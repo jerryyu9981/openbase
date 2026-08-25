@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenBase 统一前端设计总览 - v1.2.0</title>
+<style>
+  :root{--primary:#2563EB;--bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;--text:#0F172A;--sub:#475569;--ok:#16A34A;--warn:#D97706;--err:#DC2626;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:32px 16px}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{background:linear-gradient(135deg,#1E3A8A,#2563EB);color:#fff;border-radius:16px;padding:32px;margin-bottom:24px}
+  header h1{font-size:28px;margin-bottom:8px}
+  header p{opacity:.9;font-size:14px}
+  .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:4px 12px;font-size:12px;margin-top:8px}
+  h2{font-size:20px;margin:28px 0 12px;padding-left:12px;border-left:4px solid var(--primary)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;transition:box-shadow .2s}
+  .card:hover{box-shadow:0 4px 12px rgba(15,23,42,.08)}
+  .card h3{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:11px;border-radius:99px;padding:2px 8px;white-space:nowrap}
+  .t-p0{background:#FEE2E2;color:var(--err)}.t-p1{background:#FEF3C7;color:var(--warn)}
+  .card p{font-size:13px;color:var(--sub);line-height:1.6}
+  .state{margin-top:8px;font-size:12px;color:var(--sub)}
+  .state b{color:var(--text)}
+  details{margin-top:8px}
+  summary{cursor:pointer;font-size:12px;color:var(--primary)}
+  details ul{margin:8px 0 0 18px;font-size:12px;color:var(--sub);line-height:1.8}
+  footer{margin-top:32px;text-align:center;color:var(--sub);font-size:12px}
+  .note{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:16px;margin:16px 0;font-size:13px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>OpenBase 统一前端 · 设计总览</h1>
+  <p>版本 v1.2.0 · 四系统统一入口 · 动态模块架构 · 响应式三端（≥1280 / 768-1280 / &lt;768）</p>
+  <span class="badge">Vue 3 + TypeScript + Vite + Element Plus + Pinia + ECharts</span>
+</header>
+
+<div class="note">
+  <b>使用说明：</b>本页为设计阶段原型总览首页（file:// 可直接打开）。页面按模块分组列出全部设计页面、优先级与核心交互；点击"交互要点"可展开设计细节。Step 3 实现对照本页与《前端架构设计文档 v1.2.0》《UI 设计文档 v1.2.0》执行；Step 4 E2E 断言以"交互状态清单"为基线。
+</div>
+
+<h2>一、公共底座（RT-202 / RT-204）</h2>
+<div class="grid">
+  <div class="card"><h3>登录 /auth/login <span class="tag t-p0">P0</span></h3><p>账号密码 + JWT 登录，表单校验，错误契约映射（AUTH-XXX）。</p><div class="state">状态：<b>加载 / 错误 / 提交 / 成功</b></div>
+    <details><summary>交互要点</summary><ul><li>登录成功 → 跳仪表盘；401 → 提示密码错误</li><li>响应式：表单居中全宽，无横向溢出</li></ul></details></div>
+  <div class="card"><h3>仪表盘 /dashboard <span class="tag t-p0">P0</span></h3><p>统一入口总览：今日/本月 Token、活跃模型数、模块快捷入口、最近活动。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>系统管理 /system/* <span class="tag t-p1">P1</span></h3><p>用户/角色/租户/配置/审计日志（公共能力上移底座，从四系统抽取权限树）。</p><div class="state">状态：<b>空态 / 加载 / 提交</b></div></div>
+</div>
+
+<h2>二、OpenLLM 特色模块（RT-205 · 板块重设计）</h2>
+<div class="note">板块按业务域重组：<b>模型中心 / AI 应用 / 对话监控 / 平台联动</b>（公共能力已上移底座；AI 应用为全新补建）。</div>
+<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍模型中心（大模型接入管理）</h3>
+<div class="grid">
+  <div class="card"><h3>模型列表 /openllm/models <span class="tag t-p0">P0</span></h3><p>Tab 分类（全部/本地/开源/商业）、搜索筛选、状态（在线/离线/部署中/异常）、新增编辑弹窗、删除确认。</p><div class="state">状态：<b>空态 / 加载 / 提交</b></div></div>
+  <div class="card"><h3>本地模型 /openllm/models/local <span class="tag t-p0">P0</span></h3><p>卡片网格、启动/停止/删除、Ollama 拉取、运行时长/GPU 占用。</p></div>
+  <div class="card"><h3>开源模型市场 /openllm/models/market <span class="tag t-p1">P1</span></h3><p>搜索/分类/参数量、模型卡片、一键部署。</p></div>
+  <div class="card"><h3>提供商管理 /openllm/providers <span class="tag t-p0">P0</span></h3><p>卡片（类型/状态/模型数/延迟 P50）、启禁用、详情抽屉（密钥脱敏/健康）。</p></div>
+  <div class="card"><h3>提供商注册向导 /openllm/providers/register <span class="tag t-p0">P0</span></h3><p>多步向导：类型→API 配置→测试连接→完成。</p></div>
+  <div class="card"><h3>API 密钥 /openllm/api-keys <span class="tag t-p1">P1</span></h3><p>CRUD/权限范围/过期时间。</p></div>
+  <div class="card"><h3>模型部署向导 /openllm/deploy <span class="tag t-p1">P1</span></h3><p>选模型→并发/超时/缓存→确认→部署日志流式输出。</p></div>
+  <div class="card"><h3>GPU 资源 /openllm/gpu <span class="tag t-p1">P1</span></h3><p>统计卡（总数/已分配/空闲/故障）、分配/释放、10s 轮询。</p></div>
+  <div class="card"><h3>EdgeRouter 适配器 /openllm/adapters <span class="tag t-p1">P1</span></h3><p>卡片网格、健康圆点、心跳、测试连接、注册/注销。</p></div>
+</div>
+<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍AI 应用（全新补建）</h3>
+<div class="grid">
+  <div class="card"><h3>应用管理 /openllm/apps <span class="tag t-p0">P0</span></h3><p>应用 CRUD、模型绑定/Prompt 编排/参数配置、发布/下架、版本管理。</p><div class="state">状态：<b>空态 / 提交</b></div></div>
+  <div class="card"><h3>应用详情 /openllm/apps/:id <span class="tag t-p0">P0</span></h3><p>配置编辑、版本列表、发布历史。</p></div>
+  <div class="card"><h3>调用记录 /openllm/apps/calls <span class="tag t-p1">P1</span></h3><p>分页/筛选/Token 与延迟统计。</p></div>
+  <div class="card"><h3>Playground /openllm/playground <span class="tag t-p0">P0</span></h3><p>模型对话调试（流式 SSE）、导出对话记录。</p></div>
+  <div class="card"><h3>Prompt 模板 /openllm/prompt-templates <span class="tag t-p1">P1</span></h3><p>模板 CRUD、标签/变量占位符、模型关联。</p></div>
+  <div class="card"><h3>Prompt 实验 /openllm/prompt-experiments <span class="tag t-p1">P1</span></h3><p>变体/流量分配/评估指标/胜出设置。</p></div>
+</div>
+<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍对话监控</h3>
+<div class="grid">
+  <div class="card"><h3>对话管理 /openllm/conversations <span class="tag t-p0">P0</span></h3><p>列表（搜索/筛选/分页/多选）、详情（Token 消耗）、JSON 导出、批量删除。</p></div>
+  <div class="card"><h3>监控仪表盘 /openllm/monitoring <span class="tag t-p0">P0</span></h3><p>指标卡（QPS/平均延迟/P50/P99）、趋势图、Provider 分布、时间范围、10s 轮询。</p></div>
+  <div class="card"><h3>链路追踪 /openllm/monitoring/traces <span class="tag t-p1">P1</span></h3><p>Trace 搜索、Span 瀑布图、详情 Tags/Logs。</p></div>
+  <div class="card"><h3>成本分析 /openllm/monitoring/costs <span class="tag t-p1">P1</span></h3><p>堆积柱状图、明细表、导出。</p></div>
+  <div class="card"><h3>预算管理 /openllm/monitoring/budgets <span class="tag t-p1">P1</span></h3><p>列表、告警阈值 80/90/100%。</p></div>
+  <div class="card"><h3>告警中心 /openllm/monitoring/alerts <span class="tag t-p1">P1</span></h3><p>级别、单条/批量确认。</p></div>
+</div>
+<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍平台联动（经动态模块挂载）</h3>
+<div class="grid">
+  <div class="card"><h3>路由策略 /openllm/routing/strategies <span class="tag t-p1">P1</span></h3><p>策略列表（语义/级联/权重/A-B）、优先级、启停。</p></div>
+  <div class="card"><h3>熔断器 /openllm/routing/circuit-breakers <span class="tag t-p1">P1</span></h3><p>环形状态卡（OPEN/HALF_OPEN/CLOSED）、失败阈值/超时、事件时间线、重置。</p></div>
+</div>
+
+<h2>三、知识库模块（RT-206 · OpenRAG 特色）</h2>
+<div class="grid">
+  <div class="card"><h3>知识库列表 /knowledge <span class="tag t-p1">P1</span></h3><p>卡片/表格视图切换、统计条、创建/编辑、删除确认（级联）。</p><div class="state">状态：<b>空态 / 加载</b></div></div>
+  <div class="card"><h3>知识库详情 /knowledge/:id <span class="tag t-p1">P1</span></h3><p>概览 hero（状态/文档数/嵌入数）、文档管理（上传/状态过滤/多选/重新索引）、分块预览、检索测试台（Agent 模式/来源追溯/评分）。</p></div>
+  <div class="card"><h3>文档状态机展示 <span class="tag t-p1">P1</span></h3><p>pending→parsing→chunking→embedding→indexing→completed/error，轮询进度。</p></div>
+</div>
+
+<h2>四、记忆模块（RT-207 · OpenMemory 特色）</h2>
+<div class="grid">
+  <div class="card"><h3>记忆列表 /memory <span class="tag t-p1">P1</span></h3><p>分页/排序/类型筛选、衰减权重列（≥0.80 绿/0.50~0.79 黄/&lt;0.50 红）、批量删除。</p></div>
+  <div class="card"><h3>记忆详情 /memory/:id <span class="tag t-p1">P1</span></h3><p>完整内容+元数据、关联记忆跳转、WaypointTimeline（create/access/update/recall）。</p></div>
+  <div class="card"><h3>记忆搜索 /memory/search <span class="tag t-p1">P1</span></h3><p>关键词+类型+时间范围、高亮、超时提示。</p></div>
+  <div class="card"><h3>会话管理 /memory/sessions <span class="tag t-p1">P1</span></h3><p>列表（用户/IP/过期/记忆条数）、终止/批量终止、30s 刷新。</p></div>
+  <div class="card"><h3>记忆图谱 /memory/graph <span class="tag t-p1">P1</span></h3><p>力导向图（实体/关系）、搜索过滤。</p></div>
+  <div class="card"><h3>衰减配置 /memory/decay <span class="tag t-p1">P1</span></h3><p>策略（adaptive/time_only/none）、衰减因子、半衰期（默认 30 天）。</p></div>
+  <div class="card"><h3>记忆写入 /memory/write <span class="tag t-p1">P1</span></h3><p>写入表单（memory_type）、多模态上传（图像/音频转录）。</p></div>
+</div>
+
+<h2>五、画像模块（RT-208 · DPS 特色）</h2>
+<div class="grid">
+  <div class="card"><h3>画像列表 /portrait <span class="tag t-p1">P1</span></h3><p>分页/搜索/排序、状态筛选与流转（active/inactive/archived）。</p></div>
+  <div class="card"><h3>画像详情 /portrait/:id <span class="tag t-p1">P1</span></h3><p>基本信息、标签维护（打标/移除）、数据源。</p></div>
+  <div class="card"><h3>画像搜索 /portrait/search <span class="tag t-p1">P1</span></h3><p>关键词+标签组合（AND/OR）、分数/时间范围、模糊搜索、自动补全。</p></div>
+  <div class="card"><h3>标签管理 /portrait/tags <span class="tag t-p1">P1</span></h3><p>分类 CRUD + 值 CRUD + 标签统计。</p></div>
+  <div class="card"><h3>分析报表 /portrait/reports <span class="tag t-p1">P1</span></h3><p>总览/维度分布/标签数量/趋势/组织分布/导出。</p></div>
+  <div class="card"><h3>批量任务 /portrait/batch <span class="tag t-p1">P1</span></h3><p>导入（上传→预检查→执行→状态/错误明细）、导出（筛选/字段/格式/加密）。</p></div>
+</div>
+
+<footer>OpenBase v1.2.0 设计总览 · 页面与交互状态以《OpenBase-前端架构设计文档-v1.2.0》《OpenBase-UI设计文档-v1.2.0》为准</footer>
+</div>
+</body>
+</html>
