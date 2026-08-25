@@ -14,8 +14,10 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from openbase.core.db.session import get_db
 
 logger = logging.getLogger("openbase.config")
 
@@ -166,6 +168,67 @@ class ConfigStore:
                 return entry
         return None
 
+    # ---- 数据库持久化（落库后重启可恢复） ----
+
+    @classmethod
+    async def persist(
+        cls, session: Any, key: str, value: Any, level: ConfigLevel, version: int
+    ) -> None:
+        """将配置写入 DB（configs + config_versions，幂等）."""
+        from sqlalchemy import select
+
+        from openbase.core.models import ConfigKV
+        from openbase.core.models import ConfigVersion as CV
+
+        row = (
+            await session.execute(select(ConfigKV).where(ConfigKV.config_key == key))
+        ).scalar_one_or_none()
+        if row is None:
+            session.add(
+                ConfigKV(
+                    config_key=key,
+                    config_value=copy.deepcopy(value),
+                    level=level.value,
+                    version=version,
+                )
+            )
+        else:
+            row.config_value = copy.deepcopy(value)
+            row.level = level.value
+            row.version = version
+        session.add(CV(config_key=key, config_value=copy.deepcopy(value), version=version))
+        await session.commit()
+
+    @classmethod
+    async def hydrate(cls, session: Any) -> None:
+        """启动时从 DB 恢复配置到内存（configs 表）."""
+        from sqlalchemy import select
+
+        from openbase.core.models import ConfigKV
+
+        rows = (await session.execute(select(ConfigKV))).scalars().all()
+        for r in rows:
+            level = ConfigLevel(r.level) if r.level in ("system", "tenant", "user") else ConfigLevel.SYSTEM
+            cls._runtime.setdefault(level.value, {})[r.config_key] = copy.deepcopy(r.config_value)
+            # 恢复版本历史
+            cls._versions.setdefault(r.config_key, []).append(
+                ConfigVersion(r.config_key, copy.deepcopy(r.config_value), r.version)
+            )
+
+    @classmethod
+    async def versions_db(cls, session: Any, key: str) -> list[dict]:
+        """从 DB 读取配置版本历史（config_versions 表，按版本升序）."""
+        from sqlalchemy import select
+
+        from openbase.core.models import ConfigVersion as CV
+
+        rows = (
+            await session.execute(
+                select(CV).where(CV.config_key == key).order_by(CV.version)
+            )
+        ).scalars().all()
+        return [{"key": r.config_key, "version": r.version, "value": r.config_value} for r in rows]
+
 
 # ---- Schemas ----
 
@@ -195,21 +258,49 @@ class ConfigVersionOut(BaseModel):
 
 
 @router.get("/{key}", response_model=ConfigOut)
-async def get_config(key: str) -> ConfigOut:
-    """获取配置（三级合并）."""
+async def get_config(
+    key: str, session: Any = Depends(get_db)
+) -> ConfigOut:
+    """获取配置（三级合并；DB 有值时优先）."""
+    try:
+        from sqlalchemy import select
+
+        from openbase.core.models import ConfigKV
+
+        row = (
+            await session.execute(select(ConfigKV).where(ConfigKV.config_key == key))
+        ).scalar_one_or_none()
+        if row is not None:
+            return ConfigOut(key=key, value=copy.deepcopy(row.config_value), level=row.level)
+    except Exception:  # noqa: BLE001
+        logger.debug("config db read failed, fallback memory", extra={"key": key})
     return ConfigOut(key=key, value=ConfigStore.get(key))
 
 
 @router.post("", response_model=ConfigOut)
-async def set_config(req: ConfigSetRequest) -> ConfigOut:
-    """设置配置并记录版本（支持级别）."""
-    ConfigStore.set(req.key, req.value, req.level)
+async def set_config(
+    req: ConfigSetRequest, session: Any = Depends(get_db)
+) -> ConfigOut:
+    """设置配置并记录版本（支持级别；落库持久化）."""
+    entry = ConfigStore.set(req.key, req.value, req.level)
+    try:
+        await ConfigStore.persist(session, req.key, req.value, req.level, entry.version)
+    except Exception:  # noqa: BLE001
+        logger.debug("config db persist failed (memory only)", extra={"key": req.key})
     return ConfigOut(key=req.key, value=ConfigStore.get(req.key), level=req.level.value)
 
 
 @router.get("/{key}/versions", response_model=list[ConfigVersionOut])
-async def list_versions(key: str) -> list[ConfigVersionOut]:
-    """获取配置版本历史."""
+async def list_versions(
+    key: str, session: Any = Depends(get_db)
+) -> list[ConfigVersionOut]:
+    """获取配置版本历史（DB 优先，回退内存）."""
+    try:
+        rows = await ConfigStore.versions_db(session, key)
+        if rows:
+            return [ConfigVersionOut(**r) for r in rows]
+    except Exception:  # noqa: BLE001
+        logger.debug("config db versions failed, fallback memory", extra={"key": key})
     return [
         ConfigVersionOut(key=e.key, version=e.version, value=e.value)
         for e in ConfigStore.versions(key)

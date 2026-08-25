@@ -14,6 +14,16 @@ from openbase.core.models.base import (
     user_department,
     user_role,
 )
+from openbase.core.models.business import (
+    ConfigKV,
+    ConfigVersion,
+    DictItem,
+    DictType,
+    FileRecord,
+    Notification,
+    ScheduleLog,
+    ScheduleTask,
+)
 
 __all__ = [
     "Base",
@@ -23,6 +33,14 @@ __all__ = [
     "Tenant",
     "Department",
     "AuditLog",
+    "DictType",
+    "DictItem",
+    "ConfigKV",
+    "ConfigVersion",
+    "ScheduleTask",
+    "ScheduleLog",
+    "FileRecord",
+    "Notification",
     "user_role",
     "role_permission",
     "user_department",

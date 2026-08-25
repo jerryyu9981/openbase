@@ -65,12 +65,27 @@ class MeResponse(BaseModel):
 # ---- 密码校验 ----
 
 
-def hash_password(plain: str) -> str:
-    """生成 bcrypt 密码哈希."""
+def _password_ctx():
+    """构建 bcrypt 密码上下文（rounds 从 settings 读取，模块级复用）."""
     from passlib.context import CryptContext
 
-    ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    return ctx.hash(plain)
+    from openbase.settings import get_settings
+
+    ctx = getattr(_password_ctx, "_ctx", None)
+    rounds = get_settings().bcrypt_rounds
+    if ctx is None or getattr(_password_ctx, "_rounds", None) != rounds:
+        ctx = CryptContext(
+            schemes=["bcrypt"], deprecated="auto",
+            bcrypt__rounds=rounds,
+        )
+        _password_ctx._ctx = ctx  # type: ignore[attr-defined]
+        _password_ctx._rounds = rounds  # type: ignore[attr-defined]
+    return ctx
+
+
+def hash_password(plain: str) -> str:
+    """生成 bcrypt 密码哈希（rounds 配置化，默认 12）."""
+    return _password_ctx().hash(plain)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
@@ -83,11 +98,8 @@ def verify_password(plain: str, hashed: str) -> bool:
     Returns:
         是否匹配。
     """
-    from passlib.context import CryptContext
-
-    ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
     try:
-        return ctx.verify(plain, hashed)
+        return _password_ctx().verify(plain, hashed)
     except ValueError:
         return False
 

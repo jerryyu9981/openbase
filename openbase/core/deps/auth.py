@@ -41,6 +41,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/api/v1/auth/login",
         "/api/v1/auth/refresh",
         "/observability/status",
+        # MCP：服务发现公开；工具调用由 MCP 层 API Key 鉴权（豁免 JWT）
+        "/mcp/server/info",
+        "/mcp/tools",
     )
 
     async def dispatch(

@@ -40,12 +40,37 @@ def install_exception_handlers(app: Any) -> None:
 
     覆盖 BaseError 与通用 Exception，保证响应格式统一:
     {code, message, detail, request_id}
+    同时向 OpenAPI components.schemas 注册 ErrorResponse 契约（BUG-003 闭环）。
     """
 
     from fastapi import Request
     from fastapi.exceptions import RequestValidationError
     from fastapi.responses import JSONResponse
+    from pydantic import BaseModel, Field
     from starlette.exceptions import HTTPException as StarletteHTTPException
+
+    class ErrorResponse(BaseModel):
+        """OpenBase 统一错误响应契约（SR-003 错误码规范）."""
+
+        code: str = Field(..., description="错误码（ErrorCode 枚举值）")
+        message: str = Field(..., description="错误消息")
+        detail: Any = Field(None, description="附加详情")
+        request_id: str = Field(..., description="请求关联 ID")
+
+    original_openapi = app.openapi  # 保留原始 openapi 引用，避免递归
+
+    def custom_openapi() -> dict:
+        """扩展 OpenAPI schema：注册 ErrorResponse 统一错误契约."""
+        if getattr(app, "openapi_schema", None):
+            return app.openapi_schema
+        schema = original_openapi()
+        schema.setdefault("components", {}).setdefault("schemas", {})[
+            "ErrorResponse"
+        ] = ErrorResponse.model_json_schema()
+        app.openapi_schema = schema  # type: ignore[attr-defined]
+        return schema
+
+    app.openapi = custom_openapi  # type: ignore[method-assign]
 
     @app.exception_handler(BaseError)
     async def handle_base_error(request: Request, exc: BaseError) -> JSONResponse:

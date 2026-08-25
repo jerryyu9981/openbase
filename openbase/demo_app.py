@@ -69,6 +69,10 @@ def _try_database_init() -> bool:
             # 种子 admin 用户
             async with get_session_factory()() as session:
                 await _seed_admin(session)
+                # 恢复持久化配置（config 模块落库数据）
+                from openbase.modules.config import ConfigStore
+
+                await ConfigStore.hydrate(session)
             # 释放连接池：避免初始化循环与请求循环不一致导致连接复用异常
             await engine.dispose()
 

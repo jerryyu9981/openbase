@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_seconds: int = 7200
     refresh_expire_seconds: int = 604800
+    # bcrypt 成本因子（默认 12 ≈ 400-600ms；并发敏感场景可调低至 10 ≈ 200ms）
+    bcrypt_rounds: int = 12
+    # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）
+    mcp_api_keys: str = "dev-mcp-key"
 
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row

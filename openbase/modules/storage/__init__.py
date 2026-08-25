@@ -1,18 +1,26 @@
-"""storage 模块：统一文件存储（本地/MinIO/S3 适配）."""
+"""storage 模块：统一文件存储（本地/MinIO/S3 适配，数据库优先 + 内存回退）."""
 
 from __future__ import annotations
 
+import logging
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, UploadFile
+from fastapi import APIRouter, Depends, UploadFile
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from openbase.core.db.services import BaseDBService
+from openbase.core.db.session import get_db
+from openbase.core.models import FileRecord
 from openbase.settings import get_settings
+
+logger = logging.getLogger("openbase.storage")
 
 router = APIRouter(prefix="/api/v1/files", tags=["storage"])
 
-# 文件元数据（v1.0.0 最小实现：本地存储 + 内存元数据）
+# 文件元数据（数据库不可用时内存回退）
 _records: dict[int, dict] = {}
 _next_id = 1
 
@@ -61,48 +69,133 @@ def get_backend():
     return _backend
 
 
+def _to_out(r: dict) -> FileRecordOut:
+    return FileRecordOut(
+        id=r["id"], file_name=r["file_name"], storage_path=r["storage_path"],
+        backend=r["backend"], content_type=r.get("content_type"), size=r["size"],
+    )
+
+
+class FileService(BaseDBService):
+    """文件元数据服务：数据库优先 + 内存回退."""
+
+    @classmethod
+    async def create(
+        cls, session: AsyncSession, file_name: str, storage_path: str,
+        backend: str, content_type: str | None, size: int,
+    ) -> dict:
+        rec = FileRecord(
+            file_name=file_name, file_path=storage_path, backend=backend,
+            mime_type=content_type, size=size,
+        )
+        session.add(rec)
+        await session.commit()
+        return {"id": rec.id, "file_name": file_name, "storage_path": storage_path,
+                "backend": backend, "content_type": content_type, "size": size}
+
+    @classmethod
+    async def get(cls, session: AsyncSession, file_id: int) -> dict | None:
+        r = (await session.execute(select(FileRecord).where(FileRecord.id == file_id))).scalar_one_or_none()
+        if r is None:
+            return None
+        return {"id": r.id, "file_name": r.file_name, "storage_path": r.file_path,
+                "backend": r.backend, "content_type": r.mime_type, "size": r.size}
+
+    @classmethod
+    async def list_all(cls, session: AsyncSession) -> list[dict]:
+        rows = (await session.execute(select(FileRecord).order_by(FileRecord.id))).scalars().all()
+        return [{"id": r.id, "file_name": r.file_name, "storage_path": r.file_path,
+                 "backend": r.backend, "content_type": r.mime_type, "size": r.size} for r in rows]
+
+    @classmethod
+    async def delete(cls, session: AsyncSession, file_id: int) -> dict | None:
+        r = (await session.execute(select(FileRecord).where(FileRecord.id == file_id))).scalar_one_or_none()
+        if r is None:
+            return None
+        await session.delete(r)
+        await session.commit()
+        return {"deleted": file_id, "storage_path": r.file_path}
+
+    # ---- 内存回退 ----
+    @classmethod
+    async def create_mem(cls, file_name: str, storage_path: str, backend: str,
+                         content_type: str | None, size: int) -> dict:
+        global _next_id
+        rec = {"id": _next_id, "file_name": file_name, "storage_path": storage_path,
+               "backend": backend, "content_type": content_type, "size": size}
+        _records[_next_id] = rec
+        _next_id += 1
+        return rec
+
+    @classmethod
+    async def get_mem(cls, file_id: int) -> dict | None:
+        return _records.get(file_id)
+
+    @classmethod
+    async def list_all_mem(cls) -> list[dict]:
+        return list(_records.values())
+
+    @classmethod
+    async def delete_mem(cls, file_id: int) -> dict | None:
+        return _records.pop(file_id, None)
+
+
 @router.post("", response_model=FileRecordOut)
-async def upload_file(file: UploadFile) -> FileRecordOut:
-    """上传文件（multipart）."""
-    global _next_id
+async def upload_file(file: UploadFile, session: AsyncSession = Depends(get_db)) -> FileRecordOut:
+    """上传文件（multipart；元数据落库）."""
     content = await file.read()
     backend = get_backend()
     storage_path = backend.save(file.filename or "unnamed", content)
-
-    record = {
-        "id": _next_id,
-        "file_name": file.filename or "unnamed",
-        "storage_path": storage_path,
-        "backend": backend.name,
-        "content_type": file.content_type,
-        "size": len(content),
-    }
-    _records[_next_id] = record
-    _next_id += 1
-    return FileRecordOut(**record)
+    try:
+        record = await FileService.create(
+            session, file.filename or "unnamed", storage_path, backend.name,
+            file.content_type, len(content),
+        )
+    except Exception as exc:  # noqa: BLE001
+        FileService._fallback("storage.create", exc)
+        record = await FileService.create_mem(
+            file.filename or "unnamed", storage_path, backend.name,
+            file.content_type, len(content),
+        )
+    return _to_out(record)
 
 
 @router.get("/{file_id}", response_model=FileRecordOut)
-async def get_file(file_id: int) -> FileRecordOut:
+async def get_file(file_id: int, session: AsyncSession = Depends(get_db)) -> FileRecordOut:
     """获取文件元数据."""
-    record = _records.get(file_id)
+    try:
+        record = await FileService.get(session, file_id)
+    except Exception as exc:  # noqa: BLE001
+        FileService._fallback("storage.get", exc)
+        record = await FileService.get_mem(file_id)
     if record is None:
         from openbase.core.errors import BaseError, ErrorCode
 
         raise BaseError(ErrorCode.STORAGE_FILE_NOT_FOUND, "file not found")
-    return FileRecordOut(**record)
+    return _to_out(record)
 
 
 @router.get("", response_model=list[FileRecordOut])
-async def list_files() -> list[FileRecordOut]:
+async def list_files(session: AsyncSession = Depends(get_db)) -> list[FileRecordOut]:
     """文件列表."""
-    return [FileRecordOut(**r) for r in _records.values()]
+    try:
+        records = await FileService.list_all(session)
+    except Exception as exc:  # noqa: BLE001
+        FileService._fallback("storage.list", exc)
+        records = await FileService.list_all_mem()
+    return [_to_out(r) for r in records]
 
 
 @router.delete("/{file_id}")
-async def delete_file(file_id: int) -> dict:
+async def delete_file(file_id: int, session: AsyncSession = Depends(get_db)) -> dict:
     """删除文件（含存储内容）."""
-    record = _records.pop(file_id, None)
-    if record:
-        get_backend().delete(record["storage_path"])
+    try:
+        result = await FileService.delete(session, file_id)
+    except Exception as exc:  # noqa: BLE001
+        FileService._fallback("storage.delete", exc)
+        result = await FileService.delete_mem(file_id)
+    if result is not None and "storage_path" in result:
+        get_backend().delete(result["storage_path"])
+    elif result is not None:
+        get_backend().delete(result.get("storage_path", ""))
     return {"deleted": file_id}

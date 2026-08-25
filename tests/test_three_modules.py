@@ -151,14 +151,34 @@ def test_mcp_register_tool_http_layer():
     app = FastAPI()
     app.include_router(router)
     client = TestClient(app)
+    headers = {"X-API-Key": "dev-mcp-key"}
 
-    lst = client.get("/mcp/tools/list").json()
+    lst = client.get("/mcp/tools/list", headers=headers).json()
     names = [t["name"] for t in lst["tools"]]
     assert "echo" in names
 
-    call = client.post("/mcp/tools/call", json={"name": "echo", "arguments": {"text": "hi"}})
+    call = client.post(
+        "/mcp/tools/call", json={"name": "echo", "arguments": {"text": "hi"}}, headers=headers
+    )
     assert call.status_code == 200
     assert call.json()["content"][0]["text"] == "echo:hi"
+
+
+def test_mcp_http_layer_rejects_bad_key():
+    """HTTP 层：错误 API Key 拒绝（SR-008）."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from openbase.core.errors import install_exception_handlers
+    from openbase.modules.mcp import router
+
+    app = FastAPI()
+    install_exception_handlers(app)
+    app.include_router(router)
+    client = TestClient(app)
+    resp = client.get("/mcp/tools/list", headers={"X-API-Key": "wrong-key"})
+    assert resp.status_code == 401
+    assert resp.json()["code"] == "AUTH_401"
 
 
 def test_mcp_server_unregister():

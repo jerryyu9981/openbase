@@ -49,13 +49,13 @@
 
 | 测试类别 | 命令或方式 | 通过 | 失败 | 跳过 | 结论 | 证据 |
 |---------|-----------|:----:|:----:|:----:|:----:|------|
-| 契约测试（T1） | openapi.json 解析 + 契约断言 | 4 | 0 | 0 | ✅ | 契约脚本（16/16 汇总内） |
-| API 测试（T2） | `pytest tests` | 80 | 0 | 0 | ✅ | junit_full.xml |
-| 安全专项（4.7a） | test_security.py + 安全断言 | 14 | 0 | 0 | ✅ | 契约脚本 + test_security.py |
-| 集成测试（T2/T3b） | it_pg_integration.py（真实 PG） | 14 | 0 | 0 | ✅ | it_pg_integration 输出 |
+| 契约测试（T1） | openapi.json 解析 + 契约断言（含 ErrorResponse） | 5 | 0 | 0 | ✅ | 契约脚本（16/16 汇总内） |
+| API 测试（T2） | `pytest tests` | 96 | 0 | 0 | ✅ | junit_full.xml |
+| 安全专项（4.7a） | test_security.py + 安全断言 + MCP API Key | 16 | 0 | 0 | ✅ | 契约脚本 + test_security.py |
+| 集成测试（T2/T3b） | it_pg_integration.py + it_modules_pg.py（真实 PG） | 30 | 0 | 0 | ✅ | 集成输出 |
 | E2E 核心流（T4） | UAT 走查 7 项 | 7 | 0 | 0 | ✅ | 测试用例 §2.6 |
-| 回归测试 | `pytest tests` 全量 | 80 | 0 | 0 | ✅ | junit_full.xml |
-| 覆盖率测试 | `pytest --cov=openbase` | 85% | - | - | ✅ ≥85% | coverage.json |
+| 回归测试 | `pytest tests` 全量 | 96 | 0 | 0 | ✅ | junit_full.xml |
+| 覆盖率测试 | `pytest --cov=openbase` | 90% | - | - | ✅ ≥90% | coverage.json |
 | 性能测试（4.7b） | 并发压测 health/login | 2 | 0 | 0 | ✅ | 契约脚本 |
 | T3a 页面巡检 | - | - | - | 1 | 不适用 | 见跳过项说明 |
 | 可访问性（4.7c） | - | - | - | 1 | 不适用 | 见跳过项说明 |
@@ -95,11 +95,11 @@
 
 | 缺陷 ID | 级别 | 来源 | 问题 | 修复状态 | 复测结果 |
 |---------|------|------|------|---------|---------|
-| BUG-001 | P0 | 安全专项 | 全部业务接口匿名可访问（SR-001 未落地） | ✅ 已修复（AuthMiddleware 统一鉴权） | 匿名 401/带 token 200，5 用例通过 |
-| BUG-002 | P1 | 性能测试 | 登录并发 P50=3.4s，并发 40 超时 >10s（bcrypt 阻塞事件循环） | ✅ 已修复（asyncio.to_thread） | 并发 20 P50=1.7s，并发 8 P50=753ms，无超时 |
-| BUG-003 | P2 | 契约测试 | OpenAPI 未声明统一错误响应 schema（运行时格式正确） | 记录待后续版本 | - |
+| BUG-001 | P0 | 安全专项 | 全部业务接口匿名可访问（SR-001 未落地） | ✅ 已修复（AuthMiddleware 统一鉴权） | 匿名 401/带 token 200 |
+| BUG-002 | P1 | 性能测试 | 登录并发 P50=3.4s，并发 40 超时 >10s（bcrypt 阻塞） | ✅ 已修复（asyncio.to_thread + rounds 配置化） | 并发 8 P50=753ms |
+| BUG-003 | P2 | 契约测试 | OpenAPI 未声明统一错误响应 schema | ✅ 已修复（ErrorResponse 注入） | openapi.json 含契约 |
 
-**闭环结论**：P0/P1 全部关闭并复测通过；P2（BUG-003）记录于技术债务总表（TD-新增-003），不阻塞发布。
+**闭环结论**：P0/P1/P2（BUG-003）全部关闭并复测通过；遗留风险四项已清除（见 §7 更新）。
 
 ## 6. 覆盖率
 
@@ -112,12 +112,12 @@
 
 ## 7. 遗留风险
 
+> v1.0.5 更新：测试报告 §7 原四项遗留风险已全部清除（六模块落库/MCP 鉴权/错误契约/bcrypt 配置化，见 DevLogReport v1.0.5 §4.1）。
+
 | 风险 | 级别 | 批准依据 | 后续计划 |
 |------|------|---------|---------|
-| org/dict/config 等模块内存存储 | P2 | v1.0.0 最小可用范围 | v1.1.0 模块数据库接入 |
-| MCP 鉴权骨架 | P2 | 双接口体系部分实现 | v1.1.0 服务级 Key 校验 |
-| 统一错误契约未声明（BUG-003） | P2 | 运行时格式正确 | 后续版本补充 response model |
-| 登录 bcrypt 单次 400-600ms | P2 | 安全成本设计选择，并发已缓解 | 可选 argon2/缓存优化 |
+| Redis 缓存实装（dict TTL/SSE pub/sub） | P2 | 配置已解析，实装依赖 Redis 基础设施 | v1.1.0（TD-新增-001） |
+| RBAC 权限矩阵服务层查询 | P2 | 权限点基于 payload/store 简化实现 | v1.1.0（CR-002） |
 
 ## 8. 结论
 

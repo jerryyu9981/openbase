@@ -10,11 +10,31 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
+
+from openbase.core.errors import BaseError, ErrorCode
 
 logger = logging.getLogger("openbase.mcp")
 
 router = APIRouter(prefix="/mcp", tags=["mcp"])
+
+
+async def _require_mcp_key(request: Request) -> None:
+    """MCP 服务级 API Key 鉴权（双接口体系 D-002，SR-008）.
+
+    校验 X-API-Key 请求头是否在配置的 mcp_api_keys 中；
+    未配置 key 时禁止工具调用（安全默认）。
+    """
+    from openbase.settings import get_settings
+
+    keys = [
+        k.strip()
+        for k in get_settings().mcp_api_keys.split(",")
+        if k.strip()
+    ]
+    provided = request.headers.get("X-API-Key", "")
+    if not keys or provided not in keys:
+        raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid or missing mcp api key")
 
 # FastMCP 实例（懒初始化）
 _fastmcp = None
@@ -242,7 +262,7 @@ def register_tool(name: str, description: str = "") -> Callable[..., Any]:
     return decorator
 
 
-@router.get("/tools/list")
+@router.get("/tools/list", dependencies=[Depends(_require_mcp_key)])
 async def list_tools() -> dict:
     """工具清单（可缓存，对齐 2026-07 MCP 规范）.
 
@@ -252,7 +272,7 @@ async def list_tools() -> dict:
     return {"tools": get_mcp_server().list_tools()}
 
 
-@router.post("/tools/call")
+@router.post("/tools/call", dependencies=[Depends(_require_mcp_key)])
 async def call_tool(payload: dict) -> dict:
     """工具调用（HTTP 适配层，对接 MCPServer 协议处理）."""
     return await get_mcp_server().handle_request(

@@ -25,8 +25,9 @@ def test_mcp_register_tool_and_list():
     app = FastAPI()
     app.include_router(router)
     client = TestClient(app)
+    headers = {"X-API-Key": "dev-mcp-key"}
 
-    resp = client.get("/mcp/tools/list")
+    resp = client.get("/mcp/tools/list", headers=headers)
     assert resp.status_code == 200
     tools = resp.json()["tools"]
     names = [t["name"] for t in tools]
