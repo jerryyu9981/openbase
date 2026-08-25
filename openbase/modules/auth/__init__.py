@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
+from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import User
 from openbase.modules.auth.jwt import (
@@ -222,6 +223,29 @@ async def refresh(req: RefreshRequest) -> TokenResponse:
         expires_in=settings.jwt_expire_seconds,
         refresh_token=new_refresh,
         refresh_expires_in=settings.refresh_expire_seconds,
+    )
+
+
+@router.get("/me", response_model=MeResponse)
+async def me(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> MeResponse:
+    """当前用户信息（含权限标识）.
+
+    供统一前端登录后拉取用户与权限（v1.2.0 统一前端契约）。
+    """
+    from openbase.modules.auth.rbac import PermissionService
+
+    permissions = await PermissionService.permissions_for_with_fallback(session, str(user["id"]))
+    # 系统管理员（admin）兜底通配权限：数据库 RBAC 关联未就绪时保证全模块可见
+    if user.get("username") == "admin" and "*" not in permissions:
+        permissions = ["*", *permissions]
+    return MeResponse(
+        id=user["id"],
+        username=user["username"],
+        tenant_id=user.get("tenant_id"),
+        permissions=permissions,
     )
 
 __version__ = "1.1.0"

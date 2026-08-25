@@ -136,3 +136,39 @@ def test_module_service_fallback():
     modules = service.list_modules()
     assert len(modules) == 4
     assert modules[0]["status"] == "enabled"
+
+
+# ---- auth /me 端点（v1.2.0 登录链路修复回归） ----
+
+def test_auth_me_returns_wildcard_for_admin():
+    """admin 用户 me 返回通配权限（DB RBAC 未就绪时兜底）."""
+    from openbase.core.db.session import get_db
+    from openbase.modules.auth import router as auth_router
+
+    class FakeSession:
+        async def execute(self, *args, **kwargs):  # noqa: ANN002
+            raise RuntimeError("no db in test")
+
+    app = FastAPI()
+    install_exception_handlers(app)
+    app.include_router(auth_router)
+    app.dependency_overrides[get_db] = lambda: FakeSession()
+    client = TestClient(app)
+    token = create_access_token("1", username="admin", tenant_id="openbase")
+    resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["username"] == "admin"
+    assert "*" in body["permissions"]
+
+
+def test_auth_me_requires_token():
+    """me 端点必须携带有效 JWT."""
+    from openbase.modules.auth import router as auth_router
+
+    app = FastAPI()
+    install_exception_handlers(app)
+    app.include_router(auth_router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/auth/me")
+    assert resp.status_code == 401
