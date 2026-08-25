@@ -163,3 +163,5 @@ async def delete_department(
     except Exception as exc:  # noqa: BLE001
         DepartmentService._fallback("org.delete", exc)
         return await DepartmentService.delete_mem(dep_id)
+
+__version__ = "1.1.0"

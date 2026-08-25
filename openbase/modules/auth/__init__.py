@@ -223,3 +223,5 @@ async def refresh(req: RefreshRequest) -> TokenResponse:
         refresh_token=new_refresh,
         refresh_expires_in=settings.refresh_expire_seconds,
     )
+
+__version__ = "1.1.0"

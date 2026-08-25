@@ -126,3 +126,46 @@ def pub(channel: str, payload: dict) -> bool:
         return True
     except Exception:  # noqa: BLE001
         return False
+
+
+def subscribe_pattern(pattern: str, handler) -> bool:
+    """启动后台线程订阅 Redis 频道模式（多实例 SSE 广播接收）.
+
+    订阅线程持续运行，收到消息调用 handler(channel, payload_dict)；
+    Redis 不可用时返回 False（调用方回退单实例本地队列）。
+
+    Args:
+        pattern: 频道模式（如 openbase:notify:user:*）。
+        handler: 消息处理回调（channel: str, payload: dict）。
+
+    Returns:
+        订阅是否启动成功。
+    """
+    client = get_client()
+    if client is None:
+        return False
+    import threading
+
+    def _run() -> None:
+        pubsub = client.pubsub()
+        try:
+            pubsub.psubscribe(pattern)
+            for message in pubsub.listen():
+                if message.get("type") != "pmessage":
+                    continue
+                try:
+                    payload = json.loads(message.get("data") or "{}")
+                    handler(message.get("channel", ""), payload)
+                except Exception:  # noqa: BLE001
+                    logger.debug("subscribe handler failed", extra={"pattern": pattern})
+        except Exception:  # noqa: BLE001
+            logger.warning("redis subscribe stopped", extra={"pattern": pattern})
+        finally:
+            try:
+                pubsub.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    threading.Thread(target=_run, name=f"redis-sub-{pattern}", daemon=True).start()
+    logger.info("redis subscribe started", extra={"pattern": pattern})
+    return True

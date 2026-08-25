@@ -186,3 +186,5 @@ async def get_quota(tenant: str, resource: str) -> dict:
         "usage": QuotaChecker.usage(tenant, resource),
         "allowed": QuotaChecker.check(tenant, resource),
     }
+
+__version__ = "1.1.0"

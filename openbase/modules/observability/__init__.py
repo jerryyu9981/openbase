@@ -127,3 +127,5 @@ async def status() -> dict:
         "langfuse_configured": _langfuse_configured,
         "business_metrics": BusinessMetrics.snapshot(),
     }
+
+__version__ = "1.1.0"

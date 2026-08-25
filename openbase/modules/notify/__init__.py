@@ -220,3 +220,44 @@ async def mark_all_read(user_id: int, session: AsyncSession = Depends(get_db)) -
         NotificationService._fallback("notify.read_all", exc)
         await NotificationService.mark_all_read_mem(user_id)
     return {"read_all": True}
+
+
+# ---- 多实例 SSE 订阅接收（TD-11-04，BL-109） ----
+
+
+def _redis_message_handler(channel: str, payload: dict) -> None:
+    """Redis 广播消息处理器：按 user id 推送到本地 SSE 订阅队列.
+
+    channel 形如 openbase:notify:user:{user_id}。
+    """
+    user_id = str(payload.get("user_id", ""))
+    if not user_id:
+        return
+    local_channel = f"user:{user_id}"
+    message = json.dumps(payload, ensure_ascii=False)
+    for queue in _subscribers.get(local_channel, []):
+        try:
+            queue.put_nowait(message)
+        except Exception:  # noqa: BLE001
+            logger.debug("sse queue full or closed", extra={"channel": local_channel})
+
+
+def start_redis_subscriber() -> bool:
+    """启动 Redis 频道模式订阅（跨实例 SSE 广播接收）.
+
+    单实例场景 Redis 广播直接由本地 publish 处理，无需订阅；
+    多实例场景实例 B 通过订阅接收实例 A 发布的广播。
+    Redis 不可用时返回 False（保持单实例本地队列模式）。
+
+    Returns:
+        订阅是否启动成功。
+    """
+    from openbase.core.cache.redis_client import subscribe_pattern
+
+    return subscribe_pattern("openbase:notify:user:*", _redis_message_handler)
+
+
+# 应用启动时自动启动订阅（模块导入即注册，实例级）
+start_redis_subscriber()
+
+__version__ = "1.1.0"

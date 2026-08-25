@@ -1,0 +1,44 @@
+# OpenBase 告警规则（v1.1.0，对齐可观测性设计标准）
+
+groups:
+  - name: openbase-api
+    rules:
+      - alert: APILatencyHigh
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)) > 0.5
+        for: 5m
+        labels:
+          severity: P1
+          service: openbase
+        annotations:
+          summary: "API P99 latency > 500ms (5m)"
+          description: "服务 {{ $labels.service }} P99 延迟超过 500ms 持续 5 分钟"
+
+      - alert: LoginFailureSpike
+        expr: sum(rate(auth_login_total{result="failure"}[5m])) / sum(rate(auth_login_total[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: P1
+          service: openbase
+        annotations:
+          summary: "Login failure rate > 20% (5m)"
+          description: "登录失败率超过 20% 持续 5 分钟"
+
+      - alert: ServiceDown
+        expr: up{service="openbase"} == 0
+        for: 3m
+        labels:
+          severity: P0
+          service: openbase
+        annotations:
+          summary: "OpenBase service down"
+          description: "OpenBase 服务不可达（健康检查失败）持续 3 分钟"
+
+      - alert: ErrorRateHigh
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service) > 0.01
+        for: 5m
+        labels:
+          severity: P1
+          service: openbase
+        annotations:
+          summary: "5xx error rate > 1% (5m)"
+          description: "5xx 错误率超过 1% 持续 5 分钟"

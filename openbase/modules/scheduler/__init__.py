@@ -226,3 +226,5 @@ async def delete_schedule(task_id: int, session: AsyncSession = Depends(get_db))
     except Exception as exc:  # noqa: BLE001
         ScheduleService._fallback("scheduler.delete", exc)
         return await ScheduleService.delete_mem(task_id)
+
+__version__ = "1.1.0"

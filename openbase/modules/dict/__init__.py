@@ -230,3 +230,5 @@ async def delete_dict_item(
     except Exception as exc:  # noqa: BLE001
         DictService._fallback("dict.delete_item", exc)
         return await DictService.delete_item_mem(item_id)
+
+__version__ = "1.1.0"

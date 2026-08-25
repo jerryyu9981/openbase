@@ -316,3 +316,5 @@ async def rollback(key: str, version: int) -> ConfigOut:
 
         raise BaseError(ErrorCode.BIZ_CONFIG_CONFLICT, f"version {version} not found")
     return ConfigOut(key=key, value=ConfigStore.get(key))
+
+__version__ = "1.1.0"

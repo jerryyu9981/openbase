@@ -1,8 +1,8 @@
 {
   "project": "OpenBase",
   "devflowVersion": "2.18.0",
-  "currentPhase": "step_2_design",
-  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements"],
+  "currentPhase": "step_3_development",
+  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design"],
   "currentDocuments": {
     "global": [
       "doc/version/global/OpenBase-版本规划总纲.md",

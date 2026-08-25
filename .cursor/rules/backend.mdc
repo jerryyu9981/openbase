@@ -1,0 +1,18 @@
+# OpenBase 后端编码规则（.cursor/rules/backend.mdc）
+
+> 由 AGENTS.md 派生，供 Cursor/同类 AI 编辑器按项目上下文自动加载。
+
+## 适用
+- Python / FastAPI 后端代码（openbase/ 包 + tests/）
+
+## 规则
+1. **分层**：Controller（路由）→ Service（业务）→ Repository（数据），禁止跨层
+2. **错误**：BaseError(ErrorCode.XXX, msg)，统一 {code,message,detail,request_id}
+3. **日志**：logging + extra 结构化；禁止 print；禁止敏感数据
+4. **DB**：SQLAlchemy 参数化；幂等迁移；租户过滤
+5. **命名**：snake_case / PascalCase / UPPER_SNAKE_CASE；禁缩写
+6. **测试**：TDD；覆盖率 ≥90%；ruff 0 错误
+7. **验证**：`ruff check openbase tests` + `pytest tests` + `pytest --cov=openbase`
+
+## 禁止
+- 拼接 SQL、SELECT *、明文密钥入库、print 调试、跨层调用

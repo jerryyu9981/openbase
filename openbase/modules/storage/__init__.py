@@ -199,3 +199,5 @@ async def delete_file(file_id: int, session: AsyncSession = Depends(get_db)) -> 
     elif result is not None:
         get_backend().delete(result.get("storage_path", ""))
     return {"deleted": file_id}
+
+__version__ = "1.1.0"

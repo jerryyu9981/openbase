@@ -284,3 +284,5 @@ async def call_tool(payload: dict) -> dict:
 async def server_info() -> dict:
     """MCP 服务器信息（调试用）."""
     return get_mcp_server().get_server_info()
+
+__version__ = "1.1.0"

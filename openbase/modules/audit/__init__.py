@@ -232,3 +232,5 @@ async def health() -> dict:
 async def audit_records(limit: int = 100) -> dict:
     """查询审计记录（调试/管理用）."""
     return {"records": AuditService.records(limit=limit)}
+
+__version__ = "1.1.0"
