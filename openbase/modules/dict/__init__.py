@@ -48,7 +48,13 @@ class DictItemOut(BaseModel):
 
 
 class DictService(BaseDBService):
-    """字典服务：数据库优先 + 内存回退."""
+    """字典服务：数据库优先 + 内存回退 + Redis 缓存."""
+
+    CACHE_TTL = 300  # 对齐设计文档 dict 缓存 TTL 5min
+
+    @classmethod
+    def _cache_key(cls, type_code: str) -> str:
+        return f"dict:{type_code}:items"
 
     @classmethod
     async def create_type(cls, session: AsyncSession, code: str, name: str) -> dict:
@@ -79,10 +85,20 @@ class DictService(BaseDBService):
         item = DictItem(type_id=t.id, label=label, value=value, sort_order=sort_order)
         session.add(item)
         await session.commit()
+        # 缓存失效（写入后旧缓存不可用）
+        from openbase.core.cache.redis_client import cache_delete
+
+        cache_delete(cls._cache_key(type_code))
         return {"id": item.id, "label": label, "value": value, "sort_order": sort_order}
 
     @classmethod
     async def list_items(cls, session: AsyncSession, type_code: str) -> list[dict]:
+        # Redis 缓存优先（读高频路径）
+        from openbase.core.cache.redis_client import cache_get
+
+        cached = cache_get(cls._cache_key(type_code))
+        if cached is not None:
+            return cached
         t = (
             await session.execute(select(DictType).where(DictType.code == type_code))
         ).scalar_one_or_none()
@@ -95,10 +111,15 @@ class DictService(BaseDBService):
                 .order_by(DictItem.sort_order)
             )
         ).scalars().all()
-        return [
+        result = [
             {"id": r.id, "label": r.label, "value": r.value, "sort_order": r.sort_order}
             for r in rows
         ]
+        # 写缓存（Redis 不可用时静默跳过，不影响返回）
+        from openbase.core.cache.redis_client import cache_set
+
+        cache_set(cls._cache_key(type_code), result, ttl=cls.CACHE_TTL)
+        return result
 
     @classmethod
     async def delete_item(cls, session: AsyncSession, item_id: int) -> dict:
@@ -106,8 +127,19 @@ class DictService(BaseDBService):
             await session.execute(select(DictItem).where(DictItem.id == item_id))
         ).scalar_one_or_none()
         if row is not None:
+            type_code = None
+            # 查 type_code 用于缓存失效
+            type_row = (
+                await session.execute(select(DictType).where(DictType.id == row.type_id))
+            ).scalar_one_or_none()
+            if type_row is not None:
+                type_code = type_row.code
             await session.delete(row)
             await session.commit()
+            if type_code:
+                from openbase.core.cache.redis_client import cache_delete
+
+                cache_delete(cls._cache_key(type_code))
         return {"deleted": item_id}
 
     # ---- 内存回退路径 ----

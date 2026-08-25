@@ -1,4 +1,4 @@
-"""RBAC 权限矩阵：配置驱动权限管理器 + 权限点校验依赖.
+"""RBAC 权限矩阵：配置驱动权限管理器 + 数据库权限矩阵 + 权限点校验依赖.
 
 来源：OpenLLM backend/app/edgerouter/auth/rbac.py（RBACManager 配置驱动模式抽取，
 适配 openbase 统一错误与配置约定）。
@@ -6,15 +6,21 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from openbase.core.db.session import get_db
 from openbase.core.deps import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.core.models import Permission, Role, role_permission, user_role
 
-__all__ = ["require_permission", "has_permission", "PermissionStore"]
+logger = logging.getLogger("openbase.auth.rbac")
+
+__all__ = ["require_permission", "has_permission", "PermissionStore", "PermissionService"]
 
 
 class PermissionStore:
@@ -58,6 +64,48 @@ class PermissionStore:
         return list(dict.fromkeys(result))  # 去重保序
 
 
+class PermissionService:
+    """权限矩阵数据库服务：用户权限点查询（user → role → permission）.
+
+    SQL 链：user_role → roles → role_permission → permissions。
+    数据库不可用时回退 PermissionStore 内存映射。
+    """
+
+    @classmethod
+    async def permissions_for(cls, session: AsyncSession, user_id: int) -> list[str]:
+        """查询用户数据库权限点（含 admin 通配）.
+
+        Args:
+            session: 数据库会话。
+            user_id: 用户 ID。
+
+        Returns:
+            权限点列表（含 * 通配）。
+        """
+        from sqlalchemy import select
+
+        stmt = (
+            select(Permission.code)
+            .join(role_permission, role_permission.c.permission_id == Permission.id)
+            .join(Role, Role.id == role_permission.c.role_id)
+            .join(user_role, user_role.c.role_id == Role.id)
+            .where(user_role.c.user_id == user_id)
+        )
+        rows = (await session.execute(stmt)).scalars().all()
+        return list(dict.fromkeys(rows))
+
+    @classmethod
+    async def permissions_for_with_fallback(cls, session: AsyncSession, user_id: str) -> list[str]:
+        """数据库优先 + 内存回退的用户权限查询."""
+        try:
+            db_perms = await cls.permissions_for(session, int(user_id))
+            if db_perms:
+                return db_perms
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("rbac db query failed, fallback store: %s", exc)
+        return PermissionStore.permissions_for(user_id)
+
+
 def require_permission(permission_code: str) -> Callable[..., Any]:
     """生成 RBAC 权限校验依赖.
 
@@ -77,7 +125,10 @@ def require_permission(permission_code: str) -> Callable[..., Any]:
         FastAPI 依赖函数。
     """
 
-    async def _checker(user: dict = Depends(get_current_user)) -> dict:
+    async def _checker(
+        user: dict = Depends(get_current_user),
+        session: AsyncSession = Depends(get_db),
+    ) -> dict:
         user_id = str(user.get("id", ""))
 
         # 路径 1：payload 携带权限（透传/轻量场景）
@@ -85,9 +136,9 @@ def require_permission(permission_code: str) -> Callable[..., Any]:
         if has_permission(payload_permissions, permission_code):
             return user
 
-        # 路径 2：PermissionStore 权限矩阵查询
-        store_permissions = PermissionStore.permissions_for(user_id)
-        if has_permission(store_permissions, permission_code):
+        # 路径 2：数据库权限矩阵查询（user → role → permission，含 * 通配）
+        db_permissions = await PermissionService.permissions_for_with_fallback(session, user_id)
+        if has_permission(db_permissions, permission_code):
             return user
 
         raise BaseError(

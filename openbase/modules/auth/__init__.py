@@ -139,18 +139,28 @@ class UserService:
         Returns:
             用户字典；不存在返回 None。
         """
+        # Redis 用户缓存（TTL 300s，对齐设计文档"用户缓存 Redis TTL 5min"）
+        from openbase.core.cache.redis_client import cache_get
+
+        cached = cache_get(f"user:{username}")
+        if cached is not None:
+            return cached
         try:
             result = await session.execute(
                 select(User).where(User.username == username)
             )
             user = result.scalar_one_or_none()
             if user is not None:
-                return {
+                data = {
                     "id": user.id,
                     "username": user.username,
                     "password_hash": user.password_hash,
                     "tenant_id": str(user.tenant_id) if user.tenant_id else None,
                 }
+                from openbase.core.cache.redis_client import cache_set
+
+                cache_set(f"user:{username}", data, ttl=300)
+                return data
         except Exception as exc:  # noqa: BLE001
             logging.getLogger("openbase.auth").warning(
                 "user query failed, fallback to memory: %s", exc

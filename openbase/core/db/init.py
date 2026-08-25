@@ -78,4 +78,24 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                 f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = '*')"
             )
         )
+        # admin 用户 → admin 角色关联（RBAC 矩阵；依赖 admin 用户已由 demo_app 种子）
+        await conn.execute(
+            text(
+                f"INSERT INTO {schema}.user_role (user_id, role_id) "
+                f"SELECT u.id, r.id FROM {schema}.users u, {schema}.roles r "
+                f"WHERE u.username = 'admin' AND r.code = 'admin' "
+                f"AND NOT EXISTS (SELECT 1 FROM {schema}.user_role ur "
+                f"WHERE ur.user_id = u.id AND ur.role_id = r.id)"
+            )
+        )
+        # admin 角色 → 全部权限关联
+        await conn.execute(
+            text(
+                f"INSERT INTO {schema}.role_permission (role_id, permission_id) "
+                f"SELECT r.id, p.id FROM {schema}.roles r, {schema}.permissions p "
+                f"WHERE r.code = 'admin' AND p.code = '*' "
+                f"AND NOT EXISTS (SELECT 1 FROM {schema}.role_permission rp "
+                f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
+            )
+        )
     logger.info("database initialized", extra={"schema": schema})

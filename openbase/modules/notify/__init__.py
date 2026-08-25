@@ -56,10 +56,15 @@ def _to_out(n: dict) -> NotificationOut:
 
 
 async def publish(channel: str, payload: dict) -> None:
-    """发布消息到 SSE 通道."""
+    """发布消息到 SSE 通道（本地队列 + Redis 跨实例广播）."""
     message = json.dumps(payload, ensure_ascii=False)
+    # 本地订阅者（单实例 SSE 直推）
     for queue in _subscribers.get(channel, []):
         await queue.put(message)
+    # Redis 广播（多实例场景，其他实例可订阅 channel 接收）
+    from openbase.core.cache.redis_client import pub as redis_pub
+
+    redis_pub(f"openbase:notify:{channel}", payload)
 
 
 class NotificationService(BaseDBService):
