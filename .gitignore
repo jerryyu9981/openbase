@@ -1,0 +1,39 @@
+# ---- 敏感信息（绝不提交）----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.log
+
+# ---- 虚拟环境 ----
+.venv/
+venv/
+env/
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- 临时文件 ----
+tmp/
+*.tmp
+pytest_out.txt
+reports_junit.xml

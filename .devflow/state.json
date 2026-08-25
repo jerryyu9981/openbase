@@ -1,0 +1,67 @@
+{
+  "project": "OpenBase",
+  "devflowVersion": "2.18.0",
+  "currentPhase": "step_3_development",
+  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design"],
+  "currentDocuments": {
+    "global": [
+      "doc/version/global/OpenBase-版本规划总纲.md",
+      "doc/version/global/OpenBase-版本迭代路线图.md",
+      "doc/version/global/OpenBase-候选需求池.md",
+      "doc/version/global/OpenBase-版本范围变更总记录.md",
+      "doc/version/global/OpenBase-版本发布策略总则.md",
+      "doc/version/global/OpenBase-技术债务总表.md"
+    ],
+    "version_v1.0.0": [
+      "doc/version/releases/v1.0.0/OpenBase-单版本规划文档-v1.0.0.md",
+      "doc/version/releases/v1.0.0/OpenBase-本版本Backlog-v1.0.0.md",
+      "doc/version/releases/v1.0.0/OpenBase-Phase迭代计划-v1.0.0.md"
+    ],
+    "requirements": [
+      "doc/requirements/OpenBase-开发需求文档-v1.0.0.md",
+      "doc/requirements/OpenBase-用户需求说明书-v1.0.0.md",
+      "doc/requirements/OpenBase-需求来源与干系人-v1.0.0.md",
+      "doc/requirements/OpenBase-需求追溯矩阵-v1.0.0.md",
+      "doc/requirements/OpenBase-需求评审记录-v1.0.0.md",
+      "doc/requirements/OpenBase-需求基线及设计移交说明-v1.0.0.md",
+      "doc/requirements/OpenBase-统一前端需求设计说明-v0.1.0.md"
+    ],
+    "design": [
+      "doc/design/OpenBase-系统架构设计文档-v1.0.0.md",
+      "doc/design/OpenBase-API接口设计文档-v1.0.0.md",
+      "doc/design/OpenBase-数据库设计文档-v1.0.0.md",
+      "doc/design/OpenBase-非功能设计说明-v1.0.0.md",
+      "doc/design/OpenBase-部署架构草案-v1.0.0.md",
+      "doc/design/OpenBase-第三方集成设计文档-v1.0.0.md",
+      "doc/design/OpenBase-设计评审记录-v1.0.0.md"
+    ],
+    "development": [
+      "doc/development/OpenBase-DevLogReport-v1.0.0.md",
+      "doc/development/OpenBase-设计开发追溯矩阵-v1.0.0.md",
+      "doc/development/OpenBase-开发审计移交材料-v1.0.0.md"
+    ],
+    "audit": [
+      "doc/audit/review/OpenBase-阶段审计报告-Stage0-v1.0.0.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage1-v1.0.0.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage2-v1.0.0.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.0.0.md",
+      "doc/audit/review/OpenBase-需求架构对比审计报告-v1.0.0.md",
+      "doc/audit/assessment/OpenBase-需求评估报告-v1.0.0.md"
+    ]
+  },
+  "auditResults": {
+    "step_0": {
+      "status": "passed",
+      "date": "2026-08-25",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage0-v1.0.0.md"
+    }
+  },
+  "versionCheck": {
+    "lastCheck": "2026-08-24T00:00:00+08:00",
+    "installedDevflowVersion": "2.18.0",
+    "recordedDevflowVersion": null,
+    "result": "first_check",
+    "action": "no_action"
+  }
+}

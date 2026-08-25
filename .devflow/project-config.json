@@ -1,0 +1,14 @@
+{
+  "project": {
+    "name": "OpenBase",
+    "version": "1.0.0",
+    "description": "四系统（OpenLLM / OpenRAG / OpenMemory / DPS）及未来类似系统的统一基础设施公共底座框架",
+    "lastRelease": null
+  },
+  "remote": {
+    "origin": "http://192.168.0.14/jerry.yu/openbase.git",
+    "backup": "http://192.168.0.14/jerry.yu/openbase-backup.git",
+    "github": ""
+  },
+  "branchStrategy": "git-flow"
+}
