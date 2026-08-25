@@ -6,8 +6,8 @@
     "lastRelease": null
   },
   "remote": {
-    "origin": "http://192.168.0.14/jerry.yu/openbase.git",
-    "backup": "http://192.168.0.14/jerry.yu/openbase-backup.git",
+    "origin": "git@192.168.0.14:jerry.yu/openbase.git",
+    "backup": "git@192.168.0.14:jerry.yu/openbase-backup.git",
     "github": ""
   },
   "branchStrategy": "git-flow"
