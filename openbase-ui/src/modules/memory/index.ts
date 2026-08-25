@@ -2,8 +2,8 @@ import type { RouteRecordRaw } from 'vue-router'
 
 /** 记忆模块（OpenMemory 特色，RT-207） */
 export const routes: RouteRecordRaw[] = [
-  { path: '', redirect: '/memory' },
-  { path: '', name: 'memory-list', component: () => import('./pages/MemoryList.vue'), meta: { title: '记忆管理' } },
+  { path: '', redirect: '/memory/list' },
+  { path: 'list', name: 'memory-list', component: () => import('./pages/MemoryList.vue'), meta: { title: '记忆管理' } },
   { path: ':id', name: 'memory-detail', component: () => import('./pages/MemoryDetail.vue'), meta: { title: '记忆详情' } },
   { path: 'search', name: 'memory-search', component: () => import('./pages/MemoryList.vue'), meta: { title: '记忆搜索' } },
   { path: 'sessions', name: 'memory-sessions', component: () => import('./pages/MemoryList.vue'), meta: { title: '会话管理' } },
@@ -17,7 +17,7 @@ export const navItems = [
   {
     label: '记忆管理',
     items: [
-      { path: '/memory', title: '记忆列表' },
+      { path: '/memory/list', title: '记忆列表' },
       { path: '/memory/search', title: '记忆搜索' },
       { path: '/memory/sessions', title: '会话管理' },
       { path: '/memory/graph', title: '记忆图谱' },
