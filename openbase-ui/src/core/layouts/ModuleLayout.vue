@@ -3,7 +3,7 @@
     <el-menu
       mode="horizontal"
       :default-active="route.path"
-      router
+      :router="true"
       class="module-menu"
       :ellipsis="false"
     >

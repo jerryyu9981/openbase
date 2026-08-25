@@ -5,7 +5,7 @@
       <el-menu
         :default-active="route.path"
         :collapse="ui.sidebarCollapsed"
-        router
+        :router="true"
         class="ob-menu"
       >
         <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
