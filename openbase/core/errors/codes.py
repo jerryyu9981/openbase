@@ -30,12 +30,14 @@ class ErrorCode(str, Enum):
     BIZ_USER_EXISTS = "BIZ_USER_EXISTS"
     BIZ_ROLE_IN_USE = "BIZ_ROLE_IN_USE"
     BIZ_CONFIG_CONFLICT = "BIZ_CONFIG_CONFLICT"
+    BIZ_NOT_FOUND = "BIZ_404"
 
     # ---- 存储 ----
     STORAGE_FILE_NOT_FOUND = "STORAGE_404"
 
     # ---- 系统 ----
     SYS_INTERNAL_ERROR = "SYS_500"
+    SYS_UPSTREAM_ERROR = "SYS_502"
 
 
 # HTTP 状态码映射
@@ -53,6 +55,8 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.BIZ_USER_EXISTS: 409,
     ErrorCode.BIZ_ROLE_IN_USE: 409,
     ErrorCode.BIZ_CONFIG_CONFLICT: 409,
+    ErrorCode.BIZ_NOT_FOUND: 404,
     ErrorCode.STORAGE_FILE_NOT_FOUND: 404,
     ErrorCode.SYS_INTERNAL_ERROR: 500,
+    ErrorCode.SYS_UPSTREAM_ERROR: 502,
 }

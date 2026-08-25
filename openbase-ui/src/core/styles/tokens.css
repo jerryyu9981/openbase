@@ -1,0 +1,52 @@
+/* OpenBase 设计系统 token（对齐 UI 设计文档 v1.2.0） */
+:root {
+  --ob-primary: #2563eb;
+  --ob-success: #16a34a;
+  --ob-warning: #d97706;
+  --ob-danger: #dc2626;
+  --ob-info: #64748b;
+  --ob-bg: #f8fafc;
+  --ob-surface: #ffffff;
+  --ob-border: #e2e8f0;
+  --ob-text: #0f172a;
+  --ob-text-secondary: #475569;
+  --ob-text-disabled: #94a3b8;
+  --ob-radius-sm: 4px;
+  --ob-radius-md: 8px;
+  --ob-radius-lg: 12px;
+  --ob-shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
+  --ob-shadow-md: 0 4px 12px rgba(15, 23, 42, .08);
+  --ob-shadow-lg: 0 8px 24px rgba(15, 23, 42, .12);
+  /* 三端断点：>=1280 桌面 / 768-1280 平板 / <768 移动 */
+  --ob-breakpoint-lg: 1280px;
+  --ob-breakpoint-md: 768px;
+  --ob-sidebar-width: 220px;
+  --ob-header-height: 56px;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--ob-bg);
+  color: var(--ob-text);
+  font-size: 14px;
+}
+
+/* 响应式工具类 */
+@media (max-width: 767px) {
+  .ob-hide-mobile { display: none !important; }
+  .ob-card-padding { padding: 12px !important; }
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+  .ob-hide-tablet { display: none !important; }
+}
+
+/* 表格横向滚动封装 */
+.ob-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ob-table-scroll .el-table { min-width: 720px; }
+
+/* 触控目标 */
+@media (max-width: 767px) {
+  .el-button, .el-dropdown { min-height: 44px; }
+}

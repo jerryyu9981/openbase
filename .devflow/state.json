@@ -1,8 +1,8 @@
 {
   "project": "OpenBase",
   "devflowVersion": "2.18.0",
-  "currentPhase": "step_2_design",
-  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design", "v1_1_0_step_3_development", "v1_1_0_step_4_testing", "v1_1_0_step_5_operations", "v1_2_0_step_0_planning", "v1_2_0_step_1_requirements", "v1_2_0_step_2_design"],
+  "currentPhase": "step_3_development",
+  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design", "v1_1_0_step_3_development", "v1_1_0_step_4_testing", "v1_1_0_step_5_operations", "v1_2_0_step_0_planning", "v1_2_0_step_1_requirements", "v1_2_0_step_2_design", "v1_2_0_step_3_development"],
   "currentDocuments": {
     "global": [
       "doc/version/global/OpenBase-版本规划总纲.md",
@@ -57,7 +57,11 @@
     "development": [
       "doc/development/OpenBase-DevLogReport-v1.0.0.md",
       "doc/development/OpenBase-设计开发追溯矩阵-v1.0.0.md",
-      "doc/development/OpenBase-开发审计移交材料-v1.0.0.md"
+      "doc/development/OpenBase-开发审计移交材料-v1.0.0.md",
+      "doc/development/OpenBase-设计开发追溯矩阵-v1.2.0.md",
+      "doc/development/OpenBase-DevLogReport-v1.2.0.md",
+      "doc/development/OpenBase-开发审计移交材料-v1.2.0.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.2.0.md"
     ],
     "audit": [
       "doc/audit/review/OpenBase-阶段审计报告-Stage0-v1.0.0.md",

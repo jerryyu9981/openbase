@@ -1,6 +1,7 @@
 """notify 模块分支补充测试（覆盖率提升至 90%）."""
 
 import asyncio
+
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 

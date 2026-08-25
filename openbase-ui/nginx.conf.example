@@ -1,0 +1,31 @@
+# OpenBase 统一前端 nginx 部署示例（v1.2.0，Dev 环境）
+# 同域部署：静态资源 /ui + 反向代理 /api → openbase 后端
+
+server {
+    listen 80;
+    server_name localhost;
+
+    # 前端静态资源（版本目录）
+    location /ui/ {
+        alias D:/Trae\ CN/myproject/Dev/OpenBase/openbase-ui/dist/;
+        try_files $uri $uri/ /ui/index.html;
+        expires 1h;
+        add_header Cache-Control "public";
+    }
+
+    # 后端 API 反代（含四系统代理 /api/v1/proxy/*）
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Authorization $http_authorization;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        # SSE 透传
+        proxy_buffering off;
+        proxy_read_timeout 300s;
+    }
+
+    # 根路径跳转统一前端
+    location = / { return 301 /ui/; }
+}

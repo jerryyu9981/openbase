@@ -1,0 +1,46 @@
+/**
+ * 认证与模块 API（对齐后端 openapi 契约，类型由 openapi-typescript 生成后可替换）
+ */
+import { http, tokenStore, type ApiSuccess } from './http'
+
+export interface AuthUser {
+  id: number
+  username: string
+  tenant_id?: string
+  permissions: string[]
+}
+
+export interface ModuleInfo {
+  id: string
+  name: string
+  icon?: string
+  route_prefix: string
+  entry: string
+  permission: string
+  status: 'enabled' | 'disabled'
+  sort_order: number
+}
+
+export const authApi = {
+  async login(username: string, password: string): Promise<AuthUser> {
+    // 后端登录返回扁平 TokenResponse（v1.1.0 既有契约）
+    const { data } = await http.post<{ access_token: string; refresh_token: string }>('/auth/login', {
+      username,
+      password,
+    })
+    tokenStore.set(data.access_token, data.refresh_token)
+    return this.me()
+  },
+  async me(): Promise<AuthUser> {
+    // 后端 /auth/me 返回扁平 MeResponse
+    const { data } = await http.get<AuthUser>('/auth/me')
+    return data
+  },
+}
+
+export const modulesApi = {
+  async list(): Promise<ModuleInfo[]> {
+    const { data } = await http.get<ApiSuccess<{ items: ModuleInfo[]; total: number }>>('/modules')
+    return data.data.items
+  },
+}

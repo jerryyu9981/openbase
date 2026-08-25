@@ -34,6 +34,10 @@ for module in (
     "scheduler",
     "storage",
     "notify",
+    # v1.2.0 统一前端增量
+    "ai_apps",
+    "proxy",
+    "frontend",
 ):
     settings.enable_module(module)
 

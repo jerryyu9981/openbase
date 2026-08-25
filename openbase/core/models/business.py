@@ -166,6 +166,80 @@ class Notification(Base, TimestampMixin):
     )
 
 
+# ---- ai_apps 模块（数据库设计文档 v1.2.0 §2.1~2.3，全新补建） ----
+
+
+class AiApp(Base, TimestampMixin):
+    """AI 应用主表."""
+
+    __tablename__ = "ai_apps"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int | None] = mapped_column(
+        BIGINT, ForeignKey("tenants.id"), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    model_config: Mapped[dict] = mapped_column(JSON, nullable=False)
+    prompt_template_id: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="draft", nullable=False)
+    current_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+
+
+class AiAppVersion(Base, TimestampMixin):
+    """AI 应用版本."""
+
+    __tablename__ = "ai_app_versions"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    app_id: Mapped[int] = mapped_column(
+        BIGINT, ForeignKey("ai_apps.id"), nullable=False, index=True
+    )
+    version: Mapped[str] = mapped_column(String(20), nullable=False)
+    model_config_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False)
+    prompt_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    published_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    published_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AiAppCall(Base, TimestampMixin):
+    """AI 应用调用记录."""
+
+    __tablename__ = "ai_app_calls"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    app_id: Mapped[int] = mapped_column(
+        BIGINT, ForeignKey("ai_apps.id"), nullable=False, index=True
+    )
+    version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    user_id: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="success", nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+
+# ---- frontend 模块（数据库设计文档 v1.2.0 §2.4，动态模块注册表） ----
+
+
+class DynamicModule(Base, TimestampMixin):
+    """动态模块注册表."""
+
+    __tablename__ = "dynamic_modules"
+
+    id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    route_prefix: Mapped[str] = mapped_column(String(50), nullable=False)
+    entry: Mapped[str] = mapped_column(String(200), nullable=False)
+    permission: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="enabled", nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
 __all__ = [
     "DictType",
     "DictItem",
@@ -175,4 +249,8 @@ __all__ = [
     "ScheduleLog",
     "FileRecord",
     "Notification",
+    "AiApp",
+    "AiAppVersion",
+    "AiAppCall",
+    "DynamicModule",
 ]

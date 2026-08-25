@@ -28,6 +28,10 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "scheduler",
     "storage",
     "notify",
+    # v1.2.0 统一前端增量
+    "ai_apps",
+    "proxy",
+    "frontend",
 )
 
 
