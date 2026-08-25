@@ -39,6 +39,12 @@
 | CR-002 RBAC 权限矩阵 | v1.0.6 | PermissionService 数据库权限链（user→role→permission）+ 三级降级 | SQLite 3 用例 + 真实 PG 通配验证 |
 | TD-新增-001 Redis 缓存 | v1.0.6 | core/cache/redis_client.py + dict TTL 缓存 + notify Redis pub + auth 用户缓存 | fake Redis 6 用例 + 真实 Redis 命中验证 |
 
+## 1.2 新增债务（v1.1.0 风险归集）
+
+| 债务/风险 | 归集版本 | 来源 | 内容 | 计划 |
+|-----------|---------|------|------|------|
+| TD-新增-004 OTLP/PyPI 基础设施 | v1.1.0 | 单版本规划 v1.1.0 风险 R-103 | OTLP Collector 与 PyPI 账号未确认，告警实际触发与 PyPI 实际发布受阻 | v1.1.x 预研确认后偿还（Phase 4-5 前） |
+
 ## 2. 债务明细
 
 ### TD-001：抽取破坏现有系统稳定性
