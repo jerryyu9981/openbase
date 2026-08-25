@@ -1,0 +1,8 @@
+#!/bin/sh
+# DevFlow auto-backup hook
+# 安装方式：cp .devflow/hooks/post-push .git/hooks/post-push && chmod +x .git/hooks/post-push
+if git remote | grep -q backup; then
+    echo "[DevFlow] Pushing mirror to backup remote..."
+    git push --mirror backup
+    git push --tags backup
+fi
