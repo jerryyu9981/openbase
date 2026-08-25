@@ -35,3 +35,49 @@ export const routes: RouteRecordRaw[] = [
   { path: 'routing/strategies', name: 'openllm-routing-strategies', component: () => import('./pages/GenericPage.vue'), meta: { title: '路由策略' } },
   { path: 'routing/circuit-breakers', name: 'openllm-circuit-breakers', component: () => import('./pages/GenericPage.vue'), meta: { title: '熔断器' } },
 ]
+
+/** 板块导航（ModuleLayout 菜单数据，对齐系统架构设计文档 §8.2） */
+export const navItems = [
+  {
+    label: '模型中心',
+    items: [
+      { path: '/openllm/models', title: '模型管理' },
+      { path: '/openllm/models/local', title: '本地模型' },
+      { path: '/openllm/models/market', title: '开源市场' },
+      { path: '/openllm/providers', title: '提供商管理' },
+      { path: '/openllm/providers/register', title: '提供商注册' },
+      { path: '/openllm/api-keys', title: 'API 密钥' },
+      { path: '/openllm/deploy', title: '模型部署' },
+      { path: '/openllm/gpu', title: 'GPU 资源' },
+      { path: '/openllm/adapters', title: 'EdgeRouter 适配器' },
+    ],
+  },
+  {
+    label: 'AI 应用',
+    items: [
+      { path: '/openllm/apps', title: '应用管理' },
+      { path: '/openllm/playground', title: 'Playground' },
+      { path: '/openllm/prompt-templates', title: 'Prompt 模板' },
+      { path: '/openllm/prompt-experiments', title: 'Prompt 实验' },
+      { path: '/openllm/apps/calls', title: '调用记录' },
+    ],
+  },
+  {
+    label: '对话监控',
+    items: [
+      { path: '/openllm/conversations', title: '对话管理' },
+      { path: '/openllm/monitoring', title: '监控仪表盘' },
+      { path: '/openllm/monitoring/traces', title: '链路追踪' },
+      { path: '/openllm/monitoring/costs', title: '成本分析' },
+      { path: '/openllm/monitoring/budgets', title: '预算管理' },
+      { path: '/openllm/monitoring/alerts', title: '告警中心' },
+    ],
+  },
+  {
+    label: '平台联动',
+    items: [
+      { path: '/openllm/routing/strategies', title: '路由策略' },
+      { path: '/openllm/routing/circuit-breakers', title: '熔断器' },
+    ],
+  },
+]

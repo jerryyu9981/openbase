@@ -10,3 +10,17 @@ export const routes: RouteRecordRaw[] = [
   { path: 'reports', name: 'portrait-reports', component: () => import('./pages/PortraitList.vue'), meta: { title: '分析报表' } },
   { path: 'batch', name: 'portrait-batch', component: () => import('./pages/PortraitList.vue'), meta: { title: '批量任务' } },
 ]
+
+/** 板块导航 */
+export const navItems = [
+  {
+    label: '画像管理',
+    items: [
+      { path: '/portrait', title: '画像列表' },
+      { path: '/portrait/search', title: '画像搜索' },
+      { path: '/portrait/tags', title: '标签管理' },
+      { path: '/portrait/reports', title: '分析报表' },
+      { path: '/portrait/batch', title: '批量任务' },
+    ],
+  },
+]

@@ -11,3 +11,18 @@ export const routes: RouteRecordRaw[] = [
   { path: 'decay', name: 'memory-decay', component: () => import('./pages/MemoryList.vue'), meta: { title: '衰减配置' } },
   { path: 'write', name: 'memory-write', component: () => import('./pages/MemoryList.vue'), meta: { title: '写入记忆' } },
 ]
+
+/** 板块导航 */
+export const navItems = [
+  {
+    label: '记忆管理',
+    items: [
+      { path: '/memory', title: '记忆列表' },
+      { path: '/memory/search', title: '记忆搜索' },
+      { path: '/memory/sessions', title: '会话管理' },
+      { path: '/memory/graph', title: '记忆图谱' },
+      { path: '/memory/decay', title: '衰减配置' },
+      { path: '/memory/write', title: '写入记忆' },
+    ],
+  },
+]

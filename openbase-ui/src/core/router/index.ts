@@ -16,8 +16,8 @@ export const staticRoutes: RouteRecordRaw[] = [
   },
 ]
 
-/** 模块路由表注册（模块 index.ts 导出 routes，实现路由级懒加载，RT-203） */
-const moduleRouteLoaders: Record<string, () => Promise<{ routes: RouteRecordRaw[] }>> = {
+/** 模块路由表注册（模块 index.ts 导出 routes + navItems，实现路由级懒加载与页内导航，RT-203） */
+const moduleRouteLoaders: Record<string, () => Promise<{ routes: RouteRecordRaw[]; navItems?: unknown[] }>> = {
   openllm: () => import('@/modules/openllm'),
   knowledge: () => import('@/modules/knowledge'),
   memory: () => import('@/modules/memory'),
@@ -29,18 +29,18 @@ const router = createRouter({
   routes: staticRoutes,
 })
 
-/** 挂载已启用模块的路由（AppLayout 下） */
+/** 挂载已启用模块的路由（模块布局承载板块导航 + AppLayout 外层） */
 async function mountModuleRoutes() {
   const registry = useModuleRegistry()
   for (const module of registry.enabledModules) {
     const loader = moduleRouteLoaders[module.info.id]
     if (!loader || module.loaded) continue
     try {
-      const { routes } = await loader()
+      const { routes, navItems } = await loader()
       router.addRoute('', {
         path: module.info.route_prefix,
-        component: () => import('@/core/layouts/AppLayout.vue'),
-        meta: { module: module.info.id, title: module.info.name, icon: module.info.icon },
+        component: () => import('@/core/layouts/ModuleLayout.vue'),
+        meta: { module: module.info.id, title: module.info.name, icon: module.info.icon, navItems },
         children: routes.map((r) => ({ ...r, meta: { ...r.meta, module: module.info.id } })),
       })
       module.loaded = true
