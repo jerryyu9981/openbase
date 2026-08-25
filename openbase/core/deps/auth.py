@@ -1,14 +1,82 @@
-"""通用依赖注入：get_db / get_current_user / get_current_tenant."""
+"""通用依赖注入：get_db / get_current_user / get_current_tenant / AuthMiddleware."""
 
 from __future__ import annotations
 
+import logging
+import uuid
+
 from fastapi import Depends, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 from openbase.core.db.session import get_db
 from openbase.core.errors import BaseError, ErrorCode
 
-__all__ = ["get_db", "get_current_user", "get_current_tenant"]
+logger = logging.getLogger("openbase.auth")
+
+__all__ = [
+    "get_db",
+    "get_current_user",
+    "get_current_tenant",
+    "AuthMiddleware",
+]
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """统一鉴权中间件：管理接口必须携带有效 JWT（SR-001）.
+
+    白名单路径（公开）：/health、/audit/health、/docs、/openapi.json、
+    /redoc、/api/v1/auth/login、/api/v1/auth/refresh、/observability/status。
+    其余路径均要求 Authorization: Bearer <token>，无效时返回统一 401 错误格式。
+    """
+
+    PUBLIC_PREFIXES = (
+        "/health",
+        "/audit/health",
+        "/docs",
+        "/openapi.json",
+        "/redoc",
+        "/api/v1/auth/login",
+        "/api/v1/auth/refresh",
+        "/observability/status",
+    )
+
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: RequestResponseEndpoint,
+    ) -> Response:
+        path = request.url.path
+        if path.startswith(self.PUBLIC_PREFIXES):
+            return await call_next(request)
+
+        authorization = request.headers.get("Authorization", "")
+        if not authorization.startswith("Bearer "):
+            return self._unauthorized("missing bearer token")
+
+        from openbase.modules.auth.jwt import decode_access_token
+
+        token = authorization.removeprefix("Bearer ").strip()
+        payload = decode_access_token(token)
+        if payload is None or payload.get("sub") is None:
+            return self._unauthorized("invalid or expired token")
+
+        # 中间件不修改用户上下文（依赖层负责用户信息），此处仅做门禁
+        return await call_next(request)
+
+    @staticmethod
+    def _unauthorized(message: str) -> JSONResponse:
+        return JSONResponse(
+            status_code=401,
+            content={
+                "code": ErrorCode.AUTH_UNAUTHORIZED.value,
+                "message": message,
+                "detail": None,
+                "request_id": f"req-{uuid.uuid4().hex[:12]}",
+            },
+        )
 
 
 async def get_current_user(

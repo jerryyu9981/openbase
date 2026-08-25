@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends
@@ -163,7 +164,7 @@ async def login(
     if user is None or user.get("password_hash") is None:
         raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid username or password")
 
-    if not verify_password(req.password, user["password_hash"]):
+    if not await asyncio.to_thread(verify_password, req.password, user["password_hash"]):
         raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid username or password")
 
     access = create_access_token(

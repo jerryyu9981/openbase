@@ -15,7 +15,14 @@ def build_test_app() -> TestClient:
 
     UserService.seed_memory_user("admin", "admin123")
     app = init_app(settings)
-    return TestClient(app)
+    client = TestClient(app)
+    # 统一鉴权中间件（SR-001）：登录获取 token 并默认携带（业务接口需 JWT）
+    login = client.post(
+        "/api/v1/auth/login", json={"username": "admin", "password": "admin123"}
+    )
+    if login.status_code == 200:
+        client.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
+    return client
 
 
 def test_health_endpoint():

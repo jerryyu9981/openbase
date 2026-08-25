@@ -40,6 +40,11 @@ def init_app(settings: Settings) -> object:
     # 统一异常处理
     install_exception_handlers(app)
 
+    # 统一鉴权中间件（SR-001：管理接口 JWT 门禁；白名单路径公开）
+    from openbase.core.deps.auth import AuthMiddleware
+
+    app.add_middleware(AuthMiddleware)
+
     # 中间件（审计/租户等按启用顺序注册）
     if settings.is_enabled("audit"):
         from openbase.modules.audit.middleware import AuditMiddleware
