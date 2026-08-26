@@ -2,7 +2,7 @@
   <div>
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索模型" clearable style="width: 260px" data-test="model-search" />
-      <el-button type="primary" data-test="create-model">新增模型</el-button>
+      <el-button type="primary" data-test="create-model" @click="createVisible = true">新增模型</el-button>
     </div>
     <div class="ob-table-scroll">
       <el-table :data="models" stripe data-test="model-table">
@@ -27,11 +27,28 @@
         </el-table-column>
       </el-table>
     </div>
+    <el-dialog v-model="createVisible" title="新增模型" width="480px" data-test="create-model-dialog">
+      <el-form label-width="90px">
+        <el-form-item label="模型名称" required><el-input v-model="form.name" placeholder="如：gpt-4o-mini" data-test="model-name-input" /></el-form-item>
+        <el-form-item label="Provider" required><el-input v-model="form.provider" placeholder="如：OpenAI" /></el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="form.type" style="width: 100%">
+            <el-option label="商业" value="商业" />
+            <el-option label="开源" value="开源" />
+            <el-option label="本地" value="本地" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" data-test="create-model-submit" @click="createModel">创建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
 interface ModelRow {
@@ -44,6 +61,8 @@ interface ModelRow {
 }
 
 const keyword = ref('')
+const createVisible = ref(false)
+const form = reactive({ name: '', provider: '', type: '商业' })
 const models = ref<ModelRow[]>([
   { id: 1, name: 'gpt-4o', provider: 'OpenAI', type: '商业', status: 'online', updated_at: '2026-08-25 10:00' },
   { id: 2, name: 'qwen2.5-7b', provider: 'Ollama', type: '本地', status: 'online', updated_at: '2026-08-25 09:30' },
@@ -58,6 +77,24 @@ function statusLabel(status: string) {
 }
 function openDetail(row: ModelRow) {
   ElMessage.info(`查看模型详情：${row.name}`)
+}
+function createModel() {
+  if (!form.name.trim() || !form.provider.trim()) {
+    ElMessage.warning('请输入模型名称与 Provider')
+    return
+  }
+  models.value.push({
+    id: Date.now(),
+    name: form.name.trim(),
+    provider: form.provider.trim(),
+    type: form.type,
+    status: 'online',
+    updated_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+  })
+  createVisible.value = false
+  form.name = ''
+  form.provider = ''
+  ElMessage.success('模型已添加')
 }
 function remove(id: number) {
   models.value = models.value.filter((m) => m.id !== id)

@@ -6,7 +6,7 @@
         <el-option label="gpt-4o" value="gpt-4o" />
         <el-option label="qwen2.5-7b" value="qwen2.5-7b" />
       </el-select>
-      <el-button data-test="export-conversations">导出（JSON）</el-button>
+      <el-button data-test="export-conversations" @click="exportJson">导出（JSON）</el-button>
       <el-popconfirm title="确认批量删除选中对话？" @confirm="batchDelete">
         <template #reference>
           <el-button type="danger" plain :disabled="selection.length === 0">批量删除</el-button>
@@ -62,6 +62,17 @@ function batchDelete() {
   const ids = selection.value.map((s) => s.id)
   conversations.value = conversations.value.filter((c) => !ids.includes(c.id))
   ElMessage.success(`已删除 ${ids.length} 条对话`)
+}
+function exportJson() {
+  const data = JSON.stringify(conversations.value, null, 2)
+  const blob = new Blob([data], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `conversations-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success(`已导出 ${conversations.value.length} 条对话`)
 }
 </script>
 
