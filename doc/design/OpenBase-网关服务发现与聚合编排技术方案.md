@@ -164,6 +164,52 @@ class ServiceInstance:
 - **配置变更事件**：config 模块写入/删除 `proxy.{system}.instances` 时触发刷新
 - **实例下线**：注册实例超过 TTL（默认 60s 无心跳）自动移除
 
+### 3.6 DiscoveryProvider 适配器接口（分阶段演进的关键）
+
+> 服务发现采用**适配器模式**：阶段一实现零依赖（config+scheduler），阶段二接入 python-nacos 等成熟注册中心时**只新增 Provider 实现 + 配置切换**，网关其余代码零改动。
+
+```python
+# gateway/discovery.py —— 服务发现提供者抽象（适配器模式）
+from abc import ABC, abstractmethod
+
+class DiscoveryProvider(ABC):
+    """服务发现提供者抽象：config/scheduler 与 Nacos 等均可实现"""
+
+    @abstractmethod
+    def list_instances(self, system: str) -> list["ServiceInstance"]:
+        """返回某系统当前健康实例列表（加权轮询 + 故障剔除在其上层）"""
+
+    @abstractmethod
+    def register(self, instance: "ServiceInstance") -> None:
+        """注册实例（供四系统启动时调用 /api/v1/services 触发）"""
+
+    @abstractmethod
+    def deregister(self, system: str, instance_id: str) -> None:
+        """实例下线"""
+
+    @abstractmethod
+    def probe_all(self) -> None:
+        """健康探测一轮（由 scheduler interval job 触发；Nacos 模式可为空实现）"""
+
+
+def create_provider(kind: str) -> DiscoveryProvider:
+    """工厂：按配置创建 Provider（gateway.discovery.provider = config | nacos）"""
+    if kind == "nacos":
+        from .providers.nacos import NacosProvider  # 阶段二实现（可选依赖）
+        return NacosProvider()
+    return ConfigProbeProvider()  # 阶段一默认：config 驱动 + scheduler 探测
+
+
+class ConfigProbeProvider(DiscoveryProvider):
+    """阶段一实现（零新增依赖）：
+    - 实例来源：动态注册 API / config 键 proxy.{system}.instances（ConfigStore 热加载）/ 静态表 PROXY_SYSTEMS
+    - 健康探测：由 scheduler 模块 interval job 调用 probe_all()，连续 3 次失败剔除、冷却 60s 后恢复
+    """
+    ...
+```
+
+**切换方式**：`gateway.discovery.provider=config`（默认，阶段一）→ 未来 `provider=nacos` 即启用注册中心，数据模型（ServiceInstance）不变。
+
 ---
 
 ## 4. 聚合编排方案（BFF）
@@ -303,17 +349,29 @@ class ServiceInstance:
 
 ---
 
-## 8. 实施计划
+## 8. 实施计划（分阶段演进：最少改动优先，成熟方案可插拔）
 
-| Phase | 内容 | 交付物 | 周期 |
+> 依据 ADR-网关-001/002（见 §11）：当前 4 个静态单体、无弹性需求、聚合场景少——**阶段一零依赖落地**，成熟方案（python-nacos / GraphQL）仅作为后续插槽，不为不存在的复杂度提前买单。
+
+### 阶段一（当前落地，零新增依赖，最少改动）
+
+| 任务 | 内容 | 交付物 | 周期 |
 |:---:|------|--------|:---:|
-| P1 | 服务发现模式一（注册 API + 健康探测 + 加权轮询 + 剔除） | proxy 改造 + gateway 管理 API + 测试 | 2 周 |
-| P2 | 聚合编排（DSL 解析器 + 执行器：顺序/并行/条件/合并 + 部分失败） | aggregate API + DSL 注册表 + 测试 | 2 周 |
-| P3 | 模式二 Nacos 注册中心接入（可选增强） | nacos 适配器 + 配置切换 | 1 周 |
-| P4 | 网关管理前端页面 + 可观测指标 + 运维文档 | 页面 + 指标 + 更新《系统使用指南》 | 1 周 |
-| P5 | 全量回归 + 部署验证 + 审计 | 测试报告 + 发布 | 1 周 |
+| S1-1 | gateway 模块骨架 + DiscoveryProvider 抽象接口 + ConfigProbeProvider | gateway/discovery.py | 1 周 |
+| S1-2 | 健康探测接入 scheduler（interval job）+ 加权轮询 + 故障剔除 | DiscoveryRegistry + scheduler 集成 | 1 周 |
+| S1-3 | 服务管理 API（`/api/v1/services` 注册/列表/下线 + `/api/v1/gateway/health/ping`） | gateway 路由 + 测试 | 1 周 |
+| S1-4 | 聚合端点（FastAPI asyncio.gather 并发调 /proxy，先代码式不引入 DSL） | `/api/v1/gateway/aggregate` + 测试 | 1 周 |
+| S1-5 | proxy 改造（`_resolve_base_url` → `DiscoveryRegistry.pick`）+ 网关管理前端页 + 指标 | proxy 改造 + 页面 + 文档 | 1 周 |
+| S1-6 | 全量回归 + 部署验证 + 审计 | 测试报告 + 发布 | 1 周 |
 
-**合计约 7 周**，建议随 v1.4.0 排期（与 P1/P2 补全项并行）。
+**阶段一合计约 6 周**，建议随 v1.4.0 排期。
+
+### 阶段二（需求驱动，非现在）
+
+| 触发条件 | 升级动作 | 改动 |
+|---------|---------|------|
+| 四系统多实例部署 / 弹性扩缩 | 部署 Nacos + 实现 NacosProvider + `gateway.discovery.provider=nacos` | 仅新增 provider 实现 + 配置切换（接口不变） |
+| 聚合场景 > 5 个且变化频繁 | 引入自研 DSL 执行器（四算子）或 GraphQL（Strawberry） | 仅替换聚合执行器（接口不变） |
 
 ---
 
@@ -355,9 +413,43 @@ class ServiceInstance:
 
 ---
 
+## 11. 架构决策记录（ADR）
+
+### ADR-网关-001：服务发现分阶段演进（先零依赖，后注册中心）
+
+| 项 | 内容 |
+|----|------|
+| 状态 | 已接受 |
+| 决策 | 阶段一采用 **config 驱动 + scheduler 健康探测**（零新增依赖，复用现有 config/scheduler 模块），通过 `DiscoveryProvider` 适配器接口隔离；阶段二在出现多实例/弹性需求时再接入 **python-nacos**（或 python-consul）注册中心，仅替换 Provider 实现。 |
+| 背景 | OpenBase 当前 4 个静态单体后端、无动态扩缩容需求；服务发现的价值（实例动态感知）在当前规模尚未兑现。引入 Nacos 需部署注册中心服务端，增加基础设施与运维成本。 |
+| 备选 | ① 直接上 python-nacos（成熟但引入服务端依赖）；② 自研完整注册中心（成本高、无必要）；③ 维持静态表（无健康感知）。 |
+| 理由 | ① 最少改动：阶段一零新依赖，约 1 个 gateway 模块；② 成熟可插拔：DiscoveryProvider 抽象使 Nacos 接入为"加一个文件 + 配置切换"；③ 适配器模式将"当前简单"与"未来成熟"解耦，不为不存在的复杂度提前买单；④ 向后兼容：静态表 `PROXY_SYSTEMS` 保留为最终兜底。 |
+| 影响 | 阶段一不含动态扩缩容能力；未来切换 provider 时数据模型（ServiceInstance）不变，网关上层（加权轮询/剔除/聚合）零改动。 |
+| 关联 | §3.6 DiscoveryProvider 接口、§8 分阶段实施 |
+
+### ADR-网关-002：聚合先代码式（FastAPI 并发），后 DSL / GraphQL
+
+| 项 | 内容 |
+|----|------|
+| 状态 | 已接受 |
+| 决策 | 阶段一聚合采用 **FastAPI 聚合端点 + asyncio.gather 并发调 /proxy**（代码式，零新依赖）；阶段二在聚合场景 > 5 个且变化频繁时引入**自研声明式 DSL（四算子）**或 **GraphQL（Strawberry）**，通过聚合执行器接口隔离替换。 |
+| 背景 | 当前聚合场景少（仪表盘级、2~3 个子请求）；自研 DSL 执行器与 GraphQL 均需额外实现/学习成本，成熟度收益在当前规模不显著。 |
+| 备选 | ① 直接引入 GraphQL（成熟 BFF 方案，但引入 schema 化改造与团队学习成本）；② 直接实现 DSL 执行器（可配置化但开发成本中）；③ 全部手写聚合函数（零依赖，每场景重复）。 |
+| 理由 | ① 最少改动：阶段一聚合端点复用现有 proxy 链路与 asyncio，无新依赖；② 保留演进路径：聚合执行器接口（输入 DSL/请求 → 输出合并结果）稳定，阶段二可无缝替换为 DSL 或 Strawberry；③ 与 ADR-网关-001 同构：先简单落地、接口隔离、需求驱动升级。 |
+| 影响 | 阶段一聚合为代码式，新增聚合场景需写函数；阶段二引入 DSL/GraphQL 时调用方接口（`/api/v1/gateway/aggregate`）不变。 |
+| 关联 | §4 聚合编排、§8 分阶段实施 |
+
+### 决策记录补充说明
+
+- 两条 ADR 共同遵循原则：**最少改动优先 + 适配器接口隔离 + 需求驱动演进**，与《OpenBase 公共底座完整方案》v0.2.5 的"最小改动接入、可插拔复用"原则一致。
+- 不改变架构风格：本方案全部落在 OpenBase 网关层，四系统保持单体分层（Controller/Service/Repository），不构成微服务化（详见与用户沟通确认的架构定位）。
+
+---
+
 ## 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-08-28 | OpenBase 平台组 | 初始创建：服务发现（双模式可插拔 + 健康探测 + 负载均衡）与聚合编排（声明式 DSL + 四算子 + 部分失败）技术方案 |
 | v1.0.1 | 2026-08-28 | OpenBase 平台组 | 按《OpenBase 公共底座完整方案》v0.2.5 与现有代码复核调整：① 明确两层发现（前端 /modules 已实现 vs 后端 /services 新增）；② 服务发现 API 对齐附件 5.3 采用 `/api/v1/services`；③ 健康探测复用 scheduler（APScheduler）模块；④ 配置驱动复用 config（ConfigStore 热加载）；⑤ 新增权限点 gateway:* |
+| v1.0.2 | 2026-08-28 | OpenBase 平台组 | 新增架构决策记录（ADR-网关-001 服务发现分阶段演进、ADR-网关-002 聚合先代码式后 DSL/GraphQL）、DiscoveryProvider 适配器接口设计、实施计划改为分阶段演进（阶段一零依赖 6 周 + 阶段二需求驱动） |
