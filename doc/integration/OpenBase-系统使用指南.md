@@ -1,22 +1,22 @@
-# OpenBase 外部系统使用与对接指南（全版本）
+# OpenBase 系统使用指南（完整版）
 
 | 项目 | 内容 |
 |------|------|
-| 文档名称 | OpenBase 外部系统使用与对接指南（全版本） |
-| 文档版本 | v1.1.0 |
+| 文档名称 | OpenBase 系统使用指南（完整版） |
+| 文档版本 | v1.0.0 |
 | 适用版本 | OpenBase v1.0.0 ~ v1.3.0（长期维护，随版本演进） |
 | 状态 | [Final] |
 | 作者 | OpenBase 平台组 |
 | 日期 | 2026-08-27 |
 | 存放 | doc/integration/ |
 
-> 本文档为**全版本长期文档**：覆盖 OpenBase 自 v1.0.0 起的全部对外能力与 API，各版本新增/变更通过"版本演进"与"版本兼容"章节追踪。对接方无需回看单版本文档。
+> 本文档整合《外部系统使用与对接指南（全版本）》与《对接实操指南》，为 OpenBase **唯一对外使用与对接权威文档**：覆盖平台能力、API 参考全集、三种接入方式（A 直接调用 / B 代理接入 / C 前端集成）的详细步骤与可复制示例代码、安全与版本兼容。
 
 ---
 
 ## 1. 平台概述
 
-OpenBase 是统一基础设施公共底座，为四系统（OpenLLM / OpenRAG / OpenMemory / DPS）及未来类似系统提供：统一认证鉴权、多租户隔离、统一代理接入、统一错误码、统一日志与请求追踪、组织/配置/通知/审计/可观测等平台级能力。
+OpenBase 是统一基础设施公共底座，为四系统（OpenLLM / OpenRAG / OpenMemory / DPS）及未来类似系统提供：统一认证鉴权、多租户隔离、统一代理接入、统一错误码、统一日志与请求追踪，以及组织/配置/通知/审计/可观测等平台级能力。
 
 ### 1.1 能力全景
 
@@ -53,13 +53,15 @@ OpenBase 是统一基础设施公共底座，为四系统（OpenLLM / OpenRAG / 
 └─────────────┘     └────────────────────────────────────────────────┘
 ```
 
-### 1.3 对接方式
+### 1.3 三种接入方式总览
 
-| 方式 | 适用场景 | 说明 | 版本 |
-|------|---------|------|:---:|
-| A：直接调用 OpenBase API | 独立系统/前端接入平台能力 | 认证/租户/配置/通知/审计等 | v1.0.0+ |
-| B：统一代理接入 | 通过 OpenBase 访问四系统后端 | `/api/v1/proxy/{system}/{path}` | v1.2.0+ |
-| C：统一前端集成 | 作为动态模块注册进统一前端 | 路由懒加载 + 导航 + RBAC | v1.2.0+ |
+| 方式 | 核心用途 | 给谁用 | 引入版本 |
+|------|---------|--------|:---:|
+| **A：直接调用 OpenBase API** | 使用平台能力（认证/租户/配置/通知/审计/AI 应用） | 任何外部系统的后端服务 | v1.0.0+ |
+| **B：统一代理接入** | 通过 OpenBase 代转发访问四系统后端 | 统一前端 + 需要跨系统调用的服务 | v1.2.0+ |
+| **C：统一前端集成** | 把独立系统前端注册为动态模块并入统一门户 | 四系统前端团队 | v1.2.0+ |
+
+> 三种方式不互斥：四系统通常同时用 A（平台能力）+ B（后端被代理）+ C（前端集成）。
 
 ---
 
@@ -132,41 +134,17 @@ Content-Type: application/json
 }
 ```
 
-### 4.2 Token 使用
+### 4.2 Token 使用与刷新
 
-所有受保护接口必须携带：`Authorization: Bearer <access_token>`
+- 所有受保护接口携带：`Authorization: Bearer <access_token>`
+- 刷新：`POST /api/v1/auth/refresh`（Authorization: Bearer `<refresh_token>`）
+- 当前用户：`GET /api/v1/auth/me` → `{"username","permissions","tenants"}`
 
-### 4.3 刷新 Token
+### 4.3 权限（RBAC）
 
-```
-POST /api/v1/auth/refresh
-Authorization: Bearer <refresh_token>
-```
+权限按 `resource:action` 命名（如 `user:list`）。`permissions` 含 `*` 表示超级权限。权限不足返回 403。
 
-### 4.4 当前用户信息
-
-```
-GET /api/v1/auth/me
-Authorization: Bearer <access_token>
-```
-
-```json
-{
-  "code": 0,
-  "data": {
-    "username": "admin",
-    "permissions": ["*"],
-    "tenants": []
-  },
-  "traceId": "req-xxx"
-}
-```
-
-### 4.5 权限（RBAC）
-
-权限按 `resource:action` 命名（如 `user:list`）。`permissions` 含 `*` 表示超级权限。需要权限的接口返回 403。
-
-### 4.6 多租户上下文（X-Tenant-Id）
+### 4.4 多租户上下文（X-Tenant-Id）
 
 | 优先级 | 来源 | 示例 |
 |:---:|------|------|
@@ -174,12 +152,7 @@ Authorization: Bearer <access_token>
 | 2 | Path 参数 | `/api/v1/.../{tenant_id}/...` |
 | 3 | Query 参数 | `?tenant_id=tenant_a` |
 
-查询当前租户上下文：
-
-```
-GET /api/v1/tenants/context
-X-Tenant-Id: tenant_a  X-User-Id: u1  Authorization: Bearer <token>
-```
+查询当前租户上下文：`GET /api/v1/tenants/context`（带 X-Tenant-Id + X-User-Id + Bearer）。
 
 ---
 
@@ -319,136 +292,286 @@ X-Tenant-Id: tenant_a  X-User-Id: u1  Authorization: Bearer <token>
 
 ---
 
-## 7. 四系统代理接入（方式 B）
+## 7. 方式 A：直接调用 OpenBase API（使用平台能力）
 
-### 7.1 路由规则
+**用途**：外部系统后端接入 OpenBase 公共服务（认证/租户/配置/通知/审计/AI 应用）。
 
-```
-GET/POST /api/v1/proxy/{system}/{path}?{query}
-Authorization: Bearer <token>
-X-Tenant-Id: <tenant>        # 可选，多租户
-```
+### 7.1 步骤
 
-| system | 说明 |
-|--------|------|
-| openllm | OpenLLM 后端（端口 8001） |
-| openrag | OpenRAG 后端 |
-| openmemory | OpenMemory 后端 |
-| dps | DPS 后端 |
+| 步骤 | 操作 |
+|:---:|------|
+| 1 | 确认基址与账号（联系平台管理员开通） |
+| 2 | 登录获取 Token（POST /auth/login） |
+| 3 | 携带 Token 调用 API（Authorization: Bearer） |
+| 4 | Token 过期刷新（POST /auth/refresh） |
+| 5 | 统一错误处理（401 重登/403 权限/402 余额等） |
 
-### 7.2 代理行为（v1.3.0）
+### 7.2 登录获取 Token
 
-| 场景 | 行为 |
-|------|------|
-| 上游 200 | 原样透传上游 JSON |
-| 上游 **402** | 统一包装 `BIZ_MODEL_QUOTA`（HTTP 402），不暴露上游原始响应 |
-| 上游 502/不可达 | 统一包装 `SYS_502`（HTTP 502） |
-| 无 token | 401 拦截 |
-
-### 7.3 代理调用示例
+**curl**：
 
 ```bash
-# OpenLLM 健康检查
-curl -X GET "http://127.0.0.1:8000/api/v1/proxy/openllm/health" -H "Authorization: Bearer $TOKEN"
-
-# OpenRAG 知识库列表
-curl -X GET "http://127.0.0.1:8000/api/v1/proxy/openrag/kb/list" -H "Authorization: Bearer $TOKEN" -H "X-Tenant-Id: tenant_a"
-
-# OpenLLM 流式对话（SSE）
-curl -N -X POST "http://127.0.0.1:8000/api/v1/proxy/openllm/chat/stream" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "你好"}]}'
+curl -X POST "http://127.0.0.1:8000/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
 ```
 
-> ⚠️ v1.3.0 起四系统前端已完整（契约 mock），**后端实际对接按批次推进**（TD-006/007 跟踪）。代理层已验证可用（502 包装实测通过），对接批次启动时直接可用。
-
----
-
-## 8. 统一前端集成（方式 C）
-
-### 8.1 模块注册
-
-外部系统前端作为动态模块接入统一前端：在 `openbase-ui/src/modules/{module}/index.ts` 导出 `routes`（vue-router 路由）+ `navItems`（侧边导航），核心路由加载器自动懒加载。
-
-### 8.2 权限控制
-
-路由 meta 标记模块权限；`permissions.includes('*') || permissions.includes(module.permission)` 校验，未授权跳回 `/dashboard`。
-
-### 8.3 请求客户端
-
-统一使用 `@/core/api/http.ts`（自动注入 JWT + `/api/v1` 基址 + 401 刷新重试）。对接四系统后端走 `proxy` 路径。
-
----
-
-## 9. 代码示例
-
-### 9.1 Python（httpx，完整封装）
+**Python（httpx）**：
 
 ```python
 import httpx
 
 BASE_URL = "http://127.0.0.1:8000/api/v1"
 
-class OpenBaseClient:
-    def __init__(self, username: str, password: str, tenant: str | None = None):
-        self._tenant = tenant
-        self._token = self._login(username, password)
+def login(username: str, password: str) -> dict:
+    resp = httpx.post(f"{BASE_URL}/auth/login", json={"username": username, "password": password})
+    resp.raise_for_status()
+    return resp.json()["data"]  # {"access_token", "refresh_token", ...}
 
-    def _login(self, username: str, password: str) -> str:
-        resp = httpx.post(f"{BASE_URL}/auth/login", json={"username": username, "password": password})
-        resp.raise_for_status()
-        return resp.json()["data"]["access_token"]
+tokens = login("admin", "admin123")
+```
+
+**Node.js（axios）**：
+
+```javascript
+const axios = require('axios')
+const BASE_URL = 'http://127.0.0.1:8000/api/v1'
+async function login(username, password) {
+  const { data } = await axios.post(`${BASE_URL}/auth/login`, { username, password })
+  return data.data
+}
+```
+
+### 7.3 完整 Python 客户端（登录/刷新/统一错误处理/多租户）
+
+```python
+import httpx
+
+class OpenBaseClient:
+    """OpenBase 方式 A 对接客户端"""
+
+    def __init__(self, base_url: str, username: str, password: str, tenant: str | None = None):
+        self._base = f"{base_url}/api/v1"
+        self._tenant = tenant
+        self._tokens = self._login(username, password)
+
+    def _login(self, username: str, password: str) -> dict:
+        resp = httpx.post(f"{self._base}/auth/login", json={"username": username, "password": password})
+        self._raise_for_status(resp)
+        return resp.json()["data"]
+
+    def _refresh(self) -> None:
+        resp = httpx.post(f"{self._base}/auth/refresh",
+                          headers={"Authorization": f"Bearer {self._tokens['refresh_token']}"})
+        self._raise_for_status(resp)
+        self._tokens = resp.json()["data"]
 
     def _headers(self) -> dict:
-        headers = {"Authorization": f"Bearer {self._token}"}
+        headers = {"Authorization": f"Bearer {self._tokens['access_token']}"}
         if self._tenant:
             headers["X-Tenant-Id"] = self._tenant
         return headers
 
     def call(self, method: str, path: str, **kwargs):
-        resp = httpx.request(method, f"{BASE_URL}/{path}", headers=self._headers(), **kwargs)
-        if resp.status_code == 402:
-            raise RuntimeError(f"模型余额不足: {resp.json()['message']}")
-        if resp.status_code == 502:
-            raise RuntimeError(f"上游不可达: {resp.json()['message']}")
-        resp.raise_for_status()
+        resp = httpx.request(method, f"{self._base}/{path}", headers=self._headers(), **kwargs)
+        if resp.status_code == 401:          # Token 失效 → 自动刷新重试
+            self._refresh()
+            resp = httpx.request(method, f"{self._base}/{path}", headers=self._headers(), **kwargs)
+        self._raise_for_status(resp)
         return resp.json()
 
-client = OpenBaseClient("admin", "admin123", tenant="tenant_a")
-data = client.call("GET", "proxy/openllm/health")
-print(data)
+    @staticmethod
+    def _raise_for_status(resp: httpx.Response) -> None:
+        if resp.status_code >= 400:
+            body = resp.json()
+            raise RuntimeError(f"[{resp.status_code}] {body.get('code')} {body.get('message')} request_id={body.get('request_id')}")
+
+client = OpenBaseClient("http://127.0.0.1:8000", "admin", "admin123", tenant="tenant_a")
+me = client.call("GET", "auth/me")
+apps = client.call("GET", "ai-apps")
+print(me, apps)
 ```
 
-### 9.2 前端（axios 封装）
+---
+
+## 8. 方式 B：统一代理接入（访问四系统后端）
+
+**用途**：通过 OpenBase 代转发访问四系统（OpenLLM/OpenRAG/OpenMemory/DPS）后端。调用方不直连四系统，统一走网关（统一鉴权/错误码/追踪）。
+
+### 8.1 步骤
+
+| 步骤 | 操作 |
+|:---:|------|
+| 1 | 确认 `system`（openllm/openrag/openmemory/dps）与目标 `path` |
+| 2 | 获取 Token（同方式 A） |
+| 3 | 构造代理请求：`GET/POST /api/v1/proxy/{system}/{path}` + Bearer + 可选 X-Tenant-Id |
+| 4 | 处理包装错误：402（余额不足）/ 502（上游不可达） |
+| 5 | 流式接口（SSE）按流消费 |
+
+### 8.2 基本调用
+
+**curl**：
+
+```bash
+TOKEN="<access_token>"
+# OpenLLM 健康检查
+curl -X GET "http://127.0.0.1:8000/api/v1/proxy/openllm/health" -H "Authorization: Bearer $TOKEN"
+# OpenRAG 知识库列表（租户头）
+curl -X GET "http://127.0.0.1:8000/api/v1/proxy/openrag/kb/list" \
+  -H "Authorization: Bearer $TOKEN" -H "X-Tenant-Id: tenant_a"
+```
+
+**Python 封装**：
+
+```python
+import httpx
+
+BASE_URL = "http://127.0.0.1:8000/api/v1"
+TOKEN = "<access_token>"
+
+def proxy_call(system: str, path: str, method: str = "GET", tenant: str | None = None, **kwargs):
+    headers = {"Authorization": f"Bearer {TOKEN}"}
+    if tenant:
+        headers["X-Tenant-Id"] = tenant
+    url = f"{BASE_URL}/proxy/{system}/{path}"
+    resp = httpx.request(method, url, headers=headers, **kwargs)
+    if resp.status_code == 402:
+        raise RuntimeError(f"模型余额不足: {resp.json()['message']}")
+    if resp.status_code == 502:
+        raise RuntimeError(f"上游系统不可达: {resp.json()['message']}")
+    resp.raise_for_status()
+    return resp.json()
+```
+
+### 8.3 流式对话（SSE）
+
+**Python（httpx 流式）**：
+
+```python
+with httpx.stream("POST", "http://127.0.0.1:8000/api/v1/proxy/openllm/chat/stream",
+                  headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+                  json={"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "讲个笑话"}]},
+                  timeout=60) as resp:
+    if resp.status_code == 402:
+        raise RuntimeError(f"余额不足: {resp.json()['message']}")
+    for line in resp.iter_lines():
+        if line.startswith("data:"):
+            print(line[5:].strip())
+```
+
+**前端（axios 流式）**：
 
 ```typescript
-import axios from 'axios'
-
-const client = axios.create({ baseURL: '/api/v1' })
-
-client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('ob_access_token')
-  const tenant = localStorage.getItem('ob_tenant_id')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  if (tenant) config.headers['X-Tenant-Id'] = tenant
-  return config
-})
-
-client.interceptors.response.use(
-  (resp) => resp.data,
-  (error) => {
-    const body = error.response?.data
-    if (error.response?.status === 402) {
-      // BIZ_MODEL_QUOTA：提示联系管理员充值
-      ElMessage.error(body?.message || '模型服务余额不足')
-    } else if (body?.request_id) {
-      console.error(`请求失败 request_id=${body.request_id}`)
-    }
-    return Promise.reject(error)
+async function streamChat(messages: { role: string; content: string }[]) {
+  const resp = await fetch('/api/v1/proxy/openllm/chat/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('ob_access_token')}` },
+    body: JSON.stringify({ model: 'gpt-4o-mini', messages }),
+  })
+  if (resp.status === 402) { ElMessage.error('模型服务余额不足，请联系管理员充值'); return }
+  const reader = resp.body!.getReader()
+  const decoder = new TextDecoder()
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    console.log(decoder.decode(value))   // 按 "data:" 解析增量内容
   }
-)
-export default client
+}
 ```
+
+### 8.4 代理行为速查（v1.3.0）
+
+| 上游状态 | 调用方收到 | 处理 |
+|:---:|:---:|------|
+| 200 | 原样透传 | 正常解析 |
+| **402** | `BIZ_MODEL_QUOTA` + HTTP 402 | 提示充值/检查配额 |
+| 502/不可达 | `SYS_502` + HTTP 502 | 检查上游系统 |
+| 未带 Token | 401 | 先登录 |
+
+> ⚠️ v1.3.0 四系统前端已完整（契约 mock），后端实际对接按批次推进（TD-006/007）；代理层已验证可用。
+
+---
+
+## 9. 方式 C：统一前端集成（页面并入统一门户）
+
+**用途**：四系统前端团队把独立页面注册为动态模块，用户登录统一前端一次即可操作全部系统（统一登录/侧边栏/RBAC）。
+
+### 9.1 步骤
+
+| 步骤 | 操作 |
+|:---:|------|
+| 1 | 创建模块目录 `openbase-ui/src/modules/{moduleId}/` |
+| 2 | 编写 `index.ts`：导出 `routes`（路由）+ `navItems`（导航） |
+| 3 | 编写页面组件（Vue3 `<script setup lang="ts">` + Element Plus） |
+| 4 | 在 `src/core/router/index.ts` 的 `moduleRouteLoaders` 注册模块 |
+| 5 | 配置权限（路由 meta 标记；moduleRegistry 校验） |
+| 6 | 构建验证（`npx vue-tsc --noEmit` + `npx vite build`） |
+
+### 9.2 模块 index.ts 模板
+
+```typescript
+// src/modules/{moduleId}/index.ts
+import type { RouteRecordRaw } from 'vue-router'
+
+export const routes: RouteRecordRaw[] = [
+  { path: '', redirect: '/{moduleId}/list' },
+  { path: 'list', name: '{moduleId}-list',
+    component: () => import('./pages/ListPage.vue'), meta: { title: '列表' } },
+  { path: ':id', name: '{moduleId}-detail',
+    component: () => import('./pages/DetailPage.vue'), meta: { title: '详情' } },
+]
+
+export const navItems = [
+  { label: '{模块名}', items: [{ path: '/{moduleId}/list', title: '列表页' }] },
+]
+```
+
+### 9.3 页面组件模板
+
+```vue
+<!-- src/modules/{moduleId}/pages/ListPage.vue -->
+<template>
+  <div>
+    <div class="page-toolbar">
+      <el-input v-model="keyword" placeholder="搜索" clearable style="width: 200px" />
+      <el-button type="primary" @click="dialogVisible = true">新建</el-button>
+    </div>
+    <el-table :data="items" stripe>
+      <el-table-column prop="name" label="名称" />
+      <el-table-column label="操作" width="120">
+        <template #default="{ row }">
+          <el-button link type="primary" @click="$router.push(`/{moduleId}/${row.id}`)">详情</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+const keyword = ref('')
+const dialogVisible = ref(false)
+const items = ref([{ id: 1, name: '示例数据' }])
+</script>
+```
+
+### 9.4 注册路由加载器 + 统一请求客户端
+
+```typescript
+// src/core/router/index.ts —— moduleRouteLoaders 追加
+// yourmod: () => import('@/modules/yourmod'),
+
+// 页面内请求（已注入 JWT/租户头/401 刷新，四系统后端走代理）
+import client from '@/core/api/http'
+async function loadList() {
+  const { data } = await client.get('/proxy/openllm/models')   // 方式 B
+  items.value = data
+}
+```
+
+### 9.5 权限控制
+
+路由 meta 标记模块权限；`permissions.includes('*') || permissions.includes(module.permission)` 校验，未授权跳回 `/dashboard`。
 
 ---
 
@@ -485,7 +608,8 @@ export default client
 | 502 上游不可达 | 目标系统未启动 | 启动对应系统后重试 |
 | 登录慢（5-10s） | bcrypt 计算（内存模式） | 正常；或升级数据库存储 |
 | database/redis fallback | PG/Redis 未启动 | 启动依赖后重启后端 |
-| 404 接口不存在 | 版本不匹配 | 对照本文档 §6 API 参考全集核对版本 |
+| 404 接口不存在 | 版本不匹配/路径拼错 | 对照 §6 API 参考全集核对 |
+| CORS | 跨域访问 | 生产经 Nginx 同域反代 `/api` |
 | request_id 排查 | 报错时提供 | 日志 `grep <request_id>` 定位全链路 |
 
 ---
@@ -499,7 +623,7 @@ export default client
 | v1.2.0 | ai_apps/proxy/frontend 上线；E2E 缺陷修复 | 无 |
 | v1.3.0 | `BIZ_MODEL_QUOTA`(402) 错误码；代理 402 统一包装；租户管理 UI；前端 30 页完整 | 无 |
 
-> 升级建议：v1.2.0 → v1.3.0 为向后兼容增量，直接升级即可；对接方新增处理 402 响应（见 §9 代码示例）。
+> 升级建议：v1.2.0 → v1.3.0 为向后兼容增量，直接升级；对接方新增处理 402 响应（见 §7/§8 代码示例）。
 
 ---
 
@@ -520,5 +644,4 @@ export default client
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
-| v1.0.0 | 2026-08-27 | OpenBase 平台组 | 初始创建（对应 v1.3.0 单版本对接） |
-| v1.1.0 | 2026-08-27 | OpenBase 平台组 | 升级为全版本长期文档：新增版本演进、API 参考全集（10 模块 30+ 接口）、全版本错误码、版本兼容记录、方式 C 集成、术语表 |
+| v1.0.0 | 2026-08-27 | OpenBase 平台组 | 整合《外部系统使用与对接指南（全版本）》与《对接实操指南》为完整版系统使用指南（平台/API 全集/三种方式步骤代码/安全/兼容） |
