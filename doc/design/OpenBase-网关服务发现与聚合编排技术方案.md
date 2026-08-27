@@ -27,21 +27,31 @@ PROXY_SYSTEMS = {
 }
 ```
 
-限制：无服务发现（实例变更需手工改配置）、无健康感知（转发失败才暴露）、无聚合编排（跨系统取数需调用方多次请求自行拼装）。
+限制：无后端实例发现（实例变更需手工改配置）、无健康感知（转发失败才暴露）、无聚合编排（跨系统取数需调用方多次请求自行拼装）。
 
-### 1.2 目标
+### 1.2 与《OpenBase 公共底座完整方案》对齐（附件 v0.2.5）
+
+| 附件结论 | 本方案落点 |
+|---------|-----------|
+| 统一网关与 API 服务框架**均归属 OpenBase**（2.4 节） | 本方案完全在 OpenBase 内实现，OpenLLM 仅是被代理 peer |
+| 服务发现已实证：`/api/v1/modules` 动态模块注册发现（2.4 节） | 定位为**前端模块发现**（已实现，frontend 模块）；本方案新增**后端实例发现**（`/api/v1/services`），两者分层互补 |
+| 管理接口含服务发现 `/api/v1/services`（5.3 节） | 服务发现 API 主路径采用 **`/api/v1/services`**（对齐附件） |
+| 技术选型：APScheduler 定时任务（6.3 节） | 健康探测**复用 scheduler 模块**（APScheduler 封装），不另起定时框架 |
+| 配置密钥中心：热加载/版本回滚（3.1 节） | 配置驱动发现**复用 config 模块**（ConfigStore + 热加载，proxy 已有 `proxy.{system}.base_url` 先例） |
+
+### 1.3 目标
 
 | 编号 | 目标 | 验收标准 |
 |:---:|------|---------|
-| G1 | 服务发现：四系统实例动态感知 | 实例上线/下线 ≤30s 内被感知；无需重启网关 |
+| G1 | 后端实例发现：四系统实例动态感知 | 实例上线/下线 ≤30s 内被感知；无需重启网关 |
 | G2 | 健康感知与故障转移 | 故障实例自动剔除，请求自动转发健康实例，成功率 ≥99% |
 | G3 | 聚合编排：跨系统一次取数 | 声明式编排 DSL 一次请求合并多系统数据，P99 ≤ 1.5× 最慢子请求 |
-| G4 | 向后兼容 | 现有 `/api/v1/proxy/{system}/{path}` 行为不变，配置兜底可用 |
+| G4 | 向后兼容 | 现有 `/api/v1/proxy/{system}/{path}` 与 `/api/v1/modules` 行为不变，静态表兜底可用 |
 
-### 1.3 范围
+### 1.4 范围
 
-- 包含：服务发现注册/发现/健康探测/负载均衡、聚合编排 DSL 与执行器、网关管理 API
-- 不包含：四系统自身改造（零侵入，仅提供注册 SDK/脚本可选）
+- 包含：后端实例发现（注册/健康探测/负载均衡）、聚合编排 DSL 与执行器、网关管理 API
+- 不包含：四系统自身改造（零侵入，仅提供注册 SDK/脚本可选）；前端模块发现（已由 frontend 模块 `/api/v1/modules` 实现）
 
 ---
 
@@ -53,9 +63,11 @@ PROXY_SYSTEMS = {
 │  ┌────────────┐  ┌─────────────────────────────┐  ┌────────────────────────┐  │
 │  │ 接入层       │  │ 发现层（Service Registry）    │  │ 聚合层（BFF）            │  │
 │  │ JWT/租户/限流│─▶│  ● DiscoveryRegistry（内存）  │  │  ● 编排执行器（DSL）      │  │
-│  │ request_id  │  │  ● 健康探测（定时 + 惰性）     │─▶│  ● 顺序/并行/条件/合并    │  │
-│  └────────────┘  │  ● 负载均衡（加权轮询 + 剔除）  │  │  ● 超时/熔断/部分失败     │  │
-│                  └────────────┬────────────────┘  └────────────┬───────────┘  │
+│  │ request_id  │  │  ● 健康探测（复用 scheduler   │─▶│  ● 顺序/并行/条件/合并    │  │
+│  └────────────┘  │    APScheduler interval job） │  │  ● 超时/熔断/部分失败     │  │
+│                  │  ● 负载均衡（加权轮询 + 剔除）  │  └────────────┬───────────┘  │
+│                  │  ● 配置驱动（复用 config 热加载）│               │              │
+│                  └────────────┬────────────────┘               │              │
 │                               │                                 │              │
 │        ┌──────────────────────▼─────────────────────────────────▼─────┐       │
 │        │             路由/转发层（改造现有 proxy 模块）                     │       │
@@ -74,16 +86,25 @@ PROXY_SYSTEMS = {
 
 ## 3. 服务发现方案
 
+### 3.0 两层发现（对齐附件 2.4）
+
+| 层 | 发现对象 | 载体 | 状态 |
+|----|---------|------|:---:|
+| **前端模块发现** | 统一前端动态模块（路由/导航/权限） | frontend 模块 `/api/v1/modules`（v1.2.0 已实现） | ✅ 已实现 |
+| **后端实例发现**（本方案新增） | 四系统后端实例（host/port/健康/权重） | gateway 模块 `/api/v1/services` | ⏳ 本方案 |
+
+两层互补：前端模块发现决定"统一前端显示哪些系统页面"；后端实例发现决定"代理转发到哪个实例"。本方案聚焦后端实例发现。
+
 ### 3.1 技术选型对比
 
 | 方案 | 依赖 | 动态注册 | 健康感知 | 适用场景 | 结论 |
 |------|:---:|:---:|:---:|---------|:---:|
-| **模式一：配置 + 健康探测**（推荐默认） | 零新增依赖 | 配置即注册 | 网关主动探测 | 轻量部署、内存模式、中小规模 | ✅ 默认 |
+| **模式一：配置驱动 + APScheduler 健康探测**（推荐默认） | 复用现有 scheduler/config 模块，零新增依赖 | 配置即注册（ConfigStore 热加载） | 网关主动探测（scheduler interval job） | 轻量部署、与现有技术栈一致 | ✅ 默认 |
 | 模式二：Nacos 注册中心 | Nacos 服务端 | SDK 自动注册 | Nacos 心跳 | 企业级、多实例、云环境 | ✅ 可选增强 |
 | Consul / etcd | 对应服务端 | SDK | 服务端健康检查 | 同 Nacos | 备选 |
 | K8s DNS（headless Service） | K8s | 自动 | 就绪探针 | 容器化部署 | 备选 |
 
-**决策**：采用**双模式可插拔**设计——默认模式一（零依赖、配置驱动 + 网关健康探测），企业级场景切换模式二（Nacos 注册中心），两者数据模型一致，仅替换注册来源。
+**决策**：采用**双模式可插拔**设计——默认模式一完全复用现有 `scheduler`（APScheduler）+ `config`（热加载）模块，零新增依赖；企业级场景切换模式二（Nacos 注册中心），两者数据模型一致，仅替换注册来源。
 
 ### 3.2 数据模型
 
@@ -101,32 +122,34 @@ class ServiceInstance:
     meta: dict = field(default_factory=dict)   # 扩展元数据
 ```
 
-### 3.3 注册与发现机制（模式一）
+### 3.3 注册与发现机制（模式一，复用 config）
 
 ```
 四系统实例                          OpenBase 网关
    │ 启动时（可选）                     │
-   │──POST /api/v1/gateway/services──▶ │ 注册实例（携带 system/host/port/weight）
+   │──POST /api/v1/services─────────▶ │ 注册实例（携带 system/host/port/weight）
    │                                   │
-   │        轮询：GET /api/v1/gateway/services/{system} 返回实例列表
+   │        轮询：GET /api/v1/services/{system} 返回实例列表
    │◀──────────────────────────────────│
-   │        健康探测：GET {host}:{port}/health（每 10s，3 次失败剔除）
+   │        健康探测：GET {host}:{port}/health
+   │        （scheduler APScheduler interval job，每 10s 一轮）
    │◀──────────────────────────────────│
-   │        配置兜底：configs 键 proxy.{system}.instances 作为静态兜底
+   │        配置兜底：configs 键 proxy.{system}.instances（ConfigStore 热加载）
 ```
 
 **注册方式**（三选一，优先级递减）：
 
 | 优先级 | 方式 | 说明 |
 |:---:|------|------|
-| 1 | 动态注册 API | 四系统启动时调用 `POST /api/v1/gateway/services`（带 JWT），网关维护实例表 |
-| 2 | 配置驱动 | config 模块写 `proxy.{system}.instances=[{"host","port","weight"}]`，网关监听配置变更刷新 |
+| 1 | 动态注册 API | 四系统启动时调用 `POST /api/v1/services`（带 JWT + `gateway:register` 权限），网关维护实例表 |
+| 2 | 配置驱动 | config 模块写 `proxy.{system}.instances=[{"host","port","weight"}]`，复用 ConfigStore 热加载监听刷新（与现有 `proxy.{system}.base_url` 覆盖机制同源） |
 | 3 | 静态默认表 | 现有 `PROXY_SYSTEMS` 兜底（保持向后兼容） |
 
-### 3.4 健康探测与故障转移
+### 3.4 健康探测与故障转移（复用 scheduler）
 
 | 项 | 设计 |
 |----|------|
+| 调度载体 | **复用 scheduler 模块**：`get_scheduler().add_job(probe_all, trigger="interval", seconds=10, id="gateway_probe")`，随网关启动注册 |
 | 探测周期 | 每 10s 一轮（可配 `gateway.discovery.interval`） |
 | 探测路径 | `GET {host}:{port}/health`（可配 `gateway.discovery.health_path`），2xx 视为健康 |
 | 失败剔除 | 连续 3 次失败 → `healthy=false`，从候选池移除（进入冷却 60s） |
@@ -236,19 +259,21 @@ class ServiceInstance:
 
 ## 5. 网关管理 API 设计
 
+> 服务发现主路径采用 **`/api/v1/services`**（对齐附件 5.3"管理接口·服务发现"）；聚合编排用 `/api/v1/gateway/*`（网关管理域）。
+
 | 方法 | 路径 | 说明 | 鉴权 |
 |------|------|------|:---:|
-| GET | `/api/v1/gateway/services` | 服务实例列表（含健康状态） | Bearer |
-| GET | `/api/v1/gateway/services/{system}` | 指定系统实例列表 | Bearer |
-| POST | `/api/v1/gateway/services` | 四系统实例注册 | Bearer + `gateway:register` |
-| DELETE | `/api/v1/gateway/services/{system}/{instance_id}` | 实例下线 | Bearer |
-| GET | `/api/v1/gateway/health` | 网关发现层健康状态 | Bearer |
-| POST | `/api/v1/gateway/aggregate` | 聚合编排执行（body=DSL） | Bearer |
-| GET | `/api/v1/gateway/aggregate/{dsl_id}` | 查询已注册 DSL 定义 | Bearer |
-| POST | `/api/v1/gateway/aggregate/{dsl_id}` | 执行已注册 DSL | Bearer |
-| GET | `/api/v1/gateway/ping` | 四系统连通性一键检测 | Bearer |
+| GET | `/api/v1/services` | 服务实例列表（含健康状态） | Bearer + `gateway:view` |
+| GET | `/api/v1/services/{system}` | 指定系统实例列表 | Bearer + `gateway:view` |
+| POST | `/api/v1/services` | 四系统实例注册 | Bearer + `gateway:register` |
+| DELETE | `/api/v1/services/{system}/{instance_id}` | 实例下线 | Bearer + `gateway:register` |
+| GET | `/api/v1/gateway/health` | 网关发现层健康状态 | Bearer + `gateway:view` |
+| POST | `/api/v1/gateway/aggregate` | 聚合编排执行（body=DSL） | Bearer + `gateway:aggregate` |
+| GET | `/api/v1/gateway/aggregate/{dsl_id}` | 查询已注册 DSL 定义 | Bearer + `gateway:view` |
+| POST | `/api/v1/gateway/aggregate/{dsl_id}` | 执行已注册 DSL | Bearer + `gateway:aggregate` |
+| GET | `/api/v1/gateway/ping` | 四系统连通性一键检测 | Bearer + `gateway:view` |
 
-聚合 DSL 注册表存储于 config 模块（键 `gateway.aggregates.{dsl_id}`），支持热更新。
+聚合 DSL 注册表存储于 config 模块（键 `gateway.aggregates.{dsl_id}`），支持热更新（复用配置版本/回滚能力）。
 
 ---
 
@@ -257,12 +282,13 @@ class ServiceInstance:
 | 模块 | 改造点 |
 |------|--------|
 | proxy | `_resolve_base_url(system)` → `DiscoveryRegistry.pick(system)`（实例加权轮询）；保留 config 兜底；402/502 包装不变 |
-| config | 新增配置键：`gateway.discovery.*`（interval/health_path/ttl）、`gateway.aggregates.*`（DSL 注册表）；复用现有版本/回滚能力 |
+| **scheduler（复用）** | 网关启动时注册健康探测 interval job（`id="gateway_probe"`）；随模块启停，不新增调度框架 |
+| config | 新增配置键：`gateway.discovery.*`（interval/health_path/ttl）、`gateway.aggregates.*`（DSL 注册表）、`proxy.{system}.instances`（实例配置）；复用现有热加载/版本回滚 |
 | auth/rbac | 新增权限点：`gateway:register`、`gateway:aggregate`、`gateway:view` |
 | observability | 指标：实例数/健康率/探测耗时/聚合请求数/聚合耗时/部分失败数；日志带 request_id |
-| frontend | 新增"网关管理"页（服务列表/健康状态/聚合 DSL 管理） |
+| frontend | 新增"网关管理"页（服务列表/健康状态/聚合 DSL 管理）；前端模块发现（/modules）保持不变 |
 
-**向后兼容**：`PROXY_SYSTEMS` 静态表保留为最终兜底；未启用 discovery 时行为与 v1.3.0 完全一致。
+**向后兼容**：`PROXY_SYSTEMS` 静态表保留为最终兜底；未启用 discovery 时行为与 v1.3.0 完全一致；`/api/v1/modules` 前端模块发现不受影响。
 
 ---
 
@@ -334,3 +360,4 @@ class ServiceInstance:
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-08-28 | OpenBase 平台组 | 初始创建：服务发现（双模式可插拔 + 健康探测 + 负载均衡）与聚合编排（声明式 DSL + 四算子 + 部分失败）技术方案 |
+| v1.0.1 | 2026-08-28 | OpenBase 平台组 | 按《OpenBase 公共底座完整方案》v0.2.5 与现有代码复核调整：① 明确两层发现（前端 /modules 已实现 vs 后端 /services 新增）；② 服务发现 API 对齐附件 5.3 采用 `/api/v1/services`；③ 健康探测复用 scheduler（APScheduler）模块；④ 配置驱动复用 config（ConfigStore 热加载）；⑤ 新增权限点 gateway:* |
