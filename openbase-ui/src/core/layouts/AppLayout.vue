@@ -41,7 +41,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Fold, Expand, ArrowDown, Odometer, ChatDotRound, Collection, Memo, User } from '@element-plus/icons-vue'
+import { Fold, Expand, ArrowDown, Odometer, ChatDotRound, Collection, Memo, User, OfficeBuilding } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 import { useUiStore } from '@/core/stores/ui'
@@ -57,7 +57,10 @@ const iconMap: Record<string, Component> = {
 }
 
 const menuItems = computed<{ path: string; title: string; icon: Component }[]>(() => {
-  const items: { path: string; title: string; icon: Component }[] = [{ path: '/dashboard', title: '仪表盘', icon: Odometer }]
+  const items: { path: string; title: string; icon: Component }[] = [
+    { path: '/dashboard', title: '仪表盘', icon: Odometer },
+    { path: '/system/tenants', title: '租户管理', icon: OfficeBuilding },
+  ]
   for (const m of registry.enabledModules) {
     items.push({ path: m.info.route_prefix, title: m.info.name, icon: iconMap[m.info.icon || 'ChatDotRound'] || ChatDotRound })
   }

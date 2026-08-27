@@ -31,6 +31,7 @@ class ErrorCode(str, Enum):
     BIZ_ROLE_IN_USE = "BIZ_ROLE_IN_USE"
     BIZ_CONFIG_CONFLICT = "BIZ_CONFIG_CONFLICT"
     BIZ_NOT_FOUND = "BIZ_404"
+    BIZ_MODEL_QUOTA = "BIZ_MODEL_QUOTA"
 
     # ---- 存储 ----
     STORAGE_FILE_NOT_FOUND = "STORAGE_404"
@@ -56,6 +57,7 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.BIZ_ROLE_IN_USE: 409,
     ErrorCode.BIZ_CONFIG_CONFLICT: 409,
     ErrorCode.BIZ_NOT_FOUND: 404,
+    ErrorCode.BIZ_MODEL_QUOTA: 402,
     ErrorCode.STORAGE_FILE_NOT_FOUND: 404,
     ErrorCode.SYS_INTERNAL_ERROR: 500,
     ErrorCode.SYS_UPSTREAM_ERROR: 502,

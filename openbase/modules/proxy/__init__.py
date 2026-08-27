@@ -85,6 +85,22 @@ async def proxy(
         logger.warning("proxy upstream unreachable", extra={"system": system, "path": path, "error": str(exc)})
         raise BaseError(ErrorCode.SYS_UPSTREAM_ERROR, f"upstream {system} unreachable") from exc
 
+    # 上游 402（模型提供商余额不足）→ 统一包装 BIZ_MODEL_QUOTA，不暴露上游原始响应
+    if upstream.status_code == 402:
+        logger.info(
+            "proxy upstream payment required",
+            extra={"system": system, "path": path, "status": upstream.status_code},
+        )
+        return JSONResponse(
+            status_code=402,
+            content={
+                "code": ErrorCode.BIZ_MODEL_QUOTA.value,
+                "message": "模型服务余额不足，请联系管理员充值",
+                "detail": "upstream payment required",
+                "request_id": getattr(request.state, "request_id", ""),
+            },
+        )
+
     # 透传上游状态码与数据（响应体保持 JSON 透传，错误已由上游契约保证）
     try:
         payload = upstream.json()
@@ -93,4 +109,4 @@ async def proxy(
     return JSONResponse(status_code=upstream.status_code, content=payload)
 
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-page-header @back="$router.push('/knowledge/list')" :content="`知识库：${kb?.name || '详情'}`" class="mb-16" />
+    <el-page-header :content="`知识库：${kb?.name || '详情'}`" class="mb-16" @back="$router.push('/knowledge/list')" />
     <el-row :gutter="16">
       <el-col :xs="24" :lg="10">
         <el-card header="文档管理" class="mb-16">
@@ -11,14 +11,19 @@
           <div class="ob-table-scroll mt-16">
             <el-table :data="documents" size="small">
               <el-table-column prop="name" label="文档" min-width="140" />
+              <el-table-column prop="chunks" label="分块" width="70" />
               <el-table-column label="状态" width="200">
                 <template #default="{ row }">
                   <el-tag :type="docStatusType(row.status)" size="small">{{ docStatusLabel(row.status) }}</el-tag>
+                  <el-progress v-if="row.status === 'embedding'" :percentage="row.progress || 40" :show-text="false" style="width: 90px; display: inline-block; margin-left: 8px" />
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="100">
+              <el-table-column label="操作" width="160">
                 <template #default="{ row }">
                   <el-button link type="primary" @click="reindex(row)">重新索引</el-button>
+                  <el-popconfirm title="确认删除该文档？" @confirm="removeDoc(row.id)">
+                    <template #reference><el-button link type="danger">删除</el-button></template>
+                  </el-popconfirm>
                 </template>
               </el-table-column>
             </el-table>
@@ -56,16 +61,17 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { UploadFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
-interface DocumentRow { id: number; name: string; status: string }
+interface DocumentRow { id: number; name: string; status: string; chunks?: number; progress?: number }
 interface RetrievalResult { chunk_id: string; filename: string; content: string; score: number }
 
 const route = useRoute()
 const kb = computed(() => ({ id: route.params.id, name: `知识库 #${route.params.id}` }))
 const documents = ref<DocumentRow[]>([
-  { id: 1, name: '快速开始.md', status: 'completed' },
-  { id: 2, name: 'API 参考.pdf', status: 'embedding' },
-  { id: 3, name: '架构设计.docx', status: 'error' },
+  { id: 1, name: '快速开始.md', status: 'completed', chunks: 42 },
+  { id: 2, name: 'API 参考.pdf', status: 'embedding', chunks: 0, progress: 55 },
+  { id: 3, name: '架构设计.docx', status: 'error', chunks: 0 },
 ])
 const query = ref('')
 const agentMode = ref('standard')
@@ -90,6 +96,10 @@ function runRetrieval() {
 function reindex(row: DocumentRow) {
   row.status = 'indexing'
   setTimeout(() => { row.status = 'completed' }, 800)
+}
+function removeDoc(id: number) {
+  documents.value = documents.value.filter((d) => d.id !== id)
+  ElMessage.success('文档已删除')
 }
 </script>
 

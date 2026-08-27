@@ -9,9 +9,10 @@
       </el-select>
       <el-button type="primary" data-test="create-portrait" @click="createVisible = true">创建画像</el-button>
       <el-button @click="$router.push('/portrait/batch')">批量导入/导出</el-button>
+      <el-button @click="$router.push('/portrait/search')">画像查询</el-button>
     </div>
     <div class="ob-table-scroll">
-      <el-table :data="profiles" stripe data-test="portrait-table">
+      <el-table :data="paged" stripe data-test="portrait-table">
         <el-table-column prop="name" label="画像名称" min-width="160" />
         <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
         <el-table-column label="状态" width="100">
@@ -25,7 +26,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="data_source" label="数据源" width="110" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="230" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/portrait/${row.id}`)">详情</el-button>
             <el-dropdown @command="(cmd: string) => flow(row, cmd)">
@@ -38,9 +39,22 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+            <el-popconfirm title="确认删除该画像？" @confirm="remove(row.id)">
+              <template #reference><el-button link type="danger">删除</el-button></template>
+            </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
+      <el-empty v-if="paged.length === 0" description="暂无匹配的画像" :image-size="60" />
+    </div>
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="page"
+        :page-size="pageSize"
+        :total="filtered.length"
+        layout="total, prev, pager, next"
+        background
+      />
     </div>
     <el-dialog v-model="createVisible" title="创建画像" width="480px">
       <el-form label-width="80px">
@@ -57,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
 interface Profile { id: number; name: string; description: string; status: string; tags: string[]; data_source: string }
@@ -65,12 +79,34 @@ interface Profile { id: number; name: string; description: string; status: strin
 const keyword = ref('')
 const statusFilter = ref('')
 const createVisible = ref(false)
+const page = ref(1)
+const pageSize = 8
 const form = reactive({ name: '', description: '', data_source: '' })
 const profiles = ref<Profile[]>([
   { id: 1, name: '核心用户-张伟', description: '高频使用 RAG 检索用户', status: 'active', tags: ['高频用户', 'RAG'], data_source: 'openllm' },
   { id: 2, name: '试用用户-李娜', description: '试用期用户，转化评估中', status: 'inactive', tags: ['试用'], data_source: 'signup' },
   { id: 3, name: '归档-旧版', description: '历史遗留画像', status: 'archived', tags: ['历史'], data_source: 'legacy' },
+  { id: 4, name: '高潜企业-王强', description: '企业级客户高意向', status: 'active', tags: ['企业', '高潜'], data_source: 'crm' },
+  { id: 5, name: '内容创作者-赵敏', description: '活跃内容生产者', status: 'active', tags: ['创作者'], data_source: 'content' },
+  { id: 6, name: '休眠用户-刘洋', description: '30 天未活跃', status: 'inactive', tags: ['休眠'], data_source: 'user_service' },
+  { id: 7, name: '开发者-陈晨', description: 'API 高频调用者', status: 'active', tags: ['开发者', 'API'], data_source: 'openllm' },
+  { id: 8, name: '管理员-孙丽', description: '平台管理角色', status: 'active', tags: ['管理员'], data_source: 'rbac' },
+  { id: 9, name: '归档-2025Q4', description: '季度归档画像', status: 'archived', tags: ['历史'], data_source: 'legacy' },
+  { id: 10, name: '数据分析师-周杰', description: '报表高频使用者', status: 'active', tags: ['分析师'], data_source: 'analytics' },
 ])
+
+const filtered = computed(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  return profiles.value.filter((p) => {
+    const matchKw = !kw || p.name.toLowerCase().includes(kw) || p.description.toLowerCase().includes(kw)
+    const matchStatus = !statusFilter.value || p.status === statusFilter.value
+    return matchKw && matchStatus
+  })
+})
+const paged = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return filtered.value.slice(start, start + pageSize)
+})
 
 function statusType(status: string) {
   return { active: 'success', inactive: 'info', archived: 'warning' }[status] || 'info'
@@ -88,9 +124,14 @@ function createProfile() {
   createVisible.value = false
   ElMessage.success('画像已创建')
 }
+function remove(id: number) {
+  profiles.value = profiles.value.filter((p) => p.id !== id)
+  ElMessage.success('画像已删除')
+}
 </script>
 
 <style scoped>
 .page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .tag-item { margin-right: 4px; }
+.pager { margin-top: 8px; display: flex; justify-content: flex-end; }
 </style>
