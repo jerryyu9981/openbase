@@ -19,6 +19,8 @@ export const navItems = [
       { path: '/knowledge/chat', title: 'RAG 对话' },
       { path: '/knowledge/users', title: '用户管理' },
       { path: '/knowledge/settings', title: '系统配置' },
+      { path: '/knowledge/admin', title: '管理后台' },
+      { path: '/knowledge/console', title: '控制台' },
     ],
   },
 ]

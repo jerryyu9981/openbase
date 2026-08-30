@@ -54,7 +54,7 @@ def test_cmd_create_crud_generates_router(tmp_path: Path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     rc = cmd_create_crud(_ns(resource="books"))
     assert rc == 0
-    content = (tmp_path / "crud_books.py").read_text(encoding="utf-8")
+    content = (tmp_path / "books_crud.py").read_text(encoding="utf-8")
     assert "BaseCRUDRouter" in content
     assert 'prefix="/api/v1/books"' in content
 

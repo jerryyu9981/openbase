@@ -10,19 +10,20 @@ import asyncio
 import logging
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
-from openbase.core.deps.auth import get_current_user
+from openbase.core.deps.auth import get_api_key_store, get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import User
+from openbase.core.models import Role, User, user_role
 from openbase.modules.auth.jwt import (
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
 )
+from openbase.modules.auth.rbac import PermissionService, has_permission
 from openbase.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -168,6 +169,33 @@ class UserService:
             )
         return cls._memory_users.get(username)
 
+    @classmethod
+    async def get_roles(
+        cls,
+        user_id: int | str,
+        session: AsyncSession,
+        username: str = "",
+    ) -> list[str]:
+        """查询用户角色码列表（数据库优先；内存用户按用户名兜底）.
+
+        v1.4.2 R-375：角色码用于 JWT Payload（role）与权限校验。
+        """
+        try:
+            result = await session.execute(
+                select(Role.code)
+                .join(user_role, user_role.c.role_id == Role.id)
+                .where(user_role.c.user_id == int(user_id))
+            )
+            codes = list(result.scalars().all())
+            if codes:
+                return codes
+        except Exception as exc:  # noqa: BLE001
+            logging.getLogger("openbase.auth").warning(
+                "role query failed, fallback to default: %s", exc
+            )
+        # 内存降级：admin 用户 → admin 角色；其余 → viewer
+        return ["admin"] if username == "admin" else ["viewer"]
+
 
 # ---- 路由 ----
 
@@ -190,10 +218,19 @@ async def login(
     if not await asyncio.to_thread(verify_password, req.password, user["password_hash"]):
         raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid username or password")
 
-    access = create_access_token(
-        str(user["id"]), username=user["username"], tenant_id=user.get("tenant_id")
+    # v1.4.2 R-375：JWT Payload 扩展 org_id + role（OpenMemory 双层认证前置）
+    roles = await UserService.get_roles(
+        user["id"], session, user.get("username", "")
     )
-    refresh = create_refresh_token(str(user["id"]), user.get("tenant_id"))
+    role = roles[0] if roles else "viewer"
+    tenant_value = user.get("tenant_id")
+    access = create_access_token(
+        str(user["id"]),
+        username=user["username"],
+        tenant_id=tenant_value,
+        extra={"org_id": tenant_value, "role": role},
+    )
+    refresh = create_refresh_token(str(user["id"]), tenant_value)
     return TokenResponse(
         access_token=access,
         expires_in=settings.jwt_expire_seconds,
@@ -214,10 +251,14 @@ async def refresh(req: RefreshRequest) -> TokenResponse:
     if subject is None:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "refresh token missing subject")
 
+    tenant_value = payload.get("tenant_id")
     access = create_access_token(
-        subject, username=payload.get("username", ""), tenant_id=payload.get("tenant_id")
+        subject,
+        username=payload.get("username", ""),
+        tenant_id=tenant_value,
+        extra={"org_id": payload.get("org_id"), "role": payload.get("role", "viewer")},
     )
-    new_refresh = create_refresh_token(subject, payload.get("tenant_id"))
+    new_refresh = create_refresh_token(subject, tenant_value)
     return TokenResponse(
         access_token=access,
         expires_in=settings.jwt_expire_seconds,
@@ -247,5 +288,117 @@ async def me(
         tenant_id=user.get("tenant_id"),
         permissions=permissions,
     )
+
+
+# ---- v1.4.1 服务级 API Key（R-367，对齐完整方案 2.5 服务 Key ②） ----
+
+
+class ApiKeyCreate(BaseModel):
+    """服务 Key 创建请求."""
+
+    name: str = Field(..., min_length=1, max_length=64)
+    scope: dict = Field(default_factory=lambda: {"system": ["*"], "tenants": ["*"]})
+    description: str = Field("", max_length=200)
+
+
+class ApiKeyOut(BaseModel):
+    """服务 Key 响应（创建时含明文，列表不回显）."""
+
+    name: str
+    scope: dict
+    description: str = ""
+    created: float
+    revoked: bool = False
+    key: str | None = None
+
+
+# 服务 Key 权限点（auth:api-keys:manage/view）
+AUTH_API_KEY_PERMISSIONS = ("auth:api-keys:manage", "auth:api-keys:view")
+
+
+async def _check_api_key_permission(
+    user: dict, session: AsyncSession, permission_code: str
+) -> None:
+    """服务 Key 权限校验（admin 通配放行 + RBAC 兜底）.
+
+    Args:
+        user: 当前用户（get_current_user 结果）。
+        session: 数据库会话。
+        permission_code: 所需权限点。
+
+    Raises:
+        BaseError: 无权限 → AUTH_FORBIDDEN。
+    """
+    if user.get("username") == "admin":
+        return
+    payload_permissions: list[str] = user.get("permissions") or []
+    if has_permission(payload_permissions, permission_code):
+        return
+    db_permissions = await PermissionService.permissions_for_with_fallback(
+        session, str(user["id"])
+    )
+    if not has_permission(db_permissions, permission_code):
+        raise BaseError(ErrorCode.AUTH_FORBIDDEN, f"missing permission: {permission_code}")
+
+
+@router.post("/api-keys", response_model=ApiKeyOut)
+async def create_api_key(
+    payload: ApiKeyCreate,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ApiKeyOut:
+    """签发服务级 API Key（需 auth:api-keys:manage）.
+
+    返回明文 Key（仅此一次）；scope 限定可访问系统与租户。
+    """
+    await _check_api_key_permission(user, session, "auth:api-keys:manage")
+    store = get_api_key_store()
+    raw_key = store.create(
+        name=payload.name,
+        scope=payload.scope,
+        description=payload.description,
+    )
+    record = store.list_keys()[-1]
+    return ApiKeyOut(
+        name=record["name"],
+        scope=record["scope"],
+        description=record["description"],
+        created=record["created"],
+        revoked=record["revoked"],
+        key=raw_key,
+    )
+
+
+@router.get("/api-keys", response_model=list[ApiKeyOut])
+async def list_api_keys(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[ApiKeyOut]:
+    """服务 Key 列表（不回显明文，需 auth:api-keys:view）."""
+    await _check_api_key_permission(user, session, "auth:api-keys:view")
+    store = get_api_key_store()
+    return [
+        ApiKeyOut(
+            name=record["name"],
+            scope=record["scope"],
+            description=record["description"],
+            created=record["created"],
+            revoked=record["revoked"],
+        )
+        for record in store.list_keys()
+    ]
+
+
+@router.delete("/api-keys/{raw_key}", response_model=dict[str, str])
+async def revoke_api_key(
+    raw_key: str,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """吊销服务 Key（需 auth:api-keys:manage）."""
+    await _check_api_key_permission(user, session, "auth:api-keys:manage")
+    get_api_key_store().revoke(raw_key)
+    return {"revoked": raw_key}
+
 
 __version__ = "1.1.0"

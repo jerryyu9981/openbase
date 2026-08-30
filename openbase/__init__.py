@@ -62,6 +62,10 @@ def init_app(settings: Settings) -> object:
             module = __import__(f"openbase.modules.{module_name}", fromlist=["router"])
             if hasattr(module, "router"):
                 app.include_router(module.router)
+            # v1.4.2：模块可导出 extra_routers 附加路由（独立前缀，避免嵌套）
+            extra_routers = getattr(module, "extra_routers", None) or []
+            for extra_router in extra_routers:
+                app.include_router(extra_router)
         except ImportError:
             # 模块存在但未实现时跳过，不阻塞装配
             continue

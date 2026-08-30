@@ -7,10 +7,14 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+
+from openbase.core.db.session import get_db
+from openbase.core.deps.auth import get_current_user
 
 router = APIRouter(prefix="/api/v1/tenants", tags=["tenant"])
 
@@ -187,4 +191,204 @@ async def get_quota(tenant: str, resource: str) -> dict:
         "allowed": QuotaChecker.check(tenant, resource),
     }
 
-__version__ = "1.1.0"
+
+# ---- v1.4.2 R-374 租户管理 CRUD（数据落库 tenants 表） ----
+
+
+class TenantUpdate(BaseModel):
+    """更新租户请求."""
+
+    name: str | None = None
+    status: int | None = None  # 1=启用 0=禁用
+    quota: dict | None = None
+
+
+class TenantQuotaUpdate(BaseModel):
+    """租户配额更新请求."""
+
+    quota: dict
+
+
+async def _require_tenant_manage(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """租户管理权限校验（admin 通配放行 + RBAC 兜底）."""
+    from openbase.modules.auth.rbac import PermissionService, has_permission
+
+    if user.get("username") == "admin":
+        return user
+    payload_permissions: list[str] = user.get("permissions") or []
+    if has_permission(payload_permissions, "tenant:manage"):
+        return user
+    db_permissions = await PermissionService.permissions_for_with_fallback(
+        session, str(user["id"])
+    )
+    if has_permission(db_permissions, "tenant:manage"):
+        return user
+    from openbase.core.errors import BaseError, ErrorCode
+
+    raise BaseError(ErrorCode.PERM_FORBIDDEN, "missing permission: tenant:manage")
+
+
+async def _require_tenant_view(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """租户查看权限校验（admin 通配放行 + RBAC 兜底）."""
+    from openbase.modules.auth.rbac import PermissionService, has_permission
+
+    if user.get("username") == "admin":
+        return user
+    payload_permissions: list[str] = user.get("permissions") or []
+    if has_permission(payload_permissions, "tenant:view"):
+        return user
+    db_permissions = await PermissionService.permissions_for_with_fallback(
+        session, str(user["id"])
+    )
+    if has_permission(db_permissions, "tenant:view"):
+        return user
+    from openbase.core.errors import BaseError, ErrorCode
+
+    raise BaseError(ErrorCode.PERM_FORBIDDEN, "missing permission: tenant:view")
+
+
+def _tenant_to_out(tenant) -> dict:
+    """Tenant 模型 → 响应 DTO."""
+    return {
+        "id": tenant.id,
+        "name": tenant.name,
+        "code": tenant.code,
+        "status": tenant.status,
+        "isolation_level": tenant.isolation_level,
+        "quota": tenant.quota,
+    }
+
+
+@router.post("", response_model=TenantOut)
+async def create_tenant(
+    payload: TenantCreate,
+    user: dict = Depends(_require_tenant_manage),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """创建租户（数据落库）."""
+    from sqlalchemy import select as sa_select
+
+    from openbase.core.errors import BaseError, ErrorCode
+    from openbase.core.models import Tenant as TenantModel
+
+    existing = await session.execute(
+        sa_select(TenantModel).where(
+            (TenantModel.code == payload.code) | (TenantModel.name == payload.name)
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise BaseError(ErrorCode.BIZ_CONFLICT, f"tenant code/name already exists: {payload.code}")
+
+    tenant = TenantModel(
+        name=payload.name,
+        code=payload.code,
+        isolation_level=payload.isolation_level,
+        quota=payload.quota,
+        status=1,
+    )
+    session.add(tenant)
+    await session.commit()
+    await session.refresh(tenant)
+    return _tenant_to_out(tenant)
+
+
+@router.get("", response_model=list[TenantOut])
+async def list_tenants(
+    user: dict = Depends(_require_tenant_view),
+    session: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """租户列表."""
+    from sqlalchemy import select as sa_select
+
+    from openbase.core.models import Tenant as TenantModel
+
+    result = await session.execute(sa_select(TenantModel).order_by(TenantModel.id))
+    return [_tenant_to_out(row) for row in result.scalars().all()]
+
+
+@router.get("/{tenant_id}", response_model=TenantOut)
+async def get_tenant(
+    tenant_id: int,
+    user: dict = Depends(_require_tenant_view),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """租户详情."""
+    from openbase.core.errors import BaseError, ErrorCode
+    from openbase.core.models import Tenant as TenantModel
+
+    tenant = await session.get(TenantModel, tenant_id)
+    if tenant is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"tenant not found: {tenant_id}")
+    return _tenant_to_out(tenant)
+
+
+@router.put("/{tenant_id}", response_model=TenantOut)
+async def update_tenant(
+    tenant_id: int,
+    payload: TenantUpdate,
+    user: dict = Depends(_require_tenant_manage),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """更新租户（名称/状态/配额）."""
+    from openbase.core.errors import BaseError, ErrorCode
+    from openbase.core.models import Tenant as TenantModel
+
+    tenant = await session.get(TenantModel, tenant_id)
+    if tenant is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"tenant not found: {tenant_id}")
+    if payload.name is not None:
+        tenant.name = payload.name
+    if payload.status is not None:
+        tenant.status = payload.status
+    if payload.quota is not None:
+        tenant.quota = payload.quota
+    await session.commit()
+    await session.refresh(tenant)
+    return _tenant_to_out(tenant)
+
+
+@router.delete("/{tenant_id}", response_model=dict)
+async def deactivate_tenant(
+    tenant_id: int,
+    user: dict = Depends(_require_tenant_manage),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """停用租户（status=0，保留数据）."""
+    from openbase.core.errors import BaseError, ErrorCode
+    from openbase.core.models import Tenant as TenantModel
+
+    tenant = await session.get(TenantModel, tenant_id)
+    if tenant is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"tenant not found: {tenant_id}")
+    tenant.status = 0
+    await session.commit()
+    return {"code": 0, "tenant_id": tenant_id, "status": 0}
+
+
+@router.put("/{tenant_id}/quota", response_model=TenantOut)
+async def set_tenant_quota(
+    tenant_id: int,
+    payload: TenantQuotaUpdate,
+    user: dict = Depends(_require_tenant_manage),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """租户配额落库（Tenant.quota JSON）."""
+    from openbase.core.errors import BaseError, ErrorCode
+    from openbase.core.models import Tenant as TenantModel
+
+    tenant = await session.get(TenantModel, tenant_id)
+    if tenant is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"tenant not found: {tenant_id}")
+    tenant.quota = payload.quota
+    await session.commit()
+    await session.refresh(tenant)
+    return _tenant_to_out(tenant)
+
+
+__version__ = "1.2.0"

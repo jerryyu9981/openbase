@@ -13,6 +13,9 @@
     "dict": {
       "version": "1.1.0"
     },
+    "gateway": {
+      "version": "1.0.0"
+    },
     "mcp": {
       "version": "1.1.0"
     },
@@ -24,6 +27,9 @@
     },
     "org": {
       "version": "1.1.0"
+    },
+    "proxy": {
+      "version": "1.4.0"
     },
     "scheduler": {
       "version": "1.1.0"

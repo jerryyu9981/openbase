@@ -39,6 +39,21 @@ app = init_app(settings)
 
 ```bash
 pip install -e ".[dev]"
-pytest
-ruff check .
+ruff check openbase tests
 ```
+
+## 测试与回归（v1.4.2 BL-142-10）
+
+全量回归一键执行（推荐）：
+
+```bash
+python scripts/run_regression.py            # ruff + 全量 pytest（分组子进程隔离）
+python scripts/run_regression.py --cov      # 附带覆盖率统计
+```
+
+说明：Windows 上 starlette BaseHTTPMiddleware + anyio 多实例叠加存在非确定性
+C 层崩溃（TD-新增-009），已通过 `tests/conftest.py`（SelectorEventLoopPolicy）、
+`deps/auth.py` 延迟导入、pytest-asyncio module 级 loop 作用域缓解；回归脚本按
+测试文件分组子进程执行并自动重试崩溃组，全量 222 用例一键通过。
+
+单文件直跑亦可用：`python -m pytest tests/test_xxx.py`

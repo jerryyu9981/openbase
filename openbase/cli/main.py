@@ -6,13 +6,33 @@ import argparse
 import sys
 from pathlib import Path
 
-# 模块代码模板
-MODULE_TEMPLATE = '''"""{name} 模块：{description}."""
+# 模块代码模板（v1.4.1 R-371：5 文件骨架，对齐模块规范）
+MODULE_TEMPLATES: dict[str, str] = {
+    "__init__.py": '''"""{name} 模块（openbase-cli 生成）."""
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/{route}", tags=["{name}"])
+
+__all__ = ["router"]
+''',
+    "router.py": '''"""路由定义（openbase-cli 生成骨架）."""
+
+from fastapi import APIRouter, Depends
+
+from openbase.core.deps.auth import get_current_user
+
+router = APIRouter(prefix="/api/v1/{route}", tags=["{name}"])
+
+
+@router.get("/health", response_model=dict)
+async def health(user: dict = Depends(get_current_user)) -> dict:
+    """模块健康检查."""
+    return {{"status": "ok"}}
+''',
+    "schemas.py": '''"""Pydantic 模式（openbase-cli 生成骨架）."""
+
+from pydantic import BaseModel
 
 
 class {Title}Create(BaseModel):
@@ -21,16 +41,51 @@ class {Title}Create(BaseModel):
     name: str
 
 
-@router.get("", response_model=list[dict])
-async def list_items() -> list[dict]:
-    """列表."""
-    return []
+class {Title}Out(BaseModel):
+    """响应."""
+
+    id: int
+    name: str
+''',
+    "service.py": '''"""数据服务（openbase-cli 生成骨架，对接 BaseDBService）."""
+
+from openbase.core.db.services import BaseDBService
 
 
-@router.post("", response_model=dict)
-async def create_item(payload: {Title}Create) -> dict:
-    """创建."""
-    return {{"id": 1, "name": payload.name}}
+class {Title}Service(BaseDBService):
+    """{Title} 数据服务."""
+''',
+    "tests/test_router.py": '''"""模块测试骨架（openbase-cli 生成）."""
+
+from fastapi.testclient import TestClient
+
+from openbase.demo_app import app
+
+client = TestClient(app)
+
+
+def test_health_requires_auth() -> None:
+    """未登录访问模块健康检查 → 401."""
+    assert client.get("/api/v1/{route}/health").status_code == 401
+''',
+}
+
+CRUD_TEMPLATE = '''"""{Title} CRUD 路由（openbase-cli 生成，引用 BaseCRUDRouter）."""
+
+from openbase.core.crud import BaseCRUDRouter
+
+from {module}.schemas import {Title}Create, {Title}Update, {Title}Out
+from {module}.service import {Title}Service
+
+router = BaseCRUDRouter(
+    prefix="/api/v1/{route}",
+    service={Title}Service(),
+    create_schema={Title}Create,
+    update_schema={Title}Update,
+    out_schema={Title}Out,
+)
+
+__all__ = ["router"]
 '''
 
 PROJECT_TEMPLATE = '''# {name}
@@ -68,7 +123,7 @@ PYPROJECT_TEMPLATE = '''[project]
 name = "{name}"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["openbase>=1.0", "uvicorn[standard]"]
+dependencies = ["openbase>=1.4.1", "uvicorn[standard]"]
 
 [tool.setuptools.packages.find]
 include = ["app*"]
@@ -81,71 +136,117 @@ def _write(path: Path, content: str) -> None:
     print(f"  created {path}")
 
 
-def cmd_create_project(args: argparse.Namespace) -> int:
-    """create-project: 生成标准工程结构."""
-    name = args.name
-    root = Path.cwd() / name
-    print(f"Creating project {name} at {root}")
+def _pascal(name: str) -> str:
+    """snake_case → PascalCase."""
+    return "".join(part.capitalize() for part in name.replace("-", "_").split("_"))
 
-    _write(root / "README.md", PROJECT_TEMPLATE.format(name=name))
-    _write(root / "pyproject.toml", PYPROJECT_TEMPLATE.format(name=name))
-    _write(root / "app" / "main.py", MAIN_TEMPLATE)
-    _write(root / "app" / "__init__.py", "")
-    _write(root / "tests" / "__init__.py", "")
-    _write(root / ".env.example", "OPENBASE_DB_URL=postgresql+asyncpg://...\n")
-    print("Project created. Run: pip install -e . && uvicorn app.main:app --reload")
+
+def _render(template: str, name: str) -> str:
+    """渲染模板（名称占位替换）."""
+    title = _pascal(name)
+    route = name.replace("_", "-")
+    return (
+        template.replace("{name}", name)
+        .replace("{route}", route)
+        .replace("{Title}", title)
+        .replace("{{", "{")
+        .replace("}}", "}")
+    )
+
+
+def create_project(target: str, name: str) -> list[Path]:
+    """create-project: 生成标准工程结构（返回产出文件列表）.
+
+    Args:
+        target: 工程父目录。
+        name: 工程名。
+
+    Returns:
+        生成的工程根目录（含 5 文件）。
+    """
+    root = Path(target) / name
+    files = [
+        root / "README.md",
+        root / "pyproject.toml",
+        root / "app" / "main.py",
+        root / "app" / "__init__.py",
+        root / "tests" / "__init__.py",
+        root / ".env.example",
+    ]
+    contents = [
+        PROJECT_TEMPLATE.format(name=name),
+        PYPROJECT_TEMPLATE.format(name=name),
+        MAIN_TEMPLATE,
+        "",
+        "",
+        "OPENBASE_DB_URL=postgresql+asyncpg://...\n",
+    ]
+    for path, content in zip(files, contents, strict=True):
+        _write(path, content)
+    print(f"Project {name} created at {root}")
+    return files
+
+
+def create_module(target: str, name: str, description: str = "") -> list[Path]:
+    """create-module: 生成模块骨架（5 文件）.
+
+    Args:
+        target: 目标目录（openbase/modules 或 openbase-ui/src/modules）。
+        name: 模块名（snake_case）。
+        description: 模块描述（写入 __init__.py docstring，可空）。
+
+    Returns:
+        产出文件列表。
+    """
+    module_dir = Path(target) / name
+    outputs: list[Path] = []
+    for relative, template in MODULE_TEMPLATES.items():
+        content = _render(template, name)
+        if description and relative == "__init__.py":
+            content = content.replace(
+                f'"""{name} 模块（openbase-cli 生成）."""',
+                f'"""{name} 模块（openbase-cli 生成）：{description}."""',
+            )
+        path = module_dir / relative
+        _write(path, content)
+        outputs.append(path)
+    print(f"Module {name} created at {module_dir}. Add to AVAILABLE_MODULES in settings.py if new.")
+    return outputs
+
+
+def create_crud(target: str, name: str) -> list[Path]:
+    """create-crud: 生成 CRUD 路由（引用 BaseCRUDRouter）.
+
+    Args:
+        target: 目标目录。
+        name: 资源名（snake_case，如 dict_item）。
+
+    Returns:
+        产出文件列表。
+    """
+    module_name = name.split("_")[0] if "_" in name else name
+    path = Path(target) / f"{name}_crud.py"
+    _write(path, _render(CRUD_TEMPLATE, name).replace("{module}", module_name))
+    print(f"CRUD router created at {path}. Include: app.include_router(router)")
+    return [path]
+
+
+def cmd_create_project(args: argparse.Namespace) -> int:
+    """CLI 命令包装：create-project."""
+    create_project(str(Path.cwd()), args.name)
     return 0
 
 
 def cmd_create_module(args: argparse.Namespace) -> int:
-    """create-module: 生成 openbase 模块骨架."""
-    name = args.name
-    title = name.title().replace("_", "")
-    route = name.replace("_", "-")
-    target = Path.cwd() / "openbase" / "modules" / name / "__init__.py"
-    _write(target, MODULE_TEMPLATE.format(name=name, Title=title, route=route, description=args.description or name))
-    print(f"Module {name} created. Add to AVAILABLE_MODULES in settings.py if new.")
+    """CLI 命令包装：create-module."""
+    target = Path.cwd() / "openbase" / "modules"
+    create_module(str(target), args.name, getattr(args, "description", ""))
     return 0
 
 
 def cmd_create_crud(args: argparse.Namespace) -> int:
-    """create-crud: 生成 CRUD 路由（对接 BaseCRUDRouter）."""
-    resource = args.resource
-    title = resource.title().replace("_", "")
-    target = Path.cwd() / f"crud_{resource}.py"
-    content = f'''"""CRUD 路由：{resource}（由 openbase-cli 生成）."""
-
-from pydantic import BaseModel
-
-from openbase.crud import BaseCRUDRouter
-
-
-class {title}Create(BaseModel):
-    """创建请求."""
-
-    name: str
-
-
-class {title}Out(BaseModel):
-    """响应."""
-
-    id: int
-    name: str
-
-
-# 数据存储（生产接数据库，此处为示例）
-_store: dict[int, dict] = {{}}
-
-router = BaseCRUDRouter(
-    prefix="/api/v1/{resource}",
-    create_schema={title}Create,
-    out_schema={title}Out,
-    store=_store,
-    search_fields=["name"],
-)
-'''
-    _write(target, content)
-    print(f"CRUD router created at {target}. Include router in your app: app.include_router(router)")
+    """CLI 命令包装：create-crud."""
+    create_crud(str(Path.cwd()), args.resource)
     return 0
 
 
@@ -179,3 +280,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

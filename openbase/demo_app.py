@@ -38,6 +38,10 @@ for module in (
     "ai_apps",
     "proxy",
     "frontend",
+    # v1.4.0 统一网关增强（服务发现 + 聚合编排，阶段一零依赖）
+    "gateway",
+    # v1.4.2 四维身份管理（R-375 用户管理，R-374 租户已在上方启用）
+    "users",
 ):
     settings.enable_module(module)
 

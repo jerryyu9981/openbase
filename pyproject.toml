@@ -52,6 +52,10 @@ openbase = ["py.typed"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# TD-新增-009：module 级 loop 作用域，减少 Windows 上 event loop 创建/销毁
+# （Proactor 多线程清理触发 access violation；配合 conftest SelectorEventLoopPolicy）
+asyncio_default_fixture_loop_scope = "module"
+asyncio_default_test_loop_scope = "module"
 testpaths = ["tests"]
 addopts = "-q"
 

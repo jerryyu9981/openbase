@@ -16,6 +16,8 @@ from typing import Optional  # noqa: F401 - future annotations 字符串注解�
 from fastapi import APIRouter, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from openbase.core.deps.auth import IdentityContext  # noqa: F401 - build_audit_record 类型注解
+
 logger = logging.getLogger("openbase.audit")
 
 router = APIRouter(tags=["health"])
@@ -41,6 +43,54 @@ class APICallRecord:
     request_body: str | None = None
     error: str | None = None
     extra: dict = field(default_factory=dict)
+
+
+def build_audit_record(
+    method: str,
+    path: str,
+    status_code: int,
+    duration_ms: int,
+    request_id: str,
+    identity: IdentityContext | None = None,
+    operator_name: str | None = None,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
+    error: str | None = None,
+) -> APICallRecord:
+    """构造审计记录（v1.4.1 R-370：绑定四维身份上下文）.
+
+    从 IdentityContext 注入 tenant_id 与 operator_id（user_id 转字符串），
+    支撑跨租户审计追溯（完整方案 2.7 安全边界④）。
+
+    Args:
+        method: HTTP 方法。
+        path: 请求路径。
+        status_code: 响应状态码。
+        duration_ms: 耗时毫秒。
+        request_id: 请求 ID。
+        identity: 四维身份上下文（可空）。
+        operator_name: 操作者名称（可空）。
+        ip_address: 客户端 IP（可空）。
+        user_agent: 客户端 UA（可空）。
+        error: 错误信息（可空）。
+
+    Returns:
+        APICallRecord。
+    """
+    return APICallRecord(
+        method=method,
+        path=path,
+        status_code=status_code,
+        duration_ms=duration_ms,
+        request_id=request_id,
+        operator_id=str(identity.user_id) if identity and identity.user_id is not None else None,
+        operator_name=operator_name,
+        tenant_id=identity.tenant_id if identity else None,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        error=error,
+        extra={"team_id": identity.team_id, "agent_id": identity.agent_id} if identity else {},
+    )
 
 
 class AuditService:

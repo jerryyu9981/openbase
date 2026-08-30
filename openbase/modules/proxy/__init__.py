@@ -15,14 +15,19 @@ import httpx
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from openbase.core.deps.auth import get_current_user
+from openbase.core.deps.auth import get_proxy_identity
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.modules.proxy.memory_proxy import router as memory_proxy_router
 
 logger = logging.getLogger("openbase.proxy")
 
 router = APIRouter(prefix="/api/v1/proxy", tags=["proxy"])
 
-__all__ = ["PROXY_SYSTEMS", "router"]
+# v1.4.2 R-378：OpenMemory 双层认证转发路由（/api/v1/memory-proxy/*）
+# 通过 extra_routers 由 init_app 单独挂载（避免 include_router 前缀嵌套）
+extra_routers = [memory_proxy_router]
+
+__all__ = ["PROXY_SYSTEMS", "router", "extra_routers"]
 
 # 四系统代理路由表（base_url 可由 config 模块覆盖；此处为 Dev 默认）
 PROXY_SYSTEMS: dict[str, dict] = {
@@ -58,9 +63,9 @@ async def proxy(
     system: str,
     path: str,
     request: Request,
-    user: dict = Depends(get_current_user),
+    identity: dict = Depends(get_proxy_identity),
 ) -> JSONResponse:
-    """代理转发：JWT 校验后转发四系统原生 API.
+    """代理转发：JWT 优先 + 服务 Key 回退双通道认证（R-367 AC-367-2）后转发四系统原生 API.
 
     支持路径参数透传；上游不可达时返回统一 SYS_502 错误包装。
     """
@@ -109,4 +114,4 @@ async def proxy(
     return JSONResponse(status_code=upstream.status_code, content=payload)
 
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"

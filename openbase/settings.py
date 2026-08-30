@@ -32,6 +32,10 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "ai_apps",
     "proxy",
     "frontend",
+    # v1.4.0 统一网关增强（服务发现 + 聚合编排）
+    "gateway",
+    # v1.4.2 四维身份管理（R-375 用户管理 CRUD）
+    "users",
 )
 
 
@@ -102,6 +106,11 @@ class Settings(BaseSettings):
     # ---- 文件存储 ----
     storage_backend: str = "local"  # local | minio | s3
     storage_local_path: str = "./storage"
+
+    # ---- OpenMemory 对接（v1.4.2 R-378，双层认证转发） ----
+    memory_api_key: str = "openbase-gw-key-20260830"
+    memory_upstream_base: str = "http://127.0.0.1:8020"
+    memory_upstream_timeout: float = 20.0
 
     # ---- 模块启停（内部状态） ----
     _enabled_modules: set[str] = set()

@@ -13,6 +13,15 @@ export const staticRoutes: RouteRecordRaw[] = [
     children: [
       { path: 'dashboard', name: 'dashboard', component: () => import('@/pages/Dashboard.vue'), meta: { title: '仪表盘', icon: 'Odometer' } },
       { path: 'system/tenants', name: 'system-tenants', component: () => import('@/pages/SystemTenants.vue'), meta: { title: '租户管理', icon: 'OfficeBuilding' } },
+      // v1.4.0 系统管理分组（OpenLLM 系统管理 8 页，DT-14-09~16）
+      { path: 'system/roles', name: 'system-roles', component: () => import('@/modules/openllm/pages/RolesView.vue'), meta: { title: '角色权限', icon: 'UserFilled' } },
+      { path: 'system/org', name: 'system-org', component: () => import('@/modules/openllm/pages/OrgTeamsUsersView.vue'), meta: { title: '组织/团队/用户', icon: 'OfficeBuilding' } },
+      { path: 'system/workspaces', name: 'system-workspaces', component: () => import('@/modules/openllm/pages/WorkspacesView.vue'), meta: { title: '工作空间', icon: 'Grid' } },
+      { path: 'system/config', name: 'system-config', component: () => import('@/modules/openllm/pages/ConfigManageView.vue'), meta: { title: '配置管理', icon: 'Setting' } },
+      { path: 'system/audit', name: 'system-audit', component: () => import('@/modules/openllm/pages/AuditLogsView.vue'), meta: { title: '审计日志', icon: 'Document' } },
+      { path: 'system/edgerouter', name: 'system-edgerouter', component: () => import('@/modules/openllm/pages/EdgeRouterView.vue'), meta: { title: 'EdgeRouter', icon: 'Connection' } },
+      { path: 'system/docs', name: 'system-docs', component: () => import('@/modules/openllm/pages/DocCenterView.vue'), meta: { title: '文档中心', icon: 'Reading' } },
+      { path: 'system/billing', name: 'system-billing', component: () => import('@/modules/openllm/pages/BillingView.vue'), meta: { title: '计费', icon: 'Money' } },
     ],
   },
 ]
@@ -23,6 +32,7 @@ const moduleRouteLoaders: Record<string, () => Promise<{ routes: RouteRecordRaw[
   knowledge: () => import('@/modules/knowledge'),
   memory: () => import('@/modules/memory'),
   portrait: () => import('@/modules/portrait'),
+  gateway: () => import('@/modules/gateway'),
 }
 
 const router = createRouter({

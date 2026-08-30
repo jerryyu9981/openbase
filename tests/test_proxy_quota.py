@@ -69,7 +69,7 @@ def test_proxy_wraps_402_to_unified_error(monkeypatch: pytest.MonkeyPatch) -> No
         proxy_module.httpx, "AsyncClient", lambda **kwargs: _FakeClient(_FakeResponse(402))
     )
     request = _make_request()
-    response = _run(proxy_module.proxy("openllm", "chat/stream", request, user={"id": 1}))
+    response = _run(proxy_module.proxy("openllm", "chat/stream", request, identity={"id": 1}))
     assert response.status_code == 402
     payload = response.body.decode("utf-8")
     assert '"code":"BIZ_MODEL_QUOTA"' in payload
@@ -84,6 +84,6 @@ def test_proxy_passthrough_non_402(monkeypatch: pytest.MonkeyPatch) -> None:
         proxy_module.httpx, "AsyncClient", lambda **kwargs: _FakeClient(_FakeResponse(200, {"ok": True}))
     )
     request = _make_request()
-    response = _run(proxy_module.proxy("openrag", "health", request, user={"id": 1}))
+    response = _run(proxy_module.proxy("openrag", "health", request, identity={"id": 1}))
     assert response.status_code == 200
     assert '"ok":true' in response.body.decode("utf-8")

@@ -10,6 +10,7 @@ export const routes: RouteRecordRaw[] = [
   { path: 'graph', name: 'memory-graph', component: () => import('./pages/MemoryGraph.vue'), meta: { title: '记忆图谱' } },
   { path: 'api-gateway', name: 'memory-api-gateway', component: () => import('./pages/ApiGateway.vue'), meta: { title: 'API 网关' } },
   { path: 'admin', name: 'memory-admin', component: () => import('./pages/Admin.vue'), meta: { title: '管理后台' } },
+  { path: 'monitor', name: 'memory-monitor', component: () => import('./pages/MemoryMonitorView.vue'), meta: { title: '系统监控' } },
   { path: 'decay', name: 'memory-decay', component: () => import('./pages/MemoryList.vue'), meta: { title: '衰减配置' } },
   { path: 'write', name: 'memory-write', component: () => import('./pages/MemoryList.vue'), meta: { title: '写入记忆' } },
 ]

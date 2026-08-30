@@ -1,0 +1,570 @@
+"""memory-proxy 模块：OpenMemory 双层认证转发（v1.4.2 R-378）.
+
+统一前端/调用方经 OpenBase 访问 OpenMemory 8020，无需持有 OpenMemory 密钥：
+
+- 认证：OpenBase JWT（get_current_user），未认证返回 401。
+- 转发注入：X-API-Key（OpenBase 持有）+ 透传原 JWT（Bearer）+ X-Org-ID/X-User-ID
+  （供 OpenMemory RBAC/租户上下文识别）。
+- 响应适配：统一 {code, message, data, timestamp}；错误码透传
+  （200005 缺少 Key / 200001 JWT 无效 等 OpenMemory 语义）。
+"""
+from __future__ import annotations
+
+import datetime as dt
+import json
+import logging
+from typing import Any
+
+import httpx
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
+from fastapi.responses import JSONResponse
+
+from openbase.core.deps.auth import get_current_user
+from openbase.core.errors import BaseError, ErrorCode
+from openbase.modules.auth.jwt import decode_access_token
+from openbase.settings import get_settings
+
+logger = logging.getLogger("openbase.memory_proxy")
+
+router = APIRouter(prefix="/api/v1/memory-proxy", tags=["memory-proxy"])
+
+__all__ = ["router"]
+
+
+def _now_iso() -> str:
+    """生成 ISO 8601 时间戳（UTC）."""
+    return dt.datetime.now(dt.timezone.utc).isoformat()
+
+
+def _upstream_config() -> tuple[str, str, float]:
+    """读取上游 OpenMemory 配置（settings，支持 .env 覆盖）."""
+    settings = get_settings()
+    return (
+        settings.memory_api_key,
+        settings.memory_upstream_base,
+        settings.memory_upstream_timeout,
+    )
+
+
+def _extract_identity(request: Request) -> dict[str, Any]:
+    """从请求头解析 JWT 身份（tenant_id/org_id/role/sub），供上游注入.
+
+    Returns:
+        dict: {"token", "sub", "org_id", "role", "tenant_id"}；
+        token 缺失时抛出 401。
+    """
+    authorization = request.headers.get("Authorization", "")
+    if not authorization.startswith("Bearer "):
+        raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "missing bearer token")
+    token = authorization.removeprefix("Bearer ").strip()
+    payload = decode_access_token(token)
+    if payload is None:
+        raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "invalid or expired token")
+    return {
+        "token": token,
+        "sub": str(payload.get("sub", "")),
+        "tenant_id": payload.get("tenant_id"),
+        "org_id": payload.get("org_id"),
+        "role": payload.get("role", "viewer"),
+    }
+
+
+def _build_upstream_headers(request: Request, identity: dict[str, Any]) -> dict[str, str]:
+    """构造转发上游的请求头（双层认证 + 身份/租户注入）.
+
+    - X-API-Key：OpenBase 持有（服务 Key 通道，第一层认证）
+    - Authorization: Bearer <原 JWT>（第二层认证）
+    - X-Org-ID / X-User-ID：RBAC 与租户上下文识别；org_id 缺失时
+      注入 "openbase-default"（OpenMemory 无该组织策略 → 按默认策略放行）
+    - X-Tenant-ID：租户上下文（OpenMemory 解析优先级 X-Tenant-ID > JWT
+      tenant_id > default；与指南 4.6 对齐）
+    """
+    api_key, _, _ = _upstream_config()
+    org_id = identity.get("org_id") or "openbase-default"
+    tenant_id = identity.get("tenant_id") or "default"
+    return {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-API-Key": api_key,
+        "Authorization": f"Bearer {identity['token']}",
+        "X-Org-ID": str(org_id),
+        "X-User-ID": identity["sub"],
+        "X-Tenant-ID": str(tenant_id),
+    }
+
+
+def _adapt_response(upstream: httpx.Response) -> JSONResponse:
+    """统一响应适配 {code, message, data, timestamp}.
+
+    2xx：code=0, message="success"，data 为上游完整响应体（核心 API 直接
+    返回模型对象，管理/错误为 E 码结构，均透传）。
+
+    非 2xx：透传上游业务码。OpenMemory 错误体形如
+    {"code": "E300005", "message": "...", "data": null, "request_id": "..."}、
+    {"error": "NOT_FOUND", "message": "..."}（详情 404）、
+    {"detail": {"error": "...", "message": "..."}}（pydantic 包装）或
+    网关层 {"error": "AUTHENTICATION_ERROR", "message": "..."}。
+    提取顺序：body.error > body.code > detail.error/status/code > HTTP 状态码。
+    429/5xx 携带 retry_after 时透传到 data 供调用方退避。
+    """
+    try:
+        payload = upstream.json()
+    except ValueError:
+        payload = {"raw": upstream.text[:2000]}
+
+    if 200 <= upstream.status_code < 300:
+        return JSONResponse(
+            status_code=upstream.status_code,
+            content={
+                "code": 0,
+                "message": "success",
+                "data": payload,
+                "timestamp": _now_iso(),
+            },
+        )
+
+    # 错误码透传
+    code = payload.get("error") or payload.get("code")
+    message = payload.get("message")
+    if code is None:
+        detail = payload.get("detail")
+        if isinstance(detail, dict):
+            code = detail.get("error") or detail.get("code") or detail.get("status")
+            message = detail.get("message") or message
+        elif isinstance(detail, str):
+            message = detail
+    if code is None:
+        code = upstream.status_code
+    data: Any = None
+    retry_after = payload.get("retry_after") or (
+        (payload.get("data") or {}).get("retry_after")
+        if isinstance(payload.get("data"), dict) else None
+    )
+    if retry_after is not None:
+        data = {"retry_after": retry_after}
+    return JSONResponse(
+        status_code=upstream.status_code,
+        content={
+            "code": code,
+            "message": message or "upstream error",
+            "data": data,
+            "timestamp": _now_iso(),
+        },
+    )
+
+
+async def _forward(
+    method: str,
+    upstream_path: str,
+    *,
+    json_body: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
+    files: dict[str, Any] | None = None,
+    form_data: dict[str, str] | None = None,
+    headers: dict[str, str],
+) -> JSONResponse:
+    """转发请求至 OpenMemory 并适配响应.
+
+    files/form_data 用于 multipart/form-data 透传（多模态/语音上传端点）。
+    """
+    _, base_url, timeout = _upstream_config()
+    target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            upstream = await client.request(
+                method, target_url,
+                json=json_body, params=params, files=files, data=form_data,
+                headers=headers,
+            )
+    except httpx.HTTPError as exc:
+        logger.warning(
+            "memory-proxy upstream unreachable",
+            extra={"path": upstream_path, "error": str(exc)},
+        )
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR, f"OpenMemory upstream unreachable: {exc}"
+        ) from exc
+    return _adapt_response(upstream)
+
+
+async def _forward_raw(
+    method: str,
+    upstream_path: str,
+    *,
+    json_body: dict[str, Any] | None = None,
+    headers: dict[str, str],
+) -> tuple[int, dict[str, Any]]:
+    """转发请求，返回 (上游状态码, 适配后的统一响应体).
+
+    供需要二次加工（如列表分页）的端点复用。
+    """
+    _, base_url, timeout = _upstream_config()
+    target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            upstream = await client.request(
+                method, target_url, json=json_body, headers=headers,
+            )
+    except httpx.HTTPError as exc:
+        logger.warning(
+            "memory-proxy upstream unreachable",
+            extra={"path": upstream_path, "error": str(exc)},
+        )
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR, f"OpenMemory upstream unreachable: {exc}"
+        ) from exc
+    adapted = _adapt_response(upstream)
+    return adapted.status_code, json.loads(adapted.body.decode("utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# 业务端点
+# ---------------------------------------------------------------------------
+
+
+@router.post("/remember")
+async def memory_remember(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """存储记忆（POST /api/v1/remember）."""
+    identity = _extract_identity(request)
+    return await _forward(
+        "POST", "/api/v1/remember",
+        json_body=payload, headers=_build_upstream_headers(request, identity),
+    )
+
+
+@router.post("/recall")
+async def memory_recall(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """召回记忆（POST /api/v1/recall）."""
+    identity = _extract_identity(request)
+    return await _forward(
+        "POST", "/api/v1/recall",
+        json_body=payload, headers=_build_upstream_headers(request, identity),
+    )
+
+
+@router.post("/forget")
+async def memory_forget(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """删除记忆（POST /api/v1/forget）."""
+    identity = _extract_identity(request)
+    return await _forward(
+        "POST", "/api/v1/forget",
+        json_body=payload, headers=_build_upstream_headers(request, identity),
+    )
+
+
+@router.get("/memories/{memory_id}")
+async def memory_detail(
+    memory_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """记忆详情（GET /api/v1/memories/{id}）."""
+    identity = _extract_identity(request)
+    response = await _forward(
+        "GET", f"/api/v1/memories/{memory_id}",
+        headers=_build_upstream_headers(request, identity),
+    )
+    # 字段归一化：metadata.tags 提升为顶层 tags（前端消费）
+    if response.status_code < 400:
+        try:
+            body = json.loads(response.body.decode("utf-8"))
+            data = body.get("data")
+            if isinstance(data, dict) and "metadata" in data:
+                meta = data.get("metadata") or {}
+                if "tags" not in data:
+                    data["tags"] = meta.get("tags") or []
+                body["data"] = data
+                response = JSONResponse(status_code=response.status_code, content=body)
+        except (ValueError, TypeError):
+            pass
+    return response
+
+
+@router.get("/memories")
+async def memory_list(
+    request: Request,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    memory_type: str | None = Query(None),
+    tag: str | None = Query(None),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """记忆列表（分页/类型/标签过滤）.
+
+    OpenMemory v6.8.0 无原生持久化列表端点，以 recall 召回适配：
+    按当前用户召回全部持久记忆（auto 策略 + 泛化查询），
+    proxy 侧完成类型/标签过滤与分页。
+    """
+    identity = _extract_identity(request)
+    user_id = identity["sub"]
+    payload: dict[str, Any] = {
+        "query": "全部记忆",
+        "user_id": user_id,
+        "top_k": 500,
+        "strategy": "semantic",
+    }
+    status_code, body = await _forward_raw(
+        "POST", "/api/v1/recall",
+        json_body=payload, headers=_build_upstream_headers(request, identity),
+    )
+    if status_code >= 400:
+        return JSONResponse(
+            status_code=status_code,
+            content={"code": body.get("code", status_code),
+                     "message": body.get("message", "upstream error"),
+                     "data": None, "timestamp": _now_iso()},
+        )
+    data = body.get("data") or {}
+    results = data.get("results") or []
+    # 字段归一化：OpenMemory 将 tags/created_at 存入 metadata，提升为顶层
+    normalized: list[dict[str, Any]] = []
+    for row in results:
+        meta = row.get("metadata") or {}
+        normalized.append({
+            **row,
+            "tags": row.get("tags") or meta.get("tags") or [],
+            "created_at": row.get("created_at") or meta.get("created_at"),
+        })
+    results = normalized
+    # 本地过滤：类型 / 标签
+    if memory_type:
+        results = [r for r in results if r.get("memory_type") == memory_type]
+    if tag:
+        results = [r for r in results if tag in (r.get("tags") or [])]
+    total = len(results)
+    start = (page - 1) * page_size
+    items = results[start:start + page_size]
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "code": body.get("code", 0),
+            "message": body.get("message", "success"),
+            "data": {
+                "items": items,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+            },
+            "timestamp": _now_iso(),
+        },
+    )
+
+
+async def _proxy_json(
+    method: str,
+    upstream_path: str,
+    request: Request,
+    *,
+    json_body: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
+) -> JSONResponse:
+    """认证 + 透传 JSON 类端点的通用入口（v1.4.2 R-379 完善对接）."""
+    identity = _extract_identity(request)
+    return await _forward(
+        method, upstream_path,
+        json_body=json_body, params=params,
+        headers=_build_upstream_headers(request, identity),
+    )
+
+
+async def _proxy_multipart(
+    upstream_path: str,
+    request: Request,
+    file: UploadFile,
+    form_fields: dict[str, str] | None = None,
+) -> JSONResponse:
+    """认证 + multipart/form-data 透传（多模态/语音上传端点，R-380）.
+
+    读取上传文件内容，构造 httpx files={"file": (filename, content, content_type)}
+    透传上游；可选表单字段（metadata/description 等）经 data 透传。
+    注意：Content-Type 由 httpx 按 multipart 边界自动生成，勿手动设置。
+    """
+    identity = _extract_identity(request)
+    content = await file.read()
+    headers = _build_upstream_headers(request, identity)
+    headers.pop("Content-Type", None)  # multipart 边界由 httpx 生成
+    files: dict[str, Any] = {
+        "file": (file.filename or "upload.bin", content,
+                 file.content_type or "application/octet-stream"),
+    }
+    return await _forward(
+        "POST", upstream_path,
+        files=files, form_data=form_fields,
+        headers=headers,
+    )
+
+
+@router.post("/improve")
+async def memory_improve(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """优化记忆（promote/compress/merge，POST /api/v1/improve）."""
+    return await _proxy_json("POST", "/api/v1/improve", request, json_body=payload)
+
+
+@router.get("/sessions")
+async def memory_sessions(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """会话列表（GET /api/v1/sessions）."""
+    return await _proxy_json("GET", "/api/v1/sessions", request)
+
+
+@router.get("/sessions/{session_id}")
+async def memory_session_detail(
+    session_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """会话详情（GET /api/v1/sessions/{session_id}）."""
+    return await _proxy_json("GET", f"/api/v1/sessions/{session_id}", request)
+
+
+@router.post("/sessions/{session_id}/terminate")
+async def memory_session_terminate(
+    session_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """终止并清空会话（POST /api/v1/sessions/{session_id}/terminate）."""
+    return await _proxy_json("POST", f"/api/v1/sessions/{session_id}/terminate", request)
+
+
+@router.get("/decay/config")
+async def memory_decay_get(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """获取衰减配置（GET /api/v1/decay/config）."""
+    return await _proxy_json("GET", "/api/v1/decay/config", request)
+
+
+@router.put("/decay/config")
+async def memory_decay_put(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """更新衰减配置（PUT /api/v1/decay/config）."""
+    return await _proxy_json("PUT", "/api/v1/decay/config", request, json_body=payload)
+
+
+@router.get("/recall/traces/{trace_id}")
+async def memory_recall_trace(
+    trace_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """召回路径追踪（GET /api/v1/recall/traces/{trace_id}）."""
+    return await _proxy_json("GET", f"/api/v1/recall/traces/{trace_id}", request)
+
+
+@router.get("/monitor")
+async def memory_monitor(
+    request: Request,
+    range_: str = Query("24h", alias="range"),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """运行监控（GET /api/v1/monitor?range=24h）."""
+    return await _proxy_json("GET", "/api/v1/monitor", request, params={"range": range_})
+
+
+@router.get("/health")
+async def memory_health(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """OpenMemory 健康状态透传（GET /health，供运维/前端监控）."""
+    return await _proxy_json("GET", "/health", request)
+
+
+@router.get("/health/readiness")
+async def memory_health_readiness(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """OpenMemory 就绪检查透传（GET /health/readiness，需上游 API Key）."""
+    return await _proxy_json("GET", "/health/readiness", request)
+
+
+@router.get("/health/liveness")
+async def memory_health_liveness(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """OpenMemory 存活检查透传（GET /health/liveness，需上游 API Key）."""
+    return await _proxy_json("GET", "/health/liveness", request)
+
+
+# ---------------------------------------------------------------------------
+# 多模态 / 语音端点（指南 5.4/5.5，R-380）
+# ---------------------------------------------------------------------------
+
+
+@router.post("/memories/image")
+async def memory_image_upload(
+    request: Request,
+    file: UploadFile = File(...),
+    metadata: str | None = Form(None),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """上传图像记忆（multipart；POST /api/v1/memories/image，≤10MB）."""
+    form_fields = {"metadata": metadata} if metadata is not None else None
+    return await _proxy_multipart("/api/v1/memories/image", request, file, form_fields)
+
+
+@router.post("/memories/image/search")
+async def memory_image_search(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """文本搜索图像记忆（JSON；POST /api/v1/memories/image/search）."""
+    return await _proxy_json("POST", "/api/v1/memories/image/search", request, json_body=payload)
+
+
+@router.post("/multimodal/image-embed")
+async def memory_image_embed(
+    request: Request,
+    file: UploadFile = File(...),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """图像嵌入（multipart；POST /api/v1/multimodal/image-embed，CLIP）."""
+    return await _proxy_multipart("/api/v1/multimodal/image-embed", request, file)
+
+
+@router.post("/audio/transcribe")
+async def memory_audio_transcribe(
+    request: Request,
+    file: UploadFile = File(...),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """语音转写（multipart；POST /api/v1/audio/transcribe，mp3/wav/ogg ≤30MB）."""
+    return await _proxy_multipart("/api/v1/audio/transcribe", request, file)
+
+
+@router.post("/memories/remember-with-audio")
+async def memory_remember_with_audio(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """语音记忆存储（JSON；POST /api/v1/memories/remember-with-audio）."""
+    return await _proxy_json(
+        "POST", "/api/v1/memories/remember-with-audio", request, json_body=payload
+    )

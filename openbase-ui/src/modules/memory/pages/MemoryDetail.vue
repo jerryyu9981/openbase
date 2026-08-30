@@ -1,63 +1,95 @@
 <template>
   <div>
     <el-page-header content="记忆详情" class="mb-16" @back="$router.push('/memory')" />
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="14">
-        <el-card header="记忆内容" class="mb-16">
-          <p class="content">{{ memory.content }}</p>
-          <el-divider />
-          <p class="meta">类型：{{ memory.type }} · 创建：{{ memory.created_at }} · 衰减权重：{{ memory.weight.toFixed(2) }}</p>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :lg="10">
-        <el-card header="Waypoint 召回路径时间线" data-test="waypoint-timeline" class="mb-16">
-          <el-timeline>
-            <el-timeline-item v-for="node in waypoints" :key="node.label" :timestamp="node.time" :type="node.type">
-              {{ node.label }}
-            </el-timeline-item>
-          </el-timeline>
-        </el-card>
-        <el-card header="关联知识库记忆" class="mb-16" data-test="related-memories">
-          <el-table :data="related" size="small">
-            <el-table-column prop="source" label="来源" width="90" />
-            <el-table-column prop="content" label="内容（摘要）" show-overflow-tooltip />
-            <el-table-column label="相关性" width="90">
-              <template #default="{ row }">
-                <el-tag :type="row.score >= 0.7 ? 'success' : 'info'" size="small">{{ row.score.toFixed(2) }}</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-          <el-empty v-if="related.length === 0" description="暂无关联记忆" :image-size="50" />
-        </el-card>
-      </el-col>
-    </el-row>
+    <div v-loading="loading">
+      <template v-if="memory">
+        <el-row :gutter="16">
+          <el-col :xs="24" :lg="14">
+            <el-card header="记忆内容" class="mb-16">
+              <p class="content">{{ memory.content }}</p>
+              <el-divider />
+              <p class="meta">
+                类型：{{ memory.memory_type }}
+                · 创建：{{ memory.created_at || '-' }}
+                · 相关度：{{ (memory.score ?? 0).toFixed(2) }}
+              </p>
+              <div v-if="memory.tags && memory.tags.length" class="mt-8">
+                <el-tag v-for="t in memory.tags" :key="t" size="small" class="mr-4">{{ t }}</el-tag>
+              </div>
+            </el-card>
+            <el-card header="元数据" class="mb-16" v-if="hasMetadata">
+              <el-descriptions :column="1" size="small" border>
+                <el-descriptions-item v-for="(value, key) in memory.metadata" :key="key" :label="String(key)">
+                  {{ String(value) }}
+                </el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+          </el-col>
+          <el-col :xs="24" :lg="10">
+            <el-card header="实体抽取" class="mb-16" data-test="entities">
+              <el-table :data="entities" size="small">
+                <el-table-column prop="name" label="实体" />
+                <el-table-column prop="type" label="类型" width="110" />
+              </el-table>
+              <el-empty v-if="entities.length === 0" description="暂无实体" :image-size="50" />
+            </el-card>
+          </el-col>
+        </el-row>
+      </template>
+      <el-empty v-else-if="!loading" description="记忆不存在或已被删除" :image-size="60" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { http } from '@/core/api/http'
+
+interface MemoryDetail {
+  id: string
+  content: string
+  memory_type: string
+  user_id: string | null
+  session_id: string | null
+  agent_id: string | null
+  metadata: Record<string, unknown>
+  score: number | null
+  entities: Array<{ name: string; type: string }>
+  created_at: string | null
+  tags: string[]
+}
 
 const route = useRoute()
-const memory = {
-  id: route.params.id,
-  content: '用户偏好使用简洁的技术文档风格，并在检索质量评估中关注 faithfulness 与 context_precision 指标。',
-  type: 'text',
-  weight: 0.92,
-  created_at: '2026-08-25 10:00',
+const memory = ref<MemoryDetail | null>(null)
+const loading = ref(false)
+
+const entities = computed(() => memory.value?.entities || [])
+const hasMetadata = computed(
+  () => !!memory.value?.metadata && Object.keys(memory.value.metadata).length > 0,
+)
+
+async function load() {
+  loading.value = true
+  try {
+    const { data } = await http.get<{ code: number; message: string; data: MemoryDetail }>(
+      `/memory-proxy/memories/${route.params.id}`,
+    )
+    memory.value = data.data
+  } catch {
+    memory.value = null
+  } finally {
+    loading.value = false
+  }
 }
-const waypoints = [
-  { label: 'create · 记忆创建', time: '2026-08-25 10:00', type: 'primary' },
-  { label: 'access · 最近访问', time: '2026-08-25 14:20', type: 'success' },
-  { label: 'recall · 本次召回命中', time: '2026-08-25 15:00', type: 'warning' },
-]
-const related = [
-  { source: '文档库', content: '技术文档写作规范：结构清晰、示例先行', score: 0.86 },
-  { source: '会话', content: '讨论检索评估指标时的偏好', score: 0.72 },
-]
+
+onMounted(load)
 </script>
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
+.mt-8 { margin-top: 8px; }
+.mr-4 { margin-right: 4px; }
 .content { line-height: 1.8; white-space: pre-wrap; }
 .meta { color: var(--ob-text-secondary); font-size: 13px; }
 </style>

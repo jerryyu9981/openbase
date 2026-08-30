@@ -15,7 +15,7 @@ _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-def init_db(url: str, echo: bool = False, schema: str = "openbase") -> AsyncEngine:
+def init_db(url: str, echo: bool = False, schema: str | None = "openbase") -> AsyncEngine:
     """初始化全局异步引擎与 session 工厂.
 
     连接建立时自动设置 search_path 指向 openbase schema，
@@ -24,7 +24,8 @@ def init_db(url: str, echo: bool = False, schema: str = "openbase") -> AsyncEngi
     Args:
         url: 数据库连接串（asyncpg 驱动）。
         echo: 是否打印 SQL 日志。
-        schema: 目标 schema（默认 openbase）。
+        schema: 目标 schema（默认 openbase）；传 None 表示不绑定 schema
+            （SQLite 等无 schema 概念的场景）。
 
     Returns:
         全局 AsyncEngine 实例。
@@ -32,24 +33,27 @@ def init_db(url: str, echo: bool = False, schema: str = "openbase") -> AsyncEngi
     global _engine, _session_factory
     # 模型元数据绑定 schema：所有 SQL 显式带 "{schema}." 前缀，
     # 不依赖连接级 search_path，保证共享库内表隔离（最可靠方案）
-    from openbase.core.models import Base
+    if schema is not None:
+        from openbase.core.models import Base
 
-    Base.metadata.schema = schema
-    for table in Base.metadata.tables.values():
-        if table.schema is None:
-            table.schema = schema
+        Base.metadata.schema = schema
+        for table in Base.metadata.tables.values():
+            if table.schema is None:
+                table.schema = schema
 
     _engine = create_async_engine(url, echo=echo, connect_args={"timeout": 5})
 
-    from sqlalchemy import event
+    # PG 专用：连接时设置 search_path 隔离 schema；SQLite 无 schema 概念，跳过
+    if not url.startswith("sqlite"):
+        from sqlalchemy import event
 
-    @event.listens_for(_engine.sync_engine, "connect")
-    def _set_search_path(dbapi_conn, _record) -> None:
-        # 隐式事务中的 SET 会在连接回收时回滚，必须显式 commit 持久到连接
-        cursor = dbapi_conn.cursor()
-        cursor.execute(f'SET search_path TO "{schema}"')
-        cursor.close()
-        dbapi_conn.commit()
+        @event.listens_for(_engine.sync_engine, "connect")
+        def _set_search_path(dbapi_conn, _record) -> None:
+            # 隐式事务中的 SET 会在连接回收时回滚，必须显式 commit 持久到连接
+            cursor = dbapi_conn.cursor()
+            cursor.execute(f'SET search_path TO "{schema}"')
+            cursor.close()
+            dbapi_conn.commit()
 
     _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
     return _engine

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenBase 统一前端设计总览 - v1.2.0</title>
+<title>OpenBase 统一前端设计总览 - v1.4.0</title>
 <style>
   :root{--primary:#2563EB;--bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;--text:#0F172A;--sub:#475569;--ok:#16A34A;--warn:#D97706;--err:#DC2626;}
   *{margin:0;padding:0;box-sizing:border-box}
@@ -34,7 +34,7 @@
 <div class="wrap">
 <header>
   <h1>OpenBase 统一前端 · 设计总览</h1>
-  <p>版本 v1.2.0 · 四系统统一入口 · 动态模块架构 · 响应式三端（≥1280 / 768-1280 / &lt;768）</p>
+  <p>版本 v1.4.0 · 四系统统一入口 · 动态模块架构 · 统一网关增强（服务发现/聚合编排）· 响应式三端（≥1280 / 768-1280 / &lt;768）</p>
   <span class="badge">Vue 3 + TypeScript + Vite + Element Plus + Pinia + ECharts</span>
 </header>
 
@@ -116,7 +116,45 @@
   <div class="card"><h3>批量任务 /portrait/batch <span class="tag t-p1">P1</span></h3><p>导入（上传→预检查→执行→状态/错误明细）、导出（筛选/字段/格式/加密）。</p></div>
 </div>
 
-<footer>OpenBase v1.2.0 设计总览 · 页面与交互状态以《OpenBase-前端架构设计文档-v1.2.0》《OpenBase-UI设计文档-v1.2.0》为准</footer>
+<h2>三、v1.4.0 新增页面（26 项，P1 24 + P2 1 + 网关 2）</h2>
+<div class="note"><b>说明：</b>v1.4.0 为 P1 建议保留项全量补齐 + P2 保留 + 统一网关增强（VC-006）；生态工具链挂起（VC-007）。页面全部复用统一前端底座（布局/Design Token/公共组件），交互状态覆盖空态/加载/错误/成功/表单提交 5 类。Step 3 实现对照《前端架构设计文档 v1.4.0》《系统架构设计文档 v1.4.0》执行。</div>
+<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍OpenLLM 高级功能与系统管理（16 页，P1）</h3>
+<div class="grid">
+  <div class="card"><h3>开源模型市场 /openllm/market <span class="tag t-p1">P1</span></h3><p>分类/搜索/详情/一键下载部署（DT-14-01）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>下载管理 /openllm/downloads <span class="tag t-p1">P1</span></h3><p>任务队列/进度/暂停恢复/重试（DT-14-02）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>GPU 监控 /openllm/gpu <span class="tag t-p1">P1</span></h3><p>卡列表/利用率/显存/温度/趋势（DT-14-03）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>Prompt 模板 /openllm/prompt-templates <span class="tag t-p1">P1</span></h3><p>模板 CRUD/导入/启停/版本（DT-14-04）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>Prompt 实验 /openllm/prompt-experiments <span class="tag t-p1">P1</span></h3><p>实验/变体/流量分配/报表（DT-14-05）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>插件管理 /openllm/plugins <span class="tag t-p1">P1</span></h3><p>插件启停/内置工具查看（DT-14-06）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
+  <div class="card"><h3>工具调用监控 /openllm/tool-calls <span class="tag t-p1">P1</span></h3><p>调用链/取消/状态筛选（DT-14-07）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>A/B 测试 /openllm/ab-tests <span class="tag t-p1">P1</span></h3><p>实验列表/状态管理（DT-14-08）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>角色权限 /system/roles <span class="tag t-p1">P1</span></h3><p>角色 CRUD/权限清单/启停（DT-14-09）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>组织/团队/用户 /system/org <span class="tag t-p1">P1</span></h3><p>组织树/团队/用户 CRUD（DT-14-10）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>工作空间 /system/workspaces <span class="tag t-p1">P1</span></h3><p>CRUD/成员/Virtual Key 轮换（DT-14-11）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>配置管理 /system/config <span class="tag t-p1">P1</span></h3><p>配置编辑/热加载/导入导出（DT-14-12）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
+  <div class="card"><h3>审计日志 /system/audit <span class="tag t-p1">P1</span></h3><p>多维筛选/详情/异常报表（DT-14-13）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>EdgeRouter /system/edgerouter <span class="tag t-p1">P1</span></h3><p>组织/配额/适配器/审计（DT-14-14）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>文档中心 /system/docs <span class="tag t-p1">P1</span></h3><p>分组文档/阅读/搜索（DT-14-15）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>计费三页 /system/billing <span class="tag t-p1">P1</span></h3><p>概览/账单/配额告警（DT-14-16）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+</div>
+<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍OpenRAG / OpenMemory / DPS / P2（8 页，P1 7 + P2 1）</h3>
+<div class="grid">
+  <div class="card"><h3>RAG 管理概览+知识库后台 /openrag/admin <span class="tag t-p1">P1</span></h3><p>KPI/列表/后台删除（DT-14-17）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>RAG 控制台 /openrag/console <span class="tag t-p1">P1</span></h3><p>API 调试/接口文档/性能监控（DT-14-18）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
+  <div class="card"><h3>Memory 运维 /openmemory/ops <span class="tag t-p1">P1</span></h3><p>系统监控/API 测试/设置连接（DT-14-19）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
+  <div class="card"><h3>DPS 限流管理 /dps/rate-limit <span class="tag t-p1">P1</span></h3><p>配额/规则/熔断状态（DT-14-20）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>DPS API 管理 /dps/api-manage <span class="tag t-p1">P1</span></h3><p>端点 CRUD/调试/版本/错误码/导出（DT-14-21）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>DPS 权限管理 /dps/permission <span class="tag t-p1">P1</span></h3><p>角色/权限矩阵/租户（DT-14-22）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
+  <div class="card"><h3>DPS 系统监控 /dps/monitor <span class="tag t-p1">P1</span></h3><p>依赖健康/QPS/内存 CPU/告警（DT-14-23）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>P2 辅助页 /p2/assist <span class="tag t-p1">P2</span></h3><p>对比推荐/内容库/报表趋势/排名（DT-14-24，按可用标准）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+</div>
+<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍统一网关管理（2 页，P1）</h3>
+<div class="grid">
+  <div class="card"><h3>网关服务列表 /gateway/services <span class="tag t-p1">P1</span></h3><p>实例/健康徽标/权重，30s 轮询刷新，注册/下线（DT-14-25，RT-425）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
+  <div class="card"><h3>网关聚合测试 /gateway/aggregate <span class="tag t-p1">P1</span></h3><p>聚合步骤配置/发送/结果与错误展示；健康看板（DT-14-26，RT-426）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交 / 成功</b></div></div>
+</div>
+
+<footer>OpenBase v1.4.0 设计总览（26 项新页面）· 页面与交互状态以《OpenBase-前端架构设计文档-v1.4.0》《OpenBase-系统架构设计文档-v1.4.0》为准；v1.2.0 页面基线见上（一、二节）</footer>
 </div>
 </body>
 </html>

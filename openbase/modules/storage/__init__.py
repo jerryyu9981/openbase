@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, UploadFile
 from pydantic import BaseModel
@@ -61,11 +63,123 @@ class LocalStorageBackend:
         Path(storage_path).unlink(missing_ok=True)
 
 
-_backend = LocalStorageBackend(get_settings().storage_local_path)
+def _resolve_s3_config() -> dict[str, str]:
+    """解析 S3/MinIO 连接配置.
+
+    优先级：OPENBASE_STORAGE_S3_*（openbase 自有配置）> MINIO_*（.env.shared-infra 共享约定）> 默认。
+    """
+    return {
+        "endpoint": os.environ.get("OPENBASE_STORAGE_S3_ENDPOINT")
+        or os.environ.get("MINIO_ENDPOINT", ""),
+        "access_key": os.environ.get("OPENBASE_STORAGE_S3_ACCESS_KEY")
+        or os.environ.get("MINIO_ACCESS_KEY", "minioadmin"),
+        "secret_key": os.environ.get("OPENBASE_STORAGE_S3_SECRET_KEY")
+        or os.environ.get("MINIO_SECRET_KEY", "minioadmin"),
+        "bucket": os.environ.get("OPENBASE_STORAGE_S3_BUCKET") or "openbase",
+    }
+
+
+class S3StorageBackend:
+    """S3/MinIO 对象存储适配器（boto3 懒加载 + 配置驱动 + 本地回退）.
+
+    storage_path 使用 ``s3://{bucket}/{key}`` 引用，兼容 MinIO（S3 API）。
+    """
+
+    name = "s3"
+
+    def __init__(
+        self,
+        endpoint: str = "",
+        access_key: str = "minioadmin",
+        secret_key: str = "minioadmin",
+        bucket: str = "openbase",
+        region: str = "us-east-1",
+    ) -> None:
+        self._endpoint = endpoint
+        self._access_key = access_key
+        self._secret_key = secret_key
+        self._bucket = bucket
+        self._region = region
+        self._client: Any = None
+
+    @property
+    def client(self) -> Any:
+        """boto3 客户端（懒加载，MinIO 需 s3v4 签名）."""
+        if self._client is None:
+            import boto3  # 懒加载：未配置 S3 时无需安装依赖
+            from botocore.config import Config
+
+            self._client = boto3.client(
+                "s3",
+                endpoint_url=self._endpoint or None,
+                aws_access_key_id=self._access_key,
+                aws_secret_access_key=self._secret_key,
+                region_name=self._region,
+                config=Config(
+                    signature_version="s3v4",
+                    connect_timeout=5,
+                    retries={"max_attempts": 2},
+                ),
+            )
+        return self._client
+
+    def _ensure_bucket(self) -> None:
+        """确保 bucket 存在（幂等）. """
+        import botocore.exceptions
+
+        try:
+            self.client.head_bucket(Bucket=self._bucket)
+        except botocore.exceptions.ClientError:
+            self.client.create_bucket(Bucket=self._bucket)
+
+    @staticmethod
+    def _parse_path(storage_path: str) -> tuple[str, str]:
+        """解析 ``s3://{bucket}/{key}`` 引用."""
+        if not storage_path.startswith("s3://"):
+            raise ValueError(f"invalid s3 storage path: {storage_path}")
+        bucket, _, key = storage_path[5:].partition("/")
+        return bucket, key
+
+    def save(self, file_name: str, content: bytes) -> str:
+        """保存对象，返回 s3://{bucket}/{key} 引用."""
+        key = f"{uuid.uuid4().hex}_{file_name}"
+        self._ensure_bucket()
+        self.client.put_object(Bucket=self._bucket, Key=key, Body=content)
+        return f"s3://{self._bucket}/{key}"
+
+    def load(self, storage_path: str) -> bytes:
+        """读取对象内容."""
+        bucket, key = self._parse_path(storage_path)
+        response = self.client.get_object(Bucket=bucket, Key=key)
+        return response["Body"].read()
+
+    def delete(self, storage_path: str) -> None:
+        """删除对象（不存在时静默）."""
+        bucket, key = self._parse_path(storage_path)
+        self.client.delete_object(Bucket=bucket, Key=key)
+
+
+_backend: Any = None
 
 
 def get_backend():
-    """获取存储后端（v1.0.0 实现本地，MinIO/S3 适配器接口一致）."""
+    """获取存储后端（storage_backend=local|minio|s3 配置驱动，S3 不可用时回退本地）."""
+    global _backend
+    if _backend is None:
+        settings = get_settings()
+        if settings.storage_backend in ("s3", "minio"):
+            config = _resolve_s3_config()
+            if config["endpoint"]:
+                _backend = S3StorageBackend(**config)
+                logger.info("storage backend: %s (%s)", _backend.name, config["endpoint"])
+            else:
+                logger.warning(
+                    "storage_backend=%s but endpoint not configured, fallback to local",
+                    settings.storage_backend,
+                )
+                _backend = LocalStorageBackend(settings.storage_local_path)
+        else:
+            _backend = LocalStorageBackend(settings.storage_local_path)
     return _backend
 
 
