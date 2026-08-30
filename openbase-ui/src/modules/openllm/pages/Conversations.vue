@@ -41,8 +41,7 @@
         <el-form-item label="会话标题"><el-input v-model="newForm.title" placeholder="留空自动生成" /></el-form-item>
         <el-form-item label="模型" required>
           <el-select v-model="newForm.model" style="width: 100%">
-            <el-option label="gpt-4o" value="gpt-4o" />
-            <el-option label="qwen2.5-7b" value="qwen2.5-7b" />
+            <el-option v-for="m in modelOptions" :key="m" :label="m" :value="m" />
           </el-select>
         </el-form-item>
         <el-form-item label="系统提示"><el-input v-model="newForm.systemPrompt" type="textarea" :rows="2" placeholder="可选" /></el-form-item>
@@ -71,12 +70,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { llmApi, type ChatMessage as ApiChatMessage } from '@/core/api/llm'
 
 interface ChatMessage { id: number; role: 'user' | 'assistant'; content: string }
 interface Conversation {
-  id: number
+  id: string
   title: string
   model: string
   messages: number
@@ -84,6 +84,7 @@ interface Conversation {
   tokens?: number
   archived?: boolean
   chatMessages?: ChatMessage[]
+  _assistantId?: number
 }
 
 const keyword = ref('')
@@ -93,17 +94,49 @@ const newVisible = ref(false)
 const chatVisible = ref(false)
 const chatInput = ref('')
 const chatLoading = ref(false)
+const loading = ref(false)
+const error = ref('')
 const current = ref<Conversation | null>(null)
-const newForm = reactive({ title: '', model: 'gpt-4o', systemPrompt: '' })
+const newForm = reactive({ title: '', model: 'qwen2.5-7b', systemPrompt: '' })
+const modelOptions = ref<string[]>(['qwen2.5-7b'])
 
-const conversations = ref<Conversation[]>([
-  { id: 1, title: 'RAG 知识库测试对话', model: 'qwen2.5-7b', messages: 12, started_at: '2026-08-25 10:20', tokens: 3842, chatMessages: [
-    { id: 1, role: 'user', content: '介绍一下知识库检索流程' },
-    { id: 2, role: 'assistant', content: '知识库检索分为：文档切分 → 向量化 → 检索召回 → 重排 → 生成回答五个阶段。' },
-  ] },
-  { id: 2, title: '多轮需求讨论', model: 'gpt-4o', messages: 8, started_at: '2026-08-25 09:10', tokens: 5210 },
-  { id: 3, title: 'SQL 生成练习', model: 'gpt-4o', messages: 5, started_at: '2026-08-24 16:45', tokens: 2980, archived: true },
-])
+const conversations = ref<Conversation[]>([])
+
+async function loadModelOptions() {
+  try {
+    const { models } = await llmApi.fetchModels()
+    const ids = (models || []).map((m) => String(m.id || '')).filter(Boolean)
+    if (ids.length) modelOptions.value = ids
+  } catch {
+    /* 模型选项加载失败时保留默认值 */
+  }
+}
+
+async function loadConversations() {
+  loading.value = true
+  error.value = ''
+  try {
+    const { items } = await llmApi.listConversations({ skip: 0, limit: 100 })
+    conversations.value = (items || []).map((c) => ({
+      id: String(c.id || ''),
+      title: String(c.title || '未命名会话'),
+      model: String(c.model || ''),
+      messages: Number(c.messages || 0),
+      started_at: String(c.started_at || ''),
+      tokens: c.tokens ? Number(c.tokens) : undefined,
+      archived: Boolean(c.archived),
+      chatMessages: [],
+    }))
+  } catch {
+    error.value = '会话列表加载失败（OpenLLM 会话端点为 JWT 通道，M1 待完善），请检查 llm-proxy 连通性'
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(() => {
+  loadConversations()
+  loadModelOptions()
+})
 
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
@@ -116,52 +149,107 @@ const filtered = computed(() => {
 
 function openNew() {
   newForm.title = ''
-  newForm.model = 'gpt-4o'
+  newForm.model = modelOptions.value[0] || 'qwen2.5-7b'
   newForm.systemPrompt = ''
   newVisible.value = true
 }
-function createConversation() {
-  conversations.value.unshift({
-    id: Date.now(),
-    title: newForm.title.trim() || `新会话 ${new Date().toLocaleTimeString()}`,
-    model: newForm.model,
-    messages: 0,
-    started_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-    tokens: 0,
-    chatMessages: [],
-  })
-  newVisible.value = false
-  ElMessage.success('会话已创建')
+async function createConversation() {
+  try {
+    const created = await llmApi.createConversation({
+      title: newForm.title.trim() || undefined,
+      model: newForm.model,
+      system_prompt: newForm.systemPrompt || undefined,
+    })
+    conversations.value.unshift({
+      id: String(created.id || Date.now()),
+      title: String(created.title || newForm.title.trim() || '新会话'),
+      model: String(created.model || newForm.model),
+      messages: 0,
+      started_at: String(created.started_at || ''),
+      chatMessages: [],
+    })
+    newVisible.value = false
+    ElMessage.success('会话已创建')
+  } catch {
+    ElMessage.error('会话创建失败（OpenLLM 会话端点为 JWT 通道，M1 待完善）')
+  }
 }
 function openChat(row: Conversation) {
   current.value = row
   if (!row.chatMessages) row.chatMessages = []
   chatVisible.value = true
 }
-function sendMessage() {
+async function sendMessage() {
   if (!chatInput.value.trim() || !current.value) return
-  current.value.chatMessages!.push({ id: Date.now(), role: 'user', content: chatInput.value.trim() })
+  const text = chatInput.value.trim()
+  current.value.chatMessages!.push({ id: Date.now(), role: 'user', content: text })
   current.value.messages += 1
   chatInput.value = ''
   chatLoading.value = true
-  setTimeout(() => {
-    if (current.value) {
-      current.value.chatMessages!.push({ id: Date.now() + 1, role: 'assistant', content: '（模拟流式回复）已收到您的消息，该功能对接后由真实模型生成。' })
-      current.value.messages += 1
+  const model = current.value.model || modelOptions.value[0] || 'qwen2.5-7b'
+  const history: ApiChatMessage[] = (current.value.chatMessages || []).map((m) => ({ role: m.role, content: m.content }))
+  let reply = ''
+  try {
+    await llmApi.sendChatStream({ model, messages: history }, (evt) => {
+      if (evt.event === 'chunk') {
+        try {
+          const parsed = JSON.parse(evt.data)
+          const delta = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.message?.content || ''
+          if (delta) {
+              reply += delta
+              const msgs = current.value?.chatMessages || []
+              const last = msgs.length ? msgs[msgs.length - 1] : undefined
+              if (last && last.role === 'assistant' && last.id === current.value?._assistantId) {
+                last.content = reply
+              } else {
+              const id = Date.now()
+              if (current.value) current.value._assistantId = id
+              current.value?.chatMessages?.push({ id, role: 'assistant', content: reply })
+            }
+          }
+        } catch {
+          /* 非 chunk JSON 忽略 */
+        }
+      } else if (evt.event === 'error') {
+        ElMessage.error('对话流异常，请重试')
+      }
+    })
+    if (!reply && current.value) {
+      current.value.chatMessages!.push({ id: Date.now(), role: 'assistant', content: '（无回复，请检查模型可用性）' })
     }
+  } catch {
+    ElMessage.error('对话失败，请确认 OpenLLM 服务（8001）可用')
+  } finally {
     chatLoading.value = false
-  }, 500)
+  }
 }
-function toggleArchive(row: Conversation) {
-  row.archived = !row.archived
-  ElMessage.success(`已${row.archived ? '归档' : '取消归档'}：${row.title}`)
+async function toggleArchive(row: Conversation) {
+  try {
+    await llmApi.archiveConversation(row.id, { archived: !row.archived })
+    row.archived = !row.archived
+    ElMessage.success(`已${row.archived ? '归档' : '取消归档'}：${row.title}`)
+  } catch {
+    ElMessage.error('归档操作失败（OpenLLM 会话端点为 JWT 通道，M1 待完善）')
+  }
 }
-function remove(id: number) {
-  conversations.value = conversations.value.filter((c) => c.id !== id)
-  ElMessage.success('对话已删除')
+async function remove(id: string) {
+  try {
+    await llmApi.deleteConversation(id)
+    conversations.value = conversations.value.filter((c) => c.id !== id)
+    ElMessage.success('对话已删除')
+  } catch {
+    ElMessage.error('删除失败（OpenLLM 会话端点为 JWT 通道，M1 待完善）')
+  }
 }
-function batchDelete() {
+async function batchDelete() {
   const ids = selection.value.map((s) => s.id)
+  for (const id of ids) {
+    try {
+      await llmApi.deleteConversation(id)
+    } catch {
+      /* 单条失败继续 */
+    }
+  }
   conversations.value = conversations.value.filter((c) => !ids.includes(c.id))
   ElMessage.success(`已删除 ${ids.length} 条对话`)
 }

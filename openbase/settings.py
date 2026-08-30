@@ -36,6 +36,8 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "gateway",
     # v1.4.2 四维身份管理（R-375 用户管理 CRUD）
     "users",
+    # v1.4.3 OpenLLM 对接（R-379：认证注入 + llm-proxy 转发）
+    "llm_proxy",
 )
 
 
@@ -111,6 +113,12 @@ class Settings(BaseSettings):
     memory_api_key: str = "openbase-gw-key-20260830"
     memory_upstream_base: str = "http://127.0.0.1:8020"
     memory_upstream_timeout: float = 20.0
+
+    # ---- OpenLLM 对接（v1.4.3 R-379，API Key Bearer 注入转发） ----
+    llm_api_key: str = "sk-openllm-openbase-gateway-key"
+    llm_upstream_base: str = "http://127.0.0.1:8001"
+    llm_upstream_timeout: float = 20.0
+    llm_stream_timeout: float = 120.0
 
     # ---- 模块启停（内部状态） ----
     _enabled_modules: set[str] = set()

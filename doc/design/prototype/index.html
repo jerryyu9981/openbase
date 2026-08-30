@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenBase 统一前端设计总览 - v1.4.0</title>
+<title>OpenBase 统一前端设计总览 - v1.4.3</title>
 <style>
   :root{--primary:#2563EB;--bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;--text:#0F172A;--sub:#475569;--ok:#16A34A;--warn:#D97706;--err:#DC2626;}
   *{margin:0;padding:0;box-sizing:border-box}
@@ -154,7 +154,17 @@
   <div class="card"><h3>网关聚合测试 /gateway/aggregate <span class="tag t-p1">P1</span></h3><p>聚合步骤配置/发送/结果与错误展示；健康看板（DT-14-26，RT-426）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交 / 成功</b></div></div>
 </div>
 
-<footer>OpenBase v1.4.0 设计总览（26 项新页面）· 页面与交互状态以《OpenBase-前端架构设计文档-v1.4.0》《OpenBase-系统架构设计文档-v1.4.0》为准；v1.2.0 页面基线见上（一、二节）</footer>
+<h2>三、v1.4.3 OpenLLM 对接 · 2 页真实化（FR-143-05/06，R-379）</h2>
+<div class="note">v1.4.3 为 OpenLLM 系统对接（1.4.x 逐个系统对接线第 1 站）：模型管理/对话管理 2 页 mock 替换为真实 API（走 OpenBase llm-proxy，前端零密钥接触）。设计依据《OpenBase-UI设计文档-v1.4.3》《OpenBase-API接口设计文档-v1.4.3》《OpenBase-第三方集成设计文档-v1.4.3》。</div>
+<div class="grid">
+  <div class="card"><h3>模型管理页 /openllm/models <span class="tag t-p1">P1</span></h3><p>GET /api/v1/llm-proxy/models 真实数据（名称/Provider/类型/能力/定价/状态）；详情走 models/{id}；写操作按 OpenLLM 能力适配（默认禁用，缺口登记任务书）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 成功</b></div>
+    <details><summary>交互要点</summary><ul><li>加载态：表格 loading + 搜索防抖</li><li>错误态：请求失败提示 + 重试</li><li>空态：el-empty「暂无数据」</li></ul></details></div>
+  <div class="card"><h3>对话管理页 /openllm/conversations <span class="tag t-p1">P1</span></h3><p>GET /api/v1/llm-proxy/conversations 真实会话数据；新建/归档/删除映射会话端点；聊天视图内嵌 SSE 流式对话（routing→chunk→done 增量渲染）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 流式</b></div>
+    <details><summary>交互要点</summary><ul><li>流式态：输入禁用 + 增量渲染 + 停止按钮</li><li>流中断：错误提示 + 重试</li><li>表单提交态：按钮 loading 禁用</li></ul></details></div>
+  <div class="card"><h3>llm-proxy API 契约（12 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/llm-proxy/models · chat · chat/stream(SSE) · health · conversations*（OpenBase JWT；内层注入 Bearer sk-openllm-）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · SSE 逐事件透传</b></div></div>
+</div>
+
+<footer>OpenBase v1.4.3 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 对接 2 页真实化）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.3》《OpenBase-API接口设计文档-v1.4.3》为准；Step 4 E2E 断言以交互状态清单为基线</footer>
 </div>
 </body>
 </html>

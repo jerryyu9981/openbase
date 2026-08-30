@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="page-toolbar">
-      <span class="page-title" data-test="admin-title">系统管理</span>
-      <span class="tab-hint">TD-13-31 管理后台</span>
+      <span class="page-title" data-test="admin-title">记忆维护</span>
+      <span class="tab-hint">记忆管理后台：概览统计 + 运行监控（真实 OpenMemory 数据）+ 记忆维护操作</span>
     </div>
     <el-alert
       v-if="errorMsg"
@@ -16,62 +16,20 @@
     />
     <div v-loading="loading">
       <el-tabs v-model="activeTab" data-test="admin-tabs" @tab-change="handleTabChange">
-        <el-tab-pane label="存储设置" name="storage">
-          <el-card class="mb-16">
-            <template #header>存储引擎</template>
-            <el-form label-width="110px">
-              <el-form-item label="当前引擎">
-                <el-select v-model="storageEngine" style="width: 260px" data-test="storage-engine">
-                  <el-option label="向量库（Milvus）" value="向量库" />
-                  <el-option label="关系库（PostgreSQL）" value="关系库" />
-                </el-select>
-              </el-form-item>
-            </el-form>
-            <el-empty v-if="!loading && !storageStats" description="暂无该引擎的存储数据" data-test="storage-empty" />
-            <template v-else>
-              <div class="storage-info">
-                <span class="storage-label">已用容量</span>
-                <el-progress
-                  :percentage="storageStats?.used ?? 0"
-                  :status="(storageStats?.used ?? 0) >= 90 ? 'exception' : undefined"
-                  data-test="storage-progress"
-                />
-                <div class="storage-detail" data-test="storage-detail">
-                  共 {{ storageStats?.total }} · {{ storageStats?.detail }}
-                </div>
-              </div>
-              <el-popconfirm title="确认清理该引擎的过期数据？该操作不可撤销" @confirm="clearStorage">
-                <template #reference>
-                  <el-button type="danger" plain data-test="clear-storage">清理过期数据</el-button>
-                </template>
-              </el-popconfirm>
-            </template>
-          </el-card>
-          <el-card>
-            <template #header>容量概览</template>
-            <el-table :data="engineRows" data-test="engine-table" empty-text="暂无引擎数据">
-              <el-table-column prop="engine" label="引擎" width="180" />
-              <el-table-column label="容量使用" min-width="220">
-                <template #default="{ row }">
-                  <el-progress :percentage="row.used" :color="row.used >= 90 ? '#f56c6c' : undefined" />
-                </template>
-              </el-table-column>
-              <el-table-column prop="detail" label="统计" min-width="200" />
-              <el-table-column label="操作" width="100">
-                <template #default="{ row }">
-                  <el-popconfirm title="确认清理该引擎的过期数据？" @confirm="clearEngine(row)">
-                    <template #reference><el-button link type="danger" data-test="clear-engine">清理</el-button></template>
-                  </el-popconfirm>
-                </template>
-              </el-table-column>
-            </el-table>
-          </el-card>
-        </el-tab-pane>
-
-        <el-tab-pane label="运行监控" name="monitor">
-          <el-row :gutter="16">
-            <el-col v-for="card in metricCards" :key="card.label" :xs="12" :lg="6">
-              <el-card class="metric-card" data-test="metric-card">
+        <!-- 记忆概览：真实统计（按存储层级 memory_type：persistent/session/episode） -->
+        <el-tab-pane label="记忆概览" name="overview">
+          <el-alert
+            type="info"
+            :closable="false"
+            show-icon
+            class="mb-16"
+            title="记忆类型说明"
+            description="OpenMemory 的 memory_type 表示存储层级（persistent 持久 / session 会话 / episode 情景），非内容模态；内容模态（文本/图像/音频）由写入时的 metadata.source 或标签区分。"
+            data-test="admin-type-hint"
+          />
+          <el-row :gutter="16" class="mb-16">
+            <el-col v-for="card in overviewCards" :key="card.label" :xs="12" :lg="6">
+              <el-card class="metric-card" data-test="overview-card">
                 <div class="metric-label">{{ card.label }}</div>
                 <div class="metric-value" :style="card.danger ? 'color: var(--el-color-danger)' : ''">
                   {{ card.value }}<span class="metric-unit">{{ card.unit }}</span>
@@ -79,42 +37,121 @@
               </el-card>
             </el-col>
           </el-row>
-          <el-card class="mt-16" header="实时监控曲线（QPS / 内存 / 延迟）" data-test="monitor-chart">
-            <div ref="chartRef" class="chart" />
+          <el-card class="mb-16">
+            <template #header>存储层级分布（memory_type）</template>
+            <el-table :data="typeRows" stripe data-test="type-table" empty-text="暂无记忆数据">
+              <el-table-column prop="type" label="存储层级" width="180" />
+              <el-table-column label="数量" width="140">
+                <template #default="{ row }">{{ row.count }}</template>
+              </el-table-column>
+              <el-table-column label="占比" min-width="220">
+                <template #default="{ row }">
+                  <el-progress :percentage="row.percent" :stroke-width="10" />
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+          <el-card>
+            <template #header>内容来源分布（metadata.source）</template>
+            <el-table :data="sourceRows" stripe data-test="source-table" empty-text="暂无来源标记">
+              <el-table-column prop="source" label="来源" width="200" />
+              <el-table-column label="数量" width="140">
+                <template #default="{ row }">{{ row.count }}</template>
+              </el-table-column>
+              <el-table-column label="说明" min-width="220">
+                <template #default="{ row }">{{ row.desc }}</template>
+              </el-table-column>
+            </el-table>
           </el-card>
         </el-tab-pane>
 
-        <el-tab-pane label="配置管理" name="config">
-          <el-card class="config-card">
-            <template #header>记忆配置</template>
-            <el-form label-width="170px" data-test="config-form">
-              <el-form-item label="默认记忆保留天数" required>
-                <el-input-number v-model="config.retentionDays" :min="1" :max="3650" data-test="retention-days" />
-                <span class="form-unit">天</span>
-              </el-form-item>
-              <el-form-item label="最大记忆条数" required>
-                <el-input-number v-model="config.maxMemories" :min="1" :max="100000" :step="100" data-test="max-memories" />
-                <span class="form-unit">条</span>
-              </el-form-item>
-              <el-form-item label="相似度阈值">
-                <div class="slider-wrap">
-                  <el-slider
-                    v-model="config.similarityThreshold"
-                    :min="0.5"
-                    :max="0.95"
-                    :step="0.01"
-                    :format-tooltip="(value: number) => value.toFixed(2)"
-                    data-test="similarity-threshold"
-                  />
-                  <span class="slider-value">{{ config.similarityThreshold.toFixed(2) }}</span>
+        <!-- 运行监控：真实 /monitor 数据 -->
+        <el-tab-pane label="运行监控" name="monitor">
+          <div class="page-toolbar">
+            <el-select v-model="monitorRange" style="width: 120px" data-test="monitor-range" @change="loadMonitor">
+              <el-option label="1 小时" value="1h" />
+              <el-option label="6 小时" value="6h" />
+              <el-option label="24 小时" value="24h" />
+              <el-option label="7 天" value="7d" />
+              <el-option label="30 天" value="30d" />
+            </el-select>
+            <el-button plain :loading="loading" data-test="monitor-refresh" @click="loadMonitor">刷新</el-button>
+          </div>
+          <el-row :gutter="16" class="mb-16">
+            <el-col v-for="card in monitorCards" :key="card.label" :xs="12" :lg="6">
+              <el-card class="metric-card" data-test="monitor-card">
+                <div class="metric-label">{{ card.label }}</div>
+                <div class="metric-value" :style="card.danger ? 'color: var(--el-color-danger)' : ''">
+                  {{ card.value }}<span class="metric-unit">{{ card.unit }}</span>
                 </div>
-                <div class="slider-desc">写入记忆时用于判定是否与已有记忆合并的相似度下限</div>
+              </el-card>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :xs="24" :lg="12">
+              <el-card class="mb-16">
+                <template #header>状态码分布</template>
+                <el-table :data="statusRows" stripe size="small" data-test="status-table">
+                  <el-table-column prop="code" label="状态码" width="120" />
+                  <el-table-column prop="count" label="数量" min-width="120" />
+                </el-table>
+              </el-card>
+            </el-col>
+            <el-col :xs="24" :lg="12">
+              <el-card>
+                <template #header>高频端点</template>
+                <el-table :data="endpointRows" stripe size="small" data-test="endpoint-table">
+                  <el-table-column prop="endpoint" label="端点" min-width="180" show-overflow-tooltip />
+                  <el-table-column prop="count" label="调用次数" width="110" />
+                </el-table>
+              </el-card>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+
+        <!-- 记忆维护 -->
+        <el-tab-pane label="记忆维护" name="maintain">
+          <el-card class="mb-16">
+            <template #header>批量清理</template>
+            <el-form label-width="140px" @submit.prevent>
+              <el-form-item label="按类型清理">
+                <el-select v-model="cleanType" style="width: 200px" data-test="clean-type">
+                  <el-option label="文本记忆" value="text" />
+                  <el-option label="图像记忆" value="image" />
+                  <el-option label="音频记忆" value="audio" />
+                </el-select>
+                <el-button type="danger" plain class="ml-12" :loading="cleaning" data-test="clean-run" @click="cleanByType">
+                  清理该类型记忆
+                </el-button>
+                <span class="tab-hint">将对该类型记忆逐条执行 forget（软删除）</span>
               </el-form-item>
             </el-form>
-            <div class="config-actions">
-              <el-button data-test="reset-config" @click="resetConfig">恢复默认</el-button>
-              <el-button type="primary" data-test="save-config" @click="saveConfig">保存配置</el-button>
-            </div>
+          </el-card>
+          <el-card>
+            <template #header>当前记忆清单（按类型过滤）</template>
+            <el-table :data="memories" stripe data-test="maintain-table" empty-text="暂无匹配记忆">
+              <el-table-column label="记忆内容（摘要）" min-width="220" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.content }}</template>
+              </el-table-column>
+              <el-table-column label="类型" width="100">
+                <template #default="{ row }"><el-tag size="small">{{ row.memory_type }}</el-tag></template>
+              </el-table-column>
+              <el-table-column label="标签" min-width="120">
+                <template #default="{ row }">
+                  <el-tag v-for="t in row.tags" :key="t" size="small" type="info" class="mr-4">{{ t }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="100" fixed="right">
+                <template #default="{ row }">
+                  <el-popconfirm title="确认删除该记忆？" @confirm="removeOne(row.memory_id)">
+                    <template #reference>
+                      <el-button link type="danger" data-test="maintain-delete">删除</el-button>
+                    </template>
+                  </el-popconfirm>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-if="!loading && memories.length === 0" description="暂无匹配的记忆" :image-size="60" />
           </el-card>
         </el-tab-pane>
       </el-tabs>
@@ -123,125 +160,201 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import * as echarts from 'echarts'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { http } from '@/core/api/http'
 
-interface StorageStats {
-  used: number
-  total: string
-  detail: string
+interface MemoryRow {
+  memory_id: string
+  content: string
+  memory_type: string
+  tags: string[]
 }
 
-const activeTab = ref('monitor')
-const loading = ref(true)
+interface MemoryListData {
+  items: MemoryRow[]
+  total: number
+}
+
+interface MonitorData {
+  range: string
+  total_requests: number
+  error_count: number
+  error_rate: number
+  avg_latency_ms: number
+  p95_latency_ms: number
+  requests_per_minute: number
+  status_distribution: Record<string, number>
+  top_endpoints: Array<{ endpoint: string; count: number }>
+}
+
+const activeTab = ref('overview')
+const loading = ref(false)
+const cleaning = ref(false)
 const errorMsg = ref('')
 
-// TD-13-31 管理后台：存储设置
-const storageEngine = ref('向量库')
-const storageData: Record<string, StorageStats> = {
-  向量库: { used: 68, total: '120 GB', detail: '向量条数 8,420,000 · 索引分片 12' },
-  关系库: { used: 42, total: '80 GB', detail: '关系条数 1,280,000 · 数据表 96 张' },
+const memories = ref<MemoryRow[]>([])
+const monitor = ref<MonitorData | null>(null)
+const monitorRange = ref('24h')
+const cleanType = ref('text')
+
+// 概览统计（从真实列表计算，按存储层级 memory_type + 内容来源 source）
+const overviewCards = computed(() => {
+  const total = memories.value.length
+  const layers = new Map<string, number>()
+  for (const m of memories.value) {
+    layers.set(m.memory_type, (layers.get(m.memory_type) || 0) + 1)
+  }
+  return [
+    { label: '记忆总数', value: total.toLocaleString(), unit: ' 条', danger: false },
+    { label: '持久记忆', value: String(layers.get('persistent') || 0), unit: ' 条', danger: false },
+    { label: '会话记忆', value: String(layers.get('session') || 0), unit: ' 条', danger: false },
+    { label: '情景记忆', value: String(layers.get('episode') || 0), unit: ' 条', danger: false },
+  ]
+})
+
+const typeRows = computed(() => {
+  const layers = new Map<string, number>()
+  for (const m of memories.value) {
+    layers.set(m.memory_type, (layers.get(m.memory_type) || 0) + 1)
+  }
+  const total = memories.value.length || 1
+  return [...layers.entries()].map(([type, count]) => ({
+    type,
+    count,
+    percent: Math.round((count / total) * 100),
+  }))
+})
+
+// 内容来源分布：metadata.source（text/image/audio/audio_transcription 等）
+const SOURCE_DESC: Record<string, string> = {
+  text: '文本记忆（常规 remember）',
+  image: '图像记忆（memories/image 上传）',
+  audio: '音频记忆（audio/transcribe 转写）',
+  audio_transcription: '语音记忆（remember-with-audio）',
+  mobile: '移动端写入',
+  web: 'Web 端写入',
+  default: '未标记来源',
 }
 
-const storageStats = computed<StorageStats | undefined>(() => storageData[storageEngine.value])
+const sourceRows = computed(() => {
+  const sources = new Map<string, number>()
+  for (const m of memories.value) {
+    const src = (m as unknown as { metadata?: { source?: string } })?.metadata?.source || 'default'
+    sources.set(src, (sources.get(src) || 0) + 1)
+  }
+  return [...sources.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([source, count]) => ({
+      source: source === 'default' ? '（未标记）' : source,
+      count,
+      desc: SOURCE_DESC[source] || '其他来源',
+    }))
+})
 
-const engineRows = computed(() =>
-  Object.entries(storageData).map(([engine, stats]) => ({ engine, ...stats })),
+// 监控卡片（真实 monitor 数据）
+const monitorCards = computed(() => {
+  const m = monitor.value
+  return [
+    { label: '请求总数', value: (m?.total_requests ?? 0).toLocaleString(), unit: ' 次', danger: false },
+    { label: '错误率', value: ((m?.error_rate ?? 0) * 100).toFixed(1), unit: ' %', danger: (m?.error_rate ?? 0) > 0.01 },
+    { label: '平均延迟', value: String(Math.round(m?.avg_latency_ms ?? 0)), unit: ' ms', danger: false },
+    { label: 'P95 延迟', value: String(Math.round(m?.p95_latency_ms ?? 0)), unit: ' ms', danger: (m?.p95_latency_ms ?? 0) > 1000 },
+  ]
+})
+
+const statusRows = computed(() =>
+  Object.entries(monitor.value?.status_distribution || {}).map(([code, count]) => ({ code, count })),
 )
 
-function clearStorage() {
-  const stats = storageStats.value
-  const freed = stats ? Math.round(stats.used * 0.18) : 0
-  ElMessage.success(`「${storageEngine.value}」清理任务已提交，预计释放约 ${freed} GB 空间`)
+const endpointRows = computed(() => monitor.value?.top_endpoints || [])
+
+async function loadMemories() {
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    const { data } = await http.get<{ code: number; message: string; data: MemoryListData }>(
+      '/memory-proxy/memories',
+      { params: { page: 1, page_size: 100 } },
+    )
+    memories.value = data.data?.items || []
+  } catch (e) {
+    memories.value = []
+    errorMsg.value = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || '记忆列表加载失败'
+  } finally {
+    loading.value = false
+  }
 }
 
-function clearEngine(row: { engine: string }) {
-  ElMessage.success(`「${row.engine}」清理任务已提交`)
+async function loadMonitor() {
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    const { data } = await http.get<{ code: number; message: string; data: MonitorData }>(
+      '/memory-proxy/monitor',
+      { params: { range: monitorRange.value } },
+    )
+    monitor.value = data.data || null
+  } catch (e) {
+    monitor.value = null
+    errorMsg.value = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || '监控数据加载失败'
+  } finally {
+    loading.value = false
+  }
 }
 
-// TD-13-31 管理后台：运行监控
-const metricCards = ref([
-  { label: '当前 QPS', value: '1,286', unit: ' req/s', danger: false },
-  { label: '内存占用', value: '2.4', unit: ' GB', danger: true },
-  { label: 'P95 延迟', value: '186', unit: ' ms', danger: false },
-  { label: '存储 IO', value: '68', unit: ' %', danger: false },
-])
-
-const chartRef = ref<HTMLDivElement>()
-let chart: echarts.ECharts | null = null
-
-const chartData = {
-  x: ['10:00', '10:10', '10:20', '10:30', '10:40', '10:50', '11:00', '11:10', '11:20', '11:30', '11:40', '11:50', '12:00'],
-  qps: [820, 940, 1105, 980, 1286, 1210, 1350, 1180, 1245, 1390, 1310, 1420, 1286],
-  memory: [1.8, 1.9, 2.0, 1.9, 2.1, 2.2, 2.3, 2.2, 2.3, 2.4, 2.3, 2.4, 2.4],
-  latency: [120, 145, 168, 152, 186, 175, 205, 178, 190, 210, 195, 220, 186],
+async function removeOne(memoryId: string) {
+  try {
+    const { data } = await http.post<{ code: number; message: string }>('/memory-proxy/forget', {
+      memory_id: memoryId,
+      user_id: '',
+    })
+    if (data.code === 0) {
+      ElMessage.success('记忆已删除')
+      await loadMemories()
+    } else {
+      ElMessage.error(data.message || '删除失败')
+    }
+  } catch (e) {
+    ElMessage.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message || '删除失败')
+  }
 }
 
-function renderChart() {
-  if (!chartRef.value) return
-  chart = chart || echarts.init(chartRef.value)
-  chart.setOption({
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['QPS', '内存(GB)', '延迟(ms)'], top: 0 },
-    grid: { left: 56, right: 24, top: 44, bottom: 30 },
-    xAxis: { type: 'category', boundaryGap: false, data: chartData.x },
-    yAxis: [
-      { type: 'value', name: 'QPS' },
-      { type: 'value', name: '内存/延迟' },
-    ],
-    series: [
-      { name: 'QPS', type: 'line', smooth: true, yAxisIndex: 0, data: chartData.qps, areaStyle: { opacity: 0.12 } },
-      { name: '内存(GB)', type: 'line', smooth: true, yAxisIndex: 1, data: chartData.memory },
-      { name: '延迟(ms)', type: 'line', smooth: true, yAxisIndex: 1, data: chartData.latency },
-    ],
-  })
-}
-
-function handleResize() {
-  chart?.resize()
+async function cleanByType() {
+  const targets = memories.value.filter((m) => m.memory_type === cleanType.value)
+  if (targets.length === 0) {
+    ElMessage.info('该类型暂无记忆')
+    return
+  }
+  cleaning.value = true
+  try {
+    let ok = 0
+    for (const m of targets) {
+      try {
+        const { data } = await http.post<{ code: number; message: string }>('/memory-proxy/forget', {
+          memory_id: m.memory_id,
+          user_id: '',
+        })
+        if (data.code === 0) ok += 1
+      } catch {
+        // 单条失败继续
+      }
+    }
+    ElMessage.success(`已清理 ${ok}/${targets.length} 条 ${cleanType.value} 记忆`)
+    await loadMemories()
+  } finally {
+    cleaning.value = false
+  }
 }
 
 function handleTabChange(name: string | number) {
-  if (name === 'monitor') {
-    window.setTimeout(() => {
-      renderChart()
-      chart?.resize()
-    }, 50)
-  }
-}
-
-// TD-13-31 管理后台：配置管理
-const DEFAULT_CONFIG = { retentionDays: 30, maxMemories: 500, similarityThreshold: 0.72 }
-const config = reactive({ ...DEFAULT_CONFIG })
-
-function resetConfig() {
-  Object.assign(config, DEFAULT_CONFIG)
-  ElMessage.info('已恢复默认配置')
-}
-
-function saveConfig() {
-  if (config.retentionDays < 1 || config.maxMemories < 1) {
-    errorMsg.value = '保留天数与最大记忆条数必须为不小于 1 的正整数'
-    return
-  }
-  errorMsg.value = ''
-  ElMessage.success('配置已保存，将于 30 秒后生效')
+  if (name === 'monitor') loadMonitor()
+  if (name === 'maintain' || name === 'overview') loadMemories()
 }
 
 onMounted(() => {
-  // 模拟拉取管理数据
-  window.setTimeout(() => {
-    loading.value = false
-    renderChart()
-  }, 500)
-  window.addEventListener('resize', handleResize)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
-  chart?.dispose()
-  chart = null
+  loadMemories()
+  loadMonitor()
 })
 </script>
 
@@ -250,20 +363,10 @@ onBeforeUnmount(() => {
 .page-title { font-size: 16px; font-weight: 600; }
 .tab-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
-.storage-info { margin-bottom: 16px; }
-.storage-label { display: block; color: var(--ob-text-secondary); font-size: 13px; margin-bottom: 6px; }
-.storage-detail { color: var(--ob-text-secondary); font-size: 13px; margin-top: 6px; }
+.mr-4 { margin-right: 4px; }
+.ml-12 { margin-left: 12px; }
 .metric-card { text-align: center; }
 .metric-label { color: var(--ob-text-secondary); font-size: 13px; }
 .metric-value { font-size: 22px; font-weight: 600; margin-top: 6px; }
 .metric-unit { font-size: 13px; font-weight: 400; color: var(--ob-text-secondary); margin-left: 2px; }
-.mt-16 { margin-top: 16px; }
-.chart { height: 320px; }
-.config-card { max-width: 720px; }
-.form-unit { margin-left: 8px; color: var(--ob-text-secondary); font-size: 13px; }
-.slider-wrap { display: flex; align-items: center; gap: 12px; width: 100%; }
-.slider-wrap .el-slider { flex: 1; }
-.slider-value { color: var(--ob-text-secondary); font-size: 13px; min-width: 40px; text-align: right; }
-.slider-desc { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }
-.config-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
 </style>

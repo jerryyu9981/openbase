@@ -42,6 +42,8 @@ for module in (
     "gateway",
     # v1.4.2 四维身份管理（R-375 用户管理，R-374 租户已在上方启用）
     "users",
+    # v1.4.3 OpenLLM 对接（R-379：llm-proxy 认证注入 + 转发）
+    "llm_proxy",
 ):
     settings.enable_module(module)
 

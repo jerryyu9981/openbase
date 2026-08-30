@@ -21,6 +21,11 @@ from openbase.core.deps.auth import IdentityContext  # noqa: F401 - build_audit_
 logger = logging.getLogger("openbase.audit")
 
 router = APIRouter(tags=["health"])
+api_router = APIRouter(prefix="/api/v1", tags=["audit"])
+
+# 供 init_app 挂载：audit 记录走 /api/v1 前缀，与前端 baseURL 对齐（R-380 走查修复）；
+# 根路径 /health 保留在 router 上
+extra_routers = [api_router]
 
 
 @dataclass
@@ -278,7 +283,7 @@ async def health() -> dict:
     return {"status": "ok"}
 
 
-@router.get("/audit/records")
+@api_router.get("/audit/records")
 async def audit_records(limit: int = 100) -> dict:
     """查询审计记录（调试/管理用）."""
     return {"records": AuditService.records(limit=limit)}

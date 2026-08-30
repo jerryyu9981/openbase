@@ -1,8 +1,8 @@
 {
   "project": "OpenBase",
   "devflowVersion": "2.18.0",
-  "currentPhase": "v1_4_2_step_5_operations",
-  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design", "v1_1_0_step_3_development", "v1_1_0_step_4_testing", "v1_1_0_step_5_operations", "v1_2_0_step_0_planning", "v1_2_0_step_1_requirements", "v1_2_0_step_2_design", "v1_2_0_step_3_development", "v1_3_0_step_0_planning", "v1_3_0_step_1_requirements", "v1_3_0_step_2_design", "v1_3_0_step_3_development", "v1_3_0_step_4_testing", "v1_4_0_step_0_planning", "v1_4_0_step_1_requirements", "v1_4_0_step_2_design", "v1_4_0_step_3_development", "v1_4_0_step_4_testing", "v1_4_0_step_5_operations", "v1_4_1_step_0_planning", "v1_4_1_step_1_requirements", "v1_4_1_step_2_design", "v1_4_1_step_3_development", "v1_4_1_step_4_testing", "v1_4_1_step_5_operations", "v1_4_2_step_0_planning", "v1_4_2_step_1_requirements", "v1_4_2_step_2_design", "v1_4_2_step_3_development", "v1_4_2_step_4_testing"],
+  "currentPhase": "v1_4_3_step_4_testing",
+  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design", "v1_1_0_step_3_development", "v1_1_0_step_4_testing", "v1_1_0_step_5_operations", "v1_2_0_step_0_planning", "v1_2_0_step_1_requirements", "v1_2_0_step_2_design", "v1_2_0_step_3_development", "v1_3_0_step_0_planning", "v1_3_0_step_1_requirements", "v1_3_0_step_2_design", "v1_3_0_step_3_development", "v1_3_0_step_4_testing", "v1_4_0_step_0_planning", "v1_4_0_step_1_requirements", "v1_4_0_step_2_design", "v1_4_0_step_3_development", "v1_4_0_step_4_testing", "v1_4_0_step_5_operations", "v1_4_1_step_0_planning", "v1_4_1_step_1_requirements", "v1_4_1_step_2_design", "v1_4_1_step_3_development", "v1_4_1_step_4_testing", "v1_4_1_step_5_operations", "v1_4_2_step_0_planning", "v1_4_2_step_1_requirements", "v1_4_2_step_2_design", "v1_4_2_step_3_development", "v1_4_2_step_4_testing", "v1_4_2_step_5_operations", "v1_4_3_step_0_planning", "v1_4_3_step_1_requirements", "v1_4_3_step_2_design", "v1_4_3_step_3_development", "v1_4_3_step_4_testing"],
   "currentDocuments": {
     "global": [
       "doc/version/global/OpenBase-版本规划总纲.md",
@@ -22,6 +22,45 @@
       "doc/version/releases/v1.4.2/OpenBase-本版本Backlog-v1.4.2.md",
       "doc/version/releases/v1.4.2/OpenBase-Phase迭代计划-v1.4.2.md",
       "doc/version/releases/v1.4.2/OpenBase-版本规划评审记录-v1.4.2.md"
+    ],
+    "version_v1.4.3": [
+      "doc/version/releases/v1.4.3/OpenBase-单版本规划文档-v1.4.3.md",
+      "doc/version/releases/v1.4.3/OpenBase-本版本Backlog-v1.4.3.md",
+      "doc/version/releases/v1.4.3/OpenBase-Phase迭代计划-v1.4.3.md",
+      "doc/version/releases/v1.4.3/OpenBase-版本规划评审记录-v1.4.3.md"
+    ],
+    "requirements_v1.4.3": [
+      "doc/requirements/OpenBase-开发需求文档-v1.4.3.md",
+      "doc/requirements/OpenBase-需求来源与干系人-v1.4.3.md",
+      "doc/requirements/OpenBase-需求追溯矩阵-v1.4.3.md",
+      "doc/requirements/OpenBase-需求评审记录-v1.4.3.md",
+      "doc/requirements/OpenBase-需求基线及设计移交说明-v1.4.3.md",
+      "doc/audit/assessment/OpenBase-需求评估报告-v1.4.3.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage1-v1.4.3.md"
+    ],
+    "design_v1.4.3": [
+      "doc/design/OpenBase-系统架构设计文档-v1.4.3.md",
+      "doc/design/OpenBase-API接口设计文档-v1.4.3.md",
+      "doc/design/OpenBase-UI设计文档-v1.4.3.md",
+      "doc/design/OpenBase-第三方集成设计文档-v1.4.3.md",
+      "doc/design/OpenBase-非功能设计说明-v1.4.3.md",
+      "doc/design/OpenBase-部署架构草案-v1.4.3.md",
+      "doc/design/OpenBase-设计评审记录-v1.4.3.md",
+      "doc/design/prototype/index.html",
+      "doc/audit/review/OpenBase-需求架构对比审计报告-v1.4.3.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage2-v1.4.3.md"
+    ],
+    "development_v1.4.3": [
+      "doc/development/OpenBase-DevLogReport-v1.4.3.md",
+      "doc/development/OpenBase-设计开发追溯矩阵-v1.4.3.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.3.md"
+    ],
+    "test_v1.4.3": [
+      "doc/test/OpenBase-测试计划-v1.4.3.md",
+      "doc/test/OpenBase-测试用例-v1.4.3.md",
+      "doc/test/OpenBase-测试报告-v1.4.3.md",
+      "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.3.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.3.md"
     ],
     "requirements_v1.4.2": [
       "doc/requirements/OpenBase-开发需求文档-v1.4.2.md",
@@ -195,6 +234,36 @@
       "date": "2026-08-30",
       "auditor": "AU-OpenBase-Dev",
       "report": "doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.2.md"
+    },
+    "v1_4_3_step_0": {
+      "status": "passed",
+      "date": "2026-08-30",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage0-v1.4.3.md"
+    },
+    "v1_4_3_step_1": {
+      "status": "passed",
+      "date": "2026-08-30",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage1-v1.4.3.md"
+    },
+    "v1_4_3_step_2": {
+      "status": "passed",
+      "date": "2026-08-30",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage2-v1.4.3.md"
+    },
+    "v1_4_3_step_3": {
+      "status": "passed",
+      "date": "2026-08-30",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.3.md"
+    },
+    "v1_4_3_step_4": {
+      "status": "passed",
+      "date": "2026-08-30",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.3.md"
     }
   },
   "versionCheck": {
