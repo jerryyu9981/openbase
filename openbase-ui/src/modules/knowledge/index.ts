@@ -6,6 +6,8 @@ export const routes: RouteRecordRaw[] = [
   { path: 'list', name: 'knowledge-list', component: () => import('./pages/KnowledgeList.vue'), meta: { title: '知识库' } },
   { path: ':id', name: 'knowledge-detail', component: () => import('./pages/KnowledgeDetail.vue'), meta: { title: '知识库详情' } },
   { path: 'chat', name: 'knowledge-chat', component: () => import('./pages/ChatView.vue'), meta: { title: 'RAG 对话' } },
+  { path: 'admin', name: 'knowledge-admin', component: () => import('./pages/KnowledgeAdminView.vue'), meta: { title: '知识库管理后台' } },
+  { path: 'console', name: 'knowledge-console', component: () => import('./pages/KnowledgeConsoleView.vue'), meta: { title: 'API 控制台' } },
   { path: 'users', name: 'knowledge-users', component: () => import('./pages/Users.vue'), meta: { title: '用户管理' } },
   { path: 'settings', name: 'knowledge-settings', component: () => import('./pages/Settings.vue'), meta: { title: '系统配置' } },
 ]

@@ -38,6 +38,8 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "users",
     # v1.4.3 OpenLLM 对接（R-379：认证注入 + llm-proxy 转发）
     "llm_proxy",
+    # v1.4.4 OpenRAG 对接（R-380：JWT 门禁 + rag-proxy 转发，无上游认证注入）
+    "rag_proxy",
 )
 
 
@@ -119,6 +121,11 @@ class Settings(BaseSettings):
     llm_upstream_base: str = "http://127.0.0.1:8001"
     llm_upstream_timeout: float = 20.0
     llm_stream_timeout: float = 120.0
+
+    # ---- OpenRAG 对接（v1.4.4 R-380，JWT 门禁 + 无上游认证转发） ----
+    rag_upstream_base: str = "http://127.0.0.1:8010"
+    rag_upstream_timeout: float = 20.0
+    rag_stream_timeout: float = 120.0
 
     # ---- 模块启停（内部状态） ----
     _enabled_modules: set[str] = set()

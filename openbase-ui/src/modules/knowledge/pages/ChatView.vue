@@ -8,19 +8,21 @@
         placeholder="选择知识库"
         style="width: 100%"
         data-test="kb-select"
+        :loading="kbLoading"
         @change="onKbChange"
       >
         <el-option v-for="kb in knowledgeBases" :key="kb.id" :label="kb.name" :value="kb.id">
           <span>{{ kb.name }}</span>
-          <span class="kb-doc-count">{{ kb.documents }} 篇文档</span>
+          <span class="kb-doc-count">{{ kb.document_count ?? 0 }} 篇文档</span>
         </el-option>
       </el-select>
       <p v-if="selectedKb" class="panel-hint">
-        已关联 {{ selectedKb.documents }} 篇文档 / {{ selectedKb.chunks }} 个分块
+        已关联 {{ selectedKb.document_count ?? 0 }} 篇文档
       </p>
       <p v-else class="panel-hint">请选择知识库后开始对话</p>
       <el-divider />
       <p class="panel-tip">对话将基于所选知识库的检索结果生成回答，并附带来源引用。</p>
+      <el-button link type="primary" size="small" class="kb-refresh" @click="loadKbs">刷新列表</el-button>
     </aside>
 
     <!-- 右侧：聊天区 -->
@@ -48,18 +50,18 @@
                 <el-collapse-item :title="`来源引用（${msg.sources.length}）`" name="sources">
                   <div v-for="(src, idx) in msg.sources" :key="idx" class="source-item">
                     <div class="source-head">
-                      <span class="source-doc">{{ src.doc_name }}</span>
+                      <span class="source-doc">{{ src.doc_name || src.chunk_id || '来源片段' }}</span>
                       <span class="source-score">
                         <el-progress
-                          :percentage="Math.round(src.score * 100)"
+                          :percentage="Math.round((src.score ?? 0) * 100)"
                           :stroke-width="8"
                           :show-text="false"
                           class="score-bar"
                         />
-                        <span>{{ (src.score * 100).toFixed(0) }}%</span>
+                        <span>{{ ((src.score ?? 0) * 100).toFixed(0) }}%</span>
                       </span>
                     </div>
-                    <p class="source-snippet">{{ src.snippet }}</p>
+                    <p class="source-snippet">{{ src.snippet || src.content || '' }}</p>
                   </div>
                 </el-collapse-item>
               </el-collapse>
@@ -75,15 +77,15 @@
           resize="none"
           placeholder="输入问题，Enter 发送（Shift+Enter 换行）"
           data-test="chat-input"
+          :disabled="streaming"
           @keydown.enter.exact.prevent="sendMessage"
         />
         <div class="chat-actions">
-          <el-button
-            :disabled="streaming || !lastUserMessage"
-            data-test="regenerate"
-            @click="regenerate"
-          >
+          <el-button :disabled="streaming || !lastUserMessage" data-test="regenerate" @click="regenerate">
             重新生成
+          </el-button>
+          <el-button v-if="streaming" type="danger" plain data-test="stop-stream" @click="stopStream">
+            停止
           </el-button>
           <el-button
             type="primary"
@@ -100,36 +102,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-
-interface SourceRef {
-  doc_name: string
-  snippet: string
-  score: number
-}
+import { ragApi, type RagCollection, type RagSource } from '@/core/api/rag'
 
 interface ChatMessage {
   id: number
   role: 'user' | 'assistant'
   content: string
-  sources?: SourceRef[]
+  sources?: RagSource[]
 }
 
-interface KnowledgeBase {
-  id: number
-  name: string
-  documents: number
-  chunks: number
-}
-
-const knowledgeBases = ref<KnowledgeBase[]>([
-  { id: 1, name: '产品文档库', documents: 24, chunks: 1560 },
-  { id: 2, name: '技术问答库', documents: 12, chunks: 890 },
-  { id: 3, name: '法律合规库', documents: 8, chunks: 640 },
-])
-
-const selectedKbId = ref<number | null>(null)
+const knowledgeBases = ref<RagCollection[]>([])
+const kbLoading = ref(false)
+const selectedKbId = ref<string | null>(null)
 const selectedKb = computed(() => knowledgeBases.value.find((kb) => kb.id === selectedKbId.value) || null)
 const draft = ref('')
 const messages = ref<ChatMessage[]>([])
@@ -137,12 +123,24 @@ const chatLoading = ref(false)
 const streamingId = ref<number | null>(null)
 const errorMessage = ref('')
 
+let abortController: AbortController | null = null
+
 const streaming = computed(() => streamingId.value !== null)
 const lastUserMessage = computed(() => {
   return [...messages.value].reverse().find((msg) => msg.role === 'user') || null
 })
 
-let streamTimer: number | undefined
+async function loadKbs() {
+  kbLoading.value = true
+  try {
+    const result = await ragApi.listCollections({ page: 1, page_size: 100 })
+    knowledgeBases.value = result.items || []
+  } catch {
+    errorMessage.value = '知识库列表加载失败，请检查网络后重试'
+  } finally {
+    kbLoading.value = false
+  }
+}
 
 function onKbChange() {
   errorMessage.value = ''
@@ -159,7 +157,7 @@ function sendMessage() {
   errorMessage.value = ''
   messages.value.push({ id: Date.now(), role: 'user', content: text })
   draft.value = ''
-  streamReply(buildReply(text))
+  void streamReply(text)
 }
 
 function regenerate() {
@@ -168,51 +166,97 @@ function regenerate() {
   if (last.role === 'assistant') {
     messages.value.pop()
   }
-  streamReply(buildReply(lastUserMessage.value.content))
+  void streamReply(lastUserMessage.value.content)
 }
 
-function buildReply(question: string): { content: string; sources: SourceRef[] } {
-  const content = [
-    `根据「${selectedKb.value?.name ?? '知识库'}」的检索结果，关于“${question}”的回答如下：`,
-    '',
-    'OpenBase 知识库采用「文档解析 → 分块 → 向量化 → 检索召回 → 重排」的完整链路。上传的文档先被解析为纯文本，再按默认分块大小切分为语义片段，并由 Embedding 模型生成向量索引。',
-    '',
-    '查询时系统计算向量相似度召回 TopK 个候选分块，结合重排序模型精排后，将最相关的片段作为上下文交由大模型生成回答。建议在检索测试台验证不同参数下的召回效果，再调整系统配置中的检索 TopK 与召回阈值。',
-  ].join('\n')
-  const sources: SourceRef[] = [
-    { doc_name: '快速开始.md', snippet: 'OpenBase 提供统一登录与动态模块挂载能力，知识库模块支持文档上传、自动分块与向量检索，检索结果可追溯来源……', score: 0.86 },
-    { doc_name: 'RAG 架构设计.pdf', snippet: '检索链路：查询向量化 → 相似度召回 TopK → 重排序 → 大模型生成，支持自定义分块大小与召回阈值……', score: 0.74 },
-    { doc_name: 'API 参考.docx', snippet: 'POST /api/v1/knowledge/retrieve 提交查询与知识库 ID，返回命中的分块、文档名与相似度得分……', score: 0.65 },
-  ]
-  return { content, sources }
+function stopStream() {
+  abortController?.abort()
+  abortController = null
+  if (streamingId.value !== null) {
+    streamingId.value = null
+    chatLoading.value = false
+  }
+  ElMessage.info('已停止生成')
 }
 
-function streamReply(reply: { content: string; sources: SourceRef[] }) {
-  const msg: ChatMessage = { id: Date.now() + 1, role: 'assistant', content: '', sources: reply.sources }
+/** 从 SSE error 事件体提取可读错误信息（message / detail 数组 / detail 字符串） */
+function extractErrorMessage(raw: string): string {
+  try {
+    const data = JSON.parse(raw) as { message?: string; detail?: unknown }
+    if (typeof data.message === 'string' && data.message) return data.message
+    if (Array.isArray(data.detail)) {
+      const msgs = data.detail
+        .filter((item): item is { msg?: string } => typeof item === 'object' && item !== null)
+        .map((item) => item.msg)
+        .filter((m): m is string => typeof m === 'string')
+      if (msgs.length > 0) return msgs.join('；')
+    }
+    if (typeof data.detail === 'string') return data.detail
+  } catch {
+    // 非 JSON 错误体
+  }
+  return '流式回复出错'
+}
+
+function streamReply(question: string) {
+  const cid = selectedKb.value?.id
+  if (!cid) return
+  abortController?.abort()
+  abortController = new AbortController()
+  const msg: ChatMessage = { id: Date.now() + 1, role: 'assistant', content: '' }
   messages.value.push(msg)
   chatLoading.value = true
   streamingId.value = msg.id
-  let index = 0
-  streamTimer = window.setInterval(() => {
-    index += 2
-    msg.content = reply.content.slice(0, index)
-    if (index >= reply.content.length) {
-      msg.content = reply.content
-      if (streamTimer !== undefined) {
-        window.clearInterval(streamTimer)
-        streamTimer = undefined
+  const finalSources: RagSource[] = []
+
+  ragApi
+    .queryStream(
+      cid,
+      { query: question, top_k: 5, collection_ids: [cid] },
+      (evt) => {
+        if (evt.event === 'token') {
+          try {
+            const data = JSON.parse(evt.data) as { delta?: string }
+            if (data.delta) msg.content += data.delta
+          } catch {
+            // 忽略解析失败的事件片段
+          }
+        } else if (evt.event === 'done') {
+          try {
+            const data = JSON.parse(evt.data) as { answer?: string; sources?: RagSource[] }
+            if (data.answer) msg.content = data.answer
+            if (Array.isArray(data.sources) && data.sources.length > 0) {
+              finalSources.push(...data.sources)
+            }
+          } catch {
+            // done 事件无数据体（非流式兜底）时保持已渲染内容
+          }
+        } else if (evt.event === 'error') {
+          errorMessage.value = extractErrorMessage(evt.data)
+        }
+      },
+      abortController.signal,
+    )
+    .catch(() => {
+      if (!abortController?.signal.aborted) {
+        errorMessage.value = '流式请求失败，请重试'
       }
+    })
+    .finally(() => {
+      msg.sources = finalSources.length > 0 ? finalSources : undefined
       streamingId.value = null
       chatLoading.value = false
-    }
-  }, 40)
+      abortController = null
+    })
 }
 
+onMounted(() => {
+  void loadKbs()
+})
+
 onBeforeUnmount(() => {
-  if (streamTimer !== undefined) {
-    window.clearInterval(streamTimer)
-    streamTimer = undefined
-  }
+  abortController?.abort()
+  abortController = null
 })
 </script>
 
@@ -227,6 +271,7 @@ onBeforeUnmount(() => {
 .kb-doc-count { float: right; color: var(--ob-text-disabled); font-size: 12px; }
 .panel-hint { color: var(--ob-text-secondary); font-size: 12px; margin: 10px 0 0; line-height: 1.6; }
 .panel-tip { color: var(--ob-text-disabled); font-size: 12px; line-height: 1.6; margin: 0; }
+.kb-refresh { margin-top: 10px; }
 .chat-panel {
   flex: 1; min-width: 0;
   display: flex; flex-direction: column;

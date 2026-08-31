@@ -44,6 +44,8 @@ for module in (
     "users",
     # v1.4.3 OpenLLM 对接（R-379：llm-proxy 认证注入 + 转发）
     "llm_proxy",
+    # v1.4.4 OpenRAG 对接（R-380：rag-proxy JWT 门禁 + 转发）
+    "rag_proxy",
 ):
     settings.enable_module(module)
 
