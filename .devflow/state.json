@@ -1,7 +1,7 @@
 {
   "project": "OpenBase",
   "devflowVersion": "2.18.0",
-  "currentPhase": "v1_4_4_step_3_development",
+  "currentPhase": "v1_4_4_step_4_testing",
   "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design", "v1_1_0_step_3_development", "v1_1_0_step_4_testing", "v1_1_0_step_5_operations", "v1_2_0_step_0_planning", "v1_2_0_step_1_requirements", "v1_2_0_step_2_design", "v1_2_0_step_3_development", "v1_3_0_step_0_planning", "v1_3_0_step_1_requirements", "v1_3_0_step_2_design", "v1_3_0_step_3_development", "v1_3_0_step_4_testing", "v1_4_0_step_0_planning", "v1_4_0_step_1_requirements", "v1_4_0_step_2_design", "v1_4_0_step_3_development", "v1_4_0_step_4_testing", "v1_4_0_step_5_operations", "v1_4_1_step_0_planning", "v1_4_1_step_1_requirements", "v1_4_1_step_2_design", "v1_4_1_step_3_development", "v1_4_1_step_4_testing", "v1_4_1_step_5_operations", "v1_4_2_step_0_planning", "v1_4_2_step_1_requirements", "v1_4_2_step_2_design", "v1_4_2_step_3_development", "v1_4_2_step_4_testing", "v1_4_2_step_5_operations", "v1_4_3_step_0_planning", "v1_4_3_step_1_requirements", "v1_4_3_step_2_design", "v1_4_3_step_3_development", "v1_4_3_step_4_testing", "v1_4_3_step_5_operations", "v1_4_3_step_5_closed", "v1_4_4_step_0_planning", "v1_4_4_step_1_requirements"],
   "currentDocuments": {
     "global": [
@@ -340,6 +340,12 @@
       "date": "2026-08-31",
       "auditor": "AU-OpenBase-Dev",
       "report": "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.4.md"
+    },
+    "v1_4_4_step_4": {
+      "status": "passed",
+      "date": "2026-08-31",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.4.md"
     }
   },
   "versionCheck": {
