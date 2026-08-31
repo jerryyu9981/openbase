@@ -89,6 +89,26 @@
       "doc/design/OpenBase-OpenRAG对接完善任务书-v1.0.0.md",
       "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.4.md"
     ],
+    "test_v1.4.4": [
+      "doc/test/OpenBase-测试计划-v1.4.4.md",
+      "doc/test/OpenBase-测试用例-v1.4.4.md",
+      "doc/test/OpenBase-测试报告-v1.4.4.md",
+      "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.4.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.4.md"
+    ],
+    "operation_v1.4.4": [
+      "doc/operation/OpenBase-部署执行报告-v1.4.4.md",
+      "doc/operation/OpenBase-上线检查报告-v1.4.4.md",
+      "doc/operation/OpenBase-回滚方案-v1.4.4.md",
+      "doc/operation/OpenBase-运维手册-v1.4.4.md",
+      "doc/operation/OpenBase-发布复盘报告-v1.4.4.md",
+      "doc/operation/OpenBase-问题跟踪记录-v1.4.4.md",
+      "doc/release/OpenBase-Release-Note-v1.4.4.md",
+      "doc/release/OpenBase-发布入场检查记录-v1.4.4.md",
+      "doc/audit/comprehensive/OpenBase-运维审计报告-v1.4.4.md",
+      "doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.4.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage5-v1.4.4.md"
+    ],
     "test_v1.4.3": [
       "doc/test/OpenBase-测试计划-v1.4.3.md",
       "doc/test/OpenBase-测试用例-v1.4.3.md",
@@ -346,6 +366,18 @@
       "date": "2026-08-31",
       "auditor": "AU-OpenBase-Dev",
       "report": "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.4.md"
+    },
+    "v1_4_4_step_5": {
+      "status": "passed",
+      "date": "2026-08-31",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage5-v1.4.4.md"
+    },
+    "v1_4_4_step_5_closed": {
+      "status": "passed",
+      "date": "2026-08-31",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.4.md"
     }
   },
   "versionCheck": {
