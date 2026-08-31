@@ -1,137 +1,168 @@
 <template>
   <div>
+    <el-row :gutter="16" class="mb-16">
+      <el-col :span="8">
+        <el-card shadow="hover" data-test="dps-kpi">
+          <div class="kpi-label">画像总数</div>
+          <div class="kpi-value">{{ overview.total ?? '-' }}</div>
+          <div class="kpi-sub">报表概览</div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover" data-test="dps-kpi">
+          <div class="kpi-label">高风险画像</div>
+          <div class="kpi-value">{{ overview.risk_high ?? '-' }}</div>
+          <div class="kpi-sub">风险等级=high</div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover" data-test="dps-kpi">
+          <div class="kpi-label">上游健康度</div>
+          <div class="kpi-value">{{ health.status || '-' }}</div>
+          <div class="kpi-sub">DPS v{{ health.version || '?' }}</div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <div class="page-toolbar">
-      <el-input v-model="keyword" placeholder="搜索画像（姓名/ID 模糊）" clearable style="width: 240px" />
-      <el-select v-model="statusFilter" placeholder="状态" clearable style="width: 140px">
-        <el-option label="活跃" value="active" />
-        <el-option label="停用" value="inactive" />
-        <el-option label="归档" value="archived" />
-      </el-select>
-      <el-button type="primary" data-test="create-portrait" @click="createVisible = true">创建画像</el-button>
-      <el-button @click="$router.push('/portrait/batch')">批量导入/导出</el-button>
-      <el-button @click="$router.push('/portrait/search')">画像查询</el-button>
+      <el-input v-model="keyword" placeholder="搜索画像（姓名/ID 模糊）" clearable style="width: 240px" data-test="dps-search" />
+      <el-button type="primary" data-test="dps-create" @click="$router.push('/portrait/search')">画像查询</el-button>
+      <el-button :loading="loading" @click="loadData">刷新</el-button>
     </div>
+    <el-alert
+      v-if="errorMessage"
+      :title="errorMessage"
+      type="error"
+      show-icon
+      closable
+      class="mb-16"
+      @close="errorMessage = ''"
+    >
+      <template #default>
+        <el-button link type="primary" size="small" @click="loadData">点击重试</el-button>
+      </template>
+    </el-alert>
     <div class="ob-table-scroll">
-      <el-table :data="paged" stripe data-test="portrait-table">
+      <el-table v-loading="loading" :data="filtered" stripe data-test="portrait-table">
         <el-table-column prop="name" label="画像名称" min-width="160" />
-        <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
-          </template>
-        </el-table-column>
+        <el-table-column prop="person_id" label="画像 ID" min-width="180" show-overflow-tooltip />
         <el-table-column label="标签" min-width="180">
           <template #default="{ row }">
-            <el-tag v-for="t in row.tags" :key="t" size="small" class="tag-item" type="info">{{ t }}</el-tag>
+            <el-tag v-for="t in (row.tags || [])" :key="String(t)" size="small" class="tag-item" type="info">{{ t }}</el-tag>
+            <span v-if="!(row.tags || []).length" class="text-muted">-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="data_source" label="数据源" width="110" />
-        <el-table-column label="操作" width="230" fixed="right">
+        <el-table-column label="风险等级" width="110">
           <template #default="{ row }">
-            <el-button link type="primary" @click="$router.push(`/portrait/${row.id}`)">详情</el-button>
-            <el-dropdown @command="(cmd: string) => flow(row, cmd)">
-              <el-button link>状态流转</el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="active">设为活跃</el-dropdown-item>
-                  <el-dropdown-item command="inactive">停用</el-dropdown-item>
-                  <el-dropdown-item command="archived">归档</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <el-popconfirm title="确认删除该画像？" @confirm="remove(row.id)">
-              <template #reference><el-button link type="danger">删除</el-button></template>
-            </el-popconfirm>
+            <el-tag :type="riskType(row.risk_level)" size="small">{{ riskLabel(row.risk_level) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="updated_at" label="更新时间" width="170">
+          <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="$router.push(`/portrait/${row.person_id || row.id}`)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
-      <el-empty v-if="paged.length === 0" description="暂无匹配的画像" :image-size="60" />
+      <el-empty v-if="!loading && filtered.length === 0" description="暂无画像数据" :image-size="60" />
     </div>
     <div class="pager">
       <el-pagination
         v-model:current-page="page"
         :page-size="pageSize"
-        :total="filtered.length"
+        :total="total"
         layout="total, prev, pager, next"
         background
+        @current-change="loadData"
       />
     </div>
-    <el-dialog v-model="createVisible" title="创建画像" width="480px">
-      <el-form label-width="80px">
-        <el-form-item label="名称" required><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>
-        <el-form-item label="数据源"><el-input v-model="form.data_source" placeholder="如：user_service" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" data-test="create-portrait-submit" @click="createProfile">创建</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 
-interface Profile { id: number; name: string; description: string; status: string; tags: string[]; data_source: string }
-
+const portraits = ref<DpsPortrait[]>([])
+const overview = ref<Record<string, unknown>>({})
+const health = ref<{ status?: string; version?: string }>({})
 const keyword = ref('')
-const statusFilter = ref('')
-const createVisible = ref(false)
 const page = ref(1)
-const pageSize = 8
-const form = reactive({ name: '', description: '', data_source: '' })
-const profiles = ref<Profile[]>([
-  { id: 1, name: '核心用户-张伟', description: '高频使用 RAG 检索用户', status: 'active', tags: ['高频用户', 'RAG'], data_source: 'openllm' },
-  { id: 2, name: '试用用户-李娜', description: '试用期用户，转化评估中', status: 'inactive', tags: ['试用'], data_source: 'signup' },
-  { id: 3, name: '归档-旧版', description: '历史遗留画像', status: 'archived', tags: ['历史'], data_source: 'legacy' },
-  { id: 4, name: '高潜企业-王强', description: '企业级客户高意向', status: 'active', tags: ['企业', '高潜'], data_source: 'crm' },
-  { id: 5, name: '内容创作者-赵敏', description: '活跃内容生产者', status: 'active', tags: ['创作者'], data_source: 'content' },
-  { id: 6, name: '休眠用户-刘洋', description: '30 天未活跃', status: 'inactive', tags: ['休眠'], data_source: 'user_service' },
-  { id: 7, name: '开发者-陈晨', description: 'API 高频调用者', status: 'active', tags: ['开发者', 'API'], data_source: 'openllm' },
-  { id: 8, name: '管理员-孙丽', description: '平台管理角色', status: 'active', tags: ['管理员'], data_source: 'rbac' },
-  { id: 9, name: '归档-2025Q4', description: '季度归档画像', status: 'archived', tags: ['历史'], data_source: 'legacy' },
-  { id: 10, name: '数据分析师-周杰', description: '报表高频使用者', status: 'active', tags: ['分析师'], data_source: 'analytics' },
-])
+const pageSize = 20
+const total = ref(0)
+const loading = ref(false)
+const errorMessage = ref('')
 
 const filtered = computed(() => {
-  const kw = keyword.value.trim().toLowerCase()
-  return profiles.value.filter((p) => {
-    const matchKw = !kw || p.name.toLowerCase().includes(kw) || p.description.toLowerCase().includes(kw)
-    const matchStatus = !statusFilter.value || p.status === statusFilter.value
-    return matchKw && matchStatus
-  })
-})
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
+  if (!keyword.value) return portraits.value
+  const kw = keyword.value.toLowerCase()
+  return portraits.value.filter(
+    (p) => String(p.name ?? '').toLowerCase().includes(kw) || String(p.person_id ?? '').toLowerCase().includes(kw),
+  )
 })
 
-function statusType(status: string) {
-  return { active: 'success', inactive: 'info', archived: 'warning' }[status] || 'info'
+function riskLabel(level?: string) {
+  if (!level) return '未知'
+  return { low: '低', medium: '中', high: '高' }[level] || level
 }
-function statusLabel(status: string) {
-  return { active: '活跃', inactive: '停用', archived: '归档' }[status] || status
+
+function riskType(level?: string) {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = { low: 'success', medium: 'warning', high: 'danger' }
+  return map[level || ''] || 'info'
 }
-function flow(row: Profile, status: string) {
-  row.status = status
-  ElMessage.success(`${row.name} 状态已更新为 ${statusLabel(status)}`)
+
+function formatTime(v?: string) {
+  if (!v) return '-'
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? v : d.toLocaleString('zh-CN', { hour12: false })
 }
-function createProfile() {
-  if (!form.name) { ElMessage.warning('请输入画像名称'); return }
-  profiles.value.push({ id: Date.now(), name: form.name, description: form.description, status: 'active', tags: [], data_source: form.data_source || 'manual' })
-  createVisible.value = false
-  ElMessage.success('画像已创建')
+
+async function loadHealth() {
+  try {
+    health.value = await dpsApi.getDpsHealth()
+  } catch {
+    health.value = { status: '不可达' }
+  }
 }
-function remove(id: number) {
-  profiles.value = profiles.value.filter((p) => p.id !== id)
-  ElMessage.success('画像已删除')
+
+async function loadOverview() {
+  try {
+    overview.value = await dpsApi.getReportsOverview()
+  } catch {
+    overview.value = {}
+  }
 }
+
+async function loadData() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const result = await dpsApi.listPortraits({ page: page.value, page_size: pageSize })
+    portraits.value = result.items || []
+    total.value = result.total ?? 0
+  } catch (err) {
+    errorMessage.value = `画像列表加载失败：${(err as Error).message || '网络错误'}`
+  } finally {
+    loading.value = false
+  }
+  void loadHealth()
+  void loadOverview()
+}
+
+onMounted(() => {
+  void loadData()
+})
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.mb-16 { margin-bottom: 16px; }
+.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
+.kpi-label { font-size: 13px; color: #6b7280; }
+.kpi-value { font-size: 24px; font-weight: 600; margin: 4px 0; }
+.kpi-sub { font-size: 12px; color: #9ca3af; }
 .tag-item { margin-right: 4px; }
-.pager { margin-top: 8px; display: flex; justify-content: flex-end; }
+.text-muted { color: #9ca3af; }
+.pager { display: flex; justify-content: flex-end; margin-top: 12px; }
 </style>

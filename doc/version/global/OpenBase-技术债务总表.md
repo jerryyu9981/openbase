@@ -15,10 +15,10 @@
 
 | 统计项 | 数量 |
 |--------|------|
-| 待偿还 | 6 |
+| 待偿还 | 5 |
 | 挂起中 | 1 |
 | 偿还中 | 0 |
-| 已偿还 | 6 |
+| 已偿还 | 7 |
 | **总计** | **12** |
 
 **还债占比检查（v1.3.0）**：
@@ -79,14 +79,14 @@
 | **债务 ID** | TD-新增-011 |
 | **分类** | 前端债务 |
 | **严重级别** | P2 |
-| **状态** | 待偿还 |
+| **状态** | 已偿还（v1.4.5） |
 | **所属版本** | v1.4.4（源 v1.4.3） |
 | **识别日期** | 2026-08-31 |
 | **识别来源** | v1.4.4 代码逻辑审查 L-144-02（rag 侧已用 axios `adapter: 'fetch'` 修复，llm 侧未同步） |
 | **描述** | `openbase-ui/src/core/api/llm.ts` sendChatStream 使用 `responseType: 'stream'` + 浏览器默认 XHR adapter；XHR 不支持 stream，响应不返回 ReadableStream，SSE 消费走非流式兜底（onEvent done 空体），v1.4.3 对话页流式为假流式 |
 | **影响范围** | OpenLLM 对话页流式渲染（Conversations.vue） |
-| **偿还计划** | 与 rag.ts 对齐：sendChatStream 增加 `adapter: 'fetch'`，验证 routing/chunk/done 逐事件渲染；列入 v1.4.5 或专项修复 |
-| **挂起理由** | v1.4.4 范围为 OpenRAG 对接，不越范围修改已发布 v1.4.3 文件（文件范围保护） |
+| **偿还计划** | ✅ 已偿还（v1.4.5）：sendChatStream 增加 `adapter: 'fetch'`，浏览器端返回真实 ReadableStream，routing/chunk/done 逐事件渲染验证（对齐 rag.ts） |
+| **挂起理由** | 已偿还（无挂起） |
 | **连续挂起版本数** | 0 |
 
 ### TD-新增-012：OpenRAG 上游契约缺口（M1~M6）
@@ -213,3 +213,4 @@
 | v0.3.2 | 2026-08-28 | AU-OpenBase-Dev | Step 3 开发债务归集：新增 TD-新增-009（全量 pytest 本机既有 access violation 崩溃，P2，测试债务），来源为 v1.4.0 开发阶段验证（DevLogReport/开发审计移交材料） |
 | v0.3.3 | 2026-08-30 | AU-OpenBase-Dev | Step 1 需求风险归集（v1.4.3）：新增 TD-新增-010（OpenLLM 平台 JWT 用户映射未落地，P1，对接深度受限），来源为 v1.4.3 需求分析开放问题 OQ-143-1（API Key 单通道规避，后续对接线版本评估偿还） |
 | v0.3.4 | 2026-08-31 | AU-OpenBase-Dev | Step 3 开发债务归集（v1.4.4）：新增 TD-新增-011（llm.ts SSE 浏览器端 XHR 不支持 stream，P2，前端假流式）+ TD-新增-012（OpenRAG 上游契约缺口 M1~M6，P1，登记对接完善任务书），来源为 v1.4.4 联调发现（代码逻辑审查 L-144-02 + 冒烟缺口） |
+| v0.3.5 | 2026-08-31 | AU-OpenBase-Dev | Step 3 还债闭环（v1.4.5）：TD-新增-011 已偿还（llm.ts sendChatStream 对齐 fetch adapter，浏览器端真流式）；待偿还 6→5，已偿还 6→7 |

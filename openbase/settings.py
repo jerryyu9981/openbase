@@ -40,6 +40,8 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "llm_proxy",
     # v1.4.4 OpenRAG 对接（R-380：JWT 门禁 + rag-proxy 转发，无上游认证注入）
     "rag_proxy",
+    # v1.4.5 DPS 对接（R-381：JWT 门禁 + dps-proxy 转发 + 身份头注入）
+    "dps_proxy",
 )
 
 
@@ -126,6 +128,15 @@ class Settings(BaseSettings):
     rag_upstream_base: str = "http://127.0.0.1:8010"
     rag_upstream_timeout: float = 20.0
     rag_stream_timeout: float = 120.0
+
+    # ---- DPS 对接（v1.4.5 R-381，JWT 门禁 + 身份头注入转发） ----
+    dps_upstream_base: str = "http://127.0.0.1:8030"
+    dps_upstream_timeout: float = 20.0
+    dps_default_org_id: str = ""
+    dps_default_tenant_id: str = ""
+    # 组织/租户映射表（JSON：OpenBase 值 → DPS 值），命中则转换
+    dps_org_map: str = ""
+    dps_tenant_map: str = ""
 
     # ---- 模块启停（内部状态） ----
     _enabled_modules: set[str] = set()

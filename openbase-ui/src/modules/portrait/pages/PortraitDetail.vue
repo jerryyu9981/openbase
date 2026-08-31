@@ -1,94 +1,116 @@
 <template>
   <div>
     <el-page-header content="画像详情" class="mb-16" @back="$router.push('/portrait')" />
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="12">
-        <el-card header="基本信息" class="mb-16">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="名称">{{ profile.name }}</el-descriptions-item>
-            <el-descriptions-item label="描述">{{ profile.description }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <el-tag size="small">{{ profile.status }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="数据源">{{ profile.data_source }}</el-descriptions-item>
-          </el-descriptions>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :lg="12">
-        <el-card header="标签维护" class="mb-16">
-          <div class="tags">
-            <el-tag v-for="t in profile.tags" :key="t" closable class="tag-item" @close="removeTag(t)">{{ t }}</el-tag>
-          </div>
-          <div class="add-tag">
-            <el-input v-model="newTag" placeholder="添加标签" style="width: 200px" @keyup.enter="addTag" />
-            <el-button data-test="add-tag" @click="addTag">添加</el-button>
-          </div>
-        </el-card>
-        <el-card header="特征分布" class="mb-16" data-test="feature-dist">
-          <div v-for="f in features" :key="f.label" class="feature-row">
-            <span class="feature-label">{{ f.label }}</span>
-            <el-progress :percentage="f.value" :stroke-width="10" :color="f.value >= 70 ? '#16a34a' : f.value >= 40 ? '#d97706' : '#dc2626'" />
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-    <el-card header="关联画像" class="mb-16" data-test="related-profiles">
-      <el-table :data="related" size="small">
-        <el-table-column prop="name" label="画像" min-width="160" />
-        <el-table-column prop="relation" label="关联关系" width="120" />
-        <el-table-column prop="strength" label="关联强度" width="140">
-          <template #default="{ row }">
-            <el-progress :percentage="row.strength" :stroke-width="8" />
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-empty v-if="related.length === 0" description="暂无关联画像" :image-size="50" />
-    </el-card>
+    <el-alert
+      v-if="errorMessage"
+      :title="errorMessage"
+      type="error"
+      show-icon
+      closable
+      class="mb-16"
+      @close="errorMessage = ''"
+    >
+      <template #default>
+        <el-button link type="primary" size="small" @click="loadData">点击重试</el-button>
+      </template>
+    </el-alert>
+    <div v-loading="loading">
+      <el-row :gutter="16">
+        <el-col :xs="24" :lg="12">
+          <el-card header="基本信息" class="mb-16">
+            <el-descriptions v-if="profile" :column="1" border>
+              <el-descriptions-item label="画像名称">{{ profile.name || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="画像 ID">{{ profile.person_id || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="风险等级">
+                <el-tag :type="riskType(profile.risk_level)" size="small">{{ riskLabel(profile.risk_level) }}</el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="更新时间">{{ formatTime(profile.updated_at) }}</el-descriptions-item>
+            </el-descriptions>
+            <el-empty v-else-if="!loading" description="暂无画像数据" :image-size="50" />
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :lg="12">
+          <el-card header="标签" class="mb-16">
+            <div class="tags">
+              <el-tag v-for="t in (profile?.tags || [])" :key="String(t)" class="tag-item" type="info">{{ t }}</el-tag>
+              <span v-if="!(profile?.tags || []).length" class="text-muted">暂无标签</span>
+            </div>
+          </el-card>
+          <el-card header="画像维度" class="mb-16" data-test="feature-dist">
+            <div v-if="dimensionEntries.length" v-for="[dimKey, dimValue] in dimensionEntries" :key="dimKey" class="dimension-block">
+              <div class="dimension-title">{{ dimKey }}</div>
+              <pre class="dimension-value">{{ JSON.stringify(dimValue, null, 2) }}</pre>
+            </div>
+            <el-empty v-else-if="!loading" description="暂无维度数据" :image-size="50" />
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 
 const route = useRoute()
-const newTag = ref('')
-const profile = reactive({
-  id: route.params.id,
-  name: '核心用户-张伟',
-  description: '高频使用 RAG 检索用户，偏好深度技术内容',
-  status: 'active',
-  data_source: 'openllm',
-  tags: ['高频用户', 'RAG', '技术型'],
-})
-const features = ref([
-  { label: '活跃度', value: 92 },
-  { label: '技术倾向', value: 85 },
-  { label: '付费意愿', value: 58 },
-  { label: '内容偏好', value: 74 },
-])
-const related = ref([
-  { name: '开发者-陈晨', relation: '同类画像', strength: 78 },
-  { name: '数据分析师-周杰', relation: '协作画像', strength: 62 },
-])
+const personId = String(route.params.id || '')
+const profile = ref<DpsPortrait | null>(null)
+const loading = ref(false)
+const errorMessage = ref('')
 
-function addTag() {
-  const tag = newTag.value.trim()
-  if (!tag) return
-  if (!profile.tags.includes(tag)) profile.tags.push(tag)
-  newTag.value = ''
+const dimensionEntries = computed(() => {
+  const dims = (profile.value?.dimensions || {}) as Record<string, unknown>
+  return Object.entries(dims)
+})
+
+function riskLabel(level?: string) {
+  if (!level) return '未知'
+  return { low: '低', medium: '中', high: '高' }[level] || level
 }
-function removeTag(tag: string) {
-  profile.tags = profile.tags.filter((t) => t !== tag)
-  ElMessage.success(`已移除标签：${tag}`)
+
+function riskType(level?: string) {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = { low: 'success', medium: 'warning', high: 'danger' }
+  return map[level || ''] || 'info'
 }
+
+function formatTime(v?: string) {
+  if (!v) return '-'
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? v : d.toLocaleString('zh-CN', { hour12: false })
+}
+
+async function loadData() {
+  if (!personId) {
+    errorMessage.value = '缺少画像 ID 参数'
+    return
+  }
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    profile.value = await dpsApi.getPortrait(personId)
+  } catch (err) {
+    errorMessage.value = `画像详情加载失败：${(err as Error).message || '网络错误'}`
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadData()
+})
 </script>
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.add-tag { display: flex; gap: 8px; }
-.feature-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.feature-label { width: 70px; color: var(--ob-text-secondary); font-size: 13px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-item { margin-right: 4px; }
+.text-muted { color: #9ca3af; }
+.dimension-block { margin-bottom: 12px; }
+.dimension-title { font-weight: 600; font-size: 13px; color: #374151; margin-bottom: 4px; text-transform: capitalize; }
+.dimension-value {
+  margin: 0; padding: 8px 10px; background: #f9fafb; border-radius: 6px;
+  font-size: 12px; color: #6b7280; white-space: pre-wrap; word-break: break-all;
+}
 </style>

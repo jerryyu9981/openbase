@@ -106,6 +106,8 @@ export const llmApi = {
   /**
    * 对话流式（POST /api/v1/llm-proxy/chat/stream）
    * SSE 逐事件透传：event: routing → chunk×N → done
+   * adapter: 'fetch'：浏览器端 XHR 不支持 responseType 'stream'，
+   * fetch adapter 返回真实 ReadableStream 供 SSE 逐事件消费（TD-新增-011 偿还，v1.4.5）
    */
   async sendChatStream(
     payload: { model: string; messages: ChatMessage[] },
@@ -114,7 +116,7 @@ export const llmApi = {
     const resp = await http.post<ReadableStream<Uint8Array>>(
       '/llm-proxy/chat/stream',
       { ...payload, stream: true },
-      { responseType: 'stream', timeout: 120000 },
+      { responseType: 'stream', timeout: 120000, adapter: 'fetch' },
     )
     if (resp.data && typeof resp.data.getReader === 'function') {
       await parseSseStream(resp.data, onEvent)

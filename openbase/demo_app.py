@@ -46,6 +46,8 @@ for module in (
     "llm_proxy",
     # v1.4.4 OpenRAG 对接（R-380：rag-proxy JWT 门禁 + 转发）
     "rag_proxy",
+    # v1.4.5 DPS 对接（R-381：dps-proxy JWT 门禁 + 身份头注入）
+    "dps_proxy",
 ):
     settings.enable_module(module)
 
