@@ -174,7 +174,17 @@
   <div class="card"><h3>rag-proxy API 契约（11 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/rag-proxy/collections* · documents* · query*（SSE）· health（OpenBase JWT；无上游认证注入；{detail} 归一化）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · SSE 逐事件透传</b></div></div>
 </div>
 
-<footer>OpenBase v1.4.4 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 2 页 + v1.4.4 OpenRAG 2 页）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.4》《OpenBase-API接口设计文档-v1.4.4》为准；Step 4 E2E 断言以交互状态清单为基线</footer>
+<h2>五、v1.4.5 DPS 对接 · 2 页真实化（FR-145-04，R-381）</h2>
+<div class="note">v1.4.5 为 DPS 系统对接（对接线第 3 站）：画像列表/画像详情 2 页 mock 替换真实 API（走 OpenBase dps-proxy）。关键差异：DPS Header 身份认证（X-Org-ID/X-Tenant-ID/X-User-ID）→ OpenBase 唯一认证入口 + 身份头注入；无 SSE。设计依据《OpenBase-UI设计文档-v1.4.5》《OpenBase-API接口设计文档-v1.4.5》《OpenBase-第三方集成设计文档-v1.4.5》。</div>
+<div class="grid">
+  <div class="card"><h3>画像列表页 /dps/portraits <span class="tag t-p1">P1</span></h3><p>GET /api/v1/dps-proxy/portraits 真实画像列表（姓名/标签/风险等级/更新时间）；搜索/分页/详情跳转；KPI 卡（画像总数/标签数/风险预警）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 成功</b></div>
+    <details><summary>交互要点</summary><ul><li>加载态：表格 loading</li><li>空态：暂无画像</li><li>错误态：el-alert + 重试按钮</li></ul></details></div>
+  <div class="card"><h3>画像详情页 /dps/portraits/{id} <span class="tag t-p1">P1</span></h3><p>GET /api/v1/dps-proxy/portraits/{person_id} 真实画像详情：六维雷达（基础/行为/偏好/风险/社交/设备）+ 标签区 + 风险等级色标。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 成功</b></div>
+    <details><summary>交互要点</summary><ul><li>风险等级：低=success / 中=warning / 高=danger</li><li>标签：el-tag 展示</li><li>错误态：重试</li></ul></details></div>
+  <div class="card"><h3>dps-proxy API 契约（8 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/dps-proxy/portraits* · tags/categories · reports/overview · batch/tasks/{id} · audit/logs · health（OpenBase JWT；四头注入 X-User-ID/X-Tenant-ID/X-Org-ID/X-User-Role；{detail} 归一化；无 SSE）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · 身份头注入</b></div></div>
+</div>
+
+<footer>OpenBase v1.4.5 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 2 页 + v1.4.4 OpenRAG 2 页 + v1.4.5 DPS 2 页）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.5》《OpenBase-API接口设计文档-v1.4.5》为准；Step 4 E2E 断言以交互状态清单为基线</footer>
 </div>
 </body>
 </html>
