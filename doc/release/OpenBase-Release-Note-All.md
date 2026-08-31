@@ -2,6 +2,7 @@
 
 | 版本 | 主题 | 发布日期 | 状态 |
 |------|------|---------|------|
+| [v1.4.5](OpenBase-Release-Note-v1.4.5.md) | DPS 系统对接（对接线第 3 站：dps-proxy 8 端点 + 身份头注入四头 + 前端画像 2 页真实化 + 还债 TD-新增-011） | 2026-09-01 | 已发布（Dev） |
 | [v1.4.4](OpenBase-Release-Note-v1.4.4.md) | OpenRAG 系统对接（对接线第 2 站：rag-proxy 12 端点 + 前端 2 页真实化 + SSE 流式） | 2026-08-31 | 已发布（Dev） |
 | [v1.4.3](OpenBase-Release-Note-v1.4.3.md) | OpenLLM 系统对接（对接线第 1 站：llm-proxy 12 端点 + 前端 2 页真实化 + SSE 流式） | 2026-08-30 | 已发布（Dev） |
 | [v1.4.2](OpenBase-Release-Note-v1.4.2.md) | 四维身份管理基础（租户/用户）+ OpenMemory 对接（双层认证 + proxy + 多模态/语音） | 2026-08-30 | 已发布（Dev） |
