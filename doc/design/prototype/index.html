@@ -164,7 +164,17 @@
   <div class="card"><h3>llm-proxy API 契约（12 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/llm-proxy/models · chat · chat/stream(SSE) · health · conversations*（OpenBase JWT；内层注入 Bearer sk-openllm-）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · SSE 逐事件透传</b></div></div>
 </div>
 
-<footer>OpenBase v1.4.3 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 对接 2 页真实化）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.3》《OpenBase-API接口设计文档-v1.4.3》为准；Step 4 E2E 断言以交互状态清单为基线</footer>
+<h2>四、v1.4.4 OpenRAG 对接 · 2 页真实化（FR-144-05/06，R-380）</h2>
+<div class="note">v1.4.4 为 OpenRAG 系统对接（对接线第 2 站）：知识库管理/RAG 对话 2 页 mock 替换真实 API（走 OpenBase rag-proxy）。关键差异：OpenRAG 上游无认证 → OpenBase 为唯一认证入口。设计依据《OpenBase-UI设计文档-v1.4.4》《OpenBase-API接口设计文档-v1.4.4》《OpenBase-第三方集成设计文档-v1.4.4》。</div>
+<div class="grid">
+  <div class="card"><h3>知识库管理页 /openrag/knowledge <span class="tag t-p1">P1</span></h3><p>GET /api/v1/rag-proxy/collections 真实知识库列表；新建/详情/删除；文档上传（multipart → PENDING 轮询 → COMPLETED/FAILED 状态展示）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 轮询</b></div>
+    <details><summary>交互要点</summary><ul><li>加载态：表格 loading</li><li>轮询态：上传进度提示（2s 间隔）</li><li>错误态：解析失败提示 + 重试</li></ul></details></div>
+  <div class="card"><h3>RAG 对话页 /openrag/chat <span class="tag t-p1">P1</span></h3><p>知识库选择 → 提问 → POST /api/v1/rag-proxy/collections/{cid}/query/stream SSE 流式（start→token→done 增量渲染）+ 来源引用展示。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 流式</b></div>
+    <details><summary>交互要点</summary><ul><li>流式态：输入禁用 + 增量渲染 + 停止按钮</li><li>done 事件 → 来源引用折叠展示</li><li>error 事件 → 错误提示</li></ul></details></div>
+  <div class="card"><h3>rag-proxy API 契约（11 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/rag-proxy/collections* · documents* · query*（SSE）· health（OpenBase JWT；无上游认证注入；{detail} 归一化）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · SSE 逐事件透传</b></div></div>
+</div>
+
+<footer>OpenBase v1.4.4 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 2 页 + v1.4.4 OpenRAG 2 页）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.4》《OpenBase-API接口设计文档-v1.4.4》为准；Step 4 E2E 断言以交互状态清单为基线</footer>
 </div>
 </body>
 </html>
