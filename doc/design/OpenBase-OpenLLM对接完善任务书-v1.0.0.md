@@ -1,11 +1,11 @@
-# OpenBase-OpenLLM对接完善任务书-v1.1.0
+# OpenBase-OpenLLM对接完善任务书-v1.2.0
 
 | 属性 | 值 |
 |------|-----|
-| 文档编号 | OB-INTG-LLM-v1.1.0 |
-| 版本 | v1.1.0 |
+| 文档编号 | OB-INTG-LLM-v1.2.0 |
+| 版本 | v1.2.0 |
 | 状态 | [Review] |
-| 日期 | 2026-09-01 |
+| 日期 | 2026-09-02 |
 | 作者 | AD-OpenBase-Dev |
 | 版本主题 | OpenLLM 侧对接完善：会话/模型管理 API Key 通道、身份头支持、SSE 格式统一、安全补强 |
 | 适用范围 | OpenLLM 项目（D:\Trae CN\myproject\Dev\OpenLLM），由独立会话据此实施 |
@@ -18,6 +18,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-08-30 | AD-OpenBase-Dev | 初始版本：梳理 OpenBase（v1.4.3）对接 OpenLLM v2.13.0 仍需完善的 M1~M6 项 |
 | v1.1.0 | 2026-09-01 | AD-OpenBase-Dev | 实施与验证回填：M1/M2/M3/M5/M6 已完成并真实验证（OpenLLM v2.14.1）；M1 验证中修复注册用户默认租户归属缺陷；M4 维持延后（SCOPE-019） |
+| v1.2.0 | 2026-09-02 | AD-OpenBase-Dev | M4 SSE 格式统一实施完成并验证（契约见《OpenLLM-SSE事件契约-v1.0.0.md》）：M1~M6 全部 DONE + VERIFIED |
 
 ---
 
@@ -39,7 +40,7 @@ OpenBase（v1.4.3）启动 OpenLLM 系统对接（VC-011 对接线第 1 站）�
 | 模型管理写操作（providers 模型 CRUD） | ✅ 已实现并验证 | 写端点用 `get_admin_user_or_api_key`；非管理员 API Key 403；/providers/all 与 /providers/models/all 不再被 /{provider_id} 遮蔽（M2） |
 | 模型详情（GET /api/v1/providers/models/{model_id}） | ✅ 已核验 | 路由顺序已修复，/providers/models/all 返回 200 不落 422（M2 附带） |
 | 身份头支持（X-User-ID/X-Org-ID） | ✅ 已实现并验证 | API Key 通道 + 白名单来源（X-Proxy-Source: llm-proxy）才注入 external_user_id/external_org_id 审计；无来源/JWT 通道均拒绝（M3） |
-| SSE 事件格式 | ⏸️ 延后 | 维持三套并存，M4 明确延后（OpenLLM v2.14.0 SCOPE-019，任务书实施顺序第 5 项） |
+| SSE 事件格式 | ✅ 已实现并验证 | 统一契约（routing/chunk/done/error/usage）落地：chat-stream/* 与 local-models/pull 对齐网关格式，契约见《OpenLLM-SSE事件契约-v1.0.0.md》（M4） |
 | local_models 鉴权 | ✅ 已实现并验证 | 读端点 `get_current_active_user_or_api_key`、写端点 `get_admin_user_or_api_key`；无凭证 401 / API Key 读 200 / 非管理员写 403（M5） |
 | openapi.json / docs 开放 | ✅ 已实现并验证 | `_openapi_public = settings.DEBUG or settings.OPENAPI_PUBLIC`；DEBUG=true 时 /docs、/openapi.json、/redoc 注册（M6） |
 
@@ -159,7 +160,13 @@ OpenBase（v1.4.3）启动 OpenLLM 系统对接（VC-011 对接线第 1 站）�
 
 **验证方法**：新增 SSE 契约测试（断言事件序列与字段）；经 OpenBase proxy 分别请求 chat/chat-stream/网关流式端点，单一 parseSSEStream 解析全部通过。
 
-**实施与验证结果（v1.1.0 回填）**：⏸️ **维持延后**（OpenLLM v2.14.0 SCOPE-019 明确"M4 延后"）。现状：SSEEventType 枚举已含 routing/chunk/done/error/usage，`sse_adapter._adapt_openai` 已有 OpenAI 适配基础，但三套格式并存格局未改变。建议后续独立会话按本节方案实施（输出端 3 处 + 适配层）。
+**实施与验证结果（v1.2.0 回填）**：✅ **已完成并真实验证**。
+- 统一契约（见《OpenLLM-SSE事件契约-v1.0.0.md》）：事件序列 `routing → chunk×N → done`（error 中断），data 裸字段结构（routing `{components,model,parallel}` / chunk `{delta}` / done `{usage,request_id}` / error `{code,message}`）。
+- `sse_adapter.py`：SSEEventType 重构为契约事件集（ROUTING/CHUNK/DONE/ERROR/USAGE/FUNCTION_CALL/METADATA，移除 TOKEN）；`to_sse_format` 输出裸 data；新增统一事件构造器（create_routing/chunk/done/error_event）；`to_openai_format` 保留 OpenAI 兼容（chunk→`data:`/done→`[DONE]`）。
+- `chat_stream.py`：移除本地事件构造，改用统一 helpers；token→chunk 事件名、done/error data 对齐契约（含 request_id）。
+- `local_models.py` `/pull`：`data:` 原始透传 → `event: chunk` + `event: done {status}`，失败降级 `event: error {code:"pull_error"}`。
+- `chat.py` `/chat/completions`：OpenAI 兼容端点**保留**标准 `data:` 格式（协议例外，供标准 OpenAI SDK）。
+- 验证：契约单测 14 用例全绿（tests/unit/services/test_sse_adapter.py，事件名/字段结构/OpenAI 兼容）；真实服务 5 场景 PASS（chat-stream error 事件、pull error 降级、网关 routing→error 序列）。
 
 ---
 
@@ -226,7 +233,7 @@ OpenBase（v1.4.3）启动 OpenLLM 系统对接（VC-011 对接线第 1 站）�
 | 2 | M2 模型写操作 + 路由修复 | 无 | ✅ DONE + VERIFIED |
 | 3 | M3 身份头支持 | 无 | ✅ DONE + VERIFIED |
 | 4 | M6 openapi.json 开放 | 无 | ✅ DONE + VERIFIED |
-| 5 | M4 SSE 格式统一 | 无 | ⏸️ DEFERRED（SCOPE-019，独立会话实施） |
+| 5 | M4 SSE 格式统一 | 无 | ✅ DONE + VERIFIED（契约《OpenLLM-SSE事件契约-v1.0.0.md》落地） |
 | 6 | M5 local_models 鉴权 | 无 | ✅ DONE + VERIFIED |
 
 建议一个会话内按 1→2→3→6 完成核心项，4/5 视资源安排；每项完成后跑对应测试与真实验证再进入下一项。M1 完成后即可解除 OpenBase v1.4.3 对话管理页的通道阻塞（降级方案可撤销）。
@@ -248,7 +255,7 @@ OpenBase（v1.4.3）启动 OpenLLM 系统对接（VC-011 对接线第 1 站）�
 | 新建/归档/删除会话 | proxy POST / archive / DELETE | 200，落库生效 | ✅ 新建 201 落库（identity/no-proxy/jwt 三组） |
 | 模型写操作 | proxy POST /providers/{id}/models 创建 → GET 可见 | 200/201 + 列表可见 | ✅ 非管理员 403 门禁核验；管理员写操作待授权后回归 |
 | 模型详情 | proxy `GET /api/v1/llm-proxy/models/{model_id}` | 200（路由遮蔽已修复） | ✅ /providers/models/all 200 直接核验 |
-| SSE 流式对话 | proxy `POST /api/v1/llm-proxy/chat/stream` | routing/chunk/done 事件完整 | ⏸️ M4 延后，待独立会话 |
+| SSE 流式对话 | proxy `POST /api/v1/llm-proxy/chat/stream` | routing/chunk/done 事件完整 | ✅ 网关事件序列实测 routing→error（模型不可用）；单测覆盖 chunk/done 序列 |
 | 审计归属 | 经 proxy 注入 X-User-ID 调用后查审计日志 | external_user_id 字段正确 | ✅ DB 落库核验 ext-user-001/ext-org-001 |
 | 安全回归 | 未认证访问 local_models 端点 | 401 | ✅ 401 实测 |
 
@@ -268,7 +275,7 @@ OpenBase（v1.4.3）启动 OpenLLM 系统对接（VC-011 对接线第 1 站）�
 | M1 会话 API Key 通道 | ✅ VERIFIED | 2026-09-01 | 阻塞解除；附带修复注册用户默认租户归属（auth_service.py DEFAULT_TENANT_ID） |
 | M2 模型写操作 + 路由修复 | ✅ VERIFIED | 2026-09-01 | 非管理员 403 / 路由遮蔽 200 |
 | M3 身份头支持 | ✅ VERIFIED | 2026-09-01 | 审计 external_user_id/org_id 落库正确；防伪造三场景通过 |
-| M4 SSE 格式统一 | ⏸️ DEFERRED | - | SCOPE-019 延后，独立会话实施 |
+| M4 SSE 格式统一 | ✅ VERIFIED | 2026-09-02 | 契约落地：chat-stream/pull 对齐网关；契约单测 14 用例 + 真实服务 5 场景 |
 | M5 local_models 鉴权 | ✅ VERIFIED | 2026-09-01 | 401/403 门禁生效；Ollama 不可达时 503 降级正常 |
 | M6 openapi.json 开放 | ✅ VERIFIED | 2026-09-01 | DEBUG=true 200；OPENAPI_PUBLIC 分支单测覆盖 |
 
