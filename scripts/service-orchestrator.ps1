@@ -2,10 +2,12 @@
 # OpenBase 多系统服务编排脚本（service-orchestrator.ps1）
 #
 # 功能：
-#   1) start   ：一键启动全部服务（按依赖拓扑 + 端口预检 + 依赖健康检查）
-#   2) monitor ：实时健康检测，发现宕机自动重启（自愈）
-#   3) status  ：查询全部服务状态（端口占用 / 健康 / PID）
-#   4) stop    ：停止全部服务（按记录的 PID，逆拓扑）
+#   1) start      ：一键启动全部服务（按依赖拓扑 + 端口预检 + 依赖健康检查）
+#   2) startcheck ：一键启动 + 启动后自动全量检查（健康探活 + 深度业务端点检查）
+#   3) checkall   ：仅执行全量检查（不启动，对已运行服务做深度体检）
+#   4) monitor    ：实时健康检测，发现宕机自动重启（自愈）
+#   5) status     ：查询全部服务状态（端口占用 / 健康 / PID）
+#   6) stop       ：停止全部服务（按记录的 PID，逆拓扑）
 #
 # 服务/端口/依赖清单（单一事实源）：doc/design/OpenBase-多系统端口统筹方案-v1.0.0.md
 #   8000 OpenBase（固定） | 8001 OpenLLM | 8010 OpenRAG | 8020 OpenMemory
@@ -13,6 +15,8 @@
 #
 # 用法示例：
 #   .\scripts\service-orchestrator.ps1 -Action start
+#   .\scripts\service-orchestrator.ps1 -Action startcheck        # 一键启动 + 全量检查
+#   .\scripts\service-orchestrator.ps1 -Action checkall          # 仅全量检查
 #   .\scripts\service-orchestrator.ps1 -Action start -Only openbase,frontend
 #   .\scripts\service-orchestrator.ps1 -Action monitor -Interval 15 -MaxRestarts 3
 #   .\scripts\service-orchestrator.ps1 -Action status
@@ -23,7 +27,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('start', 'monitor', 'status', 'stop')]
+    [ValidateSet('start', 'startcheck', 'monitor', 'status', 'checkall', 'stop')]
     [string]$Action = 'start',
     [string[]]$Only = @(),
     [int]$Interval = 15,
@@ -54,6 +58,11 @@ $services = @(
         Depends = @()
         DepType = 'hard'
         Desc    = 'OpenLLM 大模型网关'
+        Checks  = @(
+            @{ Name = '健康检查';      Method = 'GET'; Path = '/health';              Expect = 200 }
+            @{ Name = 'API 状态';     Method = 'GET'; Path = '/api/v1/status';       Expect = 200 }
+            @{ Name = '开源模型列表';  Method = 'GET'; Path = '/api/v1/open-models';  Expect = 200 }
+        )
     },
     @{
         Name    = 'openrag'
@@ -66,6 +75,11 @@ $services = @(
         Depends = @()
         DepType = 'hard'
         Desc    = 'OpenRAG 知识库/检索'
+        Checks  = @(
+            @{ Name = '系统健康';   Method = 'GET'; Path = '/api/v1/system/health';  Expect = 200 }
+            @{ Name = '集合列表';   Method = 'GET'; Path = '/api/v1/collections';     Expect = 200 }
+            @{ Name = '系统信息';   Method = 'GET'; Path = '/api/v1/system/info';     Expect = 200 }
+        )
     },
     @{
         Name    = 'openmemory'
@@ -80,6 +94,12 @@ $services = @(
         Depends = @()
         DepType = 'hard'
         Desc    = 'OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j）'
+        Checks  = @(
+            @{ Name = '健康检查';     Method = 'GET'; Path = '/health';             Expect = 200 }
+            @{ Name = '就绪探针';     Method = 'GET'; Path = '/health/readiness';   Expect = 200 }
+            @{ Name = '存活探针';     Method = 'GET'; Path = '/health/liveness';    Expect = 200 }
+            @{ Name = 'V1 健康别名';  Method = 'GET'; Path = '/api/v1/health';      Expect = 200 }
+        )
     },
     @{
         Name    = 'dps'
@@ -92,6 +112,10 @@ $services = @(
         Depends = @()
         DepType = 'hard'
         Desc    = 'DPS 数据画像系统（任务书 M4 修复后可用）'
+        Checks  = @(
+            @{ Name = '存活探针';   Method = 'GET'; Path = '/health/liveness'; Expect = 200 }
+            @{ Name = 'API 文档';   Method = 'GET'; Path = '/docs';             Expect = 200 }
+        )
     },
     @{
         Name    = 'openbase'
@@ -104,6 +128,12 @@ $services = @(
         Depends = @('openllm', 'openrag', 'openmemory', 'dps')
         DepType = 'soft'
         Desc    = 'OpenBase 统一底座（JWT 门禁 + 四 proxy）'
+        Checks  = @(
+            @{ Name = 'OpenAPI 文档';  Method = 'GET'; Path = '/openapi.json';    Expect = 200 }
+            # /api/v1/health 需 JWT 鉴权，未带 token 返回 401 属正常（端点存在 + 门禁生效）
+            @{ Name = '健康端点(401=门禁)'; Method = 'GET'; Path = '/api/v1/health'; Expect = 401 }
+            @{ Name = '登录端点';      Method = 'GET'; Path = '/api/v1/auth/login'; Expect = 405 }
+        )
     },
     @{
         Name    = 'frontend'
@@ -112,10 +142,16 @@ $services = @(
         Command = 'npm.cmd'   # Windows 下 npm 为 npm.cmd（Start-Process 需带扩展名）
         Args    = @('run', 'dev')
         Env     = @{}
-        Health  = @('http://127.0.0.1:5173/')
+        # vite dev 默认仅绑定 IPv6 回环 ::1，须用 localhost 访问（127.0.0.1 不通）
+        Health  = @('http://localhost:5173/')
+        CheckBase = 'http://localhost:5173'
         Depends = @('openbase')
         DepType = 'hard'
         Desc    = '统一前端（vite dev，proxy → 8000）'
+        Checks  = @(
+            @{ Name = '首页 HTML'; Method = 'GET'; Path = '/';          Expect = 200 }
+            @{ Name = '入口脚本';  Method = 'GET'; Path = '/index.html'; Expect = 200 }
+        )
     }
 )
 
@@ -310,6 +346,7 @@ function Get-TopoOrder {
 # ---------------------------------------------------------------------------
 
 function Invoke-Start {
+    param([switch]$WithCheck)
     $targets = if ($Only.Count -gt 0) { $Only } else { ($services | ForEach-Object { $_.Name }) }
     $topo = Get-TopoOrder | Where-Object { $targets -contains $_ }
     Write-Log 'INFO' ("一键启动开始，服务拓扑序：{0}" -f ($topo -join ' → '))
@@ -320,6 +357,10 @@ function Invoke-Start {
     }
     Write-Log 'INFO' "一键启动完成，最终状态："
     Get-AllStatus
+    if ($WithCheck) {
+        Write-Log 'INFO' "开始全量服务检查..."
+        Invoke-CheckAll
+    }
 }
 
 function Invoke-Monitor {
@@ -356,6 +397,87 @@ function Invoke-Monitor {
     }
 }
 
+function Invoke-CheckAll {
+    param([switch]$OnlyAfterStart)
+    $targets = if ($Only.Count -gt 0) { $Only } else { ($services | ForEach-Object { $_.Name }) }
+    "===== 全量服务检查报告（{0}）=====" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+    $totalPass = 0; $totalFail = 0; $totalSkip = 0
+
+    foreach ($svc in $services) {
+        if ($targets -notcontains $svc.Name) { continue }
+        $baseUrl = if ($svc.CheckBase) { $svc.CheckBase } else { "http://127.0.0.1:{0}" -f $svc.Port }
+        $portPid = Get-PortPid $svc.Port
+        $up = [bool]$portPid
+
+        ""  # 空行分隔
+        "---- [{0}] {1}（端口 {2}）----" -f $svc.Name, $svc.Desc, $svc.Port
+        if (-not $up) {
+            $totalSkip++
+            "  [SKIP] 服务未运行（端口 {0} 无监听）" -f $svc.Port
+            continue
+        }
+        "  [INFO] 端口 {0} 监听中（PID {1}）" -f $svc.Port, $portPid
+
+        # 1) 健康探活
+        $healthy = Test-Health $svc
+        if ($healthy) {
+            $totalPass++
+            "  [PASS] 健康探活 OK（{0}）" -f ($svc.Health -join ' / ')
+        }
+        else {
+            $totalFail++
+            "  [FAIL] 健康探活失败（{0}）" -f ($svc.Health -join ' / ')
+        }
+
+        # 2) 深度业务检查
+        if ($svc.Checks) {
+            foreach ($check in $svc.Checks) {
+                $uri = $baseUrl + $check.Path
+                try {
+                    $resp = Invoke-WebRequest -Uri $uri -Method $check.Method -TimeoutSec 8 -UseBasicParsing -ErrorAction Stop
+                    $code = [int]$resp.StatusCode
+                    # 405 表示端点存在但方法不允许：对 GET 检查端点存在性场景按预期处理
+                    if ($code -eq $check.Expect -or ($code -eq 405 -and $check.Expect -eq 405)) {
+                        $totalPass++
+                        "  [PASS] {0}（{1} {2} → {3}）" -f $check.Name, $check.Method, $check.Path, $code
+                    }
+                    else {
+                        $totalFail++
+                        "  [FAIL] {0}（{1} {2} → {3}，期望 {4}）" -f $check.Name, $check.Method, $check.Path, $code, $check.Expect
+                    }
+                }
+                catch {
+                    $err = $_.Exception
+                    $msg = $err.Message
+                    # 解析 HTTP 错误响应码（如 401/403/404/405）
+                    $statusCode = $null
+                    if ($err.Response) {
+                        try { $statusCode = [int]$err.Response.StatusCode } catch { }
+                    }
+                    if ($statusCode -eq $check.Expect) {
+                        $totalPass++
+                        "  [PASS] {0}（{1} {2} → {3}，符合预期）" -f $check.Name, $check.Method, $check.Path, $statusCode
+                    }
+                    else {
+                        $totalFail++
+                        $detail = if ($statusCode) { "HTTP $statusCode" } else { $msg }
+                        "  [FAIL] {0}（{1} {2} → {3}，期望 {4}）" -f $check.Name, $check.Method, $check.Path, $detail, $check.Expect
+                    }
+                }
+            }
+        }
+    }
+
+    "" 
+    "===== 汇总：PASS {0} | FAIL {1} | SKIP {2} =====" -f $totalPass, $totalFail, $totalSkip
+    if ($totalFail -gt 0) {
+        Write-Log 'WARN' ("全量检查完成：{0} PASS / {1} FAIL / {2} SKIP" -f $totalPass, $totalFail, $totalSkip)
+    }
+    else {
+        Write-Log 'INFO' ("全量检查完成：{0} PASS / {1} FAIL / {2} SKIP" -f $totalPass, $totalFail, $totalSkip)
+    }
+}
+
 function Invoke-Status {
     "===== 多系统服务状态（{0}）=====" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
     "{0,-11} {1,-6} {2,-30} {3} {4}" -f '服务', '端口', '说明', '状态', 'PID'
@@ -378,8 +500,10 @@ function Invoke-Stop {
 }
 
 switch ($Action) {
-    'start'   { Invoke-Start }
-    'monitor' { Invoke-Monitor }
-    'status'  { Invoke-Status }
-    'stop'    { Invoke-Stop }
+    'start'      { Invoke-Start }
+    'startcheck' { Invoke-Start -WithCheck }
+    'monitor'    { Invoke-Monitor }
+    'status'     { Invoke-Status }
+    'checkall'   { Invoke-CheckAll }
+    'stop'       { Invoke-Stop }
 }
