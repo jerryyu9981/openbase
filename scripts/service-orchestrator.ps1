@@ -108,14 +108,17 @@ $services = @(
         Cwd     = 'D:\Trae CN\myproject\Dev\DPS'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'rest_api.app:app', '--app-dir', 'src', '--host', '127.0.0.1', '--port', '8030')
-        Env     = @{ API_PORT = '8030'; SQLITE_FALLBACK = 'true' }
+        # API_PORT=8030 覆盖默认 8000；SQLITE_FALLBACK 无 PG 时降级；
+        # PYTHONDONTWRITEBYTECODE 绕过沙箱禁止写 __pycache__ 的限制（M4 config.settings 已修复，
+        # aiofiles 已装；当前沙箱仅此一项需规避）
+        Env     = @{ API_PORT = '8030'; SQLITE_FALLBACK = 'true'; PYTHONDONTWRITEBYTECODE = '1' }
         Health  = @('http://127.0.0.1:8030/health/liveness')
         Depends = @()
         DepType = 'hard'
-        Desc    = 'DPS 数据画像系统（任务书 M4 修复后可用）'
+        Desc    = 'DPS 数据画像系统'
         Checks  = @(
             @{ Name = '存活探针';   Method = 'GET'; Path = '/health/liveness'; Expect = 200 }
-            @{ Name = 'API 文档';   Method = 'GET'; Path = '/docs';             Expect = 200 }
+            @{ Name = 'API 文档';   Method = 'GET'; Path = '/openapi.json';    Expect = 200 }
         )
     },
     @{
