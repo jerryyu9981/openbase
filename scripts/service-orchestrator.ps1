@@ -72,14 +72,14 @@ $services = @(
         Port    = 8020
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenMemory'
         Command = 'python'
-        # run_api.py 不传 memory_service 导致 /health 恒 503；改用 lightweight 模式
-        # （InMemoryVectorStore + SQLite + InMemoryCacheStore，无外部依赖）
-        Args    = @('scripts\run_lightweight.py', '--host', '0.0.0.0', '--port', '8020')
+        # complete 模式（Qdrant + PG + Redis + Neo4j 真实后端，依赖 192.168.0.151 共享基础设施）。
+        # 首次启动会预载 faster-whisper/CLIP 模型，耗时较长（约 2~4 分钟），健康探测需放宽等待
+        Args    = @('scripts\start_openmemory.py')
         Env     = @{}
         Health  = @('http://127.0.0.1:8020/health')
         Depends = @()
         DepType = 'hard'
-        Desc    = 'OpenMemory 记忆服务（lightweight 模式）'
+        Desc    = 'OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j）'
     },
     @{
         Name    = 'dps'

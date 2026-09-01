@@ -68,13 +68,12 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8010
 
 ```powershell
 cd 'D:\Trae CN\myproject\Dev\OpenMemory'
-# run_api.py 不传 memory_service → /health 恒 503（R-2026-0901-01 已修复）
-# 使用 lightweight 模式：InMemoryVectorStore + SQLite + InMemoryCacheStore，无外部依赖
-python scripts\run_lightweight.py --host 0.0.0.0 --port 8020
+# complete 模式：Qdrant + PostgreSQL + Redis + Neo4j 真实后端（192.168.0.151 共享基础设施）
+python scripts\start_openmemory.py
 ```
 
 > OpenBase 侧 `memory_upstream_base=http://127.0.0.1:8020` + `memory_api_key`（已配置）。
-> 注意：启动约需 60~90 秒（首次 import torch 冷加载），健康探针 `/health`（含 readiness/liveness）已全部放行（RBAC/Gateway/API-Key 三层豁免修复）。
+> 注意：首次启动约需 2~4 分钟（torch 冷加载 + faster-whisper/CLIP 模型预载），健康探针 `/health`（含 readiness/liveness）已全部放行（RBAC/Gateway/API-Key 三层豁免修复）。
 
 ### 3.5 DPS（8030）
 
@@ -141,6 +140,7 @@ foreach ($p in $ports) {
 
 | 版本     | 日期         | 修改人             | 摘要                                                                              |
 | ------ | ---------- | --------------- | ------------------------------------------------------------------------------- |
+| v1.0.2 | 2026-09-01 | OP-OpenBase-Dev | 纠正依赖可用性误判：四个外部组件（PG/Redis/Qdrant/Neo4j）真实驱动验证全部可用，OpenMemory 恢复 complete 模式（start_openmemory.py） |
 | v1.0.1 | 2026-09-01 | OP-OpenBase-Dev | OpenMemory 运行方式修订：run_api.py（恒 503）→ run_lightweight.py（lightweight 模式），健康探针三层豁免说明 |
 | v1.0.0 | 2026-09-01 | OP-OpenBase-Dev | 初始创建：五系统 + 前端端口统一分配（8000/8001/8010/8020/8030/5173）+ 启动模板 + 冲突分析（C1\~C5）+ 对接配置对照 |
 
