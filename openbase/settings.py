@@ -124,10 +124,13 @@ class Settings(BaseSettings):
     llm_upstream_timeout: float = 20.0
     llm_stream_timeout: float = 120.0
 
-    # ---- OpenRAG 对接（v1.4.4 R-380，JWT 门禁 + 无上游认证转发） ----
+    # ---- OpenRAG 对接（v1.4.4 R-380，JWT 门禁 + 上游认证转发） ----
     rag_upstream_base: str = "http://127.0.0.1:8010"
     rag_upstream_timeout: float = 20.0
     rag_stream_timeout: float = 120.0
+    # 任务书 M1：OpenRAG 服务级 API Key（X-API-Key，与 OPENRAG_API_SERVICE_API_KEY 同密钥），
+    # rag-proxy 转发时注入；空则不注入（向后兼容）
+    rag_api_key: str = "openbase-rag-gw-key-20260901"
 
     # ---- DPS 对接（v1.4.5 R-381，JWT 门禁 + 身份头注入转发） ----
     dps_upstream_base: str = "http://127.0.0.1:8030"

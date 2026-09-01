@@ -168,9 +168,9 @@ def test_rag_proxy_collections_list_success(client: TestClient) -> None:
     assert body["data"]["items"][0]["id"] == "col-1"
 
     call = client.fake.request_calls[0]  # type: ignore[attr-defined]
-    # OpenRAG 无认证：不注入 Authorization / X-API-Key
+    # 任务书 M1：OpenRAG 服务级 API Key 注入（X-API-Key），不注入 Authorization
     assert "Authorization" not in call["headers"]
-    assert "X-API-Key" not in call["headers"]
+    assert call["headers"].get("X-API-Key") == "openbase-rag-gw-key-20260901"
     assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v1/collections")
     assert call["params"] == {"page": 1, "page_size": 20}
 

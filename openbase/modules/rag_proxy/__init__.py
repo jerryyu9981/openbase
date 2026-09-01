@@ -1,11 +1,10 @@
-"""rag-proxy 模块：OpenRAG JWT 门禁 + 无上游认证注入转发（v1.4.4 R-380）.
+"""rag-proxy 模块：OpenRAG JWT 门禁 + 上游认证注入转发（v1.4.4 R-380 / 任务书 M1）.
 
 统一前端/调用方经 OpenBase 访问 OpenRAG 8010，OpenBase 为唯一认证入口：
 
-- 认证：OpenBase JWT（get_current_user），未认证返回 401（OpenRAG 上游无认证，
-  不做任何上游密钥注入）。
-- 转发：OpenRAG HTTP API 无认证（代码核验事实），rag-proxy 仅校验 OpenBase JWT
-  后直接转发，不注入 Authorization/X-API-Key。
+- 认证：OpenBase JWT（get_current_user），未认证返回 401。
+- 转发：OpenRAG 服务级 API Key（任务书 M1 落地）由 rag-proxy 持有同密钥，
+  通过 X-API-Key 请求头注入上游；无 key 配置时不注入（向后兼容）。
 - 响应适配：统一 {code, message, data, timestamp}；错误归一化提取顺序
   body.code（非 0）> body.detail.error/code（dict）> body.detail（str）>
   body.error.code > HTTP 状态码（覆盖 OpenRAG 网关 {code,message,data} 与
@@ -69,26 +68,32 @@ def _now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat()
 
 
-def _upstream_config() -> tuple[str, float, float]:
-    """读取上游 OpenRAG 配置（settings，支持 .env 覆盖；无 rag_api_key）."""
+def _upstream_config() -> tuple[str, float, float, str]:
+    """读取上游 OpenRAG 配置（settings，支持 .env 覆盖；任务书 M1 含服务级 API Key）."""
     settings = get_settings()
     return (
         settings.rag_upstream_base,
         settings.rag_upstream_timeout,
         settings.rag_stream_timeout,
+        settings.rag_api_key,
     )
 
 
 def _build_upstream_headers() -> dict[str, str]:
-    """构造转发上游的请求头（OpenRAG 无认证，不注入任何密钥）.
+    """构造转发上游的请求头（任务书 M1：注入 OpenRAG 服务级 API Key）.
 
-    OpenRAG v1.8.0 HTTP API 无认证（代码核验事实，认证仅 MCP 通道有），
-    OpenBase rag-proxy 为唯一认证入口，故不注入 Authorization/X-API-Key。
+    OpenRAG v1.8.0 APIKeyMiddleware 配置 service_api_key 后强制鉴权：
+    无 X-API-Key 直连返回 401。rag-proxy 持有同密钥（settings.rag_api_key）
+    注入上游；未配置 key 时保持无认证转发（向后兼容）。
     """
-    return {
+    _, _, _, rag_api_key = _upstream_config()
+    headers: dict[str, str] = {
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
+    if rag_api_key:
+        headers["X-API-Key"] = rag_api_key
+    return headers
 
 
 def _adapt_response(upstream: httpx.Response) -> JSONResponse:
@@ -167,8 +172,8 @@ async def _forward(
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
 ) -> JSONResponse:
-    """转发请求至 OpenRAG 并适配响应（非 SSE，无上游认证注入）."""
-    base_url, timeout, _ = _upstream_config()
+    """转发请求至 OpenRAG 并适配响应（非 SSE，任务书 M1 注入上游 API Key）."""
+    base_url, timeout, _, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -199,14 +204,17 @@ async def _forward_multipart(
     """
     body_bytes = await request.body()
     content_type = request.headers.get("content-type", "application/octet-stream")
-    base_url, timeout, _ = _upstream_config()
+    base_url, timeout, _, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
+            # 任务书 M1：multipart 透传同样注入上游 API Key（保留原始 Content-Type/boundary）
+            upstream_headers = _build_upstream_headers()
+            upstream_headers["Content-Type"] = content_type
             upstream = await client.request(
                 "POST", target_url,
                 content=body_bytes,
-                headers={"Content-Type": content_type},
+                headers=upstream_headers,
             )
     except httpx.HTTPError as exc:
         logger.warning(
@@ -229,7 +237,7 @@ async def _forward_sse(
     event: start → event: token（重复） → event: done。
     不缓冲、不包装、保序；上游中断时关闭下游流并记录日志。
     """
-    base_url, _, stream_timeout = _upstream_config()
+    base_url, _, stream_timeout, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
     json_body = {**json_body, "stream": True}
 

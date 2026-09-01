@@ -71,15 +71,17 @@ $services = @(
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenRAG'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'openrag.main:app', '--app-dir', 'src', '--host', '127.0.0.1', '--port', '8010')
-        Env     = @{ OPENRAG_API_PORT = '8010' }
+        # PYTHONDONTWRITEBYTECODE 绕过沙箱禁止写 __pycache__ 的限制（与 DPS 一致）
+        Env     = @{ OPENRAG_API_PORT = '8010'; PYTHONDONTWRITEBYTECODE = '1' }
         Health  = @('http://127.0.0.1:8010/api/v1/system/health')
         Depends = @()
         DepType = 'hard'
         Desc    = 'OpenRAG 知识库/检索'
         Checks  = @(
             @{ Name = '系统健康';   Method = 'GET'; Path = '/api/v1/system/health';  Expect = 200 }
-            @{ Name = '集合列表';   Method = 'GET'; Path = '/api/v1/collections';     Expect = 200 }
-            @{ Name = '系统统计';   Method = 'GET'; Path = '/api/v1/system/stats';    Expect = 200 }
+            # M1 认证落地后业务端点需 X-API-Key（同 OpenRAG .env service_api_key）
+            @{ Name = '集合列表';   Method = 'GET'; Path = '/api/v1/collections';     Expect = 200; Headers = @{ 'X-API-Key' = 'openbase-rag-gw-key-20260901' } }
+            @{ Name = '系统统计';   Method = 'GET'; Path = '/api/v1/system/stats';    Expect = 200; Headers = @{ 'X-API-Key' = 'openbase-rag-gw-key-20260901' } }
         )
     },
     @{
@@ -438,7 +440,15 @@ function Invoke-CheckAll {
             foreach ($check in $svc.Checks) {
                 $uri = $baseUrl + $check.Path
                 try {
-                    $resp = Invoke-WebRequest -Uri $uri -Method $check.Method -TimeoutSec 8 -UseBasicParsing -ErrorAction Stop
+                    $params = @{
+                        Uri = $uri
+                        Method = $check.Method
+                        TimeoutSec = 8
+                        UseBasicParsing = $true
+                        ErrorAction = 'Stop'
+                    }
+                    if ($check.Headers) { $params['Headers'] = $check.Headers }
+                    $resp = Invoke-WebRequest @params
                     $code = [int]$resp.StatusCode
                     # 405 表示端点存在但方法不允许：对 GET 检查端点存在性场景按预期处理
                     if ($code -eq $check.Expect -or ($code -eq 405 -and $check.Expect -eq 405)) {
