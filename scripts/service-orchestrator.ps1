@@ -72,12 +72,14 @@ $services = @(
         Port    = 8020
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenMemory'
         Command = 'python'
-        Args    = @('run_api.py', '--host', '127.0.0.1', '--port', '8020')
+        # run_api.py 不传 memory_service 导致 /health 恒 503；改用 lightweight 模式
+        # （InMemoryVectorStore + SQLite + InMemoryCacheStore，无外部依赖）
+        Args    = @('scripts\run_lightweight.py', '--host', '0.0.0.0', '--port', '8020')
         Env     = @{}
-        Health  = @('http://127.0.0.1:8020/health', 'http://127.0.0.1:8020/api/v1/health')
+        Health  = @('http://127.0.0.1:8020/health')
         Depends = @()
         DepType = 'hard'
-        Desc    = 'OpenMemory 记忆服务'
+        Desc    = 'OpenMemory 记忆服务（lightweight 模式）'
     },
     @{
         Name    = 'dps'
