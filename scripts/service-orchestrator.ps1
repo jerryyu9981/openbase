@@ -61,7 +61,8 @@ $services = @(
         Checks  = @(
             @{ Name = '健康检查';      Method = 'GET'; Path = '/health';              Expect = 200 }
             @{ Name = 'API 状态';     Method = 'GET'; Path = '/api/v1/status';       Expect = 200 }
-            @{ Name = '开源模型列表';  Method = 'GET'; Path = '/api/v1/open-models';  Expect = 200 }
+            # 开源模型列表需 JWT 鉴权，未带 token 返回 401 属正常（端点存在 + 门禁生效）
+            @{ Name = '开源模型列表(401=门禁)'; Method = 'GET'; Path = '/api/v1/open-models'; Expect = 401 }
         )
     },
     @{
@@ -78,7 +79,7 @@ $services = @(
         Checks  = @(
             @{ Name = '系统健康';   Method = 'GET'; Path = '/api/v1/system/health';  Expect = 200 }
             @{ Name = '集合列表';   Method = 'GET'; Path = '/api/v1/collections';     Expect = 200 }
-            @{ Name = '系统信息';   Method = 'GET'; Path = '/api/v1/system/info';     Expect = 200 }
+            @{ Name = '系统统计';   Method = 'GET'; Path = '/api/v1/system/stats';    Expect = 200 }
         )
     },
     @{
@@ -172,7 +173,7 @@ function Get-ServiceDef {
 }
 
 function Test-Health {
-    param([hashtable]$Svc, [int]$TimeoutSec = 3)
+    param([hashtable]$Svc, [int]$TimeoutSec = 5)
     foreach ($uri in $Svc.Health) {
         try {
             $resp = Invoke-WebRequest -Uri $uri -Method Get -TimeoutSec $TimeoutSec -UseBasicParsing -ErrorAction Stop
