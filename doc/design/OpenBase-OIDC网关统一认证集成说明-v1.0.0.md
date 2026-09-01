@@ -1,0 +1,120 @@
+# OpenBase-OIDC网关统一认证集成说明-v1.0.0
+
+| 属性 | 值 |
+|------|-----|
+| 文档编号 | OB-AUTH-OIDC-v1.0.0 |
+| 版本 | v1.0.0 |
+| 状态 | [Draft] |
+| 日期 | 2026-09-02 |
+| 作者 | AD-OpenBase-Dev |
+| 版本主题 | OIDC 统一认证：OpenBase 网关单点集成 OIDC，各对接服务（OpenMemory 等）以网关模式消费 |
+| 适用范围 | OpenBase（8000）+ OpenMemory（8020）+ OpenLLM（8001）+ OpenRAG（8010）+ DPS（8030） |
+
+> 本文档定义 OpenBase 统一网关 OIDC 认证集成方案与各下游服务的消费方式，避免各服务重复直连 IdP。OpenMemory 侧网关模式（oidc_mode=gateway）已实现并验证（见 §4）。
+
+## 修订历史
+
+| 版本 | 日期 | 修改人 | 修改内容 |
+|------|------|--------|---------|
+| v1.0.0 | 2026-09-02 | AD-OpenBase-Dev | 初始版本：OIDC 网关统一认证架构、OpenMemory gateway 模式落地、OpenBase 网关 OIDC 集成设计草案 |
+
+---
+
+## 1. 背景与目标
+
+OpenBase 统一网关（8000）当前以 JWT 门禁 + 四 proxy（llm-proxy/rag-proxy/memory-proxy/dps-proxy）聚合下游服务，认证为本地 HS256 共享密钥签发（modules/auth login）。计划引入 OIDC 统一认证（外部 IdP）后，需明确：
+
+1. OIDC 只在 OpenBase 网关单点集成（授权码流程、IdP 交互、令牌签发）。
+2. 下游服务（OpenMemory/OpenLLM/OpenRAG/DPS）**不再各自直连 IdP**，以"网关模式"消费网关签发的 JWT（共享密钥验签或信任网关仅解析 claims）。
+3. 避免双身份源与重复 OIDC 客户端凭据。
+
+## 2. 目标架构
+
+```
+浏览器/客户端
+    │  OIDC 授权码流程（登录 IdP）
+    ▼
+OpenBase 统一网关（8000）
+    │  ① OIDC 登录 → 换取 IdP ID Token/访问令牌
+    │  ② 签发统一 JWT（HS256 共享密钥，claims: sub/role/tenant_id/org_id）
+    │  ③ proxy 转发下游，携带 JWT（Authorization: Bearer）+ X-API-Key + 身份头
+    ├──▶ OpenMemory (8020)：oidc_mode=gateway（本地密钥双保险 或 仅解析 claims）
+    ├──▶ OpenLLM   (8001)：JWT 通道（get_current_active_user 已支持共享密钥验签）
+    ├──▶ OpenRAG   (8010)：X-API-Key 透传（网关代签，OIDC 不影响）
+    └──▶ DPS      (8030)：身份头注入（X-User-ID/X-Org-ID，OIDC claims 映射）
+```
+
+原则：
+- **单点 IdP 交互**：仅 OpenBase 网关持有 OIDC client_id/secret 与 discovery 配置。
+- **统一令牌语义**：网关签发 HS256 JWT（与现共享密钥体系兼容，`test-jwt-secret-for-v680` 为测试密钥，生产替换）。
+- **租户/角色传递**：OIDC claims（sub/org/role）由网关映射进 JWT（sub/tenant_id/role），下游按既有解析链路消费。
+
+## 3. OpenBase 网关 OIDC 集成设计（草案）
+
+### 3.1 配置项（openbase/settings.py 扩展）
+
+```python
+# OIDC 集成（OB-AUTH-OIDC）
+oidc_enabled: bool = False          # 启用开关（默认关闭，不影响现有本地认证）
+oidc_discovery_url: str = ""        # IdP discovery 端点
+oidc_client_id: str = ""
+oidc_client_secret: str = ""
+oidc_redirect_uri: str = ""         # 如 http://<host>:8000/api/v1/auth/oidc/callback
+oidc_scopes: list[str] = ["openid", "profile", "email"]
+oidc_claim_role: str = "roles"      # 角色 claim 名（IdP 特定，可配置）
+```
+
+### 3.2 流程
+
+1. `GET /api/v1/auth/oidc/authorize`：302 → IdP 授权端点（client_id/redirect_uri/state）。
+2. IdP 回调 `GET /api/v1/auth/oidc/callback`：code 换 token（token_endpoint）、取 ID Token、可选 userinfo。
+3. 网关映射 claims → 签发统一 JWT（复用现有 `create_access_token` 逻辑，sub=OIDC sub，附加 tenant_id/org_id/role）。
+4. 后续请求与现有 JWT 门禁完全一致（proxy 转发、身份头注入不变）。
+
+### 3.3 与现有认证的关系
+
+- `oidc_enabled=false`（默认）：现状不变（本地账号登录签发 JWT）。
+- `oidc_enabled=true`：登录端点增加 OIDC 通道；既有本地账号登录保留（可配置禁用）。
+- 现有 proxy 的 JWT 校验（get_current_user）不修改，仅签发来源扩展。
+
+## 4. OpenMemory 侧集成（已实现，OB-AUTH-OIDC §4）
+
+OpenMemory 网关中间件已支持 `oidc_mode` 双模式（`src/openmemory/gateway/gateway.py`）：
+
+| oidc_mode | 行为 | 适用 |
+|-----------|------|------|
+| `local`（默认） | 本地 HS256 共享密钥校验（现状不变） | 当前对接（网关本地签发） |
+| `gateway` | 外部 OIDC 网关已验签：配本地密钥则双保险验签；无密钥则仅解析 claims（保留 exp/nbf/iat 校验） | OpenBase 网关 OIDC 就绪后切换 |
+
+**切换方式**：`OPENMEMORY_GATEWAY__OIDC_MODE=gateway`（.env，默认 local）。共享密钥（`OPENMEMORY_GATEWAY__JWT_SECRET`）与网关一致时启用双保险；不想共享密钥可置空，信任网关仅解析 claims。
+
+**验证**（tests/unit/test_gateway.py TestOidcMode，9 用例全绿）：local 正确/错误密钥、gateway 无密钥解析 claims、gateway 过期拒绝（verify_exp 显式保留）、gateway 双保险。
+
+**已核实的相关能力**（OIDC 讨论轮核查）：
+- `Authenticator`（gateway/auth.py）gateway 模式与 APIGateway 一致语义（备选认证器，未装配）。
+- `OIDCClient`（security/oidc.py）远端 JWKS RS256 模式仅用于 OpenMemory 独立对外暴露场景，统一入口下不启用。
+- 租户解析 `X-Tenant-ID > JWT claim > default` 已具备；RBAC 角色绑定 `org_admin/user`（.env USER_ROLES）供权限判定。
+
+## 5. 验收标准
+
+| 项 | 验收 |
+|----|------|
+| 网关 OIDC 登录 | 经 IdP 授权码流程登录成功，返回统一 JWT |
+| 网关本地登录回归 | `oidc_enabled=false` 时本地账号登录行为不变 |
+| OpenMemory gateway 模式 | `OPENMEMORY_GATEWAY__OIDC_MODE=gateway` 后，网关签发 JWT 访问 8020 业务端点 200；过期/伪造 token 401 |
+| 租户/角色透传 | OIDC 用户的 tenant_id/role 正确映射，RBAC 判定生效 |
+| 各服务无重复 IdP 交互 | 仅网关持有 OIDC 凭据；下游无 OIDC discovery 调用 |
+
+## 6. 验证方法
+
+1. OpenMemory gateway 模式：`.env` 切 `OIDC_MODE=gateway` → 重启 8020 → 网关/本地签发的 JWT 访问 `GET /api/v1/decay/config` 200；过期 JWT 401。
+2. 单测：`python -m pytest tests/unit/test_gateway.py`（9 用例）。
+3. OpenBase 网关 OIDC：待 IdP（discovery/client_id/secret/redirect）配置确定后实施，实施时按 §3 扩展 settings + 新增 auth 路由，并对接 §4 OpenMemory gateway 模式做端到端验证。
+
+## 7. 风险与注意事项
+
+- **密钥管理**：共享密钥（HS256）仅限内网测试；生产建议网关 OIDC 签发 RS256 并下发 JWKS，下游验签公钥（或保持共享密钥双保险）。
+- **claims 映射**：OIDC sub 与现有用户体系（UserService）的绑定需明确（首次登录自动建号 or 绑定已有账号）。
+- **令牌时效**：网关 JWT 过期时间（jwt_expire_seconds=7200）与 IdP 会话一致或更短，避免下游验签通过但 IdP 已登出。
+- **防伪造**：gateway 模式无本地密钥时信任网关，OpenMemory 不得直接暴露公网（须经 OpenBase 网关）；若独立暴露需启用 OIDCClient 远端模式。
+- **向后兼容**：默认 oidc_mode=local 与 oidc_enabled=false，现有链路零影响。

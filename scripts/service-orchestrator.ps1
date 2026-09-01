@@ -92,7 +92,8 @@ $services = @(
         # complete 模式（Qdrant + PG + Redis + Neo4j 真实后端，依赖 192.168.0.151 共享基础设施）。
         # 首次启动会预载 faster-whisper/CLIP 模型，耗时较长（约 2~4 分钟），健康探测需放宽等待
         Args    = @('scripts\start_openmemory.py')
-        Env     = @{}
+        # PYTHONDONTWRITEBYTECODE 绕过沙箱禁止写 __pycache__ 的限制（与 openrag/dps 一致）
+        Env     = @{ PYTHONDONTWRITEBYTECODE = '1' }
         Health  = @('http://127.0.0.1:8020/health')
         Depends = @()
         DepType = 'hard'
