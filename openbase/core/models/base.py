@@ -15,6 +15,7 @@ from sqlalchemy import (
     Integer,
     String,
     Table,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -147,17 +148,22 @@ class Tenant(Base, TimestampMixin):
 class OidcIdentity(Base, TimestampMixin):
     """OIDC 外部身份 ↔ OpenBase 用户映射（OB-AUTH-OIDC v1.3.0，JIT 自动建号）.
 
-    IdP 主体（sub）唯一映射一个 OpenBase 用户（user_id 唯一），支持多 IdP（issuer 维度）。
-    首次 OIDC 登录自动建号并落映射；后续登录按 sub 直查复用。
+    IdP 主体（sub）唯一映射一个 OpenBase 用户（user_id 唯一）；
+    (issuer, sub) 复合唯一——同一 sub 可来自不同 IdP/realm（生产多 IdP 场景），
+    首次 OIDC 登录自动建号并落映射；后续登录按 sub+issuer 直查复用。
     """
 
     __tablename__ = "oidc_identity"
+    __table_args__ = (
+        # (issuer, sub) 复合唯一：取代 v1.3.0 的 sub 单列唯一（多 IdP 相同 sub 冲突）
+        UniqueConstraint("issuer", "sub", name="oidc_identity_issuer_sub_key"),
+    )
 
     id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(
         BIGINT, ForeignKey("users.id"), unique=True, nullable=False
     )
-    sub: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    sub: Mapped[str] = mapped_column(String(128), nullable=False)
     issuer: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     # IdP 侧最新身份信息（快照，供审计/重绑）
     idp_username: Mapped[str | None] = mapped_column(String(128), nullable=True)

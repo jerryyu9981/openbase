@@ -13,6 +13,10 @@
     redirect_uri=http://127.0.0.1:8000/api/v1/auth/oidc/callback
 
 用法：python idp_server.py   （监听 0.0.0.0:8090）
+
+claims 形状：OIDC_IDP_PROFILE=generic（默认，roles 平铺进 ID Token）|
+             OIDC_IDP_PROFILE=keycloak（角色仅进 access token：realm_access/resource_access 嵌套，
+             模拟 Keycloak 官方默认 mapper 行为，用于 OpenBase oidc_profile=keycloak 联调）
 """
 
 from __future__ import annotations
@@ -38,6 +42,9 @@ logger = logging.getLogger("openbase.oidc-idp")
 HOST = os.environ.get("OIDC_IDP_HOST", "127.0.0.1")
 PORT = int(os.environ.get("OIDC_IDP_PORT", "8090"))
 ISSUER = os.environ.get("OIDC_IDP_ISSUER", f"http://{HOST}:{PORT}")
+# claims 形状 profile：generic（平铺 roles 进 ID Token）| keycloak（角色仅进 access token，
+# realm_access/resource_access 嵌套，模拟 Keycloak 官方默认 mapper 行为）
+PROFILE = os.environ.get("OIDC_IDP_PROFILE", "generic")
 
 CLIENT_ID = os.environ.get("OIDC_IDP_CLIENT_ID", "openbase-gw")
 CLIENT_SECRET = os.environ.get("OIDC_IDP_CLIENT_SECRET", "openbase-oidc-secret-20260902")
@@ -231,7 +238,6 @@ async def login(request: Request) -> Response:
         return HTMLResponse("<h3>401 invalid credentials</h3>", status_code=401)
     sid = secrets.token_hex(16)
     _sessions[sid] = username
-    target = request.url.path  # /login 本身；原 authorize 参数在 query
     query = request.url.query or ""
     resp = RedirectResponse(f"/authorize?{query}" if query else "/authorize", status_code=302)
     resp.set_cookie("idp_sid", sid, max_age=1800, httponly=True)
@@ -274,6 +280,9 @@ async def token(request: Request) -> Response:
 
     claims = _user_claims(username, rec["scope"])
     now = int(time.time())
+    if PROFILE == "keycloak":
+        # Keycloak 默认：ID Token 不含角色（角色仅进 access token）
+        claims.pop("roles", None)
     id_token_payload = {
         "iss": ISSUER,
         "sub": rec["sub"],
@@ -285,7 +294,23 @@ async def token(request: Request) -> Response:
         **claims,
     }
     id_token = _sign_jws(id_token_payload)
-    access = secrets.token_urlsafe(32)
+    if PROFILE == "keycloak":
+        # Keycloak 默认形状：access token 为 RS256 JWT，角色嵌套 realm_access/resource_access
+        user = USERS[username]
+        access_payload = {
+            "iss": ISSUER,
+            "sub": rec["sub"],
+            "aud": CLIENT_ID,
+            "exp": now + ACCESS_TTL,
+            "iat": now,
+            "preferred_username": user["preferred_username"],
+            "email": user["email"],
+            "realm_access": {"roles": user["roles"]},
+            "resource_access": {CLIENT_ID: {"roles": ["viewer"]}},
+        }
+        access = _sign_jws(access_payload)
+    else:
+        access = secrets.token_urlsafe(32)
     _access_tokens[access] = {"sub": rec["sub"], "exp": time.time() + ACCESS_TTL}
     body = {
         "access_token": access,

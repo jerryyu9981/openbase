@@ -104,9 +104,12 @@ class OIDCClient:
             resp.raise_for_status()
             return resp.json()
 
-    def parse_id_token(self, id_token: str) -> dict[str, Any]:
-        """解析 ID Token 并校验签名（IdP JWKS 公钥 RS256）与 issuer/aud/exp. """
-        s = self._settings()
+    def _verify_token(self, token: str) -> dict[str, Any]:
+        """通用令牌验签：discovery JWKS 公钥 RS256 + issuer/aud/exp 校验.
+
+        ID Token 与 access token 同源签发、同一 JWKS/issuer/audience，
+        Keycloak 场景（角色默认仅进 access token）需要同样的验签能力。
+        """
         if not self._discovery:
             raise OIDCError("discovery not loaded")
         jwks_uri = self._discovery.get("jwks_uri")
@@ -115,16 +118,27 @@ class OIDCClient:
         with httpx.Client(timeout=10.0) as client:
             jwks = client.get(jwks_uri).json()
         try:
-            claims = jose_jwt.decode(
-                id_token,
+            return jose_jwt.decode(
+                token,
                 jwks,
                 algorithms=["RS256"],
-                audience=s.oidc_client_id,
+                audience=self._settings().oidc_client_id,
                 issuer=self._issuer or None,
             )
         except JWTError as exc:
-            raise OIDCError(f"id token validation failed: {exc}") from exc
-        return claims
+            raise OIDCError(f"token validation failed: {exc}") from exc
+
+    def parse_id_token(self, id_token: str) -> dict[str, Any]:
+        """解析 ID Token 并校验签名（IdP JWKS 公钥 RS256）与 issuer/aud/exp. """
+        return self._verify_token(id_token)
+
+    def verify_access_token(self, access_token: str) -> dict[str, Any]:
+        """解析 access token（同 JWKS/issuer/aud 校验）.
+
+        v1.4.0 Keycloak profile：角色默认只出现在 access token（realm_access），
+        当 ID Token 无角色时以此作为角色来源。
+        """
+        return self._verify_token(access_token)
 
     def map_claims(self, claims: dict[str, Any]) -> dict[str, Any]:
         """OIDC claims → 统一 JWT claims 映射（sub/org_id/role/租户）. """
@@ -163,6 +177,49 @@ router = APIRouter(prefix="/api/v1/auth/oidc", tags=["auth"])
 
 
 # ---- OIDC 用户体系绑定（OB-AUTH-OIDC v1.3.0：JIT 自动建号 + sub 映射） ----
+
+
+def _roles_from_keycloak(
+    claims: dict[str, Any],
+    client_id: str,
+    include_client_roles: bool = True,
+) -> list[str]:
+    """Keycloak claims 角色聚合（去重保序）.
+
+    来源：平铺 roles/role（自定义 mapper 兼容）> realm_access.roles（realm 角色）
+    > resource_access.<client_id>.roles（client 角色，可配置关闭）。
+    Keycloak 默认 realm/client 角色仅进 access token（官方默认 mapper 行为），
+    ID Token 是否携带取决于 client mapper 配置——故聚合需同时支持两令牌来源。
+    """
+    roles: list[str] = []
+    flat = claims.get("roles")
+    if isinstance(flat, list):
+        roles.extend(str(item) for item in flat)
+    elif isinstance(flat, str):
+        roles.append(flat)
+    role_alt = claims.get("role")
+    if isinstance(role_alt, str):
+        roles.append(role_alt)
+    realm_access = claims.get("realm_access")
+    if isinstance(realm_access, dict):
+        realm_roles = realm_access.get("roles")
+        if isinstance(realm_roles, list):
+            roles.extend(str(item) for item in realm_roles)
+    if include_client_roles:
+        resource_access = claims.get("resource_access")
+        if isinstance(resource_access, dict):
+            entry = resource_access.get(client_id)
+            if isinstance(entry, dict):
+                client_roles = entry.get("roles")
+                if isinstance(client_roles, list):
+                    roles.extend(str(item) for item in client_roles)
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for role in roles:
+        if role and role not in seen:
+            seen.add(role)
+            ordered.append(role)
+    return ordered
 
 
 async def _ensure_roles(session: Any, user_id: int, claims: dict[str, Any]) -> str | None:
@@ -317,7 +374,12 @@ async def _bind_or_create_user(
             "role": bound_role or "viewer",
         }
     except Exception:  # noqa: BLE001 - DB 不可用时降级（网关可用性优先）
-        logger.warning("oidc user binding failed, fallback to raw sub", extra={"sub": str(claims.get("sub", ""))})
+        # 可观测性：记录完整异常堆栈（降级是预期兜底，但原因必须可查）
+        logger.error(
+            "oidc user binding failed, fallback to raw sub",
+            extra={"sub": str(claims.get("sub", ""))},
+            exc_info=True,
+        )
         try:
             await session.rollback()
         except Exception:  # noqa: BLE001
@@ -373,8 +435,33 @@ async def oidc_callback(
     except (OIDCError, httpx.HTTPError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    mapped = client.map_claims(claims)
     settings = get_settings()
+    # v1.4.0 Keycloak profile：realm/client 角色默认仅进 access token（官方默认 mapper，
+    # ID Token 不含角色）。ID Token 聚合为空时验签 access token 兜底，归一化写回 roles。
+    if settings.oidc_profile == "keycloak":
+        roles = _roles_from_keycloak(
+            claims, settings.oidc_client_id, settings.oidc_keycloak_client_roles
+        )
+        if not roles:
+            access_token = token_resp.get("access_token")
+            if access_token:
+                try:
+                    at_claims = client.verify_access_token(access_token)
+                except (OIDCError, httpx.HTTPError) as exc:
+                    logger.warning(
+                        "keycloak access token verify failed, roles fallback skipped",
+                        extra={"error": str(exc)},
+                    )
+                else:
+                    roles = _roles_from_keycloak(
+                        at_claims,
+                        settings.oidc_client_id,
+                        settings.oidc_keycloak_client_roles,
+                    )
+        if roles:
+            claims["roles"] = roles
+
+    mapped = client.map_claims(claims)
 
     # v1.3.0：OIDC 用户体系绑定（JIT 建号/复用；DB 不可用返回 None → 降级）
     bound = await _bind_or_create_user(claims, session)

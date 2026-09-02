@@ -109,6 +109,8 @@ class Settings(BaseSettings):
     oidc_scopes: str = "openid profile email"  # 空格分隔
     oidc_claim_role: str = "roles"  # IdP ID Token 中角色 claim 名
     oidc_default_tenant: str = "default"  # 未映射租户时的默认值
+    oidc_profile: str = "generic"  # claims 适配 profile：generic（平铺 roles）| keycloak（realm_access/resource_access 嵌套聚合）
+    oidc_keycloak_client_roles: bool = True  # keycloak：聚合 resource_access.<client_id>.roles（False 仅 realm 角色）
 
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row
