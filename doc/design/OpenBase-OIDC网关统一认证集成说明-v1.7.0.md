@@ -125,7 +125,7 @@ assert\_binding.py、README.md。
 - settings：`env` 字段 + `jwt_secret` 无弱默认 + `jwt_secret_previous`；production 弱/缺密钥启动失败（fail-fast）。
 - jwt：签发恒用当前密钥（fail-closed）；验签遍历当前+旧密钥（轮换宽限）。
 - 工具 `scripts/gen_jwt_secret.py`（生成 + `--check` 校验）。
-- 本地 `.env` 已替换为生成的强随机密钥；OpenMemory 侧 `.env` 需同步同一值（沙箱外由运维执行）。
+- 本地 `.env` 已替换为生成的强随机密钥；OpenMemory 侧 `.env` 已同步同一值并重启验证联通（200）。
 
 ## 12. 风险与注意事项
 
@@ -137,7 +137,6 @@ assert\_binding.py、README.md。
 
 | 待办 | 说明 |
 | ---- | ---- |
-| OpenMemory .env 密钥同步 | 运维执行：`OPENMEMORY_GATEWAY__JWT_SECRET` 替换为与 OpenBase `.env` 相同的强随机密钥（见 OB-AUTH-JWTKEY §7） |
 | 企业 Keycloak 实配 | 真实企业 realm 复跑 §9/§10 |
 | 前端登出回跳 | OIDC 会话登出联动 IdP |
 | 一次性 code 交换 | 前端回调由 fragment 令牌升级为后端短期 code 交换 |

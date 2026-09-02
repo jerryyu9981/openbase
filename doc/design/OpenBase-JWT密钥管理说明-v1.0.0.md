@@ -68,8 +68,8 @@
 ### 3.4 演示环境（本地 .env，不入库）
 
 - OpenBase `.env`：`OPENBASE_JWT_SECRET` 已替换为生成的强随机密钥（64 字符）。
-- OpenMemory `.env`：`OPENMEMORY_GATEWAY__JWT_SECRET` 需同步为同一值
-  （其目录超出当前工作区沙箱，由运维执行下方命令同步）。
+- OpenMemory `.env`：`OPENMEMORY_GATEWAY__JWT_SECRET` 已同步为同一强随机密钥；
+  两服务均已重启加载，跨服务 JWT 验签联通验证 200（v1.0.0 实测）。
 
 ## 4. 密钥轮换操作流程（零中断）
 
@@ -110,5 +110,4 @@ $new = (python -c "import secrets;print(secrets.token_urlsafe(48))")
 
 | 待办 | 说明 |
 | ---- | ---- |
-| OpenMemory .env 同步 | 工作区沙箱外，运维执行：`OPENMEMORY_GATEWAY__JWT_SECRET=<新密钥>` 替换 `test-jwt-secret-for-v680` |
 | RS256+JWKS（可选演进） | 网关签发 RS256 + 下发 JWKS，下游公钥验签，消除共享密钥分发 |
