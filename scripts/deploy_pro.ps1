@@ -15,10 +15,15 @@ Set-Location (Split-Path $PSScriptRoot -Parent)
 
 Write-Host "=== OpenBase Deploy [$Env] strategy=$Strategy version=$Version ==="
 
-# 1. 环境变量校验（禁止默认密钥）
+# 1. 环境变量校验（禁止默认/弱密钥；生产强校验与 settings env=production 一致，v1.7.0）
 if (-not $env:OPENBASE_DB_URL) { throw "OPENBASE_DB_URL required (pro 环境必须显式注入)" }
-if (-not $env:OPENBASE_JWT_SECRET -or $env:OPENBASE_JWT_SECRET -eq "change-me-in-production") {
-    throw "OPENBASE_JWT_SECRET must be set (production secret)"
+$weakJwt = @("", "change-me-in-production", "test-jwt-secret-for-v680")
+$secret = [string]$env:OPENBASE_JWT_SECRET
+if ($weakJwt -contains $secret -or $secret.Length -lt 32) {
+    throw "OPENBASE_JWT_SECRET 必须为 ≥32 字符强随机密钥（禁止空/占位/演示值）。生成：python scripts/gen_jwt_secret.py"
+}
+if ([string]::IsNullOrEmpty($env:OPENBASE_ENV)) {
+    Write-Host "[warn] OPENBASE_ENV 未设置，默认 development；生产建议显式 OPENBASE_ENV=production（settings 将 fail-fast 拒绝弱密钥）"
 }
 
 # 2. 版本确认（git tag）
