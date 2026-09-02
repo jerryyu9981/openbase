@@ -111,6 +111,7 @@ class Settings(BaseSettings):
     oidc_default_tenant: str = "default"  # 未映射租户时的默认值
     oidc_profile: str = "generic"  # claims 适配 profile：generic（平铺 roles）| keycloak（realm_access/resource_access 嵌套聚合）
     oidc_keycloak_client_roles: bool = True  # keycloak：聚合 resource_access.<client_id>.roles（False 仅 realm 角色）
+    oidc_frontend_redirect: str = "/auth/oidc/callback"  # 浏览器授权成功后 302 前端回调路由（同源，fragment 携带令牌）
 
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row

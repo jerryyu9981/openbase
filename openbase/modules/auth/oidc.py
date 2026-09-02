@@ -15,6 +15,7 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from jose import JWTError
 from jose import jwt as jose_jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -505,6 +506,20 @@ async def oidc_callback(
     # 透传 IdP 身份供审计/身份头注入（下游网关模式消费）
     request.state.oidc_claims = claims
     request.state.bound_user = bound is not None
+    # v1.6.0：浏览器授权（Accept: text/html）→ 302 前端回调路由，令牌经 URL fragment
+    # 传递（不落服务端日志/URL 历史）；脚本/API（Accept: */*）保持 JSON 契约。
+    accept = request.headers.get("accept", "")
+    if settings.oidc_frontend_redirect and "text/html" in accept:
+        fragment = urllib.parse.urlencode(
+            {
+                "access_token": access,
+                "refresh_token": refresh,
+                "expires_in": settings.jwt_expire_seconds,
+            }
+        )
+        return RedirectResponse(
+            f"{settings.oidc_frontend_redirect}#{fragment}", status_code=302
+        )
     return {
         "access_token": access,
         "token_type": "bearer",

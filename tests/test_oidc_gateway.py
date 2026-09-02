@@ -272,3 +272,30 @@ def test_oidc_callback_full_flow(oidc_settings, mock_idp_url):
     assert protected.status_code == 200, protected.text
     me = protected.json()
     assert me.get("username") == "oidc-user-001"
+
+
+def test_oidc_callback_html_accept_redirects_frontend(oidc_settings, mock_idp_url):
+    """浏览器场景（Accept: text/html）：callback 302 前端回调路由，fragment 携带令牌（v1.6.0）. """
+    settings_module = oidc_settings
+    _apply_oidc_settings(settings_module, mock_idp_url)
+    s = settings_module._settings
+    s.oidc_frontend_redirect = "/auth/oidc/callback"
+    settings_module._settings = s
+    app = init_app(s)
+    client = TestClient(app)
+
+    auth = client.get("/api/v1/auth/oidc/authorize").json()
+    state = auth["state"]
+    redirect_uri = "http://testserver/api/v1/auth/oidc/callback"
+    resp = client.get(
+        f"{redirect_uri}?code=mock-code&state={state}",
+        headers={"Accept": "text/html,application/xhtml+xml"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302, resp.text
+    location = resp.headers["location"]
+    assert location.startswith("/auth/oidc/callback#")
+    assert "access_token=" in location
+    assert "refresh_token=" in location
+    # 令牌仅经 fragment，不出现于 query（不落 URL 历史/服务端日志）
+    assert "access_token" not in location.split("#")[0]

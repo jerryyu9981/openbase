@@ -6,6 +6,7 @@ import { tokenStore } from '@/core/api/http'
 /** 公共静态路由 */
 export const staticRoutes: RouteRecordRaw[] = [
   { path: '/auth/login', name: 'login', component: () => import('@/pages/Login.vue'), meta: { public: true } },
+  { path: '/auth/oidc/callback', name: 'oidc-callback', component: () => import('@/pages/OidcCallback.vue'), meta: { public: true } },
   {
     path: '/',
     component: () => import('@/core/layouts/AppLayout.vue'),

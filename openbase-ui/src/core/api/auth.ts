@@ -21,6 +21,15 @@ export interface ModuleInfo {
   sort_order: number
 }
 
+/** 解析 OIDC 回调 URL fragment（#access_token=..&refresh_token=..），v1.6.0 */
+export function parseOidcHash(hash: string): { access_token: string; refresh_token?: string } {
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash
+  const params = new URLSearchParams(raw)
+  const access_token = params.get('access_token') || ''
+  const refresh_token = params.get('refresh_token') || undefined
+  return { access_token, refresh_token }
+}
+
 export const authApi = {
   async login(username: string, password: string): Promise<AuthUser> {
     // 后端登录返回扁平 TokenResponse（v1.1.0 既有契约）
