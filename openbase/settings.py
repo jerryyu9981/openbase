@@ -11,9 +11,16 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger("openbase.settings")
+
+# 已知弱 JWT 密钥（占位/演示值；生产模式一律拒绝）
+WEAK_JWT_SECRETS = frozenset({"", "change-me-in-production", "test-jwt-secret-for-v680"})
 
 # 已注册的可用模块（模块包目录中存在即注册）
 AVAILABLE_MODULES: tuple[str, ...] = (
@@ -80,6 +87,8 @@ class Settings(BaseSettings):
     # ---- 基础 ----
     app_name: str = "OpenBase"
     debug: bool = False
+    # 运行环境：development | production（production 强制强 JWT 密钥，弱值启动即拒绝）
+    env: str = "development"
 
     # ---- 数据库 ----
     db_url: str = _resolve_db_url()
@@ -91,7 +100,10 @@ class Settings(BaseSettings):
     redis_url: str = _resolve_redis_url()
 
     # ---- 鉴权 ----
-    jwt_secret: str = "change-me-in-production"
+    # 无内置弱默认（v1.7.0）：本地由 .env 提供随机密钥；production 强制强密钥否则启动失败。
+    # 轮换宽限：jwt_secret_previous 仅参与验签（旧 token 过渡期有效），签发始终用 jwt_secret。
+    jwt_secret: str = ""
+    jwt_secret_previous: str = ""
     jwt_algorithm: str = "HS256"
     jwt_expire_seconds: int = 7200
     refresh_expire_seconds: int = 604800
@@ -156,6 +168,31 @@ class Settings(BaseSettings):
 
     # ---- 模块启停（内部状态） ----
     _enabled_modules: set[str] = set()
+
+    @model_validator(mode="after")
+    def _validate_jwt_secret(self) -> Settings:
+        """JWT 密钥安全校验（v1.7.0）.
+
+        production：必须为强随机密钥（≥32 字符且非已知弱值），否则启动失败（fail-fast）；
+        development：弱值仅 WARN（便于本地演示，.env 仍建议随机密钥）。
+        """
+        secret = self.jwt_secret or ""
+        is_weak = len(secret) < 32 or secret in WEAK_JWT_SECRETS
+        if self.env == "production":
+            if is_weak:
+                raise ValueError(
+                    "OPENBASE_JWT_SECRET 必须为强随机密钥（≥32 字符，禁止占位/演示值）；"
+                    "可用 python scripts/gen_jwt_secret.py 生成"
+                )
+        elif is_weak and secret:
+            logger.warning(
+                "development 模式使用弱/演示 JWT 密钥，仅限本地联调（生产将拒绝启动）"
+            )
+        elif not secret:
+            logger.warning(
+                "OPENBASE_JWT_SECRET 未配置：签发将失败（fail-closed）；请配置随机密钥"
+            )
+        return self
 
     def enable_module(self, name: str) -> None:
         """启用模块.

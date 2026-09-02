@@ -136,7 +136,7 @@ def oidc_settings(monkeypatch):
     monkeypatch.setenv("OPENBASE_OIDC_CLIENT_SECRET", "test-secret")
     monkeypatch.setenv("OPENBASE_OIDC_REDIRECT_URI", "http://testserver/api/v1/auth/oidc/callback")
     monkeypatch.setenv("OPENBASE_OIDC_CLAIM_ROLE", "roles")
-    monkeypatch.setenv("OPENBASE_JWT_SECRET", "test-jwt-secret-for-v680")
+    monkeypatch.setenv("OPENBASE_JWT_SECRET", "test-jwt-secret-v680-0123456789abcdefghij")
     import sys
 
     import openbase.settings  # noqa: F401  确保 sys.modules 注册真模块
