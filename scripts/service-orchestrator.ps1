@@ -43,6 +43,23 @@ $LogFile = Join-Path $LogDir ("orchestrator-{0}.log" -f (Get-Date -Format 'yyyyM
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
 # ---------------------------------------------------------------------------
+# 共享基础设施环境注入（.env.shared-infra：POSTGRES_URL/REDIS_URL → 服务进程继承）
+# 使 openbase 等服务启动时连接共享 PG/Redis（demo_app init_database 真实建表/种子）
+# ---------------------------------------------------------------------------
+$SharedInfraFile = Join-Path (Split-Path $PSScriptRoot -Parent) '.env.shared-infra'
+if (Test-Path $SharedInfraFile) {
+    Get-Content $SharedInfraFile | ForEach-Object {
+        if ($_ -match '^\s*([A-Z][A-Z0-9_]*)=(.*)\s*$') {
+            $k = $Matches[1]
+            $v = $Matches[2].Trim().Trim('"').Trim("'")
+            if ($v -and -not [Environment]::GetEnvironmentVariable($k, 'Process')) {
+                [Environment]::SetEnvironmentVariable($k, $v, 'Process')
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
 # 服务定义表（名称/端口/启动命令/健康检查候选端点/依赖/依赖类型）
 # DepType: hard=依赖未健康则不启动；soft=依赖未健康仅告警（OpenBase 上游软依赖）
 # ---------------------------------------------------------------------------

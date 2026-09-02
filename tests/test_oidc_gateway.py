@@ -5,17 +5,15 @@
 """
 from __future__ import annotations
 
-import json
 import time
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.requests import Request as StarletteRequest
-from starlette.responses import JSONResponse, RedirectResponse
+from starlette.responses import RedirectResponse
 
 from openbase import init_app
-from openbase.settings import Settings
 
 # ---------------------------------------------------------------------------
 # mock OIDC IdP（discovery + token + jwks，RS256 签名 ID Token）
@@ -139,12 +137,16 @@ def oidc_settings(monkeypatch):
     monkeypatch.setenv("OPENBASE_OIDC_REDIRECT_URI", "http://testserver/api/v1/auth/oidc/callback")
     monkeypatch.setenv("OPENBASE_OIDC_CLAIM_ROLE", "roles")
     monkeypatch.setenv("OPENBASE_JWT_SECRET", "test-jwt-secret-for-v680")
-    import openbase.settings  # noqa: F401  确保 sys.modules 注册真模块
     import sys
+
+    import openbase.settings  # noqa: F401  确保 sys.modules 注册真模块
+    from openbase.modules.auth import oidc as oidc_module
 
     settings_module = sys.modules["openbase.settings"]
     settings_module._settings = None
+    oidc_module._oidc_client = None  # 重置客户端单例（避免 discovery 缓存跨用例残留）
     yield settings_module
+    oidc_module._oidc_client = None
     settings_module._settings = None
 
 
@@ -161,6 +163,7 @@ def _apply_oidc_settings(settings_module, mock_idp_url) -> None:
 def mock_idp_url():
     """启动 mock IdP（uvicorn 线程，返回 issuer base URL）. """
     import threading
+
     import uvicorn
 
     idp = MockIdp(
@@ -190,12 +193,17 @@ def mock_idp_url():
 # ---------------------------------------------------------------------------
 
 
-def test_oidc_disabled_returns_404():
+def test_oidc_disabled_returns_404(monkeypatch):
     """默认（oidc_enabled=false）：OIDC 端点返回 404，本地认证不受影响. """
+    # 显式置 false（覆盖 .env 的 OPENBASE_OIDC_ENABLED=true，env 优先级高于 env_file）
+    monkeypatch.setenv("OPENBASE_OIDC_ENABLED", "false")
     import sys
+
+    from openbase.modules.auth import oidc as oidc_module
 
     settings_module = sys.modules["openbase.settings"]
     settings_module._settings = None
+    oidc_module._oidc_client = None
     s = settings_module.Settings()
     s.enable_module("auth")
     settings_module._settings = s
@@ -204,6 +212,7 @@ def test_oidc_disabled_returns_404():
     resp = client.get("/api/v1/auth/oidc/authorize")
     assert resp.status_code == 404
     settings_module._settings = None
+    oidc_module._oidc_client = None
 
 
 def test_oidc_authorize_returns_url(oidc_settings, mock_idp_url):

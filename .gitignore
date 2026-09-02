@@ -38,6 +38,7 @@ tmp/
 *.tmp
 pytest_out.txt
 reports_junit.xml
+logs/
 
 # ---- 本地存储测试数据 ----
 storage/

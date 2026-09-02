@@ -69,6 +69,19 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                 f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.roles WHERE code = 'admin')"
             )
         )
+        # OB-AUTH-OIDC（v1.3.0）：基础业务角色，供 OIDC claims roles 映射与常规授权
+        for _code, _name, _desc in (
+            ("viewer", "只读用户", "只读访问角色"),
+            ("user", "普通用户", "标准业务用户角色"),
+            ("org_admin", "组织管理员", "组织级管理角色"),
+        ):
+            await conn.execute(
+                text(
+                    f"INSERT INTO {schema}.roles (name, code, description, is_system, created_at, updated_at) "
+                    "SELECT :name, :code, :desc, true, now(), now() "
+                    f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.roles WHERE code = :code)"
+                ).bindparams(name=_name, code=_code, desc=_desc)
+            )
         # 全部权限通配
         await conn.execute(
             text(

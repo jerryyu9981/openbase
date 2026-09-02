@@ -144,6 +144,26 @@ class Tenant(Base, TimestampMixin):
     quota: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
+class OidcIdentity(Base, TimestampMixin):
+    """OIDC 外部身份 ↔ OpenBase 用户映射（OB-AUTH-OIDC v1.3.0，JIT 自动建号）.
+
+    IdP 主体（sub）唯一映射一个 OpenBase 用户（user_id 唯一），支持多 IdP（issuer 维度）。
+    首次 OIDC 登录自动建号并落映射；后续登录按 sub 直查复用。
+    """
+
+    __tablename__ = "oidc_identity"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        BIGINT, ForeignKey("users.id"), unique=True, nullable=False
+    )
+    sub: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    issuer: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    # IdP 侧最新身份信息（快照，供审计/重绑）
+    idp_username: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    idp_email: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+
 class Department(Base, TimestampMixin):
     """部门（org 模块，树形结构）."""
 
