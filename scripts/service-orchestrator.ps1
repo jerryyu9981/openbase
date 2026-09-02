@@ -106,6 +106,24 @@ $services = @(
         )
     },
     @{
+        Name    = 'oidc-idp'
+        Port    = 8090
+        Cwd     = 'D:\Trae CN\myproject\Dev\OpenBase'
+        Command = 'python'
+        # 本地标准 OIDC IdP（scripts/oidc-idp/idp_server.py，开发/联调用，OB-AUTH-OIDC）
+        Args    = @('scripts\oidc-idp\idp_server.py')
+        Env     = @{ PYTHONDONTWRITEBYTECODE = '1' }
+        Health  = @('http://127.0.0.1:8090/health', 'http://127.0.0.1:8090/.well-known/openid-configuration')
+        Depends = @()
+        DepType = 'hard'
+        Desc    = '本地 OIDC IdP（标准授权码流程，演示用户池）'
+        Checks  = @(
+            @{ Name = '健康检查'; Method = 'GET'; Path = '/health'; Expect = 200 }
+            @{ Name = 'Discovery'; Method = 'GET'; Path = '/.well-known/openid-configuration'; Expect = 200 }
+            @{ Name = 'JWKS';      Method = 'GET'; Path = '/jwks';  Expect = 200 }
+        )
+    },
+    @{
         Name    = 'dps'
         Port    = 8030
         Cwd     = 'D:\Trae CN\myproject\Dev\DPS'

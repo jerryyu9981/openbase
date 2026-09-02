@@ -41,3 +41,6 @@ reports_junit.xml
 
 # ---- 本地存储测试数据 ----
 storage/
+
+# ---- 本地 OIDC IdP 私钥（运行时生成，绝不提交）----
+scripts/oidc-idp/keys/

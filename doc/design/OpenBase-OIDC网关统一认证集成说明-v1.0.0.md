@@ -1,23 +1,24 @@
-# OpenBase-OIDC网关统一认证集成说明-v1.1.0
+# OpenBase-OIDC网关统一认证集成说明-v1.2.0
 
 | 属性   | 值                                                                         |
 | ---- | ------------------------------------------------------------------------- |
-| 文档编号 | OB-AUTH-OIDC-v1.1.0                                                       |
-| 版本   | v1.1.0                                                                    |
+| 文档编号 | OB-AUTH-OIDC-v1.2.0                                                       |
+| 版本   | v1.2.0                                                                    |
 | 状态   | \[Review]                                                                 |
 | 日期   | 2026-09-02                                                                |
 | 作者   | AD-OpenBase-Dev                                                           |
-| 版本主题 | OIDC 统一认证：OpenBase 网关授权码流程已实现并端到端验证；OpenMemory gateway 模式已落地                 |
+| 版本主题 | OIDC 统一认证：本地标准 IdP 真实接入完成并端到端验证（含跨系统贯通）                                   |
 | 适用范围 | OpenBase（8000）+ OpenMemory（8020）+ OpenLLM（8001）+ OpenRAG（8010）+ DPS（8030） |
 
-> 本文档定义 OpenBase 统一网关 OIDC 认证集成方案与各下游服务的消费方式，避免各服务重复直连 IdP。OpenBase 网关侧授权码流程（§3）与 OpenMemory 侧网关模式（§4）均已实现并验证。
+> 本文档定义 OpenBase 统一网关 OIDC 认证集成方案与各下游服务的消费方式，避免各服务重复直连 IdP。OpenBase 网关侧授权码流程（§3）、OpenMemory 侧网关模式（§4）均已实现；v1.2.0 完成本地标准 OIDC IdP 真实接入与端到端验证。
 
 ## 修订历史
 
-| 版本     | 日期         | 修改人             | 修改内容                                                               |
-| ------ | ---------- | --------------- | ------------------------------------------------------------------ |
-| v1.0.0 | 2026-09-02 | AD-OpenBase-Dev | 初始版本：OIDC 网关统一认证架构、OpenMemory gateway 模式落地、OpenBase 网关 OIDC 集成设计草案 |
+| 版本     | 日期         | 修改人             | 修改内容                                                                                                           |
+| ------ | ---------- | --------------- | -------------------------------------------------------------------------------------------------------------- |
+| v1.0.0 | 2026-09-02 | AD-OpenBase-Dev | 初始版本：OIDC 网关统一认证架构、OpenMemory gateway 模式落地、OpenBase 网关 OIDC 集成设计草案                                             |
 | v1.1.0 | 2026-09-02 | AD-OpenBase-Dev | OpenBase 网关 OIDC 授权码流程实现落地（settings/oidc.py/白名单）+ mock IdP 端到端验证 + get\_current\_user/MeResponse OIDC sub 兼容修复 |
+| v1.2.0 | 2026-09-02 | AD-OpenBase-Dev | 真实 IdP 接入：本地标准 OIDC IdP 服务（scripts/oidc-idp，8090）+ 编排脚本接入 + .env 启用；真实授权码全流程 13/13 + OIDC JWT 贯通 OpenMemory    |
 
 ***
 
@@ -81,13 +82,17 @@ oidc_default_tenant: str = "default"  # 未映射租户时的默认值
 ### 3.3 与现有认证的关系
 
 - `oidc_enabled=false`（默认）：现状不变（本地账号登录签发 JWT）；OIDC 端点 404。
+
 - `oidc_enabled=true`：OIDC 通道启用，签发的统一 JWT 与本地账号登录同语义（sub/username/tenant\_id/org\_id/role/type=access）。
+
 - 兼容修复：`get_current_user` 与 `MeResponse.id` 支持 OIDC 非数字 sub（保留字符串主体，避免 ValueError/序列化失败）。
 
 ### 3.4 实施与验证结果（v1.1.0 回填）
 
 - `tests/test_oidc_gateway.py` 3 用例全绿（mock IdP：discovery/token/jwks RS256）：禁用 404、authorize 返回 URL、授权码全流程（callback → 统一 JWT claims 断言 → `/api/v1/auth/me` 200）。
+
 - auth 相关回归（test\_ui\_increments/test\_three\_modules/test\_rbac\_deps）27 用例无破坏。
+
 - 修复过程中发现的真实缺陷：`get_current_user` 对 OIDC 字符串 sub 抛 ValueError（int 转换）、`MeResponse.id` 仅 int 无法序列化——均已修复。
 
 ## 4. OpenMemory 侧集成（已实现，OB-AUTH-OIDC §4）
@@ -141,10 +146,30 @@ OpenMemory 网关中间件已支持 `oidc_mode` 双模式（`src/openmemory/gate
 
 ## 8. 实施待办
 
-| 待办 | 说明 |
-| ---- | ---- |
-| 真实 IdP 接入 | 配置 `OPENBASE_OIDC_DISCOVERY_URL/CLIENT_ID/CLIENT_SECRET/REDIRECT_URI`（.env）后按 §6.3 复跑端到端；对接真实 IdP 的 claims（tenant/org/role）映射 |
-| OIDC 用户体系绑定 | §7.2：首次登录自动建号 or 绑定已有账号（当前统一 JWT 以 IdP sub 为主体，RBAC 角色由 IdP claims 映射） |
-| 生产密钥 | `OPENBASE_JWT_SECRET` 替换测试密钥；共享密钥 HS256 仅限内网，生产建议网关签发 RS256 + JWKS |
-| 前端登录入口 | openbase-ui 登录页增加"OIDC 登录"按钮（跳转 authorize，callback 后存 JWT） |
+| 待办            | 说明                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| ~~真实 IdP 接入~~ | ~~配置后复跑端到端~~ ✅ v1.2.0 已完成：本地标准 OIDC IdP（scripts/oidc-idp，8090）接入，真实授权码全流程 13/13 + OIDC JWT 贯通 OpenMemory 200 |
+| OIDC 用户体系绑定   | §7.2：首次登录自动建号 or 绑定已有账号（当前统一 JWT 以 IdP sub 为主体，RBAC 角色由 IdP claims 映射）                                       |
+| 生产密钥          | `OPENBASE_JWT_SECRET` 替换测试密钥；共享密钥 HS256 仅限内网，生产建议网关签发 RS256 + JWKS                                           |
+| 前端登录入口        | openbase-ui 登录页增加"OIDC 登录"按钮（跳转 authorize，callback 后存 JWT）                                                   |
 
+## 9. 真实 IdP 接入实施记录（v1.2.0）
+
+### 9.1 本地标准 OIDC IdP（scripts/oidc-idp/idp\_server.py）
+
+内网无 Docker/现成 IdP 场景下的真实 IdP：标准协议完整实现（Authlib jose RS256），与任意合规 IdP 协议兼容，后续可无缝替换。
+
+| 项         | 内容                                                                                                                   |
+| --------- | -------------------------------------------------------------------------------------------------------------------- |
+| 标准端点      | `/.well-known/openid-configuration`、`/jwks`、`/authorize`（真实登录页）、`/token`（client\_secret\_post）、`/userinfo`、`/health` |
+| 签名        | RS256（RSA-2048，密钥持久化 `scripts/oidc-idp/keys/idp-rsa.json`，.gitignore 排除）                                             |
+| 演示用户      | oidc-admin/oidc-pass-2026（roles=org\_admin）；oidc-user/user-pass-2026（roles=user）                                     |
+| 内置 client | openbase-gw / openbase-oidc-secret-20260902，redirect=<http://127.0.0.1:8000/api/v1/auth/oidc/callback>               |
+| 编排接入      | service-orchestrator.ps1 新增 `oidc-idp` 服务（8090，health/discovery/jwks Checks）                                         |
+| .env 启用   | OPENBASE\_OIDC\_ENABLED=true + discovery/client/secret/redirect/claim\_role/default\_tenant                          |
+
+### 9.2 端到端验证（2026-09-02，13/13 PASS）
+
+模拟浏览器真实流程：OpenBase authorize → IdP 登录页（真实凭据 + 会话）→ 302 授权码回 callback → 统一 JWT（claims 断言：sub=oidc-sub-admin-001 / tenant\_id=org\_id=default / role=org\_admin）→ 受保护端点 `/auth/me` 200（username=oidc-admin）→ 无 token 401。
+
+跨系统贯通：同一 OIDC 签发的统一 JWT 直连 OpenMemory 8020 `decay/config` **200**（共享密钥 HS256 验签，OpenMemory 未改配置即消费网关身份）。
