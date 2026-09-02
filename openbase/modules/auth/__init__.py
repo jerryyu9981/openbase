@@ -28,6 +28,15 @@ from openbase.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
+# v1.4.6（OB-AUTH-OIDC）：OIDC 统一认证路由独立前缀挂载（/api/v1/auth/oidc/*）
+# 默认 oidc_enabled=false 时路由 404，不影响现有本地认证
+try:
+    from openbase.modules.auth.oidc import router as oidc_router
+
+    extra_routers = [oidc_router]
+except ImportError:  # 依赖缺失时降级，不阻塞 auth 模块装配
+    extra_routers = []
+
 
 # ---- Schemas ----
 
@@ -58,7 +67,8 @@ class TokenResponse(BaseModel):
 class MeResponse(BaseModel):
     """当前用户信息响应."""
 
-    id: int
+    # v1.4.6（OB-AUTH-OIDC）：OIDC sub 为 IdP 侧字符串主体，id 支持 int（本地账号）/ str（OIDC）
+    id: int | str
     username: str
     tenant_id: str | None = None
     permissions: list[str] = []

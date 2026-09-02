@@ -62,6 +62,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/redoc",
         "/api/v1/auth/login",
         "/api/v1/auth/refresh",
+        # OB-AUTH-OIDC：OIDC 授权码流程端点公开（回调后签发统一 JWT）
+        "/api/v1/auth/oidc",
         "/observability/status",
         # MCP：服务发现公开；工具调用由 MCP 层 API Key 鉴权（豁免 JWT）
         "/mcp/server/info",
@@ -135,8 +137,14 @@ async def get_current_user(
 
     # 用户信息以 payload 中精简字段返回，详细查询由 auth 模块服务提供
     # permissions 透传（含 "*" 通配），供 require_permission 直接校验
+    # v1.4.6（OB-AUTH-OIDC）：OIDC sub 为非数字字符串（IdP 侧主体），保留原值，
+    # 仅对本地账号（数字 id）做 int 转换，避免 ValueError
+    try:
+        user_int_id = int(user_id)
+    except (TypeError, ValueError):
+        user_int_id = None
     return {
-        "id": int(user_id),
+        "id": user_int_id if user_int_id is not None else str(user_id),
         "username": payload.get("username", ""),
         "tenant_id": payload.get("tenant_id"),
         "permissions": payload.get("permissions") or [],

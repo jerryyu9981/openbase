@@ -100,6 +100,16 @@ class Settings(BaseSettings):
     # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）
     mcp_api_keys: str = "dev-mcp-key"
 
+    # ---- OIDC 统一认证（OB-AUTH-OIDC，默认关闭，不影响现有本地认证） ----
+    oidc_enabled: bool = False
+    oidc_discovery_url: str = ""  # IdP discovery 端点（.well-known/openid-configuration）
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_redirect_uri: str = ""  # 如 http://<host>:8000/api/v1/auth/oidc/callback
+    oidc_scopes: str = "openid profile email"  # 空格分隔
+    oidc_claim_role: str = "roles"  # IdP ID Token 中角色 claim 名
+    oidc_default_tenant: str = "default"  # 未映射租户时的默认值
+
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row
 
