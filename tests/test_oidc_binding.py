@@ -26,6 +26,10 @@ CLAIMS_ADMIN = {
 @pytest.fixture()
 async def session():
     """SQLite async 会话（内存库 + 幂等建表 + 基础角色种子）. """
+    # 防御测试隔离：init_db 可能把 Base 表 schema 全局置为 openbase（PG 场景），
+    # SQLite 无 schema 概念，建表前统一重置为 None，避免跨文件污染
+    for table in Base.metadata.tables.values():
+        table.schema = None
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

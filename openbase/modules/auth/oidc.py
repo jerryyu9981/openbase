@@ -104,11 +104,15 @@ class OIDCClient:
             resp.raise_for_status()
             return resp.json()
 
-    def _verify_token(self, token: str) -> dict[str, Any]:
+    def _verify_token(
+        self, token: str, *, access_token: str | None = None
+    ) -> dict[str, Any]:
         """通用令牌验签：discovery JWKS 公钥 RS256 + issuer/aud/exp 校验.
 
         ID Token 与 access token 同源签发、同一 JWKS/issuer/audience，
         Keycloak 场景（角色默认仅进 access token）需要同样的验签能力。
+        access_token 用于 ID Token 的 at_hash 校验（授权码流标准 claim，
+        Keycloak 默认携带；缺失比对目标会验签失败）。
         """
         if not self._discovery:
             raise OIDCError("discovery not loaded")
@@ -124,13 +128,16 @@ class OIDCClient:
                 algorithms=["RS256"],
                 audience=self._settings().oidc_client_id,
                 issuer=self._issuer or None,
+                access_token=access_token,
             )
         except JWTError as exc:
             raise OIDCError(f"token validation failed: {exc}") from exc
 
-    def parse_id_token(self, id_token: str) -> dict[str, Any]:
-        """解析 ID Token 并校验签名（IdP JWKS 公钥 RS256）与 issuer/aud/exp. """
-        return self._verify_token(id_token)
+    def parse_id_token(
+        self, id_token: str, access_token: str | None = None
+    ) -> dict[str, Any]:
+        """解析 ID Token 并校验签名（IdP JWKS 公钥 RS256）与 issuer/aud/exp/at_hash. """
+        return self._verify_token(id_token, access_token=access_token)
 
     def verify_access_token(self, access_token: str) -> dict[str, Any]:
         """解析 access token（同 JWKS/issuer/aud 校验）.
@@ -177,6 +184,10 @@ router = APIRouter(prefix="/api/v1/auth/oidc", tags=["auth"])
 
 
 # ---- OIDC 用户体系绑定（OB-AUTH-OIDC v1.3.0：JIT 自动建号 + sub 映射） ----
+
+# OpenBase 角色白名单：OIDC claims 角色仅映射这些 code（未知角色忽略，
+# 避免 Keycloak 默认伪角色 default-roles-* / offline_access 等污染统一 JWT role）
+OIDC_ROLE_WHITELIST = ("admin", "org_admin", "user", "viewer")
 
 
 def _roles_from_keycloak(
@@ -235,7 +246,7 @@ async def _ensure_roles(session: Any, user_id: int, claims: dict[str, Any]) -> s
     if isinstance(raw_roles, str):
         raw_roles = [raw_roles]
     want_codes = [
-        str(r) for r in raw_roles if str(r) in ("admin", "org_admin", "user", "viewer")
+        str(r) for r in raw_roles if str(r) in OIDC_ROLE_WHITELIST
     ]
     if not want_codes:
         return None
@@ -431,7 +442,8 @@ async def oidc_callback(
         id_token = token_resp.get("id_token")
         if not id_token:
             raise OIDCError("token response missing id_token")
-        claims = client.parse_id_token(id_token)
+        # access_token 供 ID Token at_hash 校验（Keycloak ID Token 默认携带 at_hash）
+        claims = client.parse_id_token(id_token, token_resp.get("access_token"))
     except (OIDCError, httpx.HTTPError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -458,6 +470,11 @@ async def oidc_callback(
                         settings.oidc_client_id,
                         settings.oidc_keycloak_client_roles,
                     )
+        if roles:
+            # 白名单过滤（保留顺序）：剔除 Keycloak 默认伪角色
+            # （default-roles-* / offline_access / uma_authorization 等），
+            # 避免统一 JWT role 取到首个伪角色
+            roles = [r for r in roles if r in OIDC_ROLE_WHITELIST]
         if roles:
             claims["roles"] = roles
 

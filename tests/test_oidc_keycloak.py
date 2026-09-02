@@ -103,9 +103,11 @@ class KeycloakStyleIdp:
             }
             # ID Token：无角色（Keycloak 默认不含）
             id_token = _sign(dict(identity), self._pem, self.kid)
-            # access token：Keycloak 默认形状（realm_access + resource_access）
+            # access token：Keycloak 默认形状（realm_access 含默认伪角色在前）
             access_payload = dict(identity)
-            access_payload["realm_access"] = {"roles": ["org_admin", "offline_access"]}
+            access_payload["realm_access"] = {
+                "roles": ["default-roles-openbase", "org_admin", "offline_access"]
+            }
             access_payload["resource_access"] = {
                 "account": {"roles": ["view-profile"]},
                 self.client_id: {"roles": ["viewer"]},
@@ -285,7 +287,7 @@ def test_keycloak_profile_uses_id_token_roles_when_present(monkeypatch, kc_idp_u
 
         # 打桩 parse_id_token：返回含平铺 roles 的 claims（模拟 Keycloak 已配置角色 mapper）
         oidc_module.OIDCClient.parse_id_token = (  # type: ignore[method-assign]
-            lambda self, tok: {
+            lambda self, tok, access_token=None: {
                 "iss": kc_idp_url,
                 "sub": "kc-user-001",
                 "aud": "openbase-kc",

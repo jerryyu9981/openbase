@@ -43,5 +43,8 @@ logs/
 # ---- 本地存储测试数据 ----
 storage/
 
+# ---- 本地运行时（Keycloak 发行版等本地基础设施，绝不提交）----
+.runtime/
+
 # ---- 本地 OIDC IdP 私钥（运行时生成，绝不提交）----
 scripts/oidc-idp/keys/
