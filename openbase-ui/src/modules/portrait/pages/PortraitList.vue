@@ -4,15 +4,15 @@
       <el-col :span="8">
         <el-card shadow="hover" data-test="dps-kpi">
           <div class="kpi-label">画像总数</div>
-          <div class="kpi-value">{{ overview.total ?? '-' }}</div>
-          <div class="kpi-sub">报表概览</div>
+          <div class="kpi-value">{{ overview.total_profiles ?? overview.total ?? '-' }}</div>
+          <div class="kpi-sub">报表概览（真实 DPS 数据）</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="hover" data-test="dps-kpi">
           <div class="kpi-label">高风险画像</div>
-          <div class="kpi-value">{{ overview.risk_high ?? '-' }}</div>
-          <div class="kpi-sub">风险等级=high</div>
+          <div class="kpi-value">{{ overview.high_risk_count ?? overview.risk_high ?? '-' }}</div>
+          <div class="kpi-sub">风险分 ≥ 70</div>
         </el-card>
       </el-col>
       <el-col :span="8">
@@ -54,7 +54,7 @@
         </el-table-column>
         <el-table-column label="风险等级" width="110">
           <template #default="{ row }">
-            <el-tag :type="riskType(row.risk_level)" size="small">{{ riskLabel(row.risk_level) }}</el-tag>
+            <el-tag :type="riskType(row)" size="small">{{ riskLabel(row) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="updated_at" label="更新时间" width="170">
@@ -65,8 +65,13 @@
             <el-button link type="primary" @click="$router.push(`/portrait/${row.person_id || row.id}`)">详情</el-button>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty
+            :description="errorMessage ? '加载失败，请点击上方提示条「点击重试」' : '暂无画像数据'"
+            :image-size="60"
+          />
+        </template>
       </el-table>
-      <el-empty v-if="!loading && filtered.length === 0" description="暂无画像数据" :image-size="60" />
     </div>
     <div class="pager">
       <el-pagination
@@ -103,14 +108,26 @@ const filtered = computed(() => {
   )
 })
 
-function riskLabel(level?: string) {
-  if (!level) return '未知'
-  return { low: '低', medium: '中', high: '高' }[level] || level
+function riskOf(row: DpsPortrait): number {
+  const raw = row.risk_level ?? row.risk_score
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : -1
 }
 
-function riskType(level?: string) {
-  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = { low: 'success', medium: 'warning', high: 'danger' }
-  return map[level || ''] || 'info'
+function riskLabel(row: DpsPortrait): string {
+  const v = riskOf(row)
+  if (v < 0) return '未知'
+  if (v >= 70) return '高'
+  if (v >= 40) return '中'
+  return '低'
+}
+
+function riskType(row: DpsPortrait): 'success' | 'warning' | 'danger' | 'info' {
+  const v = riskOf(row)
+  if (v < 0) return 'info'
+  if (v >= 70) return 'danger'
+  if (v >= 40) return 'warning'
+  return 'success'
 }
 
 function formatTime(v?: string) {
