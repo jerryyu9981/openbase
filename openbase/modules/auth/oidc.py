@@ -446,6 +446,10 @@ async def oidc_callback(
         # access_token 供 ID Token at_hash 校验（Keycloak ID Token 默认携带 at_hash）
         claims = client.parse_id_token(id_token, token_resp.get("access_token"))
     except (OIDCError, httpx.HTTPError) as exc:
+        logger.warning(
+            "oidc code exchange or id_token parse failed",
+            extra={"error": str(exc) or exc.__class__.__name__},
+        )
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     settings = get_settings()
