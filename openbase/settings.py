@@ -158,8 +158,17 @@ class Settings(BaseSettings):
     rag_api_key: str = "openbase-rag-gw-key-20260901"
 
     # ---- DPS 对接（v1.4.5 R-381，JWT 门禁 + 身份头注入转发） ----
-    dps_upstream_base: str = "http://127.0.0.1:8030"
+    # P0-3 端口对齐（评审 Q5）：默认对齐 DPS 源码 api_port=8000（DPS src/config.py
+    # API_PORT 默认 8000，main.py REST 入口；rest_api.app/MCP 部署入口为 8013）。
+    # 真实部署（如本地编排将 DPS 置于 8030 / 容器 8013）须经
+    # OPENBASE_DPS_UPSTREAM_BASE 环境变量显式覆盖，避免端口错配。
+    dps_upstream_base: str = "http://127.0.0.1:8000"
     dps_upstream_timeout: float = 20.0
+    # 上游健康探活（P0-3）：首次 dps-proxy 请求前及此后每 dps_health_interval 秒
+    # 对 {dps_upstream_base}/health 探活一次；失败仅 WARN 降级提示不阻断转发。
+    # 关闭（False）仅用于测试隔离或上游无 /health 的场景。
+    dps_health_check_enabled: bool = True
+    dps_health_interval: float = 30.0
     dps_default_org_id: str = ""
     dps_default_tenant_id: str = ""
     # 组织/租户映射表（JSON：OpenBase 值 → DPS 值），命中则转换

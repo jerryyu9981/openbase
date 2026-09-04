@@ -201,8 +201,13 @@ function extractErrorMessage(raw: string): string {
 function streamReply(question: string) {
   const cid = selectedKb.value?.id
   if (!cid) return
+  // 抢占中止上一个仍在途的请求（若有）
   abortController?.abort()
-  abortController = new AbortController()
+  // 每个请求持有独立的 AbortController；catch/finally 用「引用一致性 +
+  // signal.aborted」判断自己是否仍是当前活跃请求，避免旧请求的收尾逻辑
+  // 误清新请求的 controller / 流状态（停止后立刻重发的竞态）。
+  const controller = new AbortController()
+  abortController = controller
   const msg: ChatMessage = { id: Date.now() + 1, role: 'assistant', content: '' }
   messages.value.push(msg)
   chatLoading.value = true
@@ -235,18 +240,24 @@ function streamReply(question: string) {
           errorMessage.value = extractErrorMessage(evt.data)
         }
       },
-      abortController.signal,
+      controller.signal,
     )
     .catch(() => {
-      if (!abortController?.signal.aborted) {
+      // 主动取消（点击停止 / 卸载 / 被新请求抢占）不提示失败；
+      // 仅当本请求未被取消且仍是当前活跃请求时，才提示真实失败
+      if (!controller.signal.aborted && abortController === controller) {
         errorMessage.value = '流式请求失败，请重试'
       }
     })
     .finally(() => {
       msg.sources = finalSources.length > 0 ? finalSources : undefined
-      streamingId.value = null
-      chatLoading.value = false
-      abortController = null
+      // 竞态防护：若收尾前已发起新请求（abortController 已指向新 controller），
+      // 旧请求不得清空共享流状态，避免新流失去停止能力 / 状态错乱
+      if (abortController === controller) {
+        abortController = null
+        streamingId.value = null
+        chatLoading.value = false
+      }
     })
 }
 

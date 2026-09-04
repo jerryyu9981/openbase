@@ -5,6 +5,10 @@
 - 认证：OpenBase JWT（get_current_user），未认证返回 401。
 - 转发注入：Authorization: Bearer <llm_api_key>（OpenBase 持有，OpenLLM 服务
   API Key 通道；OpenLLM 不支持 X-API-Key 头，必须 Bearer 传递）。
+- 外部身份归属注入（P0-2 / Q4 最小档 / M3）：登录态下注入
+  X-User-ID(sub)/X-Org-ID(org_id)/X-Proxy-Source(openbase-llm-proxy)，
+  供 OpenLLM 侧 TRUSTED_PROXY_SOURCES 白名单解析到审计与请求上下文；
+  匿名/服务级内部调用（无法解析到身份）不携带身份头，避免误标。
 - 响应适配：统一 {code, message, data, timestamp}；上游错误码透传
   （1001 未认证 / 1003 限流 / 1004 无可用模型 / 2001 资源不存在 / 5001 内部错误）。
 - SSE 透传：/chat/stream 逐事件转发（event: routing → chunk×N → done），
@@ -32,6 +36,10 @@ router = APIRouter(prefix="/api/v1/llm-proxy", tags=["llm-proxy"])
 
 __version__ = "1.0.0"
 
+# P0-2（Q4 最小档 / M3 归属打通）：本 proxy 来源标识，供 OpenLLM 侧
+# TRUSTED_PROXY_SOURCES 白名单（config）校验身份头是否可信（防伪造）。
+PROXY_SOURCE_IDENTIFIER = "openbase-llm-proxy"
+
 __all__ = ["router"]
 
 
@@ -51,20 +59,57 @@ def _upstream_config() -> tuple[str, str, float, float]:
     )
 
 
-def _build_upstream_headers() -> dict[str, str]:
-    """构造转发上游的请求头（OpenLLM API Key Bearer 注入）.
+def _extract_identity(request: Request) -> dict[str, str]:
+    """从当前请求 JWT 提取身份值（sub/org_id），供上游归属头注入.
 
-    OpenLLM 认证契约：API Key 仅经 Authorization: Bearer 传递，
-    不支持 X-API-Key 头（代码核验 auth_service.get_api_key_user 只读
-    Authorization）。不注入 X-Org-ID/X-User-ID（主平台 API 不消费，仅
-    EdgeRouter 层约定）。
+    get_current_user 只返回精简字段（id/username/tenant_id/permissions），
+    外部身份归属需要 org_id（与现 JWT claim 同源），故从 Authorization
+    头解码 JWT 补取（与 memory_proxy/dps_proxy 同模式）。解码失败或缺失
+    返回空 dict：匿名/服务级内部调用不发身份头（Q4/M3：避免误标）。
+    """
+    authorization = request.headers.get("Authorization", "")
+    if not authorization.startswith("Bearer "):
+        return {}
+    from openbase.modules.auth.jwt import decode_access_token
+
+    payload = decode_access_token(authorization.removeprefix("Bearer ").strip())
+    if payload is None:
+        return {}
+    identity: dict[str, str] = {}
+    subject = payload.get("sub")
+    if subject is not None and subject != "":
+        identity["sub"] = str(subject)
+    org_id = payload.get("org_id")
+    if org_id is not None and org_id != "":
+        identity["org_id"] = str(org_id)
+    return identity
+
+
+def _build_upstream_headers(request: Request) -> dict[str, str]:
+    """构造转发上游的请求头（OpenLLM API Key Bearer + 外部身份归属注入）.
+
+    OpenLLM 认证契约：API Key 仅经 Authorization: Bearer 传递，不支持
+    X-API-Key 头（代码核验 auth_service.get_api_key_user 只读 Authorization）。
+
+    P0-2（Q4 最小档 / M3 归属打通）：身份头仅在能解析到当前登录身份时注入——
+    X-User-ID=JWT sub、X-Org-ID=JWT org_id（与现 JWT claim 同源）、
+    X-Proxy-Source=PROXY_SOURCE_IDENTIFIER（OpenLLM TRUSTED_PROXY_SOURCES
+    白名单据此防伪造）。匿名/服务级内部调用不携带身份头，避免误标。
     """
     api_key, _, _, _ = _upstream_config()
-    return {
+    headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    identity = _extract_identity(request)
+    if not identity:
+        return headers
+    headers["X-User-ID"] = identity["sub"]
+    headers["X-Proxy-Source"] = PROXY_SOURCE_IDENTIFIER
+    if identity.get("org_id"):
+        headers["X-Org-ID"] = identity["org_id"]
+    return headers
 
 
 def _adapt_response(upstream: httpx.Response) -> JSONResponse:
@@ -135,11 +180,15 @@ async def _forward(
     method: str,
     upstream_path: str,
     *,
+    headers: dict[str, str],
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
-    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
-    """转发请求至 OpenLLM 并适配响应（非 SSE）."""
+    """转发请求至 OpenLLM 并适配响应（非 SSE）.
+
+    headers 必须由调用方经 _build_upstream_headers(request) 构造
+    （含身份归属头），禁止省略。
+    """
     _, base_url, timeout, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
     try:
@@ -147,7 +196,7 @@ async def _forward(
             upstream = await client.request(
                 method, target_url,
                 json=json_body, params=params,
-                headers=headers or _build_upstream_headers(),
+                headers=headers,
             )
     except httpx.HTTPError as exc:
         logger.warning(
@@ -229,7 +278,7 @@ async def llm_models(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """模型列表（GET /openllm/v1/models，API Key 通道）."""
-    return await _forward("GET", _gateway_models(), headers=_build_upstream_headers())
+    return await _forward("GET", _gateway_models(), headers=_build_upstream_headers(request))
 
 
 @router.get("/models/{model_id}")
@@ -245,7 +294,7 @@ async def llm_model_detail(
     保持详情可走查；命中失败返回上游语义 2001 资源不存在。
     """
     response = await _forward(
-        "GET", _gateway_models(), headers=_build_upstream_headers()
+        "GET", _gateway_models(), headers=_build_upstream_headers(request)
     )
     if response.status_code >= 400:
         return response
@@ -278,7 +327,7 @@ async def llm_chat(
     """对话（POST /openllm/v1/chat，非流式聚合端点）."""
     return await _forward(
         "POST", "/openllm/v1/chat", json_body=payload,
-        headers=_build_upstream_headers(),
+        headers=_build_upstream_headers(request),
     )
 
 
@@ -290,7 +339,7 @@ async def llm_chat_stream(
 ) -> StreamingResponse:
     """对话流式（POST /openllm/v1/chat/stream，SSE 逐事件透传）."""
     return await _forward_sse(
-        "/openllm/v1/chat/stream", payload, _build_upstream_headers()
+        "/openllm/v1/chat/stream", payload, _build_upstream_headers(request)
     )
 
 
@@ -300,7 +349,7 @@ async def llm_health(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """OpenLLM 网关健康透传（GET /openllm/v1/health，供运维/前端监控）."""
-    return await _forward("GET", "/openllm/v1/health", headers=_build_upstream_headers())
+    return await _forward("GET", "/openllm/v1/health", headers=_build_upstream_headers(request))
 
 
 # ---------------------------------------------------------------------------
@@ -323,7 +372,7 @@ async def llm_conversations(
     return await _forward(
         "GET", "/api/v1/conversations",
         params={"status": status, "skip": skip, "limit": limit},
-        headers=_build_upstream_headers(),
+        headers=_build_upstream_headers(request),
     )
 
 
@@ -336,7 +385,7 @@ async def llm_conversation_create(
     """新建会话（POST /api/v1/conversations）."""
     return await _forward(
         "POST", "/api/v1/conversations", json_body=payload,
-        headers=_build_upstream_headers(),
+        headers=_build_upstream_headers(request),
     )
 
 
@@ -349,7 +398,7 @@ async def llm_conversation_detail(
     """会话详情（GET /api/v1/conversations/{id}）."""
     return await _forward(
         "GET", f"/api/v1/conversations/{conversation_id}",
-        headers=_build_upstream_headers(),
+        headers=_build_upstream_headers(request),
     )
 
 
@@ -362,7 +411,7 @@ async def llm_conversation_delete(
     """软删除会话（DELETE /api/v1/conversations/{id}）."""
     return await _forward(
         "DELETE", f"/api/v1/conversations/{conversation_id}",
-        headers=_build_upstream_headers(),
+        headers=_build_upstream_headers(request),
     )
 
 
@@ -383,7 +432,7 @@ async def llm_conversation_archive(
     return await _forward(
         "POST", f"/api/v1/conversations/{conversation_id}/archive",
         json_body=json_body,
-        headers=_build_upstream_headers(),
+        headers=_build_upstream_headers(request),
     )
 
 
@@ -397,7 +446,7 @@ async def llm_conversation_message_create(
     """追加会话消息（POST /api/v1/conversations/{id}/messages）."""
     return await _forward(
         "POST", f"/api/v1/conversations/{conversation_id}/messages",
-        json_body=payload, headers=_build_upstream_headers(),
+        json_body=payload, headers=_build_upstream_headers(request),
     )
 
 
@@ -410,5 +459,5 @@ async def llm_conversation_messages(
     """会话消息列表（GET /api/v1/conversations/{id}/messages）."""
     return await _forward(
         "GET", f"/api/v1/conversations/{conversation_id}/messages",
-        headers=_build_upstream_headers(),
+        headers=_build_upstream_headers(request),
     )

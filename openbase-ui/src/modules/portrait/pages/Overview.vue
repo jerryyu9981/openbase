@@ -4,11 +4,11 @@
     <el-alert v-if="errorMessage" type="error" show-icon closable class="mb-16" data-test="overview-error" @close="errorMessage = ''">
       <template #default>
         <span>{{ errorMessage }}</span>
-        <el-button link type="primary" data-test="overview-retry" @click="loadOverview">重新加载</el-button>
+        <el-button link type="primary" data-test="overview-retry" @click="loadData">重新加载</el-button>
       </template>
     </el-alert>
 
-    <!-- TD-13-26 数据总览：顶部 KPI 卡片（深色卡片风格） -->
+    <!-- 数据总览：KPI 卡片（真实 dps-proxy 数据，与画像列表同源） -->
     <el-row :gutter="16" class="mb-16">
       <el-col v-for="kpi in kpiCards" :key="kpi.label" :xs="12" :sm="12" :md="6" class="kpi-col">
         <div class="kpi-card" data-test="overview-kpi-card">
@@ -27,23 +27,23 @@
       </el-col>
     </el-row>
 
-    <!-- ECharts 双图：画像类型分布（饼图）+ 画像数量趋势（折线图） -->
+    <!-- ECharts 双图：风险分布（饼图）+ 近 30 天新增趋势（折线图） -->
     <el-row :gutter="16" class="mb-16">
       <el-col :xs="24" :lg="10" class="chart-col">
-        <el-card shadow="never" header="画像类型分布" data-test="overview-pie-card">
-          <el-empty v-if="pieEmpty" description="暂无画像类型数据" :image-size="80" />
+        <el-card shadow="never" header="画像风险分布" data-test="overview-pie-card">
+          <el-empty v-if="pieEmpty" description="暂无画像风险数据" :image-size="80" />
           <div v-else ref="pieRef" class="chart" />
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="14" class="chart-col">
-        <el-card shadow="never" header="画像数量趋势（近 30 天）" data-test="overview-line-card">
+        <el-card shadow="never" header="画像新增趋势（近 30 天）" data-test="overview-line-card">
           <el-empty v-if="lineEmpty" description="暂无趋势数据" :image-size="80" />
           <div v-else ref="lineRef" class="chart" />
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 最新画像列表 -->
+    <!-- 最新画像列表（真实 /dps-proxy/portraits 分页数据） -->
     <el-card shadow="never" data-test="overview-latest-card">
       <template #header>
         <div class="card-header">
@@ -54,18 +54,16 @@
       <div class="ob-table-scroll">
         <el-table :data="latestPortraits" stripe data-test="overview-latest-table">
           <el-table-column prop="name" label="姓名" min-width="110" />
-          <el-table-column label="画像类型" width="110">
+          <el-table-column prop="person_id" label="画像 ID" min-width="180" show-overflow-tooltip />
+          <el-table-column label="风险等级" width="110">
             <template #default="{ row }">
-              <el-tag size="small">{{ row.portrait_type }}</el-tag>
+              <el-tag :type="riskType(row)" size="small">{{ riskLabel(row) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="标签" min-width="170">
-            <template #default="{ row }">
-              <el-tag v-for="tag in row.tags" :key="tag" size="small" class="tag-item" type="info">{{ tag }}</el-tag>
-              <span v-if="!row.tags.length" class="text-secondary">—</span>
-            </template>
+          <el-table-column prop="overall_score" label="综合分" width="90" />
+          <el-table-column label="更新时间" width="170">
+            <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
           </el-table-column>
-          <el-table-column prop="updated_at" label="更新时间" width="160" />
           <template #empty>
             <el-empty description="暂无画像数据" :image-size="80" />
           </template>
@@ -78,6 +76,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
+import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 
 interface KpiCard {
   label: string
@@ -86,109 +85,107 @@ interface KpiCard {
   rate?: number
 }
 
-interface LatestPortrait {
-  id: number
-  name: string
-  portrait_type: string
-  tags: string[]
-  updated_at: string
-}
-
-interface TrendData {
-  dates: string[]
-  counts: number[]
+interface OverviewStats {
+  total_profiles?: number
+  today_new?: number
+  active_profiles?: number
+  inactive_profiles?: number
+  avg_overall_score?: number
+  high_risk_count?: number
+  medium_risk_count?: number
+  low_risk_count?: number
+  risk_distribution?: Array<{ name: string; value: number }>
+  trend?: Array<{ date: string; count: number }>
+  [key: string]: unknown
 }
 
 const loading = ref(true)
 const errorMessage = ref('')
-const trendData = ref<TrendData>({ dates: [], counts: [] })
+const overview = ref<OverviewStats>({})
+const latestPortraits = ref<DpsPortrait[]>([])
 const pieRef = ref<HTMLDivElement>()
 const lineRef = ref<HTMLDivElement>()
 let pieChart: echarts.ECharts | null = null
 let lineChart: echarts.ECharts | null = null
 
-/** 契约 mock：KPI 汇总数据，不调用真实 API */
-const kpiData = { total: 955, weekly_new: 38, tag_total: 156, active_rate: 86.4, weekly_growth: '+12.4%' }
+const kpiCards = computed<KpiCard[]>(() => {
+  const stats = overview.value
+  const total = stats.total_profiles ?? 0
+  const active = stats.active_profiles ?? 0
+  const activeRate = total > 0 ? Math.round((active / total) * 1000) / 10 : 0
+  return [
+    { label: '画像总数', value: String(total), trend: `平均综合分 ${stats.avg_overall_score ?? '-'}` },
+    { label: '今日新增', value: String(stats.today_new ?? 0), trend: '当日创建画像' },
+    { label: '高风险画像', value: String(stats.high_risk_count ?? 0), trend: `中风险 ${stats.medium_risk_count ?? 0} / 低风险 ${stats.low_risk_count ?? 0}` },
+    { label: '活跃画像率', value: `${activeRate}%`, trend: `近 30 天活跃 ${active} 人`, rate: activeRate },
+  ]
+})
 
-/** 契约 mock：画像类型分布 */
-const portraitTypeDistribution = [
-  { name: '基础画像', value: 420 },
-  { name: '行为画像', value: 260 },
-  { name: '偏好画像', value: 180 },
-  { name: '组合画像', value: 95 },
-]
+const pieEmpty = computed(() => !(overview.value.risk_distribution || []).some((d) => d.value > 0))
+const lineEmpty = computed(() => !(overview.value.trend || []).some((d) => d.count > 0))
 
-/** 契约 mock：最新画像 5 条 */
-const latestPortraits = ref<LatestPortrait[]>([
-  { id: 1001, name: '张伟', portrait_type: '行为画像', tags: ['高频用户', 'RAG'], updated_at: '2026-08-26 09:12' },
-  { id: 1002, name: '张敏', portrait_type: '偏好画像', tags: ['付费用户', '内容偏好'], updated_at: '2026-08-26 08:40' },
-  { id: 1003, name: '李娜', portrait_type: '基础画像', tags: ['试用'], updated_at: '2026-08-25 18:05' },
-  { id: 1004, name: '王强', portrait_type: '组合画像', tags: ['高频用户', '技术型'], updated_at: '2026-08-25 15:30' },
-  { id: 1005, name: '刘洋', portrait_type: '基础画像', tags: ['试用', '夜间活跃'], updated_at: '2026-08-24 22:11' },
-])
-
-const kpiCards = computed<KpiCard[]>(() => [
-  { label: '画像总数', value: String(kpiData.total), trend: `较上周 ${kpiData.weekly_growth}` },
-  { label: '新增本周', value: String(kpiData.weekly_new), trend: '近 7 天新创建画像' },
-  { label: '标签总数', value: String(kpiData.tag_total), trend: '画像/行为/偏好三类' },
-  { label: '活跃画像率', value: `${kpiData.active_rate}%`, trend: '近 30 天活跃画像占比', rate: kpiData.active_rate },
-])
-
-const pieEmpty = computed(() => portraitTypeDistribution.length === 0)
-const lineEmpty = computed(() => trendData.value.dates.length === 0)
-
-function formatDate(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+function riskOf(row: DpsPortrait): number {
+  const raw = row.risk_level ?? row.risk_score
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : -1
 }
 
-/** 契约 mock：生成近 30 天画像数量趋势 */
-function buildTrend(): TrendData {
-  const dates: string[] = []
-  const counts: number[] = []
-  for (let index = 29; index >= 0; index -= 1) {
-    const date = new Date()
-    date.setDate(date.getDate() - index)
-    dates.push(formatDate(date))
-    const weekendBoost = index % 7 === 0 ? 15 : 0
-    counts.push(12 + weekendBoost + Math.floor(Math.random() * 30))
-  }
-  return { dates, counts }
+function riskLabel(row: DpsPortrait): string {
+  const v = riskOf(row)
+  if (v < 0) return '未知'
+  if (v >= 70) return '高'
+  if (v >= 40) return '中'
+  return '低'
+}
+
+function riskType(row: DpsPortrait): 'success' | 'warning' | 'danger' | 'info' {
+  const v = riskOf(row)
+  if (v < 0) return 'info'
+  if (v >= 70) return 'danger'
+  if (v >= 40) return 'warning'
+  return 'success'
+}
+
+function formatTime(v?: string) {
+  if (!v) return '-'
+  const d = new Date(v)
+  return Number.isNaN(d.getTime()) ? v : d.toLocaleString('zh-CN', { hour12: false })
 }
 
 function renderCharts() {
+  const distribution = overview.value.risk_distribution || []
   if (pieRef.value) {
     if (!pieChart) pieChart = echarts.init(pieRef.value)
     pieChart.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: {c}（{d}%）' },
       legend: { bottom: 0 },
+      color: ['#ef4444', '#f59e0b', '#10b981'],
       series: [
         {
-          name: '画像类型',
+          name: '风险分布',
           type: 'pie',
           radius: ['42%', '68%'],
           center: ['50%', '45%'],
-          data: portraitTypeDistribution,
+          data: distribution,
           label: { formatter: '{b} {d}%' },
         },
       ],
     })
   }
+  const trend = overview.value.trend || []
   if (lineRef.value) {
     if (!lineChart) lineChart = echarts.init(lineRef.value)
     lineChart.setOption({
       tooltip: { trigger: 'axis' },
       grid: { left: 48, right: 16, top: 32, bottom: 28 },
-      xAxis: { type: 'category', boundaryGap: false, data: trendData.value.dates },
-      yAxis: { type: 'value' },
+      xAxis: { type: 'category', boundaryGap: false, data: trend.map((t) => t.date) },
+      yAxis: { type: 'value', minInterval: 1 },
       series: [
         {
           name: '新增画像数',
           type: 'line',
           smooth: true,
-          data: trendData.value.counts,
+          data: trend.map((t) => t.count),
           areaStyle: { opacity: 0.12 },
           itemStyle: { color: '#2563eb' },
         },
@@ -202,20 +199,20 @@ function handleResize() {
   lineChart?.resize()
 }
 
-function mockDelay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
-}
-
-async function loadOverview() {
+async function loadData() {
   errorMessage.value = ''
   loading.value = true
   try {
-    await mockDelay(400)
-    trendData.value = buildTrend()
+    const [stats, list] = await Promise.all([
+      dpsApi.getReportsOverview(),
+      dpsApi.listPortraits({ page: 1, page_size: 5 }),
+    ])
+    overview.value = (stats || {}) as OverviewStats
+    latestPortraits.value = list.items || []
     await nextTick()
     renderCharts()
-  } catch {
-    errorMessage.value = '数据总览加载失败，请稍后重试'
+  } catch (err) {
+    errorMessage.value = `数据总览加载失败：${(err as Error).message || '网络错误'}`
   } finally {
     loading.value = false
   }
@@ -223,7 +220,7 @@ async function loadOverview() {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
-  void loadOverview()
+  void loadData()
 })
 
 onBeforeUnmount(() => {
@@ -238,7 +235,6 @@ onBeforeUnmount(() => {
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
 .text-secondary { color: var(--ob-text-secondary); }
-.tag-item { margin-right: 4px; }
 .kpi-col { margin-bottom: 16px; }
 .kpi-card {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);

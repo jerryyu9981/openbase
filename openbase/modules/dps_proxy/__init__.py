@@ -1,6 +1,8 @@
 """dps-proxy 模块：DPS JWT 门禁 + 身份头注入转发（v1.4.5 R-381）.
 
-统一前端/调用方经 OpenBase 访问 DPS 8030，OpenBase 为唯一认证入口：
+统一前端/调用方经 OpenBase 访问 DPS（上游默认对齐 DPS 源码 api_port=8000，
+P0-3 评审 Q5 修正；真实部署由 OPENBASE_DPS_UPSTREAM_BASE 覆盖），
+OpenBase 为唯一认证入口：
 
 - 认证：OpenBase JWT（get_current_user），未认证返回 401。
 - 身份头注入：DPS HTTP API 采用 Header 身份直传 + RBAC 中间件
@@ -8,6 +10,8 @@
   proxy 从 OpenBase JWT/用户上下文构造四头注入上游
   （X-User-ID←sub、X-Tenant-ID←tenant_id、X-Org-ID←org_id、X-User-Role←role），
   缺失时 dps_default_* 兜底，dps_org_map/dps_tenant_map 支持值转换。
+- 上游健康探活（P0-3）：首次转发前与每 dps_health_interval 秒探测 DPS /health，
+  失败仅 WARN 降级提示并继续转发（转发自身失败仍归一为 502）。
 - 响应适配：统一 {code, message, data, timestamp}；错误归一化提取顺序
   body.code（非 0）> body.detail（str/dict/list）> HTTP 状态码
   （覆盖 DPS 网关 {code,message,data} 与 FastAPI {detail} 双格式）。
@@ -18,6 +22,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import time
 from typing import Any
 
 import httpx
@@ -172,6 +177,73 @@ def _adapt_response(upstream: httpx.Response) -> JSONResponse:
     )
 
 
+# ---------------------------------------------------------------------------
+# DPS 上游健康探活（P0-3：端口对齐守护；settings.dps_upstream_base 默认 8000）
+#
+# OpenBase 采用同步 init_app 装配（无模块 lifespan），故沿用惰性接入点：
+# 首次 dps-proxy 请求前探测一次，此后每 dps_health_interval 秒至多一次。
+# 失败仅 WARN 降级提示（fail-open，不改写既有"转发不可达→502"语义）；
+# 通过"探测前置时间戳占位"天然去重并发首请求，无需额外锁。
+# ---------------------------------------------------------------------------
+
+# 探活目标路径：DPS main.py（8000）与 rest_api.app/MCP（8013）两个入口均提供 /health
+# （/health/liveness 仅 rest_api.app 存在，不作为通用探活路径）。
+DPS_HEALTH_PATH = "/health"
+# 探活短超时：仅判定连通性，不占用 dps_upstream_timeout 业务预算
+DPS_HEALTH_PROBE_TIMEOUT = 3.0
+
+# 进程级惰性探活状态（时间戳单位：time.monotonic 秒；None=尚未探测）
+_last_dps_health_probe_at: float | None = None
+_dps_health_ok: bool | None = None
+
+
+async def _probe_dps_health_once() -> bool:
+    """执行一次 DPS /health 探测（2xx 视为健康）.
+
+    Returns:
+        探活是否成功；失败（连接异常/非 2xx）仅记录日志，不抛出。
+    """
+    base_url, _timeout = _upstream_config()
+    health_url = f"{base_url.rstrip('/')}{DPS_HEALTH_PATH}"
+    try:
+        async with httpx.AsyncClient(timeout=DPS_HEALTH_PROBE_TIMEOUT) as client:
+            response = await client.request("GET", health_url)
+        ok = 200 <= response.status_code < 300
+    except httpx.HTTPError as exc:
+        logger.warning(
+            "DPS upstream health probe failed (degraded, proxying still attempted)",
+            extra={"url": health_url, "error": str(exc)},
+        )
+        return False
+    if not ok:
+        logger.warning(
+            "DPS upstream health probe non-2xx (degraded, proxying still attempted)",
+            extra={"url": health_url, "status": response.status_code},
+        )
+    return ok
+
+
+async def _maybe_probe_dps_health() -> None:
+    """按开关与 interval 节流触发一次 DPS /health 探活（惰性、不阻断）."""
+    global _last_dps_health_probe_at, _dps_health_ok
+    settings = get_settings()
+    if not settings.dps_health_check_enabled:
+        return
+    now = time.monotonic()
+    if (
+        _last_dps_health_probe_at is not None
+        and now - _last_dps_health_probe_at < settings.dps_health_interval
+    ):
+        return
+    # 先占位再探测：并发首请求共享同一次探活，无需进程锁
+    _last_dps_health_probe_at = now
+    previous_ok = _dps_health_ok
+    ok = await _probe_dps_health_once()
+    _dps_health_ok = ok
+    if ok and previous_ok is False:
+        logger.info("DPS upstream health probe recovered")
+
+
 async def _forward(
     method: str,
     upstream_path: str,
@@ -181,6 +253,7 @@ async def _forward(
     headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     """转发请求至 DPS 并适配响应（非 SSE，身份头注入）."""
+    await _maybe_probe_dps_health()
     base_url, timeout = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
     try:
@@ -251,6 +324,27 @@ async def dps_portrait_calculate(
     )
 
 
+@router.put("/portraits/{person_id}")
+async def dps_portrait_update(
+    person_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像更新（PUT /api/v2/portrait/{person_id}，Phase C1 契约 body 透传）.
+
+    承接真实契约落地立项方案 Phase C2（决策 D3 建议 A）：ProfileAdapter 写/漂移的
+    持久化落点 PUT /api/v2/portrait/{person_id}（body {person: {name?, status?,
+    scores?}, business: {attributes}}）；复用 _forward + 四头注入，请求体原样透传。
+    """
+    headers = _build_identity_headers(_user, _jwt_payload(request))
+    return await _forward(
+        "PUT", f"/api/v2/portrait/{person_id}",
+        json_body=payload,
+        headers=headers,
+    )
+
+
 # ---------------------------------------------------------------------------
 # 标签/报表族（AC-145-03-1）
 # ---------------------------------------------------------------------------
@@ -264,6 +358,51 @@ async def dps_tags_categories(
     """标签分类（GET /api/v2/tags/categories）."""
     headers = _build_identity_headers(_user, _jwt_payload(request))
     return await _forward("GET", "/api/v2/tags/categories", headers=headers)
+
+
+@router.post("/tags/categories")
+async def dps_tag_category_create(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """创建标签分类（POST /api/v2/tags/categories，透传上游契约）."""
+    headers = _build_identity_headers(_user, _jwt_payload(request))
+    return await _forward(
+        "POST", "/api/v2/tags/categories",
+        json_body=payload,
+        headers=headers,
+    )
+
+
+@router.put("/tags/categories/{category_id}")
+async def dps_tag_category_update(
+    category_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """更新标签分类（PUT /api/v2/tags/categories/{id}）."""
+    headers = _build_identity_headers(_user, _jwt_payload(request))
+    return await _forward(
+        "PUT", f"/api/v2/tags/categories/{category_id}",
+        json_body=payload,
+        headers=headers,
+    )
+
+
+@router.delete("/tags/categories/{category_id}")
+async def dps_tag_category_delete(
+    category_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """删除标签分类（DELETE /api/v2/tags/categories/{id}）."""
+    headers = _build_identity_headers(_user, _jwt_payload(request))
+    return await _forward(
+        "DELETE", f"/api/v2/tags/categories/{category_id}",
+        headers=headers,
+    )
 
 
 @router.get("/reports/overview")

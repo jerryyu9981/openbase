@@ -61,6 +61,19 @@ DEFAULT_MODULES: list[dict] = [
         "status": "enabled",
         "sort_order": 40,
     },
+    {
+        # v1.4.6+（网关模块页可达性修复）：统一网关为第 5 个动态模块。
+        # 此前 gateway 仅存在于前端 moduleRouteLoaders，未注册进本表 →
+        # 模块路由永不挂载，/gateway/* 落入守卫兜底跳 /dashboard。
+        "id": "gateway",
+        "name": "统一网关",
+        "icon": "connection",
+        "route_prefix": "/gateway",
+        "entry": "modules/gateway",
+        "permission": "gateway:view",
+        "status": "enabled",
+        "sort_order": 50,
+    },
 ]
 
 

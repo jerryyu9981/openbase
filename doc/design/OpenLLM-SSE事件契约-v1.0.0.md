@@ -1,13 +1,13 @@
-# OpenLLM-SSE事件契约-v1.0.0
+# OpenLLM-SSE事件契约-v1.1.0
 
 | 属性 | 值 |
 |------|-----|
-| 文档编号 | OB-INTG-LLM-SSE-v1.0.0 |
-| 版本 | v1.0.0 |
+| 文档编号 | OB-INTG-LLM-SSE-v1.1.0 |
+| 版本 | v1.1.0 |
 | 状态 | [Review] |
-| 日期 | 2026-09-02 |
+| 日期 | 2026-09-04 |
 | 作者 | AD-OpenBase-Dev |
-| 版本主题 | OpenLLM SSE 事件格式统一契约（M4） |
+| 版本主题 | OpenLLM SSE 事件格式统一契约（M4）+ need_profile/profile_source 可选上报字段（need_* 统一编排 v0.4.0） |
 | 适用范围 | OpenLLM 全 SSE 输出端（对话流/拉流）+ OpenBase llm-proxy 透传 + 前端 parseSseStream |
 
 > 本契约是 OpenLLM SSE 流式输出的唯一格式依据（任务书 OpenBase-OpenLLM对接完善任务书 M4 实施产出）。对接方（OpenBase llm-proxy、前端、第三方客户端）按本契约消费，无需按端点特判。
@@ -16,6 +16,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.1.0 | 2026-09-04 | AD（跨项目分析） | routing 事件新增可选字段 need_profile/profile_source（仅上报，不改变旧客户端语义；画像组件化后 profile_source 反映真实来源 dps/skipped） |
 | v1.0.0 | 2026-09-02 | AD-OpenBase-Dev | 初始版本：以网关 chat/stream 为基线，统一 chat-stream/*、local-models/pull 输出格式 |
 
 ---
@@ -45,6 +46,7 @@ usage 可独立事件（`event: usage`）或并入 done.data.usage；对话流�
 | 事件名 | data 字段 | 说明 |
 |--------|-----------|------|
 | `routing` | `components: {need_memory, need_rag, reason, rag_source?}`, `model: {selected, reason}`, `parallel: bool` | 路由决策（首事件） |
+| `routing`（v1.1.0 扩展） | `components.need_profile?: bool`、`components.profile_source?: "dps"\|"skipped"` | **内存/进程内上报字段，仅追加可选键**：画像组件化后标记画像是否注入及真实来源（dps=注入成功；skipped=未启用/降级/空数据）；旧客户端忽略未知字段，语义零感知 |
 | `chunk` | `delta: str` | 增量文本；可选扩展字段（id/model/index 等） |
 | `done` | `usage: {prompt_tokens, completion_tokens}`, `request_id: str` | 流结束 + 用量；允许扩展字段 |
 | `error` | `code: str/int`, `message: str` | 错误中断；code 见 §3 |

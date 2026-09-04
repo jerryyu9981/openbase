@@ -149,7 +149,7 @@ $services = @(
         # API_PORT=8030 覆盖默认 8000；SQLITE_FALLBACK 无 PG 时降级；
         # PYTHONDONTWRITEBYTECODE 绕过沙箱禁止写 __pycache__ 的限制（M4 config.settings 已修复，
         # aiofiles 已装；当前沙箱仅此一项需规避）
-        Env     = @{ API_PORT = '8030'; SQLITE_FALLBACK = 'true'; PYTHONDONTWRITEBYTECODE = '1' }
+        Env     = @{ API_PORT = '8030'; SQLITE_FALLBACK = 'true'; PYTHONDONTWRITEBYTECODE = '1'; DPS_DEMO_SEED = 'true' }
         Health  = @('http://127.0.0.1:8030/health/liveness')
         Depends = @()
         DepType = 'hard'
@@ -165,7 +165,9 @@ $services = @(
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenBase'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'openbase.demo_app:app', '--host', '127.0.0.1', '--port', '8000')
-        Env     = @{}
+        # P0-3（评审 Q5）：OpenBase dps_upstream_base 默认已对齐 DPS 源码 8000；本编排将 DPS
+        # 置于 8030（同机避免与 OpenBase 8000 冲突），故显式注入环境变量覆盖默认值。
+        Env     = @{ OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030' }
         Health  = @('http://127.0.0.1:8000/openapi.json')
         Depends = @('openllm', 'openrag', 'openmemory', 'dps')
         DepType = 'soft'

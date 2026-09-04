@@ -11,7 +11,7 @@
     <el-row :gutter="16" class="mt-16">
       <el-col :xs="24" :lg="12">
         <el-card header="统一入口">
-          <p>单前端登录访问四系统特色模块：对话监控 / 知识库 / 记忆 / 画像。</p>
+          <p>单前端登录访问四系统特色模块（对话监控 / 知识库 / 记忆 / 画像）与统一网关控制台。</p>
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="12">
@@ -28,15 +28,20 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 
 const registry = useModuleRegistry()
-const cards = computed(() => [
-  { label: '已启用模块', value: registry.enabledModules.length },
-  { label: '当前用户', value: 'admin' },
-  { label: '系统版本', value: 'v1.2.0' },
-  { label: '统一入口', value: '4 系统' },
-])
+const auth = useAuthStore()
+const cards = computed(() => {
+  const count = registry.enabledModules.length
+  return [
+    { label: '已启用模块', value: count },
+    { label: '当前用户', value: auth.user?.username || 'admin' },
+    { label: '系统版本', value: 'v1.2.0' },
+    { label: '统一入口', value: `${count} 系统` },
+  ]
+})
 </script>
 
 <style scoped>

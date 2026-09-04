@@ -18,6 +18,10 @@ export interface DpsPortrait {
 export interface DpsTagCategory {
   id?: string
   name?: string
+  description?: string
+  org_id?: string
+  tenant_id?: string
+  created_at?: string
   [key: string]: unknown
 }
 
@@ -43,6 +47,24 @@ export const dpsApi = {
   /** 标签分类（GET /api/v1/dps-proxy/tags/categories） */
   async listTagCategories(): Promise<{ items: DpsTagCategory[] }> {
     const { data } = await http.get<{ code: number; data: { items: DpsTagCategory[] } }>('/dps-proxy/tags/categories')
+    return data.data
+  },
+
+  /** 创建标签分类（POST /api/v1/dps-proxy/tags/categories） */
+  async createTagCategory(payload: { name: string; description?: string }): Promise<DpsTagCategory> {
+    const { data } = await http.post<{ code: number; data: DpsTagCategory }>('/dps-proxy/tags/categories', payload)
+    return data.data
+  },
+
+  /** 更新标签分类（PUT /api/v1/dps-proxy/tags/categories/{id}） */
+  async updateTagCategory(categoryId: string, payload: { name?: string; description?: string }): Promise<DpsTagCategory> {
+    const { data } = await http.put<{ code: number; data: DpsTagCategory }>(`/dps-proxy/tags/categories/${encodeURIComponent(categoryId)}`, payload)
+    return data.data
+  },
+
+  /** 删除标签分类（DELETE /api/v1/dps-proxy/tags/categories/{id}） */
+  async deleteTagCategory(categoryId: string): Promise<unknown> {
+    const { data } = await http.delete<{ code: number; data: unknown }>(`/dps-proxy/tags/categories/${encodeURIComponent(categoryId)}`)
     return data.data
   },
 

@@ -255,8 +255,11 @@ async function loadKeys() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const { data } = await http.get<{ code: number; message: string; data: ApiKeyRow[] }>('/auth/api-keys')
-    apiKeys.value = data.data || []
+    // /auth/api-keys 历史契约返回裸数组；部分页面按信封解包 —— 兼容两种形态
+    const resp: unknown = (await http.get<unknown>('/auth/api-keys')).data
+    apiKeys.value = Array.isArray(resp)
+      ? (resp as ApiKeyRow[])
+      : ((resp as { data?: ApiKeyRow[] })?.data ?? [])
   } catch (e) {
     apiKeys.value = []
     errorMsg.value = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || '密钥列表加载失败'
@@ -324,12 +327,14 @@ async function createKey() {
       keyForm.scopeMode === 'memory'
         ? { system: ['openmemory'], tenants: ['*'] }
         : { system: ['*'], tenants: ['*'] }
-    const { data } = await http.post<{ code: number; message: string; data: ApiKeyRow }>('/auth/api-keys', {
+    const resp: unknown = (await http.post<unknown>('/auth/api-keys', {
       name,
       scope,
       description: keyForm.description.trim(),
-    })
-    const created = data.data
+    })).data
+    const created = (resp && typeof resp === 'object' && 'key' in (resp as ApiKeyRow))
+      ? (resp as ApiKeyRow)
+      : ((resp as { data?: ApiKeyRow })?.data ?? ({} as ApiKeyRow))
     latestToken.value = created.key || ''
     createVisible.value = false
     ElMessage.success('密钥创建成功')

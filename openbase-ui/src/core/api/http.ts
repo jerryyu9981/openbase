@@ -55,6 +55,14 @@ async function refreshAccessToken(): Promise<string> {
 http.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ErrorResponse>) => {
+    // 主动取消（点击停止 / 组件卸载 / 新请求抢占，AbortController.abort()）
+    // 在浏览器侧表现为 net::ERR_ABORTED，axios 抛出 CanceledError 拒绝。
+    // 这类「取消」不是请求失败，直接透传给调用方（依据 signal.aborted 自行处理），
+    // 不弹全局错误提示，避免与停止生成等预期行为混淆。
+    if (axios.isCancel(error) || error.code === AxiosError.ERR_CANCELED) {
+      return Promise.reject(error)
+    }
+
     const original = error.config as AxiosRequestConfig & { _retry?: boolean }
     const status = error.response?.status
     const body = error.response?.data

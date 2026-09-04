@@ -6,13 +6,30 @@ from collections.abc import AsyncGenerator
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request as StarletteRequest
 
 from openbase import init_app
+from openbase.modules import llm_proxy as llm_proxy_module
 from openbase.modules.auth import UserService
+from openbase.modules.auth.jwt import create_access_token
 from openbase.settings import Settings
 
 UPSTREAM_BASE = "http://127.0.0.1:8001"
 LLM_API_KEY = "sk-openllm-test-00000000000000000000000000000000"
+
+
+def _identity_token() -> str:
+    """签发带完整外部身份的 JWT（sub/org_id 与现 JWT claim 同源）.
+
+    P0-2（Q4 最小档）：llm_proxy 注入 X-User-ID(sub)/X-Org-ID(org_id)/
+    X-Proxy-Source，供 OpenLLM TRUSTED_PROXY_SOURCES 可信源解析。
+    """
+    return create_access_token(
+        "42",
+        username="identity-user",
+        tenant_id="tenant-001",
+        extra={"org_id": "org-001", "role": "admin"},
+    )
 
 
 class FakeResponse:
@@ -155,6 +172,66 @@ def test_llm_proxy_models_success_unified_response(client: TestClient) -> None:
     assert headers["Authorization"].startswith("Bearer sk-openllm-")
     assert "X-API-Key" not in headers
     assert call["url"].startswith(f"{UPSTREAM_BASE}/openllm/v1/models")
+    # P0-2（Q4 最小档）：登录 JWT 携带身份 → 注入 X-User-ID/X-Proxy-Source
+    # （memory 演示用户 org 为空，故此处不要求 X-Org-ID，见身份专用用例）
+    assert headers["X-User-ID"] == "1"
+    assert headers["X-Proxy-Source"] == llm_proxy_module.PROXY_SOURCE_IDENTIFIER
+
+
+def test_llm_proxy_injects_external_identity_headers(client: TestClient) -> None:
+    """P0-2：带完整身份 JWT → 注入 X-User-ID/X-Org-ID/X-Proxy-Source（Q4/M3）."""
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            200,
+            {
+                "code": 0,
+                "message": "success",
+                "data": {
+                    "models": [
+                        {"id": "qwen2.5-7b", "object": "model", "created": 0, "owned_by": "openllm"}
+                    ]
+                },
+            },
+        ),
+    ])
+    resp = client.get(
+        "/api/v1/llm-proxy/models",
+        headers={"Authorization": f"Bearer {_identity_token()}"},
+    )
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    headers = call["headers"]
+    # 外部身份归属头（与 JWT claim 同源：sub → X-User-ID；org_id → X-Org-ID）
+    assert headers["X-User-ID"] == "42"
+    assert headers["X-Org-ID"] == "org-001"
+    assert headers["X-Proxy-Source"] == llm_proxy_module.PROXY_SOURCE_IDENTIFIER
+    # 服务密钥不变；不引入 X-API-Key
+    assert headers["Authorization"].startswith("Bearer sk-openllm-")
+    assert "X-API-Key" not in headers
+
+
+def test_llm_proxy_identity_headers_omitted_without_jwt() -> None:
+    """P0-2：无身份来源（匿名/服务级内部调用）→ 不注入任何外部身份头."""
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/openllm/v1/models",
+        "raw_path": b"/openllm/v1/models",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "client": ("127.0.0.1", 12345),
+        "server": ("test", 80),
+        "state": {},
+    }
+    headers = llm_proxy_module._build_upstream_headers(StarletteRequest(scope))
+    assert headers["Authorization"].startswith("Bearer sk-openllm-")
+    assert "X-API-Key" not in headers
+    assert "X-User-ID" not in headers
+    assert "X-Org-ID" not in headers
+    assert "X-Proxy-Source" not in headers
 
 
 def test_llm_proxy_error_code_passthrough(client: TestClient) -> None:

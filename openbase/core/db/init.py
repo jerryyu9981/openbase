@@ -111,4 +111,71 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                 f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
             )
         )
+        # v1.4.6+（统一前端模块查看权限点种子）：openllm/openrag/openmemory/dps/gateway。
+        # 根因修复（走查发现 ①/网关权限缺失）：此前仅 admin 角色拥有 '*' 通配，
+        # OIDC/本地非 admin 用户（含 org_admin）经 user→role→permission 链查询为空
+        # → 前端模块不可见；gateway 域（gateway:view 等）亦未种入 DB 权限矩阵。
+        # 注：历史版本显式插入 id=1（'*'）未推进 PG 自增序列，后续无 id 插入会撞主键，
+        # 故先同步 permissions/roles 序列（幂等）。
+        for _table in ("permissions", "roles"):
+            await conn.execute(
+                text(
+                    f"SELECT setval(pg_get_serial_sequence('\"{schema}\".{_table}', 'id'), "
+                    f"COALESCE((SELECT MAX(id) FROM \"{schema}\".{_table}), 1))"
+                )
+            )
+        for _code, _name, _module in (
+            ("openllm:view", "OpenLLM 查看", "openllm"),
+            ("openrag:view", "知识库查看", "openrag"),
+            ("openmemory:view", "记忆查看", "openmemory"),
+            ("dps:view", "画像查看", "dps"),
+            ("gateway:view", "统一网关查看", "gateway"),
+        ):
+            await conn.execute(
+                text(
+                    f"INSERT INTO {schema}.permissions "
+                    "(code, name, module, type, created_at, updated_at) "
+                    "SELECT :code, :name, :module, 1, now(), now() "
+                    f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = :code)"
+                ).bindparams(code=_code, name=_name, module=_module)
+            )
+        # 业务角色（org_admin/user/viewer）→ 模块查看权限（admin 持 * 通配）。
+        # 映射与架构文档模块矩阵一致：各角色可浏览统一前端全部模块，深层写操作
+        # 仍由各自 *_manage/*:write 权限点管控（如 auth:api-keys:manage）。
+        for _role_code in ("org_admin", "user", "viewer"):
+            await conn.execute(
+                text(
+                    f"INSERT INTO {schema}.role_permission (role_id, permission_id) "
+                    f"SELECT r.id, p.id FROM {schema}.roles r, {schema}.permissions p "
+                    f"WHERE r.code = :role AND p.code IN "
+                    "('openllm:view','openrag:view','openmemory:view','dps:view','gateway:view') "
+                    f"AND NOT EXISTS (SELECT 1 FROM {schema}.role_permission rp "
+                    f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
+                ).bindparams(role=_role_code)
+            )
+        # 服务密钥权限点种子（v1.4.6+，网关/API 控制台页走查修复）：
+        # auth:api-keys:* 行入库供 RBAC 分配；org_admin 获得查看+管理（组织接入需签发
+        # 下游服务密钥）；user/viewer 不授（仅浏览模块，密钥属平台级写操作）。
+        for _code, _name, _module in (
+            ("auth:api-keys:view", "服务密钥查看", "auth"),
+            ("auth:api-keys:manage", "服务密钥管理", "auth"),
+        ):
+            await conn.execute(
+                text(
+                    f"INSERT INTO {schema}.permissions "
+                    "(code, name, module, type, created_at, updated_at) "
+                    "SELECT :code, :name, :module, 1, now(), now() "
+                    f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = :code)"
+                ).bindparams(code=_code, name=_name, module=_module)
+            )
+        await conn.execute(
+            text(
+                f"INSERT INTO {schema}.role_permission (role_id, permission_id) "
+                f"SELECT r.id, p.id FROM {schema}.roles r, {schema}.permissions p "
+                f"WHERE r.code = 'org_admin' AND p.code IN "
+                "('auth:api-keys:view','auth:api-keys:manage') "
+                f"AND NOT EXISTS (SELECT 1 FROM {schema}.role_permission rp "
+                f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
+            )
+        )
     logger.info("database initialized", extra={"schema": schema})

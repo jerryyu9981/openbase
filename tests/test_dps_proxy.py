@@ -1,17 +1,24 @@
-"""测试 v1.4.5 R-381 AC-145-03：dps-proxy JWT 门禁 + 身份头注入 + 统一响应 + {detail} 归一化."""
+"""测试 v1.4.5 R-381 AC-145-03：dps-proxy JWT 门禁 + 身份头注入 + 统一响应 + {detail} 归一化.
+
+P0-3（DPS 端口对齐）：UPSTREAM_BASE 对齐 DPS 源码默认 api_port=8000
+（DPS src/config.py：API_PORT 默认 8000；rest_api.app/MCP 部署入口为 8013，
+真实部署由 OPENBASE_DPS_UPSTREAM_BASE 环境变量覆盖）。
+"""
 
 import json
+import logging
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
 from openbase import init_app
+from openbase.modules import dps_proxy as dps_proxy_module
 from openbase.modules.auth import UserService
 from openbase.modules.auth.jwt import create_access_token
 from openbase.settings import Settings
 
-UPSTREAM_BASE = "http://127.0.0.1:8030"
+UPSTREAM_BASE = "http://127.0.0.1:8000"
 
 
 class FakeResponse:
@@ -68,6 +75,9 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     settings.dps_upstream_base = UPSTREAM_BASE
     settings.dps_default_org_id = "default-org"
     settings.dps_default_tenant_id = "default-tenant"
+    # P0-3：业务转发/透传类用例显式关闭上游健康探活，避免探活请求插入
+    # request_calls 序列破坏 URL 顺序断言（探活行为由下方专门用例覆盖）
+    settings.dps_health_check_enabled = False
     # 替换 settings 模块全局单例（importlib 获取真实模块，避免 openbase 包 settings 属性干扰）
     import importlib
 
@@ -249,6 +259,43 @@ def test_dps_proxy_portrait_calculate(client: TestClient) -> None:
     assert call["json"] == payload
 
 
+def test_dps_proxy_portrait_update(client: TestClient) -> None:
+    """画像更新（PUT）→ 转发 URL/方法/身份头 + C1 契约 body 透传.
+
+    真实契约落地立项方案 Phase C2 T5：OpenLLM ProfileAdapter 写/漂移的持久化落点
+    PUT /api/v2/portrait/{person_id}；沿用 mock 上游模式，探活开关按既有约定关闭。
+    """
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            200,
+            {"code": 200, "message": "success", "data": {"person_id": "p1", "version": 2}},
+        ),
+    ])
+    payload = {
+        "person": {"name": "张三"},
+        "business": {"attributes": {"industry": "金融"}},
+    }
+    resp = client.put(
+        "/api/v1/dps-proxy/portraits/p1",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["code"] == 0
+    assert body["data"]["version"] == 2
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "PUT"
+    assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/p1")
+    assert call["json"] == payload
+    headers = call["headers"]
+    assert headers["X-User-ID"] == "42"
+    assert headers["X-Tenant-ID"] == "tenant-001"
+    assert headers["X-Org-ID"] == "org-001"
+    assert headers["X-User-Role"] == "admin"
+
+
 # ---------------------------------------------------------------------------
 # 标签/报表/批量/审计（AC-145-03-1）
 # ---------------------------------------------------------------------------
@@ -388,3 +435,138 @@ def test_dps_proxy_health_success(client: TestClient) -> None:
     assert resp.json()["data"]["status"] == "healthy"
     call = client.fake.request_calls[0]  # type: ignore[attr-defined]
     assert call["url"].startswith(f"{UPSTREAM_BASE}/health/liveness")
+
+
+# ---------------------------------------------------------------------------
+# P0-3 DPS 上游健康探活（端口对齐守护：settings.dps_upstream_base → 8000）
+# ---------------------------------------------------------------------------
+
+
+def _enable_health_probe(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, interval: float = 3600.0
+) -> None:
+    """打开探活开关并重置模块级探活状态（隔离用例间污染）.
+
+    interval 取大值：单用例内第二次转发受节流跳过，便于断言"仅首次探活"。
+    """
+    monkeypatch.setattr(dps_proxy_module, "_last_dps_health_probe_at", None)
+    monkeypatch.setattr(dps_proxy_module, "_dps_health_ok", None)
+    settings = dps_proxy_module.get_settings()
+    settings.dps_health_check_enabled = True
+    settings.dps_health_interval = interval
+
+
+def test_dps_proxy_health_probe_before_first_forward_and_throttled(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """首次业务转发前先探活 DPS {base}/health；interval 内再次转发不再重复探活."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"status": "healthy"}),
+        FakeResponse(200, {"code": 200, "message": "success", "data": {"items": []}}),
+    ])
+    _enable_health_probe(client, monkeypatch)
+    resp = client.get(
+        "/api/v1/dps-proxy/portraits",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert len(calls) == 2, "首请求应恰有一次探活 + 一次转发"
+    assert calls[0]["method"] == "GET"
+    assert calls[0]["url"] == f"{UPSTREAM_BASE}/health"
+    assert calls[1]["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/list")
+    # interval（3600s）内第二次转发：不再触发探活
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": {"items": [{"person_id": "p2"}]}}),
+    ])
+    resp2 = client.get(
+        "/api/v1/dps-proxy/portraits/p2",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp2.status_code == 200, resp2.text
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert len(calls) == 3
+    assert calls[2]["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/p2")
+
+
+def test_dps_proxy_health_probe_connect_error_degrades_then_forward_502(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """探活连接异常 → WARN 降级提示；转发同样不可达时保持既有 502（AC-145-03-5）."""
+    token = _token_with_identity()
+    client.fake.fail_with = httpx.ConnectError("connection refused")  # type: ignore[attr-defined]
+    _enable_health_probe(client, monkeypatch)
+    with caplog.at_level(logging.WARNING, logger="openbase.dps_proxy"):
+        resp = client.get(
+            "/api/v1/dps-proxy/portraits",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 502, resp.text
+    assert resp.json()["code"] == "SYS_502"
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert calls[0]["url"] == f"{UPSTREAM_BASE}/health"
+    assert any(
+        "health" in record.getMessage() and "degraded" in record.getMessage()
+        for record in caplog.records
+    ), "探活连接异常应记录 WARN 降级提示"
+
+
+def test_dps_proxy_health_probe_recovery_logs_info(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """探活由失败翻转为成功 → INFO 恢复日志（previous_ok=False 分支）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(503, {"detail": "unavailable"}),
+        FakeResponse(200, {"code": 200, "message": "success", "data": {"items": []}}),
+    ])
+    _enable_health_probe(client, monkeypatch)
+    with caplog.at_level(logging.WARNING, logger="openbase.dps_proxy"):
+        resp = client.get(
+            "/api/v1/dps-proxy/portraits",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200, resp.text
+    assert dps_proxy_module._dps_health_ok is False
+    # 模拟 interval 到期后 DPS 恢复：清除时间戳，下一请求重新探活成功
+    monkeypatch.setattr(dps_proxy_module, "_last_dps_health_probe_at", None)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"status": "healthy"}),
+        FakeResponse(200, {"code": 200, "message": "success", "data": {"items": []}}),
+    ])
+    with caplog.at_level(logging.INFO, logger="openbase.dps_proxy"):
+        resp2 = client.get(
+            "/api/v1/dps-proxy/portraits",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp2.status_code == 200, resp2.text
+    assert dps_proxy_module._dps_health_ok is True
+    assert any(
+        "recovered" in record.getMessage() for record in caplog.records
+    ), "探活恢复应记录 INFO"
+
+
+def test_dps_proxy_health_probe_non_2xx_degrades_and_keeps_forwarding(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """探活返回非 2xx → WARN 降级提示，转发仍继续（fail-open，不改写既有语义）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(503, {"detail": "unavailable"}),
+        FakeResponse(200, {"code": 200, "message": "success", "data": {"items": []}}),
+    ])
+    _enable_health_probe(client, monkeypatch)
+    with caplog.at_level(logging.WARNING, logger="openbase.dps_proxy"):
+        resp = client.get(
+            "/api/v1/dps-proxy/portraits",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    assert resp.status_code == 200, resp.text
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert calls[0]["url"] == f"{UPSTREAM_BASE}/health"
+    assert calls[1]["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/list")
+    assert any(
+        "health" in record.getMessage() and "degraded" in record.getMessage()
+        for record in caplog.records
+    ), "探活失败应记录 WARN 降级提示"

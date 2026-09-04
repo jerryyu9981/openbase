@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => {
   return { requestInterceptor, responseInterceptor, mockPost, mockGet }
 })
 
+const elMessage = vi.hoisted(() => ({ error: vi.fn(), info: vi.fn() }))
+
+vi.mock('element-plus', () => ({ ElMessage: elMessage }))
+
 vi.mock('axios', async () => {
   const actual = await vi.importActual<typeof import('axios')>('axios')
   const instance = Object.assign(vi.fn(), {
@@ -37,6 +41,8 @@ describe('http 拦截器', () => {
   beforeEach(() => {
     localStorage.clear()
     tokenStore.clear()
+    elMessage.error.mockClear()
+    elMessage.info.mockClear()
   })
 
   it('请求拦截器注入 Bearer token', () => {
@@ -79,6 +85,20 @@ describe('http 拦截器', () => {
     )
     expect(tokenStore.access).toBe('new-access')
     tokenStore.clear()
+  })
+
+  it('响应拦截器对取消类错误（ERR_CANCELED）直接透传且不弹全局错误', async () => {
+    const [, onRejected] = mocks.responseInterceptor.use.mock.calls[0]
+    const cancelError = { __CANCEL__: true, message: 'canceled', config: { headers: {} } }
+    await expect(onRejected(cancelError)).rejects.toBe(cancelError)
+    expect(elMessage.error).not.toHaveBeenCalled()
+  })
+
+  it('响应拦截器对非取消类失败仍弹全局错误并透传', async () => {
+    const [, onRejected] = mocks.responseInterceptor.use.mock.calls[0]
+    const error = { message: 'network down', config: { headers: {} } }
+    await expect(onRejected(error)).rejects.toBe(error)
+    expect(elMessage.error).toHaveBeenCalledWith('network down')
   })
 
   it('authApi.login 成功后写入 token', async () => {

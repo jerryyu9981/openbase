@@ -22,7 +22,7 @@
               <el-descriptions-item label="画像名称">{{ profile.name || '-' }}</el-descriptions-item>
               <el-descriptions-item label="画像 ID">{{ profile.person_id || '-' }}</el-descriptions-item>
               <el-descriptions-item label="风险等级">
-                <el-tag :type="riskType(profile.risk_level)" size="small">{{ riskLabel(profile.risk_level) }}</el-tag>
+                <el-tag :type="riskType(profile)" size="small">{{ riskLabel(profile) }}</el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="更新时间">{{ formatTime(profile.updated_at) }}</el-descriptions-item>
             </el-descriptions>
@@ -65,14 +65,26 @@ const dimensionEntries = computed(() => {
   return Object.entries(dims)
 })
 
-function riskLabel(level?: string) {
-  if (!level) return '未知'
-  return { low: '低', medium: '中', high: '高' }[level] || level
+function riskOf(row: DpsPortrait): number {
+  const raw = row.risk_level ?? row.risk_score
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : -1
 }
 
-function riskType(level?: string) {
-  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = { low: 'success', medium: 'warning', high: 'danger' }
-  return map[level || ''] || 'info'
+function riskLabel(row: DpsPortrait): string {
+  const v = riskOf(row)
+  if (v < 0) return '未知'
+  if (v >= 70) return '高'
+  if (v >= 40) return '中'
+  return '低'
+}
+
+function riskType(row: DpsPortrait): 'success' | 'warning' | 'danger' | 'info' {
+  const v = riskOf(row)
+  if (v < 0) return 'info'
+  if (v >= 70) return 'danger'
+  if (v >= 40) return 'warning'
+  return 'success'
 }
 
 function formatTime(v?: string) {

@@ -18,7 +18,6 @@ from openbase.modules.auth.rbac import require_permission
 from openbase.modules.gateway.aggregate import execute_aggregate
 from openbase.modules.gateway.discovery import ServiceInstance
 from openbase.modules.gateway.schemas import (
-    AggregateOut,
     AggregateRequest,
     ServiceInstanceOut,
     ServiceRegisterRequest,
@@ -29,6 +28,15 @@ logger = logging.getLogger("openbase.gateway")
 router = APIRouter(prefix="/api/v1", tags=["gateway"])
 
 __all__ = ["router"]
+
+
+def _ok(data: Any) -> dict[str, Any]:
+    """统一响应信封 {code, message, data}（对齐 API 接口设计 v1.4.0 §2）.
+
+    v1.4.6+（网关页可达性走查修复）：此前网关端点返回裸对象（{"systems":...}），
+    与统一契约及前端 gatewayApi（data.data 解包）不匹配 → /gateway/services 崩溃。
+    """
+    return {"code": 0, "message": "success", "data": data}
 
 
 def _provider():
@@ -67,7 +75,7 @@ async def list_all_services() -> dict[str, Any]:
         instances = provider.list_instances(system)
         if instances:
             systems.append({"system": system, "instances": [_to_out(i).model_dump() for i in instances]})
-    return {"systems": systems}
+    return _ok({"systems": systems})
 
 
 @router.get(
@@ -79,15 +87,15 @@ async def list_system_services(system: str) -> dict[str, Any]:
     """指定系统实例列表."""
     provider = _provider()
     instances = provider.list_instances(system)
-    return {"instances": [_to_out(i).model_dump() for i in instances]}
+    return _ok({"instances": [_to_out(i).model_dump() for i in instances]})
 
 
 @router.post(
     "/services",
-    response_model=ServiceInstanceOut,
+    response_model=dict[str, Any],
     dependencies=[Depends(require_permission("gateway:register"))],
 )
-async def register_service(req: ServiceRegisterRequest) -> ServiceInstanceOut:
+async def register_service(req: ServiceRegisterRequest) -> dict[str, Any]:
     """实例注册（四系统启动时调用）."""
     provider = _provider()
     instance = provider.register_instance(
@@ -98,19 +106,19 @@ async def register_service(req: ServiceRegisterRequest) -> ServiceInstanceOut:
         weight=req.weight,
     )
     instance.meta = req.meta
-    return _to_out(instance)
+    return _ok(_to_out(instance).model_dump())
 
 
 @router.delete(
     "/services/{system}/{instance_id}",
-    response_model=dict[str, str],
+    response_model=dict[str, Any],
     dependencies=[Depends(require_permission("gateway:register"))],
 )
-async def deregister_service(system: str, instance_id: str) -> dict[str, str]:
+async def deregister_service(system: str, instance_id: str) -> dict[str, Any]:
     """实例下线."""
     provider = _provider()
     provider.deregister_instance(system, instance_id)
-    return {"deleted": instance_id}
+    return _ok({"deleted": instance_id})
 
 
 @router.get(
@@ -119,12 +127,13 @@ async def deregister_service(system: str, instance_id: str) -> dict[str, str]:
     dependencies=[Depends(require_permission("gateway:view"))],
 )
 async def gateway_health() -> dict[str, Any]:
-    """网关发现层健康状态."""
+    """网关发现层健康状态（与 /services 同源聚合，避免注册表视图不一致）."""
     provider = _provider()
-    registry = provider.get_registry()
     systems: list[dict[str, Any]] = []
-    for system in registry.systems():
-        instances = registry.list_all(system)
+    for system in ("openllm", "openrag", "openmemory", "dps"):
+        instances = provider.list_instances(system)
+        if not instances:
+            continue
         healthy = sum(1 for i in instances if i.healthy)
         systems.append(
             {
@@ -134,7 +143,7 @@ async def gateway_health() -> dict[str, Any]:
                 "health_rate": round(healthy / len(instances), 2) if instances else 0.0,
             }
         )
-    return {"systems": systems}
+    return _ok({"systems": systems})
 
 
 @router.get(
@@ -162,17 +171,17 @@ async def gateway_ping() -> dict[str, Any]:
             )
         except httpx.HTTPError:
             results.append({"system": system, "reachable": False, "latency_ms": None})
-    return {"results": results}
+    return _ok({"results": results})
 
 
 # ---- 聚合编排 API ----
 
 @router.post(
     "/gateway/aggregate",
-    response_model=AggregateOut,
+    response_model=dict[str, Any],
     dependencies=[Depends(require_permission("gateway:aggregate"))],
 )
-async def aggregate(request: AggregateRequest) -> AggregateOut:
+async def aggregate(request: AggregateRequest) -> dict[str, Any]:
     """聚合编排执行（代码式并发聚合）."""
     result = await execute_aggregate(request.model_dump())
-    return AggregateOut(**result)
+    return _ok(result)
