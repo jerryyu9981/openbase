@@ -168,7 +168,8 @@ $services = @(
         Desc    = 'DPS 数据画像系统'
         Checks  = @(
             @{ Name = '存活探针';   Method = 'GET'; Path = '/health/liveness'; Expect = 200 }
-            @{ Name = 'API 文档';   Method = 'GET'; Path = '/openapi.json';    Expect = 200 }
+            # DPS /openapi.json 受权限中间件保护，无身份返回 401 属正常（门禁生效）
+            @{ Name = 'API 文档(401=门禁)'; Method = 'GET'; Path = '/openapi.json'; Expect = 401 }
         )
     },
     @{
