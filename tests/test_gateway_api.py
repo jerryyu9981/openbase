@@ -36,38 +36,39 @@ def test_gateway_api_forbidden_without_permission() -> None:
 # ---- 服务发现 API ----
 
 def test_list_all_services_structure() -> None:
-    """GET /services 响应结构（systems/instances 字段 + 类型）."""
+    """GET /services 响应结构（统一 envelope data.systems[].instances）."""
     resp = client.get("/api/v1/services", headers=admin_headers)
     assert resp.status_code == 200
     body = resp.json()
-    assert "systems" in body
-    for group in body["systems"]:
+    assert body["code"] == 0
+    for group in body["data"]["systems"]:
         assert "system" in group
         assert "instances" in group
 
 
 def test_list_system_services() -> None:
-    """GET /services/{system} 指定系统列表."""
+    """GET /services/{system} 指定系统列表（data.instances）."""
     resp = client.get("/api/v1/services/openllm", headers=admin_headers)
     assert resp.status_code == 200
-    assert "instances" in resp.json()
+    body = resp.json()
+    assert "instances" in body["data"]
 
 
 def test_register_and_deregister_via_api() -> None:
-    """POST/DELETE /services 注册与下线闭环."""
+    """POST/DELETE /services 注册与下线闭环（data 承载 instance/deleted）."""
     reg = client.post(
         "/api/v1/services",
         headers=admin_headers,
         json={"system": "openllm", "host": "10.1.1.1", "port": 8001, "weight": 3},
     )
     assert reg.status_code == 200
-    instance = reg.json()
+    instance = reg.json()["data"]
     assert instance["instance_id"] == "10.1.1.1:8001"
     assert instance["weight"] == 3
 
     delete = client.delete("/api/v1/services/openllm/10.1.1.1:8001", headers=admin_headers)
     assert delete.status_code == 200
-    assert delete.json()["deleted"] == "10.1.1.1:8001"
+    assert delete.json()["data"]["deleted"] == "10.1.1.1:8001"
 
 
 def test_register_schema_validation() -> None:
@@ -83,23 +84,28 @@ def test_register_schema_validation() -> None:
 # ---- 网关健康 API ----
 
 def test_gateway_health_api() -> None:
-    """GET /gateway/health 响应结构."""
+    """GET /gateway/health 响应结构（统一 envelope data.systems）."""
     resp = client.get("/api/v1/gateway/health", headers=admin_headers)
     assert resp.status_code == 200
     body = resp.json()
-    assert "systems" in body
-    for item in body["systems"]:
+    assert body["code"] == 0
+    systems = body["data"]["systems"]
+    assert len(systems) >= 4
+    for item in systems:
+        assert "system" in item
         assert "healthy" in item
         assert "instance_count" in item
 
 
 def test_gateway_ping_api() -> None:
-    """GET /gateway/ping 响应结构（四系统，可达性布尔）."""
+    """GET /gateway/ping 响应结构（四系统，可达性布尔，data.results）."""
     resp = client.get("/api/v1/gateway/ping", headers=admin_headers)
     assert resp.status_code == 200
-    results = resp.json()["results"]
+    body = resp.json()
+    results = body["data"]["results"]
     assert len(results) == 4
     for item in results:
+        assert "system" in item
         assert "reachable" in item
         assert item["reachable"] in (True, False)
 
@@ -128,8 +134,9 @@ def test_aggregate_api_return_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert resp.status_code == 200
     body = resp.json()
-    assert isinstance(body["errors"], list)
-    assert len(body["errors"]) >= 1
+    errors = body["data"]["errors"]
+    assert isinstance(errors, list)
+    assert len(errors) >= 1
 
 
 # ---- 模块入口（__init__.py） ----
