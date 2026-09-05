@@ -29,12 +29,18 @@ extra_routers = [memory_proxy_router]
 
 __all__ = ["PROXY_SYSTEMS", "router", "extra_routers"]
 
+# P2（DPS 对接任务书）：dps base_url 与 dps-proxy 收敛到同一事实源 settings.dps_upstream_base
+# （默认 8000 = DPS 源码默认；编排经 OPENBASE_DPS_UPSTREAM_BASE 覆盖为 8030）。
+from openbase.settings import get_settings  # noqa: E402
+
+_settings = get_settings()
+
 # 四系统代理路由表（base_url 可由 config 模块覆盖；此处为 Dev 默认）
 PROXY_SYSTEMS: dict[str, dict] = {
     "openllm": {"base_url": "http://127.0.0.1:8001", "timeout": 10.0},
     "openrag": {"base_url": "http://127.0.0.1:8010", "timeout": 10.0},
     "openmemory": {"base_url": "http://127.0.0.1:8020", "timeout": 10.0},
-    "dps": {"base_url": "http://127.0.0.1:8030", "timeout": 10.0},
+    "dps": {"base_url": _settings.dps_upstream_base, "timeout": 10.0},
 }
 
 
