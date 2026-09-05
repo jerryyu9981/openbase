@@ -28,6 +28,7 @@
 | v1.9.0 | 2026-09-05 | AD（跨项目分析） | 原子重建（含全部决策与状态） |
 | v2.0.0 | 2026-09-05 | AD（跨项目分析） | P8 实施回填：对接使用指南 v1.0.0（commit 3763b66）；P9 待办（含联动项）快照 |
 | v2.1.0 | 2026-09-05 | AD（跨项目分析） | P9 联动回填：真实模式 profile E2E 通过（DPSClient real_mode=True 读写往返实证，2026-09-05）；编排检查 27/27（0ee504b）；中文编码注意事项并入指南 v1.1.0 |
+| v2.2.0 | 2026-09-05 | AD（跨项目分析） | P9 联动回填：完整对话链路 E2E 通过（admin/admin123 → llm-proxy → OpenLLM → Ollama llama3.2:1b，SSE routing→chunk→done）；登录 401 根因=陈旧进程态（重启后恢复，公共库 admin 哈希已按 demo_app 同款修正） |
 
 ---
 
@@ -69,9 +70,9 @@ OpenAPI 实证 81 路径；proxy 10 端点映射表；错误 envelope 由 `_adap
 
 ### P9 待办（门禁）
 
-- 冒烟 S4 全绿：重启存活、双租户隔离（种子需扩第二租户）、version/history（已实证）、停服降级（行为已断言，编排场景复核）、真实模式 profile 端到端（OPENLLM_DPS_REAL=true）、漂移重算（P1 级）。
+- ✅ 已完成子项（v2.1.0~v2.2.0 实证）：version/history、停服降级行为（断言）、真实模式 profile E2E（DPSClient real_mode 读写往返）、编排检查 27/27（0ee504b）、完整对话链路 E2E（admin/admin123 → llm-proxy → OpenLLM → llama3.2:1b，SSE routing→chunk→done，2026-09-05）。
+- 剩余：重启存活编排复核、双租户隔离（种子需扩第二租户）、画像对话内注入（OPENLLM_DPS_REAL=true + code→UUID 映射部署批次单列）、漂移重算（P1 级）。
 - 回归：DPS/OpenBase/OpenLLM 三仓命令 0 失败（OpenBase 存量测试对齐清单 T1/T3 已修，T2 OIDC 阻塞待空库复现）。
-- 联动项：编排 DPS Checks openapi 期望修正（现 401 属权限正常，应移除或改期望）；演示登录凭据确认（proxy 令牌路径冒烟）。
 
 ## 4. 实施顺序与依赖（状态）
 
