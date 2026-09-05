@@ -180,7 +180,14 @@ $services = @(
         Args    = @('-m', 'uvicorn', 'openbase.demo_app:app', '--host', '127.0.0.1', '--port', '8000')
         # P0-3（评审 Q5）：OpenBase dps_upstream_base 默认已对齐 DPS 源码 8000；本编排将 DPS
         # 置于 8030（同机避免与 OpenBase 8000 冲突），故显式注入环境变量覆盖默认值。
-        Env     = @{ OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030' }
+        # P1-1（2026-09-06）：OpenBase 侧 org-1/tenant-1（默认兜底）与 tenant_code claim
+        # （tenant-1）→ DPS 预建 code（dps-org-001/dps-tenant-001，共享 PG 种子）映射，
+        # 修复 dps-proxy 画像族 403「组织不存在」（DPS 中间件双形态解析并规范化 UUID）。
+        Env     = @{
+            OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030'
+            OPENBASE_DPS_ORG_MAP = '{"org-1":"dps-org-001","tenant-1":"dps-org-001"}'
+            OPENBASE_DPS_TENANT_MAP = '{"org-1":"dps-tenant-001","tenant-1":"dps-tenant-001"}'
+        }
         Health  = @('http://127.0.0.1:8000/openapi.json')
         Depends = @('openllm', 'openrag', 'openmemory', 'dps')
         DepType = 'soft'

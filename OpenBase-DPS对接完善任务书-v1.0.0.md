@@ -31,6 +31,7 @@
 | v2.2.0 | 2026-09-05 | AD（跨项目分析） | P9 联动回填：完整对话链路 E2E 通过（admin/admin123 → llm-proxy → OpenLLM → Ollama llama3.2:1b，SSE routing→chunk→done）；登录 401 根因=陈旧进程态（重启后恢复，公共库 admin 哈希已按 demo_app 同款修正） |
 | v2.3.0 | 2026-09-05 | AD（跨项目分析） | P9 重启存活复核回填：强杀 DPS → 编排单服务重启 → version/属性保留（共享 PG 持久化实证） |
 | v2.4.0 | 2026-09-05 | AD（跨项目分析） | P9 双租户隔离实证回填：幂等补第二 org/tenant/画像/绑定；T1/T2 列表互不可见、跨租户读 404、自有读写 200、未绑定 403 |
+| v2.5.0 | 2026-09-06 | AD（跨项目分析） | P1-1 修复回填：dps_org_map/dps_tenant_map 部署值写入（根因=OpenBase 默认 org-1/tenant-1 为旧种子语义，DPS 现库为 dps-org-001/dps-tenant-001，无映射致 403「组织不存在」）；.env + 编排 Env 双落点；API/UI 复验通过 |
 
 ---
 
@@ -73,7 +74,7 @@ OpenAPI 实证 81 路径；proxy 10 端点映射表；错误 envelope 由 `_adap
 ### P9 待办（门禁）
 
 - ✅ 已完成子项（v2.1.0~v2.4.0 实证）：version/history、停服降级行为（断言）、真实模式 profile E2E、编排检查 27/27、完整对话链路 E2E、重启存活（强杀+单服务重启持久化）、双租户隔离（T1/T2 列表互不可见、跨租户读 404、自有读写 200、未绑定 403）。
-- 剩余：画像对话内注入（OPENLLM_DPS_REAL=true + code→UUID 映射部署批次单列）、漂移重算（P1 级）。
+- 剩余：画像对话内注入（OPENLLM_DPS_REAL=true 发布批次；code 映射已随 P1-1 于 2026-09-06 部署）、漂移重算（P1 级）。
 - 回归：DPS/OpenBase/OpenLLM 三仓命令 0 失败（OpenBase 存量测试对齐清单 T1/T3 已修，T2 OIDC 阻塞待空库复现）。
 
 ## 4. 实施顺序与依赖（状态）
@@ -123,4 +124,4 @@ OpenAPI 实证 81 路径；proxy 10 端点映射表；错误 envelope 由 `_adap
 | P8 指南 | ✅ | 2026-09-05 | 3763b66 |
 | P9 冒烟门禁 | 待办（多数子项已实证） | 2026-09-05 | E2E 读写往返/编排 27/27/降级行为已过；剩余：双租户、完整对话链路（凭据）、漂移重算、T2 |
 
-**遗留**：P3.3（治理 P1-2/P1-3）、P9（冒烟门禁与联动项）、DPS fail-open（治理 P2-2）、dps_tenant_map code 部署值、T2 空库复现（OpenBase 存量测试对齐清单）。
+**遗留**：P3.3（治理 P1-2/P1-3）、P9（冒烟门禁与联动项）、DPS fail-open（治理 P2-2）、T2 空库复现（OpenBase 存量测试对齐清单）。P1-1 映射部署值已闭环（v2.5.0）。

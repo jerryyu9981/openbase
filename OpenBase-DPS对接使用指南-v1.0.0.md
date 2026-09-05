@@ -90,7 +90,16 @@ python D:\Trae CN\myproject\Dev\DPS\scripts\seed-shared-infra.py
 | DPS `PERMISSION_ENABLED` | true | 权限校验（绑定缺省 fail-closed） |
 | DPS `DPS_DEMO_USER_ROLES` | 1:super_admin | 种子角色绑定覆盖 |
 
+> **组织/租户映射部署值（v1.2.0，2026-09-06 起受管已写入）**：OpenBase 侧组织=租户同值（仅 tenants code=tenant-1），未绑定用户回退默认 `org-1/tenant-1`；DPS 共享 PG 预建 code 为 `dps-org-001/dps-tenant-001`。`dps_org_map/dps_tenant_map` 双键覆盖默认兜底与 `tenant_code` claim（tenant-1）两条路径：
+>
+> ```
+> OPENBASE_DPS_ORG_MAP={"org-1":"dps-org-001","tenant-1":"dps-org-001"}
+> OPENBASE_DPS_TENANT_MAP={"org-1":"dps-tenant-001","tenant-1":"dps-tenant-001"}
+> ```
+>
+> 落点：OpenBase 根目录 `.env`（gitignored，手动启动）与 `scripts/service-orchestrator.ps1`（openbase Env，受管重启持久化）。映射后的 code 由 DPS 中间件双形态解析并规范化为库内 UUID；未配置/未命中时直传原值（由 `dps_default_*` 兜底）。
+
 ## 7. 版本与配套
 
-- 决策上下文：《四件套身份隔离治理评审》v1.5.0（R3~R5）、《真实契约落地与沉淀收敛立项方案》v1.2.0、《OpenBase-DPS对接完善任务书》v1.9.0。
+- 决策上下文：《四件套身份隔离治理评审》v1.5.0（R3~R5）、《真实契约落地与沉淀收敛立项方案》v1.2.0、《OpenBase-DPS对接完善任务书》v2.5.0。
 - 本文档随端点/契约变更升版并同步修订历史；每版本需以冒烟 S4 与 OpenAPI 对照复核。
