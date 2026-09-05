@@ -32,12 +32,18 @@ param(
     [string[]]$Only = @(),
     [int]$Interval = 15,
     [int]$HealthTimeout = 60,
-    [int]$MaxRestarts = 3
+    [int]$MaxRestarts = 3,
+    # 沙箱/受限环境日志目录覆盖（默认 OpenBase\logs\service-orchestrator）
+    [string]$LogRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$LogDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'logs\service-orchestrator'
+if ($LogRoot) {
+    $LogDir = $LogRoot
+} else {
+    $LogDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'logs\service-orchestrator'
+}
 $PidFile = Join-Path $LogDir 'service-pids.json'
 $LogFile = Join-Path $LogDir ("orchestrator-{0}.log" -f (Get-Date -Format 'yyyyMMdd'))
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -70,7 +76,7 @@ $services = @(
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenLLM\backend'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8001')
-        Env     = @{ PORT = '8001' }
+        Env     = @{ PORT = '8001'; PYTHONDONTWRITEBYTECODE = '1' }
         Health  = @('http://127.0.0.1:8001/health', 'http://127.0.0.1:8001/api/v1/system/health')
         Depends = @()
         DepType = 'hard'
@@ -146,10 +152,16 @@ $services = @(
         Cwd     = 'D:\Trae CN\myproject\Dev\DPS'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'rest_api.app:app', '--app-dir', 'src', '--host', '127.0.0.1', '--port', '8030')
-        # API_PORT=8030 覆盖默认 8000；SQLITE_FALLBACK 无 PG 时降级；
-        # PYTHONDONTWRITEBYTECODE 绕过沙箱禁止写 __pycache__ 的限制（M4 config.settings 已修复，
-        # aiofiles 已装；当前沙箱仅此一项需规避）
-        Env     = @{ API_PORT = '8030'; SQLITE_FALLBACK = 'true'; PYTHONDONTWRITEBYTECODE = '1'; DPS_DEMO_SEED = 'true' }
+        # 强制共享 PostgreSQL（不使用 SQLite）：DATABASE_URL ← 共享 .env.shared-infra 的
+        # POSTGRES_URL（上方第 49-60 行已注入进程环境，子进程继承）；
+        # SQLITE_FALLBACK=false 禁止任何 SQLite 回退；DPS_DEMO_SEED 不再启用
+        # （seed_demo.py 为 SQLite 专用；PG 幂等种子见 DPS scripts/seed-shared-infra.py）。
+        Env     = @{
+            API_PORT = '8030'
+            DATABASE_URL = $env:POSTGRES_URL
+            SQLITE_FALLBACK = 'false'
+            PYTHONDONTWRITEBYTECODE = '1'
+        }
         Health  = @('http://127.0.0.1:8030/health/liveness')
         Depends = @()
         DepType = 'hard'
