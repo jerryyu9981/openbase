@@ -44,6 +44,10 @@ export const routes: RouteRecordRaw[] = [
   // 平台联动
   { path: 'routing/strategies', name: 'openllm-routing-strategies', component: () => import('./pages/Routing.vue'), meta: { title: '路由策略' } },
   { path: 'routing/circuit-breakers', name: 'openllm-circuit-breakers', component: () => import('./pages/Routing.vue'), meta: { title: '熔断器' } },
+  // P2-3（UI-E2E #3）：补注册菜单指向缺失的板块子路由（此前仅建视图文件未入路由表，
+  // 点击菜单 No match → 回 /dashboard 丢上下文）。路径与 navItems 菜单保持一致。
+  { path: 'recommend', name: 'openllm-recommend', component: () => import('./pages/P2RecommendView.vue'), meta: { title: '模型对比推荐' } },
+  { path: 'reports-trend', name: 'openllm-reports-trend', component: () => import('./pages/P2ReportTrendView.vue'), meta: { title: '报表趋势' } },
 ]
 
 /** 板块导航（ModuleLayout 菜单数据，对齐系统架构设计文档 §8.2） */

@@ -49,7 +49,9 @@ async function mountModuleRoutes() {
     if (!loader || module.loaded) continue
     try {
       const { routes, navItems } = await loader()
-      router.addRoute('', {
+      // P2-3 连带（UI-E2E #4 父路由告警）：此前 addRoute('', record) 以空串为父名触发
+      // `[Vue Router warn]: Parent route "" not found...`（5 模块 × 5 条）；顶层挂载无需父名。
+      router.addRoute({
         path: module.info.route_prefix,
         component: () => import('@/core/layouts/ModuleLayout.vue'),
         meta: { module: module.info.id, title: module.info.name, icon: module.info.icon, navItems },
