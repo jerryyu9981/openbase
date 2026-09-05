@@ -54,14 +54,15 @@ def test_proxy_invalid_api_key_returns_401() -> None:
 
 
 def test_proxy_valid_api_key_authenticates() -> None:
-    """有效服务 Key（scope 匹配）→ 认证通过（上游不可达返回统一 502 包装）."""
+    """有效服务 Key（scope 匹配）→ 认证通过（非 401/403；上游结果随环境）."""
     admin_token = _token("admin", "admin123")
     key = _create_key(admin_token, "svc-openllm", {"system": ["openllm"], "tenants": ["*"]})
 
     resp = client.get("/api/v1/proxy/openllm/chat", headers={"X-API-Key": key})
-    # 认证已通过；上游 127.0.0.1:8001 未启动 → SYS_502 统一包装（非 401/403）
-    assert resp.status_code == 502, resp.text
-    assert resp.json()["code"] == "SYS_502"
+    # 认证已通过（非 401/403）；上游不可达→SYS_502、无 /chat 路由→404、可达→200
+    assert resp.status_code not in (401, 403), resp.text
+    body = resp.json()
+    assert not str(body.get("code", "")).startswith(("AUTH", "PERM"))
 
 
 def test_proxy_bearer_api_key_authenticates() -> None:
@@ -70,7 +71,8 @@ def test_proxy_bearer_api_key_authenticates() -> None:
     key = _create_key(admin_token, "svc-bearer", {"system": ["*"], "tenants": ["*"]})
 
     resp = client.get("/api/v1/proxy/openllm/chat", headers={"Authorization": f"Bearer {key}"})
-    assert resp.status_code == 502, resp.text  # 认证通过，上游不可达
+    # 认证通过（非 401/403）；上游结果随环境
+    assert resp.status_code not in (401, 403), resp.text
 
 
 def test_proxy_api_key_scope_mismatch_returns_403() -> None:
@@ -88,5 +90,7 @@ def test_proxy_jwt_authenticates() -> None:
     """JWT 通道 → 认证通过（上游不可达返回 502 包装）."""
     admin_token = _token("admin", "admin123")
     resp = client.get("/api/v1/proxy/openllm/chat", headers={"Authorization": f"Bearer {admin_token}"})
-    assert resp.status_code == 502, resp.text
-    assert resp.json()["code"] == "SYS_502"
+    # 认证通过（非 401/403）；上游结果随环境
+    assert resp.status_code not in (401, 403), resp.text
+    body = resp.json()
+    assert not str(body.get("code", "")).startswith(("AUTH", "PERM"))
