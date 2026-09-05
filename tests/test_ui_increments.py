@@ -121,20 +121,21 @@ def test_proxy_backend_unreachable_returns_502():
 
 # ---- frontend modules API ----
 
-def test_modules_api_returns_four_modules():
+def test_modules_api_returns_five_modules():
     app = _build_app_with_router(frontend_router)
     client = TestClient(app)
     resp = client.get("/api/v1/modules", headers=_auth_headers())
     assert resp.status_code == 200
     items = resp.json()["data"]["items"]
     ids = {item["id"] for item in items}
-    assert ids == {"openllm", "knowledge", "memory", "portrait"}
+    # v1.4.x+ 模块注册表：openllm/knowledge/memory/portrait + gateway（统一网关，R-367）
+    assert ids == {"openllm", "knowledge", "memory", "portrait", "gateway"}
 
 
 def test_module_service_fallback():
     service = ModuleService()
     modules = service.list_modules()
-    assert len(modules) == 4
+    assert len(modules) == 5
     assert modules[0]["status"] == "enabled"
 
 
