@@ -102,6 +102,15 @@ OpenBase 以 JWT 门禁 + 专属 proxy 聚合下游，DPS（数据画像系统�
 
 **验证方法**：构造 2 用户 2 租户用例（沿用冒烟 S6 跨链路思路）；DPS/OpenBase 单测补充。
 
+### P3.x 拆分与实施记录（v1.1.0/v1.2.0）
+
+**拆分（v1.1.0）**：
+- P3.1（OpenBase 单仓）：签发增量 `tenant_code` claim（旧 org_id 保留）+ dps-proxy 映射表支持 code 键（code 优先、数值兜底，OpenMemory/llm_proxy 消费的 org_id 不受影响）。
+- P3.2（DPS）：去启动硬绑 X-User-ID=1→super_admin；与 P7 绑定种子同批（单点去绑会使 demo 全 403）。
+- P3.3（跨仓）：全量对外租户键切 code = 治理 P1-2/P1-3 立项范围（签发/身份头/映射表/迁移清单）。
+
+**P3.1 已实施（v1.2.0，commit 1074751）**：auth/__init__.py 新增 `_resolve_tenant_code`（tenants.id→code，失败 WARN 不阻断）；login/refresh 增量写 `tenant_code`；oidc.py 回调同语义（bound 数字 id 查 code / 未绑定透传 IdP code）。dps_proxy `_build_identity_headers` 头链 `tenant_code → user.tenant_id → jwt.org_id → dps_default_*`，X-Org-ID 在 code 存在时同形。验证：三态断言 + 50 passed。残余：OIDC bound 分支依赖 DB；`dps_tenant_map/dps_org_map` code 键部署配置值待 P7/联调写入。
+
 ### P4 端点面契约对齐与补齐
 
 **现状**：dps-proxy 现暴露 10 端点，映射 DPS `/api/v2`；DPS routes_profiles 等文件含更多 v2 能力（risk-assess、annotate、version、compare、trend、associate、labels、generate、statistics、track、ai/analyze 等）未在 proxy 开放；`/api/v1` 写恒 403（已文档化）；OpenLLM ProfileAdapter 真实模式依赖 `/profile/v1` 读语义，与 DPS v2 端口面不一致（需复核是否废弃 stub 契约）。
@@ -247,13 +256,13 @@ OpenBase 以 JWT 门禁 + 专属 proxy 聚合下游，DPS（数据画像系统�
 
 | 项 | 状态 | 验证日期 | 备注 |
 |:---:|------|:---:|------|
-| P1 运行数据源与 Schema 闭环 | 待办 | - | 环境写权限或共享 PG 决策前置 |
-| P2 端口地址收敛 | 待办 | - | 配置级快赢 |
-| P3 身份四头与映射收敛 | 待办 | - | 治理 Q2/Q3 落地 |
+| P1 运行数据源与 Schema 闭环 | ✅ 已实施 | 2026-09-05 | 编排强制共享 PG（0499838）：DATABASE_URL=共享 POSTGRES_URL + SQLITE_FALLBACK=false + /health/liveness；共享库 platform schema 27 表实证 |
+| P2 端口地址收敛 | ✅ 已实施 | 2026-09-05 | PROXY_SYSTEMS['dps'] 收敛 settings.dps_upstream_base（aae1de7）；两态取值正确 |
+| P3 身份四头与映射收敛 | 🔶 P3.1 已实施 | 2026-09-05 | tenant_code 增量 + code 优先（1074751）；P3.2/P3.3 待办（见 §3 P3.x） |
 | P4 端点面契约对齐 | 待办 | - | 含 /profile/v1 读映射决策 |
 | P5 画像数据模型与写链 | 待办 | - | version/history 复核 |
 | P6 可用性降级 | 待办 | - | fail-open 治理 |
-| P7 种子与演示数据 | 待办 | - | 一键幂等预置 |
+| P7 种子与演示数据 | 待办 | - | 一键幂等预置（shared PG 种子脚本已就位 seed-shared-infra.py） |
 | P8 文档与契约沉淀 | 待办 | - | 对接使用指南 v1.0.0 |
 | P9 验收与冒烟扩展 | 待办 | - | 门禁 |
 
