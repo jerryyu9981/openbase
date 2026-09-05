@@ -72,6 +72,8 @@ python D:\Trae CN\myproject\Dev\DPS\scripts\seed-shared-infra.py
 4. 直连 DPS 验证写链：PUT → GET 确认 version 递增；查 `platform.profile_history` 快照行。
 5. 观测降级：停 DPS 单服务后连续请求 dps-proxy，≥3 次失败观察 503 + `X-DPS-Upstream-Degraded`；重启 DPS 后自动恢复。
 
+> 联调注意（v1.1.0）：含中文的请求体请使用 Python/httpx 等 UTF-8 客户端；实测 PowerShell `Invoke-WebRequest` 传中文会以非 UTF-8 编码入库（画像 name 出现 `??P5` 乱码，已用 Python 客户端修正）。OpenLLM `DPSClient(real_mode=True)` 读写往返（读→归一 attributes/写→回读）已在真实 DPS 验证通过，可作联调参考实现。
+
 ## 6. 配置项速查
 
 | 项 | 默认 | 说明 |
