@@ -97,13 +97,17 @@ def _build_identity_headers(user: dict, jwt_payload: dict[str, Any] | None) -> d
     """
     settings = get_settings()
     jwt_payload = jwt_payload or {}
+    # P3.1：tenant_code claim（新签发令牌）优先 → 兼容旧令牌数值链回退。
+    # X-Tenant-ID 与 X-Org-ID 在 code 存在时同形（治理 Q2：org 头退役为兼容别名）。
     tenant_raw = (
-        user.get("tenant_id")
+        jwt_payload.get("tenant_code")
+        or user.get("tenant_id")
         or jwt_payload.get("org_id")
         or settings.dps_default_tenant_id
     )
     org_raw = (
-        jwt_payload.get("org_id")
+        jwt_payload.get("tenant_code")
+        or jwt_payload.get("org_id")
         or user.get("org_id")
         or settings.dps_default_org_id
     )

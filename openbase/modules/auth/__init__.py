@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_api_key_store, get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import Role, User, user_role
+from openbase.core.models import Role, Tenant, User, user_role
 from openbase.modules.auth.jwt import (
     create_access_token,
     create_refresh_token,
@@ -250,7 +250,9 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(req: RefreshRequest) -> TokenResponse:
+async def refresh(
+    req: RefreshRequest, session: AsyncSession = Depends(get_db)
+) -> TokenResponse:
     """刷新 Token：校验 refresh token 后签发新 access/refresh. """
     settings = get_settings()
     payload = decode_refresh_token(req.refresh_token)
@@ -262,11 +264,16 @@ async def refresh(req: RefreshRequest) -> TokenResponse:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "refresh token missing subject")
 
     tenant_value = payload.get("tenant_id")
+    # P3.1：刷新令牌保持 tenant_code claim（按 tenants.id 解析；旧 refresh 无 id 时回退）
+    tenant_code = await _resolve_tenant_code(tenant_value, session)
+    extra: dict = {"org_id": payload.get("org_id"), "role": payload.get("role", "viewer")}
+    if tenant_code:
+        extra["tenant_code"] = tenant_code
     access = create_access_token(
         subject,
         username=payload.get("username", ""),
         tenant_id=tenant_value,
-        extra={"org_id": payload.get("org_id"), "role": payload.get("role", "viewer")},
+        extra=extra,
     )
     new_refresh = create_refresh_token(subject, tenant_value)
     return TokenResponse(

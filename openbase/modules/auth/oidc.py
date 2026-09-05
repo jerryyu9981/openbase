@@ -500,6 +500,22 @@ async def oidc_callback(
         raw_role = mapped["extra"].get("role") or "viewer"
 
     extra = {"org_id": tenant_id, "role": raw_role}
+    # P3.1：增量 tenant_code claim。bound 路径 tenant_id 为 tenants.id（数字）→ 查 code；
+    # 未绑定（DB 降级）时 tenant_id 已是 IdP 侧 code 字符串 → 原样透传。
+    if tenant_id:
+        tenant_text = str(tenant_id)
+        if tenant_text.isdigit():
+            try:
+                t_res = await session.execute(
+                    select(Tenant.code).where(Tenant.id == int(tenant_text))
+                )
+                oidc_tenant_code = t_res.scalar_one_or_none()
+            except Exception:  # noqa: BLE001
+                oidc_tenant_code = None
+        else:
+            oidc_tenant_code = tenant_text
+        if oidc_tenant_code:
+            extra["tenant_code"] = oidc_tenant_code
     access = create_access_token(
         subject,
         username=username,
