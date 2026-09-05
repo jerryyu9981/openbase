@@ -272,9 +272,36 @@ async def _forward(
             "dps-proxy upstream unreachable",
             extra={"path": upstream_path, "error": str(exc)},
         )
+        global _dps_consecutive_failures
+        _dps_consecutive_failures += 1
+        threshold = get_settings().dps_degrade_threshold
+        if _dps_consecutive_failures >= max(1, threshold):
+            # P6：连续失败达阈值 → 503 显式降级（fail-open 语义保持：
+            # 后续探活恢复自动归零并恢复正常转发）
+            logger.error(
+                "DPS upstream degraded (consecutive=%d threshold=%d)",
+                _dps_consecutive_failures,
+                threshold,
+                extra={"path": upstream_path, "error": str(exc)},
+            )
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "code": 503,
+                    "message": "DPS 上游持续不可用（降级）",
+                    "data": {
+                        "degraded": True,
+                        "consecutive_failures": _dps_consecutive_failures,
+                        "last_error": str(exc)[:200],
+                    },
+                    "timestamp": _now_iso(),
+                },
+                headers={"X-DPS-Upstream-Degraded": "true"},
+            )
         raise BaseError(
             ErrorCode.SYS_UPSTREAM_ERROR, f"DPS upstream unreachable: {exc}"
         ) from exc
+    _dps_consecutive_failures = 0
     return _adapt_response(upstream)
 
 

@@ -169,6 +169,9 @@ class Settings(BaseSettings):
     # 关闭（False）仅用于测试隔离或上游无 /health 的场景。
     dps_health_check_enabled: bool = True
     dps_health_interval: float = 30.0
+    # P6（DPS 对接任务书）：连续转发失败达到该次数后返回 503 显式降级提示
+    # （fail-open 保持：阈值内仍按既有 SYS_502 语义转发尝试；探活恢复自动归零）。
+    dps_degrade_threshold: int = 3
     dps_default_org_id: str = ""
     dps_default_tenant_id: str = ""
     # 组织/租户映射表（JSON：OpenBase 值 → DPS 值），命中则转换
