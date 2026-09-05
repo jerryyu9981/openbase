@@ -245,7 +245,7 @@ OpenBase 以 JWT 门禁 + 专属 proxy 聚合下游，DPS（数据画像系统�
 | P2 端口地址收敛 | ✅ 已实施 | 2026-09-05 | PROXY_SYSTEMS['dps'] 同源 settings.dps_upstream_base（aae1de7） |
 | P3 身份四头与映射收敛 | ✅ P3.1/P3.2 已实施 | 2026-09-05 | P3.1（1074751）；P3.2 DPS v2.8.1 无硬绑残留；P3.3=治理 P1-2/P1-3 待立项 |
 | P4 端点面契约对齐 | 待办 | - | 含 /profile/v1 读映射决策 |
-| P5 画像数据模型与写链 | 待办 | - | version/history 复核 |
+| P5 画像数据模型与写链 | ✅ 已实施 | 2026-09-05 | v2.8.1 实现 + 真实 PG 实证：PUT 双 200、version→9、profile_history 7 行同步 |
 | P6 可用性降级 | 待办 | - | fail-open 治理 |
 | P7 种子与演示数据 | ✅ 已实施 | 2026-09-05 | seed-shared-infra.py 幂等实跑：org/tenant 各1、roles 6、user_roles 1、profile 3；重跑 0 新增 |
 | P8 文档与契约沉淀 | 待办 | - | 对接使用指南 v1.0.0 |
