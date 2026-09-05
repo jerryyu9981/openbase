@@ -97,6 +97,22 @@ OpenBase 以 JWT 门禁 + 专属 proxy 聚合下游，DPS（数据画像系统�
 
 **验证方法**：冒烟 S4-5 契约对照；OpenLLM profile 用例。
 
+**端点-契约对照（v1.5.0，2026-09-05 OpenAPI 实证，81 个 v1/v2 画像/治理路径）**：dps-proxy 现有 10 端点逐一映射 DPS /api/v2（均真实存在且鉴权头一致 x-org-id/x-tenant-id）：
+
+| proxy 端点 | DPS v2 目标 | 请求契约（OpenAPI 实证） |
+|---|---|---|
+| GET /portraits | GET /api/v2/portrait/list | page=1、page_size=20 透传 |
+| GET /portraits/{pid} | GET /api/v2/portrait/{person_id} | path 参数 |
+| POST /portraits/calculate | POST /api/v2/portrait/calculate | body 透传（person_id/tenant_id/input_text 实测） |
+| PUT /portraits/{pid} | PUT /api/v2/portrait/{person_id} | body {person{白名单列},business{attributes}}（已实证） |
+| GET/POST /tags/categories、PUT/DELETE /tags/categories/{id} | /api/v2/tags/categories 系列 | body/路径透传 |
+| GET /reports/overview | GET /api/v2/reports/overview | 无额外参数 |
+| GET /batch/tasks/{id} | GET /api/v2/batch/import/{task_id}/status | path 参数 |
+| GET /audit/logs | GET /api/v2/audit/logs | start_time/end_time/user_id/resource_type/action/page/page_size 透传 |
+| GET /health | /health/liveness | 白名单免鉴权 |
+
+**登记**：错误 envelope 已由 dps_proxy `_adapt_response` 归一（2xx code=0；错误提取 body.code→detail→HTTP）。**未开放面**（默认不开，前端规划需要时再开放）：risk-assess/annotate/associate/statistics/trend/track/version/compare/search/suggestions/画像 tags/ai:* /generate/labels/reports(dimensions/organizations/tags/trend)/streams/permissions/organizations/tenants/batch export 等。**/profile/v1 决策待办**：DPS 无 /profile/v1；建议 OpenLLM ProfileAdapter real 模式映射 GET /portraits/{pid}（读）+ PUT（写）语义（涉及 OpenLLM 仓，需另立实施项并前端对齐）。
+
 ### P5 画像数据模型与写链
 
 **目标**：PUT 更新 → profile 行 + version/history 记录 + 缓存失效 + 行级审计。
@@ -194,7 +210,7 @@ OpenBase 以 JWT 门禁 + 专属 proxy 聚合下游，DPS（数据画像系统�
 | P1 运行数据源与 Schema 闭环 | ✅ 已实施 | 2026-09-05 | 编排强制共享 PG（0499838）；platform schema 27 表实证 |
 | P2 端口地址收敛 | ✅ 已实施 | 2026-09-05 | PROXY_SYSTEMS['dps'] 同源 settings.dps_upstream_base（aae1de7） |
 | P3 身份四头与映射收敛 | ✅ P3.1/P3.2 已实施 | 2026-09-05 | P3.1（1074751）；P3.2 DPS v2.8.1 无硬绑残留；P3.3=治理 P1-2/P1-3 待立项 |
-| P4 端点面契约对齐 | 待办 | - | 含 /profile/v1 读映射决策 |
+| P4 端点面契约对齐 | 🔶 对照完成 | 2026-09-05 | OpenAPI 实证 10 端点映射表已落；/profile/v1 映射决策待办（OpenLLM 仓另立） |
 | P5 画像数据模型与写链 | ✅ 已实施 | 2026-09-05 | v2.8.1 + 真实 PG 实证：PUT 双 200、version→9、profile_history 7 行同步 |
 | P6 可用性降级 | 待办 | - | fail-open 治理 |
 | P7 种子与演示数据 | ✅ 已实施 | 2026-09-05 | seed-shared-infra.py 幂等实跑：org/tenant 各1、roles 6、user_roles 1、profile 3 |
