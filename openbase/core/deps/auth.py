@@ -96,8 +96,49 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if payload is None or payload.get("sub") is None:
             return self._unauthorized("invalid or expired token")
 
+        # U1 T3（K04，方案 a）：中间件与依赖层共用同一主体验证器 verify_principal，
+        # 每请求校验主体状态（默认生效）+ token 版本（enforce_token_version 开关，
+        # 默认关，两段式发布第二段开启），消除「仅验签不验状态」路径（设计草案 §5.1）。
+        try:
+            await self._verify_request_principal(request, payload)
+        except BaseError as exc:
+            return self._error_response(exc)
+
         # 中间件不修改用户上下文（依赖层负责用户信息），此处仅做门禁
         return await call_next(request)
+
+    async def _verify_request_principal(
+        self, request: Request, payload: dict
+    ) -> None:
+        """以请求级短会话执行共享主体验证（主体验证器共用，避免依赖层双读）.
+
+        OIDC 直签/外域主体（sub 非数字）与 DB 不可达由 verify_principal 内部放行；
+        仅需开 DB 会话的数值型本地主体场景才真正建立会话（降级直签场景零 DB 开销）。
+        """
+        subject_text = str(payload.get("sub") or "")
+        if not subject_text.isdigit():
+            return
+        from openbase.core.db.session import get_session_factory
+        from openbase.modules.identity import verification as principal_verification
+
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            snapshot = await principal_verification.verify_principal(session, payload)
+        if snapshot is not None:
+            request.state.verified_principal = snapshot
+
+    @staticmethod
+    def _error_response(exc: BaseError) -> JSONResponse:
+        """统一错误响应（{code, message, detail, request_id}，与异常处理器同构）."""
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "code": exc.code.value,
+                "message": exc.message,
+                "detail": exc.detail,
+                "request_id": f"req-{uuid.uuid4().hex[:12]}",
+            },
+        )
 
     @staticmethod
     def _unauthorized(message: str) -> JSONResponse:
@@ -144,6 +185,13 @@ async def get_current_user(
     user_id = payload.get("sub")
     if user_id is None:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "token missing subject")
+
+    # U1 T3（K04，方案 a）：依赖层与中间件共用同一主体验证器 verify_principal——
+    # 每请求校验主体状态（默认生效）+ token 版本（enforce_token_version 开关默认关）。
+    # 消灭「仅验签不验状态」路径：仅验签通过的 JWT 不再直接进入端点（草案 §5.1/§11 T3-6）。
+    from openbase.modules.identity import verification as principal_verification
+
+    await principal_verification.verify_principal(session, payload)
 
     # 用户信息以 payload 中精简字段返回，详细查询由 auth 模块服务提供
     # permissions 透传（含 "*" 通配），供 require_permission 直接校验
@@ -295,17 +343,21 @@ def require_api_key(
     return credential
 
 
-async def get_proxy_identity(request: Request) -> dict:
+async def get_proxy_identity(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> dict:
     """/proxy 通道双通道认证（R-367 AC-367-2）：JWT 优先 + 服务 Key 回退.
 
     认证通道判定：
     - X-API-Key 头存在 → 服务 Key 认证（校验路径 system scope）。
     - Authorization: Bearer <ob_k_...> → 服务 Key 认证。
-    - 其余（Bearer JWT / 无头）→ JWT 用户认证（get_current_user）。
+    - 其余（Bearer JWT / 无头）→ JWT 用户认证（get_current_user，U1 T3 经
+      依赖注入的真实会话执行 verify_principal 状态/版本门禁）。
     """
     x_api_key = request.headers.get("X-API-Key")
     authorization = request.headers.get("Authorization", "")
     bearer = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""
     if x_api_key or (bearer and bearer.startswith("ob_k_")):
         return require_api_key(request=request)
-    return await get_current_user(request)
+    return await get_current_user(request, session)

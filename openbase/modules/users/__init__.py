@@ -249,6 +249,12 @@ async def update_user(
         row.phone = payload.phone
     await session.commit()
     await session.refresh(row)
+    # U1 T3（K04）：状态写路径（启停）即时失效 principal:{id} 缓存，下一请求命中新状态
+    # （与 identity/lifecycle 吊销迁移清键一致；legacy 写路径无 tvn+1，故必须以失效兜底）。
+    if payload.status is not None:
+        from openbase.modules.identity.verification import invalidate_principal_cache
+
+        invalidate_principal_cache(row.id, row.username)
     roles = await _role_codes_for(session, row)
     return _to_out(row, roles)
 
@@ -269,6 +275,10 @@ async def delete_user(
     if (row.status_state or STATUS_STATE_ACTIVE) in (STATUS_STATE_ACTIVE, STATUS_STATE_PROVISIONED):
         row.status_state = STATUS_STATE_SUSPENDED
     await session.commit()
+    # U1 T3（K04）：软删（停用语义）即时失效 principal 缓存，存量会话下一请求即 401
+    from openbase.modules.identity.verification import invalidate_principal_cache
+
+    invalidate_principal_cache(row.id, row.username)
     return {"code": 0, "user_id": user_id, "status": 0}
 
 

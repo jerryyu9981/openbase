@@ -109,6 +109,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_seconds: int = 7200
     refresh_expire_seconds: int = 604800
+    # U1 T3（K04，方案 a token 版本号）：token 版本强校验开关（两段式发布第二段，
+    # 设计草案 §5.1/§12.1 风险 1/§6.2）。默认 False：版本强校验关闭，存量 v0 / 落后
+    # tvn 过渡窗口不误杀；每请求主体状态校验不依赖本开关（默认即生效）。第二段置 True。
+    enforce_token_version: bool = False
     # bcrypt 成本因子（默认 12 ≈ 400-600ms；并发敏感场景可调低至 10 ≈ 200ms）
     bcrypt_rounds: int = 12
     # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）

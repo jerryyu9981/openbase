@@ -265,13 +265,14 @@ class IdentityLifecycleService:
 
     @staticmethod
     def _invalidate_caches(subject: User) -> None:
-        """失效 principal/user 缓存键（进程 Redis 可用时删除；不可用静默降级）."""
-        try:
-            from openbase.core.cache.redis_client import cache_delete
+        """失效 principal/user 缓存键（与主体验证器共用同一失效函数，T3 一致性）.
 
-            cache_delete(f"principal:{subject.id}", f"user:{subject.username}")
-        except Exception as exc:  # noqa: BLE001 - 缓存降级不阻断状态迁移
-            logger.debug("identity cache invalidate skipped: %s", exc)
+        状态/版本变更后 principal:{id} 缓存键必须失效，下一请求命中新状态/新版本
+        （设计草案 §5.1/§11 T3-7；Redis 不可用时静默降级）。
+        """
+        from openbase.modules.identity.verification import invalidate_principal_cache
+
+        invalidate_principal_cache(subject.id, subject.username)
 
 
 __all__ = ["IdentityLifecycleService", "LifecycleTransition"]

@@ -18,10 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import AgentApiKey, Role, User, user_role
-from openbase.modules.identity.state_machine import (
-    STATUS_STATE_ACTIVE,
-    SUBJECT_TYPE_AGENT,
-)
+from openbase.modules.identity.state_machine import SUBJECT_TYPE_AGENT
 
 logger = logging.getLogger("openbase.identity.agent_keys")
 
@@ -139,8 +136,11 @@ async def resolve_agent_principal(session: AsyncSession, raw_key: str) -> dict[s
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "agent api key expired")
     if user.subject_type != SUBJECT_TYPE_AGENT:
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "api key not bound to agent subject")
-    if user.status_state != STATUS_STATE_ACTIVE:
-        raise BaseError(ErrorCode.AUTH_PRINCIPAL_DISABLED, "agent subject is not active")
+    # U1 T3（K04）：agent 请求与 user JWT 共用同一状态门禁（assert_principal_active），
+    # key 校验含主体状态门禁（设计草案 §5.3「agent suspend → 全部 key 校验失败」）。
+    from openbase.modules.identity.verification import assert_principal_active
+
+    assert_principal_active(user.status_state)
 
     record.last_used_at = _now()
     role_result = await session.execute(
