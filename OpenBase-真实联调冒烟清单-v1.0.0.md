@@ -70,7 +70,7 @@
 - S4-1 读：calculate（person 预置行）→ get 返回六维与 attrs；OpenLLM 真实模式下 profile 注入正常（routing need_profile/profile_source=dps）。
 - S4-2 写：PUT /api/v2/portrait/{person_id}（person 子集 + business.attributes）→ 持久化；重启 DPS 后 GET 仍可见（重启存活）。
 - S4-3 四头与归属：缺 X-Org/X-Tenant → 401/403；正确预置实体 + X-User-ID → 200；OpenBase dps-proxy PUT 转发同参数通过。
-- S4-4 写回/漂移（P1 可选；D3 联调后启用）：ProfileAdapter update_profile（真实模式）成功；低置信走 drift_recompute 条目逻辑在真实队列落地。
+- S4-4 写回/漂移（✅ 2026-09-06）：ProfileAdapter update_profile（真实模式）成功；低置信（confidence=0.3<0.6）转 drift_recompute 条目逻辑在真实队列落地实证：POST /openllm/v1/writeback → phase=drift_recompute done → 真实 PUT（version 12→13、attributes grade B）；画像对话内注入（OPENLLM_DPS_REAL=true）routing profile_source=dps。
 
 ### S5 主链路端到端（OpenBase 入口）（P0）
 - S5-1 JWT 登录 → llm-proxy /chat（非流式）：routing 事件含 need_profile/need_memory/need_rag 与真实 profile_source；回答正常。

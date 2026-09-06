@@ -188,6 +188,8 @@ OpenLLM 与四件套之间存在两条并行链路，均为设计意图，不可
 **W4 契约与旁路（已随真实契约落地立项实施，v0.10.0 标注）**
 
 > 实施状态（v0.10.0）：W4-1~~W4-5 全部随《真实契约落地与沉淀收敛立项方案》v1.2.0（P1-4 + W4 合流）Phase A~~D 实施完毕（任务 T1~~T8，含 D1~~D4 定案）；OpenLLM 真实模式开关（OPENLLM\_OPENMEMORY\_REAL / OPENRAG\_REAL / DPS\_REAL）缺省 False，真实服务联调待执行；实施与残余项记录见立项方案 §7。
+>
+> 状态注（v0.11.0，2026-09-06）：P1 级发布批次完成——画像对话内注入（OPENLLM\_DPS\_REAL=true：explicit profile 组件真实注入，routing profile\_source=dps）与漂移重算真实落地（低置信 0.3 → phase=drift\_recompute 条目 → 真实 PUT，version 12→13）；网关 dps 健康探活契约分叉修复（real→client.ping）。实证细节见《OpenBase-DPS对接完善任务书》v2.6.0 与 OpenLLM 仓提交。
 
 | #    | 落点                                   | 接口级改动                                                          |
 | ---- | ------------------------------------ | -------------------------------------------------------------- |

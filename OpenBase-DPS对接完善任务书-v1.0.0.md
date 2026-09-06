@@ -32,6 +32,7 @@
 | v2.3.0 | 2026-09-05 | AD（跨项目分析） | P9 重启存活复核回填：强杀 DPS → 编排单服务重启 → version/属性保留（共享 PG 持久化实证） |
 | v2.4.0 | 2026-09-05 | AD（跨项目分析） | P9 双租户隔离实证回填：幂等补第二 org/tenant/画像/绑定；T1/T2 列表互不可见、跨租户读 404、自有读写 200、未绑定 403 |
 | v2.5.0 | 2026-09-06 | AD（跨项目分析） | P1-1 修复回填：dps_org_map/dps_tenant_map 部署值写入（根因=OpenBase 默认 org-1/tenant-1 为旧种子语义，DPS 现库为 dps-org-001/dps-tenant-001，无映射致 403「组织不存在」）；.env + 编排 Env 双落点；API/UI 复验通过 |
+| v2.6.0 | 2026-09-06 | AD（跨项目分析） | P1 级剩余项闭环回填：① 画像对话内注入发布批次（OPENLLM_DPS_REAL=true 注入真实 DPS：health dps=ok、explicit profile 组件 calculate+GET 200、routing need_profile=true/profile_source=dps；画像对象 RBAC 绑定补种）；② 漂移重算真实落地（低置信 0.3 写回→phase=drift_recompute 条目 done→真实 PUT version 12→13/grade B）；OpenLLM 探活契约分叉修复（client.ping）+ 缺省断言解耦 |
 
 ---
 
@@ -66,6 +67,8 @@ OpenBase 统一网关经 `/api/v1/dps-proxy` 聚合 DPS 画像能力（前端 po
 - **P6（22d369f）**：dps_degrade_threshold（默认 3）；连续失败 503 + X-DPS-Upstream-Degraded；恢复归零；行为断言 + 27 passed。
 - **P7（实跑）**：seed 幂等 org=1/tenant=1/roles=6/user_roles=1/profile=3，重跑 0 新增。
 - **P8（3763b66）**：《OpenBase-DPS 对接使用指南 v1.0.0》（入口身份/端点契约/错误降级/种子/联调/配置速查）。
+- **P1-1（UI-E2E #1，2026-09-06）**：统一前端画像模块 403「组织不存在」修复。根因：OpenBase 默认 org-1/tenant-1（旧种子语义）未映射，DPS 现库 dps-org-001/dps-tenant-001；修复：dps_org_map/dps_tenant_map 部署值写入（.env + 编排 Env 双落点）；API/UI 复验 200 无 403（commit def7ed8）。
+- **P1 级发布批次（2026-09-06，v2.6.0）**：① 画像对话内注入：OpenLLM 真实模式启用（DPS_ENABLED=true / DPS_BASE_URL=127.0.0.1:8030 / OPENLLM_DPS_REAL=true / 四头 code 兜底）→ health dps=ok；explicit profile+llm 对话注入真实画像（calculate+GET 200、routing need_profile=true/profile_source=dps；画像对象 RBAC 补绑 super_admin）。② 漂移重算真实落地：writeback profile confidence=0.3 → 低置信转 phase=drift_recompute 条目 → 队列消费 → 真实 PUT（version 12→13、attributes grade=B），普通+drift 两行 done。③ OpenLLM 探活契约分叉修复（client.ping）与缺省断言解耦（OpenLLM 仓待提交）。
 
 ### P4 对照与 /profile/v1 决策（已定案）
 
