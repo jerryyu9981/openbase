@@ -317,9 +317,20 @@ class PurgeRecord(Base, TimestampMixin):
 
     __tablename__ = "purge_records"
     __table_args__ = (
-        # 幂等防并发收敛点：username 全局唯一且永不重发（users.username 唯一约束），
-        # 以 username 而非 subject_id 作唯一键可兼容 SQLite 无 AUTOINCREMENT 的 rowid 复用
-        # （测试/小型部署物理清除后新行可能复用 rowid）；并登记幂等键唯一。
+        # ── 幂等防并发收敛点（U1 T6 §9.2；T7 收口补登记 PG 语义，U1 T7-1）──────────
+        # 唯一幂等键取 username 而非 subject_id，依据与跨引擎语义如下：
+        # · PostgreSQL（生产库）：users.id 由 BIGSERIAL/IDENTITY 序列分配且序列不回卷，
+        #   物理 purge 删除后 id 永不被新行复用——故仅就 PG 而言 subject_id 本身即可作为
+        #   幂等锚（「一个 id 至多被 purge 一次」），唯一化 subject_id 在 PG 上成立。
+        # · SQLite（测试/小型部署，INTEGER PRIMARY KEY 未带 AUTOINCREMENT）：删除最大行
+        #   后 rowid 可被新行复用；若以 subject_id 为唯一键，复用 rowid 的新主体会被历史
+        #   墓碑误判为「曾 purge」（400/401）。为保证墓碑不变量在测试（PG/SQLite）与
+        #   生产（PG）全引擎一致，统一以 username（users.username 平台级唯一，purge 后
+        #   视为「退役用户名」，运营上不向不同自然人重发）作唯一幂等键；subject_id 仅
+        #   保留为查询索引列（本表 subject_id 不唯一，须经 purge_record_exists 预检）。
+        # · idempotency_key 另加全局唯一约束：同一逻辑请求重放命中墓碑预检 → 400 终态
+        #   拒绝；幂等键跨主体复用由 purge 服务前置 400 PARAM_INVALID 显式拦截（T7
+        #   收口），DB 唯一约束仅作并发双触发兜底（IntegrityError → 400 终态拒绝）。
         UniqueConstraint("username", name="uq_purge_records_username"),
         UniqueConstraint("idempotency_key", name="uq_purge_records_idempotency_key"),
     )

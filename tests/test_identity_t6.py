@@ -324,16 +324,25 @@ def _issue_authorization(subject_id: int, subject_type: str = "user", ttl_second
     return asyncio.run(_do())
 
 
-def _purge(subject_id: int, code: str, scope_report_hash: str, subject_type: str = "user"):
+def _purge(
+    subject_id: int,
+    code: str,
+    scope_report_hash: str,
+    subject_type: str = "user",
+    idempotency_key: str | None = None,
+):
     assert client is not None
+    body: dict = {
+        "subject_type": subject_type,
+        "subject_id": subject_id,
+        "purge_authorization_code": code,
+        "scope_report_hash": scope_report_hash,
+    }
+    if idempotency_key is not None:
+        body["idempotency_key"] = idempotency_key
     return client.post(
         "/api/v1/identity/purge",
-        json={
-            "subject_type": subject_type,
-            "subject_id": subject_id,
-            "purge_authorization_code": code,
-            "scope_report_hash": scope_report_hash,
-        },
+        json=body,
         headers=_admin_headers(),
     )
 
@@ -754,6 +763,69 @@ def test_t6_5_repeated_purge_terminal_refusal_400() -> None:
 
     # 主体行已删 + 终态台账命中 → 400 终态拒绝（不重复物理删除）
     second = _purge(user_id, "purge-fake-code-000000", "0" * 64)
+    assert second.status_code == 400, second.text
+    assert second.json()["code"] == ErrorCode.BIZ_NOT_PURGEABLE.value
+    assert _count(f"SELECT COUNT(*) FROM purge_records WHERE subject_id = {user_id}") == 1
+    assert len(_audit_purge_rows(user_id)) == 1
+
+
+# ---- T7 收口（U1 T7-1 补充）：幂等键跨主体复用显式 400 PARAM_INVALID ----
+# purge_records.idempotency_key 全局唯一；跨主体复用属调用方错误，须由服务前置显式
+# 400（不得经 DB 唯一约束兜底误报「并发双触发已 purge」并整体回滚）。
+
+
+def test_t7_idempotency_key_reuse_across_subjects_rejected_400() -> None:
+    """幂等键跨主体复用 → 400 PARAM_INVALID；目标主体不受影响（无副作用）."""
+    subject_a = _make_user(_unique("t7keya"), state="deactivated")
+    subject_b = _make_user(_unique("t7keyb"), state="deactivated")
+    issued_a = _issue_authorization(subject_a)
+    issued_b = _issue_authorization(subject_b)
+    shared_key = f"t7-shared-{uuid.uuid4().hex[:8]}"
+
+    first = _purge(  # type: ignore[union-attr]
+        subject_a,
+        issued_a.authorization_code,
+        issued_a.scope_report_hash,
+        idempotency_key=shared_key,
+    )
+    assert first.status_code == 200, first.text
+
+    # 主体 B 复用同一幂等键 → 400 PARAM_INVALID（detail 指向已占用键的主体 A）
+    second = _purge(  # type: ignore[union-attr]
+        subject_b,
+        issued_b.authorization_code,
+        issued_b.scope_report_hash,
+        idempotency_key=shared_key,
+    )
+    assert second.status_code == 400, second.text
+    assert second.json()["code"] == ErrorCode.PARAM_INVALID.value
+    assert second.json()["detail"]["existing_subject_id"] == subject_a
+
+    # 主体 B 未被清除、无墓碑、授权码未被消耗（显式校验在消耗授权码之前）
+    assert _count(f"SELECT COUNT(*) FROM users WHERE id = {subject_b}") == 1
+    assert _count(f"SELECT COUNT(*) FROM purge_records WHERE subject_id = {subject_b}") == 0
+    active_b = _count(
+        f"SELECT COUNT(*) FROM purge_authorizations WHERE subject_id = {subject_b} "
+        "AND status = 'active'"
+    )
+    assert active_b == 1
+
+
+def test_t7_idempotency_key_same_subject_replay_terminal_400() -> None:
+    """同主体同幂等键重放 → 400 BIZ_NOT_PURGEABLE 终态拒绝（墓碑预检先行）."""
+    user_id = _make_user(_unique("t7replay"), state="deactivated")
+    issued = _issue_authorization(user_id)
+    replay_key = f"t7-replay-{uuid.uuid4().hex[:8]}"
+    first = _purge(  # type: ignore[union-attr]
+        user_id,
+        issued.authorization_code,
+        issued.scope_report_hash,
+        idempotency_key=replay_key,
+    )
+    assert first.status_code == 200, first.text
+
+    # 主体已 purged → 墓碑预检先行 400 终态拒绝（幂等键显式校验/授权码均不触达）
+    second = _purge(user_id, "purge-fake-code-000000", "0" * 64, idempotency_key=replay_key)
     assert second.status_code == 400, second.text
     assert second.json()["code"] == ErrorCode.BIZ_NOT_PURGEABLE.value
     assert _count(f"SELECT COUNT(*) FROM purge_records WHERE subject_id = {user_id}") == 1

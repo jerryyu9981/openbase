@@ -13,8 +13,11 @@ Q-5=A（保留 + 全链阻断；purge 仅显式合规触发，无自动限期清
   ③ 保留 audit_logs（purge 事件留痕）、subject_blocks（阻断行指向 subject_id
      持续拒绝）、event_consumptions（幂等历史）与 outbox_events（投递历史）；
   ④ 写 ``purge_records`` 终态台账（墓碑）：终态语义、令牌拒绝判定与并发幂等基座；
-- 幂等防并发：purge_records.subject_id / idempotency_key 唯一约束 —— 并发双触发
-  仅一次执行；重复触发对已 purged 主体 400 终态拒绝（设计 §9.2 二选一取后者）。
+- 幂等防并发（T7 收口语义登记，U1 T7-1）：``purge_records`` 唯一幂等键取 **username**
+  （而非 subject_id，PG/SQLite 跨引擎语义见 ``core/models/base.py::PurgeRecord.__table_args__``
+  注释）+ ``idempotency_key`` 全局唯一 —— 并发双触发仅一次执行；重复触发对已 purged
+  主体 400 终态拒绝（设计 §9.2 二选一取后者）；幂等键**跨主体复用** → 400
+  ``PARAM_INVALID`` 显式拦截（DB 唯一约束仅作并发兜底）。
 """
 
 from __future__ import annotations
@@ -187,6 +190,47 @@ async def purge_record_exists(session: AsyncSession, subject_id: int) -> bool:
         select(PurgeRecord.subject_id).where(PurgeRecord.subject_id == subject_id).limit(1)
     )
     return result.first() is not None
+
+
+async def _ensure_idempotency_key_scope(
+    session: AsyncSession, subject_id: int, idempotency_key: str | None
+) -> None:
+    """幂等键**跨主体复用**显式校验：命中他人已用键 → 400 ``PARAM_INVALID``.
+
+    purge_records.idempotency_key 带全局唯一约束；对**不同 subject** 复用同一幂等键
+    属调用方错误（每个逻辑请求应使用各自生成的键）。若交由 DB 唯一约束兜底，会整体
+    回滚事务并误报「并发双触发已 purge」（400 ``BIZ_NOT_PURGEABLE``，语义误导）——
+    故在消耗二次授权码之前前置显式校验，给出清晰 400。同 subject 的重复触发（重放）
+    在更早的墓碑预检（``_load_purgeable_subject``/``purge_record_exists``）即 400 终态
+    拒绝，不会到达本校验；并发双触发仍由 DB 唯一约束兜底收敛（本校验为尽力而为预检）。
+
+    Args:
+        session: 数据库会话。
+        subject_id: 本次 purge 目标主体 id。
+        idempotency_key: 调用方幂等键（None 表示未启用幂等键，直接放行）。
+
+    Raises:
+        BaseError: PARAM_INVALID（幂等键已被另一主体使用）。
+    """
+    if not idempotency_key:
+        return
+    result = await session.execute(
+        select(PurgeRecord.subject_id, PurgeRecord.username).where(
+            PurgeRecord.idempotency_key == idempotency_key
+        )
+    )
+    existing = result.first()
+    if existing is not None and int(existing[0]) != subject_id:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "idempotency_key already used by another subject",
+            detail={
+                "idempotency_key": idempotency_key,
+                "subject_id": subject_id,
+                "existing_subject_id": existing[0],
+                "existing_username": existing[1],
+            },
+        )
 
 
 async def _load_purgeable_subject(
@@ -458,6 +502,9 @@ class IdentityPurgeService:
 
         # ② 状态机矩阵复用：deactivated → purged（非法迁移一律 400，防御性兜底）
         validate_transition(previous_state, STATUS_STATE_PURGED)
+
+        # ②′ 幂等键跨主体复用显式 400（T7 收口；同主体重放由墓碑预检先行拒绝）
+        await _ensure_idempotency_key_scope(session, subject_id, idempotency_key)
 
         # ③ 二次授权：一次性授权码校验并消费（缺失/无效/过期 → 403）
         authorization = await _consume_authorization(session, subject, authorization_code)
