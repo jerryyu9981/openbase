@@ -7,8 +7,11 @@
   ``tvn == users.token_version``（受 ``settings.enforce_token_version`` 开关控制，默认关）；
 - v0 兼容（草案 §6.2）：payload 无 ``tvn`` 的存量令牌过渡期放行（刷新后已升级）；
 - OIDC 直签 / 外域主体（sub 非数字）无本地主体行 → 放行（降级直签与迁移前语义一致）；
-- DB 不可达 / 主体行不存在（purged/降级内存用户）→ 无法确认状态，WARN 后放行
-  （fail-open 过渡窗口；deactivated 保留行，suspend/restore/deactivate 均即时命中新状态）；
+- DB 不可达 → 无法确认状态，WARN 后放行（fail-open 过渡窗口）；
+- 主体行不存在：以 ``purge_records`` 墓碑区分「曾存在后被 purge」→ 401 拒绝（T6
+  purge 收口：purged 主体存量 token 一律拒），「无本地行（OIDC 直签/降级内存用户）」→
+  保持 T3 遗留 fail-open 放行（deactivated 保留行，suspend/restore/deactivate 均
+  即时命中新状态）；
 - 性能（风险 2）：进程经 Redis 短缓存 ``principal:{id}``（TTL ≤60s）避免每请求 DB 读，
   状态/版本变更由写路径失效该键（tvn+1 清键，与 lifecycle T2 清键收敛到本模块）。
 
@@ -21,11 +24,17 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from sqlalchemy import select
+
 from openbase.core.cache import redis_client as cache_client
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import User
+from openbase.core.models import PurgeRecord, User
 from openbase.modules.identity.delegation import verify_request_delegation
-from openbase.modules.identity.state_machine import STATUS_STATE_ACTIVE, SUBJECT_TYPE_USER
+from openbase.modules.identity.state_machine import (
+    STATUS_STATE_ACTIVE,
+    STATUS_STATE_PURGED,
+    SUBJECT_TYPE_USER,
+)
 
 logger = logging.getLogger("openbase.identity.verification")
 
@@ -72,6 +81,28 @@ def _cache_set_snapshot(subject_id: int, snapshot: dict[str, Any]) -> None:
         )
     except Exception:  # noqa: BLE001 - Redis 不可用静默跳过
         logger.debug("principal cache set skipped: %s", subject_id)
+
+
+async def _subject_was_purged(session: Any, subject_id: int) -> bool:
+    """墓碑判定：主体是否曾存在后被 purge（purge_records 终态台账命中）.
+
+    Args:
+        session: 数据库会话。
+        subject_id: 主体 id。
+
+    Returns:
+        已 purge 返回 True；未知/未 purge 返回 False（调用方维持 fail-open 过渡语义）。
+    """
+    try:
+        result = await session.execute(
+            select(PurgeRecord.subject_id)
+            .where(PurgeRecord.subject_id == subject_id)
+            .limit(1)
+        )
+        return result.first() is not None
+    except Exception:  # noqa: BLE001 - 墓碑读失败不阻断既有 fail-open 过渡语义
+        logger.debug("purge record lookup skipped", extra={"subject_id": subject_id})
+        return False
 
 
 def assert_principal_active(status_state: str | None) -> None:
@@ -177,8 +208,16 @@ async def verify_principal(session: Any, payload: dict[str, Any]) -> dict[str, A
         return None
 
     if snapshot is None:
-        # 主体行不存在（purged/软删/降级内存用户）：无法确认状态 → WARN 放行过渡窗口。
-        # deactivated 语义保留行（非删除），suspend/restore/deactivate 均即时命中新状态。
+        # 主体行不存在：区分「曾存在后被 purge」与「无本地行（OIDC 直签/降级内存用户）」。
+        # - purge_records 墓碑命中（T6 收口）：主体曾被 purge → 存量 token 一律拒绝
+        #   （401 AUTH_PRINCIPAL_DISABLED，detail 带 purged 终态语义）；
+        # - 无墓碑：T3 遗留 fail-open 过渡窗口保持（OIDC 直签/内存用户无行可验放行）。
+        if await _subject_was_purged(session, int(subject_text)):
+            raise BaseError(
+                ErrorCode.AUTH_PRINCIPAL_DISABLED,
+                "principal has been purged",
+                detail={"status_state": STATUS_STATE_PURGED, "subject_id": int(subject_text)},
+            )
         logger.warning(
             "principal row missing; unverifiable token pass-through",
             extra={"subject": subject_text},

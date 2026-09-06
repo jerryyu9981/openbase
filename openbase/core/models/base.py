@@ -273,6 +273,75 @@ class SubjectBlock(Base, TimestampMixin):
     )
 
 
+class PurgeAuthorization(Base, TimestampMixin):
+    """L1-2 purge 一次性二次授权码（U1 T6，设计草案 §9.2/§11 T6-3）.
+
+    purge 属罕见合规操作：须由受权管理员（identity:purge）对 deactivated 主体签发
+    短 TTL 单次有效的授权码（等价确认令牌）。服务端只存 sha256 code_hash（明文仅
+    签发响应返回一次，与 sk-agent-* 密钥同构语义）；验证命中即置 consumed
+    （单次有效），过期（expires_at < now）/未命中 → 403 BIZ_PURGE_AUTH_REQUIRED。
+    同主体仅允许一张 active 授权码（新签发自动作废旧码，防码复用扩散）。
+    """
+
+    __tablename__ = "purge_authorizations"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    subject_id: Mapped[int] = mapped_column(BIGINT, nullable=False, index=True)
+    subject_type: Mapped[str] = mapped_column(String(16), nullable=False, default="user")
+    code_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, comment="sha256(授权码)，不存明文"
+    )
+    code_suffix: Mapped[str] = mapped_column(
+        String(16), nullable=False, comment="授权码尾部 6 位指纹（审计/人工核对，非可逆）"
+    )
+    # active/consumed（单次有效；过期不再放行，消费记录留痕）
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
+    expires_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    scope_report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    scope_report_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    consumed_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PurgeRecord(Base, TimestampMixin):
+    """L1-2 purge 终态台账/墓碑（U1 T6，设计草案 §9.2/§11 T6-4/T6-5）.
+
+    主体主行（users）被物理清除后，本表保留终态记录（status_state=purged），职责：
+    - 终态语义留痕：deactivated→purged 迁移结果持久化（矩阵复用，purged 无出边）；
+    - 令牌拒绝判定：主体验证器对「行缺失」主体按本表区分「曾存在后被 purge」→
+      401 AUTH_PRINCIPAL_DISABLED（存量 token 请求拒绝），与 OIDC 直签/内存用户
+      （无行亦无墓碑）fail-open 放行兼容区分（T6 行缺失处置）；
+    - 幂等防并发：username 唯一 + 幂等键唯一 —— 并发双触发仅一次执行，
+      重复触发对已 purged 主体 400 BIZ_NOT_PURGEABLE 终态拒绝（设计 §9.2 取后者）。
+    """
+
+    __tablename__ = "purge_records"
+    __table_args__ = (
+        # 幂等防并发收敛点：username 全局唯一且永不重发（users.username 唯一约束），
+        # 以 username 而非 subject_id 作唯一键可兼容 SQLite 无 AUTOINCREMENT 的 rowid 复用
+        # （测试/小型部署物理清除后新行可能复用 rowid）；并登记幂等键唯一。
+        UniqueConstraint("username", name="uq_purge_records_username"),
+        UniqueConstraint("idempotency_key", name="uq_purge_records_idempotency_key"),
+    )
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    subject_id: Mapped[int] = mapped_column(BIGINT, nullable=False, index=True)
+    subject_type: Mapped[str] = mapped_column(String(16), nullable=False, default="user")
+    username: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    tenant_id: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    tenant_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    previous_state: Mapped[str] = mapped_column(String(24), nullable=False, default="deactivated")
+    status_state: Mapped[str] = mapped_column(String(24), nullable=False, default="purged")
+    scope_report_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    authorization_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    operator: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    purged_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, nullable=False
+    )
+
+
 class Role(Base, TimestampMixin):
     """角色."""
 
@@ -389,6 +458,8 @@ __all__ = [
     "OutboxEvent",
     "EventConsumption",
     "SubjectBlock",
+    "PurgeAuthorization",
+    "PurgeRecord",
     "Role",
     "Permission",
     "Tenant",

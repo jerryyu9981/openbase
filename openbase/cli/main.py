@@ -268,6 +268,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_crud.add_argument("resource", help="资源名（如 books）")
     p_crud.set_defaults(func=cmd_create_crud)
 
+    # U1 T6（L1-2）：identity purge 运维子命令组（identity purge-authorize / identity purge）
+    p_identity = sub.add_parser("identity", help="身份运维子命令（U1）")
+    from openbase.cli.purge import add_identity_purge_subparsers
+
+    add_identity_purge_subparsers(p_identity)
+
     return parser
 
 

@@ -1,4 +1,4 @@
-"""identity 模块：统一主体（Principal）管理面（U1 T1/T2/T5，RA-01/RA-02/OB-1/OB-2）.
+"""identity 模块：统一主体（Principal）管理面（U1 T1/T2/T5/T6，RA-01/RA-02/OB-1/OB-2/L1-2）.
 
 路由前缀 /api/v1/identity。T1 范围：agent 主体创建 + sk-agent-* 密钥族；
 T2（RA-02/OB-2 状态机）新增 lifecycle 迁移端点族（activate/suspend/restore/deactivate），
@@ -7,6 +7,10 @@ T2（RA-02/OB-2 状态机）新增 lifecycle 迁移端点族（activate/suspend/
 T5（L1-1 设计草案 §8/§10.1/§11 T5-1~T5-6）新增契约桩 events API：
 POST /events/apply（投递+模拟消费）、GET /events/{event_id}（状态查询/S7 钩子）、
 GET /blocked/{subject_id}（数据面阻断对账桩态：blocked → 403 拒绝语义）。
+T6（L1-2，Q-5=A 设计草案 §9/§11 T6-1~T6-5）新增 purge 受权端点：
+POST /purge（admin + identity:purge + 一次性授权码 + 影响范围报告确认；仅 deactivated
+主体可 purge，非 deactivated → 400 BIZ_NOT_PURGEABLE，授权缺失/过期 → 403
+BIZ_PURGE_AUTH_REQUIRED；授权码由 CLI/服务层签发，本模块只消费执行）。
 """
 
 from __future__ import annotations
@@ -34,6 +38,7 @@ from openbase.modules.identity.agents import (
 from openbase.modules.identity.consumer_stub import STUB_DATA_DOMAINS, EventConsumerStub
 from openbase.modules.identity.dispatcher import OutboxDispatcherService
 from openbase.modules.identity.lifecycle import IdentityLifecycleService
+from openbase.modules.identity.purge import IdentityPurgeService
 from openbase.modules.identity.state_machine import (
     CREDENTIAL_TYPE_API_KEY,
     SUBJECT_TYPE_AGENT,
@@ -47,6 +52,7 @@ router = APIRouter(prefix="/api/v1/identity", tags=["identity"])
 IDENTITY_MANAGE_PERMISSION = "identity:manage"
 IDENTITY_VIEW_PERMISSION = "identity:view"
 IDENTITY_LIFECYCLE_PERMISSION = "identity:lifecycle"
+IDENTITY_PURGE_PERMISSION = "identity:purge"
 
 # lifecycle 端点允许的 subject_type
 _VALID_SUBJECT_TYPES = frozenset({SUBJECT_TYPE_USER, SUBJECT_TYPE_AGENT})
@@ -153,6 +159,14 @@ async def _require_identity_lifecycle(
 ) -> dict:
     """lifecycle 端点权限校验（admin 通配 + identity:lifecycle；无权限 403，T2-7 断言）."""
     return await _check_permission(user, session, IDENTITY_LIFECYCLE_PERMISSION)
+
+
+async def _require_identity_purge(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """purge 端点权限校验（admin 通配 + identity:purge；无权限 403）."""
+    return await _check_permission(user, session, IDENTITY_PURGE_PERMISSION)
 
 
 # ---- Lifecycle Schemas（T2，RA-02） ----
@@ -449,6 +463,96 @@ async def lifecycle_deactivate(
         payload.reason,
         user,
         session,
+    )
+
+
+# ---- U1 T6（L1-2，Q-5=A）：purge 显式合规触发端点（草案 §9.2/§10.1/§11 T6-2~T6-5） ----
+# 受权端点：admin 通配 + identity:purge（无权限 403）；二次授权码 + 影响范围报告确认；
+# 仅 deactivated 主体可 purge（非 deactivated → 400 BIZ_NOT_PURGEABLE）。
+
+
+class PurgeRequest(BaseModel):
+    """purge 请求：deactivated 主体 + 一次性授权码 + 影响范围报告确认哈希."""
+
+    subject_type: str = Field(SUBJECT_TYPE_USER, description="主体具象：user/agent")
+    subject_id: int = Field(..., description="主体 id（users.id）")
+    purge_authorization_code: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="一次性 purge 授权码（管理员经 CLI/服务签发）",
+    )
+    scope_report_hash: str = Field(
+        ...,
+        min_length=16,
+        max_length=64,
+        description="影响范围报告 sha256 确认哈希（与签发时一致）",
+    )
+    idempotency_key: str | None = Field(
+        None, max_length=64, description="幂等键（可选；purge_records 唯一约束防并发双跑）"
+    )
+
+
+class PurgeOut(BaseModel):
+    """purge 成功响应（主体已物理清除；终态由 purge_records 台账承载）."""
+
+    purged: bool = True
+    subject_id: int
+    subject_type: str
+    username: str | None = None
+    tenant_code: str | None = None
+    previous_state: str
+    status_state: str
+    scope_report: dict[str, Any]
+    scope_report_hash: str
+    authorization_ref: str | None = None
+
+
+@router.post("/purge", response_model=PurgeOut)
+async def purge_subject(
+    payload: PurgeRequest,
+    user: dict = Depends(_require_identity_purge),
+    session: AsyncSession = Depends(get_db),
+) -> PurgeOut:
+    """执行 purge：显式合规触发（deactivated + 授权码 + 范围报告确认）.
+
+    Raises:
+        BaseError: BIZ_NOT_FOUND（404 未知主体）；BIZ_NOT_PURGEABLE（400 非
+            deactivated/已 purged 终态）；BIZ_PURGE_AUTH_REQUIRED（403 授权码
+            缺失/无效/过期/范围报告未确认）。
+    """
+    validated = _validated_subject_type(payload.subject_type)
+    result = await IdentityPurgeService.execute_purge(
+        session,
+        subject_id=payload.subject_id,
+        subject_type=validated,
+        authorization_code=payload.purge_authorization_code,
+        scope_report_hash=payload.scope_report_hash,
+        operator=_subject_id(user),
+        idempotency_key=payload.idempotency_key,
+    )
+    await session.commit()
+    logger.info(
+        "identity purge api invoked",
+        extra={
+            "subject_type": validated,
+            "subject_id": payload.subject_id,
+            "operator": user.get("username"),
+            "request_id": result.request_id,
+            "audit_log_id": result.audit_log_id,
+        },
+    )
+    return PurgeOut(
+        purged=True,
+        subject_id=result.subject_id,
+        subject_type=result.subject_type,
+        username=result.username,
+        tenant_code=result.tenant_code,
+        previous_state=result.previous_state,
+        status_state=result.status_state,
+        scope_report=result.scope_report,
+        scope_report_hash=result.scope_report_hash,
+        authorization_ref=result.authorization_ref,
     )
 
 
