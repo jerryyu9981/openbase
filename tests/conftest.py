@@ -14,3 +14,28 @@ import sys
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+def reset_db_singletons() -> None:
+    """重置 core.db.session 全局 engine/session 单例（T2 隔离修复 2026-09-06）.
+
+    OIDC E2E 族以"DB 不可达 → 降级直签"为断言语义：autouse fixture 会把
+    OPENBASE_DB_URL 指为不可达以模拟空库。但全量 pytest 中前序用例可能已按
+    真实库创建全局 engine 单例（core/db/session._engine），OIDC 用例再走
+    get_db 会复用该 engine 直连真实库 → 固定 sub 命中历史 OidcIdentity 行
+    复用旧用户（'3'/'4'），env 隔离被绕过。本函数先 dispose 再置空两个单例，
+    使后续 get_db 按当前（不可达）env 重建。
+    """
+    from openbase.core import db as db_pkg
+
+    session_mod = db_pkg.session
+    engine = session_mod._engine
+    if engine is not None:
+        try:
+            asyncio.run(engine.dispose())
+        except Exception:
+            # dispose 失败仅告警：置空后旧引擎由 GC 回收（进程级测试可容忍）
+            pass
+    session_mod._engine = None
+    session_mod._session_factory = None
+

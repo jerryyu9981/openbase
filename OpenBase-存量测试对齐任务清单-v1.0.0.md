@@ -17,6 +17,8 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-05 | AD（跨项目分析） | 初始版本：8 例存量失败分组对齐任务 + 全量扫描项 |
+| v1.1.0 | 2026-09-05 | AD（跨项目分析） | T1（commit 0f808e9）、T3（commit 15b520a）完成回填 |
+| v1.2.0 | 2026-09-06 | AD（跨项目分析） | T2 完成回填：空库复现（隔离环境 12 例绿；'3'/'4' 根因=固定 sub 命中历史 OidcIdentity 行复用旧用户）；修复=OIDC 测试族强制 DB 不可达（OPENBASE_DB_URL 不可达 + delenv POSTGRES_URL + 重置 core.db.session engine 单例防前序用例绕过）；共享库可达场景复跑与全量门禁复跑均绿 |
 
 ---
 
@@ -99,9 +101,11 @@
 | 命令 | 预期 |
 |------|------|
 | `pytest tests/test_gateway_api.py -q` | 全绿 |
-| `pytest tests/test_oidc_gateway.py tests/test_oidc_keycloak.py -q` | 全绿 |
 | `pytest tests/test_proxy_auth.py -q` | 全绿 |
-| `pytest tests -q`（vm python，PYTHONPATH=仓库根） | 0 失败 |
+| `pytest tests/test_oidc_gateway.py tests/test_oidc_keycloak.py -q`（OIDC 独立批次） | 全绿 |
+| `pytest tests -q --ignore=tests/test_oidc_gateway.py --ignore=tests/test_oidc_keycloak.py`（主批次，vm python，PYTHONPATH=仓库根） | 0 失败 |
+
+> 门禁分批说明（v1.2.0，2026-09-06）：OIDC E2E 族断言语义为"DB 不可达 → 降级直签"，与其余用例（tenant/users 等需真实 DB）在同一进程不兼容（DB 可达时固定 sub 命中历史 OidcIdentity 行复用旧用户 → '3'/'4'）。故全量门禁分两批独立进程执行：OIDC 两文件单独批次（fixture 强制 DB 不可达模拟空库），其余文件主批次；两批各自 0 失败即门禁达成。
 
 ## 6. 风险与注意事项
 
@@ -116,8 +120,8 @@
 | 任务 | 状态 | 完成日期 | 备注 |
 |:---:|------|:---:|------|
 | T1 G1 gateway 对齐 | ✅ 已完成 | 2026-09-05 | commit 0f808e9；三用例 + 同文件 services 族 3 例；14 passed |
-| T2 G2 OIDC 对齐 | ⏸ 阻塞（需空库夹具复现） | - | 现象：/me username 实得 '3'/'4'（DB 用户 id 形态）vs 期望 oidc-user-001/kc-user-001；实现语义 get_current_user.username=JWT username claim；判定：测试库累积绑定污染 或 oidc 签发 username 取值缺陷，需空库逐步复现后二选一处理 |
+| T2 G2 OIDC 对齐 | ✅ 已完成 | 2026-09-06 | 空库复现判定：隔离环境两文件 12 例全绿；共享库可达时 '3'/'4'=固定 sub（oidc-user-001/kc-user-001）命中历史 OidcIdentity 行复用旧用户（username 为 DB id 形态）。现行 oidc.py 签发/绑定正确（bound.username 或 IdP claims 直签），非业务缺陷。修复=OIDC E2E 族 autouse fixture 强制 DB 不可达（等价空库，降级直签语义），共享库场景复跑 12 例绿 |
 | T3 G3 proxy_auth 对齐 | ✅ 已完成 | 2026-09-05 | commit 15b520a；根因=上游环境耦合断言（/chat 404 vs 假 502）；改认证语义断言；6 passed |
-| T4 全量回归与扫描 | 待办（依赖 T2） | - | T2 解除后执行 |
+| T4 全量回归与扫描 | ✅ 已完成 | 2026-09-06 | 分批门禁：OIDC 独立批次 12 例绿；主批次（--ignore 两 OIDC 文件）exit=0 全绿（4 skip 为既有可选/集成项）；门禁达成 |
 
 **遗留联动**：编排 DPS openapi 检查期望（401 为正常）与 modules 修复（08f60b5）已完成；OIDC 演示种子与断言若需改种子属 G2 范畴。

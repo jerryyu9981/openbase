@@ -128,6 +128,38 @@ class MockIdp:
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def _oidc_force_no_db(monkeypatch):
+    """OIDC E2E 族强制"DB 不可用 → 降级直签"路径（空库语义，T2 隔离修复 2026-09-06）.
+
+    这些用例断言 sub/username == IdP claims 值，仅在降级直签路径成立（oidc.py
+    _bind_or_create_user DB 异常返回 None → 以 IdP sub 直签）。测试进程若注入
+    POSTGRES_URL（共享库可达）则走绑定路径：固定 sub 命中历史 OidcIdentity 行
+    → 复用旧用户（username 为 DB id 形态 '3'/'4'，2026-09-05 全量失败根因）。
+    强制 db 不可达等价"空库"，任何环境下均稳定走降级语义。
+    """
+    monkeypatch.setenv(
+        "OPENBASE_DB_URL",
+        "postgresql+asyncpg://no-db-user:no-pass@127.0.0.1:1/no_db",
+    )
+    monkeypatch.delenv("POSTGRES_URL", raising=False)
+    # 全量 pytest 中前序用例可能已按真实库建全局 engine 单例，须重置避免绕过 env 隔离
+    from conftest import reset_db_singletons
+
+    reset_db_singletons()
+    yield
+    # teardown 复原：清空 settings/engine 单例，使后续文件按已恢复 env 重建
+    # （避免不可达 URL 实例/engine 泄漏污染 tenant/users 等后置用例）
+    import sys
+
+    try:
+        settings_module = sys.modules["openbase.settings"]
+        settings_module._settings = None
+    except KeyError:
+        pass
+    reset_db_singletons()
+
+
 @pytest.fixture()
 def oidc_settings(monkeypatch):
     """启用 OIDC 的环境变量（mock IdP 指向本地 TestClient）. """

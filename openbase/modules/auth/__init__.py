@@ -249,6 +249,37 @@ async def login(
     )
 
 
+async def _resolve_tenant_code(
+    tenant_value: int | str | None, session: AsyncSession
+) -> str | None:
+    """按 tenants.id 解析租户 code（P3.1，2026-09-06 修复缺失定义）.
+
+    数字形态（tenants.id）→ 查 tenants.code；非数字（IdP 侧 code 直传）原样返回。
+    DB 不可达/无匹配返回 None（调用方不追加 tenant_code claim，向后兼容）。
+
+    Args:
+        tenant_value: JWT tenant_id 值。
+        session: DB 会话。
+
+    Returns:
+        tenants.code 字符串；解析失败返回 None。
+    """
+    from openbase.core.models import Tenant
+
+    if tenant_value is None or tenant_value == "":
+        return None
+    text = str(tenant_value)
+    if not text.isdigit():
+        return text
+    try:
+        result = await session.execute(
+            select(Tenant.code).where(Tenant.id == int(text))
+        )
+        return result.scalar_one_or_none()
+    except Exception:  # noqa: BLE001 - DB 不可达降级（不追加 claim）
+        return None
+
+
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
     req: RefreshRequest, session: AsyncSession = Depends(get_db)

@@ -20,6 +20,36 @@ from openbase import init_app
 from openbase.modules.auth.oidc import _roles_from_keycloak
 
 
+@pytest.fixture(autouse=True)
+def _oidc_keycloak_force_no_db(monkeypatch):
+    """Keycloak profile E2E 族强制"DB 不可用 → 降级直签"路径（空库语义，T2 隔离修复 2026-09-06）.
+
+    与 test_oidc_gateway.py 同因：断言 sub==IdP claims 仅在降级直签路径成立；
+    测试进程注入 POSTGRES_URL 使共享库可达时，固定 sub=kc-user-001 命中历史
+    OidcIdentity 行复用旧用户（实得 '4'，2026-09-05 全量失败）。强制 db 不可达
+    等价"空库"，任何环境下稳定走降级语义。
+    """
+    monkeypatch.setenv(
+        "OPENBASE_DB_URL",
+        "postgresql+asyncpg://no-db-user:no-pass@127.0.0.1:1/no_db",
+    )
+    monkeypatch.delenv("POSTGRES_URL", raising=False)
+    # 全量 pytest 中前序用例可能已按真实库建全局 engine 单例，须重置避免绕过 env 隔离
+    from conftest import reset_db_singletons
+
+    reset_db_singletons()
+    yield
+    # teardown 复原：清空 settings/engine 单例，使后续文件按已恢复 env 重建
+    import sys
+
+    try:
+        settings_module = sys.modules["openbase.settings"]
+        settings_module._settings = None
+    except KeyError:
+        pass
+    reset_db_singletons()
+
+
 def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
