@@ -201,11 +201,35 @@ async def get_current_user(
         user_int_id = int(user_id)
     except (TypeError, ValueError):
         user_int_id = None
+    # U1 T4（草案 §7.3）：返回主体上下文（sub_type/tenant_code/role/委托块），
+    # 委托令牌含 on_behalf_of——主体验证器已在返回快照后完成逐跳重校验（403 拦截）。
+    from openbase.modules.identity.delegation import normalize_on_behalf_of
+
+    delegated = None
+    try:
+        delegated = normalize_on_behalf_of(payload.get("on_behalf_of"))
+    except BaseError:
+        # 结构畸形已在 verify_principal（逐跳重校验）拦截，此处兜底置 None
+        delegated = None
     return {
         "id": user_int_id if user_int_id is not None else str(user_id),
         "username": payload.get("username", ""),
         "tenant_id": payload.get("tenant_id"),
+        "tenant_code": payload.get("tenant_code"),
+        "subject_type": payload.get("sub_type", "user"),
+        "role": payload.get("role"),
         "permissions": payload.get("permissions") or [],
+        "on_behalf_of": delegated,
+        "delegated": (
+            {
+                "subject_id": delegated["subject_id"],
+                "subject_type": delegated["subject_type"],
+                "tenant_code": delegated["tenant_code"],
+                "role": delegated["role"],
+            }
+            if delegated is not None
+            else None
+        ),
     }
 
 

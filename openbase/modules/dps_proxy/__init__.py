@@ -31,6 +31,7 @@ from fastapi.responses import JSONResponse
 
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.modules.identity.delegation import delegated_claim_from_payload
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.dps_proxy")
@@ -97,6 +98,21 @@ def _build_identity_headers(user: dict, jwt_payload: dict[str, Any] | None) -> d
     """
     settings = get_settings()
     jwt_payload = jwt_payload or {}
+    # U1 T4（草案 §7.3/§11 T4-7）：委托场景出站头取委托域值——
+    # X-User-ID=delegated.subject_id、X-Tenant-ID/X-Org-ID=委托 tenant_code、
+    # X-User-Role=delegated.role（P2-1 委托头唯一签发细节移交 S1b）。
+    delegated = delegated_claim_from_payload(jwt_payload)
+    if delegated is not None:
+        return {
+            "X-User-ID": str(delegated["subject_id"]),
+            "X-Tenant-ID": _apply_map(
+                settings.dps_tenant_map, str(delegated["tenant_code"] or "")
+            ),
+            "X-Org-ID": _apply_map(
+                settings.dps_org_map, str(delegated["tenant_code"] or "")
+            ),
+            "X-User-Role": delegated.get("role") or "user",
+        }
     # P3.1：tenant_code claim（新签发令牌）优先 → 兼容旧令牌数值链回退。
     # X-Tenant-ID 与 X-Org-ID 在 code 存在时同形（治理 Q2：org 头退役为兼容别名）。
     tenant_raw = (

@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.modules.auth.jwt import decode_access_token
+from openbase.modules.identity.delegation import delegated_claim_from_payload
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.memory_proxy")
@@ -49,8 +50,12 @@ def _upstream_config() -> tuple[str, str, float]:
 def _extract_identity(request: Request) -> dict[str, Any]:
     """从请求头解析 JWT 身份（tenant_id/org_id/role/sub），供上游注入.
 
+    U1 T4（草案 §7.3/§11 T4-7）：委托场景（payload 含 on_behalf_of）取委托域值——
+    sub=delegated.subject_id、tenant_id/org_id=委托 tenant_code、role=delegated.role
+    （X-Org-ID/X-Tenant-ID/X-User-ID 不取错域）。
+
     Returns:
-        dict: {"token", "sub", "org_id", "role", "tenant_id"}；
+        dict: {"token", "sub", "org_id", "role", "tenant_id", "delegated"?}；
         token 缺失时抛出 401。
     """
     authorization = request.headers.get("Authorization", "")
@@ -60,6 +65,16 @@ def _extract_identity(request: Request) -> dict[str, Any]:
     payload = decode_access_token(token)
     if payload is None:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "invalid or expired token")
+    delegated = delegated_claim_from_payload(payload)
+    if delegated is not None:
+        return {
+            "token": token,
+            "sub": str(delegated["subject_id"]),
+            "tenant_id": delegated["tenant_code"],
+            "org_id": delegated["tenant_code"],
+            "role": delegated.get("role", "viewer"),
+            "delegated": delegated,
+        }
     return {
         "token": token,
         "sub": str(payload.get("sub", "")),

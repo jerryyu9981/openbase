@@ -82,6 +82,14 @@ def _extract_identity(request: Request) -> dict[str, str]:
     org_id = payload.get("org_id")
     if org_id is not None and org_id != "":
         identity["org_id"] = str(org_id)
+    # U1 T4（草案 §7.3/§11 T4-7）：委托场景出站头取委托域值
+    # （X-User-ID=delegated.subject_id、X-Org-ID=委托 tenant_code）。
+    from openbase.modules.identity.delegation import delegated_claim_from_payload
+
+    delegated = delegated_claim_from_payload(payload)
+    if delegated is not None:
+        identity["sub"] = str(delegated["subject_id"])
+        identity["org_id"] = delegated["tenant_code"]
     return identity
 
 

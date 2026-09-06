@@ -24,6 +24,7 @@ from typing import Any
 from openbase.core.cache import redis_client as cache_client
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import User
+from openbase.modules.identity.delegation import verify_request_delegation
 from openbase.modules.identity.state_machine import STATUS_STATE_ACTIVE, SUBJECT_TYPE_USER
 
 logger = logging.getLogger("openbase.identity.verification")
@@ -201,6 +202,11 @@ async def verify_principal(session: Any, payload: dict[str, Any]) -> dict[str, A
                     "expected_token_version": snapshot["token_version"],
                 },
             )
+
+    # ③ 委托链逐跳重校验（U1 T4，草案 §7.3/§11 T4-3/4）：返回快照后追加校验——
+    #    若 token 携带 on_behalf_of，其域不变式/委托目标状态每请求与 DB 对账
+    #    （claim 域被篡改/替换或委托目标停用 → 403，R-M4-2 逐跳重校验骨架）。
+    await verify_request_delegation(session, payload, snapshot)
     return snapshot
 
 
