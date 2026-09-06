@@ -20,6 +20,12 @@ from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, User, user_role
 from openbase.modules.auth import hash_password
 from openbase.modules.auth.rbac import PermissionService, has_permission
+from openbase.modules.identity.state_machine import (
+    STATUS_STATE_ACTIVE,
+    STATUS_STATE_PROVISIONED,
+    STATUS_STATE_SUSPENDED,
+    validate_transition,
+)
 
 logger = logging.getLogger("openbase.users")
 
@@ -228,6 +234,13 @@ async def update_user(
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"user not found: {user_id}")
     if payload.status is not None:
         row.status = payload.status
+        # U1 T2（设计草案 §4.3 兼容）：既有 status(0/1) 写路径映射 status_state
+        # （1→active / 0→suspended 保守）；deactivated 等终态不因旧写路径复活（非法→400）。
+        target_state = STATUS_STATE_ACTIVE if payload.status == 1 else STATUS_STATE_SUSPENDED
+        current_state = row.status_state or STATUS_STATE_ACTIVE
+        if current_state != target_state:
+            validate_transition(current_state, target_state)
+            row.status_state = target_state
     if payload.display_name is not None:
         row.display_name = payload.display_name
     if payload.email is not None:
@@ -251,6 +264,10 @@ async def delete_user(
     if row is None:
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"user not found: {user_id}")
     row.status = 0
+    # U1 T2（设计草案 §4.3）：DELETE 软删语义保持 = status 0（映射 suspended 保守），
+    # 不触发 deactivated 级联（既有行为不破坏）；已 suspended/deactivated 仅保持。
+    if (row.status_state or STATUS_STATE_ACTIVE) in (STATUS_STATE_ACTIVE, STATUS_STATE_PROVISIONED):
+        row.status_state = STATUS_STATE_SUSPENDED
     await session.commit()
     return {"code": 0, "user_id": user_id, "status": 0}
 

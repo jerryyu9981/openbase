@@ -1,13 +1,9 @@
-"""identity 模块：统一主体（Principal）管理面（U1 T1，RA-01/OB-1；设计草案 §10.1）.
+"""identity 模块：统一主体（Principal）管理面（U1 T1/T2，RA-01/RA-02；设计草案 §10.1）.
 
-路由前缀 /api/v1/identity。T1 范围：
-- ``POST /agents``：创建 agent 主体（subject_type=agent，默认 viewer 角色）+ 首条
-  sk-agent-* 密钥（明文仅展示一次）；
-- ``GET /agents/{agent_id}/keys``：密钥列表（不回显明文/哈希）；
-- ``POST /agents/{agent_id}/keys``：新增/轮换密钥（多密钥并存）；
-- ``DELETE /agents/{agent_id}/keys/{key_id}``：吊销单条密钥（即时失效）。
-
-鉴权：identity:manage / identity:view（admin 通配放行 + RBAC 兜底，风格与 users 模块一致）。
+路由前缀 /api/v1/identity。T1 范围：agent 主体创建 + sk-agent-* 密钥族；
+T2（RA-02/OB-2 状态机）新增 lifecycle 迁移端点族（activate/suspend/restore/deactivate），
+仅 admin/受权（identity:lifecycle）可调用；状态迁移统一经 IdentityLifecycleService
+（写 status_reason/审计/L1-1 事件 outbox/清缓存，非法迁移 400 BIZ_STATE_TRANSITION_INVALID）。
 """
 
 from __future__ import annotations
@@ -31,7 +27,12 @@ from openbase.modules.identity.agents import (
     create_agent_subject,
     ensure_agent_subject,
 )
-from openbase.modules.identity.state_machine import CREDENTIAL_TYPE_API_KEY
+from openbase.modules.identity.lifecycle import IdentityLifecycleService
+from openbase.modules.identity.state_machine import (
+    CREDENTIAL_TYPE_API_KEY,
+    SUBJECT_TYPE_AGENT,
+    SUBJECT_TYPE_USER,
+)
 
 logger = logging.getLogger("openbase.identity")
 
@@ -39,6 +40,10 @@ router = APIRouter(prefix="/api/v1/identity", tags=["identity"])
 
 IDENTITY_MANAGE_PERMISSION = "identity:manage"
 IDENTITY_VIEW_PERMISSION = "identity:view"
+IDENTITY_LIFECYCLE_PERMISSION = "identity:lifecycle"
+
+# lifecycle 端点允许的 subject_type
+_VALID_SUBJECT_TYPES = frozenset({SUBJECT_TYPE_USER, SUBJECT_TYPE_AGENT})
 
 
 # ---- Schemas ----
@@ -134,6 +139,69 @@ async def _require_identity_view(
     session: AsyncSession = Depends(get_db),
 ) -> dict:
     return await _check_permission(user, session, IDENTITY_VIEW_PERMISSION)
+
+
+async def _require_identity_lifecycle(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """lifecycle 端点权限校验（admin 通配 + identity:lifecycle；无权限 403，T2-7 断言）."""
+    return await _check_permission(user, session, IDENTITY_LIFECYCLE_PERMISSION)
+
+
+# ---- Lifecycle Schemas（T2，RA-02） ----
+
+
+class LifecycleTransitionRequest(BaseModel):
+    """状态迁移请求（suspend/restore/activate 共用）. """
+
+    reason: str | None = Field(None, max_length=255, description="迁移原因（审计/合规）")
+
+
+class DeactivateRequest(BaseModel):
+    """注销（deactivate）请求：需二次确认 confirm=true（防误触，草案 §4.2）."""
+
+    confirm: bool = False
+    reason: str | None = Field(None, max_length=255)
+
+
+class LifecycleOut(BaseModel):
+    """状态迁移响应."""
+
+    id: int
+    subject_type: str
+    username: str
+    previous_state: str
+    status_state: str
+    status_reason: str | None = None
+    token_version: int
+    tenant_code: str | None = None
+    roles: list[str] = []
+
+
+def _lifecycle_out(result: Any, subject_type: str) -> LifecycleOut:
+    return LifecycleOut(
+        id=result.subject.id,
+        subject_type=subject_type,
+        username=result.subject.username,
+        previous_state=result.previous_state,
+        status_state=result.subject.status_state,
+        status_reason=result.subject.status_reason,
+        token_version=result.subject.token_version,
+        tenant_code=result.subject.tenant_code,
+        roles=result.role_codes,
+    )
+
+
+def _validated_subject_type(subject_type: str) -> str:
+    """校验路径 subject_type ∈ {user, agent}（否则 400 PARAM_INVALID）."""
+    if subject_type not in _VALID_SUBJECT_TYPES:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            f"invalid subject_type: {subject_type}",
+            detail={"allowed": sorted(_VALID_SUBJECT_TYPES)},
+        )
+    return subject_type
 
 
 def _key_out(record: AgentApiKey, raw_key: str | None = None) -> AgentKeyOut:
@@ -244,6 +312,138 @@ async def revoke_agent_key(
         extra={"agent_id": agent_id, "key_id": key_id, "operator": user.get("username")},
     )
     return {"revoked": True, "agent_id": agent_id, "key_id": record.id}
+
+
+# ---- U1 T2（RA-02/OB-2 状态机）：lifecycle 迁移端点族（草案 §4.2/§10.1） ----
+# 鉴权：admin 通配 + identity:lifecycle（无权限 403）；迁移非法一律 400。
+
+
+async def _run_transition(
+    transition_callable: Any,
+    subject_type: str,
+    subject_id: int,
+    reason: str | None,
+    user: dict,
+    session: AsyncSession,
+) -> LifecycleOut:
+    """执行状态迁移服务并提交（统一路由样板：服务编排 → commit → 响应）. """
+    operator = _subject_id(user)
+    result = await transition_callable(
+        session,
+        subject_id,
+        subject_type=subject_type,
+        reason=reason,
+        operator=operator,
+    )
+    await session.commit()
+    logger.info(
+        "identity lifecycle api invoked",
+        extra={
+            "subject_type": subject_type,
+            "subject_id": subject_id,
+            "from": result.previous_state,
+            "to": result.target_state,
+            "operator": user.get("username"),
+        },
+    )
+    return _lifecycle_out(result, subject_type)
+
+
+@router.post(
+    "/lifecycle/{subject_type}/{subject_id}/activate",
+    response_model=LifecycleOut,
+)
+async def lifecycle_activate(
+    subject_type: str,
+    subject_id: int,
+    payload: LifecycleTransitionRequest,
+    user: dict = Depends(_require_identity_lifecycle),
+    session: AsyncSession = Depends(get_db),
+) -> LifecycleOut:
+    """provisioned → active（管理员启用；无吊销副作用，发 user.provisioned 事件）."""
+    validated = _validated_subject_type(subject_type)
+    return await _run_transition(
+        IdentityLifecycleService.activate,
+        validated,
+        subject_id,
+        payload.reason,
+        user,
+        session,
+    )
+
+
+@router.post(
+    "/lifecycle/{subject_type}/{subject_id}/suspend",
+    response_model=LifecycleOut,
+)
+async def lifecycle_suspend(
+    subject_type: str,
+    subject_id: int,
+    payload: LifecycleTransitionRequest,
+    user: dict = Depends(_require_identity_lifecycle),
+    session: AsyncSession = Depends(get_db),
+) -> LifecycleOut:
+    """active → suspended（即时拒签 + tvn+1 + 吊销联动 + user.suspended 事件）. """
+    validated = _validated_subject_type(subject_type)
+    return await _run_transition(
+        IdentityLifecycleService.suspend,
+        validated,
+        subject_id,
+        payload.reason,
+        user,
+        session,
+    )
+
+
+@router.post(
+    "/lifecycle/{subject_type}/{subject_id}/restore",
+    response_model=LifecycleOut,
+)
+async def lifecycle_restore(
+    subject_type: str,
+    subject_id: int,
+    payload: LifecycleTransitionRequest,
+    user: dict = Depends(_require_identity_lifecycle),
+    session: AsyncSession = Depends(get_db),
+) -> LifecycleOut:
+    """suspended → active（恢复；tvn 再次 +1，旧 token 不复活；发恢复事件）. """
+    validated = _validated_subject_type(subject_type)
+    return await _run_transition(
+        IdentityLifecycleService.restore,
+        validated,
+        subject_id,
+        payload.reason,
+        user,
+        session,
+    )
+
+
+@router.post(
+    "/lifecycle/{subject_type}/{subject_id}/deactivate",
+    response_model=LifecycleOut,
+)
+async def lifecycle_deactivate(
+    subject_type: str,
+    subject_id: int,
+    payload: DeactivateRequest,
+    user: dict = Depends(_require_identity_lifecycle),
+    session: AsyncSession = Depends(get_db),
+) -> LifecycleOut:
+    """→ deactivated（注销；全部凭据失效 + user.deactivated 事件；需 confirm=true 二次确认）."""
+    if not payload.confirm:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "deactivate requires confirm=true (double confirmation)",
+        )
+    validated = _validated_subject_type(subject_type)
+    return await _run_transition(
+        IdentityLifecycleService.deactivate,
+        validated,
+        subject_id,
+        payload.reason,
+        user,
+        session,
+    )
 
 
 __version__ = "0.1.0"

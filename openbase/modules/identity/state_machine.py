@@ -1,10 +1,14 @@
-"""identity 模块：Principal（user/agent）语义常量与登录面判定（U1 T1，RA-01/OB-1）.
+"""identity 模块：Principal（user/agent）语义常量 + 生命周期状态机（U1 T1/T2，RA-01/RA-02）.
 
-常量与核心模型（openbase/core/models/base.py）内联值保持一致；
-生命周期迁移矩阵完整版属 T2（RA-02），此处先沉淀 T1 所需面。
+常量与核心模型（openbase/core/models/base.py）内联值保持一致。
+T2（RA-02/OB-2 状态机 + OB-4）在此落地完整状态机：状态枚举、迁移矩阵校验
+（validate_transition，非法路径 0，草案 §4.1/§4.2）、登录面判定收口
+（active 才可认证 + agent 无人工登录面）。
 """
 
 from __future__ import annotations
+
+from openbase.core.errors import BaseError, ErrorCode
 
 # ---- Principal 具象 ----
 SUBJECT_TYPE_USER = "user"
@@ -33,20 +37,64 @@ VALID_STATUS_STATES = frozenset(
     }
 )
 
+# ---- 迁移矩阵（设计草案 §4.1：非法组合一律 400 BIZ_STATE_TRANSITION_INVALID） ----
+# provisioned → active → suspended ⇄ active；suspended/active → deactivated → purged
+TRANSITION_MATRIX: dict[str, frozenset[str]] = {
+    STATUS_STATE_PROVISIONED: frozenset({STATUS_STATE_ACTIVE}),
+    STATUS_STATE_ACTIVE: frozenset({STATUS_STATE_SUSPENDED, STATUS_STATE_DEACTIVATED}),
+    STATUS_STATE_SUSPENDED: frozenset({STATUS_STATE_ACTIVE, STATUS_STATE_DEACTIVATED}),
+    STATUS_STATE_DEACTIVATED: frozenset({STATUS_STATE_PURGED}),
+    STATUS_STATE_PURGED: frozenset(),
+}
+
+
+def is_transition_allowed(current: str, target: str) -> bool:
+    """迁移矩阵查询（纯函数）：current→target 是否合法（含状态合法性与自环拦截）.
+
+    Args:
+        current: 当前 status_state。
+        target: 目标 status_state。
+
+    Returns:
+        合法返回 True；非法/未知状态/自环返回 False。
+    """
+    if current not in TRANSITION_MATRIX or target not in VALID_STATUS_STATES:
+        return False
+    return target in TRANSITION_MATRIX[current]
+
+
+def validate_transition(current: str, target: str) -> None:
+    """校验状态迁移合法性，非法路径统一抛 400 BIZ_STATE_TRANSITION_INVALID（RA-02 验收）.
+
+    Args:
+        current: 当前 status_state。
+        target: 目标 status_state。
+
+    Raises:
+        BaseError: 迁移非法（0 非法路径由本函数拦截，草案 §4.1/§4.2）。
+    """
+    if not is_transition_allowed(current, target):
+        raise BaseError(
+            ErrorCode.BIZ_STATE_TRANSITION_INVALID,
+            f"illegal state transition: {current} -> {target}",
+            detail={"from": current, "to": target},
+        )
+
 
 def assert_loginable(subject_type: str, status_state: str = STATUS_STATE_ACTIVE) -> bool:
-    """登录面判定：agent 一律不可人工登录（0 可达登录路径，RA-01 断言）.
+    """登录面判定（T2 完整门禁）：仅 user + active 可认证（草案 §4.1「active 才可认证」）.
+
+    agent 一律不可人工登录（0 可达登录路径，RA-01 断言）；user 亦须 active
+    （suspended/deactivated/purged/provisioned 均不可登录，签发侧状态门禁）。
 
     Args:
         subject_type: 主体具象（user/agent）。
-        status_state: 生命周期状态（当前状态机完整门禁由 T2 接入，T1 仅做 subject_type 分叉）。
+        status_state: 生命周期状态。
 
     Returns:
-        user → True；agent → False。
+        user + active → True；其余一律 False。
     """
-    if subject_type == SUBJECT_TYPE_AGENT:
-        return False
-    return subject_type == SUBJECT_TYPE_USER
+    return subject_type == SUBJECT_TYPE_USER and status_state == STATUS_STATE_ACTIVE
 
 
 def status_state_from_int(status_int: int) -> str:
@@ -74,6 +122,9 @@ __all__ = [
     "STATUS_STATE_DEACTIVATED",
     "STATUS_STATE_PURGED",
     "VALID_STATUS_STATES",
+    "TRANSITION_MATRIX",
+    "is_transition_allowed",
+    "validate_transition",
     "assert_loginable",
     "status_state_from_int",
     "status_int_from_state",

@@ -172,6 +172,34 @@ class AgentApiKey(Base, TimestampMixin):
     created_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
 
 
+class OutboxEvent(Base, TimestampMixin):
+    """L1-1 跨系统级联事件 outbox 表（U1 T2 事件源骨架，设计草案 §8.2）.
+
+    生命周期迁移与状态更新在同一 DB 事务内写入本表（保证事件不丢），
+    由投递器（T5 outbox_dispatcher）置 published；消费端以 event_id 幂等去重。
+    载荷（payload）遵循 §8.1 事件 schema v1（event_type/subject/tenant_code/
+    previous_state/current_state/reason 等）。
+    """
+
+    __tablename__ = "outbox_events"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    event_id: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, comment="全局唯一事件 id（幂等消费键）"
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    # pending/published/failed（投递器按此推进；Redis 故障时 DB outbox 兜底）
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    publish_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    next_retry_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    published_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class Role(Base, TimestampMixin):
     """角色."""
 

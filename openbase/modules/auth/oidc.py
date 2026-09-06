@@ -22,8 +22,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
-from openbase.core.models import Tenant
-from openbase.modules.auth.jwt import create_access_token, create_refresh_token
+from openbase.core.errors import BaseError, ErrorCode
+from openbase.core.models import Role, Tenant, User, user_role
+from openbase.modules.auth.jwt import issue_token_pair
+from openbase.modules.identity.state_machine import (
+    STATUS_STATE_ACTIVE,
+    SUBJECT_TYPE_USER,
+)
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.auth.oidc")
@@ -280,6 +285,24 @@ async def _ensure_roles(session: Any, user_id: int, claims: dict[str, Any]) -> s
     return bound_role or next((c for c in want_codes if c in have_codes), None)
 
 
+async def _tenant_code_from_id(session: Any, tenant_value: str) -> str | None:
+    """按 tenants.id 解析 tenant_code（数字形态 → 查 tenants.code；code 串原样透传）.
+
+    DB 不可达/无匹配返回 None（调用方不追加 claim，向后兼容）。
+    """
+    if not tenant_value:
+        return None
+    if not tenant_value.isdigit():
+        return tenant_value
+    try:
+        result = await session.execute(
+            select(Tenant.code).where(Tenant.id == int(tenant_value))
+        )
+        return result.scalar_one_or_none()
+    except Exception:  # noqa: BLE001 - DB 不可达降级（不追加 claim）
+        return None
+
+
 async def _bind_or_create_user(
     claims: dict[str, Any], session: Any
 ) -> dict[str, Any] | None:
@@ -487,44 +510,76 @@ async def oidc_callback(
 
     mapped = client.map_claims(claims)
 
-    # v1.3.0：OIDC 用户体系绑定（JIT 建号/复用；DB 不可用返回 None → 降级）
+    # v1.3.0：OIDC 用户体系绑定（JIT 建号/复用；DB 不可用返回 None → 降级直签）
     bound = await _bind_or_create_user(claims, session)
+    subject_row: User | None = None
     if bound is not None:
         subject = str(bound["id"])
         username = bound.get("username") or mapped["username"]
         tenant_id = bound.get("tenant_id") or mapped["tenant_id"]
         # 角色：绑定角色（首次建号映射）> claims 原角色 > viewer
         raw_role = bound.get("role") or (mapped["extra"].get("role") or "viewer")
+        # U1 T2（RA-02，草案 §2.2/§6.3）：OIDC 接入状态机——suspended/deactivated 绑定主体
+        # 经 IdP 重登/JIT 复用一律被拒（停用拦截，callback 401 AUTH_PRINCIPAL_DISABLED）。
+        try:
+            user_row = await session.get(User, int(bound["id"]))
+        except Exception:  # noqa: BLE001 - 查不到主体按禁用处理（fail-closed）
+            user_row = None
+        if user_row is None or (user_row.subject_type or SUBJECT_TYPE_USER) != SUBJECT_TYPE_USER:
+            raise BaseError(
+                ErrorCode.AUTH_PRINCIPAL_DISABLED, "oidc principal is unavailable"
+            )
+        if user_row.status_state != STATUS_STATE_ACTIVE:
+            raise BaseError(
+                ErrorCode.AUTH_PRINCIPAL_DISABLED,
+                "oidc principal is not active",
+                detail={"status_state": user_row.status_state},
+            )
+        subject_row = user_row
     else:
         subject = mapped["sub"]
         username = mapped["username"]
         tenant_id = mapped["tenant_id"]
         raw_role = mapped["extra"].get("role") or "viewer"
 
-    extra = {"org_id": tenant_id, "role": raw_role}
-    # P3.1：增量 tenant_code claim。bound 路径 tenant_id 为 tenants.id（数字）→ 查 code；
-    # 未绑定（DB 降级）时 tenant_id 已是 IdP 侧 code 字符串 → 原样透传。
-    if tenant_id:
-        tenant_text = str(tenant_id)
-        if tenant_text.isdigit():
-            try:
-                t_res = await session.execute(
-                    select(Tenant.code).where(Tenant.id == int(tenant_text))
-                )
-                oidc_tenant_code = t_res.scalar_one_or_none()
-            except Exception:  # noqa: BLE001
-                oidc_tenant_code = None
-        else:
-            oidc_tenant_code = tenant_text
-        if oidc_tenant_code:
-            extra["tenant_code"] = oidc_tenant_code
-    access = create_access_token(
-        subject,
-        username=username,
-        tenant_id=tenant_id,
-        extra=extra,
+    # U1 T2（RA-02/OB-4）：bound/直签共用同一签发器 issue_token_pair（草案 §6.1/§6.3）。
+    # bound 路径以主体行冗余字段为准；直签（DB 降级）以 IdP claims code 原样透传。
+    if subject_row is not None:
+        subject_type = subject_row.subject_type or SUBJECT_TYPE_USER
+        final_username = subject_row.username or username
+        final_tenant_id = str(subject_row.tenant_id) if subject_row.tenant_id else None
+        oidc_tenant_code = subject_row.tenant_code
+        if not oidc_tenant_code and final_tenant_id:
+            oidc_tenant_code = await _tenant_code_from_id(session, final_tenant_id)
+        token_version = subject_row.token_version or 0
+        # role：当前绑定角色快照（claims roles 已幂等同步）> bound/claims 角色 > viewer
+        role_result = await session.execute(
+            select(Role.code)
+            .join(user_role, user_role.c.role_id == Role.id)
+            .where(user_role.c.user_id == subject_row.id)
+        )
+        role_codes = list(role_result.scalars().all())
+        final_role = role_codes[0] if role_codes else (raw_role or "viewer")
+    else:
+        subject_type = SUBJECT_TYPE_USER
+        final_username = username
+        final_tenant_id = tenant_id
+        # 直签：tenant_id 为 IdP 侧 code 字符串原样透传；数字形态尝试查 tenants.code
+        oidc_tenant_code = None
+        if tenant_id:
+            oidc_tenant_code = await _tenant_code_from_id(session, str(tenant_id))
+        token_version = 0
+        final_role = raw_role
+
+    access, refresh = issue_token_pair(
+        subject=subject,
+        username=final_username,
+        tenant_id=final_tenant_id,
+        tenant_code=oidc_tenant_code,
+        token_version=token_version,
+        role=final_role,
+        subject_type=subject_type,
     )
-    refresh = create_refresh_token(subject, tenant_id)
     # 透传 IdP 身份供审计/身份头注入（下游网关模式消费）
     request.state.oidc_claims = claims
     request.state.bound_user = bound is not None

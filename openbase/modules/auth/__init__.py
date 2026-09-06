@@ -19,11 +19,16 @@ from openbase.core.deps.auth import get_api_key_store, get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, User, user_role
 from openbase.modules.auth.jwt import (
-    create_access_token,
-    create_refresh_token,
     decode_refresh_token,
+    issue_token_pair,
 )
 from openbase.modules.auth.rbac import PermissionService, has_permission
+from openbase.modules.identity.state_machine import (
+    STATUS_STATE_ACTIVE,
+    SUBJECT_TYPE_AGENT,
+    SUBJECT_TYPE_USER,
+    assert_loginable,
+)
 from openbase.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -232,12 +237,20 @@ async def login(
     if user is None or user.get("password_hash") is None:
         raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid username or password")
 
-    # U1 T1（RA-01/OB-1，设计草案 §3.2/Q2-S1）：agent 无人工登录面——
-    # 登录面按 subject_type 分叉，agent 一律拒绝（0 可达登录路径），且先于密码校验。
-    subject_type = user.get("subject_type", "user")
-    if subject_type != "user":
+    # U1 T1/T2（RA-01/RA-02，设计草案 §3.2/§4.1）：登录面按 subject_type 分叉 + 状态门禁。
+    # agent 无人工登录面（0 可达登录路径）且先于密码校验；user 须 status_state=active
+    # （suspended/deactivated/purged/provisioned 即时拒签，AUTH_PRINCIPAL_DISABLED）。
+    subject_type = user.get("subject_type") or SUBJECT_TYPE_USER
+    if subject_type != SUBJECT_TYPE_USER:
         raise BaseError(
             ErrorCode.AUTH_FORBIDDEN, "agent subjects cannot use interactive login"
+        )
+    status_state = user.get("status_state") or STATUS_STATE_ACTIVE
+    if not assert_loginable(subject_type, status_state):
+        raise BaseError(
+            ErrorCode.AUTH_PRINCIPAL_DISABLED,
+            "principal is not active",
+            detail={"status_state": status_state},
         )
 
     if not await asyncio.to_thread(verify_password, req.password, user["password_hash"]):
@@ -249,13 +262,24 @@ async def login(
     )
     role = roles[0] if roles else "viewer"
     tenant_value = user.get("tenant_id")
-    access = create_access_token(
-        str(user["id"]),
-        username=user["username"],
+    # U1 T2（RA-02/OB-4）：login 无条件全量注入 tenant_code（按 tenant_id 查 tenants.code），
+    # 与 refresh/OIDC 共用单一签发器 issue_token_pair（草案 §6.1/§6.3）。
+    tenant_code = user.get("tenant_code")
+    if not tenant_code:
+        tenant_code = await resolve_tenant_code(tenant_value, session)
+    subject_type = user.get("subject_type") or SUBJECT_TYPE_USER
+    token_version = user.get("token_version")
+    if token_version is None:
+        token_version = 0
+    access, refresh = issue_token_pair(
+        subject=str(user["id"]),
+        username=user.get("username", ""),
         tenant_id=tenant_value,
-        extra={"org_id": tenant_value, "role": role},
+        tenant_code=tenant_code,
+        token_version=token_version,
+        role=role,
+        subject_type=subject_type,
     )
-    refresh = create_refresh_token(str(user["id"]), tenant_value)
     return TokenResponse(
         access_token=access,
         expires_in=settings.jwt_expire_seconds,
@@ -303,7 +327,15 @@ _resolve_tenant_code = resolve_tenant_code
 async def refresh(
     req: RefreshRequest, session: AsyncSession = Depends(get_db)
 ) -> TokenResponse:
-    """刷新 Token：校验 refresh token 后签发新 access/refresh. """
+    """刷新 Token：校验 refresh token 后签发新 access/refresh.
+
+    U1 T2（RA-02/OB-4）刷新链闭环：
+    - 全量 claim（修 fidelity）：新 refresh token 自带 username/role/tenant_code/
+      sub_type/tvn，刷新时直读直签（§6.1）；
+    - v0 存量 refresh（仅 sub/tenant_id）经主体行补齐 tenant_code + 版本升级（§6.2）；
+    - 签发侧状态门禁：suspended/deactivated/provisioned 主体 refresh 一律拒绝（即时拒签），
+      agent 无刷新链（AUTH_FORBIDDEN）；DB 不可达/非数字 sub（OIDC 直签）保持降级放行。
+    """
     settings = get_settings()
     payload = decode_refresh_token(req.refresh_token)
     if payload is None:
@@ -313,34 +345,60 @@ async def refresh(
     if subject is None:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "refresh token missing subject")
 
-    # U1 T1（RA-01/OB-1，设计草案 §3.2）：agent 无登录面亦无刷新链——refresh 对 agent 拒绝。
-    # DB 不可达/非数字 sub（OIDC 降级直签）时保持既有降级行为（subject_row=None → 放行）。
+    # U1 T1/T2：刷新链主体查询（数字 sub → DB 主体；DB 不可达降级保持既有行为）。
     subject_row: User | None = None
     if str(subject).isdigit():
         try:
             subject_row = await session.get(User, int(subject))
         except Exception:  # noqa: BLE001 - DB 不可达兼容内存/降级用户
             subject_row = None
-    if subject_row is not None and subject_row.subject_type == "agent":
+    if subject_row is not None and (subject_row.subject_type or SUBJECT_TYPE_USER) == SUBJECT_TYPE_AGENT:
         raise BaseError(ErrorCode.AUTH_FORBIDDEN, "agent subjects cannot use refresh")
 
-    tenant_value = payload.get("tenant_id")
-    # P3.1：刷新令牌保持 tenant_code claim（按 tenants.id 解析；旧 refresh 无 id 时回退）
-    tenant_code = await _resolve_tenant_code(tenant_value, session)
-    extra: dict = {"org_id": payload.get("org_id"), "role": payload.get("role", "viewer")}
-    if tenant_code:
-        extra["tenant_code"] = tenant_code
-    access = create_access_token(
-        subject,
-        username=payload.get("username", ""),
+    if subject_row is not None:
+        # 状态门禁：仅 active 可续签（suspended/deactivated → 即时拒签）
+        if subject_row.status_state != STATUS_STATE_ACTIVE:
+            raise BaseError(
+                ErrorCode.AUTH_PRINCIPAL_DISABLED,
+                "principal is not active",
+                detail={"status_state": subject_row.status_state},
+            )
+        subject_type = subject_row.subject_type or SUBJECT_TYPE_USER
+        username = subject_row.username or payload.get("username", "")
+        tenant_value = payload.get("tenant_id")
+        if not tenant_value and subject_row.tenant_id:
+            tenant_value = str(subject_row.tenant_id)
+        # tenant_code：payload（新 refresh 自带）> 主体行冗余列 > tenants.code 解析
+        tenant_code = payload.get("tenant_code") or subject_row.tenant_code
+        if not tenant_code:
+            tenant_code = await resolve_tenant_code(tenant_value, session)
+        token_version = subject_row.token_version or 0
+        roles = await UserService.get_roles(subject_row.id, session, username)
+        role = roles[0] if roles else (payload.get("role") or "viewer")
+    else:
+        # OIDC 直签 / DB 降级形态：以 payload claims 直读直签（v0 无则按缺省）
+        subject_type = payload.get("sub_type") or SUBJECT_TYPE_USER
+        username = payload.get("username", "")
+        tenant_value = payload.get("tenant_id")
+        tenant_code = payload.get("tenant_code")
+        if not tenant_code:
+            tenant_code = await resolve_tenant_code(tenant_value, session)
+        token_version = payload.get("tvn") or 0
+        role = payload.get("role") or "viewer"
+
+    access, refresh_token = issue_token_pair(
+        subject=subject,
+        username=username,
         tenant_id=tenant_value,
-        extra=extra,
+        tenant_code=tenant_code,
+        token_version=token_version,
+        role=role,
+        subject_type=subject_type,
     )
-    new_refresh = create_refresh_token(subject, tenant_value)
     return TokenResponse(
         access_token=access,
         expires_in=settings.jwt_expire_seconds,
-        refresh_token=new_refresh,
+        refresh_token=refresh_token,
         refresh_expires_in=settings.refresh_expire_seconds,
     )
 
