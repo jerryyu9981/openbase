@@ -2,9 +2,10 @@
 
 设计草案 §8：状态迁移事件在「同一 DB 事务」内写 outbox_events（§8.2 表结构由
 openbase/core/models/base.py 的 OutboxEvent 声明，create_all 幂等建表）。
-本任务先注册同事务写入占位：``enqueue_lifecycle_event`` —— 避免 T5 返工。
-投递（outbox_dispatcher / Redis pub-sub / EventConsumerStub / events apply 契约桩）
-与事件源本体在 T5（L1-1）实现，本文件仅冻结事件类型与 v1 载荷 schema。
+- T2：``enqueue_lifecycle_event`` 同事务写 pending + v1 载荷 schema 冻结；
+- T5（L1-1）：本文件补充投递状态常量、事件频道与 schema v1 契约校验
+  （``validate_event_payload`` 供 outbox dispatcher / EventConsumerStub / events API 共用）；
+  投递器与契约桩本体在 dispatcher.py / consumer_stub.py。
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import OutboxEvent, User
 
 logger = logging.getLogger("openbase.identity.events")
@@ -25,9 +27,36 @@ EVENT_USER_SUSPENDED = "user.suspended"
 EVENT_USER_RESTORED = "user.restored"
 EVENT_USER_DEACTIVATED = "user.deactivated"
 
+# 合法事件类型集合（schema v1 校验；purge 不对外广播，故不含 user.purged）
+VALID_EVENT_TYPES = frozenset(
+    {EVENT_USER_PROVISIONED, EVENT_USER_SUSPENDED, EVENT_USER_RESTORED, EVENT_USER_DEACTIVATED}
+)
+
 EVENT_SCHEMA_VERSION = 1
 EVENT_SOURCE = "openbase"
+
+# ---- outbox 投递状态（§8.2）----
 EVENT_STATUS_PENDING = "pending"
+EVENT_STATUS_PUBLISHED = "published"
+EVENT_STATUS_FAILED = "failed"
+
+# ---- Redis/本地频道（§8.2 双形态通道；键命名 openbase:{domain}:{key}）----
+EVENT_CHANNEL = "openbase:identity:events"
+
+# schema v1 必填顶层字段（subject 内另有 subject_id/subject_type）
+_REQUIRED_EVENT_FIELDS = (
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "source",
+    "subject",
+    "tenant_code",
+    "previous_state",
+    "current_state",
+    "reason",
+    "schema_version",
+)
+_REQUIRED_SUBJECT_FIELDS = ("subject_id", "subject_type")
 
 # 迁移语义 → 事件类型：按 (previous_state, target_state) 映射
 _TRANSITION_EVENT_MAP: dict[tuple[str, str], str] = {
@@ -42,6 +71,54 @@ _TRANSITION_EVENT_MAP: dict[tuple[str, str], str] = {
 def event_type_for_transition(previous_state: str, target_state: str) -> str | None:
     """状态迁移 → L1-1 事件类型（无对应事件返回 None，如 deactivated→purged 不对外广播）."""
     return _TRANSITION_EVENT_MAP.get((previous_state, target_state))
+
+
+def validate_event_payload(payload: dict) -> dict:
+    """事件 schema v1 契约校验（§8.1；消费端/契约桩/events apply 共用）.
+
+    Args:
+        payload: 事件载荷 dict。
+
+    Returns:
+        原样 payload（校验通过）。
+
+    Raises:
+        BaseError: PARAM_INVALID —— 缺必填字段 / 未知事件类型 / schema_version 非 1。
+    """
+    missing = [field for field in _REQUIRED_EVENT_FIELDS if field not in payload]
+    if missing:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "event payload violates schema v1: missing required fields",
+            detail={"missing": missing},
+        )
+    event_type = payload.get("event_type")
+    if event_type not in VALID_EVENT_TYPES:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            f"unknown event_type: {event_type}",
+            detail={"allowed": sorted(VALID_EVENT_TYPES)},
+        )
+    if payload.get("schema_version") != EVENT_SCHEMA_VERSION:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            f"unsupported schema_version: {payload.get('schema_version')}",
+            detail={"supported": EVENT_SCHEMA_VERSION},
+        )
+    subject = payload.get("subject")
+    if not isinstance(subject, dict):
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "event payload violates schema v1: subject must be an object",
+        )
+    missing_subject = [field for field in _REQUIRED_SUBJECT_FIELDS if field not in subject]
+    if missing_subject:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "event payload violates schema v1: subject missing required fields",
+            detail={"missing": missing_subject},
+        )
+    return payload
 
 
 def _now_iso() -> str:
@@ -124,9 +201,14 @@ __all__ = [
     "EVENT_USER_SUSPENDED",
     "EVENT_USER_RESTORED",
     "EVENT_USER_DEACTIVATED",
+    "VALID_EVENT_TYPES",
     "EVENT_SCHEMA_VERSION",
     "EVENT_SOURCE",
     "EVENT_STATUS_PENDING",
+    "EVENT_STATUS_PUBLISHED",
+    "EVENT_STATUS_FAILED",
+    "EVENT_CHANNEL",
     "event_type_for_transition",
     "enqueue_lifecycle_event",
+    "validate_event_payload",
 ]

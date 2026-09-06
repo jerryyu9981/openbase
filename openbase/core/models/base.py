@@ -200,6 +200,79 @@ class OutboxEvent(Base, TimestampMixin):
     )
 
 
+class EventConsumption(Base, TimestampMixin):
+    """L1-1 契约桩消费端幂等表（U1 T5，设计草案 §8.2/§8.3/§11 T5-3）.
+
+    模拟消费端（EventConsumerStub，代表 DPS/OpenMemory/OpenRAG）对某 event_id 的
+    一次实际执行记录；(event_id, consumer) 唯一 —— 同一事件重放不产生重复阻断副作用
+    （消费端以 event_id 去重，幂等消费契约）。consumer 取值：dps/openmemory/openrag。
+    """
+
+    __tablename__ = "event_consumptions"
+    __table_args__ = (
+        UniqueConstraint(
+            "event_id",
+            "consumer",
+            name="uq_event_consumptions_event_consumer",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    event_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True, comment="全局唯一事件 id（幂等消费键）"
+    )
+    consumer: Mapped[str] = mapped_column(
+        String(32), nullable=False, comment="模拟消费端：dps/openmemory/openrag"
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    subject_id: Mapped[int] = mapped_column(BIGINT, nullable=False, index=True)
+    subject_type: Mapped[str] = mapped_column(String(16), nullable=False, default="user")
+    tenant_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # 本次执行的副作用摘要（如 {"domain":"dps","action":"portrait.read","state":"blocked"}）
+    side_effect: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    consumed_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, nullable=False
+    )
+
+
+class SubjectBlock(Base, TimestampMixin):
+    """L1-1 契约桩数据面阻断集（U1 T5，设计草案 §8.2/§8.3 桩态）.
+
+    模拟消费端按事件将目标主体写入阻断集：(domain, subject_id) 唯一；
+    state=blocked 表示数据面阻断（拒绝语义），state=allowed 表示已解除（restored）。
+    阻断保留数据（Q-5=A），仅影响访问判定，不物理删除。
+    """
+
+    __tablename__ = "subject_blocks"
+    __table_args__ = (
+        UniqueConstraint(
+            "domain",
+            "subject_id",
+            name="uq_subject_blocks_domain_subject",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    domain: Mapped[str] = mapped_column(
+        String(32), nullable=False, comment="数据面域：dps/openmemory/openrag"
+    )
+    subject_id: Mapped[int] = mapped_column(BIGINT, nullable=False, index=True)
+    subject_type: Mapped[str] = mapped_column(String(16), nullable=False, default="user")
+    tenant_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # blocked=阻断 / allowed=已解除（解除不删行，保留审计语义）
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="blocked")
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    event_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, comment="触发本状态的事件 id（幂等溯源）"
+    )
+    blocked_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    unblocked_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class Role(Base, TimestampMixin):
     """角色."""
 
@@ -312,6 +385,10 @@ class AuditLog(Base):
 __all__ = [
     "Base",
     "User",
+    "AgentApiKey",
+    "OutboxEvent",
+    "EventConsumption",
+    "SubjectBlock",
     "Role",
     "Permission",
     "Tenant",

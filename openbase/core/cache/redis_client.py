@@ -4,18 +4,29 @@
 - 连接池复用、连接超时、键 TTL
 - 键命名：openbase:{domain}:{key}
 - Redis 不可用时返回 None（调用方回退内存/直连数据库），不阻塞业务
+- U1 T5（L1-1）事件投递：publish/subscribe 双形态 —— Redis 广播（跨进程消费端）
+  + 进程内本地通道兜底（无 Redis 时契约桩/同进程消费端不丢事件；DB outbox 仍为
+  可靠主通道，草案 §8.2/§12.1 风险 3）
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import threading
 from typing import Any
 
 logger = logging.getLogger("openbase.cache")
 
 _client = None
 _client_available: bool | None = None
+
+# ---- U1 T5（L1-1）：进程内事件订阅注册表（Redis 不可用时的本地通道兜底） ----
+# publish 先投递本地处理器（同步，确定性），再尽力 Redis 广播（跨进程）。
+# 本地处理器与 Redis 订阅互斥（subscribe 仅注册本地，远程消费端自行订阅 Redis 频道），
+# 避免同进程重复投递。
+_LOCAL_EVENT_HANDLERS: dict[str, set[Any]] = {}
+_LOCAL_EVENT_LOCK = threading.Lock()
 
 
 def get_client():
@@ -106,6 +117,73 @@ def cache_delete(*keys: str) -> bool:
         return True
     except Exception:  # noqa: BLE001
         return False
+
+
+def subscribe(channel: str, handler: Any) -> bool:
+    """注册进程内事件处理器（U1 T5 契约桩/本地消费端；Redis 不可用不丢事件）.
+
+    Args:
+        channel: 频道名（如 openbase:identity:events）。
+        handler: 消息处理回调（payload: dict）——本地通道同步调用。
+
+    Returns:
+        是否注册成功。
+    """
+    with _LOCAL_EVENT_LOCK:
+        _LOCAL_EVENT_HANDLERS.setdefault(channel, set()).add(handler)
+    logger.info("local event subscriber registered", extra={"channel": channel})
+    return True
+
+
+def unsubscribe(channel: str, handler: Any) -> bool:
+    """注销进程内事件处理器（幂等；供测试清理）."""
+    with _LOCAL_EVENT_LOCK:
+        handlers = _LOCAL_EVENT_HANDLERS.get(channel)
+        if handlers is not None:
+            handlers.discard(handler)
+            if not handlers:
+                _LOCAL_EVENT_HANDLERS.pop(channel, None)
+    return True
+
+
+def publish(channel: str, payload: dict) -> bool:
+    """发布事件：先投递本地进程内处理器，再尽力向 Redis 广播（双形态，草案 §8.2）.
+
+    本地投递保证同进程契约桩/订阅端确定性收到（Redis 不可用时仍可达）；
+    Redis 广播供跨进程真实消费端（S2/S3/S5 DPS/OpenMemory/OpenRAG）订阅。
+
+    Args:
+        channel: 频道名。
+        payload: 事件载荷（可 JSON 序列化 dict）。
+
+    Returns:
+        True 表示至少一个通道投递成功（本地有处理器或 Redis 发布成功）；
+        False 表示无任何通道可达 —— 调用方（outbox dispatcher）重试退避，不丢事件。
+    """
+    delivered_local = False
+    with _LOCAL_EVENT_LOCK:
+        handlers = tuple(_LOCAL_EVENT_HANDLERS.get(channel, ()))
+    for handler in handlers:
+        try:
+            handler(payload)
+            delivered_local = True
+        except Exception as exc:  # noqa: BLE001 - 单处理器失败不影响其他通道
+            logger.debug(
+                "local event handler failed",
+                extra={"channel": channel, "error": str(exc) or exc.__class__.__name__},
+            )
+
+    client = get_client()
+    if client is not None:
+        try:
+            client.publish(channel, json.dumps(payload, ensure_ascii=False))
+            return True
+        except Exception as exc:  # noqa: BLE001 - Redis 发布失败 → 本地已投递则兜底成功
+            logger.warning(
+                "redis publish failed; local channel fallback",
+                extra={"channel": channel, "error": str(exc) or exc.__class__.__name__},
+            )
+    return delivered_local
 
 
 def pub(channel: str, payload: dict) -> bool:

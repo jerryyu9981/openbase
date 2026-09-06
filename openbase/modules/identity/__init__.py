@@ -1,9 +1,12 @@
-"""identity 模块：统一主体（Principal）管理面（U1 T1/T2，RA-01/RA-02；设计草案 §10.1）.
+"""identity 模块：统一主体（Principal）管理面（U1 T1/T2/T5，RA-01/RA-02/OB-1/OB-2）.
 
 路由前缀 /api/v1/identity。T1 范围：agent 主体创建 + sk-agent-* 密钥族；
 T2（RA-02/OB-2 状态机）新增 lifecycle 迁移端点族（activate/suspend/restore/deactivate），
 仅 admin/受权（identity:lifecycle）可调用；状态迁移统一经 IdentityLifecycleService
 （写 status_reason/审计/L1-1 事件 outbox/清缓存，非法迁移 400 BIZ_STATE_TRANSITION_INVALID）。
+T5（L1-1 设计草案 §8/§10.1/§11 T5-1~T5-6）新增契约桩 events API：
+POST /events/apply（投递+模拟消费）、GET /events/{event_id}（状态查询/S7 钩子）、
+GET /blocked/{subject_id}（数据面阻断对账桩态：blocked → 403 拒绝语义）。
 """
 
 from __future__ import annotations
@@ -12,14 +15,15 @@ import datetime as dt
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import AgentApiKey
+from openbase.core.models import AgentApiKey, OutboxEvent
 from openbase.modules.auth.rbac import PermissionService, has_permission
 from openbase.modules.identity.agent_keys import AgentKeyService
 from openbase.modules.identity.agents import (
@@ -27,6 +31,8 @@ from openbase.modules.identity.agents import (
     create_agent_subject,
     ensure_agent_subject,
 )
+from openbase.modules.identity.consumer_stub import STUB_DATA_DOMAINS, EventConsumerStub
+from openbase.modules.identity.dispatcher import OutboxDispatcherService
 from openbase.modules.identity.lifecycle import IdentityLifecycleService
 from openbase.modules.identity.state_machine import (
     CREDENTIAL_TYPE_API_KEY,
@@ -444,6 +450,171 @@ async def lifecycle_deactivate(
         user,
         session,
     )
+
+
+# ---- U1 T5（L1-1）：契约桩 events API（草案 §10.1/§8.3/§8.4）----
+# POST /events/apply（投递+模拟消费）、GET /events/{event_id}（状态查询，S7 钩子）、
+# GET /blocked/{subject_id}（数据面阻断对账桩态：blocked → 403 拒绝语义，不真连子系统）。
+
+
+class EventApplyRequest(BaseModel):
+    """契约桩 apply 请求：事件载荷（schema v1）+ 可选模拟消费端域."""
+
+    event: dict = Field(..., description="事件载荷（schema v1：event_type/subject/tenant_code/…）")
+    consumer: str | None = Field(
+        None,
+        description="模拟消费端域（dps/openmemory/openrag）；缺省=全部桩域",
+    )
+
+
+class OutboxEventStatusOut(BaseModel):
+    """outbox 事件投递状态（GET /events/{event_id}）. """
+
+    event_id: str
+    event_type: str
+    status: str
+    publish_attempts: int
+    next_retry_at: str | None = None
+    published_at: str | None = None
+    created_at: str
+    payload: dict
+
+
+def _iso_or_none(value: Any) -> str | None:
+    return value.isoformat() if value is not None else None
+
+
+def _outbox_status_out(event: OutboxEvent) -> OutboxEventStatusOut:
+    return OutboxEventStatusOut(
+        event_id=event.event_id,
+        event_type=event.event_type,
+        status=event.status,
+        publish_attempts=event.publish_attempts or 0,
+        next_retry_at=_iso_or_none(event.next_retry_at),
+        published_at=_iso_or_none(event.published_at),
+        created_at=_iso_or_none(event.created_at) or "",
+        payload=event.payload or {},
+    )
+
+
+@router.post("/events/apply")
+async def event_apply(
+    payload: EventApplyRequest,
+    user: dict = Depends(_require_identity_manage),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """契约桩 apply（投递 + 模拟消费）：先投递 pending outbox 事件，再按契约落阻断集.
+
+    - 投递：event_id 命中 outbox 且 pending → 同执行体发布（published/重试语义一致）；
+    - 模拟消费：schema v1 校验 → 幂等表去重（重放副作用一次）→ user.suspended/deactivated
+      阻断、current_state=active（restored）解除阻断（DPS/OpenMemory/OpenRAG 桩态）。
+    """
+    event = payload.event
+    event_id = event.get("event_id", "")
+    dispatch_result = await OutboxDispatcherService.dispatch_by_event_id(session, event_id)
+    consumption = await EventConsumerStub.apply(
+        session, event, consumer=payload.consumer
+    )
+    await session.commit()
+    results = consumption["results"]
+    logger.info(
+        "identity event apply api invoked",
+        extra={
+            "event_id": event_id,
+            "event_type": event.get("event_type"),
+            "operator": user.get("username"),
+            "dispatch_outcome": (dispatch_result or {}).get("outcome"),
+        },
+    )
+    return {
+        "event_id": event_id,
+        "event_type": event.get("event_type"),
+        "dispatch": dispatch_result,
+        "consumption": {
+            "deduplicated": bool(results) and all(r["deduplicated"] for r in results),
+            "results": results,
+        },
+    }
+
+
+@router.get("/events/{event_id}", response_model=OutboxEventStatusOut)
+async def event_status(
+    event_id: str,
+    user: dict = Depends(_require_identity_view),
+    session: AsyncSession = Depends(get_db),
+) -> OutboxEventStatusOut:
+    """事件投递状态查询（S7 全链核验钩子，草案 §8.4/§10.1）. """
+    result = await session.execute(
+        select(OutboxEvent).where(OutboxEvent.event_id == event_id)
+    )
+    event = result.scalar_one_or_none()
+    if event is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"event not found: {event_id}")
+    return _outbox_status_out(event)
+
+
+@router.get("/blocked/{subject_id}")
+async def subject_block_status(
+    subject_id: int,
+    domain: str | None = Query(None, description="数据面域：dps/openmemory/openrag（缺省=全部）"),
+    user: dict = Depends(_require_identity_view),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """数据面阻断对账（契约桩态）：deactivated/suspended 后返回拒绝语义（403）.
+
+    模拟 DPS 画像读 / OpenMemory 记忆访问 / OpenRAG 归属行访问在数据面的准入判定：
+    blocked → 403 PERM_FORBIDDEN（拒绝语义，detail 含各域检查结果）；未阻断 → 200
+    {allowed: True, checks}。不真连子系统（S2/S3/S5 真实数据面按同一语义落地）。
+    """
+    if domain is not None and domain not in STUB_DATA_DOMAINS:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            f"unknown domain: {domain}",
+            detail={"allowed": list(STUB_DATA_DOMAINS)},
+        )
+    requested_domains = list(STUB_DATA_DOMAINS) if domain is None else [domain]
+
+    checks: list[dict[str, Any]] = []
+    denied_domains: list[dict[str, Any]] = []
+    subject_type = "user"
+    tenant_code: str | None = None
+    for requested in requested_domains:
+        block = await EventConsumerStub.load_block(session, subject_id, requested)
+        if block is not None:
+            subject_type = block.subject_type or subject_type
+            tenant_code = block.tenant_code or tenant_code
+        is_blocked = block is not None and block.state == "blocked"
+        check = {
+            "domain": requested,
+            "action": STUB_DATA_DOMAINS[requested],
+            "allowed": not is_blocked,
+            "state": block.state if block is not None else "allowed",
+            "reason": block.reason if block is not None else None,
+            "event_id": block.event_id if block is not None else None,
+        }
+        checks.append(check)
+        if is_blocked:
+            denied_domains.append(check)
+
+    if denied_domains:
+        raise BaseError(
+            ErrorCode.PERM_FORBIDDEN,
+            f"data-plane access denied for subject {subject_id}",
+            detail={
+                "subject_id": subject_id,
+                "subject_type": subject_type,
+                "tenant_code": tenant_code,
+                "allowed": False,
+                "checks": checks,
+            },
+        )
+    return {
+        "subject_id": subject_id,
+        "subject_type": subject_type,
+        "tenant_code": tenant_code,
+        "allowed": True,
+        "checks": checks,
+    }
 
 
 __version__ = "0.1.0"
