@@ -1,6 +1,7 @@
 """core/models：统一数据模型."""
 
 from openbase.core.models.base import (
+    AgentApiKey,
     AuditLog,
     Base,
     Department,
@@ -29,6 +30,7 @@ from openbase.core.models.business import (
 __all__ = [
     "Base",
     "User",
+    "AgentApiKey",
     "Role",
     "Permission",
     "Tenant",

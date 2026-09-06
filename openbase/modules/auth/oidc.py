@@ -18,9 +18,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from jose import JWTError
 from jose import jwt as jose_jwt
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
+from openbase.core.models import Tenant
 from openbase.modules.auth.jwt import create_access_token, create_refresh_token
 from openbase.settings import get_settings
 

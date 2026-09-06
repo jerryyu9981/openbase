@@ -88,6 +88,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         from openbase.modules.auth.jwt import decode_access_token
 
         token = authorization.removeprefix("Bearer ").strip()
+        # U1 T1（RA-01/OB-1）：sk-agent-* 为 agent 主体凭据（无 JWT 面）。中间件放行，
+        # 由端点依赖 get_current_user 的 agent 校验器完成认证（fail-closed：无效即 401）。
+        if token.startswith("sk-agent-"):
+            return await call_next(request)
         payload = decode_access_token(token)
         if payload is None or payload.get("sub") is None:
             return self._unauthorized("invalid or expired token")
@@ -127,6 +131,12 @@ async def get_current_user(
         raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "missing bearer token")
 
     token = authorization.removeprefix("Bearer ").strip()
+    # U1 T1（RA-01/OB-1）：agent 主体无 JWT 面，凭据为 sk-agent-* 密钥。
+    # 走 agent 密钥校验器（DB 校验 key_hash/状态/域；无效或吊销 → 401/403 BaseError）。
+    if token.startswith("sk-agent-"):
+        from openbase.modules.identity.agent_keys import resolve_agent_principal
+
+        return await resolve_agent_principal(session, token)
     payload = decode_access_token(token)
     if payload is None:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "invalid or expired token")

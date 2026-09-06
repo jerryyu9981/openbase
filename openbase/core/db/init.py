@@ -178,4 +178,20 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                 f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
             )
         )
+        # U1 统一身份收口（RA-01/OB-1）：identity 面权限点种子（幂等）。
+        # 仅登记权限行；分配面：admin 持 '*' 通配，其余角色由 identity/lifecycle 授权显式分配。
+        for _code, _name in (
+            ("identity:view", "主体查看"),
+            ("identity:manage", "主体管理"),
+            ("identity:lifecycle", "生命周期管理"),
+            ("identity:purge", "数据清除"),
+        ):
+            await conn.execute(
+                text(
+                    f"INSERT INTO {schema}.permissions "
+                    "(code, name, module, type, created_at, updated_at) "
+                    "SELECT :code, :name, 'identity', 1, now(), now() "
+                    f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = :code)"
+                ).bindparams(code=_code, name=_name)
+            )
     logger.info("database initialized", extra={"schema": schema})

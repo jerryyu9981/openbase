@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_api_key_store, get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import Role, Tenant, User, user_role
+from openbase.core.models import Role, User, user_role
 from openbase.modules.auth.jwt import (
     create_access_token,
     create_refresh_token,
@@ -168,6 +168,13 @@ class UserService:
                     "username": user.username,
                     "password_hash": user.password_hash,
                     "tenant_id": str(user.tenant_id) if user.tenant_id else None,
+                    # U1 T1（RA-01/OB-1）：Principal 语义字段随用户一并读取（登录面分叉用）
+                    "subject_type": user.subject_type,
+                    "credential_type": user.credential_type,
+                    "status_state": user.status_state,
+                    "status_reason": user.status_reason,
+                    "token_version": user.token_version,
+                    "tenant_code": user.tenant_code,
                 }
                 from openbase.core.cache.redis_client import cache_set
 
@@ -225,6 +232,14 @@ async def login(
     if user is None or user.get("password_hash") is None:
         raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid username or password")
 
+    # U1 T1（RA-01/OB-1，设计草案 §3.2/Q2-S1）：agent 无人工登录面——
+    # 登录面按 subject_type 分叉，agent 一律拒绝（0 可达登录路径），且先于密码校验。
+    subject_type = user.get("subject_type", "user")
+    if subject_type != "user":
+        raise BaseError(
+            ErrorCode.AUTH_FORBIDDEN, "agent subjects cannot use interactive login"
+        )
+
     if not await asyncio.to_thread(verify_password, req.password, user["password_hash"]):
         raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid username or password")
 
@@ -249,10 +264,10 @@ async def login(
     )
 
 
-async def _resolve_tenant_code(
+async def resolve_tenant_code(
     tenant_value: int | str | None, session: AsyncSession
 ) -> str | None:
-    """按 tenants.id 解析租户 code（P3.1，2026-09-06 修复缺失定义）.
+    """按 tenants.id 解析租户 code（P3.1；U1 T1 抽为共享函数，供 login/refresh/OIDC/迁移复用）.
 
     数字形态（tenants.id）→ 查 tenants.code；非数字（IdP 侧 code 直传）原样返回。
     DB 不可达/无匹配返回 None（调用方不追加 tenant_code claim，向后兼容）。
@@ -268,16 +283,20 @@ async def _resolve_tenant_code(
 
     if tenant_value is None or tenant_value == "":
         return None
-    text = str(tenant_value)
-    if not text.isdigit():
-        return text
+    code_text = str(tenant_value)
+    if not code_text.isdigit():
+        return code_text
     try:
         result = await session.execute(
-            select(Tenant.code).where(Tenant.id == int(text))
+            select(Tenant.code).where(Tenant.id == int(code_text))
         )
         return result.scalar_one_or_none()
     except Exception:  # noqa: BLE001 - DB 不可达降级（不追加 claim）
         return None
+
+
+# 向后兼容别名：旧调用方（OIDC 等）沿用私有名
+_resolve_tenant_code = resolve_tenant_code
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -293,6 +312,17 @@ async def refresh(
     subject = payload.get("sub")
     if subject is None:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "refresh token missing subject")
+
+    # U1 T1（RA-01/OB-1，设计草案 §3.2）：agent 无登录面亦无刷新链——refresh 对 agent 拒绝。
+    # DB 不可达/非数字 sub（OIDC 降级直签）时保持既有降级行为（subject_row=None → 放行）。
+    subject_row: User | None = None
+    if str(subject).isdigit():
+        try:
+            subject_row = await session.get(User, int(subject))
+        except Exception:  # noqa: BLE001 - DB 不可达兼容内存/降级用户
+            subject_row = None
+    if subject_row is not None and subject_row.subject_type == "agent":
+        raise BaseError(ErrorCode.AUTH_FORBIDDEN, "agent subjects cannot use refresh")
 
     tenant_value = payload.get("tenant_id")
     # P3.1：刷新令牌保持 tenant_code claim（按 tenants.id 解析；旧 refresh 无 id 时回退）

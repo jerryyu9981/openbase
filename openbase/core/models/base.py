@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Table,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -92,9 +93,83 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         BIGINT, ForeignKey("tenants.id"), nullable=True
     )
 
+    # ---- U1 统一身份收口（RA-01/OB-1，设计草案 §3.1；W1-4 增量演进不重建） ----
+    # 字面量默认与 openbase/modules/identity/state_machine.py 常量保持一致
+    # （core.models 不反向依赖 modules，故在此内联同步值）。
+    subject_type: Mapped[str] = mapped_column(
+        String(16),
+        default="user",
+        server_default=text("'user'"),
+        nullable=False,
+        comment="Principal 具象：user/agent（agent 必带）",
+    )
+    credential_type: Mapped[str | None] = mapped_column(
+        String(16),
+        nullable=True,
+        comment="凭据面约束：user=password/oidc；agent=api_key（禁登录面）",
+    )
+    status_state: Mapped[str] = mapped_column(
+        String(24),
+        default="active",
+        server_default=text("'active'"),
+        nullable=False,
+        comment="生命周期状态机：provisioned/active/suspended/deactivated/purged",
+    )
+    status_reason: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, comment="状态迁移原因（审计/合规）"
+    )
+    token_version: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default=text("0"),
+        nullable=False,
+        comment="token 吊销版本号（设计草案 §5 方案 a）",
+    )
+    tenant_code: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="租户唯一隔离键冗余列（与 tenants.code 对齐；键不迁移）",
+    )
+    on_behalf_of: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True, comment="委托声明（agent 场景，设计草案 §7；缺省 NULL=自身域）"
+    )
+
     roles: Mapped[list[Role]] = relationship(
         secondary=user_role, back_populates="users"
     )
+
+
+class AgentApiKey(Base, TimestampMixin):
+    """agent 服务密钥表（U1 T1，设计草案 §3.2：sk-agent-*、哈希存储、多密钥可轮换/吊销）.
+
+    明文密钥仅生成响应展示一次；服务端只存 sha256 key_hash（与 ApiKeyStore._hash 同构）。
+    agent_id → users.id（subject_type=agent 主体行），不新增独立 agents 表。
+    """
+
+    __tablename__ = "agent_api_keys"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    agent_id: Mapped[int] = mapped_column(
+        BIGINT, ForeignKey("users.id"), nullable=False, index=True
+    )
+    key_prefix: Mapped[str] = mapped_column(String(16), nullable=False, default="sk-agent-")
+    key_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, index=True
+    )
+    key_suffix: Mapped[str | None] = mapped_column(
+        String(16), nullable=True, comment="明文尾部 6 位指纹（展示/人工核对，非可逆）"
+    )
+    name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="active"
+    )  # active/revoked（吊销即时失效）
+    expires_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_used_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
 
 
 class Role(Base, TimestampMixin):

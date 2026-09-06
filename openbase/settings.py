@@ -49,6 +49,8 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "rag_proxy",
     # v1.4.5 DPS 对接（R-381：JWT 门禁 + dps-proxy 转发 + 身份头注入）
     "dps_proxy",
+    # U1 统一身份收口（RA-01/OB-1）：Principal 主体面 + agent 密钥面（identity 路由）
+    "identity",
 )
 
 
