@@ -3,7 +3,7 @@
 | 属性   | 内容                                                                                                                         |
 | ---- | -------------------------------------------------------------------------------------------------------------------------- |
 | 文档编号 | OB-INTG-IDENT-GOV-R3R5-v1.3.0                                                                                              |
-| 版本   | v1.3.0（草稿 \[Draft]，决策已定；P0/P1-4 已实施）                                                                                       |
+| 版本   | v1.6.0（草稿 \[Draft]，决策已定；P0/P1-4 已实施；P2-2 已立项）                                                                                       |
 | 状态   | 已决策；P0 已实施（2026-09-04）；P1-4 已实施（与 W4 合流，立项方案 v1.2.0）；P1-1\~P1-3 与 P2 待立项                                                   |
 | 作者   | AD（跨项目分析）                                                                                                                  |
 | 日期   | 2026-09-04                                                                                                                 |
@@ -111,7 +111,7 @@
 | P1-3 | 对外租户键切 code：签发、身份头、映射表；存量迁移清单                                                                    | OpenBase、DPS               | JWT claims 与 proxy 映射取值；迁移与兼容                             | Q3；Q5/Q1 后置对齐   | 待立项                                                    |
 | P1-4 | stub 契约转真实：OpenMemory /api/v1/remember+recall 客户端适配与隔离键语义修正；OpenRAG 检索对账后适配 /api/v1              | OpenLLM、OpenMemory、OpenRAG | openmemory\_client/openrag\_client；OpenRAG search 对账      | Q6；衔接 W4-1/W4-2 | 已实施（与 W4 合流，立项方案 v1.2.0 Phase A\~D）                    |
 | P2-1 | 内网统一身份协议头（external user/org 同形键全仓消费）                                                             | 五仓库                        | 各上游隔离键重构                                                  | Q2/Q3 定案后评估     | 待立项                                                    |
-| P2-2 | OpenMemory /sessions 端点隔离与归属校验；DPS fail-open 两处与 X-User-ID=1 硬绑治理                                | OpenMemory、DPS             | sessions 过滤；中间件 fail-closed                               | 与 P1-4 同批次评估    | 待立项                                                    |
+| P2-2 | OpenMemory /sessions 端点隔离与归属校验；DPS fail-open 两处与 X-User-ID=1 硬绑治理                                | OpenMemory、DPS             | sessions 过滤；中间件 fail-closed                               | 与 P1-4 同批次评估    | 已立项（方案 v1.0.0，2026-09-06）                                    |
 
 ## 9. P0 实施记录（v1.2.0）
 
