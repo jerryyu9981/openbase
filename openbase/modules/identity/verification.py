@@ -7,21 +7,26 @@
   ``tvn == users.token_version``（受 ``settings.enforce_token_version`` 开关控制，默认关）；
 - v0 兼容（草案 §6.2）：payload 无 ``tvn`` 的存量令牌过渡期放行（刷新后已升级）；
 - OIDC 直签 / 外域主体（sub 非数字）无本地主体行 → 放行（降级直签与迁移前语义一致）；
-- DB 不可达 → 无法确认状态，WARN 后放行（fail-open 过渡窗口）；
+- DB 不可达 → 无法确认状态：**无委托** WARN 后放行（fail-open 过渡窗口，D-V1）；
+  **携带 on_behalf_of → 403 ``PERM_DELEGATION_VERIFY_UNAVAILABLE``**（D-V3 fail-closed）；
 - 主体行不存在：以 ``purge_records`` 墓碑区分「曾存在后被 purge」→ 401 拒绝（T6
   purge 收口：purged 主体存量 token 一律拒），「无本地行（OIDC 直签/降级内存用户）」→
   保持 T3 遗留 fail-open 放行（deactivated 保留行，suspend/restore/deactivate 均
-  即时命中新状态）；
+  即时命中新状态）；**行缺失 + on_behalf_of → 403**（D-V2：委托目标存在性不可证即拒）；
+- WARN 指标（§5.1 D-V1/T2-1）：``principal.verify.db_degraded``/``row_missing`` 计数，
+  供 verify-env 报告对账（批次 2/T9 消费）；
 - 性能（风险 2）：进程经 Redis 短缓存 ``principal:{id}``（TTL ≤60s）避免每请求 DB 读，
   状态/版本变更由写路径失效该键（tvn+1 清键，与 lifecycle T2 清键收敛到本模块）。
+  **D-V4**：缓存仅是加速，非信任源——Redis 不可达 = 未命中直读 DB（静默降级）。
 
-注意：本模块只允许依赖 core.models / core.errors / state_machine / redis_client，
-不反向依赖 deps.auth 或 auth.jwt，避免循环导入。
+注意：本模块只允许依赖 core.models / core.errors / state_machine / redis_client /
+identity.delegation，不反向依赖 deps.auth 或 auth.jwt，避免循环导入。
 """
 
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Any
 
 from sqlalchemy import select
@@ -41,6 +46,35 @@ logger = logging.getLogger("openbase.identity.verification")
 # principal 快照缓存 TTL（设计 §12.1 风险 2：≤60s 兜底）
 PRINCIPAL_CACHE_TTL_SECONDS = 60
 PRINCIPAL_CACHE_PREFIX = "principal:"
+
+# P2-1 T2 WARN 指标计数（§5.1 D-V1/D-V2/T2-1/T2-9：verify-env 报告对账项）
+_VERDICT_METRICS: dict[str, int] = {
+    "db_degraded": 0,
+    "row_missing": 0,
+    "delegation_denied_db": 0,
+    "delegation_denied_row_missing": 0,
+}
+_VERDICT_METRICS_LOCK = threading.Lock()
+
+
+def _metric_increment(metric_key: str) -> None:
+    """线程安全 WARN 计数（AGENTS.md 并发：共享可变状态加锁）."""
+    with _VERDICT_METRICS_LOCK:
+        _VERDICT_METRICS[metric_key] = _VERDICT_METRICS.get(metric_key, 0) + 1
+
+
+def get_verdict_metrics() -> dict[str, int]:
+    """读取信任链裁定 WARN 指标快照（verify-env 雏形对账，T2-9/T9）."""
+    with _VERDICT_METRICS_LOCK:
+        return dict(_VERDICT_METRICS)
+
+
+def _payload_has_delegation(payload: dict[str, Any]) -> bool:
+    """payload 是否携带 on_behalf_of 委托块（用于 fail-closed 判定）."""
+    if not isinstance(payload, dict):
+        return False
+    delegated = payload.get("on_behalf_of")
+    return delegated is not None and isinstance(delegated, dict)
 
 
 def _principal_cache_key(subject_id: int) -> str:
@@ -196,28 +230,50 @@ async def verify_principal(session: Any, payload: dict[str, Any]) -> dict[str, A
 
     try:
         snapshot = await load_principal_snapshot(session, int(subject_text))
-    except Exception as exc:  # noqa: BLE001 - DB 不可达 → fail-open 降级（login 同语义）
+    except Exception as exc:  # noqa: BLE001 - DB 不可达
+        # P2-1 T2 D-V1/D-V3（§5.1）：无委托 → fail-open + WARN（login 同语义）；
+        # 携带 on_behalf_of → fail-closed 403（无法证明委托不变式即拒绝）。
         logger.warning(
             "principal verify db read failed; degrade pass-through",
             extra={"subject": subject_text, "error": str(exc) or exc.__class__.__name__},
         )
         try:
             await session.rollback()
-        except Exception:  # noqa: BLE001 - rollback 失败不阻断放行
+        except Exception:  # noqa: BLE001 - rollback 失败不阻断裁定
             pass
+        if _payload_has_delegation(payload):
+            _metric_increment("delegation_denied_db")
+            raise BaseError(
+                ErrorCode.PERM_DELEGATION_VERIFY_UNAVAILABLE,
+                "delegation verification unavailable: database degraded",
+                detail={"subject": subject_text, "reason": "db_unavailable"},
+            ) from exc
+        _metric_increment("db_degraded")
         return None
 
     if snapshot is None:
-        # 主体行不存在：区分「曾存在后被 purge」与「无本地行（OIDC 直签/降级内存用户）」。
-        # - purge_records 墓碑命中（T6 收口）：主体曾被 purge → 存量 token 一律拒绝
-        #   （401 AUTH_PRINCIPAL_DISABLED，detail 带 purged 终态语义）；
-        # - 无墓碑：T3 遗留 fail-open 过渡窗口保持（OIDC 直签/内存用户无行可验放行）。
+        # P2-1 T2 D-V2（§5.1）：主体行缺失（无墓碑）。
+        # - 携带 on_behalf_of → 403（委托目标存在性不可证即拒，fail-closed）；
+        # - 无委托：区分「曾存在后被 purge」与「无本地行（OIDC 直签/降级内存用户）」：
+        #   purge_records 墓碑命中（T6 收口）→ 401 AUTH_PRINCIPAL_DISABLED；
+        #   无墓碑 → T3 遗留 fail-open 过渡窗口保持（WARN 计数）。
+        if _payload_has_delegation(payload):
+            _metric_increment("delegation_denied_row_missing")
+            raise BaseError(
+                ErrorCode.PERM_DELEGATION_VERIFY_UNAVAILABLE,
+                "delegation verification unavailable: principal row missing",
+                detail={
+                    "subject": subject_text,
+                    "reason": "row_missing_with_on_behalf_of",
+                },
+            )
         if await _subject_was_purged(session, int(subject_text)):
             raise BaseError(
                 ErrorCode.AUTH_PRINCIPAL_DISABLED,
                 "principal has been purged",
                 detail={"status_state": STATUS_STATE_PURGED, "subject_id": int(subject_text)},
             )
+        _metric_increment("row_missing")
         logger.warning(
             "principal row missing; unverifiable token pass-through",
             extra={"subject": subject_text},
@@ -252,6 +308,7 @@ async def verify_principal(session: Any, payload: dict[str, Any]) -> dict[str, A
 __all__ = [
     "PRINCIPAL_CACHE_TTL_SECONDS",
     "assert_principal_active",
+    "get_verdict_metrics",
     "invalidate_principal_cache",
     "load_principal_snapshot",
     "verify_principal",

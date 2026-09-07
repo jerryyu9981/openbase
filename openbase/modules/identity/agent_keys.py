@@ -118,13 +118,26 @@ async def resolve_agent_principal(session: AsyncSession, raw_key: str) -> dict[s
 
     Raises:
         BaseError: AUTH_API_KEY_INVALID（无效/已吊销/过期/非 agent 绑定）；
-            AUTH_PRINCIPAL_DISABLED（agent 主体非 active）。
+            AUTH_PRINCIPAL_DISABLED（agent 主体非 active）；
+            AUTH_UNAUTHORIZED（DB 不可达 → fail-closed 401，P2-1 T2 D-V7）。
     """
-    result = await session.execute(
-        select(AgentApiKey, User)
-        .join(User, User.id == AgentApiKey.agent_id)
-        .where(AgentApiKey.key_hash == agent_key_hash(raw_key))
-    )
+    try:
+        result = await session.execute(
+            select(AgentApiKey, User)
+            .join(User, User.id == AgentApiKey.agent_id)
+            .where(AgentApiKey.key_hash == agent_key_hash(raw_key))
+        )
+    except Exception as exc:  # noqa: BLE001 - DB 不可达 → fail-closed（D-V7）
+        # agent 密钥校验依赖 DB（按 key_hash 查库）；DB 不可达无法证明密钥有效 →
+        # 拒绝，不降级放行（与 D-V1 JWT 场景的 fail-open 刻意不同）。
+        logger.warning(
+            "agent principal verify db read failed; fail-closed",
+            extra={"error": str(exc) or exc.__class__.__name__},
+        )
+        raise BaseError(
+            ErrorCode.AUTH_UNAUTHORIZED,
+            "agent principal verification unavailable: database degraded",
+        ) from exc
     row = result.first()
     if row is None:
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "invalid agent api key")
