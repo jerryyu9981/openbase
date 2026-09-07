@@ -40,6 +40,18 @@ class ErrorCode(str, Enum):
     # ---- 权限（PERM_ 前缀，四维管理域） ----
     PERM_FORBIDDEN = "PERM_FORBIDDEN"
 
+    # ---- P2-1 协议头/信任链（设计草案 §3.8 错误码表） ----
+    # 非受信来源携带身份头（V-5 定案/D-V5）：门禁后入口校验 / 下游 K02 落地
+    PERM_UNTRUSTED_IDENTITY_HEADER = "PERM_UNTRUSTED_IDENTITY_HEADER"
+    # 委托请求 + DB 不可达/行缺失无法证明不变式（V-2/V-3 fail-closed）
+    PERM_DELEGATION_VERIFY_UNAVAILABLE = "PERM_DELEGATION_VERIFY_UNAVAILABLE"
+    # 规范头格式/类型非法（validate_identity_headers）
+    PARAM_HEADER_FORMAT_INVALID = "PARAM_HEADER_FORMAT_INVALID"
+    # 未绑定服务账号的 ob_k_/X-API-Key 匿名业务写被拒（D-V6，K03 收口后）
+    PERM_SERVICE_KEY_WRITE_DENIED = "PERM_SERVICE_KEY_WRITE_DENIED"
+    # X-Org-ID ≠ X-Tenant-ID 别名（§7.1 强模式，开关化；批次 2/T7 接线）
+    BIZ_ORG_ALIAS_MISMATCH = "BIZ_ORG_ALIAS_MISMATCH"
+
     # ---- 存储 ----
     STORAGE_FILE_NOT_FOUND = "STORAGE_404"
 
@@ -89,6 +101,12 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.BIZ_MODEL_QUOTA: 402,
     ErrorCode.BIZ_AGGREGATE_PARTIAL_FAILURE: 200,
     ErrorCode.PERM_FORBIDDEN: 403,
+    # P2-1 协议头/信任链
+    ErrorCode.PERM_UNTRUSTED_IDENTITY_HEADER: 403,
+    ErrorCode.PERM_DELEGATION_VERIFY_UNAVAILABLE: 403,
+    ErrorCode.PARAM_HEADER_FORMAT_INVALID: 400,
+    ErrorCode.PERM_SERVICE_KEY_WRITE_DENIED: 403,
+    ErrorCode.BIZ_ORG_ALIAS_MISMATCH: 403,
     ErrorCode.STORAGE_FILE_NOT_FOUND: 404,
     ErrorCode.SYS_INTERNAL_ERROR: 500,
     ErrorCode.SYS_UPSTREAM_ERROR: 502,

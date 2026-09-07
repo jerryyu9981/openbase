@@ -31,7 +31,7 @@ from fastapi.responses import JSONResponse
 
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.modules.identity.delegation import delegated_claim_from_payload
+from openbase.modules.protocol_headers import TARGET_SYSTEM_DPS, build_outbound_headers
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.dps_proxy")
@@ -57,82 +57,41 @@ def _upstream_config() -> tuple[str, float]:
     )
 
 
-def _jwt_payload(request: Request) -> dict[str, Any] | None:
-    """解码当前请求的 JWT payload（获取 org_id/role 等 extra 字段）.
-
-    get_current_user 只返回精简字段（id/username/tenant_id/permissions），
-    DPS 身份头需要 org_id/role，故此处从 Authorization 头解码 JWT 补取。
-    """
-    authorization = request.headers.get("Authorization", "")
-    if not authorization.startswith("Bearer "):
-        return None
-    from openbase.modules.auth.jwt import decode_access_token
-
-    return decode_access_token(authorization.removeprefix("Bearer ").strip())
-
-
-def _apply_map(map_json: str, value: str) -> str:
-    """映射表值转换（dps_org_map/dps_tenant_map：OpenBase 值 → DPS 值）.
-
-    未配置映射表、映射表非法或未命中时返回原值。
-    """
-    if not map_json or not value:
-        return value
+def _parse_map_json(map_json: str) -> dict[str, str]:
+    """解析 dps 值映射 JSON（dps_org_map/dps_tenant_map；非法/空 → 空表）."""
+    if not map_json:
+        return {}
     try:
         mapping = json.loads(map_json)
     except ValueError:
-        return value
-    if isinstance(mapping, dict):
-        return str(mapping.get(value, value))
-    return value
+        return {}
+    return mapping if isinstance(mapping, dict) else {}
 
 
-def _build_identity_headers(user: dict, jwt_payload: dict[str, Any] | None) -> dict[str, str]:
-    """构造注入 DPS 的四头（X-User-ID/X-Tenant-ID/X-Org-ID/X-User-Role）.
+def _build_identity_headers(user: dict, request: Request) -> dict[str, str]:
+    """构造注入 DPS 的身份头（经共享 builder 唯一装配点，P2-1 §3.5）.
 
-    映射规则（需求 §3 / API 设计 §2）：
-    - X-User-ID：get_current_user().id（JWT sub）
-    - X-Tenant-ID：user.tenant_id → jwt org_id → dps_default_tenant_id → 映射表
-    - X-Org-ID：jwt org_id → user.org_id → dps_default_org_id → 映射表
-    - X-User-Role：jwt role（缺省 "user"）
+    P2-1 T1（K01）：删除二次 JWT 解码（原 ``_jwt_payload``），出站头取值**只来自
+    ``get_current_user`` 返回的统一主体上下文**（已含 tenant_code/subject_type/role/
+    on_behalf_of/delegated），委托场景由 ``resolve_identity`` 完成委托覆盖。
+
+    - X-User-ID ← 有效主体 sub（委托时为 delegated.subject_id）
+    - X-Tenant-ID ← tenant_code 优先链 → dps_default_tenant_id 显式兜底 → 值映射
+    - X-Org-ID ← 兼容别名（值域=tenant 语义；显式别名 org 头随批次 2/T7 收敛）
+    - X-User-Role ← 有效角色（缺省 dps 历史语义 "user"）
+    - X-Proxy-Source ← PROXY_SOURCE_DPS（新增）；X-Request-Id ← request_id 透传
     """
     settings = get_settings()
-    jwt_payload = jwt_payload or {}
-    # U1 T4（草案 §7.3/§11 T4-7）：委托场景出站头取委托域值——
-    # X-User-ID=delegated.subject_id、X-Tenant-ID/X-Org-ID=委托 tenant_code、
-    # X-User-Role=delegated.role（P2-1 委托头唯一签发细节移交 S1b）。
-    delegated = delegated_claim_from_payload(jwt_payload)
-    if delegated is not None:
-        return {
-            "X-User-ID": str(delegated["subject_id"]),
-            "X-Tenant-ID": _apply_map(
-                settings.dps_tenant_map, str(delegated["tenant_code"] or "")
-            ),
-            "X-Org-ID": _apply_map(
-                settings.dps_org_map, str(delegated["tenant_code"] or "")
-            ),
-            "X-User-Role": delegated.get("role") or "user",
-        }
-    # P3.1：tenant_code claim（新签发令牌）优先 → 兼容旧令牌数值链回退。
-    # X-Tenant-ID 与 X-Org-ID 在 code 存在时同形（治理 Q2：org 头退役为兼容别名）。
-    tenant_raw = (
-        jwt_payload.get("tenant_code")
-        or user.get("tenant_id")
-        or jwt_payload.get("org_id")
-        or settings.dps_default_tenant_id
+    return build_outbound_headers(
+        request,
+        user,
+        target_system=TARGET_SYSTEM_DPS,
+        default_tenant=settings.dps_default_tenant_id,
+        default_org=settings.dps_default_org_id,
+        default_role="user",
+        tenant_value_map=_parse_map_json(settings.dps_tenant_map),
+        org_value_map=_parse_map_json(settings.dps_org_map),
     )
-    org_raw = (
-        jwt_payload.get("tenant_code")
-        or jwt_payload.get("org_id")
-        or user.get("org_id")
-        or settings.dps_default_org_id
-    )
-    return {
-        "X-User-ID": str(user.get("id", "")),
-        "X-Tenant-ID": _apply_map(settings.dps_tenant_map, str(tenant_raw or "")),
-        "X-Org-ID": _apply_map(settings.dps_org_map, str(org_raw or "")),
-        "X-User-Role": jwt_payload.get("role") or "user",
-    }
 
 
 def _adapt_response(upstream: httpx.Response) -> JSONResponse:
@@ -334,7 +293,7 @@ async def dps_portraits_list(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """画像列表（GET /api/v2/portrait/list?page=&page_size=）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "GET", "/api/v2/portrait/list",
         params={"page": page, "page_size": page_size},
@@ -349,7 +308,7 @@ async def dps_portrait_detail(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """画像详情（GET /api/v2/portrait/{person_id}）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "GET", f"/api/v2/portrait/{person_id}",
         headers=headers,
@@ -363,7 +322,7 @@ async def dps_portrait_calculate(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """画像计算（POST /api/v2/portrait/calculate，请求体透传上游契约）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "POST", "/api/v2/portrait/calculate",
         json_body=payload,
@@ -384,7 +343,7 @@ async def dps_portrait_update(
     持久化落点 PUT /api/v2/portrait/{person_id}（body {person: {name?, status?,
     scores?}, business: {attributes}}）；复用 _forward + 四头注入，请求体原样透传。
     """
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "PUT", f"/api/v2/portrait/{person_id}",
         json_body=payload,
@@ -403,7 +362,7 @@ async def dps_tags_categories(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """标签分类（GET /api/v2/tags/categories）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward("GET", "/api/v2/tags/categories", headers=headers)
 
 
@@ -414,7 +373,7 @@ async def dps_tag_category_create(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """创建标签分类（POST /api/v2/tags/categories，透传上游契约）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "POST", "/api/v2/tags/categories",
         json_body=payload,
@@ -430,7 +389,7 @@ async def dps_tag_category_update(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """更新标签分类（PUT /api/v2/tags/categories/{id}）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "PUT", f"/api/v2/tags/categories/{category_id}",
         json_body=payload,
@@ -445,7 +404,7 @@ async def dps_tag_category_delete(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """删除标签分类（DELETE /api/v2/tags/categories/{id}）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "DELETE", f"/api/v2/tags/categories/{category_id}",
         headers=headers,
@@ -458,7 +417,7 @@ async def dps_reports_overview(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """报表概览（GET /api/v2/reports/overview）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward("GET", "/api/v2/reports/overview", headers=headers)
 
 
@@ -474,7 +433,7 @@ async def dps_batch_task_status(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """批量任务状态（GET /api/v2/batch/import/{task_id}/status）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward(
         "GET", f"/api/v2/batch/import/{task_id}/status",
         headers=headers,
@@ -487,7 +446,7 @@ async def dps_audit_logs(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """审计日志（GET /api/v2/audit/logs）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward("GET", "/api/v2/audit/logs", headers=headers)
 
 
@@ -502,5 +461,5 @@ async def dps_health(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """DPS 上游健康透传（GET /health/liveness，DPS 白名单免鉴权）."""
-    headers = _build_identity_headers(_user, _jwt_payload(request))
+    headers = _build_identity_headers(_user, request)
     return await _forward("GET", "/health/liveness", headers=headers)

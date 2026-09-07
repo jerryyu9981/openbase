@@ -10,6 +10,7 @@ system 映射与 base_url 可通过 config 模块配置覆盖（默认指向 Dev
 from __future__ import annotations
 
 import logging
+import uuid
 
 import httpx
 from fastapi import APIRouter, Depends, Request
@@ -17,6 +18,8 @@ from fastapi.responses import JSONResponse
 
 from openbase.core.deps.auth import get_proxy_identity
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.core.models import AuditLog
+from openbase.modules.protocol_headers import TARGET_SYSTEM_GENERIC, build_outbound_headers
 from openbase.modules.proxy.memory_proxy import router as memory_proxy_router
 
 logger = logging.getLogger("openbase.proxy")
@@ -64,6 +67,84 @@ def _timeout(system: str) -> float:
     return PROXY_SYSTEMS[system]["timeout"]
 
 
+# K03 D-V6：匿名业务写（ob_k_ 服务 Key 写路径）白名单外的 HTTP 方法
+_WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+
+def _is_service_key_identity(identity: dict) -> bool:
+    """判定 /proxy 通道认证结果是否为 ob_k_ 服务 Key（含 scope/name，无主体 id）."""
+    return bool(identity) and "scope" in identity and "id" not in identity
+
+
+def _k03_bypass_matches(entry: dict, *, system: str, method: str, path: str) -> bool:
+    """K03 过渡豁免白名单条目匹配（system+method+path_pattern 三者命中）."""
+    if entry.get("system") not in (None, "*", system):
+        return False
+    if entry.get("method") not in (None, "*", method):
+        return False
+    path_pattern = entry.get("path_pattern")
+    if not path_pattern or path_pattern in ("*", "/"):
+        return True
+    # path 形如 "chat"（路由 {path:path} 捕获相对路径），规范化为带前导 / 比对
+    canonical_path = "/" + str(path).lstrip("/")
+    pattern = "/" + str(path_pattern).lstrip("/")
+    return (
+        canonical_path == pattern
+        or canonical_path.startswith(pattern)
+        or canonical_path.endswith(pattern)
+    )
+
+
+async def _record_k03_bypass_audit(
+    session: object,
+    *,
+    entry: dict,
+    system: str,
+    method: str,
+    path: str,
+    request_id: str | None,
+) -> None:
+    """白名单内匿名写放行逐条审计（action=proxy.bypass_write，detail 含 id/reason）.
+
+    DB 不可达/不可写时降级 WARN（放行不因审计失败而阻断——过渡期语义），
+    保证业务可继续而审计尽力留痕。
+    """
+    try:
+        detail = {
+            "id": entry.get("id"),
+            "system": system,
+            "method": method,
+            "path": path,
+            "reason": entry.get("reason"),
+            "owner": entry.get("owner"),
+            "audit": entry.get("audit"),
+        }
+        record = AuditLog(
+            user_id=None,
+            tenant_id=None,
+            action="proxy.bypass_write",
+            resource=system,
+            resource_id=str(entry.get("id") or "")[:64] or None,
+            request_id=request_id or f"req-{uuid.uuid4().hex[:12]}",
+            detail=detail,
+        )
+        session.add(record)
+        await session.commit()
+        logger.info(
+            "k03 bypass write audited",
+            extra={"id": entry.get("id"), "system": system, "path": path},
+        )
+    except Exception:  # noqa: BLE001 - 审计尽力留痕，不阻断放行
+        logger.warning(
+            "k03 bypass audit write failed (degraded)",
+            extra={"system": system, "path": path},
+        )
+        try:
+            await session.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 @router.api_route("/{system}/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def proxy(
     system: str,
@@ -73,18 +154,68 @@ async def proxy(
 ) -> JSONResponse:
     """代理转发：JWT 优先 + 服务 Key 回退双通道认证（R-367 AC-367-2）后转发四系统原生 API.
 
+    P2-1 T1/K01（§3.5 通用 proxy 行）：出站身份头经 ``build_outbound_headers`` 唯一
+    装配——JWT 通道注入主体身份头；ob_k_ 服务 Key 通道注入 X-Proxy-Source/X-Request-Id
+    （服务账号主体映射随批次 2/T5）。P2-1 T2 D-V6（K03）：ob_k_ 匿名**业务写**
+    fail-closed——白名单（settings.k03_bypass_whitelist）内放行且逐条审计，
+    白名单外一律 403 ``PERM_SERVICE_KEY_WRITE_DENIED``。
+
     支持路径参数透传；上游不可达时返回统一 SYS_502 错误包装。
     """
     if system not in PROXY_SYSTEMS:
         raise BaseError(ErrorCode.PARAM_NOT_FOUND, f"unknown proxy system: {system}")
 
+    method = request.method
+    settings = get_settings()
+    is_service_key = _is_service_key_identity(identity)
+    # K03 D-V6：未登记 ob_k_ 业务写 → 403 PERM_SERVICE_KEY_WRITE_DENIED
+    if is_service_key and method in _WRITE_METHODS:
+        bypass_entry = next(
+            (
+                entry
+                for entry in settings.parse_k03_bypass_whitelist()
+                if _k03_bypass_matches(entry, system=system, method=method, path=path)
+            ),
+            None,
+        )
+        if bypass_entry is None:
+            logger.warning(
+                "anonymous service-key write denied (k03)",
+                extra={"system": system, "method": method, "path": path},
+            )
+            raise BaseError(
+                ErrorCode.PERM_SERVICE_KEY_WRITE_DENIED,
+                "anonymous service-key business write denied; "
+                "register in k03_bypass_whitelist or migrate to sk-agent-* service account",
+                detail={"system": system, "method": method, "path": path},
+            )
+        # 白名单内放行 + 逐条审计
+        from openbase.core.db.session import get_session_factory
+
+        async with get_session_factory()() as bypass_session:
+            await _record_k03_bypass_audit(
+                bypass_session,
+                entry=bypass_entry,
+                system=system,
+                method=method,
+                path=path,
+                request_id=getattr(request.state, "request_id", None),
+            )
+
     base_url = _resolve_base_url(system)
     target_url = f"{base_url.rstrip('/')}/{path}"
-    method = request.method
     headers = {
         "Content-Type": request.headers.get("Content-Type", "application/json"),
         "Accept": request.headers.get("Accept", "application/json"),
     }
+    # 出站身份头唯一装配点（JWT 通道 = 主体身份；ob_k_ 通道 = 来源标注）
+    outbound_user = None if is_service_key else identity
+    headers = build_outbound_headers(
+        request,
+        outbound_user,
+        target_system=TARGET_SYSTEM_GENERIC,
+        extra_headers=headers,
+    )
     body = await request.body() if method in ("POST", "PUT", "PATCH") else None
 
     try:

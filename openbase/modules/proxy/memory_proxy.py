@@ -21,8 +21,7 @@ from fastapi.responses import JSONResponse
 
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.modules.auth.jwt import decode_access_token
-from openbase.modules.identity.delegation import delegated_claim_from_payload
+from openbase.modules.protocol_headers import TARGET_SYSTEM_MEMORY, build_outbound_headers
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.memory_proxy")
@@ -47,65 +46,61 @@ def _upstream_config() -> tuple[str, str, float]:
     )
 
 
-def _extract_identity(request: Request) -> dict[str, Any]:
-    """从请求头解析 JWT 身份（tenant_id/org_id/role/sub），供上游注入.
+def _original_bearer_token(request: Request) -> str | None:
+    """读取入站 Authorization Bearer token（user JWT 双层认证第二层透传用）.
 
-    U1 T4（草案 §7.3/§11 T4-7）：委托场景（payload 含 on_behalf_of）取委托域值——
-    sub=delegated.subject_id、tenant_id/org_id=委托 tenant_code、role=delegated.role
-    （X-Org-ID/X-Tenant-ID/X-User-ID 不取错域）。
-
-    Returns:
-        dict: {"token", "sub", "org_id", "role", "tenant_id", "delegated"?}；
-        token 缺失时抛出 401。
+    sk-agent 场景由调用方判断不传（D-OB6-3：agent 无原 JWT，不构造伪 JWT）。
     """
     authorization = request.headers.get("Authorization", "")
     if not authorization.startswith("Bearer "):
-        raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "missing bearer token")
+        return None
     token = authorization.removeprefix("Bearer ").strip()
-    payload = decode_access_token(token)
-    if payload is None:
-        raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "invalid or expired token")
-    delegated = delegated_claim_from_payload(payload)
-    if delegated is not None:
-        return {
-            "token": token,
-            "sub": str(delegated["subject_id"]),
-            "tenant_id": delegated["tenant_code"],
-            "org_id": delegated["tenant_code"],
-            "role": delegated.get("role", "viewer"),
-            "delegated": delegated,
-        }
-    return {
-        "token": token,
-        "sub": str(payload.get("sub", "")),
-        "tenant_id": payload.get("tenant_id"),
-        "org_id": payload.get("org_id"),
-        "role": payload.get("role", "viewer"),
-    }
+    return token or None
 
 
-def _build_upstream_headers(request: Request, identity: dict[str, Any]) -> dict[str, str]:
-    """构造转发上游的请求头（双层认证 + 身份/租户注入）.
+def _effective_subject_id(user: dict) -> str:
+    """有效主体 sub（委托时 = delegated.subject_id；否则 principal id）."""
+    delegated = user.get("delegated")
+    if isinstance(delegated, dict) and delegated.get("subject_id") is not None:
+        return str(delegated["subject_id"])
+    return str(user.get("id", ""))
 
+
+def _is_service_agent(user: dict) -> bool:
+    """sk-agent 服务账号判定（agent 无原 JWT，不参与双层认证第二层透传）."""
+    return str(user.get("auth_method") or "") == "sk-agent"
+
+
+def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, str]:
+    """构造转发上游的请求头（双层认证 + 身份/租户注入，P2-1 §3.5 memory 行）.
+
+    P2-1 T1（K01）：删除 ``_extract_identity`` 二次 JWT 解码，统一经
+    ``protocol_headers.inject.build_outbound_headers`` 装配：
     - X-API-Key：OpenBase 持有（服务 Key 通道，第一层认证）
-    - Authorization: Bearer <原 JWT>（第二层认证）
-    - X-Org-ID / X-User-ID：RBAC 与租户上下文识别；org_id 缺失时
-      注入 "openbase-default"（OpenMemory 无该组织策略 → 按默认策略放行）
-    - X-Tenant-ID：租户上下文（OpenMemory 解析优先级 X-Tenant-ID > JWT
-      tenant_id > default；与指南 4.6 对齐）
+    - Authorization: Bearer <原 JWT>（第二层认证；**仅 user JWT 场景**——agent 场景
+      无原 JWT，不再构造伪 JWT 透传，D-OB6-3）
+    - X-Org-ID / X-User-ID / X-Tenant-ID / X-User-Role / X-Proxy-Source / X-Request-Id：
+      取值只来自统一主体上下文；org/tenant 缺省为显式兜底（"openbase-default"/"default"）。
     """
     api_key, _, _ = _upstream_config()
-    org_id = identity.get("org_id") or "openbase-default"
-    tenant_id = identity.get("tenant_id") or "default"
-    return {
+    headers: dict[str, str] = {
         "Content-Type": "application/json",
         "Accept": "application/json",
         "X-API-Key": api_key,
-        "Authorization": f"Bearer {identity['token']}",
-        "X-Org-ID": str(org_id),
-        "X-User-ID": identity["sub"],
-        "X-Tenant-ID": str(tenant_id),
     }
+    if user is not None and not _is_service_agent(user):
+        token = _original_bearer_token(request)
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+    return build_outbound_headers(
+        request,
+        user,
+        target_system=TARGET_SYSTEM_MEMORY,
+        extra_headers=headers,
+        default_tenant="default",
+        default_org="openbase-default",
+        default_role="viewer",
+    )
 
 
 def _adapt_response(upstream: httpx.Response) -> JSONResponse:
@@ -244,10 +239,9 @@ async def memory_remember(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """存储记忆（POST /api/v1/remember）."""
-    identity = _extract_identity(request)
     return await _forward(
         "POST", "/api/v1/remember",
-        json_body=payload, headers=_build_upstream_headers(request, identity),
+        json_body=payload, headers=_build_upstream_headers(request, _user),
     )
 
 
@@ -258,10 +252,9 @@ async def memory_recall(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """召回记忆（POST /api/v1/recall）."""
-    identity = _extract_identity(request)
     return await _forward(
         "POST", "/api/v1/recall",
-        json_body=payload, headers=_build_upstream_headers(request, identity),
+        json_body=payload, headers=_build_upstream_headers(request, _user),
     )
 
 
@@ -272,10 +265,9 @@ async def memory_forget(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """删除记忆（POST /api/v1/forget）."""
-    identity = _extract_identity(request)
     return await _forward(
         "POST", "/api/v1/forget",
-        json_body=payload, headers=_build_upstream_headers(request, identity),
+        json_body=payload, headers=_build_upstream_headers(request, _user),
     )
 
 
@@ -286,10 +278,9 @@ async def memory_detail(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """记忆详情（GET /api/v1/memories/{id}）."""
-    identity = _extract_identity(request)
     response = await _forward(
         "GET", f"/api/v1/memories/{memory_id}",
-        headers=_build_upstream_headers(request, identity),
+        headers=_build_upstream_headers(request, _user),
     )
     # 字段归一化：metadata.tags 提升为顶层 tags（前端消费）
     if response.status_code < 400:
@@ -322,8 +313,7 @@ async def memory_list(
     按当前用户召回全部持久记忆（auto 策略 + 泛化查询），
     proxy 侧完成类型/标签过滤与分页。
     """
-    identity = _extract_identity(request)
-    user_id = identity["sub"]
+    user_id = _effective_subject_id(_user)
     payload: dict[str, Any] = {
         "query": "全部记忆",
         "user_id": user_id,
@@ -332,7 +322,7 @@ async def memory_list(
     }
     status_code, body = await _forward_raw(
         "POST", "/api/v1/recall",
-        json_body=payload, headers=_build_upstream_headers(request, identity),
+        json_body=payload, headers=_build_upstream_headers(request, _user),
     )
     if status_code >= 400:
         return JSONResponse(
@@ -384,13 +374,13 @@ async def _proxy_json(
     *,
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
+    user: dict | None = None,
 ) -> JSONResponse:
     """认证 + 透传 JSON 类端点的通用入口（v1.4.2 R-379 完善对接）."""
-    identity = _extract_identity(request)
     return await _forward(
         method, upstream_path,
         json_body=json_body, params=params,
-        headers=_build_upstream_headers(request, identity),
+        headers=_build_upstream_headers(request, user),
     )
 
 
@@ -399,6 +389,8 @@ async def _proxy_multipart(
     request: Request,
     file: UploadFile,
     form_fields: dict[str, str] | None = None,
+    *,
+    user: dict | None = None,
 ) -> JSONResponse:
     """认证 + multipart/form-data 透传（多模态/语音上传端点，R-380）.
 
@@ -406,9 +398,8 @@ async def _proxy_multipart(
     透传上游；可选表单字段（metadata/description 等）经 data 透传。
     注意：Content-Type 由 httpx 按 multipart 边界自动生成，勿手动设置。
     """
-    identity = _extract_identity(request)
     content = await file.read()
-    headers = _build_upstream_headers(request, identity)
+    headers = _build_upstream_headers(request, user)
     headers.pop("Content-Type", None)  # multipart 边界由 httpx 生成
     files: dict[str, Any] = {
         "file": (file.filename or "upload.bin", content,
@@ -428,7 +419,7 @@ async def memory_improve(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """优化记忆（promote/compress/merge，POST /api/v1/improve）."""
-    return await _proxy_json("POST", "/api/v1/improve", request, json_body=payload)
+    return await _proxy_json("POST", "/api/v1/improve", request, user=_user, json_body=payload)
 
 
 @router.get("/sessions")
@@ -437,7 +428,7 @@ async def memory_sessions(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """会话列表（GET /api/v1/sessions）."""
-    return await _proxy_json("GET", "/api/v1/sessions", request)
+    return await _proxy_json("GET", "/api/v1/sessions", request, user=_user)
 
 
 @router.get("/sessions/{session_id}")
@@ -447,7 +438,7 @@ async def memory_session_detail(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """会话详情（GET /api/v1/sessions/{session_id}）."""
-    return await _proxy_json("GET", f"/api/v1/sessions/{session_id}", request)
+    return await _proxy_json("GET", f"/api/v1/sessions/{session_id}", request, user=_user)
 
 
 @router.post("/sessions/{session_id}/terminate")
@@ -457,7 +448,7 @@ async def memory_session_terminate(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """终止并清空会话（POST /api/v1/sessions/{session_id}/terminate）."""
-    return await _proxy_json("POST", f"/api/v1/sessions/{session_id}/terminate", request)
+    return await _proxy_json("POST", f"/api/v1/sessions/{session_id}/terminate", request, user=_user)
 
 
 @router.get("/decay/config")
@@ -466,7 +457,7 @@ async def memory_decay_get(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """获取衰减配置（GET /api/v1/decay/config）."""
-    return await _proxy_json("GET", "/api/v1/decay/config", request)
+    return await _proxy_json("GET", "/api/v1/decay/config", request, user=_user)
 
 
 @router.put("/decay/config")
@@ -476,7 +467,7 @@ async def memory_decay_put(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """更新衰减配置（PUT /api/v1/decay/config）."""
-    return await _proxy_json("PUT", "/api/v1/decay/config", request, json_body=payload)
+    return await _proxy_json("PUT", "/api/v1/decay/config", request, user=_user, json_body=payload)
 
 
 @router.get("/recall/traces/{trace_id}")
@@ -486,7 +477,7 @@ async def memory_recall_trace(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """召回路径追踪（GET /api/v1/recall/traces/{trace_id}）."""
-    return await _proxy_json("GET", f"/api/v1/recall/traces/{trace_id}", request)
+    return await _proxy_json("GET", f"/api/v1/recall/traces/{trace_id}", request, user=_user)
 
 
 @router.get("/monitor")
@@ -496,7 +487,7 @@ async def memory_monitor(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """运行监控（GET /api/v1/monitor?range=24h）."""
-    return await _proxy_json("GET", "/api/v1/monitor", request, params={"range": range_})
+    return await _proxy_json("GET", "/api/v1/monitor", request, user=_user, params={"range": range_})
 
 
 @router.get("/health")
@@ -505,7 +496,7 @@ async def memory_health(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """OpenMemory 健康状态透传（GET /health，供运维/前端监控）."""
-    return await _proxy_json("GET", "/health", request)
+    return await _proxy_json("GET", "/health", request, user=_user)
 
 
 @router.get("/health/readiness")
@@ -514,7 +505,7 @@ async def memory_health_readiness(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """OpenMemory 就绪检查透传（GET /health/readiness，需上游 API Key）."""
-    return await _proxy_json("GET", "/health/readiness", request)
+    return await _proxy_json("GET", "/health/readiness", request, user=_user)
 
 
 @router.get("/health/liveness")
@@ -523,7 +514,7 @@ async def memory_health_liveness(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """OpenMemory 存活检查透传（GET /health/liveness，需上游 API Key）."""
-    return await _proxy_json("GET", "/health/liveness", request)
+    return await _proxy_json("GET", "/health/liveness", request, user=_user)
 
 
 # ---------------------------------------------------------------------------
@@ -540,7 +531,7 @@ async def memory_image_upload(
 ) -> JSONResponse:
     """上传图像记忆（multipart；POST /api/v1/memories/image，≤10MB）."""
     form_fields = {"metadata": metadata} if metadata is not None else None
-    return await _proxy_multipart("/api/v1/memories/image", request, file, form_fields)
+    return await _proxy_multipart("/api/v1/memories/image", request, file, form_fields, user=_user)
 
 
 @router.post("/memories/image/search")
@@ -550,7 +541,7 @@ async def memory_image_search(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """文本搜索图像记忆（JSON；POST /api/v1/memories/image/search）."""
-    return await _proxy_json("POST", "/api/v1/memories/image/search", request, json_body=payload)
+    return await _proxy_json("POST", "/api/v1/memories/image/search", request, user=_user, json_body=payload)
 
 
 @router.post("/multimodal/image-embed")
@@ -560,7 +551,7 @@ async def memory_image_embed(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """图像嵌入（multipart；POST /api/v1/multimodal/image-embed，CLIP）."""
-    return await _proxy_multipart("/api/v1/multimodal/image-embed", request, file)
+    return await _proxy_multipart("/api/v1/multimodal/image-embed", request, file, user=_user)
 
 
 @router.post("/audio/transcribe")
@@ -570,7 +561,7 @@ async def memory_audio_transcribe(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """语音转写（multipart；POST /api/v1/audio/transcribe，mp3/wav/ogg ≤30MB）."""
-    return await _proxy_multipart("/api/v1/audio/transcribe", request, file)
+    return await _proxy_multipart("/api/v1/audio/transcribe", request, file, user=_user)
 
 
 @router.post("/memories/remember-with-audio")
@@ -581,5 +572,5 @@ async def memory_remember_with_audio(
 ) -> JSONResponse:
     """语音记忆存储（JSON；POST /api/v1/memories/remember-with-audio）."""
     return await _proxy_json(
-        "POST", "/api/v1/memories/remember-with-audio", request, json_body=payload
+        "POST", "/api/v1/memories/remember-with-audio", request, user=_user, json_body=payload
     )

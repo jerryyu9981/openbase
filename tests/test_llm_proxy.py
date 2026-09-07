@@ -12,6 +12,7 @@ from openbase import init_app
 from openbase.modules import llm_proxy as llm_proxy_module
 from openbase.modules.auth import UserService
 from openbase.modules.auth.jwt import create_access_token
+from openbase.modules.protocol_headers import PROXY_SOURCE_LLM
 from openbase.settings import Settings
 
 UPSTREAM_BASE = "http://127.0.0.1:8001"
@@ -175,7 +176,7 @@ def test_llm_proxy_models_success_unified_response(client: TestClient) -> None:
     # P0-2（Q4 最小档）：登录 JWT 携带身份 → 注入 X-User-ID/X-Proxy-Source
     # （memory 演示用户 org 为空，故此处不要求 X-Org-ID，见身份专用用例）
     assert headers["X-User-ID"] == "1"
-    assert headers["X-Proxy-Source"] == llm_proxy_module.PROXY_SOURCE_IDENTIFIER
+    assert headers["X-Proxy-Source"] == PROXY_SOURCE_LLM
 
 
 def test_llm_proxy_injects_external_identity_headers(client: TestClient) -> None:
@@ -204,14 +205,16 @@ def test_llm_proxy_injects_external_identity_headers(client: TestClient) -> None
     # 外部身份归属头（与 JWT claim 同源：sub → X-User-ID；org_id → X-Org-ID）
     assert headers["X-User-ID"] == "42"
     assert headers["X-Org-ID"] == "org-001"
-    assert headers["X-Proxy-Source"] == llm_proxy_module.PROXY_SOURCE_IDENTIFIER
+    assert headers["X-Tenant-ID"] == "tenant-001"  # P2-1 T1：llm 补 X-Tenant-ID
+    assert headers["X-User-Role"] == "admin"  # P2-1 T1：llm 补 X-User-Role
+    assert headers["X-Proxy-Source"] == PROXY_SOURCE_LLM
     # 服务密钥不变；不引入 X-API-Key
     assert headers["Authorization"].startswith("Bearer sk-openllm-")
     assert "X-API-Key" not in headers
 
 
 def test_llm_proxy_identity_headers_omitted_without_jwt() -> None:
-    """P0-2：无身份来源（匿名/服务级内部调用）→ 不注入任何外部身份头."""
+    """P2-1 T1-9：无身份来源（user=None）→ 不注入用户身份头（来源/请求 ID 保留）."""
     scope = {
         "type": "http",
         "http_version": "1.1",
@@ -226,12 +229,14 @@ def test_llm_proxy_identity_headers_omitted_without_jwt() -> None:
         "server": ("test", 80),
         "state": {},
     }
-    headers = llm_proxy_module._build_upstream_headers(StarletteRequest(scope))
+    headers = llm_proxy_module._build_upstream_headers(StarletteRequest(scope), None)
     assert headers["Authorization"].startswith("Bearer sk-openllm-")
     assert "X-API-Key" not in headers
     assert "X-User-ID" not in headers
     assert "X-Org-ID" not in headers
-    assert "X-Proxy-Source" not in headers
+    assert "X-Tenant-ID" not in headers
+    assert "X-User-Role" not in headers
+    assert headers["X-Proxy-Source"] == PROXY_SOURCE_LLM
 
 
 def test_llm_proxy_error_code_passthrough(client: TestClient) -> None:

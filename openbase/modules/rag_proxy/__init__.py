@@ -5,6 +5,9 @@
 - 认证：OpenBase JWT（get_current_user），未认证返回 401。
 - 转发：OpenRAG 服务级 API Key（任务书 M1 落地）由 rag-proxy 持有同密钥，
   通过 X-API-Key 请求头注入上游；无 key 配置时不注入（向后兼容）。
+- 身份头注入（P2-1 T1/K01，§3.5 rag-proxy 行）：现补四头 + X-Proxy-Source +
+  X-Request-Id（原零身份头；取值只来自统一主体上下文，经
+  ``protocol_headers.inject.build_outbound_headers`` 唯一装配）。
 - 响应适配：统一 {code, message, data, timestamp}；错误归一化提取顺序
   body.code（非 0）> body.detail.error/code（dict）> body.detail（str）>
   body.error.code > HTTP 状态码（覆盖 OpenRAG 网关 {code,message,data} 与
@@ -28,6 +31,7 @@ from pydantic import BaseModel, Field
 
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.modules.protocol_headers import TARGET_SYSTEM_RAG, build_outbound_headers
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.rag_proxy")
@@ -79,12 +83,18 @@ def _upstream_config() -> tuple[str, float, float, str]:
     )
 
 
-def _build_upstream_headers() -> dict[str, str]:
-    """构造转发上游的请求头（任务书 M1：注入 OpenRAG 服务级 API Key）.
+def _build_upstream_headers(
+    request: Request | None, user: dict | None
+) -> dict[str, str]:
+    """构造转发上游的请求头（任务书 M1：X-API-Key + P2-1 身份头注入）.
 
     OpenRAG v1.8.0 APIKeyMiddleware 配置 service_api_key 后强制鉴权：
     无 X-API-Key 直连返回 401。rag-proxy 持有同密钥（settings.rag_api_key）
     注入上游；未配置 key 时保持无认证转发（向后兼容）。
+
+    P2-1 T1（K01，§3.5 rag-proxy 行）：原零身份头 → 现补 X-User-ID/X-Tenant-ID/
+    X-Org-ID/X-User-Role + X-Proxy-Source(openbase-rag-proxy) + X-Request-Id，
+    取值只来自统一主体上下文（``build_outbound_headers`` 唯一装配点）。
     """
     _, _, _, rag_api_key = _upstream_config()
     headers: dict[str, str] = {
@@ -93,7 +103,12 @@ def _build_upstream_headers() -> dict[str, str]:
     }
     if rag_api_key:
         headers["X-API-Key"] = rag_api_key
-    return headers
+    return build_outbound_headers(
+        request,
+        user,
+        target_system=TARGET_SYSTEM_RAG,
+        extra_headers=headers,
+    )
 
 
 def _adapt_response(upstream: httpx.Response) -> JSONResponse:
@@ -171,6 +186,8 @@ async def _forward(
     *,
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
+    request: Request | None = None,
+    user: dict | None = None,
 ) -> JSONResponse:
     """转发请求至 OpenRAG 并适配响应（非 SSE，任务书 M1 注入上游 API Key）."""
     base_url, timeout, _, _ = _upstream_config()
@@ -180,7 +197,7 @@ async def _forward(
             upstream = await client.request(
                 method, target_url,
                 json=json_body, params=params,
-                headers=_build_upstream_headers(),
+                headers=_build_upstream_headers(request, user),
             )
     except httpx.HTTPError as exc:
         logger.warning(
@@ -196,6 +213,7 @@ async def _forward(
 async def _forward_multipart(
     upstream_path: str,
     request: Request,
+    user: dict | None = None,
 ) -> JSONResponse:
     """multipart 原始体透传（文档上传，不解析表单保持边界/编码原样）.
 
@@ -209,7 +227,7 @@ async def _forward_multipart(
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             # 任务书 M1：multipart 透传同样注入上游 API Key（保留原始 Content-Type/boundary）
-            upstream_headers = _build_upstream_headers()
+            upstream_headers = _build_upstream_headers(request, user)
             upstream_headers["Content-Type"] = content_type
             upstream = await client.request(
                 "POST", target_url,
@@ -230,6 +248,8 @@ async def _forward_multipart(
 async def _forward_sse(
     upstream_path: str,
     json_body: dict[str, Any],
+    request: Request | None = None,
+    user: dict | None = None,
 ) -> StreamingResponse:
     """SSE 逐事件透传（RAG 流式端点）.
 
@@ -240,13 +260,14 @@ async def _forward_sse(
     base_url, _, stream_timeout, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
     json_body = {**json_body, "stream": True}
+    upstream_headers = _build_upstream_headers(request, user)
 
     async def event_stream() -> AsyncGenerator[str, None]:
         try:
             async with httpx.AsyncClient(timeout=stream_timeout) as client:
                 async with client.stream(
                     "POST", target_url, json=json_body,
-                    headers=_build_upstream_headers(),
+                    headers=upstream_headers,
                 ) as upstream:
                     if upstream.status_code >= 400:
                         body_bytes = await upstream.aread()
@@ -288,6 +309,7 @@ async def _forward_sse(
 
 @router.get("/collections")
 async def rag_collections_list(
+    request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     _user: dict = Depends(get_current_user),
@@ -296,11 +318,13 @@ async def rag_collections_list(
     return await _forward(
         "GET", "/api/v1/collections",
         params={"page": page, "page_size": page_size},
+        request=request, user=_user,
     )
 
 
 @router.post("/collections")
 async def rag_collection_create(
+    request: Request,
     payload: CollectionCreate,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
@@ -308,25 +332,34 @@ async def rag_collection_create(
     return await _forward(
         "POST", "/api/v1/collections",
         json_body=payload.model_dump(exclude_none=True),
+        request=request, user=_user,
     )
 
 
 @router.get("/collections/{collection_id}")
 async def rag_collection_detail(
     collection_id: str,
+    request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """知识库详情（GET /api/v1/collections/{id}）."""
-    return await _forward("GET", f"/api/v1/collections/{collection_id}")
+    return await _forward(
+        "GET", f"/api/v1/collections/{collection_id}",
+        request=request, user=_user,
+    )
 
 
 @router.delete("/collections/{collection_id}")
 async def rag_collection_delete(
     collection_id: str,
+    request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """删除知识库（DELETE /api/v1/collections/{id}）."""
-    return await _forward("DELETE", f"/api/v1/collections/{collection_id}")
+    return await _forward(
+        "DELETE", f"/api/v1/collections/{collection_id}",
+        request=request, user=_user,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -345,13 +378,14 @@ async def rag_document_upload(
     上游返回 {status: PENDING, document_id}，前端轮询状态直至完成。
     """
     return await _forward_multipart(
-        f"/api/v1/collections/{collection_id}/documents", request
+        f"/api/v1/collections/{collection_id}/documents", request, user=_user
     )
 
 
 @router.get("/collections/{collection_id}/documents")
 async def rag_documents_list(
     collection_id: str,
+    request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status_filter: str | None = Query(None),
@@ -361,6 +395,7 @@ async def rag_documents_list(
     return await _forward(
         "GET", f"/api/v1/collections/{collection_id}/documents",
         params={"page": page, "page_size": page_size, "status_filter": status_filter},
+        request=request, user=_user,
     )
 
 
@@ -368,6 +403,7 @@ async def rag_documents_list(
 async def rag_document_detail(
     collection_id: str,
     document_id: str,
+    request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """文档详情（GET /collections/{cid}/documents/{did}，上传异步 PENDING→轮询用）.
@@ -376,7 +412,8 @@ async def rag_document_detail(
     设计文档 11 端点清单遗漏本端点，按需求补足（新增端点，向后兼容）。
     """
     return await _forward(
-        "GET", f"/api/v1/collections/{collection_id}/documents/{document_id}"
+        "GET", f"/api/v1/collections/{collection_id}/documents/{document_id}",
+        request=request, user=_user,
     )
 
 
@@ -384,11 +421,13 @@ async def rag_document_detail(
 async def rag_document_delete(
     collection_id: str,
     document_id: str,
+    request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """删除文档（DELETE /collections/{cid}/documents/{did}）."""
     return await _forward(
-        "DELETE", f"/api/v1/collections/{collection_id}/documents/{document_id}"
+        "DELETE", f"/api/v1/collections/{collection_id}/documents/{document_id}",
+        request=request, user=_user,
     )
 
 
@@ -407,6 +446,7 @@ def _query_body(payload: RagQuery) -> dict[str, Any]:
 @router.post("/collections/{collection_id}/query")
 async def rag_query(
     collection_id: str,
+    request: Request,
     payload: RagQuery,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
@@ -414,12 +454,14 @@ async def rag_query(
     return await _forward(
         "POST", f"/api/v1/collections/{collection_id}/query",
         json_body=_query_body(payload),
+        request=request, user=_user,
     )
 
 
 @router.post("/collections/{collection_id}/query/stream")
 async def rag_query_stream(
     collection_id: str,
+    request: Request,
     payload: RagQuery,
     _user: dict = Depends(get_current_user),
 ) -> StreamingResponse:
@@ -427,12 +469,15 @@ async def rag_query_stream(
     return await _forward_sse(
         f"/api/v1/collections/{collection_id}/query/stream",
         payload.model_dump(exclude_none=True),
+        request=request,
+        user=_user,
     )
 
 
 @router.post("/collections/{collection_id}/query/retrieve")
 async def rag_query_retrieve(
     collection_id: str,
+    request: Request,
     payload: RagQuery,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
@@ -440,6 +485,7 @@ async def rag_query_retrieve(
     return await _forward(
         "POST", f"/api/v1/collections/{collection_id}/query/retrieve",
         json_body=_query_body(payload),
+        request=request, user=_user,
     )
 
 
@@ -450,7 +496,10 @@ async def rag_query_retrieve(
 
 @router.get("/health")
 async def rag_health(
+    request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """OpenRAG 上游健康透传（GET /api/v1/system/health，供运维/前端监控）."""
-    return await _forward("GET", "/api/v1/system/health")
+    return await _forward(
+        "GET", "/api/v1/system/health", request=request, user=_user
+    )

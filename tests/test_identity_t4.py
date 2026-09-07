@@ -35,6 +35,11 @@ from openbase.modules import llm_proxy as llm_proxy_module
 from openbase.modules.auth import hash_password
 from openbase.modules.auth.jwt import create_access_token
 from openbase.modules.identity import delegation
+from openbase.modules.protocol_headers import (
+    PROXY_SOURCE_DPS,
+    PROXY_SOURCE_LLM,
+    PROXY_SOURCE_MEMORY,
+)
 from openbase.modules.proxy import memory_proxy as memory_proxy_module
 from openbase.settings import Settings, get_settings
 
@@ -268,6 +273,33 @@ def _forge_agent_token(
     )
 
 
+def _unified_user_ctx(
+    agent_id: int,
+    tenant_code: str,
+    claim: dict | None,
+    *,
+    role: str = "viewer",
+) -> dict:
+    """构造与 ``get_current_user`` 返回同构的统一主体上下文（P2-1 共享包消费面）.
+
+    P2-1 T1（K01）后，dps/llm/memory proxy 不再二次解码 JWT，出站装配直接消费
+    统一主体 dict（含 delegated 归一化委托块）。
+    """
+    return {
+        "id": agent_id,
+        "username": _username_of(agent_id),
+        "tenant_code": tenant_code,
+        "tenant_id": None,
+        "org_id": tenant_code,
+        "subject_type": "agent",
+        "role": role,
+        "permissions": [],
+        "auth_method": "jwt",
+        "on_behalf_of": claim,
+        "delegated": delegation.normalize_on_behalf_of(claim) if claim is not None else None,
+    }
+
+
 def _run_issue(principal_id: int, delegated_claim: dict | None) -> tuple[str, str]:
     """执行委托签发（提交事务，返回 access/refresh）."""
     async def _do() -> tuple[str, str]:
@@ -481,18 +513,15 @@ def test_t4_7_dps_proxy_outbound_headers_use_delegated_domain() -> None:
     agent_id = _make_subject(_unique("t47d-agent"), "acme", "agent", "active", "viewer")
     user_id = _make_subject(_unique("t47d-user"), "acme", "user", "active", "viewer")
     claim = _claim(user_id, "user", "acme")
-    payload = {
-        "sub": str(agent_id),
-        "tenant_code": "acme",
-        "org_id": "acme",
-        "role": "viewer",
-        "on_behalf_of": claim,
-    }
-    headers = dps_proxy_module._build_identity_headers({"id": str(agent_id)}, payload)
+    # P2-1 T1：dps-proxy 不再二次解码 JWT，出站装配直接消费统一主体上下文
+    user_ctx = _unified_user_ctx(agent_id, "acme", claim)
+    headers = dps_proxy_module._build_identity_headers(user_ctx, None)
     assert headers["X-User-ID"] == str(user_id)
     assert headers["X-Tenant-ID"] == "acme"
     assert headers["X-Org-ID"] == "acme"
     assert headers["X-User-Role"] == "viewer"
+    assert headers["X-Agent-Id"] == str(agent_id)  # 委托场景执行 agent 标注
+    assert headers["X-Proxy-Source"] == PROXY_SOURCE_DPS  # P2-1 T1：来源头补齐
 
 
 def test_t4_7_llm_proxy_outbound_headers_use_delegated_domain() -> None:
@@ -517,9 +546,12 @@ def test_t4_7_llm_proxy_outbound_headers_use_delegated_domain() -> None:
         "server": ("test", 80),
         "state": {},
     }
-    headers = llm_proxy_module._build_upstream_headers(Request(scope))
+    headers = llm_proxy_module._build_upstream_headers(Request(scope), _unified_user_ctx(agent_id, "acme", claim))
     assert headers["X-User-ID"] == str(user_id)
     assert headers["X-Org-ID"] == "acme"
+    assert headers["X-Tenant-ID"] == "acme"  # P2-1 T1：llm 补 X-Tenant-ID
+    assert headers["X-Agent-Id"] == str(agent_id)
+    assert headers["X-Proxy-Source"] == PROXY_SOURCE_LLM
 
 
 def test_t4_7_memory_proxy_outbound_headers_use_delegated_domain() -> None:
@@ -546,11 +578,14 @@ def test_t4_7_memory_proxy_outbound_headers_use_delegated_domain() -> None:
         "state": {},
     }
     request = Request(scope)
-    identity = memory_proxy_module._extract_identity(request)
-    headers = memory_proxy_module._build_upstream_headers(request, identity)
+    user_ctx = _unified_user_ctx(agent_id, "acme", claim)
+    headers = memory_proxy_module._build_upstream_headers(request, user_ctx)
     assert headers["X-User-ID"] == str(user_id)
     assert headers["X-Org-ID"] == "acme"
     assert headers["X-Tenant-ID"] == "acme"
+    assert headers["X-User-Role"] == "viewer"  # P2-1 T1：memory 补 X-User-Role
+    assert headers["X-Agent-Id"] == str(agent_id)
+    assert headers["X-Proxy-Source"] == PROXY_SOURCE_MEMORY  # P2-1 T1：memory 补来源
 
 
 # ---- 补充：claim 归一化/每请求骨架单元语义（钉死边界，R2 骨架） ----

@@ -178,14 +178,30 @@ def test_require_api_key_x_api_key_header() -> None:
     assert credential["name"] == "svc"
 
 
-# ---- 4. get_identity_context 四维身份头 ----
+# ---- 4. get_identity_context 四维身份头（P2-1 T3 试点收口）----
 
-def test_identity_context_parses_four_headers() -> None:
-    """四维身份头解析（X-User-Id/X-Tenant-Id/X-Team-Id/X-Agent-Id）."""
+def _trusted_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """构造受信来源白名单非空的 settings 单例（P2-1 协议头试点）."""
+    import importlib
+
+    from openbase.settings import Settings
+
+    settings = Settings()
+    settings.trusted_proxy_sources = "openbase-orchestrator,openbase-memory-proxy"
+    settings_module = importlib.import_module("openbase.settings")
+    monkeypatch.setattr(settings_module, "_settings", settings)
+
+
+def test_identity_context_parses_four_headers_with_trusted_source(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """受信来源（X-Proxy-Source ∈ 白名单）携带四维身份头 → 采纳解析."""
     from openbase.core.deps.auth import get_identity_context
 
+    _trusted_settings(monkeypatch)
     request = _FakeRequest(
         {
+            "X-Proxy-Source": "openbase-orchestrator",
             "X-User-Id": "42",
             "X-Tenant-Id": "tenant_a",
             "X-Team-Id": "team_1",
@@ -197,6 +213,26 @@ def test_identity_context_parses_four_headers() -> None:
     assert context.tenant_id == "tenant_a"
     assert context.team_id == "team_1"
     assert context.agent_id == "agent_x"
+
+
+def test_identity_context_ignores_untrusted_headers() -> None:
+    """非受信来源（客户端直连伪造）带四维头 → 忽略（P2-1 T3-6 试点语义）."""
+    from openbase.core.deps.auth import get_identity_context
+
+    request = _FakeRequest(
+        {
+            "X-User-Id": "999",
+            "X-Tenant-Id": "evil_tenant",
+            "X-Team-Id": "team_1",
+            "X-Agent-Id": "agent_x",
+        }
+    )
+    context = get_identity_context(request)
+    # 客户端自带头不再作为事实源（identity_headers_ignored 标注）
+    assert context.user_id is None
+    assert context.tenant_id is None
+    assert context.team_id is None
+    assert context.agent_id is None
 
 
 def test_identity_context_handles_missing_headers() -> None:

@@ -46,6 +46,17 @@ def get_api_key_store() -> ApiKeyStore:
     return _api_key_store
 
 
+def _mark_identity_headers_ignored(request: Request) -> None:
+    """审计标注 identity_headers_ignored（请求对象无 state 时静默跳过）."""
+    state = getattr(request, "state", None)
+    if state is None:
+        return
+    try:
+        state.identity_headers_ignored = True
+    except Exception:  # noqa: BLE001 - 标注尽力而为
+        pass
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     """统一鉴权中间件：管理接口必须携带有效 JWT（SR-001）.
 
@@ -80,6 +91,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if path.startswith(self.PUBLIC_PREFIXES):
             return await call_next(request)
+
+        # P2-1 T3（K02 OpenBase 试点，D-V5）：非公开路径认证前先做入站身份头来源校验
+        # （strip/enforce 两段式，settings 开关；默认过渡期仅不采信 + WARN 审计标注）。
+        gate_response = self._inbound_identity_header_gate(request)
+        if gate_response is not None:
+            return gate_response
 
         authorization = request.headers.get("Authorization", "")
         if not authorization.startswith("Bearer "):
@@ -126,6 +143,74 @@ class AuthMiddleware(BaseHTTPMiddleware):
             snapshot = await principal_verification.verify_principal(session, payload)
         if snapshot is not None:
             request.state.verified_principal = snapshot
+
+    def _inbound_identity_header_gate(self, request: Request) -> Response | None:
+        """入站身份头来源门禁（P2-1 §3.4/§5.4，D-V5 试点）.
+
+        - 无身份头 → None（继续自身认证，self_auth）；
+        - X-Proxy-Source ∈ 白名单且带身份头 → None（受信编排透传，trusted）；
+        - 非受信 + 带身份头：
+          * enforce_inbound_identity_headers=True → 403
+            ``PERM_UNTRUSTED_IDENTITY_HEADER``（门禁后强校验）；
+          * strip_inbound_identity_headers=True → 物理剥除后继续自身认证；
+          * 过渡期（默认）→ 仅标注 ``request.state.identity_headers_ignored`` + WARN。
+        """
+        from openbase.modules.protocol_headers import (
+            InboundClassification,
+            classify_inbound,
+            inbound_identity_headers_present,
+            strip_untrusted_identity_headers,
+        )
+        from openbase.settings import get_settings
+
+        settings = get_settings()
+        whitelist = settings.trusted_proxy_sources_list
+        if not inbound_identity_headers_present(request):
+            return None
+        classification = classify_inbound(
+            request, whitelist, enforce=settings.enforce_inbound_identity_headers
+        )
+        if classification in (
+            InboundClassification.SELF_AUTH,
+            InboundClassification.TRUSTED,
+        ):
+            return None
+        if classification == InboundClassification.FORBIDDEN:
+            proxy_source = request.headers.get("X-Proxy-Source")
+            identity_headers = [
+                header_name
+                for header_name in (
+                    "X-User-ID",
+                    "X-Tenant-Id",
+                    "X-Org-ID",
+                    "X-User-Role",
+                    "X-Agent-Id",
+                    "X-On-Behalf-Of",
+                )
+                if request.headers.get(header_name)
+            ]
+            exc = BaseError(
+                ErrorCode.PERM_UNTRUSTED_IDENTITY_HEADER,
+                "identity headers from untrusted source",
+                detail={
+                    "proxy_source": proxy_source,
+                    "headers": identity_headers,
+                },
+            )
+            return self._error_response(exc)
+        # IGNORED（过渡期/剥离期）：不采信 + 审计标注
+        request.state.identity_headers_ignored = True
+        logger.warning(
+            "inbound identity headers ignored (untrusted source)",
+            extra={
+                "proxy_source": request.headers.get("X-Proxy-Source"),
+                "path": request.url.path,
+            },
+        )
+        if settings.strip_inbound_identity_headers:
+            scope_headers = request.scope.get("headers") or []
+            request.scope["headers"] = strip_untrusted_identity_headers(scope_headers)
+        return None
 
     @staticmethod
     def _error_response(exc: BaseError) -> JSONResponse:
@@ -216,9 +301,11 @@ async def get_current_user(
         "username": payload.get("username", ""),
         "tenant_id": payload.get("tenant_id"),
         "tenant_code": payload.get("tenant_code"),
+        "org_id": payload.get("org_id"),
         "subject_type": payload.get("sub_type", "user"),
         "role": payload.get("role"),
         "permissions": payload.get("permissions") or [],
+        "auth_method": "jwt",
         "on_behalf_of": delegated,
         "delegated": (
             {
@@ -236,22 +323,37 @@ async def get_current_user(
 async def get_current_tenant(request: Request) -> str | None:
     """FastAPI 依赖：解析当前租户上下文.
 
-    优先取请求头 X-Tenant-Id，其次取 JWT payload 中 tenant_id。
+    P2-1 T3（K02 OpenBase 试点收口，§3.4/§5.4）：入站 X-Tenant-Id 头**仅在受信来源
+    （X-Proxy-Source ∈ settings.trusted_proxy_sources）时优先采纳**；否则以 JWT/上下文
+    为准（客户端自带头不再无校验覆盖 JWT，D-V5 试点）。非受信来源带头 → 标注
+    ``request.state.identity_headers_ignored`` 供审计。
 
     Returns:
         租户编码（Schema 名）；未指定返回 None。
     """
+    from openbase.modules.protocol_headers import (
+        assert_trusted_source,
+        trusted_source_of,
+    )
+    from openbase.settings import get_settings
+
+    settings = get_settings()
     header = request.headers.get("X-Tenant-Id")
-    if header:
+    source = trusted_source_of(request)
+    source_trusted = assert_trusted_source(source, settings.trusted_proxy_sources_list)
+    if header and source_trusted:
         return header
+    if header and not source_trusted:
+        # 非受信来源：不采信客户端自带头（审计标注 identity_headers_ignored）
+        _mark_identity_headers_ignored(request)
 
     authorization = request.headers.get("Authorization", "")
     if authorization.startswith("Bearer "):
         from openbase.modules.auth.jwt import decode_access_token
 
         payload = decode_access_token(authorization.removeprefix("Bearer ").strip())
-        if payload and payload.get("tenant_id"):
-            return str(payload["tenant_id"])
+        if payload and (payload.get("tenant_code") or payload.get("tenant_id")):
+            return str(payload.get("tenant_code") or payload["tenant_id"])
     return None
 
 
@@ -275,14 +377,40 @@ class IdentityContext:
 
 
 def get_identity_context(request: Request) -> IdentityContext:
-    """解析四维身份上下文（从请求头，缺省返回 None 字段不抛异常）.
+    """解析四维身份上下文（P2-1 T3 试点收口后）.
 
-    优先级：请求头 > JWT payload（user_id/tenant_id）。
+    来源优先级（§3.2/§3.4/§5.4）：
+    - 入站 X-User-Id/X-Tenant-Id/X-Team-Id/X-Agent-Id **仅在受信来源携带时采纳**
+      （X-Proxy-Source ∈ settings.trusted_proxy_sources；trusted 透传语义）；
+    - 其余情况 JWT payload 回退（user_id/tenant_id）；
+    - 非受信来源带头 → 忽略头 + 标注 ``request.state.identity_headers_ignored``（审计）。
     """
-    user_id = request.headers.get("X-User-Id")
-    tenant_id = request.headers.get("X-Tenant-Id")
-    team_id = request.headers.get("X-Team-Id")
-    agent_id = request.headers.get("X-Agent-Id")
+    from openbase.modules.protocol_headers import (
+        assert_trusted_source,
+        trusted_source_of,
+    )
+    from openbase.settings import get_settings
+
+    settings = get_settings()
+    source = trusted_source_of(request)
+    source_trusted = assert_trusted_source(source, settings.trusted_proxy_sources_list)
+
+    user_id = tenant_id = team_id = agent_id = None
+    if source_trusted:
+        user_id = request.headers.get("X-User-Id")
+        tenant_id = request.headers.get("X-Tenant-Id")
+        team_id = request.headers.get("X-Team-Id")
+        agent_id = request.headers.get("X-Agent-Id")
+    else:
+        for header_name in (
+            "X-User-Id",
+            "X-Tenant-Id",
+            "X-Team-Id",
+            "X-Agent-Id",
+        ):
+            if request.headers.get(header_name):
+                _mark_identity_headers_ignored(request)
+                break
 
     # JWT 回退（user_id/tenant_id）
     authorization = request.headers.get("Authorization", "")
@@ -300,8 +428,8 @@ def get_identity_context(request: Request) -> IdentityContext:
             from openbase.modules.auth.jwt import decode_access_token
 
             payload = decode_access_token(authorization.removeprefix("Bearer ").strip())
-            if payload and payload.get("tenant_id"):
-                tenant_id = str(payload["tenant_id"])
+            if payload and (payload.get("tenant_code") or payload.get("tenant_id")):
+                tenant_id = str(payload.get("tenant_code") or payload["tenant_id"])
         except Exception:  # noqa: BLE001
             pass
 

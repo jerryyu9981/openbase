@@ -184,6 +184,26 @@ class Settings(BaseSettings):
     dps_org_map: str = ""
     dps_tenant_map: str = ""
 
+    # ---- P2-1 协议头与信任链（K02/K03；设计草案 §3.3/§5.4/§11.1）----
+    # 受信来源白名单（逗号分隔，如 "openbase-dps-proxy,openbase-llm-proxy,..."）；
+    # 默认空 = 不信任任何外部携带的身份头（OpenBase 自身出口不在其列）。
+    trusted_proxy_sources: str = ""
+    # 入站头收口分段开关（§5.4 两段式）：过渡期仅审计标注不采信（默认）；
+    # 剥离期物理剥除非受信来源身份头；强校验期非受信带头 → 403。
+    strip_inbound_identity_headers: bool = False
+    enforce_inbound_identity_headers: bool = False
+    # 出站严格模式（出站头与规范不符 → 502/审计；默认 false，常规补头始终开启）
+    enforce_proxy_identity_headers: bool = False
+    # X-Org-ID 别名强模式（org ≠ tenant → 403；批次 2/T7 接线）
+    enforce_org_alias: bool = False
+    # K03 过渡豁免白名单清单（JSON 数组：{id, system, method, path_pattern, reason,
+    # owner, audit, expires_at}）；白名单外匿名业务写一律拒绝（D-V6）。
+    k03_bypass_whitelist: str = ""
+    # OB-12 角色互译表 JSON（schema_version/anchors/systems；批次 2/T6 消费）
+    role_intertranslate: str = ""
+    # dps org/tenant code→UUID 登记式基线 JSON（批次 2/T7 消费）
+    dps_code_map: str = ""
+
     # ---- 模块启停（内部状态） ----
     _enabled_modules: set[str] = set()
 
@@ -243,6 +263,39 @@ class Settings(BaseSettings):
     def enabled_modules(self) -> list[str]:
         """已启用模块列表（保持注册顺序）. """
         return [m for m in AVAILABLE_MODULES if m in self._enabled_modules]
+
+    # ---- P2-1 协议头/信任链辅助解析（§3.3/§5.2）----
+
+    @property
+    def trusted_proxy_sources_list(self) -> list[str]:
+        """受信来源白名单解析（逗号分隔 → 去空列表）."""
+        return [item.strip() for item in (self.trusted_proxy_sources or "").split(",") if item.strip()]
+
+    def parse_k03_bypass_whitelist(self) -> list[dict]:
+        """K03 过渡豁免白名单解析（JSON 数组；非法/空 → 空表）.
+
+        Returns:
+            白名单条目 dict 列表。非法 JSON 记 WARN 并按空表处理（fail-closed：
+            白名单外匿名业务写一律拒绝，宁可 403 也不放宽）。
+        """
+        raw = self.k03_bypass_whitelist or ""
+        if not raw:
+            return []
+        try:
+            import json
+
+            data = json.loads(raw)
+        except (TypeError, ValueError):
+            logger.warning(
+                "k03_bypass_whitelist invalid JSON; treated as empty (fail-closed)"
+            )
+            return []
+        if not isinstance(data, list):
+            logger.warning(
+                "k03_bypass_whitelist must be a JSON array; treated as empty (fail-closed)"
+            )
+            return []
+        return [item for item in data if isinstance(item, dict)]
 
 
 _settings: Settings | None = None
