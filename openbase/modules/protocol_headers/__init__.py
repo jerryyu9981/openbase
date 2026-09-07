@@ -51,6 +51,7 @@ from openbase.modules.protocol_headers.role_map import (
     default_role_intertranslate,
     load_role_map,
     translate_role_code,
+    validate_role_map,
     validate_role_map_structure,
 )
 from openbase.modules.protocol_headers.validate import (
@@ -106,5 +107,6 @@ __all__ = [
     "trusted_source_of",
     "validate_header_value",
     "validate_identity_headers",
+    "validate_role_map",
     "validate_role_map_structure",
 ]

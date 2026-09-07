@@ -29,6 +29,7 @@ from openbase.modules.protocol_headers.constants import (
     OUTBOUND_IDENTITY_TARGETS,
     SOURCE_BY_TARGET_SYSTEM,
 )
+from openbase.modules.protocol_headers.identity_audit import attach_outbound_identity
 from openbase.modules.protocol_headers.identity_context import resolve_identity
 from openbase.modules.protocol_headers.role_map import translate_role_code
 from openbase.modules.protocol_headers.validate import validate_header_value
@@ -133,8 +134,15 @@ def build_outbound_headers(
             HEADER_ORG_ID, _apply_value_map(org_value or mapped_tenant, org_value_map)
         )
 
-    # X-User-Role（可解析/缺省时注入；无则省略）
-    translated_role = translate_role_code(role_map, target_system, role_value)
+    # X-User-Role：仅对**主体解析出的有效角色**做互译（§6.3/T6 挂点）；
+    # 显式默认值（如 dps 历史语义 default_role="user"）为目标侧原生码，原样透传。
+    # 配置了目标系统互译表但主体角色未命中表 → translate_role_code fail-closed（403）。
+    if identity.effective_role:
+        translated_role = translate_role_code(
+            role_map, target_system, identity.effective_role
+        )
+    else:
+        translated_role = role_value
     if translated_role:
         headers[HEADER_USER_ROLE] = validate_header_value(
             HEADER_USER_ROLE, translated_role
@@ -145,5 +153,14 @@ def build_outbound_headers(
         headers[HEADER_AGENT_ID] = validate_header_value(
             HEADER_AGENT_ID, identity.agent_id
         )
+
+    # 审计 identity 块（§8.2，T5/OB-6）：出站装配即写入 request.state.identity，
+    # AuditMiddleware._record 经 extra.identity 贯穿 agent/user 主体审计记录。
+    attach_outbound_identity(
+        request,
+        user_ctx,
+        proxy_source=source,
+        request_id=headers.get(HEADER_REQUEST_ID),
+    )
 
     return headers

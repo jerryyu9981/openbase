@@ -31,7 +31,11 @@ from fastapi.responses import JSONResponse
 
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.modules.protocol_headers import TARGET_SYSTEM_DPS, build_outbound_headers
+from openbase.modules.protocol_headers import (
+    TARGET_SYSTEM_DPS,
+    build_outbound_headers,
+    load_role_map,
+)
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.dps_proxy")
@@ -78,7 +82,8 @@ def _build_identity_headers(user: dict, request: Request) -> dict[str, str]:
     - X-User-ID ← 有效主体 sub（委托时为 delegated.subject_id）
     - X-Tenant-ID ← tenant_code 优先链 → dps_default_tenant_id 显式兜底 → 值映射
     - X-Org-ID ← 兼容别名（值域=tenant 语义；显式别名 org 头随批次 2/T7 收敛）
-    - X-User-Role ← 有效角色（缺省 dps 历史语义 "user"）
+    - X-User-Role ← 有效角色（缺省 dps 历史语义 "user"）；目标系统配置了互译表
+      （settings.role_intertranslate，OB-12/T6）时经表翻译为 DPS 角色码
     - X-Proxy-Source ← PROXY_SOURCE_DPS（新增）；X-Request-Id ← request_id 透传
     """
     settings = get_settings()
@@ -91,6 +96,7 @@ def _build_identity_headers(user: dict, request: Request) -> dict[str, str]:
         default_role="user",
         tenant_value_map=_parse_map_json(settings.dps_tenant_map),
         org_value_map=_parse_map_json(settings.dps_org_map),
+        role_map=load_role_map(settings.role_intertranslate),
     )
 
 

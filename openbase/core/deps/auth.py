@@ -57,6 +57,25 @@ def _mark_identity_headers_ignored(request: Request) -> None:
         pass
 
 
+def _attach_audit_identity(request: Request, user_ctx: dict) -> None:
+    """认证解析完成后写入 request.state.identity（P2-1 §8.2/§8.3，批次 2/T5）.
+
+    AuditMiddleware._record 读取该 state 并入审计记录 extra.identity；出站装配
+    （build_outbound_headers）会以出口来源覆盖 proxy_source，本处仅覆盖普通端点
+    （含 sk-agent 直连端点）的入站链路审计主体面。
+    """
+    if not isinstance(user_ctx, dict):
+        return
+    try:
+        from openbase.modules.protocol_headers.identity_audit import (
+            attach_outbound_identity,
+        )
+
+        attach_outbound_identity(request, user_ctx, proxy_source=None)
+    except Exception:  # noqa: BLE001 - 审计附加尽力而为，不阻断认证
+        logger.debug("attach audit identity skipped", exc_info=True)
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     """统一鉴权中间件：管理接口必须携带有效 JWT（SR-001）.
 
@@ -262,7 +281,9 @@ async def get_current_user(
     if token.startswith("sk-agent-"):
         from openbase.modules.identity.agent_keys import resolve_agent_principal
 
-        return await resolve_agent_principal(session, token)
+        principal = await resolve_agent_principal(session, token)
+        _attach_audit_identity(request, principal)
+        return principal
     payload = decode_access_token(token)
     if payload is None:
         raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "invalid or expired token")
@@ -296,7 +317,7 @@ async def get_current_user(
     except BaseError:
         # 结构畸形已在 verify_principal（逐跳重校验）拦截，此处兜底置 None
         delegated = None
-    return {
+    user_context = {
         "id": user_int_id if user_int_id is not None else str(user_id),
         "username": payload.get("username", ""),
         "tenant_id": payload.get("tenant_id"),
@@ -318,6 +339,8 @@ async def get_current_user(
             else None
         ),
     }
+    _attach_audit_identity(request, user_context)
+    return user_context
 
 
 async def get_current_tenant(request: Request) -> str | None:

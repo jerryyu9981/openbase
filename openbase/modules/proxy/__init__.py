@@ -76,6 +76,50 @@ def _is_service_key_identity(identity: dict) -> bool:
     return bool(identity) and "scope" in identity and "id" not in identity
 
 
+def _resolve_service_account_subject(identity: dict) -> dict | None:
+    """ob_k_ 服务 Key → 服务账号主体上下文（P2-1 §3.7 例 3 / §5.2 D-V6）.
+
+    服务 Key 凭据（{name, scope}）命中 settings.service_account_subject_map（按 name
+    精确 / name_prefix 前缀）→ 返回可装配出站身份头的服务账号主体上下文
+    （X-User-ID=subject_id、X-Tenant-ID/X-Org-ID=tenant_code、X-User-Role=role）；
+    未绑定/未命中 → None（出站维持仅来源标注，不构造伪主体身份头）。
+
+    Args:
+        identity: get_proxy_identity 服务 Key 凭据 dict。
+
+    Returns:
+        服务账号主体上下文 dict；无绑定返回 None。
+    """
+    if not _is_service_key_identity(identity):
+        return None
+    name = str(identity.get("name") or "")
+    settings = get_settings()
+    for entry in settings.parse_service_account_subject_map():
+        subject_id = entry.get("subject_id")
+        tenant_code = entry.get("tenant_code")
+        if subject_id is None or not tenant_code:
+            continue
+        exact_name = entry.get("name")
+        name_prefix = entry.get("name_prefix")
+        matched = bool(
+            (exact_name and name == str(exact_name))
+            or (name_prefix and name.startswith(str(name_prefix)))
+        )
+        if not matched:
+            continue
+        return {
+            "id": subject_id,
+            "username": name or str(exact_name or ""),
+            "subject_type": "user",
+            "tenant_code": str(tenant_code),
+            "org_id": str(tenant_code),
+            "role": str(entry.get("role") or "viewer"),
+            "permissions": [],
+            "auth_method": "service-key",
+        }
+    return None
+
+
 def _k03_bypass_matches(entry: dict, *, system: str, method: str, path: str) -> bool:
     """K03 过渡豁免白名单条目匹配（system+method+path_pattern 三者命中）."""
     if entry.get("system") not in (None, "*", system):
@@ -208,8 +252,13 @@ async def proxy(
         "Content-Type": request.headers.get("Content-Type", "application/json"),
         "Accept": request.headers.get("Accept", "application/json"),
     }
-    # 出站身份头唯一装配点（JWT 通道 = 主体身份；ob_k_ 通道 = 来源标注）
-    outbound_user = None if is_service_key else identity
+    # 出站身份头唯一装配点（JWT 通道 = 主体身份；ob_k_ 通道 = 服务账号映射或仅来源标注）
+    # P2-1 §3.7 例 3 / §5.2 D-V6：服务 Key 命中 service_account_subject_map → 以映射
+    # 服务账号主体上下文补头；未绑定服务 Key → None（维持来源标注，不构造伪主体头）。
+    if is_service_key:
+        outbound_user = _resolve_service_account_subject(identity)
+    else:
+        outbound_user = identity
     headers = build_outbound_headers(
         request,
         outbound_user,

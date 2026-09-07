@@ -201,6 +201,11 @@ class Settings(BaseSettings):
     k03_bypass_whitelist: str = ""
     # OB-12 角色互译表 JSON（schema_version/anchors/systems；批次 2/T6 消费）
     role_intertranslate: str = ""
+    # 通用 proxy ob_k_ 服务 Key「服务账号主体映射」JSON 数组（P2-1 §3.7 例 3/§5.2 D-V6）：
+    # 每条 {name 或 name_prefix, subject_id, tenant_code, role}；ob_k_ 凭据命中映射 →
+    # 出站以服务账号主体上下文补头（X-User-ID=subject_id 等）；未绑定 → 维持仅来源标注
+    # （不构造伪主体身份头）。业务写仍受 k03_bypass_whitelist fail-closed 约束（D-V6）。
+    service_account_subject_map: str = ""
     # dps org/tenant code→UUID 登记式基线 JSON（批次 2/T7 消费）
     dps_code_map: str = ""
 
@@ -293,6 +298,31 @@ class Settings(BaseSettings):
         if not isinstance(data, list):
             logger.warning(
                 "k03_bypass_whitelist must be a JSON array; treated as empty (fail-closed)"
+            )
+            return []
+        return [item for item in data if isinstance(item, dict)]
+
+    def parse_service_account_subject_map(self) -> list[dict]:
+        """ob_k_ 服务账号主体映射解析（JSON 数组；非法/空 → 空表）.
+
+        条目：{name 或 name_prefix, subject_id, tenant_code, role}。
+        非法 JSON/结构记 WARN 并按空表处理——出站回落「仅来源标注」语义，不构造伪主体。
+        """
+        raw = self.service_account_subject_map or ""
+        if not raw:
+            return []
+        try:
+            import json
+
+            data = json.loads(raw)
+        except (TypeError, ValueError):
+            logger.warning(
+                "service_account_subject_map invalid JSON; treated as empty"
+            )
+            return []
+        if not isinstance(data, list):
+            logger.warning(
+                "service_account_subject_map must be a JSON array; treated as empty"
             )
             return []
         return [item for item in data if isinstance(item, dict)]

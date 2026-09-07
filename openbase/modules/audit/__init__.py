@@ -247,6 +247,13 @@ class AuditMiddleware(BaseHTTPMiddleware):
         """记录审计条目（异步语义：不阻塞主请求）. """
         try:
             user_id, user_name = self._extract_user_info(request)
+            # P2-1 §8.2/§8.3（批次 2/T5 OB-6）：request.state.identity（认证依赖/
+            # 出站装配写入）并入审计记录 extra.identity——agent/user 主体审计贯穿，
+            # principal.subject_type=agent 可由 detail/extra 直接识别（T8 全链沿用）。
+            identity = getattr(request.state, "identity", None)
+            extra = {"query_params": str(request.query_params), "safe_headers": self._safe_headers(request)}
+            if isinstance(identity, dict) and identity.get("principal"):
+                extra["identity"] = identity
             record = APICallRecord(
                 method=request.method,
                 path=request.url.path,
@@ -260,7 +267,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 user_agent=request.headers.get("User-Agent"),
                 request_body=self._sanitize_body(request),
                 error=error,
-                extra={"query_params": str(request.query_params), "safe_headers": self._safe_headers(request)},
+                extra=extra,
             )
             AuditService.record_api_call(record)
         except Exception:  # noqa: BLE001
