@@ -3,11 +3,11 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-ISOCARDS-v1.0.0 |
-| 版本 | v1.3.0 |
-| 状态 | [Review]（24 卡：R1=14（K01-K08 + RA-01~RA-06）/ R2=10；v1.3.0 回写：K01/K03（OB-3）、K02（规范 v1.0 发布）、K07（模板 v1.0 发布）与升级项 OB-6/OB-8/OB-9/OB-12/OB-13 已完成（实施，P2-1 S1b，批次 1~3），OB-7/OB-10 外移（见 P2-1 设计草案 §9.3） |
-| 日期 | 2026-09-08 |
+| 版本 | v1.4.0 |
+| 状态 | [Review]（24 卡：R1=14（K01-K08 + RA-01~RA-06）/ R2=10；v1.4.0 回写：S2（OpenMemory）段收口——K02(OM)/K05(OM-2)/RA-05(OM-1)/K06(OM-3) 已完成、K07 OM 端点-过滤矩阵填报完成，OB-11(OM 存量回填)/L1-1(OM 事件消费端)/OM-4/L3-2 贯通冒烟经 S2 段门禁（五项全绿）登记于卡尾执行摘要；OpenMemory 侧提交链待沙箱外放行后回填（见放行清单 v1.0.0）） |
+| 日期 | 2026-09-09 |
 | 作者 | AD（跨项目分析） |
-| 版本主题 | 将《统一身份最小特征集与隔离模型设计 v1.3.0》§12 数据隔离实现细则（22 条规则）拆为可执行任务卡，并补齐 R1 批次范围内非 §12 工作项（U1/P2-2/治理）：每卡含目标升级项、系统、批次、改动点、实现步骤、测试用例、验收断言（v1.2.0：S1a 收口回写 RA-01/RA-02/K04/K08 状态与提交链；v1.3.0：S1b/P2-1 收口回写 K01/K03/K02/K07 与 OB-3/6/8/9/12/13 状态与提交链） |
+| 版本主题 | 将《统一身份最小特征集与隔离模型设计 v1.3.0》§12 数据隔离实现细则（22 条规则）拆为可执行任务卡，并补齐 R1 批次范围内非 §12 工作项（U1/P2-2/治理）：每卡含目标升级项、系统、批次、改动点、实现步骤、测试用例、验收断言（v1.2.0：S1a 收口回写 RA-01/RA-02/K04/K08 状态与提交链；v1.3.0：S1b/P2-1 收口回写 K01/K03/K02/K07 与 OB-3/6/8/9/12/13 状态与提交链；v1.4.0：S2（OpenMemory）段收口回写 K02(OM)/K05(OM)/RA-05/K06/K07(OM 填报) 状态与卡尾 S2 段执行摘要（OB-11(OM)/L1-1(OM)/OM-4/L3-2）） |
 | 上游依据 | 身份最小集 v1.3.0 §12（R-H/M/L 规则）；文档体系与升级路线规划 v1.1.0（升级项编号 OB-*/OM-*/RG-*/DP-*/LL-*/SYS-1 与批次）；P2-2 立项方案 v1.0.0；U1 立项方案 v1.1.0 / 设计草案 v1.1.0（实施依据）；P2-1 立项方案 v1.1.0 / 设计草案 v1.1.0（S1b 收口依据，均已 [Approved]） |
 
 ## 修订历史
@@ -18,6 +18,7 @@
 | v1.1.0 | 2026-09-06 | AD（跨项目分析） | R1 范围评审补齐：新增 RA-01~RA-06 六卡（主体模型/login 闭环/fail-closed/绑定收紧/sessions 端点归属/R1 门禁聚合），覆盖 R1 批次非 §12 工作项；K05 显式协同 OM-1 |
 | v1.2.0 | 2026-09-07 | U1 开发组 | S1a（U1）收口回写：RA-01/RA-02/K04/K08 状态由「待立项（U1）」更新为「✅已完成（实施）」，登记 U1 T1~T4 提交链（c1869bf/9a8dc24/bdbe146/993bc57）；K08 委托头唯一签发收口按依赖 R2 移交 S1b（P2-1） |
 | v1.3.0 | 2026-09-08 | P2-1 开发组 | S1b（P2-1）收口回写：K01/K03（OB-3）状态改「✅已完成（实施，P2-1 批次 1~3）」，K02（SYS-1）改「✅规范 v1.0 已发布 + OpenBase 试点完成（下游 S2-S5 落地）」，K07（SYS-1 续）改「✅模板 v1.0 已发布（填报随 S2-S5）」，K08 补充登记委托头唯一签发规范 v1.0 收口；升级项 OB-6/OB-8/OB-9/OB-12/OB-13 已完成（P2-1），OB-7/OB-10 外移；登记 P2-1 提交链（批次 1/2：25b65d7/51c6657/09f28fa/9a0aa49；批次 3 见 P2-1 DevLogReport v1.0.0） |
+| v1.4.0 | 2026-09-09 | AD（跨项目分析） | S2（OpenMemory）段收口回写：K02(OM) 协议头入站校验（S2-T1/T2：IdentityGate 白名单/fail-closed + B-1 agent 双层认证）、K05(OM-2) 行控强制过滤（S2-T3）、RA-05(OM-1) sessions 归属（S2-T4）、K06(OM-3) 复合唯一（S2-T5 落地 alembic v702）状态更新为「✅已完成」；K07 登记 OM 端点-过滤矩阵填报完成（S2-T10，doc/design/OpenMemory-K07-端点过滤矩阵填报 v1.0.1 [Approved]，缺口清零）；卡尾登记 S2 段执行摘要（OB-11(OM) 存量回填 v703 0 孤儿、L1-1(OM) 事件真实消费端 v704 阻断集+幂等+双通道、OM-4 M1/M2、L3-2 贯通冒烟 S2-T13 真实 HTTP 双签移交部署/联调窗口与 S7）；提交链以 OpenMemory S2 DevLogReport v1.0.1 为准，OpenMemory 侧提交待沙箱外执行（见 doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md），OpenBase 侧锚点 commit 0713ec1=事件列表契约端点 |
 
 ---
 
@@ -40,7 +41,7 @@
 - 验收断言：任意 proxy 出站请求头仅来自签发上下文；`TRUSTED_PROXY_SOURCES` 全仓仅一种取值。
 
 ### K02 白名单身份头下游校验（SYS-1）
-- 规则/升级项：§12.1 R-H1-2 → SYS-1；批次 R1；前置 K01；状态 ✅规范 v1.0 已发布（P2-1 T3/S1b）+ OpenBase 试点完成（非白名单带头 403 开关化/剥除/审计）；下游 OpenRAG/OpenMemory/DPS/OpenLLM 各仓落地随 S2-S5 段 K02 执行
+- 规则/升级项：§12.1 R-H1-2 → SYS-1；批次 R1；前置 K01；状态 ✅规范 v1.0 已发布（P2-1 T3/S1b）+ OpenBase 试点完成（非白名单带头 403 开关化/剥除/审计）+ **OpenMemory 段落地完成（S2-T1/T2：IdentityGate 协议头入站校验与来源白名单 + block_subject_gate + B-1 agent 双层认证，fail-closed）**；OpenRAG/DPS/OpenLLM 各仓 K02 落地随 S3-S5 段执行
 - 系统：OpenRAG / OpenMemory / DPS / OpenLLM 网关（各功能系统入口中间件）
 - 改动点：各系统鉴权/身份中间件新增"来源白名单校验"：请求带身份头但来源（X-Proxy-Source/对端 IP）不在白名单 → 403；匿名请求走自身认证（M1）。
 - 实现步骤：① 各仓引入统一白名单配置键；② 中间件在身份解析前校验来源与头一致性；③ 行为矩阵化（白名单+头=信任 / 白名单无头=自身认证 / 非白名单带头=403）。
@@ -64,7 +65,7 @@
 - 验收断言：停用→存量 token 请求返回 401/403（最迟一次刷新窗口）；无"仅验签不验状态"路径。
 
 ### K05 OpenMemory 强制过滤骨架（协同 OM-1/OM-2）
-- 规则/升级项：§12.3 R-H3-1/2/3/4 → OM-2；协同 OM-1（sessions 端点归属，见 RA-05）；批次 R1；前置 —；状态 🚧已立项（P2-2 Phase2）
+- 规则/升级项：§12.3 R-H3-1/2/3/4 → OM-2；协同 OM-1（sessions 端点归属，见 RA-05）；批次 R1；前置 —；状态 ✅已完成（实施，OpenMemory S2-T3 行控强制过滤收口（repository 强制注入 (tenant_code, owner)、豁免清单、fail-closed 默认）+ S2-T4 sessions 归属收口（协同 RA-05/OM-1），见 OpenMemory S2 DevLogReport v1.0.1）
 - 系统：OpenMemory（repository/数据访问层）
 - 改动点：repository/DAO 基类强制注入 `(tenant_code, owner)` 过滤；原生 SQL 豁免走显式清单+评审；ORM 钩子纵深防御；memories/sessions 存量查询全部迁移骨架（sessions 端点归属在 RA-05 做端点级显式化）。
 - 实现步骤：① 建带强制过滤的查询基类（所有查询入口必经）；② memories/sessions 存量查询全部迁移到骨架；③ 豁免清单机制+代码评审门禁；④ 可选 SQLAlchemy event 兜底。
@@ -72,7 +73,7 @@
 - 验收断言：双租户隔离用例全绿（跨域读 404/403）；sessions list 不再全量遍历。
 
 ### K06 OpenMemory 复合唯一
-- 规则/升级项：§12.4 R-M1-1/2（OM 部分）→ OM-3；批次 R1；前置 K05；状态 ⏳待立项
+- 规则/升级项：§12.4 R-M1-1/2（OM 部分）→ OM-3；批次 R1；前置 K05；状态 ✅已完成（实施，OpenMemory S2-T5：namespace 唯一升级 (tenant_code, name) 复合唯一，alembic v702 幂等落地，见 OpenMemory S2 DevLogReport v1.0.1）
 - 系统：OpenMemory（schema/迁移）
 - 改动点：namespace 唯一索引升级为 `(tenant_code, name)` 复合唯一；存量迁移增量回填。
 - 实现步骤：① 迁移新增复合唯一约束（幂等，W1-4）；② 存量重复名按域拆分；③ 写路径冲突按 (tenant,name) 判定。
@@ -80,7 +81,7 @@
 - 验收断言：复合唯一迁移幂等可重放；跨域同名隔离用例通过。
 
 ### K07 端点-过滤矩阵（SYS-1 续）
-- 规则/升级项：§12.5 R-M2-1/2 → SYS-1；批次 R1；前置 K02/K05；状态 ✅模板 v1.0 已发布（P2-1 T4/S1b：模板文档 + k07_endpoint_matrix.py 脚本骨架 + S2-S5 填报跟踪表登记）；S2-S5 各段实际填报随段执行，S7 RA-06 终验引用
+- 规则/升级项：§12.5 R-M2-1/2 → SYS-1；批次 R1；前置 K02/K05；状态 ✅模板 v1.0 已发布（P2-1 T4/S1b：模板文档 + k07_endpoint_matrix.py 脚本骨架 + S2-S5 填报跟踪表登记）+ **OpenMemory 段填报完成（S2-T10：doc/design/OpenMemory-K07-端点过滤矩阵填报 v1.0.1 [Approved]，缺口清零，CI s2-k07-matrix-gate job 注册）**；OpenRAG/DPS/OpenLLM 填报随 S3-S5 段执行，S7 RA-06 终验引用
 - 系统：OpenBase（编排/proxy）+ OpenMemory + OpenRAG + DPS（端点盘点）
 - 改动点：按端点类别（CRUD/列表分页/搜索/聚合/导出/回调/批量）全量盘点并建立"端点-过滤矩阵"；每新增端点默认配套隔离测试。
 - 实现步骤：① 每系统导出 openapi 端点清单；② 按类别核对过滤覆盖，标红缺口端点；③ 缺口端点补过滤（接 K02/K05 骨架）；④ 新增端点模板内置隔离用例。
@@ -130,7 +131,7 @@
 - 验收断言：生产配置下无"隐式绑定放行"路径。
 
 ### RA-05 sessions 端点归属显式化（OM-1，协同 K05）
-- 规则/升级项：P2-2 Phase2（复盘 L2 sessions 无归属）→ OM-1；批次 R1；前置 K05 骨架；状态 🚧已立项（P2-2 Phase2）
+- 规则/升级项：P2-2 Phase2（复盘 L2 sessions 无归属）→ OM-1；批次 R1；前置 K05 骨架；状态 ✅已完成（实施，OpenMemory S2-T4：sessions list/get/terminate 端点归属显式化（owner/tenant 过滤、list 分页禁全量遍历、跨域 404），见 OpenMemory S2 DevLogReport v1.0.1）
 - 系统：OpenMemory（sessions API）
 - 改动点：sessions list/get/terminate 显式归属校验（owner/tenant 过滤）；list 禁全量遍历（分页+过滤必需）；terminate 仅本人/域内 admin。
 - 实现步骤：① 端点层归属参数解析与校验；② list 强制过滤+分页；③ get/terminate 归属断言（跨域 404）。
@@ -253,5 +254,25 @@
 | K16 | R-L2-1（RG） | RG-1 | R2 |
 | K17 | R-L2-1（LL） | LL-4 | R2 |
 | K18 | R-L2-1（DPS）+R-L3-1 | DP-2 | R2 |
+
+## 附：S2 段（OpenMemory）跨仓收口执行摘要（v1.4.0 回写，2026-09-09）
+
+> 依据：OpenMemory S2 立项方案 v1.1.0 [Approved] / 设计草案 v1.0.3 [Approved] / DevLogReport v1.0.1 [Approved] / 测试报告 v1.0.1 [Approved] / doc/design/OpenMemory-K07-端点过滤矩阵填报 v1.0.1 [Approved]；OpenBase 侧事件契约端点 commit 0713ec1（GET /api/v1/identity/events，2026-09-09 冻结）；S2 段门禁 2026-09-09 人工批准五项全绿，遗留=无阻断项。
+
+| 本卡/规划项 | S2 落地（T# / 迁移 / 产物） | 状态 |
+|-------------|------------------------------|------|
+| K02(OM) 协议头入站校验（SYS-1 下游） | S2-T1/T2：IdentityGate 来源白名单（非白名单带头 403）+ block_subject_gate + B-1 agent 双层认证（受信白名单来源身份头），fail-closed | ✅已完成 |
+| K05(OM-2) 行控 | S2-T3：repository/数据访问行级 (tenant_code, owner) 强制过滤 fail-closed 收口（豁免清单/审计门禁） | ✅已完成 |
+| RA-05(OM-1) sessions 端点归属 | S2-T4：sessions list/get/terminate 归属显式化收口 | ✅已完成 |
+| K06(OM-3) 复合唯一 | S2-T5：namespace → (tenant_code, name) 复合唯一，alembic v702 幂等 | ✅已完成 |
+| OB-11(OM 存量归属映射，§12.9 R-L2-1(OM)；编号口径见 OM-S2 文档) | S2-T6：alembic v703 幂等回填 + scripts/scope_backfill_report.py 对账 0 孤儿（W1-4，不改主键不迁键） | ✅已完成 |
+| L1-1 OM 事件真实消费端（domain=memory） | S2-T7：alembic v704 阻断集 + event_id 幂等落库 + 主备双通道（PullChannel 契约桩回放绿，S2-T13-4） | ✅已完成（真实 HTTP 双签移交部署/联调窗口与 S7 级联验证） |
+| K07 OM 端点-过滤矩阵填报（SYS-1 续） | S2-T10：doc/design/OpenMemory-K07-端点过滤矩阵填报 v1.0.1 [Approved]（底单全覆盖、缺口清零）+ CI s2-k07-matrix-gate job | ✅已完成 |
+| OM-4（M1 独立模式兼容 / M2 受信编排头采纳） | S2-T11（角色互译 OM 档位）+ S2-T12（M1/M2 推导开关） | ✅已完成 |
+| L3-2 OM 贯通冒烟 | S2-T13：scripts/smoke_l3_2.py + tests/unit/test_l3_2_smoke.py（契约桩回放断言绿；真实 HTTP 双签依赖 OpenBase commit 0713ec1，移交部署/联调窗口与 S7；事件通道属身份权威同步面，不纳入 S7 主备切换演练——原则边界①） | ✅已完成 |
+| S2 段门禁 | 五项门禁（协议头入站校验 / 行控 fail-closed 默认 / 消费端阻断生效 / 存量回填 0 孤儿 / 冒烟用例绿）2026-09-09 人工批准全绿 | ✅ |
+
+- **OM-1~4 收口**：OM-1（RA-05）→ S2-T4；OM-2（K05）→ S2-T3；OM-3（K06）→ S2-T5；OM-4 → S2-T11/T12，均已收口（见 OpenMemory S2 文档 §1.1）。
+- **提交链说明**：OpenMemory 仓 S2 产物因 git 沙箱受限保留工作树（HEAD 6cbfb71=v6.9.0 发布闭环），实际提交待沙箱外按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》执行（v7.2 基线 → S2 批次），提交后 hash 回填本摘要；任务执行链以 OpenMemory S2 DevLogReport v1.0.1 T1~T13 记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
 
 状态随实施推进更新；每卡验收断言可直接转测试用例标题（TDD RED 起步）。
