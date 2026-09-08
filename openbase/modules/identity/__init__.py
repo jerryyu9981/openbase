@@ -7,6 +7,9 @@ T2（RA-02/OB-2 状态机）新增 lifecycle 迁移端点族（activate/suspend/
 T5（L1-1 设计草案 §8/§10.1/§11 T5-1~T5-6）新增契约桩 events API：
 POST /events/apply（投递+模拟消费）、GET /events/{event_id}（状态查询/S7 钩子）、
 GET /blocked/{subject_id}（数据面阻断对账桩态：blocked → 403 拒绝语义）。
+Q-DESIGN-1（OpenBase 责任登记）补单向事件列表 GET /events（Pull 兜底轮询通道，
+契约《OpenBase-事件消费契约-v1.0》：无 ack、无 consumer 过滤、cursor=event_id 排他游标
+按 (occurred_at,event_id) 稳定序分页，limit 缺省 50/钳制 100；OpenMemory S2 消费端据此对接）。
 T6（L1-2，Q-5=A 设计草案 §9/§11 T6-1~T6-5）新增 purge 受权端点：
 POST /purge（admin + identity:purge + 一次性授权码 + 影响范围报告确认；仅 deactivated
 主体可 purge，非 deactivated → 400 BIZ_NOT_PURGEABLE，授权缺失/过期 → 403
@@ -37,6 +40,11 @@ from openbase.modules.identity.agents import (
 )
 from openbase.modules.identity.consumer_stub import STUB_DATA_DOMAINS, EventConsumerStub
 from openbase.modules.identity.dispatcher import OutboxDispatcherService
+from openbase.modules.identity.events import (
+    EVENTS_PAGE_DEFAULT_LIMIT,
+    EVENTS_PAGE_MAX_LIMIT,
+    list_published_events_page,
+)
 from openbase.modules.identity.lifecycle import IdentityLifecycleService
 from openbase.modules.identity.purge import IdentityPurgeService
 from openbase.modules.identity.state_machine import (
@@ -584,6 +592,23 @@ class OutboxEventStatusOut(BaseModel):
     payload: dict
 
 
+class IdentityEventListOut(BaseModel):
+    """单向事件列表页（GET /events，OpenBase-事件消费契约 v1.0 / Q-DESIGN-1）.
+
+    events 为 schema v1 全字段事件载荷（逐字段透传 outbox payload，含 subject 嵌套与
+    role_codes/previous_state/current_state/reason）；next_cursor 为空表示无更多。
+    """
+
+    events: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="已 published 事件（schema v1 载荷，按 (occurred_at,event_id) 稳定序）",
+    )
+    next_cursor: str | None = Field(
+        None,
+        description="下一页游标（本页最后一条 event_id，排他上界）；null=无更多",
+    )
+
+
 def _iso_or_none(value: Any) -> str | None:
     return value.isoformat() if value is not None else None
 
@@ -639,6 +664,41 @@ async def event_apply(
             "results": results,
         },
     }
+
+
+@router.get("/events", response_model=IdentityEventListOut)
+async def list_identity_events(
+    cursor: str | None = Query(
+        None,
+        description="排他游标：上一页 next_cursor（须为已 published 事件的 event_id）；缺省=从头部",
+    ),
+    limit: int | None = Query(
+        None,
+        description=f"页大小（缺省 {EVENTS_PAGE_DEFAULT_LIMIT}；超上限钳制为 {EVENTS_PAGE_MAX_LIMIT}）",
+    ),
+    user: dict = Depends(_require_identity_view),
+    session: AsyncSession = Depends(get_db),
+) -> IdentityEventListOut:
+    """单向事件列表（Pull 兜底轮询，契约《OpenBase-事件消费契约-v1.0》/ Q-DESIGN-1）.
+
+    无 ack、无 consumer 过滤；仅返回 outbox 已 published 事件，按 (occurred_at,event_id)
+    稳定序分页（cursor 为排他上界 event_id）。未知/未 published 游标与 limit<1 →
+    400 PARAM_INVALID；limit 缺省 50、服务端钳制上限 100。
+    """
+    page_limit = EVENTS_PAGE_DEFAULT_LIMIT if limit is None else limit
+    if page_limit < 1:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "limit must be a positive integer",
+            detail={"field": "limit", "value": limit},
+        )
+    page_limit = min(page_limit, EVENTS_PAGE_MAX_LIMIT)
+    events, next_cursor = await list_published_events_page(
+        session,
+        cursor=cursor,
+        limit=page_limit,
+    )
+    return IdentityEventListOut(events=events, next_cursor=next_cursor)
 
 
 @router.get("/events/{event_id}", response_model=OutboxEventStatusOut)

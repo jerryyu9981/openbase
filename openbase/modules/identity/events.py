@@ -5,7 +5,9 @@ openbase/core/models/base.py 的 OutboxEvent 声明，create_all 幂等建表）
 - T2：``enqueue_lifecycle_event`` 同事务写 pending + v1 载荷 schema 冻结；
 - T5（L1-1）：本文件补充投递状态常量、事件频道与 schema v1 契约校验
   （``validate_event_payload`` 供 outbox dispatcher / EventConsumerStub / events API 共用）；
-  投递器与契约桩本体在 dispatcher.py / consumer_stub.py。
+  投递器与契约桩本体在 dispatcher.py / consumer_stub.py；
+- Q-DESIGN-1：``list_published_events_page`` 单向事件列表 Pull 兜底分页读取
+  （GET /identity/events，契约《OpenBase-事件消费契约-v1.0》：cursor/limit 语义定案）。
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ import datetime as dt
 import logging
 import uuid
 
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.errors import BaseError, ErrorCode
@@ -42,6 +45,11 @@ EVENT_STATUS_FAILED = "failed"
 
 # ---- Redis/本地频道（§8.2 双形态通道；键命名 openbase:{domain}:{key}）----
 EVENT_CHANNEL = "openbase:identity:events"
+
+# ---- Pull 列表端点（GET /api/v1/identity/events，OpenBase-事件消费契约 v1.0 / Q-DESIGN-1）----
+# limit 语义：缺省 50、服务端钳制上限 100（超限不报错，仅截断）；limit<1 → 400 PARAM_INVALID。
+EVENTS_PAGE_DEFAULT_LIMIT = 50
+EVENTS_PAGE_MAX_LIMIT = 100
 
 # schema v1 必填顶层字段（subject 内另有 subject_id/subject_type）
 _REQUIRED_EVENT_FIELDS = (
@@ -119,6 +127,88 @@ def validate_event_payload(payload: dict) -> dict:
             detail={"missing": missing_subject},
         )
     return payload
+
+
+async def list_published_events_page(
+    session: AsyncSession,
+    *,
+    cursor: str | None,
+    limit: int,
+) -> tuple[list[dict], str | None]:
+    """Pull 兜底分页读取：返回已 published 事件页（OpenBase-事件消费契约 v1.0 / Q-DESIGN-1）.
+
+    单向事件列表（GET /identity/events，无 ack、无 consumer 过滤，消费端以 event_id
+    幂等自滤）。语义定案：
+
+    - 稳定全序：按 (outbox_events.created_at, outbox_events.event_id) 升序；created_at
+      为事件入队落库键（与 payload.occurred_at 同事务同刻），等价于契约的
+      (occurred_at, event_id) 升序稳定序；
+    - cursor：上一页 next_cursor（即上一页最后一条事件的 event_id），**排他上界**——
+      本页仅返回严格晚于 cursor 的事件，不含 cursor 自身；
+    - cursor 仅接受「已 published」事件：event_id 不存在或行状态非 published →
+      400 PARAM_INVALID（不静默从头部返回，消费端据此从头部重拉）；
+    - next_cursor：本页之后仍有更多 → 取本页最后一条 event_id；否则 None（无更多）；
+    - limit：调用方已钳制到 [1, EVENTS_PAGE_MAX_LIMIT]。
+
+    Args:
+        session: 数据库会话（只读，提交由调用方负责）。
+        cursor: 排他游标 event_id（None=从头部开始）。
+        limit: 本页大小（已钳制）。
+
+    Returns:
+        (events, next_cursor)：events 为 schema v1 全字段载荷列表；next_cursor 为空
+        （None）表示无更多。
+    """
+    anchor: OutboxEvent | None = None
+    if cursor is not None:
+        result = await session.execute(
+            select(OutboxEvent).where(OutboxEvent.event_id == cursor)
+        )
+        anchor = result.scalar_one_or_none()
+        if anchor is None:
+            raise BaseError(
+                ErrorCode.PARAM_INVALID,
+                "unknown events list cursor",
+                detail={"field": "cursor", "value": cursor, "reason": "event_id not found"},
+            )
+        if anchor.status != EVENT_STATUS_PUBLISHED:
+            raise BaseError(
+                ErrorCode.PARAM_INVALID,
+                "events list cursor must reference a published event",
+                detail={"field": "cursor", "value": cursor, "status": anchor.status},
+            )
+
+    stmt = select(OutboxEvent).where(OutboxEvent.status == EVENT_STATUS_PUBLISHED)
+    if anchor is not None:
+        # 排他上界：created_at 更大，或同 created_at 时 event_id 字典序更大
+        stmt = stmt.where(
+            or_(
+                OutboxEvent.created_at > anchor.created_at,
+                and_(
+                    OutboxEvent.created_at == anchor.created_at,
+                    OutboxEvent.event_id > anchor.event_id,
+                ),
+            )
+        )
+    # 多取一条判定是否存在下一页（next_cursor 语义精确，不依赖 == limit 猜测）
+    stmt = stmt.order_by(OutboxEvent.created_at, OutboxEvent.event_id).limit(limit + 1)
+    result = await session.execute(stmt)
+    rows = list(result.scalars().all())
+
+    has_more = len(rows) > limit
+    page_rows = rows[:limit]
+    events = [row.payload if isinstance(row.payload, dict) else {} for row in page_rows]
+    next_cursor = page_rows[-1].event_id if has_more else None
+    logger.debug(
+        "identity events pull page served",
+        extra={
+            "cursor": cursor,
+            "limit": limit,
+            "returned": len(events),
+            "next_cursor": next_cursor,
+        },
+    )
+    return events, next_cursor
 
 
 def _now_iso() -> str:
@@ -208,7 +298,10 @@ __all__ = [
     "EVENT_STATUS_PUBLISHED",
     "EVENT_STATUS_FAILED",
     "EVENT_CHANNEL",
+    "EVENTS_PAGE_DEFAULT_LIMIT",
+    "EVENTS_PAGE_MAX_LIMIT",
     "event_type_for_transition",
     "enqueue_lifecycle_event",
+    "list_published_events_page",
     "validate_event_payload",
 ]
