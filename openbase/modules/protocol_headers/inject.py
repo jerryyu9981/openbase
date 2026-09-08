@@ -9,6 +9,10 @@
   ``X-Agent-Id`` 承载执行 agent principal（§3.6 形态 A）。
 - 无身份可解析（匿名/健康/服务级调用未映射）→ 不注入伪身份头（T1-9）。
 - role_map（OB-12）入参预留：目标系统配置互译表时对 X-User-Role 翻译（T6 挂点）。
+- OB-8/T7 别名收敛：X-Org-ID 为退役兼容别名，**不再读取 ctx.org_id 独立中间态**；
+  值 = X-Tenant-ID（tenant 同源）或 ``org_value_map`` 显式别名命中值。
+  ``enforce_org_alias`` 强模式开启后 org≠tenant → 403 ``BIZ_ORG_ALIAS_MISMATCH``
+  （防双向混淆，复盘根因 4.3；默认 false 为兼容段两段式开关）。
 """
 from __future__ import annotations
 
@@ -76,6 +80,7 @@ def build_outbound_headers(
     org_value_map: Mapping[str, str] | None = None,
     request_id: str | None = None,
     include_proxy_source: bool = True,
+    enforce_org_alias: bool = False,
 ) -> dict[str, str]:
     """装配转发上游的出站请求头（§3.5 注入矩阵唯一装配点）.
 
@@ -87,19 +92,24 @@ def build_outbound_headers(
         extra_headers: 非身份业务头（Content-Type/Accept/Authorization/X-API-Key…）。
         role_map: OB-12 互译表（可选；配置了目标系统表时翻译 X-User-Role，T6）。
         default_tenant: 目标系统显式兜底 tenant（如 dps_default_tenant_id）。
-        default_org: 目标系统显式兜底 org 别名（如 memory openbase-default）。
+        default_org: 目标系统显式兜底 org 别名（T7 起 deprecated：org 恒取 tenant 同源
+            别名或 org_value_map 命中值，不再独立参与隔离键）。
         default_role: 角色缺省（dps 历史语义缺省 "user"）。
-        tenant_value_map: 目标系统 tenant 值映射表（如 dps_tenant_map）。
-        org_value_map: 目标系统 org 值映射表（如 dps_org_map）。
+        tenant_value_map: 目标系统 tenant 值映射表（如 dps_tenant_map/dps_code_map）。
+        org_value_map: 目标系统 org 显式别名表（如 dps_org_map/dps_code_map）。
         request_id: X-Request-Id 显式值（缺省读 request.state / 新生成）。
         include_proxy_source: 是否注入 X-Proxy-Source（通用 proxy 服务 Key 通道
             匿名读场景按 D-V6 保留来源标注，恒 True）。
+        enforce_org_alias: OB-8 别名强模式开关（settings.enforce_org_alias；默认
+            False 兼容段）。True 且出站 X-Org-ID ≠ X-Tenant-ID → 403
+            BIZ_ORG_ALIAS_MISMATCH。
 
     Returns:
         完整出站请求头 dict（身份头 + 来源 + request_id + extra）。
 
     Raises:
-        BaseError: target_system 非法 → 400 PARAM_INVALID。
+        BaseError: target_system 非法 → 400 PARAM_INVALID；
+            enforce_org_alias 且 org≠tenant → 403 BIZ_ORG_ALIAS_MISMATCH。
     """
     if target_system not in OUTBOUND_IDENTITY_TARGETS:
         raise BaseError(
@@ -123,16 +133,35 @@ def build_outbound_headers(
     subject_id = identity.effective_subject_id
     tenant_value = identity.effective_tenant_code or default_tenant
     role_value = identity.effective_role or default_role
-    org_value = identity.org_id or default_org or tenant_value
 
-    # X-User-ID / X-Tenant-ID / X-Org-ID（org 为退役兼容别名，值域=tenant 语义）
+    # X-User-ID / X-Tenant-ID / X-Org-ID
     headers[HEADER_USER_ID] = validate_header_value(HEADER_USER_ID, subject_id)
-    mapped_tenant = _apply_value_map(tenant_value, tenant_value_map)
-    if mapped_tenant:
-        headers[HEADER_TENANT_ID] = validate_header_value(HEADER_TENANT_ID, mapped_tenant)
-        headers[HEADER_ORG_ID] = validate_header_value(
-            HEADER_ORG_ID, _apply_value_map(org_value or mapped_tenant, org_value_map)
+    if tenant_value:
+        mapped_tenant = _apply_value_map(tenant_value, tenant_value_map)
+        # OB-8/T7 别名收敛：X-Org-ID 不再读 identity.org_id 独立中间态，
+        # 值 = X-Tenant-ID（tenant 同源）或 org_value_map 显式别名命中值（§7.1）。
+        mapped_org = (
+            _apply_value_map(tenant_value, org_value_map)
+            if org_value_map and tenant_value in org_value_map
+            else mapped_tenant
         )
+        headers[HEADER_TENANT_ID] = validate_header_value(
+            HEADER_TENANT_ID, mapped_tenant or tenant_value
+        )
+        headers[HEADER_ORG_ID] = validate_header_value(
+            HEADER_ORG_ID, mapped_org or mapped_tenant or tenant_value
+        )
+        if enforce_org_alias and headers[HEADER_ORG_ID] != headers[HEADER_TENANT_ID]:
+            # 别名强模式（§7.1）：org ≠ tenant → 403（防双向混淆）
+            raise BaseError(
+                ErrorCode.BIZ_ORG_ALIAS_MISMATCH,
+                "X-Org-ID must equal X-Tenant-ID when enforce_org_alias is enabled",
+                detail={
+                    "org": headers[HEADER_ORG_ID],
+                    "tenant": headers[HEADER_TENANT_ID],
+                    "hint": "configure dps_code_map with dps_org_id == dps_tenant_id",
+                },
+            )
 
     # X-User-Role：仅对**主体解析出的有效角色**做互译（§6.3/T6 挂点）；
     # 显式默认值（如 dps 历史语义 default_role="user"）为目标侧原生码，原样透传。

@@ -103,11 +103,13 @@ def _build_upstream_headers(
     }
     if rag_api_key:
         headers["X-API-Key"] = rag_api_key
+    settings = get_settings()
     return build_outbound_headers(
         request,
         user,
         target_system=TARGET_SYSTEM_RAG,
         extra_headers=headers,
+        enforce_org_alias=settings.enforce_org_alias,
     )
 
 

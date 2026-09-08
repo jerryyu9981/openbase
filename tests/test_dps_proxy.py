@@ -152,7 +152,8 @@ def test_dps_proxy_identity_headers_injected(client: TestClient) -> None:
     headers = call["headers"]
     assert headers["X-User-ID"] == "42"
     assert headers["X-Tenant-ID"] == "tenant-001"
-    assert headers["X-Org-ID"] == "org-001"
+    # P2-1 T7（OB-8 别名收敛）：X-Org-ID == X-Tenant-ID（org 不再取 org_id 独立链）
+    assert headers["X-Org-ID"] == "tenant-001"
     assert headers["X-User-Role"] == "admin"
     assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/list")
 
@@ -173,7 +174,8 @@ def test_dps_proxy_identity_defaults_when_missing(client: TestClient) -> None:
     headers = call["headers"]
     assert headers["X-User-ID"] == "9"
     assert headers["X-Tenant-ID"] == "default-tenant"  # default 兜底
-    assert headers["X-Org-ID"] == "default-org"  # default 兜底
+    # P2-1 T7（OB-8）：org 恒取 tenant 同源别名（default-org deprecated，不再独立注入）
+    assert headers["X-Org-ID"] == "default-tenant"
     assert headers["X-User-Role"] == "user"  # role 缺省
 
 
@@ -292,7 +294,7 @@ def test_dps_proxy_portrait_update(client: TestClient) -> None:
     headers = call["headers"]
     assert headers["X-User-ID"] == "42"
     assert headers["X-Tenant-ID"] == "tenant-001"
-    assert headers["X-Org-ID"] == "org-001"
+    assert headers["X-Org-ID"] == "tenant-001"  # P2-1 T7 别名收敛
     assert headers["X-User-Role"] == "admin"
 
 

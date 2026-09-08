@@ -327,6 +327,32 @@ class Settings(BaseSettings):
             return []
         return [item for item in data if isinstance(item, dict)]
 
+    # ---- OB-8 dps code→UUID 登记式基线（§7.2，批次 3/T7）----
+
+    def dps_code_map_entries(self) -> list[dict]:
+        """登记式基线 entries（settings.dps_code_map JSON 解析，非法 → 空表）."""
+        from openbase.modules.protocol_headers.dps_code_map import parse_dps_code_map
+
+        data = parse_dps_code_map(self.dps_code_map)
+        return [entry for entry in data.get("entries", []) if isinstance(entry, dict)]
+
+    def deprecated_dps_defaults(self) -> dict[str, str]:
+        """已配置的 deprecated dps_default_*（§7.2：verify-env WARN 数据源）."""
+        deprecated: dict[str, str] = {}
+        if self.dps_default_org_id:
+            deprecated["dps_default_org_id"] = self.dps_default_org_id
+        if self.dps_default_tenant_id:
+            deprecated["dps_default_tenant_id"] = self.dps_default_tenant_id
+        return deprecated
+
+    def dps_defaults_deprecation_warnings(self) -> list[str]:
+        """dps_default_* deprecated 提示文本（登记式基线替换，T7-6）."""
+        return [
+            f"dps_default_* deprecated (OB-8): {name}={value} configured; "
+            "register tenant code in dps_code_map instead"
+            for name, value in self.deprecated_dps_defaults().items()
+        ]
+
 
 _settings: Settings | None = None
 

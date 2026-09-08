@@ -264,6 +264,7 @@ async def proxy(
         outbound_user,
         target_system=TARGET_SYSTEM_GENERIC,
         extra_headers=headers,
+        enforce_org_alias=settings.enforce_org_alias,
     )
     body = await request.body() if method in ("POST", "PUT", "PATCH") else None
 

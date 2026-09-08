@@ -202,9 +202,10 @@ def test_llm_proxy_injects_external_identity_headers(client: TestClient) -> None
     assert resp.status_code == 200, resp.text
     call = client.fake.request_calls[0]  # type: ignore[attr-defined]
     headers = call["headers"]
-    # 外部身份归属头（与 JWT claim 同源：sub → X-User-ID；org_id → X-Org-ID）
+    # 外部身份归属头（与 JWT claim 同源：sub → X-User-ID；tenant → X-Org-ID/X-Tenant-ID）
     assert headers["X-User-ID"] == "42"
-    assert headers["X-Org-ID"] == "org-001"
+    # P2-1 T7（OB-8 别名收敛）：X-Org-ID == X-Tenant-ID
+    assert headers["X-Org-ID"] == "tenant-001"
     assert headers["X-Tenant-ID"] == "tenant-001"  # P2-1 T1：llm 补 X-Tenant-ID
     assert headers["X-User-Role"] == "admin"  # P2-1 T1：llm 补 X-User-Role
     assert headers["X-Proxy-Source"] == PROXY_SOURCE_LLM

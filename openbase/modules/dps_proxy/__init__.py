@@ -36,6 +36,7 @@ from openbase.modules.protocol_headers import (
     build_outbound_headers,
     load_role_map,
 )
+from openbase.modules.protocol_headers.dps_code_map import build_compat_value_maps
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.dps_proxy")
@@ -87,6 +88,12 @@ def _build_identity_headers(user: dict, request: Request) -> dict[str, str]:
     - X-Proxy-Source ← PROXY_SOURCE_DPS（新增）；X-Request-Id ← request_id 透传
     """
     settings = get_settings()
+    entries = settings.dps_code_map_entries()
+    org_value_map, tenant_value_map = build_compat_value_maps(
+        _parse_map_json(settings.dps_org_map),
+        _parse_map_json(settings.dps_tenant_map),
+        entries,
+    )
     return build_outbound_headers(
         request,
         user,
@@ -94,9 +101,10 @@ def _build_identity_headers(user: dict, request: Request) -> dict[str, str]:
         default_tenant=settings.dps_default_tenant_id,
         default_org=settings.dps_default_org_id,
         default_role="user",
-        tenant_value_map=_parse_map_json(settings.dps_tenant_map),
-        org_value_map=_parse_map_json(settings.dps_org_map),
+        tenant_value_map=tenant_value_map,
+        org_value_map=org_value_map,
         role_map=load_role_map(settings.role_intertranslate),
+        enforce_org_alias=settings.enforce_org_alias,
     )
 
 

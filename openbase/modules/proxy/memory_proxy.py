@@ -80,7 +80,9 @@ def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, st
     - Authorization: Bearer <原 JWT>（第二层认证；**仅 user JWT 场景**——agent 场景
       无原 JWT，不再构造伪 JWT 透传，D-OB6-3）
     - X-Org-ID / X-User-ID / X-Tenant-ID / X-User-Role / X-Proxy-Source / X-Request-Id：
-      取值只来自统一主体上下文；org/tenant 缺省为显式兜底（"openbase-default"/"default"）。
+      取值只来自统一主体上下文；OB-8/T7 别名收敛后 X-Org-ID == X-Tenant-ID
+      （org 不再读独立 org_id/openbase-default 默认链参与隔离键；tenant 缺省仅
+      "default" 显式兜底）。
     """
     api_key, _, _ = _upstream_config()
     headers: dict[str, str] = {
@@ -92,14 +94,15 @@ def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, st
         token = _original_bearer_token(request)
         if token:
             headers["Authorization"] = f"Bearer {token}"
+    settings = get_settings()
     return build_outbound_headers(
         request,
         user,
         target_system=TARGET_SYSTEM_MEMORY,
         extra_headers=headers,
         default_tenant="default",
-        default_org="openbase-default",
         default_role="viewer",
+        enforce_org_alias=settings.enforce_org_alias,
     )
 
 

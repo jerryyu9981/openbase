@@ -75,11 +75,13 @@ def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, st
         "Accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    settings = get_settings()
     return build_outbound_headers(
         request,
         user,
         target_system=TARGET_SYSTEM_LLM,
         extra_headers=headers,
+        enforce_org_alias=settings.enforce_org_alias,
     )
 
 

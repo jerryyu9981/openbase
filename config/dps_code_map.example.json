@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source_of_truth": "openbase.tenants.code",
+  "last_reconciled_at": "2026-09-07",
+  "entries": [
+    {
+      "tenant_code": "acme",
+      "dps_org_id": "a1b2c3d4-0000-0000-0000-000000000001",
+      "dps_tenant_id": "a1b2c3d4-0000-0000-0000-000000000001",
+      "reconciled_at": "2026-09-07",
+      "status": "verified"
+    },
+    {
+      "tenant_code": "globex",
+      "dps_org_id": "a1b2c3d4-0000-0000-0000-000000000011",
+      "dps_tenant_id": "a1b2c3d4-0000-0000-0000-000000000011",
+      "reconciled_at": "2026-09-07",
+      "status": "verified"
+    }
+  ]
+}
