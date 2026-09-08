@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "tracking": {
+    "contract_rail": "OB-9 / P2-1 S1b 配置契约轨",
+    "reference_docs": [
+      "OpenBase-P2-1-统一身份协议头与信任链收口设计草案-v1.0.0.md §9.2/§10 T9",
+      "doc/design/OpenBase-协议头规范-v1.0.md",
+      "doc/design/OpenBase-角色互译表-v1.0.md"
+    ],
+    "source_of_truth": "openbase/tenants.code + openbase/settings.py"
+  },
+  "sections": {
+    "config_single_source": [
+      "trusted_proxy_sources",
+      "role_intertranslate",
+      "dps_code_map",
+      "service_account_subject_map",
+      "enforce_org_alias",
+      "enforce_token_version",
+      "k03_bypass_whitelist",
+      "strip_inbound_identity_headers",
+      "enforce_inbound_identity_headers",
+      "enforce_proxy_identity_headers",
+      "jwt_secret",
+      "db_url",
+      "redis_url"
+    ],
+    "config_deprecated": [
+      "dps_default_org_id",
+      "dps_default_tenant_id"
+    ],
+    "upstreams": [
+      {"name": "dps", "url_key": "dps_upstream_base", "health": "/health"},
+      {"name": "openllm", "url_key": "llm_upstream_base", "health": "/openllm/v1/health"},
+      {"name": "openrag", "url_key": "rag_upstream_base", "health": "/api/v1/system/health"},
+      {"name": "openmemory", "url_key": "memory_upstream_base", "health": "/health"}
+    ],
+    "whitelist_matrix": {
+      "trusted_proxy_sources": [
+        "openbase-dps-proxy",
+        "openbase-llm-proxy",
+        "openbase-rag-proxy",
+        "openbase-memory-proxy",
+        "openbase-generic-proxy"
+      ]
+    },
+    "mapping_reconcile": ["dps_code_map"],
+    "db_checks": [
+      {"schema": "openbase", "check": "tenants.code 唯一事实源对账"}
+    ]
+  }
+}
