@@ -187,7 +187,12 @@ class IdentityLifecycleService:
         if subject_type == SUBJECT_TYPE_AGENT and target_state in _REVOKING_TARGETS:
             await cls._revoke_all_agent_keys(session, subject.id)
 
-        # 4) 审计留痕（action=identity.lifecycle.<to>，草案 §4.1）
+        # 4) 审计留痕（action=identity.lifecycle.<to>，草案 §4.1；批次 3/T8 并入
+        #    §8.2 identity 块：principal/delegated/effective/…/request_id 六键）
+        from openbase.modules.protocol_headers.identity_audit import (
+            build_identity_section,
+        )
+
         session.add(
             AuditLog(
                 user_id=operator,
@@ -202,6 +207,15 @@ class IdentityLifecycleService:
                     "reason": reason,
                     "operator": operator,
                     "subject_type": subject_type,
+                    "tenant_code": subject.tenant_code,
+                    "request_id": request_id,
+                    "identity": build_identity_section(
+                        subject_id=operator,
+                        subject_type="user",
+                        tenant_code=subject.tenant_code,
+                        auth_method="internal",
+                        request_id=request_id,
+                    ),
                 },
             )
         )

@@ -241,7 +241,54 @@ class AuditMiddleware(BaseHTTPMiddleware):
         duration_ms = int((time.perf_counter() - start) * 1000)
         self._record(request, response.status_code, duration_ms, request_id)
         response.headers["X-Request-Id"] = request_id
+        await self._persist_outbound_proxy_hop(request, request_id)
         return response
+
+    async def _persist_outbound_proxy_hop(
+        self, request: Request, request_id: str
+    ) -> None:
+        """T8（OB-13 §8.3）：proxy 出站审计 DB 钩子（best-effort，action=proxy.outbound）.
+
+        入站请求在出站装配（build_outbound_headers→attach_outbound_identity）时已标注
+        ``request.state.outbound_assembled`` 与 ``request.state.outbound_system``；
+        本钩子在响应后以同一 request_id 落 ``audit_logs``（detail.identity §8.2 全链
+        proxy_chain），供 OpenBase 侧审计与子系统侧审计经 request_id 串联（U4 前置）。
+
+        失败仅 WARN（尽力留痕不阻断响应），参照 K03 白名单审计降级语义。
+        """
+        if not getattr(request.state, "outbound_assembled", False):
+            return
+        system = getattr(request.state, "outbound_system", None)
+        identity = getattr(request.state, "identity", None)
+        if not system or not isinstance(identity, dict) or not identity.get("principal"):
+            return
+        session = None
+        try:
+            from openbase.core.db.session import get_session_factory
+            from openbase.modules.protocol_headers.identity_audit import (
+                record_proxy_hop,
+            )
+
+            async with get_session_factory()() as session:
+                await record_proxy_hop(
+                    session,
+                    identity=identity,
+                    system=str(system),
+                    method=request.method,
+                    path=request.url.path,
+                    request_id=request_id,
+                )
+                await session.commit()
+        except Exception:  # noqa: BLE001 - 审计尽力留痕，不阻断请求
+            logger.warning(
+                "proxy outbound audit persist failed (degraded)",
+                extra={"system": system, "request_id": request_id},
+            )
+            if session is not None:
+                try:
+                    await session.rollback()
+                except Exception:  # noqa: BLE001
+                    pass
 
     def _record(self, request: Request, status_code: int, duration_ms: int, request_id: str, error: str | None = None) -> None:
         """记录审计条目（异步语义：不阻塞主请求）. """

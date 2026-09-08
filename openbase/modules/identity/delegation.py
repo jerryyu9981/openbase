@@ -383,8 +383,15 @@ async def enqueue_delegation_audit(
     principal_tenant_id: int | None,
     delegated: dict,
     request_id: str | None = None,
+    subject_type: str | None = None,
+    auth_method: str | None = None,
+    proxy_source: str | None = None,
 ) -> AuditLog:
     """写委托签发审计（§7.3/§11 T4-6）：detail 记两层 principal+delegated.
+
+    批次 3/T8（OB-13）：detail 并入 §8.2 ``identity`` 块（principal/delegated/
+    effective/proxy_source/proxy_chain/request_id 六键），补 auth_method/effective/
+    proxy_source；legacy 顶层 principal/delegated/tenant_code/request_id 保留不回退。
 
     Args:
         session: 数据库会话（提交由调用方负责，与 token 签发同事务）。
@@ -393,18 +400,44 @@ async def enqueue_delegation_audit(
         principal_tenant_id: 签发主体 tenant_id（audit_logs.tenant_id）。
         delegated: 已归一化 on_behalf_of claim。
         request_id: 透传 request_id（缺省生成）。
+        subject_type: 签发主体具象（缺省 agent——委托签发链主体为 agent）。
+        auth_method: 认证方式（缺省 jwt）。
+        proxy_source: 出口来源标识（本写路径通常无，传 None）。
 
     Returns:
         已写入（未提交）的 AuditLog 行。
     """
+    from openbase.modules.protocol_headers.identity_audit import (
+        build_identity_section,
+    )
+
     delegated_id = int(delegated["subject_id"])
+    delegated_tenant_code = delegated.get("tenant_code")
+    request_id = request_id or _new_request_id()
+    identity = build_identity_section(
+        subject_id=principal_id,
+        subject_type=subject_type or SUBJECT_TYPE_AGENT,
+        tenant_code=principal_tenant_code,
+        auth_method=auth_method or "jwt",
+        delegated={
+            "subject_id": delegated_id,
+            "subject_type": delegated.get("subject_type") or SUBJECT_TYPE_USER,
+            "tenant_code": delegated_tenant_code,
+            "role": delegated.get("role"),
+        },
+        proxy_source=proxy_source,
+        request_id=request_id,
+    )
     detail = {
         "principal": {"id": principal_id, "tenant_code": principal_tenant_code},
         "delegated": {
             "id": delegated_id,
-            "tenant_code": delegated["tenant_code"],
-            "role": delegated["role"],
+            "tenant_code": delegated_tenant_code,
+            "role": delegated.get("role"),
         },
+        "tenant_code": delegated_tenant_code,
+        "request_id": request_id,
+        "identity": identity,
     }
     record = AuditLog(
         user_id=principal_id,
@@ -412,7 +445,7 @@ async def enqueue_delegation_audit(
         action=DELEGATION_ACTION_ISSUE,
         resource="users",
         resource_id=str(delegated_id),
-        request_id=request_id or _new_request_id(),
+        request_id=request_id,
         detail=detail,
     )
     session.add(record)
@@ -422,7 +455,7 @@ async def enqueue_delegation_audit(
         extra={
             "principal_id": principal_id,
             "delegated_id": delegated_id,
-            "delegated_tenant": delegated["tenant_code"],
+            "delegated_tenant": delegated_tenant_code,
         },
     )
     return record

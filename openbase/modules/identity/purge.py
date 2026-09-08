@@ -554,7 +554,12 @@ class IdentityPurgeService:
         # ⑥ 物理清除主体关联数据（audit/阻断/幂等历史保留）
         deleted_counts = await _delete_subject_data(session, subject.id)
 
-        # ⑦ 审计留痕（action=identity.purge，detail 按草案 §9.2 schema）
+        # ⑦ 审计留痕（action=identity.purge，detail 按草案 §9.2 schema + 批次 3/T8
+        #    并入 §8.2 identity 块：principal/delegated/effective/…/request_id 六键）
+        from openbase.modules.protocol_headers.identity_audit import (
+            build_identity_section,
+        )
+
         audit_log = AuditLog(
             user_id=operator,
             tenant_id=subject.tenant_id,
@@ -576,6 +581,13 @@ class IdentityPurgeService:
                 "request_id": request_id,
                 "from": previous_state,
                 "to": STATUS_STATE_PURGED,
+                "identity": build_identity_section(
+                    subject_id=operator,
+                    subject_type="user",
+                    tenant_code=subject.tenant_code,
+                    auth_method="internal",
+                    request_id=request_id,
+                ),
             },
         )
         session.add(audit_log)
