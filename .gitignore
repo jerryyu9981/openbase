@@ -48,3 +48,6 @@ storage/
 
 # ---- 本地 OIDC IdP 私钥（运行时生成，绝不提交）----
 scripts/oidc-idp/keys/
+
+# ---- verify-env 生成报告（脚本运行输出物；证据副本登记 doc/test/evidence/）----
+scripts/verify-env-report.json

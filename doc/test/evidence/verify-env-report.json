@@ -1,0 +1,72 @@
+﻿{
+    "schema_version":  1,
+    "checked_at":  "2026-09-08T11:19:02Z",
+    "contract":  {
+                     "path":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\scripts\\verify-env\\contract.json",
+                     "loaded":  true,
+                     "schema_version":  1
+                 },
+    "snapshot_source":  "C:\\Users\\jerry\\AppData\\Local\\Temp\\verify-env-snapshot-d1100950bf85446b825264873cb8b250.json",
+    "summary":  {
+                    "warnings":  9,
+                    "errors":  0,
+                    "exit_code":  1,
+                    "fail_fast":  false
+                },
+    "issues":  [
+                   {
+                       "severity":  "WARN",
+                       "section":  "config_deprecated",
+                       "code":  "DEPRECATED_KEY_USED",
+                       "message":  "dps_default_* deprecated (OB-8): dps_default_org_id=org-1 configured; register tenant code in dps_code_map instead"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "config_deprecated",
+                       "code":  "DEPRECATED_KEY_USED",
+                       "message":  "dps_default_* deprecated (OB-8): dps_default_tenant_id=tenant-1 configured; register tenant code in dps_code_map instead"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "upstreams",
+                       "code":  "UPSTREAM_UNREACHABLE",
+                       "message":  "upstream url_key=dps_upstream_base unreachable (settings dps_upstream_base; TCP probe failed)"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "upstreams",
+                       "code":  "UPSTREAM_UNREACHABLE",
+                       "message":  "upstream url_key=llm_upstream_base unreachable (settings llm_upstream_base; TCP probe failed)"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "upstreams",
+                       "code":  "UPSTREAM_UNREACHABLE",
+                       "message":  "upstream url_key=rag_upstream_base unreachable (settings rag_upstream_base; TCP probe failed)"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "upstreams",
+                       "code":  "UPSTREAM_UNREACHABLE",
+                       "message":  "upstream url_key=memory_upstream_base unreachable (settings memory_upstream_base; TCP probe failed)"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "whitelist_matrix",
+                       "code":  "WHITELIST_MISMATCH",
+                       "message":  "trusted_proxy_sources mismatch vs contract: expected=[openbase-dps-proxy,openbase-generic-proxy,openbase-llm-proxy,openbase-memory-proxy,openbase-rag-proxy] actual=[] (missing=[openbase-dps-proxy,openbase-generic-proxy,openbase-llm-proxy,openbase-memory-proxy,openbase-rag-proxy] extra=[])"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "mapping_reconcile",
+                       "code":  "TENANT_CODES_SAMPLE_UNAVAILABLE",
+                       "message":  "tenants.code sample unavailable (DB down); dps_code_map tenants.code hit check skipped - rerun with DB up or use --tenants-json offline reconcile"
+                   },
+                   {
+                       "severity":  "WARN",
+                       "section":  "db_checks",
+                       "code":  "DB_CHECK_UNREACHABLE",
+                       "message":  "db check bit down: schema=openbase unreachable (OB-7 connection/schema probe; tenants.code source_of_truth reconcile skipped)"
+                   }
+               ]
+}
