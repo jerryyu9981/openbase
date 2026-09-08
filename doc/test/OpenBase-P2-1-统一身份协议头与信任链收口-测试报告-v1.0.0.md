@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-P21-TEST-v1.0.0 |
-| 版本 | v1.0.0 |
-| 状态 | [Review]（T1~T10 用例与断言 + S1b 段门禁五项自检全绿；待人工批准进入部署/S2 移交） |
+| 版本 | v1.0.1 |
+| 状态 | [Approved]（T1~T10 用例与断言 + S1b 段门禁五项自检全绿；2026-09-08 S1b 段门禁人工批准通过，进入部署/S2 移交） |
 | 日期 | 2026-09-08 |
 | 作者 | AT-OpenBase（P2-1 测试） |
 | 存放 | doc/test/ |
@@ -16,6 +16,7 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-08 | AT-OpenBase（P2-1 测试） | 初始版本：T1~T10 用例与断言矩阵、RED→GREEN 摘要、分组回归结果、覆盖率口径、S1b 段门禁五项自检小节、R3 补测与移交登记 |
+| v1.0.1 | 2026-09-08 | 项目负责人（经 AI 开发会话人工确认） | 门禁回写（人工批准结论登记）：S1b 段门禁 2026-09-08 人工批准通过、五项全绿；K07 端点过滤矩阵模板 v1.0 / 角色互译表 v1.0 由 [Review] 回写 [Approved]（v1.0.1）；台账与遗留同步更新 |
 
 ---
 
@@ -98,9 +99,14 @@
 | G-2 | **非白名单带头 403（enforce）用例** | ✅ | `tests/test_inbound_header_gate.py::test_t2_5_enforce_403_untrusted_identity_headers`（enforce 开 → 403 `PERM_UNTRUSTED_IDENTITY_HEADER`）；`test_t3_7_strip_removes_headers_without_403`（剥离过渡期）；`test_api_keys.py::test_identity_context_ignores_untrusted_headers`；settings `enforce_inbound_identity_headers` 两段式开关 |
 | G-3 | **服务账号用例全绿**（sk-agent 四 proxy 出站+审计+ob_k_ 主体映射） | ✅ | `test_service_agent_outbound.py`（T5-1~T5-7：dps/rag/memory/llm 四 proxy sk-agent 出站四头 + X-Proxy-Source/X-Agent-Id；agent 匿名直连写拒绝；agent 出站审计含 agent_id+source+域；U1 密钥面发放/吊销回归）；`test_identity_t1.py`（sk-agent 密钥面）；`test_audit_identity_chain.py` T8-4（agent 直连审计含 agent_id+source+域+动作） |
 | G-4 | **verify-env 可用** | ✅ | `scripts/verify-env.ps1` 实跑：`warnings=9 errors=0 exit_code=1`（本环境 dps_default_* deprecated + 本地服务未启动 + 白名单未配置 → 全部 WARN 非阻断，符合 §9.2 雏形语义），报告落盘 `scripts/verify-env-report.json` → 证据副本 `doc/test/evidence/verify-env-report.json`；`tests/test_verify_env.py` T9-1~T9-6（clean exit 0 / WARN exit 1 / ERROR exit 2 / --fail-fast 非 0） |
-| G-5 | **K07 模板 v1.0 + 角色互译表发布物 [Review] 待人工批准**（文档版本/修订历史登记） | ✅ | `doc/design/OpenBase-端点过滤矩阵模板-v1.0.md`（v1.0.0，[Review] 待人工批准，修订历史登记 v1.0.0 行）+ `doc/design/OpenBase-角色互译表-v1.0.md`（v1.0.0，[Review] 待人工批准，修订历史登记 v1.0.0 行）；`scripts/k07_endpoint_matrix.py` 骨架 + `tests/test_k07_endpoint_matrix.py` 全绿；台账回写见 DevLogReport §9 与任务卡 v1.3.0（K07 已发布 / OB-12 已完成） |
+| G-5 | **K07 模板 v1.0 + 角色互译表发布物批准**（[Review] → [Approved]，v1.0.1；文档版本/修订历史登记） | ✅ | `doc/design/OpenBase-端点过滤矩阵模板-v1.0.md`（v1.0.1，[Approved]，批准注记 + 修订历史 v1.0.1 行，2026-09-08 人工门禁批准）+ `doc/design/OpenBase-角色互译表-v1.0.md`（v1.0.1，[Approved]，批准注记 + 修订历史 v1.0.1 行，2026-09-08 人工门禁批准）；`scripts/k07_endpoint_matrix.py` 骨架 + `tests/test_k07_endpoint_matrix.py` 全绿；台账回写见 DevLogReport §9 与任务卡 v1.3.0（K07 已发布 / OB-12 已完成） |
 
-> 自检说明：S1b 段门禁的 ⑤ 发布物（K07 端点过滤矩阵模板 v1.0 / 角色互译表 v1.0）**维持 [Review] 状态、随本文档一并提交人工批准**；本文档提交后经人工门禁回写 [Approved]，不在此批次由开发侧自行批准（登记于遗留项 §8「评审人工复核点」）。
+> **S1b 段门禁人工批准结论登记（2026-09-08）**：S1b 段门禁经项目负责人人工批准通过——评审人=项目负责人
+> （经 AI 开发会话人工确认 2026-09-08）；评审结论=通过；遗留=无阻断项；五项门禁全绿：① 协议头规范
+> v1.0 发布物齐备（[Approved]，v1.0.1）；② 非白名单带头 403（enforce）用例全绿；③ 服务账号发放/吊销
+> 用例全绿；④ verify-env 可用；⑤ K07 端点过滤矩阵模板 v1.0 / 角色互译表 v1.0 发布物批准（[Review] →
+> [Approved]，v1.0.1）。批准结论登记后，本报告进入部署/S2 移交（v1.0.1）。此前批次 ⑤ 发布物维持
+> [Review]、随本文档提交人工门禁的决策过程见修订历史 v1.0.0 行与 §6.1/§7。
 
 ### 6.1 台账回写核对（T10-6）
 
@@ -110,8 +116,8 @@
 | P2-1 立项方案（v1.0.0 → v1.1.0） | [Draft] → [Approved]，批准日期 2026-09-07，批准注记 + 修订行 | 用户对话确认 + 里程碑 ① |
 | P2-1 设计草案（v1.0.0 → v1.1.0） | [Draft] → [Approved]，批准日期 2026-09-08，批准注记 + 修订行 | 用户对话确认「按这个方案来」+ Q-D-1~3 |
 | 协议头规范 v1.0 | [Draft] v1.0.0 → [Approved] v1.0.1（批准注记 + 修订行；S1b 门禁项①发布物） | 设计草案 [Approved]（2026-09-08 人工批准 Q-D-1~3）+ 发布物齐备核对（T3-1） |
-| 端点过滤矩阵模板 v1.0（K07） | v1.0.0 发布物 **维持 [Review] 待人工批准**（修订历史登记于批次 2；S1b 门禁项⑤，本批次不自行批准） | 任务卡 v1.3.0 K07 已发布（填报随 S2-S5）；随本文档提交人工门禁 |
-| 角色互译表 v1.0（OB-12） | v1.0.0 发布物 **维持 [Review] 待人工批准**（修订历史登记于批次 2；S1b 门禁项⑤，本批次不自行批准） | 任务卡 v1.3.0 OB-12 已完成（Q-D-1~3 结论在文档内）；随本文档提交人工门禁 |
+| 端点过滤矩阵模板 v1.0（K07） | v1.0.0 → v1.0.1：**[Review] → [Approved]**（2026-09-08 S1b 段门禁人工批准，批准注记 + 修订历史 v1.0.1 行；S1b 门禁项⑤闭环） | 任务卡 v1.3.0 K07 已发布（填报随 S2-S5）；人工门禁批准回写 |
+| 角色互译表 v1.0（OB-12） | v1.0.0 → v1.0.1：**[Review] → [Approved]**（2026-09-08 S1b 段门禁人工批准，批准注记 + 修订历史 v1.0.1 行；S1b 门禁项⑤闭环） | 任务卡 v1.3.0 OB-12 已完成（Q-D-1~3 结论在文档内）；人工门禁批准回写 |
 | DPS-code 映射基线登记示例 v1.0.0 | 新增发布物（T7，登记式基线示例；随实施登记） | P2-1 DevLogReport v1.0.0 §9；config/dps_code_map.example.json |
 
 ## 7. 环境遗留与已知限制
@@ -122,9 +128,10 @@
 | coverage 采集边界 | Windows TestClient 线程桥 → 端点驱动模块覆盖低估（登记 R3-1，与既有口径一致） |
 | 强模式开关默认关 | enforce_org_alias/enforce_inbound_identity_headers/enforce_token_version 等默认 False（两段式发布第一段兼容）；第二段随部署窗口开启（R3-2） |
 | dps_code_map 生产登记 | 默认空表；.env 中 dps_default_* 触发 verify-env WARN（T7-6 语义），部署段经 audit_dps_code_map.py 登记入基线（R3-4） |
-| 评审人工复核点（[Review] 项） | K07 端点过滤矩阵模板 v1.0 / 角色互译表 v1.0 发布物**维持 [Review] 待人工批准**（版本 v1.0.0、修订历史登记于批次 2）；S1b 门禁项⑤随本文档提交人工门禁回写 [Approved]，本批次不自行批准 |
+| 评审人工复核点（[Review] 项，已闭环） | K07 端点过滤矩阵模板 v1.0 / 角色互译表 v1.0 发布物已于 2026-09-08 经 S1b 段门禁人工批准回写 **[Approved]**（v1.0.0 → v1.0.1，批准注记 + 修订历史 v1.0.1 行）；S1b 门禁项⑤闭环，评审结论=通过、遗留=无阻断项 |
 
 ## 8. 结论
 
-- 全量分组回归全绿、ruff 0、覆盖率按既有口径记录（protocol_headers 92% ≥90% 保持）；S1b 段门禁五项自检**全绿**（协议头规范 v1.0 发布物齐备 / 非白名单带头 403 / 服务账号用例全绿 / verify-env 可用 / K07 模板+角色互译表发布物 [Review] 待人工批准登记），台账回写完成。
-- 遗留：K07 模板 v1.0 / 角色互译表 v1.0 发布物维持 [Review] 状态，随本文档提交人工门禁回写 [Approved]；R3-1~R3-4 与 S2-S5 移交登记见 §7/§8。
+- 全量分组回归全绿、ruff 0、覆盖率按既有口径记录（protocol_headers 92% ≥90% 保持）；S1b 段门禁五项自检**全绿**（协议头规范 v1.0 发布物齐备 / 非白名单带头 403 / 服务账号用例全绿 / verify-env 可用 / K07 模板+角色互译表发布物批准 [Approved]），台账回写完成。
+- **S1b 段门禁人工批准结论**：2026-09-08 经项目负责人（AI 开发会话人工确认）批准通过，评审结论=通过、遗留=无阻断项，五项全绿（①规范发布物 ②非白名单 403 ③服务账号用例 ④verify-env ⑤K07 模板与角色互译表批准）；本报告状态由 [Review] 更新为 [Approved]（v1.0.1），进入部署/S2 移交。
+- 遗留：R3-1~R3-4 补测与 S2-S5 移交登记见 §7/§8（均为后续段内/部署跟踪项，非本门禁阻断项）。
