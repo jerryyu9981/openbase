@@ -3,11 +3,11 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-ISOCARDS-v1.0.0 |
-| 版本 | v1.5.0 |
-| 状态 | [Review]（24 卡：R1=14（K01-K08 + RA-01~RA-06）/ R2=10；v1.4.0 回写：S2（OpenMemory）段收口——K02(OM)/K05(OM-2)/RA-05(OM-1)/K06(OM-3) 已完成、K07 OM 端点-过滤矩阵填报完成，OB-11(OM 存量回填)/L1-1(OM 事件消费端)/OM-4/L3-2 贯通冒烟经 S2 段门禁（五项全绿）登记于卡尾执行摘要；OpenMemory 侧提交链待沙箱外放行后回填（见放行清单 v1.0.0）；v1.5.0 回写：S3（OpenRAG）段收口——K02(RG)/K16(RG-1)/K10(RG-2)/K11(RG-3)/K07 RG 端点-过滤矩阵填报 已完成，L1-1(RG 事件消费端)/fail-open 收口(RG 侧)/OB-13(RG 审计贯穿)/角色档位/M1/M2/L3-2 贯通冒烟经 S3 段门禁（五项全绿）登记于卡尾执行摘要；OpenRAG 侧提交链待沙箱外放行后回填（见放行清单 v1.0.1）） |
-| 日期 | 2026-09-09 |
+| 版本 | v1.6.0 |
+| 状态 | [Review]（24 卡：R1=14（K01-K08 + RA-01~RA-06）/ R2=10；v1.4.0 回写：S2（OpenMemory）段收口——K02(OM)/K05(OM-2)/RA-05(OM-1)/K06(OM-3) 已完成、K07 OM 端点-过滤矩阵填报完成，OB-11(OM 存量回填)/L1-1(OM 事件消费端)/OM-4/L3-2 贯通冒烟经 S2 段门禁（五项全绿）登记于卡尾执行摘要；OpenMemory 侧提交链待沙箱外放行后回填（见放行清单 v1.0.0）；v1.5.0 回写：S3（OpenRAG）段收口——K02(RG)/K16(RG-1)/K10(RG-2)/K11(RG-3)/K07 RG 端点-过滤矩阵填报 已完成，L1-1(RG 事件消费端)/fail-open 收口(RG 侧)/OB-13(RG 审计贯穿)/角色档位/M1/M2/L3-2 贯通冒烟经 S3 段门禁（五项全绿）登记于卡尾执行摘要；OpenRAG 侧提交链待沙箱外放行后回填（见放行清单 v1.0.1）；v1.6.0 回写：S4（OpenLLM）段收口——K09（S4-T2）/LL-1 探活（S4-T1）/LL-2 REAL 契约开关（S4-T4）/LL-4/K17（S4-T5）/LL-5（S4-T6）/LL-6（S4-T6）/K15（S4-T3）/L2-1（S4-T7）/L2-2（S4-T8）/K02(LL)（S4-T9）/OB-13 LL 侧（S4-T10）/K07 LL 端点-过滤矩阵填报（S4-T11）/角色档位（S4-T12）/M1/M2（S4-T13）/verify-env（S4-T14）/L3-2 LL 贯通冒烟（S4-T15）已完成，经 S4 段门禁（五项全绿）登记于卡尾执行摘要；OpenLLM 侧提交链待沙箱外放行后回填（见放行清单 v1.0.2）） |
+| 日期 | 2026-09-10 |
 | 作者 | AD（跨项目分析） |
-| 版本主题 | 将《统一身份最小特征集与隔离模型设计 v1.3.0》§12 数据隔离实现细则（22 条规则）拆为可执行任务卡，并补齐 R1 批次范围内非 §12 工作项（U1/P2-2/治理）：每卡含目标升级项、系统、批次、改动点、实现步骤、测试用例、验收断言（v1.2.0：S1a 收口回写 RA-01/RA-02/K04/K08 状态与提交链；v1.3.0：S1b/P2-1 收口回写 K01/K03/K02/K07 与 OB-3/6/8/9/12/13 状态与提交链；v1.4.0：S2（OpenMemory）段收口回写 K02(OM)/K05(OM)/RA-05/K06/K07(OM 填报) 状态与卡尾 S2 段执行摘要（OB-11(OM)/L1-1(OM)/OM-4/L3-2）；v1.5.0：S3（OpenRAG）段收口回写 K02(RG)/K10(RG-2)/K11(RG-3)/K16(RG-1)/K07(RG 填报) 状态与卡尾 S3 段执行摘要（L1-1(RG)/fail-open 收口/OB-13(RG 侧)/角色档位/M1/M2/L3-2）） |
+| 版本主题 | 将《统一身份最小特征集与隔离模型设计 v1.3.0》§12 数据隔离实现细则（22 条规则）拆为可执行任务卡，并补齐 R1 批次范围内非 §12 工作项（U1/P2-2/治理）：每卡含目标升级项、系统、批次、改动点、实现步骤、测试用例、验收断言（v1.2.0：S1a 收口回写 RA-01/RA-02/K04/K08 状态与提交链；v1.3.0：S1b/P2-1 收口回写 K01/K03/K02/K07 与 OB-3/6/8/9/12/13 状态与提交链；v1.4.0：S2（OpenMemory）段收口回写 K02(OM)/K05(OM)/RA-05/K06/K07(OM 填报) 状态与卡尾 S2 段执行摘要（OB-11(OM)/L1-1(OM)/OM-4/L3-2）；v1.5.0：S3（OpenRAG）段收口回写 K02(RG)/K10(RG-2)/K11(RG-3)/K16(RG-1)/K07(RG 填报) 状态与卡尾 S3 段执行摘要（L1-1(RG)/fail-open 收口/OB-13(RG 侧)/角色档位/M1/M2/L3-2）；v1.6.0：S4（OpenLLM）段收口回写 K09/K15/K17/K02(LL)/K07(LL 填报) 状态与卡尾 S4 段执行摘要（LL-1~LL-6/L2-1/L2-2/OB-13 LL 侧/K07 LL 填报/角色档位/M1/M2/verify-env/L3-2 LL 贯通冒烟）） |
 | 上游依据 | 身份最小集 v1.3.0 §12（R-H/M/L 规则）；文档体系与升级路线规划 v1.1.0（升级项编号 OB-*/OM-*/RG-*/DP-*/LL-*/SYS-1 与批次）；P2-2 立项方案 v1.0.0；U1 立项方案 v1.1.0 / 设计草案 v1.1.0（实施依据）；P2-1 立项方案 v1.1.0 / 设计草案 v1.1.0（S1b 收口依据，均已 [Approved]） |
 
 ## 修订历史
@@ -20,6 +20,7 @@
 | v1.3.0 | 2026-09-08 | P2-1 开发组 | S1b（P2-1）收口回写：K01/K03（OB-3）状态改「✅已完成（实施，P2-1 批次 1~3）」，K02（SYS-1）改「✅规范 v1.0 已发布 + OpenBase 试点完成（下游 S2-S5 落地）」，K07（SYS-1 续）改「✅模板 v1.0 已发布（填报随 S2-S5）」，K08 补充登记委托头唯一签发规范 v1.0 收口；升级项 OB-6/OB-8/OB-9/OB-12/OB-13 已完成（P2-1），OB-7/OB-10 外移；登记 P2-1 提交链（批次 1/2：25b65d7/51c6657/09f28fa/9a0aa49；批次 3 见 P2-1 DevLogReport v1.0.0） |
 | v1.4.0 | 2026-09-09 | AD（跨项目分析） | S2（OpenMemory）段收口回写：K02(OM) 协议头入站校验（S2-T1/T2：IdentityGate 白名单/fail-closed + B-1 agent 双层认证）、K05(OM-2) 行控强制过滤（S2-T3）、RA-05(OM-1) sessions 归属（S2-T4）、K06(OM-3) 复合唯一（S2-T5 落地 alembic v702）状态更新为「✅已完成」；K07 登记 OM 端点-过滤矩阵填报完成（S2-T10，doc/design/OpenMemory-K07-端点过滤矩阵填报 v1.0.1 [Approved]，缺口清零）；卡尾登记 S2 段执行摘要（OB-11(OM) 存量回填 v703 0 孤儿、L1-1(OM) 事件真实消费端 v704 阻断集+幂等+双通道、OM-4 M1/M2、L3-2 贯通冒烟 S2-T13 真实 HTTP 双签移交部署/联调窗口与 S7）；提交链以 OpenMemory S2 DevLogReport v1.0.1 为准，OpenMemory 侧提交待沙箱外执行（见 doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md），OpenBase 侧锚点 commit 0713ec1=事件列表契约端点 |
 | v1.5.0 | 2026-09-09 | AD（跨项目分析） | S3（OpenRAG）段收口回写：K02(RG) 协议头入站校验（S3-T1：IdentityGate 行为矩阵四态 + B1 EdgeRouter 不装配处置）、K16(RG-1) 表级归属迁移（S3-T2：归属列 tenant_code 幂等迁移 + 保留码 openrag-local 回填 0 孤儿 + B2 碰撞防护）、K10(RG-2) 行控强制过滤（S3-T3：强制注入 + 豁免清单 + 静态门禁）、K11(RG-3) 复合唯一（S3-T4：collection (tenant_code, name) 复合唯一，同域同名 409）状态更新为「✅已完成」；K07 登记 OpenRAG 端点-过滤矩阵填报完成（S3-T8，doc/design/OpenRAG-K07-端点过滤矩阵填报 v1.0.0，openapi 底单 121 行=豁免 10/覆盖 111，缺口清零）；卡尾登记 S3 段执行摘要（L1-1(RG) 事件真实消费端 S3-T5 阻断集+幂等+Push/Pull 契约 v1.0、fail-open 收口 S3-T6 D-V 映射、OB-13(RG 侧) S3-T7 审计 detail.identity 六键、角色档位 S3-T9 Q-RG-6、M1/M2 S3-T10、L3-2 贯通冒烟 S3-T11 通过——真实 HTTP 双签与 PG/Redis 实跑登记联调窗口）；提交链以 OpenRAG S3 DevLogReport v1.0.1 为准，OpenRAG 侧提交待沙箱外执行（见 doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md v1.0.1），OpenBase 侧锚点 commit 0713ec1=事件列表契约端点 |
+| v1.6.0 | 2026-09-10 | AD（跨项目分析） | S4（OpenLLM）段收口回写：K09 编排出站身份透传（S4-T2：external_identity 透传基座全四维采纳 + 白名单矩阵）、K15 REAL_* 兜底收口（S4-T3：出站头唯一装配统一 + 业务路径 REAL 零依赖）、K17 前缀归一（S4-T5：namespace 归一 tenant_code + org 只读别名 + 保留码）、K02(LL) 强校验（S4-T9：豁免清单 + IdentityGate 全端点收口 + 保留码 400）状态更新为「✅已完成」；K07 登记 OpenLLM 端点-过滤矩阵填报完成（S4-T11，doc/design/OpenLLM-K07-端点过滤矩阵填报 v1.0.0，S4 聚焦端点集全覆盖 + A 直连豁免行对账 + 隔离注册表缺口清零）；卡尾登记 S4 段执行摘要（LL-1 探活 S4-T1、LL-2 REAL 契约开关 S4-T4、LL-5/LL-6 S4-T6、L2-1 S4-T7、L2-2 S4-T8、OB-13 LL 侧 S4-T10、角色档位 S4-T12、M1/M2 S4-T13、verify-env S4-T14、L3-2 贯通冒烟 S4-T15——真实 HTTP 双签登记联调窗口与 S7）；提交链以 OpenLLM S4 DevLogReport v1.0.1 为准，OpenLLM 侧提交待沙箱外执行（见 doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md v1.0.2），OpenBase 侧锚点 commit 0713ec1=事件列表契约端点 |
 
 ---
 
@@ -42,7 +43,7 @@
 - 验收断言：任意 proxy 出站请求头仅来自签发上下文；`TRUSTED_PROXY_SOURCES` 全仓仅一种取值。
 
 ### K02 白名单身份头下游校验（SYS-1）
-- 规则/升级项：§12.1 R-H1-2 → SYS-1；批次 R1；前置 K01；状态 ✅规范 v1.0 已发布（P2-1 T3/S1b）+ OpenBase 试点完成（非白名单带头 403 开关化/剥除/审计）+ **OpenMemory 段落地完成（S2-T1/T2：IdentityGate 协议头入站校验与来源白名单 + block_subject_gate + B-1 agent 双层认证，fail-closed）** + **OpenRAG 段落地完成（S3-T1：IdentityGate 行为矩阵四态裁决（受信+头=信任 / 白名单无头=自身认证 / 非受信+头=403 / 非受信无头=本地认证）+ block_subject_gate/role_gate + 身份解析收口 request.state.identity + B1 EdgeRouter 不装配静态门禁，强校验期 fail-closed，见 OpenRAG S3 DevLogReport v1.0.1）**；DPS/OpenLLM 各仓 K02 落地随 S4-S5 段执行
+- 规则/升级项：§12.1 R-H1-2 → SYS-1；批次 R1；前置 K01；状态 ✅规范 v1.0 已发布（P2-1 T3/S1b）+ OpenBase 试点完成（非白名单带头 403 开关化/剥除/审计）+ **OpenMemory 段落地完成（S2-T1/T2：IdentityGate 协议头入站校验与来源白名单 + block_subject_gate + B-1 agent 双层认证，fail-closed）** + **OpenRAG 段落地完成（S3-T1：IdentityGate 行为矩阵四态裁决（受信+头=信任 / 白名单无头=自身认证 / 非受信+头=403 / 非受信无头=本地认证）+ block_subject_gate/role_gate + 身份解析收口 request.state.identity + B1 EdgeRouter 不装配静态门禁，强校验期 fail-closed，见 OpenRAG S3 DevLogReport v1.0.1）** + **OpenLLM 段落地完成（S4-T9：IdentityGate 强校验收口（全端点 + GATE_EXEMPT_PATH_PREFIXES 健康/管理面 A 直连豁免清单 ticket+审批+到期）+ 保留码 org 只读别名入站 400 + scan_identity_bypass 0 绕过，见 OpenLLM S4 DevLogReport v1.0.1）**；DPS K02 落地随 S5 段执行
 - 系统：OpenRAG / OpenMemory / DPS / OpenLLM 网关（各功能系统入口中间件）
 - 改动点：各系统鉴权/身份中间件新增"来源白名单校验"：请求带身份头但来源（X-Proxy-Source/对端 IP）不在白名单 → 403；匿名请求走自身认证（M1）。
 - 实现步骤：① 各仓引入统一白名单配置键；② 中间件在身份解析前校验来源与头一致性；③ 行为矩阵化（白名单+头=信任 / 白名单无头=自身认证 / 非白名单带头=403）。
@@ -82,7 +83,7 @@
 - 验收断言：复合唯一迁移幂等可重放；跨域同名隔离用例通过。
 
 ### K07 端点-过滤矩阵（SYS-1 续）
-- 规则/升级项：§12.5 R-M2-1/2 → SYS-1；批次 R1；前置 K02/K05；状态 ✅模板 v1.0 已发布（P2-1 T4/S1b：模板文档 + k07_endpoint_matrix.py 脚本骨架 + S2-S5 填报跟踪表登记）+ **OpenMemory 段填报完成（S2-T10：doc/design/OpenMemory-K07-端点过滤矩阵填报 v1.0.1 [Approved]，缺口清零，CI s2-k07-matrix-gate job 注册）** + **OpenRAG 段填报完成（S3-T8：doc/design/OpenRAG-K07-端点过滤矩阵填报 v1.0.0（[Final]，经 S3 段门禁人工批准复核），openapi 权威底单 121 行：豁免 10/覆盖 111，缺口清零，CI s3-static-gates k07 门禁注册）**；DPS/OpenLLM 填报随 S4-S5 段执行，S7 RA-06 终验引用
+- 规则/升级项：§12.5 R-M2-1/2 → SYS-1；批次 R1；前置 K02/K05；状态 ✅模板 v1.0 已发布（P2-1 T4/S1b：模板文档 + k07_endpoint_matrix.py 脚本骨架 + S2-S5 填报跟踪表登记）+ **OpenMemory 段填报完成（S2-T10：doc/design/OpenMemory-K07-端点过滤矩阵填报 v1.0.1 [Approved]，缺口清零，CI s2-k07-matrix-gate job 注册）** + **OpenRAG 段填报完成（S3-T8：doc/design/OpenRAG-K07-端点过滤矩阵填报 v1.0.0（[Final]，经 S3 段门禁人工批准复核），openapi 权威底单 121 行：豁免 10/覆盖 111，缺口清零，CI s3-static-gates k07 门禁注册）** + **OpenLLM 段填报完成（S4-T11：doc/design/OpenLLM-K07-端点过滤矩阵填报 v1.0.0，S4 聚焦端点集全覆盖 + A 直连豁免行（GATE_EXEMPT_PATH_PREFIXES 对账） + k07_isolation_registry 隔离注册表缺口清零）**；DPS 填报随 S5 段执行，S7 RA-06 终验引用
 - 系统：OpenBase（编排/proxy）+ OpenMemory + OpenRAG + DPS（端点盘点）
 - 改动点：按端点类别（CRUD/列表分页/搜索/聚合/导出/回调/批量）全量盘点并建立"端点-过滤矩阵"；每新增端点默认配套隔离测试。
 - 实现步骤：① 每系统导出 openapi 端点清单；② 按类别核对过滤覆盖，标红缺口端点；③ 缺口端点补过滤（接 K02/K05 骨架）；④ 新增端点模板内置隔离用例。
@@ -150,7 +151,7 @@
 ## 批次 R2 卡组（通道契约与数据迁移）
 
 ### K09 编排出站身份透传
-- 规则/升级项：§12.1 R-H1-3 → LL-3；批次 R2；前置 K01；状态 ⏳待实施
+- 规则/升级项：§12.1 R-H1-3 → LL-3；批次 R2；前置 K01；状态 ✅已完成（实施，OpenLLM S4-T2：身份透传基座收口——backend/app/services/external_identity.py 对话上下文身份 resolve 链（user→tenant 全四维采纳）+ 来源白名单矩阵 + 身份解析收口 request.state.identity 六键，REAL_* 兜底废弃为服务账号/探活专用，见 OpenLLM S4 DevLogReport v1.0.1）
 - 系统：OpenLLM（编排出站）
 - 改动点：ProfileAdapter/DPSClient 等出站身份改为透传对话上下文 resolve 所得身份；REAL_* 配置默认值降级为服务账号/探活专用并标记 deprecated。
 - 实现步骤：① 对话上下文身份 resolve 链（user→tenant）；② 出站头取 resolve 值而非配置默认；③ REAL_* 兜底仅服务/探活分支保留 + WARN 日志。
@@ -196,7 +197,7 @@
 - 验收断言：并发写用例全绿；重放幂等（DB 行数不变）。
 
 ### K15 REAL_* 兜底收口
-- 规则/升级项：§12.9 R-L1-1 → LL-3 + 复盘 §8.2-6；批次 R2；前置 K09；状态 ⏳待实施
+- 规则/升级项：§12.9 R-L1-1 → LL-3 + 复盘 §8.2-6；批次 R2；前置 K09；状态 ✅已完成（实施，OpenLLM S4-T3：出站头唯一装配统一收口——build_outbound_headers 统一装配 + REAL_* 配置默认值标记 deprecated 业务路径零依赖（兜底仅服务账号/健康探活保留）+ scan_real_fallback_business_usage 静态扫描 0 命中，见 OpenLLM S4 DevLogReport v1.0.1）
 - 系统：OpenLLM（配置/编排）
 - 改动点：REAL_* 配置默认值标记 deprecated；仅服务账号/健康探活场景允许；随发布批次移除业务路径依赖。
 - 实现步骤：① 全仓定位 REAL_* 读取点；② 业务路径改读透传/服务账号身份；③ deprecated 日志 WARN；④ 发布批次删除残留。
@@ -212,7 +213,7 @@
 - 验收断言：全量行带 tenant_code；无"无主"数据（对账报告）。
 
 ### K17 OpenLLM 前缀归一
-- 规则/升级项：§12.9 R-L2-1（LL 部分）→ LL-4；批次 R2；前置 K09；状态 ⏳待办
+- 规则/升级项：§12.9 R-L2-1（LL 部分）→ LL-4；批次 R2；前置 K09；状态 ✅已完成（实施，OpenLLM S4-T5：会话/记忆前缀与 namespace 归一 tenant_code（M2=受信 X-Tenant-ID / M1=本地租户码）+ org 兼容只读别名 + 保留码空间不变，跨域会话互不可见，见 OpenLLM S4 DevLogReport v1.0.1）
 - 系统：OpenLLM（会话/记忆命名）
 - 改动点：会话/记忆前缀/namespace 归一 tenant_code（替换 org 兼容写法）。
 - 实现步骤：① 盘点前缀语义；② 归一为 tenant_code；③ org 兼容读路径保留（只读别名）。
@@ -297,5 +298,32 @@
 
 - **RG-1~RG-3 与 K02/K07(RG) 收口**：RG-1（K16）→ S3-T2；RG-2（K10）→ S3-T3；RG-3（K11）→ S3-T4；K02(RG) → S3-T1；K07(RG) → S3-T8；角色档位 → S3-T9（Q-RG-6）；均随 OpenRAG v1.10.0（拟）S3 段收口（见 OpenRAG S3 文档 §1.1 定案与设计草案 §1.4 覆盖矩阵；S3 全组 144 用例恒绿，74 条 RED 断言全覆盖）。
 - **提交链说明**：OpenRAG 仓 S3 产物因 git 沙箱受限保留工作树（HEAD 959ef83=v1.9.1 发布闭环；2026-09-09 实测 22 M + 32 ??，全部属 S3、无历史未提交基线），实际提交待沙箱外按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》v1.0.1 执行（release/v1.10.0 拟 → S3 四批），提交后 hash 回填本摘要；任务执行链以 OpenRAG S3 DevLogReport v1.0.1 批次 1~3（T1~T11 + B2 遗留 + 段门禁自检五项）记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
+
+## 附：S4 段（OpenLLM）跨仓收口执行摘要（v1.6.0 回写，2026-09-10）
+
+> 依据：OpenLLM S4 立项方案 v1.1.0 [Approved]（OB-LL-S4-v1.1.0）/ 设计草案 v1.0.1 [Approved]（OB-LL-S4-DESIGN-v1.0.1） / DevLogReport v1.0.1 [Approved] / 测试报告 v1.0.1 [Approved] / doc/test/OpenLLM-JT-台账-S4（[Approved]，2026-09-10 S4 段门禁人工批准，评审人=项目负责人） / doc/design/OpenLLM-K07-端点过滤矩阵填报 v1.0.0（经 S4 段门禁人工批准复核）/ doc/planning/OpenLLM-S4-批次1基线收口登记清单 v1.0.0（基线 A~E 分类：A=S0 探活既有已审查 / B=版本欠账对齐 v2.14.3 / C=S4 承载版本 v2.15.0 拟仅登记 / D=S4 批次1 / E=噪音不提交）；OpenBase 侧事件契约端点 commit 0713ec1（GET /api/v1/identity/events，2026-09-09 冻结）；S4 段门禁 2026-09-10 人工批准五项全绿，遗留=无阻断项（真实 HTTP 双签登记非沙箱复核与联调/部署验证窗口；写路径等价/K14 幂等/L2-1 切换演练终验/L2-2 终验/K07 RA-06 终验引用/错误面收敛随 S7，见 OpenLLM S4 测试报告 §4）。
+
+| 本卡/规划项 | S4 落地（T# / 模块 / 产物） | 状态 |
+|-------------|------------------------------|------|
+| K09（R-H1-3 → LL-3）编排出站身份透传 | S4-T2：backend/app/services/external_identity.py 身份透传基座（对话上下文 identity resolve 链 user→tenant 全四维采纳 + 来源白名单矩阵）+ 身份解析收口 request.state.identity 六键 | ✅已完成 |
+| LL-1 探活提交（S4-T1） | S4-T1：doc/planning/OpenLLM-S4-批次1基线收口登记清单 v1.0.0（A~E 分类）+ backend/tests/unit/test_dps_probe_real_health.py 真实契约只读面健康检查接入契约对账（client.ping GET /api/v2/portrait/list?page=1&page_size=1），A 直连标注（Q-LL-3），S0 基线文件不改造 | ✅已完成 |
+| LL-2 REAL 契约开关（S4-T4） | REAL 双义拆分（探活/服务兜底 vs 业务身份）全启用 + 业务兜底身份废弃（无 resolve 上下文走服务账号语义不落业务域 WARN）；verify-env production REAL 主用期望拦截登记非沙箱复核 | ✅已完成 |
+| LL-4/K17 前缀归一（S4-T5） | namespace/会话/记忆前缀归一 tenant_code（M2=受信 X-Tenant-ID / M1=本地租户码）+ org 兼容只读别名 + 保留码空间不变，跨域会话互不可见 | ✅已完成 |
+| LL-5 服务账号化（S4-T6） | 服务账号语义（M1 sk-openllm-* 自身认证）+ 匿名写拒绝 PERM_SERVICE_KEY_WRITE_DENIED；服务账号消费随 S1b 完成态（sk-agent）双签 | ✅已完成 |
+| LL-6 画像注入发布（S4-T6） | DPS 画像服务账号写守卫 + 注入发布批次登记（发布批次核查表登记非沙箱复核） | ✅已完成 |
+| K15 REAL_* 兜底收口（S4-T3） | build_outbound_headers 出站头唯一装配统一 + REAL_* 配置默认值 deprecated 业务路径零依赖（兜底仅服务账号/探活保留 + WARN）+ scan_real_fallback_business_usage 静态扫描 0 命中 | ✅已完成 |
+| L2-1 B 主 A 备（S4-T7） | backend/app/identity/channel.py ChannelStateManager 状态机单主路径（配置声明 + 显式切换/回切 + 降级头/告警，禁双主双写）；真实切换演练 S7（本段产出演练脚本与矩阵基线） | ✅已完成（真实切换演练 S7 终验） |
+| L2-2 通道矩阵基座（S4-T8） | matrix_rows 通道覆盖矩阵（读路径 B 主全绿 + A 备 covered + 健康探活/管理面 A 直连豁免行显式标注）；写路径 A/B 等价与 K14 幂等登记 S7 终验（Q-LL-8） | ✅已完成（写路径等价/K14 登记 S7 终验） |
+| K02(LL) 协议头入站强校验（S4-T9） | IdentityGate 全端点收口 + 强校验豁免清单（GATE_EXEMPT_PATH_PREFIXES=/health /metrics /docs /redoc /openapi.json，ticket+审批+到期）+ 保留码 org 只读别名入站 400 + scan_identity_bypass 0 绕过（放宽期→豁免清单→enforce 强校验到期清零，Q-LL-2） | ✅已完成 |
+| OB-13 LL 侧（审计 detail.identity 六键） | S4-T10：audit_identity.build_identity_detail 六键（principal 含 agent_id/auth_method / delegated=null / effective / proxy_source / proxy_chain / request_id）+ 审计中间件 extra.identity 接线 + X-Request-Id 受信透传/非受信重生成 + 通道切换事件并入 identity + 敏感字段不落静态断言 | ✅已完成 |
+| K07 LL 端点-过滤矩阵填报（S4-T11） | doc/design/OpenLLM-K07-端点过滤矩阵填报 v1.0.0（S4 聚焦端点集十列全覆盖 + A 直连豁免行对账 + k07_isolation_registry 隔离注册表缺口清零 + 新增端点无隔离用例门禁拒绝） | ✅已完成 |
+| 角色档位（互译表 DPS 出站） | S4-T12：role_map 本地解释四码→档位（admin/org_admin/org_member/viewer，未知码 403 ROLE_UNMAPPED 0 静默降级）+ 写守卫 require_write_tier（只读档 4034 PERM_FORBIDDEN）+ 出站 DPS 互译（对齐 OpenBase 角色互译表 Q-D）+ OM/RG 原样透传 + agent 头集 | ✅已完成 |
+| M1/M2（Q-5=A 语义） | S4-T13：config.trust_mode 推导（非空⇔m2）+ M1 本地会话自足 / M2 受信头覆盖本地身份 + 键/数据 0 迁移（键生成幂等 + org 只读别名 + 保留码空间不变） | ✅已完成 |
+| verify-env（S4-T14） | backend/scripts/verify-env/contract.json 契约键组（identity_trust/REAL/channel/upstream）+ verify_env.py 对账（dev 全 pass / production REAL 期望拦截 fail-fast 非零退出） | ✅已完成 |
+| L3-2 LL 贯通冒烟（S4-T15） | backend/scripts/smoke_l3_2.py + tests/unit/test_s4_t15_l3_2_smoke.py（B 编排出站带头全绿 / A-B 等价 / 越权 403 / 跨域不可见 / REAL 零耦合 + 段门禁自检五项）；真实 HTTP 双签登记联调窗口与 S7 | ✅已完成（通过；真实 HTTP 双签登记非沙箱复核与联调/部署验证窗口） |
+| S4 段门禁 | 五项门禁（① 通道 B 全面主用 ② 通道矩阵全绿 ③ LL 收口用例全绿 ④ 强校验生效 0 绕过 ⑤ L3-2 冒烟通过）2026-09-10 人工批准全绿 | ✅ |
+
+- **LL-1~LL-6 与 L2-1/L2-2/K02(LL)/OB-13/K07(LL)/角色档位/M1/M2 收口**：LL-1 → S4-T1；K09（LL-3 透传）→ S4-T2；K15（LL-3 REAL 收口）→ S4-T3；LL-2 → S4-T4；LL-4/K17 → S4-T5；LL-5/LL-6 → S4-T6；L2-1 → S4-T7；L2-2 → S4-T8；K02(LL) → S4-T9；OB-13 → S4-T10；K07(LL) → S4-T11；角色档位 → S4-T12；M1/M2 → S4-T13；verify-env → S4-T14；L3-2 → S4-T15；均随 OpenLLM v2.15.0（拟）S4 段收口（S4 全组 306 passed 恒绿 + ruff 0；见 OpenLLM S4 文档 §1.1 与设计草案 §1.4 覆盖矩阵）。
+- **提交链说明**：OpenLLM 仓 S4 产物因 git 沙箱受限保留工作树（HEAD a552cbf=v2.14.3 发布闭环，分支 `feature/v2.13.0-openrag`；2026-09-10 实测 git status 430 项——.pylib/__pycache__/data db/backup 等噪音占多数，S0 探活等既有基线已按 doc/planning/OpenLLM-S4-批次1基线收口登记清单 v1.0.0 分类 A~E 文件级登记），实际提交待沙箱外按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》v1.0.2 执行（基线 1 批 + S4 四~六批），提交后 hash 回填本摘要；任务执行链以 OpenLLM S4 DevLogReport v1.0.1 T1~T15 记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
 
 状态随实施推进更新；每卡验收断言可直接转测试用例标题（TDD RED 起步）。
