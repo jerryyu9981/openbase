@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T7",
+  "title": "S7-T7 跨仓入仓核验与会签汇总核对（四仓入仓 hash / 逐仓勾稽 / 会签五步 / 清单升版）",
+  "status": "PENDING",
+  "execution_face": "A+B",
+  "generated_at": "2026-09-11T00:00:00+08:00",
+  "openbase_commit": "2d97d1a",
+  "openbase_head_short": "2d97d1a",
+  "template_ref": "doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md",
+  "summary_table_ref": "doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md",
+  "s7_report_ref": "doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md",
+  "gate_evidence_ref": "doc/test/evidence/s7/gate/gate-aggregate.json",
+  "repos": {
+    "OpenMemory": {
+      "branch": "release/v7.3.0",
+      "head": "cc7c06f",
+      "batches": {
+        "batch_0": "000a154",
+        "batch_1": "fbc8326",
+        "batch_2": "90cbe37",
+        "batch_3": "a4a0059",
+        "lint_debt": "1348229",
+        "devflow_untrack": "cc7c06f"
+      },
+      "regression": "以本仓 DevLog/测试报告口径为准（沙箱外未复跑，登记 PENDING）",
+      "remote_sync": "origin/backup 已同步 cc7c06f；github 待推（PENDING）",
+      "remote_sync_status": "PENDING",
+      "worktree_residual": 89,
+      "reconciliation": "PENDING（待按 A 类回读复核）",
+      "archived": true
+    },
+    "OpenRAG": {
+      "branch": "release/v1.10.0",
+      "head": "a2eb92b",
+      "batches": {
+        "S3-B1": "9e93c1c",
+        "S3-B2": "0bda158",
+        "S3-B3": "f48ea08",
+        "S3-B4": "5fafc0a",
+        "post_fix": "b809c04",
+        "writeback": "a2eb92b"
+      },
+      "regression": "S3 组 144 passed；四静态扫描/K07/L3-2 退出码 0",
+      "remote_sync": "origin/backup/github 已同步 a2eb92b",
+      "remote_sync_status": "SYNCED",
+      "worktree_residual": 1,
+      "reconciliation": "0",
+      "archived": true
+    },
+    "OpenLLM": {
+      "branch": "feature/s4-identity-channel-b",
+      "head": "be1886d",
+      "batches": {
+        "batch_1": "656d179",
+        "batch_2": "6d8b189",
+        "batch_3": "2ef6601",
+        "batch_4": "640f250",
+        "batch_5": "c310c38",
+        "batch_6": "24d4484",
+        "manual_1": "64ef68f",
+        "manual_2": "e366e50",
+        "manual_3": "be1886d"
+      },
+      "need_star_branch": "feature/need-star-orchestration",
+      "need_star_commit": "ce40f90",
+      "regression": "tests/unit 1981 passed / 1 failed（唯一失败为本地 backend/.env 的 OPENLLM_DPS_REAL 环境项，覆盖后 11/11 通过，非代码缺陷）",
+      "remote_sync": "origin/backup/github/jerry.yu 四远端未推送（PENDING）",
+      "remote_sync_status": "PENDING",
+      "worktree_residual": 1459,
+      "reconciliation": "0",
+      "archived": true
+    },
+    "DPS": {
+      "branch": "main",
+      "head": "e772c01",
+      "batches": {
+        "S5-B1": "8333650",
+        "S5-B2": "45a5ea4",
+        "S5-B3": "1dc5f94",
+        "S5-B4": "14d3111",
+        "writeback": "e772c01"
+      },
+      "regression": "S5 全组 168 用例恒绿；K07 --check EXIT=0 gaps=0；smoke_l3_2 --quick EXIT=0",
+      "remote_sync": "origin/backup/github 已同步 e772c01",
+      "remote_sync_status": "SYNCED",
+      "worktree_residual": 4,
+      "reconciliation": "0",
+      "archived": true
+    }
+  },
+  "list_upgrade": {
+    "release": "v1.0.9 [Approved]",
+    "clearance": "v1.0.7 [Approved]",
+    "template": "v1.0.2 [Approved]"
+  },
+  "signoff_five_steps": [
+    {
+      "step": "①",
+      "item": "四仓入仓完成",
+      "status": "DONE",
+      "detail": "OpenMemory 4 批 / OpenRAG 4 批 / OpenLLM 6 批 / DPS 4 批（均本地提交）"
+    },
+    {
+      "step": "②",
+      "item": "hash 回填（各仓 JT 台账 + 任务卡卡尾）",
+      "status": "DONE",
+      "detail": "任务卡 v1.4.0/v1.5.0/v1.6.0 卡尾 + DPS JT 台账；远端推送受限 2 项 PENDING"
+    },
+    {
+      "step": "③",
+      "item": "四仓勾稽 A 类差异 0",
+      "status": "PARTIAL",
+      "detail": "OpenRAG/DPS/OpenLLM = 0；OpenMemory 待 A 类回读复核 PENDING"
+    },
+    {
+      "step": "④",
+      "item": "跨系统卡 K02/K07/K13 与接口一致性评审",
+      "status": "DONE",
+      "detail": "K07 四仓填报缺口清零（gate-aggregate.json §K07-SYS-1 计数对账）；四头/白名单/角色互译/保留码/事件契约跨仓对齐"
+    },
+    {
+      "step": "⑤",
+      "item": "清单升版",
+      "status": "DONE",
+      "detail": "放行清单 v1.0.9 [Approved]；清点总清单 v1.0.7 [Approved]"
+    }
+  ],
+  "t7_assertions": [
+    {
+      "id": "S7-T7-1",
+      "conclusion": "PARTIAL",
+      "detail": "四仓本地入仓完成、hash 回填完成；OpenMemory github 待推 / OpenLLM 四远端未推送 → 远端 PENDING"
+    },
+    {
+      "id": "S7-T7-2",
+      "conclusion": "PARTIAL",
+      "detail": "OpenRAG/DPS/OpenLLM A 类差异 0 实测；OpenMemory 待 A 类回读复核 PENDING"
+    },
+    {
+      "id": "S7-T7-3",
+      "conclusion": "PASS",
+      "detail": "会签五步记录形成 + K02/K07/K13 与接口一致性评审"
+    },
+    {
+      "id": "S7-T7-4",
+      "conclusion": "PASS",
+      "detail": "放行清单 v1.0.9 / 清点总清单 v1.0.7 均 [Approved]"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "T7-REMOTE-PUSH:OpenMemory",
+      "item": "OpenMemory github 远端推送（release/v7.3.0 @ cc7c06f）",
+      "owner": "用户（沙箱外）",
+      "status": "PENDING"
+    },
+    {
+      "id": "T7-REMOTE-PUSH:OpenLLM",
+      "item": "OpenLLM 四远端推送（feature/s4-identity-channel-b @ be1886d）",
+      "owner": "用户（沙箱外）",
+      "status": "PENDING"
+    },
+    {
+      "id": "T7-RECONCILE:OpenMemory",
+      "item": "OpenMemory 勾稽 A 类回读复核（残余 89）",
+      "owner": "用户（沙箱外）",
+      "status": "PENDING"
+    }
+  ],
+  "note": "A 面（清单结构对账 + OpenBase 侧会签汇总与清单升版 + 文档维护）沙箱内真实执行；B 面（四仓 git 写权限、远端推送、逐仓 git status 回读、四仓回归）由用户在沙箱外执行，结果如实登记。受限项一律 PENDING，禁伪造 hash 与通过。"
+}
