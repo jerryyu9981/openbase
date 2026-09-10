@@ -5,8 +5,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-DOCMAP-INDEX-v1.0.0 |
-| 版本 | v1.0.0 |
-| 状态 | [Draft]（S7-T1-5 产出；随 S7 段门禁批准回写 [Approved]） |
+| 版本 | v1.0.1 |
+| 状态 | [Draft]（S7-T1-5 产出；v1.0.1 S7-T8-3 增补 S7 新增条目与证据索引；随 S7 段门禁批准回写 [Approved]） |
 | 日期 | 2026-09-11 |
 | 作者 | AI（沙箱侧现状实测与索引编制） |
 | 用途 | **L0-L4 全量文档地图（唯一入口表）**：逐层登记文档「名称 / 版本 / 角色 / 状态 / 关联锚点」，并承载 **S1a~S7 纵切新增文档并入核对**；判据「**无游离文档**」（各层文档均在索引内，差异 0 或显式登记） |
@@ -18,6 +18,7 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-11 | AI（沙箱侧现状实测与索引编制） | 初始版本：S7-T1-5 文档地图正文落点。含 §1 分层模型、§2 L0-L4 全量文档清单、§3 S1a~S7 纵切并入核对表、§4 无游离核对判据 + 机器可核对清单、§5 维护与边界。**本次仅新建本索引一个文档，未改动其他正文** |
+| v1.0.1 | 2026-09-11 | AI（S7 批次 3 开发会话） | **S7-T8-3 文档地图维护**：新增 §2.6「S7 新增收口资产与证据」（SHR 五项脚本与契约 / K13 矩阵 / 门禁聚合脚本与证据 / S7 总收官报告 + t8 回写核对证据）并入索引；§3 S7 行「并入结论」更新；DOCMAP-MANIFEST 机器清单同步增补上述条目并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 
 ---
 
@@ -100,6 +101,22 @@
 | doc/development/OpenBase-S6-统一前端隔离展示与段门禁收口-DevLogReport-v1.0.0.md | v1.0.0 | S6 开发记录 | Final | S6 |
 | doc/test/OpenBase-S6-统一前端隔离展示与段门禁收口-测试报告-v1.0.0.md | v1.0.0 | S6 测试报告 | Final | S6 |
 | doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md | v1.0.0（OB-INTG-S7-SIGNOFF-TPL-v1.0.0） | S7 执行模板 | Draft | S7-T7 |
+| doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md | v1.0.0 | S7 总收官报告（单文件形态；六项聚合 + PENDING + 会签 + 遗留） | Review | S7-T8-4 / S7-T8-5 |
+
+### 2.6 S7 新增收口资产与证据（脚本 / 契约 / 证据）
+
+> 承接 S7-T1（SHR 五项收口）与 S7-T6/T8（门禁聚合与回写）；脚本与证据亦纳入机器可核对清单（§4），保持「无游离」。
+
+| 名称 | 版本 | 角色 | 状态 | 关联锚点 |
+|------|------|------|------|---------|
+| scripts/verify-env/contract.global.json | schema_version=1 | 跨仓统一 verify-env 契约（主结构 + repo_overrides） | 已产出（S7 批 1） | S7-T1-1 |
+| scripts/verify_env_global.ps1 | v1.0.0 | verify-env 全局入口（-Repos / 两段式收紧） | 已产出（S7 批 1） | S7-T1-1 |
+| scripts/db/init_openbase_test.ps1 | v1.0.0 | openbase_test 建库/建账号/幂等迁移脚本 | 已产出（S7 批 1） | S7-T1-2 |
+| scripts/db/grant_k13_accounts.ps1 | v1.0.0 | K13 授权收敛脚本（不授 superuser） | 已产出（S7 批 1） | S7-T1-3 |
+| scripts/scan_orchestrator_bypass.py | v1.0.0 | 编排禁批量杀静态扫描（0 绕过命中） | 已产出（S7 批 1） | S7-T1-4 |
+| scripts/gate_aggregate.py | v1.0.0 | 门禁聚合脚本（单命令 / 单批 / 结构化 JSON） | 已产出（S7 批 2） | S7-T6-1~4 |
+| doc/test/evidence/s7/gate/gate-aggregate.json | schema_version=1 | 门禁聚合证据（RA-06 / 冒烟 / 对齐清单 / K07-SYS-1 / SHR） | 已产出（S7 批 2） | S7-T6 / S7-T8-5 |
+| doc/test/evidence/s7/t8/writeback-check.json | schema_version=1 | S7-T8 回写核对证据（24 卡 / 七线 / 无游离 / 报告章节） | 已产出（S7 批 3） | S7-T8-1~5 |
 
 ---
 
@@ -113,7 +130,7 @@
 | S1b（P2-1） | OpenBase-P2-1-统一身份协议头与信任链收口立项方案-v1.0.0.md | OpenBase-P2-1-统一身份协议头与信任链收口设计草案-v1.0.0.md | doc/development/OpenBase-P2-1-统一身份协议头与信任链收口-DevLogReport-v1.0.0.md | doc/test/OpenBase-P2-1-统一身份协议头与信任链收口-测试报告-v1.0.0.md | — | 已并入 |
 | S1b'（P2-2 / R1） | OpenBase-P2-2-隔离与fail-open收口立项方案-v1.0.0.md | — | — | — | OpenBase-P2-2-隔离收口实施执行计划-v1.0.0.md；OpenBase-R1-隔离收口实施执行计划-v1.0.0.md | 已并入 |
 | S6（前端段） | OpenBase-S6-统一前端隔离展示与段门禁收口-立项方案-v1.0.0.md | OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0.md | doc/development/OpenBase-S6-统一前端隔离展示与段门禁收口-DevLogReport-v1.0.0.md | doc/test/OpenBase-S6-统一前端隔离展示与段门禁收口-测试报告-v1.0.0.md | doc/planning/OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md | 已并入 |
-| S7（总收官段） | OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md | OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md | （Step 2 产出） | （Step 3 产出） | doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md；doc/design/OpenBase-K13-账号权限矩阵-v1.0.0.md；本索引 | 已并入（DevLog/测试报告待产出，显式登记） |
+| S7（总收官段） | OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md | OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md | （Step 2 产出） | （Step 3 产出） | doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md；doc/design/OpenBase-K13-账号权限矩阵-v1.0.0.md；doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md；doc/test/evidence/s7/gate/gate-aggregate.json；doc/test/evidence/s7/t8/writeback-check.json；本索引 | 已并入（v1.0.1 增补报告与证据；DevLog/测试报告待产出，显式登记） |
 
 **台账/清单（跨段）**：OpenBase-数据隔离实现任务卡-v1.0.0.md、OpenBase-真实联调冒烟清单-v1.0.0.md、OpenBase-存量测试对齐任务清单-v1.0.0.md、doc/planning/OpenBase-联调产物清点核对总清单-v1.0.0.md、doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md —— 均已并入 §2.5。
 
@@ -164,6 +181,15 @@
 - doc/development/OpenBase-S6-统一前端隔离展示与段门禁收口-DevLogReport-v1.0.0.md
 - doc/test/OpenBase-S6-统一前端隔离展示与段门禁收口-测试报告-v1.0.0.md
 - doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md
+- doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md
+- doc/test/evidence/s7/gate/gate-aggregate.json
+- doc/test/evidence/s7/t8/writeback-check.json
+- scripts/verify-env/contract.global.json
+- scripts/verify_env_global.ps1
+- scripts/db/init_openbase_test.ps1
+- scripts/db/grant_k13_accounts.ps1
+- scripts/scan_orchestrator_bypass.py
+- scripts/gate_aggregate.py
 <!-- DOCMAP-MANIFEST:END -->
 
 ---

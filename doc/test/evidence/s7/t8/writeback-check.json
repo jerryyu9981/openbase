@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T8",
+  "title": "S7-T8 台账全量回写与总收官报告核对（24 卡 / 七线 JT / 文档地图 / 总收官报告）",
+  "status": "PASS",
+  "execution_face": "A",
+  "reason": "",
+  "generated_at": "2026-09-11T00:00:00+08:00",
+  "openbase_commit": "d3faa7fb022642b6213dd0b241da12c043371739",
+  "openbase_head_short": "d3faa7f",
+  "artifacts": {
+    "task_card": "OpenBase-数据隔离实现任务卡-v1.0.0.md",
+    "jt_backlog": "OpenBase-多系统联调联试-子系统任务归集与版本规划-v1.0.0.md",
+    "doc_map": "doc/design/OpenBase-文档地图索引-v1.0.0.md",
+    "report": "doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md",
+    "gate_evidence": "doc/test/evidence/s7/gate/gate-aggregate.json"
+  },
+  "coverage": {
+    "task_cards_total": 24,
+    "task_cards_completed": 22,
+    "task_cards_pending": 2,
+    "task_cards_pending_ids": ["RA-06", "K13"],
+    "jt_lines_total": 7,
+    "jt_lines_with_hash_or_pending": 7,
+    "jt_lines_pending": 2,
+    "jt_lines_pending_ids": ["OpenMemory-JT", "OpenLLM-JT"],
+    "doc_map_new_entries": 13,
+    "doc_map_orphan_count": 0,
+    "report_sections_total": 7,
+    "report_pending_register_items": 21
+  },
+  "checks": [
+    {
+      "id": "S7-T8-1",
+      "name": "任务卡 24 卡（K01-K18 + RA-01~RA-06）状态全量回写",
+      "status": "PASS",
+      "detail": "24 卡逐卡含「S7 回写口径（S7-T8-1）」；22 卡 ✅已完成/已闭环，2 卡 🚧待联调窗口 PENDING（RA-06 关联 S7-T6-1/S7-T6-2、K13 关联 S7-T1-3）"
+    },
+    {
+      "id": "S7-T8-2",
+      "name": "七线 JT（OpenBase/OpenLLM/OpenRAG/OpenMemory/DPS/前端/SHR）状态与提交号全量回写",
+      "status": "PASS",
+      "detail": "归集文档 v1.4.0 §3.9 七线汇总表；已入仓两仓（OpenRAG/DPS）附 hash，未入仓两仓（OpenMemory/OpenLLM）标未入仓 PENDING"
+    },
+    {
+      "id": "S7-T8-3",
+      "name": "文档地图 L0-L4 索引维护（S7 新增条目 + 机器清单无游离）",
+      "status": "PASS",
+      "detail": "文档地图 v1.0.1 §2.6 增补 SHR 脚本与契约 / K13 矩阵 / 门禁聚合脚本与证据 / 总收官报告；DOCMAP-MANIFEST 同步且逐项存在（游离 0）"
+    },
+    {
+      "id": "S7-T8-4",
+      "name": "《S7-全域门禁与总收官报告》产出",
+      "status": "PASS",
+      "detail": "doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md（[Review]），含段门禁六项聚合结论 / PENDING 挂起登记 / 跨仓会签记录 / 遗留事项"
+    },
+    {
+      "id": "S7-T8-5",
+      "name": "段门禁六项聚合自检（含 gate-aggregate.json 引用）",
+      "status": "PASS",
+      "detail": "① RA-06 ② 冒烟 S0-S6 ③ 对齐清单关闭 ④ 三原则总验证 ⑤ 跨仓会签 ⑥ 24 卡/JT 回写——逐项登记结论与证据索引，含 PENDING"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "S7-T8-2::OpenMemory-JT",
+      "item": "OpenMemory（S2）未入仓 PENDING",
+      "precondition": "OpenMemory 仓 git 写权限（沙箱外）+ 三远端同步",
+      "owner": "用户（沙箱外）",
+      "action": "入仓后回填 hash 至归集文档 §3.9 与任务卡"
+    },
+    {
+      "id": "S7-T8-2::OpenLLM-JT",
+      "item": "OpenLLM（S4）未入仓 PENDING",
+      "precondition": "OpenLLM 仓 git 写权限（沙箱外）+ 分支推送/合入",
+      "owner": "用户（沙箱外）",
+      "action": "入仓后回填 hash 至归集文档 §3.9 与任务卡"
+    },
+    {
+      "id": "S7-T8-4::B",
+      "item": "总收官报告 B 面结论（三原则总验证 / RA-06 真实面 / 冒烟真实执行）",
+      "precondition": "真实 PG/Redis、IdP/受信通道、四仓运行态",
+      "owner": "联调窗口",
+      "action": "联调窗口执行后回填报告 §2/§4 并升 [Approved]"
+    }
+  ],
+  "note": "本证据为 S7-T8 文档面（A 面）回写核对结果：结构核对真实执行；B 面（真实环境执行与四仓入仓）一律 PENDING 登记，禁伪造。数据源 = 任务卡 v1.8.0 / 归集文档 v1.4.0 / 文档地图 v1.0.1 / 总收官报告 v1.0.0 / gate-aggregate.json。"
+}

@@ -6,6 +6,9 @@
   "generated_at": "2026-09-11T03:33:17+08:00",
   "openbase_commit": "2235229eddf92b37ba63214475215fe5b16a7495",
   "openbase_head_short": "2235229",
+  "s7_report_ref": "doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md",
+  "t8_evidence_ref": "doc/test/evidence/s7/t8/writeback-check.json",
+  "shr_ref": "doc/test/evidence/s7/shr/**（verify-env-global / openbase-test / k13 / orchestrator / doc-map 五份）",
   "overall_status": "PASS",
   "exit_code": 0,
   "counts": {
