@@ -5,8 +5,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-S7-SIGNOFF-TPL-v1.0.0 |
-| 版本 | v1.0.0 |
-| 状态 | [Draft]（可填报模板，待四仓入仓与会签填写后按文档版本管理规范升版） |
+| 版本 | v1.0.1 |
+| 状态 | [Review]（v1.0.1 修订：**OpenRAG 侧填报位已填写**——§2.2 四批 hash/回归、§4.1 勾稽行、§5 hash 回填行 + §2.5 OpenBase 基线回写 `cdfbd5b`→`f360cef`；其余三仓填报与跨仓会签完成后按文档版本管理规范升版） |
 | 日期 | 2026-09-11 |
 | 作者 | AD（跨项目分析） |
 | 用途 | **供四仓（OpenMemory / OpenRAG / OpenLLM / DPS）入仓与会签填报**：统一承载「前置裁断 → 分批入仓 → hash 回填 → 勾稽会签」全流程的空白填报位，使各子系统对话按同一表格口径执行并回填证据；本模板本身**不代为执行四仓 git 命令**，仅提供可套用结构与命令模板 |
@@ -32,6 +32,7 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-11 | AD（跨项目分析） | 初始版本：S7 跨仓入仓与会签执行模板（可填报）。含 §1 前置裁断表（1.1 待人工判定 23 项 / 1.2 边界确认 7 项）、§2 逐仓入仓执行表（OpenMemory/OpenRAG/OpenLLM/DPS 四子表，批次与计数取各仓分清单）、§3 入仓红线检查清单（勾选式，逐仓一列）、§4 逐仓勾稽核对表（含核对命令模板与判定规则）、§5 hash 回填表、§6 跨仓会签记录表（五步）、§7 S7-T7 断言对照表（S7-T7-1~4）、§8 遗留与 PENDING 登记。**本次仅新建本模板一个文件，未执行任何四仓 git 写操作、未改动任何代码与其他文档** |
+| v1.0.1 | 2026-09-11 | AI（S3 入仓会话）/ 项目负责人（入仓批准） | **OpenRAG 侧填报**：§2.2 表四批「提交 hash / 回归结果」由待填改为实测（`9e93c1c` / `0bda158` / `f48ea08` / `5fafc0a`；S3 组 144 passed、四静态扫描/K07/L3-2 退出码 0）；§4.1 勾稽表 OpenRAG 行回读 = 1、A 类差异 = 0；§5 hash 回填表 OpenRAG 行登记完成；§2.5 与 §4.1 的 OpenBase 行基线由 `cdfbd5b` 回写为 **`f360cef`**（工作树 7 → 10 项）。**其余三仓填报位、§3 红线勾选、§6 会签记录、§7 S7-T7 断言结论保持待填**，随各子系统入仓与 OpenBase 会签完成；本次未执行任何 git 提交 |
 
 ---
 
@@ -114,10 +115,10 @@
 | 批次号 | 批次主题 | 文件数（A 类） | git add 命令模板（逐项显式，禁 -A） | commit message 模板 | 提交 hash（待填） | 提交后回归命令 | 回归结果（待填） | 备注 |
 |:---:|------|:---:|------|------|:---:|------|:---:|------|
 | B0 | 基线批（S0） | 0 | （无——本仓实测 0 条，HEAD `959ef83` 已为干净基线，无需基线提交） | — | — | — | — | 不产生提交 |
-| S3-B1 | 文档 | 6 | `git add '<仓根>/OpenRAG-S3-…立项方案-v1.0.0.md' '<仓根>/OpenRAG-S3-…设计草案-v1.0.0.md' '<仓根>/doc/design/OpenRAG-K07-端点过滤矩阵填报-v1.0.0.md' '<仓根>/doc/design/OpenRAG-K07-端点过滤矩阵填报-v1.0.0.matrix.json' '<仓根>/doc/development/OpenRAG-S3-…-DevLogReport-v1.0.0.md' '<仓根>/doc/test/OpenRAG-S3-…-测试报告-v1.0.0.md'` | `docs(s3): OpenRAG S3 六份文档入库（立项 v1.1.0/设计草案 v1.0.1 [Approved]；DevLog v1.0.1/测试报告 v1.0.0/K07 填报 v1.0.0）` | 待填 | （文档批，随终批全量回归） | 待填 | 全部未跟踪 |
-| S3-B2 | identity / 中间件 / 配置 / 装配 / 审计 | 25 | `git add '<仓根>/src/openrag/identity' '<仓根>/src/openrag/api/middleware/identity_gate.py' '<仓根>/src/openrag/api/middleware/block_subject_gate.py' '<仓根>/src/openrag/api/middleware/role_gate.py' '<仓根>/src/openrag/config/settings.py' ...`（按分清单 §2.4 逐项 add 25 项） | `feat(s3): 身份接入收口 identity/中间件/配置（协议头四态+B1、级联阻断、角色档位、审计六键、事件消费端、M1/M2）` | 待填 | （源码批，随终批全量回归） | 待填 | 17 ?? + 8 M；`repository` gitlink 禁 add |
-| S3-B3 | storage / 迁移 / 模型 / 路由 / 编排 | 12 | `git add '<仓根>/src/openrag/storage/migrations.py' '<仓根>/src/openrag/storage/postgres.py' '<仓根>/src/openrag/storage/sqlite.py' '<仓根>/src/openrag/models/collection.py' ...`（按分清单 §2.5 逐项 add 12 项） | `feat(s3): 数据隔离 storage/迁移/路由（归属列幂等迁移+保留码回填+B2 碰撞防护、行控强制注入、复合唯一 409）` | 待填 | （源码批，随终批全量回归） | 待填 | 1 ?? + 11 M |
-| S3-B4 | scripts / tests / CI | 24 | `git add '<仓根>/scripts/k07_endpoint_matrix.py' '<仓根>/scripts/tenant_backfill_report.py' '<仓根>/scripts/scan_auto_purge.py' ... '<仓根>/tests/unit/test_s3_t1_identity_gate.py' ... '<仓根>/run_tests.py' '<仓根>/.github/workflows/ci-cd.yml'`（按分清单 §2.6 逐项 add 24 项） | `test(s3): S3 T1~T11 RED 断言/K07 矩阵隔离用例/四静态扫描与 L3-2 冒烟脚本 + CI s3-static-gates job` | 待填 | `python -B -m pytest tests/unit -p no:cacheprovider`（S3 组 144 用例恒绿）+ 四静态扫描逐条退出码 0 + `python scripts/k07_endpoint_matrix.py` + `python scripts/smoke_l3_2.py` | 待填 | 21 ?? + 3 M；`ci-cd.yml` 为混合 CI 文件 |
+| S3-B1 | 文档 | 6 | `git add '<仓根>/OpenRAG-S3-…立项方案-v1.0.0.md' '<仓根>/OpenRAG-S3-…设计草案-v1.0.0.md' '<仓根>/doc/design/OpenRAG-K07-端点过滤矩阵填报-v1.0.0.md' '<仓根>/doc/design/OpenRAG-K07-端点过滤矩阵填报-v1.0.0.matrix.json' '<仓根>/doc/development/OpenRAG-S3-…-DevLogReport-v1.0.0.md' '<仓根>/doc/test/OpenRAG-S3-…-测试报告-v1.0.0.md'` | `docs(s3): OpenRAG S3 六份文档入库（立项 v1.1.0/设计草案 v1.0.1 [Approved]；DevLog v1.0.1/测试报告 v1.0.0/K07 填报 v1.0.0）` | **`9e93c1c`** | （文档批，随终批全量回归） | **完成**（6 files, +3429） | 全部未跟踪 |
+| S3-B2 | identity / 中间件 / 配置 / 装配 / 审计 | 25 | `git add '<仓根>/src/openrag/identity' '<仓根>/src/openrag/api/middleware/identity_gate.py' '<仓根>/src/openrag/api/middleware/block_subject_gate.py' '<仓根>/src/openrag/api/middleware/role_gate.py' '<仓根>/src/openrag/config/settings.py' ...`（按分清单 §2.4 逐项 add 25 项） | `feat(s3): 身份接入收口 identity/中间件/配置（协议头四态+B1、级联阻断、角色档位、审计六键、事件消费端、M1/M2）` | **`0bda158`** | （源码批，随终批全量回归） | **完成**（25 files, +3386 −22） | 17 ?? + 8 M；`repository` gitlink 禁 add |
+| S3-B3 | storage / 迁移 / 模型 / 路由 / 编排 | 12 | `git add '<仓根>/src/openrag/storage/migrations.py' '<仓根>/src/openrag/storage/postgres.py' '<仓根>/src/openrag/storage/sqlite.py' '<仓根>/src/openrag/models/collection.py' ...`（按分清单 §2.5 逐项 add 12 项） | `feat(s3): 数据隔离 storage/迁移/路由（归属列幂等迁移+保留码回填+B2 碰撞防护、行控强制注入、复合唯一 409）` | **`f48ea08`** | （源码批，随终批全量回归） | **完成**（12 files, +1441 −247） | 1 ?? + 11 M |
+| S3-B4 | scripts / tests / CI | 24 | `git add '<仓根>/scripts/k07_endpoint_matrix.py' '<仓根>/scripts/tenant_backfill_report.py' '<仓根>/scripts/scan_auto_purge.py' ... '<仓根>/tests/unit/test_s3_t1_identity_gate.py' ... '<仓根>/run_tests.py' '<仓根>/.github/workflows/ci-cd.yml'`（按分清单 §2.6 逐项 add 24 项） | `test(s3): S3 T1~T11 RED 断言/K07 矩阵隔离用例/四静态扫描与 L3-2 冒烟脚本 + CI s3-static-gates job` | **`5fafc0a`** | `python -B -m pytest tests/unit -p no:cacheprovider`（S3 组 144 用例恒绿）+ 四静态扫描逐条退出码 0 + `python scripts/k07_endpoint_matrix.py` + `python scripts/smoke_l3_2.py` | **完成**（S3 组 144 passed；四静态扫描/K07/L3-2 逐条退出码 0） | 21 ?? + 3 M；`ci-cd.yml` 为混合 CI 文件 |
 | **小计** | **4 批（B0 无提交）** | **67** | — | — | — | — | — | A+B+C+人工 = 67+0+0+0 = **67**（+本文档自身为 68） |
 
 > OpenRAG 分支建议：自 `master`（`959ef83`）切 `release/v1.10.0`（拟）。**严禁 `git add repository`**（gitlink `160000 0ed102a…`）。
@@ -159,7 +160,7 @@
 | OpenLLM | `a552cbf` / `feature/v2.13.0-openrag` | 6（15/7/15/15/8/15） | **75** | 13 | 1455 | 12 | **1555** | 6（可合 5） |
 | DPS | `6b39dd4` / `main` | 4（S5-B1=19 / B2=17 / B3=8 / B4=8） | **52** | 3 | 2 | 3（⊂A） | **57** | 4 |
 | **合计** | — | **18（合批后 17）** | **264** | 213 | 1546 | 23 | — | 18（合批 17） |
-| OpenBase（本仓） | `cdfbd5b` / `main` | 0（无需放行） | 0 | 0 | 7（`dogfood-output/` 不提交） | 0 | 7 | 0 |
+| OpenBase（本仓） | **`f360cef`** / `main`（2026-09-11 实测；原登记 `cdfbd5b`） | 0（无需放行） | 0 | 0 | 7（`dogfood-output/` 不提交） | 0 | **10**（3 `M` + 7 `??`） | 0 |
 
 > 计数核对：A 类合计 **264** = 70+67+75+52；建议提交 **18** 个（OpenLLM 合批后 **17** 个）；需人工判定 **23** = 8+12+3；边界确认 **7**。以上与《清点总清单》§1.1 与本模板 §1 完全一致。
 
@@ -194,7 +195,7 @@
 | 仓 | 清点基线 A/B/C 计数（预填实测值） | 入仓后 `git status --porcelain -uall` 回读 A/B/C 计数（待填） | A 类差异（须 0，待填） | 残余条目说明（仅 B/C + 清单文档自身） | 核对人/日期 |
 |----|------|------|:---:|------|------|
 | OpenMemory | A **70** / B **197** / C **89**（+人工 8；总 364） | 待填（期望 ≈ B197 + C89 + 人工8 + 清单文档自身） | 待填 | 待填（B 类 v7.x 在途 + C 类噪音 + 本仓清单文档） | 待填 |
-| OpenRAG | A **67** / B **0** / C **0**（总 67；+清单文档 1 = 68） | 待填（期望 = 1，仅清单文档自身） | 待填 | 待填（仅本仓清单文档自身） | 待填 |
+| OpenRAG | A **67** / B **0** / C **0**（总 67；+清单文档 1 = 68） | **1**（入仓后实测，仅清单文档自身） | **0**（A 类差异归零） | 仅本仓清单文档自身（内部版本 v1.0.1，保持未跟踪） | AI（S7 入仓会话）/ 2026-09-11 |
 | OpenLLM | A **75** / B **13** / C **1455**（+人工 12；`-uall` 总 1555） | 待填（期望 ≈ B13 + C1455 + 人工12 + 清单文档自身） | 待填 | 待填（B 类 need-star + C 类噪音 + 本仓清单文档） | 待填 |
 | DPS | A **52** / B **3** / C **2**（总 57；人工 3 ⊂ A） | 待填（期望 ≈ B3 + C2 + 清单文档自身） | 待填 | 待填（B 类 v2.9.0 + C 类噪音 + 本仓清单文档） | 待填 |
 | OpenBase（本仓） | A **0** / B **0** / C **7**（`dogfood-output/` 不提交） | 待填（期望 = 7，全部 dogfood-output） | 待填 | 待填（`dogfood-output/` 走查产物，不提交） | 待填 |
@@ -248,7 +249,7 @@ python -m ruff check openbase tests
 | 仓 | 提交 hash 清单（待填） | 回填位置 | 回填完成（待填） | 备注 |
 |----|------|------|:---:|------|
 | OpenMemory | 批 0：____；批 1：____；批 2：____；批 3：____（4 个） | 《OpenBase-数据隔离实现任务卡》**v1.4.0 卡尾（S2 段执行摘要）** | 待填 | 4 个 commit hash + 批次结论；受限则登记 `PENDING` |
-| OpenRAG | S3-B1：____；S3-B2：____；S3-B3：____；S3-B4：____（4 个） | 《OpenBase-数据隔离实现任务卡》**v1.5.0 卡尾（S3 段执行摘要）** | 待填 | 4 个 commit hash + 批次结论；受限则登记 `PENDING` |
+| OpenRAG | S3-B1：`9e93c1c`；S3-B2：`0bda158`；S3-B3：`f48ea08`；S3-B4：`5fafc0a`（4 个） | 《OpenBase-数据隔离实现任务卡》**v1.5.0 卡尾（S3 段执行摘要）** | **已回填**（2026-09-11） | 4 个 commit hash + 批次结论；另 `b809c04`（入仓后修复）/ `a2eb92b`（登记回填） |
 | OpenLLM | 批 1：____；批 2：____；批 3：____；批 4：____；批 5：____；批 6：____（6 个，或合批 5 个） | 《OpenBase-数据隔离实现任务卡》**v1.6.0 卡尾（S4 段执行摘要）** | 待填 | 6 个（合批则 5 个）+ 批次结论；受限则登记 `PENDING` |
 | DPS | S5-B1：____；S5-B2：____；S5-B3：____；S5-B4：____（4 个） | **DPS JT 台账** + 任务卡 **S5 卡尾**（v1.7.0 S5 段执行摘要） | 待填 | 4 个 commit hash + 批次结论；受限则登记 `PENDING` |
 | OpenBase（本仓） | 无联调产物 hash（本次联调 OpenBase A 类 = 0） | 会签结论（可追加至总清单 §4 或任务卡卡尾） | 待填 | 仅登记会签结论 |

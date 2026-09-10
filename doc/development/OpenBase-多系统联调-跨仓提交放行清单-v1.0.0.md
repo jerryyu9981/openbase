@@ -637,6 +637,24 @@ python scripts/smoke_l3_2.py                                   # L3-2 冒烟 + �
 python scripts/verify_env_contract.py --fail-fast              # 可选：verify-env 契约键对账（trust_mode 推导一致）
 ```
 
+### 4.7 实际 commit 登记（2026-09-11 入仓回填）
+
+> 登记来源：OpenRAG 子系统入仓会话回填（对应《OpenRAG-联调产物待提交清单-v1.0.0》§6.6「上游放行清单」回填位）。§4.4 四批命令模板已**实际执行**，下表为实测 commit。
+
+| 批次 | 实际 commit | 内容 | 规模 |
+|------|------|------|------|
+| S3-B1 | `9e93c1c` | S3 六份文档（含 doc/design K07 填报 + matrix.json / doc/development DevLog / doc/test 测试报告） | 6 files, +3429 |
+| S3-B2 | `0bda158` | identity / 中间件 / 配置 / 装配 / 错误面 / 审计 | 25 files, +3386 −22 |
+| S3-B3 | `f48ea08` | storage / 迁移 / 模型 / 路由 / 编排 | 12 files, +1441 −247 |
+| S3-B4 | `5fafc0a` | scripts / tests / CI（含 s3-static-gates job） | 24 files, +5672 −10 |
+| 入仓后修复 | `b809c04` | 遗留用例 `tests/unit/api/test_api_routes_supplement_users_docs.py` 适配 `_index_document_task` 的 `tenant_code` 域透传 | 1 file, +9 −3 |
+| 入仓登记回填 | `a2eb92b` | DevLogReport / 测试报告 内部版本 v1.0.1→v1.0.2，加注入仓 hash 登记 | 2 files, +24 −4 |
+
+- **分支与远端**：`release/v1.10.0`（自 `master` @ `959ef83` 切出）；origin / backup / github 三远端 HEAD 均为 `a2eb92b`；`master` 保持 `959ef83` 未改动；未创建 tag（§4.4 的 `v1.10.0-rc.1` 未执行）。
+- **入仓后复核**：A 类差异 = 0；S3 全组 144 用例隔离恒绿；四静态扫描 + K07 矩阵 + L3-2 冒烟 + verify-env 契约对账退出码 0；残留工作树 = 1（仅 OpenRAG 分清单文档自身，符合勾稽期望）。
+- **§4.6 回归口径勘误（实测）**：① 全量 `pytest tests/unit` 实测 2665 passed / 49 failed / 40 errors，其中失败与错误经 subset 对照 `master` 基线**完全持平**（36 failed / 40 errors），无 S3 引入回归（入仓后发现并已修复 2 项遗留用例，见上表 `b809c04`）；② `python -m ruff check src scripts tests/unit` 实测非 0（885 项），CI 实际门禁口径为 `ruff check src/openrag`（2 个既有 N812 告警，非 S3 引入），§4.6 该行「期望 0 错误」应按 CI 口径修正。
+- **回填位说明**：本清单 §4 无独立「实际 commit」列，hash 正式回填位为《OpenBase-数据隔离实现任务卡》**v1.5.0 卡尾 S3 段执行摘要**（已回填，见其「S3 实际提交 hash 登记」表）。
+
 ## 5. OpenBase 仓（D:\Trae CN\myproject\Dev\OpenBase）
 
 | 项目 | 值 |

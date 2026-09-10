@@ -3,9 +3,9 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-ISOCARDS-v1.0.0 |
-| 版本 | v1.7.0 |
+| 版本 | v1.7.2 |
 | 状态 | [Review]（24 卡：R1=14（K01-K08 + RA-01~RA-06）/ R2=10；v1.4.0 回写：S2（OpenMemory）段收口——K02(OM)/K05(OM-2)/RA-05(OM-1)/K06(OM-3) 已完成、K07 OM 端点-过滤矩阵填报完成，OB-11(OM 存量回填)/L1-1(OM 事件消费端)/OM-4/L3-2 贯通冒烟经 S2 段门禁（五项全绿）登记于卡尾执行摘要；OpenMemory 侧提交链待沙箱外放行后回填（见放行清单 v1.0.0）；v1.5.0 回写：S3（OpenRAG）段收口——K02(RG)/K16(RG-1)/K10(RG-2)/K11(RG-3)/K07 RG 端点-过滤矩阵填报 已完成，L1-1(RG 事件消费端)/fail-open 收口(RG 侧)/OB-13(RG 审计贯穿)/角色档位/M1/M2/L3-2 贯通冒烟经 S3 段门禁（五项全绿）登记于卡尾执行摘要；OpenRAG 侧提交链待沙箱外放行后回填（见放行清单 v1.0.1）；v1.6.0 回写：S4（OpenLLM）段收口——K09（S4-T2）/LL-1 探活（S4-T1）/LL-2 REAL 契约开关（S4-T4）/LL-4/K17（S4-T5）/LL-5（S4-T6）/LL-6（S4-T6）/K15（S4-T3）/L2-1（S4-T7）/L2-2（S4-T8）/K02(LL)（S4-T9）/OB-13 LL 侧（S4-T10）/K07 LL 端点-过滤矩阵填报（S4-T11）/角色档位（S4-T12）/M1/M2（S4-T13）/verify-env（S4-T14）/L3-2 LL 贯通冒烟（S4-T15）已完成，经 S4 段门禁（五项全绿）登记于卡尾执行摘要；OpenLLM 侧提交链待沙箱外放行后回填（见放行清单 v1.0.2）；v1.7.0 回写：S5（DPS）段收口——K02(DPS) 协议头入站校验（S5-T1）、K07 DPS 端点-过滤矩阵填报（S5-T10，169 行=覆盖 134/豁免 35/缺口 0 + CI 门禁）、K12(DP-6) person 复合唯一（S5-T5）、K14(DP-4) 并发写规则固化（S5-T4）、K18(DP-2) org/tenant 归一与 code 冲突检测（S5-T2，含 DP-3 绑定总线化 S5-T3）状态更新为「✅已完成」；经 S5 段门禁（五项全绿）登记于卡尾执行摘要（DPS-T1~T12）；DPS 侧提交链待沙箱外放行后回填（见放行清单 v1.0.5）） |
-| 日期 | 2026-09-10 |
+| 日期 | 2026-09-11 |
 | 作者 | AD（跨项目分析） |
 | 版本主题 | 将《统一身份最小特征集与隔离模型设计 v1.3.0》§12 数据隔离实现细则（22 条规则）拆为可执行任务卡，并补齐 R1 批次范围内非 §12 工作项（U1/P2-2/治理）：每卡含目标升级项、系统、批次、改动点、实现步骤、测试用例、验收断言（v1.2.0：S1a 收口回写 RA-01/RA-02/K04/K08 状态与提交链；v1.3.0：S1b/P2-1 收口回写 K01/K03/K02/K07 与 OB-3/6/8/9/12/13 状态与提交链；v1.4.0：S2（OpenMemory）段收口回写 K02(OM)/K05(OM)/RA-05/K06/K07(OM 填报) 状态与卡尾 S2 段执行摘要（OB-11(OM)/L1-1(OM)/OM-4/L3-2）；v1.5.0：S3（OpenRAG）段收口回写 K02(RG)/K10(RG-2)/K11(RG-3)/K16(RG-1)/K07(RG 填报) 状态与卡尾 S3 段执行摘要（L1-1(RG)/fail-open 收口/OB-13(RG 侧)/角色档位/M1/M2/L3-2）；v1.6.0：S4（OpenLLM）段收口回写 K09/K15/K17/K02(LL)/K07(LL 填报) 状态与卡尾 S4 段执行摘要（LL-1~LL-6/L2-1/L2-2/OB-13 LL 侧/K07 LL 填报/角色档位/M1/M2/verify-env/L3-2 LL 贯通冒烟）；v1.7.0：S5（DPS）段收口回写 K02(DPS)/K07(DPS 填报)/K12(DP-6)/K14(DP-4)/K18(DP-2) 状态与卡尾 S5 段执行摘要（DP-2/K18、DP-3、DP-4/K14、DP-6/K12、K02(DPS)、K07(DPS)、角色互译表 DPS 侧接线、L1-1 DPS 真实消费端、OB-13 DPS 审计六键、M1/M2 与服务账号、verify-env、L3-2 冒烟）） |
 | 上游依据 | 身份最小集 v1.3.0 §12（R-H/M/L 规则）；文档体系与升级路线规划 v1.1.0（升级项编号 OB-*/OM-*/RG-*/DP-*/LL-*/SYS-1 与批次）；P2-2 立项方案 v1.0.0；U1 立项方案 v1.1.0 / 设计草案 v1.1.0（实施依据）；P2-1 立项方案 v1.1.0 / 设计草案 v1.1.0（S1b 收口依据，均已 [Approved]） |
@@ -22,6 +22,7 @@
 | v1.5.0 | 2026-09-09 | AD（跨项目分析） | S3（OpenRAG）段收口回写：K02(RG) 协议头入站校验（S3-T1：IdentityGate 行为矩阵四态 + B1 EdgeRouter 不装配处置）、K16(RG-1) 表级归属迁移（S3-T2：归属列 tenant_code 幂等迁移 + 保留码 openrag-local 回填 0 孤儿 + B2 碰撞防护）、K10(RG-2) 行控强制过滤（S3-T3：强制注入 + 豁免清单 + 静态门禁）、K11(RG-3) 复合唯一（S3-T4：collection (tenant_code, name) 复合唯一，同域同名 409）状态更新为「✅已完成」；K07 登记 OpenRAG 端点-过滤矩阵填报完成（S3-T8，doc/design/OpenRAG-K07-端点过滤矩阵填报 v1.0.0，openapi 底单 121 行=豁免 10/覆盖 111，缺口清零）；卡尾登记 S3 段执行摘要（L1-1(RG) 事件真实消费端 S3-T5 阻断集+幂等+Push/Pull 契约 v1.0、fail-open 收口 S3-T6 D-V 映射、OB-13(RG 侧) S3-T7 审计 detail.identity 六键、角色档位 S3-T9 Q-RG-6、M1/M2 S3-T10、L3-2 贯通冒烟 S3-T11 通过——真实 HTTP 双签与 PG/Redis 实跑登记联调窗口）；提交链以 OpenRAG S3 DevLogReport v1.0.1 为准，OpenRAG 侧提交待沙箱外执行（见 doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md v1.0.1），OpenBase 侧锚点 commit 0713ec1=事件列表契约端点 |
 | v1.6.0 | 2026-09-10 | AD（跨项目分析） | S4（OpenLLM）段收口回写：K09 编排出站身份透传（S4-T2：external_identity 透传基座全四维采纳 + 白名单矩阵）、K15 REAL_* 兜底收口（S4-T3：出站头唯一装配统一 + 业务路径 REAL 零依赖）、K17 前缀归一（S4-T5：namespace 归一 tenant_code + org 只读别名 + 保留码）、K02(LL) 强校验（S4-T9：豁免清单 + IdentityGate 全端点收口 + 保留码 400）状态更新为「✅已完成」；K07 登记 OpenLLM 端点-过滤矩阵填报完成（S4-T11，doc/design/OpenLLM-K07-端点过滤矩阵填报 v1.0.0，S4 聚焦端点集全覆盖 + A 直连豁免行对账 + 隔离注册表缺口清零）；卡尾登记 S4 段执行摘要（LL-1 探活 S4-T1、LL-2 REAL 契约开关 S4-T4、LL-5/LL-6 S4-T6、L2-1 S4-T7、L2-2 S4-T8、OB-13 LL 侧 S4-T10、角色档位 S4-T12、M1/M2 S4-T13、verify-env S4-T14、L3-2 贯通冒烟 S4-T15——真实 HTTP 双签登记联调窗口与 S7）；提交链以 OpenLLM S4 DevLogReport v1.0.1 为准，OpenLLM 侧提交待沙箱外执行（见 doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md v1.0.2），OpenBase 侧锚点 commit 0713ec1=事件列表契约端点 |
 | v1.7.0 | 2026-09-10 | AD（跨项目分析） | S5（DPS）段收口回写：K18(DP-2) org/tenant 归一（S5-T2：tenants.code 对齐 OpenBase 权威源 + 冲突检测与重映射脚本 tenant_code_reconcile.py + 冲突清单 0 未决）、DP-3 绑定总线化（S5-T3：user_roles 以 OpenBase 主体键绑定 + deactivated/restored 生命周期联动）、K14(DP-4) 并发写规则固化（S5-T4：画像写链 WHERE version 乐观锁冲突 409 + message_hash 幂等盘点结论「0 适用」落档）、K12(DP-6) person 复合唯一（S5-T5：复核即达 + 对账 0 孤儿 + 跨租户同名互不可见）、K02(DPS) 协议头入站校验（S5-T1：来源白名单 + 行为矩阵四态 + 保留码/非法头 400 + 装配顺序断言）、K07 DPS 端点-过滤矩阵填报（S5-T10：169 行=覆盖 134/豁免 35/缺口 0 + CI 门禁）状态更新为「✅已完成」；卡尾登记 S5 段执行摘要（角色互译表 DPS 侧接线 S5-T9、L1-1 DPS 真实消费端 S5-T6、OB-13 DPS 审计六键 S5-T8、M1/M2 与服务账号 S5-T11、verify-env 契约键 S5-T14、L3-2 冒烟 S5-T12）；提交链以 DPS S5 DevLogReport（doc/development/DPS-S5-画像数据隔离与身份接入收口-DevLogReport-v1.0.0.md）为准，DPS 侧提交待沙箱外执行（见 doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md v1.0.5）；OpenBase 侧锚点 commit 0713ec1=事件列表契约端点 |
+| v1.7.1 | 2026-09-11 | AI（跨仓会签侧回填） | **DPS S5 入仓 hash 回填与勾稽**：S5 段执行摘要「提交链说明」更新为**已入仓**——S5-B1 `8333650` / S5-B2 `45a5ea4` / S5-B3 `1dc5f94` / S5-B4 `14d3111`（+回填提交 `e772c01`），分支 main（基线 `6b39dd4`）；勾稽回读 A 类差异 0（残余 4 = B 类 v2.9.0 三份文档 + 分清单自身）；三远程 origin/backup/github main 同步；S5 摘要遗留③ 关闭；§3.5 DPS-JT 台账同步回填 |
 
 ---
 
@@ -298,7 +299,20 @@
 | S3 段门禁 | 五项门禁（① 过滤隔离用例全绿 ② 协议头入站校验生效 ③ 级联阻断生效 ④ 存量回填 0 孤儿 ⑤ L3-2 冒烟通过）2026-09-09 人工批准全绿 | ✅ |
 
 - **RG-1~RG-3 与 K02/K07(RG) 收口**：RG-1（K16）→ S3-T2；RG-2（K10）→ S3-T3；RG-3（K11）→ S3-T4；K02(RG) → S3-T1；K07(RG) → S3-T8；角色档位 → S3-T9（Q-RG-6）；均随 OpenRAG v1.10.0（拟）S3 段收口（见 OpenRAG S3 文档 §1.1 定案与设计草案 §1.4 覆盖矩阵；S3 全组 144 用例恒绿，74 条 RED 断言全覆盖）。
-- **提交链说明**：OpenRAG 仓 S3 产物因 git 沙箱受限保留工作树（HEAD 959ef83=v1.9.1 发布闭环；2026-09-09 实测 22 M + 32 ??，全部属 S3、无历史未提交基线），实际提交待沙箱外按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》v1.0.1 执行（release/v1.10.0 拟 → S3 四批），提交后 hash 回填本摘要；任务执行链以 OpenRAG S3 DevLogReport v1.0.1 批次 1~3（T1~T11 + B2 遗留 + 段门禁自检五项）记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
+- **提交链说明（2026-09-11 入仓回填）**：OpenRAG 仓 S3 产物**已完成入仓**——自 `master`（`959ef83`=v1.9.1 发布闭环）切 `release/v1.10.0`，按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》§4.4 S3 四批逐项显式 `git add` 提交，**实际 commit 已回填本摘要（见下表）**；三远端 origin/backup/github 已同步至 `a2eb92b`。任务执行链以 OpenRAG S3 DevLogReport v1.0.2（批次 1~3：T1~T11 + B2 遗留 + 段门禁自检五项）与测试报告 v1.0.2 §8 入仓登记为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
+- **S3 实际提交 hash 登记（入仓四批 + 入仓后修复/回填）**：
+
+| 批次 | commit | 内容 | 规模 |
+|------|--------|------|------|
+| S3-B1 | `9e93c1c` | S3 六份文档（立项/设计草案/K07 填报 + matrix.json/DevLogReport/测试报告） | 6 files, +3429 |
+| S3-B2 | `0bda158` | identity 包 + 三中间件 + 配置/装配/错误面/审计 | 25 files, +3386 −22 |
+| S3-B3 | `f48ea08` | storage 迁移 + 模型归属列 + 路由域过滤 + 编排 | 12 files, +1441 −247 |
+| S3-B4 | `5fafc0a` | 四静态扫描/K07/verify-env/L3-2 脚本 + 段测试 + CI s3-static-gates job | 24 files, +5672 −10 |
+| 入仓后修复 | `b809c04` | 遗留用例 `tests/unit/api/test_api_routes_supplement_users_docs.py` 适配 `_index_document_task` 的 `tenant_code` 域透传（回归复原 master 基线） | 1 file, +9 −3 |
+| 入仓登记回填 | `a2eb92b` | DevLogReport/测试报告 内部版本 v1.0.1→v1.0.2，加注入仓 hash 登记 | 2 files, +24 −4 |
+
+  > **入仓后复核（2026-09-11）**：S3 全组 144 用例隔离运行恒绿；四静态扫描 + K07 矩阵 + L3-2 冒烟 + verify-env 契约对账退出码 0；工作树残余 = 1（仅 OpenRAG 分清单文档自身，符合勾稽期望）；`master` 保持 `959ef83` 未改动；未创建 tag（§4.4 的 `v1.10.0-rc.1` 为可选项，未执行）。
+  > **残留工作树口径变更提示**：入仓后 OpenRAG 工作树 A 类已归零，实测 `(git status --porcelain -uall).Count` = **1**（仅 `doc/planning/OpenRAG-联调产物待提交清单-v1.0.0.md`），与《联调产物清点核对总清单》§4.2 的期望一致；该清单文档内部版本已升 v1.0.1（文件名不变）。
 
 ## 附：S4 段（OpenLLM）跨仓收口执行摘要（v1.6.0 回写，2026-09-10）
 
@@ -325,7 +339,7 @@
 | S4 段门禁 | 五项门禁（① 通道 B 全面主用 ② 通道矩阵全绿 ③ LL 收口用例全绿 ④ 强校验生效 0 绕过 ⑤ L3-2 冒烟通过）2026-09-10 人工批准全绿 | ✅ |
 
 - **LL-1~LL-6 与 L2-1/L2-2/K02(LL)/OB-13/K07(LL)/角色档位/M1/M2 收口**：LL-1 → S4-T1；K09（LL-3 透传）→ S4-T2；K15（LL-3 REAL 收口）→ S4-T3；LL-2 → S4-T4；LL-4/K17 → S4-T5；LL-5/LL-6 → S4-T6；L2-1 → S4-T7；L2-2 → S4-T8；K02(LL) → S4-T9；OB-13 → S4-T10；K07(LL) → S4-T11；角色档位 → S4-T12；M1/M2 → S4-T13；verify-env → S4-T14；L3-2 → S4-T15；均随 OpenLLM v2.15.0（拟）S4 段收口（S4 全组 306 passed 恒绿 + ruff 0；见 OpenLLM S4 文档 §1.1 与设计草案 §1.4 覆盖矩阵）。
-- **提交链说明**：OpenLLM 仓 S4 产物因 git 沙箱受限保留工作树（HEAD a552cbf=v2.14.3 发布闭环，分支 `feature/v2.13.0-openrag`；2026-09-10 实测 git status 430 项——.pylib/__pycache__/data db/backup 等噪音占多数，S0 探活等既有基线已按 doc/planning/OpenLLM-S4-批次1基线收口登记清单 v1.0.0 分类 A~E 文件级登记），实际提交待沙箱外按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》v1.0.2 执行（基线 1 批 + S4 四~六批），提交后 hash 回填本摘要；任务执行链以 OpenLLM S4 DevLogReport v1.0.1 T1~T15 记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
+- **提交链说明**：OpenLLM 仓 S4 产物因 git 沙箱受限保留工作树（HEAD a552cbf=v2.14.3 发布闭环，分支 `feature/v2.13.0-openrag`；2026-09-10 实测 git status 430 项——.pylib/__pycache__/data db/backup 等噪音占多数，S0 探活等既有基线已按 doc/planning/OpenLLM-S4-批次1基线收口登记清单 v1.0.0 分类 A~E 文件级登记），**已按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》v1.0.2 完成六批入仓**（基线 1 批 + S4 五批）；hash 回填与勾稽见下方「S4 入仓 hash 回填（v1.7.2，2026-09-11）」；任务执行链以 OpenLLM S4 DevLogReport v1.0.1 T1~T15 记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
 
 ## 附：S5 段（DPS）跨仓收口执行摘要（v1.7.0 回写，2026-09-10）
 
@@ -350,7 +364,7 @@
 
 - **DP 收口与段内引用**：K18(DP-2) → DPS-T2；DP-3 → DPS-T3；K14(DP-4) → DPS-T4；K12(DP-6) → DPS-T5；K02(DPS) → DPS-T1；K07(DPS) → DPS-T10；L1-1(domain=dps) → DPS-T6；fail-open 收口 → DPS-T7；OB-13(DPS 侧) → DPS-T8；角色互译表 DPS 侧接线 → DPS-T9（OB-12）；M1/M2 与服务账号 → DPS-T11；verify-env → DPS-T11 配套；L3-2 → DPS-T12；均随 DPS v2.10.0（拟）S5 段收口（S5 全组 **168 用例恒绿**（批1 47 + 批2 43 + 批3 39 + 批4 39，12 文件逐文件独立进程）+ ruff（select=E9,F63,F7,F82,F401,F811）0 错误；见 DPS S5 DevLogReport v1.0.1 §1/§5 与设计草案 v1.0.1 §1.1 覆盖矩阵）。R1 批次 RA-03/RA-04 已随 S0 收口（DPS 提交 887c214），本段只做回归引用与联动。
 - **版本处置（Q-DPS-1）**：S5 承载版本 **DPS v2.10.0（拟，随版本规划批准）**；本段**不执行** `src/config.py` version/mcp_server_version 升级动作（保持 **2.8.1**，版本号升级属发布收口步骤）；工作树 v2.9.0 未跟踪文档 3 项（画像/标注模板扩展设计文档、设计评审记录、功能需求清单）**未触碰、未混批**，另起独立隔离批。
-- **提交链说明**：DPS 仓 S5 产物因 git 沙箱受限保留工作树（基线 HEAD `6b39dd4`=S0 门禁补充 / `main`；2026-09-10 实测 `git status --porcelain -uall` = **57** = A 联调 52 + B 类在途 3（v2.9.0）+ C 类噪音 2），实际提交待沙箱外按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》**v1.0.5** 执行（S5-B1 内核装配 19 → S5-B2 路由权限测试 17 → S5-B3 脚本门禁证据 8 → S5-B4 联调文档 8，共 4 批），提交后 hash 回填 DPS-JT 台账与本摘要；任务执行链以 DPS S5 DevLogReport v1.0.1 批 1~4（T1~T12）记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
-- **遗留（均非阻断）**：① Pull 真实 HTTP 双签 PENDING（Q-DPS-5：配置 `IDENTITY_EVENTS_BASE_URL` 指向 OpenBase commit 0713ec1 事件端点后 `smoke_l3_2.py --full-gate --strict-gate` 补跑并回填证据）；② 非沙箱复核清单（真实 PG/Redis 复核、`test_tenant_isolation attack_19` SQLite 分支、lifespan 连 PG 用例、`test_auth_v280`/`test_v2_7_api_integration` 依赖 PG/种子绑定，均登记非沙箱复核，无本段引入的新失败）；③ DPS 仓 S5 提交 hash 待沙箱外放行后回填 DPS-JT 台账与本摘要。
+- **提交链说明（v1.7.1 回填，2026-09-11 已入仓）**：DPS 仓 S5 产物已按《doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》**v1.0.5** 与《OpenBase-S7-跨仓入仓与会签执行模板 v1.0.0》§2.4 完成四批入仓（逐项显式 `git add`，禁 `git add -A`/`git add .`）：S5-B1 `8333650`（内核装配 19）/ S5-B2 `45a5ea4`（路由权限测试 17）/ S5-B3 `1dc5f94`（脚本门禁证据 8）/ S5-B4 `14d3111`（联调文档 8）；另有回填提交 `e772c01`（DevLogReport 内部 v1.0.2 入仓登记）。基线 HEAD `6b39dd4` → 入仓后 `e772c01`，分支 `main`。勾稽回读：`git status --porcelain -uall` 由 58（A52+B3+C2+分清单自身 1）→ **残余 4** = B 类 v2.9.0 三份文档 + 分清单自身，**A 类差异 0**。回归：S5 全组 168 用例全绿（162 同进程 + T12 独立进程 6）、K07 `--check` EXIT=0（gaps=0）、`smoke_l3_2 --quick` EXIT=0、ruff（select=E9,F63,F7,F82,F401,F811）本轮新增/改动文件 0 错误（存量历史 F401 48 项另起卫生批，非本轮引入）。三远程 `origin`/`backup`/`github` `main` 同步。hash 已回填本摘要与 §3.5 DPS-JT 台账。任务执行链以 DPS S5 DevLogReport v1.0.2 批 1~4（T1~T12）记录为准。OpenBase 侧锚点 commit 0713ec1=事件列表契约端点（已在 main）。
+- **遗留（均非阻断）**：① Pull 真实 HTTP 双签 PENDING（Q-DPS-5：配置 `IDENTITY_EVENTS_BASE_URL` 指向 OpenBase commit 0713ec1 事件端点后 `smoke_l3_2.py --full-gate --strict-gate` 补跑并回填证据）；② 非沙箱复核清单（真实 PG/Redis 复核、`test_tenant_isolation attack_19` SQLite 分支、lifespan 连 PG 用例、`test_auth_v280`/`test_v2_7_api_integration` 依赖 PG/种子绑定，均登记非沙箱复核，无本段引入的新失败）；③ ~~DPS 仓 S5 提交 hash 待沙箱外放行后回填 DPS-JT 台账与本摘要~~ **已完成（2026-09-11）**：hash 见提交链说明（`8333650`/`45a5ea4`/`1dc5f94`/`14d3111`，+回填 `e772c01`），已回填本摘要与 §3.5 DPS-JT 台账（§3.5 同步回填）。
 
 状态随实施推进更新；每卡验收断言可直接转测试用例标题（TDD RED 起步）。
