@@ -1,0 +1,185 @@
+{
+  "schema": "openbase-s6-l3-2-smoke/v1.0.0",
+  "task": "S6-T5-1",
+  "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.5 / Q-FE-5 / Q-S6-D6",
+  "status": "PENDING",
+  "reason": "受信通道不可达：http://127.0.0.1:8000（B2 环境待办，非沙箱）",
+  "openbase_commit": "72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec",
+  "ui_version": "1.3.0",
+  "base_url": "http://127.0.0.1:8000",
+  "trusted_source": {
+    "header": "X-Proxy-Source",
+    "value": "openbase-ui"
+  },
+  "key_pages_source": "tests/e2e/fixtures/key-pages.json（Q-S6-D6，与 Playwright 同源）",
+  "started_at": "2026-09-10T15:39:51.802Z",
+  "finished_at": "2026-09-10T15:39:52.794Z",
+  "static_bypass_check": {
+    "scanned_root": "openbase-ui/src",
+    "port_pattern": "8001|8002|8080|localhost:3",
+    "port_matched": 8,
+    "port_whitelisted": 8,
+    "port_unexpected": [],
+    "port_hits": [
+      {
+        "file": "src/modules/gateway/pages/GatewayServicesView.vue",
+        "line": 109,
+        "text": "const registerForm = ref({ system: 'openllm', host: '127.0.0.1', port: 8001, weight: 1 })",
+        "whitelisted": true,
+        "reason": "实例注册表单默认值（经 gateway /services 受信通道提交），非前端直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/AuditLogsView.vue",
+        "line": 101,
+        "text": "{ id: 1, time: '2026-08-28 12:30:11', user: 'admin', action: 'model.deploy', module: 'openllm', result: 'success', detail: '部署模型 llama3-8b 到实例 10.0.0.5:8001', duration: 3420 },",
+        "whitelisted": true,
+        "reason": "审计日志 mock 数据文本，非网络直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/AuditLogsView.vue",
+        "line": 102,
+        "text": "{ id: 2, time: '2026-08-28 11:52:03', user: 'ops01', action: 'gateway.register', module: 'gateway', result: 'success', detail: '注册实例 openllm@10.0.0.5:8001', duration: 18 },",
+        "whitelisted": true,
+        "reason": "审计日志 mock 数据文本，非网络直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/ConfigManageView.vue",
+        "line": 102,
+        "text": "{ group: 'proxy', key: 'proxy.openllm.instances', value: '[{\"host\":\"127.0.0.1\",\"port\":8001}]', level: 'system', version: 3, history: [1, 2, 3] },",
+        "whitelisted": true,
+        "reason": "配置管理页 mock 展示数据（实例列表），非网络直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/Conversations.vue",
+        "line": 274,
+        "text": "ElMessage.error('对话失败，请确认 OpenLLM 服务（8001）可用')",
+        "whitelisted": true,
+        "reason": "错误提示文案（面向上游排障），非网络直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "line": 92,
+        "text": "{ name: 'OpenAI 兼容适配器', type: 'openai', endpoint: 'http://10.0.0.5:8001/v1', enabled: true },",
+        "whitelisted": true,
+        "reason": "EdgeRouter 适配器 mock 数据 endpoint 文本，非网络直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/Models.vue",
+        "line": 130,
+        "text": "error.value = '模型列表加载失败，请检查 OpenLLM 服务（8001）与 llm-proxy 连通性'",
+        "whitelisted": true,
+        "reason": "错误提示文案，非网络直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/Playground.vue",
+        "line": 66,
+        "text": "if (!modelId.value) errorMessage.value = '未获取到可用模型，请检查 OpenLLM(8001)/llm-proxy 连通性'",
+        "whitelisted": true,
+        "reason": "错误提示文案，非网络直连"
+      }
+    ],
+    "absolute_url_matched": 10,
+    "absolute_url_unexpected": [],
+    "absolute_url_hits": [
+      {
+        "file": "src/modules/knowledge/pages/KnowledgeConsoleView.vue",
+        "line": 9,
+        "text": "<code>https://openbase.example.com/api/v1/rag</code>",
+        "whitelisted": true,
+        "reason": "API 控制台示例文档 base_url 展示文本（示例域名，非网络调用）"
+      },
+      {
+        "file": "src/modules/knowledge/pages/KnowledgeConsoleView.vue",
+        "line": 104,
+        "text": "base_url=\"https://openbase.example.com/api/v1/rag\",",
+        "whitelisted": true,
+        "reason": "API 控制台示例文档 base_url 展示文本（示例域名，非网络调用）"
+      },
+      {
+        "file": "src/modules/memory/pages/MemoryMonitorView.vue",
+        "line": 97,
+        "text": "serviceUrl: 'http://127.0.0.1:8020',",
+        "whitelisted": true,
+        "reason": "记忆监控页「服务设置」mock 默认值（设置项展示，运行时经受信通道），非前端直连"
+      },
+      {
+        "file": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "line": 92,
+        "text": "{ name: 'OpenAI 兼容适配器', type: 'openai', endpoint: 'http://10.0.0.5:8001/v1', enabled: true },",
+        "whitelisted": true,
+        "reason": "适配器 mock 数据 endpoint 文本，非网络调用"
+      },
+      {
+        "file": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "line": 93,
+        "text": "{ name: 'Ollama 适配器', type: 'ollama', endpoint: 'http://127.0.0.1:11434', enabled: true },",
+        "whitelisted": true,
+        "reason": "Ollama 适配器 mock 数据 endpoint 文本，非网络调用"
+      },
+      {
+        "file": "src/modules/openllm/pages/Providers.vue",
+        "line": 38,
+        "text": "<el-form-item label=\"Base URL\" required><el-input v-model=\"form.base_url\" placeholder=\"https://api.openai.com\" /></el-form-item>",
+        "whitelisted": true,
+        "reason": "提供商表单占位/mock 数据 base_url 文本，非网络调用"
+      },
+      {
+        "file": "src/modules/openllm/pages/Providers.vue",
+        "line": 72,
+        "text": "{ id: 1, name: 'OpenAI', type: '商业', enabled: true, base_url: 'https://api.openai.com', api_key: '', description: '商业模型提供商', model_count: 8, latency_ms: 320, healthy: true },",
+        "whitelisted": true,
+        "reason": "提供商表单占位/mock 数据 base_url 文本，非网络调用"
+      },
+      {
+        "file": "src/modules/openllm/pages/Providers.vue",
+        "line": 73,
+        "text": "{ id: 2, name: 'Ollama 本地', type: '本地', enabled: true, base_url: 'http://127.0.0.1:11434', api_key: '', description: '本地 Ollama 服务', model_count: 5, latency_ms: 85, healthy: true },",
+        "whitelisted": true,
+        "reason": "本地提供商 mock 数据 base_url 文本，非网络调用"
+      },
+      {
+        "file": "src/modules/openllm/pages/Providers.vue",
+        "line": 74,
+        "text": "{ id: 3, name: 'Azure OpenAI', type: 'Azure', enabled: false, base_url: 'https://xxx.openai.azure.com', api_key: '', description: 'Azure 部署', model_count: 4, latency_ms: 0, healthy: false },",
+        "whitelisted": true,
+        "reason": "Azure 提供商 mock 数据 base_url 文本，非网络调用"
+      },
+      {
+        "file": "src/modules/openllm/pages/Settings.vue",
+        "line": 19,
+        "text": "<el-input v-model=\"profileForm.avatarUrl\" placeholder=\"https://example.com/avatar.png\" data-test=\"profile-avatar\" />",
+        "whitelisted": true,
+        "reason": "头像地址输入框占位文案，非网络调用"
+      }
+    ],
+    "api_client_base_url": "/api/v1",
+    "api_client_absolute_urls": [],
+    "pass": true
+  },
+  "preconditions": {
+    "health": [
+      {
+        "url": "http://127.0.0.1:8000/health",
+        "reachable": false,
+        "status": null,
+        "error": "TypeError: fetch failed"
+      },
+      {
+        "url": "http://127.0.0.1:8000/api/v1/health",
+        "reachable": false,
+        "status": null,
+        "error": "TypeError: fetch failed"
+      }
+    ],
+    "token_source": null
+  },
+  "probes": [],
+  "cross_domain_probes": [],
+  "pending": [
+    {
+      "item": "trusted-channel",
+      "reason": "受信通道不可达（health 探活全部网络失败）",
+      "blocked_by": "B2"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "openbase-s6-coverage-summary/v1.0.0",
+  "task": "S6-T6-2",
+  "command": "npm run test:coverage",
+  "cwd": "openbase-ui",
+  "exit_code": 0,
+  "thresholds": { "statements": 80, "lines": 80, "functions": 80, "branches": 70 },
+  "thresholds_relaxed": false,
+  "coverage_include": ["src/core/stores/**", "src/core/router/**", "src/core/api/**"],
+  "all_files": { "statements": 97.08, "branches": 90, "functions": 88.46, "lines": 97.08 },
+  "by_group": {
+    "api": { "statements": 98.36, "branches": 90.95, "functions": 98.5, "lines": 98.36 },
+    "router": { "statements": 92.3, "branches": 87.5, "functions": 54.54, "lines": 92.3 },
+    "stores": { "statements": 95.65, "branches": 87.87, "functions": 93.33, "lines": 95.65 }
+  },
+  "test_files": 13,
+  "tests": 137,
+  "lint": { "command": "npm run lint", "exit_code": 0, "problems": 0 },
+  "increment_coverage_note": "Q-FE-7b：全局阈值（80/80/80/70）不变、coverage.include 不扩大；模块页回归由 Playwright 关键页 PASS 承载（B1）。本轮新增 `tests/l3-2-smoke.spec.ts`（8 用例）覆盖 T5 基座（fixture 同源 / 受信通道约束 / 静态旁路检查），不计入 coverage.include。",
+  "executed_at": "2026-09-10"
+}

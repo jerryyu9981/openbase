@@ -1,0 +1,68 @@
+{
+  "schema": "openbase-s6-ui-e2e-status/v1.0.0",
+  "task": "S6-T5-2 / S6-T6-1",
+  "segment": "S6（前端段，FE-JT 收官）",
+  "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.5/§4.6/§5.4；Q-FE-4/4b/5；Q-S6-D6",
+  "status": "PENDING",
+  "reason": "沙箱内 Playwright 浏览器二进制下载被限制（EPERM 目录锁），且无受信通道/四子系统运行态；不可达即 PENDING，禁止伪造通过",
+  "openbase_commit": "72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec",
+  "openbase_commit_note": "执行时（批次 4 提交前）OpenBase HEAD；批次 4 提交见本仓 `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`",
+  "ui_version": "1.3.0",
+  "key_pages_source": "openbase-ui/tests/e2e/fixtures/key-pages.json（Q-S6-D6，与冒烟脚本同源）",
+  "key_pages_total": 9,
+  "key_pages_pass": 0,
+  "executed_at": "2026-09-10",
+  "attempts": [
+    {
+      "command": "npm install --save-dev @playwright/test@^1.49.0 --no-audit --no-fund",
+      "cwd": "openbase-ui",
+      "result": "OK（解析安装 @playwright/test 1.63.0，已入 devDependencies）",
+      "exit_code": 0
+    },
+    {
+      "command": "npx playwright install chromium",
+      "cwd": "openbase-ui",
+      "result": "FAILED（沙箱受限：浏览器二进制目录不可写）",
+      "exit_code": 1,
+      "error": "EPERM: operation not permitted, mkdir 'C:\\Users\\jerry\\AppData\\Local\\ms-playwright\\__dirlock'"
+    },
+    {
+      "command": "npx playwright test --list",
+      "cwd": "openbase-ui",
+      "result": "OK（识别 9 tests in 4 files：chat 2 / knowledge 2 / memory 2 / portrait 3，配置与用例可被 Playwright 正确解析）",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run test:e2e",
+      "cwd": "openbase-ui",
+      "result": "9 failed（浏览器未安装：Playwright 提示 Please run npx playwright install）",
+      "exit_code": 1
+    }
+  ],
+  "artifacts": {
+    "results_json": "ui-e2e/results.json（Playwright JSON 报告：9 failed，失败原因=浏览器二进制缺失，非断言失败）",
+    "report_html": "不归档（运行期产物，已由 .gitignore 排除：ui-e2e/report/、ui-e2e/artifacts/）"
+  },
+  "key_pages": [
+    { "id": "portrait-list", "path": "/portrait/list", "status": "PENDING" },
+    { "id": "portrait-overview", "path": "/portrait/overview", "status": "PENDING" },
+    { "id": "portrait-detail", "path": "/portrait/:id", "status": "PENDING" },
+    { "id": "openllm-conversations", "path": "/openllm/conversations", "status": "PENDING" },
+    { "id": "knowledge-chat", "path": "/knowledge/chat", "status": "PENDING" },
+    { "id": "knowledge-list", "path": "/knowledge/list", "status": "PENDING" },
+    { "id": "knowledge-detail", "path": "/knowledge/:id", "status": "PENDING" },
+    { "id": "memory-list", "path": "/memory/list", "status": "PENDING" },
+    { "id": "memory-sessions", "path": "/memory/sessions", "status": "PENDING" }
+  ],
+  "pending": {
+    "blocked_by": "B1（Playwright 浏览器级关键页 PASS）",
+    "reason_detail": "① Playwright 浏览器二进制安装被沙箱拒绝；② 受信通道（nginx /ui/ + /api/）与四子系统运行态不可达",
+    "owner": "非沙箱受控环境（部署/联调窗口）"
+  },
+  "non_sandbox_next": [
+    "npx playwright install chromium（安装浏览器二进制）",
+    "配置 OPENBASE_BASE_URL（nginx 同域 /ui/ 或 gateway）与 OPENBASE_ACCESS_TOKEN（或 OPENBASE_USERNAME/OPENBASE_PASSWORD）",
+    "npm run test:e2e（9 关键页 PASS）",
+    "回填本文件 status=PASS 与 key_pages 逐页结论、key_pages_pass=9"
+  ]
+}

@@ -51,3 +51,7 @@ scripts/oidc-idp/keys/
 
 # ---- verify-env 生成报告（脚本运行输出物；证据副本登记 doc/test/evidence/）----
 scripts/verify-env-report.json
+
+# ---- S6 Playwright 运行期产物（证据仅保留 results.json / status.json；HTML report 与 trace 不入库）----
+doc/test/evidence/s6/ui-e2e/report/
+doc/test/evidence/s6/ui-e2e/artifacts/

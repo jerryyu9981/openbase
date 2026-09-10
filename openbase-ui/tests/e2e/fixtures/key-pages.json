@@ -1,0 +1,238 @@
+{
+  "doc": "OB-S6-L3-2-KEY-PAGES-v1.0.0",
+  "source": "Q-S6-D6",
+  "description": "S6-T5 L3-2 关键页清单（Q-FE-4b 9 页）单一事实源：Playwright E2E（tests/e2e/*.spec.ts）与零依赖冒烟脚本（scripts/smoke_l3_2_ui.mjs）同源读取，防止两套断言漂移。",
+  "base_url_env": "OPENBASE_BASE_URL",
+  "trusted_source_header": "X-Proxy-Source",
+  "trusted_source_value": "openbase-ui",
+  "gateway_prefix": "/api/v1",
+  "pages": [
+    {
+      "id": "portrait-list",
+      "module": "portrait",
+      "name": "画像列表",
+      "path": "/portrait/list",
+      "method": "GET",
+      "data_endpoint": "/api/v1/dps-proxy/portraits?page=1&page_size=20",
+      "key_element": "[data-test=\"dps-search\"]",
+      "accept_states": [
+        "[data-test=\"isolation-empty\"]",
+        "[data-test=\"isolation-forbidden\"]",
+        "[data-test=\"isolation-not-found\"]"
+      ],
+      "expect": { "success_status": [200], "allow_empty": true, "allow_forbidden": true }
+    },
+    {
+      "id": "portrait-overview",
+      "module": "portrait",
+      "name": "画像总览",
+      "path": "/portrait/overview",
+      "method": "GET",
+      "data_endpoint": "/api/v1/dps-proxy/reports/overview",
+      "key_element": "[data-test=\"overview-kpi-card\"]",
+      "accept_states": [
+        "[data-test=\"overview-error\"]",
+        "[data-test=\"isolation-forbidden\"]",
+        "[data-test=\"isolation-not-found\"]"
+      ],
+      "expect": { "success_status": [200], "allow_empty": true, "allow_forbidden": true }
+    },
+    {
+      "id": "portrait-detail",
+      "module": "portrait",
+      "name": "画像详情",
+      "path": "/portrait/:id",
+      "sample_id": "P-1001",
+      "method": "GET",
+      "data_endpoint": "/api/v1/dps-proxy/portraits/P-1001",
+      "key_element": "[data-test=\"feature-dist\"]",
+      "accept_states": [
+        "[data-test=\"isolation-not-found\"]",
+        "[data-test=\"isolation-empty\"]",
+        "[data-test=\"isolation-forbidden\"]"
+      ],
+      "expect": { "success_status": [200, 404], "allow_empty": true, "allow_forbidden": true }
+    },
+    {
+      "id": "openllm-conversations",
+      "module": "openllm",
+      "name": "对话（OpenLLM 会话）",
+      "path": "/openllm/conversations",
+      "method": "GET",
+      "data_endpoint": "/api/v1/llm-proxy/conversations?limit=20",
+      "key_element": "[data-test=\"conversation-search\"]",
+      "accept_states": [
+        "[data-test=\"isolation-empty\"]",
+        "[data-test=\"isolation-forbidden\"]",
+        "[data-test=\"isolation-not-found\"]"
+      ],
+      "expect": { "success_status": [200], "allow_empty": true, "allow_forbidden": true }
+    },
+    {
+      "id": "knowledge-chat",
+      "module": "knowledge",
+      "name": "对话（RAG 知识问答）",
+      "path": "/knowledge/chat",
+      "method": "GET",
+      "data_endpoint": "/api/v1/rag-proxy/collections?page=1&page_size=20",
+      "key_element": "[data-test=\"chat-messages\"]",
+      "accept_states": [
+        "[data-test=\"isolation-forbidden\"]",
+        "[data-test=\"isolation-not-found\"]"
+      ],
+      "expect": { "success_status": [200], "allow_empty": true, "allow_forbidden": true },
+      "note": "data_endpoint 为页面数据面（知识库选择器）受信通道探活；SSE 查询端点（query/stream）由 Playwright 关键页 PASS 承载（B1）"
+    },
+    {
+      "id": "knowledge-list",
+      "module": "knowledge",
+      "name": "知识列表",
+      "path": "/knowledge/list",
+      "method": "GET",
+      "data_endpoint": "/api/v1/rag-proxy/collections?page=1&page_size=20",
+      "key_element": "[data-test=\"kb-search\"]",
+      "accept_states": [
+        "[data-test=\"isolation-empty\"]",
+        "[data-test=\"isolation-forbidden\"]",
+        "[data-test=\"isolation-not-found\"]"
+      ],
+      "expect": { "success_status": [200], "allow_empty": true, "allow_forbidden": true }
+    },
+    {
+      "id": "knowledge-detail",
+      "module": "knowledge",
+      "name": "知识详情",
+      "path": "/knowledge/:id",
+      "sample_id": "kb-1",
+      "method": "GET",
+      "data_endpoint": "/api/v1/rag-proxy/collections/kb-1",
+      "key_element": "[data-test=\"retrieval-query\"]",
+      "accept_states": [
+        "[data-test=\"isolation-not-found\"]",
+        "[data-test=\"isolation-forbidden\"]"
+      ],
+      "expect": { "success_status": [200, 404], "allow_empty": true, "allow_forbidden": true }
+    },
+    {
+      "id": "memory-list",
+      "module": "memory",
+      "name": "记忆列表",
+      "path": "/memory/list",
+      "method": "GET",
+      "data_endpoint": "/api/v1/memory-proxy/memories?page=1&page_size=20",
+      "key_element": "[data-test=\"memory-keyword\"]",
+      "accept_states": [
+        "[data-test=\"isolation-empty\"]",
+        "[data-test=\"isolation-forbidden\"]",
+        "[data-test=\"isolation-not-found\"]"
+      ],
+      "expect": { "success_status": [200], "allow_empty": true, "allow_forbidden": true }
+    },
+    {
+      "id": "memory-sessions",
+      "module": "memory",
+      "name": "记忆会话",
+      "path": "/memory/sessions",
+      "method": "GET",
+      "data_endpoint": "/api/v1/memory-proxy/sessions",
+      "key_element": "[data-test=\"sessions-title\"]",
+      "accept_states": [
+        "[data-test=\"isolation-forbidden\"]",
+        "[data-test=\"isolation-not-found\"]"
+      ],
+      "expect": { "success_status": [200], "allow_empty": true, "allow_forbidden": true }
+    }
+  ],
+  "page_assertions": [
+    "页面渲染（容器可见、非白屏）",
+    "关键元素可见（key_element 或 accept_states 之一）",
+    "无渲染兜底触发（[data-test=\"layout-render-fallback\"] 计数为 0）",
+    "无 console error（且无 pageerror）",
+    "无 console warn（浏览器层 console.warn = 0，Q-FE-4b）"
+  ],
+  "static_bypass": {
+    "port_pattern": "8001|8002|8080|localhost:3",
+    "network_base_url_must_be": "/api/v1",
+    "api_client_dir": "src/core/api",
+    "whitelist": [
+      {
+        "path": "src/modules/openllm/pages/Conversations.vue",
+        "line_contains": "请确认 OpenLLM 服务（8001）可用",
+        "reason": "错误提示文案（面向上游排障），非网络直连"
+      },
+      {
+        "path": "src/modules/openllm/pages/Models.vue",
+        "line_contains": "请检查 OpenLLM 服务（8001）与 llm-proxy 连通性",
+        "reason": "错误提示文案，非网络直连"
+      },
+      {
+        "path": "src/modules/openllm/pages/Playground.vue",
+        "line_contains": "请检查 OpenLLM(8001)/llm-proxy 连通性",
+        "reason": "错误提示文案，非网络直连"
+      },
+      {
+        "path": "src/modules/openllm/pages/ConfigManageView.vue",
+        "line_contains": "proxy.openllm.instances",
+        "reason": "配置管理页 mock 展示数据（实例列表），非网络直连"
+      },
+      {
+        "path": "src/modules/openllm/pages/AuditLogsView.vue",
+        "line_contains": "10.0.0.5:8001",
+        "reason": "审计日志 mock 数据文本，非网络直连"
+      },
+      {
+        "path": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "line_contains": "10.0.0.5:8001/v1",
+        "reason": "EdgeRouter 适配器 mock 数据 endpoint 文本，非网络直连"
+      },
+      {
+        "path": "src/modules/gateway/pages/GatewayServicesView.vue",
+        "line_contains": "port: 8001",
+        "reason": "实例注册表单默认值（经 gateway /services 受信通道提交），非前端直连"
+      }
+    ],
+    "absolute_url_whitelist": [
+      {
+        "path": "src/modules/knowledge/pages/KnowledgeConsoleView.vue",
+        "line_contains": "https://openbase.example.com/api/v1/rag",
+        "reason": "API 控制台示例文档 base_url 展示文本（示例域名，非网络调用）"
+      },
+      {
+        "path": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "line_contains": "http://10.0.0.5:8001/v1",
+        "reason": "适配器 mock 数据 endpoint 文本，非网络调用"
+      },
+      {
+        "path": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "line_contains": "http://127.0.0.1:11434",
+        "reason": "Ollama 适配器 mock 数据 endpoint 文本，非网络调用"
+      },
+      {
+        "path": "src/modules/openllm/pages/Providers.vue",
+        "line_contains": "https://api.openai.com",
+        "reason": "提供商表单占位/mock 数据 base_url 文本，非网络调用"
+      },
+      {
+        "path": "src/modules/openllm/pages/Providers.vue",
+        "line_contains": "http://127.0.0.1:11434",
+        "reason": "本地提供商 mock 数据 base_url 文本，非网络调用"
+      },
+      {
+        "path": "src/modules/openllm/pages/Providers.vue",
+        "line_contains": "https://xxx.openai.azure.com",
+        "reason": "Azure 提供商 mock 数据 base_url 文本，非网络调用"
+      },
+      {
+        "path": "src/modules/openllm/pages/Settings.vue",
+        "line_contains": "https://example.com/avatar.png",
+        "reason": "头像地址输入框占位文案，非网络调用"
+      },
+      {
+        "path": "src/modules/memory/pages/MemoryMonitorView.vue",
+        "line_contains": "http://127.0.0.1:8020",
+        "reason": "记忆监控页「服务设置」mock 默认值（设置项展示，运行时经受信通道），非前端直连"
+      }
+    ],
+    "absolute_url_note": "绝对 URL 扫描用于发现「网络层直连」；命中的均为示例/占位/mock 数据文本（白名单内）。强判据为：src/core/api/** 客户端必须无绝对 URL，且 http.ts baseURL = /api/v1（同域受信通道）。"
+  }
+}

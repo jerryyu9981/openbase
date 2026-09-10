@@ -5,8 +5,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S6-T1-FRONTEND-FREEZE-v1.0.0 |
-| 版本 | v1.0.1 |
-| 状态 | [Draft] |
+| 版本 | v1.0.2 |
+| 状态 | [Draft]（v1.0.2 追加 §10 S6 批次 4 T5/T6 结论与 3 处改造物理闭环 PENDING 登记） |
 | 日期 | 2026-09-10 |
 | 作者 | AI（S6 批次 1/2 开发会话，沙箱内只读盘点 + 口径登记 + 发布形态参数化） |
 | 文档主题 | S6 段 **T1 边界收口**口径登记：统一前端唯一维护面声明、四仓 `frontend/` 冻结声明文案与落点、3 处待改造点逐条登记（四元组 + 状态）、口径闭环与物理闭环两级判定（Q-S6-D7） |
@@ -21,6 +21,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-10 | AI（S6 批次 1 开发会话） | 初始版本：S6-T1-1 交付物。含 §1 统一前端唯一维护面声明；§2 四仓 `frontend/` 冻结统一文案；§3 3 处改造点逐条登记（归属仓 / 证据行号 / 建议动作 / 状态）；§4 各仓冻结声明落点待执行清单（Q-S6-D5）；§5 口径闭环与物理闭环两级判定（Q-S6-D7）；§6 核验命令与证据；§7 遗留与边界 |
 | v1.0.1 | 2026-09-10 | AI（S6 批次 2 开发会话） | 补做并闭环 §7-1 遗留的 **S6-T1-3「发布形态」四小项**：① `scripts/build_release.ps1` 版本目录参数化（由 `openbase-ui/package.json.version` 派生 `dist-v$Version`，消除 `dist-v1.2.0` 硬编码，保留 Lint/测试/覆盖率门禁）；② `.gitignore` 增补 `dist-v*`（实测 `git check-ignore` 命中）；③ `package.json`/`package-lock.json` 版本 1.2.0 → **1.3.0**（S6 承载版本）；④ `nginx.conf.example` 同域 `/ui/`（alias 指向版本目录）+ `/api/` 反代 + SSE `proxy_buffering off` 口径核对一致。新增 §8 参数化片段与忽略规则证据、§9 批次 2 硬门禁实测值（覆盖率已由 51.52% 提升至 96.37% 达标） |
+| v1.0.2 | 2026-09-10 | AI（S6 批次 4 开发会话） | 追加 **§10 S6 批次 4（T5/T6）结论登记**：① T5 L3-2 贯通冒烟基座落地（`playwright.config.ts` + `tests/e2e/*` 9 页 + Q-S6-D6 同源 fixture + 零依赖 `scripts/smoke_l3_2_ui.mjs` + 静态旁路检查），沙箱可执行面通过、真实双签与浏览器级 PASS **PENDING（B1/B2）**；② T6 段门禁聚合与台账回写（evidence `doc/test/evidence/s6/**`）；③ **3 处改造闭环两级判定复核**：口径闭环 ✅ 保持、物理闭环 **PENDING**（B5，交 S7 按 Q-S6-D7）；④ 新增批次 4 硬门禁实测值（lint 0 / 137 tests / 覆盖率 97.08-90-88.46-97.08 / pytest S6-T1 9 passed）。**仅追加登记，不改变 §1~§9 既有口径与四仓处置结论** |
 
 ---
 
@@ -245,6 +246,38 @@ coverage
 | 4 | `python -m pytest tests/test_s6_t1_frontend_boundary.py -q`（仓根） | **9 passed**（S6-T1 防回归固化） | **0** |
 
 > 说明：覆盖率已按 Q-FE-7b「不改阈值」口径由 51.52% 提升至 96.37%（新增 `tests/api-clients.spec.ts` 打通 `src/core/api/**` 客户端、`tests/router-nav.spec.ts`/`nav-consistency.spec.ts` 覆盖 `src/core/router/**`），**未放宽 `vite.config.ts` thresholds**。
+
+---
+
+## §10 S6 批次 4（T5/T6）结论登记（v1.0.2 新增，2026-09-10）
+
+> 登记口径：本条为批次 4 的**结论追加**，不改变 §1~§9 既有口径；T1 冻结与 3 处改造处置结论保持原样（仅复核两级闭环状态）。
+
+### 10.1 T5 L3-2 贯通冒烟基座（S6-T5-1~3）
+
+| 项 | 结论 |
+|----|------|
+| 脚本与清单 | `openbase-ui/scripts/smoke_l3_2_ui.mjs`（零依赖、仅 `OPENBASE_BASE_URL` 受信通道入口、携带 `X-Proxy-Source`）+ `openbase-ui/tests/e2e/fixtures/key-pages.json`（Q-S6-D6 同源，9 关键页） |
+| 浏览器级用例 | `openbase-ui/playwright.config.ts` + `tests/e2e/{portrait,memory,knowledge,chat}.spec.ts`（9 tests in 4 files，`npx playwright test --list` 退出码 0） |
+| 静态旁路检查 | **PASS**：`src/**` 端口字面量 8/8 属白名单（提示文案/mock 数据）、绝对 URL 10/10 属白名单、`src/core/api/**` 绝对地址 0、`http.ts` `baseURL=/api/v1`；**白名单外命中 = 0** |
+| 真实执行 | **PENDING**：`OPENBASE_BASE_URL` 受信通道不可达 → `doc/test/evidence/s6/l3-2-smoke.json` `status=PENDING`（退出码 2）；Playwright 浏览器二进制沙箱安装受限（EPERM）→ 9 failed（非断言失败） |
+| 阻塞项 | B1（关键页 PASS）、B2（真实双签） |
+
+### 10.2 T6 段门禁聚合与台账回写（S6-T6-1~3）
+
+| 项 | 结论 |
+|----|------|
+| evidence 归档 | `doc/test/evidence/s6/`：`l3-2-smoke.json`、`ui-e2e/{results.json,status.json}`、`coverage-summary.json`、`segment-gate.json`（含 `openbase_commit`/`ui_version`/时间戳/`status`） |
+| 硬门禁 | `npm run lint` 0 problem（退出 0）；`npm test` 13 files/137 tests（退出 0）；`npm run test:coverage` 97.08/90/88.46/97.08（阈值 80/80/80/70，退出 0，**未放宽**）；仓根 `python -m pytest tests/test_s6_t1_frontend_boundary.py -q` **9 passed** |
+| 台账回写 | JT 归集 §3.6（v1.3.0）、跨仓放行清单 §0/§5（v1.0.7）、清点总清单 §5.7（v1.0.4）；本登记文档（v1.0.2） |
+| 提交号桥接 | 批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 = `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写` |
+
+### 10.3 3 处改造闭环两级判定（复核）
+
+| 层级 | 判据 | 本批次结论 |
+|------|------|-----------|
+| **口径闭环** | 3 处改造点逐项登记完成 + 唯一维护面口径一致 + 前端侧冻结声明落点落地 | ✅ **保持闭环**（§1~§5 不变；本批复核无回退） |
+| **物理闭环** | 四仓实际完成 nginx 下线 / compose 移除 / CI 收敛，且统一前端 `/ui/` 已先发布可用 | ⏳ **PENDING（B5）**：需各子系统仓写权限，交 S7 按 Q-S6-D7 复核；**不得以「已登记」冒充「已改造」** |
 
 ---
 

@@ -1,0 +1,108 @@
+{
+  "schema": "openbase-s6-segment-gate/v1.0.0",
+  "task": "S6-T6-1 / S6-T6-2 / S6-T6-3",
+  "segment": "S6（前端段，FE-JT 收官）",
+  "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.6/§9；立项方案（内部 v1.1.0）§4（22 断言）",
+  "executed_at": "2026-09-10",
+  "openbase_commit_at_execution": "72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec",
+  "openbase_commit_note": "执行时（批次 4 提交前）HEAD；批次 4 提交 = `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`",
+  "ui_version": "1.3.0",
+  "s6_commits": ["2abe52a", "aa6c5bd", "72b19da", "（批 4）feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写"],
+  "gate_items": [
+    {
+      "id": "UI-E2E",
+      "name": "UI-E2E 关键页 PASS（画像/对话/知识/记忆 9 页）",
+      "conclusion": "未达成/待复核（PENDING）",
+      "sandbox": "PENDING",
+      "non_sandbox": "B1",
+      "evidence": ["doc/test/evidence/s6/ui-e2e/status.json", "doc/test/evidence/s6/ui-e2e/results.json", "openbase-ui/playwright.config.ts", "openbase-ui/tests/e2e/*.spec.ts"],
+      "detail": "用例/配置就绪（`npx playwright test --list` = 9 tests in 4 files，退出码 0）；执行受沙箱限：浏览器二进制安装 EPERM 拒绝，`npm run test:e2e` 9 failed（浏览器缺失，非断言失败）"
+    },
+    {
+      "id": "FE-R1-1",
+      "name": "FE-R1-1 隔离呈现回归（画像/记忆/知识关键页）",
+      "conclusion": "通过（沙箱组件层）；真实双租户数据面待复核",
+      "sandbox": "PASS",
+      "non_sandbox": "B3",
+      "evidence": ["openbase-ui/tests/isolation-presentation.spec.ts", "openbase-ui/tests/portrait-list-error.spec.ts"],
+      "detail": "四类呈现（空/403/404/5xx）+ 无白屏 + 无堆栈泄漏 + request_id 不落 URL/localStorage 全绿"
+    },
+    {
+      "id": "FE-R1-2",
+      "name": "FE-R1-2 登录态/吊销回归",
+      "conclusion": "通过（沙箱）；真实 IdP 回调/吊销链路待复核",
+      "sandbox": "PASS",
+      "non_sandbox": "B4",
+      "evidence": ["openbase-ui/tests/http.spec.ts", "openbase-ui/tests/auth-redirect.spec.ts", "openbase-ui/tests/oidc-auth.spec.ts"],
+      "detail": "401 单飞刷新（并发 3→1 次）/403 无白屏不刷新/OIDC fragment 解析与缺令牌错误页/安全回跳 safeRedirect 全绿"
+    },
+    {
+      "id": "FE-3",
+      "name": "FE-3 模块导航壳（P3 体验收尾）",
+      "conclusion": "达成",
+      "sandbox": "PASS",
+      "non_sandbox": "B1（浏览器层 console.warn=0 复核）",
+      "evidence": ["openbase-ui/tests/router-nav.spec.ts", "openbase-ui/tests/nav-consistency.spec.ts"],
+      "detail": "模块路由装载幂等必达、顶层/模块内导航高亮与一致性、权限驱动挂载、console.warn=0（vitest spy）"
+    },
+    {
+      "id": "L3-2",
+      "name": "L3-2 贯通冒烟（统一前端 → gateway → 子系统）",
+      "conclusion": "未达成/待复核（PENDING）",
+      "sandbox": "PENDING（静态旁路检查 PASS；真实双签不可达）",
+      "non_sandbox": "B2",
+      "evidence": ["doc/test/evidence/s6/l3-2-smoke.json", "openbase-ui/scripts/smoke_l3_2_ui.mjs"],
+      "detail": "静态旁路检查通过（端口字面量 8/8 白名单、API 客户端零绝对地址、baseURL=/api/v1）；受信通道不可达 → status=PENDING（退出码 2），未产真实双签结论"
+    },
+    {
+      "id": "COVERAGE-LINT",
+      "name": "覆盖率/Lint 最终值（Q-FE-7/7b）",
+      "conclusion": "通过（口径未放宽）",
+      "sandbox": "PASS",
+      "non_sandbox": "—",
+      "evidence": ["doc/test/evidence/s6/coverage-summary.json"],
+      "detail": "lint 0 problem（退出码 0）；覆盖率 All files stmts 97.08 / branch 90 / funcs 88.46 / lines 97.08（阈值 80/80/80/70，退出码 0）；thresholds 与 include 均未调整"
+    },
+    {
+      "id": "RETROFIT-CLOSURE",
+      "name": "3 处改造闭环（Q-S6-D7 两级）",
+      "conclusion": "口径闭环：完成；物理闭环：未达成（PENDING）",
+      "sandbox": "PASS（口径登记）",
+      "non_sandbox": "B5（四仓物理改造）",
+      "evidence": ["doc/planning/OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md", "tests/test_s6_t1_frontend_boundary.py", "openbase-ui/docs/frontend-frozen.md"],
+      "detail": "改造点 1 OpenMemory nginx / 2 OpenLLM 编排 / 3 DPS+OpenRAG CI 四元组登记齐备；物理闭环需各子系统仓写权限，交 S7 复核"
+    }
+  ],
+  "segment_gate_conclusion": "S6 段门禁：**未达最终通过**（UI-E2E 与 L3-2 因非沙箱环境 PENDING）；前端侧组件层回归（FE-R1-1/FE-R1-2/FE-3）与覆盖率/Lint 门禁已达成，3 处改造口径闭环完成。待非沙箱补齐 B1/B2 后按 Q-FE-6 移交 S7。",
+  "assertions": [
+    { "id": "S6-T1-1", "sandbox": "PASS", "non_sandbox": "B5", "evidence": "doc/planning/OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md" },
+    { "id": "S6-T1-2", "sandbox": "PASS", "non_sandbox": "—", "evidence": "python -m pytest tests/test_s6_t1_frontend_boundary.py -q（9 passed）" },
+    { "id": "S6-T1-3", "sandbox": "PASS", "non_sandbox": "B6", "evidence": "scripts/build_release.ps1 / .gitignore / nginx.conf.example / package.json" },
+    { "id": "S6-T1-4", "sandbox": "PASS", "non_sandbox": "—", "evidence": "git status --porcelain -uall 白名单对照" },
+    { "id": "S6-T2-1", "sandbox": "PASS", "non_sandbox": "—", "evidence": "openbase-ui/tests/router-nav.spec.ts" },
+    { "id": "S6-T2-2", "sandbox": "PASS", "non_sandbox": "—", "evidence": "openbase-ui/tests/router-nav.spec.ts（权限矩阵）" },
+    { "id": "S6-T2-3", "sandbox": "PASS", "non_sandbox": "—", "evidence": "openbase-ui/tests/nav-consistency.spec.ts" },
+    { "id": "S6-T2-4", "sandbox": "PASS", "non_sandbox": "B1", "evidence": "vitest spy（warn=0）；浏览器层 console.warn 由 E2E 复核" },
+    { "id": "S6-T3-1", "sandbox": "PASS", "non_sandbox": "B3", "evidence": "openbase-ui/tests/isolation-presentation.spec.ts" },
+    { "id": "S6-T3-2", "sandbox": "PASS", "non_sandbox": "B3", "evidence": "openbase-ui/tests/isolation-presentation.spec.ts" },
+    { "id": "S6-T3-3", "sandbox": "PASS", "non_sandbox": "B3", "evidence": "openbase-ui/tests/isolation-presentation.spec.ts" },
+    { "id": "S6-T3-4", "sandbox": "PASS", "non_sandbox": "B3", "evidence": "openbase-ui/tests/isolation-presentation.spec.ts（四类判定）" },
+    { "id": "S6-T4-1", "sandbox": "PASS", "non_sandbox": "—", "evidence": "openbase-ui/tests/auth-redirect.spec.ts" },
+    { "id": "S6-T4-2", "sandbox": "PASS", "non_sandbox": "—", "evidence": "openbase-ui/tests/http.spec.ts" },
+    { "id": "S6-T4-3", "sandbox": "PASS", "non_sandbox": "B4", "evidence": "openbase-ui/tests/oidc-auth.spec.ts" },
+    { "id": "S6-T4-4", "sandbox": "PASS", "non_sandbox": "B4", "evidence": "openbase-ui/tests/auth-redirect.spec.ts + isolation-presentation.spec.ts" },
+    { "id": "S6-T5-1", "sandbox": "PASS（脚本与静态旁路检查）", "non_sandbox": "B2（真实双签 PENDING）", "evidence": "doc/test/evidence/s6/l3-2-smoke.json" },
+    { "id": "S6-T5-2", "sandbox": "PENDING", "non_sandbox": "B1", "evidence": "doc/test/evidence/s6/ui-e2e/status.json" },
+    { "id": "S6-T5-3", "sandbox": "PENDING", "non_sandbox": "B2", "evidence": "doc/test/evidence/s6/l3-2-smoke.json（pending 登记）" },
+    { "id": "S6-T6-1", "sandbox": "PENDING", "non_sandbox": "B1", "evidence": "本文件 gate_items[UI-E2E]" },
+    { "id": "S6-T6-2", "sandbox": "PASS", "non_sandbox": "—", "evidence": "doc/test/evidence/s6/coverage-summary.json" },
+    { "id": "S6-T6-3", "sandbox": "PASS（文档回写）", "non_sandbox": "B5（子系统提交）", "evidence": "JT 归集 §3.6 / 放行清单 §0-5,§5 / 清点 §1.4,§5.6 / 本目录 evidence" }
+  ],
+  "assertion_statistics": {
+    "total": 22,
+    "sandbox_pass": 17,
+    "sandbox_pending": 4,
+    "sandbox_conditional_pass": 1,
+    "non_sandbox_pending_items": ["B1", "B2", "B3", "B4", "B5", "B6"]
+  }
+}

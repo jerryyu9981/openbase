@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
@@ -42,6 +42,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // S6-T5：Playwright 关键页用例由 `npm run test:e2e` 执行，不计入 vitest（避免双引擎误收集）
+    exclude: [...configDefaults.exclude, 'tests/e2e/**'],
     coverage: {
       provider: 'v8',
       include: ['src/core/stores/**', 'src/core/router/**', 'src/core/api/**'],
