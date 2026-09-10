@@ -1,103 +1,144 @@
 <template>
-  <div class="chat-layout">
-    <!-- 左侧：知识库选择 -->
-    <aside class="kb-panel">
-      <h3 class="panel-title">知识库选择</h3>
-      <el-select
-        v-model="selectedKbId"
-        placeholder="选择知识库"
-        style="width: 100%"
-        data-test="kb-select"
-        :loading="kbLoading"
-        @change="onKbChange"
-      >
-        <el-option v-for="kb in knowledgeBases" :key="kb.id" :label="kb.name" :value="kb.id">
-          <span>{{ kb.name }}</span>
-          <span class="kb-doc-count">{{ kb.document_count ?? 0 }} 篇文档</span>
-        </el-option>
-      </el-select>
-      <p v-if="selectedKb" class="panel-hint">
-        已关联 {{ selectedKb.document_count ?? 0 }} 篇文档
-      </p>
-      <p v-else class="panel-hint">请选择知识库后开始对话</p>
-      <el-divider />
-      <p class="panel-tip">对话将基于所选知识库的检索结果生成回答，并附带来源引用。</p>
-      <el-button link type="primary" size="small" class="kb-refresh" @click="loadKbs">刷新列表</el-button>
-    </aside>
+  <div>
+    <el-result
+      v-if="isForbidden"
+      icon="error"
+      :title="presentation?.title || ''"
+      :sub-title="presentation?.detail || ''"
+      data-test="isolation-forbidden"
+    >
+      <template #extra>
+        <p v-if="presentation?.requestId" class="request-id" data-test="error-request-id">
+          请求编号：{{ presentation.requestId }}
+        </p>
+        <el-button data-test="isolation-back" @click="$router.push('/dashboard')">返回仪表盘</el-button>
+      </template>
+    </el-result>
 
-    <!-- 右侧：聊天区 -->
-    <section class="chat-panel">
-      <el-alert
-        v-if="errorMessage"
-        :title="errorMessage"
-        type="error"
-        show-icon
-        closable
-        class="chat-alert"
-        @close="errorMessage = ''"
-      />
-      <div v-loading="chatLoading" class="chat-messages" element-loading-text="检索知识库中…" data-test="chat-messages">
-        <el-empty v-if="messages.length === 0" description="开始你的 RAG 对话吧" :image-size="80" />
-        <template v-for="msg in messages" :key="msg.id">
-          <div class="chat-msg" :class="msg.role">
-            <span class="chat-msg-role">{{ msg.role === 'user' ? '我' : '助手' }}</span>
-            <div class="chat-bubble">
-              <div class="chat-content">
-                {{ msg.content }}
-                <span v-if="msg.id === streamingId" class="stream-cursor">▍</span>
-              </div>
-              <el-collapse v-if="msg.role === 'assistant' && msg.sources?.length" class="source-collapse">
-                <el-collapse-item :title="`来源引用（${msg.sources.length}）`" name="sources">
-                  <div v-for="(src, idx) in msg.sources" :key="idx" class="source-item">
-                    <div class="source-head">
-                      <span class="source-doc">{{ src.doc_name || src.chunk_id || '来源片段' }}</span>
-                      <span class="source-score">
-                        <el-progress
-                          :percentage="Math.round((src.score ?? 0) * 100)"
-                          :stroke-width="8"
-                          :show-text="false"
-                          class="score-bar"
-                        />
-                        <span>{{ ((src.score ?? 0) * 100).toFixed(0) }}%</span>
-                      </span>
-                    </div>
-                    <p class="source-snippet">{{ src.snippet || src.content || '' }}</p>
-                  </div>
-                </el-collapse-item>
-              </el-collapse>
-            </div>
-          </div>
-        </template>
-      </div>
-      <div class="chat-input">
-        <el-input
-          v-model="draft"
-          type="textarea"
-          :rows="3"
-          resize="none"
-          placeholder="输入问题，Enter 发送（Shift+Enter 换行）"
-          data-test="chat-input"
-          :disabled="streaming"
-          @keydown.enter.exact.prevent="sendMessage"
+    <div v-else class="chat-layout">
+      <!-- 左侧：知识库选择 -->
+      <aside class="kb-panel">
+        <h3 class="panel-title">知识库选择</h3>
+        <el-select
+          v-model="selectedKbId"
+          placeholder="选择知识库"
+          style="width: 100%"
+          data-test="kb-select"
+          :loading="kbLoading"
+          @change="onKbChange"
+        >
+          <el-option v-for="kb in knowledgeBases" :key="kb.id" :label="kb.name" :value="kb.id">
+            <span>{{ kb.name }}</span>
+            <span class="kb-doc-count">{{ kb.document_count ?? 0 }} 篇文档</span>
+          </el-option>
+        </el-select>
+        <p v-if="selectedKb" class="panel-hint">
+          已关联 {{ selectedKb.document_count ?? 0 }} 篇文档
+        </p>
+        <p v-else class="panel-hint">请选择知识库后开始对话</p>
+        <el-divider />
+        <p class="panel-tip">对话将基于所选知识库的检索结果生成回答，并附带来源引用。</p>
+        <el-button link type="primary" size="small" class="kb-refresh" @click="loadKbs">刷新列表</el-button>
+      </aside>
+
+      <!-- 右侧：聊天区 -->
+      <section class="chat-panel">
+        <el-alert
+          v-if="notice"
+          :title="notice"
+          type="warning"
+          show-icon
+          closable
+          class="chat-alert"
+          @close="notice = ''"
         />
-        <div class="chat-actions">
-          <el-button :disabled="streaming || !lastUserMessage" data-test="regenerate" @click="regenerate">
-            重新生成
-          </el-button>
-          <el-button v-if="streaming" type="danger" plain data-test="stop-stream" @click="stopStream">
-            停止
-          </el-button>
-          <el-button
-            type="primary"
-            :disabled="!draft.trim() || streaming"
-            data-test="send-message"
-            @click="sendMessage"
-          >
-            发送
-          </el-button>
+        <el-alert
+          v-if="presentation"
+          :title="presentation.title"
+          type="error"
+          show-icon
+          closable
+          class="chat-alert"
+          data-test="isolation-error-bar"
+          @close="presentation = null"
+        >
+          <template #default>
+            <p class="alert-detail">{{ presentation.detail }}</p>
+            <el-button
+              v-if="presentation.retryable"
+              link
+              type="primary"
+              size="small"
+              data-test="isolation-retry"
+              @click="retryLast"
+            >
+              重试
+            </el-button>
+          </template>
+        </el-alert>
+        <div v-loading="chatLoading" class="chat-messages" element-loading-text="检索知识库中…" data-test="chat-messages">
+          <el-empty v-if="messages.length === 0" description="开始你的 RAG 对话吧" :image-size="80" />
+          <template v-for="msg in messages" :key="msg.id">
+            <div class="chat-msg" :class="msg.role">
+              <span class="chat-msg-role">{{ msg.role === 'user' ? '我' : '助手' }}</span>
+              <div class="chat-bubble">
+                <div class="chat-content">
+                  {{ msg.content }}
+                  <span v-if="msg.id === streamingId" class="stream-cursor">▍</span>
+                </div>
+                <el-collapse v-if="msg.role === 'assistant' && msg.sources?.length" class="source-collapse">
+                  <el-collapse-item :title="`来源引用（${msg.sources.length}）`" name="sources">
+                    <div v-for="(src, idx) in msg.sources" :key="idx" class="source-item">
+                      <div class="source-head">
+                        <span class="source-doc">{{ src.doc_name || src.chunk_id || '来源片段' }}</span>
+                        <span class="source-score">
+                          <el-progress
+                            :percentage="Math.round((src.score ?? 0) * 100)"
+                            :stroke-width="8"
+                            :show-text="false"
+                            class="score-bar"
+                          />
+                          <span>{{ ((src.score ?? 0) * 100).toFixed(0) }}%</span>
+                        </span>
+                      </div>
+                      <p class="source-snippet">{{ src.snippet || src.content || '' }}</p>
+                    </div>
+                  </el-collapse-item>
+                </el-collapse>
+              </div>
+            </div>
+          </template>
         </div>
-      </div>
-    </section>
+        <div class="chat-input">
+          <el-input
+            v-model="draft"
+            type="textarea"
+            :rows="3"
+            resize="none"
+            placeholder="输入问题，Enter 发送（Shift+Enter 换行）"
+            data-test="chat-input"
+            :disabled="streaming"
+            @keydown.enter.exact.prevent="sendMessage"
+          />
+          <div class="chat-actions">
+            <el-button :disabled="streaming || !lastUserMessage" data-test="regenerate" @click="regenerate">
+              重新生成
+            </el-button>
+            <el-button v-if="streaming" type="danger" plain data-test="stop-stream" @click="stopStream">
+              停止
+            </el-button>
+            <el-button
+              type="primary"
+              :disabled="!draft.trim() || streaming"
+              data-test="send-message"
+              @click="sendMessage"
+            >
+              发送
+            </el-button>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -105,6 +146,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ragApi, type RagCollection, type RagSource } from '@/core/api/rag'
+import { describeError, type ErrorPresentation } from '@/core/api/error'
 
 interface ChatMessage {
   id: number
@@ -121,7 +163,10 @@ const draft = ref('')
 const messages = ref<ChatMessage[]>([])
 const chatLoading = ref(false)
 const streamingId = ref<number | null>(null)
-const errorMessage = ref('')
+const presentation = ref<ErrorPresentation | null>(null)
+const notice = ref('')
+
+const isForbidden = computed(() => presentation.value?.pageLevel === true)
 
 let abortController: AbortController | null = null
 
@@ -132,18 +177,21 @@ const lastUserMessage = computed(() => {
 
 async function loadKbs() {
   kbLoading.value = true
+  presentation.value = null
   try {
     const result = await ragApi.listCollections({ page: 1, page_size: 100 })
     knowledgeBases.value = result.items || []
-  } catch {
-    errorMessage.value = '知识库列表加载失败，请检查网络后重试'
+  } catch (err) {
+    knowledgeBases.value = []
+    presentation.value = describeError(err)
   } finally {
     kbLoading.value = false
   }
 }
 
 function onKbChange() {
-  errorMessage.value = ''
+  presentation.value = null
+  notice.value = ''
   ElMessage.info(`已切换到知识库：${selectedKb.value?.name ?? ''}`)
 }
 
@@ -151,13 +199,23 @@ function sendMessage() {
   const text = draft.value.trim()
   if (!text) return
   if (!selectedKb.value) {
-    errorMessage.value = '请先选择知识库，再进行对话'
+    notice.value = '请先选择知识库，再进行对话'
     return
   }
-  errorMessage.value = ''
+  presentation.value = null
+  notice.value = ''
   messages.value.push({ id: Date.now(), role: 'user', content: text })
   draft.value = ''
   void streamReply(text)
+}
+
+/** 错误条「重试」：有上一轮提问则重生成，否则重试知识库列表加载 */
+function retryLast() {
+  if (lastUserMessage.value && !streaming.value) {
+    regenerate()
+    return
+  }
+  void loadKbs()
 }
 
 function regenerate() {
@@ -237,16 +295,23 @@ function streamReply(question: string) {
             // done 事件无数据体（非流式兜底）时保持已渲染内容
           }
         } else if (evt.event === 'error') {
-          errorMessage.value = extractErrorMessage(evt.data)
+          presentation.value = {
+            kind: 'server-error',
+            title: '加载失败，请稍后重试',
+            detail: extractErrorMessage(evt.data),
+            requestId: '',
+            retryable: true,
+            pageLevel: false,
+          }
         }
       },
       controller.signal,
     )
-    .catch(() => {
+    .catch((err) => {
       // 主动取消（点击停止 / 卸载 / 被新请求抢占）不提示失败；
       // 仅当本请求未被取消且仍是当前活跃请求时，才提示真实失败
       if (!controller.signal.aborted && abortController === controller) {
-        errorMessage.value = '流式请求失败，请重试'
+        presentation.value = { ...describeError(err), detail: `流式请求失败，请重试：${describeError(err).detail}` }
       }
     })
     .finally(() => {
@@ -273,6 +338,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .chat-layout { display: flex; gap: 16px; align-items: flex-start; }
+.request-id { color: #6b7280; font-size: 12px; margin-bottom: 8px; }
 .kb-panel {
   width: 250px; flex-shrink: 0;
   background: var(--ob-surface); border: 1px solid var(--ob-border);
@@ -290,6 +356,7 @@ onBeforeUnmount(() => {
   border-radius: var(--ob-radius-md); padding: 16px;
 }
 .chat-alert { margin-bottom: 12px; }
+.alert-detail { margin: 0 0 4px; font-size: 12px; color: var(--ob-text-secondary); }
 .chat-messages {
   height: calc(100vh - 260px); min-height: 360px;
   overflow-y: auto; padding: 12px;

@@ -3,12 +3,18 @@
  */
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
+import { classifyError, type ApiErrorKind } from './error'
 
 export interface ErrorResponse {
   code: string
   message: string
   detail: string | null
   request_id: string
+}
+
+/** 拦截器在错误对象上标记的分类结果（供页面消费，见 §2.4） */
+export interface ApiErrorWithKind extends AxiosError<ErrorResponse> {
+  bizKind?: ApiErrorKind
 }
 
 export interface ApiSuccess<T> {
@@ -84,7 +90,13 @@ http.interceptors.response.use(
     }
 
     const message = body?.message || error.message || '请求失败'
-    ElMessage.error(message)
+    // 统一错误分类（§2.4）：页面按 kind 呈现；403/404/401 默认不弹全局 toast（由页面级提示承载），
+    // 5xx/网络/未知仍弹全局 toast 保证可观测。
+    const classified = classifyError(error)
+    ;(error as ApiErrorWithKind).bizKind = classified.kind
+    if (classified.kind !== 'forbidden' && classified.kind !== 'not-found' && classified.kind !== 'unauthorized') {
+      ElMessage.error(message)
+    }
     return Promise.reject(error)
   },
 )

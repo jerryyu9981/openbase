@@ -1,5 +1,6 @@
 node_modules
 dist
+dist-v*
 coverage
 *.local
 .DS_Store

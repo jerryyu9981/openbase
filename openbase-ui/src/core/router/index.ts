@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw, type Router, type RouterHistory } from 'vue-router'
 import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 import { tokenStore } from '@/core/api/http'
@@ -36,62 +36,107 @@ const moduleRouteLoaders: Record<string, () => Promise<{ routes: RouteRecordRaw[
   gateway: () => import('@/modules/gateway'),
 }
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes: staticRoutes,
-})
-
-/** 挂载已启用模块的路由（模块布局承载板块导航 + AppLayout 外层） */
-async function mountModuleRoutes() {
-  const registry = useModuleRegistry()
-  for (const module of registry.enabledModules) {
-    const loader = moduleRouteLoaders[module.info.id]
-    if (!loader || module.loaded) continue
-    try {
-      const { routes, navItems } = await loader()
-      // P2-3 连带（UI-E2E #4 父路由告警）：此前 addRoute('', record) 以空串为父名触发
-      // `[Vue Router warn]: Parent route "" not found...`（5 模块 × 5 条）；顶层挂载无需父名。
-      router.addRoute({
-        path: module.info.route_prefix,
-        component: () => import('@/core/layouts/ModuleLayout.vue'),
-        meta: { module: module.info.id, title: module.info.name, icon: module.info.icon, navItems },
-        children: routes.map((r) => ({ ...r, meta: { ...r.meta, module: module.info.id } })),
-      })
-      module.loaded = true
-    } catch (error) {
-      console.error(`[module:${module.info.id}] route load failed`, error)
-    }
-  }
+/**
+ * 检出子路由越权声明 `meta.navItems` 的条目（S6-T2 设计说明 5 / R-6）。
+ *
+ * Vue Router 的 `route.meta` 为 matched 链 shallow merge（后者覆盖），
+ * 子路由若声明同名 `navItems` 将覆盖父级模块导航 → 模块内导航消失。
+ * 该检查在「装载期告警」与「测试期断言」双处使用（子路由禁声明 navItems）。
+ */
+export function findNavItemsOverrides(routes: RouteRecordRaw[]): string[] {
+  return routes
+    .filter((route) => route.meta?.navItems !== undefined)
+    .map((route) => String(route.path))
 }
 
-router.beforeEach(async (to) => {
-  const auth = useAuthStore()
-  if (to.meta.public) {
-    if (tokenStore.access && to.path === '/auth/login') return { path: '/dashboard' }
-    return true
+export interface AppRouterBundle {
+  router: Router
+  mountModuleRoutes: () => Promise<void>
+}
+
+/**
+ * 构建应用路由器（可注入 history，便于以 `createMemoryHistory` 做无浏览器回归）。
+ *
+ * 关键机制（S6 设计草案 §2.2）：模块路由装载**幂等必达**——
+ * 守卫内无条件调用 `mountModuleRoutes()`，以 `module.loaded` 与 `router.hasRoute(moduleId)`
+ * 双条件跳过重复装载，修复「注册表已初始化但路由未装载 → 深链丢上下文回 /dashboard」。
+ */
+export function createAppRouter(history: RouterHistory = createWebHistory()): AppRouterBundle {
+  const router = createRouter({ history, routes: staticRoutes })
+
+  /** 挂载已启用模块的路由（模块布局承载板块导航 + AppLayout 外层）；幂等、可重试 */
+  async function mountModuleRoutes(): Promise<void> {
+    const registry = useModuleRegistry()
+    for (const module of registry.enabledModules) {
+      const loader = moduleRouteLoaders[module.info.id]
+      if (!loader) continue
+      // 幂等：路由表已注册 → 补标记并跳过（连续调用不重复注册、不触发重名告警）
+      if (router.hasRoute(module.info.id)) {
+        module.loaded = true
+        continue
+      }
+      try {
+        const { routes, navItems } = await loader()
+        const overrides = findNavItemsOverrides(routes)
+        if (overrides.length > 0) {
+          console.warn(
+            `[module:${module.info.id}] 子路由不得声明 navItems（覆盖父级导航），已检出：${overrides.join(', ')}`,
+          )
+        }
+        // P2-3 连带（UI-E2E #4 父路由告警）：顶层挂载命名父路由，避免 `Parent route "" not found`。
+        // 空路径子路由（模块根 redirect）须显式命名，否则命名父路由会触发
+        // `has a child without a name and an empty path` 告警（S6-T2-4 要求 console.warn = 0）。
+        router.addRoute({
+          name: module.info.id,
+          path: module.info.route_prefix,
+          component: () => import('@/core/layouts/ModuleLayout.vue'),
+          meta: { module: module.info.id, title: module.info.name, icon: module.info.icon, navItems },
+          children: routes.map((route, index) => ({
+            ...route,
+            name: route.name ?? (route.path === '' ? `${module.info.id}-root-${index}` : undefined),
+            meta: { ...route.meta, module: module.info.id },
+          })),
+        })
+        module.loaded = true
+      } catch (error) {
+        console.error(`[module:${module.info.id}] route load failed`, error)
+        module.loaded = false
+      }
+    }
   }
-  if (!tokenStore.access) return { path: '/auth/login', query: { redirect: to.fullPath } }
-  if (!auth.loaded) await auth.loadMe()
-  const registry = useModuleRegistry()
-  if (!registry.initialized) {
-    await registry.init(auth.permissions)
+
+  router.beforeEach(async (to) => {
+    const auth = useAuthStore()
+    if (to.meta.public) {
+      if (tokenStore.access && to.path === '/auth/login') return { path: '/dashboard' }
+      return true
+    }
+    if (!tokenStore.access) return { path: '/auth/login', query: { redirect: to.fullPath } }
+    if (!auth.loaded) await auth.loadMe()
+    const registry = useModuleRegistry()
+    if (!registry.initialized) await registry.init(auth.permissions)
+    // 幂等必达：无论 init 是否刚刚执行，都尝试装载（修复「单次装载门」导致深链丢上下文）
     await mountModuleRoutes()
     // 模块路由刚注册：若当前导航是注册前解析的（matched 为空）且现在可匹配 → 重导
     const resolved = router.resolve(to.fullPath)
     if (resolved.matched.length > 0 && to.matched.length === 0) {
       return { path: to.fullPath, replace: true }
     }
-  }
-  if (to.matched.length === 0) return { path: '/dashboard' }
-  const moduleId = to.meta.module as string | undefined
-  if (moduleId) {
-    const found = registry.enabledModules.find((m) => m.info.id === moduleId)
-    if (!found) return { path: '/dashboard' }
-    const allowed = auth.permissions.includes('*') || auth.permissions.includes(found.info.permission)
-    if (!allowed) return { path: '/dashboard' }
-  }
-  return true
-})
+    if (to.matched.length === 0) return { path: '/dashboard' }
+    const moduleId = to.meta.module as string | undefined
+    if (moduleId) {
+      const found = registry.enabledModules.find((m) => m.info.id === moduleId)
+      if (!found) return { path: '/dashboard' }
+      const allowed = auth.permissions.includes('*') || auth.permissions.includes(found.info.permission)
+      if (!allowed) return { path: '/dashboard' }
+    }
+    return true
+  })
 
-export { mountModuleRoutes }
-export default router
+  return { router, mountModuleRoutes }
+}
+
+const defaultBundle = createAppRouter()
+
+export const mountModuleRoutes = defaultBundle.mountModuleRoutes
+export default defaultBundle.router

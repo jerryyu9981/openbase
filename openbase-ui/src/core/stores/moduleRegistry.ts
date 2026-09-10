@@ -28,16 +28,19 @@ export const useModuleRegistry = defineStore('moduleRegistry', {
       this.initialized = true
     },
     /**
-     * 懒加载模块入口（动态 import）。
-     * 模块路由表由各模块 index.ts 导出 routes；本方法供路由守卫在首次访问时挂载。
+     * 懒加载模块入口：委托真实装载（`router/index.ts` 的 `mountModuleRoutes`，单一实现）。
+     *
+     * 动态 import 规避 `router/index.ts` ↔ 本 store 的循环依赖；返回值语义 =
+     * 「该模块路由当前已装载」（模块不存在 / 被禁用 / 装载失败时为 false）。
      */
     async loadRoutes(moduleId: string): Promise<boolean> {
       const module = this.modules.find((m) => m.info.id === moduleId)
       if (!module) return false
       if (!module.loaded) {
-        module.loaded = true // 标记已加载（实际路由表由模块 index 静态导出，见 router/index.ts）
+        const { mountModuleRoutes } = await import('@/core/router')
+        await mountModuleRoutes()
       }
-      return true
+      return module.loaded
     },
     unregister(moduleId: string) {
       this.modules = this.modules.filter((m) => m.info.id !== moduleId)

@@ -1,13 +1,14 @@
-# OpenBase 统一前端 nginx 部署示例（v1.2.0，Dev 环境）
+# OpenBase 统一前端 nginx 部署示例（承载版本 v1.3.0，Dev 环境）
 # 同域部署：静态资源 /ui + 反向代理 /api → openbase 后端
+# 发布形态（Q-FE-2b）：alias 指向版本目录 dist-vX.Y.Z（由 scripts/build_release.ps1 由 package.json.version 派生）
 
 server {
     listen 80;
     server_name localhost;
 
-    # 前端静态资源（版本目录）
+    # 前端静态资源（版本目录，切换/回滚仅改此处 alias）
     location /ui/ {
-        alias D:/Trae\ CN/myproject/Dev/OpenBase/openbase-ui/dist/;
+        alias D:/Trae\ CN/myproject/Dev/OpenBase/openbase-ui/dist-v1.3.0/;
         try_files $uri $uri/ /ui/index.html;
         expires 1h;
         add_header Cache-Control "public";

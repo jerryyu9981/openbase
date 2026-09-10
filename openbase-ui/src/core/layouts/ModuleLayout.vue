@@ -1,6 +1,8 @@
 <template>
   <div class="module-layout">
+    <!-- 空态兜底：route.meta.navItems 缺失（如子路由误声明覆盖父级）时不渲染空菜单条 -->
     <el-menu
+      v-if="groups.length"
       mode="horizontal"
       :default-active="route.path"
       :router="true"

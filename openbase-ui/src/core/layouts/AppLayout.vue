@@ -3,7 +3,7 @@
     <el-aside :width="ui.sidebarCollapsed ? '64px' : '220px'" class="ob-sidebar" :class="{ 'ob-sidebar-mobile': ui.isMobile }">
       <div class="ob-logo">{{ ui.sidebarCollapsed ? 'OB' : 'OpenBase' }}</div>
       <el-menu
-        :default-active="route.path"
+        :default-active="activeMenu"
         :collapse="ui.sidebarCollapsed"
         :router="true"
         class="ob-menu"
@@ -32,16 +32,29 @@
         </el-dropdown>
       </el-header>
       <el-main class="ob-main">
-        <router-view />
+        <!-- 渲染异常兜底：防子页面抛错导致整页白屏（S6 §2.4 机制 3 / INV-3） -->
+        <el-result
+          v-if="renderError"
+          icon="warning"
+          title="页面加载失败"
+          sub-title="页面渲染异常，可重试或返回仪表盘"
+          data-test="layout-render-fallback"
+        >
+          <template #extra>
+            <el-button type="primary" data-test="layout-render-retry" @click="retryRender">重试</el-button>
+            <el-button @click="router.push('/dashboard')">返回仪表盘</el-button>
+          </template>
+        </el-result>
+        <router-view v-else :key="viewKey" />
       </el-main>
     </el-container>
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, type Component } from 'vue'
+import { computed, onBeforeUnmount, onErrorCaptured, onMounted, ref, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Fold, Expand, ArrowDown, Odometer, ChatDotRound, Collection, Memo, User, OfficeBuilding } from '@element-plus/icons-vue'
+import { Fold, Expand, ArrowDown, Odometer, ChatDotRound, Collection, Memo, User, OfficeBuilding, Connection } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 import { useUiStore } from '@/core/stores/ui'
@@ -52,8 +65,9 @@ const auth = useAuthStore()
 const registry = useModuleRegistry()
 const ui = useUiStore()
 
+/** 模块图标映射（键 = 后端 `ModuleInfo.icon`；未命中由 menuItems 回退 ChatDotRound） */
 const iconMap: Record<string, Component> = {
-  Odometer, ChatDotRound, Collection, Memo, User,
+  Odometer, ChatDotRound, Collection, Memo, User, OfficeBuilding, Connection,
 }
 
 const menuItems = computed<{ path: string; title: string; icon: Component }[]>(() => {
@@ -67,6 +81,18 @@ const menuItems = computed<{ path: string; title: string; icon: Component }[]>((
   return items
 })
 
+/**
+ * 顶层菜单高亮项：模块子页（如 `/portrait/list`）回退到模块 `route_prefix`（如 `/portrait`），
+ * 使模块内任意子页时顶层模块项保持高亮（S6-T2 设计说明 3）。
+ */
+const activeMenu = computed(() => {
+  const exact = menuItems.value.find((item) => item.path === route.path)
+  if (exact) return exact.path
+  const moduleId = route.meta.module as string | undefined
+  const activeModule = moduleId ? registry.enabledModules.find((m) => m.info.id === moduleId) : undefined
+  return activeModule?.info.route_prefix || route.path
+})
+
 function onCommand(command: string) {
   if (command === 'logout') {
     auth.logout()
@@ -76,6 +102,20 @@ function onCommand(command: string) {
 
 function handleResize() {
   ui.setMobile(window.innerWidth < 768)
+}
+
+/** 渲染异常兜底状态（onErrorCaptured 捕获子树错误后渲染提示，避免白屏） */
+const renderError = ref('')
+const viewKey = ref(0)
+
+onErrorCaptured((error) => {
+  renderError.value = (error as Error)?.message || '渲染异常'
+  return false
+})
+
+function retryRender() {
+  renderError.value = ''
+  viewKey.value += 1
 }
 
 onMounted(() => {

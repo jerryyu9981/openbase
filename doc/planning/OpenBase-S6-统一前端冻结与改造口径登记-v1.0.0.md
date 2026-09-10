@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S6-T1-FRONTEND-FREEZE-v1.0.0 |
-| 版本 | v1.0.0 |
+| 版本 | v1.0.1 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-10 |
-| 作者 | AI（S6 批次 1 开发会话，沙箱内只读盘点 + 口径登记） |
+| 作者 | AI（S6 批次 1/2 开发会话，沙箱内只读盘点 + 口径登记 + 发布形态参数化） |
 | 文档主题 | S6 段 **T1 边界收口**口径登记：统一前端唯一维护面声明、四仓 `frontend/` 冻结声明文案与落点、3 处待改造点逐条登记（四元组 + 状态）、口径闭环与物理闭环两级判定（Q-S6-D7） |
 | 上游依据 | ①《OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0》（OB-S6-DESIGN-v1.0.0，[Draft]）§1.1 Q-FE-1/Q-FE-2b、§3.4、§4.1（S6-T1-1~4）、§6.2/§6.3、§7 R-3、§10.2 Q-S6-D1/Q-S6-D5/Q-S6-D7、附录 D；②《OpenBase-S6-统一前端隔离展示与段门禁收口-立项方案-v1.0.0》（内部 v1.1.0，[Approved]，2026-09-10）§2.3/§2.4/§4；③《OpenBase-联调产物清点核对总清单-v1.0.0》（OB-INTG-CLEARANCE-v1.0.0）§1.3/§1.4；④《OpenBase-多系统联调-跨仓提交放行清单-v1.0.0》（OB-INTG-CROSSREPO-RELEASE-v1.0.0）§0 通用红线第 5 条 |
 | 适用范围 | S6 段 T1 的**口径与登记面**。本文档**只登记不改动**：对 DPS / OpenLLM / OpenMemory / OpenRAG 四仓的 `frontend/` 目录与 CI/部署配置仅做只读盘点与处置口径登记，**S6 内不改动任何子系统仓文件**（Q-FE-1）；四仓的物理改造动作归属其各自后续批次 |
@@ -20,6 +20,7 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-10 | AI（S6 批次 1 开发会话） | 初始版本：S6-T1-1 交付物。含 §1 统一前端唯一维护面声明；§2 四仓 `frontend/` 冻结统一文案；§3 3 处改造点逐条登记（归属仓 / 证据行号 / 建议动作 / 状态）；§4 各仓冻结声明落点待执行清单（Q-S6-D5）；§5 口径闭环与物理闭环两级判定（Q-S6-D7）；§6 核验命令与证据；§7 遗留与边界 |
+| v1.0.1 | 2026-09-10 | AI（S6 批次 2 开发会话） | 补做并闭环 §7-1 遗留的 **S6-T1-3「发布形态」四小项**：① `scripts/build_release.ps1` 版本目录参数化（由 `openbase-ui/package.json.version` 派生 `dist-v$Version`，消除 `dist-v1.2.0` 硬编码，保留 Lint/测试/覆盖率门禁）；② `.gitignore` 增补 `dist-v*`（实测 `git check-ignore` 命中）；③ `package.json`/`package-lock.json` 版本 1.2.0 → **1.3.0**（S6 承载版本）；④ `nginx.conf.example` 同域 `/ui/`（alias 指向版本目录）+ `/api/` 反代 + SSE `proxy_buffering off` 口径核对一致。新增 §8 参数化片段与忽略规则证据、§9 批次 2 硬门禁实测值（覆盖率已由 51.52% 提升至 96.37% 达标） |
 
 ---
 
@@ -165,11 +166,86 @@
 
 | # | 项 | 说明 | 归属 |
 |---|----|------|------|
-| 1 | 设计草案 §4.1 **S6-T1-3「发布形态」条目**（`build_release.ps1` 版本目录参数化、`.gitignore` 增补 `dist-v*`、`package.json` 1.2.0 → 1.3.0、`nginx.conf.example` 口径确认） | 本批次按任务口径将 S6-T1-3 聚焦为「前端侧冻结声明落点」；发布形态条目**未在本批次执行**，登记为后续批次/T6 待办（对齐 Q-S6-D1「版本号建议 T6 前升」） | 后续批次（S6-T6 前） |
+| 1 | 设计草案 §4.1 **S6-T1-3「发布形态」条目**（`build_release.ps1` 版本目录参数化、`.gitignore` 增补 `dist-v*`、`package.json` 1.2.0 → 1.3.0、`nginx.conf.example` 口径确认） | **✅ 已闭环（S6 批次 2，对齐 Q-FE-2b 与 Q-S6-D1「T6 前升」）**：四小项全部落地——① 版本目录由 `package.json.version` 派生；② `.gitignore` 含 `dist-v*`；③ 承载版本升 **1.3.0**；④ nginx 同域口径核对一致。证据与核验命令见 **§8 / §9** | 已完成（S6 批次 2） |
 | 2 | 四仓物理改造（改造点 1~3）与 4 仓冻结声明写入 | 需各子系统仓 git 写权限（沙箱仅允许 OpenBase 仓） | 各子系统后续批次；S7 复核 |
 | 3 | 子系统后端挂载结论 | 引用放行清单 §1.5/§2.5/§3.3/§4.5（本批未逐仓重测） | S7 全链核验 |
 | 4 | `frontend/` 目录规模与在途项 | OpenMemory 59 文件（在途 8 项归 B 类）、OpenLLM 214 文件、DPS 63 文件、OpenRAG 125 文件 | 引用放行清单 v1.0.4/v1.0.5 各仓小节注记 |
 
 ---
 
-> **文档结束**。本文档为 S6 段 **T1 边界收口（口径面）** 交付物（[Draft]）；与 S6-T1-2 静态断言测试、S6-T1-3 前端侧冻结声明落点、S6-T1-4 清单引用位共同构成 T1 的可核对证据链。
+## §8 S6-T1-3 发布形态参数化证据（S6 批次 2 补做，Q-FE-2b）
+
+> 口径：统一前端发布形态 = **`dist-vX.Y.Z` 版本目录承载 + nginx 同域 `/ui/` 静态 + `/api/` 反代 + SSE 不缓冲**；版本目录仅切 alias 即可发布/回滚，不涉及数据库迁移与后端语义（设计草案 §6.1、INV-5）。
+
+### 8.1 版本目录参数化（`openbase-ui/scripts/build_release.ps1`）
+
+```powershell
+$Root = Split-Path -Parent $PSScriptRoot
+$Dist = Join-Path $Root 'dist'
+# 版本目录参数化：由 openbase-ui/package.json 的 version 派生，消除 dist-v1.2.0 硬编码
+$PackageJson = Get-Content (Join-Path $Root 'package.json') -Raw | ConvertFrom-Json
+$Version = $PackageJson.version
+$ReleaseDir = Join-Path $Root "dist-v$Version"
+...
+Write-Host "[1/3] 质量门禁：Lint 0 + 测试 100% + 覆盖率 >=80%（承载版本 v$Version）"
+npm run lint   ; if ($LASTEXITCODE -ne 0) { throw 'Lint 失败' }
+npm run test   ; if ($LASTEXITCODE -ne 0) { throw '单测失败' }
+npm run test:coverage ; if ($LASTEXITCODE -ne 0) { throw '覆盖率门禁失败' }
+npm run build  ; if ($LASTEXITCODE -ne 0) { throw '构建失败' }
+if (Test-Path $ReleaseDir) { Remove-Item $ReleaseDir -Recurse -Force }
+Copy-Item $Dist $ReleaseDir -Recurse
+```
+
+| 核验项 | 命令 | 结果 |
+|--------|------|------|
+| 无硬编码版本目录 | `Select-String -Path scripts\build_release.ps1 -Pattern 'dist-v'` | 仅注释 + `"dist-v$Version"` 参数化行，**无 `dist-v1.2.0` 硬编码** |
+| 派生版本号 | `(Get-Content package.json -Raw \| ConvertFrom-Json).version` | **1.3.0**（`package-lock.json` 同步 1.3.0） |
+| 门禁语义保持 | 脚本 Lint/测试/覆盖率/build 四段 | 语义不变（Lint 0 + 测试 100% + 覆盖率 ≥80%） |
+
+### 8.2 忽略规则（`openbase-ui/.gitignore`）
+
+```
+node_modules
+dist
+dist-v*
+coverage
+*.local
+.DS_Store
+```
+
+| 核验项 | 命令 | 结果 |
+|--------|------|------|
+| 版本目录被忽略 | `git check-ignore -v openbase-ui/dist-v1.3.0` | `openbase-ui/.gitignore:3:dist-v*` **命中**（此前实测未忽略，R-10 已消除） |
+
+### 8.3 nginx 同域口径（`openbase-ui/nginx.conf.example`）
+
+| 项 | 现行（实测） | 口径 |
+|----|-------------|------|
+| `/ui/` 静态 | `alias …/dist-v1.3.0/;` + `try_files $uri $uri/ /ui/index.html;` + `expires 1h` | alias 指向**版本目录**，切换/回滚仅改此处 |
+| `/api/` 反代 | `proxy_pass http://127.0.0.1:8000;` + `Authorization` 透传 + `proxy_http_version 1.1` | 受信通道口径不变 |
+| SSE | `proxy_buffering off;` + `proxy_read_timeout 300s;` | 流式不缓冲（对话/RAG 关键） |
+| 根路径 | `location = / { return 301 /ui/; }` | 统一前端承接 |
+
+### 8.4 边界（非沙箱复核，Q-S6-D7 / 设计草案 §1.4 B6）
+
+| 项 | 说明 |
+|----|------|
+| `/ui/` 发布与回滚实测 | 需 nginx + 运行态 + 两个版本目录，**PENDING（沙箱受限）**，交 S7 按 B6 复核 |
+| 生产 alias 指向 | 由发布流程在部署时切换（配置级回滚）；本批仅固化示例口径 |
+
+---
+
+## §9 批次 2 硬门禁实测（2026-09-10，沙箱内，禁止伪造）
+
+| # | 命令（工作目录） | 结果摘要 | 退出码 |
+|---|----------------|---------|--------|
+| 1 | `npm run lint`（openbase-ui） | `eslint src --ext .ts,.vue && vue-tsc --noEmit` **0 problem** | **0** |
+| 2 | `npm test`（openbase-ui） | Test Files **11 passed (11)**、Tests **104 passed (104)**（批前 7 files / 44 tests） | **0** |
+| 3 | `npm run test:coverage`（openbase-ui） | All files：stmts **96.37%** / lines **96.37%** / funcs **87.23%** / branches **88.63%**（阈值 80/80/80/70，**全部达标**；批前 51.52/51.52/50.66/85.84） | **0** |
+| 4 | `python -m pytest tests/test_s6_t1_frontend_boundary.py -q`（仓根） | **9 passed**（S6-T1 防回归固化） | **0** |
+
+> 说明：覆盖率已按 Q-FE-7b「不改阈值」口径由 51.52% 提升至 96.37%（新增 `tests/api-clients.spec.ts` 打通 `src/core/api/**` 客户端、`tests/router-nav.spec.ts`/`nav-consistency.spec.ts` 覆盖 `src/core/router/**`），**未放宽 `vite.config.ts` thresholds**。
+
+---
+
+> **文档结束**。本文档为 S6 段 **T1 边界收口（口径面）** 交付物（[Draft]）；与 S6-T1-2 静态断言测试、S6-T1-3 前端侧冻结声明落点（批次 1）+ 发布形态参数化（批次 2）、S6-T1-4 清单引用位共同构成 T1 的可核对证据链。

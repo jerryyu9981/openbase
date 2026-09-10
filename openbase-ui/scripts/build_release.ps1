@@ -1,10 +1,14 @@
-# OpenBase 统一前端构建部署脚本（v1.2.0）
+# OpenBase 统一前端构建部署脚本
+# 发布形态（Q-FE-2b）：版本目录由 package.json.version 派生，产物目录 dist-v$Version
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 $Dist = Join-Path $Root 'dist'
-$ReleaseDir = Join-Path $Root 'dist-v1.2.0'
+# 版本目录参数化：由 openbase-ui/package.json 的 version 派生，消除 dist-v1.2.0 硬编码
+$PackageJson = Get-Content (Join-Path $Root 'package.json') -Raw | ConvertFrom-Json
+$Version = $PackageJson.version
+$ReleaseDir = Join-Path $Root "dist-v$Version"
 
-Write-Host '[1/3] 质量门禁：Lint 0 + 测试 100% + 覆盖率 >=80%'
+Write-Host "[1/3] 质量门禁：Lint 0 + 测试 100% + 覆盖率 >=80%（承载版本 v$Version）"
 Push-Location $Root
 npm run lint
 if ($LASTEXITCODE -ne 0) { throw 'Lint 失败' }
