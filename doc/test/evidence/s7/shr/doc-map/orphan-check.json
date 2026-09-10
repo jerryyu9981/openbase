@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T1-5",
+  "title": "文档地图：L0-L4 全量索引 + S1a~S7 纵切并入核对（无游离文档）（Q-S7-D6）",
+  "execution_face": "A",
+  "sandbox": "PASS",
+  "non_sandbox": "—",
+  "status": "PASS",
+  "reason": "文档面为纯沙箱可判定（A 面）：索引覆盖 L0-L4 分层与字段；S1a~S7 新增文档逐项并入；机器可核对清单逐项存在（无游离/无失效引用）",
+  "openbase_commit": "f360cef66a39521d6c62fc5172488d9e31416808",
+  "checked_at": "2026-09-11",
+  "artifacts": [
+    "doc/design/OpenBase-文档地图索引-v1.0.0.md",
+    "tests/test_s7_t1_shr.py"
+  ],
+  "checks": [
+    {
+      "id": "A1",
+      "item": "索引覆盖 L0-L4 分层，含名称/版本/角色/状态/关联锚点字段",
+      "result": "PASS",
+      "evidence": "§1 分层模型 + §2 L0-L4 全量清单"
+    },
+    {
+      "id": "A2",
+      "item": "S1a~S7 纵切新增文档（立项/设计草案/DevLog/测试报告/台账/清单/执行模板）逐项并入核对",
+      "result": "PASS",
+      "evidence": "§3 并入核对表；26 项 S1a~S7 文档均命中索引"
+    },
+    {
+      "id": "A3",
+      "item": "机器可核对清单逐项真实存在（无游离文档/无失效引用）",
+      "result": "PASS",
+      "evidence": "DOCMAP-MANIFEST 37 项，缺失 0"
+    }
+  ],
+  "counts": {
+    "manifest_entries": 37,
+    "manifest_missing": 0,
+    "s1a_s7_documents": 26
+  },
+  "pending_items": [],
+  "note": "文档面 A 面已判定；无 B 面挂起项。"
+}

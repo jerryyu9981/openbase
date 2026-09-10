@@ -1,4 +1,4 @@
-#!/usr/bin/env powershell
+﻿#!/usr/bin/env powershell
 # OpenBase v1.4.2 回归脚本（BL-142-10 TD-新增-009）
 # 用法: powershell -File scripts/run_tests.ps1 [-WithCoverage]
 #
@@ -10,7 +10,10 @@
 #    starlette BaseHTTPMiddleware + anyio 多实例叠加的 C 层崩溃（单组不崩）。
 
 param(
-    [switch]$WithCoverage
+    [switch]$WithCoverage,
+    # S7-T1-2：跨仓统一回归入口（默认单仓 openbase，保持 v1.4.2 行为不变）
+    [string[]]$Repos = @('openbase'),
+    [switch]$DryRun
 )
 
 # UTF-8 输出（PowerShell 5 中文编码）
@@ -21,6 +24,62 @@ $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyI
 $root = Split-Path $scriptDir -Parent
 Set-Location $root
 Write-Host "root: $root"
+
+# ---------------------------------------------------------------------------
+# S7-T1-2 跨仓统一回归入口（Q-S7-D3）
+#   默认 -Repos openbase = 下方单仓「按文件分组子进程隔离 + ruff」流程（行为不变）。
+#   传入多仓 / 非 openbase / -DryRun 时进入跨仓编排（逐仓回归命令表）。
+#   真实建库与跨仓实跑属 B 面（联调窗口）；沙箱内 -DryRun 干跑为可判定面。
+# ---------------------------------------------------------------------------
+# 兼容 -File 传参：单个参数内以逗号分隔的多仓（openbase,openllm）拆分为数组
+    $Repos = @($Repos | ForEach-Object { $_ -split ',' } | Where-Object { $_ -ne '' })
+    $isCrossRepo = $DryRun -or ($Repos.Count -gt 1) -or ($Repos[0] -ne 'openbase')
+if ($isCrossRepo) {
+    $siblingRoot = Split-Path $root -Parent
+    $repoCommandTable = [ordered]@{
+        openbase   = @{ Root = $root;                                  Commands = @('python -m ruff check openbase tests', 'python -m pytest tests') }
+        openllm    = @{ Root = (Join-Path $siblingRoot 'OpenLLM\backend');    Commands = @('python -m pytest tests') }
+        openrag    = @{ Root = (Join-Path $siblingRoot 'OpenRAG');            Commands = @('python -m pytest tests') }
+        openmemory = @{ Root = (Join-Path $siblingRoot 'OpenMemory');         Commands = @('python -m pytest tests') }
+        dps        = @{ Root = (Join-Path $siblingRoot 'DPS');                Commands = @('python -m pytest tests') }
+    }
+    Write-Host "=== S7-T1-2 跨仓统一回归入口（repos=$($Repos -join ',') dry_run=$DryRun）==="
+    $pendingRepos = New-Object System.Collections.ArrayList
+    $failedRepos = New-Object System.Collections.ArrayList
+    foreach ($repoName in $Repos) {
+        if (-not $repoCommandTable.Contains($repoName)) {
+            Write-Host "[FAIL] 未知仓：$repoName"; exit 1
+        }
+        $entry = $repoCommandTable[$repoName]
+        $present = Test-Path -LiteralPath $entry.Root
+        Write-Host "--- repo: $repoName root=$($entry.Root) present=$present ---"
+        foreach ($command in $entry.Commands) { Write-Host "    cmd: $command" }
+        if ($DryRun -or -not $present) {
+            # 干跑/仓不可达：仅输出计划（真实执行属 B 面，登记 PENDING）
+            if (-not $present) { [void]$pendingRepos.Add($repoName) }
+            continue
+        }
+        foreach ($command in $entry.Commands) {
+            Push-Location $entry.Root
+            try {
+                Invoke-Expression $command
+                if ($LASTEXITCODE -ne 0) { [void]$failedRepos.Add("$repoName :: $command") }
+            } finally {
+                Pop-Location
+            }
+        }
+    }
+    if ($pendingRepos.Count -gt 0) {
+        Write-Host "[PENDING] 沙箱不可达仓（联调窗口执行）：$($pendingRepos -join ', ')"
+    }
+    if ($failedRepos.Count -gt 0) {
+        Write-Host "[FAIL] 跨仓回归失败项："
+        $failedRepos | ForEach-Object { Write-Host "  $_" }
+        exit 1
+    }
+    Write-Host "[OK] 跨仓统一回归入口完成（dry-run 时仅为计划）"
+    exit 0
+}
 
 # 静态检查
 Write-Host "=== 1/3 ruff ==="

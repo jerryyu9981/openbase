@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T1-4",
+  "title": "受管编排唯一入口：禁批量杀静态扫描 0 命中（Q-S7-D5）",
+  "execution_face": "A+B",
+  "sandbox": "PASS",
+  "non_sandbox": "PENDING",
+  "status": "PASS",
+  "reason": "A 面（静态扫描：scan_orchestrator_bypass.py 0 绕过命中 + 非空化自检通过）沙箱内真实执行；B 面（编排实跑：真实服务启停）未执行 → PENDING",
+  "openbase_commit": "f360cef66a39521d6c62fc5172488d9e31416808",
+  "checked_at": "2026-09-11",
+  "artifacts": [
+    "scripts/scan_orchestrator_bypass.py",
+    "scripts/service-orchestrator.ps1",
+    "tests/test_s7_t1_shr.py"
+  ],
+  "scan_result": {
+    "orchestrator_entry": "scripts/service-orchestrator.ps1",
+    "scanned_files": 20,
+    "allowed_hits": 1,
+    "allowed_detail": "scripts/service-orchestrator.ps1:365 Stop-Process -Id $target（按记录 PID 逆拓扑 stop，唯一允许位）",
+    "disallowed_hits": 0,
+    "self_check": {
+      "bypass_detected": true,
+      "string_mention_ignored": true,
+      "allowed_pid_stop_accepted": true
+    }
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "item": "唯一入口 = service-orchestrator.ps1（start/startcheck/checkall/monitor/status/stop）",
+      "result": "PASS",
+      "evidence": "scripts/service-orchestrator.ps1"
+    },
+    {
+      "id": "A2",
+      "item": "仓内 taskkill / Stop-Process / kill -9 / killall / pkill 批量杀绕过 = 0 命中（字符串文案不误报）",
+      "result": "PASS",
+      "evidence": "scan_orchestrator_bypass.py 退出码 0"
+    },
+    {
+      "id": "A3",
+      "item": "扫描器非空化自检：违规样本命中 + 字符串文案忽略 + 合法 PID 停止识别",
+      "result": "PASS",
+      "evidence": "self_check 三项全 true"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "B-4",
+      "item": "编排实跑（服务生命周期 start/stop 逆拓扑）",
+      "precondition": "四仓运行态 + 服务依赖",
+      "owner": "联调窗口",
+      "action": "执行 service-orchestrator.ps1 启停并回填结果"
+    }
+  ],
+  "note": "静态面 0 命中已判定；编排实跑登记 PENDING。"
+}

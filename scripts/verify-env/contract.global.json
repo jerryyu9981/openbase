@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "tracking": {
+    "contract_rail": "S7-T1-1 verify-env 全局化（跨仓统一契约）",
+    "based_on": "scripts/verify-env/contract.json（OpenBase 6 组主结构，非破坏性保留）",
+    "reference_docs": [
+      "OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md §2.2/§4.1（Q-S7-D1/D2）",
+      "OpenBase-P2-1-统一身份协议头与信任链收口设计草案-v1.0.0.md §9.2/§10 T9",
+      "OpenBase-多系统对接联调问题复盘与根治方案-v1.0.0.md"
+    ],
+    "source_of_truth": "openbase/tenants.code + openbase/settings.py（OpenBase 主结构）+ 各仓 verify-env 契约键命名（OpenRAG S3-T10 / OpenLLM S4-T14 / DPS S5-T11 配套）"
+  },
+  "sections": {
+    "config_single_source": [
+      "trusted_proxy_sources",
+      "role_intertranslate",
+      "dps_code_map",
+      "service_account_subject_map",
+      "enforce_org_alias",
+      "enforce_token_version",
+      "k03_bypass_whitelist",
+      "strip_inbound_identity_headers",
+      "enforce_inbound_identity_headers",
+      "enforce_proxy_identity_headers",
+      "jwt_secret",
+      "db_url",
+      "redis_url"
+    ],
+    "config_deprecated": [
+      "dps_default_org_id",
+      "dps_default_tenant_id"
+    ],
+    "upstreams": [
+      {"name": "dps", "url_key": "dps_upstream_base", "health": "/health"},
+      {"name": "openllm", "url_key": "llm_upstream_base", "health": "/openllm/v1/health"},
+      {"name": "openrag", "url_key": "rag_upstream_base", "health": "/api/v1/system/health"},
+      {"name": "openmemory", "url_key": "memory_upstream_base", "health": "/health"}
+    ],
+    "whitelist_matrix": {
+      "trusted_proxy_sources": [
+        "openbase-dps-proxy",
+        "openbase-llm-proxy",
+        "openbase-rag-proxy",
+        "openbase-memory-proxy",
+        "openbase-generic-proxy"
+      ]
+    },
+    "mapping_reconcile": ["dps_code_map"],
+    "db_checks": [
+      {"schema": "openbase", "check": "tenants.code 唯一事实源对账"}
+    ]
+  },
+  "repo_overrides": {
+    "openbase": {
+      "role": "primary",
+      "contract_source": "scripts/verify-env/contract.json（6 组主结构基线）",
+      "verify_env_ref": "scripts/verify-env.ps1",
+      "sections": [
+        "config_single_source",
+        "config_deprecated",
+        "upstreams",
+        "whitelist_matrix",
+        "mapping_reconcile",
+        "db_checks"
+      ]
+    },
+    "openllm": {
+      "role": "override",
+      "contract_source": "S4-T14 verify-env 契约键命名（上游实测）",
+      "verify_env_ref": "scripts/verify-env",
+      "contract_keys": ["identity_trust", "REAL", "channel", "upstream"]
+    },
+    "openrag": {
+      "role": "override",
+      "contract_source": "S3-T10 verify-env 契约键命名（上游实测）",
+      "verify_env_ref": "scripts/verify-env",
+      "contract_keys": ["identity_trust", "row_scope", "identity_event", "api"]
+    },
+    "dps": {
+      "role": "override",
+      "contract_source": "S5-T11 配套 verify-env 契约键命名（上游实测）",
+      "verify_env_ref": "scripts/verify-env",
+      "contract_keys": ["identity_trust", "row_scope", "identity_event", "api"]
+    },
+    "openmemory": {
+      "role": "override",
+      "contract_source": "上游实测（目录级 scripts/verify-env；具体键名待仓内确认）",
+      "verify_env_ref": "scripts/verify-env",
+      "contract_dir": "scripts/verify-env",
+      "contract_keys": [],
+      "contract_keys_pending": true
+    }
+  }
+}

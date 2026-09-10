@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T1-2",
+  "title": "openbase_test 独立测试库：幂等建库脚本 + run_tests.ps1 跨仓统一回归入口（Q-S7-D3）",
+  "execution_face": "A+B",
+  "sandbox": "PASS",
+  "non_sandbox": "PENDING",
+  "status": "PASS",
+  "reason": "A 面（建库脚本幂等结构 + -DryRun 干跑；run_tests.ps1 跨仓入口结构 + -DryRun 编排干跑）沙箱内真实执行通过；B 面（真实建库/建账号/迁移与跨仓实跑）未在沙箱执行 → PENDING（前置：真实 PG + 建库权限）",
+  "openbase_commit": "f360cef66a39521d6c62fc5172488d9e31416808",
+  "checked_at": "2026-09-11",
+  "artifacts": [
+    "scripts/db/init_openbase_test.ps1",
+    "scripts/run_tests.ps1",
+    "tests/test_s7_t1_shr.py"
+  ],
+  "checks": [
+    {
+      "id": "A1",
+      "item": "init_openbase_test.ps1 幂等：pg_database 存在性守卫 + pg_roles IF NOT EXISTS + 迁移 IF NOT EXISTS/create_all",
+      "result": "PASS",
+      "evidence": "-DryRun 退出码 0，输出幂等语句计划（CREATE DATABASE openbase_test 前有存在性守卫）"
+    },
+    {
+      "id": "A2",
+      "item": "测试连接隔离业务库：OPENBASE_DB_URL 指向 openbase_test",
+      "result": "PASS",
+      "evidence": "OPENBASE_DB_URL=postgresql://openbase_app@127.0.0.1:5432/openbase_test"
+    },
+    {
+      "id": "A3",
+      "item": "run_tests.ps1 升跨仓统一回归入口，保留 v1.4.2 单仓「按文件分组子进程隔离 + ruff」能力（默认 -Repos openbase 行为不变）",
+      "result": "PASS",
+      "evidence": "-DryRun -Repos openbase,openllm 退出码 0，逐仓命令表编排输出；$i += 6 分组逻辑保留"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "B-2",
+      "item": "openbase_test 真实建库/建账号/幂等迁移 + 跨 schema 隔离",
+      "precondition": "真实 PG + 建库权限",
+      "owner": "联调窗口",
+      "action": "执行 init_openbase_test.ps1（非 -DryRun）并以 OPENBASE_DB_URL 指向 openbase_test 复跑测试族"
+    },
+    {
+      "id": "B-2b",
+      "item": "run_tests.ps1 跨仓实跑（逐仓回归）",
+      "precondition": "四仓代码就绪 + 各自依赖环境",
+      "owner": "联调窗口",
+      "action": "执行 run_tests.ps1 -Repos openbase,openllm,openrag,openmemory,dps 并回填结果"
+    }
+  ],
+  "note": "B 面未真实执行，登记 PENDING；沙箱无真实 PG，禁伪造建库/迁移结果。"
+}

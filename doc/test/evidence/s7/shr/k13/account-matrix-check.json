@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T1-3",
+  "title": "K13 存储账号分离：schema×账号×权限矩阵 + 授权脚本打印模式干跑（Q-S7-D4）",
+  "execution_face": "B",
+  "sandbox": "PASS（结构面）",
+  "non_sandbox": "PENDING",
+  "status": "PENDING",
+  "reason": "断言主体（真实授权 + 跨 schema 写拒绝 = DB 级 0 成功路径）属 B 面，沙箱无真实 PG → PENDING；结构面（矩阵文件 + 授权脚本 -DryRun）沙箱内已判定为 PASS",
+  "openbase_commit": "f360cef66a39521d6c62fc5172488d9e31416808",
+  "checked_at": "2026-09-11",
+  "artifacts": [
+    "doc/design/OpenBase-K13-账号权限矩阵-v1.0.0.md",
+    "scripts/db/grant_k13_accounts.ps1",
+    "tests/test_s7_t1_shr.py"
+  ],
+  "checks": [
+    {
+      "id": "A1",
+      "item": "账号矩阵含 schema×账号×权限（openbase_app / platform_app / openbase_migrator / openbase_runtime；各自仅本 schema DML；不授 superuser）",
+      "result": "PASS",
+      "evidence": "doc/design/OpenBase-K13-账号权限矩阵-v1.0.0.md §1/§2"
+    },
+    {
+      "id": "A2",
+      "item": "授权脚本打印模式干跑通过；无 GRANT ... SUPERUSER 语句；含跨 schema REVOKE",
+      "result": "PASS",
+      "evidence": "grant_k13_accounts.ps1 -DryRun 退出码 0；正则 \\bGRANT\\s+[^\\r\\n]*\\bSUPERUSER\\b 0 命中"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "B-3",
+      "item": "真实建账号/授权 + 跨 schema 写拒绝验证（openbase_app 写 platform.* 期望 42501）+ 运行账号无法 DDL + has_schema_privilege 复核",
+      "precondition": "真实 PG + 账号授权权限",
+      "owner": "联调窗口",
+      "action": "执行 grant_k13_accounts.ps1（非 -DryRun）与拒绝用例，回填响应码至本目录"
+    }
+  ],
+  "note": "跨 schema 写拒绝 = 真实执行登记 PENDING；禁伪造响应码。"
+}

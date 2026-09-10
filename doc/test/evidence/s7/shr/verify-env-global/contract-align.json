@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T1-1",
+  "title": "verify-env 全局化：跨仓统一契约结构对账 + 单一全局入口干跑（Q-S7-D1/D2）",
+  "execution_face": "A+B",
+  "sandbox": "PASS",
+  "non_sandbox": "PENDING",
+  "status": "PASS",
+  "reason": "A 面（契约结构对齐 + verify_env_global.ps1 -DryRun 干跑）沙箱内真实执行通过；B 面（逐仓真实探活：端口/上游/db）未在沙箱执行 → PENDING（前置：真实 PG/Redis + 四仓运行态）",
+  "openbase_commit": "f360cef66a39521d6c62fc5172488d9e31416808",
+  "checked_at": "2026-09-11",
+  "artifacts": [
+    "scripts/verify-env/contract.global.json",
+    "scripts/verify_env_global.ps1",
+    "scripts/verify-env/contract.json",
+    "tests/test_s7_t1_shr.py"
+  ],
+  "checks": [
+    {
+      "id": "A1",
+      "item": "全局契约主结构 = OpenBase 6 组（与 contract.json sections 逐组一致，非破坏性保留）",
+      "result": "PASS",
+      "evidence": "contract.global.json sections == contract.json sections"
+    },
+    {
+      "id": "A2",
+      "item": "repo_overrides 承载四仓契约键命名对齐（OpenLLM identity_trust/REAL/channel/upstream；OpenRAG、DPS identity_trust/row_scope/identity_event/api；OpenMemory 目录级 scripts/verify-env，键名待仓内确认显式登记）",
+      "result": "PASS",
+      "evidence": "repo_overrides 键集合无游离/无缺失"
+    },
+    {
+      "id": "A3",
+      "item": "单一全局入口保留 exit 0/1/2 语义与两段式开关（默认 WARN 非阻断；-FailFast / OPENBASE_VERIFY_ENV_STRICT=1 强校验；回退开关保留）",
+      "result": "PASS",
+      "evidence": "verify_env_global.ps1 -DryRun -SkipNetwork -SkipDb 退出码 0，报告 mode=dry-run，repos=5"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "B-1",
+      "item": "verify-env 真实探活（跨仓端口/上游/db 逐仓复用各仓 verify-env）",
+      "precondition": "真实 PG/Redis + 四仓运行态",
+      "owner": "联调窗口",
+      "action": "执行 verify_env_global.ps1（非 -DryRun）并回填逐仓 PASS/WARN/ERROR 与响应"
+    }
+  ],
+  "note": "B 面未真实执行，登记 PENDING；禁伪造探活结果。"
+}
