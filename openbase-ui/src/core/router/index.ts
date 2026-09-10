@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw, type Router, type 
 import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 import { tokenStore } from '@/core/api/http'
+import { registerLoginNavigator } from '@/core/api/redirect'
 
 /** 公共静态路由 */
 export const staticRoutes: RouteRecordRaw[] = [
@@ -63,6 +64,11 @@ export interface AppRouterBundle {
  */
 export function createAppRouter(history: RouterHistory = createWebHistory()): AppRouterBundle {
   const router = createRouter({ history, routes: staticRoutes })
+
+  // 401 会话失效收敛：SPA 内 replace 到登录页并保留站内回跳（R-7 口径，替代整页跳转）
+  registerLoginNavigator((target) => {
+    void router.replace({ path: target.path, query: target.query })
+  })
 
   /** 挂载已启用模块的路由（模块布局承载板块导航 + AppLayout 外层）；幂等、可重试 */
   async function mountModuleRoutes(): Promise<void> {

@@ -4,6 +4,7 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import { classifyError, type ApiErrorKind } from './error'
+import { redirectToLogin } from './redirect'
 
 export interface ErrorResponse {
   code: string
@@ -47,6 +48,19 @@ http.interceptors.request.use((config) => {
   return config
 })
 
+/** 认证公共端点：其 401 属正常业务失败（如密码错误），不参与「会话失效收敛」 */
+const AUTH_PUBLIC_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/oidc/authorize']
+
+function isAuthEndpoint(url?: string): boolean {
+  if (!url) return false
+  return AUTH_PUBLIC_ENDPOINTS.some((endpoint) => url.includes(endpoint))
+}
+
+/** 在错误对象上标记分类结果（供页面按 kind 渲染） */
+function markKind(error: AxiosError<ErrorResponse>, kind: ApiErrorKind): void {
+  ;(error as ApiErrorWithKind).bizKind = kind
+}
+
 let refreshing: Promise<string> | null = null
 
 async function refreshAccessToken(): Promise<string> {
@@ -56,6 +70,27 @@ async function refreshAccessToken(): Promise<string> {
   )
   tokenStore.set(data.data.access_token)
   return data.data.access_token
+}
+
+/**
+ * 单飞刷新（S6-T4-2）：并发 401 复用同一 refresh 任务，成功后自动复位，
+ * 使后续新一轮 401 可再次刷新（失败时 token 已清空 → 不会进入刷新分支，故不循环）。
+ */
+async function ensureRefreshed(): Promise<string> {
+  if (!refreshing) {
+    refreshing = refreshAccessToken().finally(() => {
+      refreshing = null
+    })
+  }
+  return refreshing
+}
+
+/** 会话失效收敛：清态 + SPA 内 replace 到登录页（保留站内 redirect） */
+function convergeToLogin(error: AxiosError<ErrorResponse>): Promise<never> {
+  tokenStore.clear()
+  markKind(error, 'unauthorized')
+  redirectToLogin()
+  return Promise.reject(error)
 }
 
 http.interceptors.response.use(
@@ -69,31 +104,32 @@ http.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    const original = error.config as AxiosRequestConfig & { _retry?: boolean }
+    const original = (error.config ?? {}) as AxiosRequestConfig & { _retry?: boolean }
     const status = error.response?.status
     const body = error.response?.data
 
-    // 401 静默刷新（仅一次）
-    if (status === 401 && !original._retry && tokenStore.refresh) {
-      original._retry = true
-      try {
-        refreshing = refreshing || refreshAccessToken()
-        const token = await refreshing
-        refreshing = null
-        original.headers = { ...original.headers, Authorization: `Bearer ${token}` }
-        return http(original)
-      } catch {
-        refreshing = null
-        tokenStore.clear()
-        window.location.href = '/auth/login'
+    // 401 会话失效（S6-T4-1/2）：静默刷新单飞 + 重放一次；刷新失败或无 refresh 凭证 → 收敛登录
+    if (status === 401 && !isAuthEndpoint(original.url)) {
+      if (!original._retry && tokenStore.refresh) {
+        original._retry = true
+        try {
+          const token = await ensureRefreshed()
+          original.headers = { ...original.headers, Authorization: `Bearer ${token}` }
+          return http(original)
+        } catch {
+          // 刷新失败（含超时/网络异常）→ 清态收敛登录，不重试、不循环、不白屏
+          return convergeToLogin(error)
+        }
       }
+      // 无 refresh 凭证，或重放后仍 401 → 直接收敛登录（上限一次刷新，防无限循环）
+      return convergeToLogin(error)
     }
 
     const message = body?.message || error.message || '请求失败'
     // 统一错误分类（§2.4）：页面按 kind 呈现；403/404/401 默认不弹全局 toast（由页面级提示承载），
     // 5xx/网络/未知仍弹全局 toast 保证可观测。
     const classified = classifyError(error)
-    ;(error as ApiErrorWithKind).bizKind = classified.kind
+    markKind(error, classified.kind)
     if (classified.kind !== 'forbidden' && classified.kind !== 'not-found' && classified.kind !== 'unauthorized') {
       ElMessage.error(message)
     }

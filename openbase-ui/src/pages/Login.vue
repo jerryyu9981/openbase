@@ -26,6 +26,7 @@ import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/core/stores/auth'
 import { http, isApiError } from '@/core/api/http'
+import { safeRedirect } from '@/core/api/redirect'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -56,7 +57,8 @@ async function onSubmit() {
   try {
     await auth.login(form.username, form.password)
     ElMessage.success('登录成功')
-    router.push((route.query.redirect as string) || '/dashboard')
+    // 回跳安全（S6-T4-1）：redirect 仅接受站内相对路径，恶意值回落 /dashboard
+    router.push(safeRedirect(route.query.redirect))
   } catch (error) {
     if (isApiError(error)) {
       ElMessage.error(error.response?.data?.message || '登录失败')

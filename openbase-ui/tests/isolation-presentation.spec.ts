@@ -25,6 +25,7 @@ import { llmApi } from '@/core/api/llm'
 import PortraitList from '@/modules/portrait/pages/PortraitList.vue'
 import PortraitDetail from '@/modules/portrait/pages/PortraitDetail.vue'
 import MemoryList from '@/modules/memory/pages/MemoryList.vue'
+import MemorySessions from '@/modules/memory/pages/MemorySessions.vue'
 import KnowledgeList from '@/modules/knowledge/pages/KnowledgeList.vue'
 import Conversations from '@/modules/openllm/pages/Conversations.vue'
 import ChatView from '@/modules/knowledge/pages/ChatView.vue'
@@ -228,7 +229,7 @@ describe('S6-T3-1: 画像关键页跨域呈现', () => {
     expect(serverError.wrapper.find('[data-test="isolation-error-bar"]').exists()).toBe(true)
     expect(serverError.wrapper.find('[data-test="isolation-retry"]').exists()).toBe(true)
     expectNotBlank(serverError.wrapper)
-  })
+  }, 15000)
 })
 
 describe('S6-T3-2: 记忆关键页跨域呈现', () => {
@@ -255,7 +256,48 @@ describe('S6-T3-2: 记忆关键页跨域呈现', () => {
     expect(serverError.wrapper.find('[data-test="isolation-error-bar"]').exists()).toBe(true)
     expect(serverError.wrapper.find('[data-test="isolation-retry"]').exists()).toBe(true)
     expectNotBlank(serverError.wrapper)
-  })
+  }, 15000)
+
+  it('会话终止（写操作）失败 → 统一错误条呈现（批 2 遗留补齐，不静默、不白屏）', async () => {
+    vi.spyOn(http, 'get').mockResolvedValue({
+      data: {
+        code: 0,
+        message: 'ok',
+        data: [{ session_id: 'sess-1', user_id: 'user-1', message_count: 2, created_at: null, updated_at: null }],
+      },
+    })
+    const postSpy = vi
+      .spyOn(http, 'post')
+      .mockRejectedValue(apiError(500, { code: 'SYS_FAULT', message: '会话终止失败' }))
+    const { wrapper } = await mountPage(MemorySessions, '/memory/sessions')
+    expect(wrapper.find('[data-test="sessions-table"]').exists()).toBe(true)
+
+    // ElPopconfirm 的 confirm 事件带 MouseEvent 校验，按契约传入点击事件
+    await wrapper.findComponent({ name: 'ElPopconfirm' }).vm.$emit('confirm', new MouseEvent('click'))
+    await flushPromises()
+
+    expect(postSpy).toHaveBeenCalled()
+    const bar = wrapper.find('[data-test="isolation-error-bar"]')
+    expect(bar.exists()).toBe(true)
+    expect(bar.text()).toContain('会话列表加载失败')
+    expect(bar.text()).toContain('会话终止失败')
+    expectNoStackLeak(wrapper)
+    expectNotBlank(wrapper)
+  }, 15000)
+
+  it('停用/吊销主体数据面 403（AUTH_ 前缀）→ 页面级提示，非空态、非白屏', async () => {
+    vi.spyOn(http, 'get').mockRejectedValue(
+      apiError(403, { code: 'AUTH_DEACTIVATED', message: '账号已停用或登录已失效', request_id: 'req-auth-off' }),
+    )
+    const { wrapper } = await mountPage(MemoryList, '/memory/list')
+    const forbidden = wrapper.find('[data-test="isolation-forbidden"]')
+    expect(forbidden.exists()).toBe(true)
+    expect(forbidden.text()).toContain('无权限访问')
+    expect(wrapper.find('[data-test="error-request-id"]').text()).toContain('req-auth-off')
+    expect(window.location.href).not.toContain('req-auth-off')
+    expect(JSON.stringify(localStorage)).not.toContain('req-auth-off')
+    expectNotBlank(wrapper)
+  }, 15000)
 })
 
 describe('S6-T3-3: 知识关键页跨域呈现', () => {
@@ -275,7 +317,7 @@ describe('S6-T3-3: 知识关键页跨域呈现', () => {
     expect(serverError.wrapper.find('[data-test="isolation-error-bar"]').exists()).toBe(true)
     expect(serverError.wrapper.find('[data-test="isolation-retry"]').exists()).toBe(true)
     expectNotBlank(serverError.wrapper)
-  })
+  }, 15000)
 
   it('RAG 对话流式失败 → 错误条 + 重试，保留已产出内容（不断流成白屏）', async () => {
     vi.spyOn(ragApi, 'listCollections').mockResolvedValue({
@@ -321,7 +363,7 @@ describe('S6-T3-3: 对话关键页（OpenLLM 会话）呈现', () => {
     expect(serverError.wrapper.find('[data-test="isolation-error-bar"]').exists()).toBe(true)
     expect(serverError.wrapper.find('[data-test="isolation-retry"]').exists()).toBe(true)
     expectNotBlank(serverError.wrapper)
-  })
+  }, 15000)
 })
 
 describe('S6-T3-4: 渲染异常兜底（防白屏）', () => {

@@ -30,6 +30,19 @@ export function parseOidcHash(hash: string): { access_token: string; refresh_tok
   return { access_token, refresh_token }
 }
 
+/**
+ * 解析 OIDC 回调 fragment 中的错误参数（IdP 拒绝 / state 校验失败，v1.6.0）。
+ * 返回空串表示无错误参数，调用方按「缺少令牌」兜底提示。
+ */
+export function parseOidcError(hash: string): { error: string; error_description: string } {
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash
+  const params = new URLSearchParams(raw)
+  return {
+    error: params.get('error') || '',
+    error_description: params.get('error_description') || '',
+  }
+}
+
 export const authApi = {
   async login(username: string, password: string): Promise<AuthUser> {
     // 后端登录返回扁平 TokenResponse（v1.1.0 既有契约）
