@@ -1,0 +1,627 @@
+{
+  "schema_version": 1,
+  "evidence_ref": "S7-T6",
+  "title": "S7 门禁聚合（RA-06 / 冒烟 S0-S6 / 对齐清单关闭 / K07+SYS-1 终验）",
+  "mode": "dry-run",
+  "generated_at": "2026-09-11T03:33:17+08:00",
+  "openbase_commit": "2235229eddf92b37ba63214475215fe5b16a7495",
+  "openbase_head_short": "2235229",
+  "overall_status": "PASS",
+  "exit_code": 0,
+  "counts": {
+    "sections": 5,
+    "pass": 19,
+    "fail": 0,
+    "pending": 3
+  },
+  "sections": [
+    {
+      "id": "RA-06",
+      "name": "RA-06 R1 门禁聚合（五项）",
+      "execution_face": "A+B",
+      "status": "PASS",
+      "items": [
+        {
+          "key": "tenant_isolation_regression",
+          "name": "双租户隔离回归",
+          "selector": [
+            "tests/test_tenant_admin.py",
+            "tests/test_identity_t2.py"
+          ],
+          "execution_face": "A+B",
+          "real_face_status": "PENDING",
+          "reason": "真实双租户数据面（DPS 画像/OpenMemory 记忆跨租户读写）需 PG + 四仓运行态，属 B 面",
+          "status": "PASS",
+          "exit_code": 0,
+          "cases": 19,
+          "failed": 0,
+          "skipped": 0,
+          "per_file": [
+            {
+              "file": "tests/test_tenant_admin.py",
+              "exit_code": 0,
+              "cases": 5,
+              "failed": 0
+            },
+            {
+              "file": "tests/test_identity_t2.py",
+              "exit_code": 0,
+              "cases": 14,
+              "failed": 0
+            }
+          ],
+          "evidence": "pytest tests/test_tenant_admin.py tests/test_identity_t2.py（逐文件隔离，exit=0）"
+        },
+        {
+          "key": "fail_closed",
+          "name": "fail-closed 用例",
+          "selector": [
+            "tests/test_inbound_header_gate.py",
+            "tests/test_verdict_k03.py"
+          ],
+          "execution_face": "A+B",
+          "real_face_status": "PENDING",
+          "reason": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
+          "status": "PASS",
+          "exit_code": 0,
+          "cases": 21,
+          "failed": 0,
+          "skipped": 0,
+          "per_file": [
+            {
+              "file": "tests/test_inbound_header_gate.py",
+              "exit_code": 0,
+              "cases": 7,
+              "failed": 0
+            },
+            {
+              "file": "tests/test_verdict_k03.py",
+              "exit_code": 0,
+              "cases": 14,
+              "failed": 0
+            }
+          ],
+          "evidence": "pytest tests/test_inbound_header_gate.py tests/test_verdict_k03.py（逐文件隔离，exit=0）"
+        },
+        {
+          "key": "oidc_batch_isolation",
+          "name": "OIDC 批次隔离（存量 T2 归档关闭）",
+          "selector": [
+            "tests/test_oidc_gateway.py",
+            "tests/test_oidc_keycloak.py"
+          ],
+          "execution_face": "A+B",
+          "real_face_status": "PENDING",
+          "reason": "真实 IdP 回调与吊销链路需身份提供方，属 B 面",
+          "status": "PASS",
+          "exit_code": 0,
+          "cases": 12,
+          "failed": 0,
+          "skipped": 0,
+          "per_file": [
+            {
+              "file": "tests/test_oidc_gateway.py",
+              "exit_code": 0,
+              "cases": 4,
+              "failed": 0
+            },
+            {
+              "file": "tests/test_oidc_keycloak.py",
+              "exit_code": 0,
+              "cases": 8,
+              "failed": 0
+            }
+          ],
+          "evidence": "pytest tests/test_oidc_gateway.py tests/test_oidc_keycloak.py（逐文件隔离，exit=0）"
+        },
+        {
+          "key": "delegation_cross_tenant_403",
+          "name": "委托跨界 403",
+          "selector": [
+            "tests/test_identity_t4.py"
+          ],
+          "execution_face": "A+B",
+          "real_face_status": "PENDING",
+          "reason": "真实网关代理链路的跨界 403 需四仓运行态，属 B 面",
+          "status": "PASS",
+          "exit_code": 0,
+          "cases": 13,
+          "failed": 0,
+          "skipped": 0,
+          "per_file": [
+            {
+              "file": "tests/test_identity_t4.py",
+              "exit_code": 0,
+              "cases": 13,
+              "failed": 0
+            }
+          ],
+          "evidence": "pytest tests/test_identity_t4.py（逐文件隔离，exit=0）"
+        },
+        {
+          "key": "revocation_immediacy",
+          "name": "吊销即时性",
+          "selector": [
+            "tests/test_identity_t3.py"
+          ],
+          "execution_face": "A+B",
+          "real_face_status": "PENDING",
+          "reason": "真实 token 吊销即时性需 Redis/PG 运行态，属 B 面",
+          "status": "PASS",
+          "exit_code": 0,
+          "cases": 17,
+          "failed": 0,
+          "skipped": 0,
+          "per_file": [
+            {
+              "file": "tests/test_identity_t3.py",
+              "exit_code": 0,
+              "cases": 17,
+              "failed": 0
+            }
+          ],
+          "evidence": "pytest tests/test_identity_t3.py（逐文件隔离，exit=0）"
+        }
+      ],
+      "pending_items": [
+        {
+          "id": "RA-06::tenant_isolation_regression::B",
+          "item": "双租户隔离回归 真实面",
+          "precondition": "真实双租户数据面（DPS 画像/OpenMemory 记忆跨租户读写）需 PG + 四仓运行态，属 B 面",
+          "owner": "联调窗口",
+          "action": "真实环境执行后回填 status"
+        },
+        {
+          "id": "RA-06::fail_closed::B",
+          "item": "fail-closed 用例 真实面",
+          "precondition": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
+          "owner": "联调窗口",
+          "action": "真实环境执行后回填 status"
+        },
+        {
+          "id": "RA-06::oidc_batch_isolation::B",
+          "item": "OIDC 批次隔离（存量 T2 归档关闭） 真实面",
+          "precondition": "真实 IdP 回调与吊销链路需身份提供方，属 B 面",
+          "owner": "联调窗口",
+          "action": "真实环境执行后回填 status"
+        },
+        {
+          "id": "RA-06::delegation_cross_tenant_403::B",
+          "item": "委托跨界 403 真实面",
+          "precondition": "真实网关代理链路的跨界 403 需四仓运行态，属 B 面",
+          "owner": "联调窗口",
+          "action": "真实环境执行后回填 status"
+        },
+        {
+          "id": "RA-06::revocation_immediacy::B",
+          "item": "吊销即时性 真实面",
+          "precondition": "真实 token 吊销即时性需 Redis/PG 运行态，属 B 面",
+          "owner": "联调窗口",
+          "action": "真实环境执行后回填 status"
+        }
+      ]
+    },
+    {
+      "id": "SMOKE-S0-S6",
+      "name": "冒烟 S0-S6 聚合（冒烟清单 v1.1.0 §3）",
+      "execution_face": "B",
+      "status": "PENDING",
+      "structure_status": "PASS",
+      "real_face_status": "PENDING",
+      "matrix": {
+        "groups": [
+          "S0",
+          "S1",
+          "S2",
+          "S3",
+          "S4",
+          "S5",
+          "S6"
+        ],
+        "p0_count": 30,
+        "p1_count": 2,
+        "p0_cases": [
+          "S0-1",
+          "S0-2",
+          "S0-3",
+          "S0-4",
+          "S0-5",
+          "S1-1",
+          "S1-2",
+          "S2-1",
+          "S2-2",
+          "S2-3",
+          "S2-4",
+          "S2-5",
+          "S2-6",
+          "S3-1",
+          "S3-2",
+          "S3-3",
+          "S3-4",
+          "S4-0",
+          "S4-1",
+          "S4-2",
+          "S4-3",
+          "S5-1",
+          "S5-2",
+          "S5-3",
+          "S5-4",
+          "S5-5",
+          "S5-6",
+          "S6-1",
+          "S6-2",
+          "S6-4"
+        ],
+        "p1_cases": [
+          "S4-4",
+          "S6-3"
+        ],
+        "missing": []
+      },
+      "evidence": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（结构对账）",
+      "reason": "冒烟 S0-S6 需真实五服务（OpenLLM/OpenMemory/OpenRAG/DPS/OpenBase）与真实开关；沙箱无运行态 → 真实执行 PENDING（结构对账已 PASS）",
+      "pending_items": [
+        {
+          "id": "SMOKE-REAL",
+          "item": "冒烟 S0-S6 真实执行（P0 全绿、P1 登记）",
+          "precondition": "真实五服务 + 密钥 + 三真实开关 + DPS org/tenant 预置",
+          "owner": "联调窗口",
+          "action": "按冒烟清单 v1.1.0 §5 产出执行记录并回填"
+        }
+      ]
+    },
+    {
+      "id": "TEST-ALIGN-CLOSE",
+      "name": "存量测试对齐清单关闭",
+      "execution_face": "A+B",
+      "status": "PASS",
+      "doc_status": "Approved",
+      "doc_path": "OpenBase-存量测试对齐任务清单-v1.0.0.md",
+      "oidc_batch": {
+        "status": "PASS",
+        "exit_code": 0,
+        "cases": 12,
+        "failed": 0,
+        "selector": [
+          "tests/test_oidc_gateway.py",
+          "tests/test_oidc_keycloak.py"
+        ]
+      },
+      "main_batch": {
+        "status": "PENDING",
+        "exit_code": 1,
+        "cases": 573,
+        "failed": 4,
+        "skipped": 4,
+        "groups": 10,
+        "failed_groups": [
+          6
+        ],
+        "failed_files": [
+          "tests/test_oidc_binding.py"
+        ],
+        "failed_nodes": [
+          "tests/test_oidc_binding.py::test_jit_create_binds_mapping_and_role",
+          "tests/test_oidc_binding.py::test_reuse_existing_identity",
+          "tests/test_oidc_binding.py::test_username_conflict_gets_suffix",
+          "tests/test_oidc_binding.py::test_role_mapping_filters_unknown_roles"
+        ],
+        "selector": [
+          "tests/test_api_keys.py",
+          "tests/test_api_keys_api.py",
+          "tests/test_app.py",
+          "tests/test_audit_db_services.py",
+          "tests/test_audit_identity_chain.py",
+          "tests/test_auth.py",
+          "tests/test_cache.py",
+          "tests/test_cli.py",
+          "tests/test_cli_func.py",
+          "tests/test_crud.py",
+          "tests/test_crud_router.py",
+          "tests/test_db_init.py",
+          "tests/test_db_modules.py",
+          "tests/test_demo_app.py",
+          "tests/test_dps_proxy.py",
+          "tests/test_extra.py",
+          "tests/test_extracted.py",
+          "tests/test_gateway.py",
+          "tests/test_gateway_api.py",
+          "tests/test_grayscale.py",
+          "tests/test_identity_events_list.py",
+          "tests/test_identity_t1.py",
+          "tests/test_identity_t2.py",
+          "tests/test_identity_t3.py",
+          "tests/test_identity_t4.py",
+          "tests/test_identity_t5.py",
+          "tests/test_identity_t6.py",
+          "tests/test_inbound_header_gate.py",
+          "tests/test_jwt_secrets.py",
+          "tests/test_k07_endpoint_matrix.py",
+          "tests/test_llm_proxy.py",
+          "tests/test_memory_proxy.py",
+          "tests/test_models.py",
+          "tests/test_notify_extra.py",
+          "tests/test_obs_mcp.py",
+          "tests/test_oidc_binding.py",
+          "tests/test_org_alias_code.py",
+          "tests/test_protocol_headers_lib.py",
+          "tests/test_proxy_auth.py",
+          "tests/test_proxy_outbound_matrix.py",
+          "tests/test_proxy_quota.py",
+          "tests/test_rag_proxy.py",
+          "tests/test_rbac_db.py",
+          "tests/test_rbac_deps.py",
+          "tests/test_role_intertranslate.py",
+          "tests/test_s6_t1_frontend_boundary.py",
+          "tests/test_s7_t1_shr.py",
+          "tests/test_security.py",
+          "tests/test_service_agent_outbound.py",
+          "tests/test_settings.py",
+          "tests/test_storage_s3.py",
+          "tests/test_storage_s3_real.py",
+          "tests/test_tenant_admin.py",
+          "tests/test_three_modules.py",
+          "tests/test_ui_increments.py",
+          "tests/test_users_admin.py",
+          "tests/test_verdict_k03.py",
+          "tests/test_verify_env.py"
+        ],
+        "reason": "沙箱无真实 PG/Redis：主批次 4 例失败集中于 test_oidc_binding（S6 §5 登记的 asyncpg/PG 环境性失败），单文件独立运行 5 passed、非业务缺陷 → 随 PG 就绪复跑关闭"
+      },
+      "pending_items": [
+        {
+          "id": "PG-ENV-1",
+          "item": "asyncpg 连接/迁移族用例（沙箱无真实 PG，跳未真跑）",
+          "precondition": "真实 PostgreSQL + openbase_test 库就绪",
+          "owner": "联调窗口",
+          "action": "随 PG 就绪复跑并回填 status=PASS/FAIL"
+        },
+        {
+          "id": "PG-ENV-2",
+          "item": "asyncpg 驱动真实 DDL/DML 对账",
+          "precondition": "真实 PostgreSQL + 账号权限",
+          "owner": "联调窗口",
+          "action": "随 PG 就绪复跑并回填"
+        },
+        {
+          "id": "PG-ENV-3",
+          "item": "数据库连接池/会话生命周期用例",
+          "precondition": "真实 PostgreSQL + Redis",
+          "owner": "联调窗口",
+          "action": "随 PG 就绪复跑并回填"
+        },
+        {
+          "id": "PG-ENV-4",
+          "item": "存量对齐 asyncpg 环境性失败 4 项复跑关闭",
+          "precondition": "真实 PostgreSQL + openbase_test",
+          "owner": "联调窗口",
+          "action": "复跑主批次确认 0 失败并回填"
+        }
+      ],
+      "reason": ""
+    },
+    {
+      "id": "K07-SYS-1",
+      "name": "K07 + SYS-1 端点-过滤矩阵终验",
+      "execution_face": "B",
+      "status": "PENDING",
+      "repos": {
+        "openbase": {
+          "role": "template",
+          "path": "doc/design/OpenBase-端点过滤矩阵模板-v1.0.md",
+          "exists": true,
+          "rows": 1,
+          "covered": 0,
+          "exempt": 1,
+          "gap_count": 0,
+          "status": "PASS",
+          "reason": ""
+        },
+        "openllm": {
+          "role": "filled",
+          "path": "../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.0.0.md",
+          "exists": true,
+          "rows": 14,
+          "covered": 10,
+          "exempt": 4,
+          "gap_count": 0,
+          "status": "PASS",
+          "reason": ""
+        },
+        "openrag": {
+          "role": "filled",
+          "path": "../OpenRAG/doc/design/OpenRAG-K07-端点过滤矩阵填报-v1.0.0.md",
+          "exists": true,
+          "rows": 121,
+          "covered": 111,
+          "exempt": 10,
+          "gap_count": 0,
+          "status": "PASS",
+          "reason": ""
+        },
+        "openmemory": {
+          "role": "filled",
+          "path": "../OpenMemory/doc/design/OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md",
+          "exists": true,
+          "rows": 32,
+          "covered": 25,
+          "exempt": 7,
+          "gap_count": 0,
+          "status": "PASS",
+          "reason": ""
+        },
+        "dps": {
+          "role": "filled",
+          "path": "../DPS/doc/design/DPS-K07-端点过滤矩阵填报-v1.0.0.md",
+          "exists": true,
+          "rows": 169,
+          "covered": 134,
+          "exempt": 35,
+          "gap_count": 0,
+          "status": "PASS",
+          "reason": ""
+        }
+      },
+      "real_face_status": "PENDING",
+      "evidence": "四仓 K07 填报矩阵存在性与缺口计数对账（沙箱结构面）",
+      "reason": "真实 openapi 全量导出与逐行终验需四仓运行态（B 面）→ PENDING；存在性/计数对账已记录",
+      "pending_items": [
+        {
+          "id": "K07-REAL",
+          "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验（缺口清零/未覆盖清零/豁免有效期）",
+          "precondition": "四仓运行态 + openapi 导出",
+          "owner": "联调窗口",
+          "action": "导出各仓 openapi 全量并回填矩阵终验表"
+        }
+      ]
+    },
+    {
+      "id": "SHR",
+      "name": "SHR 五项（批 1 产物复核）",
+      "execution_face": "A+B",
+      "status": "PASS",
+      "items": [
+        {
+          "key": "verify_env_global",
+          "name": "verify-env 全局化",
+          "status": "PASS",
+          "execution_face": "A+B",
+          "artifacts": [
+            "scripts/verify-env/contract.global.json",
+            "scripts/verify_env_global.ps1"
+          ],
+          "evidence": "doc/test/evidence/s7/shr/verify-env-global/contract-align.json",
+          "reason": ""
+        },
+        {
+          "key": "openbase_test",
+          "name": "openbase_test 独立测试库 + run_tests.ps1",
+          "status": "PASS",
+          "execution_face": "A+B",
+          "artifacts": [
+            "scripts/db/init_openbase_test.ps1",
+            "scripts/run_tests.ps1"
+          ],
+          "evidence": "doc/test/evidence/s7/shr/openbase-test/init-check.json",
+          "reason": ""
+        },
+        {
+          "key": "k13",
+          "name": "K13 存储账号分离",
+          "status": "PASS",
+          "execution_face": "A+B",
+          "artifacts": [
+            "doc/design/OpenBase-K13-账号权限矩阵-v1.0.0.md",
+            "scripts/db/grant_k13_accounts.ps1"
+          ],
+          "evidence": "doc/test/evidence/s7/shr/k13/account-matrix-check.json",
+          "reason": ""
+        },
+        {
+          "key": "orchestrator",
+          "name": "受管编排唯一入口（禁批量杀）",
+          "status": "PASS",
+          "execution_face": "A+B",
+          "artifacts": [
+            "scripts/service-orchestrator.ps1",
+            "scripts/scan_orchestrator_bypass.py"
+          ],
+          "evidence": "doc/test/evidence/s7/shr/orchestrator/bypass-scan.json",
+          "reason": ""
+        },
+        {
+          "key": "doc_map",
+          "name": "文档地图（L0-L4 + S1a~S7 并入）",
+          "status": "PASS",
+          "execution_face": "A+B",
+          "artifacts": [
+            "doc/design/OpenBase-文档地图索引-v1.0.0.md"
+          ],
+          "evidence": "doc/test/evidence/s7/shr/doc-map/orphan-check.json",
+          "reason": ""
+        }
+      ],
+      "pending_items": []
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "RA-06::tenant_isolation_regression::B",
+      "item": "双租户隔离回归 真实面",
+      "precondition": "真实双租户数据面（DPS 画像/OpenMemory 记忆跨租户读写）需 PG + 四仓运行态，属 B 面",
+      "owner": "联调窗口",
+      "action": "真实环境执行后回填 status"
+    },
+    {
+      "id": "RA-06::fail_closed::B",
+      "item": "fail-closed 用例 真实面",
+      "precondition": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
+      "owner": "联调窗口",
+      "action": "真实环境执行后回填 status"
+    },
+    {
+      "id": "RA-06::oidc_batch_isolation::B",
+      "item": "OIDC 批次隔离（存量 T2 归档关闭） 真实面",
+      "precondition": "真实 IdP 回调与吊销链路需身份提供方，属 B 面",
+      "owner": "联调窗口",
+      "action": "真实环境执行后回填 status"
+    },
+    {
+      "id": "RA-06::delegation_cross_tenant_403::B",
+      "item": "委托跨界 403 真实面",
+      "precondition": "真实网关代理链路的跨界 403 需四仓运行态，属 B 面",
+      "owner": "联调窗口",
+      "action": "真实环境执行后回填 status"
+    },
+    {
+      "id": "RA-06::revocation_immediacy::B",
+      "item": "吊销即时性 真实面",
+      "precondition": "真实 token 吊销即时性需 Redis/PG 运行态，属 B 面",
+      "owner": "联调窗口",
+      "action": "真实环境执行后回填 status"
+    },
+    {
+      "id": "SMOKE-REAL",
+      "item": "冒烟 S0-S6 真实执行（P0 全绿、P1 登记）",
+      "precondition": "真实五服务 + 密钥 + 三真实开关 + DPS org/tenant 预置",
+      "owner": "联调窗口",
+      "action": "按冒烟清单 v1.1.0 §5 产出执行记录并回填"
+    },
+    {
+      "id": "PG-ENV-1",
+      "item": "asyncpg 连接/迁移族用例（沙箱无真实 PG，跳未真跑）",
+      "precondition": "真实 PostgreSQL + openbase_test 库就绪",
+      "owner": "联调窗口",
+      "action": "随 PG 就绪复跑并回填 status=PASS/FAIL"
+    },
+    {
+      "id": "PG-ENV-2",
+      "item": "asyncpg 驱动真实 DDL/DML 对账",
+      "precondition": "真实 PostgreSQL + 账号权限",
+      "owner": "联调窗口",
+      "action": "随 PG 就绪复跑并回填"
+    },
+    {
+      "id": "PG-ENV-3",
+      "item": "数据库连接池/会话生命周期用例",
+      "precondition": "真实 PostgreSQL + Redis",
+      "owner": "联调窗口",
+      "action": "随 PG 就绪复跑并回填"
+    },
+    {
+      "id": "PG-ENV-4",
+      "item": "存量对齐 asyncpg 环境性失败 4 项复跑关闭",
+      "precondition": "真实 PostgreSQL + openbase_test",
+      "owner": "联调窗口",
+      "action": "复跑主批次确认 0 失败并回填"
+    },
+    {
+      "id": "K07-REAL",
+      "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验（缺口清零/未覆盖清零/豁免有效期）",
+      "precondition": "四仓运行态 + openapi 导出",
+      "owner": "联调窗口",
+      "action": "导出各仓 openapi 全量并回填矩阵终验表"
+    }
+  ],
+  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面（真实 PG/Redis/IdP、四仓运行态、冒烟真实服务、K07 真实 openapi 全量导出）一律 PENDING 登记，禁伪造。"
+}
