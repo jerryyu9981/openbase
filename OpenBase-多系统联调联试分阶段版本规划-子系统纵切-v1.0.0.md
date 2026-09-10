@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-STAGEPLAN-v1.0.0 |
-| 版本 | v1.3.0 |
+| 版本 | v1.3.1 |
 | 状态 | [Approved 待发布]（Q-1~Q-5 全部定案；进入执行阶段） |
 | 日期 | 2026-09-06 |
 | 作者 | AD（跨项目分析） |
@@ -18,6 +18,7 @@
 | v1.1.0 | 2026-09-06 | AD（跨项目分析） | 三条核心原则符合性评审（§7）与补强 L1-1/L1-2/L2-1/L2-2/L3-1/L3-2 编入阶段 |
 | v1.2.0 | 2026-09-06 | AD（跨项目分析） | 待确认定案：Q-1 否 / Q-2 拆 S1a+S1b / Q-3 确认顺序 / Q-4 单一主备（默认 A 主 B 备初稿）/ Q-5 解释默认 A |
 | v1.3.0 | 2026-09-06 | AD（跨项目分析） | 最终定案：Q-4 主备默认修正为 **B（经 OpenLLM）主、A（OpenBase 直连）备**；Q-5 定案 **A（保留+访问阻断，purge 显式触发）**；全部待确认清零，进入执行 |
+| v1.3.1 | 2026-09-10 | AD（跨项目分析） | **v1.0.x 修订：统一前端定案**。S6 前端段定义补充：唯一维护面 = `OpenBase/openbase-ui`（已入库跟踪）；S6 = 在 openbase-ui 内落地 FE-3 模块导航壳 + FE-R1-1/FE-R1-2 全量回归 + L3-2 贯通冒烟；门禁 UI-E2E 画像/对话/知识/记忆关键页 PASS 均在统一前端执行；不含各子系统独立前端维护（DPS/OpenLLM/OpenMemory/OpenRAG 的 `frontend/` 冻结、不再维护） |
 
 ---
 
@@ -77,7 +78,11 @@
 - 门禁：双通道等价用例（K09）；REAL_* 不作为业务身份；主备语义文档 v1.0（B 主 A 备）。
 
 ### S6 前端段
-FE-3、FE-R1-1/2 全量回归整合、L3-2 贯通冒烟。门禁：UI-E2E 画像/对话/知识/记忆关键页 PASS。
+> **v1.0.x 修订：统一前端定案（S6 段定义补充）**
+
+- **统一前端定案**：唯一维护面 = `D:\Trae CN\myproject\Dev\OpenBase\openbase-ui`（Git 仓在 OpenBase 项目目录下、已入库跟踪，`git ls-files openbase-ui` 实测 107 文件）；各子系统自带 `frontend/`（DPS/OpenLLM/OpenMemory/OpenRAG）**暂时冻结、不再维护**（保留目录、不再构建/发布、后端不再挂载其产物）。
+- **S6 段定义（修订）**：S6 = 在 **openbase-ui 内**落地 **FE-3 模块导航壳** + **FE-R1-1/FE-R1-2 全量回归** + **L3-2 贯通冒烟**；**不含各子系统独立前端维护**（其 `frontend/` 不进入 S6 交付面与提交面）。
+- **门禁（UI-E2E）**：画像/对话/知识/记忆关键页 PASS **均在统一前端 openbase-ui 内执行**（画像=portrait/DPS、对话=openllm+knowledge、知识=knowledge/OpenRAG、记忆=memory/OpenMemory）。
 
 ### S7 总收官段（三原则总验证）
 - SHR：verify-env 全局化、openbase_test + run_tests.ps1、存储账号分离 K13、编排唯一入口、文档地图。

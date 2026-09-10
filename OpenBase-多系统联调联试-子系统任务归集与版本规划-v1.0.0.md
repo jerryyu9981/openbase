@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-JTBACKLOG-v1.0.0 |
-| 版本 | v1.1.0 |
-| 状态 | [Review]（Q-A/Q-B/Q-C 已评审定案；FE-JT v1.0.0 纳入验证任务；跨系统卡主责矩阵已定） |
+| 版本 | v1.2.0 |
+| 状态 | [Review]（Q-A/Q-B/Q-C 已评审定案；FE-JT v1.0.0 纳入验证任务；跨系统卡主责矩阵已定；v1.2.0 统一前端定案） |
 | 日期 | 2026-09-06 |
 | 作者 | AD（跨项目分析） |
 | 版本主题 | 将联调联试暴露的问题（复盘 L1-L7、规划升级项、隔离任务卡 K/RA）按子系统分别归集为"联调联试版本"任务线：每子系统一张独立 Backlog，含任务、里程碑（R1-R4）、版本号与门禁，供各仓分别排期修正 |
@@ -16,6 +16,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-06 | AD（跨项目分析） | 初始版本：归集规则 + 七条子系统联调版本线任务归集 |
 | v1.1.0 | 2026-09-06 | AD（跨项目分析） | 评审定案：Q-A JT 独立+产品版本双向标注；Q-B 跨系统卡主责矩阵 + R1/R2 跨仓会签点；Q-C FE-JT v1.0.0 纳入 FE-R1-1/FE-R1-2 验证回归；§1/§4 规则与 §3.6 同步更新 |
+| v1.2.0 | 2026-09-10 | AD（跨项目分析） | **v1.0.x 修订：统一前端定案**（内容性范围修订）。项目负责人定案：唯一维护面 = `D:\Trae CN\myproject\Dev\OpenBase\openbase-ui`（Git 仓在 OpenBase 项目目录下、已入库跟踪，`git ls-files openbase-ui` 实测 107 文件）；各子系统自带 `frontend/`（DPS/OpenLLM/OpenMemory/OpenRAG）暂时冻结、不再维护。§3.6 FE-JT 补「统一前端定案」段：FE-R1-1/FE-R1-2 与 FE-3 均在 openbase-ui 内落地 |
 
 ---
 
@@ -111,6 +112,13 @@
 | | FE-R1-2（Q-C 定案 v1.1.0） | 登录态/吊销回归：token 失效后正确跳登录；401/403 处理无白屏 | ⏳ |
 | v1.3.0 (R4) | FE-3 | 模块导航壳（P3 体验） | 📋 |
 | 门禁 | R1：UI-E2E 画像/对话关键页 PASS（联动 RA-06）；R4：UI-E2E 全模块 PASS | — | — |
+
+**统一前端定案（v1.0.x 修订：统一前端定案；v1.2.0 纳入）**
+
+- **唯一维护面**：`D:\Trae CN\myproject\Dev\OpenBase\openbase-ui`（Git 仓位于 OpenBase 项目目录下、**已入库跟踪**；`git ls-files openbase-ui` 实测 **107** 个文件）。
+- **FE-JT 全部前端任务在 openbase-ui 内落地**：**FE-R1-1**（R1 隔离收口后 UI 回归：画像/记忆/知识关键页数据正确、跨域呈现为空/403 提示）、**FE-R1-2**（登录态/吊销回归：401/403 无白屏）、**FE-3**（模块导航壳）均在此单一前端实现与验收，不另建前端。
+- **openbase-ui 已注册模块与路由**（`src/core/router/index.ts`）：`gateway`（统一网关管理）、`knowledge`（OpenRAG 知识面）、`memory`（OpenMemory 记忆面）、`openllm`（OpenLLM 编排面）、`portrait`（DPS 画像面）；模块路由由 `src/core/stores/moduleRegistry.ts` 依后端 `/modules` 清单与权限动态挂载。
+- **各子系统自带 `frontend/` 冻结（DPS/OpenLLM/OpenMemory/OpenRAG）**：保留目录不删除、不再构建/发布、后端不再挂载其产物；其未提交改动不进入联调提交面（归 B/C 类）。本段为范围性定案，FE-JT 版本库与门禁口径（R1/R4）不变。
 
 ### 3.7 共享基础设施（PG/编排/测试/文档）— SHR-JT
 | JT 版本 | 任务（来源/升级项/卡） | 内容要点 | 状态 |
