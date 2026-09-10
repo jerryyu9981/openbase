@@ -37,9 +37,11 @@
             </div>
           </el-card>
           <el-card header="画像维度" class="mb-16" data-test="feature-dist">
-            <div v-if="dimensionEntries.length" v-for="[dimKey, dimValue] in dimensionEntries" :key="dimKey" class="dimension-block">
-              <div class="dimension-title">{{ dimKey }}</div>
-              <pre class="dimension-value">{{ JSON.stringify(dimValue, null, 2) }}</pre>
+            <div v-if="dimensionEntries.length">
+              <div v-for="[dimKey, dimValue] in dimensionEntries" :key="dimKey" class="dimension-block">
+                <div class="dimension-title">{{ dimKey }}</div>
+                <pre class="dimension-value">{{ JSON.stringify(dimValue, null, 2) }}</pre>
+              </div>
             </div>
             <el-empty v-else-if="!loading" description="暂无维度数据" :image-size="50" />
           </el-card>

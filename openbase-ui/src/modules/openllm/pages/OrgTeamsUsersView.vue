@@ -23,7 +23,7 @@
             <el-button type="primary" data-test="org-user-add" @click="addUser">新增用户</el-button>
           </div>
           <div class="ob-table-scroll">
-            <el-table :data="filteredUsers" stripe empty-text="暂无用户" data-test="org-users-table" v-loading="loading">
+            <el-table v-loading="loading" :data="filteredUsers" stripe empty-text="暂无用户" data-test="org-users-table">
               <el-table-column prop="username" label="用户名" min-width="120" />
               <el-table-column prop="display_name" label="姓名" min-width="100" />
               <el-table-column prop="email" label="邮箱" min-width="160" />

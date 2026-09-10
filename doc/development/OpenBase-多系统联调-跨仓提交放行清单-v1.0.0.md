@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-CROSSREPO-RELEASE-v1.0.0 |
-| 版本 | v1.0.5 |
+| 版本 | v1.0.6 |
 | 状态 | [Draft]（供用户沙箱外执行；每条命令执行前请以「第 0 步核对」实核各仓 git 状态；v1.0.4 依据统一前端定案补「统一前端口径」红线与各仓 frontend 冻结注记；v1.0.5 依据 S5（DPS）段门禁 2026-09-10 人工批准（五项全绿，Pull 真实 HTTP 双签 PENDING 挂起登记不阻断）在 §3.3 登记「S5 段门禁已批准、可进入入仓」并引用《DPS-联调产物待提交清单-v1.0.0》为执行依据，待跨仓会签） |
 | 日期 | 2026-09-10 |
 | 作者 | AD（跨项目分析） |
@@ -21,6 +21,7 @@
 | v1.0.3 | 2026-09-10 | AD（跨项目分析） | 依据《OpenBase-联调产物清点核对总清单-v1.0.0》（OB-INTG-CLEARANCE-v1.0.0，[Review]，2026-09-10 四仓只读清点核对）§2 的 7 条差异与 §2.8 的 10 条回写建议做跨仓差异回写：①§4 OpenRAG 登记条数 54 → 实测 **67**（22 M + 45 ??），净增 13 项全部为 S3 批次 3（T8~T11）产物并附文件名摘要，批次数 4（B1~B4）明确；②§2 OpenLLM 清点口径修正（折叠 430 ≈ `-uall` 展开 1555 = ??1235 + D211 + M109，差额主体 `.pylib` 1157 + `.pyc` 282 + data/backup 等，均不提交；已入库 `.pyc` 用 `git rm -r --cached` 处置 13 个 `__pycache__` 目录共 211 项且禁止恢复；批次数维持 6，基线 1 + S4 5，可合 5）；③§2 分类冲突修正：4 项 need-star 测试文件从基线批 1 / 批 6 移出、改归 B 类隔离（`OB-INTG-LLM-NEEDSTAR`，建议独立分支 `feature/need-star-orchestration` + 独立批次与段门禁）；④§3 DPS 实测 57（11 M + 46 ??）≠ 预估 47，批次口径 1 → **4**（S5-B1~B4），补 v2.9.0 在途 3 项隔离清单与噪音提示，另登记 `.gitignore` 末尾无效绝对路径规则待修（不入本次提交面）；⑤§1 OpenMemory 登记口径更新为实测 **364**（75 M + 289 ??），A 联调 70（基线批 29 + S2 段批 41，共 4 批），B 类 197 项 v7.0~v7.2 自身在途开发必须隔离（原「`git add -A` + `git reset`」模板改为逐清单显式 `git add`、禁止兜底 add），敏感项 `.env.shared-infra`【不提交】并建议补 `.gitignore`；⑥§5 OpenBase HEAD `0713ec1` → 实测 **`cdfbd5b`**（S4 台账回写提交；`0713ec1` 仍为单据参考锚点），自身仅 7 项 `dogfood-output` 噪音（不提交、无联调产物）；⑦新增「§7 各仓清点清单索引」（总清单 + 四仓分清单共 5 份）并明确入仓-回填-勾稽-会签-回写流程；⑧新增「通用提交红线」4 条；⑨§0 前置门禁引用本次清点结论（清点核对已闭环、可进入各仓入仓），S0~S7 段顺序语义不变。本次仅回写本文档，未执行任何 git 写操作，未改动任何代码与其他文档；状态保持 [Draft] 待跨仓会签 |
 | v1.0.4 | 2026-09-10 | AD（跨项目分析） | **v1.0.x 修订：统一前端定案**。项目负责人定案：唯一维护面 = `D:\Trae CN\myproject\Dev\OpenBase\openbase-ui`（Git 仓在 OpenBase 项目目录下、已入库跟踪，`git ls-files openbase-ui` 实测 107 文件）；各子系统自带 `frontend/`（DPS/OpenLLM/OpenMemory/OpenRAG）暂时冻结、不再维护。①§0 通用红线新增第 5 条「统一前端口径」：禁止将各子系统 `frontend/` 改动纳入联调提交批（其修改不属联调提交面、归 B/C 类），统一前端改动仅在 OpenBase 仓 `openbase-ui/` 内维护与提交；②各仓小节加 frontend 冻结注记——§1.5 OpenMemory（59 文件、在途 8 项已归 B 类、`deploy/nginx/conf.d/openmemory.conf:90,93` 待改造）、§2.5 OpenLLM（214 文件、`docker-compose.yml:141-172` 与 `docker-compose.prod.yml:19` 及 `frontend/Dockerfile`、`frontend/nginx.conf` 待改造）、§3.3 DPS（63 文件、CI `ci.yml:73-237` 构建链待改造、后端无挂载）、§4.5 OpenRAG（125 文件、`frontend-ci.yml` 待改造、后端无挂载）；③核实结论：四仓后端均**未**以 StaticFiles 挂载 frontend 产物，各仓分清单均**未**将 frontend 列入 A 类联调产物（误列 A 类 0 项），OpenBase 工作树无 `openbase-ui` 未提交改动（不增加提交面）。本次仅回写本文档，未执行任何 git 写操作，未改动任何代码；状态保持 [Draft] 待跨仓会签 |
 | v1.0.5 | 2026-09-10 | AD（跨项目分析） | **S5（DPS）段门禁批准后放行登记**：依据 DPS S5 段门禁 2026-09-10 人工批准（批准口径=`2026-09-10 S5 段门禁人工批准：评审人=项目负责人经 AI 开发会话人工确认、段门禁自检五项全绿（Pull 真实 HTTP 双签 PENDING 挂起登记不阻断）、遗留=无阻断项`；DPS 侧 DevLogReport/测试报告/K07 端点-过滤矩阵填报/设计草案四项文档已随批准回写至内部版本 v1.0.1），在 **§3.3「命令模板」** 增补登记行「**S5 段门禁已于 2026-09-10 人工批准、可进入入仓**」并引用《DPS-联调产物待提交清单-v1.0.0》（OB-DPS-CLEARANCE-v1.0.0，`D:\Trae CN\myproject\Dev\DPS\doc\planning\DPS-联调产物待提交清单-v1.0.0.md`）为逐文件执行依据；§3.1/§3.2 现状核对与 S5-B1~B4 四批口径**不变**（57 = A 52 + B 3 + C 2；HEAD 6b39dd4 / main）。本次仅回写本文档与 OpenBase 侧台账，未执行任何 git 写操作，未改动任何代码；状态保持 [Draft] 待跨仓会签 |
+| v1.0.6 | 2026-09-10 | AI（S6 批次 1 开发会话） | **S6-T1 统一前端冻结口径闭环加注**：依据《OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md》（OB-S6-T1-FRONTEND-FREEZE-v1.0.0，`doc/planning/`）在 **§0 通用红线第 5 条之后**追加「S6-T1 口径闭环 + 物理闭环待各子系统执行（PENDING 交 S7）」注记，与《OpenBase-联调产物清点核对总清单-v1.0.0》§5.6（v1.0.3）同口径。**仅加注，不改变 §0 既有红线文本与 §1~§5 任何计数与批次口径**；本次仅回写本文档，未执行任何 git 写操作、未改动任何代码；状态保持 [Draft] 待跨仓会签 |
 
 ---
 
@@ -41,6 +42,8 @@
 3. **OpenRAG 禁止 `git add repository`**：该路径为 gitlink 子仓（`160000 0ed102a…`），任何批次不得 add，如需提交须在内嵌仓自身会话内独立作业。
 4. **OpenLLM 4 个混合文件须 `git add -p` 按 hunk 拆分**：`backend/app/api/openllm_gateway.py`、`backend/app/api/writeback.py`、`backend/app/core/config.py`、`backend/main.py`（S4 增量与 need-star 增量同文件叠加）；未拆分而整体提交时，**须在 commit message 显式声明混入 need-star**（不推荐）。
 5. **统一前端口径（v1.0.4 新增；v1.0.x 修订：统一前端定案）**：**禁止将各子系统 `frontend/`（DPS / OpenLLM / OpenMemory / OpenRAG）改动纳入联调提交批**——各子系统自带前端已冻结（保留目录、不再构建/发布、后端不再挂载其产物），其改动一律不属联调提交面（归 B/C 类）；**统一前端改动仅在 OpenBase 仓 `openbase-ui/` 内维护与提交**（唯一维护面 = `D:\Trae CN\myproject\Dev\OpenBase\openbase-ui`，已入库跟踪，`git ls-files openbase-ui` 实测 107 文件；本次实测无未提交改动，不增加提交面）。
+
+> **S6-T1 口径闭环加注（v1.0.6 新增，2026-09-10）**：统一前端冻结的 **S6-T1 口径闭环已完成**（2026-09-10，S6 批次 1）——统一前端唯一维护面 = `OpenBase/openbase-ui`；四仓 `frontend/` 冻结声明（保留不删 / 不再构建/发布 / 后端不挂载产物）；3 处改造点（OpenMemory nginx `deploy/nginx/conf.d/openmemory.conf:90,93`；OpenLLM `docker-compose.yml:141-172` 与 `docker-compose.prod.yml:19`；DPS `.github/workflows/ci.yml` 与 OpenRAG `.github/workflows/frontend-ci.yml`）逐条登记四元组齐备，证据锚点 = 《OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md》+ `tests/test_s6_t1_frontend_boundary.py` + `openbase-ui/docs/frontend-frozen.md`。**物理闭环（四仓实际改造/CI 收敛）待各子系统执行（PENDING 交 S7 按 Q-S6-D7 口径复核）**，需各子系统仓写权限，本清单不代为执行、不伪造。本条**仅加注**：§0 红线第 5 条原文不变，§1~§5 各仓计数与批次口径均不变（详见清点总清单 §5.6 同口径注记）。
 
 ## 1. OpenMemory 仓（D:\Trae CN\myproject\Dev\OpenMemory）
 

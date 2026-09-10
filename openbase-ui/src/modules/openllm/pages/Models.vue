@@ -14,7 +14,7 @@
       <template #default><el-button link type="primary" @click="loadModels">重试</el-button></template>
     </el-alert>
     <div class="ob-table-scroll">
-      <el-table :data="filteredModels" stripe data-test="model-table" v-loading="loading">
+      <el-table v-loading="loading" :data="filteredModels" stripe data-test="model-table">
         <el-table-column prop="name" label="模型" min-width="140" />
         <el-table-column prop="provider" label="Provider" width="110" />
         <el-table-column label="类型" width="90">

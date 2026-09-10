@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-row :gutter="16">
-      <el-col :xs="24" :sm="12" :lg="6" v-for="card in cards" :key="card.label">
+      <el-col v-for="card in cards" :key="card.label" :xs="24" :sm="12" :lg="6">
         <el-card class="stat-card">
           <div class="stat-label">{{ card.label }}</div>
           <div class="stat-value">{{ card.value }}</div>

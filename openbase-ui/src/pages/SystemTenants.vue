@@ -9,7 +9,7 @@
       <el-button type="primary" data-test="create-tenant" @click="openForm()">创建租户</el-button>
     </div>
     <div class="ob-table-scroll">
-      <el-table :data="paged" stripe data-test="tenant-table" v-loading="loading">
+      <el-table v-loading="loading" :data="paged" stripe data-test="tenant-table">
         <el-table-column prop="code" label="租户编码" min-width="130" />
         <el-table-column prop="name" label="租户名称" min-width="160" />
         <el-table-column label="状态" width="90">
@@ -65,7 +65,7 @@
     <el-dialog v-model="quotaVisible" :title="`配额管理：${currentTenant?.name || ''}`" width="520px" data-test="quota-dialog">
       <el-form label-width="110px">
         <el-form-item label="配额配置（JSON）">
-          <el-input v-model="quotaText" type="textarea" :rows="4" placeholder='{"users": 100, "storage": 1024}' data-test="quota-input" />
+          <el-input v-model="quotaText" type="textarea" :rows="4" placeholder="{&quot;users&quot;: 100, &quot;storage&quot;: 1024}" data-test="quota-input" />
         </el-form-item>
         <el-form-item label="当前配置">
           <span class="quota-summary">{{ quotaSummary(currentTenant?.quota) || '未配置' }}</span>

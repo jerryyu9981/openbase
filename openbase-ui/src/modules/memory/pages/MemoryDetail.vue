@@ -17,7 +17,7 @@
                 <el-tag v-for="t in memory.tags" :key="t" size="small" class="mr-4">{{ t }}</el-tag>
               </div>
             </el-card>
-            <el-card header="元数据" class="mb-16" v-if="hasMetadata">
+            <el-card v-if="hasMetadata" header="元数据" class="mb-16">
               <el-descriptions :column="1" size="small" border>
                 <el-descriptions-item v-for="(value, key) in memory.metadata" :key="key" :label="String(key)">
                   {{ String(value) }}

@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-CLEARANCE-v1.0.0 |
-| 版本 | v1.0.2 |
+| 版本 | v1.0.3 |
 | 状态 | [Review] |
 | 日期 | 2026-09-10 |
 | 作者 | AD（跨项目分析 / 只读盘点整合） |
@@ -358,6 +358,18 @@ python -m ruff check openbase tests
 | 遗留（非阻断） | ① Pull 真实 HTTP 双签 PENDING（Q-DPS-5，配置 `IDENTITY_EVENTS_BASE_URL` 指向 OpenBase commit 0713ec1 事件端点后补跑）；② 非沙箱复核清单（真实 PG/Redis 复核等）；③ DPS 仓 S5 提交 hash 待沙箱外放行后回填 DPS-JT 台账与任务卡卡尾（v1.7.0 S5 段执行摘要） |
 
 > 影响面：本条为**段门禁批准状态登记**，不改变 §1.1 五仓对照表任何计数与 A/B/C 归类（DPS A 类仍为 52、B 类 3、C 类 2）；DPS 仓 S5 四批入仓后按 §4.1 会签流程回填 hash 并使 A 类差异归零。
+
+### 5.6 S6-T1 统一前端冻结口径闭环登记（v1.0.3 新增，2026-09-10）
+
+> 加注口径：本次仅**追加一行 S6-T1 口径闭环与物理闭环 PENDING 移交注记**，**不改变 §1.1 五仓对照表任何既有计数与 A/B/C 归类，也不改动任何既有红线**（本仓 OpenBase A 类仍为 0、工作树噪音口径不变；§1.4 的 107 仍为其时点基线口径）。
+
+| 项 | 登记内容 |
+|----|---------|
+| 段/任务 | **S6 段 T1 边界收口**（S6-T1-1~4） |
+| 口径闭环结论 | ✅ **S6-T1 口径闭环完成**（2026-09-10，S6 批次 1）：统一前端唯一维护面 = `OpenBase/openbase-ui`；四仓 `frontend/` 冻结声明（保留不删 / 不再构建/发布 / 后端不挂载产物）；3 处改造点（OpenMemory nginx `:90,93`、OpenLLM `docker-compose.yml:141-172` 与 `docker-compose.prod.yml:19`、DPS/OpenRAG CI）逐条登记四元组齐备 |
+| 物理闭环结论 | ⏳ **物理闭环待各子系统执行（PENDING 交 S7 按 Q-S6-D7 口径复核）**：四仓实际改造需各子系统仓写权限，沙箱内不执行、不伪造 |
+| 证据锚点 | 登记文档《OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md》（OB-S6-T1-FRONTEND-FREEZE-v1.0.0，`doc/planning/`）；后端不挂载静态断言 `tests/test_s6_t1_frontend_boundary.py`；前端侧冻结声明落点 `openbase-ui/docs/frontend-frozen.md` |
+| 引用位（本清单） | 本条（§5.6）；与跨仓提交放行清单 §0「统一前端口径」同口径，见其 v1.0.6 加注 |
 
 ---
 
