@@ -6,7 +6,7 @@
   "status": "PENDING",
   "reason": "沙箱内 Playwright 浏览器二进制下载被限制（EPERM 目录锁），且无受信通道/四子系统运行态；不可达即 PENDING，禁止伪造通过",
   "openbase_commit": "72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec",
-  "openbase_commit_note": "执行时（批次 4 提交前）OpenBase HEAD；批次 4 提交见本仓 `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`",
+  "openbase_commit_note": "执行时（批次 4 提交前）OpenBase HEAD；批次 4 提交 = `477eb80` `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`",
   "ui_version": "1.3.0",
   "key_pages_source": "openbase-ui/tests/e2e/fixtures/key-pages.json（Q-S6-D6，与冒烟脚本同源）",
   "key_pages_total": 9,

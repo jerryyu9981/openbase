@@ -5,9 +5,9 @@
   "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.6/§9；立项方案（内部 v1.1.0）§4（22 断言）",
   "executed_at": "2026-09-10",
   "openbase_commit_at_execution": "72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec",
-  "openbase_commit_note": "执行时（批次 4 提交前）HEAD；批次 4 提交 = `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`",
+  "openbase_commit_note": "执行时（批次 4 提交前）HEAD；批次 4 提交 = `477eb80` `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`",
   "ui_version": "1.3.0",
-  "s6_commits": ["2abe52a", "aa6c5bd", "72b19da", "（批 4）feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写"],
+  "s6_commits": ["2abe52a", "aa6c5bd", "72b19da", "477eb80"],
   "gate_items": [
     {
       "id": "UI-E2E",

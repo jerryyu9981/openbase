@@ -270,7 +270,7 @@ coverage
 | evidence 归档 | `doc/test/evidence/s6/`：`l3-2-smoke.json`、`ui-e2e/{results.json,status.json}`、`coverage-summary.json`、`segment-gate.json`（含 `openbase_commit`/`ui_version`/时间戳/`status`） |
 | 硬门禁 | `npm run lint` 0 problem（退出 0）；`npm test` 13 files/137 tests（退出 0）；`npm run test:coverage` 97.08/90/88.46/97.08（阈值 80/80/80/70，退出 0，**未放宽**）；仓根 `python -m pytest tests/test_s6_t1_frontend_boundary.py -q` **9 passed** |
 | 台账回写 | JT 归集 §3.6（v1.3.0）、跨仓放行清单 §0/§5（v1.0.7）、清点总清单 §5.7（v1.0.4）；本登记文档（v1.0.2） |
-| 提交号桥接 | 批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 = `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写` |
+| 提交号桥接 | 批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 `477eb80`（`feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`） |
 
 ### 10.3 3 处改造闭环两级判定（复核）
 

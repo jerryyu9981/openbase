@@ -12,7 +12,7 @@
 | 文档主题 | S6 段（前端段，FE-JT 收官）**测试报告**：22 条验收断言（S6-T1-1~S6-T6-3）逐条状态与证据索引、硬门禁实测值（命令/退出码）、段门禁聚合结论、已知环境性失败、非沙箱 PENDING 清单 B1~B6 与 S7 移交说明 |
 | 上游依据 | ①《OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0》（内部 v1.0.1，[Approved]）§1.3 覆盖矩阵、§1.4 沙箱/非沙箱面、§4 逐任务断言、§5 契约与呈现规范、§9 里程碑；②《OpenBase-S6-统一前端隔离展示与段门禁收口-立项方案-v1.0.0》（内部 v1.1.1，[Approved]）§4（22 断言）；③`doc/development/OpenBase-S6-…-DevLogReport-v1.0.0.md`（[Review]） |
 | 适用范围 | 统一前端 `openbase-ui/`（唯一代码改造面）与 OpenBase 仓 `doc/test/evidence/s6/**` 证据；**未对任何子系统仓执行测试或写操作** |
-| 测试对象基线 | `openbase-ui` version **1.3.0**；测试执行时 OpenBase HEAD = `72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec`（批次 4 提交前；批次 4 = `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`） |
+| 测试对象基线 | `openbase-ui` version **1.3.0**；测试执行时 OpenBase HEAD = `72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec`（批次 4 提交前；批次 4 = `477eb80` `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`） |
 | 执行环境 | 沙箱：node **v22.16.0** / npm **10.9.4** / vitest **2.1.8** / `@playwright/test` **1.63.0** / pytest **9.1.1**（pytest-asyncio 1.4.0、pytest-timeout 2.4.0）；无真实受信通道 / IdP / 四子系统运行态 |
 | 纪律 | 未真实执行项一律 `PENDING`，**禁止以「预期通过」代替证据、禁止伪造 hash/截图/报告**（设计草案 §1.4） |
 
@@ -123,7 +123,7 @@
 ## §7 结论与 S7 移交
 
 1. **结论**：S6 段前端侧实现与回归在沙箱内达成（FE-3、FE-R1-1/FE-R1-2 前端侧、覆盖率/Lint、3 处改造口径闭环）；**UI-E2E 关键页 PASS 与 L3-2 真实双签为 PENDING**，段门禁**未达最终通过**，不得据此宣布 S6 收官。
-2. **移交接口（Q-FE-6，S6 → S7）**：UI-E2E evidence 索引（`doc/test/evidence/s6/ui-e2e/`）+ FE-JT 台账回写行（JT 归集 §3.6，v1.3.0）+ L3-2 冒烟记录（`l3-2-smoke.json`），以**提交号**桥接（批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 = `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`）。
+2. **移交接口（Q-FE-6，S6 → S7）**：UI-E2E evidence 索引（`doc/test/evidence/s6/ui-e2e/`）+ FE-JT 台账回写行（JT 归集 §3.6，v1.3.0）+ L3-2 冒烟记录（`l3-2-smoke.json`），以**提交号**桥接（批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 `477eb80`）。
 3. **S6 不终验项**（设计草案 §8）：L3-1 Agent 端到端、L2-1 主备切换、L2-2 通道矩阵终验、RA-06 终验聚合、K07 终验、冒烟 S0-S6 聚合与会签；各子系统 `frontend/` 物理改造（B5）与后端语义均不在 S6 范围。
 
 ## §8 证据索引

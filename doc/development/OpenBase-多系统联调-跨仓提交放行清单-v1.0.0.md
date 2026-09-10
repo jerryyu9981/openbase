@@ -22,7 +22,7 @@
 | v1.0.4 | 2026-09-10 | AD（跨项目分析） | **v1.0.x 修订：统一前端定案**。项目负责人定案：唯一维护面 = `D:\Trae CN\myproject\Dev\OpenBase\openbase-ui`（Git 仓在 OpenBase 项目目录下、已入库跟踪，`git ls-files openbase-ui` 实测 107 文件）；各子系统自带 `frontend/`（DPS/OpenLLM/OpenMemory/OpenRAG）暂时冻结、不再维护。①§0 通用红线新增第 5 条「统一前端口径」：禁止将各子系统 `frontend/` 改动纳入联调提交批（其修改不属联调提交面、归 B/C 类），统一前端改动仅在 OpenBase 仓 `openbase-ui/` 内维护与提交；②各仓小节加 frontend 冻结注记——§1.5 OpenMemory（59 文件、在途 8 项已归 B 类、`deploy/nginx/conf.d/openmemory.conf:90,93` 待改造）、§2.5 OpenLLM（214 文件、`docker-compose.yml:141-172` 与 `docker-compose.prod.yml:19` 及 `frontend/Dockerfile`、`frontend/nginx.conf` 待改造）、§3.3 DPS（63 文件、CI `ci.yml:73-237` 构建链待改造、后端无挂载）、§4.5 OpenRAG（125 文件、`frontend-ci.yml` 待改造、后端无挂载）；③核实结论：四仓后端均**未**以 StaticFiles 挂载 frontend 产物，各仓分清单均**未**将 frontend 列入 A 类联调产物（误列 A 类 0 项），OpenBase 工作树无 `openbase-ui` 未提交改动（不增加提交面）。本次仅回写本文档，未执行任何 git 写操作，未改动任何代码；状态保持 [Draft] 待跨仓会签 |
 | v1.0.5 | 2026-09-10 | AD（跨项目分析） | **S5（DPS）段门禁批准后放行登记**：依据 DPS S5 段门禁 2026-09-10 人工批准（批准口径=`2026-09-10 S5 段门禁人工批准：评审人=项目负责人经 AI 开发会话人工确认、段门禁自检五项全绿（Pull 真实 HTTP 双签 PENDING 挂起登记不阻断）、遗留=无阻断项`；DPS 侧 DevLogReport/测试报告/K07 端点-过滤矩阵填报/设计草案四项文档已随批准回写至内部版本 v1.0.1），在 **§3.3「命令模板」** 增补登记行「**S5 段门禁已于 2026-09-10 人工批准、可进入入仓**」并引用《DPS-联调产物待提交清单-v1.0.0》（OB-DPS-CLEARANCE-v1.0.0，`D:\Trae CN\myproject\Dev\DPS\doc\planning\DPS-联调产物待提交清单-v1.0.0.md`）为逐文件执行依据；§3.1/§3.2 现状核对与 S5-B1~B4 四批口径**不变**（57 = A 52 + B 3 + C 2；HEAD 6b39dd4 / main）。本次仅回写本文档与 OpenBase 侧台账，未执行任何 git 写操作，未改动任何代码；状态保持 [Draft] 待跨仓会签 |
 | v1.0.6 | 2026-09-10 | AI（S6 批次 1 开发会话） | **S6-T1 统一前端冻结口径闭环加注**：依据《OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md》（OB-S6-T1-FRONTEND-FREEZE-v1.0.0，`doc/planning/`）在 **§0 通用红线第 5 条之后**追加「S6-T1 口径闭环 + 物理闭环待各子系统执行（PENDING 交 S7）」注记，与《OpenBase-联调产物清点核对总清单-v1.0.0》§5.6（v1.0.3）同口径。**仅加注，不改变 §0 既有红线文本与 §1~§5 任何计数与批次口径**；本次仅回写本文档，未执行任何 git 写操作、未改动任何代码；状态保持 [Draft] 待跨仓会签 |
-| v1.0.7 | 2026-09-10 | AI（S6 批次 4 开发会话） | **S6 段门禁结论回写（前端段收官）**：依据《OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0》§4.6/§9 与 `doc/test/evidence/s6/**`，①在 **§0** 追加「S6 段门禁结论」注记（前端侧回归 FE-R1-1/FE-R1-2/FE-3 达成、覆盖率 97.08/90/88.46/97.08 与 lint 0 problem 达标、3 处改造口径闭环完成；UI-E2E 关键页 PASS 与 L3-2 真实通道 **PENDING 非沙箱 B1/B2**、物理闭环 **PENDING B5 交 S7**）；②在 **§5 OpenBase 仓** 登记 **S6 提交批次**（批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 = `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`）与证据索引。**仅加注**：§0 红线第 5 条原文与 §1~§4 四仓计数/批次口径均不变；未执行任何跨仓 git 写操作、未改动任何代码；状态保持 [Draft] 待跨仓会签 |
+| v1.0.7 | 2026-09-10 | AI（S6 批次 4 开发会话） | **S6 段门禁结论回写（前端段收官）**：依据《OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0》§4.6/§9 与 `doc/test/evidence/s6/**`，①在 **§0** 追加「S6 段门禁结论」注记（前端侧回归 FE-R1-1/FE-R1-2/FE-3 达成、覆盖率 97.08/90/88.46/97.08 与 lint 0 problem 达标、3 处改造口径闭环完成；UI-E2E 关键页 PASS 与 L3-2 真实通道 **PENDING 非沙箱 B1/B2**、物理闭环 **PENDING B5 交 S7**）；②在 **§5 OpenBase 仓** 登记 **S6 提交批次**（批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 `477eb80`）与证据索引。**仅加注**：§0 红线第 5 条原文与 §1~§4 四仓计数/批次口径均不变；未执行任何跨仓 git 写操作、未改动任何代码；状态保持 [Draft] 待跨仓会签 |
 
 ---
 
@@ -655,7 +655,7 @@ python scripts/verify_env_contract.py --fail-fast              # 可选：verify
   | 批 1 | `2abe52a` | `feat(ui): S6-T1 统一前端冻结与改造口径登记 + lint 转绿` |
   | 批 2 | `aa6c5bd` | `feat(ui): S6-T2 模块导航壳与 S6-T3 隔离呈现回归 + 发布形态参数化` |
   | 批 3 | `72b19da` | `feat(ui): S6-T4 登录态与吊销回归（安全回跳/单飞刷新/403 无白屏/OIDC 清理）` |
-  | 批 4 | 见 `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写` | S6-T5 L3-2 贯通冒烟基座 + S6-T6 段门禁与台账回写 |
+  | 批 4 | `477eb80` | `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写` |
 
   - 段门禁结论见 §0「S6 段门禁结论加注」；证据索引 `doc/test/evidence/s6/**`；承载版本 `openbase-ui/package.json` = **1.3.0**（`dist-v1.3.0`）。本条**仅加注**：§5 表「放行需求」「HEAD」「工作树」行原文与四仓放行口径均不变；未对四仓执行任何 git 写操作。
 
