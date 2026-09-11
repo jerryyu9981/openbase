@@ -5,8 +5,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-DOCMAP-INDEX-v1.0.0 |
-| 版本 | v1.0.2 |
-| 状态 | [Draft]（S7-T1-5 产出；v1.0.1 S7-T8-3 增补 S7 新增条目与证据索引；v1.0.2 增补 S7 DevLogReport / 测试报告条目；随 S7 段门禁批准回写 [Approved]） |
+| 版本 | v1.0.3 |
+| 状态 | [Draft]（S7-T1-5 产出；v1.0.1 S7-T8-3 增补 S7 新增条目与证据索引；v1.0.2 增补 S7 DevLogReport / 测试报告条目；v1.0.3 增补 S7 联调窗口工具脚本 L1-1/L2-1/L2-2/L3-1/L3-2 条目；随 S7 段门禁批准回写 [Approved]） |
 | 日期 | 2026-09-11 |
 | 作者 | AI（沙箱侧现状实测与索引编制） |
 | 用途 | **L0-L4 全量文档地图（唯一入口表）**：逐层登记文档「名称 / 版本 / 角色 / 状态 / 关联锚点」，并承载 **S1a~S7 纵切新增文档并入核对**；判据「**无游离文档**」（各层文档均在索引内，差异 0 或显式登记） |
@@ -20,6 +20,7 @@
 | v1.0.0 | 2026-09-11 | AI（沙箱侧现状实测与索引编制） | 初始版本：S7-T1-5 文档地图正文落点。含 §1 分层模型、§2 L0-L4 全量文档清单、§3 S1a~S7 纵切并入核对表、§4 无游离核对判据 + 机器可核对清单、§5 维护与边界。**本次仅新建本索引一个文档，未改动其他正文** |
 | v1.0.1 | 2026-09-11 | AI（S7 批次 3 开发会话） | **S7-T8-3 文档地图维护**：新增 §2.6「S7 新增收口资产与证据」（SHR 五项脚本与契约 / K13 矩阵 / 门禁聚合脚本与证据 / S7 总收官报告 + t8 回写核对证据）并入索引；§3 S7 行「并入结论」更新；DOCMAP-MANIFEST 机器清单同步增补上述条目并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 | v1.0.2 | 2026-09-11 | AI（S7 批次 5 开发会话） | **S7 段 Step 2/3 交付物并入**：新增 §2.5 L4 两份交付物行（`doc/development/OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md`、`doc/test/OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md`）；§3 S7 行 DevLogReport / 测试报告由「待产出」更正为实际路径；DOCMAP-MANIFEST 同步增补两条并保持逐项存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
+| v1.0.3 | 2026-09-11 | AI（S7 联调窗口工具脚本骨架批次） | **S7 联调窗口工具脚本并入**：新增 §2.6 五行（`scripts/verify_l1_1_cascade.ps1`、`scripts/drill_l2_1_failover.ps1`、`scripts/finalize_l2_2_matrix.py`、`scripts/verify_l3_1_agent.ps1`、`scripts/smoke_l3_2.py`，均为「骨架 + 干跑」形态）；DOCMAP-MANIFEST 同步增补五条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 
 ---
 
@@ -108,7 +109,7 @@
 
 ### 2.6 S7 新增收口资产与证据（脚本 / 契约 / 证据）
 
-> 承接 S7-T1（SHR 五项收口）与 S7-T6/T8（门禁聚合与回写）；脚本与证据亦纳入机器可核对清单（§4），保持「无游离」。
+> 承接 S7-T1（SHR 五项收口）、S7-T2~T5（联调窗口工具脚本 L1-1/L2-1/L2-2/L3-1/L3-2）与 S7-T6/T8（门禁聚合与回写）；脚本与证据亦纳入机器可核对清单（§4），保持「无游离」。
 
 | 名称 | 版本 | 角色 | 状态 | 关联锚点 |
 |------|------|------|------|---------|
@@ -120,6 +121,11 @@
 | scripts/gate_aggregate.py | v1.0.0 | 门禁聚合脚本（单命令 / 单批 / 结构化 JSON） | 已产出（S7 批 2） | S7-T6-1~4 |
 | doc/test/evidence/s7/gate/gate-aggregate.json | schema_version=1 | 门禁聚合证据（RA-06 / 冒烟 / 对齐清单 / K07-SYS-1 / SHR） | 已产出（S7 批 2） | S7-T6 / S7-T8-5 |
 | doc/test/evidence/s7/t8/writeback-check.json | schema_version=1 | S7-T8 回写核对证据（24 卡 / 七线 / 无游离 / 报告章节） | 已产出（S7 批 3） | S7-T8-1~5 |
+| scripts/verify_l1_1_cascade.ps1 | v1.0.0（骨架 + 干跑） | S7-T2 L1-1 级联全链核验（DPS/OpenMemory 阻断 / 幂等 / purge；真实执行 PENDING） | 骨架已就绪（干跑 PENDING） | S7-T2-1~4 |
+| scripts/drill_l2_1_failover.ps1 | v1.0.0（骨架 + 干跑） | S7-T3 L2-1 主备切换演练（双场景 + 演练报告模板；真实执行 PENDING） | 骨架已就绪（干跑 PENDING） | S7-T3-1~4 |
+| scripts/finalize_l2_2_matrix.py | v1.0.0（骨架 + 干跑） | S7-T4 L2-2 通道矩阵终验（复用 S4-T8 matrix_rows 语义 + K07 豁免对账） | 骨架已就绪（干跑 PENDING） | S7-T4-1~4 |
+| scripts/verify_l3_1_agent.ps1 | v1.0.0（骨架 + 干跑） | S7-T5 L3-1 Agent 端到端（四头 / 白名单 / 域隔离 / 403 + M1-M2） | 骨架已就绪（干跑 PENDING） | S7-T5-1~4 |
+| scripts/smoke_l3_2.py | v1.0.0（骨架 + 干跑） | L3-2 贯通冒烟（OpenBase 侧缺失项；受信通道端到端关键路径） | 骨架已就绪（干跑 PENDING） | S7-T6-2 / S7-T7-3 |
 
 ---
 
@@ -133,7 +139,7 @@
 | S1b（P2-1） | OpenBase-P2-1-统一身份协议头与信任链收口立项方案-v1.0.0.md | OpenBase-P2-1-统一身份协议头与信任链收口设计草案-v1.0.0.md | doc/development/OpenBase-P2-1-统一身份协议头与信任链收口-DevLogReport-v1.0.0.md | doc/test/OpenBase-P2-1-统一身份协议头与信任链收口-测试报告-v1.0.0.md | — | 已并入 |
 | S1b'（P2-2 / R1） | OpenBase-P2-2-隔离与fail-open收口立项方案-v1.0.0.md | — | — | — | OpenBase-P2-2-隔离收口实施执行计划-v1.0.0.md；OpenBase-R1-隔离收口实施执行计划-v1.0.0.md | 已并入 |
 | S6（前端段） | OpenBase-S6-统一前端隔离展示与段门禁收口-立项方案-v1.0.0.md | OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0.md | doc/development/OpenBase-S6-统一前端隔离展示与段门禁收口-DevLogReport-v1.0.0.md | doc/test/OpenBase-S6-统一前端隔离展示与段门禁收口-测试报告-v1.0.0.md | doc/planning/OpenBase-S6-统一前端冻结与改造口径登记-v1.0.0.md | 已并入 |
-| S7（总收官段） | OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md | OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md | doc/development/OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md | doc/test/OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md | doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md；doc/design/OpenBase-K13-账号权限矩阵-v1.0.0.md；doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md；doc/test/evidence/s7/gate/gate-aggregate.json；doc/test/evidence/s7/t8/writeback-check.json；本索引 | 已并入（v1.0.2 增补 DevLog/测试报告；S7 段交付物齐备） |
+| S7（总收官段） | OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md | OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md | doc/development/OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md | doc/test/OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md | doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md；doc/design/OpenBase-K13-账号权限矩阵-v1.0.0.md；doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md；doc/test/evidence/s7/gate/gate-aggregate.json；doc/test/evidence/s7/t8/writeback-check.json；本索引 | 已并入（v1.0.2 增补 DevLog/测试报告；v1.0.3 增补联调窗口工具脚本 L1-1/L2-1/L2-2/L3-1/L3-2；S7 段交付物齐备） |
 
 **台账/清单（跨段）**：OpenBase-数据隔离实现任务卡-v1.0.0.md、OpenBase-真实联调冒烟清单-v1.0.0.md、OpenBase-存量测试对齐任务清单-v1.0.0.md、doc/planning/OpenBase-联调产物清点核对总清单-v1.0.0.md、doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md —— 均已并入 §2.5。
 
@@ -195,6 +201,11 @@
 - scripts/db/grant_k13_accounts.ps1
 - scripts/scan_orchestrator_bypass.py
 - scripts/gate_aggregate.py
+- scripts/verify_l1_1_cascade.ps1
+- scripts/drill_l2_1_failover.ps1
+- scripts/finalize_l2_2_matrix.py
+- scripts/verify_l3_1_agent.ps1
+- scripts/smoke_l3_2.py
 <!-- DOCMAP-MANIFEST:END -->
 
 ---

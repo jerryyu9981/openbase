@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "tool": "smoke_l3_2.py",
+  "task": "L3-2",
+  "evidence_ref": "S7-T6-2 / S7-T7-3",
+  "title": "L3-2 贯通冒烟（OpenBase 侧缺失项骨架）",
+  "mode": "dry-run",
+  "status": "PENDING",
+  "exit_code": 2,
+  "execution_face": "B",
+  "base_url": "",
+  "generated_at": "2026-09-11T12:38:40+08:00",
+  "commit": "0a195c4",
+  "openbase_commit": "0a195c4106ae150d98c812924ae3ffc6949bd0c6",
+  "reason": "沙箱无四仓运行态 / 受信通道不可达：L3-2 贯通冒烟属 B 面 → PENDING；真实执行需联调窗口（各子系统仓 L3-2 双签脚本）",
+  "key_paths": [
+    {
+      "system": "OpenBase",
+      "path": "/health",
+      "desc": "底座健康"
+    },
+    {
+      "system": "OpenLLM",
+      "path": "/openllm/v1/health",
+      "desc": "模型服务健康"
+    },
+    {
+      "system": "OpenMemory",
+      "path": "/health",
+      "desc": "记忆服务健康"
+    },
+    {
+      "system": "OpenRAG",
+      "path": "/api/v1/system/health",
+      "desc": "检索服务健康"
+    },
+    {
+      "system": "DPS",
+      "path": "/health",
+      "desc": "数据平台健康"
+    }
+  ],
+  "checks": [
+    {
+      "id": "S7-T6-2",
+      "name": "L3-2 贯通冒烟（S0-S6 关键路径经受信通道端到端）",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "--base-url 不可达或未提供（沙箱无四仓运行态）→ 真实执行 PENDING"
+    },
+    {
+      "id": "S7-T7-3",
+      "name": "L3-2 真实受信通道双签（各子系统仓执行，OpenBase 侧登记回填）",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "--base-url 不可达或未提供（沙箱无四仓运行态）→ 真实执行 PENDING"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "L3-2-REAL",
+      "item": "L3-2 贯通冒烟 + 真实受信通道双签",
+      "precondition": "四仓运行态 + 真实受信通道 + 密钥/开关就绪",
+      "owner": "联调窗口",
+      "action": "按段级 L3-2 双签脚本执行后回填 status=PASS/FAIL"
+    }
+  ]
+}

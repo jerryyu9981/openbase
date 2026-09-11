@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-OUTSIDE-RUN-v1.0.0 |
-| 版本 | v1.0.0 |
+| 版本 | v1.0.1 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-11 |
 | 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11） |
@@ -41,6 +41,7 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-11 | AI（S7 批次 5 执行单编制） | 初始版本：S7 沙箱外执行单。含 §0 前置环境检查表（含 S7 相关脚本现状只读核实结论）、§1 跨仓收口项（P1，3 条）、§2 联调窗口 T2~T5（P2，4 条）、§3 T6 真实面（P2，4 条）、§4 段级非沙箱复核（P2，10 条：S2~S5 双签 4 + S6 B1~B6 6）、§5 收口与批准（P3，6 条）、§6 执行进度勾选总表、§7 执行纪律与风险、附录 A~D（提交链索引 / 四仓分支与 hash / PENDING 主挂起与 S7 自身 PENDING 清单 / 断言→证据→回填映射表）。**本次仅新建本执行单一个文件，未改动任何代码与其他文档，未执行任何四仓 git 写操作** |
+| v1.0.1 | 2026-09-11 | AI（S7 联调窗口工具脚本骨架批次） | **工具脚本骨架并入与命令校正**：§0.2 由「待实现」更新为「骨架已就绪（可干跑，真实执行仍需联调窗口）」（N-1~N-4 五脚本骨架已补齐，N-5 `scripts/smoke_l3_2.py` 已补做）；§2.1~§2.4 命令模板按实际参数名校正（`-OutDir`→`-EvidenceDir`，补 `-DryRun` / `--dry-run`，`finalize_l2_2_matrix.py` 补 `--matrix`/`--check-read-ab`/`--check-write-ab`/`--k14`）；§2 增补五脚本统一退出码约定（`0=PASS` / `1=FAIL` / `2=PENDING`）。**仅更新本执行单脚本现状与命令，不改任务范围与 PENDING 结论** |
 
 ---
 
@@ -63,7 +64,7 @@
 
 ### 0.2 S7 相关脚本现状核实（只读实测，2026-09-11）
 
-> 核实方式：只读枚举 `<OB>\scripts\**`（Glob / Grep），**未执行任何写操作**。判定为「已就绪」= 文件存在且实现于 S7-T1/T6 收口提交内；「待实现」= 设计草案 §4 要求、仓内当前不存在。
+> 核实方式：只读枚举 `<OB>\scripts\**`（Glob / Grep），**未执行任何写操作**。判定为「已就绪」= 文件存在且实现于 S7-T1/T6 收口提交内；「骨架已就绪」= 文件已补齐（参数解析 + 证据 JSON 字段 + 断言占位），可**干跑**（`-DryRun` / `--dry-run`，无真实环境时 `status=PENDING`、退出码 `2`），真实调用与真实响应码在联调窗口填入（**骨架不得填假响应码**）。
 
 **已就绪（实测存在）**
 
@@ -79,17 +80,17 @@
 | S-8 | `scripts/k07_endpoint_matrix.py` | S7-T6-4 | K07 端点-过滤矩阵脚本（四仓计数对账：OpenMemory 32 / OpenRAG 121 / OpenLLM 14 / DPS 169，`gap_count=0`） |
 | S-9 | `scripts/service-orchestrator.ps1` | S7-T1-4 | 受管编排唯一入口（`start/startcheck/checkall/monitor/status/stop`，逆拓扑 stop） |
 
-**待实现（设计草案 §4 要求但仓内当前不存在，可在沙箱内先补骨架）**
+**骨架已就绪（可干跑，真实执行仍需联调窗口）**
 
-| # | 计划脚本路径 | 关联任务 / 断言 | 现状与骨架建议 |
+| # | 计划脚本路径 | 关联任务 / 断言 | 现状与骨架说明 |
 |:-:|-------------|----------------|---------------|
-| N-1 | `scripts/verify_l1_1_cascade.ps1`（或 `.py`，零新依赖） | S7-T2 / S7-T2-1~4 | **待实现**。骨架建议：读取 `POST /api/v1/identity/suspend` → 轮询 `GET /api/v1/identity/events/{event_id}` → 断言 DPS 画像读阻断（403/404）、OpenMemory 记忆数据面阻断（`sessions`/`memories` 403/404）、`event_id` 幂等（重放 DB 行数不变）、`restored` 解除；输出 `doc/test/evidence/s7/l1-1/*.json` |
-| N-2 | `scripts/drill_l2_1_failover.ps1` | S7-T3 / S7-T3-1~4 | **待实现**。骨架建议：故障注入 = 停 B 上游进程 / 阻断 B 端口；双场景（B 断→A 接管、A 断→B 维持）；采集切换前后路由、降级头、告警；单主禁双写断言；输出 `doc/test/evidence/s7/l2-1/*` |
-| N-3 | L2-2 终验相关脚本（无专用脚本，建议 `scripts/finalize_l2_2_matrix.py`） | S7-T4 / S7-T4-1~4 | **待实现**。骨架建议：以 S4-T8 `matrix_rows` 为基座，校验「每子系统 × A/B × 头语义」行全覆盖、缺口 0、A 直连豁免行标注、读路径 B 主 A 备、写路径 A/B 等价 + K14 幂等；输出 `doc/test/evidence/s7/l2-2/*.json` |
-| N-4 | `scripts/verify_l3_1_agent.ps1`（或 `.py`） | S7-T5 / S7-T5-1~4 | **待实现**。骨架建议：agent key → 四头（X-User-ID/X-Tenant-ID/X-User-Role/X-Proxy-Source）→ 各系统白名单（每系统 ≥3 例）→ 域隔离 → 未授权 403（`PERM_UNTRUSTED_IDENTITY_HEADER`）；M1/M2 分别断言；agent 无交互登录 0 可达；输出 `doc/test/evidence/s7/l3-1/*.json` |
-| N-5 | `scripts/smoke_l3_2.py`（任务清单标注「若存在」） | S7-T6-2 / S6 B2 | **OpenBase 仓内不存在**（全仓 Glob 实测无该文件）；L3-2 双签执行以各子系统仓脚本为准，OpenBase 侧仅登记回填 |
+| N-1 | `scripts/verify_l1_1_cascade.ps1`（零新依赖） | S7-T2 / S7-T2-1~4 | **骨架已就绪**（可干跑：`-DryRun -BaseUrl … -SubjectId … -EvidenceDir …`，无环境 `status=PENDING`/退出码 `2`）。真实路径：`POST /api/v1/identity/suspend` → 轮询身份事件 → 断言 DPS 画像读阻断（403/404）、OpenMemory 记忆数据面阻断（`sessions`/`memories` 403/404）、`event_id` 幂等（重放 DB 行数不变）、`restored` 解除、purge 显式触发（400/403/审计留痕）；输出 `doc/test/evidence/s7/l1-1/cascade-result.json` |
+| N-2 | `scripts/drill_l2_1_failover.ps1` | S7-T3 / S7-T3-1~4 | **骨架已就绪**（可干跑：`-DryRun -Scenario b-down\|a-down\|both -BaseUrl … -EvidenceDir …`）。真实路径：故障注入 = 停 B 上游进程 / 阻断 B 端口；双场景（B 断→A 接管、A 断→B 维持）；采集切换前后路由、降级头、告警；单主禁双写断言；输出 `doc/test/evidence/s7/l2-1/failover-drill.json` + `drill-report.md` |
+| N-3 | `scripts/finalize_l2_2_matrix.py` | S7-T4 / S7-T4-1~4 | **骨架已就绪**（可干跑：`--dry-run`；真实路径 `--matrix <S4-T8 matrix_rows.json> --check-read-ab --check-write-ab --k14`）。以 S4-T8 `matrix_rows` 为基座（复用其语义口径），校验「每子系统 × A/B × 头语义」行全覆盖、缺口 0、A 直连豁免行标注（与 K07 端点矩阵对账）、读路径 B 主 A 备、写路径 A/B 等价 + K14 幂等；输出 `doc/test/evidence/s7/l2-2/matrix-finalize.json` |
+| N-4 | `scripts/verify_l3_1_agent.ps1` | S7-T5 / S7-T5-1~4 | **骨架已就绪**（可干跑：`-DryRun -AgentKey … -BaseUrl … -EvidenceDir …`）。真实路径：agent key → 四头（X-User-ID/X-Tenant-ID/X-User-Role/X-Proxy-Source）→ 各系统白名单（每系统 ≥3 例）→ 域隔离 → 未授权 403（`PERM_UNTRUSTED_IDENTITY_HEADER`）；M1/M2 分别断言；agent 无交互登录 0 可达；输出 `doc/test/evidence/s7/l3-1/agent-e2e.json` |
+| N-5 | `scripts/smoke_l3_2.py` | S7-T6-2 / S7-T7-3（S6 B2） | **骨架已就绪**（可干跑：`--dry-run --base-url …`；不可达 → `status=PENDING`、退出码 `2`）；经受信通道端到端关键路径；L3-2 双签执行以各子系统仓脚本为准，OpenBase 侧登记回填；输出 `doc/test/evidence/s7/l3-2/smoke-result.json` |
 
-> **纪律**：待实现项**不阻断** P1/P2 执行中的非依赖项；N-1/N-2/N-4 建议先在沙箱内补做**骨架**（参数解析 + 证据 JSON 字段 + 断言占位），真实调用与真实响应码在联调窗口填入，**骨架不得填假响应码**。
+> **纪律**：五脚本骨架**不阻断** P1/P2 执行中的非依赖项；参数解析 + 证据 JSON 字段 + 断言占位已就绪，**真实调用与真实响应码在联调窗口填入，骨架不得填假响应码**。五脚本统一退出码约定：`0=PASS` / `1=FAIL` / `2=PENDING`（干跑且无环境时默认 `2`）。
 
 ---
 
@@ -140,16 +141,18 @@
 ## §2 联调窗口 T2~T5（优先级 P2 · 需真实环境）
 
 > 前置：§0.1 全项「就绪」。纪律：真实停用使用**专用冒烟主体**（`smoke_l1_1_*`），执行后 `restored`；**未执行不填 PASS，禁伪造响应码 / `request_id`**。证据 JSON 字段规范见设计草案 §5.2（`schema_version` / `status` / `reason` / `execution_face` / `openbase_commit` / `checked_at` / `evidence_ref`）。
+>
+> **工具脚本（骨架已就绪）**：T2~T5 五脚本已补齐骨架（L1-1/L2-1/L2-2/L3-1/L3-2），可**干跑**（无真实环境时 `status=PENDING`）；**统一退出码约定：`0=PASS` / `1=FAIL` / `2=PENDING`**（干跑且无环境时默认 `2`）。真实执行时去掉 `-DryRun` / `--dry-run` 并按命令模板替换占位符。
 
 ### 2.1 [P2-T2] S7-T2 L1-1 级联全链核验（关联断言 S7-T2-1~4）
 
 | 项 | 内容 |
 |----|------|
-| **脚本** | `scripts/verify_l1_1_cascade.ps1` → **待实现**（见 §0.2 N-1；可先在沙箱内补骨架） |
+| **脚本** | `scripts/verify_l1_1_cascade.ps1` → **骨架已就绪**（可干跑；见 §0.2 N-1） |
 | **前置** | 真实停用主体（`<SUBJECT_ID>`，建议 `smoke_l1_1_*`）+ DPS 运行态 + OpenMemory 运行态 + 真实 PG/Redis |
 | **关联断言** | S7-T2-1 / S7-T2-2 / S7-T2-3 / S7-T2-4 |
 | **执行步骤** | ① 停用主体（`POST /api/v1/identity/suspend` 或状态补丁）→ 事件 outbox `user.suspended`（`event_id` 幂等）；② 断言 **DPS 画像读阻断**（绑定失效 → 403/404，数据保留）；③ 断言 **OpenMemory 记忆数据面阻断**（`sessions`/`memories` 拒绝，数据保留）；④ `event_id` 幂等（重放不双写、DB 行数不变）；⑤ `restored` 恢复解除阻断；⑥ purge 显式触发核验：`POST /api/v1/identity/purge`（非 deactivated → **400**；未二次授权 → **403**；授权后物理清除 + `audit_logs` 留痕 `action=identity.purge`）；⑦ 静态扫描无自动 purge 路径 |
-| **命令模板** | `pwsh -File <OB>\scripts\verify_l1_1_cascade.ps1 -BaseUrl <GATEWAY_BASE> -SubjectId <SUBJECT_ID> -OutDir <OB>\doc\test\evidence\s7\l1-1`<br>`python -m pytest tests -k "identity_events or purge" -q`（本地静态/契约面基线参照）<br>`Select-String -Path <OB>\openbase\**\*.py -Pattern "scheduler|apscheduler|purge"`（无定时 purge 佐证） |
+| **命令模板** | `pwsh -File <OB>\scripts\verify_l1_1_cascade.ps1 -BaseUrl <GATEWAY_BASE> -SubjectId <SUBJECT_ID> -EvidenceDir <OB>\doc\test\evidence\s7\l1-1 -DryRun`（干跑，退出码 `2`）<br>`pwsh -File <OB>\scripts\verify_l1_1_cascade.ps1 -BaseUrl <GATEWAY_BASE> -SubjectId <SUBJECT_ID> -EvidenceDir <OB>\doc\test\evidence\s7\l1-1`（真实执行，退出码 `0`/`1`）<br>`python -m pytest tests -k "identity_events or purge" -q`（本地静态/契约面基线参照）<br>`Select-String -Path <OB>\openbase\**\*.py -Pattern "scheduler|apscheduler|purge"`（无定时 purge 佐证） |
 | **期望证据** | `doc/test/evidence/s7/l1-1/dps-block.json`（S7-T2-1）、`openmemory-block.json` + `event-idempotency.json`（S7-T2-2）、`restore.json` + `scan-auto-purge.txt`（S7-T2-3）、`purge.json`（S7-T2-4） |
 | **回填位置** | 测试报告 §2 「S7-T2-1~4」行状态（PENDING → PASS/FAIL）；门禁项 ④ 三原则总验证；`gate-aggregate.json` 相关分项引用；总收官报告 v1.0.1 §4.2 第 6 项 |
 | **失败处置** | 契约不符 / 阻断未生效 → 登记 `FAIL` + `reason`，回溯 U1 §8 事件契约与 DPS/OpenMemory 消费端；不得以「预期通过」替代 |
@@ -158,13 +161,13 @@
 
 | 项 | 内容 |
 |----|------|
-| **脚本** | `scripts/drill_l2_1_failover.ps1` → **待实现**（见 §0.2 N-2） |
+| **脚本** | `scripts/drill_l2_1_failover.ps1` → **骨架已就绪**（可干跑；见 §0.2 N-2） |
 | **前置** | 可注故障的运行态 + 切换窗口（B 上游进程可停 / B 端口可阻断） |
 | **关联断言** | S7-T3-1 / S7-T3-2 / S7-T3-3 / S7-T3-4 |
 | **双场景** | **场景 1**：B 断 → A 接管（A 直连接管 + 降级头/告警产生，业务不中断）；**场景 2**：A 断 → B 维持（B 编排维持，业务不中断） |
 | **单主禁双写** | 同一动作同一时刻**仅一条主路径**（S4-T7 `ChannelStateManager` 单主状态机）；**无双主双写证据**；主路由配置声明、切换显式触发 |
 | **边界** | 事件通道（L1-1 身份权威同步面）**不纳入**演练矩阵（设计草案 §4.3 / Q-S7-4） |
-| **命令模板** | `pwsh -File <OB>\scripts\drill_l2_1_failover.ps1 -Scenario B-down -OutDir <OB>\doc\test\evidence\s7\l2-1`<br>`pwsh -File <OB>\scripts\drill_l2_1_failover.ps1 -Scenario A-down -OutDir <OB>\doc\test\evidence\s7\l2-1` |
+| **命令模板** | `pwsh -File <OB>\scripts\drill_l2_1_failover.ps1 -Scenario b-down -BaseUrl <GATEWAY_BASE> -EvidenceDir <OB>\doc\test\evidence\s7\l2-1 -DryRun`（干跑，退出码 `2`）<br>`pwsh -File <OB>\scripts\drill_l2_1_failover.ps1 -Scenario b-down -BaseUrl <GATEWAY_BASE> -EvidenceDir <OB>\doc\test\evidence\s7\l2-1`（场景 1 真实执行）<br>`pwsh -File <OB>\scripts\drill_l2_1_failover.ps1 -Scenario a-down -BaseUrl <GATEWAY_BASE> -EvidenceDir <OB>\doc\test\evidence\s7\l2-1`（场景 2）<br>`-Scenario both` 可选（双场景一次演练） |
 | **期望证据** | `doc/test/evidence/s7/l2-1/drill-report.md`（含**场景/命令/切换前后路由/降级头/告警/回切条件/结论**字段）+ `route-before.json` / `route-after.json`（单主断言）+ `degrade-headers.json` + `alerts.json` |
 | **回填位置** | 测试报告 §2 「S7-T3-1~4」行状态；门禁项 ④；总收官报告 §3 S7-T3 行 |
 | **失败处置** | 双写 / 业务中断 / 无降级头 → 登记 `FAIL`，回溯 S4-T7 单主状态机与路由配置；演练窗口不可得 → `PENDING` + 排期 |
@@ -173,11 +176,11 @@
 
 | 项 | 内容 |
 |----|------|
-| **脚本** | L2-2 终验相关脚本 → **待实现**（无专用脚本，见 §0.2 N-3） |
+| **脚本** | `scripts/finalize_l2_2_matrix.py` → **骨架已就绪**（可干跑；见 §0.2 N-3） |
 | **前置** | 四仓运行态 + 真实通道；基座 = S4-T8 `matrix_rows` |
 | **关联断言** | S7-T4-1 / S7-T4-2 / S7-T4-3 / S7-T4-4 |
 | **终验判据** | ① 通道覆盖矩阵（每子系统 × A/B × 状态/头语义）**行全覆盖、缺口 0**；② 管理面/探活 **A 直连豁免行显式标注**（与 K07 端点矩阵 A 直连豁免行对账一致）；③ **读路径 B 主全绿 + A 备 covered**（同读请求经 A/B 返回一致、四头一致）；④ **写路径 A/B 等价 + K14 幂等**（重放不双写、DB 行数不变） |
-| **命令模板** | `python <OB>\scripts\finalize_l2_2_matrix.py --matrix <S4-T8 matrix_rows.json> --out <OB>\doc\test\evidence\s7\l2-2\matrix-finalize.json`<br>`python <OB>\scripts\finalize_l2_2_matrix.py --check-read-ab --out ...read-path-ab-equivalence.json`<br>`python <OB>\scripts\finalize_l2_2_matrix.py --check-write-ab --k14 --out ...write-path-equivalence.json` |
+| **命令模板** | `python <OB>\scripts\finalize_l2_2_matrix.py --dry-run --out <OB>\doc\test\evidence\s7\l2-2\matrix-finalize.json`（干跑，退出码 `2`）<br>`python <OB>\scripts\finalize_l2_2_matrix.py --matrix <S4-T8 matrix_rows.json> --out <OB>\doc\test\evidence\s7\l2-2\matrix-finalize.json`<br>`python <OB>\scripts\finalize_l2_2_matrix.py --check-read-ab --base-url <GATEWAY_BASE> --out <OB>\doc\test\evidence\s7\l2-2\read-path-ab-equivalence.json`<br>`python <OB>\scripts\finalize_l2_2_matrix.py --check-write-ab --k14 --base-url <GATEWAY_BASE> --out <OB>\doc\test\evidence\s7\l2-2\write-path-equivalence.json` |
 | **期望证据** | `doc/test/evidence/s7/l2-2/matrix-finalize.json`（rows / covered / `gap=0`）+ `read-path-ab-equivalence.json` + `write-path-equivalence.json` + `k14-idempotency.json` |
 | **回填位置** | 测试报告 §2 「S7-T4-1~4」行状态；门禁项 ④；`gate-aggregate.json` K07 豁免行对账引用 |
 | **失败处置** | 矩阵缺口 / 读写不等价 / K14 非幂等 → 登记 `FAIL` + `reason`，回溯 S4-T8 矩阵与 DPS 写路径；豁免行无审批 → 不放行 |
@@ -186,11 +189,11 @@
 
 | 项 | 内容 |
 |----|------|
-| **脚本** | `scripts/verify_l3_1_agent.ps1` → **待实现**（见 §0.2 N-4） |
+| **脚本** | `scripts/verify_l3_1_agent.ps1` → **骨架已就绪**（可干跑；见 §0.2 N-4） |
 | **前置** | 四仓运行态 + 真实 agent key（`<SMOKE_AGENT_KEY>`，`sk-agent-*`） |
 | **关联断言** | S7-T5-1 / S7-T5-2 / S7-T5-3 / S7-T5-4 |
 | **路径与判据** | agent key → **四头**（X-User-ID / X-Tenant-ID / X-User-Role / X-Proxy-Source）齐全且与主体一致（**agent 无交互登录路径，0 可达**）；**各系统白名单**放行（受信来源 + 头 = 信任；每系统 ≥3 例）→ 非白名单携带身份头全链路 **403**（`PERM_UNTRUSTED_IDENTITY_HEADER`，无绕过端点）；**域隔离** 跨域不可见（404/403/空）；**M1 独立模式**（本地 service key 自身认证）与 **M2 受信头采纳**分别断言 |
-| **命令模板** | `pwsh -File <OB>\scripts\verify_l3_1_agent.ps1 -AgentKey <SMOKE_AGENT_KEY> -BaseUrl <GATEWAY_BASE> -OutDir <OB>\doc\test\evidence\s7\l3-1` |
+| **命令模板** | `pwsh -File <OB>\scripts\verify_l3_1_agent.ps1 -AgentKey <SMOKE_AGENT_KEY> -BaseUrl <GATEWAY_BASE> -EvidenceDir <OB>\doc\test\evidence\s7\l3-1 -DryRun`（干跑，退出码 `2`）<br>`pwsh -File <OB>\scripts\verify_l3_1_agent.ps1 -AgentKey <SMOKE_AGENT_KEY> -BaseUrl <GATEWAY_BASE> -EvidenceDir <OB>\doc\test\evidence\s7\l3-1`（真实执行，退出码 `0`/`1`） |
 | **期望证据** | `doc/test/evidence/s7/l3-1/agent-key-issuance.json`（四头一致性 + 无登录路径）、`system-whitelist-cases.json`（≥3 例/系统）、`domain-isolation.json`、`unauthorized-403.json`、`m1-m2.json` |
 | **回填位置** | 测试报告 §2 「S7-T5-1~4」行状态；门禁项 ④；总收官报告 §4.2 第 6 项 |
 | **失败处置** | 四头缺失 / 白名单放行异常 / 403 可绕过 / 域隔离失效 → 登记 `FAIL` + `reason`，回溯 K02 白名单规范与四仓落地 |
@@ -268,7 +271,7 @@
 | ID | 关联断言/门禁 | 复核项 | 前置 | 执行命令模板 | 期望证据 | 回填位置 | 失败处置 |
 |----|--------------|--------|------|-------------|---------|---------|---------|
 | **P2-B1** | S7-T6-2 | Playwright **9 关键页** PASS | 浏览器二进制（§0.1 第 0-8 项）+ 统一前端运行态 | `cd <OB>\openbase-ui; npx playwright install chromium; npm run test:e2e` | `doc/test/evidence/s6/ui-e2e/{results.json,status.json}`（9 页 PASS） | 总收官报告 §4.1 第 5 项；放行清单 §0 S6 注记 | 页面失败逐页记录复现；浏览器不可得 → `PENDING` |
-| **P2-B2** | S7-T7-3（B5 复核） | L3-2 真实受信通道双签 | 四子系统运行态 + 真实通道 | 按段级 L3-2 双签执行 | `doc/test/evidence/s6/l3-2-smoke.json`（`status=PASS`） | 总收官报告 §4.1 第 6 项 | 同上 |
+| **P2-B2** | S7-T7-3（B5 复核） | L3-2 真实受信通道双签 | 四子系统运行态 + 真实通道 | 按段级 L3-2 双签执行；OpenBase 侧骨架：`python <OB>\scripts\smoke_l3_2.py --dry-run`（PENDING，退出码 `2`） | `doc/test/evidence/s6/l3-2-smoke.json`（`status=PASS`） | 总收官报告 §4.1 第 6 项 | 同上 |
 | **P2-B3** | S7-T6-2 | 真实双租户数据面 | 真实 PG/Redis | 双租户隔离回归（`<TENANT_A>` / `<TENANT_B>`） | `doc/test/evidence/s6/**`（双租户数据面证据） | 总收官报告 §4.1 第 7 项 | 隔离失效 → `FAIL` 回溯 |
 | **P2-B4** | S7-T2-1 | 真实 IdP 回调与吊销 | 真实 IdP（§0.1 第 0-4 项） | 按 IdP 回调/吊销用例执行 | `doc/test/evidence/s6/**` | 总收官报告 §4.1 第 8 项 | IdP 不可达 → `PENDING` |
 | **P2-B5** | S7-T7-3（Q-S6-D7） | 四仓 `frontend/` 物理改造与 CI 收敛（各子仓执行，S7 复核） | 各子系统仓写权限 + CI | 逐仓改造并收敛构建链（见下表「B5 物理改造点」） | 各仓改造提交 hash + CI 结果；S7 复核结论回填 | 总收官报告 §4.1 第 9 项；S6 证据索引 | 未改造 → 登记复核结论 `PENDING` |

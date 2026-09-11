@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "tool": "finalize_l2_2_matrix.py",
+  "task": "S7-T4",
+  "evidence_ref": "S7-T4",
+  "title": "S7-T4 L2-2 通道矩阵终验",
+  "mode": "dry-run",
+  "status": "PENDING",
+  "exit_code": 2,
+  "execution_face": "B",
+  "generated_at": "2026-09-11T12:38:36+08:00",
+  "commit": "0a195c4",
+  "openbase_commit": "0a195c4106ae150d98c812924ae3ffc6949bd0c6",
+  "reason": "沙箱无真实 PG/Redis/IdP/四仓运行态：矩阵终验属 B 面 → PENDING；真实执行需联调窗口（S4-T8 matrix_rows 基座 + 受信通道）",
+  "matrix_plan": {
+    "subsystems": [
+      "OpenMemory",
+      "OpenRAG",
+      "OpenLLM",
+      "DPS"
+    ],
+    "channels": [
+      "A",
+      "B"
+    ],
+    "path_semantics": [
+      "read",
+      "write",
+      "health-management"
+    ],
+    "header_semantics": [
+      "X-User-ID",
+      "X-Tenant-ID",
+      "X-User-Role",
+      "X-Proxy-Source"
+    ],
+    "planned_rows": [
+      {
+        "subsystem": "OpenMemory",
+        "channel": "A",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenMemory",
+        "channel": "A",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenMemory",
+        "channel": "A",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenMemory",
+        "channel": "B",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenMemory",
+        "channel": "B",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenMemory",
+        "channel": "B",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenRAG",
+        "channel": "A",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenRAG",
+        "channel": "A",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenRAG",
+        "channel": "A",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenRAG",
+        "channel": "B",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenRAG",
+        "channel": "B",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenRAG",
+        "channel": "B",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenLLM",
+        "channel": "A",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenLLM",
+        "channel": "A",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenLLM",
+        "channel": "A",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenLLM",
+        "channel": "B",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenLLM",
+        "channel": "B",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "OpenLLM",
+        "channel": "B",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "DPS",
+        "channel": "A",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "DPS",
+        "channel": "A",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "DPS",
+        "channel": "A",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "DPS",
+        "channel": "B",
+        "path_semantic": "read",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "DPS",
+        "channel": "B",
+        "path_semantic": "write",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      },
+      {
+        "subsystem": "DPS",
+        "channel": "B",
+        "path_semantic": "health-management",
+        "header_semantics": [
+          "X-User-ID",
+          "X-Tenant-ID",
+          "X-User-Role",
+          "X-Proxy-Source"
+        ],
+        "status": "PENDING"
+      }
+    ]
+  },
+  "k07_reconcile": {
+    "template": "doc/design/OpenBase-端点过滤矩阵模板-v1.0.md",
+    "exists": true,
+    "direct_connect_rows": 4,
+    "exempt_rows": 1,
+    "status": "PENDING",
+    "reason": "豁免行显式标注已对账；真实终验（缺口清零 / 豁免有效期与审批）属联调窗口 B 面"
+  },
+  "checks": [
+    {
+      "id": "S7-T4-1",
+      "name": "通道覆盖矩阵（每子系统 × A/B × 状态/头语义）行全覆盖、缺口 0",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "未提供 --matrix 基座（S4-T8 matrix_rows）；沙箱无四仓运行态",
+      "metrics": {
+        "rows": 0,
+        "covered": 0,
+        "gap": null
+      }
+    },
+    {
+      "id": "S7-T4-2",
+      "name": "管理面/探活 A 直连豁免行显式标注（与 K07 端点矩阵对账）",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "豁免行显式标注已对账；真实终验（缺口清零 / 豁免有效期与审批）属联调窗口 B 面",
+      "k07_reconcile": {
+        "template": "doc/design/OpenBase-端点过滤矩阵模板-v1.0.md",
+        "exists": true,
+        "direct_connect_rows": 4,
+        "exempt_rows": 1,
+        "status": "PENDING",
+        "reason": "豁免行显式标注已对账；真实终验（缺口清零 / 豁免有效期与审批）属联调窗口 B 面"
+      }
+    },
+    {
+      "id": "S7-T4-3",
+      "name": "读路径 B 主全绿 + A 备 covered（同读请求经 A/B 返回一致、四头一致）",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "--check-read-ab 未开启或受信通道不可达（沙箱无四仓运行态）"
+    },
+    {
+      "id": "S7-T4-4",
+      "name": "写路径 A/B 等价用例绿 + K14 幂等（重放不双写、DB 行数不变）",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "--check-write-ab/--k14 未开启或受信通道不可达（沙箱无真实 PG/Redis）"
+    }
+  ],
+  "pending_items": [
+    {
+      "id": "L2-2-REAL",
+      "item": "L2-2 通道矩阵终验（缺口 0 / A 直连豁免对账 / 读写 A/B 等价 / K14 幂等）",
+      "precondition": "四仓运行态 + S4-T8 matrix_rows 基座 + 真实受信通道",
+      "owner": "联调窗口",
+      "action": "真实窗口执行后回填 status=PASS/FAIL"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+    "schema_version":  1,
+    "tool":  "verify_l1_1_cascade.ps1",
+    "task":  "S7-T2",
+    "evidence_ref":  "S7-T2-1~4",
+    "title":  "S7-T2 L1-1 级联全链核验",
+    "mode":  "dry-run",
+    "status":  "PENDING",
+    "exit_code":  2,
+    "execution_face":  "B",
+    "base_url":  "",
+    "subject_id":  "smoke_l1_1_skeleton",
+    "generated_at":  "2026-09-11T12:39:01+08:00",
+    "commit":  "0a195c4",
+    "openbase_commit":  "0a195c4106ae150d98c812924ae3ffc6949bd0c6",
+    "reason":  "沙箱无真实 PG/Redis/IdP/四仓运行态：L1-1 级联全链核验属 B 面 -\u003e PENDING；真实执行需联调窗口",
+    "planned_steps":  [
+                          "1) 停用主体（POST /api/v1/identity/suspend）-\u003e 事件 outbox user.suspended（event_id 幂等）",
+                          "2) 断言 DPS 画像读阻断（绑定失效 -\u003e 403/404，数据保留）",
+                          "3) 断言 OpenMemory 记忆数据面阻断（sessions/memories 拒绝，数据保留）",
+                          "4) event_id 幂等（重放不双写、DB 行数不变）",
+                          "5) restored 恢复解除阻断（Q-5=A：数据保留 + 全链阻断）",
+                          "6) 静态扫描无自动 purge 路径（scan_auto_purge 0 命中）",
+                          "7) purge 显式触发核验（非 deactivated-\u003e400；未二次授权-\u003e403；授权后物理清除 + audit_logs action=identity.purge）"
+                      ],
+    "checks":  [
+                   {
+                       "id":  "S7-T2-1",
+                       "name":  "DPS 画像读阻断（绑定失效 -\u003e 403/404，数据保留）",
+                       "execution_face":  "B",
+                       "status":  "PENDING",
+                       "reason":  "干跑/环境不可达：真实停用主体 + DPS 运行态需联调窗口",
+                       "evidence":  "doc/test/evidence/s7/l1-1/dps-block.json"
+                   },
+                   {
+                       "id":  "S7-T2-2",
+                       "name":  "OpenMemory 记忆数据面阻断 + event_id 幂等（重放不双写、DB 行数不变）",
+                       "execution_face":  "B",
+                       "status":  "PENDING",
+                       "reason":  "干跑/环境不可达：需 OpenMemory 运行态 + 真实 PG/Redis",
+                       "evidence":  "doc/test/evidence/s7/l1-1/openmemory-block.json + event-idempotency.json"
+                   },
+                   {
+                       "id":  "S7-T2-3",
+                       "name":  "Q-5=A 保留 + 全链阻断 + 无自动 purge（静态扫描 0 命中）",
+                       "execution_face":  "A+B",
+                       "status":  "PENDING",
+                       "reason":  "干跑/环境不可达：静态面 0 自动 purge + restored 解除阻断需真实执行",
+                       "evidence":  "doc/test/evidence/s7/l1-1/restore.json + scan-auto-purge.txt"
+                   },
+                   {
+                       "id":  "S7-T2-4",
+                       "name":  "purge 显式触发（400/403/物理清除 + audit_logs action=identity.purge）",
+                       "execution_face":  "B",
+                       "status":  "PENDING",
+                       "reason":  "干跑/环境不可达：purge 端点真实响应码与审计留痕需联调窗口",
+                       "evidence":  "doc/test/evidence/s7/l1-1/purge.json"
+                   }
+               ],
+    "pending_items":  [
+                          {
+                              "id":  "L1-1-REAL",
+                              "item":  "L1-1 级联全链核验（DPS/OpenMemory 数据面阻断 / 幂等 / purge 显式触发）",
+                              "precondition":  "专用冒烟主体 smoke_l1_1_* + DPS/OpenMemory 运行态 + 真实 PG/Redis",
+                              "owner":  "联调窗口",
+                              "action":  "真实窗口执行后回填 status=PASS/FAIL"
+                          }
+                      ]
+}
