@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "tool": "seed-shared-infra.py",
+  "task": "S7-T6-2 / S4 预置数据",
+  "evidence_ref": "SMOKE-S4 / SMOKE-S5",
+  "mode": "real",
+  "generated_at": "2026-09-11T19:12:00+08:00",
+  "openbase_commit": "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
+  "command": "python D:\\Trae CN\\myproject\\Dev\\DPS\\scripts\\seed-shared-infra.py",
+  "exit_code": 0,
+  "result": {
+    "org": "已存在",
+    "tenant": "已存在",
+    "roles_added": 0,
+    "bindings_added": 0,
+    "portraits_added": 0
+  },
+  "org_id": "10000000-0000-0000-0000-000000000001",
+  "tenant_id": "20000000-0000-0000-0000-000000000001",
+  "org_code": "dps-org-001",
+  "tenant_code": "dps-tenant-001",
+  "note": "DPS 共享 PG 幂等种子（ON CONFLICT DO NOTHING）；联调组织/租户/画像样本已存在，重复执行 0 新增。冒烟 S4 复用既有 person_id=dps-tenant-001_admin1_001。"
+}

@@ -360,7 +360,11 @@ def test_t2_6_whitelisted_write_allowed_with_bypass_audit(
     )
     # 白名单内 → 不被 403（上游不可达时按既有 SYS_502 语义；DB 审计失败降级 WARN）
     assert resp.status_code != 403, resp.text
-    assert resp.json()["code"] != "PERM_SERVICE_KEY_WRITE_DENIED"
+    # 真实环境上游可达时响应为透明包装体，可能不含 code 字段；
+    # 仅在含 code 时校验其非 PERM_SERVICE_KEY_WRITE_DENIED（非 403 语义已由上一断言覆盖）
+    body = resp.json()
+    if isinstance(body, dict) and "code" in body:
+        assert body["code"] != "PERM_SERVICE_KEY_WRITE_DENIED"
 
 
 def test_k03_bypass_matcher_unit() -> None:

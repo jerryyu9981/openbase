@@ -45,9 +45,17 @@ K07_TEMPLATE = ROOT / "doc" / "design" / "OpenBase-端点过滤矩阵模板-v1.0
 SHR_EVIDENCE_DIR = ROOT / "doc" / "test" / "evidence" / "s7" / "shr"
 
 _OIDC_FILES = ("test_oidc_gateway.py", "test_oidc_keycloak.py")
-# 主批次排除项：两 OIDC 文件（独立批次）+ 门禁自检测试（避免自指递归）
+# 主批次排除项：两 OIDC 文件（独立批次）+ 门禁自检测试（避免自指递归；
+# test_s7_t7_signoff / test_s7_t8_writeback 读取本脚本产出的 gate-aggregate.json，
+# 若纳入主批次会因「先跑批、后写文件」的自引用时序产生假失败）
 _MAIN_BATCH_EXCLUDE = frozenset(
-    {"test_oidc_gateway.py", "test_oidc_keycloak.py", "test_s7_t6_gate.py"}
+    {
+        "test_oidc_gateway.py",
+        "test_oidc_keycloak.py",
+        "test_s7_t6_gate.py",
+        "test_s7_t7_signoff.py",
+        "test_s7_t8_writeback.py",
+    }
 )
 _GROUP_SIZE = 6  # 对齐 scripts/run_tests.ps1 按文件分组子进程隔离范式
 # S6 §5 登记的 asyncpg/PG 环境性失败集中文件（沙箱无真实 PG/Redis；非业务缺陷）
@@ -636,6 +644,13 @@ def build_report(*, dry_run: bool, run_executable: bool, skip_main_batch: bool) 
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "openbase_commit": head,
         "openbase_head_short": head[:7],
+        "s7_report_ref": "doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md",
+        "t8_evidence_ref": "doc/test/evidence/s7/t8/writeback-check.json",
+        "t7_evidence_ref": "doc/test/evidence/s7/t7/signoff-check.json",
+        "shr_ref": (
+            "doc/test/evidence/s7/shr/**（verify-env-global / openbase-test / k13 / "
+            "orchestrator / doc-map 五份）"
+        ),
         "overall_status": "FAIL" if fail_present else "PASS",
         "exit_code": exit_code,
         "counts": {

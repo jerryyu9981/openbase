@@ -4,15 +4,15 @@
     "task":  "S7-T2",
     "evidence_ref":  "S7-T2-1~4",
     "title":  "S7-T2 L1-1 级联全链核验",
-    "mode":  "dry-run",
+    "mode":  "run",
     "status":  "PENDING",
     "exit_code":  2,
     "execution_face":  "B",
-    "base_url":  "",
-    "subject_id":  "smoke_l1_1_skeleton",
-    "generated_at":  "2026-09-11T12:39:01+08:00",
-    "commit":  "0a195c4",
-    "openbase_commit":  "0a195c4106ae150d98c812924ae3ffc6949bd0c6",
+    "base_url":  "http://127.0.0.1:8000",
+    "subject_id":  "smoke_l1_1_smoke",
+    "generated_at":  "2026-09-11T18:59:39+08:00",
+    "commit":  "0595bcd",
+    "openbase_commit":  "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
     "reason":  "沙箱无真实 PG/Redis/IdP/四仓运行态：L1-1 级联全链核验属 B 面 -\u003e PENDING；真实执行需联调窗口",
     "planned_steps":  [
                           "1) 停用主体（POST /api/v1/identity/suspend）-\u003e 事件 outbox user.suspended（event_id 幂等）",
@@ -29,7 +29,7 @@
                        "name":  "DPS 画像读阻断（绑定失效 -\u003e 403/404，数据保留）",
                        "execution_face":  "B",
                        "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：真实停用主体 + DPS 运行态需联调窗口",
+                       "reason":  "DPS 画像读响应码 401 无法判定为阻断（需联调窗口复核）",
                        "evidence":  "doc/test/evidence/s7/l1-1/dps-block.json"
                    },
                    {
@@ -37,7 +37,7 @@
                        "name":  "OpenMemory 记忆数据面阻断 + event_id 幂等（重放不双写、DB 行数不变）",
                        "execution_face":  "B",
                        "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：需 OpenMemory 运行态 + 真实 PG/Redis",
+                       "reason":  "OpenMemory 记忆数据面响应码 401 无法判定为阻断（需联调窗口复核）",
                        "evidence":  "doc/test/evidence/s7/l1-1/openmemory-block.json + event-idempotency.json"
                    },
                    {
@@ -45,7 +45,7 @@
                        "name":  "Q-5=A 保留 + 全链阻断 + 无自动 purge（静态扫描 0 命中）",
                        "execution_face":  "A+B",
                        "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：静态面 0 自动 purge + restored 解除阻断需真实执行",
+                       "reason":  "静态面 0 自动 purge 需 scan_auto_purge 复核；restored 解除阻断响应码 401",
                        "evidence":  "doc/test/evidence/s7/l1-1/restore.json + scan-auto-purge.txt"
                    },
                    {
@@ -53,7 +53,7 @@
                        "name":  "purge 显式触发（400/403/物理清除 + audit_logs action=identity.purge）",
                        "execution_face":  "B",
                        "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：purge 端点真实响应码与审计留痕需联调窗口",
+                       "reason":  "purge 响应码（非 deactivated=401 / 未二次授权=401）需联调窗口复核",
                        "evidence":  "doc/test/evidence/s7/l1-1/purge.json"
                    }
                ],

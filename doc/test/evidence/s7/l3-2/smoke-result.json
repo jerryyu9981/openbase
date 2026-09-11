@@ -4,15 +4,16 @@
   "task": "L3-2",
   "evidence_ref": "S7-T6-2 / S7-T7-3",
   "title": "L3-2 贯通冒烟（OpenBase 侧缺失项骨架）",
-  "mode": "dry-run",
+  "mode": "run",
   "status": "PENDING",
   "exit_code": 2,
   "execution_face": "B",
-  "base_url": "",
-  "generated_at": "2026-09-11T12:38:40+08:00",
-  "commit": "0a195c4",
-  "openbase_commit": "0a195c4106ae150d98c812924ae3ffc6949bd0c6",
-  "reason": "沙箱无四仓运行态 / 受信通道不可达：L3-2 贯通冒烟属 B 面 → PENDING；真实执行需联调窗口（各子系统仓 L3-2 双签脚本）",
+  "base_url": "http://127.0.0.1:8000",
+  "generated_at": "2026-09-11T18:59:52+08:00",
+  "commit": "0595bcd",
+  "openbase_commit": "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
+  "reason": "受信通道可达（base_url 在线）；L3-2 真实双签以各子系统仓脚本为准，OpenBase 侧登记回填 → 保持 PENDING",
+  "reachable": true,
   "key_paths": [
     {
       "system": "OpenBase",
@@ -46,14 +47,14 @@
       "name": "L3-2 贯通冒烟（S0-S6 关键路径经受信通道端到端）",
       "execution_face": "B",
       "status": "PENDING",
-      "reason": "--base-url 不可达或未提供（沙箱无四仓运行态）→ 真实执行 PENDING"
+      "reason": "受信通道可达，逐子系统关键路径断言需真实响应与四头（联调窗口回填）"
     },
     {
       "id": "S7-T7-3",
       "name": "L3-2 真实受信通道双签（各子系统仓执行，OpenBase 侧登记回填）",
       "execution_face": "B",
       "status": "PENDING",
-      "reason": "--base-url 不可达或未提供（沙箱无四仓运行态）→ 真实执行 PENDING"
+      "reason": "受信通道可达，逐子系统关键路径断言需真实响应与四头（联调窗口回填）"
     }
   ],
   "pending_items": [

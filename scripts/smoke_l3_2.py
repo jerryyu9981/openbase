@@ -70,12 +70,18 @@ def _git_head() -> str:
 
 
 def _probe(base_url: str, timeout: float = 3.0) -> bool:
-    """探活受信通道基址（真实执行路径；不可达返回 False → PENDING）."""
+    """探活受信通道基址（真实执行路径；不可达返回 False → PENDING）.
+
+    4xx（含 404）视为**通道可达**（服务在线但该路径受鉴权/不存在），
+    仅连接类错误与 5xx 视为不可达；避免将在线通道误判为不可达。
+    """
     if not base_url:
         return False
     try:
         with urllib.request.urlopen(base_url, timeout=timeout) as response:  # noqa: S310
             return 200 <= int(response.status) < 500
+    except urllib.error.HTTPError as http_error:
+        return int(http_error.code) < 500
     except (urllib.error.URLError, OSError, ValueError):
         return False
 
@@ -128,9 +134,17 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         "commit": head[:7],
         "openbase_commit": head,
         "reason": (
-            "沙箱无四仓运行态 / 受信通道不可达：L3-2 贯通冒烟属 B 面 → PENDING；"
-            "真实执行需联调窗口（各子系统仓 L3-2 双签脚本）"
+            (
+                "受信通道可达（base_url 在线）；L3-2 真实双签以各子系统仓脚本为准，"
+                "OpenBase 侧登记回填 → 保持 PENDING"
+            )
+            if reachable
+            else (
+                "受信通道不可达或未提供：L3-2 贯通冒烟属 B 面 → PENDING；"
+                "真实执行需联调窗口（各子系统仓 L3-2 双签脚本）"
+            )
         ),
+        "reachable": reachable,
         "key_paths": [dict(item) for item in KEY_PATHS],
         "checks": checks,
         "pending_items": [

@@ -1,68 +1,72 @@
 {
-  "schema": "openbase-s6-ui-e2e-status/v1.0.0",
-  "task": "S6-T5-2 / S6-T6-1",
-  "segment": "S6（前端段，FE-JT 收官）",
-  "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.5/§4.6/§5.4；Q-FE-4/4b/5；Q-S6-D6",
-  "status": "PENDING",
-  "reason": "沙箱内 Playwright 浏览器二进制下载被限制（EPERM 目录锁），且无受信通道/四子系统运行态；不可达即 PENDING，禁止伪造通过",
-  "openbase_commit": "72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec",
-  "openbase_commit_note": "执行时（批次 4 提交前）OpenBase HEAD；批次 4 提交 = `477eb80` `feat(ui): S6-T5 L3-2 贯通冒烟基座与 S6-T6 段门禁回写`",
-  "ui_version": "1.3.0",
-  "key_pages_source": "openbase-ui/tests/e2e/fixtures/key-pages.json（Q-S6-D6，与冒烟脚本同源）",
-  "key_pages_total": 9,
-  "key_pages_pass": 0,
-  "executed_at": "2026-09-10",
-  "attempts": [
+  "schema_version": 1,
+  "tool": "playwright",
+  "task": "S6-B1",
+  "mode": "real",
+  "base_url": "http://localhost:5173",
+  "stats": {
+    "startTime": "2026-09-11T11:05:20.325Z",
+    "duration": 39829.564,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 9,
+    "flaky": 0
+  },
+  "cases": [
     {
-      "command": "npm install --save-dev @playwright/test@^1.49.0 --no-audit --no-fund",
-      "cwd": "openbase-ui",
-      "result": "OK（解析安装 @playwright/test 1.63.0，已入 devDependencies）",
-      "exit_code": 0
+      "title": "对话（OpenLLM 会话） /openllm/conversations 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 3943,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
     },
     {
-      "command": "npx playwright install chromium",
-      "cwd": "openbase-ui",
-      "result": "FAILED（沙箱受限：浏览器二进制目录不可写）",
-      "exit_code": 1,
-      "error": "EPERM: operation not permitted, mkdir 'C:\\Users\\jerry\\AppData\\Local\\ms-playwright\\__dirlock'"
+      "title": "对话（RAG 知识问答） /knowledge/chat 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 1967,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
     },
     {
-      "command": "npx playwright test --list",
-      "cwd": "openbase-ui",
-      "result": "OK（识别 9 tests in 4 files：chat 2 / knowledge 2 / memory 2 / portrait 3，配置与用例可被 Playwright 正确解析）",
-      "exit_code": 0
+      "title": "知识列表 /knowledge/list 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 2249,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
     },
     {
-      "command": "npm run test:e2e",
-      "cwd": "openbase-ui",
-      "result": "9 failed（浏览器未安装：Playwright 提示 Please run npx playwright install）",
-      "exit_code": 1
+      "title": "知识详情 /knowledge/:id 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 1367,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+    },
+    {
+      "title": "记忆列表 /memory/list 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 1522,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+    },
+    {
+      "title": "记忆会话 /memory/sessions 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 1940,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+    },
+    {
+      "title": "画像列表 /portrait/list 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 1650,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+    },
+    {
+      "title": "画像总览 /portrait/overview 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 1950,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+    },
+    {
+      "title": "画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn",
+      "status": "failed",
+      "duration_ms": 1497,
+      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
     }
   ],
-  "artifacts": {
-    "results_json": "ui-e2e/results.json（Playwright JSON 报告：9 failed，失败原因=浏览器二进制缺失，非断言失败）",
-    "report_html": "不归档（运行期产物，已由 .gitignore 排除：ui-e2e/report/、ui-e2e/artifacts/）"
-  },
-  "key_pages": [
-    { "id": "portrait-list", "path": "/portrait/list", "status": "PENDING" },
-    { "id": "portrait-overview", "path": "/portrait/overview", "status": "PENDING" },
-    { "id": "portrait-detail", "path": "/portrait/:id", "status": "PENDING" },
-    { "id": "openllm-conversations", "path": "/openllm/conversations", "status": "PENDING" },
-    { "id": "knowledge-chat", "path": "/knowledge/chat", "status": "PENDING" },
-    { "id": "knowledge-list", "path": "/knowledge/list", "status": "PENDING" },
-    { "id": "knowledge-detail", "path": "/knowledge/:id", "status": "PENDING" },
-    { "id": "memory-list", "path": "/memory/list", "status": "PENDING" },
-    { "id": "memory-sessions", "path": "/memory/sessions", "status": "PENDING" }
-  ],
-  "pending": {
-    "blocked_by": "B1（Playwright 浏览器级关键页 PASS）",
-    "reason_detail": "① Playwright 浏览器二进制安装被沙箱拒绝；② 受信通道（nginx /ui/ + /api/）与四子系统运行态不可达",
-    "owner": "非沙箱受控环境（部署/联调窗口）"
-  },
-  "non_sandbox_next": [
-    "npx playwright install chromium（安装浏览器二进制）",
-    "配置 OPENBASE_BASE_URL（nginx 同域 /ui/ 或 gateway）与 OPENBASE_ACCESS_TOKEN（或 OPENBASE_USERNAME/OPENBASE_PASSWORD）",
-    "npm run test:e2e（9 关键页 PASS）",
-    "回填本文件 status=PASS 与 key_pages 逐页结论、key_pages_pass=9"
-  ]
+  "note": "9 关键页均由 page.goto 渲染成功（受控空态可见），失败集中于 Q-FE-4b console.warn=0 判据（Vue Router 'No match found' 警告）。"
 }
