@@ -5,12 +5,12 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-TEST-v1.0.0 |
-| 版本 | v1.0.0 |
-| 状态 | [Review]（S7 段（总收官段）测试报告；**34 条断言逐条状态 + 段门禁六项聚合结论**；A 面（沙箱可判定）已真实执行，B 面（联调窗口必需）一律 PENDING 登记，禁伪造） |
+| 版本 | v1.0.1 |
+| 状态 | [Review]（S7 段（总收官段）测试报告；**34 条断言逐条状态 + 段门禁六项聚合结论**；A 面（沙箱可判定）已真实执行，B 面（联调窗口必需）PENDING 登记，禁伪造；**v1.0.1：S7-T7-1 / S7-T7-2 按实测更正（三远端已同步 / 勾稽差异 0；`jerry.yu` 受限 PENDING）**） |
 | 日期 | 2026-09-11 |
-| 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批文档编制） |
+| 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批编制；S7 批次 6 回填会话修订 v1.0.1） |
 | 版本主题 | **S7 段（总收官段）测试报告**：34 条断言（S7-T1-1~S7-T8-5）逐条状态矩阵（ID / 通过标准摘要 / 执行面 A\|A+B\|B / 实测结论 / 证据路径）、段门禁六项聚合结论（① RA-06 ② 冒烟 S0-S6 ③ 对齐清单关闭 ④ 三原则总验证 ⑤ 跨仓会签 ⑥ 24 卡/JT 回写）、硬门禁实测（命令 + 退出码 + 用例数）、已知环境性失败登记、非沙箱复核清单、结论 |
-| 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4.1~§4.9 / §5 证据与报告规范 / §9 里程碑）；②《OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md》（内部 **v1.1.0 [Approved]**，§4 34 条验收断言，执行面尾注 A 5 / A+B 9 / B 20）；③《OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md》（OB-S7-DEVLOG-v1.0.0，[Review]）；④《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（内部 v1.0.1，[Review]） |
+| 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4.1~§4.9 / §5 证据与报告规范 / §9 里程碑）；②《OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md》（内部 **v1.1.0 [Approved]**，§4 34 条验收断言，执行面尾注 A 5 / A+B 9 / B 20）；③《OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md》（OB-S7-DEVLOG-v1.0.0，[Review]）；④《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（内部 v1.0.2，[Review]） |
 | 适用范围 | OpenBase 主仓 S7 段验收；证据来自 `doc/test/evidence/s7/**`；**不改动子系统仓**；**不纳入 `dogfood-output/`** |
 | 纪律 | 结论分「通过（沙箱可判定）/部分达成（结构面 PASS + 真实面 PENDING）/PENDING（联调窗口）」三类；**未真实执行项不填 PASS，禁伪造 hash/响应码/截图**（对齐设计草案 §5.3/§5.4） |
 
@@ -19,6 +19,7 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-11 | AI（S7 批次 1~4 实测汇总 + 本批编制） | 初始版本：S7 段测试报告。含 §1 测试范围与策略；§2 34 条断言逐条状态矩阵（统计 A 5 / A+B 9 / B 20，结论 通过 5 / 部分达成 9 / PENDING 20）；§3 段门禁六项聚合结论；§4 硬门禁实测；§5 已知环境性失败登记（`PG-ENV-1`~`PG-ENV-4` 与 `test_oidc_binding.py` 关系）；§6 非沙箱复核清单；§7 结论；§8 证据索引。**本次仅新建本报告，不改动任何代码或子系统仓文件** |
+| v1.0.1 | 2026-09-11 | AI（S7 批次 6 回填会话） | **S7-T7-1 / S7-T7-2 按实测更正**：依据 2026-09-11 `ls-remote` 与 `git status --porcelain -uall` 实测——① §2 逐条矩阵 S7-T7-1/T7-2 由「PENDING（两仓待推 / OD 待回读）」更正为「**部分达成**：origin/backup/github 三远端（或按实测）已同步 + **勾稽 A 类差异 0（四仓）**；仅 `jerry.yu` 受限 PENDING / 本地点跟踪 ref 待 `git fetch`」；② §2.1 统计结论分类由 5 / 9 / 20 更正为 **通过 5 / 部分达成 11 / PENDING 18**（执行面 A 5 / A+B 9 / B 20 不变）；③ §2 S7-T7-3「④ 勾稽步骤含 OpenMemory PENDING」更正为「四仓全 0」；④ §3 门禁项⑤、§6 跨仓（T7）行、§7 结论与最终判定同步更正（跨仓推送与勾稽回读已闭环，仅余 `jerry.yu`）；⑤ 上游依据 ④ 总收官报告内部版本 v1.0.1→v1.0.2、⑥ 引用归集文档 v1.6.0。**结论仍为「段门禁整体未达最终通过」（三原则与冒烟真实面 PENDING）。仅修订本报告，不改动四仓任何文件** |
 
 ---
 
@@ -69,9 +70,9 @@
 | S7-T6-2 | 冒烟 S0-S6 聚合：P0 全绿、P1 项登记完成 | B | **PENDING**：结构对账 PASS（S0-S6 七组、P0 30 例、P1 2 例、`missing=0`）；真实五服务执行 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §SMOKE-S0-S6；`OpenBase-真实联调冒烟清单-v1.0.0.md` §3 |
 | S7-T6-3 | 存量测试对齐清单关闭（状态升版 + 分批门禁复跑 + asyncpg/PG 4 项随 PG 就绪复跑关闭） | A+B | **部分达成**：清单升 **[Approved]** + OIDC 独立批次 12 例 PASS；主批次 573 例中 4 例 asyncpg/PG 环境性失败 PENDING（`PG-ENV-4`） | `OpenBase-存量测试对齐任务清单-v1.0.0.md` 修订历史；`gate-aggregate.json` §TEST-ALIGN-CLOSE |
 | S7-T6-4 | K07 + SYS-1 端点-过滤矩阵终验：缺口清零、未覆盖清零；豁免有效期与审批；新增端点无隔离用例不放行 | B | **PENDING**：结构对账 PASS（OpenMemory 32 / OpenRAG 121 / OpenLLM 14 / DPS 169 行，`gap_count=0`）；真实 openapi 全量导出与逐行终验 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §K07-SYS-1 |
-| S7-T7-1 | 四仓入仓完成，实 hash 回填各仓 JT 台账与任务卡卡尾（hash 不得伪造） | B | **PENDING**：四仓本地入仓完成 + hash 回填完成（任务卡 v1.4.0/v1.5.0/v1.6.0 卡尾 + DPS JT + S4 手册）；OpenMemory github 待推 / OpenLLM 四远端未推送 → 远端 PENDING | `doc/test/evidence/s7/t7/signoff-check.json`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md` |
-| S7-T7-2 | 四仓清单勾稽：逐仓 `git status --porcelain -uall`，A 类差异 = 0（仅剩 B 类隔离 + C 类噪音 + 清单文档自身） | B | **PENDING**：OpenRAG/DPS/OpenLLM A 类差异 0（实测/按登记）；OpenMemory 残余 89 待 A 类回读复核 → PENDING | `doc/test/evidence/s7/t7/signoff-check.json` §repos；清点总清单 §1.1 |
-| S7-T7-3 | 跨仓会签记录形成（总清单 §4.1 五步）+ K02/K07/K13 与接口一致性评审 | A+B | **部分达成**：会签五步记录形成 + 汇总核对表 + 接口一致性评审（K07 四仓缺口 0 / 四头·白名单·角色互译·保留码·事件契约对齐）；④ 勾稽步骤含 OpenMemory PENDING | `doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`；`doc/test/evidence/s7/t7/signoff-check.json` |
+| S7-T7-1 | 四仓入仓完成，实 hash 回填各仓 JT 台账与任务卡卡尾（hash 不得伪造） | B | **部分达成（受限 PENDING）**：四仓本地入仓完成 + hash 回填完成（任务卡 v1.4.0/v1.5.0/v1.6.0 卡尾 + DPS JT + S4 手册）；**origin/backup/github 三远端（或按实测）已同步**——OpenMemory `cc7c06f`、OpenLLM `be1886d` 与 need-star `ce40f90`（`ls-remote` 实测三端一致）；仅 OpenLLM `jerry.yu` 远端无写权限受限 PENDING + 本地点跟踪 ref 待 `git fetch` | `doc/test/evidence/s7/t7/signoff-check.json`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md` |
+| S7-T7-2 | 四仓清单勾稽：逐仓 `git status --porcelain -uall`，A 类差异 = 0（仅剩 B 类隔离 + C 类噪音 + 清单文档自身） | B | **部分达成**：**四仓 A 类差异 = 0**（OpenRAG/DPS/OpenLLM 实测）；**OpenMemory 回读完成**——A 集合 73（批 0 基线批 29 + §8.1 裁断并入 3 + S2 段批 41）与残余 89 集合比对，**交集 = 0**；残余分类 = C 类噪音 88（C-2 4 / C-3 57 / C-4 27）+ 清单文档自身 1，B 类 0 / 清单外待裁定 0 | `doc/test/evidence/s7/t7/signoff-check.json` §repos；`doc/test/evidence/s7/t7/om-reconcile.json`；清点总清单 §1.1 |
+| S7-T7-3 | 跨仓会签记录形成（总清单 §4.1 五步）+ K02/K07/K13 与接口一致性评审 | A+B | **部分达成**：会签五步记录形成 + 汇总核对表 + 接口一致性评审（K07 四仓缺口 0 / 四头·白名单·角色互译·保留码·事件契约对齐）；④ 勾稽步骤四仓全 0 | `doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`；`doc/test/evidence/s7/t7/signoff-check.json` |
 | S7-T7-4 | 放行清单（→[Approved]）与清点总清单（→[Approved]）升版登记 | A | **通过**：放行清单 v1.0.9 [Approved]、清点总清单 v1.0.7 [Approved]、执行模板 v1.0.2 [Approved] | 两份清单修订历史；`doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md` |
 | S7-T8-1 | 任务卡 24 卡（K01-K18 + RA-01~RA-06）状态全量回写 | A | **通过**：任务卡 v1.9.0；24 卡逐卡「S7 回写口径」；22 已完成/已闭环 + 2 待联调窗口 PENDING（RA-06 / K13） | `OpenBase-数据隔离实现任务卡-v1.0.0.md`；`doc/test/evidence/s7/t8/writeback-check.json` |
 | S7-T8-2 | JT 台账七线（OpenBase/OpenLLM/OpenRAG/OpenMemory/DPS/前端/SHR）状态与提交号全量回写归集 §3 | A | **通过**：归集文档 v1.5.0 §3.9 七线齐备 + 提交号（四仓已入仓本地提交，远端状态如实登记） | `OpenBase-多系统联调联试-子系统任务归集与版本规划-v1.0.0.md` §3.9；`writeback-check.json` |
@@ -84,11 +85,11 @@
 | 结论分类 | 条数 | 明细 |
 |---------|:---:|------|
 | **通过（沙箱可判定）** | **5** | S7-T1-5、S7-T7-4、S7-T8-1、S7-T8-2、S7-T8-3（= 全部 A 面断言） |
-| **部分达成（结构面 PASS + 真实面 PENDING）** | **9** | S7-T1-1、S7-T1-2、S7-T1-4、S7-T2-3、S7-T6-1、S7-T6-3、S7-T7-3、S7-T8-4、S7-T8-5（= 全部 A+B 断言） |
-| **PENDING（联调窗口）** | **20** | S7-T1-3、S7-T2-1/2/4、S7-T3-1~4、S7-T4-1~4、S7-T5-1~4、S7-T6-2/4、S7-T7-1/2（= 全部 B 断言） |
-| **合计** | **34** | 与设计草案 §4.9 尾注执行面分布一致：**A 5 / A+B 9 / B 20** |
+| **部分达成（结构面 PASS + 真实面 PENDING）** | **11** | S7-T1-1、S7-T1-2、S7-T1-4、S7-T2-3、S7-T6-1、S7-T6-3、S7-T7-1、S7-T7-3、S7-T8-4、S7-T8-5（A+B 断言）+ **S7-T7-2**（v1.0.1：B 面回读完成，结论由 PENDING 转部分达成） |
+| **PENDING（联调窗口）** | **18** | S7-T1-3、S7-T2-1/2/4、S7-T3-1~4、S7-T4-1~4、S7-T5-1~4、S7-T6-2/4（= 其余 B 断言；S7-T7-1/2 已按实测回读，转「部分达成」） |
+| **合计** | **34** | 执行面分档仍为设计草案 §4.9 尾注：**A 5 / A+B 9 / B 20**；v1.0.1 结论分类 5 / 11 / 18 |
 
-> **口径说明**：执行面分档（A / A+B / B）与设计草案 §4.9 尾注逐条一致；逐条结论三类计数 5 / 9 / 20 与执行面分档一一对应。B 面中部分项（如 S7-T6-2 冒烟结构对账、S7-T7-1/2 四仓本地入仓与两仓实测勾稽、S7-T1-3 结构面）已有沙箱结构面产出，但断言通过标准为**真实执行 / 远端回读**，故整体判定 PENDING，其子进度已在「实测结论」列如实登记。
+> **口径说明**：执行面分档（A / A+B / B）与设计草案 §4.9 尾注逐条一致（A 5 / A+B 9 / B 20）；**v1.0.1 起结论分类与执行面不再一一对应**——S7-T7-1 / S7-T7-2（原 B 面 PENDING）经 2026-09-11 远端 `ls-remote` 与 OpenMemory 勾稽回读实测，三远端（或按实测）已同步、勾稽 A 类差异 0，结论由 PENDING 转「部分达成（受限 PENDING：仅 `jerry.yu`）」，故结论分类为 **通过 5 / 部分达成 11 / PENDING 18**。按实测事实登记，禁伪造。
 
 ---
 
@@ -102,10 +103,10 @@
 | ② | **冒烟 S0-S6 聚合** | B | **结构对账 PASS / 真实执行 PENDING**——S0-S6 七组、P0 30 例、P1 2 例、`missing=0`；真实五服务执行 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §SMOKE-S0-S6；《OpenBase-真实联调冒烟清单-v1.0.0.md》§3 |
 | ③ | **存量测试对齐清单关闭** | A+B | **文档面 PASS / 真实面 PENDING**——清单升 [Approved] + OIDC 独立批次 12 例 PASS；主批次 573 例中 4 例 asyncpg/PG 环境性失败 PENDING（`PG-ENV-4`） | `OpenBase-存量测试对齐任务清单-v1.0.0.md` 修订历史；`gate-aggregate.json` §TEST-ALIGN-CLOSE |
 | ④ | **三原则总验证（L1-1 / L2-1 / L2-2 / L3-1）** | B | **PENDING**——真实联调窗口执行；沙箱内产出脚本/矩阵/用例模板（未执行不填 PASS） | `doc/test/evidence/s7/{l1-1,l2-1,l2-2,l3-1}/**`（待产出）；断言 S7-T2-1、S7-T3-1、S7-T4-1、S7-T5-1 |
-| ⑤ | **跨仓会签** | A+B | **部分达成**——四仓入仓完成（OpenRAG/DPS 三远端同步、OpenMemory github 待推、OpenLLM 未推送）+ 勾稽 A 类差异 0（两仓实测、两仓按登记）+ 清单升版；两仓远端推送与 OpenMemory 勾稽回读 PENDING | §6 非沙箱复核清单；`doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`；`doc/test/evidence/s7/t7/signoff-check.json` |
-| ⑥ | **24 卡 / JT 台账全量回写** | A | **PASS**——24 卡逐卡 S7 回写口径；七线 JT 状态与提交号汇总回写；文档地图无游离 | `OpenBase-数据隔离实现任务卡-v1.0.0.md`（v1.9.0）；`OpenBase-多系统联调联试-子系统任务归集与版本规划-v1.0.0.md`（v1.5.0 §3.9）；`doc/design/OpenBase-文档地图索引-v1.0.0.md`；`doc/test/evidence/s7/t8/writeback-check.json` |
+| ⑤ | **跨仓会签** | A+B | **部分达成**——四仓入仓完成 + **三远端（或按实测）已同步**（OM `cc7c06f` / LL `be1886d`、`ce40f90` / OpenRAG、DPS 三远端）+ **勾稽 A 类差异 0（四仓）** + 清单升版；仅 OpenLLM `jerry.yu` 受限 PENDING、本地点跟踪 ref 待 `git fetch` | §6 非沙箱复核清单；`doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`；`doc/test/evidence/s7/t7/{signoff-check,om-reconcile}.json` |
+| ⑥ | **24 卡 / JT 台账全量回写** | A | **PASS**——24 卡逐卡 S7 回写口径；七线 JT 状态与提交号汇总回写；文档地图无游离 | `OpenBase-数据隔离实现任务卡-v1.0.0.md`（v1.9.0）；`OpenBase-多系统联调联试-子系统任务归集与版本规划-v1.0.0.md`（v1.6.0 §3.9）；`doc/design/OpenBase-文档地图索引-v1.0.0.md`；`doc/test/evidence/s7/t8/writeback-check.json` |
 
-**六项合计**：① ② ③ 结构面/文档面达成、⑥ 达成；① ② 真实面、④、⑤ 为 PENDING → **段门禁整体未达最终通过**。
+**六项合计**：① ② ③ 结构面/文档面达成、⑤ 部分达成、⑥ 达成；① ② 真实面、④ 为 PENDING、⑤ 仅余 `jerry.yu` 受限 PENDING → **段门禁整体未达最终通过**。
 
 ---
 
@@ -149,19 +150,19 @@
 | S6 移交（B1~B6） | B1 Playwright 9 关键页 / B2 L3-2 真实受信通道双签 / B3 真实双租户数据面 / B4 真实 IdP 回调与吊销 / B5 四仓 `frontend/` 物理改造与 CI 收敛（S7 按 Q-S6-D7 复核）/ B6 nginx `/ui/` 发布回滚 | 浏览器/通道/PG-Redis/IdP/nginx | 联调窗口（B5 各子系统仓） | 逐条回填 `doc/test/evidence/s6/**` 后关闭 |
 | T2~T5 联调窗口（4 组） | T2 L1-1 级联 / T3 L2-1 演练 / T4 L2-2 终验 / T5 L3-1 Agent | 四仓运行态 + 可注故障窗口 + 真实 agent key | 联调窗口 | 执行并回填 `doc/test/evidence/s7/{l1-1,l2-1,l2-2,l3-1}/**` |
 | T6 真实面 | RA-06 五项真实面 / 冒烟 S0-S6 真实执行 / `PG-ENV-1`~`4` / K07/SYS-1 真实 openapi 全量终验 | 真实 PG/Redis/IdP + 四仓运行态 | 联调窗口 | 回填 `gate-aggregate.json` 对应 `status` |
-| 跨仓（T7） | 两仓远端推送（OpenMemory github 待推 / OpenLLM 四远端未推送）+ OpenMemory 勾稽 A 类回读 | 各仓远端写权限 | 用户（沙箱外） | 推送后回填归集 §3.9 与 `signoff-check.json` |
+| 跨仓（T7） | 跨仓推送受限项（OpenLLM `jerry.yu` 无写权限）+ 本地点跟踪 ref 待 `git fetch`；勾稽 A 类回读已闭环（差异 0） | `jerry.yu` 远端写权限 + `git fetch` | 用户（沙箱外） | 受限项回填归集 §3.9 与 `signoff-check.json` |
 
-> **段门禁最终批准前置**：上述 B 面全绿且 T2~T5 真实面回填、两仓远端推送与 OpenMemory 勾稽回读完成后，本报告与总收官报告由 [Review] 按挂起口径升 [Approved]。
+> **段门禁最终批准前置**：上述 B 面全绿且 T2~T5 真实面回填完成后，本报告与总收官报告由 [Review] 按挂起口径升 [Approved]（跨仓推送与 OpenMemory 勾稽回读已于 2026-09-11 闭环，仅余 `jerry.yu` 受限项）。
 
 ---
 
 ## §7 结论
 
-- **34 条断言统计**：**通过（沙箱可判定）5 条** + **部分达成（结构面 PASS + 真实面 PENDING）9 条** + **PENDING（联调窗口）20 条** = **34 条**；执行面分布 **A 5 / A+B 9 / B 20**，与设计草案 §4.9 尾注逐条一致。
-- **段门禁六项**（逐项见 §3）：① RA-06（结构面 PASS / 真实面 PENDING）、② 冒烟 S0-S6（结构对账 PASS / 真实执行 PENDING）、③ 对齐清单关闭（文档面 PASS；主批次 4 例 PG 环境性失败 PENDING）、④ 三原则总验证（PENDING）、⑤ 跨仓会签（部分达成；两仓远端推送 PENDING）、⑥ 24 卡/JT 回写（PASS）。
+- **34 条断言统计**：**通过（沙箱可判定）5 条** + **部分达成（结构面 PASS + 真实面 PENDING）11 条** + **PENDING（联调窗口）18 条** = **34 条**；执行面分布仍为 **A 5 / A+B 9 / B 20**（与设计草案 §4.9 尾注一致）；v1.0.1：S7-T7-1 / S7-T7-2 按远端实测回读由 PENDING 转「部分达成」（受限 PENDING：仅 `jerry.yu`）。
+- **段门禁六项**（逐项见 §3）：① RA-06（结构面 PASS / 真实面 PENDING）、② 冒烟 S0-S6（结构对账 PASS / 真实执行 PENDING）、③ 对齐清单关闭（文档面 PASS；主批次 4 例 PG 环境性失败 PENDING）、④ 三原则总验证（PENDING）、⑤ 跨仓会签（**部分达成；三远端（或按实测）已同步 + 勾稽 A 类差异 0（四仓）；仅 `jerry.yu` 受限 PENDING**）、⑥ 24 卡/JT 回写（PASS）。
 - **硬门禁**：`ruff` 0 错误（退出码 0）；S7 断言回归 **70 passed**（退出码 0）；本批新增 `tests/test_s7_docs.py` 全绿（退出码 0）；S6 边界防回归 **9 passed**（退出码 0）。
-- **最终判定**：**段门禁整体未达最终通过**，待真实面（RA-06 真实面 / 冒烟 S0-S6 真实执行 / 三原则总验证 T2~T5）全绿、`PG-ENV-1`~`PG-ENV-4` 复跑关闭、K07/SYS-1 真实终验完成，以及两仓远端推送与 OpenMemory 勾稽回读完成后，按**挂起口径**批准（对齐 S5/S6 范式：挂起登记不阻断已达成项；遗留 = 无阻断项）。
-- **结论口径不变**：与总收官报告 v1.0.1 一致；本报告与 DevLogReport v1.0.0 为 S7 段 Step 2/Step 3 交付物，随段门禁批准回写。
+- **最终判定**：**段门禁整体未达最终通过**，待真实面（RA-06 真实面 / 冒烟 S0-S6 真实执行 / 三原则总验证 T2~T5）全绿、`PG-ENV-1`~`PG-ENV-4` 复跑关闭、K07/SYS-1 真实终验完成，以及 `jerry.yu` 受限项处理完成后，按**挂起口径**批准（对齐 S5/S6 范式：挂起登记不阻断已达成项；遗留 = 无阻断项）。
+- **结论口径**：与总收官报告 v1.0.2 一致；本报告与 DevLogReport v1.0.0 为 S7 段 Step 2/Step 3 交付物，随段门禁批准回写。
 
 ---
 
@@ -179,4 +180,4 @@
 
 ---
 
-> **文档结束**。本文档为 S7 段「测试」环节交付物（**[Review]** v1.0.0）；回溯需求（34 断言）、设计（§4 落点）、执行面（A 5 / A+B 9 / B 20）逐条覆盖；B 面 PENDING 项待联调窗口与非沙箱环境回填后按挂起口径复核。
+> **文档结束**。本文档为 S7 段「测试」环节交付物（**[Review]** v1.0.1）；回溯需求（34 断言）、设计（§4 落点）、执行面（A 5 / A+B 9 / B 20）逐条覆盖；S7-T7-1/T7-2 按实测回读转「部分达成」，其余 B 面 PENDING 项待联调窗口与非沙箱环境回填后按挂起口径复核。

@@ -194,11 +194,11 @@ def test_task_card_appends_s7_summary_section() -> None:
 
 
 def test_jt_backlog_version_bumped_to_v150() -> None:
-    """归集文档内部版本升 v1.5.0 并登记修订历史（批次 4：四仓入仓口径修正）."""
+    """归集文档内部版本升 v1.6.0 并登记修订历史（批次 6：远端同步口径更正）."""
     assert _JT_BACKLOG.exists(), _JT_BACKLOG
     text = _read_text(_JT_BACKLOG)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.5\.0\s*\|", text), "归集文档版本未升 v1.5.0"
-    assert re.search(r"\|\s*v1\.5\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.5.0 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.6\.0\s*\|", text), "归集文档版本未升 v1.6.0"
+    assert re.search(r"\|\s*v1\.6\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.6.0 条目"
 
 
 def test_jt_seven_lines_have_status_and_hash_or_pending() -> None:
@@ -215,7 +215,7 @@ def test_jt_seven_lines_have_status_and_hash_or_pending() -> None:
 
 
 def test_jt_all_four_repos_archived_with_remote_status() -> None:
-    """四仓均「已入仓（本地提交完成）」；逐仓附 HEAD 与远端同步状态（OM github / LL 四远端 PENDING）."""
+    """四仓均「已入仓（本地提交完成）」；逐仓附 HEAD 与远端同步状态（OM/LL 三远端已同步；LL jerry.yu 受限 PENDING）."""
     text = _read_text(_JT_BACKLOG)
     rows = {match.group(1): match.group(2) for match in _JT_ROW.finditer(text)}
     for repo_row in ("OpenMemory-JT", "OpenLLM-JT", "OpenRAG-JT", "DPS-JT"):
@@ -223,8 +223,9 @@ def test_jt_all_four_repos_archived_with_remote_status() -> None:
         assert re.search(r"[0-9a-f]{7}", rows[repo_row]), rows[repo_row]
     assert "未入仓" not in rows["OpenMemory-JT"], rows["OpenMemory-JT"]
     assert "未入仓" not in rows["OpenLLM-JT"], rows["OpenLLM-JT"]
-    assert "github" in rows["OpenMemory-JT"] and "PENDING" in rows["OpenMemory-JT"]
-    assert "未推送" in rows["OpenLLM-JT"] and "PENDING" in rows["OpenLLM-JT"]
+    assert "github" in rows["OpenMemory-JT"] and "三端已同步" in rows["OpenMemory-JT"]
+    assert "已同步" in rows["OpenLLM-JT"] and "jerry.yu" in rows["OpenLLM-JT"]
+    assert "PENDING" in rows["OpenLLM-JT"]
 
 
 def test_jt_openbase_and_frontend_submit_chain() -> None:
@@ -272,7 +273,7 @@ def test_report_exists_with_metadata() -> None:
     text = _read_text(_REPORT)
     assert "OpenBase-S7-全域门禁与总收官报告-v1.0.0" in text
     assert re.search(r"\|\s*状态\s*\|\s*\[Review\]", text), "报告状态非 [Review]"
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.1\s*\|", text)
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.2\s*\|", text)
     assert "修订历史" in text
 
 
@@ -299,14 +300,14 @@ def test_report_pending_register_merges_all_sources() -> None:
 
 
 def test_report_signoff_record_four_repos_archived() -> None:
-    """跨仓会签记录：四仓入仓完成 hash + 远端同步状态（OM github 待推 / LL 未推送）+ 会签五步."""
+    """跨仓会签记录：四仓入仓完成 hash + 远端同步状态（OM/LL 三远端已同步，jerry.yu 受限 PENDING）+ 会签五步."""
     text = _read_text(_REPORT)
     for digest in ("a2eb92b", "e772c01", "cc7c06f", "be1886d"):
         assert digest in text, f"会签记录缺少四仓 HEAD hash {digest}"
     assert "四仓入仓完成" in text, "报告未登记四仓入仓完成"
     assert "未入仓" not in text, "报告仍残留「未入仓」过时口径"
-    assert "github" in text and "待推" in text, "报告未登记 OpenMemory github 待推"
-    assert "未推送" in text, "报告未登记 OpenLLM 未推送"
+    assert "github" in text and "三端已同步" in text, "报告未登记 OpenMemory github 三端已同步"
+    assert "jerry.yu" in text and "PENDING" in text, "报告未登记 OpenLLM jerry.yu 受限 PENDING"
     for marker in ("五步", "会签"):
         assert marker in text, f"会签记录缺少 {marker}"
 

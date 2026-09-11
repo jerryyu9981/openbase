@@ -168,5 +168,40 @@
       "status": "PENDING"
     }
   ],
+  "updated": {
+    "updated_at": "2026-09-11",
+    "basis": "跨仓推送结果与 OpenMemory 勾稽 A 类回读实测（2026-09-11）",
+    "note": "本章为 updated 覆盖口径；上文顶层与 repos 字段为 v1 历史口径，保留不改。",
+    "remote_sync": {
+      "OpenMemory": "origin/backup/github 三端已同步 cc7c06f（ls-remote 实测三端 hash 一致）",
+      "OpenLLM": "origin/backup/github 三端已同步 be1886d（feature/s4-identity-channel-b）与 ce40f90（feature/need-star-orchestration）；jerry.yu 无写权限受限 PENDING；本地点跟踪 ref 待 git fetch",
+      "OpenRAG": "origin/backup/github 三端已同步 a2eb92b",
+      "DPS": "origin/backup/github 三端已同步 e772c01"
+    },
+    "reconcile": {
+      "OpenMemory": {
+        "a_class_count": 73,
+        "a70_count": 70,
+        "a_class_batches": {"batch0": 29, "batch1": 5, "batch2": 21, "batch3": 15, "extra_from_section_8_1": 3},
+        "residual_total": 89,
+        "intersection": 0,
+        "a_class_diff": 0,
+        "residual_class_counts": {"checklist_doc": 1, "C-2": 4, "C-3": 57, "C-4": 27, "B": 0, "undecided": 0},
+        "detail_ref": "doc/test/evidence/s7/t7/om-reconcile.json"
+      }
+    },
+    "t7_assertions": [
+      {"id": "S7-T7-1", "conclusion": "PARTIAL", "detail": "四仓入仓完成 + 三远端（或按实测）已同步；仅 OpenLLM jerry.yu 受限 PENDING + 本地点跟踪 ref 待 git fetch"},
+      {"id": "S7-T7-2", "conclusion": "PASS", "detail": "四仓 A 类差异 0；OpenMemory 回读完成（A 集合 73 vs 残余 89，交集 0）"}
+    ],
+    "list_upgrade": {"clearance": "v1.0.8 [Approved]"},
+    "signoff_five_steps": [
+      {"step": "③", "item": "四仓勾稽 A 类差异 0", "status": "DONE", "detail": "四仓全 0（OpenMemory 回读完成）"}
+    ],
+    "pending_items": [
+      {"id": "T7-REMOTE-PUSH:OpenLLM-jerry.yu", "item": "OpenLLM jerry.yu 远端推送（无写权限受限）", "owner": "用户（沙箱外）", "status": "PENDING"},
+      {"id": "T7-LOCAL-TRACKING-FETCH", "item": "OpenMemory/OpenLLM 本地点跟踪 ref 待 git fetch 同步", "owner": "用户（沙箱外）", "status": "PENDING"}
+    ]
+  },
   "note": "A 面（清单结构对账 + OpenBase 侧会签汇总与清单升版 + 文档维护）沙箱内真实执行；B 面（四仓 git 写权限、远端推送、逐仓 git status 回读、四仓回归）由用户在沙箱外执行，结果如实登记。受限项一律 PENDING，禁伪造 hash 与通过。"
 }

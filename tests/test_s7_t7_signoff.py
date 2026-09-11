@@ -3,14 +3,14 @@
 设计依据：《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0》（内部 v1.0.1 [Approved]）
 §4.7（S7-T7-1 ~ S7-T7-4）、§1.2（Q-S7-D10 会签汇总表落点）、§5；执行件
 `doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md`（内部 v1.0.2 [Approved]）；
-`doc/planning/OpenBase-联调产物清点核对总清单-v1.0.0.md`（内部 v1.0.7 [Approved]）§4.1 会签五步；
+`doc/planning/OpenBase-联调产物清点核对总清单-v1.0.0.md`（内部 v1.0.8 [Approved]）§4.1 会签五步；
 `doc/development/OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md`（内部 v1.0.9 [Approved]）§0/§7。
 
 四仓入仓实测事实（2026-09-11 本地实测，本批以此为准并修正批次 3 过时口径）：
 - OpenRAG：`release/v1.10.0` @ `a2eb92b`（`9e93c1c`/`0bda158`/`f48ea08`/`5fafc0a` + 修复 `b809c04` + 回填 `a2eb92b`），三远端同步，勾稽 A 类差异 0；
 - DPS：`main` @ `e772c01`（`8333650`/`45a5ea4`/`1dc5f94`/`14d3111` + 回填 `e772c01`），三远端同步，勾稽 A 类差异 0；
-- OpenMemory：`release/v7.3.0` @ `cc7c06f`（`000a154` v7.2 基线 / `fbc8326` S2 五文档 / `90cbe37` S2 源码与迁移 / `a4a0059` 测试与 CI / `1348229` lint 债 / `cc7c06f` .devflow 移出版本控制），origin+backup 已同步、github PENDING，勾稽待 A 类回读复核；
-- OpenLLM：`feature/s4-identity-channel-b` @ `be1886d`（批 1 `656d179`/批 2 `6d8b189`/批 3 `2ef6601`/批 4 `640f250`/批 5 `c310c38`/批 6 `24d4484` + 手册留档 `64ef68f`/`e366e50`/`be1886d`；need-star 独立分支 `feature/need-star-orchestration` @ `ce40f90`），四远端未推送 PENDING，勾稽 A 类差异 0。
+- OpenMemory：`release/v7.3.0` @ `cc7c06f`（`000a154` v7.2 基线 / `fbc8326` S2 五文档 / `90cbe37` S2 源码与迁移 / `a4a0059` 测试与 CI / `1348229` lint 债 / `cc7c06f` .devflow 移出版本控制），origin/backup/github 三端已同步 `cc7c06f`，勾稽 A 类回读完成（差异 0）；
+- OpenLLM：`feature/s4-identity-channel-b` @ `be1886d`（批 1 `656d179`/批 2 `6d8b189`/批 3 `2ef6601`/批 4 `640f250`/批 5 `c310c38`/批 6 `24d4484` + 手册留档 `64ef68f`/`e366e50`/`be1886d`；need-star 独立分支 `feature/need-star-orchestration` @ `ce40f90`），origin/backup/github 三端已同步 `be1886d`/`ce40f90`，`jerry.yu` 受限 PENDING，勾稽 A 类差异 0。
 
 断言口径（沙箱可判定面 / A 面 + 联调窗口必需面 / B 面；禁伪造 hash 与通过）：
 - S7-T7-1：四仓入仓完成 + 实 hash 回填（远端推送受限则如实登记 PENDING）；
@@ -83,8 +83,8 @@ _REPO_BRANCH = {
 _REMOTE_SYNC = {
     "OpenRAG": "origin/backup/github",
     "DPS": "origin/backup/github",
-    "OpenMemory": "origin/backup",
-    "OpenLLM": "origin/backup/github/jerry.yu",
+    "OpenMemory": "origin/backup/github",
+    "OpenLLM": "origin/backup/github",
 }
 # 会签五步锚点（总清单 §4.1）
 _SIGNOFF_STEPS = ("①", "②", "③", "④", "⑤")
@@ -208,11 +208,11 @@ def test_template_t7_assertions_concluded() -> None:
 
 
 def test_jt_backlog_version_bumped() -> None:
-    """归集文档内部版本升 v1.5.0 并在修订历史登记."""
+    """归集文档内部版本升 v1.6.0 并在修订历史登记."""
     assert _JT_BACKLOG.exists(), _JT_BACKLOG
     text = _read_text(_JT_BACKLOG)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.5\.0\s*\|", text), "归集文档版本未升 v1.5.0"
-    assert re.search(r"\|\s*v1\.5\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.5.0 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.6\.0\s*\|", text), "归集文档版本未升 v1.6.0"
+    assert re.search(r"\|\s*v1\.6\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.6.0 条目"
 
 
 def test_jt_backlog_section_3_9_all_four_repos_archived() -> None:
@@ -231,19 +231,19 @@ def test_jt_backlog_section_3_9_all_four_repos_archived() -> None:
 
 
 def test_jt_backlog_remote_sync_status_per_repo() -> None:
-    """§3.9 远端同步状态逐仓登记（OM origin/backup 同步 github PENDING；LL 四远端未推送 PENDING）."""
+    """§3.9 远端同步状态逐仓登记（OM/LL 三远端已同步；LL jerry.yu 受限 PENDING）."""
     text = _read_text(_JT_BACKLOG)
     section = text[text.index("### 3.9") : text.index("## 4. 执行与版本管理规则")]
     rows = {match.group(1): match.group(2) for match in _JT_ROW.finditer(section)}
     memory_row = rows["OpenMemory-JT"]
     assert "origin" in memory_row and "backup" in memory_row, memory_row
-    assert "github" in memory_row and "PENDING" in memory_row, memory_row
+    assert "github" in memory_row and "三端已同步" in memory_row, memory_row
     llm_row = rows["OpenLLM-JT"]
     for remote in ("origin", "backup", "github", "jerry.yu"):
         assert remote in llm_row, f"OpenLLM-JT 行缺少远端 {remote}"
-    assert "未推送" in llm_row and "PENDING" in llm_row, llm_row
+    assert "已同步" in llm_row and "PENDING" in llm_row, llm_row
     assert "ce40f90" in llm_row, "OpenLLM-JT 行缺少 need-star 独立分支提交号"
-    assert "PENDING" in rows["OpenMemory-JT"], "OpenMemory 勾稽受限未登记 PENDING"
+    assert "A 类差异 0" in memory_row, "OpenMemory 勾稽回读结论未登记（A 类差异 0）"
 
 
 # ===========================================================================
@@ -262,12 +262,12 @@ def test_release_checklist_approved_with_signoff() -> None:
 
 
 def test_clearance_checklist_approved_with_four_repo_registration() -> None:
-    """清点总清单升 v1.0.7 [Approved]，新增四仓入仓完成登记（分支/HEAD/勾稽/远端）."""
+    """清点总清单升 v1.0.8 [Approved]，新增四仓入仓完成登记（分支/HEAD/勾稽/远端）."""
     assert _CLEARANCE.exists(), _CLEARANCE
     text = _read_text(_CLEARANCE)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.7\s*\|", text), "清点总清单版本未升 v1.0.7"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.8\s*\|", text), "清点总清单版本未升 v1.0.8"
     assert re.search(r"\|\s*状态\s*\|\s*\[Approved\]", text), "清点总清单状态非 [Approved]"
-    assert re.search(r"\|\s*v1\.0\.7\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.7 条目"
+    assert re.search(r"\|\s*v1\.0\.8\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.8 条目"
     assert "### 5.10" in text, "清点总清单缺少 §5.10 四仓入仓完成登记"
     for repo, head in _REPO_HEAD.items():
         assert head in text, f"清点总清单缺少 {repo} HEAD {head}"
@@ -283,17 +283,17 @@ def test_report_corrected_four_repos_archived() -> None:
     """总收官报告内部版本升 v1.0.1，且不再保留「未入仓」过时口径."""
     assert _REPORT.exists(), _REPORT
     text = _read_text(_REPORT)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.1\s*\|", text), "总收官报告未升内部 v1.0.1"
-    assert re.search(r"\|\s*v1\.0\.1\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.1 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.2\s*\|", text), "总收官报告未升内部 v1.0.2"
+    assert re.search(r"\|\s*v1\.0\.2\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.2 条目"
     assert "未入仓" not in text, "总收官报告仍残留「未入仓」过时口径"
 
 
 def test_report_records_remote_sync_and_reconciliation() -> None:
-    """报告登记四仓入仓完成：两仓三远端同步、OpenMemory github 待推、OpenLLM 未推送 + 勾稽状态."""
+    """报告登记四仓入仓完成：OM/LL 三远端已同步、jerry.yu 受限 PENDING + 勾稽差异 0."""
     text = _read_text(_REPORT)
     assert "四仓入仓完成" in text, "报告未登记「四仓入仓完成」"
-    assert "github" in text and "待推" in text, "报告未登记 OpenMemory github 待推"
-    assert "未推送" in text, "报告未登记 OpenLLM 未推送"
+    assert "github" in text and "三端已同步" in text, "报告未登记 OpenMemory github 三端已同步"
+    assert "jerry.yu" in text and "PENDING" in text, "报告未登记 OpenLLM jerry.yu 受限 PENDING"
     assert "勾稽" in text, "报告缺少勾稽状态"
     assert "已入仓（本地提交完成）" in text, "报告未登记两仓「已入仓（本地提交完成）」"
     assert "段门禁整体未达最终通过" in text, "报告结论口径被误改（应保持未达最终通过）"

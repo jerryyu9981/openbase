@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-JTBACKLOG-v1.0.0 |
-| 版本 | v1.5.0 |
-| 状态 | [Review]（Q-A/Q-B/Q-C 已评审定案；FE-JT v1.0.0 纳入验证任务；跨系统卡主责矩阵已定；v1.2.0 统一前端定案；v1.3.0 S6 段门禁结论回写；v1.3.1 DPS-JT 入仓回填；v1.4.0 S7 段七线 JT 汇总回写；**v1.5.0 四仓入仓口径修正（S7-T7）**——OpenMemory-JT / OpenLLM-JT 由「未入仓 PENDING」**更正为「已入仓（本地提交完成）」**并补分支/HEAD/批次 hash/远端同步状态；OpenRAG/DPS 维持已入仓三远端同步；勾稽 A 类差异：OpenRAG/DPS/OpenLLM 三仓 0、OpenMemory 按 A 类回读复核登记 PENDING） |
+| 版本 | v1.6.0 |
+| 状态 | [Review]（Q-A/Q-B/Q-C 已评审定案；FE-JT v1.0.0 纳入验证任务；跨系统卡主责矩阵已定；v1.2.0 统一前端定案；v1.3.0 S6 段门禁结论回写；v1.3.1 DPS-JT 入仓回填；v1.4.0 S7 段七线 JT 汇总回写；v1.5.0 四仓入仓口径修正（S7-T7）；**v1.6.0 远端同步实测更正**——OpenMemory-JT 由「github 待推」更正为「**origin/backup/github 三远端已同步 `cc7c06f`**，勾稽差异 0」；OpenLLM-JT 由「四远端未推送」更正为「**origin/backup/github 三远端已同步 `be1886d` 与 need-star `ce40f90`**；`jerry.yu` 无权限受限 PENDING；本地点跟踪 ref 待 `git fetch`」；OpenRAG/DPS 维持三远端同步） |
 | 日期 | 2026-09-06 |
 | 作者 | AD（跨项目分析） |
 | 版本主题 | 将联调联试暴露的问题（复盘 L1-L7、规划升级项、隔离任务卡 K/RA）按子系统分别归集为"联调联试版本"任务线：每子系统一张独立 Backlog，含任务、里程碑（R1-R4）、版本号与门禁，供各仓分别排期修正 |
@@ -21,6 +21,7 @@
 | v1.3.1 | 2026-09-11 | AI（跨仓会签侧回填） | **DPS-JT 入仓 hash 回填（§3.5 DPS 画像面）**：v1.0.0(R1) DP-1/RA-03、DP-5/RA-04 与 v1.1.0(R2) DP-2/K18、DP-3、DP-4/K14、DP-6/K12 状态由 🚧/⏳ 回填为 **✅ 已闭环/已完成**并逐行附提交号（S0：`887c214`/`6b39dd4`；S5：`8333650`/`45a5ea4`/`1dc5f94`/`14d3111`），K02（协同）DPS 侧落地（S5-T1）；门禁行回填（S0 真实共享 PG 15/15 + S5 段门禁 2026-09-10 人工批准），并新增「DPS 入仓回填（v1.3.1）」注记（勾稽 A 类差异 0、残余 4、三远程同步）。**仅回填 §3.5 状态与注记，不改变其他子系统行与既有口径** |
 | v1.4.0 | 2026-09-11 | AI（S7 批次 3 开发会话） | **S7 段七线 JT 汇总回写（S7-T8-2）**：新增 §3.9「S7 段七线 JT 汇总回写」——OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS / 前端 / SHR 七线状态与提交号全量回写。OpenBase-JT：S7 提交链 `402ff8e`（SHR 五项）/`2235229`（S3·S5 入仓回填登记）/`d3faa7f`（S7-T6 门禁聚合）；OpenRAG-JT：**已入仓**（`release/v1.10.0`，`9e93c1c`/`0bda158`/`f48ea08`/`5fafc0a` + `b809c04` + `a2eb92b`，三远端同步，勾稽 A 类差异 0）；DPS-JT：**已入仓**（`main`，`8333650`/`45a5ea4`/`1dc5f94`/`14d3111` + `e772c01`，勾稽 A 类差异 0，残余 4）；**OpenMemory-JT / OpenLLM-JT：未入仓 PENDING**（本地提交/待提交，三远端同步与勾稽待沙箱外，关联 S7-T7-1）；FE-JT：`2abe52a`/`aa6c5bd`/`72b19da`/`477eb80`（S6 批 1~4）+ `aad9c8a`（S6 段门禁批准回写）；SHR-JT：S7-T1 五项结构面完成（`402ff8e`；`doc/test/evidence/s7/shr/**` 五份），真实探活/建库/授权待联调窗口。**仅新增 §3.9 汇总表与本条修订历史，不改变 §3.1~§3.8 既有口径** |
 | v1.5.0 | 2026-09-11 | AI（S7 批次 4 开发会话） | **四仓入仓口径修正（S7-T7-1/T7-2）**：依据四仓 2026-09-11 本地实测，§3.9 七线 JT 全量更正——**OpenMemory-JT**：由「未入仓 PENDING」更正为「**已入仓（本地提交完成）**」（`release/v7.3.0` @ `cc7c06f`；`000a154` v7.2 基线收口 / `fbc8326` S2 五文档 / `90cbe37` S2 源码与迁移 / `a4a0059` 测试与 CI / `1348229` lint 债 / `cc7c06f` .devflow 移出版本控制；origin+backup 已同步 `cc7c06f`、**github 尚无该分支（PENDING）**；工作树残余 89，勾稽按 A 类回读复核登记 PENDING）；**OpenLLM-JT**：由「未入仓 PENDING」更正为「**已入仓（本地提交完成）**」（`feature/s4-identity-channel-b` @ `be1886d`；批 1 `656d179`/批 2 `6d8b189`/批 3 `2ef6601`/批 4 `640f250`/批 5 `c310c38`/批 6 `24d4484` + 手册留档 `64ef68f`/`e366e50`/`be1886d`；need-star 独立分支 `feature/need-star-orchestration` @ `ce40f90`；origin/backup/github/jerry.yu 四远端均无该分支，**未推送 PENDING**；勾稽 A 类差异 0，任务卡 v1.7.2 登记 `-uall` 1556→1479）；OpenRAG/DPS 维持「已入仓（三远端同步，勾稽 A 类差异 0）」；§3.9 汇总口径同步更正。**不改变 §3.1~§3.8 既有口径与四仓分清单自身** |
+| v1.6.0 | 2026-09-11 | AI（S7 批次 6 回填会话）/ 项目负责人（实测事实确认） | **远端同步实测更正（§3.9）**：依据 2026-09-11 `ls-remote` 实测——**OpenMemory-JT**：远端状态由「origin+backup 已同步、github 尚无该分支（PENDING）」更正为「**origin / backup / github 三端已同步 `cc7c06f`**」，勾稽由「待 A 类回读复核 PENDING」更正为「**A 类差异 0**」（残余 89 分类：C 类噪音 88 + 清单文档自身 1，B 类 0）；**OpenLLM-JT**：远端状态由「origin/backup/github/jerry.yu 四远端均无该分支（未推送 PENDING）」更正为「**origin / backup / github 三端已同步 `be1886d`（s4）与 `ce40f90`（need-star）**；**`jerry.yu` 无写权限受限 PENDING**；本地点跟踪 ref 待人工 `git fetch`（推送中 `.git/logs/refs/remotes/**` 写入沙箱受限 exit 1，不影响远端）」；OpenRAG/DPS 维持三远端同步；§3.9 汇总口径同步更正为「四仓 A 类差异均 0」。**不改变 §3.1~§3.8 既有口径与四仓分清单自身** |
 
 ---
 
@@ -151,21 +152,21 @@
 | K07 端点-过滤矩阵（R-M2） | OpenBase（盘点模板/方法，P2-1） | 各仓填报自身端点矩阵 | 端点-过滤矩阵（缺口清零） | R1 收官 |
 | K13 存储账号分离（R-M3） | 共享基础设施（DB 账号矩阵/授权，U2） | 各仓改连接串配合 | 账号矩阵核对通过 | R2 收官 |
 
-### 3.9 S7 段七线 JT 汇总回写（v1.5.0，2026-09-11）
+### 3.9 S7 段七线 JT 汇总回写（v1.6.0，2026-09-11）
 
-> 依据：《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0》§4.8（S7-T8-2）/ §4.7（S7-T7-1/T7-2）/ §1.1（Q-S7-8）；《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0》（内部 v1.0.2 [Approved]）§2/§4.1/§5；《OpenBase-联调产物清点核对总清单-v1.0.0》（内部 v1.0.7 [Approved]）§5.10；S7 任务卡 v1.9.0 卡尾「S7 段（总收官）回写摘要」。**纪律：hash 一律真实回填；已入仓登记实际 commit 与远端同步状态，未推送/未回读等受限项一律标 `PENDING`，禁伪造**（Q-S7-1 / S7-T7-1）。**本表 v1.5.0 按四仓 2026-09-11 本地实测全量更正**（原 v1.4.0 对 OpenMemory / OpenLLM 两仓沿用批次 3 过时口径，现更正为四仓入仓完成）。
+> 依据：《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0》§4.8（S7-T8-2）/ §4.7（S7-T7-1/T7-2）/ §1.1（Q-S7-8）；《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0》（内部 v1.0.2 [Approved]）§2/§4.1/§5；《OpenBase-联调产物清点核对总清单-v1.0.0》（内部 v1.0.7 [Approved]）§5.10；S7 任务卡 v1.9.0 卡尾「S7 段（总收官）回写摘要」。**纪律：hash 一律真实回填；已入仓登记实际 commit 与远端同步状态，未推送/未回读等受限项一律标 `PENDING`，禁伪造**（Q-S7-1 / S7-T7-1）。**本表 v1.5.0 按四仓 2026-09-11 本地实测全量更正**（原 v1.4.0 对 OpenMemory / OpenLLM 两仓沿用批次 3 过时口径，现更正为四仓入仓完成）；**v1.6.0 再按 2026-09-11 远端实测更正 OM/LL 两仓远端同步口径**（OM 由 github 待推更正为三端已同步；LL 由四远端未推送更正为 origin/backup/github 三端已同步，`jerry.yu` 受限 PENDING）。
 
 | JT 线 | 段落 | 状态 | 提交号 / PENDING 说明 |
 |-------|------|------|------------------------|
 | OpenBase-JT | §3.1 | ✅ S7 段产物已入仓（SHR / 门禁聚合 / 台账回写） | S7 提交链 `402ff8e`（SHR 五项收口）/ `2235229`（S3·S5 入仓回填登记）/ `d3faa7f`（S7-T6 门禁聚合）；事件契约锚点 `0713ec1` |
-| OpenLLM-JT | §3.2 | ✅ 已入仓（本地提交完成）（`feature/s4-identity-channel-b`） | 分支 `feature/s4-identity-channel-b` @ `be1886d`；批 1 `656d179` / 批 2 `6d8b189` / 批 3 `2ef6601` / 批 4 `640f250` / 批 5 `c310c38` / 批 6 `24d4484` + 手册留档 `64ef68f` / `e366e50` / `be1886d`；need-star 独立分支 `feature/need-star-orchestration` @ `ce40f90`（13 项隔离）；**origin / backup / github / jerry.yu 四远端均无该分支（未推送，PENDING）**；工作树残余 1459（以 `.pylib`/`.pyc` 噪音为主 + 清单外项），勾稽 A 类差异 0（任务卡 v1.7.2 登记 `-uall` 1556→1479）；关联 S7-T7-1 / S7-T7-2 |
+| OpenLLM-JT | §3.2 | ✅ 已入仓（本地提交完成）+ 三远端已同步（`feature/s4-identity-channel-b`） | 分支 `feature/s4-identity-channel-b` @ `be1886d`；批 1 `656d179` / 批 2 `6d8b189` / 批 3 `2ef6601` / 批 4 `640f250` / 批 5 `c310c38` / 批 6 `24d4484` + 手册留档 `64ef68f` / `e366e50` / `be1886d`；need-star 独立分支 `feature/need-star-orchestration` @ `ce40f90`（13 项隔离）；**origin / backup / github 三端已同步 `be1886d` 与 `ce40f90`（`ls-remote` 实测三端 hash 一致）**；**`jerry.yu` 远端无写权限受限 PENDING**（`Permission denied (publickey,...)`，exit 128）；推送中 `.git/logs/refs/remotes/**` 写入沙箱受限（exit 1，不影响远端），**本地点跟踪 ref 待人工 `git fetch` 同步**；工作树残余 1459（以 `.pylib`/`.pyc` 噪音为主 + 清单外项），勾稽 A 类差异 0（任务卡 v1.7.2 登记 `-uall` 1556→1479）；关联 S7-T7-1 / S7-T7-2 |
 | OpenRAG-JT | §3.3 | ✅ 已入仓（`release/v1.10.0`，三远端同步） | 分支 `release/v1.10.0` @ `a2eb92b`；`9e93c1c` / `0bda158` / `f48ea08` / `5fafc0a` + `b809c04`（入仓后修复）+ `a2eb92b`（入仓登记回填）；origin / backup / github 三远端同步；勾稽 A 类差异 0 |
-| OpenMemory-JT | §3.4 | ✅ 已入仓（本地提交完成）（`release/v7.3.0`） | 分支 `release/v7.3.0` @ `cc7c06f`；`000a154`（v7.2 基线收口）/ `fbc8326`（S2 五文档）/ `90cbe37`（S2 源码与迁移）/ `a4a0059`（测试与 CI）/ `1348229`（lint 债）/ `cc7c06f`（.devflow 移出版本控制）；远端 **origin + backup 已同步 `cc7c06f`**、**github 尚无该分支（PENDING）**；工作树残余 89（含 B 类在途、噪音与分清单自身），勾稽待按 A 类回读复核（**登记 PENDING**）；关联 S7-T7-1 / S7-T7-2 |
+| OpenMemory-JT | §3.4 | ✅ 已入仓（本地提交完成）+ 三远端已同步（`release/v7.3.0`） | 分支 `release/v7.3.0` @ `cc7c06f`；`000a154`（v7.2 基线收口）/ `fbc8326`（S2 五文档）/ `90cbe37`（S2 源码与迁移）/ `a4a0059`（测试与 CI）/ `1348229`（lint 债）/ `cc7c06f`（.devflow 移出版本控制）；远端 **origin + backup + github 三端已同步 `cc7c06f`**（`ls-remote` 实测三端 hash 一致，github 此前「待推」口径已闭环）；工作树残余 89（分类：C 类噪音 88 + 清单文档自身 1，B 类 0），**勾稽 A 类回读完成：A 类差异 0**（A 集合 73 = 批 0 基线批 29 + §8.1 裁断并入 3 + S2 段批 41；交集 0，明细 `doc/test/evidence/s7/t7/om-reconcile.json`）；关联 S7-T7-1 / S7-T7-2 |
 | DPS-JT | §3.5 | ✅ 已入仓（`main`，三远端同步） | 分支 `main` @ `e772c01`；`8333650` / `45a5ea4` / `1dc5f94` / `14d3111` + `e772c01`（回填提交）；勾稽 A 类差异 0（残余 4 = B 类 v2.9.0 三份文档 + 分清单自身） |
 | FE-JT | §3.6 | ✅ 前端侧已完成 / 真实环境复核 PENDING | S6 批 1 `2abe52a` / 批 2 `aa6c5bd` / 批 3 `72b19da` / 批 4 `477eb80` + `aad9c8a`（S6 段门禁批准回写）；B1/B3/B4/B6 非沙箱复核与 B5 物理闭环待联调窗口 |
 | SHR-JT | §3.7 | ✅ S7-T1 五项完成（结构面）/ 真实面 PENDING | `402ff8e`；`doc/test/evidence/s7/shr/**` 五份（`verify-env-global` / `openbase-test` / `k13` / `orchestrator` / `doc-map`）；真实探活 / 建库 / 授权 / 跨 schema 写拒绝待联调窗口 |
 
-> **汇总（S7-T8-2，v1.5.0 更正）**：七线状态行齐备；**四仓入仓完成（本地提交）**——OpenRAG-JT（`release/v1.10.0` @ `a2eb92b`）与 DPS-JT（`main` @ `e772c01`）三远端同步、OpenMemory-JT（`release/v7.3.0` @ `cc7c06f`）origin+backup 同步（github 待推 PENDING）、OpenLLM-JT（`feature/s4-identity-channel-b` @ `be1886d`）四远端未推送（PENDING）；**勾稽结论**：OpenRAG/DPS/OpenLLM A 类差异 0（实测/按登记）、OpenMemory 待 A 类回读复核（PENDING）；前端与 SHR 线以提交号桥接段门禁结论。逐项证据与 PENDING 登记见 `doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md` 与 `doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md`。
+> **汇总（S7-T8-2，v1.6.0 更正）**：七线状态行齐备；**四仓入仓完成（本地提交）+ 三远端同步**——OpenRAG-JT（`release/v1.10.0` @ `a2eb92b`）、DPS-JT（`main` @ `e772c01`）、OpenMemory-JT（`release/v7.3.0` @ `cc7c06f`）三端 origin/backup/github 同步、OpenLLM-JT（`feature/s4-identity-channel-b` @ `be1886d`，need-star `ce40f90`）三端 origin/backup/github 同步（`jerry.yu` 受限 PENDING）；**勾稽结论**：**四仓 A 类差异均 0**（OpenMemory 回读完成，残余 89 全分类：C 类 88 + 清单文档自身 1）；前端与 SHR 线以提交号桥接段门禁结论。逐项证据见 `doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`、`doc/test/evidence/s7/t7/om-reconcile.json` 与 `doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md`。
 
 ## 4. 执行与版本管理规则
 
