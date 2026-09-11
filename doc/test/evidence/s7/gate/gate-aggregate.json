@@ -3,20 +3,20 @@
   "evidence_ref": "S7-T6",
   "title": "S7 门禁聚合（RA-06 / 冒烟 S0-S6 / 对齐清单关闭 / K07+SYS-1 终验）",
   "mode": "dry-run",
-  "generated_at": "2026-09-11T21:35:00+08:00",
-  "openbase_commit": "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
-  "openbase_head_short": "0595bcd",
+  "generated_at": "2026-09-11T22:21:47+08:00",
+  "openbase_commit": "7773fc221bb8c447a82e0a6ce4d1e1bec3d8d174",
+  "openbase_head_short": "7773fc2",
   "s7_report_ref": "doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md",
   "t8_evidence_ref": "doc/test/evidence/s7/t8/writeback-check.json",
   "t7_evidence_ref": "doc/test/evidence/s7/t7/signoff-check.json",
   "shr_ref": "doc/test/evidence/s7/shr/**（verify-env-global / openbase-test / k13 / orchestrator / doc-map 五份）",
-  "overall_status": "PASS",
-  "exit_code": 0,
+  "overall_status": "FAIL",
+  "exit_code": 1,
   "counts": {
     "sections": 5,
     "pass": 20,
-    "fail": 0,
-    "pending": 2
+    "fail": 1,
+    "pending": 1
   },
   "sections": [
     {
@@ -412,7 +412,7 @@
       "id": "K07-SYS-1",
       "name": "K07 + SYS-1 端点-过滤矩阵终验",
       "execution_face": "B",
-      "status": "PENDING",
+      "status": "FAIL",
       "repos": {
         "openbase": {
           "role": "template",
@@ -470,18 +470,118 @@
           "reason": ""
         }
       },
-      "real_face_status": "PENDING",
-      "evidence": "四仓 K07 填报矩阵存在性与缺口计数对账（沙箱结构面）",
-      "reason": "真实 openapi 全量导出与逐行终验需四仓运行态（B 面）→ PENDING；存在性/计数对账已记录",
+      "real_face_status": "FAIL",
+      "evidence": "doc/test/evidence/s7/gate/k07-finalize.json（五实例 openapi 真实导出 + 逐仓逐行核对）",
+      "reason": "真实导出五实例 openapi（openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161）并与各仓填报矩阵逐行核对：缺口合计 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、豁免 56 条（有效 21 / DPS 35 条复核日 2026-09-10 早于终验日需续期）→ 门禁 verdict=FAIL（子系统仓缺口未清零，本仓只登记不代改）。",
       "pending_items": [
         {
           "id": "K07-REAL",
-          "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验（缺口清零/未覆盖清零/豁免有效期）",
+          "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验",
           "precondition": "四仓运行态 + openapi 导出",
           "owner": "联调窗口",
-          "action": "导出各仓 openapi 全量并回填矩阵终验表"
+          "action": "已完成（B 面真实执行，见 k07-finalize.json）；结论 FAIL（子系统缺口），缺口移交子系统仓",
+          "status": "DONE"
+        },
+        {
+          "id": "K07-SUBREPO-GAP",
+          "item": "子系统仓 K07 矩阵补填报（OpenLLM 344 / OpenMemory 8）",
+          "precondition": "子系统仓写权限（沙箱仅 OpenBase）",
+          "owner": "OpenLLM / OpenMemory 仓",
+          "action": "补填矩阵行 + 挂隔离用例后复跑真实终验",
+          "status": "PENDING"
+        },
+        {
+          "id": "K07-DPS-EXEMPT-RENEW",
+          "item": "DPS 35 条豁免续期复核（回填未来到期日）",
+          "precondition": "DPS 仓写权限",
+          "owner": "DPS 仓",
+          "action": "续期复核并回填未来到期日",
+          "status": "PENDING"
         }
-      ]
+      ],
+      "real_finalize": {
+        "evidence": "doc/test/evidence/s7/gate/k07-finalize.json",
+        "tool": "k07-finalize",
+        "mode": "real",
+        "generated_at": "2026-09-11T22:21:01+08:00",
+        "gate_verdict": "FAIL",
+        "summary": {
+          "real_endpoints_total": 663,
+          "filled_rows_total": 336,
+          "gap_total": 352,
+          "uncovered_total": 0,
+          "exempt_total": 56,
+          "exempt_valid_total": 21,
+          "exempt_invalid_total": 35,
+          "gap_cleared": false,
+          "uncovered_cleared": true,
+          "exemption_all_valid": false,
+          "exemption_note": "OpenRAG/OpenLLM/OpenMemory 豁免全部在有效期且有审批；DPS 35 条豁免登记齐备但到期/复核日=2026-09-10 早于终验日 2026-09-11（无未来到期日），严格有效期口径需续期。"
+        },
+        "per_system": [
+          {
+            "system": "openbase",
+            "role": "template",
+            "real_endpoints": 137,
+            "filled_rows": 1,
+            "gap_count": null,
+            "uncovered_count": null,
+            "exempt_rows": 1,
+            "exempt_valid": 1,
+            "exempt_invalid": 0,
+            "conclusion": "N/A"
+          },
+          {
+            "system": "openrag",
+            "role": "filled",
+            "real_endpoints": 115,
+            "filled_rows": 121,
+            "gap_count": 0,
+            "uncovered_count": 0,
+            "exempt_rows": 10,
+            "exempt_valid": 10,
+            "exempt_invalid": 0,
+            "conclusion": "PASS"
+          },
+          {
+            "system": "dps",
+            "role": "filled",
+            "real_endpoints": 161,
+            "filled_rows": 169,
+            "gap_count": 0,
+            "uncovered_count": 0,
+            "exempt_rows": 35,
+            "exempt_valid": 0,
+            "exempt_invalid": 35,
+            "conclusion": "FAIL"
+          },
+          {
+            "system": "openllm",
+            "role": "filled",
+            "real_endpoints": 351,
+            "filled_rows": 14,
+            "gap_count": 344,
+            "uncovered_count": 0,
+            "exempt_rows": 4,
+            "exempt_valid": 4,
+            "exempt_invalid": 0,
+            "conclusion": "FAIL"
+          },
+          {
+            "system": "openmemory",
+            "role": "filled",
+            "real_endpoints": 36,
+            "filled_rows": 32,
+            "gap_count": 8,
+            "uncovered_count": 0,
+            "exempt_rows": 7,
+            "exempt_valid": 7,
+            "exempt_invalid": 0,
+            "conclusion": "FAIL"
+          }
+        ],
+        "findings_count": 4
+      }
     },
     {
       "id": "SHR",
@@ -598,10 +698,27 @@
     },
     {
       "id": "K07-REAL",
-      "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验（缺口清零/未覆盖清零/豁免有效期）",
+      "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验",
       "precondition": "四仓运行态 + openapi 导出",
       "owner": "联调窗口",
-      "action": "导出各仓 openapi 全量并回填矩阵终验表"
+      "action": "已完成（B 面真实执行，见 k07-finalize.json）；结论 FAIL（子系统缺口），缺口移交子系统仓",
+      "status": "DONE"
+    },
+    {
+      "id": "K07-SUBREPO-GAP",
+      "item": "子系统仓 K07 矩阵补填报（OpenLLM 344 / OpenMemory 8）",
+      "precondition": "子系统仓写权限（沙箱仅 OpenBase）",
+      "owner": "OpenLLM / OpenMemory 仓",
+      "action": "补填矩阵行 + 挂隔离用例后复跑真实终验",
+      "status": "PENDING"
+    },
+    {
+      "id": "K07-DPS-EXEMPT-RENEW",
+      "item": "DPS 35 条豁免续期复核（回填未来到期日）",
+      "precondition": "DPS 仓写权限",
+      "owner": "DPS 仓",
+      "action": "续期复核并回填未来到期日",
+      "status": "PENDING"
     }
   ],
   "closed_items": [
@@ -634,5 +751,6 @@
       "reason": "沙箱无真实 PG 时的批次串扰/环境性失败 → openbase_test 建库后主批次 0 失败关闭"
     }
   ],
-  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面（真实 IdP、四仓运行态、冒烟真实服务、K07 真实 openapi 全量导出）一律 PENDING 登记，禁伪造。PG-ENV-1~4 于 2026-09-11 openbase_test 真实建库后复跑主批次（676 passed / 0 failed，4 skipped）关闭，见 closed_items 与 sections[TEST-ALIGN-CLOSE].closed_items。"
+  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面已由联调窗口真实执行 K07/SYS-1 openapi 全量导出与逐行终验（k07-finalize.json）：结论 FAIL——缺口合计 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、DPS 35 条豁免复核日早于终验日需续期；子系统仓缺口只登记不代改。其余 A 面分项仍 PASS。",
+  "k07_finalize_ref": "doc/test/evidence/s7/gate/k07-finalize.json"
 }

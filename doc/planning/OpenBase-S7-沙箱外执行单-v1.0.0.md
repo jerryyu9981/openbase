@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-OUTSIDE-RUN-v1.0.0 |
-| 版本 | v1.0.5 |
+| 版本 | v1.0.6 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-11 |
-| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45） |
+| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45；批次 9 K07 终验回填 2026-09-11 22:15） |
 | 用途 | **S7 沙箱外 / 联调窗口执行单**：将 S7 段（总收官段）全部 B 面（联调窗口必需面）与跨仓收口待办，整理为可逐项执行、可回填证据、可勾选收口的**唯一执行清单**；沙箱内仅可执行 OpenBase 仓操作，四仓 git 与真实运行态操作须由用户在沙箱外按本单执行 |
 | 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（仓根，OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4 逐任务设计 §4.1~§4.9（34 断言与执行面 A/A+B/B）、§5 证据与报告规范）；②《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md》（`doc/test/`，OB-S7-TEST-v1.0.0，**[Review]**，34 断言矩阵：通过 5 / 部分达成 9 / PENDING 20）；③《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（`doc/development/`，内部 **v1.0.1**，[Review]）；④《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2 [Approved]**）；⑤《OpenBase-联调产物清点核对总清单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.7 [Approved]**，§1.1 五仓对照表 / §4.1 会签五步 / §5.10 四仓入仓完成登记）；⑥《OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》（`doc/development/`，内部 **v1.0.9 [Approved]**，§0 通用红线）；⑦各段测试报告 PENDING 清单（S2 / S3 / S4 / S5 段级真实双签 + S6 B1~B6，见总收官报告 §4.1）；⑧《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，OB-INTG-SMOKE-v1.1.0，内部 **v1.1.0**，§3 用例矩阵 S0-S6） |
 | 事实基线（2026-09-11 实测） | 四仓入仓 = **OpenRAG** `release/v1.10.0` @ `a2eb92b`（三远端同步、勾稽差异 0、残余 1）；**DPS** `main` @ `e772c01`（三远端同步、勾稽差异 0、残余 4）；**OpenMemory** `release/v7.3.0` @ `cc7c06f`（origin+backup 已同步、**github 待推**、**勾稽 A 类回读待做**（残余 89））；**OpenLLM** `feature/s4-identity-channel-b` @ `be1886d`（**四远端 origin/backup/github/jerry.yu 均未推送**；need-star 隔离分支 `feature/need-star-orchestration` @ `ce40f90` 亦未推，残余 1459）。**OpenBase 提交链** = `402ff8e` / `2235229` / `d3faa7f` / `2d97d1a` / `a5020fa` / `9056f48`（S7 段内提交，`main`）。**S7 段门禁当前结论 = 未达最终通过**（① ② 真实面、④ 三原则总验证、⑤ 两仓远端推送为 PENDING） |
@@ -275,6 +275,7 @@
 | **期望结果 / 退出码** | 四仓缺口 0、未覆盖 0；脚本退出码 **0** |
 | **回填位置** | 测试报告 §2 「S7-T6-4」行状态；门禁项 ③/④；`gate-aggregate.json` §K07-SYS-1 `status=PASS` |
 | **失败处置** | 存在缺口/未覆盖/过期豁免 → **不放行**，登记 `FAIL` 并回溯对应子系统矩阵填报 |
+| **执行状态（v1.0.6 实测 2026-09-11 22:15）** | ❌ **已执行，结论 FAIL**：从五实例真实导出 openapi（`openbase:8000` 137 / `openllm:8001` 351 / `openrag:8010` 115 / `openmemory:8020` 36 / `dps:8030` 161，均 HTTP 200）并保真落盘 `doc/test/evidence/s7/gate/k07-openapi/*.openapi.json`；与各仓填报表逐行核对 → **缺口 352 = OpenLLM 344 + OpenMemory 8、未覆盖 0、豁免 56（有效 21；DPS 35 条复核日 2026-09-10 早于终验日需续期）、十列字段完整性 0 缺口**。证据 `doc/test/evidence/s7/gate/k07-finalize.json`；`gate-aggregate.json` §K07-SYS-1 改真实终验结论（`overall=FAIL / pass=20 / fail=1 / pending=1`）。**子系统仓缺口按纪律只登记不代改（归属 OpenLLM/OpenMemory）**。<br>脚本能力实测：OpenBase 骨架生成器接受外部 openapi（四子系统 351/115/36/161 骨架行，退出码 0）；OpenMemory `--verify --openapi` 接受真实导出（退出码 1，missing_rows=8）；OpenLLM `--openapi-file`（需 app 装配）支持外部 openapi；**OpenRAG/DPS 脚本仅支持仓内离线 `app.openapi()` 底单（不接受外部 openapi）→ 采用真实导出 JSON 与填报表逐行核对** |
 
 ### 3.5 T6 真实面执行结果（v1.0.4 实测，2026-09-11 19:00）
 
@@ -283,7 +284,7 @@
 | P2-T6-1（RA-06） | `python scripts/gate_aggregate.py`（含 RA-06 选择器实跑） | **RA-06 五项 PASS**（82 用例：双租户 19 / fail-closed 21 / OIDC 12 / 委托 13 / 吊销 17）；真实数据面仍 PENDING | `gate-aggregate.json` §RA-06 |
 | P2-T6-2（冒烟 S0-S6） | 冒烟清单 §3 逐条真实 HTTP | **P0 14/30 PASS、9 FAIL、7 BLOCKED；P1 2 BLOCKED**（详见 §2.5） | `doc/test/evidence/s7/smoke/**` |
 | P2-T6-3（PG-ENV） | `gate_aggregate.py` 主批次实跑 | **PASS（对齐清单关闭，主批次 PENDING）**：主批次 605 例中 4 例 `test_oidc_binding` 环境性失败（`openbase_test` 未建，PG-ENV-1~4 未关闭） | `gate-aggregate.json` §TEST-ALIGN-CLOSE |
-| P2-T6-4（K07/SYS-1） | `gate_aggregate.py` §K07-SYS-1 | **PENDING**：四仓结构计数缺口 0；真实 openapi 全量导出待四仓运行态 | `gate-aggregate.json` §K07-SYS-1 |
+| P2-T6-4（K07/SYS-1） | 五实例 `/openapi.json` 真实导出 + 逐行核对 | **已执行，FAIL（v1.0.6）**：缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、豁免 56（有效 21 / DPS 35 需续期） | `doc/test/evidence/s7/gate/k07-finalize.json`；`doc/test/evidence/s7/gate/k07-openapi/*.openapi.json` |
 
 > **门禁聚合实跑结论**：最终 `overall=PASS exit=0 pass=19 fail=0 pending=3`（`mode=dry-run`，脚本固定口径）。首跑 FAIL 由两点导致并已修：① `tests/test_verdict_k03.py::test_t2_6_whitelisted_write_allowed_with_bypass_audit` 断言过严（上游可达时响应为透传体无 `code`）→ 健壮化；② `test_s7_t7_signoff`/`test_s7_t8_writeback` 读取本脚本产出文件产生自引用时序 → 纳入主批次排除项；并增补 `s7_report_ref`/`t8_evidence_ref`/`t7_evidence_ref`/`shr_ref` 引用键。
 

@@ -122,12 +122,13 @@ def _writeback_line(block: str) -> str | None:
 # ===========================================================================
 
 
-def test_task_card_version_bumped_to_v190() -> None:
-    """任务卡内部版本升 v1.9.0 并在修订历史登记（批次 4：S7-T7 入仓 hash 回填）."""
+def test_task_card_version_bumped_to_v1100() -> None:
+    """任务卡内部版本升 v1.10.0 并在修订历史登记（批次 9：S7-T6-4 K07 终验回写）."""
     assert _TASK_CARD.exists(), _TASK_CARD
     text = _read_text(_TASK_CARD)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.9\.0\s*\|", text), "任务卡版本未升 v1.9.0"
-    assert re.search(r"\|\s*v1\.9\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.9.0 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.10\.0\s*\|", text), "任务卡版本未升 v1.10.0"
+    assert re.search(r"\|\s*v1\.10\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.10.0 条目"
+    assert re.search(r"\|\s*v1\.9\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.9.0 条目（历史保留）"
 
 
 def test_task_card_has_all_24_cards() -> None:
@@ -273,7 +274,7 @@ def test_report_exists_with_metadata() -> None:
     text = _read_text(_REPORT)
     assert "OpenBase-S7-全域门禁与总收官报告-v1.0.0" in text
     assert re.search(r"\|\s*状态\s*\|\s*\[Review\]", text), "报告状态非 [Review]"
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.4\s*\|", text)
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.5\s*\|", text)
     assert "修订历史" in text
 
 

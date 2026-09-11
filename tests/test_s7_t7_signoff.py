@@ -280,11 +280,12 @@ def test_clearance_checklist_approved_with_four_repo_registration() -> None:
 
 
 def test_report_corrected_four_repos_archived() -> None:
-    """总收官报告内部版本升 v1.0.4（F-4 修复 + openbase_test 建库收口），且不再保留「未入仓」过时口径."""
+    """总收官报告内部版本升 v1.0.5（K07/SYS-1 真实终验回写），且不再保留「未入仓」过时口径."""
     assert _REPORT.exists(), _REPORT
     text = _read_text(_REPORT)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.4\s*\|", text), "总收官报告未升内部 v1.0.4"
-    assert re.search(r"\|\s*v1\.0\.4\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.4 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.5\s*\|", text), "总收官报告未升内部 v1.0.5"
+    assert re.search(r"\|\s*v1\.0\.5\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.5 条目"
+    assert re.search(r"\|\s*v1\.0\.4\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.4 条目（历史保留）"
     assert re.search(r"\|\s*v1\.0\.3\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.3 条目（历史保留）"
     assert "未入仓" not in text, "总收官报告仍残留「未入仓」过时口径"
 
@@ -317,11 +318,12 @@ def test_summary_table_exists_with_four_repos() -> None:
 
 
 def test_task_card_version_bumped_and_summaries_filled() -> None:
-    """任务卡内部版本升 v1.9.0，卡尾 S2/S3/S4/S5 摘要含入仓 hash 回填."""
+    """任务卡内部版本升 v1.10.0，卡尾 S2/S3/S4/S5 摘要含入仓 hash 回填."""
     assert _TASK_CARD.exists(), _TASK_CARD
     text = _read_text(_TASK_CARD)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.9\.0\s*\|", text), "任务卡版本未升 v1.9.0"
-    assert re.search(r"\|\s*v1\.9\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.9.0 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.10\.0\s*\|", text), "任务卡版本未升 v1.10.0"
+    assert re.search(r"\|\s*v1\.10\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.10.0 条目"
+    assert re.search(r"\|\s*v1\.9\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.9.0 条目（历史保留）"
     # S2（OpenMemory）入仓 hash 回填
     for digest in ("000a154", "fbc8326", "90cbe37", "a4a0059", "1348229", "cc7c06f"):
         assert digest in text, f"任务卡 S2 摘要缺少入仓 hash {digest}"
