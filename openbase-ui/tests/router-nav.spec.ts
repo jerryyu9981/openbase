@@ -24,7 +24,7 @@ import {
 } from '@element-plus/icons-vue'
 import AppLayout from '@/core/layouts/AppLayout.vue'
 import ModuleLayout from '@/core/layouts/ModuleLayout.vue'
-import { createAppRouter, findNavItemsOverrides } from '@/core/router'
+import { bootstrapModuleRoutes, createAppRouter, findNavItemsOverrides } from '@/core/router'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 import { useAuthStore } from '@/core/stores/auth'
 import { tokenStore } from '@/core/api/http'
@@ -262,5 +262,43 @@ describe('S6-T2-4: 装载幂等与告警清零 / 空态兜底', () => {
   it('一致性检查非空化自检：合成违规子路由必须被检出', () => {
     expect(findNavItemsOverrides([{ path: 'x', meta: {} } as never])).toEqual([])
     expect(findNavItemsOverrides([{ path: 'y', meta: { navItems: [] } } as never])).toEqual(['y'])
+  })
+})
+
+describe('S6-T2-1(B): 冷启动预热——首帧深链解析前完成模块装载（F-4 统一路由告警）', () => {
+  it('未预热时首帧 resolve 深链无匹配（RED 现象：No match found 告警根因）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    vi.spyOn(modulesApi, 'list').mockResolvedValue(MODULE_INFOS)
+    loginWith(['*'])
+
+    const bundle = createAppRouter(createMemoryHistory())
+    // 冷启动：模块路由尚未装载，浏览器首帧 `router.resolve` 命中此分支 → vue-router 告警
+    expect(bundle.router.resolve('/openllm/conversations').matched.length).toBe(0)
+    expect(warn).toHaveBeenCalled()
+  })
+
+  it('预热后首帧 resolve 深链即匹配且无 console.warn（GREEN）', async () => {
+    const warnMessages: string[] = []
+    vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+      warnMessages.push(args.map((arg) => String(arg)).join(' '))
+    })
+    vi.spyOn(modulesApi, 'list').mockResolvedValue(MODULE_INFOS)
+    loginWith(['*'])
+
+    const bundle = createAppRouter(createMemoryHistory())
+    await bootstrapModuleRoutes(bundle)
+
+    for (const target of ['/openllm/conversations', '/knowledge/chat', '/memory/sessions', '/portrait/list']) {
+      expect(bundle.router.resolve(target).matched.length).toBeGreaterThan(0)
+    }
+    expect(warnMessages).toEqual([])
+  })
+
+  it('无登录态时预热直接返回（公共路由即可，不触碰模块 API）', async () => {
+    const listSpy = vi.spyOn(modulesApi, 'list').mockResolvedValue(MODULE_INFOS)
+    const bundle = createAppRouter(createMemoryHistory())
+    await bootstrapModuleRoutes(bundle)
+    expect(listSpy).not.toHaveBeenCalled()
+    expect(bundle.router.resolve('/auth/login').matched.length).toBeGreaterThan(0)
   })
 })

@@ -86,7 +86,7 @@
           "specs": [
             {
               "title": "对话（OpenLLM 会话） /openllm/conversations 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -99,58 +99,18 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3943,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/openllm/conversations\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/openllm/conversations\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/openllm/conversations\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1827,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:21.762Z",
+                      "startTime": "2026-09-11T12:30:15.027Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--c77b7-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--c77b7-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--c77b7-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "6dac514d5d837ca37b9e-937db03c05316484cce9",
@@ -160,7 +120,7 @@
             },
             {
               "title": "对话（RAG 知识问答） /knowledge/chat 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -171,60 +131,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1967,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/chat\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/chat\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/chat\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1167,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:29.187Z",
+                      "startTime": "2026-09-11T12:30:17.416Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--1f062-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--1f062-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--1f062-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "6dac514d5d837ca37b9e-041a9cf4050c650c1a75",
@@ -251,7 +171,7 @@
           "specs": [
             {
               "title": "知识列表 /knowledge/list 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -262,60 +182,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 2249,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1132,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:33.526Z",
+                      "startTime": "2026-09-11T12:30:18.623Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-fcd82-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-fcd82-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-fcd82-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "0828a03cd0e93ee0ce1b-655f38cb6c09c5b233f7",
@@ -325,7 +205,7 @@
             },
             {
               "title": "知识详情 /knowledge/:id 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -336,60 +216,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1367,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/kb-1\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/kb-1\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/knowledge/kb-1\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1518,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:37.936Z",
+                      "startTime": "2026-09-11T12:30:19.769Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-dc423-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-dc423-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-dc423-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "0828a03cd0e93ee0ce1b-38dea8a23eb95d67e882",
@@ -416,7 +256,7 @@
           "specs": [
             {
               "title": "记忆列表 /memory/list 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -427,60 +267,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 4,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1522,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/memory/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/memory/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/memory/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 2389,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:41.594Z",
+                      "startTime": "2026-09-11T12:30:21.317Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-8e2fe-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-8e2fe-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-8e2fe-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "7ae46fcbe7df2182c676-13304e773f6c87d98eab",
@@ -490,7 +290,7 @@
             },
             {
               "title": "记忆会话 /memory/sessions 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -501,60 +301,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 5,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1940,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/memory/sessions\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/memory/sessions\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/memory/sessions\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1388,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:45.525Z",
+                      "startTime": "2026-09-11T12:30:23.747Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-0ccf1-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-0ccf1-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-0ccf1-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "7ae46fcbe7df2182c676-5df2fb7ddb88fb672070",
@@ -581,7 +341,7 @@
           "specs": [
             {
               "title": "画像列表 /portrait/list 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -592,60 +352,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 6,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1650,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/list\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1911,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:49.562Z",
+                      "startTime": "2026-09-11T12:30:25.179Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-78114-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-78114-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-78114-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "533547a08cc5ab5f5f47-736f8ea94c91113ca461",
@@ -655,7 +375,7 @@
             },
             {
               "title": "画像总览 /portrait/overview 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -666,60 +386,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 7,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1950,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/overview\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/overview\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/overview\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 2340,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:53.353Z",
+                      "startTime": "2026-09-11T12:30:27.123Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-8fedc-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-8fedc-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-8fedc-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "533547a08cc5ab5f5f47-07e8cb39e7cb2f6bffcf",
@@ -729,7 +409,7 @@
             },
             {
               "title": "画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -740,60 +420,20 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 8,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1497,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/P-1001\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/P-1001\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7",
-                        "location": {
-                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                          "column": 55,
-                          "line": 88
-                        },
-                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:88\n\n\u001b[0m \u001b[90m 86 |\u001b[39m\n \u001b[90m 87 |\u001b[39m   \u001b[90m// Q-FE-4b：无 pageerror / console.error / console.warn\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 88 |\u001b[39m   expect({ pageErrors\u001b[33m,\u001b[39m consoleErrors\u001b[33m,\u001b[39m consoleWarns })\u001b[33m.\u001b[39mtoEqual({\n \u001b[90m    |\u001b[39m                                                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 89 |\u001b[39m     pageErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 90 |\u001b[39m     consoleErrors\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\n \u001b[90m 91 |\u001b[39m     consoleWarns\u001b[33m:\u001b[39m []\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                            "column": 55,
-                            "line": 88
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"consoleErrors\": Array [],\u001b[22m\n\u001b[32m-   \"consoleWarns\": Array [],\u001b[39m\n\u001b[31m+   \"consoleWarns\": Array [\u001b[39m\n\u001b[31m+     \"[Vue Router warn]: No match found for location with path \\\"/portrait/P-1001\\\"\",\u001b[39m\n\u001b[31m+   ],\u001b[39m\n\u001b[2m    \"pageErrors\": Array [],\u001b[22m\n\u001b[2m  }\u001b[22m\n\n   at support\\key-page.ts:88\n\n  86 |\n  87 |   // Q-FE-4b：无 pageerror / console.error / console.warn\n> 88 |   expect({ pageErrors, consoleErrors, consoleWarns }).toEqual({\n     |                                                       ^\n  89 |     pageErrors: [],\n  90 |     consoleErrors: [],\n  91 |     consoleWarns: [],\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:88:55)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1581,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-11T11:05:57.560Z",
+                      "startTime": "2026-09-11T12:30:29.535Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
-                        "column": 55,
-                        "line": 88
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "533547a08cc5ab5f5f47-370d79067003ac12a294",
@@ -808,11 +448,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-11T11:05:20.325Z",
-    "duration": 39829.564,
-    "expected": 0,
+    "startTime": "2026-09-11T12:30:12.164Z",
+    "duration": 20913.566000000003,
+    "expected": 9,
     "skipped": 0,
-    "unexpected": 9,
+    "unexpected": 0,
     "flaky": 0
   }
 }

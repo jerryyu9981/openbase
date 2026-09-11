@@ -146,3 +146,35 @@ const defaultBundle = createAppRouter()
 
 export const mountModuleRoutes = defaultBundle.mountModuleRoutes
 export default defaultBundle.router
+
+/**
+ * 应用启动预热：在 `app.use(router)` 触发首帧导航**之前**完成模块路由装载。
+ *
+ * F-4 / Q-FE-4b：vue-router 在首帧 `router.resolve`（`pushWithRedirect` 内）即对未匹配
+ * location 发出 `[Vue Router warn] No match found for location with path …`。该解析发生在
+ * `beforeEach` 守卫之前，守卫内的幂等 `mountModuleRoutes()` 无法挽回已产生的告警——
+ * 直访深链（E2E `page.goto` / 刷新 / 书签）必然告警。故在安装路由器前先做一次预热装载，
+ * 使首帧解析即可命中，从根因消除告警（不放宽 `console.warn=0` 判据、不屏蔽告警）。
+ *
+ * - 无登录态：直接返回（公共路由 `staticRoutes` 已足够，不触碰模块 API）；
+ * - 幂等：`registry.init` / `mountModuleRoutes` 自带幂等（`initialized` / `loaded` 双条件），
+ *   重复调用不重复注册；守卫在导航时仍会按幂等语义兜底重试；
+ * - 失败不阻断启动：预热异常只记录，交由守卫在导航阶段重试装载。
+ *
+ * @param bundle 目标路由集合（默认单例；测试可注入 `createMemoryHistory` 实例）
+ */
+export async function bootstrapModuleRoutes(
+  bundle: AppRouterBundle = defaultBundle,
+): Promise<void> {
+  if (!tokenStore.access) return
+  try {
+    const auth = useAuthStore()
+    if (!auth.loaded) await auth.loadMe()
+    const registry = useModuleRegistry()
+    if (!registry.initialized) await registry.init(auth.permissions)
+    await bundle.mountModuleRoutes()
+  } catch (error) {
+    // 预热失败不阻断启动：守卫在导航时按幂等语义重试装载（无需在此告警，避免污染 console）
+    console.debug('[router] module route bootstrap skipped', error)
+  }
+}

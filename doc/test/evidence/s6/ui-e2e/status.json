@@ -4,69 +4,104 @@
   "task": "S6-B1",
   "mode": "real",
   "base_url": "http://localhost:5173",
+  "ui_version": "1.3.0",
+  "generated_at": "2026-09-11T20:30:33+08:00",
+  "openbase_commit": "75ddef953e9a0889d1f42ecbc406132424070314",
+  "attempt": 2,
   "stats": {
-    "startTime": "2026-09-11T11:05:20.325Z",
-    "duration": 39829.564,
-    "expected": 0,
+    "startTime": "2026-09-11T12:30:12.164Z",
+    "duration": 20913.566000000003,
+    "expected": 9,
     "skipped": 0,
-    "unexpected": 9,
+    "unexpected": 0,
     "flaky": 0
   },
   "cases": [
     {
       "title": "对话（OpenLLM 会话） /openllm/conversations 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 3943,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 1827
     },
     {
       "title": "对话（RAG 知识问答） /knowledge/chat 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 1967,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 1167
     },
     {
       "title": "知识列表 /knowledge/list 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 2249,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 1132
     },
     {
       "title": "知识详情 /knowledge/:id 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 1367,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 1518
     },
     {
       "title": "记忆列表 /memory/list 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 1522,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 2389
     },
     {
       "title": "记忆会话 /memory/sessions 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 1940,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 1388
     },
     {
       "title": "画像列表 /portrait/list 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 1650,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 1911
     },
     {
       "title": "画像总览 /portrait/overview 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 1950,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 2340
     },
     {
       "title": "画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn",
-      "status": "failed",
-      "duration_ms": 1497,
-      "error_head": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m"
+      "status": "passed",
+      "duration_ms": 1581
     }
   ],
-  "note": "9 关键页均由 page.goto 渲染成功（受控空态可见），失败集中于 Q-FE-4b console.warn=0 判据（Vue Router 'No match found' 警告）。"
+  "history": [
+    {
+      "attempt": 1,
+      "started_at": "2026-09-11T11:05:20.325Z",
+      "expected": 0,
+      "unexpected": 9,
+      "flaky": 0,
+      "result": "FAIL",
+      "reason": "Q-FE-4b console.warn=0 未满足：Vue Router `No match found for location with path <深链>`（F-4 统一前端路由告警）",
+      "command": "$env:OPENBASE_BASE_URL=http://localhost:5173; npm run test:e2e",
+      "evidence": "results.json（9 failed）/ status.json（本文件历史）"
+    },
+    {
+      "attempt": 2,
+      "started_at": "2026-09-11T12:30:12.164Z",
+      "expected": 9,
+      "unexpected": 0,
+      "flaky": 0,
+      "result": "PASS",
+      "reason": "F-4 修复：启动预热（bootstrapModuleRoutes）在首帧导航前幂等装载模块路由，深链首帧 resolve 即命中，Q-FE-4b console.warn=0 达成",
+      "command": "$env:OPENBASE_BASE_URL=http://localhost:5173; $env:OPENBASE_ACCESS_TOKEN=<env>; npm run test:e2e",
+      "evidence": "results.json（9 passed）"
+    }
+  ],
+  "fix": {
+    "id": "F-4",
+    "root_cause_category": "B",
+    "root_cause": "装配时序：模块路由由守卫在导航后懒装载；vue-router 在首帧 `router.resolve`（pushWithRedirect 内，守卫之前）已对未匹配深链发出 No match 告警，守卫内幂等装载无法挽回已产生的告警。",
+    "change": [
+      "openbase-ui/src/core/router/index.ts：新增 bootstrapModuleRoutes（有登录态时先 loadMe + registry.init + mountModuleRoutes，幂等、失败不阻断）",
+      "openbase-ui/src/main.ts：app.use(router) 前 await 预热，使首帧导航前完成模块路由装载",
+      "openbase-ui/tests/router-nav.spec.ts：新增 S6-T2-1(B) 冷启动预热用例（RED→GREEN）"
+    ],
+    "constraint": "未放宽 console.warn=0 判据、未屏蔽告警；E2E 断言代码未改动。"
+  },
+  "browser": {
+    "playwright": "1.63.0",
+    "chromium_revision": "1228",
+    "note": "node_modules/playwright-core browsers.json 期望 revision 1228，与用户级 ms-playwright 缓存一致；无需 npx playwright install，未产生需入库的浏览器产物。"
+  },
+  "note": "9 关键页在统一前端 openbase-ui 内以真实浏览器执行；第 2 次尝试（F-4 修复后）9/9 PASS（页面渲染 + 关键元素/受控空态 + 无渲染兜底 + 无 console error/warn）。历史尝试次数与时间戳保留于 history。"
 }
