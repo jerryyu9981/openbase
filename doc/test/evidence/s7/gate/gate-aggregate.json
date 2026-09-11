@@ -10,7 +10,7 @@
   "t8_evidence_ref": "doc/test/evidence/s7/t8/writeback-check.json",
   "t7_evidence_ref": "doc/test/evidence/s7/t7/signoff-check.json",
   "shr_ref": "doc/test/evidence/s7/shr/**（verify-env-global / openbase-test / k13 / orchestrator / doc-map 五份）",
-  "overall_status": "FAIL",
+  "overall_status": "PARTIAL",
   "exit_code": 1,
   "counts": {
     "sections": 5,
@@ -412,7 +412,7 @@
       "id": "K07-SYS-1",
       "name": "K07 + SYS-1 端点-过滤矩阵终验",
       "execution_face": "B",
-      "status": "FAIL",
+      "status": "PARTIAL",
       "repos": {
         "openbase": {
           "role": "template",
@@ -427,14 +427,14 @@
         },
         "openllm": {
           "role": "filled",
-          "path": "../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.0.0.md",
+          "path": "../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md",
           "exists": true,
-          "rows": 14,
-          "covered": 10,
-          "exempt": 4,
+          "rows": 354,
+          "covered": 349,
+          "exempt": 5,
           "gap_count": 0,
           "status": "PASS",
-          "reason": ""
+          "reason": "OpenLLM 工作树全量补填（354 行 / 覆盖 349 / 豁免 5），真实底单 351 操作缺口 0；待提交"
         },
         "openrag": {
           "role": "filled",
@@ -470,24 +470,32 @@
           "reason": ""
         }
       },
-      "real_face_status": "FAIL",
-      "evidence": "doc/test/evidence/s7/gate/k07-finalize.json（五实例 openapi 真实导出 + 逐仓逐行核对）",
-      "reason": "真实导出五实例 openapi（openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161）并与各仓填报矩阵逐行核对：缺口合计 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、豁免 56 条（有效 21 / DPS 35 条复核日 2026-09-10 早于终验日需续期）→ 门禁 verdict=FAIL（子系统仓缺口未清零，本仓只登记不代改）。",
+      "real_face_status": "PARTIAL",
+      "evidence": "doc/test/evidence/s7/gate/k07-finalize.json（五实例 openapi 真实导出 + 逐仓逐行核对；OpenLLM 工作树补填，见 OpenLLM 侧 doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md 与 .matrix.json）",
+      "reason": "真实导出五实例 openapi（openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161）并与各仓填报矩阵逐行核对：OpenLLM 已于子系统仓工作树全量补填（缺口 344→0；矩阵 354 行 / 覆盖 349 / 豁免 5；隔离用例 767 passed；门禁 exit 0，沙箱拒写 .git/objects 未能 commit，待提交）；剩余缺口 8（仅 OpenMemory）；DPS 35 条豁免复核日 2026-09-10 早于终验日需续期 → 门禁 verdict=PARTIAL（OpenLLM 已补填/待提交，OpenMemory 与 DPS 豁免续期未处理）。",
       "pending_items": [
         {
           "id": "K07-REAL",
           "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验",
           "precondition": "四仓运行态 + openapi 导出",
           "owner": "联调窗口",
-          "action": "已完成（B 面真实执行，见 k07-finalize.json）；结论 FAIL（子系统缺口），缺口移交子系统仓",
+          "action": "已完成（B 面真实执行，见 k07-finalize.json）；结论 PARTIAL（OpenLLM 已补填待提交，OpenMemory 8 条缺口）",
           "status": "DONE"
         },
         {
           "id": "K07-SUBREPO-GAP",
-          "item": "子系统仓 K07 矩阵补填报（OpenLLM 344 / OpenMemory 8）",
+          "item": "子系统仓 K07 矩阵补填报（OpenMemory 8；OpenLLM 已于工作树补填，待提交）",
           "precondition": "子系统仓写权限（沙箱仅 OpenBase）",
-          "owner": "OpenLLM / OpenMemory 仓",
-          "action": "补填矩阵行 + 挂隔离用例后复跑真实终验",
+          "owner": "OpenMemory 仓（OpenLLM 补填已完成，待可写环境提交）",
+          "action": "OpenMemory 补填矩阵行 + 挂隔离用例后复跑真实终验；OpenLLM 提交工作树改动",
+          "status": "PENDING"
+        },
+        {
+          "id": "K07-OPENLLM-COMMIT",
+          "item": "OpenLLM K07 工作树补填提交（5 文件；沙箱拒写 .git/objects）",
+          "precondition": "可写 .git/objects 的环境",
+          "owner": "OpenLLM 仓",
+          "action": "提交并推送（建议 message：docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零））",
           "status": "PENDING"
         },
         {
@@ -504,19 +512,20 @@
         "tool": "k07-finalize",
         "mode": "real",
         "generated_at": "2026-09-11T22:21:01+08:00",
-        "gate_verdict": "FAIL",
+        "gate_verdict": "PARTIAL",
         "summary": {
           "real_endpoints_total": 663,
-          "filled_rows_total": 336,
-          "gap_total": 352,
+          "filled_rows_total": 676,
+          "gap_total": 8,
           "uncovered_total": 0,
-          "exempt_total": 56,
-          "exempt_valid_total": 21,
+          "exempt_total": 57,
+          "exempt_valid_total": 22,
           "exempt_invalid_total": 35,
           "gap_cleared": false,
+          "openllm_gap_cleared": true,
           "uncovered_cleared": true,
           "exemption_all_valid": false,
-          "exemption_note": "OpenRAG/OpenLLM/OpenMemory 豁免全部在有效期且有审批；DPS 35 条豁免登记齐备但到期/复核日=2026-09-10 早于终验日 2026-09-11（无未来到期日），严格有效期口径需续期。"
+          "exemption_note": "OpenLLM 5 条豁免在有效期且有审批（到期 2026-12-31）；DPS 35 条豁免复核日 2026-09-10 早于终验日需续期；剩余缺口仅 OpenMemory 8 条。"
         },
         "per_system": [
           {
@@ -559,13 +568,14 @@
             "system": "openllm",
             "role": "filled",
             "real_endpoints": 351,
-            "filled_rows": 14,
-            "gap_count": 344,
+            "filled_rows": 354,
+            "gap_count": 0,
             "uncovered_count": 0,
-            "exempt_rows": 4,
-            "exempt_valid": 4,
+            "exempt_rows": 5,
+            "exempt_valid": 5,
             "exempt_invalid": 0,
-            "conclusion": "FAIL"
+            "conclusion": "PASS",
+            "status": "FILLED(worktree, uncommitted)"
           },
           {
             "system": "openmemory",
@@ -581,6 +591,22 @@
           }
         ],
         "findings_count": 4
+      },
+      "history": {
+        "status": "FAIL",
+        "real_face_status": "FAIL",
+        "openllm_repos": {
+          "role": "filled",
+          "path": "../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.0.0.md",
+          "exists": true,
+          "rows": 14,
+          "covered": 10,
+          "exempt": 4,
+          "gap_count": 0,
+          "status": "PASS",
+          "reason": ""
+        },
+        "note": "历史值保留（v1.0.5 真实终验结论：缺口 352 = OpenLLM 344 + OpenMemory 8）"
       }
     },
     {
@@ -751,6 +777,19 @@
       "reason": "沙箱无真实 PG 时的批次串扰/环境性失败 → openbase_test 建库后主批次 0 失败关闭"
     }
   ],
-  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面已由联调窗口真实执行 K07/SYS-1 openapi 全量导出与逐行终验（k07-finalize.json）：结论 FAIL——缺口合计 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、DPS 35 条豁免复核日早于终验日需续期；子系统仓缺口只登记不代改。其余 A 面分项仍 PASS。",
-  "k07_finalize_ref": "doc/test/evidence/s7/gate/k07-finalize.json"
+  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面已由联调窗口真实执行 K07/SYS-1 openapi 全量导出与逐行终验（k07-finalize.json）：OpenLLM 已于子系统仓工作树全量补填（缺口 344→0，隔离用例 767 passed，门禁 exit 0，沙箱拒写 .git/objects 未能 commit，待可写环境提交）；剩余缺口合计 8（仅 OpenMemory）、未覆盖 0、DPS 35 条豁免复核日早于终验日需续期 → 门禁 verdict=PARTIAL。子系统仓缺口只登记不代改。其余 A 面分项仍 PASS。",
+  "k07_finalize_ref": "doc/test/evidence/s7/gate/k07-finalize.json",
+  "k07_backfill": {
+    "date": "2026-09-11",
+    "summary": "OpenLLM K07 全量补填（工作树，待提交）；缺口 344→0；剩余缺口 8（OpenMemory）；gate_verdict FAIL→PARTIAL",
+    "openllm": {
+      "rows": 354,
+      "covered": 349,
+      "exempt": 5,
+      "gap": 0,
+      "uncovered": 0,
+      "exemption_valid": 5,
+      "status": "FILLED(worktree, uncommitted)"
+    }
+  }
 }

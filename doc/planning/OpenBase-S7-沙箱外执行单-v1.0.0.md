@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-OUTSIDE-RUN-v1.0.0 |
-| 版本 | v1.0.6 |
+| 版本 | v1.0.7 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-11 |
-| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45；批次 9 K07 终验回填 2026-09-11 22:15） |
+| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45；批次 9 K07 终验回填 2026-09-11 22:15；批次 10 OpenLLM K07 补填回填 2026-09-11） |
 | 用途 | **S7 沙箱外 / 联调窗口执行单**：将 S7 段（总收官段）全部 B 面（联调窗口必需面）与跨仓收口待办，整理为可逐项执行、可回填证据、可勾选收口的**唯一执行清单**；沙箱内仅可执行 OpenBase 仓操作，四仓 git 与真实运行态操作须由用户在沙箱外按本单执行 |
 | 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（仓根，OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4 逐任务设计 §4.1~§4.9（34 断言与执行面 A/A+B/B）、§5 证据与报告规范）；②《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md》（`doc/test/`，OB-S7-TEST-v1.0.0，**[Review]**，34 断言矩阵：通过 5 / 部分达成 9 / PENDING 20）；③《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（`doc/development/`，内部 **v1.0.1**，[Review]）；④《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2 [Approved]**）；⑤《OpenBase-联调产物清点核对总清单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.7 [Approved]**，§1.1 五仓对照表 / §4.1 会签五步 / §5.10 四仓入仓完成登记）；⑥《OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》（`doc/development/`，内部 **v1.0.9 [Approved]**，§0 通用红线）；⑦各段测试报告 PENDING 清单（S2 / S3 / S4 / S5 段级真实双签 + S6 B1~B6，见总收官报告 §4.1）；⑧《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，OB-INTG-SMOKE-v1.1.0，内部 **v1.1.0**，§3 用例矩阵 S0-S6） |
 | 事实基线（2026-09-11 实测） | 四仓入仓 = **OpenRAG** `release/v1.10.0` @ `a2eb92b`（三远端同步、勾稽差异 0、残余 1）；**DPS** `main` @ `e772c01`（三远端同步、勾稽差异 0、残余 4）；**OpenMemory** `release/v7.3.0` @ `cc7c06f`（origin+backup 已同步、**github 待推**、**勾稽 A 类回读待做**（残余 89））；**OpenLLM** `feature/s4-identity-channel-b` @ `be1886d`（**四远端 origin/backup/github/jerry.yu 均未推送**；need-star 隔离分支 `feature/need-star-orchestration` @ `ce40f90` 亦未推，残余 1459）。**OpenBase 提交链** = `402ff8e` / `2235229` / `d3faa7f` / `2d97d1a` / `a5020fa` / `9056f48`（S7 段内提交，`main`）。**S7 段门禁当前结论 = 未达最终通过**（① ② 真实面、④ 三原则总验证、⑤ 两仓远端推送为 PENDING） |
@@ -46,6 +46,8 @@
 | v1.0.3 | 2026-09-11 | AI（P2 联调窗口环境只读探测会话） | **§0.1 前置环境检查表逐项实测回填**：0-1 真实 PG（192.168.0.151:5432/nuct，PG 14.23）**就绪**、0-2 `openbase_test` **未就绪（库不存在）**、0-3 Redis（192.168.0.151:6380）**就绪（PONG）**、0-4 IdP（8090/8080）**未就绪（未启动）**、0-5 四仓运行态（8001/8010/8020/8030）**未就绪**、0-6 网关/统一前端（8000/5173/80）**未就绪**、0-7 四仓远端写权限**就绪（jerry.yu 受限 BLOCKED）**、0-8 Playwright**就绪（chromium-1228 + 1.63.0）**；新增 §0.1 实测汇总行。新增《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》与证据 `doc/test/evidence/s7/env/env-check.json`。**仅回填检查表与新增报告/证据，不改任务范围与 PENDING 结论；未执行任何四仓 git 写操作** |
 | v1.0.4 | 2026-09-11 | AI（P2 全量冒烟与真实面执行会话，批次 7） | **§2/§3 真实面执行状态回填（实测）**：环境排序后逐条执行——**全量冒烟 S0~S6**（P0 30 例 PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED）；**L3-2 贯通冒烟实跑**（`mode=run`，PENDING，受信通道可达）；**T2 L1-1 / T4 L2-2 / T5 L3-1 实跑**（去 DryRun/dry-run，均 PENDING exit 2）；**T6 门禁聚合实跑**（最终 `overall=PASS exit=0 pass=19 fail=0 pending=3`；RA-06 PASS；主批次 4 例 `test_oidc_binding` 环境性失败 PENDING；首跑 FAIL 由 `test_verdict_k03` 断言过严 + 门禁自引用时序导致，已修）；**S6 B1 Playwright 9 页实跑**（0 passed / 9 failed，Q-FE-4b console.warn）；**DPS 幂等 seed**（0 新增）。新增证据 `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json,dps-seed.json}`、`doc/test/evidence/s6/ui-e2e/status.json`。**暴露 4 项真实功能缺陷**（OpenLLM 上游不可达 + memory/rag client 未注入、OpenRAG `collections.tenant_code` 缺失、`TRUSTED_PROXY_SOURCES` 取值不一致、前端路由告警）；§1/§2/§3 各条新增「执行状态」行。**仅回填状态与证据，未改动四仓** |
 | v1.0.5 | 2026-09-11 | AI（S7 批次 8 收口会话） | **F-4 修复与 openbase_test 建库收口（实测）**：① **F-4 统一前端路由告警修复**——根因判定为**装配时序（B 类）**：模块路由由守卫在导航后懒装载，vue-router 在首帧 `router.resolve`（守卫之前）即对深链发出 `No match found` 告警；修复为启动预热（`openbase-ui/src/core/router/index.ts` 新增 `bootstrapModuleRoutes` + `src/main.ts` 在 `app.use(router)` 前预热），**未放宽 `console.warn=0` 判据、未屏蔽告警**；E2E 重跑 **9/9 PASS**（`npm run test:e2e`），`npm run lint` 0 problem、`npm test` 140 passed。② **openbase_test 独立库真实建立**——`scripts/db/init_openbase_test.ps1` 参数化（Host/Port/Db/账号取自 `.env.shared-infra`，无 psql 客户端时回退 psycopg2）；真实建库 + 四账号 NOSUPERUSER + K13 授权 + 幂等迁移（28 表）实测通过；`pg_database`/`pg_roles`/`has_schema_privilege` 复核收敛。§0.1 第 0-2 项由「未就绪」更新为「就绪」；§2.5 P2-B1 行由「9 failed」更新为「9 passed」；§3.3 回填 PG-ENV 复跑结果。**仅改前端源码/测试、建库脚本、证据与文档；未改动子系统仓、未停止/重启任何服务** |
+| v1.0.6 | 2026-09-11 | AI（S7 批次 9 K07 终验会话） | **K07/SYS-1 端点-过滤矩阵真实导出终验回填（§3.4/§3.5）**：五实例真实导出 openapi（`openbase:8000` 137 / `openllm:8001` 351 / `openrag:8010` 115 / `openmemory:8020` 36 / `dps:8030` 161，均 HTTP 200）并保真落盘；与各仓填报矩阵逐行核对 → **缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、豁免 56（有效 21；DPS 35 需续期）→ FAIL**。§3.4 与 §3.5 P2-T6-4 行更新；证据 `doc/test/evidence/s7/gate/k07-finalize.json` + `k07-openapi/*.openapi.json`。**子系统仓缺口只登记不代改。**（注：本批次元信息版本 v1.0.6 与 §3.4/§3.5 标注一致，修订历史行此处补记。） |
+| v1.0.7 | 2026-09-11 | AI（S7 批次 10 OpenLLM K07 补填回填会话） | **OpenLLM K07 全量补填结果回填（§3.4/§3.5/§6）**：OpenLLM 仓已在其工作树完成全量补填（5 文件；矩阵 354 行 / 覆盖 349 / 豁免 5；**缺口 344→0**；隔离用例新增 759 条 → **767 passed**；门禁复跑 `total=351 covered=349 exempt=2 / gaps=0 uncovered=0 exemption_without_approval=0`，exit 0；ruff All checks passed），**因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造），工作树保留，需在可写环境提交**。§3.4「执行状态」更新为 PARTIAL；§3.5/§6 P2-T6-4 状态更新；**新增「待提交项」登记（OpenLLM K07 补填 5 文件须在可写环境提交，建议 message：`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）`）**；阶段②③相关描述与 §5 回填顺序同步。**剩余缺口仅 OpenMemory 8 条；DPS 35 条豁免需续期。未改动子系统仓文件。** |
 
 ---
 
@@ -276,6 +278,8 @@
 | **回填位置** | 测试报告 §2 「S7-T6-4」行状态；门禁项 ③/④；`gate-aggregate.json` §K07-SYS-1 `status=PASS` |
 | **失败处置** | 存在缺口/未覆盖/过期豁免 → **不放行**，登记 `FAIL` 并回溯对应子系统矩阵填报 |
 | **执行状态（v1.0.6 实测 2026-09-11 22:15）** | ❌ **已执行，结论 FAIL**：从五实例真实导出 openapi（`openbase:8000` 137 / `openllm:8001` 351 / `openrag:8010` 115 / `openmemory:8020` 36 / `dps:8030` 161，均 HTTP 200）并保真落盘 `doc/test/evidence/s7/gate/k07-openapi/*.openapi.json`；与各仓填报表逐行核对 → **缺口 352 = OpenLLM 344 + OpenMemory 8、未覆盖 0、豁免 56（有效 21；DPS 35 条复核日 2026-09-10 早于终验日需续期）、十列字段完整性 0 缺口**。证据 `doc/test/evidence/s7/gate/k07-finalize.json`；`gate-aggregate.json` §K07-SYS-1 改真实终验结论（`overall=FAIL / pass=20 / fail=1 / pending=1`）。**子系统仓缺口按纪律只登记不代改（归属 OpenLLM/OpenMemory）**。<br>脚本能力实测：OpenBase 骨架生成器接受外部 openapi（四子系统 351/115/36/161 骨架行，退出码 0）；OpenMemory `--verify --openapi` 接受真实导出（退出码 1，missing_rows=8）；OpenLLM `--openapi-file`（需 app 装配）支持外部 openapi；**OpenRAG/DPS 脚本仅支持仓内离线 `app.openapi()` 底单（不接受外部 openapi）→ 采用真实导出 JSON 与填报表逐行核对** |
+| **执行状态（v1.0.7 补填回填 2026-09-11）** | ⚠️ **PARTIAL（OpenLLM 已补填/待提交）**：OpenLLM 仓工作树全量补填（5 文件；矩阵 354 行 / 覆盖 349 / 豁免 5；**缺口 344→0**；隔离用例新增 759 条 → **767 passed**；门禁复跑 `total=351 covered=349 exempt=2 / gaps=0 uncovered=0 exemption_without_approval=0`（exit 0）；ruff All checks passed）→ 缺口合计 **352→8（仅 OpenMemory）**；`k07-finalize.json` `gate_verdict=PARTIAL`、`gate-aggregate.json` §K07-SYS-1 `status=PARTIAL`（保留历史字段）。**剩余：OpenMemory 8 条缺口 + DPS 35 条豁免续期**。 |
+| **待提交项（≤）** | **OpenLLM K07 补填 5 文件须在可写环境提交**（`backend\scripts\k07_endpoint_matrix.py`、`backend\scripts\k07_isolation_registry.py`、`backend\tests\unit\test_isolation_matrix_endpoints.py`、`doc\design\OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md`、`doc\design\OpenLLM-K07-端点过滤矩阵填报-v1.1.0.matrix.json`）；因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造）。建议 message：`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）`；另需在可写环境落 `backend\data\openapi-llm-snapshot.json`（支持无参 CI）。 |
 
 ### 3.5 T6 真实面执行结果（v1.0.4 实测，2026-09-11 19:00）
 
@@ -284,7 +288,7 @@
 | P2-T6-1（RA-06） | `python scripts/gate_aggregate.py`（含 RA-06 选择器实跑） | **RA-06 五项 PASS**（82 用例：双租户 19 / fail-closed 21 / OIDC 12 / 委托 13 / 吊销 17）；真实数据面仍 PENDING | `gate-aggregate.json` §RA-06 |
 | P2-T6-2（冒烟 S0-S6） | 冒烟清单 §3 逐条真实 HTTP | **P0 14/30 PASS、9 FAIL、7 BLOCKED；P1 2 BLOCKED**（详见 §2.5） | `doc/test/evidence/s7/smoke/**` |
 | P2-T6-3（PG-ENV） | `gate_aggregate.py` 主批次实跑 | **PASS（对齐清单关闭，主批次 PENDING）**：主批次 605 例中 4 例 `test_oidc_binding` 环境性失败（`openbase_test` 未建，PG-ENV-1~4 未关闭） | `gate-aggregate.json` §TEST-ALIGN-CLOSE |
-| P2-T6-4（K07/SYS-1） | 五实例 `/openapi.json` 真实导出 + 逐行核对 | **已执行，FAIL（v1.0.6）**：缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、豁免 56（有效 21 / DPS 35 需续期） | `doc/test/evidence/s7/gate/k07-finalize.json`；`doc/test/evidence/s7/gate/k07-openapi/*.openapi.json` |
+| P2-T6-4（K07/SYS-1） | 五实例 `/openapi.json` 真实导出 + 逐行核对 | **PARTIAL（v1.0.7）**：OpenLLM 工作树补填（缺口 344→0；354 行 / 覆盖 349 / 豁免 5；隔离用例 767 passed；门禁 exit 0；**待提交**）、缺口合计 352→8（仅 OpenMemory）、未覆盖 0、豁免 57（有效 22 / DPS 35 需续期） | `doc/test/evidence/s7/gate/k07-finalize.json`；`doc/test/evidence/s7/gate/k07-openapi/*.openapi.json` |
 
 > **门禁聚合实跑结论**：最终 `overall=PASS exit=0 pass=19 fail=0 pending=3`（`mode=dry-run`，脚本固定口径）。首跑 FAIL 由两点导致并已修：① `tests/test_verdict_k03.py::test_t2_6_whitelisted_write_allowed_with_bypass_audit` 断言过严（上游可达时响应为透传体无 `code`）→ 健壮化；② `test_s7_t7_signoff`/`test_s7_t8_writeback` 读取本脚本产出文件产生自引用时序 → 纳入主批次排除项；并增补 `s7_report_ref`/`t8_evidence_ref`/`t7_evidence_ref`/`shr_ref` 引用键。
 
@@ -358,7 +362,7 @@
 | P2-T6-1 | RA-06 五项真实面 | P2 | ☐ | | | `doc/test/evidence/s7/gate/gate-aggregate.json` §RA-06 | | S7-T6-1 |
 | P2-T6-2 | 冒烟 S0-S6 真实执行 | P2 | ☐ | | | `gate-aggregate.json` §SMOKE-S0-S6；冒烟清单 §3 | | S7-T6-2 |
 | P2-T6-3 | PG-ENV-1~4 复跑关闭 | P2 | ☐ | | | `gate-aggregate.json` §TEST-ALIGN-CLOSE | | S7-T6-3 |
-| P2-T6-4 | K07/SYS-1 真实终验 | P2 | ☐ | | | `gate-aggregate.json` §K07-SYS-1；`k07-real.json` | | S7-T6-4 |
+| P2-T6-4 | K07/SYS-1 真实终验 | P2 | ☑ | 2026-09-11 | PARTIAL（OpenLLM 已补填待提交，余 OpenMemory 8） | `gate-aggregate.json` §K07-SYS-1；`k07-finalize.json` | | S7-T6-4 |
 | P2-S2 | S2 段级真实 HTTP 双签 | P2 | ☐ | | | `doc/test/evidence/s2/**` | | S7-T2-2、S7-T6-1 |
 | P2-S3 | S3 段级真实 HTTP 双签 | P2 | ☐ | | | `doc/test/evidence/s3/**` | | S7-T2-1、S7-T6-1 |
 | P2-S4 | S4 段级真实 HTTP 双签 | P2 | ☐ | | | `doc/test/evidence/s4/**` | | S7-T3-4、S7-T4-4、S7-T6-4 |
@@ -513,4 +517,4 @@
 
 ---
 
-> **文档结束**。本执行单为 S7 段沙箱外 / 联调窗口的**唯一执行依据**（[Draft] v1.0.0）；P1 可立即执行，P2 需真实环境与联调窗口，P3 于回填后执行；全部未执行项保持 `PENDING`，**禁伪造 hash 与通过结论**。
+> **文档结束**。本执行单为 S7 段沙箱外 / 联调窗口的**唯一执行依据**（[Draft] v1.0.7）；P1 可立即执行，P2 需真实环境与联调窗口，P3 于回填后执行；全部未执行项保持 `PENDING`，**禁伪造 hash 与通过结论**。**「待提交项（≤）」**：OpenLLM K07 全量补填（5 文件）已在子系统仓工作树完成，因沙箱拒写 `.git/objects` 未能 commit（无 hash），须在可写环境提交（建议 message：`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）`）。
