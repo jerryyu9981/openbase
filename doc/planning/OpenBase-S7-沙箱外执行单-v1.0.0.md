@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-OUTSIDE-RUN-v1.0.0 |
-| 版本 | v1.0.4 |
+| 版本 | v1.0.5 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-11 |
-| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00） |
+| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45） |
 | 用途 | **S7 沙箱外 / 联调窗口执行单**：将 S7 段（总收官段）全部 B 面（联调窗口必需面）与跨仓收口待办，整理为可逐项执行、可回填证据、可勾选收口的**唯一执行清单**；沙箱内仅可执行 OpenBase 仓操作，四仓 git 与真实运行态操作须由用户在沙箱外按本单执行 |
 | 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（仓根，OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4 逐任务设计 §4.1~§4.9（34 断言与执行面 A/A+B/B）、§5 证据与报告规范）；②《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md》（`doc/test/`，OB-S7-TEST-v1.0.0，**[Review]**，34 断言矩阵：通过 5 / 部分达成 9 / PENDING 20）；③《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（`doc/development/`，内部 **v1.0.1**，[Review]）；④《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2 [Approved]**）；⑤《OpenBase-联调产物清点核对总清单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.7 [Approved]**，§1.1 五仓对照表 / §4.1 会签五步 / §5.10 四仓入仓完成登记）；⑥《OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》（`doc/development/`，内部 **v1.0.9 [Approved]**，§0 通用红线）；⑦各段测试报告 PENDING 清单（S2 / S3 / S4 / S5 段级真实双签 + S6 B1~B6，见总收官报告 §4.1）；⑧《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，OB-INTG-SMOKE-v1.1.0，内部 **v1.1.0**，§3 用例矩阵 S0-S6） |
 | 事实基线（2026-09-11 实测） | 四仓入仓 = **OpenRAG** `release/v1.10.0` @ `a2eb92b`（三远端同步、勾稽差异 0、残余 1）；**DPS** `main` @ `e772c01`（三远端同步、勾稽差异 0、残余 4）；**OpenMemory** `release/v7.3.0` @ `cc7c06f`（origin+backup 已同步、**github 待推**、**勾稽 A 类回读待做**（残余 89））；**OpenLLM** `feature/s4-identity-channel-b` @ `be1886d`（**四远端 origin/backup/github/jerry.yu 均未推送**；need-star 隔离分支 `feature/need-star-orchestration` @ `ce40f90` 亦未推，残余 1459）。**OpenBase 提交链** = `402ff8e` / `2235229` / `d3faa7f` / `2d97d1a` / `a5020fa` / `9056f48`（S7 段内提交，`main`）。**S7 段门禁当前结论 = 未达最终通过**（① ② 真实面、④ 三原则总验证、⑤ 两仓远端推送为 PENDING） |
@@ -45,6 +45,7 @@
 | v1.0.2 | 2026-09-11 | AI（S7 批次 6 回填会话） | **P1 跨仓收口三条状态回填（实测）**：§1.1 [P1-1] OpenMemory 推送 github → **已完成（实测已同步，无需操作）**（远端 `ls-remote` = `cc7c06f`，三端一致）；§1.2 [P1-2] OpenMemory 勾稽 A 类回读 → **已完成（差异 0）**（A 类集合 73 vs 残余 89，交集 0；分类 C 类 88 + 清单文档自身 1）；§1.3 [P1-3] OpenLLM 推送 → **部分完成**（origin/backup/github 三端已同步 `be1886d`/`ce40f90`；`jerry.yu` 无写权限受限 PENDING；本地点跟踪 ref 待 `git fetch`）。§1 各条新增「执行状态」行；§2~§4（P2 联调窗口）任务范围与 PENDING 结论**不变** |
 | v1.0.3 | 2026-09-11 | AI（P2 联调窗口环境只读探测会话） | **§0.1 前置环境检查表逐项实测回填**：0-1 真实 PG（192.168.0.151:5432/nuct，PG 14.23）**就绪**、0-2 `openbase_test` **未就绪（库不存在）**、0-3 Redis（192.168.0.151:6380）**就绪（PONG）**、0-4 IdP（8090/8080）**未就绪（未启动）**、0-5 四仓运行态（8001/8010/8020/8030）**未就绪**、0-6 网关/统一前端（8000/5173/80）**未就绪**、0-7 四仓远端写权限**就绪（jerry.yu 受限 BLOCKED）**、0-8 Playwright**就绪（chromium-1228 + 1.63.0）**；新增 §0.1 实测汇总行。新增《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》与证据 `doc/test/evidence/s7/env/env-check.json`。**仅回填检查表与新增报告/证据，不改任务范围与 PENDING 结论；未执行任何四仓 git 写操作** |
 | v1.0.4 | 2026-09-11 | AI（P2 全量冒烟与真实面执行会话，批次 7） | **§2/§3 真实面执行状态回填（实测）**：环境排序后逐条执行——**全量冒烟 S0~S6**（P0 30 例 PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED）；**L3-2 贯通冒烟实跑**（`mode=run`，PENDING，受信通道可达）；**T2 L1-1 / T4 L2-2 / T5 L3-1 实跑**（去 DryRun/dry-run，均 PENDING exit 2）；**T6 门禁聚合实跑**（最终 `overall=PASS exit=0 pass=19 fail=0 pending=3`；RA-06 PASS；主批次 4 例 `test_oidc_binding` 环境性失败 PENDING；首跑 FAIL 由 `test_verdict_k03` 断言过严 + 门禁自引用时序导致，已修）；**S6 B1 Playwright 9 页实跑**（0 passed / 9 failed，Q-FE-4b console.warn）；**DPS 幂等 seed**（0 新增）。新增证据 `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json,dps-seed.json}`、`doc/test/evidence/s6/ui-e2e/status.json`。**暴露 4 项真实功能缺陷**（OpenLLM 上游不可达 + memory/rag client 未注入、OpenRAG `collections.tenant_code` 缺失、`TRUSTED_PROXY_SOURCES` 取值不一致、前端路由告警）；§1/§2/§3 各条新增「执行状态」行。**仅回填状态与证据，未改动四仓** |
+| v1.0.5 | 2026-09-11 | AI（S7 批次 8 收口会话） | **F-4 修复与 openbase_test 建库收口（实测）**：① **F-4 统一前端路由告警修复**——根因判定为**装配时序（B 类）**：模块路由由守卫在导航后懒装载，vue-router 在首帧 `router.resolve`（守卫之前）即对深链发出 `No match found` 告警；修复为启动预热（`openbase-ui/src/core/router/index.ts` 新增 `bootstrapModuleRoutes` + `src/main.ts` 在 `app.use(router)` 前预热），**未放宽 `console.warn=0` 判据、未屏蔽告警**；E2E 重跑 **9/9 PASS**（`npm run test:e2e`），`npm run lint` 0 problem、`npm test` 140 passed。② **openbase_test 独立库真实建立**——`scripts/db/init_openbase_test.ps1` 参数化（Host/Port/Db/账号取自 `.env.shared-infra`，无 psql 客户端时回退 psycopg2）；真实建库 + 四账号 NOSUPERUSER + K13 授权 + 幂等迁移（28 表）实测通过；`pg_database`/`pg_roles`/`has_schema_privilege` 复核收敛。§0.1 第 0-2 项由「未就绪」更新为「就绪」；§2.5 P2-B1 行由「9 failed」更新为「9 passed」；§3.3 回填 PG-ENV 复跑结果。**仅改前端源码/测试、建库脚本、证据与文档；未改动子系统仓、未停止/重启任何服务** |
 
 ---
 
@@ -57,7 +58,7 @@
 | # | 检查项 | 检查命令（可复制） | 就绪 | 未就绪 | 备注 |
 |:-:|--------|-------------------|:---:|:---:|------|
 | 0-1 | **真实 PostgreSQL**（连接可用） | `psql "<PG_DSN>" -c "select version();"` | ☒ | ☐ | **就绪（2026-09-11 实测）**：192.168.0.151:5432（库 `nuct`，user `nuct`，口令已配置）TCP 可达 + `SELECT 1` 通过（PG 14.23）；业务 schema `openbase` 已存在。**（明细见《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》§1 第 1/2 项）** |
-| 0-2 | **`openbase_test` 测试库可用**（S7-T1-2 真实面） | `psql "<PG_DSN>" -c "select datname from pg_database where datname='openbase_test';"` | ☐ | ☒ | **未就绪（2026-09-11 实测）**：`pg_database` 仅 `nuct`/`postgres`/`template0`/`template1`，`openbase_test` 与 `openbase` 独立库**均不存在**，四账号未创建。须执行 `<OB>\scripts\db\init_openbase_test.ps1 -AdminUrl '…'` 建库（干跑已就绪）；阻塞 0-2/S7-T1-2/S7-T6-3 PG-ENV-1~4 |
+| 0-2 | **`openbase_test` 测试库可用**（S7-T1-2 真实面） | `psql "<PG_DSN>" -c "select datname from pg_database where datname='openbase_test';"` | ☒ | ☐ | **就绪（2026-09-11 20:40 实测）**：`openbase_test` 已真实建立（`pg_database` 实测 = [nuct, openbase_test]）；四账号 `openbase_app`/`platform_app`/`openbase_migrator`/`openbase_runtime` 已建（NOSUPERUSER）；`openbase_test` 内 `openbase` schema 迁移 **28 表**；K13 授权 `has_schema_privilege` 复核收敛。建库脚本 `scripts/db/init_openbase_test.ps1` 已参数化（默认读 `.env.shared-infra`，无 psql 回退 psycopg2）。**（明细见《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》§1 第 3 项与证据 `doc/test/evidence/s7/env/env-check.json`）** |
 | 0-3 | **Redis**（PING 通） | `redis-cli -h <REDIS_HOST> -p <REDIS_PORT> ping` | ☒ | ☐ | **就绪（2026-09-11 实测）**：192.168.0.151:6380 TCP 可达、`PING` = `PONG`（口令已配置）；会话/连接池用例前置（PG-ENV-3）满足 |
 | 0-4 | **IdP / Keycloak**（OIDC 发现端点可达） | `curl -sk <IDP_BASE>/realms/<REALM>/.well-known/openid-configuration` | ☐ | ☒ | **未就绪（2026-09-11 实测）**：本地 OIDC IdP `127.0.0.1:8090`（`.env` 默认，无 realm）与 Keycloak `127.0.0.1:8080/realms/openbase`（发行版存于 `.runtime/keycloak-26.7.3`）**均连接被拒（未启动）**；阻塞 S6 B4 / RA-06 OIDC 面 |
 | 0-5 | **四仓运行态与端口**（四仓 `/health` 通过） | 逐仓 `curl -s <各仓健康地址>`（端口见《OpenBase-多系统端口统筹方案-v1.0.0.md》） | ☐ | ☒ | **未就绪（2026-09-11 实测）**：OpenLLM 8001 / OpenRAG 8010 / OpenMemory 8020 / DPS 8030 **全部无监听**；运行态编排唯一入口 = `<OB>\scripts\service-orchestrator.ps1 -Action startcheck`（已就绪，可用） |
@@ -218,7 +219,7 @@
 | P2-T5 | `verify_l3_1_agent.ps1 -AgentKey sk-agent-smoke -BaseUrl http://127.0.0.1:8000` | **PENDING（exit 2，mode=run）**：未提供真实 `sk-agent-*`；白名单/域隔离/M1-M2 需四仓 | `doc/test/evidence/s7/l3-1/agent-e2e.json` |
 | P2-T6-2（冒烟） | 冒烟清单 §3 逐条真实 HTTP | **P0 30 例 PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED**（失败=真实缺陷 F-1/F-2/F-3；阻塞=环境待办上游不可达/禁停服务） | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}` |
 | P2-B2（L3-2） | `smoke_l3_2.py --base-url http://127.0.0.1:8000` | **PENDING（exit 2，mode=run，reachable=true）**：受信通道可达；真实双签以子系统仓脚本为准 | `doc/test/evidence/s7/l3-2/smoke-result.json` |
-| P2-B1（前端 E2E） | `cd openbase-ui; $env:OPENBASE_BASE_URL=http://localhost:5173; npm run test:e2e` | **9 页全失败（0 passed / 9 failed）**：渲染成功、受控空态可见；失败为 Q-FE-4b `console.warn=0`（Vue Router No match） | `doc/test/evidence/s6/ui-e2e/{results.json,status.json}` |
+| P2-B1（前端 E2E） | `cd openbase-ui; $env:OPENBASE_BASE_URL=http://localhost:5173; npm run test:e2e` | **9 页全绿（9 passed / 0 failed）**（v1.0.5 F-4 修复后重跑）：页面渲染 + 关键元素/受控空态 + 无渲染兜底 + **无 console error/warn**（Q-FE-4b 达成）。历史首跑（v1.0.4）为 0 passed / 9 failed（Q-FE-4b `console.warn`，Vue Router No match，F-4） | `doc/test/evidence/s6/ui-e2e/{results.json,status.json}`（attempt=2 PASS，历史 attempt=1 保留） |
 | DPS seed | `python DPS/scripts/seed-shared-infra.py` | **exit 0（幂等，0 新增）** | `doc/test/evidence/s7/smoke/dps-seed.json` |
 
 ---
@@ -261,6 +262,7 @@
 | **期望结果 / 退出码** | `tests/test_oidc_binding.py` → 5+ passed，退出码 **0**；主批次 573 例 **0 失败**，退出码 **0** |
 | **回填位置** | 测试报告 §5 `PG-ENV-1`~`PG-ENV-4` 处置列；门禁项 ③；`gate-aggregate.json` §TEST-ALIGN-CLOSE `pending_items` 清空；存量对齐清单复跑记录 |
 | **失败处置** | 若复跑仍失败且非环境性 → 转业务缺陷登记并回溯；`openbase_test` 建库失败 → 记录原因，评估是否退化为独立 schema（设计草案 Q-S7-D3） |
+| **执行状态（v1.0.5 实测 2026-09-11 20:40）** | ✅ **已完成（PG-ENV-1~4 全部关闭）**：`scripts/db/init_openbase_test.ps1` 参数化后（默认读 `.env.shared-infra`；无 psql 客户端时回退 psycopg2）真实执行——`openbase_test` 独立库建立、四账号 `openbase_app`/`platform_app`/`openbase_migrator`/`openbase_runtime` NOSUPERUSER、K13 授权收敛、幂等迁移 **28 表**；`tests/test_oidc_binding.py` 单文件 **5 passed**；主批次（`run_regression.py` 分组 22 组）**676 passed / 0 failed / 4 skipped（exit 0）**，含该文件分组 **passed=10 / failed=0** → 原 4 例环境性失败关闭。证据：`doc/test/evidence/s7/env/env-check.json`（`openbase_test_database=READY`）、`doc/test/evidence/s7/gate/gate-aggregate.json` §TEST-ALIGN-CLOSE（`main_batch.status=PASS` + `closed_items`） |
 
 ### 3.4 [P2-T6-4] K07 / SYS-1 端点-过滤矩阵真实终验（关联断言 S7-T6-4）
 

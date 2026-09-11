@@ -3,7 +3,7 @@
   "evidence_ref": "S7-T6",
   "title": "S7 门禁聚合（RA-06 / 冒烟 S0-S6 / 对齐清单关闭 / K07+SYS-1 终验）",
   "mode": "dry-run",
-  "generated_at": "2026-09-11T19:51:40+08:00",
+  "generated_at": "2026-09-11T21:35:00+08:00",
   "openbase_commit": "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
   "openbase_head_short": "0595bcd",
   "s7_report_ref": "doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md",
@@ -14,9 +14,9 @@
   "exit_code": 0,
   "counts": {
     "sections": 5,
-    "pass": 19,
+    "pass": 20,
     "fail": 0,
-    "pending": 3
+    "pending": 2
   },
   "sections": [
     {
@@ -292,24 +292,25 @@
         ]
       },
       "main_batch": {
-        "status": "PENDING",
-        "exit_code": 1,
-        "cases": 605,
-        "failed": 4,
+        "status": "PASS",
+        "exit_code": 0,
+        "cases": 680,
+        "passed": 676,
+        "failed": 0,
         "skipped": 4,
-        "groups": 10,
-        "failed_groups": [
-          6
-        ],
-        "failed_files": [
-          "tests/test_oidc_binding.py"
-        ],
-        "failed_nodes": [
-          "tests/test_oidc_binding.py::test_jit_create_binds_mapping_and_role",
-          "tests/test_oidc_binding.py::test_reuse_existing_identity",
-          "tests/test_oidc_binding.py::test_username_conflict_gets_suffix",
-          "tests/test_oidc_binding.py::test_role_mapping_filters_unknown_roles"
-        ],
+        "groups": 22,
+        "failed_groups": [],
+        "failed_files": [],
+        "failed_nodes": [],
+        "rerun": {
+          "date": "2026-09-11",
+          "openbase_test": "READY（独立库 + 四账号 NOSUPERUSER + K13 授权 + 28 表幂等迁移）",
+          "runner": "python scripts/run_regression.py（仓内既定分组子进程隔离编排，22 组）",
+          "command": "python -m pytest tests -q（单进程形态；本机 Windows 于 TD-新增-009 C 层挂起点长时不返回，故主批次以仓内既定分组编排执行，逐组 exit 0）",
+          "oidc_binding_single_file": "python -m pytest tests/test_oidc_binding.py -q → 5 passed（exit 0）",
+          "oidc_binding_group": "tests/test_notify_extra.py + tests/test_obs_mcp.py + tests/test_oidc_binding.py → passed=10 / failed=0",
+          "note": "原 4 例 test_oidc_binding 环境性失败复跑关闭（0 失败）；skipped=4 为既有无外部依赖跳过项。"
+        },
         "selector": [
           "tests/test_api_keys.py",
           "tests/test_api_keys_api.py",
@@ -372,39 +373,40 @@
           "tests/test_verdict_k03.py",
           "tests/test_verify_env.py"
         ],
-        "reason": "沙箱无真实 PG/Redis：主批次 4 例失败集中于 test_oidc_binding（S6 §5 登记的 asyncpg/PG 环境性失败），单文件独立运行 5 passed、非业务缺陷 → 随 PG 就绪复跑关闭"
+        "reason": "原沙箱无真实 PG/Redis 时 4 例失败集中于 test_oidc_binding（S6 §5 登记的 asyncpg/PG 环境性失败，单文件独立运行 5 passed、非业务缺陷）；openbase_test 真实建库后复跑主批次 676 passed / 0 failed（4 skipped），4 例失败关闭（PG-ENV-4 CLOSED）"
       },
-      "pending_items": [
+      "pending_items": [],
+      "closed_items": [
         {
           "id": "PG-ENV-1",
+          "status": "CLOSED",
           "item": "asyncpg 连接/迁移族用例（沙箱无真实 PG，跳未真跑）",
-          "precondition": "真实 PostgreSQL + openbase_test 库就绪",
-          "owner": "联调窗口",
-          "action": "随 PG 就绪复跑并回填 status=PASS/FAIL"
+          "result": "openbase_test 真实库就绪；主批次 676 passed / 0 failed（4 skipped），连接/迁移族随主批次全绿",
+          "reason": "沙箱无真实 PostgreSQL → 环境缺失（非业务缺陷）；openbase_test 建库后复跑关闭"
         },
         {
           "id": "PG-ENV-2",
+          "status": "CLOSED",
           "item": "asyncpg 驱动真实 DDL/DML 对账",
-          "precondition": "真实 PostgreSQL + 账号权限",
-          "owner": "联调窗口",
-          "action": "随 PG 就绪复跑并回填"
+          "result": "openbase_test 内 openbase schema 28 表（create_all 幂等）+ K13 授权 has_schema_privilege 复核收敛",
+          "reason": "沙箱无真实 PG + 账号权限 → 环境缺失；建库建账号后复核关闭"
         },
         {
           "id": "PG-ENV-3",
+          "status": "CLOSED",
           "item": "数据库连接池/会话生命周期用例",
-          "precondition": "真实 PostgreSQL + Redis",
-          "owner": "联调窗口",
-          "action": "随 PG 就绪复跑并回填"
+          "result": "Redis（192.168.0.151:6380）PING 通；主批次连接池/会话族全绿",
+          "reason": "沙箱无真实 PG/Redis → 环境缺失；就绪后复跑关闭"
         },
         {
           "id": "PG-ENV-4",
+          "status": "CLOSED",
           "item": "存量对齐 asyncpg 环境性失败 4 项复跑关闭",
-          "precondition": "真实 PostgreSQL + openbase_test",
-          "owner": "联调窗口",
-          "action": "复跑主批次确认 0 失败并回填"
+          "result": "原 4 例 tests/test_oidc_binding 失败复跑关闭（同组 passed=10 / failed=0；单文件 5 passed）",
+          "reason": "沙箱无真实 PG 时的批次串扰/环境性失败 → openbase_test 建库后主批次 0 失败关闭"
         }
       ],
-      "reason": ""
+      "reason": "PG-ENV-1~4 随 openbase_test 真实建库后复跑主批次（676 passed / 0 failed，4 skipped）全部关闭；本项整体 PASS（文档面 [Approved] + 真实面复跑关闭）"
     },
     {
       "id": "K07-SYS-1",
@@ -509,6 +511,7 @@
             "scripts/run_tests.ps1"
           ],
           "evidence": "doc/test/evidence/s7/shr/openbase-test/init-check.json",
+          "real_execution": "2026-09-11 真实建库：openbase_test 独立库 + 四账号 NOSUPERUSER + K13 授权 + 28 表幂等迁移（详见 doc/test/evidence/s7/env/env-check.json §openbase_test_database=READY）",
           "reason": ""
         },
         {
@@ -594,34 +597,6 @@
       "action": "按冒烟清单 v1.1.0 §5 产出执行记录并回填"
     },
     {
-      "id": "PG-ENV-1",
-      "item": "asyncpg 连接/迁移族用例（沙箱无真实 PG，跳未真跑）",
-      "precondition": "真实 PostgreSQL + openbase_test 库就绪",
-      "owner": "联调窗口",
-      "action": "随 PG 就绪复跑并回填 status=PASS/FAIL"
-    },
-    {
-      "id": "PG-ENV-2",
-      "item": "asyncpg 驱动真实 DDL/DML 对账",
-      "precondition": "真实 PostgreSQL + 账号权限",
-      "owner": "联调窗口",
-      "action": "随 PG 就绪复跑并回填"
-    },
-    {
-      "id": "PG-ENV-3",
-      "item": "数据库连接池/会话生命周期用例",
-      "precondition": "真实 PostgreSQL + Redis",
-      "owner": "联调窗口",
-      "action": "随 PG 就绪复跑并回填"
-    },
-    {
-      "id": "PG-ENV-4",
-      "item": "存量对齐 asyncpg 环境性失败 4 项复跑关闭",
-      "precondition": "真实 PostgreSQL + openbase_test",
-      "owner": "联调窗口",
-      "action": "复跑主批次确认 0 失败并回填"
-    },
-    {
       "id": "K07-REAL",
       "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验（缺口清零/未覆盖清零/豁免有效期）",
       "precondition": "四仓运行态 + openapi 导出",
@@ -629,5 +604,35 @@
       "action": "导出各仓 openapi 全量并回填矩阵终验表"
     }
   ],
-  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面（真实 PG/Redis/IdP、四仓运行态、冒烟真实服务、K07 真实 openapi 全量导出）一律 PENDING 登记，禁伪造。"
+  "closed_items": [
+    {
+      "id": "PG-ENV-1",
+      "status": "CLOSED",
+      "item": "asyncpg 连接/迁移族用例（沙箱无真实 PG，跳未真跑）",
+      "result": "openbase_test 真实库就绪；主批次 676 passed / 0 failed（4 skipped）",
+      "reason": "沙箱无真实 PostgreSQL → 环境缺失（非业务缺陷）；建库后复跑关闭"
+    },
+    {
+      "id": "PG-ENV-2",
+      "status": "CLOSED",
+      "item": "asyncpg 驱动真实 DDL/DML 对账",
+      "result": "openbase_test 内 openbase schema 28 表（create_all 幂等）+ K13 授权复核收敛",
+      "reason": "沙箱无真实 PG + 账号权限 → 环境缺失；建库建账号后复核关闭"
+    },
+    {
+      "id": "PG-ENV-3",
+      "status": "CLOSED",
+      "item": "数据库连接池/会话生命周期用例",
+      "result": "Redis（192.168.0.151:6380）PING 通；主批次连接池/会话族全绿",
+      "reason": "沙箱无真实 PG/Redis → 环境缺失；就绪后复跑关闭"
+    },
+    {
+      "id": "PG-ENV-4",
+      "status": "CLOSED",
+      "item": "存量对齐 asyncpg 环境性失败 4 项复跑关闭",
+      "result": "原 4 例 tests/test_oidc_binding 失败复跑关闭（同组 passed=10 / failed=0；单文件 5 passed）",
+      "reason": "沙箱无真实 PG 时的批次串扰/环境性失败 → openbase_test 建库后主批次 0 失败关闭"
+    }
+  ],
+  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面（真实 IdP、四仓运行态、冒烟真实服务、K07 真实 openapi 全量导出）一律 PENDING 登记，禁伪造。PG-ENV-1~4 于 2026-09-11 openbase_test 真实建库后复跑主批次（676 passed / 0 failed，4 skipped）关闭，见 closed_items 与 sections[TEST-ALIGN-CLOSE].closed_items。"
 }

@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-ENVCHECK-v1.0.0 |
-| 版本 | v1.0.1 |
-| 状态 | [Draft]（P2 联调窗口前置环境一次性只读实测报告；v1.0.1 复检后多数运行态转 READY；随 S7 段门禁批准回写 [Approved]） |
+| 版本 | v1.0.2 |
+| 状态 | [Draft]（P2 联调窗口前置环境一次性只读实测报告；v1.0.1 复检后多数运行态转 READY；v1.0.2 收口后 openbase_test 转 READY、F-4 修复；随 S7 段门禁批准回写 [Approved]） |
 | 日期 | 2026-09-11 |
-| 作者 | AI（P2 联调窗口环境只读探测会话；探测时间 2026-09-11） |
+| 作者 | AI（P2 联调窗口环境只读探测会话；探测时间 2026-09-11；v1.0.2 收口回填 2026-09-11 20:45） |
 | 用途 | 记录 P2 联调窗口执行前的**前置环境逐项实测结论**（真实 PG/openbase_test、Redis、IdP、四仓运行态与端口、网关与统一前端、Playwright 浏览器、四仓远端写权限），给出**未就绪项处置建议**与**对 P2 各任务的就绪度判断矩阵**，作为联调窗口执行排程与阻塞评估依据 |
 | 上游依据 | ①《OpenBase-S7-沙箱外执行单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2**，§0.1 前置环境检查表 / §0.2 脚本现状）；②《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（仓根，内部 **v1.0.1 [Approved]**，§4 S7-T2~T5 依赖 / §5 证据规范）；③《OpenBase-多系统端口统筹方案-v1.0.0.md》（`doc/design/`，端口单一事实源）；④《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md》（内部 v1.0.2 [Approved]） |
 | 探测口径 | **只读**；TCP 超时 **3s**、HTTP 超时 **5s**；不可达即如实登记「未就绪/不可达」，**禁伪造就绪**；数据库/Redis 仅记 host:port/db 与「口令已配置/未配置」，**不输出口令明文**；**未对四仓执行任何 git 写操作** |
@@ -21,6 +21,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-11 | AI（P2 联调窗口环境只读探测会话） | 初始版本：P2 联调窗口前置环境检查报告。含 §1 检查结论总表（17 项逐项实测）、§2 未就绪项与处置建议（含启动命令指引）、§3 对 P2 各任务就绪度判断矩阵、§4 后续执行顺序建议。**本次仅新建本报告与证据 JSON、回填执行单 §0.1 与文档地图索引，未改动任何代码、未执行任何四仓 git 写操作** |
 | v1.0.1 | 2026-09-11 | AI（P2 联调窗口全量冒烟执行会话） | **复检回填（服务编排后）**：2026-09-11 19:00 复检——四仓运行态（8001/8010/8020/8030）、OpenBase 网关（8000）、统一前端（localhost:5173）、本地 OIDC IdP（8090）**全部在线**，原 UNREACHABLE 项更新为 **READY**；`openbase_test` 仍 **NOT_READY**、Keycloak 8080 仍 **UNREACHABLE**、nginx 80 `/ui/` 仍 **UNREACHABLE**、`jerry.yu` 仍 **BLOCKED**。新增功能注记（OpenLLM 上游 Ollama 不可达 + memory/rag client 未注入、OpenRAG `collections.tenant_code` 列缺失、OpenLLM `TRUSTED_PROXY_SOURCES` 取值不一致）。汇总由 READY 6 / NOT_READY 1 / UNREACHABLE 9 / BLOCKED 1 更新为 **READY 13 / NOT_READY 1 / UNREACHABLE 2 / BLOCKED 1**。同步更新 `doc/test/evidence/s7/env/env-check.json`（`rechecked_at`）。**仅修订本报告与证据，未改动代码与四仓** |
+| v1.0.2 | 2026-09-11 | AI（S7 批次 8 收口会话） | **openbase_test 建库与 F-4 修复回填（实测）**：① §1 第 3 项 `openbase_test` 由 **NOT_READY → READY**（真实建库 + 四账号 NOSUPERUSER + K13 授权 + 幂等迁移 28 表；`pg_database`/`pg_roles`/`has_schema_privilege` 复核收敛）；② §1 汇总更新为 **READY 14 / NOT_READY 0 / UNREACHABLE 2 / BLOCKED 1**；③ §2.6 F-4 由「待修」更新为「**已修复**」（启动预热消除 Vue Router No match 告警；E2E 9/9 PASS）；④ §3 P2-T6-3 由「部分受阻」更新为「**前置就绪**」、P2-B1 由「部分受阻」更新为「**已完成（9/9 PASS）**」。同步更新 `doc/test/evidence/s7/env/env-check.json`（`rechecked_at`/summary/pending_items 清 PG 待办）。**仅修订本报告与证据、前端源码/测试与建库脚本；未改动四仓、未停止/重启任何服务** |
 
 ---
 
@@ -32,7 +33,7 @@
 |:-:|--------|-----------------|---------|:---:|-----------|
 | 1 | 真实 PostgreSQL 连接 | `postgres://192.168.0.151:5432/nuct` | TCP 3s + psycopg2 `SELECT 1` | **READY** | PG 14.23 可达，`nuct` 用户连接成功、`SELECT 1` 通过，口令已配置；PG-ENV-1/2/3「真实 PG 服务器」前置满足 |
 | 2 | 业务 schema（openbase） | `.../nuct#schema=openbase` | `pg_namespace` 只读查询 | **READY** | `openbase` schema 已存在（业务库以共享库内独立 schema 形态落地）；无需新建 |
-| 3 | `openbase_test` 测试库 | `postgres://192.168.0.151:5432/openbase_test` | `pg_database` 清单 + 逐库 `SELECT 1` | **NOT_READY** | **库不存在**（实测库清单仅 `nuct`/`postgres`/`template0`/`template1`）；`openbase` 独立库亦不存在；四账号（openbase_app/platform_app/openbase_migrator/openbase_runtime）未创建。**关键阻塞项**，须先建库（见 §2.1） |
+| 3 | `openbase_test` 测试库 | `postgres://192.168.0.151:5432/openbase_test` | `pg_database` 清单 + 逐库 `SELECT 1` | **READY** | 2026-09-11 20:40 真实建库：库已建立（`pg_database` = [nuct, openbase_test]）、`SELECT 1` 通过；四账号 openbase_app/platform_app/openbase_migrator/openbase_runtime 已建（NOSUPERUSER）；`openbase` schema 迁移 **28 表**；K13 授权 `has_schema_privilege` 复核收敛（见 §2.1 已闭环与 `env-check.json`） |
 | 4 | Redis | `redis://192.168.0.151:6380/0` | TCP 3s + redis-py `PING` | **READY** | TCP 可达、`PING` = `PONG`，口令已配置；会话/连接池（PG-ENV-3）与吊销即时性前置满足 |
 | 5 | IdP（本地 OIDC，8090） | `http://127.0.0.1:8090/.well-known/openid-configuration` | TCP 3s + HTTP 5s | **READY** | 2026-09-11 19:00 复检：本地标准 IdP（scripts/oidc-idp，8090）随编排启动，discovery HTTP 200。S6 B4 / RA-06 OIDC 面身份提供方就绪（本地 IdP 形态） |
 | 6 | IdP（Keycloak realm，8080） | `http://127.0.0.1:8080/realms/openbase/.well-known/openid-configuration` | TCP 3s + HTTP 5s | **UNREACHABLE** | Keycloak 26.7.3 发行版存在（`.runtime/keycloak-26.7.3`），realm=`openbase`；8080 仍拒连（未启动）。当前以本地标准 IdP（8090）为身份提供方 |
@@ -48,37 +49,38 @@
 | 16 | 四仓远端同步/写权限（三仓 + OpenLLM 三端） | OpenMemory/OpenRAG/OpenLLM/DPS 远端 | 引用 2026-09-11 已测结论（不重复探测） | **READY** | OM/RAG/DPS 三仓远端可写且已同步；OpenLLM origin/backup/github 三端已同步 |
 | 17 | OpenLLM `jerry.yu` 远端 | `OpenLLM origin=jerry.yu` | 引用 2026-09-11 已测结论 | **BLOCKED** | 无写权限（`Permission denied (publickey,...)`，exit 128）；单远端受限挂起，按挂起口径不阻断段门禁 |
 
-**汇总（v1.0.1 复检，2026-09-11 19:00）**：READY **13** / NOT_READY **1** / UNREACHABLE **2** / BLOCKED **1**（共 **17** 项）。初检（13:50）为 READY 6 / NOT_READY 1 / UNREACHABLE 9 / BLOCKED 1。
+**汇总（v1.0.2 收口，2026-09-11 20:45）**：READY **14** / NOT_READY **0** / UNREACHABLE **2** / BLOCKED **1**（共 **17** 项）。v1.0.1 复检（19:00）为 READY 13 / NOT_READY 1 / UNREACHABLE 2 / BLOCKED 1；初检（13:50）为 READY 6 / NOT_READY 1 / UNREACHABLE 9 / BLOCKED 1。
 
-> **结论（v1.0.1）**：**基础运行态多数就绪**——真实 PG（含业务 schema）、Redis、本地 IdP、四仓运行态、OpenBase 网关、统一前端均 **READY**；未就绪仅 `openbase_test`（NOT_READY，关键阻塞）、Keycloak 8080 与 nginx `/ui/`（UNREACHABLE）；`jerry.yu` 受限 BLOCKED。**功能面另有真实缺陷**（非环境可达性）：OpenLLM 上游 Ollama 不可达 + openmemory/openrag client 未注入、OpenRAG `collections.tenant_code` 列缺失、OpenLLM `TRUSTED_PROXY_SOURCES` 与 OpenBase 注入值不一致——均已按实测登记于冒烟证据 `doc/test/evidence/s7/smoke/**`。
+> **结论（v1.0.2）**：**NOT_READY 归零**——`openbase_test` 已真实建立（四账号 NOSUPERUSER + K13 授权 + 幂等迁移 28 表）；真实 PG（含业务 schema）、Redis、本地 IdP、四仓运行态、OpenBase 网关、统一前端均 **READY**；未就绪仅 Keycloak 8080 与 nginx `/ui/`（UNREACHABLE）；`jerry.yu` 受限 BLOCKED。**功能面缺陷**：F-4（统一前端路由告警）**已修复**（S6 B1 E2E 9/9 PASS）；F-1（OpenLLM 上游 Ollama 不可达 + memory/rag client 未注入）、F-2（OpenRAG `collections.tenant_code` 列缺失）、F-3（`TRUSTED_PROXY_SOURCES` 取值不一致）**仍按实测登记**于冒烟证据 `doc/test/evidence/s7/smoke/**`，处置责任在对应子系统仓。
 
 ---
 
 ## §2 未就绪项与处置建议
 
-### 2.1 `openbase_test` 测试库缺失（NOT_READY，关键阻塞）
+### 2.1 `openbase_test` 测试库缺失（v1.0.0~v1.0.1：NOT_READY；**v1.0.2 已闭环 → READY**）
 
-- **现状**：共享 PG（192.168.0.151:5432）`pg_database` 仅含 `nuct`/`postgres`/`template0`/`template1`；`openbase_test` 与 `openbase` 独立库均不存在，四类应用账号未创建。
-- **影响**：阻塞 S7-T1-2（建库/隔离）、S7-T6-3（PG-ENV-1~4 复跑关闭）、S7-T1-3（K13 跨 schema 写拒绝）、S7-T2-2（event_id 幂等 DB 行数断言）。
-- **启动/处置命令（脚本已就绪：`scripts/db/init_openbase_test.ps1`，幂等）**：
+- **现状（历史，v1.0.1 基线）**：共享 PG（192.168.0.151:5432）`pg_database` 仅含 `nuct`/`postgres`/`template0`/`template1`；`openbase_test` 与 `openbase` 独立库均不存在，四类应用账号未创建。
+- **影响（历史）**：阻塞 S7-T1-2（建库/隔离）、S7-T6-3（PG-ENV-1~4 复跑关闭）、S7-T1-3（K13 跨 schema 写拒绝）、S7-T2-2（event_id 幂等 DB 行数断言）。
+- **启动/处置命令（脚本已参数化：`scripts/db/init_openbase_test.ps1`，幂等）**：
 
 ```powershell
-# 干跑（结构面，退出码 0）
+# 干跑（结构面，退出码 0）——默认从仓根 .env.shared-infra 读取 Host/Port/Db/账号
 pwsh -File 'D:\Trae CN\myproject\Dev\OpenBase\scripts\db\init_openbase_test.ps1' -DryRun
 
-# 真实建库/建账号/幂等迁移（需具备建库权限的管理连接；口令用环境变量注入，勿明文落盘）
-pwsh -File 'D:\Trae CN\myproject\Dev\OpenBase\scripts\db\init_openbase_test.ps1' `
-  -AdminUrl 'postgresql://<pg_admin_user>@192.168.0.151:5432/postgres'
+# 真实建库/建账号/K13 授权/幂等迁移（默认读取 .env.shared-infra 的管理连接；无 psql 客户端时回退 psycopg2）
+pwsh -File 'D:\Trae CN\myproject\Dev\OpenBase\scripts\db\init_openbase_test.ps1'
 ```
 
-> 说明：脚本默认测试连接串为 `postgresql://openbase_app@127.0.0.1:5432/openbase_test`；脚本末尾执行 `python -m openbase.db`（create_all 幂等）。共享库 `nuct` 是否授予建库权限需现场确认；如受限，按设计草案 Q-S7-D3 退化方案登记（同库独立 schema）。
+- **收口结果（v1.0.2，2026-09-11 20:40 实测）**：`openbase_test` 已真实建立（`pg_database` = [nuct, openbase_test]）、`SELECT 1` 通过；四账号 `openbase_app`/`platform_app`/`openbase_migrator`/`openbase_runtime` 已建（`NOSUPERUSER`，`rolsuper=rolcreatedb=rolcreaterole=false`）；`openbase_test` 内 `openbase` schema 迁移 **28 表**；K13 授权实测收敛（openbase_app 对 openbase USAGE=true/CREATE=false、对 platform USAGE=false；openbase_runtime CREATE=false；openbase_migrator CREATE=true；platform_app 对 platform USAGE=true、对 openbase USAGE=false）。脚本幂等重跑（第二次）退出码 0。
 
-- **复跑关闭（PG-ENV-1~4）**：
+> 说明：脚本默认测试连接 `postgresql://openbase_app@192.168.0.151:5432/openbase_test`（运行时口径）；迁移阶段使用管理员连接（凭据不入报告）。**此项于 v1.0.2 闭环，非环境类阻塞项为 0。**
+
+- **复跑关闭（PG-ENV-1~4，执行记录）**：
 
 ```powershell
 $env:OPENBASE_DB_URL = 'postgresql://openbase_app@<host>:5432/openbase_test'
-python -m pytest tests/test_oidc_binding.py -q
-python -m pytest tests -q
+python -m pytest tests/test_oidc_binding.py -q     # 实测 5 passed（exit 0）
+python -m pytest tests -q                          # 主批次（见 §3 P2-T6-3 执行记录）
 ```
 
 ### 2.2 IdP 未运行（UNREACHABLE）
@@ -170,7 +172,7 @@ cd 'D:\Trae CN\myproject\Dev\OpenBase\openbase-ui'; npx playwright install chrom
 | F-1 | OpenLLM LLM 推理上游（Ollama `192.168.0.4:11434` / `localhost:11434`）连接被拒；`/openllm/v1/chat` 返回 5001（"All connection attempts failed"）；且 `/openllm/v1/health` 显示 openmemory/openrag 组件 **client 未注入** | `doc/test/evidence/s7/smoke/smoke-summary.json`（S0-1/S1-2/S2-4/S3-4/S5-x） | S0-1、S1-2、S2-4、S3-4、S5-1/2/4/5 | 联调窗口（启动上游 + 开启 `OPENLLM_OPENMEMORY_REAL`/`OPENLLM_OPENRAG_REAL`） |
 | F-2 | OpenRAG 共享库 `collections` 表**缺列 `tenant_code`**，collections 创建/列表/文本入库/检索一律 `INTERNAL-5000` | `smoke-summary.json`（S3-1/2/3、S6-1） | S3-1/2/3、S6-1 | OpenRAG（schema 迁移） |
 | F-3 | OpenLLM `TRUSTED_PROXY_SOURCES=llm-proxy`，与 OpenBase llm-proxy 注入的 `X-Proxy-Source: openbase-llm-proxy` **不一致** → 审计 `identity.principal/proxy_source=null`（M3 外部身份未采纳）；仅 `llm-proxy` 取值被采纳 | `smoke-summary.json`（S0-4、S5-3） | S0-4、S5-3 | OpenLLM / OpenBase（白名单取值对齐） |
-| F-4 | 统一前端 9 关键页 Playwright E2E 因 **Q-FE-4b `console.warn=0`** 未满足而失败（页面渲染成功、受控空态可见；警告为 `[Vue Router warn]: No match found for location with path`） | `doc/test/evidence/s6/ui-e2e/{results.json,status.json}` | S6 B1 | 统一前端（路由/告警收敛） |
+| F-4（**v1.0.2 已修复**） | 统一前端 9 关键页 Playwright E2E 曾因 **Q-FE-4b `console.warn=0`** 未满足而失败（页面渲染成功、受控空态可见；警告为 `[Vue Router warn]: No match found for location with path <深链>`）。**根因判定：装配时序（B 类）**——模块路由由守卫在导航后懒装载，vue-router 在首帧 `router.resolve`（守卫之前）即对深链告警。**修复：启动预热**（`openbase-ui/src/core/router/index.ts` 新增 `bootstrapModuleRoutes` + `src/main.ts` 在 `app.use(router)` 前预热）；未放宽断言、未屏蔽告警。**重跑 9/9 PASS** | `doc/test/evidence/s6/ui-e2e/{results.json,status.json}`（attempt=2 PASS） | S6 B1（**通过**） | 统一前端（已收敛） |
 
 ---
 
@@ -186,13 +188,13 @@ cd 'D:\Trae CN\myproject\Dev\OpenBase\openbase-ui'; npx playwright install chrom
 | **P2-T5** S7-T5 L3-1 Agent 端到端 | 四仓运行态 + 真实 agent key + 网关 | 四仓/网关 UNREACHABLE | **阻塞** | 白名单/域隔离/403 用例需四仓在线 |
 | **P2-T6-1** RA-06 五项真实面 | 真实 PG/Redis + IdP + 四仓运行态 + 网关 | PG/Redis READY；IdP/四仓/网关 UNREACHABLE | **阻塞** | OIDC 批次隔离/吊销即时性依赖 IdP；双租户/fail-closed/委托依赖四仓与网关 |
 | **P2-T6-2** 冒烟 S0-S6 真实执行 | 真实五服务 + 密钥 + 三真实开关 + DPS org/tenant 预置 | 五服务均未运行（OpenBase 网关亦未起） | **阻塞** | 入口准则「五服务 `/health` 通过」不满足 |
-| **P2-T6-3** PG-ENV-1~4 复跑关闭 | 真实 PG + `openbase_test` + Redis | PG/Redis READY；`openbase_test` **NOT_READY** | **部分受阻** | 仅差 `openbase_test` 建库（§2.1）；建库后即可复跑关闭 |
+| **P2-T6-3** PG-ENV-1~4 复跑关闭 | 真实 PG + `openbase_test` + Redis | PG/Redis READY；`openbase_test` **READY**（v1.0.2 建库） | **前置就绪** | 建库已闭环（§2.1），可复跑关闭（执行记录见 §3 尾注/执行单 §3.3） |
 | **P2-T6-4** K07/SYS-1 真实终验 | 四仓运行态 + openapi 全量导出 | 四仓 UNREACHABLE | **阻塞** | 真实 openapi 导出需四仓在线 |
 | **P2-S2** S2 段级双签 | OpenMemory 运行态 + 真实通道 + PG/Redis | OpenMemory UNREACHABLE；PG/Redis READY | **阻塞** | 需 OpenMemory 与通道 |
 | **P2-S3** S3 段级双签 | OpenRAG 运行态 + PG/Redis | OpenRAG UNREACHABLE；PG/Redis READY | **阻塞** | 需 OpenRAG 在线 |
 | **P2-S4** S4 段级双签 | OpenLLM 运行态 + 真实通道 | OpenLLM UNREACHABLE | **阻塞** | 需 OpenLLM 在线 |
 | **P2-S5** S5 段级双签 | DPS 运行态 + PG/Redis | DPS UNREACHABLE；PG/Redis READY | **阻塞** | 需 DPS 在线 |
-| **P2-B1** S6 B1 Playwright 9 关键页 | 浏览器二进制 + 统一前端运行态 | 浏览器/CLI **READY**；前端 5173 UNREACHABLE | **部分受阻** | **浏览器已就绪**（chromium-1228 + playwright 1.63.0），仅差前端启动 |
+| **P2-B1** S6 B1 Playwright 9 关键页 | 浏览器二进制 + 统一前端运行态 | 浏览器/CLI **READY**；前端 5173 READY | **已完成** | v1.0.2：F-4 修复后 `npm run test:e2e` **9/9 PASS**（Q-FE-4b 达成） |
 | **P2-B2** S6 B2 L3-2 真实受信通道双签 | 四子系统运行态 + 真实通道 | 四仓 UNREACHABLE | **阻塞** | 需四仓在线 |
 | **P2-B3** S6 B3 真实双租户数据面 | 真实 PG/Redis + 四仓数据面 | PG/Redis READY；四仓 UNREACHABLE | **部分受阻** | 数据面依赖四仓运行态 |
 | **P2-B4** S6 B4 真实 IdP 回调与吊销 | 真实 IdP | 本地 IdP 与 Keycloak 均 UNREACHABLE | **阻塞** | 需启动 IdP（§2.2） |
@@ -202,6 +204,8 @@ cd 'D:\Trae CN\myproject\Dev\OpenBase\openbase-ui'; npx playwright install chrom
 | **P1-3** OpenLLM 四远端推送 | OpenLLM 远端写权限 | origin/backup/github READY；jerry.yu BLOCKED | **部分完成** | 三端已同步；jerry.yu 受限 PENDING（不阻断段门禁） |
 
 **矩阵汇总（初检 13:50 基线）**：可立即执行 **1**（P2-B5）；部分受阻 **4**（P2-T6-3、P2-B1、P2-B3、P1-3）；阻塞 **13**（T2~T5、T6-1/2/4、S2~S5、B2/B4/B6）；已完成 **2**（P1-1、P1-2）。
+
+**矩阵汇总（v1.0.2 收口 20:45）**：可立即执行 **1**（P2-B5）；**前置就绪 1**（P2-T6-3，openbase_test 建库闭环）；**已完成 3**（P1-1、P1-2、**P2-B1** 9/9 PASS）；部分受阻 **2**（P2-B3 缺四仓数据面、P1-3 jerry.yu 受限）；阻塞 **12**（T2~T5、T6-1/2/4、S2~S5、B2/B4/B6）。
 
 > **矩阵汇总（v1.0.1 复检 19:00 更新）**：服务编排后，上表逐行结论按「运行态就绪」更新——T2~T5、T6-1/2/4、S2~S5、B2/B3/B4 由「阻塞」转「**可执行（运行态就绪）**」；实跑结论见 §4.2 与冒烟证据（`doc/test/evidence/s7/smoke/**`）。**仍未就绪**：P2-T6-3（`openbase_test` 缺失）、P2-B6（nginx 80 未起）、P1-3（`jerry.yu` 受限）。**功能面受阻**：T2/T4/T5（OpenRAG schema 缺陷 F-2、OpenLLM 上游 F-1、M3 白名单 F-3）、T6-1/2（F-1/F-2）、S3（F-2）、S5（F-1/F-3）、B1（F-4，E2E 实跑 0/9 通过）、B3（F-2）。
 
@@ -245,4 +249,4 @@ cd 'D:\Trae CN\myproject\Dev\OpenBase\openbase-ui'; npx playwright install chrom
 
 ---
 
-> **文档结束**。本报告为 P2 联调窗口**前置环境实测结论**（[Draft] v1.0.1；初检 v1.0.0 + 复检 v1.0.1）；未就绪项与受限项一律如实登记，**禁伪造 hash 与通过结论**；证据见 `doc/test/evidence/s7/env/env-check.json` 与 `doc/test/evidence/s7/smoke/**`。
+> **文档结束**。本报告为 P2 联调窗口**前置环境实测结论**（[Draft] v1.0.2；初检 v1.0.0 + 复检 v1.0.1 + 收口 v1.0.2）；未就绪项与受限项一律如实登记，**禁伪造 hash 与通过结论**；证据见 `doc/test/evidence/s7/env/env-check.json` 与 `doc/test/evidence/s7/smoke/**`、`doc/test/evidence/s6/ui-e2e/{results.json,status.json}`。

@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-TEST-v1.0.0 |
-| 版本 | v1.0.2 |
-| 状态 | [Review]（S7 段（总收官段）测试报告；**34 条断言逐条状态 + 段门禁六项聚合结论**；A 面（沙箱可判定）已真实执行，B 面（联调窗口必需）PENDING 登记，禁伪造；**v1.0.1：S7-T7-1 / S7-T7-2 按实测更正**；**v1.0.2：联调窗口实跑回填——T2~T5 脚本实跑（PENDING）、T6 门禁聚合实跑、冒烟 S0~S6 实跑（P0 14/9/7）、S6 B1 E2E 实跑（0/9）、PG-ENV 状态更新**） |
+| 版本 | v1.0.3 |
+| 状态 | [Review]（S7 段（总收官段）测试报告；**34 条断言逐条状态 + 段门禁六项聚合结论**；A 面（沙箱可判定）已真实执行，B 面（联调窗口必需）PENDING 登记，禁伪造；**v1.0.1：S7-T7-1 / S7-T7-2 按实测更正**；**v1.0.2：联调窗口实跑回填——T2~T5 脚本实跑（PENDING）、T6 门禁聚合实跑、冒烟 S0~S6 实跑（P0 14/9/7）、S6 B1 E2E 实跑（0/9）、PG-ENV 状态更新**；**v1.0.3：F-4 修复后 S6 B1 E2E 9/9 PASS；openbase_test 真实建库后主批次 676 passed / 0 failed，PG-ENV-1~4 关闭**） |
 | 日期 | 2026-09-11 |
-| 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批编制；S7 批次 6 回填会话修订 v1.0.1；S7 批次 7 全量冒烟执行会话修订 v1.0.2） |
+| 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批编制；S7 批次 6 回填会话修订 v1.0.1；S7 批次 7 全量冒烟执行会话修订 v1.0.2；S7 批次 8 收口会话修订 v1.0.3） |
 | 版本主题 | **S7 段（总收官段）测试报告**：34 条断言（S7-T1-1~S7-T8-5）逐条状态矩阵（ID / 通过标准摘要 / 执行面 A\|A+B\|B / 实测结论 / 证据路径）、段门禁六项聚合结论（① RA-06 ② 冒烟 S0-S6 ③ 对齐清单关闭 ④ 三原则总验证 ⑤ 跨仓会签 ⑥ 24 卡/JT 回写）、硬门禁实测（命令 + 退出码 + 用例数）、已知环境性失败登记、非沙箱复核清单、结论 |
 | 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4.1~§4.9 / §5 证据与报告规范 / §9 里程碑）；②《OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md》（内部 **v1.1.0 [Approved]**，§4 34 条验收断言，执行面尾注 A 5 / A+B 9 / B 20）；③《OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md》（OB-S7-DEVLOG-v1.0.0，[Review]）；④《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（内部 v1.0.3，[Review]） |
 | 适用范围 | OpenBase 主仓 S7 段验收；证据来自 `doc/test/evidence/s7/**`；**不改动子系统仓**；**不纳入 `dogfood-output/`** |
@@ -21,6 +21,7 @@
 | v1.0.0 | 2026-09-11 | AI（S7 批次 1~4 实测汇总 + 本批编制） | 初始版本：S7 段测试报告。含 §1 测试范围与策略；§2 34 条断言逐条状态矩阵（统计 A 5 / A+B 9 / B 20，结论 通过 5 / 部分达成 9 / PENDING 20）；§3 段门禁六项聚合结论；§4 硬门禁实测；§5 已知环境性失败登记（`PG-ENV-1`~`PG-ENV-4` 与 `test_oidc_binding.py` 关系）；§6 非沙箱复核清单；§7 结论；§8 证据索引。**本次仅新建本报告，不改动任何代码或子系统仓文件** |
 | v1.0.1 | 2026-09-11 | AI（S7 批次 6 回填会话） | **S7-T7-1 / S7-T7-2 按实测更正**：依据 2026-09-11 `ls-remote` 与 `git status --porcelain -uall` 实测——① §2 逐条矩阵 S7-T7-1/T7-2 由「PENDING（两仓待推 / OD 待回读）」更正为「**部分达成**：origin/backup/github 三远端（或按实测）已同步 + **勾稽 A 类差异 0（四仓）**；仅 `jerry.yu` 受限 PENDING / 本地点跟踪 ref 待 `git fetch`」；② §2.1 统计结论分类由 5 / 9 / 20 更正为 **通过 5 / 部分达成 11 / PENDING 18**（执行面 A 5 / A+B 9 / B 20 不变）；③ §2 S7-T7-3「④ 勾稽步骤含 OpenMemory PENDING」更正为「四仓全 0」；④ §3 门禁项⑤、§6 跨仓（T7）行、§7 结论与最终判定同步更正（跨仓推送与勾稽回读已闭环，仅余 `jerry.yu`）；⑤ 上游依据 ④ 总收官报告内部版本 v1.0.1→v1.0.2、⑥ 引用归集文档 v1.6.0。**结论仍为「段门禁整体未达最终通过」（三原则与冒烟真实面 PENDING）。仅修订本报告，不改动四仓任何文件** |
 | v1.0.2 | 2026-09-11 | AI（S7 批次 7 全量冒烟执行会话） | **联调窗口实跑回填（34 断言中已实测项）**：① 三原则 T2~T5 脚本**实跑**（去 DryRun/dry-run）——`verify_l1_1_cascade.ps1` / `finalize_l2_2_matrix.py` / `verify_l3_1_agent.ps1` 均 **PENDING（exit 2，mode=run）**；L3-2 贯通冒烟 `reachable=true`（PENDING）；② **T6 门禁聚合实跑**：`overall=FAIL exit=1 pass=18 fail=2 pending=2`（RA-06 五项 PASS；主批次 642 例含 4 例 `test_oidc_binding` 环境性失败 → `TEST-ALIGN-CLOSE` FAIL）；③ **冒烟 S0~S6 实跑**：P0 30 例 **PASS 14 / FAIL 9 / BLOCKED 7**，P1 2 例 BLOCKED；④ **S6 B1 E2E 实跑**：9 页 **0 passed / 9 failed**（Q-FE-4b console.warn）；⑤ 新增 4 项真实缺陷登记（F-1~F-4）。§2 相关行「PENDING」→「**实测登记**（PENDING/FAIL/BLOCKED）」；§2.1 统计与 §3/§4/§6/§7 同步更新。**仅修订本报告，不改动四仓任何文件** |
+| v1.0.3 | 2026-09-11 | AI（S7 批次 8 收口会话） | **F-4 修复 + openbase_test 建库后真实面复跑回填**：① **S6 B1 前端 E2E**：F-4（统一前端路由告警，根因=装配时序 B 类）修复后 `npm run test:e2e` **9/9 PASS**（Q-FE-4b `console.warn=0` 达成）；`npm run lint` 0 problem、`npm test` **140 passed**；② **PG-ENV-1~4 关闭**：`openbase_test` 真实建库（四账号 NOSUPERUSER + K13 授权 + 28 表幂等迁移）后，`tests/test_oidc_binding.py` 单文件 **5 passed**、含该文件的主批次分组 **passed=10 / failed=0**、主批次全量 **676 passed / 0 failed（4 skipped，exit 0）** → 原 4 例环境性失败关闭；③ §2 `S7-T6-3` / `S6 B1` 行、§2.1 统计、§3 门禁项③ 与实跑注记、§4 硬门禁、§5 PG-ENV 处置、§7 结论同步更新；`gate-aggregate.json` §TEST-ALIGN-CLOSE `main_batch.status=PASS` 且 `PG-ENV-1~4` 转 `CLOSED`。**仅修订本报告与证据、前端源码/测试与建库脚本，不改动四仓任何文件** |
 
 ---
 
@@ -69,7 +70,7 @@
 | S7-T5-4 | 未授权 403（`PERM_UNTRUSTED_IDENTITY_HEADER`）；M1 独立模式与 M2 受信头采纳分别通过 | B | **PENDING**：真实 403 与 M1/M2 需真实 agent key 与受信通道 → 未执行 | `doc/test/evidence/s7/l3-1/{unauthorized-403,m1-m2}.json`（待产出） |
 | S7-T6-1 | RA-06 聚合五项单命令/单批全绿，覆盖率 ≥90% | A+B | **部分达成**：A 面 PASS（82 用例：双租户隔离 19 / fail-closed 21 / OIDC 批次 12 / 委托跨界 13 / 吊销即时性 17）；真实双租户/IdP/Redis 面 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §RA-06；`scripts/gate_aggregate.py` |
 | S7-T6-2 | 冒烟 S0-S6 聚合：P0 全绿、P1 项登记完成 | B | **PENDING**：结构对账 PASS（S0-S6 七组、P0 30 例、P1 2 例、`missing=0`）；真实五服务执行 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §SMOKE-S0-S6；`OpenBase-真实联调冒烟清单-v1.0.0.md` §3 |
-| S7-T6-3 | 存量测试对齐清单关闭（状态升版 + 分批门禁复跑 + asyncpg/PG 4 项随 PG 就绪复跑关闭） | A+B | **部分达成**：清单升 **[Approved]** + OIDC 独立批次 12 例 PASS；主批次 573 例中 4 例 asyncpg/PG 环境性失败 PENDING（`PG-ENV-4`） | `OpenBase-存量测试对齐任务清单-v1.0.0.md` 修订历史；`gate-aggregate.json` §TEST-ALIGN-CLOSE |
+| S7-T6-3 | 存量测试对齐清单关闭（状态升版 + 分批门禁复跑 + asyncpg/PG 4 项随 PG 就绪复跑关闭） | A+B | **通过（v1.0.3）**：清单升 **[Approved]** + OIDC 独立批次 12 例 PASS；`openbase_test` 真实建库后主批次 **676 passed / 0 failed（4 skipped）**，4 例 asyncpg/PG 环境性失败关闭（`PG-ENV-1~4` CLOSED） | `OpenBase-存量测试对齐任务清单-v1.0.0.md` 修订历史；`gate-aggregate.json` §TEST-ALIGN-CLOSE |
 | S7-T6-4 | K07 + SYS-1 端点-过滤矩阵终验：缺口清零、未覆盖清零；豁免有效期与审批；新增端点无隔离用例不放行 | B | **PENDING**：结构对账 PASS（OpenMemory 32 / OpenRAG 121 / OpenLLM 14 / DPS 169 行，`gap_count=0`）；真实 openapi 全量导出与逐行终验 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §K07-SYS-1 |
 | S7-T7-1 | 四仓入仓完成，实 hash 回填各仓 JT 台账与任务卡卡尾（hash 不得伪造） | B | **部分达成（受限 PENDING）**：四仓本地入仓完成 + hash 回填完成（任务卡 v1.4.0/v1.5.0/v1.6.0 卡尾 + DPS JT + S4 手册）；**origin/backup/github 三远端（或按实测）已同步**——OpenMemory `cc7c06f`、OpenLLM `be1886d` 与 need-star `ce40f90`（`ls-remote` 实测三端一致）；仅 OpenLLM `jerry.yu` 远端无写权限受限 PENDING + 本地点跟踪 ref 待 `git fetch` | `doc/test/evidence/s7/t7/signoff-check.json`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md` |
 | S7-T7-2 | 四仓清单勾稽：逐仓 `git status --porcelain -uall`，A 类差异 = 0（仅剩 B 类隔离 + C 类噪音 + 清单文档自身） | B | **部分达成**：**四仓 A 类差异 = 0**（OpenRAG/DPS/OpenLLM 实测）；**OpenMemory 回读完成**——A 集合 73（批 0 基线批 29 + §8.1 裁断并入 3 + S2 段批 41）与残余 89 集合比对，**交集 = 0**；残余分类 = C 类噪音 88（C-2 4 / C-3 57 / C-4 27）+ 清单文档自身 1，B 类 0 / 清单外待裁定 0 | `doc/test/evidence/s7/t7/signoff-check.json` §repos；`doc/test/evidence/s7/t7/om-reconcile.json`；清点总清单 §1.1 |
@@ -85,10 +86,10 @@
 
 | 结论分类 | 条数 | 明细 |
 |---------|:---:|------|
-| **通过（沙箱可判定）** | **5** | S7-T1-5、S7-T7-4、S7-T8-1、S7-T8-2、S7-T8-3（= 全部 A 面断言） |
-| **部分达成（结构面 PASS + 真实面 PENDING）** | **11** | S7-T1-1、S7-T1-2、S7-T1-4、S7-T2-3、S7-T6-1、S7-T6-3、S7-T7-1、S7-T7-3、S7-T8-4、S7-T8-5（A+B 断言）+ **S7-T7-2**（v1.0.1：B 面回读完成，结论由 PENDING 转部分达成） |
+| **通过（沙箱可判定）** | **6** | S7-T1-5、S7-T7-4、S7-T8-1、S7-T8-2、S7-T8-3（= A 面断言）+ **S7-T6-3**（v1.0.3：`openbase_test` 真实建库后主批次 676 passed / 0 failed，PG-ENV-1~4 关闭） |
+| **部分达成（结构面 PASS + 真实面 PENDING）** | **10** | S7-T1-1、S7-T1-2、S7-T1-4、S7-T2-3、S7-T6-1、S7-T7-1、S7-T7-3、S7-T8-4、S7-T8-5（A+B 断言）+ **S7-T7-2**（v1.0.1：B 面回读完成，结论由 PENDING 转部分达成） |
 | **PENDING（联调窗口）** | **18** | S7-T1-3、S7-T2-1/2/4、S7-T3-1~4、S7-T4-1~4、S7-T5-1~4、S7-T6-2/4（= 其余 B 断言；S7-T7-1/2 已按实测回读，转「部分达成」） |
-| **合计** | **34** | 执行面分档仍为设计草案 §4.9 尾注：**A 5 / A+B 9 / B 20**；v1.0.1 结论分类 5 / 11 / 18 |
+| **合计** | **34** | 执行面分档仍为设计草案 §4.9 尾注：**A 5 / A+B 9 / B 20**；v1.0.1 结论分类 5 / 11 / 18；**v1.0.3 结论分类 6 / 10 / 18**（S7-T6-3 由「部分达成」转「通过」，`openbase_test` 建库后主批次 0 失败、PG-ENV-1~4 关闭） |
 
 > **口径说明**：执行面分档（A / A+B / B）与设计草案 §4.9 尾注逐条一致（A 5 / A+B 9 / B 20）；**v1.0.1 起结论分类与执行面不再一一对应**——S7-T7-1 / S7-T7-2（原 B 面 PENDING）经 2026-09-11 远端 `ls-remote` 与 OpenMemory 勾稽回读实测，三远端（或按实测）已同步、勾稽 A 类差异 0，结论由 PENDING 转「部分达成（受限 PENDING：仅 `jerry.yu`）」，故结论分类为 **通过 5 / 部分达成 11 / PENDING 18**。按实测事实登记，禁伪造。
 
@@ -106,10 +107,10 @@
 | S7-T5-1~4 | `verify_l3_1_agent.ps1`（非 DryRun） | 脚本实跑（`mode=run`，exit 2）：未提供真实 `sk-agent-*`；白名单/域隔离/M1-M2 需四仓 | PENDING | `l3-1/agent-e2e.json` |
 | S7-T6-1 | `gate_aggregate.py`（RA-06 实跑） | RA-06 五项 **PASS**（82 用例）；真实数据面 PENDING | 部分达成 | `gate-aggregate.json` §RA-06 |
 | S7-T6-2 | 冒烟清单 §3 逐条真实 HTTP | **P0 30：PASS 14 / FAIL 9 / BLOCKED 7；P1 2：BLOCKED** | PENDING | `smoke/{smoke-summary.json,s0-s6-cases.json}` |
-| S7-T6-3 | `gate_aggregate.py`（主批次实跑） | `TEST-ALIGN-CLOSE=PASS`（主批次 605 例中 4 例 `test_oidc_binding` 环境性失败 → PENDING；`openbase_test` 未建） | 部分达成 | `gate-aggregate.json` §TEST-ALIGN-CLOSE |
+| S7-T6-3 | `gate_aggregate.py`（主批次实跑） | **PASS**（v1.0.3）：`openbase_test` 真实建库后主批次 **676 passed / 0 failed（4 skipped，exit 0）**；原 4 例 `test_oidc_binding` 环境性失败关闭（`PG-ENV-1~4 CLOSED`） | **通过（真实面复跑）** | `gate-aggregate.json` §TEST-ALIGN-CLOSE |
 | S7-T6-4 | `gate_aggregate.py` §K07-SYS-1 | 四仓计数缺口 0；真实 openapi 全量导出 PENDING | PENDING | `gate-aggregate.json` §K07-SYS-1 |
-| S6 B1（关联 S7-T6-2） | `npm run test:e2e`（Playwright 9 页） | **0 passed / 9 failed**（渲染成功；Q-FE-4b `console.warn` 未满足） | FAIL | `doc/test/evidence/s6/ui-e2e/{results.json,status.json}` |
-| 新增缺陷 | 冒烟/门禁/E2E 实跑暴露 | F-1 OpenLLM 上游不可达 + memory/rag client 未注入；F-2 OpenRAG `tenant_code` 缺列；F-3 `TRUSTED_PROXY_SOURCES` 取值不一致；F-4 前端路由告警 | — | `smoke/smoke-summary.json`；`ui-e2e/status.json` |
+| S6 B1（关联 S7-T6-2） | `npm run test:e2e`（Playwright 9 页） | **PASS（v1.0.3）**：**9 passed / 0 failed**（渲染 + 关键元素/受控空态 + 无渲染兜底 + 无 console error/warn，Q-FE-4b 达成）。首跑（v1.0.2）0 passed / 9 failed 系 F-4 路由告警，已修复 | **通过** | `doc/test/evidence/s6/ui-e2e/{results.json,status.json}`（attempt=2 PASS） |
+| 新增缺陷 | 冒烟/门禁/E2E 实跑暴露 | F-1 OpenLLM 上游不可达 + memory/rag client 未注入；F-2 OpenRAG `tenant_code` 缺列；F-3 `TRUSTED_PROXY_SOURCES` 取值不一致（**F-1~F-3 仍登记，责任在子系统仓/联调窗口**）；**F-4 前端路由告警已修复（v1.0.3，E2E 9/9 PASS）** | — | `smoke/smoke-summary.json`；`ui-e2e/status.json` |
 
 **统计变更说明**：三分法仍为 **通过 5 / 部分达成 11 / PENDING 18**；新增标注——**已实跑（实测登记）**：T2/T4/T5/T6-1~4、S6 B1、冒烟 S0~S6；**BLOCKED**：T3-1~4（禁停服务）。真实缺陷 **4 项**（F-1~F-4）为本次实跑新增登记。
 
@@ -123,14 +124,16 @@
 |---|--------|:---:|------|---------|
 | ① | **RA-06 聚合（五项）** | A+B | **结构面 PASS / 真实面 PENDING**——A 面 82 用例 PASS（双租户隔离 19 / fail-closed 21 / OIDC 批次 12 / 委托跨界 13 / 吊销即时性 17）；真实数据面 / IdP / Redis / 网关链路 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §RA-06；`tests/test_s7_t6_gate.py` |
 | ② | **冒烟 S0-S6 聚合** | B | **结构对账 PASS / 真实执行 PENDING**——S0-S6 七组、P0 30 例、P1 2 例、`missing=0`；真实五服务执行 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §SMOKE-S0-S6；《OpenBase-真实联调冒烟清单-v1.0.0.md》§3 |
-| ③ | **存量测试对齐清单关闭** | A+B | **文档面 PASS / 真实面 PENDING**——清单升 [Approved] + OIDC 独立批次 12 例 PASS；主批次 573 例中 4 例 asyncpg/PG 环境性失败 PENDING（`PG-ENV-4`） | `OpenBase-存量测试对齐任务清单-v1.0.0.md` 修订历史；`gate-aggregate.json` §TEST-ALIGN-CLOSE |
+| ③ | **存量测试对齐清单关闭** | A+B | **PASS（v1.0.3）**——清单升 [Approved] + OIDC 独立批次 12 例 PASS；`openbase_test` 真实建库后主批次 **676 passed / 0 failed（4 skipped）**，原 4 例 asyncpg/PG 环境性失败关闭（`PG-ENV-1~4` CLOSED） | `OpenBase-存量测试对齐任务清单-v1.0.0.md` 修订历史；`gate-aggregate.json` §TEST-ALIGN-CLOSE（`main_batch.status=PASS` + `closed_items`） |
 | ④ | **三原则总验证（L1-1 / L2-1 / L2-2 / L3-1）** | B | **PENDING**——真实联调窗口执行；沙箱内产出脚本/矩阵/用例模板（未执行不填 PASS） | `doc/test/evidence/s7/{l1-1,l2-1,l2-2,l3-1}/**`（待产出）；断言 S7-T2-1、S7-T3-1、S7-T4-1、S7-T5-1 |
 | ⑤ | **跨仓会签** | A+B | **部分达成**——四仓入仓完成 + **三远端（或按实测）已同步**（OM `cc7c06f` / LL `be1886d`、`ce40f90` / OpenRAG、DPS 三远端）+ **勾稽 A 类差异 0（四仓）** + 清单升版；仅 OpenLLM `jerry.yu` 受限 PENDING、本地点跟踪 ref 待 `git fetch` | §6 非沙箱复核清单；`doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`；`doc/test/evidence/s7/t7/{signoff-check,om-reconcile}.json` |
 | ⑥ | **24 卡 / JT 台账全量回写** | A | **PASS**——24 卡逐卡 S7 回写口径；七线 JT 状态与提交号汇总回写；文档地图无游离 | `OpenBase-数据隔离实现任务卡-v1.0.0.md`（v1.9.0）；`OpenBase-多系统联调联试-子系统任务归集与版本规划-v1.0.0.md`（v1.6.0 §3.9）；`doc/design/OpenBase-文档地图索引-v1.0.0.md`；`doc/test/evidence/s7/t8/writeback-check.json` |
 
-**六项合计**：① ② ③ 结构面/文档面达成、⑤ 部分达成、⑥ 达成；① ② 真实面、④ 为 PENDING、⑤ 仅余 `jerry.yu` 受限 PENDING → **段门禁整体未达最终通过**。
+**六项合计**：① ② 结构面达标、**③ 达成（v1.0.3）**、⑤ 部分达成、⑥ 达成；① ② 真实面、④ 为 PENDING、⑤ 仅余 `jerry.yu` 受限 PENDING → **段门禁整体未达最终通过**。
 
 > **v1.0.2 实跑更新（2026-09-11 19:00）**：① RA-06 实跑 **PASS**（82 用例）；② 冒烟 S0~S6 实跑 **P0 PASS 14 / FAIL 9 / BLOCKED 7、P1 2 BLOCKED**；③ 对齐清单主批次实跑 **`TEST-ALIGN-CLOSE=PASS`**（主批次 605 例中 4 例 `test_oidc_binding` 环境性失败 → PENDING，`openbase_test` 未建）；④ 三原则 T2~T5 脚本**实跑**（T2/T4/T5 PENDING、T3 BLOCKED——禁停服务）；⑤ 跨仓会签维持部分达成（仅 `jerry.yu` 受限）；⑥ 维持 PASS。门禁聚合最终 `overall=PASS exit=0 pass=19 fail=0 pending=3`（首跑 FAIL 由 `test_verdict_k03` 断言过严 + 门禁自引用时序导致，已修）。**段门禁整体仍为未达最终通过**，并新增 **4 项真实缺陷（F-1~F-4）** 登记。
+
+> **v1.0.3 收口更新（2026-09-11 20:45）**：① **S6 B1 E2E 复跑 9/9 PASS**（F-4 修复：启动预热消除 Vue Router No match 告警；未放宽 `console.warn=0` 判据）；② **`openbase_test` 真实建库**（四账号 NOSUPERUSER + K13 授权 + 28 表幂等迁移），主批次复跑 **676 passed / 0 failed（4 skipped，exit 0）**，`PG-ENV-1~4` 全部 **CLOSED** → 门禁项③ 由「部分达成」转 **PASS**；③ 门禁聚合 `gate-aggregate.json` `counts=pass 20 / pending 2 / fail 0`。**段门禁整体仍未达最终通过**：剩余为 ① ② 真实面、④ 三原则真实面（PENDING）、⑤ 仅 `jerry.yu` 受限，以及 F-1~F-3（子系统仓/联调窗口责任）。
 
 ---
 
@@ -140,12 +143,15 @@
 |---|----------------------|---------|--------|
 | 1 | `python -m ruff check openbase tests scripts` | **All checks passed!**（0 错误） | **0** |
 | 2 | `python -m pytest tests/test_s7_docs.py -q` | **passed**（本批新增文档一致性断言） | **0** |
-| 3 | `python -m pytest tests/test_s7_t1_shr.py tests/test_s7_t6_gate.py tests/test_s7_t7_signoff.py tests/test_s7_t8_writeback.py -q` | **70 passed**（15 + 16 + 20 + 19，防回归） | **0** |
+| 3 | `python -m pytest tests/test_s7_t1_shr.py tests/test_s7_t6_gate.py tests/test_s7_t7_signoff.py tests/test_s7_t8_writeback.py tests/test_s7_docs.py tests/test_s7_tools_skeleton.py -q` | **102 passed**（分组实测：`s7_docs+t1_shr+t6_gate`=37、`t7_signoff+t8_writeback+tools_skeleton`=65；防回归） | **0** |
 | 4 | `python -m pytest tests/test_s6_t1_frontend_boundary.py -q` | **9 passed**（既有 S6 边界防回归） | **0** |
-| 5 | `python scripts/gate_aggregate.py`（干跑经 `tests/test_s7_t6_gate.py` 覆盖；实跑另记） | 干跑 `overall_status=PASS`、`pass=19`、`pending=3`、`fail=0` | **0** |
-| 6 | `python scripts/gate_aggregate.py`（**实跑**，含主批次） | `overall=PASS`、`pass=19`、`fail=0`、`pending=3`（RA-06 PASS；`TEST-ALIGN-CLOSE` PASS，主批次 4 例环境性失败 → PENDING） | **0** |
+| 5 | `python scripts/gate_aggregate.py`（干跑经 `tests/test_s7_t6_gate.py` 覆盖；实跑另记） | 干跑 `overall_status=PASS`、`fail=0`；仓内留存证据（v1.0.3 更新）`counts = pass 20 / pending 2 / fail 0` | **0** |
+| 6 | `python scripts/gate_aggregate.py`（**实跑**，含主批次） | `overall=PASS`、`pass=20`、`fail=0`、`pending=2`（RA-06 PASS；`TEST-ALIGN-CLOSE` PASS，`main_batch.status=PASS`、`PG-ENV-1~4` CLOSED） | **0** |
 | 7 | 冒烟 S0~S6 逐条真实 HTTP（脚本归档） | P0 30：PASS 14 / FAIL 9 / BLOCKED 7；P1 2：BLOCKED | — |
-| 8 | `cd openbase-ui && npm run test:e2e`（Playwright） | **0 passed / 9 failed**（9 关键页；Q-FE-4b console.warn） | **1** |
+| 8 | `cd openbase-ui && npm run test:e2e`（Playwright） | **9 passed / 0 failed**（v1.0.3 F-4 修复后；Q-FE-4b console.warn=0 达成） | **0** |
+| 9 | `python scripts/run_regression.py`（主批次，分组子进程隔离 22 组；含 `tests/test_oidc_binding.py` 组） | **676 passed / 0 failed / 4 skipped**（`test_oidc_binding` 所在组 passed=10 / failed=0） | **0** |
+| 10 | `python -m pytest tests/test_oidc_binding.py -q`（单跑对照） | **5 passed** | **0** |
+| 11 | `cd openbase-ui && npm run lint` 与 `npm test` | lint **0 problem**；vitest **140 passed**（原 137 + 新增 3） | **0** |
 
 > 覆盖率口径：S7 段为脚本/文档/证据收口，不新增 `openbase/**` 业务代码，故不单独出具产品覆盖率；RA-06 聚合覆盖率 ≥90% 见 `gate-aggregate.json` §RA-06（A 面 82 用例全绿）。**不得以「预期通过」代替 B 面证据**。
 
@@ -155,10 +161,10 @@
 
 | ID | 现象 | 归因 | 证据 | 处置 |
 |----|------|------|------|------|
-| PG-ENV-1 | asyncpg 连接/迁移族用例沙箱无真实 PG，跳未真跑 | 环境缺失（非业务缺陷） | `gate-aggregate.json` §TEST-ALIGN-CLOSE `pending_items` | 真实 PG + `openbase_test` 就绪复跑并回填 |
-| PG-ENV-2 | asyncpg 驱动真实 DDL/DML 对账未执行 | 环境缺失 | 同上 | 真实 PG + 账号权限复跑 |
-| PG-ENV-3 | 数据库连接池/会话生命周期用例未执行 | 环境缺失（需 Redis） | 同上 | 真实 PG + Redis 复跑 |
-| PG-ENV-4 | 存量对齐主批次 573 例中 **4 例**失败集中于 `tests/test_oidc_binding.py` | 沙箱无真实 PG/Redis（S6 §5 登记同源） | `gate-aggregate.json` §TEST-ALIGN-CLOSE `main_batch.failed_nodes` | 随 PG 就绪复跑关闭 |
+| PG-ENV-1 | asyncpg 连接/迁移族用例沙箱无真实 PG，跳未真跑 | 环境缺失（非业务缺陷） | `gate-aggregate.json` §TEST-ALIGN-CLOSE `closed_items` | **CLOSED（v1.0.3）**：`openbase_test` 建库后主批次 676 passed / 0 failed |
+| PG-ENV-2 | asyncpg 驱动真实 DDL/DML 对账未执行 | 环境缺失 | 同上 | **CLOSED（v1.0.3）**：openbase_test 内 `openbase` schema 28 表 + K13 授权复核收敛 |
+| PG-ENV-3 | 数据库连接池/会话生命周期用例未执行 | 环境缺失（需 Redis） | 同上 | **CLOSED（v1.0.3）**：Redis 192.168.0.151:6380 PING 通；主批次连接池/会话族全绿 |
+| PG-ENV-4 | 存量对齐主批次中 **4 例**失败集中于 `tests/test_oidc_binding.py` | 沙箱无真实 PG/Redis（S6 §5 登记同源） | `gate-aggregate.json` §TEST-ALIGN-CLOSE `main_batch.rerun` | **CLOSED（v1.0.3）**：openbase_test 建库后主批次 0 失败关闭 |
 
 **`PG-ENV-1`~`PG-ENV-4` 与 `tests/test_oidc_binding.py` 的关系**：主批次 4 例失败节点为：
 `tests/test_oidc_binding.py::test_jit_create_binds_mapping_and_role`、
@@ -168,6 +174,8 @@
 **单文件独立运行 5 passed**，属 asyncpg/PG 驱动在沙箱无真实数据库时的**环境性失败**，**非业务缺陷**；随真实 PG / `openbase_test` 就绪后复跑主批次确认 0 失败（`PG-ENV-4`）关闭。
 
 > **v1.0.2 复跑状态（2026-09-11 19:00）**：真实 PG/Redis 就绪后 **`tests/test_oidc_binding.py` 单文件独立运行 5 passed**（exit 0），确认其为批次串扰/环境性失败；但 **`openbase_test` 仍未建**（`pg_database` 无该库，K13 四账号为空），主批次实跑仍 4 例失败 → `PG-ENV-1`~`PG-ENV-4` **保持 PENDING（未关闭）**，需先执行 `scripts/db/init_openbase_test.ps1` 真实建库。另实跑暴露 1 例确定性失败 `tests/test_verdict_k03.py::test_t2_6_whitelisted_write_allowed_with_bypass_audit`（上游可达时响应为透传体、无 `code` 字段）——已按实测健壮化该断言（仅在含 `code` 时校验），修复后 14 passed。
+
+> **v1.0.3 复跑关闭（2026-09-11 20:45）**：执行 `scripts/db/init_openbase_test.ps1` 真实建库（`openbase_test` + 四账号 NOSUPERUSER + K13 授权 + 28 表幂等迁移）后——`tests/test_oidc_binding.py` 单文件 **5 passed**；含该文件的主批次分组（`test_notify_extra + test_obs_mcp + test_oidc_binding`）**passed=10 / failed=0**；主批次全量 **676 passed / 0 failed / 4 skipped（exit 0）**。→ **`PG-ENV-1`~`PG-ENV-4` 全部 CLOSED**。（单进程 `python -m pytest tests -q` 在本机 Windows 于 TD-新增-009 C 层挂起点长时不返回，主批次以仓内既定分组编排 `scripts/run_regression.py` 执行，逐组 exit 0。）
 
 ---
 
@@ -187,12 +195,13 @@
 
 ## §7 结论
 
-- **34 条断言统计**：**通过（沙箱可判定）5 条** + **部分达成（结构面 PASS + 真实面 PENDING）11 条** + **PENDING（联调窗口）18 条** = **34 条**；执行面分布仍为 **A 5 / A+B 9 / B 20**（与设计草案 §4.9 尾注一致）；v1.0.1：S7-T7-1 / S7-T7-2 按远端实测回读由 PENDING 转「部分达成」（受限 PENDING：仅 `jerry.yu`）。
-- **段门禁六项**（逐项见 §3）：① RA-06（结构面 PASS / 真实面 PENDING）、② 冒烟 S0-S6（结构对账 PASS / 真实执行 PENDING）、③ 对齐清单关闭（文档面 PASS；主批次 4 例 PG 环境性失败 PENDING）、④ 三原则总验证（PENDING）、⑤ 跨仓会签（**部分达成；三远端（或按实测）已同步 + 勾稽 A 类差异 0（四仓）；仅 `jerry.yu` 受限 PENDING**）、⑥ 24 卡/JT 回写（PASS）。
-- **硬门禁**：`ruff` 0 错误（退出码 0）；S7 断言回归 **70 passed**（退出码 0）；本批新增 `tests/test_s7_docs.py` 全绿（退出码 0）；S6 边界防回归 **9 passed**（退出码 0）。
-- **最终判定**：**段门禁整体未达最终通过**，待真实面（RA-06 真实面 / 冒烟 S0-S6 真实执行 / 三原则总验证 T2~T5）全绿、`PG-ENV-1`~`PG-ENV-4` 复跑关闭、K07/SYS-1 真实终验完成，以及 `jerry.yu` 受限项处理完成后，按**挂起口径**批准（对齐 S5/S6 范式：挂起登记不阻断已达成项；遗留 = 无阻断项）。
-- **结论口径**：与总收官报告 v1.0.3 一致；本报告与 DevLogReport v1.0.0 为 S7 段 Step 2/Step 3 交付物，随段门禁批准回写。
-- **v1.0.2 实跑补充（2026-09-11 19:00）**：三原则脚本实跑（T2/T4/T5 PENDING、T3 BLOCKED）、T6 门禁聚合实跑（最终 `overall=PASS`，首跑 FAIL 已修）、冒烟 S0~S6 实跑（P0 14/9/7）、S6 B1 E2E 实跑（0/9）；**新增 4 项真实缺陷（F-1~F-4）**；`PG-ENV-1`~`PG-ENV-4` 复跑后仍 PENDING（`openbase_test` 未建）。**最终判定不变：段门禁整体未达最终通过**，需修复 F-1~F-4 并关闭 PG-ENV 与完成 T2~T5 真实面后按挂起口径批准。
+- **34 条断言统计（v1.0.3）**：**通过 6 条** + **部分达成（结构面 PASS + 真实面 PENDING）10 条** + **PENDING（联调窗口）18 条** = **34 条**；执行面分布仍为 **A 5 / A+B 9 / B 20**（与设计草案 §4.9 尾注一致）。v1.0.1：S7-T7-1 / S7-T7-2 按远端实测回读由 PENDING 转「部分达成」（受限 PENDING：仅 `jerry.yu`）；v1.0.3：S7-T6-3 由「部分达成」转「通过」（`openbase_test` 建库后主批次 0 失败、`PG-ENV-1~4` 关闭）。
+- **段门禁六项**（逐项见 §3）：① RA-06（结构面 PASS / 真实面 PENDING）、② 冒烟 S0-S6（结构对账 PASS / 真实执行 PENDING）、③ **对齐清单关闭（PASS，v1.0.3：主批次 676 passed / 0 failed；`PG-ENV-1~4` CLOSED）**、④ 三原则总验证（PENDING）、⑤ 跨仓会签（**部分达成；三远端（或按实测）已同步 + 勾稽 A 类差异 0（四仓）；仅 `jerry.yu` 受限 PENDING**）、⑥ 24 卡/JT 回写（PASS）。
+- **硬门禁（v1.0.3）**：`ruff check openbase tests scripts` 0 错误（退出码 0）；S7 全组断言回归 **102 passed**（退出码 0）；主批次 **676 passed / 0 failed / 4 skipped**（`run_regression.py` 分组，退出码 0）；`test_oidc_binding.py` 单跑 **5 passed**（退出码 0）；`npm run lint` 0 problem、`npm test` **140 passed**、`npm run test:e2e` **9 passed**（退出码 0）。
+- **最终判定（v1.0.3）**：**段门禁整体仍未达最终通过**，待真实面（RA-06 真实面 / 冒烟 S0-S6 真实执行 / 三原则总验证 T2~T5）全绿、K07/SYS-1 真实终验完成，以及 `jerry.yu` 受限项处理完成后，按**挂起口径**批准（对齐 S5/S6 范式：挂起登记不阻断已达成项）。**v1.0.3 已关闭**：`PG-ENV-1~4`（`openbase_test` 建库 + 主批次 0 失败）与 F-4（S6 B1 E2E 9/9 PASS）。
+- **结论口径**：与总收官报告 v1.0.4 一致；本报告与 DevLogReport v1.0.0 为 S7 段 Step 2/Step 3 交付物，随段门禁批准回写。
+- **v1.0.2 实跑补充（2026-09-11 19:00）**：三原则脚本实跑（T2/T4/T5 PENDING、T3 BLOCKED）、T6 门禁聚合实跑（最终 `overall=PASS`，首跑 FAIL 已修）、冒烟 S0~S6 实跑（P0 14/9/7）、S6 B1 E2E 实跑（0/9）；**新增 4 项真实缺陷（F-1~F-4）**；`PG-ENV-1`~`PG-ENV-4` 复跑后仍 PENDING（`openbase_test` 未建）。
+- **v1.0.3 收口补充（2026-09-11 20:45）**：**F-4 修复 → S6 B1 E2E 9/9 PASS**（启动预热消除 Vue Router No match 告警）；**`openbase_test` 真实建库 → 主批次 676 passed / 0 failed，`PG-ENV-1~4` CLOSED**；门禁项③ 转 PASS。**最终判定不变：段门禁整体仍未达最终通过**（剩余 ① ② ④ 真实面、⑤ `jerry.yu` 受限，及 F-1~F-3 子系统仓/联调窗口责任）。
 
 ---
 

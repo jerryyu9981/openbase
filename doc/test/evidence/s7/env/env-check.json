@@ -7,7 +7,7 @@
   "mode": "run",
   "execution_face": "A+B",
   "generated_at": "2026-09-11T13:50:00+08:00",
-  "rechecked_at": "2026-09-11T19:00:00+08:00",
+  "rechecked_at": "2026-09-11T20:45:00+08:00",
   "openbase_commit": "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
   "openbase_head_short": "0595bcd",
   "probe_policy": {
@@ -34,9 +34,9 @@
     {
       "name": "openbase_test_database",
       "target": "postgres://192.168.0.151:5432/openbase_test",
-      "status": "NOT_READY",
-      "detail": "2026-09-11 19:00 复检：pg_database 实测库清单 = [nuct, postgres, template0, template1]；**openbase_test 与 openbase 独立库均不存在**；openbase_app/platform_app/openbase_migrator/openbase_runtime 四账号为空。",
-      "impact": "阻塞 S7-T1-2 真实面、S7-T6-3（PG-ENV-1~4 复跑关闭）、S7-T1-3（K13 跨 schema 写拒绝）。需执行 scripts/db/init_openbase_test.ps1 真实建库。"
+      "status": "READY",
+      "detail": "2026-09-11 20:40 复检（真实建库执行）：openbase_test 独立库已建立（pg_database 实测 = [nuct, openbase_test]）；openbase_app/platform_app/openbase_migrator/openbase_runtime 四账号已建（NOSUPERUSER，rolsuper=rolcreatedb=rolcreaterole=false，rolcanlogin=true）；openbase_test 内 openbase schema 迁移 28 表（init_database create_all 幂等）；K13 授权实测收敛（openbase_app 对 openbase USAGE=true/CREATE=false、对 platform USAGE=false；openbase_runtime 对 openbase CREATE=false；openbase_migrator 对 openbase CREATE=true；platform_app 对 platform USAGE=true、对 openbase USAGE=false）。建库脚本 scripts/db/init_openbase_test.ps1 已参数化（Host/Port/Db/账号取自 .env.shared-infra，无 psql 时回退 psycopg2）。",
+      "impact": "S7-T1-2 真实面就绪；S7-T6-3（PG-ENV-1~4）可复跑；S7-T1-3（K13）账号/授权实测可复核。"
     },
     {
       "name": "redis_connectivity",
@@ -138,25 +138,13 @@
     }
   ],
   "summary": {
-    "READY": 13,
-    "NOT_READY": 1,
+    "READY": 14,
+    "NOT_READY": 0,
     "UNREACHABLE": 2,
     "BLOCKED": 1,
     "total": 17
   },
   "pending_items": [
-    {
-      "id": "ENV-PG-OPENTEST",
-      "item": "openbase_test 独立测试库（及四类应用账号）未创建",
-      "blocked_assertions": [
-        "S7-T1-2（openbase_test 建库/隔离，A+B）",
-        "S7-T6-3（PG-ENV-1~4 复跑关闭，A+B）",
-        "S7-T1-3（K13 跨 schema 写拒绝，B）"
-      ],
-      "precondition": "共享 PG 建库权限 + scripts/db/init_openbase_test.ps1 真实执行（-AdminUrl）",
-      "owner": "联调窗口（用户）",
-      "action": "执行建库脚本 → 复跑 tests/test_oidc_binding.py 与主批次 → 回填 gate-aggregate.json §TEST-ALIGN-CLOSE"
-    },
     {
       "id": "ENV-OPENLLM-UPSTREAM",
       "item": "OpenLLM LLM 推理上游（Ollama 192.168.0.4:11434 / localhost:11434）连接被拒；openmemory/openrag 组件 client 未注入",
@@ -212,5 +200,5 @@
       "action": "授权后补推或按挂起口径登记 PENDING（不阻断段门禁）"
     }
   ],
-  "note": "本 JSON 为 P2 联调窗口环境探测实测（初检 2026-09-11 13:50；复检 2026-09-11 19:00，服务编排后多数 UNREACHABLE 项转 READY，jerry.yu 保持 BLOCKED）；数据库/Redis 口令仅记录『已配置』，未输出明文；功能缺陷与阻塞项按实测如实登记。"
+  "note": "本 JSON 为 P2 联调窗口环境探测实测（初检 2026-09-11 13:50；复检 2026-09-11 19:00，服务编排后多数 UNREACHABLE 项转 READY，jerry.yu 保持 BLOCKED；2026-09-11 20:45 openbase_test 真实建库后由 NOT_READY 转 READY，NOT_READY 归零）；数据库/Redis 口令仅记录『已配置』，未输出明文；功能缺陷与阻塞项按实测如实登记。"
 }

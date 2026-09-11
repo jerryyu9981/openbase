@@ -280,11 +280,12 @@ def test_clearance_checklist_approved_with_four_repo_registration() -> None:
 
 
 def test_report_corrected_four_repos_archived() -> None:
-    """总收官报告内部版本升 v1.0.1，且不再保留「未入仓」过时口径."""
+    """总收官报告内部版本升 v1.0.4（F-4 修复 + openbase_test 建库收口），且不再保留「未入仓」过时口径."""
     assert _REPORT.exists(), _REPORT
     text = _read_text(_REPORT)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.3\s*\|", text), "总收官报告未升内部 v1.0.3"
-    assert re.search(r"\|\s*v1\.0\.3\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.3 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.4\s*\|", text), "总收官报告未升内部 v1.0.4"
+    assert re.search(r"\|\s*v1\.0\.4\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.4 条目"
+    assert re.search(r"\|\s*v1\.0\.3\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.3 条目（历史保留）"
     assert "未入仓" not in text, "总收官报告仍残留「未入仓」过时口径"
 
 
