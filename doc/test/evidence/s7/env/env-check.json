@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "tool": "env-check",
+  "task": "S7-P2 联调窗口环境检查",
+  "evidence_ref": "S7-P2-ENV",
+  "title": "S7 P2 联调窗口前置环境检查（真实 PG/Redis/IdP/四仓运行态/网关与前端/Playwright/远端写权限）",
+  "mode": "run",
+  "execution_face": "A+B",
+  "generated_at": "2026-09-11T13:50:00+08:00",
+  "openbase_commit": "9d1633a64b503394ac28b05b0ca6ccee52f1c297",
+  "openbase_head_short": "9d1633a",
+  "probe_policy": {
+    "tcp_timeout_seconds": 3.0,
+    "http_timeout_seconds": 5.0,
+    "note": "只读探测；不可达即如实登记，禁伪造就绪。数据库/Redis 口令仅记「已配置/未配置」，不落报告明文。"
+  },
+  "checks": [
+    {
+      "name": "real_postgresql_connectivity",
+      "target": "postgres://192.168.0.151:5432/nuct",
+      "status": "READY",
+      "detail": "TCP 可达（3s 内 connect ok）；psycopg2 连接成功并执行 SELECT 1；server_version=14.23；user=nuct；口令已配置（明文不入报告）。",
+      "impact": "PG-ENV-1/2/3 的『真实 PG 服务器可用』前提满足；但业务库 openbase_test 与 K13 账号尚缺（见下）。"
+    },
+    {
+      "name": "real_pg_business_schema",
+      "target": "postgres://192.168.0.151:5432/nuct#schema=openbase",
+      "status": "READY",
+      "detail": "nuct 库内 schema `openbase` 实测存在（pg_namespace 命中）；settings.db_schema=openbase，业务库以共享库内独立 schema 形态落地。",
+      "impact": "OpenBase 业务 schema 就绪；openbase 独立库并不存在（业务库=共享库 nuct + schema openbase）。"
+    },
+    {
+      "name": "openbase_test_database",
+      "target": "postgres://192.168.0.151:5432/openbase_test",
+      "status": "NOT_READY",
+      "detail": "pg_database 实测库清单 = [nuct, postgres, template0, template1]；**openbase_test 与 openbase 两个独立库均不存在**；openbase_app/platform_app/openbase_migrator/openbase_runtime 四账号亦未创建。",
+      "impact": "阻塞 S7-T1-2 真实面（openbase_test 建库/隔离）、S7-T6-3（PG-ENV-1~4 复跑关闭）、S7-T1-3（K13 跨 schema 写拒绝）与 S7-T2-2（event_id 幂等 DB 行数断言）。需先执行 scripts/db/init_openbase_test.ps1 真实建库。"
+    },
+    {
+      "name": "redis_connectivity",
+      "target": "redis://192.168.0.151:6380/0",
+      "status": "READY",
+      "detail": "TCP 可达；redis-py 客户端 PING = PONG；口令已配置（明文不入报告）。",
+      "impact": "PG-ENV-3（连接池/会话生命周期，依赖 Redis）与吊销即时性（RA-06 吊销项）前置满足。"
+    },
+    {
+      "name": "idp_local_oidc",
+      "target": "http://127.0.0.1:8090/.well-known/openid-configuration",
+      "status": "UNREACHABLE",
+      "detail": "OpenBase .env 配置 OIDC discovery = http://127.0.0.1:8090/.well-known/openid-configuration（本地标准 IdP，issuer 无 realm 概念）；TCP 8090 连接被拒（ConnectionRefused），HTTP 探活不可达。",
+      "impact": "阻塞 S6 B4（真实 IdP 回调与吊销）、S7-T6-1 RA-06 OIDC 批次隔离真实面、RA-06 吊销即时性真实面。需启动 scripts/oidc-idp/idp_server.py（8090）。"
+    },
+    {
+      "name": "idp_keycloak_realm",
+      "target": "http://127.0.0.1:8080/realms/openbase/.well-known/openid-configuration",
+      "status": "UNREACHABLE",
+      "detail": "Keycloak 26.7.3 发行版存在（.runtime/keycloak-26.7.3/keycloak-26.7.3/bin/kc.bat 实测存在），realm=openbase（issuer http://127.0.0.1:8080/realms/openbase）；TCP 8080 连接被拒，realm 发现端点不可达（未启动）。",
+      "impact": "真实 Keycloak 授权码端到端（OB-AUTH-OIDC v1.5.0）与 RA-06 OIDC 真实面不可执行；需先启动 Keycloak 并执行 provision_realm.py 导入 realm。"
+    },
+    {
+      "name": "openllm_runtime",
+      "target": "http://127.0.0.1:8001",
+      "status": "UNREACHABLE",
+      "detail": "端口 8001 无监听（ConnectionRefused）；/health 与 /api/v1/system/health 均 0 响应。端口依据：多系统端口统筹 v1.0.0 + service-orchestrator.ps1。",
+      "impact": "阻塞 S7-T5（L3-1 agent 端到端 OpenLLM 白名单 ≥3 例）、S7-T2/T3/T4 联调窗口、冒烟 S4 组、S6 B2/B3、K07-SYS-1 真实 openapi 终验。"
+    },
+    {
+      "name": "openrag_runtime",
+      "target": "http://127.0.0.1:8010",
+      "status": "UNREACHABLE",
+      "detail": "端口 8010 无监听；/api/v1/system/health 不可达。端口依据：端口统筹 8010（OPENRAG_API_PORT）。",
+      "impact": "阻塞 S7-T5（OpenRAG 白名单用例）、S7-T2-1（DPS/OpenRAG pull 双签 P2-S3）、冒烟 S2/S3 组、K07 真实终验。"
+    },
+    {
+      "name": "openmemory_runtime",
+      "target": "http://127.0.0.1:8020",
+      "status": "UNREACHABLE",
+      "detail": "端口 8020 无监听；/health 不可达。端口依据：端口统筹 8020 + orchestrator（complete 模式）。",
+      "impact": "阻塞 S7-T2-2（OpenMemory 记忆数据面阻断 + event_id 幂等）、P2-S2 段级双签、S6 B2/B3、冒烟 S2 组。"
+    },
+    {
+      "name": "dps_runtime",
+      "target": "http://127.0.0.1:8030",
+      "status": "UNREACHABLE",
+      "detail": "端口 8030 无监听；/health 与 /health/liveness 均不可达。端口依据：端口统筹 8030（API_PORT 覆盖）；DPS docker-compose.yml 另暴露 8013:8013（MCP/REST 容器入口，health=/health）。",
+      "impact": "阻塞 S7-T2-1（DPS 画像读阻断）、S7-T4（写路径等价 + K14 幂等）、S7-T5（DPS 白名单用例）、P2-S5 双签、冒烟 S5 组、K07-SYS-1 真实终验。"
+    },
+    {
+      "name": "openbase_gateway",
+      "target": "http://127.0.0.1:8000",
+      "status": "UNREACHABLE",
+      "detail": "网关端口 8000 无监听；/openapi.json 不可达。OpenBase 为五仓联调入口与四 proxy（llm/rag/memory/dps）唯一对外面。",
+      "impact": "阻塞 P2-T2~T5 全部联调窗口用例（脚本 -BaseUrl 指向网关）、P2-T6-1/2 门禁真实面、冒烟 S0-S6 全组。"
+    },
+    {
+      "name": "unified_frontend_vite",
+      "target": "http://localhost:5173/",
+      "status": "UNREACHABLE",
+      "detail": "统一前端 vite dev 端口 5173 无监听（localhost/127.0.0.1 均拒连）；openbase-ui/node_modules 实测存在（依赖已安装）。",
+      "impact": "阻塞 S6 B1（Playwright 9 关键页，需前端运行态）、B3（真实双租户数据面前端面）与前端走查类复核。"
+    },
+    {
+      "name": "nginx_ui_publish",
+      "target": "http://127.0.0.1/ui/",
+      "status": "UNREACHABLE",
+      "detail": "nginx 80 端口无监听；/ui/ 不可达。发布配置存在：openbase-ui/nginx.conf.example（location /ui/ alias dist-vX.Y.Z + /api/ 反代 8000 + 根 301 /ui/）。",
+      "impact": "阻塞 S6 B6（nginx /ui/ 发布回滚，S7-T8-3 复核）。"
+    },
+    {
+      "name": "playwright_chromium_browser",
+      "target": "ms-playwright/chromium-1228/chrome-win64/chrome.exe",
+      "status": "READY",
+      "detail": "用户级缓存 C:\\Users\\<user>\\AppData\\Local\\ms-playwright 实测含 chromium-1217/chromium-1228/chromium_headless_shell-1228；chromium-1228/chrome-win64/chrome.exe 可执行文件存在。",
+      "impact": "S6 B1 的『浏览器二进制』前置满足；B1 剩余阻塞仅为前端运行态（5173 未起），非浏览器缺失。"
+    },
+    {
+      "name": "playwright_cli",
+      "target": "openbase-ui: npx playwright --version",
+      "status": "READY",
+      "detail": "openbase-ui 内 npx playwright --version = 1.63.0；node v22.16.0 / npx 10.9.4；node_modules 与 @playwright/test 实测存在。",
+      "impact": "S6 B1（npm run test:e2e = playwright test）执行链可用，仅待前端运行态与用例目标就绪。"
+    },
+    {
+      "name": "four_repo_remote_sync",
+      "target": "OpenMemory/OpenRAG/OpenLLM/DPS 远端",
+      "status": "READY",
+      "detail": "直接引用 2026-09-11 已测结论（本批不重复探测）：OpenMemory/OpenRAG/DPS 三仓远端可写且已同步（origin/backup/github）；OpenLLM origin/backup/github 三端已同步（feature/s4-identity-channel-b @ be1886d、feature/need-star-orchestration @ ce40f90）。",
+      "impact": "P1-1/P1-2 已完成、P1-3 三端完成；S7-T7-1 远端同步子项除 jerry.yu 受限外可关闭。"
+    },
+    {
+      "name": "openllm_jerry_yu_remote",
+      "target": "OpenLLM remote: jerry.yu",
+      "status": "BLOCKED",
+      "detail": "直接引用 2026-09-11 已测结论：jerry.yu 远端无写权限（Permission denied (publickey,...)，exit 128），受限 PENDING；本地点跟踪 ref 待 git fetch 同步。",
+      "impact": "S7-T7-1 的 jerry.yu 单远端为受限挂起项，按挂起口径不阻断段门禁（其余三远端已同步）。"
+    }
+  ],
+  "summary": {
+    "READY": 6,
+    "NOT_READY": 1,
+    "UNREACHABLE": 9,
+    "BLOCKED": 1,
+    "total": 17
+  },
+  "pending_items": [
+    {
+      "id": "ENV-PG-OPENTEST",
+      "item": "openbase_test 独立测试库（及 openbase_app/platform_app/openbase_migrator/openbase_runtime 账号）未创建",
+      "blocked_assertions": [
+        "S7-T1-2（openbase_test 建库/隔离，A+B）",
+        "S7-T6-3（PG-ENV-1~4 复跑关闭，A+B）",
+        "S7-T1-3（K13 跨 schema 写拒绝，B）",
+        "S7-T2-2（event_id 幂等 DB 行数，B）"
+      ],
+      "precondition": "共享 PG 建库权限 + scripts/db/init_openbase_test.ps1 真实执行（-AdminUrl）",
+      "owner": "联调窗口（用户）",
+      "action": "执行建库脚本 → 复跑 tests/test_oidc_binding.py 与主批次 → 回填 gate-aggregate.json §TEST-ALIGN-CLOSE"
+    },
+    {
+      "id": "ENV-IDP",
+      "item": "IdP 未运行（本地 oidc-idp 8090 与 Keycloak 8080/openbase realm 均不可达）",
+      "blocked_assertions": [
+        "S6 B4（真实 IdP 回调与吊销，B）",
+        "S7-T6-1（RA-06 OIDC 批次隔离真实面，A+B）",
+        "RA-06 吊销即时性真实面（B）"
+      ],
+      "precondition": "启动 scripts/oidc-idp/idp_server.py（8090）或 scripts/keycloak/start-keycloak.ps1 + provision_realm.py",
+      "owner": "联调窗口（用户）",
+      "action": "启动 IdP → 执行 OIDC 回调/吊销用例 → 回填 S6 证据与 gate-aggregate.json §RA-06"
+    },
+    {
+      "id": "ENV-RUNTIMES",
+      "item": "四仓运行态未启动（OpenLLM 8001 / OpenRAG 8010 / OpenMemory 8020 / DPS 8030 均不可达）",
+      "blocked_assertions": [
+        "S7-T2-1~4（L1-1 级联，B/A+B）",
+        "S7-T3-1~4（L2-1 主备演练，B）",
+        "S7-T4-1~4（L2-2 通道矩阵，B）",
+        "S7-T5-1~4（L3-1 Agent 端到端，B）",
+        "S7-T6-1/2/4（门禁真实面，A+B/B）",
+        "P2-S2~S5（段级真实 HTTP 双签）",
+        "S6 B2/B3（L3-2 双签 / 双租户数据面）"
+      ],
+      "precondition": "按 scripts/service-orchestrator.ps1 或各仓 compose 启动四子系统并健康",
+      "owner": "联调窗口（用户）",
+      "action": "启动四仓 → /health 全绿 → 按执行单 §2/§3 执行"
+    },
+    {
+      "id": "ENV-GATEWAY-FRONTEND",
+      "item": "OpenBase 网关（8000）与统一前端（vite 5173 / nginx 80 /ui/）未运行",
+      "blocked_assertions": [
+        "P2-T2~T5 全部（-BaseUrl 指向网关）",
+        "S7-T6-1/2（门禁真实面）",
+        "冒烟 S0-S6 全组",
+        "S6 B1（Playwright 9 关键页）",
+        "S6 B6（nginx /ui/ 发布回滚）"
+      ],
+      "precondition": "启动 OpenBase（demo_app 8000）+ openbase-ui npm run dev（5173）或 nginx /ui/",
+      "owner": "联调窗口（用户）",
+      "action": "启动网关与前端 → 复跑联调脚本 → 回填各证据 JSON"
+    },
+    {
+      "id": "ENV-OPENLLM-JERRY-YU",
+      "item": "OpenLLM jerry.yu 远端无写权限（受限挂起，非环境类阻塞）",
+      "blocked_assertions": [
+        "S7-T7-1（jerry.yu 单远端，B；其余三远端已同步）"
+      ],
+      "precondition": "确认 jerry.yu 远端授权后再推",
+      "owner": "用户（沙箱外）",
+      "action": "授权后补推或按挂起口径登记 PENDING（不阻断段门禁）"
+    }
+  ],
+  "note": "本 JSON 为 P2 联调窗口只读环境探测实测结果（2026-09-11）；未执行任何四仓 git 写操作，未改动四仓；数据库/Redis 口令仅记录『已配置』，未输出明文。未就绪项一律如实登记，禁伪造就绪。"
+}

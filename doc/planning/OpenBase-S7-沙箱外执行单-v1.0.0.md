@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-OUTSIDE-RUN-v1.0.0 |
-| 版本 | v1.0.2 |
+| 版本 | v1.0.3 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-11 |
 | 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11） |
@@ -43,6 +43,7 @@
 | v1.0.0 | 2026-09-11 | AI（S7 批次 5 执行单编制） | 初始版本：S7 沙箱外执行单。含 §0 前置环境检查表（含 S7 相关脚本现状只读核实结论）、§1 跨仓收口项（P1，3 条）、§2 联调窗口 T2~T5（P2，4 条）、§3 T6 真实面（P2，4 条）、§4 段级非沙箱复核（P2，10 条：S2~S5 双签 4 + S6 B1~B6 6）、§5 收口与批准（P3，6 条）、§6 执行进度勾选总表、§7 执行纪律与风险、附录 A~D（提交链索引 / 四仓分支与 hash / PENDING 主挂起与 S7 自身 PENDING 清单 / 断言→证据→回填映射表）。**本次仅新建本执行单一个文件，未改动任何代码与其他文档，未执行任何四仓 git 写操作** |
 | v1.0.1 | 2026-09-11 | AI（S7 联调窗口工具脚本骨架批次） | **工具脚本骨架并入与命令校正**：§0.2 由「待实现」更新为「骨架已就绪（可干跑，真实执行仍需联调窗口）」（N-1~N-4 五脚本骨架已补齐，N-5 `scripts/smoke_l3_2.py` 已补做）；§2.1~§2.4 命令模板按实际参数名校正（`-OutDir`→`-EvidenceDir`，补 `-DryRun` / `--dry-run`，`finalize_l2_2_matrix.py` 补 `--matrix`/`--check-read-ab`/`--check-write-ab`/`--k14`）；§2 增补五脚本统一退出码约定（`0=PASS` / `1=FAIL` / `2=PENDING`）。**仅更新本执行单脚本现状与命令，不改任务范围与 PENDING 结论** |
 | v1.0.2 | 2026-09-11 | AI（S7 批次 6 回填会话） | **P1 跨仓收口三条状态回填（实测）**：§1.1 [P1-1] OpenMemory 推送 github → **已完成（实测已同步，无需操作）**（远端 `ls-remote` = `cc7c06f`，三端一致）；§1.2 [P1-2] OpenMemory 勾稽 A 类回读 → **已完成（差异 0）**（A 类集合 73 vs 残余 89，交集 0；分类 C 类 88 + 清单文档自身 1）；§1.3 [P1-3] OpenLLM 推送 → **部分完成**（origin/backup/github 三端已同步 `be1886d`/`ce40f90`；`jerry.yu` 无写权限受限 PENDING；本地点跟踪 ref 待 `git fetch`）。§1 各条新增「执行状态」行；§2~§4（P2 联调窗口）任务范围与 PENDING 结论**不变** |
+| v1.0.3 | 2026-09-11 | AI（P2 联调窗口环境只读探测会话） | **§0.1 前置环境检查表逐项实测回填**：0-1 真实 PG（192.168.0.151:5432/nuct，PG 14.23）**就绪**、0-2 `openbase_test` **未就绪（库不存在）**、0-3 Redis（192.168.0.151:6380）**就绪（PONG）**、0-4 IdP（8090/8080）**未就绪（未启动）**、0-5 四仓运行态（8001/8010/8020/8030）**未就绪**、0-6 网关/统一前端（8000/5173/80）**未就绪**、0-7 四仓远端写权限**就绪（jerry.yu 受限 BLOCKED）**、0-8 Playwright**就绪（chromium-1228 + 1.63.0）**；新增 §0.1 实测汇总行。新增《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》与证据 `doc/test/evidence/s7/env/env-check.json`。**仅回填检查表与新增报告/证据，不改任务范围与 PENDING 结论；未执行任何四仓 git 写操作** |
 
 ---
 
@@ -54,14 +55,16 @@
 
 | # | 检查项 | 检查命令（可复制） | 就绪 | 未就绪 | 备注 |
 |:-:|--------|-------------------|:---:|:---:|------|
-| 0-1 | **真实 PostgreSQL**（连接可用） | `psql "<PG_DSN>" -c "select version();"` | ☐ | ☐ | 需建库/授权权限 |
-| 0-2 | **`openbase_test` 测试库可用**（S7-T1-2 真实面） | `psql "<PG_DSN>" -c "select datname from pg_database where datname='openbase_test';"` | ☐ | ☐ | 缺则执行 `<OB>\scripts\db\init_openbase_test.ps1`（已就绪） |
-| 0-3 | **Redis**（PING 通） | `redis-cli -h <REDIS_HOST> -p <REDIS_PORT> ping` | ☐ | ☐ | 会话/连接池用例前置（PG-ENV-3） |
-| 0-4 | **IdP / Keycloak**（OIDC 发现端点可达） | `curl -sk <IDP_BASE>/realms/<REALM>/.well-known/openid-configuration` | ☐ | ☐ | S6 B4 / RA-06 OIDC 面 |
-| 0-5 | **四仓运行态与端口**（四仓 `/health` 通过） | 逐仓 `curl -s <各仓健康地址>`（端口见《OpenBase-多系统端口统筹方案-v1.0.0.md》） | ☐ | ☐ | 运行态编排唯一入口 = `<OB>\scripts\service-orchestrator.ps1`（已就绪） |
-| 0-6 | **网关 / 统一前端可访问** | `curl -s <GATEWAY_BASE>/health; curl -s <GATEWAY_BASE>/ui/` | ☐ | ☐ | S6 B6 nginx `/ui/` 发布回滚前置 |
-| 0-7 | **四仓 git 远端写权限** | `git -C <OM> ls-remote --heads origin; git -C <LL> ls-remote --heads origin`（读）+ 推送前 `git -C <LL> push --dry-run origin feature/s4-identity-channel-b` | ☐ | ☐ | P1 跨仓收口（S7-T7-1）唯一前置 |
-| 0-8 | **Playwright 浏览器二进制**（S6 B1） | `cd <OB>\openbase-ui; npx playwright install chromium` | ☐ | ☐ | 缺失则 S6 B1（9 关键页）无法执行 |
+| 0-1 | **真实 PostgreSQL**（连接可用） | `psql "<PG_DSN>" -c "select version();"` | ☒ | ☐ | **就绪（2026-09-11 实测）**：192.168.0.151:5432（库 `nuct`，user `nuct`，口令已配置）TCP 可达 + `SELECT 1` 通过（PG 14.23）；业务 schema `openbase` 已存在。**（明细见《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》§1 第 1/2 项）** |
+| 0-2 | **`openbase_test` 测试库可用**（S7-T1-2 真实面） | `psql "<PG_DSN>" -c "select datname from pg_database where datname='openbase_test';"` | ☐ | ☒ | **未就绪（2026-09-11 实测）**：`pg_database` 仅 `nuct`/`postgres`/`template0`/`template1`，`openbase_test` 与 `openbase` 独立库**均不存在**，四账号未创建。须执行 `<OB>\scripts\db\init_openbase_test.ps1 -AdminUrl '…'` 建库（干跑已就绪）；阻塞 0-2/S7-T1-2/S7-T6-3 PG-ENV-1~4 |
+| 0-3 | **Redis**（PING 通） | `redis-cli -h <REDIS_HOST> -p <REDIS_PORT> ping` | ☒ | ☐ | **就绪（2026-09-11 实测）**：192.168.0.151:6380 TCP 可达、`PING` = `PONG`（口令已配置）；会话/连接池用例前置（PG-ENV-3）满足 |
+| 0-4 | **IdP / Keycloak**（OIDC 发现端点可达） | `curl -sk <IDP_BASE>/realms/<REALM>/.well-known/openid-configuration` | ☐ | ☒ | **未就绪（2026-09-11 实测）**：本地 OIDC IdP `127.0.0.1:8090`（`.env` 默认，无 realm）与 Keycloak `127.0.0.1:8080/realms/openbase`（发行版存于 `.runtime/keycloak-26.7.3`）**均连接被拒（未启动）**；阻塞 S6 B4 / RA-06 OIDC 面 |
+| 0-5 | **四仓运行态与端口**（四仓 `/health` 通过） | 逐仓 `curl -s <各仓健康地址>`（端口见《OpenBase-多系统端口统筹方案-v1.0.0.md》） | ☐ | ☒ | **未就绪（2026-09-11 实测）**：OpenLLM 8001 / OpenRAG 8010 / OpenMemory 8020 / DPS 8030 **全部无监听**；运行态编排唯一入口 = `<OB>\scripts\service-orchestrator.ps1 -Action startcheck`（已就绪，可用） |
+| 0-6 | **网关 / 统一前端可访问** | `curl -s <GATEWAY_BASE>/health; curl -s <GATEWAY_BASE>/ui/` | ☐ | ☒ | **未就绪（2026-09-11 实测）**：OpenBase 网关 8000、统一前端 vite 5173、nginx 80 `/ui/` **均无监听**（`openbase-ui/node_modules` 依赖已装、`nginx.conf.example` 配置齐备）；阻塞 S6 B6 与 T2~T5 `-BaseUrl` |
+| 0-7 | **四仓 git 远端写权限** | `git -C <OM> ls-remote --heads origin; git -C <LL> ls-remote --heads origin`（读）+ 推送前 `git -C <LL> push --dry-run origin feature/s4-identity-channel-b` | ☒ | ☐ | **就绪（引用 2026-09-11 已测结论，不重复探测）**：OpenMemory/OpenRAG/DPS 三仓远端可写且已同步；OpenLLM origin/backup/github 三端已同步 `be1886d`/`ce40f90`；**`jerry.yu` 无写权限（BLOCKED，受限 PENDING，不阻断远端子项关闭）**；P1 跨仓收口（S7-T7-1）唯一前置满足 |
+| 0-8 | **Playwright 浏览器二进制**（S6 B1） | `cd <OB>\openbase-ui; npx playwright install chromium` | ☒ | ☐ | **就绪（2026-09-11 实测）**：用户缓存 `%LOCALAPPDATA%\ms-playwright` 含 `chromium-1228/chrome-win64/chrome.exe`；`npx playwright --version` = **1.63.0**（node v22.16.0）。S6 B1 剩余阻塞仅为统一前端运行态（0-6） |
+
+> **§0.1 实测汇总（v1.0.3 回填，2026-09-11）**：8 项中 **就绪 4**（0-1 真实 PG / 0-3 Redis / 0-7 四仓远端写权限（除 `jerry.yu`）/ 0-8 Playwright）、**未就绪 4**（0-2 `openbase_test` / 0-4 IdP / 0-5 四仓运行态 / 0-6 网关与统一前端）。**结论：环境未就绪，不满足「全部就绪后方可进入 P2 联调窗口」判据**；仅 P1 跨仓收口（已完成/受限）与 S6 B5（不依赖本机运行态）可独立推进。逐项明细与处置建议见《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》§1/§2，证据见 `doc/test/evidence/s7/env/env-check.json`。
 
 ### 0.2 S7 相关脚本现状核实（只读实测，2026-09-11）
 

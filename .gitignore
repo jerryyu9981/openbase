@@ -26,6 +26,8 @@ coverage.xml
 .venv/
 venv/
 env/
+# 例外：S7 联调窗口环境检查证据目录（命名恰为 env，非虚拟环境，须入库）
+!doc/test/evidence/s7/env/
 
 # ---- IDE / OS ----
 .idea/
