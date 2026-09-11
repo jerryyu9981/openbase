@@ -5,16 +5,16 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-FAULT-DISPATCH-v1.0.0 |
-| 版本 | v1.0.1 |
+| 版本 | v1.0.2 |
 | 状态 | [Draft] |
-| 日期 | 2026-09-11 |
-| 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1） |
+| 日期 | 2026-09-12 |
+| 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.2） |
 | 用途 | **冒烟缺陷分派与闭环回填**：将 S7-T6-2 全量冒烟 S0~S6 实测暴露的三项功能缺陷（F-1/F-2/F-3），逐条落笔为「现象与证据 → 根因判定 → 修复动作 → 验证方式 → 回填位置 → 风险与边界」，供责任方按单修复、重跑指定用例、回填台账，并由 OpenBase 侧复核收口 |
 | 上游依据 | ①`doc/test/evidence/s7/smoke/smoke-summary.json`、`doc/test/evidence/s7/smoke/s0-s6-cases.json`（P0 30 例：PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED）；②`doc/test/evidence/s7/env/env-check.json`（READY 14 / UNREACHABLE 2 / BLOCKED 1）；③《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2**，§2.6 四项功能缺陷）；④《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，内部 **v1.1.0**，§3 用例定义）；⑤各仓实际配置文件（只读定位）；⑥《OpenBase-S7-沙箱外执行单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.5**，§2/§3 结构与回填位）；⑦《OpenBase-数据隔离实现任务卡-v1.0.0.md》（K02/K07/K09/K10/K15，七线 JT 口径回填位） |
 | 关联证据 | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}`；`doc/test/evidence/s7/env/env-check.json`；`doc/test/evidence/s7/gate/gate-aggregate.json` |
 | 使用说明（闭环四步） | **① 责任方按单修复**（§2~§4「修复动作」）→ **② 重跑指定用例**（各缺陷「验证方式」用例 ID 清单 + 命令模板）→ **③ 回填三处**（执行单 §2/§3、测试报告 §2.2、`smoke-summary.json`）→ **④ 通知 OpenBase 侧复核**（§7 复核动作） |
 | 脱敏口径 | 本单**不输出任何明文密钥 / 口令**；数据库 / Redis 连接串仅记 host 与库名，键值以「已配置 / 脱敏」表述；`.env` 只引用键名，值以「当前值 / 目标值」呈现（密钥类不落值） |
-| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项） |
+| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.2 新增 F-6**（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项） |
 
 ### 修订历史
 
@@ -22,6 +22,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-11 | AI（S7 批次 9 冒烟缺陷分派会话） | 初始版本：基于 `smoke-summary.json` / `s0-s6-cases.json` / `env-check.json` 与各仓只读配置核对，形成 §1 分派总表、§2~§4 逐缺陷详单（现象与证据 / 根因判定 / 修复动作 / 验证方式 / 回填位置 / 风险与边界）、§5 闭环检查清单、§6 执行纪律、§7 OpenBase 侧复核动作、附录（用例→缺陷→责任方映射 + 冒烟快照）。**仅新建本单，未改动任何代码、未对四仓执行 git 写操作、未将 `dogfood-output/` 纳入提交面** |
 | v1.0.1 | 2026-09-11 | AI（S7 批次 10 OpenLLM K07 补填回填会话） | **新增 F-5 条目（OpenLLM K07 全量补填：工作树完成/待提交）**：§1 分派总表增补 **F-5**（责任方 OpenLLM 仓；优先级 P0；阻塞用例数 **0**（非冒烟阻塞项，属 K07 矩阵治理）；关联断言 **S7-T6-4**；状态 **已修复待提交**）；新增 **§5.4 F-5 闭环检查清单**；§7 增补 F-5 OpenBase 侧复核动作。**要点**：OpenLLM 仓已在其工作树完成 K07 端点过滤矩阵全量补填（5 文件；矩阵 354 行 / 覆盖 349 / 豁免 5；**缺口 344→0**；隔离用例新增 759 条 → **767 passed**；门禁复跑 `total=351 covered=349 exempt=2 / gaps=0 uncovered=0 exemption_without_approval=0`，exit 0；ruff All checks passed），**因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造），工作树保留，待可写环境提交**（建议 message：`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）`）。回填位：`k07-finalize.json` `per_system[openllm]`（rows=354/covered=349/exempt=5/gap=0/status=FILLED(worktree,uncommitted)）+ `gate-aggregate.json` §K07-SYS-1（`status=PARTIAL`）。**保留 F-1~F-3 条目不变**；未改动任何子系统仓文件 |
+| v1.0.2 | 2026-09-12 | AI（S7 批次 11 OpenMemory K07 缺口补填回填会话） | **新增 F-6 条目（OpenMemory K07 8 条缺口已补填：工作树完成/待提交）**：§1 分派总表增补 **F-6**（责任方 OpenMemory 仓；优先级 P0；阻塞用例数 **0**（非冒烟阻塞项，属 K07 矩阵治理）；关联断言 **S7-T6-4**；状态 **已修复待提交（工作树）**）；新增 **§5.5 F-6 闭环检查清单**；§7 增补 F-6 OpenBase 侧复核动作。**要点**：OpenMemory 仓已在其工作树完成 K07 端点过滤矩阵 8 条缺口补填（4 文件；矩阵 32→**40 行** / 覆盖 25→31 / 豁免 7→9；**缺口 8→0**；新增隔离用例 `IS-OM-R26~R31`，`pytest tests/unit/test_isolation_matrix_endpoints.py` → **81 passed**；门禁复跑 `missing_rows=0`，exit 0；K07/identity 组 **372 passed**；ruff 0 错误），**因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造），工作树保留，待可写环境提交**（建议 message：`docs(k07): OpenMemory 端点过滤矩阵 8 条缺口补填与隔离用例注册（缺口归零）`）。回填位：`k07-finalize.json` `per_system[openmemory]`（rows=40/covered=31/exempt=9/gap=0/status=FILLED(worktree,uncommitted)）+ `gate-aggregate.json` §K07-SYS-1。**保留 F-1~F-3/F-5 条目不变**；未改动任何子系统仓功能语义代码 |
 
 ---
 
@@ -35,7 +36,8 @@
 | **F-2** | OpenRAG 共享库 `collections` 表缺 `tenant_code` 列 → `GET /api/v1/collections`（带 X-API-Key）500、集合创建 / 列表、文本入库（`/documents/text`）、检索、以及经网关的 `rag-proxy query` 500 | **OpenRAG 仓** | P0 | **5** | S7-T6-2、S7-T4-1~4（L2-2 通道矩阵）、S7-T6-4（K07/SYS-1 真实终验） | K10（OpenRAG 强制过滤骨架）、K02(RG) | 待修复 |
 | **F-3** | OpenLLM `TRUSTED_PROXY_SOURCES=llm-proxy` 与 OpenBase 注入的 `openbase-llm-proxy` 不一致 → M3 可信源不生效（`identity.proxy_source=null`、审计外部身份未采纳） | **OpenLLM 仓**（白名单取值对齐）；OpenBase 提供协议头单一事实源对标 | P0 | **2** | S7-T6-2、S7-T6-1（RA-06 M3 五项真实面） | K09（编排出站身份透传）、K02(LL) | 待修复 |
 | **F-5** | OpenLLM K07 端点-过滤矩阵全量缺填（真实底单 351 操作中 344 未登记 + 无隔离用例） | **OpenLLM 仓**（工作树全量补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(LL) | **已修复待提交** |
-| — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5 计 0） | — | — | — |
+| **F-6** | OpenMemory K07 端点-过滤矩阵 8 条缺口（真实底单 36 操作中 8 条未登记 + 无隔离用例） | **OpenMemory 仓**（工作树 8 条缺口补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(OM) | **已修复待提交（工作树）** |
+| — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5/F-6 各计 0） | — | — | — |
 
 > **冒烟快照**（`smoke-summary.json`，`generated_at=2026-09-11T18:57:56+08:00`，`openbase_commit=0595bcde788bd19d3a2e21ffc647b827eaa3fded` / 短号 `0595bcd`）：**P0 30 例 PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED**（`entry_criteria_met=false`）。9 条 FAIL **全部**由 F-1/F-2/F-3 覆盖（F-1 2 条：S0-1、S1-2；F-2 5 条：S1-1、S3-1、S3-2、S3-3、S6-1；F-3 2 条：S0-4、S5-3）；7 条 BLOCKED 中 6 条由 F-1 覆盖（S2-4、S3-4、S5-1、S5-2、S5-4、S5-5），余 1 条 **S5-6** 为禁停服务约束（归受控窗口，不在本单）。
 
@@ -353,6 +355,18 @@
 | **待提交**（OpenLLM 仓 5 文件 commit + push；沙箱拒写 `.git/objects` 未能 commit，无 hash，禁伪造） | ☐ | OpenLLM 仓（可写环境） | | 建议 message：`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）`；另需落 `backend\data\openapi-llm-snapshot.json` 以支持无参 CI |
 | OpenBase 复核（§7 第 6 项） | ☑ | OpenBase 侧 | 2026-09-11 | 独立复核通过（见批量回填记录） |
 
+### 5.5 F-6（OpenMemory K07 端点-过滤矩阵 8 条缺口补填：工作树完成/待提交）
+
+> 说明：F-6 非冒烟 S0~S6 阻塞项（阻塞用例数 0），属 **K07 矩阵治理**（S7-T6-4）；此处按同口径登记闭环状态。**已修复（工作树）→ 待提交**。
+
+| 检查项 | 是否完成 | 责任人 | 日期 | 备注 |
+|--------|:---:|--------|------|------|
+| 已修复（OpenMemory 仓工作树 4 文件：`doc\design\OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md`（内部 v1.1.0，40 行主表）、`scripts\api_baseline.json`（32→40）、`scripts\k07_endpoint_matrix.py`（豁免判定对齐 `/health*` 前缀）、`tests\unit\test_isolation_matrix_endpoints.py`（新增，隔离注册 IS-OM-R26~R31）） | ☑ | OpenMemory 仓（工作树） | 2026-09-12 | 矩阵 32→40 行 = 真实底单 36 操作 + 文档面合成 4；覆盖 25→31 + A 直连豁免 7→9；**缺口 8→0**；2 健康探针豁免（ticket=T-健康直连 / 审批人=S2-PMO / 复核 2026-09-11 / 到期 2026-12-31），6 业务面挂隔离用例 |
+| 已重跑（门禁 `--verify --openapi <真实导出>`：`missing_rows=[] uncovered_business=[] exemption_errors=[] isolation_missing=[] total_rows=40 business_rows=31 exempt_rows=9`，**exit 0**；隔离用例 `pytest tests\unit\test_isolation_matrix_endpoints.py` → **81 passed**；K07/identity 组 25 文件 → **372 passed**；ruff `scripts tests src` → All checks passed） | ☑ | OpenMemory 仓（工作树） | 2026-09-12 | 独立复核复跑一致（OpenBase 侧脚本解析 + 命令复跑） |
+| 已回填（`k07-finalize.json` `per_system[openmemory]`：rows=40/covered=31/exempt=9/gap=0/uncovered=0/exemption_valid=9/status=FILLED(worktree,uncommitted)、`summary.gap_total 8→0`、`K07-GAP-OPENMEMORY`→RESOLVED；`gate-aggregate.json` §K07-SYS-1 同步；测试报告 §2/§3、总收官报告 §2/§3/§5.3/§6/§7、执行单 §3.4/§3.5/§6） | ☑ | OpenBase 侧 | 2026-09-12 | 子系统仓文件只读（未改动功能语义代码）；仅回填 OpenBase 侧证据与文档 |
+| **待提交**（OpenMemory 仓 4 文件 commit + push；沙箱拒写 `.git/objects` 未能 commit，无 hash，禁伪造） | ☐ | OpenMemory 仓（可写环境） | | 建议 message：`docs(k07): OpenMemory 端点过滤矩阵 8 条缺口补填与隔离用例注册（缺口归零）`；敏感文件零进入（`.env*` / `scripts/evidence_v680_*.txt` / `storage/images/**` / `doc/test/_temp_test.txt` 不提交） |
+| OpenBase 复核（§7 第 7 项） | ☑ | OpenBase 侧 | 2026-09-12 | 独立复核通过（见 §7 第 7 项） |
+
 ---
 
 ## §6 执行纪律（硬约束）
@@ -378,6 +392,7 @@
 4. **段门禁六项复评**：① RA-06 ② 冒烟 S0-S6 ③ 对齐清单关闭 ④ 三原则总验证 ⑤ 跨仓会签 ⑥ 24 卡 / JT 回写——逐项复核结论，回填总收官报告 §2 六项聚合自检表。
 5. **回填下游文档**：更新《OpenBase-S7-联调窗口环境检查报告-v1.0.0》§2.6 三缺陷行状态、`env-check.json` `pending_items` 对应项；按文档版本管理规范同步版本与修订历史。
 6. **F-5（OpenLLM K07 全量补填）复核（v1.0.1 新增）**：OpenBase 侧已独立复核 OpenLLM 工作树补填——解析真实底单 openapi（278 路径 / 351 操作）、解析 `...v1.1.0.matrix.json`（354 行 / 覆盖 349 / 豁免 5）、差集缺口 0（额外 3 为文档面合成）、豁免到期 2026-12-31 有效、复跑门禁 `--check`（exit 0）、隔离用例 767 passed、ruff 通过；回填 `k07-finalize.json`（`per_system[openllm]` + `gate_verdict=PARTIAL`）与 `gate-aggregate.json` §K07-SYS-1。**待提交项**：OpenLLM 仓须在可写环境提交 5 文件（沙箱拒写 `.git/objects`，无 hash，禁伪造）；提交后核对 `git log -1 --stat` 与门禁复跑结果。
+7. **F-6（OpenMemory K07 8 条缺口补填）复核（v1.0.2 新增）**：OpenBase 侧已独立复核 OpenMemory 工作树补填——解析真实底单 openapi（30 路径 / 36 操作）、解析 `scripts/api_baseline.json`（40 条，排序保持）、解析矩阵主表（40 行 / 覆盖 31 / 豁免 9）、差集缺口 0（额外 4 为文档面合成 `/docs`、`/docs/oauth2-redirect`、`/openapi.json`、`/redoc`）、9 条豁免到期 2026-12-31 有效且有审批、复跑门禁 `--verify --openapi`（`missing_rows=0`，exit 0）、隔离用例 81 passed（K07/identity 组 372 passed）、ruff 通过；回填 `k07-finalize.json`（`per_system[openmemory]` + `summary.gap_total 8→0` + `K07-GAP-OPENMEMORY`→RESOLVED）与 `gate-aggregate.json` §K07-SYS-1。**待提交项**：OpenMemory 仓须在可写环境提交 4 文件（沙箱拒写 `.git/objects`，无 hash，禁伪造）；提交后核对 `git log -1 --stat` 与门禁复跑结果。
 
 ---
 
@@ -429,4 +444,4 @@
 
 ---
 
-> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.1）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何代码、未对四仓执行 git 写操作、未将 `dogfood-output/` 纳入提交面。
+> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.2）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；**v1.0.2 新增 F-6（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何功能语义代码、未对四仓执行 git 写操作、未将 `dogfood-output/` 纳入提交面。

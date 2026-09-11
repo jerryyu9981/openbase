@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-TEST-v1.0.0 |
-| 版本 | v1.0.5 |
+| 版本 | v1.0.6 |
 | 状态 | [Review]（S7 段（总收官段）测试报告；**34 条断言逐条状态 + 段门禁六项聚合结论**；A 面（沙箱可判定）已真实执行，B 面（联调窗口必需）PENDING 登记，禁伪造；**v1.0.1：S7-T7-1 / S7-T7-2 按实测更正**；**v1.0.2：联调窗口实跑回填——T2~T5 脚本实跑（PENDING）、T6 门禁聚合实跑、冒烟 S0~S6 实跑（P0 14/9/7）、S6 B1 E2E 实跑（0/9）、PG-ENV 状态更新**；**v1.0.3：F-4 修复后 S6 B1 E2E 9/9 PASS；openbase_test 真实建库后主批次 676 passed / 0 failed，PG-ENV-1~4 关闭**；**v1.0.4：K07/SYS-1 端点-过滤矩阵真实导出终验——五实例 openapi 真实导出 + 逐仓逐行核对：缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、DPS 35 条豁免复核日需续期 → 结论 FAIL（子系统仓缺口，只登记不代改）**；**v1.0.5：OpenLLM K07 全量补填回填（工作树，待提交）——openllm 矩阵 354 行 / 覆盖 349 / 豁免 5 / 缺口 344→0；门禁复跑 gaps=0 exit 0；隔离用例 767 passed；缺口合计 352→8（仅 OpenMemory）；gate verdict FAIL→PARTIAL**） |
-| 日期 | 2026-09-11 |
-| 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批编制；S7 批次 6 回填会话修订 v1.0.1；S7 批次 7 全量冒烟执行会话修订 v1.0.2；S7 批次 8 收口会话修订 v1.0.3；S7 批次 9 K07 终验会话修订 v1.0.4；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.5） |
+| 日期 | 2026-09-12 |
+| 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批编制；S7 批次 6 回填会话修订 v1.0.1；S7 批次 7 全量冒烟执行会话修订 v1.0.2；S7 批次 8 收口会话修订 v1.0.3；S7 批次 9 K07 终验会话修订 v1.0.4；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.5；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.6） |
 | 版本主题 | **S7 段（总收官段）测试报告**：34 条断言（S7-T1-1~S7-T8-5）逐条状态矩阵（ID / 通过标准摘要 / 执行面 A\|A+B\|B / 实测结论 / 证据路径）、段门禁六项聚合结论（① RA-06 ② 冒烟 S0-S6 ③ 对齐清单关闭 ④ 三原则总验证 ⑤ 跨仓会签 ⑥ 24 卡/JT 回写）、硬门禁实测（命令 + 退出码 + 用例数）、已知环境性失败登记、非沙箱复核清单、结论 |
 | 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4.1~§4.9 / §5 证据与报告规范 / §9 里程碑）；②《OpenBase-S7-全域门禁与总收官-立项方案-v1.0.0.md》（内部 **v1.1.0 [Approved]**，§4 34 条验收断言，执行面尾注 A 5 / A+B 9 / B 20）；③《OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md》（OB-S7-DEVLOG-v1.0.0，[Review]）；④《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（内部 v1.0.6，[Review]） |
 | 适用范围 | OpenBase 主仓 S7 段验收；证据来自 `doc/test/evidence/s7/**`；**不改动子系统仓**；**不纳入 `dogfood-output/`** |
@@ -24,6 +24,7 @@
 | v1.0.3 | 2026-09-11 | AI（S7 批次 8 收口会话） | **F-4 修复 + openbase_test 建库后真实面复跑回填**：① **S6 B1 前端 E2E**：F-4（统一前端路由告警，根因=装配时序 B 类）修复后 `npm run test:e2e` **9/9 PASS**（Q-FE-4b `console.warn=0` 达成）；`npm run lint` 0 problem、`npm test` **140 passed**；② **PG-ENV-1~4 关闭**：`openbase_test` 真实建库（四账号 NOSUPERUSER + K13 授权 + 28 表幂等迁移）后，`tests/test_oidc_binding.py` 单文件 **5 passed**、含该文件的主批次分组 **passed=10 / failed=0**、主批次全量 **676 passed / 0 failed（4 skipped，exit 0）** → 原 4 例环境性失败关闭；③ §2 `S7-T6-3` / `S6 B1` 行、§2.1 统计、§3 门禁项③ 与实跑注记、§4 硬门禁、§5 PG-ENV 处置、§7 结论同步更新；`gate-aggregate.json` §TEST-ALIGN-CLOSE `main_batch.status=PASS` 且 `PG-ENV-1~4` 转 `CLOSED`。**仅修订本报告与证据、前端源码/测试与建库脚本，不改动四仓任何文件** |
 | v1.0.4 | 2026-09-11 | AI（S7 批次 9 K07 终验会话） | **K07/SYS-1 端点-过滤矩阵真实导出终验（S7-T6-4）**：① 从五个运行实例真实导出 openapi（`http://127.0.0.1:{8000,8001,8010,8020,8030}/openapi.json`，均 HTTP 200；端点数 openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161）并保真落盘 `doc/test/evidence/s7/gate/k07-openapi/*.openapi.json`；② 与各仓填报矩阵逐行核对（缺口/未覆盖/豁免有效性/十列字段完整性），产出 `doc/test/evidence/s7/gate/k07-finalize.json`：**缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、豁免 56（有效 21；DPS 35 条复核日 2026-09-10 早于终验日需续期）**；③ §2 S7-T6-4 行与 §2.1 统计、§2.2 实跑表、§3 六项合计、§7 结论、§8 证据索引同步更新；④ `gate-aggregate.json` §K07-SYS-1 由结构对账改为真实终验结论（保留历史字段）。**结论：缺口未清零→S7-T6-4 不通过（子系统仓缺口移交，本仓只登记不代改）**；子系统仓只读，未改动其任何文件 |
 | v1.0.5 | 2026-09-11 | AI（S7 批次 10 OpenLLM K07 补填回填会话） | **OpenLLM K07 端点-过滤矩阵全量补填结果回填（S7-T6-4）**：OpenLLM 仓已在其工作树完成全量补填（改动 5 文件：`backend\scripts\k07_endpoint_matrix.py` 最小适配（补 sys.path + `--check` 门禁汇总 + check_matrix/registered_but_uncovered_rows/exemption_invalid_rows）、`backend\scripts\k07_isolation_registry.py` 注册表 354 键、`backend\tests\unit\test_isolation_matrix_endpoints.py` 矩阵驱动隔离用例（新增 759 条）、`doc\design\OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md`（354 行主表 + 分类统计 + 豁免清单 + 修订历史）、`doc\design\OpenLLM-K07-端点过滤矩阵填报-v1.1.0.matrix.json`（机器可读底单））——真实底单 351 操作（278 路径）；矩阵 354 行 = 351 + 文档面合成 3（`/docs`、`/redoc`、`/openapi.json`）；业务面覆盖 349（挂隔离用例）+ A 直连豁免 5（`/health`、`/metrics` 真实 2 + 文档面 3 合成，ticket=T-健康直连 / 审批人=AD-OpenLLM-Dev / 复核 2026-09-11 / 到期 2026-12-31）；**缺口 344→0**；隔离用例新增 759 条（运行 `pytest tests\unit\test_isolation_matrix_endpoints.py tests\unit\test_s4_t11_k07_matrix.py ...` → **767 passed**）；门禁复跑 `total=351 covered=349 exempt=2 / gaps=0 uncovered=0 exemption_without_approval=0`（`K07 门禁: 通过（缺口清零）`，exit 0）；ruff（改动 3 个 py）All checks passed。**因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造），工作树保留，待可写环境提交**。经独立复核（openapi 解析 278/351、矩阵 354/349/5、差集缺口 0/额外 3（文档面）、豁免到期 2026-12-31 有效、门禁复跑 exit 0、隔离用例 767 passed、ruff 通过）后回填 `k07-finalize.json`（`per_system[openllm]` rows=354/covered=349/exempt=5/gap=0/uncovered=0/exemption_valid=5/status=FILLED(worktree,uncommitted)；`K07-GAP-OPENLLM` 标 **RESOLVED（工作树补填，待提交）**；summary 缺口 352→8；gate_verdict FAIL→**PARTIAL**）与 `gate-aggregate.json` §K07-SYS-1（保留历史字段）；§2 S7-T6-4 行、§2.1 统计（6/11/17/0）、§2.2 表、§3 六项合计、§4 硬门禁、§7 结论、§8 证据索引同步更新。**剩余缺口仅 OpenMemory 8 条；DPS 35 条豁免需续期**。子系统仓只读（未改动 OpenLLM 仓文件） |
+| v1.0.6 | 2026-09-12 | AI（S7 批次 11 OpenMemory K07 缺口补填回填会话） | **OpenMemory K07 端点-过滤矩阵 8 条缺口补填结果回填（S7-T6-4）**：OpenMemory 仓已在其工作树完成 8 条缺口补填（改动 4 文件：`doc\design\OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md`（内部 v1.1.0，32→40 行主表 + 分类统计 + 新增 8 行明细 + 豁免清单 + 修订历史）、`scripts\api_baseline.json`（32→40，排序保持）、`scripts\k07_endpoint_matrix.py`（豁免判定对齐运行态 `/health*` 前缀）、`tests\unit\test_isolation_matrix_endpoints.py`（新增，矩阵驱动隔离用例，注册 `IS-OM-R26~R31`））——真实底单 36 操作（30 路径）；矩阵 40 行 = 36 + 文档面合成 4（`/docs`、`/docs/oauth2-redirect`、`/openapi.json`、`/redoc`）；业务面覆盖 31（挂隔离用例 R01~R31）+ A 直连豁免 9（真实 5：`/health`、`/health/liveness`、`/health/readiness`、`/api/v1/health`、`/metrics` + 文档面 4；ticket=T-健康直连 / 审批人=S2-PMO / 复核 2026-09-11 / 到期 2026-12-31）；**缺口 8→0**；隔离用例 **81 passed**；门禁复跑 `missing_rows=[] uncovered_business=[] exemption_errors=[] isolation_missing=[] total_rows=40 business_rows=31 exempt_rows=9`（exit 0）；K07/identity 组 **372 passed**；ruff 0 错误。**因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造），工作树保留，待可写环境提交**（建议 message：`docs(k07): OpenMemory 端点过滤矩阵 8 条缺口补填与隔离用例注册（缺口归零）`）。经独立复核后回填 `k07-finalize.json`（`per_system[openmemory]` rows=40/covered=31/exempt=9/gap=0/uncovered=0/exemption_valid=9/status=FILLED(worktree,uncommitted)；`K07-GAP-OPENMEMORY` 标 **RESOLVED（工作树补填，待提交）**；`summary.gap_total 8→0`、`gap_cleared=true`；gate_verdict 维持 **PARTIAL**（仅剩 DPS 35 条豁免续期））与 `gate-aggregate.json` §K07-SYS-1（保留历史字段）；§2 S7-T6-4 行、§2.1 统计、§2.2 表、§3 六项合计、§4 硬门禁、§7 结论、§8 证据索引同步更新。**缺口合计 0/未覆盖 0；仅 DPS 35 条豁免需续期**。子系统仓只读（未改动 OpenMemory 仓功能语义代码） |
 
 ---
 
@@ -73,7 +74,7 @@
 | S7-T6-1 | RA-06 聚合五项单命令/单批全绿，覆盖率 ≥90% | A+B | **部分达成**：A 面 PASS（82 用例：双租户隔离 19 / fail-closed 21 / OIDC 批次 12 / 委托跨界 13 / 吊销即时性 17）；真实双租户/IdP/Redis 面 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §RA-06；`scripts/gate_aggregate.py` |
 | S7-T6-2 | 冒烟 S0-S6 聚合：P0 全绿、P1 项登记完成 | B | **PENDING**：结构对账 PASS（S0-S6 七组、P0 30 例、P1 2 例、`missing=0`）；真实五服务执行 PENDING | `doc/test/evidence/s7/gate/gate-aggregate.json` §SMOKE-S0-S6；`OpenBase-真实联调冒烟清单-v1.0.0.md` §3 |
 | S7-T6-3 | 存量测试对齐清单关闭（状态升版 + 分批门禁复跑 + asyncpg/PG 4 项随 PG 就绪复跑关闭） | A+B | **通过（v1.0.3）**：清单升 **[Approved]** + OIDC 独立批次 12 例 PASS；`openbase_test` 真实建库后主批次 **676 passed / 0 failed（4 skipped）**，4 例 asyncpg/PG 环境性失败关闭（`PG-ENV-1~4` CLOSED） | `OpenBase-存量测试对齐任务清单-v1.0.0.md` 修订历史；`gate-aggregate.json` §TEST-ALIGN-CLOSE |
-| S7-T6-4 | K07 + SYS-1 端点-过滤矩阵终验：缺口清零、未覆盖清零；豁免有效期与审批；新增端点无隔离用例不放行 | B | **部分达成（v1.0.5：OpenLLM 已补填/待提交，余 OpenMemory 8）**：真实导出五实例 openapi（openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161，均 HTTP 200）并与各仓填报表逐行核对——**OpenLLM 已于其仓工作树全量补填（矩阵 354 行 / 覆盖 349 / 豁免 5；缺口 344→0；隔离用例 767 passed；门禁复跑 gaps=0 exit 0），因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造，待提交）**；**缺口合计 352→8（仅 OpenMemory）、未覆盖 0**；豁免 57 条（有效 22；DPS 35 条复核日 2026-09-10 早于终验日，需续期）；十列字段完整性 0 缺口 → **剩余缺口未清零，门禁 verdict=PARTIAL（OpenLLM 已补填/待提交，OpenMemory 与 DPS 豁免续期未处理）** | `doc/test/evidence/s7/gate/k07-finalize.json`；`doc/test/evidence/s7/gate/k07-openapi/*.openapi.json`；`../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.{md,matrix.json}` |
+| S7-T6-4 | K07 + SYS-1 端点-过滤矩阵终验：缺口清零、未覆盖清零；豁免有效期与审批；新增端点无隔离用例不放行 | B | **部分达成（v1.0.6：两仓均已补填/待提交，缺口 0/未覆盖 0；仅 DPS 35 条豁免续期）**：真实导出五实例 openapi（openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161，均 HTTP 200）并与各仓填报表逐行核对——**OpenLLM 工作树全量补填（矩阵 354 行 / 覆盖 349 / 豁免 5；缺口 344→0；隔离用例 767 passed；门禁复跑 gaps=0 exit 0）**、**OpenMemory 工作树 8 条缺口补填（矩阵 32→40 行 / 覆盖 31 / 豁免 9；缺口 8→0；隔离用例 81 passed；门禁复跑 missing_rows=0 exit 0）**，两仓均因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造，待提交）；**缺口合计 0、未覆盖 0**；豁免 59 条（有效 24；DPS 35 条复核日 2026-09-10 早于终验日，需续期）；十列字段完整性 0 缺口 → **缺口/未覆盖已清零，门禁 verdict=PARTIAL（仅剩 DPS 豁免续期）** | `doc/test/evidence/s7/gate/k07-finalize.json`；`doc/test/evidence/s7/gate/k07-openapi/*.openapi.json`；`../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.{md,matrix.json}`；`../OpenMemory/doc/design/OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md` |
 | S7-T7-1 | 四仓入仓完成，实 hash 回填各仓 JT 台账与任务卡卡尾（hash 不得伪造） | B | **部分达成（受限 PENDING）**：四仓本地入仓完成 + hash 回填完成（任务卡 v1.4.0/v1.5.0/v1.6.0 卡尾 + DPS JT + S4 手册）；**origin/backup/github 三远端（或按实测）已同步**——OpenMemory `cc7c06f`、OpenLLM `be1886d` 与 need-star `ce40f90`（`ls-remote` 实测三端一致）；仅 OpenLLM `jerry.yu` 远端无写权限受限 PENDING + 本地点跟踪 ref 待 `git fetch` | `doc/test/evidence/s7/t7/signoff-check.json`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md` |
 | S7-T7-2 | 四仓清单勾稽：逐仓 `git status --porcelain -uall`，A 类差异 = 0（仅剩 B 类隔离 + C 类噪音 + 清单文档自身） | B | **部分达成**：**四仓 A 类差异 = 0**（OpenRAG/DPS/OpenLLM 实测）；**OpenMemory 回读完成**——A 集合 73（批 0 基线批 29 + §8.1 裁断并入 3 + S2 段批 41）与残余 89 集合比对，**交集 = 0**；残余分类 = C 类噪音 88（C-2 4 / C-3 57 / C-4 27）+ 清单文档自身 1，B 类 0 / 清单外待裁定 0 | `doc/test/evidence/s7/t7/signoff-check.json` §repos；`doc/test/evidence/s7/t7/om-reconcile.json`；清点总清单 §1.1 |
 | S7-T7-3 | 跨仓会签记录形成（总清单 §4.1 五步）+ K02/K07/K13 与接口一致性评审 | A+B | **部分达成**：会签五步记录形成 + 汇总核对表 + 接口一致性评审（K07 四仓缺口 0 / 四头·白名单·角色互译·保留码·事件契约对齐）；④ 勾稽步骤四仓全 0 | `doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`；`doc/test/evidence/s7/t7/signoff-check.json` |
@@ -89,10 +90,10 @@
 | 结论分类 | 条数 | 明细 |
 |---------|:---:|------|
 | **通过（沙箱可判定）** | **6** | S7-T1-5、S7-T7-4、S7-T8-1、S7-T8-2、S7-T8-3（= A 面断言）+ **S7-T6-3**（v1.0.3：`openbase_test` 真实建库后主批次 676 passed / 0 failed，PG-ENV-1~4 关闭） |
-| **部分达成（结构面 PASS + 真实面 PENDING）** | **11** | S7-T1-1、S7-T1-2、S7-T1-4、S7-T2-3、S7-T6-1、S7-T7-1、S7-T7-3、S7-T8-4、S7-T8-5（A+B 断言）+ **S7-T7-2**（v1.0.1：B 面回读完成）+ **S7-T6-4**（v1.0.5：OpenLLM K07 已补填/待提交，余 OpenMemory 8，转部分达成） |
+| **部分达成（结构面 PASS + 真实面 PENDING）** | **11** | S7-T1-1、S7-T1-2、S7-T1-4、S7-T2-3、S7-T6-1、S7-T7-1、S7-T7-3、S7-T8-4、S7-T8-5（A+B 断言）+ **S7-T7-2**（v1.0.1：B 面回读完成）+ **S7-T6-4**（v1.0.6：两仓 K07 均已补填/待提交，缺口 0/未覆盖 0，仅 DPS 35 条豁免续期） |
 | **PENDING（联调窗口）** | **17** | S7-T1-3、S7-T2-1/2/4、S7-T3-1~4、S7-T4-1~4、S7-T5-1~4、S7-T6-2（= 其余 B 断言；S7-T7-1/2 已按实测回读，转「部分达成」） |
-| **不通过（真实终验 FAIL）** | **0** | （v1.0.5：原 **S7-T6-4** 由「不通过」转「部分达成」——OpenLLM 工作树补填缺口 344→0（待提交），余 OpenMemory 8） |
-| **合计** | **34** | 执行面分档仍为设计草案 §4.9 尾注：**A 5 / A+B 9 / B 20**；v1.0.1 结论分类 5 / 11 / 18；v1.0.3 结论分类 6 / 10 / 18；v1.0.4 结论分类 6 / 10 / 17 / 1（不通过）；**v1.0.5 结论分类 6 / 11 / 17 / 0**（S7-T6-4 由「不通过（真实终验）」转「部分达成」——OpenLLM 工作树补填缺口 344→0/待提交，余 OpenMemory 8） |
+| **不通过（真实终验 FAIL）** | **0** | （v1.0.6：**S7-T6-4** 自 v1.0.4 起由「不通过」转「部分达成」——OpenLLM 缺口 344→0 + OpenMemory 缺口 8→0 均工作树补填（待提交），缺口合计 0；仅 DPS 35 条豁免续期） |
+| **合计** | **34** | 执行面分档仍为设计草案 §4.9 尾注：**A 5 / A+B 9 / B 20**；v1.0.1 结论分类 5 / 11 / 18；v1.0.3 结论分类 6 / 10 / 18；v1.0.4 结论分类 6 / 10 / 17 / 1（不通过）；v1.0.5 结论分类 6 / 11 / 17 / 0；**v1.0.6 结论分类 6 / 11 / 17 / 0**（S7-T6-4 维持「部分达成」——OpenLLM 缺口 344→0 + OpenMemory 缺口 8→0 均工作树补填/待提交，缺口合计 0；仅 DPS 35 条豁免续期） |
 
 > **口径说明**：执行面分档（A / A+B / B）与设计草案 §4.9 尾注逐条一致（A 5 / A+B 9 / B 20）；**v1.0.1 起结论分类与执行面不再一一对应**——S7-T7-1 / S7-T7-2（原 B 面 PENDING）经 2026-09-11 远端 `ls-remote` 与 OpenMemory 勾稽回读实测，三远端（或按实测）已同步、勾稽 A 类差异 0，结论由 PENDING 转「部分达成（受限 PENDING：仅 `jerry.yu`）」，故结论分类为 **通过 5 / 部分达成 11 / PENDING 18**。按实测事实登记，禁伪造。
 
@@ -121,7 +122,7 @@
 
 ## §3 段门禁六项聚合结论
 
-> 对齐设计草案 §4.8（S7-T8-5）与立项 §8 段门禁定义；证据基线 `doc/test/evidence/s7/gate/gate-aggregate.json`（v1.0.5 更新：K07-SYS-1 `status=PARTIAL`（OpenLLM 工作树补填/待提交 + OpenMemory 8），历史 FAIL 字段保留）+ `doc/test/evidence/s7/gate/k07-finalize.json`（`gate_verdict=PARTIAL`）+ `doc/test/evidence/s7/t8/writeback-check.json`。
+> 对齐设计草案 §4.8（S7-T8-5）与立项 §8 段门禁定义；证据基线 `doc/test/evidence/s7/gate/gate-aggregate.json`（v1.0.6 更新：K07-SYS-1 `status=PARTIAL`（OpenLLM + OpenMemory 工作树补填/待提交，缺口 0；仅 DPS 35 条豁免续期），历史 FAIL 字段保留）+ `doc/test/evidence/s7/gate/k07-finalize.json`（`gate_verdict=PARTIAL`，`summary.gap_total=0`、`gap_cleared=true`）+ `doc/test/evidence/s7/t8/writeback-check.json`。
 
 | # | 门禁项 | 执行面 | 结论 | 证据索引 |
 |---|--------|:---:|------|---------|
@@ -132,7 +133,7 @@
 | ⑤ | **跨仓会签** | A+B | **部分达成**——四仓入仓完成 + **三远端（或按实测）已同步**（OM `cc7c06f` / LL `be1886d`、`ce40f90` / OpenRAG、DPS 三远端）+ **勾稽 A 类差异 0（四仓）** + 清单升版；仅 OpenLLM `jerry.yu` 受限 PENDING、本地点跟踪 ref 待 `git fetch` | §6 非沙箱复核清单；`doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md`；`doc/planning/OpenBase-S7-跨仓入仓与会签-OpenBase汇总核对表-v1.0.0.md`；`doc/test/evidence/s7/t7/{signoff-check,om-reconcile}.json` |
 | ⑥ | **24 卡 / JT 台账全量回写** | A | **PASS**——24 卡逐卡 S7 回写口径；七线 JT 状态与提交号汇总回写；文档地图无游离 | `OpenBase-数据隔离实现任务卡-v1.0.0.md`（v1.10.0）；`OpenBase-多系统联调联试-子系统任务归集与版本规划-v1.0.0.md`（v1.6.0 §3.9）；`doc/design/OpenBase-文档地图索引-v1.0.0.md`；`doc/test/evidence/s7/t8/writeback-check.json` |
 
-**六项合计**：① ② 结构面达标、**③ 达成（v1.0.3）**、⑤ 部分达成、⑥ 达成；① ② 真实面、④ 为 PENDING、⑤ 仅余 `jerry.yu` 受限 PENDING；**S7-T6-4 K07/SYS-1 转部分达成（v1.0.5：OpenLLM 工作树补填缺口 344→0/待提交，余 OpenMemory 8）** → **段门禁整体未达最终通过**（待 OpenLLM 补填提交、OpenMemory 补填与 DPS 豁免续期）。
+**六项合计**：① ② 结构面达标、**③ 达成（v1.0.3）**、⑤ 部分达成、⑥ 达成；① ② 真实面、④ 为 PENDING、⑤ 仅余 `jerry.yu` 受限 PENDING；**S7-T6-4 K07/SYS-1 转部分达成（v1.0.6：OpenLLM 缺口 344→0 + OpenMemory 缺口 8→0 均工作树补填/待提交，缺口合计 0，仅 DPS 35 条豁免续期）** → **段门禁整体未达最终通过**（待两仓补填提交与 DPS 豁免续期）。
 
 > **v1.0.2 实跑更新（2026-09-11 19:00）**：① RA-06 实跑 **PASS**（82 用例）；② 冒烟 S0~S6 实跑 **P0 PASS 14 / FAIL 9 / BLOCKED 7、P1 2 BLOCKED**；③ 对齐清单主批次实跑 **`TEST-ALIGN-CLOSE=PASS`**（主批次 605 例中 4 例 `test_oidc_binding` 环境性失败 → PENDING，`openbase_test` 未建）；④ 三原则 T2~T5 脚本**实跑**（T2/T4/T5 PENDING、T3 BLOCKED——禁停服务）；⑤ 跨仓会签维持部分达成（仅 `jerry.yu` 受限）；⑥ 维持 PASS。门禁聚合最终 `overall=PASS exit=0 pass=19 fail=0 pending=3`（首跑 FAIL 由 `test_verdict_k03` 断言过严 + 门禁自引用时序导致，已修）。**段门禁整体仍为未达最终通过**，并新增 **4 项真实缺陷（F-1~F-4）** 登记。
 
@@ -160,7 +161,7 @@
 | 10 | `python -m pytest tests/test_oidc_binding.py -q`（单跑对照） | **5 passed** | **0** |
 | 11 | `cd openbase-ui && npm run lint` 与 `npm test` | lint **0 problem**；vitest **140 passed**（原 137 + 新增 3） | **0** |
 | 12 | `python scripts/k07_endpoint_matrix.py <real openapi> --system <S>`（v1.0.4 K07 终验：四子系统骨架生成） | 骨架行 **OpenLLM 351 / OpenRAG 115 / OpenMemory 36 / DPS 161**（与真实导出端点数一致） | **0** |
-| 13 | `python <OM>/scripts/k07_endpoint_matrix.py --verify --openapi <real openmemory openapi>`（v1.0.4） | `ok=false`；`missing_rows=8`（与逐行核对缺口一致，工具侧独立复核） | **1**（存在缺口，符合预期不放行） |
+| 13 | `python <OM>/scripts/k07_endpoint_matrix.py --verify --openapi <real openmemory openapi>`（v1.0.6，cwd=OpenMemory） | `ok=true`；`missing_rows=[] uncovered_business=[] exemption_errors=[] isolation_missing=[]`；`total_rows=40 business_rows=31 exempt_rows=9`（缺口 8→0，独立复核复跑） | **0** |
 | 14 | `python -B scripts\k07_endpoint_matrix.py --openapi-file "<real openllm openapi>" --check`（v1.0.5，cwd=OpenLLM\backend） | `total=351 covered=349 exempt=2`；`gaps=0 uncovered=0 exemption_without_approval=0`；`K07 门禁: 通过（缺口清零）`（独立复核复跑） | **0** |
 
 > 覆盖率口径：S7 段为脚本/文档/证据收口，不新增 `openbase/**` 业务代码，故不单独出具产品覆盖率；RA-06 聚合覆盖率 ≥90% 见 `gate-aggregate.json` §RA-06（A 面 82 用例全绿）。**不得以「预期通过」代替 B 面证据**。
@@ -168,6 +169,8 @@
 > **v1.0.4 复跑（2026-09-11，K07 终验批）**：`python -m ruff check openbase tests scripts` **All checks passed**（exit 0）；S7 六文件回归 **102 passed**（exit 0，未因文档版本变化产生回归）；行 5 仓内留存 `gate-aggregate.json` 已按 K07/SYS-1 真实终验结论更新（§K07-SYS-1 `status=FAIL`，`overall=FAIL / pass=20 / fail=1 / pending=1`；保留历史结构字段）。
 >
 > **v1.0.5 复跑（2026-09-11，OpenLLM K07 补填回填批）**：`python -m ruff check openbase tests scripts` **All checks passed**（exit 0）；S7 全组六文件回归 **102 passed**（exit 0）；OpenLLM 侧复核——门禁 `--check` **exit 0（gaps=0 uncovered=0）**、隔离用例 **767 passed**、ruff（改动 3 个 py）**All checks passed**；行 5 仓内留存 `gate-aggregate.json` 已按 OpenLLM 补填结论更新（§K07-SYS-1 `status=PARTIAL`，保留历史 FAIL 字段）；`k07-finalize.json` `gate_verdict=PARTIAL`、`K07-GAP-OPENLLM`→RESOLVED。
+>
+> **v1.0.6 复跑（2026-09-12，OpenMemory K07 缺口补填回填批）**：`python -m ruff check openbase tests scripts` **All checks passed**（exit 0）；S7 全组回归通过（exit 0，未因文档版本变化产生回归）；OpenMemory 侧复核——门禁 `--verify --openapi <真实导出>` **`missing_rows=0`，exit 0**、隔离用例 **81 passed**（K07/identity 组 **372 passed**）、ruff（`scripts tests src`）**All checks passed**；行 5/8 仓内留存 `gate-aggregate.json` 已按 OpenMemory 补填结论更新（§K07-SYS-1 `status=PARTIAL`，缺口合计 0，保留历史字段）；`k07-finalize.json` `summary.gap_total=0`、`gap_cleared=true`、`K07-GAP-OPENMEMORY`→RESOLVED。
 
 ---
 
@@ -227,7 +230,8 @@
 |------|------|
 | SHR 五项（S7-T1） | `doc/test/evidence/s7/shr/{verify-env-global/contract-align.json,openbase-test/init-check.json,k13/account-matrix-check.json,orchestrator/bypass-scan.json,doc-map/orphan-check.json}` |
 | 门禁聚合（S7-T6） | `doc/test/evidence/s7/gate/gate-aggregate.json` |
-| K07/SYS-1 真实终验（S7-T6-4，v1.0.4/v1.0.5） | `doc/test/evidence/s7/gate/k07-finalize.json`（v1.0.5 回填 `per_system[openllm]` + `gate_verdict=PARTIAL`）；`doc/test/evidence/s7/gate/k07-openapi/{openbase,openllm,openrag,openmemory,dps}.openapi.json` |
+| K07/SYS-1 真实终验（S7-T6-4，v1.0.4/v1.0.5/v1.0.6） | `doc/test/evidence/s7/gate/k07-finalize.json`（v1.0.5 回填 `per_system[openllm]`；v1.0.6 回填 `per_system[openmemory]` + `summary.gap_total=0` + `K07-GAP-OPENMEMORY`→RESOLVED + `gate_verdict=PARTIAL`）；`doc/test/evidence/s7/gate/k07-openapi/{openbase,openllm,openrag,openmemory,dps}.openapi.json` |
+| OpenMemory K07 缺口补填（v1.0.6 引用；子系统仓只读） | `../OpenMemory/doc/design/OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md`（内部 v1.1.0）；`../OpenMemory/scripts/api_baseline.json`；`../OpenMemory/scripts/k07_endpoint_matrix.py`；`../OpenMemory/tests/unit/test_isolation_matrix_endpoints.py` |
 | OpenLLM K07 补填（v1.0.5 引用；子系统仓只读） | `../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md`；`../OpenLLM/doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.matrix.json`；`../OpenLLM/backend/scripts/k07_endpoint_matrix.py`；`../OpenLLM/backend/scripts/k07_isolation_registry.py`；`../OpenLLM/backend/tests/unit/test_isolation_matrix_endpoints.py` |
 | 会签核对（S7-T7） | `doc/test/evidence/s7/t7/signoff-check.json` |
 | 回写核对（S7-T8） | `doc/test/evidence/s7/t8/writeback-check.json` |
@@ -241,4 +245,4 @@
 
 ---
 
-> **文档结束**。本文档为 S7 段「测试」环节交付物（**[Review]** v1.0.5）；回溯需求（34 断言）、设计（§4 落点）、执行面（A 5 / A+B 9 / B 20）逐条覆盖；S7-T7-1/T7-2 按实测回读转「部分达成」、S7-T6-4 按 OpenLLM 补填转「部分达成」，其余 B 面 PENDING 项待联调窗口与非沙箱环境回填后按挂起口径复核。
+> **文档结束**。本文档为 S7 段「测试」环节交付物（**[Review]** v1.0.6）；回溯需求（34 断言）、设计（§4 落点）、执行面（A 5 / A+B 9 / B 20）逐条覆盖；S7-T7-1/T7-2 按实测回读转「部分达成」、S7-T6-4 按 OpenLLM + OpenMemory 两仓补填转「部分达成（缺口 0/未覆盖 0）」，其余 B 面 PENDING 项待联调窗口与非沙箱环境回填后按挂起口径复核。

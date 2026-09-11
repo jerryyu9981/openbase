@@ -503,9 +503,9 @@
         "evidence_file": "doc/test/evidence/s7/gate/k07-openapi/openmemory.openapi.json"
       },
       "real_endpoints": 36,
-      "filled_rows": 32,
-      "filled_unique_endpoints": 32,
-      "structure_rows_expected": 32,
+      "filled_rows": 40,
+      "filled_unique_endpoints": 40,
+      "structure_rows_expected": 40,
       "duplicate_rows": 0,
       "extra_rows_not_in_real": 4,
       "extra_endpoints": [
@@ -514,46 +514,42 @@
         "GET /openapi.json",
         "GET /redoc"
       ],
-      "gap_count": 8,
-      "gap_endpoints": [
-        "GET /api/v1/orgs/{org_id}/permissions",
-        "GET /api/v1/orgs/{org_id}/roles",
-        "GET /api/v1/orgs/{org_id}/users/{user_id}/role",
-        "GET /health/liveness",
-        "GET /health/readiness",
-        "POST /api/v1/audio/transcribe",
-        "POST /api/v1/memories/remember-with-audio",
-        "PUT /api/v1/orgs/{org_id}/users/{user_id}/role"
-      ],
+      "gap_count": 0,
+      "gap_endpoints": [],
       "uncovered_count": 0,
       "uncovered": [],
-      "exempt_rows": 7,
-      "exempt_valid": 7,
+      "exempt_rows": 9,
+      "exempt_valid": 9,
       "exempt_invalid": 0,
       "exempt_needs_renew": [],
       "field_gap_count": 0,
       "field_gaps": [],
       "field_completeness": "PASS",
       "status_counts": {
-        "覆盖": 25,
-        "豁免": 7
+        "覆盖": 31,
+        "豁免": 9
       },
-      "conclusion": "FAIL"
+      "conclusion": "PASS",
+      "rows": 40,
+      "status": "FILLED(worktree, uncommitted)",
+      "evidence_ref": "OpenMemory 侧 doc/design/OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md（内部 v1.1.0）+ scripts/api_baseline.json（32→40）+ tests/unit/test_isolation_matrix_endpoints.py（隔离用例注册 IS-OM-R26~R31）",
+      "scope_note": "矩阵 40 行 = 真实底单 36 操作 + 文档面合成 4（/docs、/docs/oauth2-redirect、/openapi.json、/redoc）；业务面覆盖 31（挂隔离用例 IS-OM-R01~R31）+ A 直连豁免 9（真实 5：/health、/health/liveness、/health/readiness、/api/v1/health、/metrics + 文档面 4）。"
     }
   ],
   "summary": {
     "real_endpoints_total": 663,
-    "filled_rows_total": 676,
-    "gap_total": 8,
+    "filled_rows_total": 684,
+    "gap_total": 0,
     "uncovered_total": 0,
-    "exempt_total": 57,
-    "exempt_valid_total": 22,
+    "exempt_total": 59,
+    "exempt_valid_total": 24,
     "exempt_invalid_total": 35,
-    "gap_cleared": false,
+    "gap_cleared": true,
     "uncovered_cleared": true,
     "exemption_all_valid": false,
-    "exemption_note": "OpenRAG/OpenLLM/OpenMemory 豁免全部在有效期且有审批（OpenLLM 5 条：/health、/metrics 真实 2 + 文档面 3 合成；ticket=T-健康直连 / 审批人=AD-OpenLLM-Dev / 复核 2026-09-11 / 到期 2026-12-31）；DPS 35 条豁免登记齐备但到期/复核日=2026-09-10 早于终验日 2026-09-11（无未来到期日），严格有效期口径需续期。剩余缺口仅 OpenMemory 8 条（OpenLLM 344 条已工作树补填，待提交）。",
-    "openllm_gap_cleared": true
+    "exemption_note": "OpenRAG/OpenLLM/OpenMemory 豁免全部在有效期且有审批（OpenLLM 5 条：/health、/metrics 真实 2 + 文档面 3 合成；OpenMemory 9 条：/health、/health/liveness、/health/readiness、/api/v1/health、/metrics 真实 5 + 文档面 4，ticket=T-健康直连 / 审批人=S2-PMO / 复核 2026-09-11 / 到期 2026-12-31）；DPS 35 条豁免登记齐备但到期/复核日=2026-09-10 早于终验日 2026-09-11（无未来到期日），严格有效期口径需续期。缺口合计 0（OpenLLM 344 条 + OpenMemory 8 条均已工作树补填，待提交）。",
+    "openllm_gap_cleared": true,
+    "openmemory_gap_cleared": true
   },
   "findings": [
     {
@@ -628,29 +624,23 @@
       "id": "K07-GAP-OPENMEMORY",
       "system": "openmemory",
       "type": "gap",
-      "count": 8,
-      "endpoints": [
-        "GET /api/v1/orgs/{org_id}/permissions",
-        "GET /api/v1/orgs/{org_id}/roles",
-        "GET /api/v1/orgs/{org_id}/users/{user_id}/role",
-        "GET /health/liveness",
-        "GET /health/readiness",
-        "POST /api/v1/audio/transcribe",
-        "POST /api/v1/memories/remember-with-audio",
-        "PUT /api/v1/orgs/{org_id}/users/{user_id}/role"
-      ],
+      "count": 0,
+      "endpoints": [],
       "owner": "openmemory 仓（子系统，本仓只登记不代改）",
-      "detail": "真实 openapi 36 端点中 8 个未在填报矩阵登记（S4/S2 聚焦集外）。",
-      "suggestion": "在对应子系统仓补填矩阵行并挂隔离用例（新增端点无隔离用例不放行）。"
+      "detail": "原缺口 8 已在 OpenMemory 仓工作树全量补填（矩阵 32→40 行 = 真实底单 36 操作 + 文档面合成 4；业务面覆盖 25→31，A 直连豁免 7→9；新增隔离用例注册 IS-OM-R26~R31；门禁复跑 missing_rows=0 退出码 0；隔离用例 81 passed；K07/identity 组 372 passed；ruff 0 错误）；因沙箱拒写 .git/objects 未能 commit，无 hash（禁伪造），工作树保留，待可写环境提交。",
+      "suggestion": "在可写环境提交上述 4 个改动文件（建议 message：docs(k07): OpenMemory 端点过滤矩阵 8 条缺口补填与隔离用例注册（缺口归零））。",
+      "status": "RESOLVED",
+      "resolution": "工作树补填，待提交"
     }
   ],
   "gate_verdict": "PARTIAL",
+  "gate_verdict_note": "缺口 0 / 未覆盖 0 已清零（OpenLLM 344 条与 OpenMemory 8 条均工作树补填，待提交）；仅剩 DPS 35 条豁免续期（无未来到期日）→ 维持 PARTIAL（仅剩豁免续期说明）。",
   "assertions": [
     {
       "id": "S7-T6-4-a",
       "item": "矩阵缺口清零",
-      "result": "PARTIAL",
-      "detail": "缺口合计 8（仅 OpenMemory）；OpenLLM 344 条已工作树补填（缺口 344→0，待提交）"
+      "result": "PASS",
+      "detail": "缺口合计 0；OpenLLM 344 条 + OpenMemory 8 条均已工作树补填（待提交）"
     },
     {
       "id": "S7-T6-4-b",
@@ -667,8 +657,8 @@
     {
       "id": "S7-T6-4-d",
       "item": "新增端点无隔离用例不放行",
-      "result": "PARTIAL",
-      "detail": "OpenLLM 已工作树补填并挂隔离用例（767 passed，门禁放行）；OpenMemory 仍存在 8 条未登记端点，按门禁不放行"
+      "result": "PASS",
+      "detail": "OpenLLM（767 passed）与 OpenMemory（81 passed；IS-OM-R26~R31 注册）均已工作树补填并挂隔离用例，门禁放行"
     }
   ],
   "k07_scripts": {
@@ -685,9 +675,12 @@
     },
     "openmemory_verify": {
       "command": "python <OM>/scripts/k07_endpoint_matrix.py --verify --openapi <real openapi>",
-      "exit_code": 1,
-      "ok": false,
-      "missing_rows": 8
+      "exit_code": 0,
+      "ok": true,
+      "missing_rows": 0,
+      "total_rows": 40,
+      "business_rows": 31,
+      "exempt_rows": 9
     },
     "openllm_gate_rerun": {
       "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
@@ -703,9 +696,10 @@
   "pending_items": [
     {
       "id": "K07-SUBREPO-GAP",
-      "item": "子系统仓 K07 矩阵补填报（OpenMemory 8；OpenLLM 已于工作树全量补填，待提交）",
-      "owner": "OpenMemory 仓（OpenLLM 补填已完成，待可写环境提交）",
-      "status": "PENDING"
+      "item": "子系统仓 K07 矩阵补填报（OpenMemory 8；OpenLLM 344）",
+      "owner": "OpenMemory 仓 / OpenLLM 仓（补填已完成，待可写环境提交）",
+      "status": "DONE",
+      "detail": "OpenLLM 344 条与 OpenMemory 8 条均已在子系统仓工作树全量补填；缺口合计 0（待可写环境提交）。"
     },
     {
       "id": "K07-OPENLLM-COMMIT",
@@ -720,7 +714,7 @@
       "status": "PENDING"
     }
   ],
-  "note": "真实导出与逐行核对（B 面）本批真实执行；缺口/未覆盖/无效豁免逐条登记，禁伪造。OpenLLM 已于子系统仓工作树全量补填（矩阵 354 行 / 缺口 344→0 / 隔离用例 767 passed / 门禁 exit 0），因沙箱拒写 .git/objects 未能 commit（无 hash，禁伪造），待可写环境提交；剩余缺口仅 OpenMemory 8 条，DPS 35 条豁免需续期 → gate_verdict=PARTIAL。子系统仓缺口只登记不代改。",
+  "note": "真实导出与逐行核对（B 面）本批真实执行；缺口/未覆盖/无效豁免逐条登记，禁伪造。OpenLLM（矩阵 354 行 / 缺口 344→0 / 隔离用例 767 passed）与 OpenMemory（矩阵 32→40 行 / 缺口 8→0 / 隔离用例 81 passed / 门禁 missing_rows=0 exit 0）均已于子系统仓工作树全量补填，因沙箱拒写 .git/objects 未能 commit（无 hash，禁伪造），待可写环境提交；缺口合计 0、未覆盖 0，仅 DPS 35 条豁免需续期 → gate_verdict=PARTIAL（仅剩豁免续期说明）。子系统仓缺口只登记不代改。",
   "backfill": {
     "date": "2026-09-11",
     "system": "openllm",
@@ -794,6 +788,113 @@
       "ruff": {
         "command": "python -m ruff check --no-cache scripts/k07_endpoint_matrix.py scripts/k07_isolation_registry.py tests/unit/test_isolation_matrix_endpoints.py",
         "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+        "result": "All checks passed!",
+        "exit_code": 0
+      }
+    }
+  },
+  "openmemory_backfill": {
+    "date": "2026-09-12",
+    "system": "openmemory",
+    "action": "K07 端点过滤矩阵 8 条缺口补填（工作树，未提交）",
+    "repo": "D:\\Trae CN\\myproject\\Dev\\OpenMemory",
+    "base_evidence": "doc/test/evidence/s7/gate/k07-openapi/openmemory.openapi.json（30 路径 / 36 操作，HTTP 200）",
+    "matrix": "doc/design/OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md（内部 v1.1.0）+ scripts/api_baseline.json（32→40）",
+    "changed_files": [
+      "doc\\design\\OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md",
+      "scripts\\api_baseline.json",
+      "scripts\\k07_endpoint_matrix.py",
+      "tests\\unit\\test_isolation_matrix_endpoints.py"
+    ],
+    "classification": {
+      "exempt": [
+        "GET /health/liveness",
+        "GET /health/readiness"
+      ],
+      "business": [
+        "POST /api/v1/audio/transcribe",
+        "POST /api/v1/memories/remember-with-audio",
+        "GET /api/v1/orgs/{org_id}/permissions",
+        "GET /api/v1/orgs/{org_id}/roles",
+        "GET /api/v1/orgs/{org_id}/users/{user_id}/role",
+        "PUT /api/v1/orgs/{org_id}/users/{user_id}/role"
+      ],
+      "exempt_rationale": "/health/liveness、/health/readiness 为健康探针（IdentityGate _is_whitelisted startswith /health、RBAC _SKIP_PATHS、server.py:488-494）→ A 直连豁免（ticket=T-健康直连 / 审批人=S2-PMO / 复核 2026-09-11 / 到期 2026-12-31）。",
+      "business_rationale": "6 条不在 IdentityGate/RBAC 豁免白名单（_is_whitelisted 仅 /health* 与 /docs）→ 业务面，挂矩阵驱动隔离用例 IS-OM-R26~R31。"
+    },
+    "commit": null,
+    "commit_note": "沙箱拒写 .git/objects（insufficient permission for adding an object to repository database），git add 未成功；无 hash（禁伪造）；工作树保留，待可写环境提交。",
+    "suggested_commit_message": "docs(k07): OpenMemory 端点过滤矩阵 8 条缺口补填与隔离用例注册（缺口归零）",
+    "independent_verification": {
+      "date": "2026-09-12",
+      "method": "脚本解析独立复核（真实底单/矩阵/差集/豁免/门禁复跑/隔离用例/静态检查）",
+      "openapi_parse": {
+        "file": "doc/test/evidence/s7/gate/k07-openapi/openmemory.openapi.json",
+        "openapi_version": "3.1.0",
+        "paths": 30,
+        "operations": 36
+      },
+      "baseline_parse": {
+        "file": "scripts/api_baseline.json",
+        "entries": 40,
+        "sorted": true
+      },
+      "matrix_parse": {
+        "file": "doc/design/OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md（内部 v1.1.0）",
+        "total_rows": 40,
+        "covered": 31,
+        "exempt": 9,
+        "duplicate_keys": 0
+      },
+      "set_diff": {
+        "gap_real_minus_matrix": 0,
+        "extra_matrix_minus_real": 4,
+        "extra": [
+          "GET /docs",
+          "GET /docs/oauth2-redirect",
+          "GET /openapi.json",
+          "GET /redoc"
+        ]
+      },
+      "exemption_validity": {
+        "valid": 9,
+        "expires_at": "2026-12-31",
+        "ticket": "T-健康直连",
+        "approver": "S2-PMO",
+        "review_date": "2026-09-11"
+      },
+      "registry_ids": [
+        "IS-OM-R26",
+        "IS-OM-R27",
+        "IS-OM-R28",
+        "IS-OM-R29",
+        "IS-OM-R30",
+        "IS-OM-R31"
+      ],
+      "gate_rerun": {
+        "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenMemory",
+        "command": "python scripts\\k07_endpoint_matrix.py --verify --openapi \"<OpenBase>/doc/test/evidence/s7/gate/k07-openapi/openmemory.openapi.json\"",
+        "stdout": [
+          "ok=true missing_rows=[] uncovered_business=[] exemption_errors=[] isolation_missing=[]",
+          "total_rows=40 business_rows=31 exempt_rows=9"
+        ],
+        "exit_code": 0
+      },
+      "isolation_tests": {
+        "command": "pytest tests/unit/test_isolation_matrix_endpoints.py -q -p no:cacheprovider",
+        "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenMemory",
+        "result": "81 passed",
+        "exit_code": 0
+      },
+      "regression_group": {
+        "command": "pytest <K07/identity 25 文件> -q -p no:cacheprovider",
+        "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenMemory",
+        "result": "372 passed",
+        "exit_code": 0
+      },
+      "ruff": {
+        "command": "python -m ruff check --no-cache scripts tests src",
+        "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenMemory",
         "result": "All checks passed!",
         "exit_code": 0
       }

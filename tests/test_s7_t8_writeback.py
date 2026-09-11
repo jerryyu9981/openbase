@@ -274,7 +274,7 @@ def test_report_exists_with_metadata() -> None:
     text = _read_text(_REPORT)
     assert "OpenBase-S7-全域门禁与总收官报告-v1.0.0" in text
     assert re.search(r"\|\s*状态\s*\|\s*\[Review\]", text), "报告状态非 [Review]"
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.6\s*\|", text)
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.7\s*\|", text)
     assert "修订历史" in text
 
 

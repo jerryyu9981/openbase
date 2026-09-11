@@ -451,12 +451,12 @@
           "role": "filled",
           "path": "../OpenMemory/doc/design/OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md",
           "exists": true,
-          "rows": 32,
-          "covered": 25,
-          "exempt": 7,
+          "rows": 40,
+          "covered": 31,
+          "exempt": 9,
           "gap_count": 0,
           "status": "PASS",
-          "reason": ""
+          "reason": "OpenMemory 工作树全量补填（40 行 = 真实底单 36 操作 + 文档面合成 4；覆盖 31 / 豁免 9），缺口 0；隔离用例 81 passed；门禁 missing_rows=0 exit 0；待提交"
         },
         "dps": {
           "role": "filled",
@@ -471,8 +471,8 @@
         }
       },
       "real_face_status": "PARTIAL",
-      "evidence": "doc/test/evidence/s7/gate/k07-finalize.json（五实例 openapi 真实导出 + 逐仓逐行核对；OpenLLM 工作树补填，见 OpenLLM 侧 doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md 与 .matrix.json）",
-      "reason": "真实导出五实例 openapi（openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161）并与各仓填报矩阵逐行核对：OpenLLM 已于子系统仓工作树全量补填（缺口 344→0；矩阵 354 行 / 覆盖 349 / 豁免 5；隔离用例 767 passed；门禁 exit 0，沙箱拒写 .git/objects 未能 commit，待提交）；剩余缺口 8（仅 OpenMemory）；DPS 35 条豁免复核日 2026-09-10 早于终验日需续期 → 门禁 verdict=PARTIAL（OpenLLM 已补填/待提交，OpenMemory 与 DPS 豁免续期未处理）。",
+      "evidence": "doc/test/evidence/s7/gate/k07-finalize.json（五实例 openapi 真实导出 + 逐仓逐行核对；OpenLLM 与 OpenMemory 工作树补填，见各仓 doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md/.matrix.json 与 OpenMemory-K07-端点过滤矩阵填报-v1.0.0.md（内部 v1.1.0））",
+      "reason": "真实导出五实例 openapi（openbase 137 / openllm 351 / openrag 115 / openmemory 36 / dps 161）并与各仓填报矩阵逐行核对：OpenLLM 工作树全量补填（缺口 344→0；矩阵 354 行 / 覆盖 349 / 豁免 5；隔离用例 767 passed；门禁 exit 0）；OpenMemory 工作树全量补填（缺口 8→0；矩阵 32→40 行 / 覆盖 31 / 豁免 9；隔离用例 81 passed；门禁 missing_rows=0 exit 0）；两仓均因沙箱拒写 .git/objects 未能 commit，待提交。缺口合计 0、未覆盖 0；仅 DPS 35 条豁免复核日 2026-09-10 早于终验日需续期 → 门禁 verdict=PARTIAL（仅剩豁免续期说明）。",
       "pending_items": [
         {
           "id": "K07-REAL",
@@ -484,11 +484,11 @@
         },
         {
           "id": "K07-SUBREPO-GAP",
-          "item": "子系统仓 K07 矩阵补填报（OpenMemory 8；OpenLLM 已于工作树补填，待提交）",
+          "item": "子系统仓 K07 矩阵补填报（OpenMemory 8；OpenLLM 344）",
           "precondition": "子系统仓写权限（沙箱仅 OpenBase）",
-          "owner": "OpenMemory 仓（OpenLLM 补填已完成，待可写环境提交）",
-          "action": "OpenMemory 补填矩阵行 + 挂隔离用例后复跑真实终验；OpenLLM 提交工作树改动",
-          "status": "PENDING"
+          "owner": "OpenMemory 仓 / OpenLLM 仓（补填已完成，待可写环境提交）",
+          "action": "补填与隔离用例注册已完成（工作树），缺口合计 0；待可写环境提交两仓改动",
+          "status": "DONE"
         },
         {
           "id": "K07-OPENLLM-COMMIT",
@@ -515,17 +515,18 @@
         "gate_verdict": "PARTIAL",
         "summary": {
           "real_endpoints_total": 663,
-          "filled_rows_total": 676,
-          "gap_total": 8,
+          "filled_rows_total": 684,
+          "gap_total": 0,
           "uncovered_total": 0,
-          "exempt_total": 57,
-          "exempt_valid_total": 22,
+          "exempt_total": 59,
+          "exempt_valid_total": 24,
           "exempt_invalid_total": 35,
-          "gap_cleared": false,
+          "gap_cleared": true,
           "openllm_gap_cleared": true,
+          "openmemory_gap_cleared": true,
           "uncovered_cleared": true,
           "exemption_all_valid": false,
-          "exemption_note": "OpenLLM 5 条豁免在有效期且有审批（到期 2026-12-31）；DPS 35 条豁免复核日 2026-09-10 早于终验日需续期；剩余缺口仅 OpenMemory 8 条。"
+          "exemption_note": "OpenLLM 5 条与 OpenMemory 9 条豁免在有效期且有审批（到期 2026-12-31）；DPS 35 条豁免复核日 2026-09-10 早于终验日需续期；缺口合计 0（OpenLLM 344 + OpenMemory 8 均工作树补填，待提交）。"
         },
         "per_system": [
           {
@@ -581,13 +582,14 @@
             "system": "openmemory",
             "role": "filled",
             "real_endpoints": 36,
-            "filled_rows": 32,
-            "gap_count": 8,
+            "filled_rows": 40,
+            "gap_count": 0,
             "uncovered_count": 0,
-            "exempt_rows": 7,
-            "exempt_valid": 7,
+            "exempt_rows": 9,
+            "exempt_valid": 9,
             "exempt_invalid": 0,
-            "conclusion": "FAIL"
+            "conclusion": "PASS",
+            "status": "FILLED(worktree, uncommitted)"
           }
         ],
         "findings_count": 4
@@ -727,7 +729,7 @@
       "item": "K07/SYS-1 真实 openapi 全量导出 + 逐行终验",
       "precondition": "四仓运行态 + openapi 导出",
       "owner": "联调窗口",
-      "action": "已完成（B 面真实执行，见 k07-finalize.json）；结论 FAIL（子系统缺口），缺口移交子系统仓",
+      "action": "已完成（B 面真实执行，见 k07-finalize.json）；结论 PARTIAL（缺口 0/未覆盖 0；OpenLLM 与 OpenMemory 工作树补填待提交；仅 DPS 35 条豁免续期）",
       "status": "DONE"
     },
     {
@@ -735,8 +737,8 @@
       "item": "子系统仓 K07 矩阵补填报（OpenLLM 344 / OpenMemory 8）",
       "precondition": "子系统仓写权限（沙箱仅 OpenBase）",
       "owner": "OpenLLM / OpenMemory 仓",
-      "action": "补填矩阵行 + 挂隔离用例后复跑真实终验",
-      "status": "PENDING"
+      "action": "补填矩阵行 + 隔离用例注册已完成（工作树；缺口合计 0）；待可写环境提交；提交后复跑真实终验",
+      "status": "DONE"
     },
     {
       "id": "K07-DPS-EXEMPT-RENEW",
@@ -777,11 +779,11 @@
       "reason": "沙箱无真实 PG 时的批次串扰/环境性失败 → openbase_test 建库后主批次 0 失败关闭"
     }
   ],
-  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面已由联调窗口真实执行 K07/SYS-1 openapi 全量导出与逐行终验（k07-finalize.json）：OpenLLM 已于子系统仓工作树全量补填（缺口 344→0，隔离用例 767 passed，门禁 exit 0，沙箱拒写 .git/objects 未能 commit，待可写环境提交）；剩余缺口合计 8（仅 OpenMemory）、未覆盖 0、DPS 35 条豁免复核日早于终验日需续期 → 门禁 verdict=PARTIAL。子系统仓缺口只登记不代改。其余 A 面分项仍 PASS。",
+  "note": "A 面（结构对账 + 既有 pytest 选择器）沙箱内真实执行；B 面已由联调窗口真实执行 K07/SYS-1 openapi 全量导出与逐行终验（k07-finalize.json）：OpenLLM（缺口 344→0，隔离用例 767 passed，门禁 exit 0）与 OpenMemory（缺口 8→0，矩阵 32→40，隔离用例 81 passed，门禁 missing_rows=0 exit 0）均已于子系统仓工作树全量补填，因沙箱拒写 .git/objects 未能 commit，待可写环境提交；缺口合计 0、未覆盖 0、仅 DPS 35 条豁免复核日早于终验日需续期 → 门禁 verdict=PARTIAL（仅剩豁免续期说明）。子系统仓缺口只登记不代改。其余 A 面分项仍 PASS。",
   "k07_finalize_ref": "doc/test/evidence/s7/gate/k07-finalize.json",
   "k07_backfill": {
-    "date": "2026-09-11",
-    "summary": "OpenLLM K07 全量补填（工作树，待提交）；缺口 344→0；剩余缺口 8（OpenMemory）；gate_verdict FAIL→PARTIAL",
+    "date": "2026-09-12",
+    "summary": "OpenLLM（缺口 344→0）与 OpenMemory（缺口 8→0）K07 全量补填（工作树，待提交）；缺口合计 0；gate_verdict 维持 PARTIAL（仅剩 DPS 35 条豁免续期）",
     "openllm": {
       "rows": 354,
       "covered": 349,
@@ -789,6 +791,16 @@
       "gap": 0,
       "uncovered": 0,
       "exemption_valid": 5,
+      "status": "FILLED(worktree, uncommitted)"
+    },
+    "openmemory": {
+      "rows": 40,
+      "covered": 31,
+      "exempt": 9,
+      "gap": 0,
+      "uncovered": 0,
+      "exemption_valid": 9,
+      "isolation_tests": "81 passed",
       "status": "FILLED(worktree, uncommitted)"
     }
   }
