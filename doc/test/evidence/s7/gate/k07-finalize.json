@@ -611,7 +611,7 @@
       "suggestion": "维护要求：豁免到期前（2026-12-31）重新复核并续期；DPS 侧生成模板 `scripts/k07_endpoint_matrix.py:324` 的默认文案仍为旧复核日（该文件受本执行环境写入限制未同步），建议在 DPS 仓内同步更新模板文案，避免下次重建填报时回退。",
       "status": "CLOSED",
       "resolved_at": "2026-09-12",
-      "resolution": "已续期：DPS 填报文档 35 条豁免行「到期/复核」由 2026-09-10 更新为**续期至 2026-12-31**（续期日 2026-09-12），并复跑 DPS 门禁 `scripts/k07_endpoint_matrix.py --check` → `total=169 covered=134 exempt=35 / gaps=0 uncovered=0 exemption_without_approval=0 / exit 0`。"
+      "resolution": "已续期：DPS 填报文档 35 条豁免行「到期/复核」由 2026-09-10 更新为**续期至 2026-12-31**（续期日 2026-09-12），并复跑 DPS 门禁 `scripts/k07_endpoint_matrix.py --check` → `total=169 covered=134 exempt=35 / gaps=0 uncovered=0 exemption_without_approval=0 / exit 0`。 **入库确认（2026-09-13）**：DPS 仓提交 `b5f5c06`（`docs(k07): DPS 端点过滤矩阵 35 条豁免续期至 2026-12-31（S7 终验续期，门禁复跑 exit 0）`），三远端 `ls-remote` 与本地 HEAD 一致。"
     },
     {
       "id": "K07-GAP-OPENLLM",
@@ -718,7 +718,7 @@
       "item": "DPS 35 条豁免续期复核（回填未来到期日）",
       "owner": "DPS 仓",
       "status": "DONE",
-      "action": "已续期至 2026-12-31（续期日 2026-09-12）并复跑门禁 exit 0；DPS 工作树待提交（提交脚本就绪）"
+      "action": "已续期至 2026-12-31（续期日 2026-09-12）并复跑门禁 exit 0；**DPS 仓已提交 `b5f5c06`（2026-09-13，3 文件 = 填报矩阵 + 一键提交脚本 2），origin/backup/github 三远端 `ls-remote` 与本地 HEAD 一致**"
     }
   ],
   "note": "真实导出与逐行核对（B 面）已真实执行；缺口/未覆盖/无效豁免逐条登记，禁伪造。**收口（2026-09-12）**：缺口合计 0（OpenLLM 344→0 已提交 `41af780`、OpenMemory 8→0 已提交 `0a6f351`，均三远端同步）、未覆盖 0、豁免 59 条全部在有效期且有审批（DPS 35 条已于 2026-09-12 续期至 2026-12-31，门禁复跑 exit 0，DPS 工作树待提交）→ `gate_verdict=PASS`，K07/SYS-1 三项判定全部满足。子系统仓文件由各仓自行提交，本仓只登记不代改。",
@@ -908,5 +908,23 @@
       }
     },
     "status": "COMMITTED"
+  },
+  "dps_exemption_commit": {
+    "hash": "b5f5c06",
+    "date": "2026-09-13",
+    "branch": "main",
+    "files": 3,
+    "file_list": [
+      "doc/design/DPS-K07-端点过滤矩阵填报-v1.0.0.md",
+      "scripts/dps_k07_exempt_commit_push.ps1",
+      "dps-k07-commit-push.bat"
+    ],
+    "remotes": [
+      "origin",
+      "backup",
+      "github"
+    ],
+    "remotes_in_sync": true,
+    "message": "docs(k07): DPS 端点过滤矩阵 35 条豁免续期至 2026-12-31（S7 终验续期，门禁复跑 exit 0）"
   }
 }

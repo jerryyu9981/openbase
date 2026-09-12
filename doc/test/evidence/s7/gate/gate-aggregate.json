@@ -611,7 +611,7 @@
           "item": "DPS 35 条豁免续期复核（回填未来到期日）",
           "precondition": "DPS 仓写权限",
           "owner": "DPS 仓",
-          "action": "已续期至 2026-12-31（续期日 2026-09-12）并复跑 DPS 门禁 exit 0；工作树待提交（提交脚本就绪）",
+          "action": "已续期至 2026-12-31（续期日 2026-09-12）并复跑门禁 exit 0；DPS 仓已提交 `b5f5c06`（2026-09-13），三远端同步",
           "status": "DONE"
         }
       ],
@@ -889,7 +889,7 @@
       "status": "DONE"
     }
   ],
-  "note": "A 面（结构对账 + 既有 pytest 选择器 + 主批次分组复跑）本批沙箱内真实执行（overall=PASS / pass=20 / fail=0 / pending=2）；B 面 K07/SYS-1 已由联调窗口真实执行并闭环（k07-finalize.json：缺口 0 / 未覆盖 0 / 豁免 59 全有效 → verdict=PASS；OpenLLM `41af780` 与 OpenMemory `0a6f351` 补填已提交三远端同步；DPS 35 条豁免 2026-09-12 续期至 2026-12-31）；冒烟 S0-S6 真实执行按 v4 快照登记（26 PASS / 0 FAIL / 6 BLOCKED，环境侧写限制与特性缺口已登记），门禁项②仍为 PENDING （不阻断，按挂起口径批准）。",
+  "note": "A 面（结构对账 + 既有 pytest 选择器 + 主批次分组复跑）本批沙箱内真实执行（overall=PASS / pass=20 / fail=0 / pending=2）；B 面 K07/SYS-1 已由联调窗口真实执行并闭环（k07-finalize.json：缺口 0 / 未覆盖 0 / 豁免 59 全有效 → verdict=PASS；OpenLLM `41af780` 与 OpenMemory `0a6f351` 补填已提交三远端同步；DPS 35 条豁免 2026-09-12 续期至 2026-12-31，已于 2026-09-13 提交 `b5f5c06` 三远端同步）；冒烟 S0-S6 真实执行按 v4 快照登记（26 PASS / 0 FAIL / 6 BLOCKED，环境侧写限制与特性缺口已登记），门禁项②仍为 PENDING （不阻断，按挂起口径批准）。",
   "k07_finalize_ref": "doc/test/evidence/s7/gate/k07-finalize.json",
   "k07_backfill": {
     "date": "2026-09-12",
@@ -918,7 +918,16 @@
       "exemption_valid": 35,
       "renewed_at": "2026-09-12",
       "renewed_to": "2026-12-31",
-      "gate_rerun": "total=169 covered=134 exempt=35 / gaps=0 uncovered=0 / exit 0"
+      "gate_rerun": "total=169 covered=134 exempt=35 / gaps=0 uncovered=0 / exit 0",
+      "commit": "b5f5c06",
+      "commit_date": "2026-09-13",
+      "remotes": [
+        "origin",
+        "backup",
+        "github"
+      ],
+      "remotes_in_sync": true,
+      "status": "COMMITTED"
     }
   },
   "smoke_baseline_ref": "doc/test/evidence/s7/smoke/smoke-summary-v4.json"

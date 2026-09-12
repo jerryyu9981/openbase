@@ -280,11 +280,12 @@ def test_clearance_checklist_approved_with_four_repo_registration() -> None:
 
 
 def test_report_corrected_four_repos_archived() -> None:
-    """总收官报告内部版本升 v1.0.8（K07 门禁收口回填），且不再保留「未入仓」过时口径."""
+    """总收官报告内部版本升 v1.0.9（DPS 豁免续期入库回填），且不再保留「未入仓」过时口径."""
     assert _REPORT.exists(), _REPORT
     text = _read_text(_REPORT)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.8\s*\|", text), "总收官报告未升内部 v1.0.8"
-    assert re.search(r"\|\s*v1\.0\.8\s*\|\s*2026-09-12\s*\|", text), "修订历史缺少 v1.0.8 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.0\.9\s*\|", text), "总收官报告未升内部 v1.0.9"
+    assert re.search(r"\|\s*v1\.0\.9\s*\|\s*2026-09-13\s*\|", text), "修订历史缺少 v1.0.9 条目"
+    assert re.search(r"\|\s*v1\.0\.8\s*\|\s*2026-09-12\s*\|", text), "修订历史缺少 v1.0.8 条目（历史保留）"
     assert re.search(r"\|\s*v1\.0\.7\s*\|\s*2026-09-12\s*\|", text), "修订历史缺少 v1.0.7 条目（历史保留）"
     assert re.search(r"\|\s*v1\.0\.6\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.6 条目（历史保留）"
     assert re.search(r"\|\s*v1\.0\.5\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.0.5 条目（历史保留）"
