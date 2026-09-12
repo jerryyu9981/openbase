@@ -3,12 +3,12 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-U1-DEVLOG-v1.0.0 |
-| 版本 | v1.0.0 |
-| 状态 | [Review]（T1~T6 开发完成 + T7 兼容回归收口 + T8 文档与段门禁；待测试回溯与人工批准进入 S1a 收官/部署） |
+| 版本 | v1.0.1 |
+| 状态 | [Review]（T1~T6 开发完成 + T7 兼容回归收口 + T8 文档与段门禁；待测试回溯与人工批准进入 S1a 收官/部署；**v1.0.1：初始化链漂移根治——`init_database()` 内联身份幂等迁移 + 建库 runner fail-loud 守卫**） |
 | 日期 | 2026-09-07 |
 | 作者 | U1 开发组（OpenBase 主仓） |
 | 存放 | doc/development/ |
-| 版本主题 | U1（S1a OpenBase 身份主线段）T1~T6 开发记录（RED/GREEN、改动文件、提交链、回归 407 passed、覆盖率与缺口 R3 登记）+ T7/T8 收口（兼容回归、迁移幂等重放、追溯矩阵、S1a 段门禁四项核对结论） |
+| 版本主题 | U1（S1a OpenBase 身份主线段）T1~T6 开发记录（RED/GREEN、改动文件、提交链、回归 407 passed、覆盖率与缺口 R3 登记）+ T7/T8 收口（兼容回归、迁移幂等重放、追溯矩阵、S1a 段门禁四项核对结论；**v1.0.1 追加：初始化链漂移根治（§13）**） |
 | 适用范围 | OpenBase 主仓（openbase/、tests/、doc/、仓根 U1 立项与设计文档回写） |
 | 上游依据 | 《OpenBase-U1-统一身份收口立项方案》v1.1.0（v1.0.0 §3 T1~T8 / §4 验收 / §8 门禁）；《OpenBase-U1-统一身份收口设计草案》v1.1.0（v1.0.0 §11 T1~T8 RED 断言）；《OpenBase-多系统联调联试分阶段版本规划（子系统纵切）》v1.3.0（S1a 门禁四项）；《OpenBase-数据隔离实现任务卡》v1.2.0（RA-01/RA-02/K04/K08） |
 
@@ -19,6 +19,7 @@
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-07 | U1 开发组 | 初始版本：T1~T6 逐任务 RED/GREEN 摘要与改动文件、提交链（c1869bf→52a4792）、T7 兼容回归（分组 407 passed/4 skipped）、迁移幂等重放验证、覆盖率与覆盖缺口 R3 登记、T1~T8 追溯矩阵、S1a 段门禁四项核对、遗留项登记（含 S1b P2-1 移交） |
+| v1.0.1 | 2026-09-12 | U1 维护组（OpenBase 主仓） | **初始化链漂移根治（`init_database()` 内联身份幂等迁移）**：根因＝`init_database()`（应用启动 `demo_app._try_database_init` 与 `scripts/db/init_openbase_test.ps1` runner 的唯一入口）只做 `create_all` + 种子，U1 身份幂等增量迁移（users 7 列 / `agent_api_keys` / `identity:*` 权限点）需另行调用 → 经该入口建库/初始化的库漏迁移（U1-T7 漂移：存量库 users 缺列）。修复＝在 `init_database()` 末尾内联 `await apply_identity_migration(engine, schema)`（延迟导入避免 core ↔ modules 循环依赖；幂等可重放），并把建库 runner 追加 **fail-loud 守卫**（校验 U1 身份 7 列齐备，缺失即 `sys.exit(3)`），使初始化链永不再漏迁移；TDD：`tests/test_db_init.py::test_init_database_applies_identity_migration`（RED→GREEN）。代码提交 `19123fe` |
 
 ---
 
@@ -240,3 +241,47 @@ U1 identity 模块实测（全仓分组聚合口径）：
 
 - 本报告与 U1 测试报告（doc/test）配套进入测试回溯（测试报告回溯覆盖立项 §4 全部验收项后人工批准进入部署）。
 - 提交链：T1~T6（c1869bf → 52a4792）；T7 代码小项提交（fix(identity): U1 T7 …）与 T7/T8 文档提交（docs(identity): U1 T7/T8 …）见 git log（T7/T8 两提交 hash 在交付说明返回；本文件所在提交即文档提交）。
+
+## 13. 漂移根治（v1.0.1，2026-09-12）：初始化链内联身份幂等迁移
+
+### 13.1 根因（漂移链）
+
+`init_database()`（`openbase/core/db/init.py`）是 OpenBase 建库/初始化的**唯一入口**——应用启动
+（`openbase/demo_app.py::_try_database_init` → `init_database(engine, settings.db_schema)`）与测试库建库
+（`scripts/db/init_openbase_test.ps1` 的 `PyMigrateRunner` → `init_database(engine, "openbase")`）均经此入口。
+但该入口此前**只执行 `create_tables`（`create_all`）+ 基础种子数据**，U1 身份幂等增量迁移
+（`openbase/modules/identity/migration.py::apply_identity_migration`：users 7 列 ALTER + 存量回填 +
+`agent_api_keys` 建表 + `identity:*` 权限点种子）**需另行调用**。
+
+后果：任何经该入口新建或初始化的库都不会补齐身份面结构 → 存量库 users 缺列（U1-T7 登记漂移），
+表现为身份/审计链路在缺列库上运行时报列不存在，且需人工补跑迁移才能恢复。
+
+### 13.2 修复（内联 + 守卫，双保险）
+
+| 项 | 位置 | 内容 |
+|----|------|------|
+| 内联迁移（根治） | `openbase/core/db/init.py::init_database` 末尾 | `await apply_identity_migration(engine, schema)` —— 初始化链固定为 `create_tables → 基础种子 → apply_identity_migration`；**延迟导入**（函数内 import）避免 `core` ↔ `modules` 模块级循环依赖，并只在真实初始化时付导入开销；迁移幂等（已生效则 `columns_added=[]`），可重复调用 |
+| 迁移链守卫（fail-loud） | `scripts/db/init_openbase_test.ps1` `PyMigrateRunner` | 迁移后读取 `users` 列集合，校验 U1 身份 7 列（`subject_type` / `credential_type` / `status_state` / `status_reason` / `token_version` / `tenant_code` / `on_behalf_of`）齐备；缺失即打印 `[migrate][ERROR]` 并以 `sys.exit(3)` 非零退出（脚本随即 `exit 2`），杜绝漂移被静默放过 |
+| 计划文案同步 | 同上 §plan [4/4] | 由「create_all 幂等，WHERE NOT EXISTS 兜底」更正为「create_all 幂等 + 内联 apply_identity_migration + 迁移后守卫 U1 身份 7 列」 |
+
+### 13.3 TDD 与验证
+
+| 项 | 内容 |
+|----|------|
+| RED | `tests/test_db_init.py::test_init_database_applies_identity_migration`（断言：迁移被调用且仅一次、`schema` 透传、复用同一 `engine`、顺序为 `create_tables → 种子 SQL → apply_identity_migration`）——实现前失败（`len(calls) == 0`） |
+| GREEN | 内联后通过；同文件既有 `test_init_database_seed_sql` 同步补 stub（该用例只校验种子 SQL，迁移由新用例覆盖），`tests/test_db_init.py` + `test_demo_app.py` 5 passed |
+| 静态检查 | `python -m ruff check openbase tests` → All checks passed |
+| 回归 | `tests/test_db_init.py` / `test_demo_app.py` / `test_db_modules.py` / `test_identity_t1.py` / `test_identity_t2.py` → 33 passed；分组全量回归 `python scripts/run_regression.py --group-size 6`（65 文件 / 11 组）在本批提交时点已跑 6/11 组：**291 passed / 0 failed**（含 `test_db_init`（28）与 `test_demo_app`（68）所在组、`test_identity_t1~t3`（73）、`test_identity_t4~t6`（71）等全部相关组），其余组后台续跑（日志留档；**未跑完的组不作为通过依据**） |
+| runner 校验 | 内嵌 `PyMigrateRunner` 片段语法编译通过（45 行；含内联迁移、7 列守卫、非零退出标记）；`init_openbase_test.ps1 -DryRun` 计划输出正确（真实建库仍属 B 面，登记 PENDING） |
+
+### 13.4 改动文件
+
+- `openbase/core/db/init.py`（`init_database` 末尾内联迁移 + docstring 明确初始化链）
+- `tests/test_db_init.py`（新增漂移防护用例 + 既有种子用例 stub 化）
+- `scripts/db/init_openbase_test.ps1`（runner fail-loud 守卫 + 计划文案同步）
+
+### 13.5 提交与边界
+
+- 代码提交：`19123fe`（`fix(db): init_database 末尾内联身份幂等迁移，根治初始化链漏迁移`）；本报告所在提交为文档提交。
+- 边界：本项只改 OpenBase 主仓；**未改动四子系统仓**；真实建库/授权/迁移执行仍属 B 面（联调窗口），
+  本批仅完成代码链路收口 + 守卫，不做真实库写操作。
