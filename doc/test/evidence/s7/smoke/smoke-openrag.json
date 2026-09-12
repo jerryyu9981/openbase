@@ -1,13 +1,13 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "tool": "smoke",
   "mode": "real",
   "subsystem": "openrag",
-  "generated_at": "2026-09-12T16:39:03+08:00",
-  "openbase_commit": "f22a13e968ba7ab9bcd891f474657d7ec42d63bc",
-  "openbase_head_short": "f22a13e",
+  "generated_at": "2026-09-12T19:24:25+08:00",
+  "openbase_commit": "90a0f1e58748c52431f9c29894b3738aa8e91c8e",
+  "openbase_head_short": "90a0f1e",
   "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
-  "repair_context": "F-2（collections.tenant_code PG 迁移）与 F-3（TRUSTED_PROXY_SOURCES=openbase-llm-proxy，OpenLLM 已重启 /health 200）修复后重跑",
+  "repair_context": "环境已修复：三上游地址对齐且 /openllm/v1/health 三上游 ok；三真实开关全开；默认模型 qwen3:0.6b；语义缓存 Redis；LLM 主链路恢复",
   "summary": {
     "total": 6,
     "PASS": 5,
@@ -23,15 +23,15 @@
         "method": "GET",
         "url": "http://127.0.0.1:8010/openrag/endpoints",
         "headers": {
-          "X-API-Key": "***REDACTED***",
-          "Content-Type": "application/json"
+          "X-API-Key": "***REDACTED***"
         }
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "contains_text_endpoint=True",
+      "evidence": "contains_documents_text=True; body={\"code\":0,\"message\":\"ok\",\"data\":[{\"method\":\"GET\",\"path\":\"/api/v1/collections\",\"auth_required\":true},{\"method\":\"POST\",\"path\":\"/api/v1/collections\",\"auth_required\":true},{\"method\":\"DELETE\",\"path\":\"/api/v1/collections/{collection_id}\",\"auth_required\":true},{\"method\":\"GET\",\"path\":\"/api/v1/collections/{c",
       "root_cause": "",
-      "v2_verdict": "PASS"
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
     },
     {
       "id": "S1-1",
@@ -39,17 +39,14 @@
       "priority": "P0",
       "request": {
         "method": "GET",
-        "url": "http://127.0.0.1:8010/api/v1/collections（无/有 X-API-Key）；http://127.0.0.1:8020/api/v1/sessions（无/有 X-API-Key）",
-        "headers": {
-          "X-API-Key": "***REDACTED***",
-          "Content-Type": "application/json"
-        }
+        "url": "http://127.0.0.1:8010/api/v1/collections（无/有 X-API-Key）；http://127.0.0.1:8020/api/v1/sessions（无/有 X-API-Key）"
       },
       "status_code": 200,
       "verdict": "PASS",
       "evidence": "RAG no-key=401, key=200; MEM no-key=401, key=200",
       "root_cause": "",
-      "v2_verdict": "FAIL"
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
     },
     {
       "id": "S3-1",
@@ -58,19 +55,16 @@
       "request": {
         "method": "POST/GET",
         "url": "http://127.0.0.1:8010/api/v1/collections",
-        "headers": {
-          "X-API-Key": "***REDACTED***",
-          "Content-Type": "application/json"
-        },
         "body": {
-          "name": "smoke_kb_f7b0c275"
+          "name": "smoke_kb_20260912192112"
         }
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "create=200 cid=1a91f7ea-ae1a-4a3f-8fb5-186a481626ca; list=200",
+      "evidence": "create=200 cid=49009904-8b2d-4250-a392-317140a9b427; list=200; retrieve=200",
       "root_cause": "",
-      "v2_verdict": "FAIL"
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
     },
     {
       "id": "S3-2",
@@ -79,19 +73,16 @@
       "request": {
         "method": "POST/GET",
         "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/documents/text",
-        "headers": {
-          "X-API-Key": "***REDACTED***",
-          "Content-Type": "application/json"
-        },
         "body": {
-          "content": "<smoke text>"
+          "content": "<smoke v4 文本>"
         }
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "submit=200 status=PENDING doc=3fb15edd-0278-45f9-8e8a-3bbb4575b022; 轮询=COMPLETED; 幂等 doc=3fb15edd-0278-45f9-8e8a-3bbb4575b022",
+      "evidence": "submit=200 status0=PENDING doc=37077216-5e18-436b-859b-b69636ead23a; 轮询=COMPLETED; 重复 content 幂等 doc2=37077216-5e18-436b-859b-b69636ead23a 幂等=True",
       "root_cause": "",
-      "v2_verdict": "FAIL"
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
     },
     {
       "id": "S3-3",
@@ -100,20 +91,17 @@
       "request": {
         "method": "POST",
         "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/query/retrieve",
-        "headers": {
-          "X-API-Key": "***REDACTED***",
-          "Content-Type": "application/json"
-        },
         "body": {
-          "query": "<smoke text>",
+          "query": "<smoke v4 文本>",
           "top_k": 5
         }
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "retrieve=200 items=1 命中=True",
+      "evidence": "retrieve=200；COMPLETED 后立即检索 items=0（索引传播窗口），延迟重试 items=1 命中=True （chunk_id=71d8d865-19ea-4fd8-9255-c2eda1664791 document_id=37077216-5e18-436b-859b-b69636ead23a score=0.0164）。属向量索引传播时序抖动（非确定性缺陷），登记“COMPLETED 后延迟/重试检索”策略。",
       "root_cause": "",
-      "v2_verdict": "FAIL"
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
     },
     {
       "id": "S3-4",
@@ -121,13 +109,14 @@
       "priority": "P0",
       "request": {
         "method": "POST",
-        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat（rag 组件）"
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat（rag 组件）+ OpenLLM writeback"
       },
-      "status_code": 500,
+      "status_code": 200,
       "verdict": "BLOCKED",
-      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:49.737085+00:00\"}",
-      "root_cause": "主通道未成功（Ollama 不可达 + OpenLLM rag client 未注入）→ 写侧 rag 沉淀无法验证",
-      "v2_verdict": "BLOCKED"
+      "evidence": "chat=200(预热1次); 集合文档数 before=1 after=1; writeback rag=500 {\"code\":5001,\"message\":\"回写队列不可用，请稍后重试\",\"request_id\":\"openllm-wb-96d5e28450eb4461b5888faf\"}",
+      "root_cause": "回写队列不可用（受限环境 SQLite WAL 写失败）→ 沉淀端到端阻塞",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "openrag"
     }
   ]
 }

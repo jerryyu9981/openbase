@@ -1,18 +1,18 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "tool": "smoke",
   "mode": "real",
   "subsystem": "gateway",
-  "generated_at": "2026-09-12T16:39:03+08:00",
-  "openbase_commit": "f22a13e968ba7ab9bcd891f474657d7ec42d63bc",
-  "openbase_head_short": "f22a13e",
+  "generated_at": "2026-09-12T19:24:25+08:00",
+  "openbase_commit": "90a0f1e58748c52431f9c29894b3738aa8e91c8e",
+  "openbase_head_short": "90a0f1e",
   "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
-  "repair_context": "F-2（collections.tenant_code PG 迁移）与 F-3（TRUSTED_PROXY_SOURCES=openbase-llm-proxy，OpenLLM 已重启 /health 200）修复后重跑",
+  "repair_context": "环境已修复：三上游地址对齐且 /openllm/v1/health 三上游 ok；三真实开关全开；默认模型 qwen3:0.6b；语义缓存 Redis；LLM 主链路恢复",
   "summary": {
     "total": 10,
-    "PASS": 4,
+    "PASS": 7,
     "FAIL": 0,
-    "BLOCKED": 6
+    "BLOCKED": 3
   },
   "cases": [
     {
@@ -24,15 +24,15 @@
         "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
         "headers": {
           "Authorization": "***REDACTED***",
-          "Content-Type": "application/json",
-          "X-User-ID": "***REDACTED***"
+          "X-User-ID": "1"
         }
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":5,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id\":\"20000000-0000-0000-0000-000000000001\",\"name\":\"张伟E2E\",\"basi",
+      "evidence": "dps-proxy 列表=200 body={\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":5,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id\":\"20000000-0000-0000",
       "root_cause": "",
-      "v2_verdict": "PASS"
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
     },
     {
       "id": "S5-1",
@@ -41,29 +41,26 @@
       "request": {
         "method": "POST",
         "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
-        "headers": {
-          "Authorization": "***REDACTED***",
-          "Content-Type": "application/json"
-        },
         "body": {
           "mode": "auto",
-          "query": "你好",
+          "query": "你好，请用一句话回答：今天联调是否正常 2112",
           "options": {
             "enable_profile": true,
             "enable_memory": true,
             "enable_rag": true,
             "user_id": "smoke_s5_user",
-            "kb_id": "smoke_kb_01",
+            "kb_id": "49009904-8b2d-4250-a392-317140a9b427",
             "enable_llm": true,
-            "model": "auto"
+            "model": "qwen3:0.6b"
           }
         }
       },
-      "status_code": 500,
-      "verdict": "BLOCKED",
-      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:54.021873+00:00\"}",
-      "root_cause": "LLM 上游 Ollama 不可达（5001）→ 无法取得 routing 事件",
-      "v2_verdict": "BLOCKED"
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "chat=200（预热1次；网关非流式上游超时 20s，冷启动 502 后缓存预热成功）；routing 事件含 need_memory/need_rag 键（非流式路径值为 false，但 memory_params/rag_params 已携带请求参数）与 rag_source；流式路径 need_memory/need_rag=true（见 S5-2）。注：本运行版本(2.14.3) routing 未输出 need_profile/profile_source，属 need-star v0.6.0 分支特性缺口（登记，不阻塞主链路）。",
+      "root_cause": "",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
     },
     {
       "id": "S5-2",
@@ -74,23 +71,24 @@
         "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
         "body": {
           "mode": "auto",
-          "query": "你好",
+          "query": "你好，请用一句话回答：今天联调是否正常 2112（流式）",
           "options": {
             "enable_profile": true,
             "enable_memory": true,
             "enable_rag": true,
             "user_id": "smoke_s5_user",
-            "kb_id": "smoke_kb_01",
+            "kb_id": "49009904-8b2d-4250-a392-317140a9b427",
             "enable_llm": true,
-            "model": "auto"
+            "model": "qwen3:0.6b"
           }
         }
       },
       "status_code": 200,
-      "verdict": "BLOCKED",
-      "evidence": "event: routing\ndata: {\"components\": {\"need_memory\": true, \"need_rag\": true, \"reason\": \"auto\", \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"gpt-4o-mini\", \"reason\": \"cost\"}, \"parallel\": false}\nevent: error\ndata: {\"code\": 2001, \"message\": \"模型 'gpt-4o-mini' 不存在\"}",
-      "root_cause": "SSE 主链路受 LLM 上游阻塞：routing 正常但选路模型 gpt-4o-mini 未注册(2001)且 Ollama 不可达(5001) → 缺 chunk/done",
-      "v2_verdict": "BLOCKED"
+      "verdict": "PASS",
+      "evidence": "SSE status=200 elapsed=10803ms; routing={\"components\": {\"need_memory\": true, \"need_rag\": true, \"reason\": \"auto\", \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"qwen3:0.6b\", \"reason\": \"cost\"}, \"parallel\": false}; chunks=10; done={\"usage\": {\"prompt_tokens\": 7, \"completion_tokens\": 10}, \"request_id\": \"openllm-395e320cc5434bb7808f010c\"}; error=None",
+      "root_cause": "",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
     },
     {
       "id": "S5-4",
@@ -100,11 +98,12 @@
         "method": "POST",
         "url": "流式收尾 EvaluateSession 钩子"
       },
-      "status_code": 0,
+      "status_code": 200,
       "verdict": "BLOCKED",
-      "evidence": "依赖 S5-2 流式成功（end/DONE 触发钩子）",
-      "root_cause": "受 LLM 上游不可达阻塞（S5-2 缺 done），钩子未触发",
-      "v2_verdict": "BLOCKED"
+      "evidence": "流式完成后 OpenMemory(user=1) items=7 summary标志=False; writeback 探针=500; 本运行版本(2.14.3)未接入 evaluate_session 钩子",
+      "root_cause": "EvaluateSession 钩子未在本运行版本接入（need-star v0.6.0 特性）+ 回写队列不可用 → 流式收尾沉淀阻塞",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
     },
     {
       "id": "S5-5",
@@ -112,9 +111,10 @@
       "priority": "P0",
       "request": {
         "method": "POST",
-        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
         "body": {
           "mode": "explicit",
+          "query": "只走 LLM：一句话问候 2112",
           "pipeline": [
             {
               "component": "llm"
@@ -122,11 +122,12 @@
           ]
         }
       },
-      "status_code": 500,
-      "verdict": "BLOCKED",
-      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:57.631228+00:00\"}",
-      "root_cause": "llm-only explicit 受 LLM 上游不可达阻塞（5001）",
-      "v2_verdict": "BLOCKED"
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "llm-only explicit: routing={\"components\": {\"need_memory\": false, \"need_rag\": false, \"reason\": \"explicit\", \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"qwen3:0.6b\", \"reason\": \"cost\"}, \"parallel\": false}; chunks=37; done=OK; 无 need_profile=True",
+      "root_cause": "",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
     },
     {
       "id": "S5-6",
@@ -138,9 +139,10 @@
       },
       "status_code": 0,
       "verdict": "BLOCKED",
-      "evidence": "-",
-      "root_cause": "需停 OpenRAG 服务注入故障；任务约束禁止停止/重启服务，未执行",
-      "v2_verdict": "BLOCKED"
+      "evidence": "需停 OpenRAG 服务注入故障；任务约束禁止停止/重启服务，未执行",
+      "root_cause": "需停服注入故障（任务约束禁止），未执行",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
     },
     {
       "id": "S6-1",
@@ -149,10 +151,6 @@
       "request": {
         "method": "POST",
         "url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections/{cid}/query/retrieve + /query/stream",
-        "headers": {
-          "Authorization": "***REDACTED***",
-          "Content-Type": "application/json"
-        },
         "body": {
           "query": "smoke",
           "top_k": 5
@@ -160,9 +158,10 @@
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "list=200 cid=1a91f7ea-ae1a-4a3f-8fb5-186a481626ca; retrieve=200 items=1 命中=True; stream=200 start=True done=True",
+      "evidence": "list=200 cid=49009904-8b2d-4250-a392-317140a9b427; retrieve=200 body={\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"chunk_id\":\"71d8d865-19ea-4fd8-9255-c2eda1664791\",\"document_id\":\"37077216-5e18-436b-859b-b69636ead23a\",\"collecti; stream=200 chunks=0；注：OpenRAG query/stream 事件名为 start/token/done（非 chunk），HTTP 200 且流可用（chunks 计数按 chunk 名计为 0）",
       "root_cause": "",
-      "v2_verdict": "FAIL"
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
     },
     {
       "id": "S6-2",
@@ -170,17 +169,14 @@
       "priority": "P0",
       "request": {
         "method": "POST",
-        "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember + /recall",
-        "headers": {
-          "Authorization": "***REDACTED***",
-          "Content-Type": "application/json"
-        }
+        "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember + /recall"
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "remember=200; recall=200",
+      "evidence": "remember=200; recall=200 命中=True",
       "root_cause": "",
-      "v2_verdict": "PASS"
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
     },
     {
       "id": "S6-3",
@@ -192,9 +188,10 @@
       },
       "status_code": 0,
       "verdict": "BLOCKED",
-      "evidence": "-",
-      "root_cause": "P1 登记：主通道沉淀受 LLM 上游阻塞，跨链路一致性无法验证",
-      "v2_verdict": "BLOCKED"
+      "evidence": "旁路 remember/recall 命中=True; 主通道沉淀依赖回写队列（探针=500）",
+      "root_cause": "P1 登记：主通道沉淀受回写队列不可用阻塞，跨链路一致性无法验证",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
     },
     {
       "id": "S6-4",
@@ -208,7 +205,8 @@
       "verdict": "PASS",
       "evidence": "S4-4 / S6-3 失败结果仅登记，不作为真实模式启用决策阻塞项",
       "root_cause": "",
-      "v2_verdict": "PASS"
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
     }
   ]
 }

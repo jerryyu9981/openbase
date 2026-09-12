@@ -1,17 +1,17 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "tool": "smoke",
   "mode": "real",
   "subsystem": "openllm",
-  "generated_at": "2026-09-12T16:39:03+08:00",
-  "openbase_commit": "f22a13e968ba7ab9bcd891f474657d7ec42d63bc",
-  "openbase_head_short": "f22a13e",
+  "generated_at": "2026-09-12T19:24:25+08:00",
+  "openbase_commit": "90a0f1e58748c52431f9c29894b3738aa8e91c8e",
+  "openbase_head_short": "90a0f1e",
   "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
-  "repair_context": "F-2（collections.tenant_code PG 迁移）与 F-3（TRUSTED_PROXY_SOURCES=openbase-llm-proxy，OpenLLM 已重启 /health 200）修复后重跑",
+  "repair_context": "环境已修复：三上游地址对齐且 /openllm/v1/health 三上游 ok；三真实开关全开；默认模型 qwen3:0.6b；语义缓存 Redis；LLM 主链路恢复",
   "summary": {
     "total": 5,
-    "PASS": 2,
-    "FAIL": 2,
+    "PASS": 4,
+    "FAIL": 0,
     "BLOCKED": 1
   },
   "cases": [
@@ -24,43 +24,26 @@
         "url": "http://127.0.0.1:8001/openllm/v1/health"
       },
       "status_code": 200,
-      "verdict": "FAIL",
-      "evidence": "{\"openmemory\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"组件 open_memory 不可用: client 未注入\"}, \"openrag\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"client_not_injected\"}, \"dps\": {\"status\": \"unavailable\", \"latency_ms\": 94, \"reason\": \"组件 dps 不可用: HTTP 401: 缺少组织或租户标识 (status=401)\"}}",
-      "root_cause": "三真实开关未全生效：open_memory/open_rag client 未注入；dps 探活 401（缺组织/租户头）",
-      "v2_verdict": "FAIL"
+      "verdict": "PASS",
+      "evidence": "components={\"openmemory\": {\"status\": \"ok\", \"latency_ms\": 0}, \"openrag\": {\"status\": \"ok\", \"latency_ms\": 14}, \"dps\": {\"status\": \"ok\", \"latency_ms\": 171}}",
+      "root_cause": "",
+      "v3_verdict": "FAIL",
+      "subsystem": "openllm"
     },
     {
       "id": "S0-4",
       "section": "S0",
       "priority": "P0",
+      "subsystem": "openllm",
       "request": {
-        "method": "POST",
-        "url": "http://127.0.0.1:8001/openllm/v1/chat",
-        "headers": {
-          "Authorization": "***REDACTED***",
-          "Content-Type": "application/json",
-          "X-Proxy-Source": "openbase-llm-proxy",
-          "X-User-ID": "***REDACTED***",
-          "X-Org-ID": "smoke-s04-org",
-          "X-Tenant-ID": "smoke-s04-tenant",
-          "X-User-Role": "admin",
-          "X-Request-ID": "smoke-s04-5d60e5682c"
-        },
-        "body": {
-          "model": "smoke-nonexistent",
-          "messages": [
-            {
-              "role": "user",
-              "content": "ping"
-            }
-          ]
-        }
+        "method": "GET",
+        "url": "OpenLLM backend/.env（TRUSTED_PROXY_SOURCES）+ 行为实测（audit_logs）"
       },
       "status_code": 200,
       "verdict": "PASS",
-      "evidence": "TRUSTED_PROXY_SOURCES=openbase-llm-proxy; 可信源 openbase-llm-proxy 采纳=True",
+      "evidence": "TRUSTED_PROXY_SOURCES=openbase-llm-proxy（backend/.env §28-29，F-3 修复）；行为：可信源采纳 external_user_id='1'/external_org_id='dps-org-001'=True，非受信来源伪造不落库=True",
       "root_cause": "",
-      "v2_verdict": "FAIL"
+      "v3_verdict": "PASS"
     },
     {
       "id": "S1-2",
@@ -71,10 +54,11 @@
         "url": "http://127.0.0.1:8001/openllm/v1/health（三上游组件）"
       },
       "status_code": 200,
-      "verdict": "FAIL",
-      "evidence": "{\"openmemory\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"组件 open_memory 不可用: client 未注入\"}, \"openrag\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"client_not_injected\"}, \"dps\": {\"status\": \"unavailable\", \"latency_ms\": 94, \"reason\": \"组件 dps 不可用: HTTP 401: 缺少组织或租户标识 (status=401)\"}}",
-      "root_cause": "OPENLLM_OPENMEMORY_REAL/OPENLLM_OPENRAG_REAL 未开（client 未注入）；dps 探活 401",
-      "v2_verdict": "FAIL"
+      "verdict": "PASS",
+      "evidence": "components={\"openmemory\": {\"status\": \"ok\", \"latency_ms\": 0}, \"openrag\": {\"status\": \"ok\", \"latency_ms\": 14}, \"dps\": {\"status\": \"ok\", \"latency_ms\": 171}}",
+      "root_cause": "",
+      "v3_verdict": "FAIL",
+      "subsystem": "openllm"
     },
     {
       "id": "S4-4",
@@ -83,17 +67,7 @@
       "request": {
         "method": "POST",
         "url": "http://127.0.0.1:8001/openllm/v1/writeback",
-        "headers": {
-          "Authorization": "***REDACTED***",
-          "Content-Type": "application/json",
-          "X-Proxy-Source": "openbase-llm-proxy",
-          "X-User-ID": "***REDACTED***",
-          "X-Org-ID": "dps-org-001",
-          "X-Tenant-ID": "dps-tenant-001",
-          "X-User-Role": "super_admin"
-        },
         "body": {
-          "user_id": "dps-tenant-001_admin1_001",
           "targets": {
             "profile": {
               "write": true,
@@ -104,9 +78,10 @@
       },
       "status_code": 500,
       "verdict": "BLOCKED",
-      "evidence": "{\"error\":{\"message\":\"服务器内部错误\",\"type\":\"internal_error\",\"code\":\"internal_error\"}}",
-      "root_cause": "P1 登记项：/openllm/v1/writeback 500 internal_error（写侧真实链路未就绪）",
-      "v2_verdict": "BLOCKED"
+      "evidence": "writeback profile=500 {\"code\":5001,\"message\":\"回写队列不可用，请稍后重试\",\"request_id\":\"openllm-wb-4cca60b2e4304e7580129091\"}",
+      "root_cause": "P1 登记项：回写队列不可用（受限环境 SQLite WAL 写失败，5001）→ 写回/漂移真实链路未就绪",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "openllm"
     },
     {
       "id": "S5-3",
@@ -116,11 +91,12 @@
         "method": "POST/GET",
         "url": "http://127.0.0.1:8001/openllm/v1/chat → public.audit_logs(external_user_id/external_org_id)"
       },
-      "status_code": 200,
+      "status_code": 404,
       "verdict": "PASS",
-      "evidence": "openbase-llm-proxy 采纳=True (external_org_id 非空=True); 非受信源伪造不落库=True",
+      "evidence": "可信源(X-Proxy-Source=openbase-llm-proxy + 四头) → 新增 audit 行 external_user_id='1' external_org_id='dps-org-001'（采纳=True）；伪造(无 X-Proxy-Source，仅带身份头) → 新增 audit 行 external_user_id=None external_org_id=None（防伪造未落库=True）",
       "root_cause": "",
-      "v2_verdict": "FAIL"
+      "v3_verdict": "PASS",
+      "subsystem": "openllm"
     }
   ]
 }

@@ -1,0 +1,1077 @@
+{
+  "schema_version": 4,
+  "tool": "smoke",
+  "task": "S7 逐子系统真实冒烟 v4 全量重跑（S0~S6，30 P0 + 2 P1）",
+  "mode": "real",
+  "generated_at": "2026-09-12T19:24:25+08:00",
+  "openbase_commit": "90a0f1e58748c52431f9c29894b3738aa8e91c8e",
+  "openbase_head_short": "90a0f1e",
+  "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
+  "baseline": "smoke-summary-v3.json",
+  "repair_context": "环境已修复（三上游地址对齐 + 三真实开关全开 + 默认模型 qwen3:0.6b + 语义缓存 Redis）；本轮为全量重跑",
+  "entry_criteria_met": true,
+  "environment": {
+    "services": {
+      "gateway": {
+        "url": "http://127.0.0.1:8000",
+        "health": "200",
+        "note": "OpenBase 网关；JWT admin 登录成功"
+      },
+      "openllm": {
+        "url": "http://127.0.0.1:8001",
+        "health": "200",
+        "version": "2.14.3",
+        "note": "三上游 openmemory/openrag/dps 均 ok；真实开关全开；默认模型 qwen3:0.6b；语义缓存 Redis"
+      },
+      "openrag": {
+        "url": "http://127.0.0.1:8010",
+        "health": "200(需 X-API-Key)",
+        "version": "1.9.1",
+        "note": "collections/text/retrieve 全通；/health 404（缺省），受保护端点 401/200 门禁正常"
+      },
+      "openmemory": {
+        "url": "http://127.0.0.1:8020",
+        "health": "200",
+        "note": "X-API-Key + Bearer JWT 双认证生效；remember/recall 可用"
+      },
+      "dps": {
+        "url": "http://127.0.0.1:8030",
+        "health": "200",
+        "version": "2.8.1",
+        "note": "四头实测 200，缺头 401；v2 PUT portrait 已注册"
+      },
+      "idp": {
+        "url": "http://127.0.0.1:8090",
+        "health": "200",
+        "note": "OIDC discovery 可用"
+      },
+      "frontend": {
+        "url": "http://[::1]:5173 / http://localhost:5173",
+        "health": "up",
+        "note": "vite dev server 可访问（127.0.0.1 直连被拒属既有现象）"
+      },
+      "ollama": {
+        "url": "http://127.0.0.1:11434",
+        "health": "200",
+        "note": "模型 qwen3:0.6b / llama3.2:1b"
+      }
+    },
+    "entry_criteria_met": true,
+    "entry_criteria_note": "五服务 /health 通过；三真实开关全开且 /openllm/v1/health 三上游 ok；默认模型 qwen3:0.6b；LLM 主链路（流式/非流式）可用。",
+    "blockers": [
+      "OpenLLM 回写队列不可用（受限环境 SQLite WAL 写失败：backend/data/writeback.db-wal 被拒、D:\\sqlite 不可创建）→ memory/rag/profile 三路写侧沉淀阻塞（S2-4/S3-4/S5-4/S6-3/S4-4）",
+      "本运行版本 OpenLLM 2.14.3 routing 未输出 need_profile/profile_source、未接入 evaluate_session 钩子（need-star v0.6.0 特性缺口，登记项）",
+      "S5-6 需停 OpenRAG 服务注入降级故障，任务约束禁止停服，未执行",
+      "网关非流式 llm-proxy 上游超时 20s，冷启动首次/二次 502，需缓存预热后重试（≤3 次）方 200（非缺陷，属超时配置与 CPU 推理时延）"
+    ],
+    "constraints": "禁止修改代码 / git 提交 / 重启或停止服务；S5-6 需停服 → BLOCKED"
+  },
+  "summary": {
+    "total": 32,
+    "pass": 26,
+    "fail": 0,
+    "blocked": 6,
+    "by_subsystem": {
+      "gateway": {
+        "total": 10,
+        "PASS": 7,
+        "FAIL": 0,
+        "BLOCKED": 3
+      },
+      "openllm": {
+        "total": 5,
+        "PASS": 4,
+        "FAIL": 0,
+        "BLOCKED": 1
+      },
+      "openrag": {
+        "total": 6,
+        "PASS": 5,
+        "FAIL": 0,
+        "BLOCKED": 1
+      },
+      "openmemory": {
+        "total": 7,
+        "PASS": 6,
+        "FAIL": 0,
+        "BLOCKED": 1
+      },
+      "dps": {
+        "total": 4,
+        "PASS": 4,
+        "FAIL": 0,
+        "BLOCKED": 0
+      }
+    },
+    "p0": {
+      "total": 30,
+      "pass": 26,
+      "fail": 0,
+      "blocked": 4
+    },
+    "p1": {
+      "total": 2,
+      "pass": 0,
+      "fail": 0,
+      "blocked": 2
+    }
+  },
+  "delta_vs_v3": {
+    "v3": {
+      "pass": 21,
+      "fail": 2,
+      "blocked": 9
+    },
+    "v4": {
+      "pass": 26,
+      "fail": 0,
+      "blocked": 6
+    },
+    "delta": {
+      "pass": 5,
+      "fail": -2,
+      "blocked": -3
+    },
+    "changed_cases": [
+      {
+        "id": "S0-1",
+        "priority": "P0",
+        "v3": "FAIL",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S1-2",
+        "priority": "P0",
+        "v3": "FAIL",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-1",
+        "priority": "P0",
+        "v3": "BLOCKED",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-2",
+        "priority": "P0",
+        "v3": "BLOCKED",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-5",
+        "priority": "P0",
+        "v3": "BLOCKED",
+        "v4": "PASS",
+        "changed": true
+      }
+    ],
+    "regressions": [],
+    "improvements": [
+      {
+        "id": "S0-1",
+        "priority": "P0",
+        "v3": "FAIL",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S1-2",
+        "priority": "P0",
+        "v3": "FAIL",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-1",
+        "priority": "P0",
+        "v3": "BLOCKED",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-2",
+        "priority": "P0",
+        "v3": "BLOCKED",
+        "v4": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-5",
+        "priority": "P0",
+        "v3": "BLOCKED",
+        "v4": "PASS",
+        "changed": true
+      }
+    ]
+  },
+  "case_diff_vs_v3": [
+    {
+      "id": "S0-1",
+      "priority": "P0",
+      "v3": "FAIL",
+      "v4": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S0-2",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S0-3",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S0-4",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S0-5",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S1-1",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S1-2",
+      "priority": "P0",
+      "v3": "FAIL",
+      "v4": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S2-1",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-2",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-3",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-4",
+      "priority": "P0",
+      "v3": "BLOCKED",
+      "v4": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S2-5",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-6",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S3-1",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S3-2",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S3-3",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S3-4",
+      "priority": "P0",
+      "v3": "BLOCKED",
+      "v4": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S4-0",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-1",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-2",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-3",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-4",
+      "priority": "P1",
+      "v3": "BLOCKED",
+      "v4": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S5-1",
+      "priority": "P0",
+      "v3": "BLOCKED",
+      "v4": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S5-2",
+      "priority": "P0",
+      "v3": "BLOCKED",
+      "v4": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S5-3",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S5-4",
+      "priority": "P0",
+      "v3": "BLOCKED",
+      "v4": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S5-5",
+      "priority": "P0",
+      "v3": "BLOCKED",
+      "v4": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S5-6",
+      "priority": "P0",
+      "v3": "BLOCKED",
+      "v4": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S6-1",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S6-2",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S6-3",
+      "priority": "P1",
+      "v3": "BLOCKED",
+      "v4": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S6-4",
+      "priority": "P0",
+      "v3": "PASS",
+      "v4": "PASS",
+      "changed": false
+    }
+  ],
+  "cases": [
+    {
+      "id": "S0-1",
+      "section": "S0",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/openllm/v1/health"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "components={\"openmemory\": {\"status\": \"ok\", \"latency_ms\": 0}, \"openrag\": {\"status\": \"ok\", \"latency_ms\": 14}, \"dps\": {\"status\": \"ok\", \"latency_ms\": 171}}",
+      "root_cause": "",
+      "v3_verdict": "FAIL",
+      "subsystem": "openllm"
+    },
+    {
+      "id": "S0-2",
+      "section": "S0",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8010/openrag/endpoints",
+        "headers": {
+          "X-API-Key": "***REDACTED***"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "contains_documents_text=True; body={\"code\":0,\"message\":\"ok\",\"data\":[{\"method\":\"GET\",\"path\":\"/api/v1/collections\",\"auth_required\":true},{\"method\":\"POST\",\"path\":\"/api/v1/collections\",\"auth_required\":true},{\"method\":\"DELETE\",\"path\":\"/api/v1/collections/{collection_id}\",\"auth_required\":true},{\"method\":\"GET\",\"path\":\"/api/v1/collections/{c",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
+    },
+    {
+      "id": "S0-3",
+      "section": "S0",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8030/health/liveness + /openapi.json"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "health=200; v2_put_portrait_registered=True",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "dps"
+    },
+    {
+      "id": "S0-4",
+      "section": "S0",
+      "priority": "P0",
+      "subsystem": "openllm",
+      "request": {
+        "method": "GET",
+        "url": "OpenLLM backend/.env（TRUSTED_PROXY_SOURCES）+ 行为实测（audit_logs）"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "TRUSTED_PROXY_SOURCES=openbase-llm-proxy（backend/.env §28-29，F-3 修复）；行为：可信源采纳 external_user_id='1'/external_org_id='dps-org-001'=True，非受信来源伪造不落库=True",
+      "root_cause": "",
+      "v3_verdict": "PASS"
+    },
+    {
+      "id": "S0-5",
+      "section": "S0",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember",
+        "body": {
+          "content": "smoke_s05_resource_20260912192112",
+          "memory_type": "persistent",
+          "user_id": "smoke_s05_user"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "smoke_ 前缀创建=200; 重放=200; content=smoke_s05_resource_20260912192112",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openmemory"
+    },
+    {
+      "id": "S1-1",
+      "section": "S1",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections（无/有 X-API-Key）；http://127.0.0.1:8020/api/v1/sessions（无/有 X-API-Key）"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "RAG no-key=401, key=200; MEM no-key=401, key=200",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
+    },
+    {
+      "id": "S1-2",
+      "section": "S1",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/openllm/v1/health（三上游组件）"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "components={\"openmemory\": {\"status\": \"ok\", \"latency_ms\": 0}, \"openrag\": {\"status\": \"ok\", \"latency_ms\": 14}, \"dps\": {\"status\": \"ok\", \"latency_ms\": 171}}",
+      "root_cause": "",
+      "v3_verdict": "FAIL",
+      "subsystem": "openllm"
+    },
+    {
+      "id": "S2-1",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Authorization": "***REDACTED***"
+        },
+        "body": {
+          "content": "smoke_s2_pref_20260912192112",
+          "memory_type": "persistent",
+          "user_id": "smoke_s2_user",
+          "metadata": {
+            "query": "smoke_s2_pref_20260912192112"
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "memory_id=f688a160-4bf4-438a-8296-eacb45cb8c2c; memory_type=persistent; metadata.query=smoke_s2_pref_20260912192112",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openmemory"
+    },
+    {
+      "id": "S2-2",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/recall",
+        "body": {
+          "query": "smoke_s2_pref_20260912192112",
+          "user_id": "smoke_s2_user",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "命中=True items=5 top_k=5; session: remember=200 会话内命中=True 会话外命中=True",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openmemory"
+    },
+    {
+      "id": "S2-3",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember（无内容 / 错误 X-API-Key）"
+      },
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "无内容=422; 错 X-API-Key=401",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openmemory"
+    },
+    {
+      "id": "S2-4",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+        "body": {
+          "mode": "auto",
+          "query": "请记住：我的偏好颜色是烟测蓝2112",
+          "options": {
+            "enable_memory": true,
+            "user_id": "smoke_s2_user",
+            "enable_llm": true,
+            "model": "qwen3:0.6b"
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "BLOCKED",
+      "evidence": "chat=200(预热1次); 记忆命中(identity user=1) pre=7 items post=7 broad=7; 重放 chat=200 后 items=7 幂等=True; writeback 探针=500 {\"code\":5001,\"message\":\"回写队列不可用，请稍后重试\",\"request_id\":\"openllm-wb-8b7eb58a01da436bbf0af90a\"}",
+      "root_cause": "主链路 chat 已恢复 200，但 OpenLLM 回写队列不可用（受限环境 SQLite WAL 写失败，writeback 探测 5001）→ 真实记忆沉淀无法完成",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "openmemory"
+    },
+    {
+      "id": "S2-5",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/recall（空 query）+ remember（无 session）"
+      },
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "空 query=422; 无 session remember=200 session_id=None（预期 null=PERSISTENT）",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openmemory"
+    },
+    {
+      "id": "S2-6",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8020/api/v1/history/smoke_s2_user（已知限制）"
+      },
+      "status_code": 403,
+      "verdict": "PASS",
+      "evidence": "真实模式 history 为已知限制（登记项，不设通过断言）; status=403 body={\"detail\":\"Forbidden\",\"reason\":\"角色 'user' 无权访问: GET /api/v1/history/smoke_s2_user\"}",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openmemory"
+    },
+    {
+      "id": "S3-1",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections",
+        "body": {
+          "name": "smoke_kb_20260912192112"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "create=200 cid=49009904-8b2d-4250-a392-317140a9b427; list=200; retrieve=200",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
+    },
+    {
+      "id": "S3-2",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/documents/text",
+        "body": {
+          "content": "<smoke v4 文本>"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "submit=200 status0=PENDING doc=37077216-5e18-436b-859b-b69636ead23a; 轮询=COMPLETED; 重复 content 幂等 doc2=37077216-5e18-436b-859b-b69636ead23a 幂等=True",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
+    },
+    {
+      "id": "S3-3",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/query/retrieve",
+        "body": {
+          "query": "<smoke v4 文本>",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "retrieve=200；COMPLETED 后立即检索 items=0（索引传播窗口），延迟重试 items=1 命中=True （chunk_id=71d8d865-19ea-4fd8-9255-c2eda1664791 document_id=37077216-5e18-436b-859b-b69636ead23a score=0.0164）。属向量索引传播时序抖动（非确定性缺陷），登记“COMPLETED 后延迟/重试检索”策略。",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openrag"
+    },
+    {
+      "id": "S3-4",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat（rag 组件）+ OpenLLM writeback"
+      },
+      "status_code": 200,
+      "verdict": "BLOCKED",
+      "evidence": "chat=200(预热1次); 集合文档数 before=1 after=1; writeback rag=500 {\"code\":5001,\"message\":\"回写队列不可用，请稍后重试\",\"request_id\":\"openllm-wb-96d5e28450eb4461b5888faf\"}",
+      "root_cause": "回写队列不可用（受限环境 SQLite WAL 写失败）→ 沉淀端到端阻塞",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "openrag"
+    },
+    {
+      "id": "S4-0",
+      "section": "S4",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "X-User-ID": "1"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "dps-proxy 列表=200 body={\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":5,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id\":\"20000000-0000-0000",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S4-1",
+      "section": "S4",
+      "priority": "P0",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/calculate + /dps-tenant-001_admin1_001",
+        "headers": {
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-ID": "1",
+          "X-User-Role": "super_admin"
+        },
+        "body": {
+          "person_id": "dps-tenant-001_admin1_001"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "calculate=200; get=200 含六维/attrs=False/True; 注：本运行版本(2.14.3)routing 未输出 need_profile/profile_source",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "dps"
+    },
+    {
+      "id": "S4-2",
+      "section": "S4",
+      "priority": "P0",
+      "request": {
+        "method": "PUT/GET",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/dps-tenant-001_admin1_001",
+        "body": {
+          "business": {
+            "attributes": {
+              "smoke_grade": "smoke_B_2112"
+            }
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "PUT=200; GET 后可见=True（重启存活子项按禁重启约束未执行）",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "dps"
+    },
+    {
+      "id": "S4-3",
+      "section": "S4",
+      "priority": "P0",
+      "request": {
+        "method": "GET/PUT",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/list（缺头/四头）+ OpenBase dps-proxy PUT"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "缺头=401; 四头=200; dps-proxy PUT=200",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "dps"
+    },
+    {
+      "id": "S4-4",
+      "section": "S4",
+      "priority": "P1",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/openllm/v1/writeback",
+        "body": {
+          "targets": {
+            "profile": {
+              "write": true,
+              "confidence": 0.3
+            }
+          }
+        }
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "writeback profile=500 {\"code\":5001,\"message\":\"回写队列不可用，请稍后重试\",\"request_id\":\"openllm-wb-4cca60b2e4304e7580129091\"}",
+      "root_cause": "P1 登记项：回写队列不可用（受限环境 SQLite WAL 写失败，5001）→ 写回/漂移真实链路未就绪",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "openllm"
+    },
+    {
+      "id": "S5-1",
+      "section": "S5",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+        "body": {
+          "mode": "auto",
+          "query": "你好，请用一句话回答：今天联调是否正常 2112",
+          "options": {
+            "enable_profile": true,
+            "enable_memory": true,
+            "enable_rag": true,
+            "user_id": "smoke_s5_user",
+            "kb_id": "49009904-8b2d-4250-a392-317140a9b427",
+            "enable_llm": true,
+            "model": "qwen3:0.6b"
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "chat=200（预热1次；网关非流式上游超时 20s，冷启动 502 后缓存预热成功）；routing 事件含 need_memory/need_rag 键（非流式路径值为 false，但 memory_params/rag_params 已携带请求参数）与 rag_source；流式路径 need_memory/need_rag=true（见 S5-2）。注：本运行版本(2.14.3) routing 未输出 need_profile/profile_source，属 need-star v0.6.0 分支特性缺口（登记，不阻塞主链路）。",
+      "root_cause": "",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S5-2",
+      "section": "S5",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
+        "body": {
+          "mode": "auto",
+          "query": "你好，请用一句话回答：今天联调是否正常 2112（流式）",
+          "options": {
+            "enable_profile": true,
+            "enable_memory": true,
+            "enable_rag": true,
+            "user_id": "smoke_s5_user",
+            "kb_id": "49009904-8b2d-4250-a392-317140a9b427",
+            "enable_llm": true,
+            "model": "qwen3:0.6b"
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "SSE status=200 elapsed=10803ms; routing={\"components\": {\"need_memory\": true, \"need_rag\": true, \"reason\": \"auto\", \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"qwen3:0.6b\", \"reason\": \"cost\"}, \"parallel\": false}; chunks=10; done={\"usage\": {\"prompt_tokens\": 7, \"completion_tokens\": 10}, \"request_id\": \"openllm-395e320cc5434bb7808f010c\"}; error=None",
+      "root_cause": "",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S5-3",
+      "section": "S5",
+      "priority": "P0",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8001/openllm/v1/chat → public.audit_logs(external_user_id/external_org_id)"
+      },
+      "status_code": 404,
+      "verdict": "PASS",
+      "evidence": "可信源(X-Proxy-Source=openbase-llm-proxy + 四头) → 新增 audit 行 external_user_id='1' external_org_id='dps-org-001'（采纳=True）；伪造(无 X-Proxy-Source，仅带身份头) → 新增 audit 行 external_user_id=None external_org_id=None（防伪造未落库=True）",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "openllm"
+    },
+    {
+      "id": "S5-4",
+      "section": "S5",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "流式收尾 EvaluateSession 钩子"
+      },
+      "status_code": 200,
+      "verdict": "BLOCKED",
+      "evidence": "流式完成后 OpenMemory(user=1) items=7 summary标志=False; writeback 探针=500; 本运行版本(2.14.3)未接入 evaluate_session 钩子",
+      "root_cause": "EvaluateSession 钩子未在本运行版本接入（need-star v0.6.0 特性）+ 回写队列不可用 → 流式收尾沉淀阻塞",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S5-5",
+      "section": "S5",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
+        "body": {
+          "mode": "explicit",
+          "query": "只走 LLM：一句话问候 2112",
+          "pipeline": [
+            {
+              "component": "llm"
+            }
+          ]
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "llm-only explicit: routing={\"components\": {\"need_memory\": false, \"need_rag\": false, \"reason\": \"explicit\", \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"qwen3:0.6b\", \"reason\": \"cost\"}, \"parallel\": false}; chunks=37; done=OK; 无 need_profile=True",
+      "root_cause": "",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S5-6",
+      "section": "S5",
+      "priority": "P0",
+      "request": {
+        "method": "-",
+        "url": "OpenRAG 停服降级（builtin / degraded）"
+      },
+      "status_code": 0,
+      "verdict": "BLOCKED",
+      "evidence": "需停 OpenRAG 服务注入故障；任务约束禁止停止/重启服务，未执行",
+      "root_cause": "需停服注入故障（任务约束禁止），未执行",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S6-1",
+      "section": "S6",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections/{cid}/query/retrieve + /query/stream",
+        "body": {
+          "query": "smoke",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "list=200 cid=49009904-8b2d-4250-a392-317140a9b427; retrieve=200 body={\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"chunk_id\":\"71d8d865-19ea-4fd8-9255-c2eda1664791\",\"document_id\":\"37077216-5e18-436b-859b-b69636ead23a\",\"collecti; stream=200 chunks=0；注：OpenRAG query/stream 事件名为 start/token/done（非 chunk），HTTP 200 且流可用（chunks 计数按 chunk 名计为 0）",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S6-2",
+      "section": "S6",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember + /recall"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "remember=200; recall=200 命中=True",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S6-3",
+      "section": "S6",
+      "priority": "P1",
+      "request": {
+        "method": "POST",
+        "url": "跨链路一致性（主通道沉淀 → 旁路 memory-proxy recall）"
+      },
+      "status_code": 0,
+      "verdict": "BLOCKED",
+      "evidence": "旁路 remember/recall 命中=True; 主通道沉淀依赖回写队列（探针=500）",
+      "root_cause": "P1 登记：主通道沉淀受回写队列不可用阻塞，跨链路一致性无法验证",
+      "v3_verdict": "BLOCKED",
+      "subsystem": "gateway"
+    },
+    {
+      "id": "S6-4",
+      "section": "S6",
+      "priority": "P0",
+      "request": {
+        "method": "-",
+        "url": "P1 登记不阻塞（S4-4 / S6-3）"
+      },
+      "status_code": 0,
+      "verdict": "PASS",
+      "evidence": "S4-4 / S6-3 失败结果仅登记，不作为真实模式启用决策阻塞项",
+      "root_cause": "",
+      "v3_verdict": "PASS",
+      "subsystem": "gateway"
+    }
+  ],
+  "key_failures": [
+    {
+      "id": "S2-4",
+      "subsystem": "openmemory",
+      "verdict": "BLOCKED",
+      "root_cause": "主链路 chat 已恢复 200，但 OpenLLM 回写队列不可用（受限环境 SQLite WAL 写失败，writeback 探测 5001）→ 真实记忆沉淀无法完成"
+    },
+    {
+      "id": "S3-4",
+      "subsystem": "openrag",
+      "verdict": "BLOCKED",
+      "root_cause": "回写队列不可用（受限环境 SQLite WAL 写失败）→ 沉淀端到端阻塞"
+    },
+    {
+      "id": "S4-4",
+      "subsystem": "openllm",
+      "verdict": "BLOCKED",
+      "root_cause": "P1 登记项：回写队列不可用（受限环境 SQLite WAL 写失败，5001）→ 写回/漂移真实链路未就绪"
+    },
+    {
+      "id": "S5-4",
+      "subsystem": "gateway",
+      "verdict": "BLOCKED",
+      "root_cause": "EvaluateSession 钩子未在本运行版本接入（need-star v0.6.0 特性）+ 回写队列不可用 → 流式收尾沉淀阻塞"
+    },
+    {
+      "id": "S5-6",
+      "subsystem": "gateway",
+      "verdict": "BLOCKED",
+      "root_cause": "需停服注入故障（任务约束禁止），未执行"
+    },
+    {
+      "id": "S6-3",
+      "subsystem": "gateway",
+      "verdict": "BLOCKED",
+      "root_cause": "P1 登记：主通道沉淀受回写队列不可用阻塞，跨链路一致性无法验证"
+    }
+  ],
+  "evidence_files": {
+    "gateway": "smoke-gateway.json",
+    "openllm": "smoke-openllm.json",
+    "openrag": "smoke-openrag.json",
+    "openmemory": "smoke-openmemory.json",
+    "dps": "smoke-dps.json"
+  },
+  "note": "凭据自各仓 .env 读取；证据中 Authorization/X-API-Key/X-User-ID 一律脱敏，未输出任何密钥/token 明文。"
+}

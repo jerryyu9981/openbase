@@ -1,0 +1,151 @@
+{
+  "task": "F-1 修复后 LLM 主链路验证",
+  "generated_at": "2026-09-12T18:02:00+08:00",
+  "constraints": {
+    "code_modified": false,
+    "service_restarted": false,
+    "secrets_exposed": false,
+    "http_timeout_seconds": 240
+  },
+  "environment": {
+    "openllm_base": "http://127.0.0.1:8001",
+    "openbase_base": "http://127.0.0.1:8000",
+    "ollama_base": "http://127.0.0.1:11434",
+    "default_llm_model": "qwen3:0.6b",
+    "openllm_health": {
+      "status_code": 200,
+      "elapsed_seconds": 0.14,
+      "version": "2.14.3",
+      "components": {"openmemory": "ok", "openrag": "ok", "dps": "unavailable (HTTP 401 缺少组织或租户标识)"}
+    },
+    "ollama_models": ["llama3.2:1b", "qwen3:0.6b"],
+    "openbase_health": {"status_code": 200, "body": "{\"status\":\"ok\"}"},
+    "api_key_masked": "sk-openllm...9529"
+  },
+  "auth": {
+    "openllm_direct": {"mode": "api_key_bearer", "key_masked": "sk-openllm...9529"},
+    "openbase_gateway": {
+      "mode": "jwt_bearer",
+      "login_endpoint": "POST /api/v1/auth/login",
+      "login_status_code": 200,
+      "login_elapsed_seconds": 1.3,
+      "token_type": "bearer",
+      "expires_in": 7200,
+      "token_masked": "eyJhbGciOi...Qcg4"
+    }
+  },
+  "cases": [
+    {
+      "name": "A_direct_chat",
+      "channel": "direct-openllm",
+      "endpoint": "POST http://127.0.0.1:8001/openllm/v1/chat",
+      "auth_mode": "api_key_bearer",
+      "status_code": 500,
+      "elapsed_seconds": 0.49,
+      "routing_model_selected": null,
+      "routing_event": null,
+      "response_summary": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"request_id\":\"openllm-017566d196ca4661b93393e4\"}",
+      "ok": false,
+      "note": "非流式路径在路由/推理前即失败，无 routing 事件"
+    },
+    {
+      "name": "B_direct_chat_stream",
+      "channel": "direct-openllm",
+      "endpoint": "POST http://127.0.0.1:8001/openllm/v1/chat/stream",
+      "auth_mode": "api_key_bearer",
+      "status_code": 200,
+      "elapsed_seconds": 27.72,
+      "routing_model_selected": "qwen3:0.6b",
+      "routing_event": {
+        "components": {"need_memory": false, "need_rag": false, "reason": "explicit", "rag_source": "skipped"},
+        "model": {"selected": "qwen3:0.6b", "reason": "cost"},
+        "parallel": false
+      },
+      "sse_event_sequence": ["routing", "chunk x N", "done"],
+      "done_event": {"usage": {"prompt_tokens": 2, "completion_tokens": 25}, "request_id": "openllm-e57aeae72c8d47a9873106e7"},
+      "response_summary": "我是AI助手，具备强大的语言处理能力、创意思维和多任务执行能力，能够帮助用户完成各种任务。",
+      "ok": true
+    },
+    {
+      "name": "C_gateway_chat",
+      "channel": "gateway-openbase",
+      "endpoint": "POST http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+      "auth_mode": "jwt_bearer",
+      "status_code": 500,
+      "elapsed_seconds": 2.38,
+      "routing_model_selected": null,
+      "routing_event": null,
+      "response_summary": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T09:52:50.464159+00:00\"}",
+      "ok": false,
+      "note": "网关透传上游 5001；上游非流式路径同样在路由/推理前失败"
+    },
+    {
+      "name": "D_gateway_chat_stream",
+      "channel": "gateway-openbase",
+      "endpoint": "POST http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
+      "auth_mode": "jwt_bearer",
+      "status_code": 200,
+      "elapsed_seconds": 8.35,
+      "routing_model_selected": "qwen3:0.6b",
+      "routing_event": {
+        "components": {"need_memory": false, "need_rag": false, "reason": "explicit", "rag_source": "skipped"},
+        "model": {"selected": "qwen3:0.6b", "reason": "cost"},
+        "parallel": false
+      },
+      "sse_event_sequence": ["routing", "chunk x N", "done"],
+      "done_event": {"usage": {"prompt_tokens": 2, "completion_tokens": 21}, "request_id": "openllm-1d42e9be8de247cdbf33307c"},
+      "response_summary": "我是一个热情、可靠且细心的人，总能以专业和耐心助你一臂之力。",
+      "ok": true
+    }
+  ],
+  "retest_nonstream": {
+    "generated_at": "2026-09-12T17:59:00+08:00",
+    "purpose": "确认 5001 是否稳定复现（排除瞬时 sqlite 锁）",
+    "cases": [
+      {"name": "A_direct_chat_retest", "status_code": 500, "elapsed_seconds": 0.12, "routing_model_selected": null, "ok": false},
+      {"name": "C_gateway_chat_retest", "status_code": 500, "elapsed_seconds": 0.41, "routing_model_selected": null, "ok": false}
+    ],
+    "conclusion": "非流式 5001 稳定复现，非瞬时问题"
+  },
+  "blocker": {
+    "title": "非流式 /openllm/v1/chat 因语义缓存 SQLite WAL 写失败返回 5001",
+    "affected_cases": ["A_direct_chat", "C_gateway_chat"],
+    "unaffected_cases": ["B_direct_chat_stream", "D_gateway_chat_stream"],
+    "failure_path_only_in_non_stream": "语义缓存仅在非流式 openllm_chat 中使用；流式 openllm_chat_stream 不经过语义缓存，故流式正常",
+    "traceback": [
+      "ERROR app.api.openllm_gateway: openllm_chat 内部错误, request_id=openllm-ede714edb3d14bcebf3002a7",
+      "  File \"app/api/openllm_gateway.py\", line 1683, in openllm_chat",
+      "    cached = cache.get(identity.user_id, query)",
+      "  File \"app/core/semantic_cache.py\", line 153, in get",
+      "    rows = self._fetch_valid(user_id, now)",
+      "  File \"app/core/semantic_cache.py\", line 243, in _fetch_valid",
+      "    self._conn.commit()",
+      "sqlite3.OperationalError: disk I/O error"
+    ],
+    "reproduced_out_of_band": {
+      "method": "在 OpenLLM backend 环境内进程内命中同一路由（TestClient），捕获 logger.exception 完整堆栈",
+      "result": "与线上一致：语义缓存 get() -> _fetch_valid() -> commit() 抛 sqlite3.OperationalError: disk I/O error，路由外层 except Exception 兜底返回 5001"
+    },
+    "environment_isolation": {
+      "work_dir_wal_commit": "OK（journal_mode=wal, commit 成功）",
+      "openllm_backend_data_wal_commit": "FAILED sqlite3.OperationalError: disk I/O error；并报告受限文件 D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\data\\semantic_cache.db-wal",
+      "conclusion": "OpenLLM backend/data 下 SQLite WAL 文件写入在当前执行环境被拒绝，导致非流式 chat 的语义缓存读取失败"
+    },
+    "code_defect_notes": [
+      "openllm_gateway.openllm_chat 中 cache.get() 无 try/except 降级（第 1683 行附近），缓存故障直接升级为 HTTP 500",
+      "_get_semantic_cache() 仅在初始化失败时降级为 None；初始化成功但后续 get/put 失败无降级路径",
+      "语义缓存开关未提供 settings/env 显式关闭项（仅 SEMANTIC_CACHE_DB_PATH 可改路径）"
+    ]
+  },
+  "summary": {
+    "total_cases": 4,
+    "passed_cases": 2,
+    "passed_names": ["B_direct_chat_stream", "D_gateway_chat_stream"],
+    "failed_names": ["A_direct_chat", "C_gateway_chat"],
+    "main_link_streaming_available": true,
+    "main_link_nonstream_available": false,
+    "main_link_available": false,
+    "routing_model_selected_observed": "qwen3:0.6b（流式两例，reason=cost）",
+    "notes": "流式主链路（直连 + 网关，SSE routing→chunk→done）真实推理可用；非流式主链路因语义缓存 SQLite WAL 写失败被阻断"
+  }
+}
