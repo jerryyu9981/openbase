@@ -51,7 +51,12 @@ async def create_tables(
 
 
 async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
-    """初始化数据库（建 schema + 建表 + 基础种子数据）.
+    """初始化数据库（建 schema + 建表 + 基础种子数据 + 身份幂等增量迁移）.
+
+    初始化链固定为：create_tables → 基础种子数据 → apply_identity_migration。
+    末尾内联 U1 身份幂等增量迁移（users 语义列 / agent_api_keys / identity:* 权限点），
+    使经本入口建库或初始化的库（应用启动、init_openbase_test.ps1 runner）**永不再漏迁移**
+    —— 根治此前「迁移需另行调用」导致的 U1-T7 漂移（存量库 users 缺列）。
 
     Args:
         engine: 异步引擎。
@@ -194,4 +199,9 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                     f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = :code)"
                 ).bindparams(code=_code, name=_name)
             )
+    # U1 统一身份幂等增量迁移（内联于初始化链末尾；幂等可重放，已生效则 columns_added 为空）。
+    # 延迟导入：避免 core ↔ modules 模块级循环依赖，且仅在真实初始化时付导入开销。
+    from openbase.modules.identity.migration import apply_identity_migration
+
+    await apply_identity_migration(engine, schema)
     logger.info("database initialized", extra={"schema": schema})

@@ -136,7 +136,7 @@ $k13SchemaSql | ForEach-Object { [void]$plan.Add($_) }
 [void]$plan.Add("OPENBASE_DB_URL=$TestDbUrl")
 if (-not $SkipMigrate) {
     [void]$plan.Add("-- [4/4] 幂等迁移（create_all）+ 迁移后 K13 表级授权")
-    [void]$plan.Add("-- 应用迁移器：init_database(engine, 'openbase')（create_all 幂等，WHERE NOT EXISTS 兜底）")
+    [void]$plan.Add("-- 应用迁移器：init_database(engine, 'openbase')（create_all 幂等 + 内联 apply_identity_migration + 迁移后守卫 U1 身份 7 列）")
     $k13TableSql | ForEach-Object { [void]$plan.Add($_) }
 }
 
@@ -243,6 +243,10 @@ if (-not $SkipMigrate) {
         $script:PyMigrateRunner = @'
 import asyncio
 import os
+import sys
+
+from sqlalchemy import inspect
+
 from openbase.core.db.session import init_db
 from openbase.core.db.init import init_database
 
@@ -250,8 +254,38 @@ url = os.environ["OPENBASE_DB_URL"]
 if url.startswith("postgresql://") and "+asyncpg" not in url:
     url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 engine = init_db(url)
+# init_database 末尾已内联 apply_identity_migration（U1 身份幂等增量迁移）
 asyncio.run(init_database(engine, "openbase"))
-print("[migrate] openbase schema/tables ensured")
+print("[migrate] openbase schema/tables ensured（含内联 apply_identity_migration）")
+
+# 迁移链守卫（fail-loud）：U1 身份 7 列必须齐备，缺失即非零退出，避免漂移被静默放过
+_REQUIRED_IDENTITY_COLUMNS = (
+    "subject_type",
+    "credential_type",
+    "status_state",
+    "status_reason",
+    "token_version",
+    "tenant_code",
+    "on_behalf_of",
+)
+
+
+async def _users_columns():
+    async with engine.begin() as conn:
+        return await conn.run_sync(
+            lambda sync_conn: {
+                column["name"]
+                for column in inspect(sync_conn).get_columns("users", schema="openbase")
+            }
+        )
+
+
+_columns = asyncio.run(_users_columns())
+_missing = [name for name in _REQUIRED_IDENTITY_COLUMNS if name not in _columns]
+if _missing:
+    print(f"[migrate][ERROR] U1 身份列缺失（初始化链漏迁移）: {_missing}")
+    sys.exit(3)
+print(f"[migrate] U1 identity columns verified: {len(_REQUIRED_IDENTITY_COLUMNS)}/{len(_REQUIRED_IDENTITY_COLUMNS)}")
 '@
         $script:PyMigrateRunner | & python -
         if ($LASTEXITCODE -ne 0) { Write-Host "[init_openbase_test][ERROR] 迁移失败（create_all）"; exit 2 }
