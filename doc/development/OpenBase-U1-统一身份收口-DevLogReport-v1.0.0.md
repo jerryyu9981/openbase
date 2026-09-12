@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-U1-DEVLOG-v1.0.0 |
-| 版本 | v1.0.2 |
-| 状态 | [Review]（T1~T6 开发完成 + T7 兼容回归收口 + T8 文档与段门禁；待测试回溯与人工批准进入 S1a 收官/部署；**v1.0.1：初始化链漂移根治——`init_database()` 内联身份幂等迁移 + 建库 runner fail-loud 守卫**；**v1.0.2：更正 v1.0.1 回归口径表述（禁以未跑完组充作通过）**） |
+| 版本 | v1.0.3 |
+| 状态 | [Review]（T1~T6 开发完成 + T7 兼容回归收口 + T8 文档与段门禁；待测试回溯与人工批准进入 S1a 收官/部署；**v1.0.1：初始化链漂移根治——`init_database()` 内联身份幂等迁移 + 建库 runner fail-loud 守卫**；**v1.0.2：更正 v1.0.1 回归口径表述（禁以未跑完组充作通过）**；**v1.0.3：回归终态定稿（626 passed / 0 failed / 4 skipped；唯一非绿组为 PG-ENV-4 环境性批次失败）**） |
 | 日期 | 2026-09-07 |
 | 作者 | U1 开发组（OpenBase 主仓） |
 | 存放 | doc/development/ |
@@ -21,6 +21,7 @@
 | v1.0.0 | 2026-09-07 | U1 开发组 | 初始版本：T1~T6 逐任务 RED/GREEN 摘要与改动文件、提交链（c1869bf→52a4792）、T7 兼容回归（分组 407 passed/4 skipped）、迁移幂等重放验证、覆盖率与覆盖缺口 R3 登记、T1~T8 追溯矩阵、S1a 段门禁四项核对、遗留项登记（含 S1b P2-1 移交） |
 | v1.0.1 | 2026-09-12 | U1 维护组（OpenBase 主仓） | **初始化链漂移根治（`init_database()` 内联身份幂等迁移）**：根因＝`init_database()`（应用启动 `demo_app._try_database_init` 与 `scripts/db/init_openbase_test.ps1` runner 的唯一入口）只做 `create_all` + 种子，U1 身份幂等增量迁移（users 7 列 / `agent_api_keys` / `identity:*` 权限点）需另行调用 → 经该入口建库/初始化的库漏迁移（U1-T7 漂移：存量库 users 缺列）。修复＝在 `init_database()` 末尾内联 `await apply_identity_migration(engine, schema)`（延迟导入避免 core ↔ modules 循环依赖；幂等可重放），并把建库 runner 追加 **fail-loud 守卫**（校验 U1 身份 7 列齐备，缺失即 `sys.exit(3)`），使初始化链永不再漏迁移；TDD：`tests/test_db_init.py::test_init_database_applies_identity_migration`（RED→GREEN）。代码提交 `19123fe` |
 | v1.0.2 | 2026-09-12 | U1 维护组（OpenBase 主仓） | **纠错：修正 v1.0.1 §13.3 回归口径表述**——原文「已跑 6/11 组：291 passed / 0 failed」易误读为第 6 组已通过；据实测更正为「1~5 组全绿 291 passed / 0 failed；第 6 组批次形态 exit=1（连续重试复现），其中 `tests/test_oidc_binding.py` 单跑 5 passed 且与改动前同签名，属 PG-ENV-4 环境性批次串扰；第 7~11 组续跑中」。**结论口径不变**（代码修复与验证证据未变，仅更正表述，禁以未跑完组充作通过）。 |
+| v1.0.3 | 2026-09-12 | U1 维护组（OpenBase 主仓） | **回归终态定稿**：分组全量回归 11 组终态——**10 组全绿 = 626 passed / 0 failed / 4 skipped**；唯一非绿项为第 6 组批次形态 exit=1（脚本汇总 `group crashed`），逐例定位为 `tests/test_oidc_binding.py` 4 例 `sqlite3.OperationalError: no such table: openbase.users`（批次上下文表可见性/串扰；该文件单跑 5 passed，且同签名在改动前即复现，属 PG-ENV-4 口径，非本项引入）。**代码修复与 §13 结论不变**；本节替代 v1.0.1/v1.0.2 的中间态表述。 |
 
 ---
 
@@ -272,7 +273,7 @@ U1 identity 模块实测（全仓分组聚合口径）：
 | RED | `tests/test_db_init.py::test_init_database_applies_identity_migration`（断言：迁移被调用且仅一次、`schema` 透传、复用同一 `engine`、顺序为 `create_tables → 种子 SQL → apply_identity_migration`）——实现前失败（`len(calls) == 0`） |
 | GREEN | 内联后通过；同文件既有 `test_init_database_seed_sql` 同步补 stub（该用例只校验种子 SQL，迁移由新用例覆盖），`tests/test_db_init.py` + `test_demo_app.py` 5 passed |
 | 静态检查 | `python -m ruff check openbase tests` → All checks passed |
-| 回归 | 专项：`tests/test_db_init.py` / `test_demo_app.py` / `test_db_modules.py` / `test_identity_t1.py` / `test_identity_t2.py` → 33 passed。分组全量回归 `python scripts/run_regression.py --group-size 6`（65 文件 / 11 组）：**1~5 组全绿 291 passed / 0 failed**（含 `test_db_init` 所在组 28、`test_demo_app` 所在组 68、`test_identity_t1~t3` 73、`test_identity_t4~t6` 71）；**第 6 组（`test_llm_proxy / test_memory_proxy / test_models / test_notify_extra / test_obs_mcp / test_oidc_binding`）批次形态 exit=1（连续重试 3 次仍复现）**——逐例复跑定位为 **`tests/test_oidc_binding.py` 4 例失败**（`test_jit_create_binds_mapping_and_role` / `test_reuse_existing_identity` / `test_username_conflict_gets_suffix` / `test_role_mapping_filters_unknown_roles`），报错 `sqlite3.OperationalError: no such table: openbase.users`（批次上下文 SQLite 测试库表可见性/串扰）；该文件**单跑 5 passed**，且该失败在**改动前**（同日 20:50 门禁聚合主批次实测 605 例 / 4 失败 / `failed_files=[tests/test_oidc_binding.py]`）即为**同一签名**，属 **PG-ENV-4 登记口径**（openbase_test 真实库建库后主批次 0 失败关闭），**非本项引入**；第 7~11 组后台续跑（日志留档）。**未跑完/未通过组不作为通过依据** |
+| 回归 | 专项：`tests/test_db_init.py` / `test_demo_app.py` / `test_db_modules.py` / `test_identity_t1.py` / `test_identity_t2.py` → 33 passed。**分组全量回归终态**（`python scripts/run_regression.py --group-size 6`，65 文件 / 11 组）：**10 组全绿 = 626 passed / 0 failed / 4 skipped**（含 `test_db_init` 所在组 28、`test_demo_app` 所在组 68、`test_identity_t1~t3` 73、`test_identity_t4~t6` 71、S7 六文件 102）；**唯一非绿项＝第 6 组批次形态 exit=1**（`test_llm_proxy / test_memory_proxy / test_models / test_notify_extra / `test_obs_mcp / test_oidc_binding`；连续重试 3 次仍复现，脚本汇总报 `group crashed`）。**逐例定位**：`tests/test_oidc_binding.py` 4 例失败（`test_jit_create_binds_mapping_and_role` / `test_reuse_existing_identity` / `test_username_conflict_gets_suffix` / `test_role_mapping_filters_unknown_roles`），报错 `sqlite3.OperationalError: no such table: openbase.users`（批次上下文 SQLite 测试库表可见性/串扰）；**该文件单跑 5 passed**，且同签名在**改动前**（同日 20:50 门禁聚合主批次实测 605 例 / 4 失败 / `failed_files=[tests/test_oidc_binding.py]`）已复现，属 **PG-ENV-4 登记口径**（`openbase_test` 真实库建库后主批次 0 失败关闭），**非本项引入**。结论：本项改动相关面（db 初始化 / demo_app / identity 全组 / S7 断言）全绿，无新增失败 |
 | runner 校验 | 内嵌 `PyMigrateRunner` 片段语法编译通过（45 行；含内联迁移、7 列守卫、非零退出标记）；`init_openbase_test.ps1 -DryRun` 计划输出正确（真实建库仍属 B 面，登记 PENDING） |
 
 ### 13.4 改动文件
