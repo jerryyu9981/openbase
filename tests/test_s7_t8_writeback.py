@@ -123,11 +123,12 @@ def _writeback_line(block: str) -> str | None:
 
 
 def test_task_card_version_bumped_to_v1100() -> None:
-    """任务卡内部版本升 v1.10.0 并在修订历史登记（批次 9：S7-T6-4 K07 终验回写）."""
+    """任务卡内部版本升 v1.11.0 并在修订历史登记（批次 19：S7-T6-4 K07/SYS-1 终验收口回写）."""
     assert _TASK_CARD.exists(), _TASK_CARD
     text = _read_text(_TASK_CARD)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.10\.0\s*\|", text), "任务卡版本未升 v1.10.0"
-    assert re.search(r"\|\s*v1\.10\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.10.0 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.11\.0\s*\|", text), "任务卡版本未升 v1.11.0"
+    assert re.search(r"\|\s*v1\.11\.0\s*\|\s*2026-09-13\s*\|", text), "修订历史缺少 v1.11.0 条目"
+    assert re.search(r"\|\s*v1\.10\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.10.0 条目（历史保留）"
     assert re.search(r"\|\s*v1\.9\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.9.0 条目（历史保留）"
 
 

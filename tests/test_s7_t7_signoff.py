@@ -322,11 +322,12 @@ def test_summary_table_exists_with_four_repos() -> None:
 
 
 def test_task_card_version_bumped_and_summaries_filled() -> None:
-    """任务卡内部版本升 v1.10.0，卡尾 S2/S3/S4/S5 摘要含入仓 hash 回填."""
+    """任务卡内部版本升 v1.11.0，卡尾 S2/S3/S4/S5 摘要含入仓 hash 回填."""
     assert _TASK_CARD.exists(), _TASK_CARD
     text = _read_text(_TASK_CARD)
-    assert re.search(r"\|\s*版本\s*\|\s*v1\.10\.0\s*\|", text), "任务卡版本未升 v1.10.0"
-    assert re.search(r"\|\s*v1\.10\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.10.0 条目"
+    assert re.search(r"\|\s*版本\s*\|\s*v1\.11\.0\s*\|", text), "任务卡版本未升 v1.11.0"
+    assert re.search(r"\|\s*v1\.11\.0\s*\|\s*2026-09-13\s*\|", text), "修订历史缺少 v1.11.0 条目"
+    assert re.search(r"\|\s*v1\.10\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.10.0 条目（历史保留）"
     assert re.search(r"\|\s*v1\.9\.0\s*\|\s*2026-09-11\s*\|", text), "修订历史缺少 v1.9.0 条目（历史保留）"
     # S2（OpenMemory）入仓 hash 回填
     for digest in ("000a154", "fbc8326", "90cbe37", "a4a0059", "1348229", "cc7c06f"):
