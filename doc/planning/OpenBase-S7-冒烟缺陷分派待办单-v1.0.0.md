@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-FAULT-DISPATCH-v1.0.0 |
-| 版本 | v1.0.6 |
+| 版本 | v1.0.7 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-12 |
-| 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.2；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.3；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.4；S7 批次 14 DPS 探活口径修复会话修订 v1.0.5；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.6） |
+| 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.2；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.3；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.4；S7 批次 14 DPS 探活口径修复会话修订 v1.0.5；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.6；S7 批次 16 跨仓提交状态同步回填会话修订 v1.0.7） |
 | 用途 | **冒烟缺陷分派与闭环回填**：将 S7-T6-2 全量冒烟 S0~S6 实测暴露的三项功能缺陷（F-1/F-2/F-3），逐条落笔为「现象与证据 → 根因判定 → 修复动作 → 验证方式 → 回填位置 → 风险与边界」，供责任方按单修复、重跑指定用例、回填台账，并由 OpenBase 侧复核收口 |
 | 上游依据 | ①`doc/test/evidence/s7/smoke/smoke-summary.json`、`doc/test/evidence/s7/smoke/s0-s6-cases.json`（P0 30 例：PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED）；②`doc/test/evidence/s7/env/env-check.json`（READY 14 / UNREACHABLE 2 / BLOCKED 1）；③《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2**，§2.6 四项功能缺陷）；④《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，内部 **v1.1.0**，§3 用例定义）；⑤各仓实际配置文件（只读定位）；⑥《OpenBase-S7-沙箱外执行单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.5**，§2/§3 结构与回填位）；⑦《OpenBase-数据隔离实现任务卡-v1.0.0.md》（K02/K07/K09/K10/K15，七线 JT 口径回填位） |
 | 关联证据 | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}`；`doc/test/evidence/s7/env/env-check.json`；`doc/test/evidence/s7/gate/gate-aggregate.json` |
@@ -27,6 +27,7 @@
 | v1.0.4 | 2026-09-12 | AI（S7 批次 13 F-1 环境配置与主链路修复会话） | **F-1 修复关闭（环境配置 + 代码修复）**：① 环境侧——三上游地址对齐（OpenRAG→8010 / OpenMemory→8020 / DPS→8030）、补齐 REAL/ENABLED 开关、`DEFAULT_LLM_MODEL=qwen3:0.6b`、`ollama-lan` provider 指向本机、本机 Ollama 启动（v0.32.15，`qwen3:0.6b`/`llama3.2:1b`，CPU）、内部直连密钥经 `OpenBase/.env.shared-infra` 注入；② 代码侧（提交 **`f258022`**，7 文件 / +902 −18，三远端同步）——语义缓存新增 **Redis 后端（可配置切换，默认 sqlite 不变）** + writeback 队列**降级加固**（不缓存失败态、可重试）；③ 复验——openmemory/openrag 探活 **ok**、流式（直连/网关）**200**、非流式（直连）**200**（cache_hit）；④ §1 分派总表 F-1 状态由「待修复」改为 **「已修复（v1.0.4）」**；⑤ 遗留：DPS 探活 401（未带 org/tenant 头，待复核）、冒烟 v4 待重跑。**未改动任何子系统仓文件（OpenLLM 侧代码修复由本批会话实施并已提交）** |
 | v1.0.5 | 2026-09-12 | AI（S7 批次 14 DPS 探活口径修复会话） | **新增 F-7（DPS 组件探活恒 401 → 已修复）**：根因＝real 模式探活打业务只读面 `/api/v2/portrait/list`（需组织/租户身份头），探活上下文无身份 → 恒 401，导致 `/openllm/v1/health` 的 dps 恒 unavailable；修复＝`dps_client.liveness()`（`GET /health/liveness`）+ 网关探活分支改调，新增单测 5 例（**5 passed**，ruff 通过）；实测 `/openllm/v1/health` **三上游全 ok**（openmemory/openrag/dps）。§1 分派总表新增 **F-7** 行（待提交，脚本就绪）；**F-1 行维持「已修复（v1.0.4）」**。未改动其它子系统仓文件 |
 | v1.0.6 | 2026-09-12 | AI（S7 批次 15 冒烟 v4 重跑与回填会话） | **冒烟 v4 快照回填 + F-7 状态更新**：① 冒烟 v4（32 例：30 P0 + 2 P1）= **26 PASS / 0 FAIL / 6 BLOCKED**（v3 21/2/9；新增 5 PASS、FAIL 清零、零回归）；② **F-7 状态由「已修复待提交（脚本就绪）」更新为「已提交（`f1d187b`，三远端同步）」**（`fix(dps): 组件探活改走运维端点 /health/liveness`）；③ **新增环境受限登记（非缺陷，不作为分派缺陷）**：`writeback.db` SQLite WAL 写入在本执行环境被拒 → 回写队列不可用（S2-4 / S3-4 / S5-4 / S4-4 写侧沉淀受阻；主链路已由降级保护正常）；④ 新增特性缺口登记：routing 未输出 `need_profile/profile_source`、未接入 `evaluate_session` 钩子（need-star v0.6.0 分支特性）；⑤ S3-3 命中抖动登记重试策略（+3s）。冒烟快照基线由 v3 更新为 v4。未改动任何子系统仓文件 |
+| v1.0.7 | 2026-09-12 | AI（S7 批次 16 跨仓提交状态同步回填会话） | **F-2 / F-5 / F-6 状态由「已修复待提交」同步为「已提交（三远端同步）」**：F-2 → OpenRAG `ada7a97`（`fix(f2): 补齐 PG 租户列幂等迁移（补列+回填+复合唯一）并对共享库执行`）；F-5 → OpenLLM `41af780`（`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册`）；F-6 → OpenMemory `0a6f351`（`docs(k07): OpenMemory 端点过滤矩阵 8 条缺口补填与隔离用例注册`）。三仓 `git status` 目标文件均无残留改动，`ls-remote` 三端与本地 HEAD 一致。**F-1（`f258022`）/ F-7（`f1d187b`）此前已登记为已提交**。**分派缺陷清单至此全部闭环（F-1~F-7：已提交/已修复；F-4 早前已修复）**。未改动任何子系统仓文件 |
 
 ---
 
@@ -37,10 +38,10 @@
 | 编号 | 标题 | 责任方 | 优先级 | 阻塞用例数 | 关联 S7 断言 | 关联卡（七线 JT） | 状态 |
 |:---:|------|--------|:---:|:---:|-----------|------------------|:---:|
 | **F-1** | OpenLLM 上游 Ollama 不可达（`192.168.0.4:11434` / `localhost:11434` 连接被拒）+ 三真实开关未全开（`open_memory`/`open_rag` client 未注入；`dps` client 已注入但探活 401） | **OpenLLM 仓 + 环境侧**（联调窗口：启动上游 / 改上游地址 / 置开关） | P0 | **8** | S7-T6-2（冒烟 S0~S6） | K15（REAL_* 兜底收口）、K02(LL) | **已修复（v1.0.4）** |
-| **F-2** | OpenRAG 共享库 `collections` 表缺 `tenant_code` 列 → `GET /api/v1/collections`（带 X-API-Key）500、集合创建 / 列表、文本入库（`/documents/text`）、检索、以及经网关的 `rag-proxy query` 500 | **OpenRAG 仓** | P0 | **5** | S7-T6-2、S7-T4-1~4（L2-2 通道矩阵）、S7-T6-4（K07/SYS-1 真实终验） | K10（OpenRAG 强制过滤骨架）、K02(RG) | **已修复关闭（v1.0.3）** |
+| **F-2** | OpenRAG 共享库 `collections` 表缺 `tenant_code` 列 → `GET /api/v1/collections`（带 X-API-Key）500、集合创建 / 列表、文本入库（`/documents/text`）、检索、以及经网关的 `rag-proxy query` 500 | **OpenRAG 仓** | P0 | **5** | S7-T6-2、S7-T4-1~4（L2-2 通道矩阵）、S7-T6-4（K07/SYS-1 真实终验） | K10（OpenRAG 强制过滤骨架）、K02(RG) | **已提交（`ada7a97`，三远端同步）** |
 | **F-3** | OpenLLM `TRUSTED_PROXY_SOURCES=llm-proxy` 与 OpenBase 注入的 `openbase-llm-proxy` 不一致 → M3 可信源不生效（`identity.proxy_source=null`、审计外部身份未采纳） | **OpenLLM 仓**（白名单取值对齐）；OpenBase 提供协议头单一事实源对标 | P0 | **2** | S7-T6-2、S7-T6-1（RA-06 M3 五项真实面） | K09（编排出站身份透传）、K02(LL) | **已修复关闭（v1.0.3）** |
-| **F-5** | OpenLLM K07 端点-过滤矩阵全量缺填（真实底单 351 操作中 344 未登记 + 无隔离用例） | **OpenLLM 仓**（工作树全量补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(LL) | **已修复待提交** |
-| **F-6** | OpenMemory K07 端点-过滤矩阵 8 条缺口（真实底单 36 操作中 8 条未登记 + 无隔离用例） | **OpenMemory 仓**（工作树 8 条缺口补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(OM) | **已修复待提交（工作树）** |
+| **F-5** | OpenLLM K07 端点-过滤矩阵全量缺填（真实底单 351 操作中 344 未登记 + 无隔离用例） | **OpenLLM 仓**（工作树全量补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(LL) | **已提交（`41af780`，三远端同步）** |
+| **F-6** | OpenMemory K07 端点-过滤矩阵 8 条缺口（真实底单 36 操作中 8 条未登记 + 无隔离用例） | **OpenMemory 仓**（工作树 8 条缺口补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(OM) | **已提交（`0a6f351`，三远端同步）** |
 | **F-7** | OpenLLM DPS 组件探活恒 401（real 模式探活打业务只读面 `/api/v2/portrait/list`，要求组织/租户身份头，而探活上下文无身份）→ `/openllm/v1/health` 的 dps 恒 unavailable，掩盖真实可用性 | **OpenLLM 仓**（探活改走运维端点 `/health/liveness`） | P0 | **0**（非冒烟阻塞项，属健康探活口径） | S7-T6-1（RA-06 真实面）、S7-T6-2 | K09（编排出站身份透传）、K02(LL) | **已提交（`f1d187b`，三远端同步）** |
 | — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5/F-6 各计 0） | — | — | — |
 
