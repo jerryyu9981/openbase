@@ -1,0 +1,161 @@
+{
+  "schema_version": 3,
+  "tool": "smoke",
+  "mode": "real",
+  "subsystem": "openmemory",
+  "generated_at": "2026-09-12T16:39:03+08:00",
+  "openbase_commit": "f22a13e968ba7ab9bcd891f474657d7ec42d63bc",
+  "openbase_head_short": "f22a13e",
+  "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
+  "repair_context": "F-2（collections.tenant_code PG 迁移）与 F-3（TRUSTED_PROXY_SOURCES=openbase-llm-proxy，OpenLLM 已重启 /health 200）修复后重跑",
+  "summary": {
+    "total": 7,
+    "PASS": 6,
+    "FAIL": 0,
+    "BLOCKED": 1
+  },
+  "cases": [
+    {
+      "id": "S0-5",
+      "section": "S0",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json",
+          "Authorization": "***REDACTED***"
+        },
+        "body": {
+          "content": "smoke_s05_resource_<uuid>",
+          "memory_type": "persistent",
+          "user_id": "smoke_s05_user"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "smoke_ 前缀资源创建成功",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-1",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json",
+          "Authorization": "***REDACTED***"
+        },
+        "body": {
+          "content": "<smoke_s2_pref>",
+          "memory_type": "persistent",
+          "user_id": "smoke_s2_user",
+          "metadata": {
+            "query": "<content>"
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "memory_id=ffe39530-0fd3-4a4d-839e-71613fedc1e8; memory_type=persistent",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-2",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/recall",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json",
+          "Authorization": "***REDACTED***"
+        },
+        "body": {
+          "query": "<content>",
+          "user_id": "smoke_s2_user",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "命中=True; top_k=5",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-3",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember（无内容 / 错误 X-API-Key）"
+      },
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "无内容=422; 错 X-API-Key=401",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-4",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "mode": "auto",
+          "query": "hello",
+          "options": {
+            "enable_memory": true
+          }
+        }
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:44.492302+00:00\"}",
+      "root_cause": "主通道 /chat 未成功（LLM 上游 Ollama 不可达 + OpenLLM memory client 未注入）；环境待办",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S2-5",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/recall（空 query）+ remember（session）"
+      },
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "空 query=422; session remember=200",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-6",
+      "section": "S2",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8020/api/v1/history/smoke_s2_user（已知限制）"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "真实模式 history 空列表为已知限制，不设通过断言（登记项）",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    }
+  ]
+}

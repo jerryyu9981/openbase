@@ -1,0 +1,103 @@
+{
+  "schema_version": 3,
+  "tool": "smoke",
+  "mode": "real",
+  "subsystem": "dps",
+  "generated_at": "2026-09-12T16:39:03+08:00",
+  "openbase_commit": "f22a13e968ba7ab9bcd891f474657d7ec42d63bc",
+  "openbase_head_short": "f22a13e",
+  "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
+  "repair_context": "F-2（collections.tenant_code PG 迁移）与 F-3（TRUSTED_PROXY_SOURCES=openbase-llm-proxy，OpenLLM 已重启 /health 200）修复后重跑",
+  "summary": {
+    "total": 4,
+    "PASS": 4,
+    "FAIL": 0,
+    "BLOCKED": 0
+  },
+  "cases": [
+    {
+      "id": "S0-3",
+      "section": "S0",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8030/health/liveness + /openapi.json"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "health=200; v2_put_portrait_registered=True",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S4-1",
+      "section": "S4",
+      "priority": "P0",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/calculate + /dps-tenant-001_admin1_001",
+        "headers": {
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-ID": "1",
+          "X-User-Role": "super_admin"
+        },
+        "body": {
+          "person_id": "dps-tenant-001_admin1_001"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "calculate=200 六维=True; get=200 attrs=True",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S4-2",
+      "section": "S4",
+      "priority": "P0",
+      "request": {
+        "method": "PUT/GET",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/dps-tenant-001_admin1_001",
+        "headers": {
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-ID": "1",
+          "X-User-Role": "super_admin"
+        },
+        "body": {
+          "business": {
+            "attributes": {
+              "smoke_grade": "smoke_B_4a3f"
+            }
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "PUT=200; GET 后可见=True（重启存活子项按禁重启约束未执行）",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S4-3",
+      "section": "S4",
+      "priority": "P0",
+      "request": {
+        "method": "GET/PUT",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/list（缺头/四头）+ OpenBase dps-proxy PUT",
+        "headers": {
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-ID": "1",
+          "X-User-Role": "super_admin"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "缺头=401; 四头=200; dps-proxy PUT=200",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    }
+  ]
+}

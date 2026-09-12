@@ -1,0 +1,1218 @@
+{
+  "schema_version": 3,
+  "tool": "smoke",
+  "task": "S7 逐子系统真实冒烟（S0~S6，30 P0 + 2 P1）",
+  "mode": "real",
+  "generated_at": "2026-09-12T16:39:03+08:00",
+  "openbase_commit": "f22a13e968ba7ab9bcd891f474657d7ec42d63bc",
+  "openbase_head_short": "f22a13e",
+  "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
+  "baseline": "smoke-summary-v2.json",
+  "repair_context": "本轮为 F-2 与 F-3 修复后重跑（F-2 已执行 PG 迁移；F-3 OpenLLM 已重启且 /health 200）",
+  "entry_criteria_met": false,
+  "entry_criteria_note": "五服务 /health 通过；但三真实开关未全开（open_memory/open_rag client 未注入）且 LLM 上游 Ollama 不可达（影响主链路 S5/S2-4/S3-4）",
+  "environment": {
+    "services": {
+      "gateway": {
+        "url": "http://127.0.0.1:8000",
+        "health": "200",
+        "note": "OpenBase 103 路径；JWT admin 登录成功"
+      },
+      "openllm": {
+        "url": "http://127.0.0.1:8001",
+        "health": "200",
+        "version": "2.14.3",
+        "note": "F-3 已生效（可信源 openbase-llm-proxy）；openmemory/openrag client 仍未注入；dps 探活 401"
+      },
+      "openrag": {
+        "url": "http://127.0.0.1:8010",
+        "health": "200",
+        "version": "1.9.1",
+        "note": "F-2 已生效（collections.tenant_code 存在）；collections/text/retrieve 全通"
+      },
+      "openmemory": {
+        "url": "http://127.0.0.1:8020",
+        "health": "200",
+        "note": "X-API-Key + Bearer JWT 生效；remember/recall 可用"
+      },
+      "dps": {
+        "url": "http://127.0.0.1:8030",
+        "health": "200",
+        "version": "2.8.1",
+        "note": "四头实测 200，缺头 401；v2 PUT portrait 已注册"
+      },
+      "idp": {
+        "url": "http://127.0.0.1:8090",
+        "health": "200",
+        "note": "OIDC discovery 可用"
+      },
+      "frontend": {
+        "url": "http://[::1]:5173",
+        "health": "up",
+        "note": "仅 IPv6 ::1 监听（127.0.0.1 连接被拒属预期）"
+      }
+    },
+    "entry_criteria_met": false,
+    "entry_criteria_note": "五服务 /health 通过；但三真实开关未全开（open_memory/open_rag client 未注入）且 LLM 上游 Ollama 不可达（影响主链路 S5/S2-4/S3-4）",
+    "blockers": [
+      "OpenLLM OPENLLM_OPENMEMORY_REAL / OPENLLM_OPENRAG_REAL 未开（open_memory/open_rag client 未注入）",
+      "OpenLLM 三上游探活：openmemory/openrag unavailable；dps 探活 401（缺组织/租户头）",
+      "LLM 推理上游 Ollama（192.168.0.4:11434 / 127.0.0.1:11434）连接被拒 → 主通道 /chat 5001",
+      "OpenLLM 选路模型 gpt-4o-mini 未注册（SSE error 2001；已注册模型含 gpt-4/deepseek-v4-flash/qwen3:0.6b/qwen2.5:0.5b/llama3.2:1b）"
+    ],
+    "constraints": "禁止修改代码 / git 提交 / 重启或停止服务；S5-6 需停服 → BLOCKED"
+  },
+  "probes": {
+    "F-2": {
+      "title": "OpenRAG collections.tenant_code 列（PG 迁移）",
+      "before": {
+        "verdict": "NOT_FIXED",
+        "fixed": false,
+        "evidence": [
+          "shared PG 192.168.0.151:5432/nuct public.collections 无 tenant_code 列（has_tenant_code=false）",
+          "POST /api/v1/collections → 500 INTERNAL-5000: asyncpg.exceptions.UndefinedColumnError: column collections.tenant_code does not exist"
+        ],
+        "impact": "S1-1/S3-1/S3-2/S3-3/S6-1 FAIL；S3-4 写侧 rag 沉淀阻塞"
+      },
+      "after": {
+        "verdict": "FIXED",
+        "fixed": true,
+        "method": "information_schema 列探测 + POST/GET /api/v1/collections 行为实测",
+        "evidence": [
+          "public.collections 已含 tenant_code（character varying, NOT NULL, default 'default'）",
+          "POST /api/v1/collections → 200（返回 data.id）；GET /api/v1/collections → 200",
+          "S3-2 text 入库 PENDING→COMPLETED 通过；重复 content 幂等返回既有 document_id",
+          "S3-3 检索 items=1 命中；S6-1 rag-proxy retrieve/stream 通过"
+        ]
+      },
+      "impact_after": "S1-1/S3-1/S3-2/S3-3/S6-1 由 FAIL→PASS；无回归"
+    },
+    "F-3": {
+      "title": "OpenLLM TRUSTED_PROXY_SOURCES 含 openbase-llm-proxy（M3 可信源）",
+      "before": {
+        "verdict": "NOT_FIXED",
+        "fixed": false,
+        "evidence": [
+          "OpenLLM backend/.env TRUSTED_PROXY_SOURCES=llm-proxy（不含 openbase-llm-proxy）",
+          "X-Proxy-Source=openbase-llm-proxy + 四头 → audit external_user_id=NULL（未采纳）",
+          "X-Proxy-Source=llm-proxy（旧值）→ 采纳（对照组）"
+        ],
+        "impact": "S0-4/S5-3 FAIL（M3 外部身份不采纳）"
+      },
+      "after": {
+        "verdict": "FIXED",
+        "fixed": true,
+        "method": "OpenLLM backend/.env 配置核对 + audit_logs 落库行为实测（external_user_id/external_org_id）",
+        "evidence": [
+          "OpenLLM backend/.env TRUSTED_PROXY_SOURCES=openbase-llm-proxy",
+          "X-Proxy-Source=openbase-llm-proxy + 四头 → audit external_user_id 非空、external_org_id 非空（采纳=True）",
+          "非受信来源（无 X-Proxy-Source）伪造身份头 → 未落库（防伪造生效）",
+          "注：旧值 llm-proxy 现不再是可信源（白名单为替换而非追加），OpenBase 注入值已对齐协议头规范 PROXY_SOURCE_LLM=openbase-llm-proxy"
+        ]
+      },
+      "impact_after": "S0-4/S5-3 由 FAIL→PASS；无回归"
+    }
+  },
+  "summary": {
+    "total": 32,
+    "pass": 21,
+    "fail": 2,
+    "blocked": 9,
+    "by_subsystem": {
+      "gateway": {
+        "total": 10,
+        "PASS": 4,
+        "FAIL": 0,
+        "BLOCKED": 6
+      },
+      "openllm": {
+        "total": 5,
+        "PASS": 2,
+        "FAIL": 2,
+        "BLOCKED": 1
+      },
+      "openrag": {
+        "total": 6,
+        "PASS": 5,
+        "FAIL": 0,
+        "BLOCKED": 1
+      },
+      "openmemory": {
+        "total": 7,
+        "PASS": 6,
+        "FAIL": 0,
+        "BLOCKED": 1
+      },
+      "dps": {
+        "total": 4,
+        "PASS": 4,
+        "FAIL": 0,
+        "BLOCKED": 0
+      }
+    },
+    "p0": {
+      "total": 30,
+      "pass": 21,
+      "fail": 2,
+      "blocked": 7
+    },
+    "p1": {
+      "total": 2,
+      "pass": 0,
+      "fail": 0,
+      "blocked": 2
+    }
+  },
+  "delta_vs_v2": {
+    "v2": {
+      "pass": 14,
+      "fail": 9,
+      "blocked": 9
+    },
+    "v3": {
+      "pass": 21,
+      "fail": 2,
+      "blocked": 9
+    },
+    "delta": {
+      "pass": 7,
+      "fail": -7,
+      "blocked": 0
+    },
+    "changed_cases": [
+      {
+        "id": "S0-4",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S1-1",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S3-1",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S3-2",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S3-3",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-3",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S6-1",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      }
+    ],
+    "regressions": [],
+    "improvements": [
+      {
+        "id": "S0-4",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S1-1",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S3-1",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S3-2",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S3-3",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S5-3",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      },
+      {
+        "id": "S6-1",
+        "priority": "P0",
+        "v2": "FAIL",
+        "v3": "PASS",
+        "changed": true
+      }
+    ]
+  },
+  "case_diff_vs_v2": [
+    {
+      "id": "S0-1",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "FAIL",
+      "changed": false
+    },
+    {
+      "id": "S0-2",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S0-3",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S0-4",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S0-5",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S1-1",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S1-2",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "FAIL",
+      "changed": false
+    },
+    {
+      "id": "S2-1",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-2",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-3",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-4",
+      "priority": "P0",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S2-5",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S2-6",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S3-1",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S3-2",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S3-3",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S3-4",
+      "priority": "P0",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S4-0",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-1",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-2",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-3",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S4-4",
+      "priority": "P1",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S5-1",
+      "priority": "P0",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S5-2",
+      "priority": "P0",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S5-3",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S5-4",
+      "priority": "P0",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S5-5",
+      "priority": "P0",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S5-6",
+      "priority": "P0",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S6-1",
+      "priority": "P0",
+      "v2": "FAIL",
+      "v3": "PASS",
+      "changed": true
+    },
+    {
+      "id": "S6-2",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    },
+    {
+      "id": "S6-3",
+      "priority": "P1",
+      "v2": "BLOCKED",
+      "v3": "BLOCKED",
+      "changed": false
+    },
+    {
+      "id": "S6-4",
+      "priority": "P0",
+      "v2": "PASS",
+      "v3": "PASS",
+      "changed": false
+    }
+  ],
+  "cases": [
+    {
+      "id": "S0-1",
+      "section": "S0",
+      "priority": "P0",
+      "subsystem": "openllm",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/openllm/v1/health"
+      },
+      "status_code": 200,
+      "verdict": "FAIL",
+      "evidence": "{\"openmemory\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"组件 open_memory 不可用: client 未注入\"}, \"openrag\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"client_not_injected\"}, \"dps\": {\"status\": \"unavailable\", \"latency_ms\": 94, \"reason\": \"组件 dps 不可用: HTTP 401: 缺少组织或租户标识 (status=401)\"}}",
+      "root_cause": "三真实开关未全生效：open_memory/open_rag client 未注入；dps 探活 401（缺组织/租户头）",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S0-2",
+      "section": "S0",
+      "priority": "P0",
+      "subsystem": "openrag",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8010/openrag/endpoints",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "contains_text_endpoint=True",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S0-3",
+      "section": "S0",
+      "priority": "P0",
+      "subsystem": "dps",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8030/health/liveness + /openapi.json"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "health=200; v2_put_portrait_registered=True",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S0-4",
+      "section": "S0",
+      "priority": "P0",
+      "subsystem": "openllm",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/openllm/v1/chat",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json",
+          "X-Proxy-Source": "openbase-llm-proxy",
+          "X-User-ID": "***REDACTED***",
+          "X-Org-ID": "smoke-s04-org",
+          "X-Tenant-ID": "smoke-s04-tenant",
+          "X-User-Role": "admin",
+          "X-Request-ID": "smoke-s04-5d60e5682c"
+        },
+        "body": {
+          "model": "smoke-nonexistent",
+          "messages": [
+            {
+              "role": "user",
+              "content": "ping"
+            }
+          ]
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "TRUSTED_PROXY_SOURCES=openbase-llm-proxy; 可信源 openbase-llm-proxy 采纳=True",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S0-5",
+      "section": "S0",
+      "priority": "P0",
+      "subsystem": "openmemory",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json",
+          "Authorization": "***REDACTED***"
+        },
+        "body": {
+          "content": "smoke_s05_resource_<uuid>",
+          "memory_type": "persistent",
+          "user_id": "smoke_s05_user"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "smoke_ 前缀资源创建成功",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S1-1",
+      "section": "S1",
+      "priority": "P0",
+      "subsystem": "openrag",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections（无/有 X-API-Key）；http://127.0.0.1:8020/api/v1/sessions（无/有 X-API-Key）",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "RAG no-key=401, key=200; MEM no-key=401, key=200",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S1-2",
+      "section": "S1",
+      "priority": "P0",
+      "subsystem": "openllm",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8001/openllm/v1/health（三上游组件）"
+      },
+      "status_code": 200,
+      "verdict": "FAIL",
+      "evidence": "{\"openmemory\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"组件 open_memory 不可用: client 未注入\"}, \"openrag\": {\"status\": \"unavailable\", \"latency_ms\": 0, \"reason\": \"client_not_injected\"}, \"dps\": {\"status\": \"unavailable\", \"latency_ms\": 94, \"reason\": \"组件 dps 不可用: HTTP 401: 缺少组织或租户标识 (status=401)\"}}",
+      "root_cause": "OPENLLM_OPENMEMORY_REAL/OPENLLM_OPENRAG_REAL 未开（client 未注入）；dps 探活 401",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S2-1",
+      "section": "S2",
+      "priority": "P0",
+      "subsystem": "openmemory",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json",
+          "Authorization": "***REDACTED***"
+        },
+        "body": {
+          "content": "<smoke_s2_pref>",
+          "memory_type": "persistent",
+          "user_id": "smoke_s2_user",
+          "metadata": {
+            "query": "<content>"
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "memory_id=ffe39530-0fd3-4a4d-839e-71613fedc1e8; memory_type=persistent",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-2",
+      "section": "S2",
+      "priority": "P0",
+      "subsystem": "openmemory",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/recall",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json",
+          "Authorization": "***REDACTED***"
+        },
+        "body": {
+          "query": "<content>",
+          "user_id": "smoke_s2_user",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "命中=True; top_k=5",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-3",
+      "section": "S2",
+      "priority": "P0",
+      "subsystem": "openmemory",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/remember（无内容 / 错误 X-API-Key）"
+      },
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "无内容=422; 错 X-API-Key=401",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-4",
+      "section": "S2",
+      "priority": "P0",
+      "subsystem": "openmemory",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "mode": "auto",
+          "query": "hello",
+          "options": {
+            "enable_memory": true
+          }
+        }
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:44.492302+00:00\"}",
+      "root_cause": "主通道 /chat 未成功（LLM 上游 Ollama 不可达 + OpenLLM memory client 未注入）；环境待办",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S2-5",
+      "section": "S2",
+      "priority": "P0",
+      "subsystem": "openmemory",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8020/api/v1/recall（空 query）+ remember（session）"
+      },
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "空 query=422; session remember=200",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S2-6",
+      "section": "S2",
+      "priority": "P0",
+      "subsystem": "openmemory",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8020/api/v1/history/smoke_s2_user（已知限制）"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "真实模式 history 空列表为已知限制，不设通过断言（登记项）",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S3-1",
+      "section": "S3",
+      "priority": "P0",
+      "subsystem": "openrag",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "smoke_kb_f7b0c275"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "create=200 cid=1a91f7ea-ae1a-4a3f-8fb5-186a481626ca; list=200",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S3-2",
+      "section": "S3",
+      "priority": "P0",
+      "subsystem": "openrag",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/documents/text",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "content": "<smoke text>"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "submit=200 status=PENDING doc=3fb15edd-0278-45f9-8e8a-3bbb4575b022; 轮询=COMPLETED; 幂等 doc=3fb15edd-0278-45f9-8e8a-3bbb4575b022",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S3-3",
+      "section": "S3",
+      "priority": "P0",
+      "subsystem": "openrag",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/query/retrieve",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "query": "<smoke text>",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "retrieve=200 items=1 命中=True",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S3-4",
+      "section": "S3",
+      "priority": "P0",
+      "subsystem": "openrag",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat（rag 组件）"
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:49.737085+00:00\"}",
+      "root_cause": "主通道未成功（Ollama 不可达 + OpenLLM rag client 未注入）→ 写侧 rag 沉淀无法验证",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S4-0",
+      "section": "S4",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json",
+          "X-User-ID": "***REDACTED***"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":5,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id\":\"20000000-0000-0000-0000-000000000001\",\"name\":\"张伟E2E\",\"basi",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S4-1",
+      "section": "S4",
+      "priority": "P0",
+      "subsystem": "dps",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/calculate + /dps-tenant-001_admin1_001",
+        "headers": {
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-ID": "1",
+          "X-User-Role": "super_admin"
+        },
+        "body": {
+          "person_id": "dps-tenant-001_admin1_001"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "calculate=200 六维=True; get=200 attrs=True",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S4-2",
+      "section": "S4",
+      "priority": "P0",
+      "subsystem": "dps",
+      "request": {
+        "method": "PUT/GET",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/dps-tenant-001_admin1_001",
+        "headers": {
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-ID": "1",
+          "X-User-Role": "super_admin"
+        },
+        "body": {
+          "business": {
+            "attributes": {
+              "smoke_grade": "smoke_B_4a3f"
+            }
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "PUT=200; GET 后可见=True（重启存活子项按禁重启约束未执行）",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S4-3",
+      "section": "S4",
+      "priority": "P0",
+      "subsystem": "dps",
+      "request": {
+        "method": "GET/PUT",
+        "url": "http://127.0.0.1:8030/api/v2/portrait/list（缺头/四头）+ OpenBase dps-proxy PUT",
+        "headers": {
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-ID": "1",
+          "X-User-Role": "super_admin"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "缺头=401; 四头=200; dps-proxy PUT=200",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S4-4",
+      "section": "S4",
+      "priority": "P1",
+      "subsystem": "openllm",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8001/openllm/v1/writeback",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json",
+          "X-Proxy-Source": "openbase-llm-proxy",
+          "X-User-ID": "***REDACTED***",
+          "X-Org-ID": "dps-org-001",
+          "X-Tenant-ID": "dps-tenant-001",
+          "X-User-Role": "super_admin"
+        },
+        "body": {
+          "user_id": "dps-tenant-001_admin1_001",
+          "targets": {
+            "profile": {
+              "write": true,
+              "confidence": 0.3
+            }
+          }
+        }
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "{\"error\":{\"message\":\"服务器内部错误\",\"type\":\"internal_error\",\"code\":\"internal_error\"}}",
+      "root_cause": "P1 登记项：/openllm/v1/writeback 500 internal_error（写侧真实链路未就绪）",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S5-1",
+      "section": "S5",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "mode": "auto",
+          "query": "你好",
+          "options": {
+            "enable_profile": true,
+            "enable_memory": true,
+            "enable_rag": true,
+            "user_id": "smoke_s5_user",
+            "kb_id": "smoke_kb_01",
+            "enable_llm": true,
+            "model": "auto"
+          }
+        }
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:54.021873+00:00\"}",
+      "root_cause": "LLM 上游 Ollama 不可达（5001）→ 无法取得 routing 事件",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S5-2",
+      "section": "S5",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
+        "body": {
+          "mode": "auto",
+          "query": "你好",
+          "options": {
+            "enable_profile": true,
+            "enable_memory": true,
+            "enable_rag": true,
+            "user_id": "smoke_s5_user",
+            "kb_id": "smoke_kb_01",
+            "enable_llm": true,
+            "model": "auto"
+          }
+        }
+      },
+      "status_code": 200,
+      "verdict": "BLOCKED",
+      "evidence": "event: routing\ndata: {\"components\": {\"need_memory\": true, \"need_rag\": true, \"reason\": \"auto\", \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"gpt-4o-mini\", \"reason\": \"cost\"}, \"parallel\": false}\nevent: error\ndata: {\"code\": 2001, \"message\": \"模型 'gpt-4o-mini' 不存在\"}",
+      "root_cause": "SSE 主链路受 LLM 上游阻塞：routing 正常但选路模型 gpt-4o-mini 未注册(2001)且 Ollama 不可达(5001) → 缺 chunk/done",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S5-3",
+      "section": "S5",
+      "priority": "P0",
+      "subsystem": "openllm",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8001/openllm/v1/chat → public.audit_logs(external_user_id/external_org_id)"
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "openbase-llm-proxy 采纳=True (external_org_id 非空=True); 非受信源伪造不落库=True",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S5-4",
+      "section": "S5",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "POST",
+        "url": "流式收尾 EvaluateSession 钩子"
+      },
+      "status_code": 0,
+      "verdict": "BLOCKED",
+      "evidence": "依赖 S5-2 流式成功（end/DONE 触发钩子）",
+      "root_cause": "受 LLM 上游不可达阻塞（S5-2 缺 done），钩子未触发",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S5-5",
+      "section": "S5",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+        "body": {
+          "mode": "explicit",
+          "pipeline": [
+            {
+              "component": "llm"
+            }
+          ]
+        }
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:57.631228+00:00\"}",
+      "root_cause": "llm-only explicit 受 LLM 上游不可达阻塞（5001）",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S5-6",
+      "section": "S5",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "-",
+        "url": "OpenRAG 停服降级（builtin / degraded）"
+      },
+      "status_code": 0,
+      "verdict": "BLOCKED",
+      "evidence": "-",
+      "root_cause": "需停 OpenRAG 服务注入故障；任务约束禁止停止/重启服务，未执行",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S6-1",
+      "section": "S6",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections/{cid}/query/retrieve + /query/stream",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "query": "smoke",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "list=200 cid=1a91f7ea-ae1a-4a3f-8fb5-186a481626ca; retrieve=200 items=1 命中=True; stream=200 start=True done=True",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S6-2",
+      "section": "S6",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember + /recall",
+        "headers": {
+          "Authorization": "***REDACTED***",
+          "Content-Type": "application/json"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "remember=200; recall=200",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S6-3",
+      "section": "S6",
+      "priority": "P1",
+      "subsystem": "gateway",
+      "request": {
+        "method": "POST",
+        "url": "跨链路一致性（主通道沉淀 → 旁路 memory-proxy recall）"
+      },
+      "status_code": 0,
+      "verdict": "BLOCKED",
+      "evidence": "-",
+      "root_cause": "P1 登记：主通道沉淀受 LLM 上游阻塞，跨链路一致性无法验证",
+      "v2_verdict": "BLOCKED"
+    },
+    {
+      "id": "S6-4",
+      "section": "S6",
+      "priority": "P0",
+      "subsystem": "gateway",
+      "request": {
+        "method": "-",
+        "url": "P1 登记不阻塞（S4-4 / S6-3）"
+      },
+      "status_code": 0,
+      "verdict": "PASS",
+      "evidence": "S4-4 / S6-3 失败结果仅登记，不作为真实模式启用决策阻塞项",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    }
+  ],
+  "key_failures": [
+    {
+      "id": "S0-1/S1-2",
+      "verdict": "FAIL",
+      "root_cause": "OpenLLM 三真实开关未全开：OPENLLM_OPENMEMORY_REAL/OPENLLM_OPENRAG_REAL 未开（open_memory/open_rag client 未注入）；dps client 已注入但探活 401（缺组织/租户头）"
+    },
+    {
+      "id": "S2-4/S3-4/S5-1/S5-2/S5-4/S5-5/S6-3",
+      "verdict": "BLOCKED",
+      "root_cause": "LLM 推理上游 Ollama（192.168.0.4:11434 / 127.0.0.1:11434）连接被拒（5001）＋选路模型 gpt-4o-mini 未注册（2001）→ 主链路非流式/流式均无法完成，沉淀与跨链路一致性不可验证"
+    },
+    {
+      "id": "S4-4",
+      "verdict": "BLOCKED",
+      "root_cause": "P1 登记项：/openllm/v1/writeback 返回 500 internal_error（写侧真实链路未就绪）"
+    },
+    {
+      "id": "S5-6",
+      "verdict": "BLOCKED",
+      "root_cause": "需停 OpenRAG 服务注入故障验证降级；任务约束禁止停止/重启服务，未执行"
+    }
+  ],
+  "evidence_files": {
+    "gateway": "smoke-gateway.json",
+    "openllm": "smoke-openllm.json",
+    "openrag": "smoke-openrag.json",
+    "openmemory": "smoke-openmemory.json",
+    "dps": "smoke-dps.json"
+  },
+  "note": "凭据自各仓 .env 读取；证据中 Authorization/X-API-Key/X-User-ID 一律脱敏，未输出任何密钥/token 明文。"
+}

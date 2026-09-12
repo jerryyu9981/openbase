@@ -1,0 +1,133 @@
+{
+  "schema_version": 3,
+  "tool": "smoke",
+  "mode": "real",
+  "subsystem": "openrag",
+  "generated_at": "2026-09-12T16:39:03+08:00",
+  "openbase_commit": "f22a13e968ba7ab9bcd891f474657d7ec42d63bc",
+  "openbase_head_short": "f22a13e",
+  "source": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（内部 v1.1.0）",
+  "repair_context": "F-2（collections.tenant_code PG 迁移）与 F-3（TRUSTED_PROXY_SOURCES=openbase-llm-proxy，OpenLLM 已重启 /health 200）修复后重跑",
+  "summary": {
+    "total": 6,
+    "PASS": 5,
+    "FAIL": 0,
+    "BLOCKED": 1
+  },
+  "cases": [
+    {
+      "id": "S0-2",
+      "section": "S0",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8010/openrag/endpoints",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "contains_text_endpoint=True",
+      "root_cause": "",
+      "v2_verdict": "PASS"
+    },
+    {
+      "id": "S1-1",
+      "section": "S1",
+      "priority": "P0",
+      "request": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections（无/有 X-API-Key）；http://127.0.0.1:8020/api/v1/sessions（无/有 X-API-Key）",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "RAG no-key=401, key=200; MEM no-key=401, key=200",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S3-1",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "smoke_kb_f7b0c275"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "create=200 cid=1a91f7ea-ae1a-4a3f-8fb5-186a481626ca; list=200",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S3-2",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST/GET",
+        "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/documents/text",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "content": "<smoke text>"
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "submit=200 status=PENDING doc=3fb15edd-0278-45f9-8e8a-3bbb4575b022; 轮询=COMPLETED; 幂等 doc=3fb15edd-0278-45f9-8e8a-3bbb4575b022",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S3-3",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8010/api/v1/collections/{cid}/query/retrieve",
+        "headers": {
+          "X-API-Key": "***REDACTED***",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "query": "<smoke text>",
+          "top_k": 5
+        }
+      },
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "retrieve=200 items=1 命中=True",
+      "root_cause": "",
+      "v2_verdict": "FAIL"
+    },
+    {
+      "id": "S3-4",
+      "section": "S3",
+      "priority": "P0",
+      "request": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat（rag 组件）"
+      },
+      "status_code": 500,
+      "verdict": "BLOCKED",
+      "evidence": "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"data\":null,\"timestamp\":\"2026-09-12T08:36:49.737085+00:00\"}",
+      "root_cause": "主通道未成功（Ollama 不可达 + OpenLLM rag client 未注入）→ 写侧 rag 沉淀无法验证",
+      "v2_verdict": "BLOCKED"
+    }
+  ]
+}
