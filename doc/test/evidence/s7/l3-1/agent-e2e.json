@@ -1,140 +1,161 @@
 {
-    "schema_version":  1,
-    "tool":  "verify_l3_1_agent.ps1",
-    "task":  "S7-T5",
-    "evidence_ref":  "S7-T5-1~4",
-    "title":  "S7-T5 L3-1 Agent 端到端",
-    "mode":  "run",
-    "status":  "PENDING",
-    "exit_code":  2,
-    "execution_face":  "B",
-    "base_url":  "http://127.0.0.1:8000",
-    "agent_key_masked":  "sk-agent-***",
-    "generated_at":  "2026-09-11T18:59:45+08:00",
-    "commit":  "0595bcd",
-    "openbase_commit":  "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
-    "reason":  "沙箱无四仓运行态/无真实 agent key：L3-1 Agent 端到端属 B 面 -\u003e PENDING；真实执行需联调窗口",
-    "identity_headers":  [
-                             "X-User-ID",
-                             "X-Tenant-ID",
-                             "X-User-Role",
-                             "X-Proxy-Source"
-                         ],
-    "whitelist_cases":  [
-                            {
-                                "system":  "DPS",
-                                "case":  "trusted-header",
-                                "expect":  "PASS",
-                                "desc":  "受信来源 + 四头 = 信任放行"
-                            },
-                            {
-                                "system":  "DPS",
-                                "case":  "untrusted-header",
-                                "expect":  "403",
-                                "desc":  "非白名单携带身份头 -\u003e PERM_UNTRUSTED_IDENTITY_HEADER"
-                            },
-                            {
-                                "system":  "DPS",
-                                "case":  "cross-domain",
-                                "expect":  "404/403/empty",
-                                "desc":  "跨域不可见"
-                            },
-                            {
-                                "system":  "OpenLLM",
-                                "case":  "trusted-header",
-                                "expect":  "PASS",
-                                "desc":  "受信来源 + 四头 = 信任放行"
-                            },
-                            {
-                                "system":  "OpenLLM",
-                                "case":  "untrusted-header",
-                                "expect":  "403",
-                                "desc":  "非白名单携带身份头 -\u003e PERM_UNTRUSTED_IDENTITY_HEADER"
-                            },
-                            {
-                                "system":  "OpenLLM",
-                                "case":  "cross-domain",
-                                "expect":  "404/403/empty",
-                                "desc":  "跨域不可见"
-                            },
-                            {
-                                "system":  "OpenRAG",
-                                "case":  "trusted-header",
-                                "expect":  "PASS",
-                                "desc":  "受信来源 + 四头 = 信任放行"
-                            },
-                            {
-                                "system":  "OpenRAG",
-                                "case":  "untrusted-header",
-                                "expect":  "403",
-                                "desc":  "非白名单携带身份头 -\u003e PERM_UNTRUSTED_IDENTITY_HEADER"
-                            },
-                            {
-                                "system":  "OpenRAG",
-                                "case":  "cross-domain",
-                                "expect":  "404/403/empty",
-                                "desc":  "跨域不可见"
-                            },
-                            {
-                                "system":  "OpenMemory",
-                                "case":  "trusted-header",
-                                "expect":  "PASS",
-                                "desc":  "受信来源 + 四头 = 信任放行"
-                            },
-                            {
-                                "system":  "OpenMemory",
-                                "case":  "untrusted-header",
-                                "expect":  "403",
-                                "desc":  "非白名单携带身份头 -\u003e PERM_UNTRUSTED_IDENTITY_HEADER"
-                            },
-                            {
-                                "system":  "OpenMemory",
-                                "case":  "cross-domain",
-                                "expect":  "404/403/empty",
-                                "desc":  "跨域不可见"
-                            }
-                        ],
-    "checks":  [
-                   {
-                       "id":  "S7-T5-1",
-                       "name":  "agent key -\u003e 四头齐全且与主体一致；agent 无交互登录路径（0 可达）",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "agent 四头探活响应码 404（需联调窗口核对四头一致与无登录路径）",
-                       "evidence":  "doc/test/evidence/s7/l3-1/agent-key-issuance.json"
-                   },
-                   {
-                       "id":  "S7-T5-2",
-                       "name":  "各系统白名单放行（每系统 \u003e=3 例）；非白名单携带身份头全链路 403",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "非白名单携带身份头响应码 401；各系统白名单矩阵需四仓运行态（联调窗口回填）",
-                       "evidence":  "doc/test/evidence/s7/l3-1/system-whitelist-cases.json"
-                   },
-                   {
-                       "id":  "S7-T5-3",
-                       "name":  "域隔离：跨域不可见（404/403/空），跨域同名并存互不可见",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "跨域隔离需真实双域数据面（联调窗口回填）",
-                       "evidence":  "doc/test/evidence/s7/l3-1/domain-isolation.json"
-                   },
-                   {
-                       "id":  "S7-T5-4",
-                       "name":  "未授权 403（PERM_UNTRUSTED_IDENTITY_HEADER）；M1 独立模式与 M2 受信头采纳分别断言",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "M1/M2 双模式断言需真实 service key 与受信头链路（联调窗口回填）",
-                       "evidence":  "doc/test/evidence/s7/l3-1/unauthorized-403.json + m1-m2.json"
-                   }
-               ],
-    "pending_items":  [
-                          {
-                              "id":  "L3-1-REAL",
-                              "item":  "L3-1 Agent 端到端（四头一致 / 各系统白名单 / 域隔离 / 未授权 403 + M1/M2）",
-                              "precondition":  "四仓运行态 + 真实 agent key（sk-agent-*）",
-                              "owner":  "联调窗口",
-                              "action":  "真实窗口执行后回填 status=PASS/FAIL"
-                          }
-                      ]
+  "schema_version": 1,
+  "tool": "verify_l3_1_agent.ps1",
+  "task": "S7-T5",
+  "evidence_ref": "S7-T5-1~4",
+  "title": "S7-T5 L3-1 Agent 端到端",
+  "mode": "run",
+  "execution_face": "B",
+  "base_url": "http://127.0.0.1:8000",
+  "generated_at": "2026-09-13T18:20:46+0800",
+  "commit": "ebbbed0e04c6dacdb361b31c61e7d4b26c59acc7",
+  "identity_headers": [
+    "X-User-ID",
+    "X-Tenant-ID",
+    "X-User-Role",
+    "X-Proxy-Source"
+  ],
+  "status": "PENDING",
+  "exit_code": 2,
+  "checks": [
+    {
+      "id": "S7-T5-1",
+      "name": "agent key -> 主体一致（四头齐备）；agent 无交互登录路径（0 可达）；suspend 即时失效且 restore 不复活旧密钥",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l3-1/agent-key-issuance.json"
+    },
+    {
+      "id": "S7-T5-2",
+      "name": "各系统白名单放行（每系统 >=3 例）；非白名单携带身份头全链路 403",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l3-1/system-whitelist-cases.json"
+    },
+    {
+      "id": "S7-T5-3",
+      "name": "域隔离：跨域不可见（404/403/空），跨域同名并存互不可见",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "双域（双租户）同名数据面未预置，跨域可见性无法在真实数据面断言；需预置双域数据后回填",
+      "evidence": "doc/test/evidence/s7/l3-1/domain-isolation.json"
+    },
+    {
+      "id": "S7-T5-4",
+      "name": "未授权 403（PERM_UNTRUSTED_IDENTITY_HEADER）；M1 独立模式与 M2 受信头采纳分别断言",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l3-1/unauthorized-403.json + m1-m2.json"
+    }
+  ],
+  "artifacts": {
+    "agent_id": 34,
+    "agent_key_id": 13,
+    "agent_username": "smoke_l3_1_1789294847",
+    "agent_me": {
+      "id": 34,
+      "username": "smoke_l3_1_1789294847",
+      "tenant_id": null,
+      "permissions": [
+        "openllm:view",
+        "openrag:view",
+        "openmemory:view",
+        "dps:view",
+        "gateway:view"
+      ]
+    },
+    "agent_login_http": 403,
+    "agent_login_error_code": "AUTH_403",
+    "suspend_invalidates_key": true,
+    "old_key_not_resurrected": true,
+    "rotate_code": 200,
+    "whitelist_cases": [
+      {
+        "system": "DPS",
+        "case": "trusted-header-pass",
+        "http": 200,
+        "expect": 200
+      },
+      {
+        "system": "DPS",
+        "case": "untrusted-header-forbidden",
+        "http": 403,
+        "error_code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+        "expect": 403
+      },
+      {
+        "system": "DPS",
+        "case": "trusted-header-agent-key",
+        "http": 200,
+        "expect": 200
+      },
+      {
+        "system": "OpenLLM",
+        "case": "trusted-header-pass",
+        "http": 200,
+        "expect": 200
+      },
+      {
+        "system": "OpenLLM",
+        "case": "untrusted-header-forbidden",
+        "http": 403,
+        "error_code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+        "expect": 403
+      },
+      {
+        "system": "OpenLLM",
+        "case": "trusted-header-agent-key",
+        "http": 200,
+        "expect": 200
+      },
+      {
+        "system": "OpenRAG",
+        "case": "trusted-header-pass",
+        "http": 200,
+        "expect": 200
+      },
+      {
+        "system": "OpenRAG",
+        "case": "untrusted-header-forbidden",
+        "http": 403,
+        "error_code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+        "expect": 403
+      },
+      {
+        "system": "OpenRAG",
+        "case": "trusted-header-agent-key",
+        "http": 200,
+        "expect": 200
+      },
+      {
+        "system": "OpenMemory",
+        "case": "trusted-header-pass",
+        "http": 200,
+        "expect": 200
+      },
+      {
+        "system": "OpenMemory",
+        "case": "untrusted-header-forbidden",
+        "http": 403,
+        "error_code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+        "expect": 403
+      },
+      {
+        "system": "OpenMemory",
+        "case": "trusted-header-agent-key",
+        "http": 200,
+        "expect": 200
+      }
+    ],
+    "untrusted_http": 403,
+    "untrusted_error_code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+    "m1_service_key_http": 200,
+    "m1_proxy_http": 200,
+    "m1_proxy_anonymous_http": 401,
+    "m2_trusted_header_http": 200
+  },
+  "reason": "存在未闭合项（见 checks[].reason）"
 }

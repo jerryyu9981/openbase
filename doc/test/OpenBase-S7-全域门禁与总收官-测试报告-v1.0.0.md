@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-TEST-v1.0.0 |
-| 版本 | v1.0.17 |
+| 版本 | v1.0.18 |
 | 状态 | [Review]（S7 段（总收官段）测试报告；**34 条断言逐条状态 + 段门禁六项聚合结论**；A 面（沙箱可判定）已真实执行，B 面（联调窗口必需）PENDING 登记，禁伪造；**v1.0.1：S7-T7-1 / S7-T7-2 按实测更正**；**v1.0.2：联调窗口实跑回填——T2~T5 脚本实跑（PENDING）、T6 门禁聚合实跑、冒烟 S0~S6 实跑（P0 14/9/7）、S6 B1 E2E 实跑（0/9）、PG-ENV 状态更新**；**v1.0.3：F-4 修复后 S6 B1 E2E 9/9 PASS；openbase_test 真实建库后主批次 676 passed / 0 failed，PG-ENV-1~4 关闭**；**v1.0.4：K07/SYS-1 端点-过滤矩阵真实导出终验——五实例 openapi 真实导出 + 逐仓逐行核对：缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、DPS 35 条豁免复核日需续期 → 结论 FAIL（子系统仓缺口，只登记不代改）**；**v1.0.5：OpenLLM K07 全量补填回填（工作树，待提交）——openllm 矩阵 354 行 / 覆盖 349 / 豁免 5 / 缺口 344→0；门禁复跑 gaps=0 exit 0；隔离用例 767 passed；缺口合计 352→8（仅 OpenMemory）；gate verdict FAIL→PARTIAL**；**v1.0.7：F-2（OpenRAG PG 租户列幂等迁移补齐并对共享库执行，`POST /api/v1/collections` 500→200）+ F-3（OpenLLM 白名单对齐 `openbase-llm-proxy` 并重启生效）修复完成；冒烟 S0~S6 重跑（v3：P0 21 PASS / 2 FAIL / 7 BLOCKED，7 例 FAIL→PASS、零回归）**；**v1.0.8：F-1 修复完成——环境侧（上游地址/开关/默认模型/provider/本机 Ollama/密钥注入）+ 代码侧（提交 `f258022`：语义缓存 Redis 后端可切换、writeback 队列降级加固）；复验 openmemory/openrag 探活 ok、流式（直连/网关）200、非流式（直连）200**；**v1.0.9：DPS 探活口径修复（F-7）——探活由业务面 `/api/v2/portrait/list` 改走运维端点 `/health/liveness`（单测 5 passed、ruff 通过），重启后 `/openllm/v1/health` 三上游全部 ok（openmemory/openrag/dps）；提交脚本就绪待执行**；**v1.0.10：冒烟 v4 全量重跑——26 PASS / 0 FAIL / 6 BLOCKED（v3 21/2/9），新增 5 例 PASS（S0-1/S1-2/S5-1/S5-2/S5-5）、FAIL 清零、零回归；余 6 BLOCKED 中 4 例归因「回写队列写限制（环境受限，主链路已降级保护）」、1 例禁停服（S5-6）、1 例特性缺口登记**；**v1.0.11：跨仓提交状态同步——四仓修复与产物均已入库并三远端同步（OpenLLM `f258022`/`f1d187b`/`41af780`、OpenMemory `0a6f351`、OpenRAG `ada7a97`），`S7-T6-4` 与分派单 F-2/F-5/F-6 状态同步为「已提交」**；**v1.0.12：K07/SYS-1 门禁收口 PARTIAL→PASS（DPS 35 条豁免续期至 2026-12-31；缺口 0 / 未覆盖 0 / 豁免 59 全有效）+ 门禁聚合复跑 `overall=PASS exit=0 pass=20 fail=0 pending=2`**；**v1.0.13：DPS 35 条豁免续期已入库（`b5f5c06`，2026-09-13，三远端同步）——K07 子系统仓待提交项清零**） |
 | 日期 | 2026-09-12 |
 | 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批编制；S7 批次 6 回填会话修订 v1.0.1；S7 批次 7 全量冒烟执行会话修订 v1.0.2；S7 批次 8 收口会话修订 v1.0.3；S7 批次 9 K07 终验会话修订 v1.0.4；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.5；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.6；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.7；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.8；S7 批次 14 DPS 探活口径修复会话修订 v1.0.9；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.10；S7 批次 16 跨仓提交状态同步回填会话修订 v1.0.11；S7 批次 17 K07 门禁收口与聚合复跑会话修订 v1.0.12；S7 批次 19 DPS 豁免续期入库回填会话修订 v1.0.13；S7 批次 21 六服务启动与双通道端到端实测会话修订 v1.0.14；S7 批次 22 OpenBase 受控重启与双通道终验回填会话修订 v1.0.15；S7 批次 23 DPS 门禁恢复与 S4-T8 基座导入会话修订 v1.0.16；S7 批次 24 DPS 门禁恢复入库回填会话修订 v1.0.17） |
@@ -37,6 +37,7 @@
 | v1.0.16 | 2026-09-13 | AI（S7 批次 23 DPS 门禁恢复与 S4-T8 基座导入会话） | **① DPS 门禁恢复（人工决定）**：API 文档面移出身份/租户豁免面（`identity_gate`/`tenant` 两处清单），权限层保留豁免以避免 unknown 资源误判 403 —— 实测 **匿名 `/openapi.json`→401、`/docs`→401、带身份→200、`/health/liveness`→200**；DPS 自身 K07 矩阵复跑 **计数不变**（total=169/covered=134/exempt=35/gaps=0/uncovered=0/drift=0，豁免口径为三层清单并集，权限层保留 → 无级联）；**编排 `checkall` 27 PASS / 0 FAIL**（原唯一 FAIL「DPS /openapi.json 期望 401」已消除）；② **S4-T8 `matrix_rows` 基座导入**：由 OpenLLM `backend/app/identity/ab_equivalence.py::matrix_rows` 只读导入导出 **17 行**（state: covered 8 / 登记待S7终验 6 / 豁免3；channel: A 9 / B 8）→ `doc/test/evidence/s7/l2-2/matrix-rows-base.json`；官方终结器实跑 **S7-T4-1 由 PENDING 转 PASS**（矩阵行全覆盖、缺口 0），T4-2/3/4 为该工具内固定 PENDING 设计（真实证据见 `dual_channel_e2e.py` 三份 JSON）；③ DPS 测试同步：`test_p22_fail_closed.py`（R1 对齐用例）、`test_s5_t1_identity_gate.py`（豁免清单用例）随口径更新，专项 4 passed |
 | v1.0.16 | 2026-09-13 | AI（S7 批次 23 DPS 门禁恢复与 S4-T8 基座导入会话） | **① DPS 门禁恢复（人工决定）**：API 文档面移出身份/租户豁免面（`identity_gate`/`tenant` 两处清单），权限层保留豁免以避免 unknown 资源误判 403 —— 实测 **匿名 `/openapi.json`→401、`/docs`→401、带身份→200、`/health/liveness`→200**；DPS 自身 K07 矩阵复跑 **计数不变**（total=169/covered=134/exempt=35/gaps=0/uncovered=0/drift=0，豁免口径为三层清单并集，权限层保留 → 无级联）；**编排 `checkall` 27 PASS / 0 FAIL**（原唯一 FAIL「DPS /openapi.json 期望 401」已消除）；② **S4-T8 `matrix_rows` 基座导入**：由 OpenLLM `backend/app/identity/ab_equivalence.py::matrix_rows` 只读导入导出 **17 行**（state: covered 8 / 登记待S7终验 6 / 豁免3；channel: A 9 / B 8）→ `doc/test/evidence/s7/l2-2/matrix-rows-base.json`；官方终结器实跑 **S7-T4-1 由 PENDING 转 PASS**（矩阵行全覆盖、缺口 0），T4-2/3/4 为该工具内固定 PENDING 设计（真实证据见 `dual_channel_e2e.py` 三份 JSON）；③ DPS 测试同步：`test_p22_fail_closed.py`（R1 对齐用例）、`test_s5_t1_identity_gate.py`（豁免清单用例）随口径更新，专项 4 passed |
 | v1.0.17 | 2026-09-13 | AI（S7 批次 24 DPS 门禁恢复入库回填会话） | **DPS 门禁恢复入库完成**：提交 **`386378c`**（2026-09-13 15:40，10 文件 / 205+ 31-），origin / backup / github 三远端 `ls-remote` 实测均一致；入库面 = 身份/租户豁免面收窄 + 权限层保留豁免 + 两测试同口径更新 + K07 矩阵 v1.0.2 + 2 个脚本补 BOM + 投放脚本 2 件。**入库后复核**：匿名 `/openapi.json`→401、带身份→200、`/health/liveness`→200；DPS K07 `--check` = 169/134/35 gaps=0（不变）；编排 `checkall` 27 PASS / 0 FAIL。**同批登记三处投放脚本缺陷及修复**：① bat 仓根取 `%~dp0..` 误跳到上级（=两次闪退真因，改 `%~dp0` + 绝对路径）；② ps1 在 param 默认值用 `$PSScriptRoot`（PS 5.1 为空 → Join-Path 报错，改脚本体内三级兜底解析）；③ 清单含缺失文件时 `git add` pathspec 中断（改按存在文件过滤）；另修守卫中文路径误判（改计数比较）与 CRCRLF 行尾污染（改字节写入）。脚本侧已在等价替身仓复演通过（`b21c095`，10 files changed，exit 0） |
+| v1.0.18 | 2026-09-13 | AI（S7 批次 25 段门禁 ①②④ 联调会话） | **段门禁 ①②④ 联调：三原则骨架升级为真实运行器（含三处根因修复）**：① **R-1** `demo_app.py` 未启用 `identity` 模块 → `/api/v1/identity/*` 全 404；启用后 openapi 路径 103→**115**；② **R-2** 部署入口未启 outbox 投递循环 + `OPENBASE_REDIS_URL` 未配置 → 事件面不可观测；补启动钩子 + 指向共享 Redis 后事件真实 published；③ **R-3** 共享 Redis 跨用例脏读 → `tests/conftest.py` 增 `isolate_identity_cache` autouse 夹具（identity 三套件 **44 passed**）；④ **真实面结果**：L1-1 **3 PASS / 1 PENDING**（T2-1/T2-2/T2-3：停用→事件→消费→DPS/OpenMemory 阻断 403→幂等重放 `deduplicated=true`→restore 解除阻断；T2-4 负例 400/403 通过、正例需 CLI 授权码登记 PENDING）、L2-1 **4/4 PASS**（驱动 OpenLLM 真实 `ChannelStateManager`：B 断→A 接管 / A 断→B 维持 / 单主路径 / 回切审计链齐备）、L3-1 **3 PASS / 1 PENDING**（agent key 即时失效与不复活 / 12 例白名单矩阵全符含 403 / 未授权 403 + M1 独立模式 + M2 受信头；T5-3 域隔离因缺双域数据面 PENDING）；OpenLLM 侧 `smoke_l3_2.py` 沙箱面**聚合退出码 0**；⑤ **脚本形态**：三 PS1 骨架改为委派真实运行器（保留退出码与骨架期参数），`tests/test_s7_tools_skeleton.py` 口径同步（状态自洽 + PENDING 必附原因 + PASS 必全项 PASS，26 例全绿）；⑥ 新增开放项 **ENV-DB-1**（受限执行面前台进程无法完成 PG 会话 → purge 正例与库依赖用例受限）；⑦ 冒烟基线仍为 v5（23/0/9，Ollama 已启动待重跑）。**仅本仓改动：`demo_app.py`、`tests/conftest.py`、`tests/test_s7_tools_skeleton.py`、三 PS1 + 三 Python 运行器 + 报告/证据；`.env` 为本地配置不入库** |
 
 ---
 
@@ -129,6 +130,47 @@
 | 新增缺陷 | 冒烟/门禁/E2E 实跑暴露 | **F-1** OpenLLM 上游不可达 + memory/rag client 未注入 → **已修复（v1.0.8）**（环境配置 + 主链路代码 `f258022`）；**F-2** OpenRAG `tenant_code` 缺列 → **已提交（`ada7a97`）**；**F-3** `TRUSTED_PROXY_SOURCES` 取值不一致 → **已修复关闭（v1.0.7）**；**F-4** 前端路由告警 → 已修复（v1.0.3）；**F-5/F-6** K07 缺口补填 → **已提交（`41af780` / `0a6f351`）**；**F-7** DPS 探活恒 401 → **已提交（`f1d187b`）** | — | `smoke/{smoke-summary-v4.json,smoke-<sys>.json}`；`ui-e2e/status.json`；`gate/k07-finalize.json` |
 
 **统计变更说明**：**v1.0.12 四分法为 通过 7 / 部分达成 10 / PENDING 17 / 不通过 0**（S7-T6-4 由「部分达成」转「通过」——DPS 35 条豁免 2026-09-12 续期至 2026-12-31，缺口 0 / 未覆盖 0 / 豁免 59 全有效；门禁聚合复跑 `overall=PASS exit=0 pass=20 fail=0 pending=2`）；**v1.0.5 四分法为 通过 6 / 部分达成 11 / PENDING 17 / 不通过 0**（S7-T6-4 由「不通过（真实终验 FAIL）」转「部分达成」——OpenLLM 工作树补填缺口 344→0（待提交），余 OpenMemory 8）；新增标注——**已实跑（实测登记）**：T2/T4/T5/T6-1~4、S6 B1、冒烟 S0~S6；**BLOCKED**：T3-1~4（禁停服务）。真实缺陷 **4 项**（F-1~F-4）为本次实跑新增登记；**v1.0.5 新增待提交项**：OpenLLM K07 补填 5 文件（工作树，待可写环境提交）。**v1.0.7 更新**：四分法维持 **通过 6 / 部分达成 12 / PENDING 16 / 不通过 0**（S7-T6-2 由「PENDING（仅结构对账）」转「部分达成（真实实跑 21/2/7，7 例 FAIL→PASS）」）；**缺陷状态**：F-2/F-3 **已修复关闭**、F-4 已修复关闭、F-1 仍登记（环境侧）、F-5/F-6 待提交；**v1.0.7 新增待提交项**：F-2 修复 3 文件（OpenRAG 仓工作树，已生成一键提交脚本）。**v1.0.10 更新**：冒烟基线升至 **v4（26 PASS / 0 FAIL / 6 BLOCKED）**；存量待提交项更新为——OpenRAG F-2 3 文件、OpenMemory K07（F-6）4 文件（脚本就绪）；OpenLLM F-1（`f258022`）与 F-7（`f1d187b`）**已提交并三远端同步**。
+
+### 2.3 段门禁 ①②④ 联调实跑更新（v1.0.18，2026-09-13）
+
+> 本批为「段门禁 ①②④ 联调」实跑：以真实服务 + 真实 HTTP + 真实状态机驱动，把三原则骨架替换为可复跑的真实运行器。**禁伪造口径不变**：未闭合项一律登记 PENDING/FAIL 并附原因。
+
+**根因修复（代码，OpenBase 仓）**
+
+| # | 现象 | 根因 | 修复 |
+|---|------|------|------|
+| R-1 | `/api/v1/identity/*`（agents / lifecycle / purge / events / blocked）全部 404 | `openbase/demo_app.py` 模块清单**未启用 `identity`**（`init_app` 只挂载 enabled_modules） | 模块清单加入 `identity` → 实测 openapi 路径 103 → **115**（identity 12 条） |
+| R-2 | `GET /api/v1/identity/events` 恒空、L1-1 事件面对账不可观测 | 部署入口未启动 outbox 投递循环；且 `OPENBASE_REDIS_URL` 未配置（默认 `localhost:6379` 不可达） | `demo_app` 启动钩子拉起 `OutboxDispatcherService.start_background_loop`；`.env` 增 `OPENBASE_REDIS_URL`（共享 Redis）→ 事件由 pending 推进 **published**（实测事件列表返回真实 schema v1 载荷） |
+| R-3 | 启用 Redis 后 identity 用例跨用例脏读（连续运行 2 例失败、单独运行通过） | 共享 Redis 中 `principal:{id}` / `user:{username}` 快照跨用例残留 | `tests/conftest.py` 增 autouse 夹具 `isolate_identity_cache`（复位 redis 单例 + 清理身份缓存键；Redis 不可用为无操作）→ identity 三套件 **44 passed** |
+
+**④ 三原则真实面（骨架 → 真实运行器）**
+
+| 断言 | 结论 | 实测关键值 |
+|------|------|-----------|
+| S7-T2-1（L1-1：DPS 画像读阻断） | **PASS** | 停用主体（active→suspended，tvn 0→1）→ outbox `user.suspended` 真实载荷 → `events/apply` 消费 → `blocked?domain=dps` **403** |
+| S7-T2-2（L1-1：OpenMemory 阻断 + 幂等） | **PASS** | `blocked?domain=openmemory` **403**；同 event_id 重放 → `consumption.deduplicated=true`（无重复副作用） |
+| S7-T2-3（L1-1：Q-5=A 保留 + restored 解除） | **PASS** | restore（suspended→active，tvn +1）→ `user.restored` 消费 → `blocked` **200 allowed=true** |
+| S7-T2-4（L1-1：purge 显式触发） | **PENDING** | 负例已实测通过：非 deactivated→**400 BIZ_NOT_PURGEABLE**、未授权→**403 BIZ_PURGE_AUTH_REQUIRED**；**正例（物理清除 + `audit_logs action=identity.purge`）需 CLI 签发一次性授权码（DB 直连）**，受限执行面下不可完成 → 登记 PENDING（不伪造 PASS） |
+| S7-T3-1~4（L2-1 主备切换演练） | **PASS ×4** | 驱动 OpenLLM 真实状态机 `app.identity.channel.ChannelStateManager`：B 断→A 接管（before=b / after=a / 写只能在 A、经 B 写被拒 / 降级告警 `failover_b_to_a`）、A 断→B 维持（主通道不变、备不可用告警 `a_failure`）、单主路径三阶段采样恒长 1、回切链路审计留痕 6 动作齐备（`recover_b`→`drill_window_open`→`drill_verified`→`drill_window_elapsed`→`switch_back_to_b`） |
+| S7-T5-1（L3-1：agent key + 无交互登录） | **PASS** | `POST /identity/agents` 签发 **`sk-agent-*`**；`/auth/me` 带密钥 200 且主体一致；agent 用户名交互登录 **403（拒绝）**；agent suspend → 密钥**即时失效 401**；restore 后旧密钥**不复活 401**（须重新签发） |
+| S7-T5-2（L3-1：白名单矩阵 + 非白名单 403） | **PASS** | 4 系统 × 3 例 = **12 例全符**：受信来源+四头→200、受信来源+agent 密钥→200、非受信来源+四头→**403 PERM_UNTRUSTED_IDENTITY_HEADER** |
+| S7-T5-3（L3-1：域隔离） | **PENDING** | 双域（双租户）同名数据面未预置，OpenBase 侧无法在真实数据面断言跨域可见性 → 登记 PENDING（OpenLLM 侧命名空间层「跨域不可见」已由 `smoke_l3_2.py` 沙箱面实证，见下） |
+| S7-T5-4（L3-1：未授权 403 + M1/M2） | **PASS** | 非受信头 → **403 PERM_UNTRUSTED_IDENTITY_HEADER**；**M1 独立模式**：`ob_k_*` 服务密钥经 `/api/v1/proxy/openllm/health` → **200**（同路径匿名 **401** 对照）；**M2 受信头采纳**：受信来源 + 四头 → 200 |
+| L3-2（OpenBase 侧贯通冒烟） | **PENDING** | `scripts/smoke_l3_2.py` 真实执行面可达（`reachable=true`），逐子系统关键路径断言与真实双签归联调窗口；**OpenLLM 侧** `backend/scripts/smoke_l3_2.py` 沙箱面实跑 **聚合退出码 0**（单主路径 / A-B 等价三系统 / L2-2 矩阵 17 行 / 403 矩阵 / 跨域不可见 / org 别名防串域 / 保留码拒写 / REAL_* 零耦合 / 段门禁项 1~4 PASS，项 5 `REGISTERED_NON_SANDBOX`） |
+
+**② 冒烟 S0-S6**：基线为 `smoke-summary-v5.json`（**23 PASS / 0 FAIL / 9 PENDING**）；其中 7 例因本机 Ollama 未启动而挂起，**本批已启动 Ollama（`D:\Ollama\ollama.exe serve`，端口 11434 监听，模型 `llama3.2:1b`）** → 7 例具备复跑条件，重跑回填见下一版。
+
+**① RA-06 五项真实面**：本批以 `gate_aggregate.py` 复跑口径为准（见 §3）；identity 侧可复跑证据——`tests/test_identity_t3.py`（吊销即时性）/ `tests/test_identity_t4.py`（委托链）随 R-3 修复后 **44 passed**。
+
+**权限/信任链开关（`.env`，本地配置不入库）**：`OPENBASE_TRUSTED_PROXY_SOURCES`（6 个规范来源常量）+ `OPENBASE_ENFORCE_INBOUND_IDENTITY_HEADERS=true`（两段式发布进入强校验段）→ 非受信来源携带身份头一律 403（fail-closed）。
+
+**脚本形态升级**：`verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1` 由「骨架 + 干跑」改为**委派真实运行器**（`scripts/verify_l1_1_cascade.py` / `scripts/drill_l2_1_failover.py` / `scripts/verify_l3_1_agent.py`），保留统一退出码（0/1/2）与骨架期参数；干跑仍一律 PENDING + 原因（`tests/test_s7_tools_skeleton.py` 口径同步更新为「状态自洽 + PENDING 必附原因 + PASS 必全项 PASS」）。
+
+**开放项（本批新登记）**
+
+- **ENV-DB-1**：受限执行面（Agent 沙箱）下**前台进程无法完成 PG 会话**（`ConnectionResetError: [WinError 64]`；同机服务进程可正常连库）→ 影响：purge 正例（CLI 授权码）、全量回归中依赖真实库的 `test_users_admin` / `test_tenant_admin` 用例。**处置**：purge 正例登记 PENDING 并交付可复跑命令，由非受限环境执行回填。
+- **ENV-REDIS-1**（已处置）：共享 Redis 跨用例脏读 → 见 R-3。
+
 
 ---
 

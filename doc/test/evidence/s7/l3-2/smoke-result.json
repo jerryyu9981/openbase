@@ -9,9 +9,9 @@
   "exit_code": 2,
   "execution_face": "B",
   "base_url": "http://127.0.0.1:8000",
-  "generated_at": "2026-09-11T18:59:52+08:00",
-  "commit": "0595bcd",
-  "openbase_commit": "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
+  "generated_at": "2026-09-13T17:34:46+08:00",
+  "commit": "ebbbed0",
+  "openbase_commit": "ebbbed0e04c6dacdb361b31c61e7d4b26c59acc7",
   "reason": "受信通道可达（base_url 在线）；L3-2 真实双签以各子系统仓脚本为准，OpenBase 侧登记回填 → 保持 PENDING",
   "reachable": true,
   "key_paths": [

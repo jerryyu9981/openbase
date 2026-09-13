@@ -12,6 +12,8 @@ from __future__ import annotations
 import asyncio
 import sys
 
+import pytest
+
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -38,4 +40,46 @@ def reset_db_singletons() -> None:
             pass
     session_mod._engine = None
     session_mod._session_factory = None
+
+
+def _clear_identity_cache_keys() -> None:
+    """清理 identity 主体缓存键（principal:*/user:*；Redis 不可用时静默跳过）.
+
+    背景：启用 Redis 缓存后，主体快照（``principal:{id}``）与用户按名缓存
+    （``user:{username}``，TTL 内）会跨用例残留；用例既复用确定性用户名、又
+    直接改写库中主体状态，残留快照会造成跨用例脏读（示例：
+    tests/test_identity_t4.py::test_t4_4_nested_chain_same_domain_ok_cross_hop_rejected
+    与 tests/test_identity_t3.py::test_t3_1_suspend_immediately_invalidates_existing_access
+    在共享 Redis 下单独运行通过、连续运行失败）。生产为同一库同一 Redis 实例，
+    不存在该语义差异；此处仅做用例间隔离。
+
+    性能：复用 ``redis_client`` 全局单例（不逐用例重建连接），仅对身份键做
+    SCAN + DEL，避免全量测试因远端往返显著变慢。
+    """
+    try:
+        from openbase.core.cache import redis_client
+
+        client = redis_client.get_client()
+        if client is None:
+            return
+        keys: list[str] = []
+        for pattern in ("openbase:principal:*", "openbase:user:*"):
+            keys.extend(client.scan_iter(pattern, count=500))
+        if keys:
+            client.delete(*keys)
+    except Exception:  # noqa: BLE001 - 缓存隔离尽力而为，不阻断用例
+        return
+
+
+@pytest.fixture(autouse=True)
+def isolate_identity_cache() -> None:
+    """用例级缓存隔离：清理身份缓存键（Redis 不可用时为无操作）.
+
+    覆盖全部用例：主体快照缓存污染不限于身份用例文件——例如
+    ``tests/test_verdict_k03.py`` 以「DB 不可达」模拟降级，若命中上一用例残留的
+    ``principal:{id}`` 快照（状态非 active），会走 AUTH_PRINCIPAL_DISABLED 分支而
+    非预期降级分支，造成误判。清理成本为 2 次 SCAN + 1 次 DEL（复用全局连接）。
+    """
+    _clear_identity_cache_keys()
+    yield
 

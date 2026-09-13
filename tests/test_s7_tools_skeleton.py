@@ -356,15 +356,34 @@ def test_no_fake_pass_without_real_environment(
 
 
 def test_default_evidence_registered_as_pending() -> None:
-    """仓内默认证据落点已登记 PENDING（B 面未真实执行项，不写假响应码）."""
+    """仓内默认证据落点已登记且状态自洽（禁伪造：PENDING 必附原因，PASS 必全项 PASS）.
+
+    说明：三脚本已由「骨架 + 干跑一律 PENDING」升级为委派真实运行器
+    （``verify_l1_1_cascade.py`` / ``drill_l2_1_failover.py`` / ``verify_l3_1_agent.py``），
+    默认落点因此可能是真实联调结果（PASS/PENDING）。本断言保证状态与退出码自洽、
+    PENDING 附原因、PASS 不得含未闭合项（禁伪造口径不放松）。
+    """
     for tool in _TOOLS:
         evidence_path = ROOT / tool["evidence_rel"]
-        assert evidence_path.exists(), f"缺少 PENDING 登记证据: {tool['evidence_rel']}"
+        assert evidence_path.exists(), f"缺少证据: {tool['evidence_rel']}"
         payload = _load_json(evidence_path)
         for field in _REQUIRED_FIELDS:
             assert field in payload, f"{tool['evidence_rel']} 缺少字段: {field}"
-        assert payload["status"] == "PENDING", payload["status"]
-        assert payload["exit_code"] == _EXIT_PENDING, payload["exit_code"]
+        assert payload["status"] in _VALID_STATUS, payload["status"]
+        assert payload["exit_code"] == _STATUS_TO_EXIT[payload["status"]], (
+            f"{tool['evidence_rel']} status 与 exit_code 不一致: "
+            f"{payload['status']} / {payload['exit_code']}"
+        )
+        if payload["status"] == "PENDING":
+            assert payload.get("reason"), f"{tool['evidence_rel']} PENDING 缺少 reason"
+        if payload["status"] == "PASS":
+            unresolved = [
+                item["id"] for item in payload.get("checks", [])
+                if item.get("status") != "PASS"
+            ]
+            assert not unresolved, (
+                f"{tool['evidence_rel']} 标 PASS 但存在未闭合项: {unresolved}"
+            )
 
 
 # ===========================================================================

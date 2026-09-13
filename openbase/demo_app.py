@@ -48,6 +48,10 @@ for module in (
     "rag_proxy",
     # v1.4.5 DPS 对接（R-381：dps-proxy JWT 门禁 + 身份头注入）
     "dps_proxy",
+    # U1 统一身份收口（RA-01/OB-1/OB-2/L1-1/L1-2）：Principal 主体面 +
+    # agent 密钥面（sk-agent-*）+ lifecycle 状态机 + purge 受权 + events/blocked 契约桩。
+    # S7 门禁 ④（L1-1 级联 / L3-1 Agent）联调依赖该路由挂载。
+    "identity",
 ):
     settings.enable_module(module)
 
@@ -105,3 +109,17 @@ if not _DB_READY:
     logger.info("fallback: memory demo user seeded (admin/admin123)")
 
 app = init_app(settings)
+
+
+@app.on_event("startup")
+async def _start_identity_outbox_dispatcher() -> None:
+    """启动 L1-1 outbox 投递后台循环（部署入口按需启动，草案 §8.2）.
+
+    identity.lifecycle.* 迁移在同事务写 outbox_events；投递循环把 pending 事件
+    推进为 published，使 ``GET /api/v1/identity/events`` 可观测、消费端可对账。
+    无 Redis 时投递失败会走指数退避重试（事件不丢）。
+    """
+    from openbase.modules.identity.dispatcher import OutboxDispatcherService
+
+    await OutboxDispatcherService.start_background_loop(interval_seconds=1.0)
+    logger.info("identity outbox dispatcher started")

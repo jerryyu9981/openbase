@@ -1,84 +1,125 @@
 {
-    "schema_version":  1,
-    "tool":  "drill_l2_1_failover.ps1",
-    "task":  "S7-T3",
-    "evidence_ref":  "S7-T3-1~4",
-    "title":  "S7-T3 L2-1 主备切换演练",
-    "mode":  "dry-run",
-    "status":  "PENDING",
-    "exit_code":  2,
-    "execution_face":  "B",
-    "base_url":  "",
-    "scenario":  "both",
-    "generated_at":  "2026-09-11T12:39:10+08:00",
-    "commit":  "0a195c4",
-    "openbase_commit":  "0a195c4106ae150d98c812924ae3ffc6949bd0c6",
-    "reason":  "沙箱无可注故障运行态/无切换窗口：L2-1 主备切换演练属 B 面 -\u003e PENDING；真实执行需联调窗口",
-    "planned_commands":  [
-                             "pwsh -File scripts/drill_l2_1_failover.ps1 -Scenario b-down -BaseUrl \u003cGATEWAY_BASE\u003e -EvidenceDir \u003c...\u003e -DryRun",
-                             "pwsh -File scripts/drill_l2_1_failover.ps1 -Scenario a-down -BaseUrl \u003cGATEWAY_BASE\u003e -EvidenceDir \u003c...\u003e -DryRun"
-                         ],
-    "scenario_matrix":  [
-                            {
-                                "key":  "b-down",
-                                "label":  "场景 1：B 断 -\u003e A 接管",
-                                "route_before":  "B 编排（主）",
-                                "route_after":  "A 直连接管（备转主）",
-                                "degrade_header":  "X-Channel-Degrade: a-direct",
-                                "alert":  "channel.b.degraded",
-                                "restore_condition":  "B /health 恢复 + 显式切回触发"
-                            },
-                            {
-                                "key":  "a-down",
-                                "label":  "场景 2：A 断 -\u003e B 维持",
-                                "route_before":  "B 编排（主）",
-                                "route_after":  "B 编排维持（A 备不可用）",
-                                "degrade_header":  "X-Channel-Degrade: none",
-                                "alert":  "channel.a.unavailable",
-                                "restore_condition":  "A /health 恢复 + 显式切回触发"
-                            }
-                        ],
-    "checks":  [
-                   {
-                       "id":  "S7-T3-1",
-                       "name":  "B 断 -\u003e A 接管（A 直连接管，降级头/告警产生，业务不中断）",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：可注故障运行态 + 切换窗口需联调窗口",
-                       "evidence":  "doc/test/evidence/s7/l2-1/drill-report.md（场景 1）+ route-after.json"
-                   },
-                   {
-                       "id":  "S7-T3-2",
-                       "name":  "A 断 -\u003e B 维持（B 编排维持，业务不中断）",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：可注故障运行态 + 切换窗口需联调窗口",
-                       "evidence":  "doc/test/evidence/s7/l2-1/drill-report.md（场景 2）"
-                   },
-                   {
-                       "id":  "S7-T3-3",
-                       "name":  "单主路径：同一动作同一时刻仅一条主路径，禁双主双写",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：ChannelStateManager 单主断言需真实运行态",
-                       "evidence":  "doc/test/evidence/s7/l2-1/route-before.json + route-after.json"
-                   },
-                   {
-                       "id":  "S7-T3-4",
-                       "name":  "演练报告字段齐备（场景/命令/路由/降级头/告警/回切条件/结论）",
-                       "execution_face":  "B",
-                       "status":  "PENDING",
-                       "reason":  "干跑/环境不可达：真实切换前后路由/降级头/告警需联调窗口采集",
-                       "evidence":  "doc/test/evidence/s7/l2-1/drill-report.md"
-                   }
-               ],
-    "pending_items":  [
-                          {
-                              "id":  "L2-1-REAL",
-                              "item":  "L2-1 主备切换演练（B 断-\u003eA 接管 / A 断-\u003eB 维持 / 单主禁双写 / 报告）",
-                              "precondition":  "可注故障运行态（B 上游可停 / 端口可阻断）+ 切换窗口",
-                              "owner":  "联调窗口",
-                              "action":  "受控窗口执行后回填 status=PASS/FAIL 与演练报告 md"
-                          }
-                      ]
+  "schema_version": 1,
+  "tool": "drill_l2_1_failover.ps1",
+  "task": "S7-T3",
+  "evidence_ref": "S7-T3-1~4",
+  "title": "S7-T3 L2-1 主备切换演练",
+  "mode": "run",
+  "execution_face": "B",
+  "generated_at": "2026-09-13T18:21:11+0800",
+  "commit": "ebbbed0e04c6dacdb361b31c61e7d4b26c59acc7",
+  "openllm_backend": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+  "status": "PASS",
+  "exit_code": 0,
+  "checks": [
+    {
+      "id": "S7-T3-1",
+      "name": "B 断 -> A 接管（A 直连接管，降级告警产生，业务不中断）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/drill-report.md（场景 1）+ route-after.json"
+    },
+    {
+      "id": "S7-T3-2",
+      "name": "A 断 -> B 维持（B 编排维持，业务不中断）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/drill-report.md（场景 2）"
+    },
+    {
+      "id": "S7-T3-3",
+      "name": "单主路径：同一动作同一时刻仅一条主路径，禁双主双写",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/route-before.json + route-after.json"
+    },
+    {
+      "id": "S7-T3-4",
+      "name": "演练报告字段齐备（场景/命令/路由/降级头/告警/回切条件/结论）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/drill-report.md"
+    }
+  ],
+  "artifacts": {
+    "scenario_b_down": {
+      "route_before": "b",
+      "consecutive_failures": 3,
+      "takeover": true,
+      "route_after": "a",
+      "primary_paths_after": [
+        "a"
+      ],
+      "write_on_a_allowed": true,
+      "write_on_b_rejected": true,
+      "alert_events": [
+        "component_failure",
+        "component_failure",
+        "component_failure",
+        "failover_b_to_a"
+      ]
+    },
+    "scenario_a_down": {
+      "route_before": "b",
+      "a_consecutive_failures": 1,
+      "route_after": "b",
+      "primary_paths_after": [
+        "b"
+      ],
+      "auto_failover": false,
+      "a_health": {
+        "consecutive_failures": 1,
+        "healthy": true
+      }
+    },
+    "single_primary_samples": [
+      {
+        "stage": "initial",
+        "primary": "b",
+        "paths": [
+          "b"
+        ]
+      },
+      {
+        "stage": "after-failover",
+        "primary": "a",
+        "paths": [
+          "a"
+        ]
+      },
+      {
+        "stage": "after-switch-back",
+        "primary": "b",
+        "paths": [
+          "b"
+        ]
+      }
+    ],
+    "restore_chain": {
+      "switch_back_ok": true,
+      "audit_actions": [
+        "failover_b_to_a",
+        "recover_b",
+        "drill_window_open",
+        "drill_verified",
+        "drill_window_elapsed",
+        "switch_back_to_b"
+      ],
+      "missing_audit_actions": [],
+      "channel_status": {
+        "preference": "b-primary",
+        "primary_channel": "b",
+        "single_primary": true,
+        "state": "b-primary",
+        "healthy_b": true,
+        "drill_window_seconds": 300.0,
+        "auto_failover_enabled": false
+      }
+    }
+  },
+  "reason": ""
 }

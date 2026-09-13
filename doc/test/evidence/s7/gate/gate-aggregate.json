@@ -930,5 +930,45 @@
       "status": "COMMITTED"
     }
   },
-  "smoke_baseline_ref": "doc/test/evidence/s7/smoke/smoke-summary-v4.json"
+  "smoke_baseline_ref": "doc/test/evidence/s7/smoke/smoke-summary-v4.json",
+  "aggregate_rerun_20260913": {
+    "generated_at": "2026-09-13T18:20:10+08:00",
+    "mode": "dry-run",
+    "overall_status": "PASS",
+    "exit_code": 0,
+    "counts": {
+      "sections": 5,
+      "pass": 19,
+      "fail": 0,
+      "pending": 3
+    },
+    "ra06_subitems": [
+      {
+        "name": "双租户隔离回归",
+        "status": "PASS",
+        "cases": 19
+      },
+      {
+        "name": "fail-closed 用例",
+        "status": "PASS",
+        "cases": 21
+      },
+      {
+        "name": "OIDC 批次隔离（存量 T2 归档关闭）",
+        "status": "PASS",
+        "cases": 12
+      },
+      {
+        "name": "委托跨界 403",
+        "status": "PASS",
+        "cases": 13
+      },
+      {
+        "name": "吊销即时性",
+        "status": "PASS",
+        "cases": 17
+      }
+    ],
+    "note": "本批（v1.0.18 段门禁 ①②④ 联调）复跑。因该脚本为无状态重算、不保留历史回填字段，故以原地追加方式记录复跑结论，仓内权威字段（k07_backfill/k07_finalize_ref/smoke_baseline_ref）保持不变。"
+  }
 }
