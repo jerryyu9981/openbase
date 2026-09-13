@@ -42,9 +42,10 @@
       "module": "portrait",
       "name": "画像详情",
       "path": "/portrait/:id",
-      "sample_id": "P-1001",
+      "sample_id": "dps-tenant-001_admin1_001",
+      "sample_id_note": "AD-FE-1：取现网 DPS 真实 person_id（网关明细路由 /portraits/{person_id}，非行 UUID）；数据集重建后需同步更新，否则该页回落 404 受控态并触发浏览器 console 404 资源错误",
       "method": "GET",
-      "data_endpoint": "/api/v1/dps-proxy/portraits/P-1001",
+      "data_endpoint": "/api/v1/dps-proxy/portraits/dps-tenant-001_admin1_001",
       "key_element": "[data-test=\"feature-dist\"]",
       "accept_states": [
         "[data-test=\"isolation-not-found\"]",

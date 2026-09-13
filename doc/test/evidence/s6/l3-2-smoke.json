@@ -4,7 +4,7 @@
   "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.5 / Q-FE-5 / Q-S6-D6",
   "status": "PASS",
   "reason": "L3-2 关键页数据面 / 受信通道来源标识 / 越权收敛 全绿",
-  "openbase_commit": "e0231d2faf1206f30a8d9519a779224f250d46cf",
+  "openbase_commit": "a0c21953b31b79c7dd9c072f4672a406b354e578",
   "ui_version": "1.3.0",
   "base_url": "http://localhost:5173",
   "trusted_source": {
@@ -12,8 +12,8 @@
     "value": "openbase-ui"
   },
   "key_pages_source": "tests/e2e/fixtures/key-pages.json（Q-S6-D6，与 Playwright 同源）",
-  "started_at": "2026-09-13T12:17:04.213Z",
-  "finished_at": "2026-09-13T12:17:23.693Z",
+  "started_at": "2026-09-13T12:53:26.522Z",
+  "finished_at": "2026-09-13T12:53:27.770Z",
   "static_bypass_check": {
     "scanned_root": "openbase-ui/src",
     "port_pattern": "8001|8002|8080|localhost:3",
@@ -172,7 +172,7 @@
         "reachable": true,
         "status": 401,
         "source_header": null,
-        "request_id": "req-5648c384e2eb",
+        "request_id": "req-d8e3f4fe137c",
         "body_code": "AUTH_401",
         "item_count": null
       }
@@ -210,10 +210,10 @@
       "page": "portrait-detail",
       "name": "画像详情",
       "path": "/portrait/:id",
-      "data_endpoint": "/api/v1/dps-proxy/portraits/P-1001",
+      "data_endpoint": "/api/v1/dps-proxy/portraits/dps-tenant-001_admin1_001",
       "result": "PASS",
-      "detail": "HTTP 404",
-      "status": 404,
+      "detail": "HTTP 200",
+      "status": 200,
       "source_header": null,
       "source_passthrough": false,
       "request_id": null,
