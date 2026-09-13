@@ -3,11 +3,11 @@
   "tool": "dual_channel_e2e.py",
   "task": "S7-T4",
   "execution_face": "B",
-  "generated_at": "2026-09-13T11:27:39.513026+08:00",
-  "openbase_commit": "0fae428",
+  "generated_at": "2026-09-13T11:43:23.474967+08:00",
+  "openbase_commit": "cf12ab3",
   "evidence_ref": "S7-T4-3",
   "title": "读路径 A/B 双通道等价（同一读请求经 A/B）",
-  "status": "PARTIAL",
+  "status": "PASS",
   "endpoints": {
     "A": "子系统原生 API（直连）",
     "B": "OpenBase 编排代理（JWT）"
@@ -93,7 +93,7 @@
       "B": {
         "status": 200,
         "url": "http://127.0.0.1:8000/api/v1/memory-proxy/sessions",
-        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-09-13T03:27:40.951634+00:00\"}",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-09-13T03:43:40.092914+00:00\"}",
         "ids": []
       },
       "verdict": "PASS_EMPTY",
@@ -111,13 +111,17 @@
         ]
       },
       "B": {
-        "status": 401,
+        "status": 200,
         "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
-        "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-09-13T03:27:40.992670+00:00\"}",
-        "ids": []
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id",
+        "ids": [
+          "022b0429-315f-41f0-ab82-ad581064660f",
+          "78166aa3-e6cc-417e-b204-ac19bb9a790d",
+          "cbfba441-e6ae-4d05-9f89-2d46cc564ac8"
+        ]
       },
-      "verdict": "BLOCKED",
-      "reason": "A=200 B=401"
+      "verdict": "PASS",
+      "reason": "id 集完全一致（3 条）"
     }
   }
 }

@@ -3,8 +3,8 @@
   "tool": "dual_channel_e2e.py",
   "task": "S7-T4",
   "execution_face": "B",
-  "generated_at": "2026-09-13T11:27:39.513026+08:00",
-  "openbase_commit": "0fae428",
+  "generated_at": "2026-09-13T11:43:23.474967+08:00",
+  "openbase_commit": "cf12ab3",
   "evidence_ref": "S7-T4-4",
   "title": "写路径 A/B 双通道等价（写后跨通道可见）",
   "status": "PASS",
@@ -12,7 +12,7 @@
     "B_write_then_A_read": {
       "write_url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections",
       "write_status": 200,
-      "created_id": "b3312c4a-a94e-48cc-bbaa-a557ca5ac8dd",
+      "created_id": "9f20fe7b-6a4d-4c87-9cf8-a117afb54881",
       "read_url": "http://127.0.0.1:8010/api/v1/collections",
       "read_status": 200,
       "visible_via_A": true,
@@ -21,7 +21,7 @@
     "A_write_then_B_read": {
       "write_url": "http://127.0.0.1:8010/api/v1/collections",
       "write_status": 200,
-      "created_id": "18746b17-104b-48d6-bcb5-992947e56395",
+      "created_id": "4fd3b028-e104-46b0-8a21-b81711330084",
       "read_url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections",
       "read_status": 200,
       "visible_via_B": true,
@@ -30,7 +30,7 @@
     "memory_B_write_then_A_recall": {
       "write_url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember",
       "write_status": 200,
-      "created_memory_id": "8b55a044-3db2-4799-b0e2-f36ee914ae8b",
+      "created_memory_id": "8a8d13fe-02bd-4c05-8f35-07ca5ddf4a27",
       "read_url": "http://127.0.0.1:8020/api/v1/recall",
       "read_status": 200,
       "recalled_via_A": true,
@@ -40,25 +40,25 @@
   },
   "cleanup": {
     "B-created": {
-      "id": "b3312c4a-a94e-48cc-bbaa-a557ca5ac8dd",
+      "id": "9f20fe7b-6a4d-4c87-9cf8-a117afb54881",
       "delete_status": 200,
-      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":null,\"timestamp\":\"2026-09-13T03:27:44.116869+00:00\"}"
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":null,\"timestamp\":\"2026-09-13T03:43:49.882928+00:00\"}"
     },
     "A-created": {
-      "id": "18746b17-104b-48d6-bcb5-992947e56395",
+      "id": "4fd3b028-e104-46b0-8a21-b81711330084",
       "delete_status": 200,
-      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":null,\"timestamp\":\"2026-09-13T03:27:44.267813+00:00\"}"
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":null,\"timestamp\":\"2026-09-13T03:43:50.162180+00:00\"}"
     },
     "replay-created": {
       "skip": "无 id"
     },
     "memory-probe": {
-      "id": "8b55a044-3db2-4799-b0e2-f36ee914ae8b",
+      "id": "8a8d13fe-02bd-4c05-8f35-07ca5ddf4a27",
       "forget_payload_keys": [
         "memory_id"
       ],
       "forget_status": 200,
-      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"memory_ids\":[\"8b55a044-3db2-4799-b0e2-f36ee914ae8b\"],\"status\":\"success\",\"mode\":\"soft\",\"message\":null,"
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"memory_ids\":[\"8a8d13fe-02bd-4c05-8f35-07ca5ddf4a27\"],\"status\":\"success\",\"mode\":\"soft\",\"message\":null,"
     }
   }
 }

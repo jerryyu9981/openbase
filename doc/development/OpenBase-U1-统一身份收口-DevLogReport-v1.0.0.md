@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-INTG-U1-DEVLOG-v1.0.0 |
-| 版本 | v1.0.3 |
-| 状态 | [Review]（T1~T6 开发完成 + T7 兼容回归收口 + T8 文档与段门禁；待测试回溯与人工批准进入 S1a 收官/部署；**v1.0.1：初始化链漂移根治——`init_database()` 内联身份幂等迁移 + 建库 runner fail-loud 守卫**；**v1.0.2：更正 v1.0.1 回归口径表述（禁以未跑完组充作通过）**；**v1.0.3：回归终态定稿（626 passed / 0 failed / 4 skipped；唯一非绿组为 PG-ENV-4 环境性批次失败）**） |
+| 版本 | v1.0.4 |
+| 状态 | [Review]（T1~T6 开发完成 + T7 兼容回归收口 + T8 文档与段门禁；待测试回溯与人工批准进入 S1a 收官/部署；**v1.0.1：初始化链漂移根治——`init_database()` 内联身份幂等迁移 + 建库 runner fail-loud 守卫**；**v1.0.2：更正 v1.0.1 回归口径表述（禁以未跑完组充作通过）**；**v1.0.3：回归终态定稿（626 passed / 0 failed / 4 skipped；唯一非绿组为 PG-ENV-4 环境性批次失败）**；**v1.0.4：现网库落地实证（受控重启后 users 12→19 列、`/api/v1/users` 500→200）**） |
 | 日期 | 2026-09-07 |
 | 作者 | U1 开发组（OpenBase 主仓） |
 | 存放 | doc/development/ |
@@ -22,6 +22,7 @@
 | v1.0.1 | 2026-09-12 | U1 维护组（OpenBase 主仓） | **初始化链漂移根治（`init_database()` 内联身份幂等迁移）**：根因＝`init_database()`（应用启动 `demo_app._try_database_init` 与 `scripts/db/init_openbase_test.ps1` runner 的唯一入口）只做 `create_all` + 种子，U1 身份幂等增量迁移（users 7 列 / `agent_api_keys` / `identity:*` 权限点）需另行调用 → 经该入口建库/初始化的库漏迁移（U1-T7 漂移：存量库 users 缺列）。修复＝在 `init_database()` 末尾内联 `await apply_identity_migration(engine, schema)`（延迟导入避免 core ↔ modules 循环依赖；幂等可重放），并把建库 runner 追加 **fail-loud 守卫**（校验 U1 身份 7 列齐备，缺失即 `sys.exit(3)`），使初始化链永不再漏迁移；TDD：`tests/test_db_init.py::test_init_database_applies_identity_migration`（RED→GREEN）。代码提交 `19123fe` |
 | v1.0.2 | 2026-09-12 | U1 维护组（OpenBase 主仓） | **纠错：修正 v1.0.1 §13.3 回归口径表述**——原文「已跑 6/11 组：291 passed / 0 failed」易误读为第 6 组已通过；据实测更正为「1~5 组全绿 291 passed / 0 failed；第 6 组批次形态 exit=1（连续重试复现），其中 `tests/test_oidc_binding.py` 单跑 5 passed 且与改动前同签名，属 PG-ENV-4 环境性批次串扰；第 7~11 组续跑中」。**结论口径不变**（代码修复与验证证据未变，仅更正表述，禁以未跑完组充作通过）。 |
 | v1.0.3 | 2026-09-12 | U1 维护组（OpenBase 主仓） | **回归终态定稿**：分组全量回归 11 组终态——**10 组全绿 = 626 passed / 0 failed / 4 skipped**；唯一非绿项为第 6 组批次形态 exit=1（脚本汇总 `group crashed`），逐例定位为 `tests/test_oidc_binding.py` 4 例 `sqlite3.OperationalError: no such table: openbase.users`（批次上下文表可见性/串扰；该文件单跑 5 passed，且同签名在改动前即复现，属 PG-ENV-4 口径，非本项引入）。**代码修复与 §13 结论不变**；本节替代 v1.0.1/v1.0.2 的中间态表述。 |
+| v1.0.4 | 2026-09-13 | U1 维护组（OpenBase 主仓） | **现网库落地实证**：人工授权的受控重启（编排 `-Action stop/start -Only openbase`，stop 按端口兜底停编排外旧进程PID 4768 → 新 PID 20896）后，§13 内联迁移在共享 PG 真实生效 —— `openbase.users` 列 **12 → 19**（7 个 U1 语义列全部补齐）、`agent_api_keys` 在库，**`GET /api/v1/users` 带合法 JWT 由 500 → 200**；同时消除运行态 dps-proxy 自环（旧进程未获 `OPENBASE_DPS_UPSTREAM_BASE`，默认值 `http://127.0.0.1:8000` 落回自身）。证据：`doc/test/evidence/s7/l2-2/*.json` + 测试报告 v1.0.15 |
 
 ---
 
@@ -287,3 +288,17 @@ U1 identity 模块实测（全仓分组聚合口径）：
 - 代码提交：`19123fe`（`fix(db): init_database 末尾内联身份幂等迁移，根治初始化链漏迁移`）；本报告所在提交为文档提交。
 - 边界：本项只改 OpenBase 主仓；**未改动四子系统仓**；真实建库/授权/迁移执行仍属 B 面（联调窗口），
   本批仅完成代码链路收口 + 守卫，不做真实库写操作。
+
+### 13.6 现网库落地实证（v1.0.4，2026-09-13 受控重启）
+
+| 项 | 重启前 | 重启后（编排注入 env 后） |
+|----|--------|--------------------------|
+| 运行进程 | PID 4768（编排外启动，无 DPS 上游 env） | **PID 20896**（编排托管，注入 `OPENBASE_DPS_UPSTREAM_BASE`/org-tenant 映射/共享 PG-Redis） |
+| `openbase.users` 列数 | 12（7 个 U1 列全缺） | **19（U1 列全补齐）** |
+| `agent_api_keys` | 在库 | 在库（不变） |
+| `GET /api/v1/users`（合法 JWT） | **500 SYS_500** | **200**（返回 admin/viewer 等） |
+| `GET /api/v1/dps-proxy/{health,portraits,reports/overview}` | 404 / 401 / 401（自环：上游＝自身 8000） | **200 / 200（3 条画像）/ 200** |
+
+结论：§13 的内联迁移经真实重启验证**在共享 PG 生效**，U1-T7 存量库缺列漂移在现网库侧闭环；同时修复了运行态
+dps-proxy 自环（该自环与迁移无关，根因＝编排外启动缺 env）。复跑证据：`read-path-ab-equivalence.json`
+（读等价 4/4 PASS）、`write-path-equivalence.json`、`k14-idempotency.json`（重放 409 / 同名行数 1）。
