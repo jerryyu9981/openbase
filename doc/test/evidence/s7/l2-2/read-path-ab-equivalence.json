@@ -3,8 +3,8 @@
   "tool": "dual_channel_e2e.py",
   "task": "S7-T4",
   "execution_face": "B",
-  "generated_at": "2026-09-13T11:43:23.474967+08:00",
-  "openbase_commit": "cf12ab3",
+  "generated_at": "2026-09-13T19:12:11.768671+08:00",
+  "openbase_commit": "7832e60",
   "evidence_ref": "S7-T4-3",
   "title": "读路径 A/B 双通道等价（同一读请求经 A/B）",
   "status": "PASS",
@@ -17,11 +17,14 @@
       "A": {
         "status": 200,
         "url": "http://127.0.0.1:8010/api/v1/collections",
-        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"49009904-8b2d-4250-a392-317140a9b427\",\"name\":\"smoke_kb_20260912192112\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"8bdc064a-fdc2-449b-b0ef-d832cba3adfd\",\"name\":\"smoke_v6_kb_20260913182508\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured",
         "ids": [
+          "03141379-af90-47f0-872d-ce38bb63be80",
           "1a91f7ea-ae1a-4a3f-8fb5-186a481626ca",
+          "1e39b480-1e25-4bb3-81de-8a1d1047880c",
           "49009904-8b2d-4250-a392-317140a9b427",
           "62dd5755-07ef-468b-9738-c6a376644c79",
+          "8bdc064a-fdc2-449b-b0ef-d832cba3adfd",
           "b1b1a409-bdfa-4de6-9f3f-522277d5936c",
           "ea7075f1-86e4-4374-ac0e-c7aac3ecb4d9",
           "f23412d2-f1f2-4871-a0ae-cf0b0906c180"
@@ -30,18 +33,21 @@
       "B": {
         "status": 200,
         "url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections",
-        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"49009904-8b2d-4250-a392-317140a9b427\",\"name\":\"smoke_kb_20260912192112\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"8bdc064a-fdc2-449b-b0ef-d832cba3adfd\",\"name\":\"smoke_v6_kb_20260913182508\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured",
         "ids": [
+          "03141379-af90-47f0-872d-ce38bb63be80",
           "1a91f7ea-ae1a-4a3f-8fb5-186a481626ca",
+          "1e39b480-1e25-4bb3-81de-8a1d1047880c",
           "49009904-8b2d-4250-a392-317140a9b427",
           "62dd5755-07ef-468b-9738-c6a376644c79",
+          "8bdc064a-fdc2-449b-b0ef-d832cba3adfd",
           "b1b1a409-bdfa-4de6-9f3f-522277d5936c",
           "ea7075f1-86e4-4374-ac0e-c7aac3ecb4d9",
           "f23412d2-f1f2-4871-a0ae-cf0b0906c180"
         ]
       },
       "verdict": "PASS",
-      "reason": "id 集完全一致（6 条）"
+      "reason": "id 集完全一致（9 条）"
     },
     "OpenLLM": {
       "A": {
@@ -93,7 +99,7 @@
       "B": {
         "status": 200,
         "url": "http://127.0.0.1:8000/api/v1/memory-proxy/sessions",
-        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-09-13T03:43:40.092914+00:00\"}",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-09-13T11:12:23.974154+00:00\"}",
         "ids": []
       },
       "verdict": "PASS_EMPTY",

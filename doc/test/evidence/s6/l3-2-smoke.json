@@ -2,18 +2,18 @@
   "schema": "openbase-s6-l3-2-smoke/v1.0.0",
   "task": "S6-T5-1",
   "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.5 / Q-FE-5 / Q-S6-D6",
-  "status": "PENDING",
-  "reason": "受信通道不可达：http://127.0.0.1:8000（B2 环境待办，非沙箱）",
-  "openbase_commit": "72b19daf7b3e847ef4e4a8f1055ef4c7183b16ec",
+  "status": "FAIL",
+  "reason": "存在 2 项断言失败（见 probes/cross_domain_probes）",
+  "openbase_commit": "7832e607456effd69eb0bb3d73e9004214488cc1",
   "ui_version": "1.3.0",
-  "base_url": "http://127.0.0.1:8000",
+  "base_url": "http://localhost:5173",
   "trusted_source": {
     "header": "X-Proxy-Source",
     "value": "openbase-ui"
   },
   "key_pages_source": "tests/e2e/fixtures/key-pages.json（Q-S6-D6，与 Playwright 同源）",
-  "started_at": "2026-09-10T15:39:51.802Z",
-  "finished_at": "2026-09-10T15:39:52.794Z",
+  "started_at": "2026-09-13T11:29:49.649Z",
+  "finished_at": "2026-09-13T11:30:22.082Z",
   "static_bypass_check": {
     "scanned_root": "openbase-ui/src",
     "port_pattern": "8001|8002|8080|localhost:3",
@@ -159,27 +159,161 @@
   "preconditions": {
     "health": [
       {
-        "url": "http://127.0.0.1:8000/health",
-        "reachable": false,
-        "status": null,
-        "error": "TypeError: fetch failed"
+        "url": "http://localhost:5173/health",
+        "reachable": true,
+        "status": 404,
+        "source_header": null,
+        "request_id": null,
+        "body_code": null,
+        "item_count": null
       },
       {
-        "url": "http://127.0.0.1:8000/api/v1/health",
-        "reachable": false,
-        "status": null,
-        "error": "TypeError: fetch failed"
+        "url": "http://localhost:5173/api/v1/health",
+        "reachable": true,
+        "status": 401,
+        "source_header": null,
+        "request_id": "req-011788dfb055",
+        "body_code": "AUTH_401",
+        "item_count": null
       }
     ],
-    "token_source": null
+    "token_source": "OPENBASE_ACCESS_TOKEN"
   },
-  "probes": [],
-  "cross_domain_probes": [],
-  "pending": [
+  "probes": [
     {
-      "item": "trusted-channel",
-      "reason": "受信通道不可达（health 探活全部网络失败）",
-      "blocked_by": "B2"
+      "page": "portrait-list",
+      "name": "画像列表",
+      "path": "/portrait/list",
+      "data_endpoint": "/api/v1/dps-proxy/portraits?page=1&page_size=20",
+      "result": "PASS",
+      "detail": "HTTP 200",
+      "status": 200,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": 3
+    },
+    {
+      "page": "portrait-overview",
+      "name": "画像总览",
+      "path": "/portrait/overview",
+      "data_endpoint": "/api/v1/dps-proxy/reports/overview",
+      "result": "PASS",
+      "detail": "HTTP 200",
+      "status": 200,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": null
+    },
+    {
+      "page": "portrait-detail",
+      "name": "画像详情",
+      "path": "/portrait/:id",
+      "data_endpoint": "/api/v1/dps-proxy/portraits/P-1001",
+      "result": "PASS",
+      "detail": "HTTP 404",
+      "status": 404,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": null
+    },
+    {
+      "page": "openllm-conversations",
+      "name": "对话（OpenLLM 会话）",
+      "path": "/openllm/conversations",
+      "data_endpoint": "/api/v1/llm-proxy/conversations?limit=20",
+      "result": "PASS",
+      "detail": "HTTP 200",
+      "status": 200,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": 16
+    },
+    {
+      "page": "knowledge-chat",
+      "name": "对话（RAG 知识问答）",
+      "path": "/knowledge/chat",
+      "data_endpoint": "/api/v1/rag-proxy/collections?page=1&page_size=20",
+      "result": "PASS",
+      "detail": "HTTP 200",
+      "status": 200,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": 9
+    },
+    {
+      "page": "knowledge-list",
+      "name": "知识列表",
+      "path": "/knowledge/list",
+      "data_endpoint": "/api/v1/rag-proxy/collections?page=1&page_size=20",
+      "result": "PASS",
+      "detail": "HTTP 200",
+      "status": 200,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": 9
+    },
+    {
+      "page": "knowledge-detail",
+      "name": "知识详情",
+      "path": "/knowledge/:id",
+      "data_endpoint": "/api/v1/rag-proxy/collections/kb-1",
+      "result": "FAIL",
+      "detail": "HTTP 500（期望 200/404 或 403）",
+      "status": 500,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": null
+    },
+    {
+      "page": "memory-list",
+      "name": "记忆列表",
+      "path": "/memory/list",
+      "data_endpoint": "/api/v1/memory-proxy/memories?page=1&page_size=20",
+      "result": "PASS",
+      "detail": "HTTP 200",
+      "status": 200,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": 7
+    },
+    {
+      "page": "memory-sessions",
+      "name": "记忆会话",
+      "path": "/memory/sessions",
+      "data_endpoint": "/api/v1/memory-proxy/sessions",
+      "result": "PASS",
+      "detail": "HTTP 200",
+      "status": 200,
+      "source_header": null,
+      "source_passthrough": false,
+      "request_id": null,
+      "item_count": 0
     }
-  ]
+  ],
+  "cross_domain_probes": [
+    {
+      "case": "no-token",
+      "expectation": "401/403（fail-closed）",
+      "result": "PASS",
+      "status": 401,
+      "detail": "HTTP 401"
+    },
+    {
+      "case": "cross-tenant-header",
+      "expectation": "200（空）/ 403",
+      "result": "FAIL",
+      "status": 200,
+      "item_count": 3,
+      "detail": "HTTP 200"
+    }
+  ],
+  "pending": []
 }
