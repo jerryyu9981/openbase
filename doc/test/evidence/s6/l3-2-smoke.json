@@ -2,9 +2,9 @@
   "schema": "openbase-s6-l3-2-smoke/v1.0.0",
   "task": "S6-T5-1",
   "design_ref": "OpenBase-S6-统一前端隔离展示与段门禁收口-设计草案-v1.0.0 §4.5 / Q-FE-5 / Q-S6-D6",
-  "status": "FAIL",
-  "reason": "存在 2 项断言失败（见 probes/cross_domain_probes）",
-  "openbase_commit": "7832e607456effd69eb0bb3d73e9004214488cc1",
+  "status": "PASS",
+  "reason": "L3-2 关键页数据面 / 受信通道来源标识 / 越权收敛 全绿",
+  "openbase_commit": "e0231d2faf1206f30a8d9519a779224f250d46cf",
   "ui_version": "1.3.0",
   "base_url": "http://localhost:5173",
   "trusted_source": {
@@ -12,8 +12,8 @@
     "value": "openbase-ui"
   },
   "key_pages_source": "tests/e2e/fixtures/key-pages.json（Q-S6-D6，与 Playwright 同源）",
-  "started_at": "2026-09-13T11:29:49.649Z",
-  "finished_at": "2026-09-13T11:30:22.082Z",
+  "started_at": "2026-09-13T12:17:04.213Z",
+  "finished_at": "2026-09-13T12:17:23.693Z",
   "static_bypass_check": {
     "scanned_root": "openbase-ui/src",
     "port_pattern": "8001|8002|8080|localhost:3",
@@ -172,7 +172,7 @@
         "reachable": true,
         "status": 401,
         "source_header": null,
-        "request_id": "req-011788dfb055",
+        "request_id": "req-5648c384e2eb",
         "body_code": "AUTH_401",
         "item_count": null
       }
@@ -263,9 +263,9 @@
       "name": "知识详情",
       "path": "/knowledge/:id",
       "data_endpoint": "/api/v1/rag-proxy/collections/kb-1",
-      "result": "FAIL",
-      "detail": "HTTP 500（期望 200/404 或 403）",
-      "status": 500,
+      "result": "PASS",
+      "detail": "HTTP 404",
+      "status": 404,
       "source_header": null,
       "source_passthrough": false,
       "request_id": null,
@@ -308,11 +308,12 @@
     },
     {
       "case": "cross-tenant-header",
-      "expectation": "200（空）/ 403",
-      "result": "FAIL",
-      "status": 200,
-      "item_count": 3,
-      "detail": "HTTP 200"
+      "expectation": "403（非受信来源带头 fail-closed）/ 200（空：受信来源且他域不可见）",
+      "result": "PASS",
+      "status": 403,
+      "body_code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+      "item_count": null,
+      "detail": "HTTP 403 PERM_UNTRUSTED_IDENTITY_HEADER"
     }
   ],
   "pending": []

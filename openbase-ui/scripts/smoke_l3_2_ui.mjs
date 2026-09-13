@@ -356,15 +356,28 @@ async function main() {
     status: noTokenProbe.status,
     detail: noTokenProbe.reachable ? `HTTP ${noTokenProbe.status}` : noTokenProbe.error,
   })
-  const crossTenantProbe = await request(protectedEndpoint, buildHeaders(fixture, token, { 'X-Tenant-Code': 'tenant_other' }))
-  const crossTenantEmpty = crossTenantProbe.status === 200 && (crossTenantProbe.item_count === 0 || crossTenantProbe.item_count === null)
+  // 跨域探针（§5.2）：以**规范头 X-Tenant-ID** 声明他域视角——非受信来源携带身份头
+  // fail-closed（403 PERM_UNTRUSTED_IDENTITY_HEADER）；受信来源则「他域不可见（空 200）」。
+  // 修正记录（AD-TENANT-1）：此前误用非规范头 `X-Tenant-Code`（协议头规范 v1.0 未定义该头，
+  // 网关不视其为身份头）→ 恒回本域数据、断言失真；改为规范头后按强校验段口径 fail-closed。
+  const crossTenantProbe = await request(
+    protectedEndpoint,
+    buildHeaders(fixture, token, { 'X-Tenant-ID': 'tenant_other' }),
+  )
+  const crossTenantDenied = crossTenantProbe.status === 403
+  const crossTenantEmpty =
+    crossTenantProbe.status === 200 &&
+    (crossTenantProbe.item_count === 0 || crossTenantProbe.item_count === null)
   report.cross_domain_probes.push({
     case: 'cross-tenant-header',
-    expectation: '200（空）/ 403',
-    result: crossTenantEmpty || crossTenantProbe.status === 403 ? 'PASS' : crossTenantProbe.reachable ? 'FAIL' : 'PENDING',
+    expectation: '403（非受信来源带头 fail-closed）/ 200（空：受信来源且他域不可见）',
+    result: crossTenantDenied || crossTenantEmpty ? 'PASS' : crossTenantProbe.reachable ? 'FAIL' : 'PENDING',
     status: crossTenantProbe.status,
+    body_code: crossTenantProbe.body_code ?? null,
     item_count: crossTenantProbe.item_count ?? null,
-    detail: crossTenantProbe.reachable ? `HTTP ${crossTenantProbe.status}` : crossTenantProbe.error,
+    detail: crossTenantProbe.reachable
+      ? `HTTP ${crossTenantProbe.status}${crossTenantProbe.body_code ? ` ${crossTenantProbe.body_code}` : ''}`
+      : crossTenantProbe.error,
   })
 
   const pendingCount = report.pending.length
