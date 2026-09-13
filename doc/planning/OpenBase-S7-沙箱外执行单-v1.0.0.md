@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-OUTSIDE-RUN-v1.0.0 |
-| 版本 | v1.0.9 |
+| 版本 | v1.0.10 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-12 |
-| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45；批次 9 K07 终验回填 2026-09-11 22:15；批次 10 OpenLLM K07 补填回填 2026-09-11；批次 11 OpenMemory K07 缺口补填回填 2026-09-12；批次 19 DPS 豁免续期入库回填 2026-09-13；批次 20 OpenLLM 快照落仓脚本登记 2026-09-13） |
+| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45；批次 9 K07 终验回填 2026-09-11 22:15；批次 10 OpenLLM K07 补填回填 2026-09-11；批次 11 OpenMemory K07 缺口补填回填 2026-09-12；批次 19 DPS 豁免续期入库回填 2026-09-13；批次 20 OpenLLM 快照落仓脚本登记 2026-09-13；批次 21 DPS 门禁恢复入库回填 2026-09-13） |
 | 用途 | **S7 沙箱外 / 联调窗口执行单**：将 S7 段（总收官段）全部 B 面（联调窗口必需面）与跨仓收口待办，整理为可逐项执行、可回填证据、可勾选收口的**唯一执行清单**；沙箱内仅可执行 OpenBase 仓操作，四仓 git 与真实运行态操作须由用户在沙箱外按本单执行 |
 | 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（仓根，OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4 逐任务设计 §4.1~§4.9（34 断言与执行面 A/A+B/B）、§5 证据与报告规范）；②《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md》（`doc/test/`，OB-S7-TEST-v1.0.0，**[Review]**，34 断言矩阵：通过 5 / 部分达成 9 / PENDING 20）；③《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（`doc/development/`，内部 **v1.0.1**，[Review]）；④《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2 [Approved]**）；⑤《OpenBase-联调产物清点核对总清单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.7 [Approved]**，§1.1 五仓对照表 / §4.1 会签五步 / §5.10 四仓入仓完成登记）；⑥《OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》（`doc/development/`，内部 **v1.0.9 [Approved]**，§0 通用红线）；⑦各段测试报告 PENDING 清单（S2 / S3 / S4 / S5 段级真实双签 + S6 B1~B6，见总收官报告 §4.1）；⑧《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，OB-INTG-SMOKE-v1.1.0，内部 **v1.1.0**，§3 用例矩阵 S0-S6） |
 | 事实基线（2026-09-11 实测） | 四仓入仓 = **OpenRAG** `release/v1.10.0` @ `a2eb92b`（三远端同步、勾稽差异 0、残余 1）；**DPS** `main` @ `e772c01`（三远端同步、勾稽差异 0、残余 4）；**OpenMemory** `release/v7.3.0` @ `cc7c06f`（origin+backup 已同步、**github 待推**、**勾稽 A 类回读待做**（残余 89））；**OpenLLM** `feature/s4-identity-channel-b` @ `be1886d`（**四远端 origin/backup/github/jerry.yu 均未推送**；need-star 隔离分支 `feature/need-star-orchestration` @ `ce40f90` 亦未推，残余 1459）。**OpenBase 提交链** = `402ff8e` / `2235229` / `d3faa7f` / `2d97d1a` / `a5020fa` / `9056f48`（S7 段内提交，`main`）。**S7 段门禁当前结论 = 未达最终通过**（① ② 真实面、④ 三原则总验证、⑤ 两仓远端推送为 PENDING） |
@@ -147,6 +147,17 @@
 | **失败处置** | 个别远端不可用 → 逐远端分别登记 `PENDING` + `reason`（不得以「预期已推」代替证据）；`jerry.yu` 为个人远端须确认授权后再推 |
 
 > **P1 收尾**：三项完成后，门禁项 ⑤「跨仓会签」的远端子项可关闭；随后按 §5 顺序回填。**（v1.0.2 实测 2026-09-11：P1-1 已完成、P1-2 已完成（差异 0）、P1-3 部分完成——origin/backup/github 三端已同步，仅 `jerry.yu` 受限 PENDING 不阻断远端子项关闭）**
+
+### 1.4 [P1-4] DPS 门禁恢复入库（新增 2026-09-13）
+
+| 项 | 内容 |
+|----|------|
+| **关联断言** | **S7-T7-1**（四仓入仓 + 远端同步）；门禁项 ⑤ 跨仓会签 |
+| **目标** | DPS 仓：API 文档面门禁恢复（`/docs` `/redoc` `/openapi.json` 移出身份/租户豁免面）的**代码 + 测试 + 文档 + BOM 修复**需入库并推送三远端 |
+| **执行状态（2026-09-13 实测）** | ✅ **已完成**：提交 **`386378c`**（2026-09-13 15:40，10 文件 / 205+ 31-）——`identity_gate`/`tenant` 豁免面收窄、`permission` 层保留豁免（避免 unknown 资源误判 403）、`test_p22_fail_closed` / `test_s5_t1_identity_gate` 同口径更新、K07 矩阵 v1.0.2、`scripts/start-shared-infra.ps1` + `devflow-plugin/release.ps1` 补 UTF-8 BOM、投放脚本 2 件；**origin / backup / github 三远端 `ls-remote` 实测均 = `386378c`（一致）**；工作树内本次 10 文件已全部清空 |
+| **执行命令** | 沙箱内被拦（`.git/objects` 不可写），执行面为可写环境一键脚本：`<DPS>\dps-gate-restore-commit-push.bat`（或 `powershell -File <DPS>\scripts\dps_gate_restore_commit_push.ps1`） |
+| **期望证据** | `git -C <DPS> log -n1` = `386378c`；`ls-remote origin/backup/github refs/heads/main` 三端一致；实测匿名 `GET /openapi.json` → **401**、带身份 → **200**、`/health/liveness` → **200**；DPS 自身 K07 矩阵 `--check` 复跑 = `total=169 covered=134 exempt=35 gaps=0 uncovered=0 drift=0`（**计数不变**，豁免口径为三层清单并集，权限层保留豁免 → 无级联）；编排 `checkall` = **27 PASS / 0 FAIL / 0 SKIP** |
+| **失败处置** | 已登记并修复三处脚本缺陷（详见测试报告 v1.0.17）：bat 仓根解析（`%~dp0..` → `%~dp0`）、ps1 在 param 默认值中使用 `$PSScriptRoot`（PS 5.1 下为空）、清单缺文件导致 `git add` pathspec 中断 |
 
 ---
 
