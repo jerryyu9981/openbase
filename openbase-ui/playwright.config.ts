@@ -18,7 +18,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  workers: process.env.CI ? 1 : undefined,
+  // AD-FE-2（2026-09-13）：本地默认同样固定单 worker。9 页并行时与 CPU 推理型上游争抢资源，
+  // 关键元素偶发超出 15s 轮询预算且失败页在多次运行间漂移（实测多 worker：2~4 分钟、8/9）；
+  // 串行执行 9 页 13.0s 全绿且可复现。需要并行压测时以 OPENBASE_E2E_WORKERS 显式覆盖。
+  workers: Number(process.env.OPENBASE_E2E_WORKERS || 1),
   timeout: 30000,
   expect: { timeout: 10000 },
   reporter: [
