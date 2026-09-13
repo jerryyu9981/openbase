@@ -10,12 +10,17 @@ event loop 触发 C 层 access violation / Segmentation fault（全量 pytest
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 
 import pytest
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# C-1（日志落盘）测试隔离：默认不装配文件日志，避免向仓库 logs/ 落盘并干扰 caplog 断言。
+# 需要验证真实装配的用例显式调用 setup_logging(force=True) 并自行清理 handler。
+os.environ.setdefault("OPENBASE_LOG_SETUP", "0")
 
 
 def reset_db_singletons() -> None:

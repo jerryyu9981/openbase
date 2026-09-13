@@ -21,8 +21,18 @@
 #   .\scripts\service-orchestrator.ps1 -Action monitor -Interval 15 -MaxRestarts 3
 #   .\scripts\service-orchestrator.ps1 -Action status
 #   .\scripts\service-orchestrator.ps1 -Action stop
+#   .\scripts\service-orchestrator.ps1 -Action start -ServiceLogRoot D:\tmp\svc-logs   # 覆盖服务日志采集根目录
 #
 # 环境要求：Windows PowerShell 5+；各服务 Python 依赖已安装（各项目自有环境）
+#
+# 服务日志采集（C-6，消 G-2）：
+#   start/monitor 启动子进程时，把每个服务的 stdout/stderr 重定向落盘到
+#     <ServiceLogRoot>\<service>\<service>-YYYYMMDD.log      （stdout）
+#     <ServiceLogRoot>\<service>\<service>-YYYYMMDD.err.log  （stderr）
+#   默认 ServiceLogRoot = OpenBase\logs（与 openbase 侧 C-1 JSONL 落盘同根，
+#   便于 C-7 聚合脚本一次扫描）。同日重复启动会把上一轮内容归档为
+#   <service>-YYYYMMDD-HHmmss.log，避免重定向覆盖历史输出。
+#   仅改动「子进程输出去向」，不改启停/健康检查/拓扑语义。
 # ============================================================================
 
 [CmdletBinding()]
@@ -34,7 +44,9 @@ param(
     [int]$HealthTimeout = 60,
     [int]$MaxRestarts = 3,
     # 沙箱/受限环境日志目录覆盖（默认 OpenBase\logs\service-orchestrator）
-    [string]$LogRoot = ''
+    [string]$LogRoot = '',
+    # 服务子进程日志采集根目录覆盖（默认 OpenBase\logs，见 C-6）
+    [string]$ServiceLogRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,6 +59,14 @@ if ($LogRoot) {
 $PidFile = Join-Path $LogDir 'service-pids.json'
 $LogFile = Join-Path $LogDir ("orchestrator-{0}.log" -f (Get-Date -Format 'yyyyMMdd'))
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+
+# C-6：服务子进程 stdout/stderr 采集根目录（默认 OpenBase\logs\<service>\）
+if ($ServiceLogRoot) {
+    $ServiceLogDir = $ServiceLogRoot
+} else {
+    $ServiceLogDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'logs'
+}
+New-Item -ItemType Directory -Force -Path $ServiceLogDir | Out-Null
 
 # ---------------------------------------------------------------------------
 # 共享基础设施环境注入（.env.shared-infra：POSTGRES_URL/REDIS_URL → 服务进程继承）
@@ -235,6 +255,33 @@ function Get-ServiceDef {
     return $services | Where-Object { $_.Name -eq $Name } | Select-Object -First 1
 }
 
+function Get-ServiceLogDir {
+    param([string]$Name)
+    return (Join-Path $ServiceLogDir $Name)
+}
+
+# C-6：准备服务 stdout/stderr 采集文件。
+# 同日重复启动时先把上一轮非空内容归档为 <name>-YYYYMMDD-HHmmss.log，
+# 因为 Start-Process 的重定向是「覆盖写」，不归档会丢历史输出。
+function Initialize-ServiceLogTarget {
+    param([hashtable]$Svc)
+    $svcDir = Get-ServiceLogDir $Svc.Name
+    New-Item -ItemType Directory -Force -Path $svcDir | Out-Null
+    $day = Get-Date -Format 'yyyyMMdd'
+    $outPath = Join-Path $svcDir ("{0}-{1}.log" -f $Svc.Name, $day)
+    $errPath = Join-Path $svcDir ("{0}-{1}.err.log" -f $Svc.Name, $day)
+    $archiveStamp = Get-Date -Format 'HHmmss'
+    foreach ($path in @($outPath, $errPath)) {
+        if (-not (Test-Path $path)) { continue }
+        if ((Get-Item $path).Length -le 0) { continue }
+        $archiveName = "{0}-{1}.log" -f ([System.IO.Path]::GetFileNameWithoutExtension($path)), $archiveStamp
+        $archivePath = Join-Path (Split-Path $path -Parent) $archiveName
+        Move-Item -Path $path -Destination $archivePath -Force
+        Write-Log 'INFO' ("{0} 上一轮日志已归档：{1}" -f $Svc.Name, $archivePath)
+    }
+    return @{ Out = $outPath; Err = $errPath }
+}
+
 function Test-Health {
     param([hashtable]$Svc, [int]$TimeoutSec = 5)
     foreach ($uri in $Svc.Health) {
@@ -327,10 +374,13 @@ function Start-Service {
         [Environment]::SetEnvironmentVariable($key, [string]$Svc.Env[$key], 'Process')
     }
     try {
+        # C-6：把子进程 stdout/stderr 落盘采集（消 G-2），日志路径写编排器日志便于检索
+        $logTarget = Initialize-ServiceLogTarget $Svc
         Write-Log 'INFO' ("启动 {0}（{1}）：{2} {3}（cwd={4}）" -f $Svc.Name, $Svc.Desc, $Svc.Command, ($Svc.Args -join ' '), $Svc.Cwd)
-        $proc = Start-Process -FilePath $Svc.Command -ArgumentList $Svc.Args -WorkingDirectory $Svc.Cwd -WindowStyle Hidden -PassThru
+        $proc = Start-Process -FilePath $Svc.Command -ArgumentList $Svc.Args -WorkingDirectory $Svc.Cwd -WindowStyle Hidden -RedirectStandardOutput $logTarget.Out -RedirectStandardError $logTarget.Err -PassThru
         Save-Pid $Svc.Name $proc.Id
-        Write-Log 'INFO' ("{0} 进程已创建（PID {1}），等待健康检查（超时 {2}s）..." -f $Svc.Name, $proc.Id, $HealthTimeout)
+        Write-Log 'INFO' ("{0} 进程已创建（PID {1}），日志 stdout={2}，stderr={3}" -f $Svc.Name, $proc.Id, $logTarget.Out, $logTarget.Err)
+        Write-Log 'INFO' ("{0} 等待健康检查（超时 {1}s）..." -f $Svc.Name, $HealthTimeout)
         $deadline = (Get-Date).AddSeconds($HealthTimeout)
         while ((Get-Date) -lt $deadline) {
             Start-Sleep -Seconds 2
@@ -339,7 +389,7 @@ function Start-Service {
                 return $true
             }
             if ($proc.HasExited) {
-                Write-Log 'ERROR' ("{0} 进程提前退出（exit={1}）" -f $Svc.Name, $proc.ExitCode)
+                Write-Log 'ERROR' ("{0} 进程提前退出（exit={1}），请查看 stderr 日志：{2}" -f $Svc.Name, $proc.ExitCode, $logTarget.Err)
                 Remove-Pid $Svc.Name
                 return $false
             }

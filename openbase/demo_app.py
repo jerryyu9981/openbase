@@ -11,10 +11,12 @@
 
 import asyncio
 import logging
+import os
 
 from openbase import init_app
 from openbase.core.db.init import init_database
 from openbase.core.db.session import get_engine, get_session_factory
+from openbase.core.logging_setup import setup_logging
 from openbase.core.models import User
 from openbase.modules.auth import UserService, hash_password
 from openbase.settings import Settings
@@ -22,6 +24,19 @@ from openbase.settings import Settings
 logger = logging.getLogger("openbase.demo")
 
 settings = Settings()
+
+# C-1 日志落盘：进程启动即装配（JSONL 落盘 + 控制台 JSON）。
+# 测试环境由 tests/conftest.py 置 OPENBASE_LOG_SETUP=0，避免污染仓库日志与干扰 caplog。
+if os.getenv("OPENBASE_LOG_SETUP", "1") != "0":
+    _logging_setup = setup_logging(service="openbase")
+    logger.info(
+        "service.start",
+        extra={
+            "service": "openbase",
+            "log_path": str(_logging_setup.current_path),
+            "log_level": logging.getLevelName(_logging_setup.level),
+        },
+    )
 for module in (
     "auth",
     "tenant",

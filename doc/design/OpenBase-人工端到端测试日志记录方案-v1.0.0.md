@@ -5,12 +5,12 @@
 | 项 | 内容 |
 |------|-----|
 | 文档编号 | OB-DESIGN-MANUAL-E2E-LOG-v1.0.0 |
-| 版本 | v1.1.0 |
+| 版本 | v1.1.2 |
 | 状态 | **[Approved]（2026-09-13 决议冻结：D-1~D-6 全部确认，见 §9.1）** |
 | 作者 | AI（S7 批次 31 方案编制会话） |
 | 日期 | 2026-09-13 |
 | 适用范围 | 人工端到端测试（统一前端 → 各后端服务）期间的**结果记录与复盘**；不改动业务语义 |
-| 关联文档 | 《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.8）；可观测性标准（日志/指标/追踪三大支柱） |
+| 关联文档 | 《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.0.0》（批 1 里程碑 C-1+C-6 实施记录）；《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.10）；可观测性标准（日志/指标/追踪三大支柱） |
 
 ## 修订历史
 
@@ -20,6 +20,8 @@
 | v1.0.1 | 2026-09-13 | AI（S7 批次 32） | **补齐「响应级观测与错误归因」并确认合规红线（D-5）**：经逐行核查 `APICallRecord`（无响应字段）与 proxy 层 5 处日志点（仅 K03/服务密钥写拒绝/上游不可达/402，**上游正常与业务错误响应未留痕**），确认原方案**无法观测子系统响应数据**；新增 §11（响应采集三开关、脱敏规则、上游响应字段、错误归因矩阵、分析器输出）与 §5 批 4（C-15 网关响应摘要 / C-16 上游响应专段 / C-17 错误归因分析器 / C-18 统一脱敏器）；§4.2 增 `resp_*`/`upstream_*` 字段族；§6 增响应级归因率与红线合规验收；§7 增合规风险行；§9 增 D-5（**已确认：默认关闭 + 开启强制脱敏**） |
 | v1.0.2 | 2026-09-13 | AI（S7 批次 33 跨仓前提核实会话） | **跨仓前提实测核实并入（§11.8）**：前提 1（子进程日志可被编排器捕获）**四仓 PASS、无需改动**（DPS `src/main.py:37-41` stderr / OpenLLM `backend/main.py:80-83` stderr / OpenRAG `repository/config/logging.py:58-63` stdout / OpenMemory `api/server.py:788-791` stderr）；前提 2（日志带 request_id）**四仓均未打通、需各自最小改动**（DPS 死接线 / OpenLLM 只进审计 DB / OpenMemory 仅差 `structured_log.py:26` 一行 / OpenRAG 全仓零匹配且中间件未注册）。新增 §9 D-6（是否推动四仓补接线）；顺带登记两处既有缺口（OpenRAG 请求日志中间件未注册、OpenMemory 启动路径可能不配置日志）。**本仓仅更新方案文档，未改动业务代码** |
 | v1.1.0 | 2026-09-13 | AI（S7 批次 34 决议冻结会话） | **决策全部冻结，方案置 [Approved]**：D-1=②（批 1+批 2，批 3 不做）/ D-2=①（复用 `audit_logs`，零迁移）/ D-3=①（人工记录仅作补充证据、不参与门禁）/ D-4=①（复用既有编号 + `AD-HOC-` 兜底）/ D-5=①（默认关闭 + 开启强制脱敏，硬约束）/ D-6=②（推动四仓补齐 request_id 接线，独立跨仓任务、不阻塞本仓）。新增 §9.1 决议记录，并冻结实施顺序（批 1 → 批 2 → 批 4）与首个里程碑（C-1 + C-6）。状态由 [Draft] 升为 [Approved]。**本次仅文档定稿，代码实施自下一批次开始** |
+| v1.1.1 | 2026-09-14 | AI（S7 批次 36 批 1 里程碑开发会话） | **实施期文档对齐**：§3.1 L1 落点由 `logs/<service>/app-YYYYMMDD.jsonl` 更正为 `logs/<service>/<service>-YYYYMMDD.jsonl`（与 C-1 实现及 C-6 采集文件名一致）；新增 §5.1「实施进度（批 1 里程碑：C-1 + C-6）」；关联文档增列本批次 DevLogReport。**本次仅文档对齐，未改动业务代码** |
+| v1.1.2 | 2026-09-14 | AI（S7 批次 36 批 1 里程碑开发会话） | **C-1 实施期修订：移除「按保留期自动清理」**。实施时被既有不变量 T6-1（`tests/test_identity_t6.py::test_t6_1_no_auto_retention_purge_path_static_scan`：`openbase/**` 全仓静态扫描 0 命中 `auto_purge`/`purge_expired`/`retention_days` 等标识）捕获：原 §5 C-1 设计的「按日 + 保留 30 天（自动清理）」与被测代码路径冲突。处置：**删除进程内自动删除实现与 `OPENBASE_LOG_RETAIN_DAYS` 开关**，只保留按日切分；保留期改为**运维人工执行**策略。§5 C-1 行与 §5.1 证据同步更新，并补齐「历史日志不得被自动删除」与「模块无自动清除标识」两个单测（合计 12 用例）以锁定不变量。 |
 
 ---
 
@@ -65,7 +67,7 @@
 
 | 层 | 通道 | 触发方式 | 记录内容 | 落点 |
 |----|------|---------|---------|------|
-| **L1 请求级** | 结构化日志（JSON） | 自动（中间件） | 每请求一条：method/path/status/duration/request_id/**case_id/step_id**/actor/tenant/channel/error_code | `logs/<service>/app-YYYYMMDD.jsonl` |
+| **L1 请求级** | 结构化日志（JSON） | 自动（中间件） | 每请求一条：method/path/status/duration/request_id/**case_id/step_id**/actor/tenant/channel/error_code | `logs/<service>/<service>-YYYYMMDD.jsonl` |
 | **L1′ 请求级** | 审计记录 | 自动（中间件） | 同 L1 + 请求体摘要 + identity，**可查询/可跨重启** | `audit_logs` 表（+ 内存缓冲加速） |
 | **L2 用例级** | 用例事件日志 | 半自动（人触发/前端埋点/CLI） | run/case/step 的开始、结果（PASS/FAIL/BLOCKED）、人判定理由、耗时 | `logs/<service>/test-YYYYMMDD.jsonl` |
 | **L3 证据级** | 聚合报告 | 一键脚本 | 按 run 汇总的 JSON + Markdown（与 Playwright/smoke evidence 同构） | `doc/test/evidence/manual/<run_id>.json｜.md` |
@@ -162,11 +164,23 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 
 > 分三批，**批 1 是必需最小集**（纯后端 + 脚本，不动前端、不动接口契约）。
 
+### 5.1 实施进度（批 1 里程碑：C-1 + C-6）
+
+| # | 落地文件 | 状态 | 实测证据 |
+|---|---------|------|---------|
+| **C-1** | `openbase/core/logging_setup.py`（新增）+ `openbase/demo_app.py` / `tests/conftest.py`（修改）+ `tests/test_logging_setup.py`（新增 12 用例） | **已完成** | `logs/openbase/openbase-20260913.jsonl` 实测 10 行（含 `service.start`，必填字段齐全）；`pytest tests/test_logging_setup.py` **12 passed**；`pytest tests/test_identity_t6.py` **23 passed**（不变量 T6-1 无冲突）；`ruff` 0 错 |
+| **C-6** | `scripts/service-orchestrator.ps1`（修改：`Start-Service` 重定向 + `-ServiceLogRoot` 参数 + 同日归档） | **已完成** | 实测 `logs/openbase/openbase-20260913.log` 捕获 uvicorn 访问日志、`openbase-20260913.err.log` 捕获 C-1 控制台 JSON、`logs/frontend/frontend-20260914.log` 捕获 vite 启动输出；`-Action checkall` 回归 **27 PASS / 0 FAIL / 0 SKIP**（两轮，与基线一致） |
+
+> 实施细节、变更统计与验证结论见《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.0.0》（`doc/development/`）。
+> **C-2 部分完成**：`openbase/demo_app.py` 已接线（`service.start`）；其余服务入口接线与提交号注入仍属批 1 剩余项。
+> 本仓批 1 剩余项：C-2（其他服务入口接线 + 提交号注入）、C-3~C-5（case 头 + 落库 + 出站透传）、C-7~C-9（聚合脚本 + 查询过滤 + 补测）。
+> **实施期修订**：C-1 原设计的「按日 + 保留 30 天自动清理」在实施时**主动移除**——既有不变量 T6-1（`tests/test_identity_t6.py::test_t6_1_no_auto_retention_purge_path_static_scan`）禁止 `openbase/**` 出现按保留期自动清除代码路径；保留期改由**运维人工执行**（见 v1.1.2 修订历史）。
+
 ### 批 1：日志落盘 + 用例上下文 + 持久化 + 聚合（必需）
 
 | # | 文件 | 动作 | 说明 |
 |---|------|------|------|
-| C-1 | `openbase/core/logging_setup.py` | **新增** | JSON Lines formatter；`RotatingFileHandler`（按日 + 大小，保留 30 天）；级别由 `OPENBASE_LOG_LEVEL` 控制；敏感字段过滤；`service/env/version` 注入 |
+| C-1 | `openbase/core/logging_setup.py` | **新增** | JSON Lines formatter；按日切分 `DailyFileHandler`（**不做进程内自动清理**，保留期由运维人工执行——遵循既有不变量 T6-1「全仓 0 条按保留期限自动清除代码路径」）；级别由 `OPENBASE_LOG_LEVEL` 控制；敏感字段过滤；`service/env/version` 注入 |
 | C-2 | `openbase/demo_app.py`（及其他服务入口） | 修改 | 启动时调用 `setup_logging()`；记录 `service.start`（含端口/版本/提交号） |
 | C-3 | `openbase/modules/audit/__init__.py` | 修改 | ① `dispatch` 读取 `X-Test-Case-Id`/`X-Test-Step-Id` → `request.state`；② `_record` 的 `extra` 增 `case_id/step_id/run_id/channel`；③ 新增 JSON 日志落盘（复用同一 formatter） |
 | C-4 | `openbase/modules/audit/__init__.py`（`AuditService`） | 修改 | 记录**异步落 DB**（`audit_logs`，best-effort；失败仅 WARN 不阻断），内存缓冲保留作加速；提供按 `case_id` 查询 |
