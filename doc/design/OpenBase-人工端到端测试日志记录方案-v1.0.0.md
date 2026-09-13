@@ -5,12 +5,12 @@
 | 项 | 内容 |
 |------|-----|
 | 文档编号 | OB-DESIGN-MANUAL-E2E-LOG-v1.0.0 |
-| 版本 | v1.0.1 |
-| 状态 | [Draft]（待评审：D-1/D-2/D-3/D-4；**D-5 响应采集红线已于 2026-09-13 确认**） |
+| 版本 | v1.0.2 |
+| 状态 | [Draft]（待评审：D-1/D-2/D-3/D-4/D-6；**D-5 响应采集红线已于 2026-09-13 确认**；**跨仓前提已于 2026-09-13 实测核实，见 §11.8**） |
 | 作者 | AI（S7 批次 31 方案编制会话） |
 | 日期 | 2026-09-13 |
 | 适用范围 | 人工端到端测试（统一前端 → 各后端服务）期间的**结果记录与复盘**；不改动业务语义 |
-| 关联文档 | 《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.6）；可观测性标准（日志/指标/追踪三大支柱） |
+| 关联文档 | 《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.7）；可观测性标准（日志/指标/追踪三大支柱） |
 
 ## 修订历史
 
@@ -18,6 +18,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-13 | AI（S7 批次 31） | 初始版本：现状核查（4 处缺口）+ 三层记录通道设计 + 字段/事件字典 + 用例上下文贯穿 + 人工结论记录三方案对比 + 文件级改造清单 + 验收标准 + 待决策项 |
 | v1.0.1 | 2026-09-13 | AI（S7 批次 32） | **补齐「响应级观测与错误归因」并确认合规红线（D-5）**：经逐行核查 `APICallRecord`（无响应字段）与 proxy 层 5 处日志点（仅 K03/服务密钥写拒绝/上游不可达/402，**上游正常与业务错误响应未留痕**），确认原方案**无法观测子系统响应数据**；新增 §11（响应采集三开关、脱敏规则、上游响应字段、错误归因矩阵、分析器输出）与 §5 批 4（C-15 网关响应摘要 / C-16 上游响应专段 / C-17 错误归因分析器 / C-18 统一脱敏器）；§4.2 增 `resp_*`/`upstream_*` 字段族；§6 增响应级归因率与红线合规验收；§7 增合规风险行；§9 增 D-5（**已确认：默认关闭 + 开启强制脱敏**） |
+| v1.0.2 | 2026-09-13 | AI（S7 批次 33 跨仓前提核实会话） | **跨仓前提实测核实并入（§11.8）**：前提 1（子进程日志可被编排器捕获）**四仓 PASS、无需改动**（DPS `src/main.py:37-41` stderr / OpenLLM `backend/main.py:80-83` stderr / OpenRAG `repository/config/logging.py:58-63` stdout / OpenMemory `api/server.py:788-791` stderr）；前提 2（日志带 request_id）**四仓均未打通、需各自最小改动**（DPS 死接线 / OpenLLM 只进审计 DB / OpenMemory 仅差 `structured_log.py:26` 一行 / OpenRAG 全仓零匹配且中间件未注册）。新增 §9 D-6（是否推动四仓补接线）；顺带登记两处既有缺口（OpenRAG 请求日志中间件未注册、OpenMemory 启动路径可能不配置日志）。**本仓仅更新方案文档，未改动业务代码** |
 
 ---
 
@@ -255,6 +256,7 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | **D-3** | 是否纳入 S7 门禁口径 | ① 仅作补充证据（不参与门禁判定）② 纳入门禁（人工 run 必须全绿） | **①**：人工记录保持「补充证据」定位，避免与自动化断言口径混淆 |
 | **D-4** | 用例编号体系 | ① 复用既有（S0-1…S6-4 / UI-<模块>-<序号> / S7-T2-1）② 新建人工用例集 | **①**：复用保证与既有证据可对齐，不新增第二套编号 |
 | **D-5** | **响应数据采集红线** | ① 默认关闭，开启时强制脱敏（2KB 摘要上限、生产永久关闭）② 常开（便于分析）③ 完全不采集响应 | **①（已确认 2026-09-13）**：默认关闭保证零合规暴露；仅在联调/人工测试窗口显式开启，且落盘前必经 C-18 脱敏。**②③ 不再作为可选项** |
+| **D-6** | **是否推动四仓补齐 request_id 日志接线**（v1.0.2 新增，源于 §11.8 实测） | ① 暂不推动（靠网关侧 `upstream_*` 定位到「错在上游」即够）② 推动四仓各做最小改动（DPS/OpenLLM 各 1 个 Filter + format、OpenMemory 1 行、OpenRAG 注册中间件 + 补头）③ 只修 OpenRAG（其请求日志根本未注册） | **②**：四仓的状态码/耗时**其实都已采集**（指标/审计表/中间件组装），只差「送进日志」这一步，改动成本极低；收益是人工排查能追进子系统内部日志。**须列为独立跨仓任务（各仓走各自的开发流程），不阻塞 OpenBase 侧批 1/批 2** |
 
 ---
 
@@ -340,3 +342,30 @@ UI-DPS-0014  5     500      500       上游子系统   是    req-1c02ab77d9f4 
 ### 11.7 与自动化的边界
 
 响应采集**只服务人工探索性测试**；Playwright / s7 冒烟继续使用自身断言，**不依赖**响应摘要，避免形成第二套判定口径（与 D-3「人工记录仅作补充证据」一致）。
+
+### 11.8 跨仓前提核实结果（2026-09-13 实测，只读核查四仓源码）
+
+**前提 1：子系统日志是否可被编排器重定向捕获 → 四仓 PASS，无需任何改动**
+
+| 仓 | 实际日志出口 | 证据 |
+|----|-------------|------|
+| DPS | stderr（`basicConfig` 未传 filename/handlers/stream） | `src/main.py:37-41` |
+| OpenLLM | stderr（同上） | `backend/main.py:80-83` |
+| OpenRAG | stdout（**实际生效的是 `config/logging.py`，不是 `observability/logging.py`**） | `repository/config/logging.py:58-63` |
+| OpenMemory | stderr | `src/openmemory/api/server.py:788-791` |
+
+**前提 2：子系统日志是否携带 request_id → 四仓均未打通，各需最小改动**
+
+| 仓 | 结论 | 实证 | 最小改动 |
+|----|------|------|---------|
+| DPS | **FAIL（死接线）** | contextvar 仅在 `identity_gate_middleware.py:109` 写入，全仓**无任何 Filter/Formatter/`extra=` 消费它**；`get_current_request_id()` 零调用；`error_handlers.py:81-87` 是把 rid 拼进 message 文本（且取自 `request.state`） | 根 logger 加 1 个 Filter + format 加 `%(request_id)s` |
+| OpenLLM | **FAIL** | `app/identity/audit_identity.py:112-129` 的 `identity_log_extra()` **已产出 request_id，但只塞进审计 DB**（`app/middleware/audit.py:320-327`），从未传给 `logger.*(extra=…)` | 同上（Filter + format） |
+| OpenMemory | **FAIL（仅差 1 行）** | `utils/struct_logger.py:253-255` 有 JSON formatter 且从 contextvars 取 `request_id`；`api/middleware/structured_log.py:144-197` **已组装** `request_id`/`status_code`/`elapsed_ms` 并以 `extra={"structured":…}` 发出，但 `:26` 用的是普通 `logging.getLogger` → 被根 logger 的纯文本 formatter **丢弃** | `structured_log.py:26` 改用 `get_logger` |
+| OpenRAG | **FAIL（既有缺口更重）** | `repository` 全目录 `request_id`/`X-Request-Id` **零匹配**（其相关性 ID 走 `X-Correlation-ID`）；`observability/logging.py:366` 的 `LoggingMiddleware` **定义但从未注册**（`main.py` 只注册 CORS + Prometheus）；`security/audit_logger.py` 不存在 | ① 注册请求日志中间件 ② 补 `X-Request-Id` 受信透传 ③（可选）补审计模块 |
+
+**关键结论**：前提 2 **不阻塞本方案**——网关侧 C-16 已能提供 `upstream_status`/`upstream_error_code`/`upstream_duration_ms`，足以判定「错在网关还是上游」。补齐四仓接线只影响「能否进一步追进子系统**内部**日志」。另一个有利事实：四仓的**状态码/耗时其实都已采集**（DPS 指标 + 审计表 / OpenLLM DB + 指标 / OpenMemory 中间件组装 / OpenRAG Prometheus 指标），**只差「送进日志」这一步**，故跨仓改动成本很低（详见 D-6）。
+
+**顺带发现的两处既有缺口（与本方案无关，但影响人工排查效率，已登记）**
+
+1. **OpenRAG 请求日志中间件从未注册** → 其「请求日志」实际不存在；其 S3 文档声称的 `audit_logger`/`detail.identity` 亦未落地（目录不存在）。这解释了为何此前排查上游问题时看不到 OpenRAG 请求日志。
+2. **OpenMemory 的 `basicConfig` 只在 `main()` 内** → 若以 `uvicorn openmemory.api.server:create_app` 方式启动，根 logger 不被配置（需核实编排器实际启动命令；已列入实施前置核对）。
