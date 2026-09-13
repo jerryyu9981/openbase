@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-TEST-v1.0.0 |
-| 版本 | v1.0.20 |
+| 版本 | v1.0.21 |
 | 状态 | [Review]（S7 段（总收官段）测试报告；**34 条断言逐条状态 + 段门禁六项聚合结论**；A 面（沙箱可判定）已真实执行，B 面（联调窗口必需）PENDING 登记，禁伪造；**v1.0.1：S7-T7-1 / S7-T7-2 按实测更正**；**v1.0.2：联调窗口实跑回填——T2~T5 脚本实跑（PENDING）、T6 门禁聚合实跑、冒烟 S0~S6 实跑（P0 14/9/7）、S6 B1 E2E 实跑（0/9）、PG-ENV 状态更新**；**v1.0.3：F-4 修复后 S6 B1 E2E 9/9 PASS；openbase_test 真实建库后主批次 676 passed / 0 failed，PG-ENV-1~4 关闭**；**v1.0.4：K07/SYS-1 端点-过滤矩阵真实导出终验——五实例 openapi 真实导出 + 逐仓逐行核对：缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、DPS 35 条豁免复核日需续期 → 结论 FAIL（子系统仓缺口，只登记不代改）**；**v1.0.5：OpenLLM K07 全量补填回填（工作树，待提交）——openllm 矩阵 354 行 / 覆盖 349 / 豁免 5 / 缺口 344→0；门禁复跑 gaps=0 exit 0；隔离用例 767 passed；缺口合计 352→8（仅 OpenMemory）；gate verdict FAIL→PARTIAL**；**v1.0.7：F-2（OpenRAG PG 租户列幂等迁移补齐并对共享库执行，`POST /api/v1/collections` 500→200）+ F-3（OpenLLM 白名单对齐 `openbase-llm-proxy` 并重启生效）修复完成；冒烟 S0~S6 重跑（v3：P0 21 PASS / 2 FAIL / 7 BLOCKED，7 例 FAIL→PASS、零回归）**；**v1.0.8：F-1 修复完成——环境侧（上游地址/开关/默认模型/provider/本机 Ollama/密钥注入）+ 代码侧（提交 `f258022`：语义缓存 Redis 后端可切换、writeback 队列降级加固）；复验 openmemory/openrag 探活 ok、流式（直连/网关）200、非流式（直连）200**；**v1.0.9：DPS 探活口径修复（F-7）——探活由业务面 `/api/v2/portrait/list` 改走运维端点 `/health/liveness`（单测 5 passed、ruff 通过），重启后 `/openllm/v1/health` 三上游全部 ok（openmemory/openrag/dps）；提交脚本就绪待执行**；**v1.0.10：冒烟 v4 全量重跑——26 PASS / 0 FAIL / 6 BLOCKED（v3 21/2/9），新增 5 例 PASS（S0-1/S1-2/S5-1/S5-2/S5-5）、FAIL 清零、零回归；余 6 BLOCKED 中 4 例归因「回写队列写限制（环境受限，主链路已降级保护）」、1 例禁停服（S5-6）、1 例特性缺口登记**；**v1.0.11：跨仓提交状态同步——四仓修复与产物均已入库并三远端同步（OpenLLM `f258022`/`f1d187b`/`41af780`、OpenMemory `0a6f351`、OpenRAG `ada7a97`），`S7-T6-4` 与分派单 F-2/F-5/F-6 状态同步为「已提交」**；**v1.0.12：K07/SYS-1 门禁收口 PARTIAL→PASS（DPS 35 条豁免续期至 2026-12-31；缺口 0 / 未覆盖 0 / 豁免 59 全有效）+ 门禁聚合复跑 `overall=PASS exit=0 pass=20 fail=0 pending=2`**；**v1.0.13：DPS 35 条豁免续期已入库（`b5f5c06`，2026-09-13，三远端同步）——K07 子系统仓待提交项清零**） |
 | 日期 | 2026-09-12 |
 | 作者 | AI（S7 批次 1~4 开发会话实测汇总 + 本批编制；S7 批次 6 回填会话修订 v1.0.1；S7 批次 7 全量冒烟执行会话修订 v1.0.2；S7 批次 8 收口会话修订 v1.0.3；S7 批次 9 K07 终验会话修订 v1.0.4；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.5；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.6；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.7；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.8；S7 批次 14 DPS 探活口径修复会话修订 v1.0.9；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.10；S7 批次 16 跨仓提交状态同步回填会话修订 v1.0.11；S7 批次 17 K07 门禁收口与聚合复跑会话修订 v1.0.12；S7 批次 19 DPS 豁免续期入库回填会话修订 v1.0.13；S7 批次 21 六服务启动与双通道端到端实测会话修订 v1.0.14；S7 批次 22 OpenBase 受控重启与双通道终验回填会话修订 v1.0.15；S7 批次 23 DPS 门禁恢复与 S4-T8 基座导入会话修订 v1.0.16；S7 批次 24 DPS 门禁恢复入库回填会话修订 v1.0.17） |
@@ -40,6 +40,7 @@
 | v1.0.18 | 2026-09-13 | AI（S7 批次 25 段门禁 ①②④ 联调会话） | **段门禁 ①②④ 联调：三原则骨架升级为真实运行器（含三处根因修复）**：① **R-1** `demo_app.py` 未启用 `identity` 模块 → `/api/v1/identity/*` 全 404；启用后 openapi 路径 103→**115**；② **R-2** 部署入口未启 outbox 投递循环 + `OPENBASE_REDIS_URL` 未配置 → 事件面不可观测；补启动钩子 + 指向共享 Redis 后事件真实 published；③ **R-3** 共享 Redis 跨用例脏读 → `tests/conftest.py` 增 `isolate_identity_cache` autouse 夹具（identity 三套件 **44 passed**）；④ **真实面结果**：L1-1 **3 PASS / 1 PENDING**（T2-1/T2-2/T2-3：停用→事件→消费→DPS/OpenMemory 阻断 403→幂等重放 `deduplicated=true`→restore 解除阻断；T2-4 负例 400/403 通过、正例需 CLI 授权码登记 PENDING）、L2-1 **4/4 PASS**（驱动 OpenLLM 真实 `ChannelStateManager`：B 断→A 接管 / A 断→B 维持 / 单主路径 / 回切审计链齐备）、L3-1 **3 PASS / 1 PENDING**（agent key 即时失效与不复活 / 12 例白名单矩阵全符含 403 / 未授权 403 + M1 独立模式 + M2 受信头；T5-3 域隔离因缺双域数据面 PENDING）；OpenLLM 侧 `smoke_l3_2.py` 沙箱面**聚合退出码 0**；⑤ **脚本形态**：三 PS1 骨架改为委派真实运行器（保留退出码与骨架期参数），`tests/test_s7_tools_skeleton.py` 口径同步（状态自洽 + PENDING 必附原因 + PASS 必全项 PASS，26 例全绿）；⑥ 新增开放项 **ENV-DB-1**（受限执行面前台进程无法完成 PG 会话 → purge 正例与库依赖用例受限）；⑦ 冒烟复跑 **v6 = 32 例 / PASS 24 / FAIL 2 / PENDING 6**（Ollama 启动后：LLM 主链路与 SSE 转真实 200；新增 2 例 FAIL 系信任链强校验**口径变更**引发——直连客户端携带身份头一律 403，与段门禁 ④ 要求一致、与 v5 用例期望冲突，登记待决 **AD-SMOKE-1**，未改用例期望值）。**仅本仓改动：`demo_app.py`、`tests/conftest.py`、`tests/test_s7_tools_skeleton.py`、三 PS1 + 三 Python 运行器 + 报告/证据；`.env` 为本地配置不入库** |
 | v1.0.19 | 2026-09-13 | AI（S7 批次 26 依次端到端复跑会话） | **依次端到端复跑（统一前端→OpenBase→OpenLLM→OpenMemory→OpenRAG→DPS）**：① 编排 `checkall` **27 PASS / 0 FAIL / 0 SKIP**；② `dual_channel_e2e.py` 读等价 **4/4 PASS** + 写通 3 链 + K14 幂等 PASS（证据三份刷新）；③ 前端关键页 E2E **8 passed / 1 failed**，唯一失败 `chat.spec.ts › /openllm/conversations` 经单例独跑 **PASS（18.5s）** 判定为并发负载下渲染时序偶发；④ UI L3-2 冒烟**首次真实执行** `status=FAIL`，暴露 2 项既有缺口——`probes.knowledge-detail` `/rag-proxy/collections/kb-1` **500**（期望 200/404/403）、`cross_domain_probes.cross-tenant-header` **200 返回 3 条**（期望 200 空/403，跨租户可见性不成立）；新增待决 `AD-RAG-1` / `AD-TENANT-1`；⑤ 修正两处执行面配置（vite 仅监听 IPv6 回环 → E2E 须 `OPENBASE_BASE_URL=http://localhost:5173`；UI 冒烟同因 PENDING）。**未修改业务代码，仅报告与证据** |
 | v1.0.20 | 2026-09-13 | AI（S7 批次 27 口径定案与缺口闭环会话） | **身份/租户头归属口径定案 + 两项缺口闭环**：① **AD-RAG-1 闭环（OpenRAG 代码修复）**——`GET /api/v1/collections/{非UUID}` 由 **500 → 404**：新增 `PostgresStore._lookup_uuid` 把非 UUID 解析失败归一为 `CollectionNotFoundError`/`DocumentNotFoundError`（不用裸 `ValueError`，故不改变「非『不存在』异常 → 500」既有契约），实测直连/经 rag-proxy/文档列表三处均 404，新增单测 4 例 + 路由映射用例 1 例（20 passed），ruff 0 错误；OpenRAG 受控重启后复验；② **AD-TENANT-1 闭环（探针口径缺陷修复）**——跨域探针误用非规范头 `X-Tenant-Code`（协议头规范未定义 → 网关不视其为身份头 → 恒回本域数据、断言失真），改用规范头 `X-Tenant-ID` 后按强校验段口径 fail-closed → 实测 **403 PERM_UNTRUSTED_IDENTITY_HEADER**；③ **UI L3-2 冒烟由 FAIL → PASS（exit 0）**，9 个关键页探针 9 PASS；④ **口径定案**：身份头仅受信来源透传（否则过渡期丢弃 / 强校验期 403），受信白名单只收服务端到服务端来源（6 个 `openbase-*-proxy`/`orchestrator` 常量），浏览器可伪造来源不纳入白名单、租户视角一律由 JWT 承载；据此 s7 冒烟 S4-0/S4-3 的 403 属预期，用例形态改 JWT-only（不回改期望值）→ **AD-SMOKE-1 口径已定案**；⑤ 跨仓：OpenRAG 修复为工作树变更，已交付 `rag1-commit-push.bat` / `scripts/rag1_commit_push.ps1`（DryRun 演练通过）待仓外提交。**本仓改动：`openbase-ui/scripts/smoke_l3_2_ui.mjs` + 证据 + 报告** |
+| v1.0.21 | 2026-09-13 | AI（S7 批次 28 逐服务前端端到端遍历会话） | **逐服务前端端到端遍历（61 页全绿）**：通过统一前端逐个遍历每个后端服务的页面——**OpenBase 自身 12 / OpenLLM 24 / OpenRAG 6 / OpenMemory 8 / DPS 11 = 61 页 PASS 61 / FAIL 0**（逐页断言：导航成功且未重定向登录/退回仪表盘、无渲染兜底、无 pageerror/console.error/console.warn）；新增取证脚本 `openbase-ui/scripts/ui_e2e_all_services.mjs`（Playwright 真实浏览器、逐页串行规避并发抖动）+ 证据 `doc/test/evidence/s6/ui-e2e-all-services.json`；同批关键页套件（9 页）复跑 8 passed / 1 failed，失败页在两次运行间漂移（chat 对话页 ↔ 画像详情页），分别归因**渲染时序偶发**（单例独跑 18.5s 通过）与**样例 id 与判据冲突**（`sample_id: P-1001` 为占位 id → DPS 404 → 浏览器 console 404，与「允许 404」+「console.error=0」自相矛盾），新增待决 `AD-FE-1`（未改用例期望值）；OpenRAG 修复已由用户仓外提交入库并推送（`cc16567` @ `release/v1.10.0`）。**本仓改动：UI 取证脚本 + 证据 + 报告** |
 
 ---
 
@@ -214,6 +215,30 @@
 **待决状态**：`AD-RAG-1` ✅ 已闭环（代码修复 + 实测 404）、`AD-TENANT-1` ✅ 已闭环（探针改规范头 + 实测 403）、`AD-SMOKE-1` ✅ 口径已定案（用例基线重定待下次冒烟）。
 
 **跨仓提交状态**：OpenRAG 修复为**工作树变更**（`src/openrag/storage/postgres.py` + 新增单测 + 路由测试），因受限执行面拒写其 `.git/objects`，已交付一键提交脚本 `rag1-commit-push.bat` / `scripts/rag1_commit_push.ps1`（已 `-DryRun` 演练通过，待仓外执行）。
+
+### 2.5 逐服务前端端到端遍历（v1.0.21，2026-09-13）
+
+口径：**通过统一前端（openbase-ui，vite 5173）逐个对每个后端服务的页面做端到端遍历**，页面清单取自各模块 `navItems`（与侧边导航同源）。逐页断言＝导航成功且未被重定向登录/退回仪表盘 ＋ 未触发渲染兜底 ＋ 无 `pageerror`/`console.error`/`console.warn`（Q-FE-4b 同口径）。
+
+新增取证脚本 `openbase-ui/scripts/ui_e2e_all_services.mjs`（Playwright chromium 真实浏览器，逐页串行以规避并发负载抖动），证据 `doc/test/evidence/s6/ui-e2e-all-services.json`。
+
+| 后端服务 | 页数 | 结果 | 代表页面 |
+|---------|------|------|---------|
+| **OpenBase 自身** | 12 | **PASS 12 / FAIL 0** | 仪表盘、租户管理、角色权限、组织/团队/用户、工作空间、配置管理、审计日志、EdgeRouter、文档中心、计费、网关服务列表、聚合测试 |
+| **OpenLLM** | 24 | **PASS 24 / FAIL 0** | 模型管理/本地模型/分类/对比/开源市场、下载管理、提供商管理/注册、收藏、用量统计、个人设置、API 密钥、模型部署、GPU 监控、EdgeRouter 适配器、应用管理/创建应用、Playground、Prompt 模板/实验、插件管理、工具调用监控、A/B 测试、对话 |
+| **OpenRAG** | 6 | **PASS 6 / FAIL 0** | 知识库、RAG 对话、用户管理、系统配置、管理后台、控制台 |
+| **OpenMemory** | 8 | **PASS 8 / FAIL 0** | 记忆列表、记忆搜索、会话管理、记忆图谱、API 网关、管理后台、衰减配置、写入记忆 |
+| **DPS** | 11 | **PASS 11 / FAIL 0** | 数据总览、画像列表、画像搜索、标签管理、规则引擎、分析报表、限流管理、API 管理、权限管理、系统监控、批量任务 |
+| **合计** | **61** | **PASS 61 / FAIL 0** | — |
+
+**同批现有 Playwright 关键页套件（9 页）复跑：8 passed / 1 failed**，两次运行的失败页不同（先为 `chat.spec.ts › /openllm/conversations`，后为 `portrait.spec.ts › /portrait/:id`）——分别归因两类**非功能缺陷**问题：
+
+| 失败类 | 现象 | 归因 |
+|-------|------|------|
+| 渲染时序偶发 | 关键元素在 15s 轮询预算内未渲染、整例 30s 超时 | 9 页并发 + 上游 CPU 推理；**单例独跑通过（18.5s）**、同页数据面探针 200/16 条 |
+| 样例 id 与判据冲突 | `/portrait/:id` 对 `/dps-proxy/portraits/P-1001` **404** → 浏览器记 `console.error: Failed to load resource: 404` | fixture `sample_id: P-1001` 为**占位 id**（现网 DPS 画像主键为 UUID），而 fixture 的 `expect.success_status` 又允许 404 —— **「允许 404」与「console.error=0」互相矛盾**（浏览器对 404 资源必然记错，前端无法抑制） |
+
+**待决（新增）**：`AD-FE-1`——关键页 fixture 的 `sample_id` 应改用**真实存在**的画像 id（或将该页从 Q-FE-4b「console.error=0」判据中显式豁免并登记理由）；在决策前**不改用例期望值**。注册为既有缺口，非本批引入。
 
 
 ---
