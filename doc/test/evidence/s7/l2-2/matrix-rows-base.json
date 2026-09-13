@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "artifact": "S4-T8 matrix_rows 通道覆盖矩阵基座",
+  "source_repo": "D:\\Trae CN\\myproject\\Dev\\OpenLLM",
+  "source_commit": "f1d187b",
+  "source_module": "backend/app/identity/ab_equivalence.py::matrix_rows",
+  "generator": "import-live（只读导入 OpenLLM 源码，PYTHONDONTWRITEBYTECODE=1）",
+  "exported_at": "2026-09-13",
+  "total": 17,
+  "matrix_rows": [
+    {
+      "capability": "画像读(portrait read)",
+      "system": "dps",
+      "channel": "b",
+      "primary": true,
+      "state": "covered",
+      "note": "dps B 主（编排主通道，出站 openbase-llm-proxy 白名单登记）"
+    },
+    {
+      "capability": "画像读(portrait read)",
+      "system": "dps",
+      "channel": "a",
+      "primary": false,
+      "state": "covered",
+      "note": "dps A 备（原子/降级接管直连）"
+    },
+    {
+      "capability": "记忆 recall",
+      "system": "openmemory",
+      "channel": "b",
+      "primary": true,
+      "state": "covered",
+      "note": "openmemory B 主（编排主通道，出站 openbase-llm-proxy 白名单登记）"
+    },
+    {
+      "capability": "记忆 recall",
+      "system": "openmemory",
+      "channel": "a",
+      "primary": false,
+      "state": "covered",
+      "note": "openmemory A 备（原子/降级接管直连）"
+    },
+    {
+      "capability": "知识检索/引用",
+      "system": "openrag",
+      "channel": "b",
+      "primary": true,
+      "state": "covered",
+      "note": "openrag B 主（编排主通道，出站 openbase-llm-proxy 白名单登记）"
+    },
+    {
+      "capability": "知识检索/引用",
+      "system": "openrag",
+      "channel": "a",
+      "primary": false,
+      "state": "covered",
+      "note": "openrag A 备（原子/降级接管直连）"
+    },
+    {
+      "capability": "画像写(portrait write)",
+      "system": "dps",
+      "channel": "b",
+      "primary": true,
+      "state": "登记/待S7终验",
+      "note": "dps 写路径 A/B 等价与 K14 幂等登记联调窗口，待 S7 终验"
+    },
+    {
+      "capability": "画像写(portrait write)",
+      "system": "dps",
+      "channel": "a",
+      "primary": false,
+      "state": "登记/待S7终验",
+      "note": "dps 写路径 A/B 等价与 K14 幂等登记联调窗口，待 S7 终验"
+    },
+    {
+      "capability": "记忆 remember(写)",
+      "system": "openmemory",
+      "channel": "b",
+      "primary": true,
+      "state": "登记/待S7终验",
+      "note": "openmemory 写路径 A/B 等价与 K14 幂等登记联调窗口，待 S7 终验"
+    },
+    {
+      "capability": "记忆 remember(写)",
+      "system": "openmemory",
+      "channel": "a",
+      "primary": false,
+      "state": "登记/待S7终验",
+      "note": "openmemory 写路径 A/B 等价与 K14 幂等登记联调窗口，待 S7 终验"
+    },
+    {
+      "capability": "知识 ingest(写)",
+      "system": "openrag",
+      "channel": "b",
+      "primary": true,
+      "state": "登记/待S7终验",
+      "note": "openrag 写路径 A/B 等价与 K14 幂等登记联调窗口，待 S7 终验"
+    },
+    {
+      "capability": "知识 ingest(写)",
+      "system": "openrag",
+      "channel": "a",
+      "primary": false,
+      "state": "登记/待S7终验",
+      "note": "openrag 写路径 A/B 等价与 K14 幂等登记联调窗口，待 S7 终验"
+    },
+    {
+      "capability": "健康探活/管理面原子操作",
+      "system": "dps",
+      "channel": "a",
+      "primary": false,
+      "state": "豁免(K07对齐)",
+      "note": "dps 健康探活/管理面 A 直连（服务密钥，忽略身份头；K07 填报豁免行 ticket=T-健康直连 对账，S4-T8-2/S4-T11-3）"
+    },
+    {
+      "capability": "健康探活/管理面原子操作",
+      "system": "openmemory",
+      "channel": "a",
+      "primary": false,
+      "state": "豁免(K07对齐)",
+      "note": "openmemory 健康探活/管理面 A 直连（服务密钥，忽略身份头；K07 填报豁免行 ticket=T-健康直连 对账，S4-T8-2/S4-T11-3）"
+    },
+    {
+      "capability": "健康探活/管理面原子操作",
+      "system": "openrag",
+      "channel": "a",
+      "primary": false,
+      "state": "豁免(K07对齐)",
+      "note": "openrag 健康探活/管理面 A 直连（服务密钥，忽略身份头；K07 填报豁免行 ticket=T-健康直连 对账，S4-T8-2/S4-T11-3）"
+    },
+    {
+      "capability": "对话/编排复合",
+      "system": null,
+      "channel": "b",
+      "primary": true,
+      "state": "covered",
+      "note": "对话/编排复合 B 主（编排主通道）：入站 openbase-llm-proxy → 出站 openbase-orchestrator，X-Request-Id 贯通同 id"
+    },
+    {
+      "capability": "编排主通道复合",
+      "system": null,
+      "channel": "b",
+      "primary": true,
+      "state": "covered",
+      "note": "编排主通道复合 B 主：REAL 目标经编排通道；入站 openbase-llm-proxy → 出站 openbase-orchestrator"
+    }
+  ]
+}

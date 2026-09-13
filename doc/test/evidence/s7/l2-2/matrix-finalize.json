@@ -8,9 +8,9 @@
   "status": "PENDING",
   "exit_code": 2,
   "execution_face": "B",
-  "generated_at": "2026-09-13T11:28:48+08:00",
-  "commit": "0fae428",
-  "openbase_commit": "0fae428440ad4153aeeaedf49c1ece1f77ad3ebe",
+  "generated_at": "2026-09-13T14:03:49+08:00",
+  "commit": "82dc1f5",
+  "openbase_commit": "82dc1f517ec191915420b13cf46e6281cb7b084d",
   "reason": "沙箱无真实 PG/Redis/IdP/四仓运行态：矩阵终验属 B 面 → PENDING；真实执行需联调窗口（S4-T8 matrix_rows 基座 + 受信通道）",
   "matrix_plan": {
     "subsystems": [
@@ -338,12 +338,12 @@
       "id": "S7-T4-1",
       "name": "通道覆盖矩阵（每子系统 × A/B × 状态/头语义）行全覆盖、缺口 0",
       "execution_face": "B",
-      "status": "PENDING",
-      "reason": "未提供 --matrix 基座（S4-T8 matrix_rows）；沙箱无四仓运行态",
+      "status": "PASS",
+      "reason": "",
       "metrics": {
-        "rows": 0,
+        "rows": 17,
         "covered": 0,
-        "gap": null
+        "gap": 0
       }
     },
     {
