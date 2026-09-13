@@ -5,18 +5,19 @@
 | 项 | 内容 |
 |------|-----|
 | 文档编号 | OB-DESIGN-MANUAL-E2E-LOG-v1.0.0 |
-| 版本 | v1.0.0 |
-| 状态 | [Draft]（待评审：需确认「是否落库」「是否改前端」「是否纳入 S7 门禁口径」三项） |
+| 版本 | v1.0.1 |
+| 状态 | [Draft]（待评审：D-1/D-2/D-3/D-4；**D-5 响应采集红线已于 2026-09-13 确认**） |
 | 作者 | AI（S7 批次 31 方案编制会话） |
 | 日期 | 2026-09-13 |
 | 适用范围 | 人工端到端测试（统一前端 → 各后端服务）期间的**结果记录与复盘**；不改动业务语义 |
-| 关联文档 | 《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.5）；可观测性标准（日志/指标/追踪三大支柱） |
+| 关联文档 | 《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.6）；可观测性标准（日志/指标/追踪三大支柱） |
 
 ## 修订历史
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-09-13 | AI（S7 批次 31） | 初始版本：现状核查（4 处缺口）+ 三层记录通道设计 + 字段/事件字典 + 用例上下文贯穿 + 人工结论记录三方案对比 + 文件级改造清单 + 验收标准 + 待决策项 |
+| v1.0.1 | 2026-09-13 | AI（S7 批次 32） | **补齐「响应级观测与错误归因」并确认合规红线（D-5）**：经逐行核查 `APICallRecord`（无响应字段）与 proxy 层 5 处日志点（仅 K03/服务密钥写拒绝/上游不可达/402，**上游正常与业务错误响应未留痕**），确认原方案**无法观测子系统响应数据**；新增 §11（响应采集三开关、脱敏规则、上游响应字段、错误归因矩阵、分析器输出）与 §5 批 4（C-15 网关响应摘要 / C-16 上游响应专段 / C-17 错误归因分析器 / C-18 统一脱敏器）；§4.2 增 `resp_*`/`upstream_*` 字段族；§6 增响应级归因率与红线合规验收；§7 增合规风险行；§9 增 D-5（**已确认：默认关闭 + 开启强制脱敏**） |
 
 ---
 
@@ -128,6 +129,16 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | `error_code` | 错误码（AUTH/PERM/PARAM/BIZ/SYS/STORAGE 前缀） | 异常处理器 |
 | `actor`/`tenant` | 主体与租户 | JWT/主体上下文 |
 | `evidence_ref` | 证据引用 | `doc/test/evidence/manual/run-.../UI-DPS-0007.json` |
+| ★ `resp_status` | 网关回给调用方的状态码 | `403` |
+| ★ `resp_error_code` | 网关错误信封中的错误码（从响应体提取，非明文） | `PERM_UNTRUSTED_IDENTITY_HEADER` |
+| ★ `resp_bytes` / `resp_digest` | 响应体长度 / 内容摘要（sha256 前 16） | `1024` / `a3f19c02…` |
+| ★ `resp_summary` | 响应摘要（**仅 `OPENBASE_CAPTURE_RESPONSE=1` 且经脱敏后**，≤2KB） | `{"code":"…","message":"…"}` |
+| ★ `upstream_system` | 上游子系统 | `dps` |
+| ★ `upstream_status` | **上游子系统返回的状态码** | `500` |
+| ★ `upstream_error_code` | 上游错误信封中的错误码（如有） | `BIZ_XXX` |
+| ★ `upstream_duration_ms` | 上游耗时（与网关总耗时分离，用于定位慢在谁身上） | `832` |
+| ★ `upstream_digest` / `upstream_body_summary` | 上游响应摘要与内容摘要（同受开关与脱敏约束） | — |
+| ★ `retry_count` | 上游重试次数 | `0` |
 
 ### 4.3 事件字典（L2 用例级）
 
@@ -178,6 +189,16 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | C-13 | `scripts/gate_aggregate.py` | 修改 | 新增「人工测试记录」章节：读取 `doc/test/evidence/manual/*.json` 作为**补充证据**（不替代自动化断言） |
 | C-14 | 文档 | 修改 | 测试报告中登记人工 run 的结论与证据引用 |
 
+### 批 4：响应级观测与错误归因（v1.0.1 新增，受 D-5 红线约束）
+
+| # | 文件 | 动作 | 说明 |
+|---|------|------|------|
+| C-15 | `openbase/modules/audit/__init__.py`（响应侧） | 修改 | 网关响应摘要采集：`resp_status`/`resp_bytes`/`resp_content_type`/`resp_error_code`/`resp_digest`；`resp_summary` **仅在 `OPENBASE_CAPTURE_RESPONSE=1` 时采集**并经 C-18 脱敏 |
+| C-16 | `openbase/modules/proxy/__init__.py`（`_forward`，`:273-301`） | 修改 | 上游响应专段：`upstream_system`/`upstream_status`/`upstream_error_code`/`upstream_duration_ms`/`upstream_digest`（+ 开关下 `upstream_body_summary`）；**成功与业务错误路径统一补记**，异常路径复用同一结构（不新增日志点） |
+| C-17 | `scripts/test_log_analyze.py` | **新增** | 错误归因分析器：按 step 输出「网关状态 → 上游状态 → 归属层 → 是否首现 → request_id → 建议动作」；输出 `doc/test/evidence/manual/＜run_id＞-analysis.md` |
+| C-18 | `openbase/core/mask.py` | **新增** | 统一脱敏器 `mask_sensitive()`（凭据/个人隐私/画像业务数据/超限摘要）+ 单测；**C-15/C-16 落盘前必经此函数** |
+| C-19 | `openbase/settings.py` + `tests/` | 修改/新增 | 三开关（`OPENBASE_CAPTURE_RESPONSE`/`OPENBASE_CAPTURE_UPSTREAM`/`OPENBASE_CAPTURE_FIELD_ALLOWLIST`）默认关；开关变更记审计；单测覆盖「关时零采集」「开时脱敏生效」 |
+
 ---
 
 ## §6 验收标准
@@ -191,6 +212,8 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | **合规** | 敏感字段（密码/token/key）与超限请求体**0 命中** | 单测 + 全量日志扫描 |
 | **性能** | 日志写入不阻塞主请求；P99 增量 < 5ms | 压测对比 |
 | **容量** | 单服务单日日志 < 200MB（1000 请求/日量级，含样本） | 实测 |
+| **响应级归因**（v1.0.1） | ≥90% 的失败步骤可定位到「归属层 + 上游错误码」；上游耗时与网关耗时可分离 | `scripts/test_log_analyze.py` 输出统计 |
+| **红线合规**（v1.0.1，D-5） | 采集默认关闭时日志中 `resp_summary`/`upstream_body_summary` **0 条**；开启后敏感字段（token/key/password/证件号/手机号原文）**0 命中**；单条摘要 ≤2KB | 全量日志扫描 + 单测 |
 
 ---
 
@@ -203,6 +226,7 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | 自定义头被误加入身份集合 | 若将来把 `X-Test-Case-Id` 混入 `INBOUND_IDENTITY_HEADERS` 会触发 403 | 在 `protocol_headers/constants.py` 注释中显式标注「非身份头，禁止加入裁剪集」 |
 | 人工记录主观性 | PASS/FAIL 由人判定，可能失真 | 强制要求「FAIL/BLOCKED 必填 reason」，并要求附 `request_id` 客观证据 |
 | 日志量增长 | 全量 INFO + 请求级日志 | 采样策略（ERROR/WARN 100%、INFO 可配）、按日轮转 + 30 天保留 |
+| 响应采集合规（v1.0.1） | DPS 画像等域属**个人隐私数据**，误采即合规事故 | 已定红线（D-5）：默认关闭 + 开启强制脱敏 + 2KB 摘要上限 + 开关变更留痕审计 + 生产永久关闭 |
 
 **假设**：① 人工测试在联调环境（dev/pro）进行，允许文件落盘；② 测试者使用浏览器/Postman/CLI，均可携带自定义头；③ 生产环境默认关闭 `test.*` 事件与 case 头透传。
 
@@ -230,6 +254,7 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | **D-2** | 是否落库 | ① 复用 `audit_logs` ② 新建 `test_records` 表 ③ 不落库（纯文件） | 先 ①（零迁移）；若查询压力大再 ② |
 | **D-3** | 是否纳入 S7 门禁口径 | ① 仅作补充证据（不参与门禁判定）② 纳入门禁（人工 run 必须全绿） | **①**：人工记录保持「补充证据」定位，避免与自动化断言口径混淆 |
 | **D-4** | 用例编号体系 | ① 复用既有（S0-1…S6-4 / UI-<模块>-<序号> / S7-T2-1）② 新建人工用例集 | **①**：复用保证与既有证据可对齐，不新增第二套编号 |
+| **D-5** | **响应数据采集红线** | ① 默认关闭，开启时强制脱敏（2KB 摘要上限、生产永久关闭）② 常开（便于分析）③ 完全不采集响应 | **①（已确认 2026-09-13）**：默认关闭保证零合规暴露；仅在联调/人工测试窗口显式开启，且落盘前必经 C-18 脱敏。**②③ 不再作为可选项** |
 
 ---
 
@@ -243,3 +268,75 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | `openbase-ui/scripts/ui_e2e_all_services.mjs` | **可复用**：测试模式开关与 case 头注入逻辑可共用 |
 | `doc/test/evidence/**` | **扩展落点**：新增 `manual/` 子目录，与自动化证据并列不混用 |
 | Playwright / s7 冒烟 / 门禁聚合 | **互补**：自动化负责「可复现断言」，人工记录负责「探索性验证与体验问题留痕」 |
+
+---
+
+## §11 响应级观测与错误归因（v1.0.1 新增）
+
+> 本章回答两个问题：**能否观测各子系统的响应数据？能否据此分析每一步的响应错误？**
+> 结论：**原方案不能**——响应体是盲区，必须补 C-15~C-19 才能达到「按步骤归因到上游」的能力。
+
+### 11.1 为什么原方案观测不到响应数据（实证）
+
+| 核查点 | 实证 | 结论 |
+|--------|------|------|
+| 审计记录字段 | `APICallRecord`（`openbase/modules/audit/__init__.py:32-50`）字段为 method/path/status_code/duration_ms/request_id/operator/tenant/ip/ua/**request_body**/error/extra | **无任何响应字段** |
+| 代理层日志点 | `openbase/modules/proxy/__init__.py` 共 5 处日志，全部落在 K03 绕过审计、服务密钥写拒绝、上游不可达、上游 402 | **上游正常响应与业务错误响应未留痕** |
+| 上游响应去向 | `_forward` 中 `payload = upstream.json()`（失败回退 `upstream.text[:2000]`）→ `JSONResponse(status_code=upstream.status_code, content=payload)`（`:298-301`） | 上游响应**原样透传浏览器，未落日志/审计** |
+| 子系统侧 | OpenRAG 有请求级日志中间件（`src/openrag/observability/logging.py:456`）；DPS 有 `identity/request_id.py` contextvar 与审计表 `request_id` 列 | 具备按 request_id 串联的基础，但**各仓是否记状态码/响应摘要需逐仓核实**（列为实施前置任务） |
+
+**能力边界（原方案）**：可回答「哪一步、网关返回了什么状态码/错误码、耗时多少」；**不可回答**「上游子系统到底返回了什么、错误出在网关还是上游」。
+
+### 11.2 红线（D-5，已确认的硬约束）
+
+1. **默认关闭**：`OPENBASE_CAPTURE_RESPONSE` / `OPENBASE_CAPTURE_UPSTREAM` 未设或为 `0` 时，**零采集、零落盘**（响应摘要字段不出现，仅保留 `resp_status`/`resp_bytes`/`resp_digest` 等非敏感结构字段）；
+2. **开启时强制脱敏**：任何响应摘要**落盘前必经 C-18 `mask_sensitive()`**，命中敏感字段即遮蔽；
+3. **单条上限 2KB**：超限只存 `resp_digest` + 键名清单，不存原文；
+4. **生产永久关闭**：仅联调/人工测试窗口可开启；
+5. **开关本身留痕**：响应采集的开启/关闭作为审计事件记录（谁、何时、对哪个服务开启）；
+6. **域级最小化**：`OPENBASE_CAPTURE_FIELD_ALLOWLIST` 默认空 → 默认只留结构化键名与 digest，画像等隐私域**整体遮蔽**。
+
+### 11.3 三开关设计
+
+| 开关 | 默认 | 作用 |
+|------|------|------|
+| `OPENBASE_CAPTURE_RESPONSE` | `0`（关） | 网关侧响应摘要（C-15） |
+| `OPENBASE_CAPTURE_UPSTREAM` | `0`（关） | 上游子系统响应摘要（C-16） |
+| `OPENBASE_CAPTURE_FIELD_ALLOWLIST` | 空 | 允许保留原值的字段白名单（如 `error.code`、`error.message`） |
+
+### 11.4 脱敏规则（C-18）
+
+| 类别 | 处理 |
+|------|------|
+| 凭据 | `authorization`/`token`/`api_key`/`password`/`secret`/`cookie` → `***` |
+| 个人隐私 | 手机号（保留后 4 位）、证件号/身份证、邮箱（本地部掩码）、住址 |
+| 画像业务域 | `portraits` 等域**默认整体遮蔽**，仅留键名与长度 |
+| 超限/嵌套过深 | >2KB 或层级 >5 层 → 摘要 + digest，不存原文 |
+
+### 11.5 错误归因矩阵（C-17 输出口径）
+
+| 观测到的错误 | 归属层 | 排查入口 |
+|-------------|--------|---------|
+| `401 AUTH_401` | 网关鉴权 | 是否携带 JWT / 是否走 key 通道 |
+| `403 PERM_UNTRUSTED_IDENTITY_HEADER` | 网关信任链 | 调用方是否直连带身份头（应改走 JWT 或 proxy） |
+| `403 PERM_SERVICE_KEY_WRITE_DENIED` | 网关 K03 | 写操作是否需 `sk-agent-*` 服务账号或登记白名单 |
+| `502 SYS_UPSTREAM_ERROR` | 网络/上游不可达 | 上游端口、进程、编排器状态 |
+| 上游 4xx/5xx + `upstream_error_code` | **上游子系统** | 子系统日志（同 `request_id`）→ 该仓错误码表 |
+| 网关 200 但响应不符预期 | 契约/数据 | `resp_digest` 对比 + 子系统日志 |
+
+### 11.6 分析器输出（`scripts/test_log_analyze.py`）
+
+按步骤输出一行一结论，并给出「首次失败即停」脚手架（避免人工测试把连锁噪音当新问题）：
+
+```
+case_id      step  gateway  upstream  归属层      首现  request_id           建议动作
+UI-DPS-0007  3     403      -         网关信任链   是    req-9f3a1c02d4e7    该页应走 JWT，勿带身份头
+UI-DPS-0011  2     502      -         网络/上游    是    req-77b10d9ac331    检查 dps:8030 进程
+UI-DPS-0014  5     500      500       上游子系统   是    req-1c02ab77d9f4    查 DPS 日志同 request_id
+```
+
+输出落 `doc/test/evidence/manual/<run_id>-analysis.md`（含每步的 `resp_digest`/`upstream_status` 引用，**不含响应明文**）。
+
+### 11.7 与自动化的边界
+
+响应采集**只服务人工探索性测试**；Playwright / s7 冒烟继续使用自身断言，**不依赖**响应摘要，避免形成第二套判定口径（与 D-3「人工记录仅作补充证据」一致）。
