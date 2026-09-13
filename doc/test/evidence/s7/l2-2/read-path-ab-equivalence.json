@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "tool": "dual_channel_e2e.py",
+  "task": "S7-T4",
+  "execution_face": "B",
+  "generated_at": "2026-09-13T11:27:39.513026+08:00",
+  "openbase_commit": "0fae428",
+  "evidence_ref": "S7-T4-3",
+  "title": "读路径 A/B 双通道等价（同一读请求经 A/B）",
+  "status": "PARTIAL",
+  "endpoints": {
+    "A": "子系统原生 API（直连）",
+    "B": "OpenBase 编排代理（JWT）"
+  },
+  "results": {
+    "OpenRAG": {
+      "A": {
+        "status": 200,
+        "url": "http://127.0.0.1:8010/api/v1/collections",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"49009904-8b2d-4250-a392-317140a9b427\",\"name\":\"smoke_kb_20260912192112\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"",
+        "ids": [
+          "1a91f7ea-ae1a-4a3f-8fb5-186a481626ca",
+          "49009904-8b2d-4250-a392-317140a9b427",
+          "62dd5755-07ef-468b-9738-c6a376644c79",
+          "b1b1a409-bdfa-4de6-9f3f-522277d5936c",
+          "ea7075f1-86e4-4374-ac0e-c7aac3ecb4d9",
+          "f23412d2-f1f2-4871-a0ae-cf0b0906c180"
+        ]
+      },
+      "B": {
+        "status": 200,
+        "url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"49009904-8b2d-4250-a392-317140a9b427\",\"name\":\"smoke_kb_20260912192112\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"",
+        "ids": [
+          "1a91f7ea-ae1a-4a3f-8fb5-186a481626ca",
+          "49009904-8b2d-4250-a392-317140a9b427",
+          "62dd5755-07ef-468b-9738-c6a376644c79",
+          "b1b1a409-bdfa-4de6-9f3f-522277d5936c",
+          "ea7075f1-86e4-4374-ac0e-c7aac3ecb4d9",
+          "f23412d2-f1f2-4871-a0ae-cf0b0906c180"
+        ]
+      },
+      "verdict": "PASS",
+      "reason": "id 集完全一致（6 条）"
+    },
+    "OpenLLM": {
+      "A": {
+        "status": 200,
+        "url": "http://127.0.0.1:8001/openllm/v1/models",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"models\":[{\"id\":\"gpt-4\",\"object\":\"model\",\"created\":1785570622,\"owned_by\":\"DeepSeek2\"},{\"id\":\"deepseek-v4-flash\",\"object\":\"model\",\"created\":1786876867,\"owned_by\":\"DeepSeek\"},{\"id\":\"qwen3:0.6b\",\"object\":\"",
+        "ids": [
+          "deepseek-v4-flash",
+          "gpt-4",
+          "llama3.2:1b",
+          "llama3.2:1b",
+          "qwen2.5:0.5b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b"
+        ]
+      },
+      "B": {
+        "status": 200,
+        "url": "http://127.0.0.1:8000/api/v1/llm-proxy/models",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"models\":[{\"id\":\"gpt-4\",\"object\":\"model\",\"created\":1785570622,\"owned_by\":\"DeepSeek2\"},{\"id\":\"deepseek-v4-flash\",\"object\":\"model\",\"created\":1786876867,\"owned_by\":\"DeepSeek\"},{\"id\":\"qwen3:0.6b\",\"object\":\"",
+        "ids": [
+          "deepseek-v4-flash",
+          "gpt-4",
+          "llama3.2:1b",
+          "llama3.2:1b",
+          "qwen2.5:0.5b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b",
+          "qwen3:0.6b"
+        ]
+      },
+      "verdict": "PASS",
+      "reason": "id 集完全一致（11 条）"
+    },
+    "OpenMemory": {
+      "A": {
+        "status": 200,
+        "url": "http://127.0.0.1:8020/api/v1/sessions",
+        "body_head": "[]",
+        "ids": []
+      },
+      "B": {
+        "status": 200,
+        "url": "http://127.0.0.1:8000/api/v1/memory-proxy/sessions",
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-09-13T03:27:40.951634+00:00\"}",
+        "ids": []
+      },
+      "verdict": "PASS_EMPTY",
+      "reason": "两侧均为空集（一致性成立但无样本）"
+    },
+    "DPS": {
+      "A": {
+        "status": 200,
+        "url": "http://127.0.0.1:8030/api/v2/portrait/list?page=1&page_size=20",
+        "body_head": "{\"code\":200,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_",
+        "ids": [
+          "022b0429-315f-41f0-ab82-ad581064660f",
+          "78166aa3-e6cc-417e-b204-ac19bb9a790d",
+          "cbfba441-e6ae-4d05-9f89-2d46cc564ac8"
+        ]
+      },
+      "B": {
+        "status": 401,
+        "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
+        "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-09-13T03:27:40.992670+00:00\"}",
+        "ids": []
+      },
+      "verdict": "BLOCKED",
+      "reason": "A=200 B=401"
+    }
+  }
+}

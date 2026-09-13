@@ -8,9 +8,9 @@
   "status": "PENDING",
   "exit_code": 2,
   "execution_face": "B",
-  "generated_at": "2026-09-11T18:59:18+08:00",
-  "commit": "0595bcd",
-  "openbase_commit": "0595bcde788bd19d3a2e21ffc647b827eaa3fded",
+  "generated_at": "2026-09-13T11:28:48+08:00",
+  "commit": "0fae428",
+  "openbase_commit": "0fae428440ad4153aeeaedf49c1ece1f77ad3ebe",
   "reason": "沙箱无真实 PG/Redis/IdP/四仓运行态：矩阵终验属 B 面 → PENDING；真实执行需联调窗口（S4-T8 matrix_rows 基座 + 受信通道）",
   "matrix_plan": {
     "subsystems": [
