@@ -741,7 +741,7 @@
     "suggested_commit_message": "docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）",
     "leftovers": [
       "5 条 S4 聚焦未装配路径转附录 A 保留注册位",
-      "backend/data/openapi-llm-snapshot.json 因沙箱拒写未落仓（需可写环境落快照以支持无参 CI）"
+      "backend/data/openapi-llm-snapshot.json 已于 2026-09-13 落仓并三远端同步（提交 e2683ce；sha256 2CE7DF70EF22B94B 三方一致：HEAD blob = 工作树 = 源快照，351 操作）"
     ],
     "independent_verification": {
       "date": "2026-09-11",

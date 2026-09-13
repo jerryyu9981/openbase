@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-FAULT-DISPATCH-v1.0.0 |
-| 版本 | v1.0.11 |
+| 版本 | v1.0.12 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-12 |
 | 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.2；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.3；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.4；S7 批次 14 DPS 探活口径修复会话修订 v1.0.5；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.6；S7 批次 16 跨仓提交状态同步回填会话修订 v1.0.7；S7 批次 17 K07 门禁收口与聚合复跑会话修订 v1.0.8；S7 批次 18 K07 收口提交与脚本路径回填会话修订 v1.0.9；S7 批次 19 DPS 豁免续期入库回填会话修订 v1.0.10；S7 批次 20 OpenLLM 快照落仓脚本登记会话修订 v1.0.11） |
@@ -363,7 +363,7 @@
 | 已修复（OpenLLM 仓工作树全量补填 5 文件：`backend\scripts\k07_endpoint_matrix.py`、`backend\scripts\k07_isolation_registry.py`（354 键）、`backend\tests\unit\test_isolation_matrix_endpoints.py`（新增 759 条）、`doc\design\OpenLLM-K07-端点过滤矩阵填报-v1.1.0.md`（354 行主表）、`...v1.1.0.matrix.json`） | ☑ | OpenLLM 仓（工作树） | 2026-09-11 | 矩阵 354 行 = 真实底单 351 操作 + 文档面合成 3；业务面覆盖 349 + A 直连豁免 5；**缺口 344→0** |
 | 已重跑（门禁 `--check`：`total=351 covered=349 exempt=2 / gaps=0 uncovered=0 exemption_without_approval=0`，**exit 0**；隔离用例 `pytest tests\unit\test_isolation_matrix_endpoints.py tests\unit\test_s4_t11_k07_matrix.py ...` → **767 passed**；ruff（改动 3 个 py）All checks passed） | ☑ | OpenLLM 仓（工作树） | 2026-09-11 | 独立复核复跑一致（OpenBase 侧脚本解析 + 命令复跑） |
 | 已回填（`k07-finalize.json` `per_system[openllm]`：rows=354/covered=349/exempt=5/gap=0/uncovered=0/exemption_valid=5/status=FILLED(worktree,uncommitted)、`K07-GAP-OPENLLM`→RESOLVED；`gate-aggregate.json` §K07-SYS-1 `status=PARTIAL`（保留历史字段）；测试报告 §2/§3/§7、总收官报告 §2/§3/§5.3/§6/§7、执行单 §3.4/§3.5/§6） | ☑ | OpenBase 侧 | 2026-09-11 | 子系统仓文件只读（未改动）；仅回填 OpenBase 侧证据与文档 |
-| **已提交**（OpenLLM 仓 5 文件 commit + push 完成，三远端同步） | ☑ | OpenLLM 仓 | 2026-09-12 | 提交 **`41af780`**（`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）`）；**遗留收口（2026-09-13）**：已生成一键落仓脚本 `openllm-k07-snapshot-commit-push.bat`（包装 `scripts/openllm_k07_snapshot_commit_push.ps1`；源取 K07 证据导出 `doc/test/evidence/s7/gate/k07-openapi/openllm.openapi.json`——`openapi=3.1.0` / `paths=278` / `operations=351`，与 K07 台账一致；脚本含 **351 操作校验 + 提交面守卫（仅 1 文件）+ 三远端 `ls-remote` 校验**，`-DryRun` 实跑通过）。**受限沙箱内 OpenLLM 仓全仓只读**（`backend/data/**` 与 `.git` 均被拦截，实测无残留：目标文件未生成、`index.lock` 未产生、暂存区为空）→ **待沙箱外执行并回填 hash**。 |
+| **已提交**（OpenLLM 仓 5 文件 commit + push 完成，三远端同步） | ☑ | OpenLLM 仓 | 2026-09-12 | 提交 **`41af780`**（`docs(k07): OpenLLM 端点过滤矩阵全量补填与隔离用例注册（351 端点/缺口归零）`）；**遗留收口（2026-09-13）**：已生成一键落仓脚本 `openllm-k07-snapshot-commit-push.bat`（包装 `scripts/openllm_k07_snapshot_commit_push.ps1`；源取 K07 证据导出 `doc/test/evidence/s7/gate/k07-openapi/openllm.openapi.json`——`openapi=3.1.0` / `paths=278` / `operations=351`，与 K07 台账一致；脚本含 **351 操作校验 + 提交面守卫（仅 1 文件）+ 三远端 `ls-remote` 校验**，`-DryRun` 实跑通过）。**受限沙箱内 OpenLLM 仓全仓只读**（`backend/data/**` 与 `.git` 均被拦截，实测无残留：目标文件未生成、`index.lock` 未产生、暂存区为空）→ **已于 2026-09-13 完成落仓并三远端同步**（提交 **`e2683ce`**（`chore(k07): 落仓 OpenLLM /openapi.json 快照（351 操作，K07 无参 CI 依赖）`）；sha256 `2CE7DF70EF22B94B` **三方一致**（HEAD blob = 工作树 = 源快照，888760 bytes）；origin / backup / github `ls-remote` 均 = `e2683ce`；重跑落仓脚本会因「暂存面为空」被提交面守卫拦下（exit 2）= **无东西可提交时的正确行为**）。 |
 | OpenBase 复核（§7 第 6 项） | ☑ | OpenBase 侧 | 2026-09-11 | 独立复核通过（见批量回填记录） |
 
 ### 5.5 F-6（OpenMemory K07 端点-过滤矩阵 8 条缺口补填：工作树完成/待提交）
