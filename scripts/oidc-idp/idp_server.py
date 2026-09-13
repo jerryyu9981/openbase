@@ -35,7 +35,19 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+try:
+    # C-2：复用 OpenBase 结构化日志（JSONL 落盘 logs/oidc-idp/ + 控制台 JSON，交 C-6 采集）。
+    # 该脚本可独立运行（仓库根不在 sys.path 时）——日志装配属 best-effort，**不得阻断服务启动**。
+    from openbase.core.logging_setup import setup_logging
+except Exception:  # noqa: BLE001 - 无法导入时回落标准 basicConfig
+    setup_logging = None  # type: ignore[assignment]
+
+if setup_logging is not None and os.getenv("OPENBASE_LOG_SETUP", "1") != "0":
+    setup_logging(service="oidc-idp")
+else:
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s"
+    )
 logger = logging.getLogger("openbase.oidc-idp")
 
 # ---- 配置 ----

@@ -28,6 +28,8 @@ from openbase.modules.protocol_headers.constants import (
     HEADER_PROXY_SOURCE,
     HEADER_REQUEST_ID,
     HEADER_TENANT_ID,
+    HEADER_TEST_CASE_ID,
+    HEADER_TEST_STEP_ID,
     HEADER_USER_ID,
     HEADER_USER_ROLE,
     OUTBOUND_IDENTITY_TARGETS,
@@ -66,6 +68,36 @@ def _apply_value_map(value: str | None, value_map: Mapping[str, str] | None) -> 
     return value
 
 
+# 用例上下文头值长度上限（非身份头，独立于 IDENTITY_HEADER_LENGTH_LIMITS）
+_TEST_CONTEXT_MAX_LENGTH = 64
+
+
+def _test_context_value(value: Any) -> str | None:
+    """归一化用例上下文头值（C-3/C-5）.
+
+    非身份头**不做 fail-closed 校验**：空值/超长/含 CR-LF 控制字符一律**丢弃**，
+    既不阻断业务请求，也不让非法值进入上游（防头注入）。
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or len(text) > _TEST_CONTEXT_MAX_LENGTH:
+        return None
+    if any(char in text for char in ("\r", "\n", "\x00")):
+        return None
+    return text
+
+
+def _test_context_of(
+    request: Any, provided_case: Any = None, provided_step: Any = None
+) -> tuple[str | None, str | None]:
+    """用例上下文取值（与 X-Request-Id 同源策略：显式提供 > request.state > 不注入）."""
+    state = getattr(request, "state", None)
+    raw_case = provided_case if provided_case is not None else getattr(state, "test_case_id", None)
+    raw_step = provided_step if provided_step is not None else getattr(state, "test_step_id", None)
+    return _test_context_value(raw_case), _test_context_value(raw_step)
+
+
 def build_outbound_headers(
     request: Any = None,
     user_ctx: dict[str, Any] | None = None,
@@ -81,6 +113,8 @@ def build_outbound_headers(
     request_id: str | None = None,
     include_proxy_source: bool = True,
     enforce_org_alias: bool = False,
+    test_case_id: str | None = None,
+    test_step_id: str | int | None = None,
 ) -> dict[str, str]:
     """装配转发上游的出站请求头（§3.5 注入矩阵唯一装配点）.
 
@@ -103,9 +137,11 @@ def build_outbound_headers(
         enforce_org_alias: OB-8 别名强模式开关（settings.enforce_org_alias；默认
             False 兼容段）。True 且出站 X-Org-ID ≠ X-Tenant-ID → 403
             BIZ_ORG_ALIAS_MISMATCH。
+        test_case_id: 人工测试用例号（C-5；缺省读 ``request.state.test_case_id``）。
+        test_step_id: 用例内步骤序号（C-5；缺省读 ``request.state.test_step_id``）。
 
     Returns:
-        完整出站请求头 dict（身份头 + 来源 + request_id + extra）。
+        完整出站请求头 dict（身份头 + 来源 + request_id + 用例上下文 + extra）。
 
     Raises:
         BaseError: target_system 非法 → 400 PARAM_INVALID；
@@ -123,6 +159,14 @@ def build_outbound_headers(
     source = SOURCE_BY_TARGET_SYSTEM[target_system]
     if include_proxy_source:
         headers[HEADER_PROXY_SOURCE] = source
+
+    # 用例上下文头（C-5，非身份头）：与 X-Request-Id 同源策略；未启用测试模式时不注入。
+    # 放在身份解析之前——匿名/服务级出站同样可按 case 聚合（方案 §3.2 子系统日志串联）。
+    case_value, step_value = _test_context_of(request, test_case_id, test_step_id)
+    if case_value:
+        headers[HEADER_TEST_CASE_ID] = case_value
+    if step_value:
+        headers[HEADER_TEST_STEP_ID] = step_value
 
     identity = resolve_identity(user_ctx)
     if identity is None:

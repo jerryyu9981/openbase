@@ -262,3 +262,60 @@ def test_setup_logging_level_follows_env(tmp_path: Path, monkeypatch):
     config = setup_logging(service="openbase", log_dir=tmp_path, force=True)
 
     assert config.level == logging.DEBUG
+
+
+# ---- C-2：版本/提交号注入（服务启动可追溯）----
+
+
+def test_resolve_version_prefers_explicit_then_env(monkeypatch):
+    """版本取值：显式入参 > OPENBASE_SERVICE_VERSION."""
+    monkeypatch.setenv("OPENBASE_SERVICE_VERSION", "1.2.3")
+
+    assert logging_setup_module._resolve_version("9.9.9") == "9.9.9"
+    assert logging_setup_module._resolve_version(None) == "1.2.3"
+
+
+def test_resolve_version_falls_back_to_git_commit(monkeypatch):
+    """未配置版本时回退 git 短提交号（best-effort，失败不阻断启动）。"""
+    monkeypatch.delenv("OPENBASE_SERVICE_VERSION", raising=False)
+    monkeypatch.setattr(logging_setup_module, "_git_short_commit", lambda: "abc1234")
+
+    assert logging_setup_module._resolve_version(None) == "abc1234"
+
+
+def test_resolve_version_defaults_when_git_unavailable(monkeypatch):
+    """git 不可用且无环境变量 → "0.0.0"（不伪造提交号）。"""
+    monkeypatch.delenv("OPENBASE_SERVICE_VERSION", raising=False)
+    monkeypatch.setattr(logging_setup_module, "_git_short_commit", lambda: None)
+
+    assert logging_setup_module._resolve_version(None) == "0.0.0"
+
+
+def test_setup_logging_version_flows_into_records(tmp_path: Path, monkeypatch):
+    """装配时注入的版本写入每条记录（version 字段）."""
+    monkeypatch.delenv("OPENBASE_SERVICE_VERSION", raising=False)
+    monkeypatch.setattr(logging_setup_module, "_git_short_commit", lambda: "abc1234")
+
+    config = setup_logging(service="openbase", log_dir=tmp_path, version="2.0.0", force=True)
+    assert config.version == "2.0.0"
+
+    logger = logging.getLogger("openbase.test.version")
+    logger.info("version-line")
+    for handler in logging.getLogger().handlers:
+        handler.flush()
+
+    payload = json.loads(
+        Path(config.current_path).read_text(encoding="utf-8").splitlines()[-1]
+    )
+    assert payload["version"] == "2.0.0"
+
+
+def test_oidc_idp_entry_wires_structured_logging():
+    """C-2：仓内另一服务入口（本地 OIDC IdP）已接线结构化日志 + 可关闭守卫."""
+    source = (
+        Path(__file__).resolve().parents[1] / "scripts" / "oidc-idp" / "idp_server.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'setup_logging(service="oidc-idp")' in source
+    assert "OPENBASE_LOG_SETUP" in source
+    assert "logging.basicConfig(" in source, "缺少无法导入 openbase 时的兜底日志配置"

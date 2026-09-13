@@ -22,6 +22,10 @@ if sys.platform == "win32":
 # 需要验证真实装配的用例显式调用 setup_logging(force=True) 并自行清理 handler。
 os.environ.setdefault("OPENBASE_LOG_SETUP", "0")
 
+# C-4（审计落库）测试隔离：默认关闭请求期 DB 落库，避免每个 TestClient 请求都尝试连库
+# （拖慢全量且受共享 PG 抖动影响）。需要验证落库/降级的用例显式置 1 并注入假会话工厂。
+os.environ.setdefault("OPENBASE_AUDIT_DB_PERSIST", "0")
+
 
 def reset_db_singletons() -> None:
     """重置 core.db.session 全局 engine/session 单例（T2 隔离修复 2026-09-06）.

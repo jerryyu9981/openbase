@@ -5,8 +5,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-DOCMAP-INDEX-v1.0.0 |
-| 版本 | v1.0.10 |
-| 状态 | [Draft]（S7-T1-5 产出；v1.0.1 S7-T8-3 增补 S7 新增条目与证据索引；v1.0.2 增补 S7 DevLogReport / 测试报告条目；v1.0.3 增补 S7 联调窗口工具脚本 L1-1/L2-1/L2-2/L3-1/L3-2 条目；v1.0.4 增补 S7 联调窗口环境检查报告与 env-check 证据条目；v1.0.5 增补人工端到端测试日志记录方案条目；v1.0.6 该方案升版 v1.0.1（补 §11 响应级观测与错误归因、D-5 红线）并同步条目描述；v1.0.7 该方案升版 v1.0.2（并入 §11.8 跨仓前提实测核实 + D-6）并同步条目描述；v1.0.8 该方案升版 v1.1.0 并置 [Approved]（决议冻结 §9.1）并同步条目描述；v1.0.9 增补 D-6 四仓 request_id 日志接线改动说明条目；v1.0.10 登记批 1 里程碑（C-1+C-6）实施记录 DevLogReport 条目并同步方案条目至 v1.1.1；随 S7 段门禁批准回写 [Approved]） |
+| 版本 | v1.0.11 |
+| 状态 | [Draft]（S7-T1-5 产出；v1.0.1 S7-T8-3 增补 S7 新增条目与证据索引；v1.0.2 增补 S7 DevLogReport / 测试报告条目；v1.0.3 增补 S7 联调窗口工具脚本 L1-1/L2-1/L2-2/L3-1/L3-2 条目；v1.0.4 增补 S7 联调窗口环境检查报告与 env-check 证据条目；v1.0.5 增补人工端到端测试日志记录方案条目；v1.0.6 该方案升版 v1.0.1（补 §11 响应级观测与错误归因、D-5 红线）并同步条目描述；v1.0.7 该方案升版 v1.0.2（并入 §11.8 跨仓前提实测核实 + D-6）并同步条目描述；v1.0.8 该方案升版 v1.1.0 并置 [Approved]（决议冻结 §9.1）并同步条目描述；v1.0.9 增补 D-6 四仓 request_id 日志接线改动说明条目；v1.0.10 登记批 1 里程碑（C-1+C-6）实施记录 DevLogReport 条目并同步方案条目至 v1.1.1；v1.0.11 该 DevLogReport 升版 v1.1.0（批 1 C-1~C-9 全量落地）并同步方案条目至 v1.2.0、增补聚合脚本与人工测试证据条目；随 S7 段门禁批准回写 [Approved]） |
 | 日期 | 2026-09-11 |
 | 作者 | AI（沙箱侧现状实测与索引编制） |
 | 用途 | **L0-L4 全量文档地图（唯一入口表）**：逐层登记文档「名称 / 版本 / 角色 / 状态 / 关联锚点」，并承载 **S1a~S7 纵切新增文档并入核对**；判据「**无游离文档**」（各层文档均在索引内，差异 0 或显式登记） |
@@ -28,6 +28,7 @@
 | v1.0.8 | 2026-09-13 | AI（S7 批次 34 决议冻结会话） | **人工测试日志方案定稿 v1.1.0 并置 [Approved]**：D-1~D-6 全部决议冻结（D-1=②/D-2=①/D-3=①/D-4=①/D-5=①/D-6=②，详见该方案 §9.1），冻结实施顺序（批 1 → 批 2 → 批 4）与首个里程碑（C-1 + C-6）；§2.6 条目版本与状态（[Draft] → [Approved]）同步更新。**仅更新既有条目描述与状态，不新增/不删除条目；本仓未改动业务代码** |
 | v1.0.9 | 2026-09-13 | AI（S7 批次 35 跨仓施工说明会话） | **D-6 四仓改动说明并入**：§2.6 新增一行（`doc/design/OpenBase-D6四仓request_id日志接线改动说明-v1.0.0.md`，[Draft]，跨仓施工依据）；DOCMAP-MANIFEST 同步增补一条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目；本仓未改动业务代码** |
 | v1.0.10 | 2026-09-14 | AI（S7 批次 36 批 1 里程碑开发会话） | **批 1 里程碑（C-1 日志落盘 + C-6 服务日志采集）实施记录并入**：§2.5 新增一行（`doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.0.0.md`，[Review]，S7 Step 2 增量开发记录）；§2.6 方案条目版本由 v1.1.0 同步至 **v1.1.2**（§3.1 L1 落点文件名对齐实现、新增 §5.1 实施进度、移除 C-1 按保留期自动清理以遵循不变量 T6-1）；DOCMAP-MANIFEST 同步增补一条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
+| v1.0.11 | 2026-09-14 | AI（S7 批次 37 批 1 全量落地会话） | **批 1（C-1~C-9）全量落地并入**：§2.5 该 DevLogReport 升版 **v1.1.0**（新增 §15 C-2~C-9 实施记录）并同步 §2.6 方案条目至 **v1.2.0**（含 `X-Test-Run-Id` 头承载口径与 C-1~C-9 实施进度表）；§2.6 增补两行（`scripts/test_log_aggregate.py`、`doc/test/evidence/manual/run-20260914-*.{json,md}`）；DOCMAP-MANIFEST 同步增补三条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 
 ---
 
@@ -111,7 +112,7 @@
 | doc/test/OpenBase-S6-统一前端隔离展示与段门禁收口-测试报告-v1.0.0.md | v1.0.0 | S6 测试报告 | Final | S6 |
 | doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md | v1.0.0（OB-INTG-S7-SIGNOFF-TPL-v1.0.0） | S7 执行模板 | Draft | S7-T7 |
 | doc/development/OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md | v1.0.0（OB-S7-DEVLOG-v1.0.0） | S7 开发记录报告（批 1~4 / SHR 收口 / 门禁聚合 / 台账回写 / 会签） | Review | S7 Step 2 |
-| doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.0.0.md | v1.0.0（OB-S7-DEVLOG-LOGS-v1.0.0） | S7 增量开发记录：批 1 首个里程碑 **C-1 日志落盘 + C-6 服务日志采集**（改动清单 / RED→GREEN / 静态质量 / 单元测试 / 实跑验证 / 回归 / 变更统计） | Review | S7 Step 2 / 方案 §5.1 |
+| doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0.md | v1.1.0（OB-S7-DEVLOG-LOGS-v1.1.0） | S7 增量开发记录：**批 1（C-1~C-9）全量落地**（C-1 日志落盘 / C-2 入口接线与提交号注入 / C-3 用例上下文与 L1 日志 / C-4 审计落库 / C-5 出站透传 / C-6 服务日志采集 / C-7 聚合脚本 / C-8 查询过滤 / C-9 单测；含 §15 逐项 RED→GREEN、实跑证据、变更统计） | Review | S7 Step 2 / 方案 §5.1 |
 | doc/test/OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md | v1.0.0（OB-S7-TEST-v1.0.0） | S7 测试报告（34 断言矩阵 + 段门禁六项聚合结论） | Review | S7 Step 3 |
 | doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md | v1.0.0（内部 v1.0.1，OB-S7-CLOSURE-v1.0.0） | S7 总收官报告（单文件形态；六项聚合 + PENDING + 会签 + 遗留） | Review | S7-T8-4 / S7-T8-5 |
 | doc/planning/OpenBase-S7-联调窗口环境检查报告-v1.0.0.md | v1.0.0（OB-S7-ENVCHECK-v1.0.0） | S7 P2 联调窗口前置环境检查报告（17 项实测 + 处置建议 + 就绪度矩阵） | Draft | S7-§0.1 / S7-P2-ENV |
@@ -136,8 +137,10 @@
 | scripts/verify_l3_1_agent.ps1 | v1.0.0（骨架 + 干跑） | S7-T5 L3-1 Agent 端到端（四头 / 白名单 / 域隔离 / 403 + M1-M2） | 骨架已就绪（干跑 PENDING） | S7-T5-1~4 |
 | scripts/smoke_l3_2.py | v1.0.0（骨架 + 干跑） | L3-2 贯通冒烟（OpenBase 侧缺失项；受信通道端到端关键路径） | 骨架已就绪（干跑 PENDING） | S7-T6-2 / S7-T7-3 |
 | doc/test/evidence/s7/env/env-check.json | schema_version=1 | S7 P2 联调窗口环境检查证据（真实 PG/openbase_test / Redis / IdP / 四仓运行态 / 网关与前端 / Playwright / 四仓远端写权限） | 已产出（P2 环境只读探测） | S7-§0.1 / S7-P2-ENV |
-| doc/design/OpenBase-人工端到端测试日志记录方案-v1.0.0.md | **v1.1.2（[Approved]）** | 人工端到端测试日志记录方案（现状 4 缺口 / 三层记录通道 / 字段与事件字典 / 用例上下文贯穿 / 改造清单 C-1~C-19 / §5.1 批 1 里程碑实施进度 / §11 响应级观测与错误归因 / §11.8 跨仓前提实测核实 / §9.1 决议记录 / 验收标准；v1.1.2 移除 C-1 的按保留期自动清理以遵循不变量 T6-1） | **已批准（2026-09-13 决议冻结；v1.1.1~v1.1.2 为实施期文档对齐与修订）** | 联调期人工测试留痕（补充证据；D-3 决议不参与门禁判定） |
+| doc/design/OpenBase-人工端到端测试日志记录方案-v1.0.0.md | **v1.2.0（[Approved]）** | 人工端到端测试日志记录方案（现状 4 缺口 / 三层记录通道 / 字段与事件字典（含头承载口径）/ 用例上下文贯穿 / 改造清单 C-1~C-19 / §5.1 批 1（C-1~C-9）实施进度 / §11 响应级观测与错误归因 / §11.8 跨仓前提实测核实 / §9.1 决议记录 / 验收标准；v1.1.2 移除 C-1 的按保留期自动清理以遵循不变量 T6-1；v1.2.0 记批 1 全量落地并补 `X-Test-Run-Id` 头口径） | **已批准（2026-09-13 决议冻结；v1.1.1~v1.2.0 为实施期文档对齐、修订与补充）** | 联调期人工测试留痕（补充证据；D-3 决议不参与门禁判定） |
 | doc/design/OpenBase-D6四仓request_id日志接线改动说明-v1.0.0.md | v1.0.0（[Draft]） | D-6 跨仓施工说明（四仓现状实证 / 统一约定 / 逐仓改动与代码片段 / 验收标准 / 改动一览 / 风险 R-1~R-7） | 待各仓评审（跨仓依据） | D-6 = ②（四仓补齐 request_id 接线）；依据方案 v1.1.0 §11.8 |
+| scripts/test_log_aggregate.py | v1.0.0（内部：批 1 C-7） | 人工测试日志聚合器（`logs/**/*.jsonl` → `doc/test/evidence/manual/<run_id>.{json,md}`；退出码 0=PASS / 1=FAIL / 2=PENDING） | 已落地（TDD 8 例 + PASS/FAIL 双路径实跑） | 方案 §5 C-7 / §3.1 L3 |
+| doc/test/evidence/manual/run-20260914-0230.json｜.md、run-20260914-0225.json｜.md | 运行期证据（PASS / FAIL 各一轮） | 人工测试日志聚合证据（run → case → step + `request_id` 双证据） | 已产出（批 1 实跑回填） | 方案 §3.1 L3 / §5 C-7 |
 
 ---
 
@@ -203,7 +206,12 @@
 - doc/test/OpenBase-S6-统一前端隔离展示与段门禁收口-测试报告-v1.0.0.md
 - doc/planning/OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md
 - doc/development/OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md
-- doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.0.0.md
+- doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0.md
+- scripts/test_log_aggregate.py
+- doc/test/evidence/manual/run-20260914-0230.json
+- doc/test/evidence/manual/run-20260914-0230.md
+- doc/test/evidence/manual/run-20260914-0225.json
+- doc/test/evidence/manual/run-20260914-0225.md
 - doc/test/OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md
 - doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md
 - doc/planning/OpenBase-S7-联调窗口环境检查报告-v1.0.0.md

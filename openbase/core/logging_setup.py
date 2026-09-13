@@ -28,7 +28,7 @@
 | ``OPENBASE_LOG_LEVEL`` | ``INFO`` | 日志级别 |
 | ``OPENBASE_LOG_DIR`` | ``logs`` | 日志根目录 |
 | ``OPENBASE_ENV`` | ``dev`` | 环境标识（写入 ``env`` 字段） |
-| ``OPENBASE_SERVICE_VERSION`` | ``0.0.0`` | 服务版本（写入 ``version`` 字段） |
+| ``OPENBASE_SERVICE_VERSION`` | 当前 git 短提交号 | 服务版本（写入 ``version`` 字段）；未设置时 best-effort 读 git，读不到回落 ``0.0.0`` |
 | ``OPENBASE_LOG_MAX_VALUE`` | ``1024`` | 单字段值最大长度（超出截断） |
 """
 
@@ -37,10 +37,12 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 from collections.abc import Callable
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -104,7 +106,45 @@ _MASKED: str = "***"
 _TRUNCATED_SUFFIX: str = "[truncated]"
 _MAX_DEPTH: int = 5
 
+# 仓库根（`openbase/core/logging_setup.py` → parents[2]）：用于 best-effort 读取提交号
+_REPO_ROOT: Path = Path(__file__).resolve().parents[2]
+_VERSION_UNKNOWN: str = "0.0.0"
+
 _log_context: ContextVar[dict[str, Any] | None] = ContextVar("openbase_log_context", default=None)
+
+
+@lru_cache(maxsize=1)
+def _git_short_commit() -> str | None:
+    """读取当前提交短 hash（best-effort；git 不可用/非仓库 → None，不伪造）."""
+    cwd = _REPO_ROOT if (_REPO_ROOT / ".git").exists() else None
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def _resolve_version(explicit: str | None = None) -> str:
+    """服务版本/提交号（C-2）：显式入参 > ``OPENBASE_SERVICE_VERSION`` > git 短提交号 > ``"0.0.0"``.
+
+    提交号注入使「某条日志由哪个代码版本产生」可追溯（方案 §4.1 ``version`` 字段）。
+    """
+    return (
+        (explicit or "").strip()
+        or (os.getenv("OPENBASE_SERVICE_VERSION") or "").strip()
+        or (_git_short_commit() or "")
+        or _VERSION_UNKNOWN
+    )
 
 
 def bind_log_context(**fields: Any) -> None:
@@ -306,6 +346,7 @@ def setup_logging(
     log_dir: str | Path | None = None,
     level: int | str | None = None,
     force: bool = False,
+    version: str | None = None,
 ) -> LoggingSetup:
     """装配结构化日志（幂等：重复调用不产生重复 handler）。
 
@@ -314,6 +355,8 @@ def setup_logging(
         log_dir: 日志根目录，默认取 ``OPENBASE_LOG_DIR`` 或 ``logs``。
         level: 级别（int 或名称），默认取 ``OPENBASE_LOG_LEVEL`` 或 ``INFO``。
         force: 为 ``True`` 时先摘除上一次配置（测试/重载用）。
+        version: 服务版本/提交号；缺省取 ``OPENBASE_SERVICE_VERSION``，再回退
+            当前 git 短提交号（C-2），最终回退 ``"0.0.0"``。
 
     Returns:
         LoggingSetup: 配置结果。
@@ -328,13 +371,13 @@ def setup_logging(
         _active_setup = None
 
     env = os.getenv("OPENBASE_ENV", "dev")
-    version = os.getenv("OPENBASE_SERVICE_VERSION", "0.0.0")
+    resolved_version = _resolve_version(version)
     max_value_length = int(os.getenv("OPENBASE_LOG_MAX_VALUE", "1024"))
     resolved_level = _resolve_level(level)
     resolved_dir = Path(log_dir or os.getenv("OPENBASE_LOG_DIR", "logs"))
 
     formatter = JsonFormatter(
-        service=service, env=env, version=version, max_value_length=max_value_length
+        service=service, env=env, version=resolved_version, max_value_length=max_value_length
     )
 
     file_handler = DailyFileHandler(
@@ -355,7 +398,7 @@ def setup_logging(
     _active_setup = LoggingSetup(
         service=service,
         env=env,
-        version=version,
+        version=resolved_version,
         level=resolved_level,
         log_dir=resolved_dir,
         file_handler=file_handler,

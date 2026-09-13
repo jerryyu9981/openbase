@@ -5,12 +5,12 @@
 | 项 | 内容 |
 |------|-----|
 | 文档编号 | OB-DESIGN-MANUAL-E2E-LOG-v1.0.0 |
-| 版本 | v1.1.2 |
+| 版本 | v1.2.0 |
 | 状态 | **[Approved]（2026-09-13 决议冻结：D-1~D-6 全部确认，见 §9.1）** |
 | 作者 | AI（S7 批次 31 方案编制会话） |
-| 日期 | 2026-09-13 |
+| 日期 | 2026-09-14 |
 | 适用范围 | 人工端到端测试（统一前端 → 各后端服务）期间的**结果记录与复盘**；不改动业务语义 |
-| 关联文档 | 《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.0.0》（批 1 里程碑 C-1+C-6 实施记录）；《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.10）；可观测性标准（日志/指标/追踪三大支柱） |
+| 关联文档 | 《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1（C-1~C-9）实施记录）；《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.11）；可观测性标准（日志/指标/追踪三大支柱） |
 
 ## 修订历史
 
@@ -22,6 +22,7 @@
 | v1.1.0 | 2026-09-13 | AI（S7 批次 34 决议冻结会话） | **决策全部冻结，方案置 [Approved]**：D-1=②（批 1+批 2，批 3 不做）/ D-2=①（复用 `audit_logs`，零迁移）/ D-3=①（人工记录仅作补充证据、不参与门禁）/ D-4=①（复用既有编号 + `AD-HOC-` 兜底）/ D-5=①（默认关闭 + 开启强制脱敏，硬约束）/ D-6=②（推动四仓补齐 request_id 接线，独立跨仓任务、不阻塞本仓）。新增 §9.1 决议记录，并冻结实施顺序（批 1 → 批 2 → 批 4）与首个里程碑（C-1 + C-6）。状态由 [Draft] 升为 [Approved]。**本次仅文档定稿，代码实施自下一批次开始** |
 | v1.1.1 | 2026-09-14 | AI（S7 批次 36 批 1 里程碑开发会话） | **实施期文档对齐**：§3.1 L1 落点由 `logs/<service>/app-YYYYMMDD.jsonl` 更正为 `logs/<service>/<service>-YYYYMMDD.jsonl`（与 C-1 实现及 C-6 采集文件名一致）；新增 §5.1「实施进度（批 1 里程碑：C-1 + C-6）」；关联文档增列本批次 DevLogReport。**本次仅文档对齐，未改动业务代码** |
 | v1.1.2 | 2026-09-14 | AI（S7 批次 36 批 1 里程碑开发会话） | **C-1 实施期修订：移除「按保留期自动清理」**。实施时被既有不变量 T6-1（`tests/test_identity_t6.py::test_t6_1_no_auto_retention_purge_path_static_scan`：`openbase/**` 全仓静态扫描 0 命中 `auto_purge`/`purge_expired`/`retention_days` 等标识）捕获：原 §5 C-1 设计的「按日 + 保留 30 天（自动清理）」与被测代码路径冲突。处置：**删除进程内自动删除实现与 `OPENBASE_LOG_RETAIN_DAYS` 开关**，只保留按日切分；保留期改为**运维人工执行**策略。§5 C-1 行与 §5.1 证据同步更新，并补齐「历史日志不得被自动删除」与「模块无自动清除标识」两个单测（合计 12 用例）以锁定不变量。 |
+| v1.2.0 | 2026-09-14 | AI（S7 批次 37 批 1 全量落地会话） | **批 1（C-1~C-9）全部落地，§5.1 改写为完整实施进度表**：C-2（其他服务入口接线 + **提交号注入**）、C-3（用例上下文头 → `request.state` + L1 请求级 JSON 日志 + extra 字段）、C-4（审计记录 best-effort 落 `audit_logs`，复用 JSON `detail` 零迁移 + 跨重启按 case 查询）、C-5（出站透传 `X-Test-Case-Id`/`X-Test-Step-Id`）、C-7（`scripts/test_log_aggregate.py` 聚合证据）、C-8（`/api/v1/audit/records` 增 `case_id`/`run_id` 过滤）、C-9（单测补齐）。**实施期补充**：新增 `X-Test-Run-Id` 头（缺省回退 `OPENBASE_TEST_RUN_ID`）承载 §4.2 的 `run_id`；新增落库开关 `OPENBASE_AUDIT_DB_PERSIST`（默认开，测试环境关）。 |
 
 ---
 
@@ -144,6 +145,8 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | ★ `upstream_digest` / `upstream_body_summary` | 上游响应摘要与内容摘要（同受开关与脱敏约束） | — |
 | ★ `retry_count` | 上游重试次数 | `0` |
 
+> **头承载口径（C-3 实施）**：`case_id` ← `X-Test-Case-Id`；`step_id` ← `X-Test-Step-Id`（纯数字归一为 int）；`run_id` ← `X-Test-Run-Id`，缺省回退环境变量 `OPENBASE_TEST_RUN_ID`（便于测试者启动时统一注入）。三者均为**非身份头**，不在 `IDENTITY_HEADERS` / `INBOUND_IDENTITY_HEADERS` 内，携带不触发信任链 403（§3.3）。
+
 ### 4.3 事件字典（L2 用例级）
 
 | event | 时机 | 必带字段 |
@@ -164,17 +167,24 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 
 > 分三批，**批 1 是必需最小集**（纯后端 + 脚本，不动前端、不动接口契约）。
 
-### 5.1 实施进度（批 1 里程碑：C-1 + C-6）
+### 5.1 实施进度（批 1 日志链路：C-1~C-9 全部落地）
 
 | # | 落地文件 | 状态 | 实测证据 |
 |---|---------|------|---------|
-| **C-1** | `openbase/core/logging_setup.py`（新增）+ `openbase/demo_app.py` / `tests/conftest.py`（修改）+ `tests/test_logging_setup.py`（新增 12 用例） | **已完成** | `logs/openbase/openbase-20260913.jsonl` 实测 10 行（含 `service.start`，必填字段齐全）；`pytest tests/test_logging_setup.py` **12 passed**；`pytest tests/test_identity_t6.py` **23 passed**（不变量 T6-1 无冲突）；`ruff` 0 错 |
-| **C-6** | `scripts/service-orchestrator.ps1`（修改：`Start-Service` 重定向 + `-ServiceLogRoot` 参数 + 同日归档） | **已完成** | 实测 `logs/openbase/openbase-20260913.log` 捕获 uvicorn 访问日志、`openbase-20260913.err.log` 捕获 C-1 控制台 JSON、`logs/frontend/frontend-20260914.log` 捕获 vite 启动输出；`-Action checkall` 回归 **27 PASS / 0 FAIL / 0 SKIP**（两轮，与基线一致） |
+| **C-1** | `openbase/core/logging_setup.py`（新增）+ `openbase/demo_app.py` / `tests/conftest.py`（修改）+ `tests/test_logging_setup.py` | **已完成** | JSONL 落盘实测（含 `service.start`）；单测全绿；`ruff` 0 错 |
+| **C-2** | `openbase/demo_app.py`（装配 + `service.start`）、`scripts/oidc-idp/idp_server.py`（接线 + 兜底）、`logging_setup._resolve_version`（提交号注入） | **已完成** | 实测日志 `version="966745b"`（git 短提交号注入生效）；`logs/oidc-idp/oidc-idp-20260914.jsonl` 253B |
+| **C-3** | `openbase/modules/audit/__init__.py`（`_extract_test_context` + `_emit_request_log` + extra）、`openbase/modules/protocol_headers/constants.py`（三头常量 + 非身份头注释） | **已完成** | 实测 L1 记录含 `case_id/step_id/run_id/channel`（`logs/openbase/*.jsonl`）；单测 14 例 |
+| **C-4** | `openbase/modules/audit/__init__.py`（`_persist_audit_record` + `query_audit_logs_by_case`） | **已完成** | 真实 PG：`audit_logs` 命中 2 行（id=390/391，`detail.case_id/step_id/run_id/channel` 齐全）；失败降级仅 WARN（单测） |
+| **C-5** | `openbase/modules/protocol_headers/inject.py`（`test_case_id`/`test_step_id` 透传 + 头注入防护） | **已完成** | 实测带三头走 `dps-proxy` → 200（**未触发 403 信任链**），上游 404 亦为上游业务响应（证明出站链路正常）；单测 4 例 |
+| **C-6** | `scripts/service-orchestrator.ps1`（`Start-Service` 重定向 + `-ServiceLogRoot` + 同日归档） | **已完成** | `logs/<service>/<service>-YYYYMMDD.log` 实测（openbase/frontend/oidc-idp）；`checkall` **27 PASS / 0 FAIL / 0 SKIP**（多轮） |
+| **C-7** | `scripts/test_log_aggregate.py`（新增） | **已完成** | 实测聚合 `run-20260914-0230`：3 记录 / 1 用例 / **PASS**，落 `doc/test/evidence/manual/<run_id>.json｜.md`；FAIL 轮次（含 404 步骤）退出码 1 亦实测；单测 8 例 |
+| **C-8** | `openbase/modules/audit/__init__.py`（`records(case_id, run_id)` + `/api/v1/audit/records` 查询参数） | **已完成** | 实测 `GET /api/v1/audit/records?case_id=AD-HOC-20260914-01` → 200 且命中当步记录；单测 2 例 |
+| **C-9** | `tests/test_test_case_context.py`、`tests/test_audit_db_persist.py`、`tests/test_test_log_aggregate.py`、`tests/test_logging_setup.py`（扩充） | **已完成** | 新增/扩充单测合计 **36 例**；`ruff` 0 错 |
 
-> 实施细节、变更统计与验证结论见《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.0.0》（`doc/development/`）。
-> **C-2 部分完成**：`openbase/demo_app.py` 已接线（`service.start`）；其余服务入口接线与提交号注入仍属批 1 剩余项。
-> 本仓批 1 剩余项：C-2（其他服务入口接线 + 提交号注入）、C-3~C-5（case 头 + 落库 + 出站透传）、C-7~C-9（聚合脚本 + 查询过滤 + 补测）。
+> 实施细节、变更统计与验证结论见《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（`doc/development/`）。
+> **批 1 收口**：批 1（C-1~C-9）全部落地，人工测试已可按「run → case → step」检索、按 `request_id` 关联客观响应，并一键产出聚合证据。批 2（C-10~C-12 受权 API 与前端面板）为下一步。
 > **实施期修订**：C-1 原设计的「按日 + 保留 30 天自动清理」在实施时**主动移除**——既有不变量 T6-1（`tests/test_identity_t6.py::test_t6_1_no_auto_retention_purge_path_static_scan`）禁止 `openbase/**` 出现按保留期自动清除代码路径；保留期改由**运维人工执行**（见 v1.1.2 修订历史）。
+> **实施期补充**：新增 `X-Test-Run-Id` 头（缺省回退环境变量 `OPENBASE_TEST_RUN_ID`），用于承载设计 §4.2 的 `run_id` 字段——原设计仅定义了 case/step 两个头，无 run 头则 C-7/C-8 的 run 维度聚合无法落地（见 v1.2.0 修订历史）。
 
 ### 批 1：日志落盘 + 用例上下文 + 持久化 + 聚合（必需）
 

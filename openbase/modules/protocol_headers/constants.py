@@ -17,6 +17,24 @@ HEADER_ON_BEHALF_OF = "X-On-Behalf-Of"
 HEADER_TEAM_ID = "X-Team-Id"
 HEADER_API_KEY = "X-API-Key"
 
+# ---- 人工测试用例上下文头（C-3/C-5，方案 §3.3）----
+# ⚠️ 非身份头：**禁止**加入 IDENTITY_HEADERS / INBOUND_IDENTITY_HEADERS 裁剪集，
+#    也不得加入 INBOUND_IDENTITY_HEADERS 派生的受信判定位集合——否则测试者携带
+#    这三个头会被信任链判定为「未受信身份头」并返回 403（方案 §3.3 关键取舍）。
+#    它们只用于把「人判定」与「系统客观记录」按 case/step/run 维度关联起来。
+HEADER_TEST_CASE_ID = "X-Test-Case-Id"
+HEADER_TEST_STEP_ID = "X-Test-Step-Id"
+HEADER_TEST_RUN_ID = "X-Test-Run-Id"
+
+# 用例上下文头集（非身份头；仅供出站透传与审计引用，不参与任何信任链判定）
+TEST_CONTEXT_HEADERS: frozenset[str] = frozenset(
+    {
+        HEADER_TEST_CASE_ID,
+        HEADER_TEST_STEP_ID,
+        HEADER_TEST_RUN_ID,
+    }
+)
+
 # 四头 + 委托/执行者标注（R-H1-1 校验集）；X-Org-ID 为退役兼容别名（OB-8，值=tenant_code）
 IDENTITY_HEADERS: frozenset[str] = frozenset(
     {
