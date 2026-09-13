@@ -1,4 +1,4 @@
-# Keycloak 26.7.3 本地启动（真实 Keycloak realm 联调用，OB-AUTH-OIDC v1.5.0）
+﻿# Keycloak 26.7.3 本地启动（真实 Keycloak realm 联调用，OB-AUTH-OIDC v1.5.0）
 #
 # 依赖：Java 17+（推荐 21，JAVA_HOME 已配置）；发行版已解压于 .runtime/keycloak-26.7.3/
 # 用法：powershell -ExecutionPolicy Bypass -File scripts/keycloak/start-keycloak.ps1 [-Port 8080]

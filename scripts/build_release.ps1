@@ -1,4 +1,4 @@
-#!/usr/bin/env powershell
+﻿#!/usr/bin/env powershell
 # OpenBase v1.1.0 发布构建脚本（TD-11-05，BL-110 PyPI 发布）
 # 用法: powershell -File scripts/build_release.ps1 [-Version 1.1.0] [-Publish]
 

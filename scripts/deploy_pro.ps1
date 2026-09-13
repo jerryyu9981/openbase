@@ -1,4 +1,4 @@
-#!/usr/bin/env powershell
+﻿#!/usr/bin/env powershell
 # OpenBase v1.1.0 Pro 环境部署脚本（TD-11-06，BL-111）
 # 蓝绿/金丝雀部署 + 上线验证
 # 用法: powershell -File scripts/deploy_pro.ps1 -Env pro -Strategy bluegreen

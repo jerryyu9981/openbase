@@ -1,4 +1,4 @@
-# 以真实 Keycloak（8080/realms/openbase）启动 OpenBase 网关（OB-AUTH-OIDC v1.5.0）
+﻿# 以真实 Keycloak（8080/realms/openbase）启动 OpenBase 网关（OB-AUTH-OIDC v1.5.0）
 #
 # 用法：powershell -ExecutionPolicy Bypass -File scripts/keycloak/start-gateway-keycloak.ps1
 # 前置：Keycloak 已启动并配置 realm（start-keycloak.ps1 + provision_realm.py）

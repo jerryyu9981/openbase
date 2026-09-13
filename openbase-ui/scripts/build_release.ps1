@@ -1,4 +1,4 @@
-# OpenBase 统一前端构建部署脚本
+﻿# OpenBase 统一前端构建部署脚本
 # 发布形态（Q-FE-2b）：版本目录由 package.json.version 派生，产物目录 dist-v$Version
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
