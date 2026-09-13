@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-DOCMAP-INDEX-v1.0.0 |
-| 版本 | v1.0.4 |
+| 版本 | v1.0.5 |
 | 状态 | [Draft]（S7-T1-5 产出；v1.0.1 S7-T8-3 增补 S7 新增条目与证据索引；v1.0.2 增补 S7 DevLogReport / 测试报告条目；v1.0.3 增补 S7 联调窗口工具脚本 L1-1/L2-1/L2-2/L3-1/L3-2 条目；v1.0.4 增补 S7 联调窗口环境检查报告与 env-check 证据条目；随 S7 段门禁批准回写 [Approved]） |
 | 日期 | 2026-09-11 |
 | 作者 | AI（沙箱侧现状实测与索引编制） |
@@ -22,6 +22,7 @@
 | v1.0.2 | 2026-09-11 | AI（S7 批次 5 开发会话） | **S7 段 Step 2/3 交付物并入**：新增 §2.5 L4 两份交付物行（`doc/development/OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md`、`doc/test/OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md`）；§3 S7 行 DevLogReport / 测试报告由「待产出」更正为实际路径；DOCMAP-MANIFEST 同步增补两条并保持逐项存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 | v1.0.3 | 2026-09-11 | AI（S7 联调窗口工具脚本骨架批次） | **S7 联调窗口工具脚本并入**：新增 §2.6 五行（`scripts/verify_l1_1_cascade.ps1`、`scripts/drill_l2_1_failover.ps1`、`scripts/finalize_l2_2_matrix.py`、`scripts/verify_l3_1_agent.ps1`、`scripts/smoke_l3_2.py`，均为「骨架 + 干跑」形态）；DOCMAP-MANIFEST 同步增补五条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 | v1.0.4 | 2026-09-11 | AI（P2 联调窗口环境只读探测会话） | **S7 联调窗口环境检查报告与证据并入**：§2.5 新增一行（`doc/planning/OpenBase-S7-联调窗口环境检查报告-v1.0.0.md`）；§2.6 新增一行（`doc/test/evidence/s7/env/env-check.json`，schema_version=1 / tool=env-check / mode=run）；§3 S7 行「并入结论」更新；DOCMAP-MANIFEST 同步增补两条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
+| v1.0.5 | 2026-09-13 | AI（S7 批次 31 人工测试日志方案会话） | **人工端到端测试日志记录方案并入**：§2.6 新增一行（`doc/design/OpenBase-人工端到端测试日志记录方案-v1.0.0.md`，状态 [Draft] 待评审）；DOCMAP-MANIFEST 同步增补一条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 
 ---
 
@@ -129,6 +130,7 @@
 | scripts/verify_l3_1_agent.ps1 | v1.0.0（骨架 + 干跑） | S7-T5 L3-1 Agent 端到端（四头 / 白名单 / 域隔离 / 403 + M1-M2） | 骨架已就绪（干跑 PENDING） | S7-T5-1~4 |
 | scripts/smoke_l3_2.py | v1.0.0（骨架 + 干跑） | L3-2 贯通冒烟（OpenBase 侧缺失项；受信通道端到端关键路径） | 骨架已就绪（干跑 PENDING） | S7-T6-2 / S7-T7-3 |
 | doc/test/evidence/s7/env/env-check.json | schema_version=1 | S7 P2 联调窗口环境检查证据（真实 PG/openbase_test / Redis / IdP / 四仓运行态 / 网关与前端 / Playwright / 四仓远端写权限） | 已产出（P2 环境只读探测） | S7-§0.1 / S7-P2-ENV |
+| doc/design/OpenBase-人工端到端测试日志记录方案-v1.0.0.md | v1.0.0（[Draft]） | 人工端到端测试日志记录方案（现状 4 缺口 / 三层记录通道 / 字段与事件字典 / 用例上下文贯穿 / 改造清单 / 验收标准 / 待决策 D-1~D-4） | 待评审（[Draft]） | 联调期人工测试留痕（补充证据；S7 口径待 D-3 决策） |
 
 ---
 
@@ -211,6 +213,7 @@
 - scripts/finalize_l2_2_matrix.py
 - scripts/verify_l3_1_agent.ps1
 - scripts/smoke_l3_2.py
+- doc/design/OpenBase-人工端到端测试日志记录方案-v1.0.0.md
 <!-- DOCMAP-MANIFEST:END -->
 
 ---
