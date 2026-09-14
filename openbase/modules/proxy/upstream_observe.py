@@ -25,14 +25,28 @@ from collections.abc import Sequence
 from typing import Any
 
 from openbase.core.mask import digest_of, observe_payload
+from openbase.settings import get_settings
 
 __all__ = [
     "UPSTREAM_SEGMENT_FIELDS",
+    "UPSTREAM_SYSTEM_DPS",
+    "UPSTREAM_SYSTEM_OPENLLM",
+    "UPSTREAM_SYSTEM_OPENMEMORY",
+    "UPSTREAM_SYSTEM_OPENRAG",
     "build_upstream_segment",
+    "content_type_of",
     "elapsed_ms",
     "extract_upstream_error_code",
     "publish_upstream_observation",
+    "publish_upstream_response",
 ]
+
+# 上游系统标识：与通用代理通道 ``PROXY_SYSTEMS`` 的路由键**逐字对齐**，
+# 避免同一上游在「通用通道 / 专用通道」下产生两套标识（归因聚合会因此割裂）。
+UPSTREAM_SYSTEM_OPENLLM = "openllm"
+UPSTREAM_SYSTEM_OPENRAG = "openrag"
+UPSTREAM_SYSTEM_OPENMEMORY = "openmemory"
+UPSTREAM_SYSTEM_DPS = "dps"
 
 # 专段字段（与审计模块 UPSTREAM_FIELD_NAMES 对齐；upstream_keys 为过深/超限时的键名清单）
 UPSTREAM_SEGMENT_FIELDS: tuple[str, ...] = (
@@ -58,6 +72,18 @@ _ERROR_CODE_PATHS: tuple[tuple[str, ...], ...] = (
 def elapsed_ms(start: float) -> int:
     """把 ``time.perf_counter()`` 起点换算为毫秒（统一取整口径）."""
     return int((time.perf_counter() - start) * 1000)
+
+
+def content_type_of(response: Any) -> str | None:
+    """读取上游响应 ``Content-Type``（缺头/替身响应 → None，不抛错）.
+
+    各代理族的转发出口共用此读取口径，避免四处各写一份防御式取值。
+    """
+    headers = getattr(response, "headers", None)
+    if headers is None:
+        return None
+    getter = getattr(headers, "get", None)
+    return getter("content-type") if callable(getter) else None
 
 
 def _dig(obj: Any, path: tuple[str, ...]) -> Any:
@@ -166,3 +192,61 @@ def publish_upstream_observation(request: Any, segment: dict[str, Any]) -> dict[
     merged["upstream_calls"] = calls
     request.state.upstream_observation = merged
     return merged
+
+
+def capture_options() -> tuple[bool, tuple[str, ...]]:
+    """读取采集开关的**唯一取值来源**（红线：默认关 + 生产永久关）.
+
+    Returns:
+        ``(是否允许产出上游摘要, 允许清单)``；生产环境下第一项恒为 False
+        （``settings.capture_upstream_enabled`` 已在属性层收敛）。
+    """
+    settings = get_settings()
+    return settings.capture_upstream_enabled, tuple(settings.capture_field_allowlist_list)
+
+
+def publish_upstream_response(
+    request: Any,
+    *,
+    system: str,
+    reached: bool,
+    duration_ms: int,
+    status_code: int | None = None,
+    content_type: str | None = None,
+    payload: bytes | None = None,
+    error: str | None = None,
+) -> dict[str, Any] | None:
+    """一行式入口：构造上游专段并挂到 ``request.state``（C-16 的通用落点）.
+
+    各代理族（通用代理 + DPS/OpenLLM/OpenRAG/OpenMemory 专用代理）**只调用本函数**，
+    不各自读取配置或拼装字段——保证红线口径（默认关 / 生产永久关 / 唯一脱敏出口）
+    只有一个实现点，避免多份判断漂移。
+
+    Args:
+        request: 当前请求（``None`` = 无请求上下文，如脚本直调 → 静默跳过，不影响业务）。
+        system: 上游系统标识（取 ``UPSTREAM_SYSTEM_*``）。
+        reached: 是否拿到上游响应（False = 网络/连接异常）。
+        duration_ms: 上游耗时毫秒（流式端点为首字节耗时）。
+        status_code: 上游 HTTP 状态码（reached=False 时省略）。
+        content_type: 上游响应 ``Content-Type``。
+        payload: 上游响应体字节（**流式端点不支持**：预读会消费流，传 None）。
+        error: 异常文本（仅异常路径）。
+
+    Returns:
+        写入 ``request.state`` 后的合并专段；``request`` 为 None 时返回 None。
+    """
+    if request is None:
+        return None
+    capture, allowlist = capture_options()
+    segment = build_upstream_segment(
+        system=system,
+        reached=reached,
+        duration_ms=duration_ms,
+        status_code=status_code,
+        content_type=content_type,
+        payload=payload,
+        capture=capture,
+        allowlist=allowlist,
+        error=error,
+    )
+    return publish_upstream_observation(request, segment)

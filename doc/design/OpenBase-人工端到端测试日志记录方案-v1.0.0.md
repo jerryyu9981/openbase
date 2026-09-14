@@ -5,12 +5,12 @@
 | 项 | 内容 |
 |------|-----|
 | 文档编号 | OB-DESIGN-MANUAL-E2E-LOG-v1.0.0 |
-| 版本 | v1.4.0 |
-| 状态 | **[Approved]（2026-09-13 决议冻结：D-1~D-6 全部确认，见 §9.1；v1.4.0 追加批 4 C-15~C-19 实施期进度与补充）** |
-| 作者 | AI（S7 批次 31 方案编制会话；批 1/批 2/批 4 开发会话追加） |
+| 版本 | v1.5.0 |
+| 状态 | **[Approved]（2026-09-13 决议冻结：D-1~D-6 全部确认，见 §9.1；v1.4.0 追加批 4 C-15~C-19 实施期进度与补充；v1.5.0 追加批 5 专用代理族上游专段接线（§14#2 收尾））** |
+| 作者 | AI（S7 批次 31 方案编制会话；批 1/批 2/批 4/批 5 开发会话追加） |
 | 日期 | 2026-09-14 |
 | 适用范围 | 人工端到端测试（统一前端 → 各后端服务）期间的**结果记录与复盘**；不改动业务语义 |
-| 关联文档 | 《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0》（批 4（C-15~C-19）实施记录）；《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0》（批 2（C-10~C-12）实施记录）；《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1（C-1~C-9）实施记录）；《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.12）；可观测性标准（日志/指标/追踪三大支柱） |
+| 关联文档 | 《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.4.0》（批 5（专用代理族接线）实施记录）；《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0》（批 4（C-15~C-19）实施记录，已归档）；《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0》（批 2（C-10~C-12）实施记录，已归档）；《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1（C-1~C-9）实施记录，已归档）；《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.14）；可观测性标准（日志/指标/追踪三大支柱） |
 
 ## 修订历史
 
@@ -25,6 +25,7 @@
 | v1.2.0 | 2026-09-14 | AI（S7 批次 37 批 1 全量落地会话） | **批 1（C-1~C-9）全部落地，§5.1 改写为完整实施进度表**：C-2（其他服务入口接线 + **提交号注入**）、C-3（用例上下文头 → `request.state` + L1 请求级 JSON 日志 + extra 字段）、C-4（审计记录 best-effort 落 `audit_logs`，复用 JSON `detail` 零迁移 + 跨重启按 case 查询）、C-5（出站透传 `X-Test-Case-Id`/`X-Test-Step-Id`）、C-7（`scripts/test_log_aggregate.py` 聚合证据）、C-8（`/api/v1/audit/records` 增 `case_id`/`run_id` 过滤）、C-9（单测补齐）。**实施期补充**：新增 `X-Test-Run-Id` 头（缺省回退 `OPENBASE_TEST_RUN_ID`）承载 §4.2 的 `run_id`；新增落库开关 `OPENBASE_AUDIT_DB_PERSIST`（默认开，测试环境关）。 |
 | v1.3.0 | 2026-09-14 | AI（S7 批 2 开发会话） | **批 2（C-10~C-12）实施落地**：C-10 受权 `test:record` 端点族（`openbase/modules/testing/` 新模块，POST run / POST record / PATCH update / GET summary，best-effort 落 `audit_logs`（action `test.run`/`test.record`/`test.record.update`））；C-11 前端测试模式（URL/本地开关 → 自动注入三测试头，关闭零影响）；C-12 前端测试记录面板（`/system/test-records`）。§5.1 追加批 2 进度行。**实施期补充（待评审追认）**：受权码 `test:record` 走既有 `require_permission`（管理员令牌放行 + 普通用户 403 双向断言）；RBAC 种子数据是否显式登记该码不在本批代码面。 |
 | v1.4.0 | 2026-09-14 | AI（S7 批 4 开发会话） | **批 4（C-15~C-19）实施落地**：C-18 统一脱敏器 `openbase/core/mask.py`（凭据/个人隐私/画像域/超限与过深层级）；C-19 三开关（默认关 + **生产永久关闭** + 开关变更审计留痕 `capture.switch`）；C-15 网关响应观测（`resp_status`/`resp_bytes`/`resp_content_type`/`resp_error_code`/`resp_digest` 恒记；`resp_summary` 仅开关开启且经 C-18 脱敏；统一异常处理器补标 `request.state.error_code`）；C-16 上游响应专段（`openbase/modules/proxy/upstream_observe.py`：`upstream_system`/`upstream_status`/`upstream_error_code`/`upstream_duration_ms`/`upstream_digest` + 开关下 `upstream_body_summary`；成功/业务错误/异常三路径**共用同一结构**，经 `request.state.upstream_observation` 与 C-15 观测**同列于一条 L1 记录**）；C-17 错误归因分析器 `scripts/test_log_analyze.py`（输出 `<run_id>-analysis.md`，退出码 0/1/2）。§5.1 追加批 4 进度行与实施期补充（发布顺序与重启要求、专用代理族接线范围）。 |
+| v1.5.0 | 2026-09-14 | AI（S7 批 5 开发会话） | **批 5（专用代理族上游专段接线，批 4 §14#2 收尾）实施落地**：C-16 专段由「仅通用代理通道」扩展至**四个专用代理族的全部非流式转发出口**——`dps_proxy._forward`、`llm_proxy._forward`、`rag_proxy._forward` + `_forward_multipart`、`memory_proxy._forward` + `_forward_raw`；新增一行式统一出口 `upstream_observe.publish_upstream_response()`（**采集开关与脱敏在此唯一读取**，各族不再各自判断，防红线口径漂移）与 `UPSTREAM_SYSTEM_*` 常量（与通用通道路由键逐字对齐）；`content_type_of()` 上提为共用读取口径（消除四处重复实现）。**流式端点口径**：`rag_proxy._forward_sse` / `llm_proxy._forward_sse` 记**头部级专段**（状态/首字节耗时/Content-Type；2xx 不预读流式体 → 无 digest；4xx/5xx 读错误体 → 含 `upstream_error_code`），并在首事件前落位。**实施期缺陷修复（AD-20260914-01）**：`dps_proxy._dps_consecutive_failures` 缺模块级初值 → 上游首次不可达即 `NameError`（P6 降级/502 路径在真实故障下不可用），本次补齐初值并新增覆盖该分支的用例。 |
 
 ---
 
@@ -169,7 +170,7 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 
 > 分三批，**批 1 是必需最小集**（纯后端 + 脚本，不动前端、不动接口契约）。
 
-### 5.1 实施进度（批 1 日志链路：C-1~C-9 全部落地；批 2 人工结论入口：C-10~C-12 落地；批 4 响应级观测：C-15~C-19 落地）
+### 5.1 实施进度（批 1 日志链路：C-1~C-9 全部落地；批 2 人工结论入口：C-10~C-12 落地；批 4 响应级观测：C-15~C-19 落地；批 5 专用代理族接线：C-16 补全落地）
 
 | # | 落地文件 | 状态 | 实测证据 |
 |---|---------|------|---------|
@@ -190,9 +191,12 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | **C-17** | `scripts/test_log_analyze.py`（新增） | **已完成** | 单测 7 例：归因矩阵逐行核对（鉴权/信任链/K03/网络/上游/契约）+ 上游 5xx 优先归因上游 + 首现标记 + 报告**不含响应明文** + 退出码 0/1/2 |
 | **C-18** | `openbase/core/mask.py`（新增：`mask_sensitive`/`observe_payload`/`digest_of`） | **已完成** | 单测 21 例：凭据遮蔽、手机号/证件号/邮箱掩码、画像域整体遮蔽（仅留类型与规模）、层级 >5 与单条 >2KB 只留 digest + 键名清单、允许清单子树前缀、digest 稳定可比对 |
 | **C-19** | `openbase/settings.py`（三开关 + `capture_response_enabled`/`capture_upstream_enabled`/`capture_field_allowlist_list`）、`openbase/modules/audit/capture_switches.py`（新增：状态快照 + 审计留痕）、`openbase/demo_app.py`（启动留痕接线） | **已完成** | 单测 8 例：默认全关；env 开启生效；**生产永久关闭**（env=production 时置 1 亦不生效）；开启 → `audit_logs` 落 `capture.switch`；落库/回滚失败均降级不阻断 |
+| **C-16 补全**（批 5） | `openbase/modules/proxy/upstream_observe.py`（新增 `publish_upstream_response`/`capture_options`/`content_type_of`/`UPSTREAM_SYSTEM_*`）、`openbase/modules/dps_proxy/__init__.py`、`openbase/modules/llm_proxy/__init__.py`、`openbase/modules/rag_proxy/__init__.py`、`openbase/modules/proxy/memory_proxy.py`、`openbase/modules/proxy/__init__.py`（通用通道收敛到同一出口） | **已完成** | 单测 **14 例**（`tests/test_specialized_proxy_upstream_observe.py`）：四族成功/不可达两路径；multipart 与 `_forward_raw` 出口；SSE 头部级专段；开关集中读取（开 → 脱敏、生产 → 永久关）；无 request 静默跳过；system 标识与通用通道对齐；端到端进审计记录 |
 
-> 实施细节、变更统计与验证结论见《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0》（批 4，`doc/development/`）、《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0》（批 2，`doc/development/`）与《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1，`doc/development/`）。
+> 实施细节、变更统计与验证结论见《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.4.0》（批 5，`doc/development/`，**当前有效版本**）、《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0》（批 4，`doc/development/archive/`）、《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0》（批 2，`doc/development/archive/`）与《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1，`doc/development/archive/`）。
 > **批 4 收口**：批 4（C-15~C-19）全部落地，**响应级观测与错误归因闭环成立**——网关侧 `resp_*`（状态/字节/类型/错误码/digest，恒记）与上游侧 `upstream_*`（系统/状态/错误码/耗时/digest，恒记）**同列于一条 L1 记录**，`scripts/test_log_analyze.py` 按 step 输出「归属层 + 首现 + request_id + 建议动作」并落 `doc/test/evidence/manual/<run_id>-analysis.md`；响应体摘要（`resp_summary`/`upstream_body_summary`）默认**零采集**，仅在 `OPENBASE_CAPTURE_RESPONSE`/`OPENBASE_CAPTURE_UPSTREAM` 显式开启（生产永久关闭）时产出且必经 C-18 脱敏。
+> **批 5 收口**：批 5（专用代理族上游专段接线）全部落地，**批 4 §14#2 遗留项关闭**——四个专用代理族（`dps_proxy`/`llm_proxy`/`rag_proxy`/`memory_proxy`）的**全部非流式转发出口**（含 rag multipart、memory `_forward_raw`）与通用代理通道**共用同一观测出口** `publish_upstream_response()`；流式端点（`rag`/`llm` 各一处）记**头部级专段**并在首事件前落位。此前「专用通道仅具 C-15 网关侧字段」的盲区（人工 E2E 走统一前端时最常触达的正是这些通道）已消除：任一通道失败均可由 `upstream_system`/`upstream_status`/`upstream_error_code` 直接定位归属层，无需跨行 join。
+> **实施期补充（批 5）**：①`request` 为**可选关键字参数**（缺省 None → 仅跳过观测，转发语义零变化），便于脚本/工具链直调转发函数；②**采集开关唯一读取点**收敛到 `capture_options()`（各族不再各自读 settings，防红线口径漂移）；③**SSE 2xx 无 digest**——预读流式体会消费事件流破坏透传，故只记状态/首字节耗时/Content-Type；4xx/5xx 因错误体可安全读取，仍产出 `upstream_error_code`；④**system 标识**取 `UPSTREAM_SYSTEM_*` 常量并与通用通道路由键逐字对齐（同一上游只有一套标识，否则归因统计会被割裂）。
 > **实施期补充（批 4）**：①**网关侧 digest 口径**——未采集响应体时 `resp_digest` 为结构性摘要（`状态码|类型|长度|错误码` 的 sha256 前 16 位）；采集响应体后为**内容摘要**。**上游侧 digest 恒为内容摘要**（httpx 已持有响应体，无需额外读取），二者口径差异已在此显式登记。②**采集需在进程启动时置开关**（Settings 启动时读取 env，进程内不热更）；开关变更以启动快照留痕（`capture.switch`）。③**接线范围**：C-16 专段落在通用代理 `openbase/modules/proxy/_forward`（方案指定落点）；专用代理族（`dps_proxy`/`rag_proxy`/`llm_proxy`/`memory_proxy`）的上游专段接线列为下一步（需把 `Request` 传入其 `_forward`，避免本批大范围改动核心请求路径），当前这些通道的人工记录仅有 C-15 网关侧字段。
 > **批 2 收口**：批 2（C-10~C-12）全部落地，人工测试者已可**在前端 `/system/test-records` 完成 run 开轮、步骤结论录入与可视化改判**，结论经受权 API 持久化到 `audit_logs`（action `test.run`/`test.record`/`test.record.update`），与批 1 的含用例头请求日志形成「**人判定 + 系统客观记录**」双证据闭环。批 4（C-15~C-19 响应级观测）已随后于 v1.4.0 落地（见上）。
 > **实施期修订**：C-1 原设计的「按日 + 保留 30 天自动清理」在实施时**主动移除**——既有不变量 T6-1（`tests/test_identity_t6.py::test_t6_1_no_auto_retention_purge_path_static_scan`）禁止 `openbase/**` 出现按保留期自动清除代码路径；保留期改由**运维人工执行**（见 v1.1.2 修订历史）。
@@ -236,6 +240,22 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | C-17 | `scripts/test_log_analyze.py` | **新增** | 错误归因分析器：按 step 输出「网关状态 → 上游状态 → 归属层 → 是否首现 → request_id → 建议动作」；输出 `doc/test/evidence/manual/＜run_id＞-analysis.md` |
 | C-18 | `openbase/core/mask.py` | **新增** | 统一脱敏器 `mask_sensitive()`（凭据/个人隐私/画像业务数据/超限摘要）+ 单测；**C-15/C-16 落盘前必经此函数** |
 | C-19 | `openbase/settings.py` + `tests/` | 修改/新增 | 三开关（`OPENBASE_CAPTURE_RESPONSE`/`OPENBASE_CAPTURE_UPSTREAM`/`OPENBASE_CAPTURE_FIELD_ALLOWLIST`）默认关；开关变更记审计；单测覆盖「关时零采集」「开时脱敏生效」 |
+
+### 批 5：专用代理族上游专段接线（批 4 §14#2 收尾）
+
+> **背景**：批 4 的 C-16 专段仅落在通用代理 `openbase/modules/proxy/_forward`（`/api/v1/proxy/{system}/…`）。人工 E2E 经统一前端访问时实际走的是**专用代理族**（`/api/v1/dps-proxy`、`/api/v1/llm-proxy`、`/api/v1/rag-proxy`、`/api/v1/memory-proxy`），这些通道**只有 C-15 网关侧字段**，上游归属层不可判。批 5 关闭该盲区。
+
+| # | 文件 | 动作 | 说明 |
+|---|------|------|------|
+| C-16 补全 | `openbase/modules/proxy/upstream_observe.py` | 修改 | 新增 `publish_upstream_response()`（**一行式统一出口**：读取采集开关 → 构造专段 → 挂 `request.state`；request 为 None 静默跳过）、`capture_options()`（开关唯一取值来源）、`content_type_of()`（上游 Content-Type 防御式读取，消除四处重复）、`UPSTREAM_SYSTEM_*` 常量（与通用通道路由键对齐） |
+| C-16 补全 | `openbase/modules/dps_proxy/__init__.py` | 修改 | `_forward` 增可选 `request` 参数并在不可达/成功两路径补记专段；12 处调用点传入 `request`。**顺带修复 AD-20260914-01**：补齐 `_dps_consecutive_failures` 模块级初值（原缺失 → 上游首次不可达即 `NameError`，P6 降级路径失效） |
+| C-16 补全 | `openbase/modules/llm_proxy/__init__.py` | 修改 | `_forward` 与 `_forward_sse` 增可选 `request`；11 处 `_forward` 调用点 + 1 处 `_forward_sse` 调用点传入 `request` |
+| C-16 补全 | `openbase/modules/rag_proxy/__init__.py` | 修改 | `_forward`/`_forward_multipart` 两出口补记专段（调用点已携带 `request`，零调用点改动）；`_forward_sse` 记头部级专段 |
+| C-16 补全 | `openbase/modules/proxy/memory_proxy.py` | 修改 | `_forward`/`_forward_raw` 两出口增可选 `request` 并补记专段；7 处调用点传入 `request` |
+| C-16 补全 | `openbase/modules/proxy/__init__.py` | 修改 | 通用代理通道**收敛**到 `publish_upstream_response()`（删除本地开关读取与 `_upstream_content_type`），使「一条路径」升级为「五族同一出口」 |
+| C-16 补全 | `tests/test_specialized_proxy_upstream_observe.py` | 新增 | **14 例**：四族成功/不可达、multipart、`_forward_raw`、SSE 头部级与错误体、开关（关/开脱敏/生产永久关）、无 request 静默跳过、system 标识对齐、端到端进审计记录 |
+
+**批 5 与批 4 的口径一致性**：字段集（`UPSTREAM_SEGMENT_FIELDS`）、落点（`request.state.upstream_observation` → 审计中间件合流进同一条 L1 记录）、脱敏（唯一出口经 C-18）、红线（默认关 + 生产永久关）**均未新增口径**——批 5 只扩大**覆盖范围**，不改变任何既有数据契约。
 
 ---
 

@@ -19,6 +19,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import time
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -29,6 +30,12 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.modules.protocol_headers import TARGET_SYSTEM_LLM, build_outbound_headers
+from openbase.modules.proxy.upstream_observe import (
+    UPSTREAM_SYSTEM_OPENLLM,
+    content_type_of,
+    elapsed_ms,
+    publish_upstream_response,
+)
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.llm_proxy")
@@ -156,14 +163,18 @@ async def _forward(
     headers: dict[str, str],
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
+    request: Request | None = None,
 ) -> JSONResponse:
-    """转发请求至 OpenLLM 并适配响应（非 SSE）.
+    """转发请求至 OpenLLM 并适配响应（非 SSE；C-16 上游专段同请求汇聚）.
 
     headers 必须由调用方经 _build_upstream_headers(request, _user) 构造
     （含身份归属头），禁止省略。
+
+    ``request`` 缺省 None 时仅跳过上游观测（专段挂 ``request.state``），**转发语义不变**。
     """
     _, base_url, timeout, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    upstream_start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             upstream = await client.request(
@@ -172,6 +183,13 @@ async def _forward(
                 headers=headers,
             )
     except httpx.HTTPError as exc:
+        publish_upstream_response(
+            request,
+            system=UPSTREAM_SYSTEM_OPENLLM,
+            reached=False,
+            duration_ms=elapsed_ms(upstream_start),
+            error=str(exc),
+        )
         logger.warning(
             "llm-proxy upstream unreachable",
             extra={"path": upstream_path, "error": str(exc)},
@@ -179,6 +197,15 @@ async def _forward(
         raise BaseError(
             ErrorCode.SYS_UPSTREAM_ERROR, f"OpenLLM upstream unreachable: {exc}"
         ) from exc
+    publish_upstream_response(
+        request,
+        system=UPSTREAM_SYSTEM_OPENLLM,
+        reached=True,
+        duration_ms=elapsed_ms(upstream_start),
+        status_code=upstream.status_code,
+        content_type=content_type_of(upstream),
+        payload=getattr(upstream, "content", None),
+    )
     return _adapt_response(upstream)
 
 
@@ -186,17 +213,22 @@ async def _forward_sse(
     upstream_path: str,
     json_body: dict[str, Any],
     headers: dict[str, str],
+    request: Request | None = None,
 ) -> StreamingResponse:
-    """SSE 逐事件透传（对话流式端点）.
+    """SSE 逐事件透传（对话流式端点；C-16 头部级专段）.
 
     以 httpx AsyncClient stream 读取上游事件流，逐事件写回下游：
     event: routing → event: chunk（重复） → event: done。
     不缓冲、不包装、保序；上游中断时关闭下游流并记录日志。
+
+    C-16 观测口径：**仅记头部级字段**（状态/首字节耗时/Content-Type）——流式体
+    预读会消费事件流、破坏透传语义，故 2xx 路径传 ``payload=None``（无 digest）。
     """
     _, base_url, _, stream_timeout = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
 
     async def event_stream() -> AsyncGenerator[str, None]:
+        upstream_start = time.perf_counter()
         try:
             async with httpx.AsyncClient(timeout=stream_timeout) as client:
                 async with client.stream(
@@ -204,6 +236,15 @@ async def _forward_sse(
                 ) as upstream:
                     if upstream.status_code >= 400:
                         body_bytes = await upstream.aread()
+                        publish_upstream_response(
+                            request,
+                            system=UPSTREAM_SYSTEM_OPENLLM,
+                            reached=True,
+                            duration_ms=elapsed_ms(upstream_start),
+                            status_code=upstream.status_code,
+                            content_type=content_type_of(upstream),
+                            payload=body_bytes,
+                        )
                         body: dict[str, Any] = {}
                         try:
                             body = json.loads(body_bytes.decode("utf-8"))
@@ -215,10 +256,25 @@ async def _forward_sse(
                             extra={"path": upstream_path, "status": upstream.status_code},
                         )
                         return
+                    publish_upstream_response(
+                        request,
+                        system=UPSTREAM_SYSTEM_OPENLLM,
+                        reached=True,
+                        duration_ms=elapsed_ms(upstream_start),
+                        status_code=upstream.status_code,
+                        content_type=content_type_of(upstream),
+                    )
                     async for line in upstream.aiter_lines():
                         if line:
                             yield f"{line}\n"
         except httpx.HTTPError as exc:
+            publish_upstream_response(
+                request,
+                system=UPSTREAM_SYSTEM_OPENLLM,
+                reached=False,
+                duration_ms=elapsed_ms(upstream_start),
+                error=str(exc),
+            )
             logger.warning(
                 "llm-proxy sse stream interrupted",
                 extra={"path": upstream_path, "error": str(exc)},
@@ -251,7 +307,11 @@ async def llm_models(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """模型列表（GET /openllm/v1/models，API Key 通道）."""
-    return await _forward("GET", _gateway_models(), headers=_build_upstream_headers(request, _user))
+    return await _forward(
+        "GET", _gateway_models(),
+        headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
 
 
 @router.get("/models/{model_id}")
@@ -267,7 +327,8 @@ async def llm_model_detail(
     保持详情可走查；命中失败返回上游语义 2001 资源不存在。
     """
     response = await _forward(
-        "GET", _gateway_models(), headers=_build_upstream_headers(request, _user)
+        "GET", _gateway_models(), headers=_build_upstream_headers(request, _user),
+        request=request,
     )
     if response.status_code >= 400:
         return response
@@ -301,6 +362,7 @@ async def llm_chat(
     return await _forward(
         "POST", "/openllm/v1/chat", json_body=payload,
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -312,7 +374,9 @@ async def llm_chat_stream(
 ) -> StreamingResponse:
     """对话流式（POST /openllm/v1/chat/stream，SSE 逐事件透传）."""
     return await _forward_sse(
-        "/openllm/v1/chat/stream", payload, _build_upstream_headers(request, _user)
+        "/openllm/v1/chat/stream", payload,
+        _build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -322,7 +386,11 @@ async def llm_health(
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """OpenLLM 网关健康透传（GET /openllm/v1/health，供运维/前端监控）."""
-    return await _forward("GET", "/openllm/v1/health", headers=_build_upstream_headers(request, _user))
+    return await _forward(
+        "GET", "/openllm/v1/health",
+        headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -346,6 +414,7 @@ async def llm_conversations(
         "GET", "/api/v1/conversations",
         params={"status": status, "skip": skip, "limit": limit},
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -359,6 +428,7 @@ async def llm_conversation_create(
     return await _forward(
         "POST", "/api/v1/conversations", json_body=payload,
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -372,6 +442,7 @@ async def llm_conversation_detail(
     return await _forward(
         "GET", f"/api/v1/conversations/{conversation_id}",
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -385,6 +456,7 @@ async def llm_conversation_delete(
     return await _forward(
         "DELETE", f"/api/v1/conversations/{conversation_id}",
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -406,6 +478,7 @@ async def llm_conversation_archive(
         "POST", f"/api/v1/conversations/{conversation_id}/archive",
         json_body=json_body,
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -420,6 +493,7 @@ async def llm_conversation_message_create(
     return await _forward(
         "POST", f"/api/v1/conversations/{conversation_id}/messages",
         json_body=payload, headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -433,4 +507,5 @@ async def llm_conversation_messages(
     return await _forward(
         "GET", f"/api/v1/conversations/{conversation_id}/messages",
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )

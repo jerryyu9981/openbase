@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import time
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -32,6 +33,12 @@ from pydantic import BaseModel, Field
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.modules.protocol_headers import TARGET_SYSTEM_RAG, build_outbound_headers
+from openbase.modules.proxy.upstream_observe import (
+    UPSTREAM_SYSTEM_OPENRAG,
+    content_type_of,
+    elapsed_ms,
+    publish_upstream_response,
+)
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.rag_proxy")
@@ -191,9 +198,13 @@ async def _forward(
     request: Request | None = None,
     user: dict | None = None,
 ) -> JSONResponse:
-    """转发请求至 OpenRAG 并适配响应（非 SSE，任务书 M1 注入上游 API Key）."""
+    """转发请求至 OpenRAG 并适配响应（非 SSE，任务书 M1 注入上游 API Key；C-16 专段）.
+
+    ``request`` 缺省 None 时仅跳过上游观测（专段挂 ``request.state``），**转发语义不变**。
+    """
     base_url, timeout, _, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    upstream_start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             upstream = await client.request(
@@ -202,6 +213,13 @@ async def _forward(
                 headers=_build_upstream_headers(request, user),
             )
     except httpx.HTTPError as exc:
+        publish_upstream_response(
+            request,
+            system=UPSTREAM_SYSTEM_OPENRAG,
+            reached=False,
+            duration_ms=elapsed_ms(upstream_start),
+            error=str(exc),
+        )
         logger.warning(
             "rag-proxy upstream unreachable",
             extra={"path": upstream_path, "error": str(exc)},
@@ -209,6 +227,15 @@ async def _forward(
         raise BaseError(
             ErrorCode.SYS_UPSTREAM_ERROR, f"OpenRAG upstream unreachable: {exc}"
         ) from exc
+    publish_upstream_response(
+        request,
+        system=UPSTREAM_SYSTEM_OPENRAG,
+        reached=True,
+        duration_ms=elapsed_ms(upstream_start),
+        status_code=upstream.status_code,
+        content_type=content_type_of(upstream),
+        payload=getattr(upstream, "content", None),
+    )
     return _adapt_response(upstream)
 
 
@@ -217,7 +244,7 @@ async def _forward_multipart(
     request: Request,
     user: dict | None = None,
 ) -> JSONResponse:
-    """multipart 原始体透传（文档上传，不解析表单保持边界/编码原样）.
+    """multipart 原始体透传（文档上传，不解析表单保持边界/编码原样；C-16 专段）.
 
     FastAPI 端不声明 UploadFile（避免预解析消费流），直接读取原始 body 与
     Content-Type（含 boundary）转发上游，文件字节流完整透传。
@@ -226,6 +253,7 @@ async def _forward_multipart(
     content_type = request.headers.get("content-type", "application/octet-stream")
     base_url, timeout, _, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    upstream_start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             # 任务书 M1：multipart 透传同样注入上游 API Key（保留原始 Content-Type/boundary）
@@ -237,6 +265,13 @@ async def _forward_multipart(
                 headers=upstream_headers,
             )
     except httpx.HTTPError as exc:
+        publish_upstream_response(
+            request,
+            system=UPSTREAM_SYSTEM_OPENRAG,
+            reached=False,
+            duration_ms=elapsed_ms(upstream_start),
+            error=str(exc),
+        )
         logger.warning(
             "rag-proxy multipart upstream unreachable",
             extra={"path": upstream_path, "error": str(exc)},
@@ -244,6 +279,15 @@ async def _forward_multipart(
         raise BaseError(
             ErrorCode.SYS_UPSTREAM_ERROR, f"OpenRAG upstream unreachable: {exc}"
         ) from exc
+    publish_upstream_response(
+        request,
+        system=UPSTREAM_SYSTEM_OPENRAG,
+        reached=True,
+        duration_ms=elapsed_ms(upstream_start),
+        status_code=upstream.status_code,
+        content_type=content_type_of(upstream),
+        payload=getattr(upstream, "content", None),
+    )
     return _adapt_response(upstream)
 
 
@@ -253,11 +297,15 @@ async def _forward_sse(
     request: Request | None = None,
     user: dict | None = None,
 ) -> StreamingResponse:
-    """SSE 逐事件透传（RAG 流式端点）.
+    """SSE 逐事件透传（RAG 流式端点；C-16 头部级专段）.
 
     以 httpx AsyncClient stream 读取上游事件流，逐事件写回下游：
     event: start → event: token（重复） → event: done。
     不缓冲、不包装、保序；上游中断时关闭下游流并记录日志。
+
+    C-16 观测口径：**仅记头部级字段**（状态/首字节耗时/Content-Type）——流式体
+    预读会消费事件流、破坏透传语义，故传 ``payload=None``（无 digest）。专段在
+    首个事件写出前落位，早于审计中间件结算该请求的记录。
     """
     base_url, _, stream_timeout, _ = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
@@ -265,6 +313,7 @@ async def _forward_sse(
     upstream_headers = _build_upstream_headers(request, user)
 
     async def event_stream() -> AsyncGenerator[str, None]:
+        upstream_start = time.perf_counter()
         try:
             async with httpx.AsyncClient(timeout=stream_timeout) as client:
                 async with client.stream(
@@ -273,6 +322,15 @@ async def _forward_sse(
                 ) as upstream:
                     if upstream.status_code >= 400:
                         body_bytes = await upstream.aread()
+                        publish_upstream_response(
+                            request,
+                            system=UPSTREAM_SYSTEM_OPENRAG,
+                            reached=True,
+                            duration_ms=elapsed_ms(upstream_start),
+                            status_code=upstream.status_code,
+                            content_type=content_type_of(upstream),
+                            payload=body_bytes,
+                        )
                         body: dict[str, Any] = {}
                         try:
                             body = json.loads(body_bytes.decode("utf-8"))
@@ -284,10 +342,25 @@ async def _forward_sse(
                             extra={"path": upstream_path, "status": upstream.status_code},
                         )
                         return
+                    publish_upstream_response(
+                        request,
+                        system=UPSTREAM_SYSTEM_OPENRAG,
+                        reached=True,
+                        duration_ms=elapsed_ms(upstream_start),
+                        status_code=upstream.status_code,
+                        content_type=content_type_of(upstream),
+                    )
                     async for line in upstream.aiter_lines():
                         if line:
                             yield f"{line}\n"
         except httpx.HTTPError as exc:
+            publish_upstream_response(
+                request,
+                system=UPSTREAM_SYSTEM_OPENRAG,
+                reached=False,
+                duration_ms=elapsed_ms(upstream_start),
+                error=str(exc),
+            )
             logger.warning(
                 "rag-proxy sse stream interrupted",
                 extra={"path": upstream_path, "error": str(exc)},

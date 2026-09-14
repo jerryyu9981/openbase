@@ -37,6 +37,12 @@ from openbase.modules.protocol_headers import (
     load_role_map,
 )
 from openbase.modules.protocol_headers.dps_code_map import build_compat_value_maps
+from openbase.modules.proxy.upstream_observe import (
+    UPSTREAM_SYSTEM_DPS,
+    content_type_of,
+    elapsed_ms,
+    publish_upstream_response,
+)
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.dps_proxy")
@@ -189,6 +195,13 @@ DPS_HEALTH_PROBE_TIMEOUT = 3.0
 _last_dps_health_probe_at: float | None = None
 _dps_health_ok: bool | None = None
 
+# P6 连续失败计数（用于达阈值后 503 显式降级）。
+# 缺陷修复（AD-20260914-01）：原实现仅在 `_forward` 的异常分支内以 `global` 自增，
+# 全仓无模块级初值 → **上游首次不可达即 NameError**（降级/502 路径在真实故障下不可用，
+# 且此前无用例覆盖该分支）。此处补齐模块级初值，语义与 settings.dps_degrade_threshold
+# 一致（`_forward` 成功路径与探活恢复时归零）。
+_dps_consecutive_failures: int = 0
+
 
 async def _probe_dps_health_once() -> bool:
     """执行一次 DPS /health 探测（2xx 视为健康）.
@@ -244,11 +257,17 @@ async def _forward(
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
     headers: dict[str, str] | None = None,
+    request: Request | None = None,
 ) -> JSONResponse:
-    """转发请求至 DPS 并适配响应（非 SSE，身份头注入）."""
+    """转发请求至 DPS 并适配响应（非 SSE，身份头注入；C-16 上游专段同请求汇聚）.
+
+    ``request`` 缺省 None 时仅跳过上游观测（专段挂 ``request.state``），**转发语义不变**，
+    便于脚本/工具链直调 ``_forward``。
+    """
     await _maybe_probe_dps_health()
     base_url, timeout = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    upstream_start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             upstream = await client.request(
@@ -257,6 +276,13 @@ async def _forward(
                 headers=headers or {},
             )
     except httpx.HTTPError as exc:
+        publish_upstream_response(
+            request,
+            system=UPSTREAM_SYSTEM_DPS,
+            reached=False,
+            duration_ms=elapsed_ms(upstream_start),
+            error=str(exc),
+        )
         logger.warning(
             "dps-proxy upstream unreachable",
             extra={"path": upstream_path, "error": str(exc)},
@@ -291,6 +317,15 @@ async def _forward(
             ErrorCode.SYS_UPSTREAM_ERROR, f"DPS upstream unreachable: {exc}"
         ) from exc
     _dps_consecutive_failures = 0
+    publish_upstream_response(
+        request,
+        system=UPSTREAM_SYSTEM_DPS,
+        reached=True,
+        duration_ms=elapsed_ms(upstream_start),
+        status_code=upstream.status_code,
+        content_type=content_type_of(upstream),
+        payload=getattr(upstream, "content", None),
+    )
     return _adapt_response(upstream)
 
 
@@ -312,6 +347,7 @@ async def dps_portraits_list(
         "GET", "/api/v2/portrait/list",
         params={"page": page, "page_size": page_size},
         headers=headers,
+        request=request,
     )
 
 
@@ -326,6 +362,7 @@ async def dps_portrait_detail(
     return await _forward(
         "GET", f"/api/v2/portrait/{person_id}",
         headers=headers,
+        request=request,
     )
 
 
@@ -341,6 +378,7 @@ async def dps_portrait_calculate(
         "POST", "/api/v2/portrait/calculate",
         json_body=payload,
         headers=headers,
+        request=request,
     )
 
 
@@ -362,6 +400,7 @@ async def dps_portrait_update(
         "PUT", f"/api/v2/portrait/{person_id}",
         json_body=payload,
         headers=headers,
+        request=request,
     )
 
 
@@ -377,7 +416,7 @@ async def dps_tags_categories(
 ) -> JSONResponse:
     """标签分类（GET /api/v2/tags/categories）."""
     headers = _build_identity_headers(_user, request)
-    return await _forward("GET", "/api/v2/tags/categories", headers=headers)
+    return await _forward("GET", "/api/v2/tags/categories", headers=headers, request=request)
 
 
 @router.post("/tags/categories")
@@ -392,6 +431,7 @@ async def dps_tag_category_create(
         "POST", "/api/v2/tags/categories",
         json_body=payload,
         headers=headers,
+        request=request,
     )
 
 
@@ -408,6 +448,7 @@ async def dps_tag_category_update(
         "PUT", f"/api/v2/tags/categories/{category_id}",
         json_body=payload,
         headers=headers,
+        request=request,
     )
 
 
@@ -422,6 +463,7 @@ async def dps_tag_category_delete(
     return await _forward(
         "DELETE", f"/api/v2/tags/categories/{category_id}",
         headers=headers,
+        request=request,
     )
 
 
@@ -432,7 +474,7 @@ async def dps_reports_overview(
 ) -> JSONResponse:
     """报表概览（GET /api/v2/reports/overview）."""
     headers = _build_identity_headers(_user, request)
-    return await _forward("GET", "/api/v2/reports/overview", headers=headers)
+    return await _forward("GET", "/api/v2/reports/overview", headers=headers, request=request)
 
 
 # ---------------------------------------------------------------------------
@@ -451,6 +493,7 @@ async def dps_batch_task_status(
     return await _forward(
         "GET", f"/api/v2/batch/import/{task_id}/status",
         headers=headers,
+        request=request,
     )
 
 
@@ -461,7 +504,7 @@ async def dps_audit_logs(
 ) -> JSONResponse:
     """审计日志（GET /api/v2/audit/logs）."""
     headers = _build_identity_headers(_user, request)
-    return await _forward("GET", "/api/v2/audit/logs", headers=headers)
+    return await _forward("GET", "/api/v2/audit/logs", headers=headers, request=request)
 
 
 # ---------------------------------------------------------------------------
@@ -476,4 +519,4 @@ async def dps_health(
 ) -> JSONResponse:
     """DPS 上游健康透传（GET /health/liveness，DPS 白名单免鉴权）."""
     headers = _build_identity_headers(_user, request)
-    return await _forward("GET", "/health/liveness", headers=headers)
+    return await _forward("GET", "/health/liveness", headers=headers, request=request)

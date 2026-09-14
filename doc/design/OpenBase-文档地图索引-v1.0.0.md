@@ -31,6 +31,7 @@
 | v1.0.11 | 2026-09-14 | AI（S7 批次 37 批 1 全量落地会话） | **批 1（C-1~C-9）全量落地并入**：§2.5 该 DevLogReport 升版 **v1.1.0**（新增 §15 C-2~C-9 实施记录）并同步 §2.6 方案条目至 **v1.2.0**（含 `X-Test-Run-Id` 头承载口径与 C-1~C-9 实施进度表）；§2.6 增补两行（`scripts/test_log_aggregate.py`、`doc/test/evidence/manual/run-20260914-*.{json,md}`）；DOCMAP-MANIFEST 同步增补三条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 | v1.0.12 | 2026-09-14 | AI（S7 批 4 开发会话） | **批 2 / 批 4 实施记录并入**：§2.5 增补两行（`doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0.md`（批 2 C-10~C-12）、`...-v1.3.0.md`（批 4 C-15~C-19））；§2.6 方案条目版本由 v1.2.0 同步至 **v1.4.0**（§5.1 增列批 4 C-15~C-19 进度行与实施期补充：digest 口径差异、采集需启动期置开关、专用代理族接线范围）；§2.6 增补三行（`scripts/test_log_analyze.py` 错误归因分析器、`doc/test/evidence/manual/batch4-unit-junit.xml`、`.../batch4-regression2-junit.xml`）；DOCMAP-MANIFEST 同步增补五条并保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 | v1.0.13 | 2026-09-14 | AI（S7 批 4 开发会话，人工确认后执行） | **DevLogReport 家族旧版归档（版本管理流程落地）**：按 `project-document-management` §6「工作目录仅保留当前最新版本」将 `doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0.md`（批 1）与 `-v1.2.0.md`（批 2）移入 `doc/development/archive/`（**只读**，内容零改动），工作目录仅保留最新 `-v1.3.0.md`（批 4）；§2.5 两条条目路径同步为归档路径并标注「已归档（只读）」，DOCMAP-MANIFEST 两条路径同步更新（保持逐项真实存在、无失效引用、无游离）。**仅归档与路径同步，不改文档内容与 §1 分层** |
+| v1.0.14 | 2026-09-14 | AI（S7 批 5 开发会话） | **批 5（专用代理族上游专段接线）实施记录并入 + 批 4 记录归档**：§2.5 新增一行（`doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.4.0.md`，[Review]，当前有效版本）并将 `-v1.3.0.md`（批 4）标注「已归档（只读）」；§2.6 方案条目版本由 v1.4.0 同步至 **v1.5.0**（§5.1 增列批 5 进度行与实施期补充：五族同一观测出口、SSE 头部级口径）；§2.6 增补四行（`batch5-unit-junit.xml`、`batch5-proxy-regression-junit.xml`、`batch5-full-regression-junit.xml`、`batch5-pg-flake-recheck-junit.xml`）；DOCMAP-MANIFEST 同步增补五条并同步一条归档路径，保持逐项真实存在（无游离）。**仅增补条目与清单，不改 §1 分层与既有条目** |
 
 ---
 
@@ -116,7 +117,8 @@
 | doc/development/OpenBase-S7-全域门禁与总收官-DevLogReport-v1.0.0.md | v1.0.0（OB-S7-DEVLOG-v1.0.0） | S7 开发记录报告（批 1~4 / SHR 收口 / 门禁聚合 / 台账回写 / 会签） | Review | S7 Step 2 |
 | doc/development/archive/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0.md | v1.1.0（OB-S7-DEVLOG-LOGS-v1.1.0） | S7 增量开发记录：**批 1（C-1~C-9）全量落地**（C-1 日志落盘 / C-2 入口接线与提交号注入 / C-3 用例上下文与 L1 日志 / C-4 审计落库 / C-5 出站透传 / C-6 服务日志采集 / C-7 聚合脚本 / C-8 查询过滤 / C-9 单测；含 §15 逐项 RED→GREEN、实跑证据、变更统计） | **已归档（只读）** | S7 Step 2 / 方案 §5.1 |
 | doc/development/archive/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0.md | v1.2.0（OB-S7-DEVLOG-LOGS-v1.2.0） | S7 增量开发记录：**批 2（C-10~C-12）落地**（C-10 受权 `test:record` 端点族 + best-effort 落 `audit_logs` / C-11 前端测试模式注入三测试头 / C-12 `/system/test-records` 面板；含 §15 逐项实施、23 例后端单测 + 147 例前端、覆盖率 98%） | **已归档（只读）** | S7 Step 2 / 方案 §5.1 |
-| doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0.md | v1.3.0（OB-S7-DEVLOG-LOGS-v1.3.0） | S7 增量开发记录（**当前有效版本**）：**批 4（C-15~C-19）落地**（C-15 网关响应观测 / C-16 上游响应专段 / C-17 错误归因分析器 / C-18 统一脱敏器 / C-19 三开关与开关审计留痕；含 §15 逐项实施、单测、覆盖率与回归证据、TDD 顺序如实说明） | Review | S7 Step 2 / 方案 §5.1 |
+| doc/development/archive/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0.md | v1.3.0（OB-S7-DEVLOG-LOGS-v1.3.0） | S7 增量开发记录：**批 4（C-15~C-19）落地**（C-15 网关响应观测 / C-16 上游响应专段 / C-17 错误归因分析器 / C-18 统一脱敏器 / C-19 三开关与开关审计留痕；含 §15 逐项实施、单测、覆盖率与回归证据、TDD 顺序如实说明） | **已归档（只读）** | S7 Step 2 / 方案 §5.1 |
+| doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.4.0.md | v1.4.0（OB-S7-DEVLOG-LOGS-v1.4.0） | S7 增量开发记录（**当前有效版本**）：**批 5（专用代理族上游专段接线，批 4 §14#2 收尾）落地**（`publish_upstream_response` 统一出口 / 四族非流式出口接线 / SSE 头部级专段 / 缺陷 AD-20260914-01 修复；含 §16 逐项实施、单测、覆盖率与全量回归证据） | Review | S7 Step 2 / 方案 §5.1 |
 | doc/test/OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md | v1.0.0（OB-S7-TEST-v1.0.0） | S7 测试报告（34 断言矩阵 + 段门禁六项聚合结论） | Review | S7 Step 3 |
 | doc/development/OpenBase-S7-全域门禁与总收官报告-v1.0.0.md | v1.0.0（内部 v1.0.1，OB-S7-CLOSURE-v1.0.0） | S7 总收官报告（单文件形态；六项聚合 + PENDING + 会签 + 遗留） | Review | S7-T8-4 / S7-T8-5 |
 | doc/planning/OpenBase-S7-联调窗口环境检查报告-v1.0.0.md | v1.0.0（OB-S7-ENVCHECK-v1.0.0） | S7 P2 联调窗口前置环境检查报告（17 项实测 + 处置建议 + 就绪度矩阵） | Draft | S7-§0.1 / S7-P2-ENV |
@@ -141,7 +143,7 @@
 | scripts/verify_l3_1_agent.ps1 | v1.0.0（骨架 + 干跑） | S7-T5 L3-1 Agent 端到端（四头 / 白名单 / 域隔离 / 403 + M1-M2） | 骨架已就绪（干跑 PENDING） | S7-T5-1~4 |
 | scripts/smoke_l3_2.py | v1.0.0（骨架 + 干跑） | L3-2 贯通冒烟（OpenBase 侧缺失项；受信通道端到端关键路径） | 骨架已就绪（干跑 PENDING） | S7-T6-2 / S7-T7-3 |
 | doc/test/evidence/s7/env/env-check.json | schema_version=1 | S7 P2 联调窗口环境检查证据（真实 PG/openbase_test / Redis / IdP / 四仓运行态 / 网关与前端 / Playwright / 四仓远端写权限） | 已产出（P2 环境只读探测） | S7-§0.1 / S7-P2-ENV |
-| doc/design/OpenBase-人工端到端测试日志记录方案-v1.0.0.md | **v1.4.0（[Approved]）** | 人工端到端测试日志记录方案（现状 4 缺口 / 三层记录通道 / 字段与事件字典（含头承载口径）/ 用例上下文贯穿 / 改造清单 C-1~C-19 / §5.1 批 1（C-1~C-9）+ 批 2（C-10~C-12）+ 批 4（C-15~C-19）实施进度 / §11 响应级观测与错误归因 / §11.8 跨仓前提实测核实 / §9.1 决议记录 / 验收标准；v1.1.2 移除 C-1 的按保留期自动清理以遵循不变量 T6-1；v1.2.0 记批 1 全量落地并补 `X-Test-Run-Id` 头口径；v1.4.0 记批 4 落地并补 digest 口径差异、采集需启动期置开关、专用代理族接线范围） | **已批准（2026-09-13 决议冻结；v1.1.1~v1.4.0 为实施期文档对齐、修订与补充）** | 联调期人工测试留痕（补充证据；D-3 决议不参与门禁判定） |
+| doc/design/OpenBase-人工端到端测试日志记录方案-v1.0.0.md | **v1.5.0（[Approved]）** | 人工端到端测试日志记录方案（现状 4 缺口 / 三层记录通道 / 字段与事件字典（含头承载口径）/ 用例上下文贯穿 / 改造清单 C-1~C-19 / §5.1 批 1（C-1~C-9）+ 批 2（C-10~C-12）+ 批 4（C-15~C-19）+ 批 5（专用代理族接线）实施进度 / §11 响应级观测与错误归因 / §11.8 跨仓前提实测核实 / §9.1 决议记录 / 验收标准；v1.1.2 移除 C-1 的按保留期自动清理以遵循不变量 T6-1；v1.2.0 记批 1 全量落地并补 `X-Test-Run-Id` 头口径；v1.4.0 记批 4 落地并补 digest 口径差异、采集需启动期置开关、专用代理族接线范围；v1.5.0 记批 5 落地并补「五族同一观测出口」与 SSE 头部级口径） | **已批准（2026-09-13 决议冻结；v1.1.1~v1.5.0 为实施期文档对齐、修订与补充）** | 联调期人工测试留痕（补充证据；D-3 决议不参与门禁判定） |
 | doc/design/OpenBase-D6四仓request_id日志接线改动说明-v1.0.0.md | v1.0.0（[Draft]） | D-6 跨仓施工说明（四仓现状实证 / 统一约定 / 逐仓改动与代码片段 / 验收标准 / 改动一览 / 风险 R-1~R-7） | 待各仓评审（跨仓依据） | D-6 = ②（四仓补齐 request_id 接线）；依据方案 v1.1.0 §11.8 |
 | scripts/test_log_aggregate.py | v1.0.0（内部：批 1 C-7） | 人工测试日志聚合器（`logs/**/*.jsonl` → `doc/test/evidence/manual/<run_id>.{json,md}`；退出码 0=PASS / 1=FAIL / 2=PENDING） | 已落地（TDD 8 例 + PASS/FAIL 双路径实跑） | 方案 §5 C-7 / §3.1 L3 |
 | doc/test/evidence/manual/run-20260914-0230.json｜.md、run-20260914-0225.json｜.md | 运行期证据（PASS / FAIL 各一轮） | 人工测试日志聚合证据（run → case → step + `request_id` 双证据） | 已产出（批 1 实跑回填） | 方案 §3.1 L3 / §5 C-7 |
@@ -149,6 +151,10 @@
 | doc/test/evidence/manual/batch4-unit-junit.xml | 运行期证据（批 4 单测） | 批 4 新增单测 JUnit 证据（C-15/C-16/C-17/C-18/C-19 用例逐项留痕） | 已产出（批 4 实跑回填） | 方案 §5 批 4 / §6 验收 |
 | doc/test/evidence/manual/batch4-regression2-junit.xml | 运行期证据（批 4 定向回归，pytest 采集序） | 批 4 定向回归 JUnit 证据（审计/代理/身份/设置等受影响面按 pytest 采集序运行） | 已产出（批 4 实跑回填） | 方案 §6 验收（回归） |
 | doc/test/evidence/manual/run-20260914-0230-analysis.md、run-20260914-0225-analysis.md | 运行期证据（真实轮次的归因报告） | 错误归因分析器在真实轮次上的产物（PASS 退出码 0 / FAIL 退出码 1 + 归属层） | 已产出（批 4 实跑回填） | 方案 §5 C-17 / §11.6 |
+| doc/test/evidence/manual/batch5-unit-junit.xml | 运行期证据（批 5 单测） | 批 5 新增单测 JUnit 证据（`tests/test_specialized_proxy_upstream_observe.py`：**14 例 / 0 失败**） | 已产出（批 5 实跑回填） | 方案 §5 批 5 / §6 验收 |
+| doc/test/evidence/manual/batch5-proxy-regression-junit.xml | 运行期证据（批 5 代理族定向回归） | 批 5 定向回归 JUnit 证据（proxy/dps/llm/rag/memory 等 9 文件：**121 例 / 0 失败**；含 `upstream_observe` 覆盖率 100%） | 已产出（批 5 实跑回填） | 方案 §6 验收（回归） |
+| doc/test/evidence/manual/batch5-full-regression-junit.xml | 运行期证据（批 5 全量回归） | 批 5 全量回归 JUnit 证据（**824 例 / 4 失败 / 0 错误 / 4 跳过**；4 例为既有共享 PG 抖动，复跑 10/10 全绿，见 `batch5-pg-flake-recheck-junit.xml`） | 已产出（批 5 实跑回填） | 方案 §6 验收（回归） |
+| doc/test/evidence/manual/batch5-pg-flake-recheck-junit.xml | 运行期证据（批 5 环境抖动复核） | 失败 4 例所在文件单独复跑（`test_tenant_admin.py` + `test_users_admin.py`：**10 例 / 0 失败**），判定为既有共享 PG 抖动而非代码缺陷 | 已产出（批 5 实跑回填） | 方案 §7 风险（环境） |
 
 ---
 
@@ -218,9 +224,14 @@
 - doc/development/archive/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0.md
 - scripts/test_log_aggregate.py
 - scripts/test_log_analyze.py
-- doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0.md
+- doc/development/archive/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0.md
+- doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.4.0.md
 - doc/test/evidence/manual/batch4-unit-junit.xml
 - doc/test/evidence/manual/batch4-regression2-junit.xml
+- doc/test/evidence/manual/batch5-unit-junit.xml
+- doc/test/evidence/manual/batch5-proxy-regression-junit.xml
+- doc/test/evidence/manual/batch5-full-regression-junit.xml
+- doc/test/evidence/manual/batch5-pg-flake-recheck-junit.xml
 - doc/test/evidence/manual/run-20260914-0230-analysis.md
 - doc/test/evidence/manual/run-20260914-0225-analysis.md
 - doc/test/evidence/manual/run-20260914-0230.json

@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import time
 from typing import Any
 
 import httpx
@@ -22,6 +23,12 @@ from fastapi.responses import JSONResponse
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.modules.protocol_headers import TARGET_SYSTEM_MEMORY, build_outbound_headers
+from openbase.modules.proxy.upstream_observe import (
+    UPSTREAM_SYSTEM_OPENMEMORY,
+    content_type_of,
+    elapsed_ms,
+    publish_upstream_response,
+)
 from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.memory_proxy")
@@ -175,13 +182,16 @@ async def _forward(
     files: dict[str, Any] | None = None,
     form_data: dict[str, str] | None = None,
     headers: dict[str, str],
+    request: Request | None = None,
 ) -> JSONResponse:
-    """转发请求至 OpenMemory 并适配响应.
+    """转发请求至 OpenMemory 并适配响应（C-16 上游专段同请求汇聚）.
 
     files/form_data 用于 multipart/form-data 透传（多模态/语音上传端点）。
+    ``request`` 缺省 None 时仅跳过上游观测（专段挂 ``request.state``），**转发语义不变**。
     """
     _, base_url, timeout = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    upstream_start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             upstream = await client.request(
@@ -190,6 +200,13 @@ async def _forward(
                 headers=headers,
             )
     except httpx.HTTPError as exc:
+        publish_upstream_response(
+            request,
+            system=UPSTREAM_SYSTEM_OPENMEMORY,
+            reached=False,
+            duration_ms=elapsed_ms(upstream_start),
+            error=str(exc),
+        )
         logger.warning(
             "memory-proxy upstream unreachable",
             extra={"path": upstream_path, "error": str(exc)},
@@ -197,6 +214,15 @@ async def _forward(
         raise BaseError(
             ErrorCode.SYS_UPSTREAM_ERROR, f"OpenMemory upstream unreachable: {exc}"
         ) from exc
+    publish_upstream_response(
+        request,
+        system=UPSTREAM_SYSTEM_OPENMEMORY,
+        reached=True,
+        duration_ms=elapsed_ms(upstream_start),
+        status_code=upstream.status_code,
+        content_type=content_type_of(upstream),
+        payload=getattr(upstream, "content", None),
+    )
     return _adapt_response(upstream)
 
 
@@ -206,19 +232,28 @@ async def _forward_raw(
     *,
     json_body: dict[str, Any] | None = None,
     headers: dict[str, str],
+    request: Request | None = None,
 ) -> tuple[int, dict[str, Any]]:
-    """转发请求，返回 (上游状态码, 适配后的统一响应体).
+    """转发请求，返回 (上游状态码, 适配后的统一响应体)（C-16 专段随请求汇聚）.
 
     供需要二次加工（如列表分页）的端点复用。
     """
     _, base_url, timeout = _upstream_config()
     target_url = f"{base_url.rstrip('/')}{upstream_path}"
+    upstream_start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             upstream = await client.request(
                 method, target_url, json=json_body, headers=headers,
             )
     except httpx.HTTPError as exc:
+        publish_upstream_response(
+            request,
+            system=UPSTREAM_SYSTEM_OPENMEMORY,
+            reached=False,
+            duration_ms=elapsed_ms(upstream_start),
+            error=str(exc),
+        )
         logger.warning(
             "memory-proxy upstream unreachable",
             extra={"path": upstream_path, "error": str(exc)},
@@ -226,6 +261,15 @@ async def _forward_raw(
         raise BaseError(
             ErrorCode.SYS_UPSTREAM_ERROR, f"OpenMemory upstream unreachable: {exc}"
         ) from exc
+    publish_upstream_response(
+        request,
+        system=UPSTREAM_SYSTEM_OPENMEMORY,
+        reached=True,
+        duration_ms=elapsed_ms(upstream_start),
+        status_code=upstream.status_code,
+        content_type=content_type_of(upstream),
+        payload=getattr(upstream, "content", None),
+    )
     adapted = _adapt_response(upstream)
     return adapted.status_code, json.loads(adapted.body.decode("utf-8"))
 
@@ -245,6 +289,7 @@ async def memory_remember(
     return await _forward(
         "POST", "/api/v1/remember",
         json_body=payload, headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -258,6 +303,7 @@ async def memory_recall(
     return await _forward(
         "POST", "/api/v1/recall",
         json_body=payload, headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -271,6 +317,7 @@ async def memory_forget(
     return await _forward(
         "POST", "/api/v1/forget",
         json_body=payload, headers=_build_upstream_headers(request, _user),
+        request=request,
     )
 
 
@@ -284,6 +331,7 @@ async def memory_detail(
     response = await _forward(
         "GET", f"/api/v1/memories/{memory_id}",
         headers=_build_upstream_headers(request, _user),
+        request=request,
     )
     # 字段归一化：metadata.tags 提升为顶层 tags（前端消费）
     if response.status_code < 400:
@@ -326,6 +374,7 @@ async def memory_list(
     status_code, body = await _forward_raw(
         "POST", "/api/v1/recall",
         json_body=payload, headers=_build_upstream_headers(request, _user),
+        request=request,
     )
     if status_code >= 400:
         return JSONResponse(
@@ -384,6 +433,7 @@ async def _proxy_json(
         method, upstream_path,
         json_body=json_body, params=params,
         headers=_build_upstream_headers(request, user),
+        request=request,
     )
 
 
@@ -412,6 +462,7 @@ async def _proxy_multipart(
         "POST", upstream_path,
         files=files, form_data=form_fields,
         headers=headers,
+        request=request,
     )
 
 
