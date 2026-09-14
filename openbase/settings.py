@@ -51,6 +51,8 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "dps_proxy",
     # U1 统一身份收口（RA-01/OB-1）：Principal 主体面 + agent 密钥面（identity 路由）
     "identity",
+    # 批 2 C-10：人工测试结论记录（受权 API test:record）
+    "testing",
 )
 
 
@@ -139,6 +141,16 @@ class Settings(BaseSettings):
     otlp_endpoint: str = "http://localhost:4318"
     langfuse_enabled: bool = False
     sample_rate: float = 0.1
+
+    # ---- 响应级观测三开关（批 4 C-19；方案 §11.2 红线 / §11.3）----
+    # 默认全关：未设置或为 0 时**零采集、零落盘**（响应摘要字段不出现）；
+    # 仅联调/人工测试窗口显式开启，且开启后摘要必经 core/mask.mask_sensitive 脱敏；
+    # **生产永久关闭**（env=production 时开关不生效，见 capture_response_enabled）。
+    capture_response: bool = False
+    capture_upstream: bool = False
+    # 允许清单（逗号分隔字段路径，如 "error.code,error.message"）：命中路径保留原值；
+    # 默认空 = 全脱敏（默认只留结构化键名与 digest，隐私域整体遮蔽）。
+    capture_field_allowlist: str = ""
 
     # ---- 文件存储 ----
     storage_backend: str = "local"  # local | minio | s3
@@ -268,6 +280,27 @@ class Settings(BaseSettings):
     def enabled_modules(self) -> list[str]:
         """已启用模块列表（保持注册顺序）. """
         return [m for m in AVAILABLE_MODULES if m in self._enabled_modules]
+
+    # ---- 响应级观测三开关（批 4 C-19）辅助 ----
+
+    @property
+    def capture_field_allowlist_list(self) -> list[str]:
+        """允许清单解析（逗号分隔 → 去空列表；默认空 = 全脱敏）."""
+        return [
+            item.strip()
+            for item in (self.capture_field_allowlist or "").split(",")
+            if item.strip()
+        ]
+
+    @property
+    def capture_response_enabled(self) -> bool:
+        """网关响应体采集是否**实际**生效（红线 4：生产永久关闭）."""
+        return self.capture_response and self.env != "production"
+
+    @property
+    def capture_upstream_enabled(self) -> bool:
+        """上游响应体采集是否**实际**生效（红线 4：生产永久关闭）."""
+        return self.capture_upstream and self.env != "production"
 
     # ---- P2-1 协议头/信任链辅助解析（§3.3/§5.2）----
 

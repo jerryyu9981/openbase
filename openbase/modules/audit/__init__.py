@@ -11,18 +11,22 @@ import logging
 import os
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Optional  # noqa: F401 - future annotations 字符串注解求值
 
 from fastapi import APIRouter, Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from openbase.core.deps.auth import IdentityContext  # noqa: F401 - build_audit_record 类型注解
+from openbase.core.mask import digest_of, observe_payload
 from openbase.modules.protocol_headers.constants import (
     HEADER_TEST_CASE_ID,
     HEADER_TEST_RUN_ID,
     HEADER_TEST_STEP_ID,
 )
+from openbase.settings import get_settings
 
 logger = logging.getLogger("openbase.audit")
 
@@ -44,6 +48,133 @@ ACTION_API_REQUEST = "api.request"
 
 # 请求级记录通道标识（C-3）：OpenBase 网关编排路径 = B 通道（A 通道为子系统直连，不经网关）
 CHANNEL_GATEWAY = "B"
+
+# 响应观测字段（C-15）：结构性字段（恒有）+ 摘要字段（仅开关开启时产出）
+RESP_FIELD_NAMES: tuple[str, ...] = (
+    "resp_status",
+    "resp_bytes",
+    "resp_content_type",
+    "resp_error_code",
+    "resp_digest",
+    "resp_summary",
+    "resp_keys",
+)
+
+# 上游观测字段（C-16）：由 proxy 模块经 ``request.state.upstream_observation`` 注入
+UPSTREAM_FIELD_NAMES: tuple[str, ...] = (
+    "upstream_system",
+    "upstream_status",
+    "upstream_content_type",
+    "upstream_error_code",
+    "upstream_duration_ms",
+    "upstream_digest",
+    "upstream_body_summary",
+    "upstream_keys",
+    "upstream_calls",
+    "upstream_error",
+)
+
+# 落库 detail 保留的**结构性**观测字段（摘要类不入库，避免 detail JSON 膨胀与隐私面扩大）
+STRUCTURAL_DETAIL_FIELDS: tuple[str, ...] = (
+    "resp_status",
+    "resp_bytes",
+    "resp_content_type",
+    "resp_error_code",
+    "resp_digest",
+    "upstream_system",
+    "upstream_status",
+    "upstream_content_type",
+    "upstream_error_code",
+    "upstream_duration_ms",
+    "upstream_digest",
+    "upstream_calls",
+)
+
+# 不读响应体的内容类型（流式与二进制：读取会破坏透传语义）
+_NON_CAPTURABLE_CONTENT_TYPES: tuple[str, ...] = ("text/event-stream",)
+
+
+def should_capture_body(content_type: str | None) -> bool:
+    """是否允许读取响应体以生成摘要（C-15 采集判定）.
+
+    仅 ``application/json`` 且非 SSE 流式时允许读取——流式（``text/event-stream``）
+    与二进制/HTML 一律不读，避免破坏透传语义与拖慢大响应。
+
+    Args:
+        content_type: 响应 ``Content-Type`` 头（可空）。
+
+    Returns:
+        是否允许读取响应体。
+    """
+    if not content_type:
+        return False
+    lowered = content_type.lower()
+    if any(marker in lowered for marker in _NON_CAPTURABLE_CONTENT_TYPES):
+        return False
+    return "application/json" in lowered
+
+
+def build_response_observation(
+    *,
+    status_code: int,
+    content_type: str | None,
+    content_length: int | None,
+    error_code: str | None,
+    payload: bytes | None = None,
+    allowlist: Sequence[str] = (),
+) -> dict[str, Any]:
+    """构造网关响应观测字段（C-15；默认关 → 只产出结构性字段）.
+
+    口径（方案 §11.2）：
+
+    - ``payload is None``（默认关，未读取响应体）→ ``resp_bytes`` 取 ``Content-Length``，
+      ``resp_digest`` 为**结构性摘要**（状态码/类型/长度/错误码的组合），无 ``resp_summary``；
+    - ``payload`` 非空（开关开启且已读取）→ 以**真实字节数**与**内容摘要**为准，并产出
+      经 :func:`openbase.core.mask.mask_sensitive` 脱敏的 ``resp_summary``（超限只留键名清单）。
+
+    Args:
+        status_code: 网关返回状态码。
+        content_type: 响应 ``Content-Type``。
+        content_length: 响应 ``Content-Length``（未读取响应体时的字节数来源）。
+        error_code: 统一错误码（``AUTH_401``/``PERM_*`` 等；来自统一异常处理器）。
+        payload: 已读取的响应体字节（None 表示未采集）。
+        allowlist: 允许保留原值的字段路径清单（``OPENBASE_CAPTURE_FIELD_ALLOWLIST``）。
+
+    Returns:
+        仅含非空字段的观测字典（键名见 :data:`RESP_FIELD_NAMES`）。
+    """
+    if payload is None:
+        fields: dict[str, Any] = {
+            "resp_status": status_code,
+            "resp_bytes": content_length,
+            "resp_content_type": content_type,
+            "resp_error_code": error_code,
+            "resp_digest": digest_of(f"{status_code}|{content_type}|{content_length}|{error_code}"),
+        }
+    else:
+        observed = observe_payload(payload, allowlist=allowlist)
+        fields = {
+            "resp_status": status_code,
+            "resp_bytes": observed["bytes"],
+            "resp_content_type": content_type,
+            "resp_error_code": error_code,
+            "resp_digest": observed["digest"],
+        }
+        if observed["summary"] is not None:
+            fields["resp_summary"] = observed["summary"]
+        if observed["keys"]:
+            fields["resp_keys"] = observed["keys"]
+    return {key: value for key, value in fields.items() if value is not None}
+
+
+def _parse_content_length(raw: str | None) -> int | None:
+    """解析 ``Content-Length``（非法/缺失 → None，不臆造字节数）."""
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def _normalize_step_id(raw: str | None) -> int | str | None:
@@ -152,7 +283,8 @@ class AuditService:
             run_id: 仅返回该测试轮次的记录（None 表示不过滤）。
 
         Returns:
-            记录 dict 列表（含 C-3 用例上下文字段 case_id/step_id/run_id/channel）。
+            记录 dict 列表（含 C-3 用例上下文字段 case_id/step_id/run_id/channel；
+            C-15/C-16 观测字段 resp_*/upstream_* 存在时一并带出）。
         """
         rows: list[dict] = []
         for record in reversed(cls._records):
@@ -161,23 +293,26 @@ class AuditService:
                 continue
             if run_id is not None and extra.get("run_id") != run_id:
                 continue
-            rows.append(
-                {
-                    "request_id": record.request_id,
-                    "method": record.method,
-                    "path": record.path,
-                    "status_code": record.status_code,
-                    "duration_ms": record.duration_ms,
-                    "operator_id": record.operator_id,
-                    "tenant_id": record.tenant_id,
-                    "ip_address": record.ip_address,
-                    "error": record.error,
-                    "case_id": extra.get("case_id"),
-                    "step_id": extra.get("step_id"),
-                    "run_id": extra.get("run_id"),
-                    "channel": extra.get("channel"),
-                }
-            )
+            row = {
+                "request_id": record.request_id,
+                "method": record.method,
+                "path": record.path,
+                "status_code": record.status_code,
+                "duration_ms": record.duration_ms,
+                "operator_id": record.operator_id,
+                "tenant_id": record.tenant_id,
+                "ip_address": record.ip_address,
+                "error": record.error,
+                "case_id": extra.get("case_id"),
+                "step_id": extra.get("step_id"),
+                "run_id": extra.get("run_id"),
+                "channel": extra.get("channel"),
+            }
+            # C-15/C-16：观测字段仅在存在时带出（默认关 → 无 resp_summary/upstream_body_summary）
+            for name in (*RESP_FIELD_NAMES, *UPSTREAM_FIELD_NAMES):
+                if name in extra:
+                    row[name] = extra[name]
+            rows.append(row)
             if len(rows) >= limit:
                 break
         return rows
@@ -338,11 +473,75 @@ class AuditMiddleware(BaseHTTPMiddleware):
             raise
 
         duration_ms = int((time.perf_counter() - start) * 1000)
-        audit_record = self._record(request, response.status_code, duration_ms, request_id)
+        # C-15：响应观测（默认关 → 不读响应体；开启 → 读取 JSON 响应体并脱敏摘要）
+        response, observation = await self._observe_response(request, response)
+        audit_record = self._record(
+            request, response.status_code, duration_ms, request_id, observation=observation
+        )
         response.headers["X-Request-Id"] = request_id
         await self._persist_audit_record(request, audit_record)
         await self._persist_outbound_proxy_hop(request, request_id)
         return response
+
+    async def _observe_response(
+        self, request: Request, response: Response
+    ) -> tuple[Response, dict[str, Any]]:
+        """构造响应观测并（仅开关开启时）读取响应体（C-15）.
+
+        红线（方案 §11.2）：开关默认关 → **不读取响应体**（零采集），仅产出结构性字段；
+        开关开启且内容类型为 JSON（非 SSE）时读取并重建响应，摘要经 C-18 脱敏。
+
+        Args:
+            request: 当前请求（错误码取自统一异常处理器写入的 ``state.error_code``）。
+            response: 下游返回的响应。
+
+        Returns:
+            ``(可能被重建的响应, 观测字段字典)``。
+        """
+        settings = get_settings()
+        allowlist = tuple(settings.capture_field_allowlist_list)
+        content_type = response.headers.get("content-type")
+        content_length = _parse_content_length(response.headers.get("content-length"))
+        error_code = getattr(request.state, "error_code", None)
+
+        payload: bytes | None = None
+        if settings.capture_response_enabled and should_capture_body(content_type):
+            response, payload = await self._read_response_body(response)
+
+        observation = build_response_observation(
+            status_code=response.status_code,
+            content_type=content_type,
+            content_length=content_length,
+            error_code=error_code,
+            payload=payload,
+            allowlist=allowlist,
+        )
+        return response, observation
+
+    async def _read_response_body(self, response: Response) -> tuple[Response, bytes | None]:
+        """读取响应体并重建同内容响应（读取失败回退原响应，绝不影响业务）."""
+        try:
+            chunks = [chunk async for chunk in response.body_iterator]
+            raw = b"".join(
+                chunk if isinstance(chunk, bytes) else str(chunk).encode("utf-8") for chunk in chunks
+            )
+        except Exception:  # noqa: BLE001 - 采集失败不影响响应透传
+            logger.warning("response body capture failed; fallback to metadata-only observation")
+            return response, None
+
+        headers = {
+            key: value
+            for key, value in response.headers.items()
+            if key.lower() not in ("content-length", "content-type")
+        }
+        rebuilt = Response(
+            content=raw,
+            status_code=response.status_code,
+            headers=headers,
+            media_type=response.media_type,
+            background=response.background,
+        )
+        return rebuilt, raw
 
     async def _persist_audit_record(
         self, request: Request, record: APICallRecord | None
@@ -376,6 +575,11 @@ class AuditMiddleware(BaseHTTPMiddleware):
             detail["identity"] = identity
         if record.error:
             detail["error"] = record.error
+        # C-15/C-16：结构性观测字段入库（摘要类不入库，避免 detail 膨胀与隐私面扩大）
+        for name in STRUCTURAL_DETAIL_FIELDS:
+            value = (record.extra or {}).get(name)
+            if value is not None:
+                detail[name] = value
         detail = {key: value for key, value in detail.items() if value is not None}
 
         session = None
@@ -456,10 +660,46 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 except Exception:  # noqa: BLE001
                     pass
 
+    def _observation_fields(
+        self, request: Request, observation: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """汇总观测字段：网关响应（C-15）+ 上游响应（C-16）.
+
+        上游字段由 proxy 模块经 ``request.state.upstream_observation`` 注入（同一请求内
+        多次上游调用时取最近一次，并累计 ``upstream_calls``），使「网关 → 上游」两级
+        响应落在**同一条** L1 记录上（错误归因不需要跨行 join）。
+
+        Args:
+            request: 当前请求。
+            observation: C-15 网关侧观测字段（可为空）。
+
+        Returns:
+            合并后的观测字段字典。
+        """
+        fields: dict[str, Any] = dict(observation or {})
+        upstream = getattr(request.state, "upstream_observation", None)
+        if isinstance(upstream, dict):
+            fields.update(upstream)
+        return fields
+
     def _record(
-        self, request: Request, status_code: int, duration_ms: int, request_id: str, error: str | None = None
+        self,
+        request: Request,
+        status_code: int,
+        duration_ms: int,
+        request_id: str,
+        error: str | None = None,
+        observation: dict[str, Any] | None = None,
     ) -> APICallRecord | None:
-        """记录审计条目（异步语义：不阻塞主请求）+ L1 请求级结构化日志（C-3）.
+        """记录审计条目（异步语义：不阻塞主请求）+ L1 请求级结构化日志（C-3/C-15/C-16）.
+
+        Args:
+            request: 当前请求。
+            status_code: 网关返回状态码。
+            duration_ms: 网关耗时毫秒。
+            request_id: 请求 ID。
+            error: 异常文本（可空）。
+            observation: 响应观测字段（C-15/C-16；默认关时仅含结构性字段）。
 
         Returns:
             已入内存缓冲的审计记录；记录失败（异常吞掉）时返回 None。
@@ -475,6 +715,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 extra["identity"] = identity
             # C-3：用例上下文（case_id/step_id/run_id/channel）并入 extra，供 C-4 落库与 C-8 查询
             extra.update(self._test_context_fields(request))
+            # C-15/C-16：响应观测字段并入 extra（默认关 → 无摘要字段，零合规暴露）
+            extra.update(self._observation_fields(request, observation))
             record = APICallRecord(
                 method=request.method,
                 path=request.url.path,
@@ -491,7 +733,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 extra=extra,
             )
             AuditService.record_api_call(record)
-            self._emit_request_log(request, status_code, duration_ms, request_id, user_id, error)
+            self._emit_request_log(
+                request, status_code, duration_ms, request_id, user_id, error, observation
+            )
             return record
         except Exception:  # noqa: BLE001
             logger.exception("failed to record audit log", extra={"request_id": request_id})
@@ -505,14 +749,24 @@ class AuditMiddleware(BaseHTTPMiddleware):
         request_id: str,
         operator_id: str | None,
         error: str | None = None,
+        observation: dict[str, Any] | None = None,
     ) -> None:
-        """L1 请求级结构化日志（C-3；字段口径 = 方案 §4.1 必填 + §4.2 场景扩展）.
+        """L1 请求级结构化日志（C-3 + C-15/C-16；字段口径 = 方案 §4.1 必填 + §4.2 场景扩展）.
 
         经 root logger 输出：C-1 装配后同时落 JSONL 文件（``logs/<service>/…jsonl``）
         与控制台（由 C-6 重定向采集）；未装配时为空操作（测试环境零副作用）。
 
-        说明：``error_code``（AUTH/PERM/… 前缀码）需从异常处理器上下文提取，属批 4
-        C-15 ``resp_error_code`` 范围；本批仅记录 ``error`` 文本。
+        说明：``error_code``（AUTH/PERM/… 前缀码）由统一异常处理器写入
+        ``request.state.error_code``，经 C-15 观测字段 ``resp_error_code`` 带出。
+
+        Args:
+            request: 当前请求。
+            status_code: 网关返回状态码。
+            duration_ms: 网关耗时毫秒。
+            request_id: 请求 ID。
+            operator_id: 操作者 ID。
+            error: 异常文本（可空）。
+            observation: 响应观测字段（可空）。
         """
         payload: dict[str, Any] = {
             "request_id": request_id,
@@ -524,6 +778,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             "tenant": self._extract_tenant(request),
         }
         payload.update(self._test_context_fields(request))
+        payload.update(self._observation_fields(request, observation))
         if error:
             payload["error"] = error
         logger.info("api.request", extra=payload)

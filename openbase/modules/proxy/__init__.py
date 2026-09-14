@@ -10,7 +10,9 @@ system 映射与 base_url 可通过 config 模块配置覆盖（默认指向 Dev
 from __future__ import annotations
 
 import logging
+import time
 import uuid
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, Request
@@ -21,6 +23,11 @@ from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import AuditLog
 from openbase.modules.protocol_headers import TARGET_SYSTEM_GENERIC, build_outbound_headers
 from openbase.modules.proxy.memory_proxy import router as memory_proxy_router
+from openbase.modules.proxy.upstream_observe import (
+    build_upstream_segment,
+    elapsed_ms,
+    publish_upstream_observation,
+)
 
 logger = logging.getLogger("openbase.proxy")
 
@@ -65,6 +72,15 @@ def _resolve_base_url(system: str) -> str:
 
 def _timeout(system: str) -> float:
     return PROXY_SYSTEMS[system]["timeout"]
+
+
+def _upstream_content_type(response: Any) -> str | None:
+    """读取上游响应 ``Content-Type``（缺头/替身响应 → None，不抛错）."""
+    headers = getattr(response, "headers", None)
+    if headers is None:
+        return None
+    getter = getattr(headers, "get", None)
+    return getter("content-type") if callable(getter) else None
 
 
 # K03 D-V6：匿名业务写（ob_k_ 服务 Key 写路径）白名单外的 HTTP 方法
@@ -268,20 +284,46 @@ async def proxy(
     )
     body = await request.body() if method in ("POST", "PUT", "PATCH") else None
 
+    # C-16：上游耗时与专段观测（成功/业务错误/异常三路径共用同一结构，不新增日志点）
+    upstream_start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=_timeout(system)) as client:
             upstream = await client.request(
                 method, target_url, headers=headers, content=body,
             )
     except httpx.HTTPError as exc:
-        logger.warning("proxy upstream unreachable", extra={"system": system, "path": path, "error": str(exc)})
+        unreachable = build_upstream_segment(
+            system=system,
+            reached=False,
+            duration_ms=elapsed_ms(upstream_start),
+            error=str(exc),
+        )
+        publish_upstream_observation(request, unreachable)
+        logger.warning(
+            "proxy upstream unreachable",
+            extra={"system": system, "path": path, "error": str(exc), **unreachable},
+        )
         raise BaseError(ErrorCode.SYS_UPSTREAM_ERROR, f"upstream {system} unreachable") from exc
+
+    # C-16：拿到上游响应即补记专段（含业务错误响应；摘要受 OPENBASE_CAPTURE_UPSTREAM 红线约束）
+    capture_settings = get_settings()
+    segment = build_upstream_segment(
+        system=system,
+        reached=True,
+        duration_ms=elapsed_ms(upstream_start),
+        status_code=upstream.status_code,
+        content_type=_upstream_content_type(upstream),
+        payload=getattr(upstream, "content", None),
+        capture=capture_settings.capture_upstream_enabled,
+        allowlist=tuple(capture_settings.capture_field_allowlist_list),
+    )
+    publish_upstream_observation(request, segment)
 
     # 上游 402（模型提供商余额不足）→ 统一包装 BIZ_MODEL_QUOTA，不暴露上游原始响应
     if upstream.status_code == 402:
         logger.info(
             "proxy upstream payment required",
-            extra={"system": system, "path": path, "status": upstream.status_code},
+            extra={"system": system, "path": path, "status": upstream.status_code, **segment},
         )
         return JSONResponse(
             status_code=402,

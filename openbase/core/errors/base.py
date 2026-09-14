@@ -41,6 +41,9 @@ def install_exception_handlers(app: Any) -> None:
     覆盖 BaseError 与通用 Exception，保证响应格式统一:
     {code, message, detail, request_id}
     同时向 OpenAPI components.schemas 注册 ErrorResponse 契约（BUG-003 闭环）。
+
+    另：各处理器把错误码写入 ``request.state.error_code``，供审计中间件
+    C-15「响应级观测」带出 ``resp_error_code`` 字段（错误归因入口，方案 §11.5）。
     """
 
     from fastapi import Request
@@ -72,8 +75,13 @@ def install_exception_handlers(app: Any) -> None:
 
     app.openapi = custom_openapi  # type: ignore[method-assign]
 
+    def _mark_error_code(request: Request, code: str) -> None:
+        """标注本次请求的错误码（供 C-15 响应观测读取；不改变响应体契约）."""
+        request.state.error_code = code
+
     @app.exception_handler(BaseError)
     async def handle_base_error(request: Request, exc: BaseError) -> JSONResponse:
+        _mark_error_code(request, exc.code.value)
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -88,6 +96,7 @@ def install_exception_handlers(app: Any) -> None:
     async def handle_validation_error(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
+        _mark_error_code(request, ErrorCode.PARAM_VALIDATION_ERROR.value)
         return JSONResponse(
             status_code=422,
             content={
@@ -102,6 +111,7 @@ def install_exception_handlers(app: Any) -> None:
     async def handle_http_exception(
         request: Request, exc: StarletteHTTPException
     ) -> JSONResponse:
+        _mark_error_code(request, str(exc.status_code))
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -116,6 +126,7 @@ def install_exception_handlers(app: Any) -> None:
     async def handle_unexpected(
         request: Request, exc: Exception
     ) -> JSONResponse:
+        _mark_error_code(request, ErrorCode.SYS_INTERNAL_ERROR.value)
         return JSONResponse(
             status_code=500,
             content={

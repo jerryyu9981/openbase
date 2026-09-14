@@ -67,6 +67,8 @@ for module in (
     # agent 密钥面（sk-agent-*）+ lifecycle 状态机 + purge 受权 + events/blocked 契约桩。
     # S7 门禁 ④（L1-1 级联 / L3-1 Agent）联调依赖该路由挂载。
     "identity",
+    # 批 2 C-10：人工测试结论记录（受权 API test:record）
+    "testing",
 ):
     settings.enable_module(module)
 
@@ -138,3 +140,15 @@ async def _start_identity_outbox_dispatcher() -> None:
 
     await OutboxDispatcherService.start_background_loop(interval_seconds=1.0)
     logger.info("identity outbox dispatcher started")
+
+
+@app.on_event("startup")
+async def _record_capture_switch_state() -> None:
+    """C-19：启动时留痕响应采集三开关状态（方案 §11.2 红线 5「开关本身留痕」）.
+
+    全关（生产默认）→ 只留结构化日志、零落库；任一开启 → best-effort 落
+    ``audit_logs``（action=capture.switch）；落库失败仅 WARN，不阻断启动。
+    """
+    from openbase.modules.audit.capture_switches import record_capture_switch_state
+
+    await record_capture_switch_state(settings)

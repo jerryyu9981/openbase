@@ -5,12 +5,12 @@
 | 项 | 内容 |
 |------|-----|
 | 文档编号 | OB-DESIGN-MANUAL-E2E-LOG-v1.0.0 |
-| 版本 | v1.2.0 |
-| 状态 | **[Approved]（2026-09-13 决议冻结：D-1~D-6 全部确认，见 §9.1）** |
-| 作者 | AI（S7 批次 31 方案编制会话） |
+| 版本 | v1.4.0 |
+| 状态 | **[Approved]（2026-09-13 决议冻结：D-1~D-6 全部确认，见 §9.1；v1.4.0 追加批 4 C-15~C-19 实施期进度与补充）** |
+| 作者 | AI（S7 批次 31 方案编制会话；批 1/批 2/批 4 开发会话追加） |
 | 日期 | 2026-09-14 |
 | 适用范围 | 人工端到端测试（统一前端 → 各后端服务）期间的**结果记录与复盘**；不改动业务语义 |
-| 关联文档 | 《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1（C-1~C-9）实施记录）；《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.11）；可观测性标准（日志/指标/追踪三大支柱） |
+| 关联文档 | 《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0》（批 4（C-15~C-19）实施记录）；《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0》（批 2（C-10~C-12）实施记录）；《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1（C-1~C-9）实施记录）；《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0》（v1.0.23）；《OpenBase-文档地图索引-v1.0.0》（v1.0.12）；可观测性标准（日志/指标/追踪三大支柱） |
 
 ## 修订历史
 
@@ -23,6 +23,8 @@
 | v1.1.1 | 2026-09-14 | AI（S7 批次 36 批 1 里程碑开发会话） | **实施期文档对齐**：§3.1 L1 落点由 `logs/<service>/app-YYYYMMDD.jsonl` 更正为 `logs/<service>/<service>-YYYYMMDD.jsonl`（与 C-1 实现及 C-6 采集文件名一致）；新增 §5.1「实施进度（批 1 里程碑：C-1 + C-6）」；关联文档增列本批次 DevLogReport。**本次仅文档对齐，未改动业务代码** |
 | v1.1.2 | 2026-09-14 | AI（S7 批次 36 批 1 里程碑开发会话） | **C-1 实施期修订：移除「按保留期自动清理」**。实施时被既有不变量 T6-1（`tests/test_identity_t6.py::test_t6_1_no_auto_retention_purge_path_static_scan`：`openbase/**` 全仓静态扫描 0 命中 `auto_purge`/`purge_expired`/`retention_days` 等标识）捕获：原 §5 C-1 设计的「按日 + 保留 30 天（自动清理）」与被测代码路径冲突。处置：**删除进程内自动删除实现与 `OPENBASE_LOG_RETAIN_DAYS` 开关**，只保留按日切分；保留期改为**运维人工执行**策略。§5 C-1 行与 §5.1 证据同步更新，并补齐「历史日志不得被自动删除」与「模块无自动清除标识」两个单测（合计 12 用例）以锁定不变量。 |
 | v1.2.0 | 2026-09-14 | AI（S7 批次 37 批 1 全量落地会话） | **批 1（C-1~C-9）全部落地，§5.1 改写为完整实施进度表**：C-2（其他服务入口接线 + **提交号注入**）、C-3（用例上下文头 → `request.state` + L1 请求级 JSON 日志 + extra 字段）、C-4（审计记录 best-effort 落 `audit_logs`，复用 JSON `detail` 零迁移 + 跨重启按 case 查询）、C-5（出站透传 `X-Test-Case-Id`/`X-Test-Step-Id`）、C-7（`scripts/test_log_aggregate.py` 聚合证据）、C-8（`/api/v1/audit/records` 增 `case_id`/`run_id` 过滤）、C-9（单测补齐）。**实施期补充**：新增 `X-Test-Run-Id` 头（缺省回退 `OPENBASE_TEST_RUN_ID`）承载 §4.2 的 `run_id`；新增落库开关 `OPENBASE_AUDIT_DB_PERSIST`（默认开，测试环境关）。 |
+| v1.3.0 | 2026-09-14 | AI（S7 批 2 开发会话） | **批 2（C-10~C-12）实施落地**：C-10 受权 `test:record` 端点族（`openbase/modules/testing/` 新模块，POST run / POST record / PATCH update / GET summary，best-effort 落 `audit_logs`（action `test.run`/`test.record`/`test.record.update`））；C-11 前端测试模式（URL/本地开关 → 自动注入三测试头，关闭零影响）；C-12 前端测试记录面板（`/system/test-records`）。§5.1 追加批 2 进度行。**实施期补充（待评审追认）**：受权码 `test:record` 走既有 `require_permission`（管理员令牌放行 + 普通用户 403 双向断言）；RBAC 种子数据是否显式登记该码不在本批代码面。 |
+| v1.4.0 | 2026-09-14 | AI（S7 批 4 开发会话） | **批 4（C-15~C-19）实施落地**：C-18 统一脱敏器 `openbase/core/mask.py`（凭据/个人隐私/画像域/超限与过深层级）；C-19 三开关（默认关 + **生产永久关闭** + 开关变更审计留痕 `capture.switch`）；C-15 网关响应观测（`resp_status`/`resp_bytes`/`resp_content_type`/`resp_error_code`/`resp_digest` 恒记；`resp_summary` 仅开关开启且经 C-18 脱敏；统一异常处理器补标 `request.state.error_code`）；C-16 上游响应专段（`openbase/modules/proxy/upstream_observe.py`：`upstream_system`/`upstream_status`/`upstream_error_code`/`upstream_duration_ms`/`upstream_digest` + 开关下 `upstream_body_summary`；成功/业务错误/异常三路径**共用同一结构**，经 `request.state.upstream_observation` 与 C-15 观测**同列于一条 L1 记录**）；C-17 错误归因分析器 `scripts/test_log_analyze.py`（输出 `<run_id>-analysis.md`，退出码 0/1/2）。§5.1 追加批 4 进度行与实施期补充（发布顺序与重启要求、专用代理族接线范围）。 |
 
 ---
 
@@ -167,7 +169,7 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 
 > 分三批，**批 1 是必需最小集**（纯后端 + 脚本，不动前端、不动接口契约）。
 
-### 5.1 实施进度（批 1 日志链路：C-1~C-9 全部落地）
+### 5.1 实施进度（批 1 日志链路：C-1~C-9 全部落地；批 2 人工结论入口：C-10~C-12 落地；批 4 响应级观测：C-15~C-19 落地）
 
 | # | 落地文件 | 状态 | 实测证据 |
 |---|---------|------|---------|
@@ -180,9 +182,19 @@ scripts/test_log_aggregate.py ──▶ L3 报告（按 case 汇总 + 双证据�
 | **C-7** | `scripts/test_log_aggregate.py`（新增） | **已完成** | 实测聚合 `run-20260914-0230`：3 记录 / 1 用例 / **PASS**，落 `doc/test/evidence/manual/<run_id>.json｜.md`；FAIL 轮次（含 404 步骤）退出码 1 亦实测；单测 8 例 |
 | **C-8** | `openbase/modules/audit/__init__.py`（`records(case_id, run_id)` + `/api/v1/audit/records` 查询参数） | **已完成** | 实测 `GET /api/v1/audit/records?case_id=AD-HOC-20260914-01` → 200 且命中当步记录；单测 2 例 |
 | **C-9** | `tests/test_test_case_context.py`、`tests/test_audit_db_persist.py`、`tests/test_test_log_aggregate.py`、`tests/test_logging_setup.py`（扩充） | **已完成** | 新增/扩充单测合计 **36 例**；`ruff` 0 错 |
+| **C-10** | `openbase/modules/testing/`（新增：`__init__.py` 402 行 + `schemas.py` 66 行）+ `settings.py`/`demo_app.py`（登记模块）+ `tests/test_testing_api.py` | **已完成** | 受权 `test:record` 端点族全闭环；单测 **23 passed**；`--cov=openbase.modules.testing` **98%**；落库 best-effort（假会话成功/失败降级） |
+| **C-11** | `openbase-ui/src/core/api/http.ts`（`TEST_MODE_KEY` + `resolveTestCaseHeaders` + 拦截器） | **已完成** | 前端测试模式注入三测试头；`http.spec.ts` 锁定（URL/本地开关 + 关闭零影响）；vitest 全量 **147 passed** |
+| **C-12** | `openbase-ui/src/pages/SystemTestRecords.vue`（新增）+ `core/api/testing.ts` + `core/router/index.ts` | **已完成** | `/system/test-records` 面板：run 汇总 + 用例步骤表 + 改判（失败/阻塞强制 reason） |
+| **C-15** | `openbase/modules/audit/__init__.py`（`should_capture_body` + `build_response_observation` + `_observe_response`/`_read_response_body` + `_record`/`_emit_request_log` 观测合流）、`openbase/core/errors/base.py`（异常处理器补标 `request.state.error_code`）、`openbase/core/deps/auth.py`（中间件直出错误响应同源补标） | **已完成** | 单测 13 例：默认关 → 结构性字段齐备且**无摘要**；开启 → JSON 响应体读取 + 摘要经 C-18 脱敏（手机号 `138****5678`）；SSE/非 JSON **永不读体**；`resp_error_code` 取自异常处理器（AUTH_401/PERM_*/BIZ_*） |
+| **C-16** | `openbase/modules/proxy/upstream_observe.py`（新增：`build_upstream_segment`/`extract_upstream_error_code`/`publish_upstream_observation`）、`openbase/modules/proxy/__init__.py`（`_forward` 三路径补记同一专段） | **已完成** | 单测 9 例：成功/业务错误/不可达三路径同结构；业务错误码提取（顶层 `code` 与 `error.code`）；开关下摘要经脱敏、过深只留键名；与 C-15 观测同列一条 L1 记录（`upstream_calls` 计数） |
+| **C-17** | `scripts/test_log_analyze.py`（新增） | **已完成** | 单测 7 例：归因矩阵逐行核对（鉴权/信任链/K03/网络/上游/契约）+ 上游 5xx 优先归因上游 + 首现标记 + 报告**不含响应明文** + 退出码 0/1/2 |
+| **C-18** | `openbase/core/mask.py`（新增：`mask_sensitive`/`observe_payload`/`digest_of`） | **已完成** | 单测 21 例：凭据遮蔽、手机号/证件号/邮箱掩码、画像域整体遮蔽（仅留类型与规模）、层级 >5 与单条 >2KB 只留 digest + 键名清单、允许清单子树前缀、digest 稳定可比对 |
+| **C-19** | `openbase/settings.py`（三开关 + `capture_response_enabled`/`capture_upstream_enabled`/`capture_field_allowlist_list`）、`openbase/modules/audit/capture_switches.py`（新增：状态快照 + 审计留痕）、`openbase/demo_app.py`（启动留痕接线） | **已完成** | 单测 8 例：默认全关；env 开启生效；**生产永久关闭**（env=production 时置 1 亦不生效）；开启 → `audit_logs` 落 `capture.switch`；落库/回滚失败均降级不阻断 |
 
-> 实施细节、变更统计与验证结论见《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（`doc/development/`）。
-> **批 1 收口**：批 1（C-1~C-9）全部落地，人工测试已可按「run → case → step」检索、按 `request_id` 关联客观响应，并一键产出聚合证据。批 2（C-10~C-12 受权 API 与前端面板）为下一步。
+> 实施细节、变更统计与验证结论见《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.3.0》（批 4，`doc/development/`）、《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.2.0》（批 2，`doc/development/`）与《OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.1.0》（批 1，`doc/development/`）。
+> **批 4 收口**：批 4（C-15~C-19）全部落地，**响应级观测与错误归因闭环成立**——网关侧 `resp_*`（状态/字节/类型/错误码/digest，恒记）与上游侧 `upstream_*`（系统/状态/错误码/耗时/digest，恒记）**同列于一条 L1 记录**，`scripts/test_log_analyze.py` 按 step 输出「归属层 + 首现 + request_id + 建议动作」并落 `doc/test/evidence/manual/<run_id>-analysis.md`；响应体摘要（`resp_summary`/`upstream_body_summary`）默认**零采集**，仅在 `OPENBASE_CAPTURE_RESPONSE`/`OPENBASE_CAPTURE_UPSTREAM` 显式开启（生产永久关闭）时产出且必经 C-18 脱敏。
+> **实施期补充（批 4）**：①**网关侧 digest 口径**——未采集响应体时 `resp_digest` 为结构性摘要（`状态码|类型|长度|错误码` 的 sha256 前 16 位）；采集响应体后为**内容摘要**。**上游侧 digest 恒为内容摘要**（httpx 已持有响应体，无需额外读取），二者口径差异已在此显式登记。②**采集需在进程启动时置开关**（Settings 启动时读取 env，进程内不热更）；开关变更以启动快照留痕（`capture.switch`）。③**接线范围**：C-16 专段落在通用代理 `openbase/modules/proxy/_forward`（方案指定落点）；专用代理族（`dps_proxy`/`rag_proxy`/`llm_proxy`/`memory_proxy`）的上游专段接线列为下一步（需把 `Request` 传入其 `_forward`，避免本批大范围改动核心请求路径），当前这些通道的人工记录仅有 C-15 网关侧字段。
+> **批 2 收口**：批 2（C-10~C-12）全部落地，人工测试者已可**在前端 `/system/test-records` 完成 run 开轮、步骤结论录入与可视化改判**，结论经受权 API 持久化到 `audit_logs`（action `test.run`/`test.record`/`test.record.update`），与批 1 的含用例头请求日志形成「**人判定 + 系统客观记录**」双证据闭环。批 4（C-15~C-19 响应级观测）已随后于 v1.4.0 落地（见上）。
 > **实施期修订**：C-1 原设计的「按日 + 保留 30 天自动清理」在实施时**主动移除**——既有不变量 T6-1（`tests/test_identity_t6.py::test_t6_1_no_auto_retention_purge_path_static_scan`）禁止 `openbase/**` 出现按保留期自动清除代码路径；保留期改由**运维人工执行**（见 v1.1.2 修订历史）。
 > **实施期补充**：新增 `X-Test-Run-Id` 头（缺省回退环境变量 `OPENBASE_TEST_RUN_ID`），用于承载设计 §4.2 的 `run_id` 字段——原设计仅定义了 case/step 两个头，无 run 头则 C-7/C-8 的 run 维度聚合无法落地（见 v1.2.0 修订历史）。
 

@@ -37,7 +37,7 @@ vi.mock('axios', async () => {
   }
 })
 
-import { http, isApiError, tokenStore, type ErrorResponse } from '@/core/api/http'
+import { http, isApiError, tokenStore, resolveTestCaseHeaders, type ErrorResponse } from '@/core/api/http'
 import { authApi, modulesApi } from '@/core/api/auth'
 import { LOGIN_PATH, registerLoginNavigator, type LoginNavigateTarget } from '@/core/api/redirect'
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
@@ -256,5 +256,66 @@ describe('http 拦截器', () => {
 describe('http 实例导出', () => {
   it('http 为 axios 实例（create 已调用）', () => {
     expect(http).toBeDefined()
+  })
+})
+
+describe('C-11 resolveTestCaseHeaders 测试模式', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('默认关闭 → 不注入任何测试头', () => {
+    expect(resolveTestCaseHeaders('')).toEqual({})
+    expect(resolveTestCaseHeaders('?foo=bar')).toEqual({})
+  })
+
+  it('URL ?test_case= 开启并注入 case/step/run 三头', () => {
+    const headers = resolveTestCaseHeaders('?test_case=UI-DPS-0007&test_step=3&test_run=run-20260914-0230')
+    expect(headers).toEqual({
+      'X-Test-Case-Id': 'UI-DPS-0007',
+      'X-Test-Step-Id': '3',
+      'X-Test-Run-Id': 'run-20260914-0230',
+    })
+  })
+
+  it('localStorage ob_test_mode=1 → 注入配置的 case 头', () => {
+    localStorage.setItem('ob_test_mode', '1')
+    localStorage.setItem('ob_test_case_id', 'S0-1')
+    expect(resolveTestCaseHeaders('')['X-Test-Case-Id']).toBe('S0-1')
+  })
+
+  it('URL 参数优先于 localStorage', () => {
+    localStorage.setItem('ob_test_mode', '1')
+    localStorage.setItem('ob_test_case_id', 'STALE')
+    expect(resolveTestCaseHeaders('?test_case=FRESH')['X-Test-Case-Id']).toBe('FRESH')
+  })
+
+  it('开启但无任何配置值 → 返回空对象（零残留）', () => {
+    localStorage.setItem('ob_test_mode', '1')
+    expect(resolveTestCaseHeaders('')).toEqual({})
+  })
+
+  it('请求拦截器注入测试头（localStorage 模式）', () => {
+    localStorage.setItem('ob_test_mode', '1')
+    localStorage.setItem('ob_test_case_id', 'UI-DPS-0007')
+    localStorage.setItem('ob_test_step_id', '2')
+    localStorage.setItem('ob_test_run_id', 'run-x')
+    tokenStore.set('access-1')
+    const [onFulfilled] = mocks.requestInterceptor.use.mock.calls[0]
+    const result = onFulfilled({ headers: {} })
+    expect(result.headers.Authorization).toBe('Bearer access-1')
+    expect(result.headers['X-Test-Case-Id']).toBe('UI-DPS-0007')
+    expect(result.headers['X-Test-Step-Id']).toBe('2')
+    expect(result.headers['X-Test-Run-Id']).toBe('run-x')
+  })
+
+  it('测试模式关闭时请求拦截器零测试头（零影响）', () => {
+    tokenStore.set('access-1')
+    const [onFulfilled] = mocks.requestInterceptor.use.mock.calls[0]
+    const result = onFulfilled({ headers: {} })
+    expect(result.headers.Authorization).toBe('Bearer access-1')
+    expect(result.headers['X-Test-Case-Id']).toBeUndefined()
+    expect(result.headers['X-Test-Step-Id']).toBeUndefined()
+    expect(result.headers['X-Test-Run-Id']).toBeUndefined()
   })
 })

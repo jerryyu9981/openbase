@@ -119,7 +119,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         authorization = request.headers.get("Authorization", "")
         if not authorization.startswith("Bearer "):
-            return self._unauthorized("missing bearer token")
+            return self._unauthorized(request, "missing bearer token")
 
         from openbase.modules.auth.jwt import decode_access_token
 
@@ -130,7 +130,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         payload = decode_access_token(token)
         if payload is None or payload.get("sub") is None:
-            return self._unauthorized("invalid or expired token")
+            return self._unauthorized(request, "invalid or expired token")
 
         # U1 T3（K04，方案 a）：中间件与依赖层共用同一主体验证器 verify_principal，
         # 每请求校验主体状态（默认生效）+ token 版本（enforce_token_version 开关，
@@ -138,7 +138,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         try:
             await self._verify_request_principal(request, payload)
         except BaseError as exc:
-            return self._error_response(exc)
+            return self._error_response(request, exc)
 
         # 中间件不修改用户上下文（依赖层负责用户信息），此处仅做门禁
         return await call_next(request)
@@ -216,7 +216,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     "headers": identity_headers,
                 },
             )
-            return self._error_response(exc)
+            return self._error_response(request, exc)
         # IGNORED（过渡期/剥离期）：不采信 + 审计标注
         request.state.identity_headers_ignored = True
         logger.warning(
@@ -232,8 +232,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         return None
 
     @staticmethod
-    def _error_response(exc: BaseError) -> JSONResponse:
-        """统一错误响应（{code, message, detail, request_id}，与异常处理器同构）."""
+    def _error_response(request: Request, exc: BaseError) -> JSONResponse:
+        """统一错误响应（{code, message, detail, request_id}，与异常处理器同构）.
+
+        同时标注 ``request.state.error_code``（C-15：响应观测的 ``resp_error_code``
+        来源——中间件直接构造的响应不经统一异常处理器，故在此补标）。
+        """
+        request.state.error_code = exc.code.value
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -245,7 +250,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         )
 
     @staticmethod
-    def _unauthorized(message: str) -> JSONResponse:
+    def _unauthorized(request: Request, message: str) -> JSONResponse:
+        request.state.error_code = ErrorCode.AUTH_UNAUTHORIZED.value
         return JSONResponse(
             status_code=401,
             content={

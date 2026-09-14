@@ -27,6 +27,50 @@ export interface ApiSuccess<T> {
 const TOKEN_KEY = 'ob_access_token'
 const REFRESH_KEY = 'ob_refresh_token'
 
+/**
+ * C-11 人工测试模式（方案 §5 批 2）：URL 查询参数或 localStorage 开启时，
+ * 为每个请求注入 X-Test-Case-Id / X-Test-Step-Id / X-Test-Run-Id 三个非身份测试头。
+ * 关闭时零注入（不改动既有请求行为）。头取值口径对齐 audit/_extract_test_context。
+ */
+export const TEST_MODE_KEY = 'ob_test_mode'
+export const TEST_CASE_KEY = 'ob_test_case_id'
+export const TEST_STEP_KEY = 'ob_test_step_id'
+export const TEST_RUN_KEY = 'ob_test_run_id'
+
+export interface TestCaseHeaders {
+  'X-Test-Case-Id'?: string
+  'X-Test-Step-Id'?: string
+  'X-Test-Run-Id'?: string
+}
+
+/**
+ * 解析当前应注入的测试头。
+ * 开启条件：URL 携带 `?test_case=` 或 localStorage `ob_test_mode==='1'`。
+ * URL 参数优先于 localStorage；均未提供对应值时该头不注入。
+ *
+ * @param search URL query 串（`?a=b`；测试可显式注入，缺省读当前 location.search）
+ */
+export function resolveTestCaseHeaders(search: string = ''): TestCaseHeaders {
+  const fromUrl = new URLSearchParams(search)
+  const urlCase = fromUrl.get('test_case')
+  const modeOn = typeof localStorage === 'undefined' ? false : localStorage.getItem(TEST_MODE_KEY) === '1'
+  if (!urlCase && !modeOn) return {}
+
+  const caseId = urlCase || (typeof localStorage !== 'undefined' ? localStorage.getItem(TEST_CASE_KEY) : '') || ''
+  const headers: TestCaseHeaders = {}
+  if (caseId) headers['X-Test-Case-Id'] = caseId
+
+  const urlStep = fromUrl.get('test_step')
+  const step = urlStep || (typeof localStorage !== 'undefined' ? localStorage.getItem(TEST_STEP_KEY) : '') || ''
+  if (step) headers['X-Test-Step-Id'] = step
+
+  const urlRun = fromUrl.get('test_run')
+  const run = urlRun || (typeof localStorage !== 'undefined' ? localStorage.getItem(TEST_RUN_KEY) : '') || ''
+  if (run) headers['X-Test-Run-Id'] = run
+
+  return headers
+}
+
 export const tokenStore = {
   get access() { return localStorage.getItem(TOKEN_KEY) || '' },
   get refresh() { return localStorage.getItem(REFRESH_KEY) || '' },
@@ -45,6 +89,13 @@ const http = axios.create({ baseURL: '/api/v1', timeout: 15000 })
 http.interceptors.request.use((config) => {
   const token = tokenStore.access
   if (token) config.headers.Authorization = `Bearer ${token}`
+  // C-11 测试模式：URL ?test_case= 或 localStorage ob_test_mode=1 → 注入测试头；关闭时零影响
+  const testHeaders = resolveTestCaseHeaders(
+    typeof window !== 'undefined' ? window.location.search : '',
+  )
+  for (const [key, value] of Object.entries(testHeaders)) {
+    ;(config.headers as Record<string, string>)[key] = value
+  }
   return config
 })
 

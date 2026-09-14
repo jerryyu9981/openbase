@@ -21,6 +21,8 @@ export const staticRoutes: RouteRecordRaw[] = [
       { path: 'system/workspaces', name: 'system-workspaces', component: () => import('@/modules/openllm/pages/WorkspacesView.vue'), meta: { title: '工作空间', icon: 'Grid' } },
       { path: 'system/config', name: 'system-config', component: () => import('@/modules/openllm/pages/ConfigManageView.vue'), meta: { title: '配置管理', icon: 'Setting' } },
       { path: 'system/audit', name: 'system-audit', component: () => import('@/modules/openllm/pages/AuditLogsView.vue'), meta: { title: '审计日志', icon: 'Document' } },
+      // 批 2 C-12：人工测试记录面板（复用 system/audit 风格，需 test:record 权限）
+      { path: 'system/test-records', name: 'system-test-records', component: () => import('@/pages/SystemTestRecords.vue'), meta: { title: '测试记录', icon: 'Memo', permission: 'test:record' } },
       { path: 'system/edgerouter', name: 'system-edgerouter', component: () => import('@/modules/openllm/pages/EdgeRouterView.vue'), meta: { title: 'EdgeRouter', icon: 'Connection' } },
       { path: 'system/docs', name: 'system-docs', component: () => import('@/modules/openllm/pages/DocCenterView.vue'), meta: { title: '文档中心', icon: 'Reading' } },
       { path: 'system/billing', name: 'system-billing', component: () => import('@/modules/openllm/pages/BillingView.vue'), meta: { title: '计费', icon: 'Money' } },
