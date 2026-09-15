@@ -1,0 +1,818 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\jerry\\AppData\\Roaming\\TRAE SOLO CN\\ModularData\\ai-agent\\vm\\tools\\node\\node.exe",
+      "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\node_modules\\@playwright\\test\\cli.js",
+      "test"
+    ],
+    "configFile": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\playwright.config.ts",
+    "rootDir": "D:/Trae CN/myproject/Dev/OpenBase/openbase-ui/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": true,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Trae CN/myproject/Dev/OpenBase/doc/test/evidence/s6/ui-e2e/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Trae CN/myproject/Dev/OpenBase/openbase-ui/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../doc/test/evidence/s6/ui-e2e/results.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "../doc/test/evidence/s6/ui-e2e/report",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "chat.spec.ts",
+      "file": "chat.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "S6-T5-2 对话关键页 PASS（Q-FE-4b）",
+          "file": "chat.spec.ts",
+          "line": 20,
+          "column": 6,
+          "specs": [
+            {
+              "title": "对话（OpenLLM 会话） /openllm/conversations 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 17008,
+                      "error": {
+                        "message": "Error: 关键页 /openllm/conversations 未渲染关键元素/受控空态（期望其一：[data-test=\"conversation-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /openllm/conversations 未渲染关键元素/受控空态（期望其一：[data-test=\"conversation-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /openllm/conversations 未渲染关键元素/受控空态（期望其一：[data-test=\"conversation-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /openllm/conversations 未渲染关键元素/受控空态（期望其一：[data-test=\"conversation-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /openllm/conversations 未渲染关键元素/受控空态（期望其一：[data-test=\"conversation-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /openllm/conversations 未渲染关键元素/受控空态（期望其一：[data-test=\"conversation-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:47:55.456Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--c77b7-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--c77b7-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--c77b7-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "6dac514d5d837ca37b9e-937db03c05316484cce9",
+              "file": "chat.spec.ts",
+              "line": 22,
+              "column": 5
+            },
+            {
+              "title": "对话（RAG 知识问答） /knowledge/chat 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15618,
+                      "error": {
+                        "message": "Error: 关键页 /knowledge/chat 未渲染关键元素/受控空态（期望其一：[data-test=\"chat-messages\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /knowledge/chat 未渲染关键元素/受控空态（期望其一：[data-test=\"chat-messages\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /knowledge/chat 未渲染关键元素/受控空态（期望其一：[data-test=\"chat-messages\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /knowledge/chat 未渲染关键元素/受控空态（期望其一：[data-test=\"chat-messages\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /knowledge/chat 未渲染关键元素/受控空态（期望其一：[data-test=\"chat-messages\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /knowledge/chat 未渲染关键元素/受控空态（期望其一：[data-test=\"chat-messages\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\chat.spec.ts:24:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:48:15.026Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--1f062-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--1f062-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\chat-S6-T5-2-对话关键页-PASS（Q--1f062-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "6dac514d5d837ca37b9e-041a9cf4050c650c1a75",
+              "file": "chat.spec.ts",
+              "line": 22,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "knowledge.spec.ts",
+      "file": "knowledge.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "S6-T5-2 知识关键页 PASS（Q-FE-4b）",
+          "file": "knowledge.spec.ts",
+          "line": 21,
+          "column": 6,
+          "specs": [
+            {
+              "title": "知识列表 /knowledge/list 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16919,
+                      "error": {
+                        "message": "Error: 关键页 /knowledge/list 未渲染关键元素/受控空态（期望其一：[data-test=\"kb-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /knowledge/list 未渲染关键元素/受控空态（期望其一：[data-test=\"kb-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /knowledge/list 未渲染关键元素/受控空态（期望其一：[data-test=\"kb-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /knowledge/list 未渲染关键元素/受控空态（期望其一：[data-test=\"kb-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /knowledge/list 未渲染关键元素/受控空态（期望其一：[data-test=\"kb-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /knowledge/list 未渲染关键元素/受控空态（期望其一：[data-test=\"kb-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:48:32.547Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-fcd82-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-fcd82-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-fcd82-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0828a03cd0e93ee0ce1b-655f38cb6c09c5b233f7",
+              "file": "knowledge.spec.ts",
+              "line": 23,
+              "column": 5
+            },
+            {
+              "title": "知识详情 /knowledge/:id 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15546,
+                      "error": {
+                        "message": "Error: 关键页 /knowledge/kb-1 未渲染关键元素/受控空态（期望其一：[data-test=\"retrieval-query\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-forbidden\"]）\n\n关键页 /knowledge/kb-1 未渲染关键元素/受控空态（期望其一：[data-test=\"retrieval-query\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-forbidden\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /knowledge/kb-1 未渲染关键元素/受控空态（期望其一：[data-test=\"retrieval-query\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-forbidden\"]）\n\n关键页 /knowledge/kb-1 未渲染关键元素/受控空态（期望其一：[data-test=\"retrieval-query\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-forbidden\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /knowledge/kb-1 未渲染关键元素/受控空态（期望其一：[data-test=\"retrieval-query\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-forbidden\"]）\n\n关键页 /knowledge/kb-1 未渲染关键元素/受控空态（期望其一：[data-test=\"retrieval-query\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-forbidden\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\knowledge.spec.ts:25:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:48:51.300Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-dc423-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-dc423-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\knowledge-S6-T5-2-知识关键页-PA-dc423-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "0828a03cd0e93ee0ce1b-38dea8a23eb95d67e882",
+              "file": "knowledge.spec.ts",
+              "line": 23,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "memory.spec.ts",
+      "file": "memory.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "S6-T5-2 记忆关键页 PASS（Q-FE-4b）",
+          "file": "memory.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "记忆列表 /memory/list 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15667,
+                      "error": {
+                        "message": "Error: 关键页 /memory/list 未渲染关键元素/受控空态（期望其一：[data-test=\"memory-keyword\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /memory/list 未渲染关键元素/受控空态（期望其一：[data-test=\"memory-keyword\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /memory/list 未渲染关键元素/受控空态（期望其一：[data-test=\"memory-keyword\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /memory/list 未渲染关键元素/受控空态（期望其一：[data-test=\"memory-keyword\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /memory/list 未渲染关键元素/受控空态（期望其一：[data-test=\"memory-keyword\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /memory/list 未渲染关键元素/受控空态（期望其一：[data-test=\"memory-keyword\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:49:08.602Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-8e2fe-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-8e2fe-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-8e2fe-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7ae46fcbe7df2182c676-13304e773f6c87d98eab",
+              "file": "memory.spec.ts",
+              "line": 21,
+              "column": 5
+            },
+            {
+              "title": "记忆会话 /memory/sessions 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15416,
+                      "error": {
+                        "message": "Error: 关键页 /memory/sessions 未渲染关键元素/受控空态（期望其一：[data-test=\"sessions-title\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /memory/sessions 未渲染关键元素/受控空态（期望其一：[data-test=\"sessions-title\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /memory/sessions 未渲染关键元素/受控空态（期望其一：[data-test=\"sessions-title\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /memory/sessions 未渲染关键元素/受控空态（期望其一：[data-test=\"sessions-title\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /memory/sessions 未渲染关键元素/受控空态（期望其一：[data-test=\"sessions-title\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /memory/sessions 未渲染关键元素/受控空态（期望其一：[data-test=\"sessions-title\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\memory.spec.ts:23:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:49:25.910Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-0ccf1-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-0ccf1-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\memory-S6-T5-2-记忆关键页-PASS（-0ccf1-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7ae46fcbe7df2182c676-5df2fb7ddb88fb672070",
+              "file": "memory.spec.ts",
+              "line": 21,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "portrait.spec.ts",
+      "file": "portrait.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "S6-T5-2 画像关键页 PASS（Q-FE-4b）",
+          "file": "portrait.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "画像列表 /portrait/list 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15715,
+                      "error": {
+                        "message": "Error: 关键页 /portrait/list 未渲染关键元素/受控空态（期望其一：[data-test=\"dps-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /portrait/list 未渲染关键元素/受控空态（期望其一：[data-test=\"dps-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /portrait/list 未渲染关键元素/受控空态（期望其一：[data-test=\"dps-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /portrait/list 未渲染关键元素/受控空态（期望其一：[data-test=\"dps-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /portrait/list 未渲染关键元素/受控空态（期望其一：[data-test=\"dps-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /portrait/list 未渲染关键元素/受控空态（期望其一：[data-test=\"dps-search\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:49:43.017Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-78114-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-78114-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-78114-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "533547a08cc5ab5f5f47-736f8ea94c91113ca461",
+              "file": "portrait.spec.ts",
+              "line": 21,
+              "column": 5
+            },
+            {
+              "title": "画像总览 /portrait/overview 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15718,
+                      "error": {
+                        "message": "Error: 关键页 /portrait/overview 未渲染关键元素/受控空态（期望其一：[data-test=\"overview-kpi-card\"] | [data-test=\"overview-error\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /portrait/overview 未渲染关键元素/受控空态（期望其一：[data-test=\"overview-kpi-card\"] | [data-test=\"overview-error\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /portrait/overview 未渲染关键元素/受控空态（期望其一：[data-test=\"overview-kpi-card\"] | [data-test=\"overview-error\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /portrait/overview 未渲染关键元素/受控空态（期望其一：[data-test=\"overview-kpi-card\"] | [data-test=\"overview-error\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /portrait/overview 未渲染关键元素/受控空态（期望其一：[data-test=\"overview-kpi-card\"] | [data-test=\"overview-error\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n关键页 /portrait/overview 未渲染关键元素/受控空态（期望其一：[data-test=\"overview-kpi-card\"] | [data-test=\"overview-error\"] | [data-test=\"isolation-forbidden\"] | [data-test=\"isolation-not-found\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:50:00.533Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-8fedc-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-8fedc-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-8fedc-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "533547a08cc5ab5f5f47-07e8cb39e7cb2f6bffcf",
+              "file": "portrait.spec.ts",
+              "line": 21,
+              "column": 5
+            },
+            {
+              "title": "画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15685,
+                      "error": {
+                        "message": "Error: 关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test=\"feature-dist\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"]）\n\n关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test=\"feature-dist\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                        "stack": "Error: 关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test=\"feature-dist\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"]）\n\n关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test=\"feature-dist\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7",
+                        "location": {
+                          "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                          "column": 6,
+                          "line": 82
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39msupport\\key-page.ts:82\n\n\u001b[0m \u001b[90m 80 |\u001b[39m       }\u001b[33m,\u001b[39m\n \u001b[90m 81 |\u001b[39m     )\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 82 |\u001b[39m     \u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\n \u001b[90m    |\u001b[39m      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 83 |\u001b[39m\n \u001b[90m 84 |\u001b[39m   \u001b[90m// 防白屏：渲染兜底不得触发\u001b[39m\n \u001b[90m 85 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[33mRENDER_FALLBACK_SELECTOR\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m0\u001b[39m)\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                            "column": 6,
+                            "line": 82
+                          },
+                          "message": "Error: 关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test=\"feature-dist\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"]）\n\n关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test=\"feature-dist\"] | [data-test=\"isolation-not-found\"] | [data-test=\"isolation-empty\"] | [data-test=\"isolation-forbidden\"]）\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n   at support\\key-page.ts:82\n\n  80 |       },\n  81 |     )\n> 82 |     .toBe(true)\n     |      ^\n  83 |\n  84 |   // 防白屏：渲染兜底不得触发\n  85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)\n    at assertKeyPage (D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts:82:6)\n    at D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\portrait.spec.ts:23:7"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-14T13:50:17.997Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\s6\\ui-e2e\\artifacts\\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\tests\\e2e\\support\\key-page.ts",
+                        "column": 6,
+                        "line": 82
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "533547a08cc5ab5f5f47-370d79067003ac12a294",
+              "file": "portrait.spec.ts",
+              "line": 21,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-14T13:47:54.135Z",
+    "duration": 160101.80000000002,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 9,
+    "flaky": 0
+  }
+}

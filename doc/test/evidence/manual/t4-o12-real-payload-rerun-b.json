@@ -1,0 +1,116 @@
+{
+  "run_id": "run-o12b-20260914-223526",
+  "checked_at": "2026-09-14T22:35:26+08:00",
+  "log_file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\logs\\openbase\\openbase-20260914.jsonl",
+  "summary": {
+    "executed": 5,
+    "pass": 4,
+    "fail": 1,
+    "with_oplog": 5,
+    "coverage": 100.0
+  },
+  "calls": [
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "O12B-TENANT-CREATE",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "payload": {
+        "code": "o12b223526",
+        "name": "走查租户-223526",
+        "status": "active"
+      },
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"id\":4,\"name\":\"走查租户-223526\",\"code\":\"o12b223526\",\"status\":1,\"isolation_level\":1,\"quota\":null}",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-46372975831c"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "O12B-TENANT-UPDATE",
+      "step_id": "2",
+      "method": "PUT",
+      "path": "/api/v1/tenants/4",
+      "payload": {
+        "name": "走查租户改-223526",
+        "status": "active"
+      },
+      "expect": 200,
+      "status_code": 422,
+      "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"int_parsing\",\"loc\":[\"body\",\"status\"],\"msg\":\"Input should be a valid integer, unable to parse string as an integer\",\"input\"",
+      "verdict": "FAIL",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-5141f8934cd4"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "O12B-TENANT-DELETE",
+      "step_id": "3",
+      "method": "DELETE",
+      "path": "/api/v1/tenants/4",
+      "payload": null,
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"tenant_id\":4,\"status\":0}",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-f17d13838267"
+      ]
+    },
+    {
+      "page": "openllm/AppForm",
+      "case_id": "O12B-AIAPPS-CREATE",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/ai-apps",
+      "payload": {
+        "name": "o12b-app-223526",
+        "description": "O-12 复跑",
+        "llm_config": {
+          "provider": "Ollama",
+          "model": "qwen3:0.6b",
+          "parameters": {
+            "temperature": 0.7
+          }
+        }
+      },
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"app-2\",\"name\":\"o12b-app-223526\",\"description\":\"O-12 复跑\",\"model_config\":{\"provider\":\"Ollama\",\"model\":\"qwen3:0.6b\",\"parameters\":{\"temperature\":0.7}},\"prompt_templa",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-d6b324a72d19"
+      ]
+    },
+    {
+      "page": "openllm/Apps",
+      "case_id": "O12B-AIAPPS-PUBLISH",
+      "step_id": "2",
+      "method": "POST",
+      "path": "/api/v1/ai-apps/app-2/publish",
+      "payload": {},
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"app-2\",\"name\":\"o12b-app-223526\",\"description\":\"O-12 复跑\",\"model_config\":{\"provider\":\"Ollama\",\"model\":\"qwen3:0.6b\",\"parameters\":{\"temperature\":0.7}},\"prompt_templa",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-45cd6cd7b2d7"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+ "url": "http://localhost:5173/auth/login?redirect=/dashboard",
+ "title": "OpenBase 统一管理平台",
+ "body": "OpenBase 统一管理平台\n登 录\n或\nOIDC 统一登录",
+ "inputs": [
+  {
+   "type": "text",
+   "name": "",
+   "id": "el-id-6157-2",
+   "ph": "用户名",
+   "val": ""
+  },
+  {
+   "type": "password",
+   "name": "",
+   "id": "el-id-6157-3",
+   "ph": "密码",
+   "val": ""
+  }
+ ],
+ "buttons": [
+  {
+   "text": "登 录",
+   "type": "submit"
+  },
+  {
+   "text": "OIDC 统一登录",
+   "type": "button"
+  }
+ ],
+ "links": [],
+ "ls_keys": [],
+ "console": [
+  {
+   "type": "debug",
+   "text": "[vite] connecting..."
+  },
+  {
+   "type": "debug",
+   "text": "[vite] connected."
+  }
+ ],
+ "failed": []
+}

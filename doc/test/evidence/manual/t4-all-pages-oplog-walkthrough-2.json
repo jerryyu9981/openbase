@@ -1,0 +1,253 @@
+{
+  "run_id": "run-pages2-20260914-2224",
+  "checked_at": "2026-09-14T22:24:42+08:00",
+  "log_file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\logs\\openbase\\openbase-20260914.jsonl",
+  "summary": {
+    "operations": 16,
+    "with_oplog": 16,
+    "without_oplog": 0,
+    "coverage": 100.0
+  },
+  "calls": [
+    {
+      "page": "core/Login",
+      "case_id": "PAGE-AUTH-LOGIN",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJhZG1pbiIsImlhdCI6MTc4OTM5NTg4MSwiZXhwIjoxNzg5NDAzMDgxLCJ0eXBlIjoiYWNjZXNzIiwic3ViX3R5cGUiOiJ1c2",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-75da7c3d85c5"
+      ]
+    },
+    {
+      "page": "core/Layout",
+      "case_id": "PAGE-AUTH-ME",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"id\":1,\"username\":\"admin\",\"tenant_id\":null,\"permissions\":[\"*\"]}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-b3957d5bd2bc"
+      ]
+    },
+    {
+      "page": "core/Layout",
+      "case_id": "PAGE-MODULES",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/modules",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"items\":[{\"id\":\"openllm\",\"name\":\"OpenLLM\",\"icon\":\"chat\",\"route_prefix\":\"/openllm\",\"entry\":\"modules/openllm\",\"permission\":\"openllm:view\",\"status\":\"e",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-27ac1311994f"
+      ]
+    },
+    {
+      "page": "memory/ApiGateway",
+      "case_id": "PAGE-APIKEY-LIST",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/auth/api-keys",
+      "expect": null,
+      "status_code": 200,
+      "body": "[]",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-476533e01b72"
+      ]
+    },
+    {
+      "page": "memory/ApiGateway",
+      "case_id": "PAGE-APIKEY-CREATE",
+      "step_id": "2",
+      "method": "POST",
+      "path": "/api/v1/auth/api-keys",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"name\":\"t4-walk-2224\",\"scope\":{\"system\":[\"*\"],\"tenants\":[\"*\"]},\"description\":\"\",\"created\":1789395881.5409508,\"revoked\":false,\"key\":\"ob_k_ORgFpaz1mXOKRVJEfPrgfOm-u0LrDGOl\"}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-38f69fe2da74"
+      ]
+    },
+    {
+      "page": "openllm/Apps",
+      "case_id": "PAGE-AIAPPS-LIST",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/ai-apps",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"items\":[],\"total\":0}}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-e2734d8f366a"
+      ]
+    },
+    {
+      "page": "openllm/AppForm",
+      "case_id": "PAGE-AIAPPS-CREATE",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/ai-apps",
+      "expect": null,
+      "status_code": 422,
+      "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"llm_config\"],\"msg\":\"Field required\",\"input\":{\"name\":\"t4-walk-app-2224\",\"descri",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-7097fbfadbb5"
+      ]
+    },
+    {
+      "page": "openllm/Apps",
+      "case_id": "PAGE-AIAPPS-PUBLISH",
+      "step_id": "2",
+      "method": "POST",
+      "path": "/api/v1/ai-apps/1/publish",
+      "expect": null,
+      "status_code": 404,
+      "body": "{\"code\":\"BIZ_404\",\"message\":\"ai app not found: 1\",\"detail\":null,\"request_id\":\"req-f0f4d2b96575\"}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-f0f4d2b96575"
+      ]
+    },
+    {
+      "page": "openllm/OrgTeamsUsersView",
+      "case_id": "PAGE-USERS-LIST",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "expect": null,
+      "status_code": 200,
+      "body": "[{\"id\":1,\"username\":\"admin\",\"display_name\":\"系统管理员\",\"email\":null,\"phone\":null,\"status\":1,\"tenant_id\":null,\"roles\":[\"admin\"]},{\"id\":4,\"username\":\"viewer\",\"display_name\":\"只读走查用户\",\"ema",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-232e8e393a00"
+      ]
+    },
+    {
+      "page": "openllm/OrgTeamsUsersView",
+      "case_id": "PAGE-USERS-CREATE",
+      "step_id": "2",
+      "method": "POST",
+      "path": "/api/v1/users",
+      "expect": null,
+      "status_code": 422,
+      "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"password\"],\"msg\":\"Field required\",\"input\":{\"username\":\"t4walk2224\",\"display_na",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-ab8672f9d863"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "PAGE-TENANT-CREATE",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"id\":3,\"name\":\"走查租户\",\"code\":\"t4walk2224\",\"status\":1,\"isolation_level\":1,\"quota\":null}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-c3d0f7b2d65c"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "PAGE-TENANT-UPDATE",
+      "step_id": "2",
+      "method": "PUT",
+      "path": "/api/v1/tenants/3",
+      "expect": null,
+      "status_code": 422,
+      "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"int_parsing\",\"loc\":[\"body\",\"status\"],\"msg\":\"Input should be a valid integer, unable to parse string as",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-3f736d7696e9"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "PAGE-TENANT-DELETE",
+      "step_id": "3",
+      "method": "DELETE",
+      "path": "/api/v1/tenants/3",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"code\":0,\"tenant_id\":3,\"status\":0}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-537db4aceb64"
+      ]
+    },
+    {
+      "page": "pages/TestRecords",
+      "case_id": "PAGE-TESTRUN-CREATE",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/test-runs",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"run_id\":\"run-pages2-20260914-2224\",\"title\":\"\",\"scope\":\"\",\"records\":[]}}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-ca343cf80c5a"
+      ]
+    },
+    {
+      "page": "pages/TestRecords",
+      "case_id": "PAGE-TESTREC-CREATE",
+      "step_id": "2",
+      "method": "POST",
+      "path": "/api/v1/test-records",
+      "expect": null,
+      "status_code": 422,
+      "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"result\"],\"msg\":\"Field required\",\"input\":{\"run_id\":\"run-pages2-20260914-2224\",\"",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-8ba1318ca18f"
+      ]
+    },
+    {
+      "page": "gateway/GatewayAggregateView",
+      "case_id": "PAGE-GW-AGGREGATE2",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/gateway/aggregate",
+      "expect": null,
+      "status_code": 422,
+      "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"steps\",0,\"id\"],\"msg\":\"Field required\",\"input\":{\"system\":\"openrag\",\"path\":\"/api",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-cbab944ee99b"
+      ]
+    }
+  ]
+}

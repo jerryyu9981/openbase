@@ -25,6 +25,9 @@ class ErrorCode(str, Enum):
     PARAM_NOT_FOUND = "PARAM_404"
     PARAM_INVALID = "PARAM_INVALID"
     PARAM_AGGREGATE_STEP_INVALID = "PARAM_AGGREGATE_STEP_INVALID"
+    # 导出命中数超上限（> 10000）→ 按《OpenBase-API接口设计文档-v1.4.6》§5
+    # 「导出超限」行的契约码字面值 `PARAM_400`（HTTP 400，detail 含 {matched, limit}）
+    PARAM_EXPORT_LIMIT_EXCEEDED = "PARAM_400"
 
     # ---- 业务 ----
     BIZ_TENANT_EXISTS = "BIZ_TENANT_EXISTS"
@@ -78,6 +81,16 @@ class ErrorCode(str, Enum):
     BIZ_PURGE_AUTH_REQUIRED = "BIZ_PURGE_AUTH_REQUIRED"
     BIZ_NOT_PURGEABLE = "BIZ_NOT_PURGEABLE"
 
+    # ---- v1.4.6 模块启停（ADR-146-07 Step 3 定案：先留痕后生效） ----
+    # 留痕通道不可用（OPENBASE_AUDIT_DB_PERSIST=0 或 audit_logs 落库失败）
+    # → 拒绝变更并保持模块状态不变（fail-closed，不产生无留痕的状态漂移）
+    BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE = "BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE"
+
+    # ---- v1.4.6 日志中心导出（BL-146-06 / AC-146-06-4，ADR-146-04） ----
+    # 导出留痕通道显式不可用（OPENBASE_AUDIT_DB_PERSIST=0）→ 拒绝导出并保持
+    # 「导出 ⇔ 留痕」不变式（口径与 module.switch 的 fail-closed 一致）
+    BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE = "BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE"
+
 
 # HTTP 状态码映射
 ERROR_HTTP_MAP: dict[ErrorCode, int] = {
@@ -91,6 +104,7 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.PARAM_NOT_FOUND: 404,
     ErrorCode.PARAM_INVALID: 400,
     ErrorCode.PARAM_AGGREGATE_STEP_INVALID: 400,
+    ErrorCode.PARAM_EXPORT_LIMIT_EXCEEDED: 400,
     ErrorCode.BIZ_TENANT_EXISTS: 409,
     ErrorCode.BIZ_TENANT_NOT_FOUND: 404,
     ErrorCode.BIZ_USER_EXISTS: 409,
@@ -124,4 +138,8 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.PERM_DELEGATION_ROLE: 403,
     ErrorCode.BIZ_PURGE_AUTH_REQUIRED: 403,
     ErrorCode.BIZ_NOT_PURGEABLE: 400,
+    # v1.4.6 模块启停：留痕通道不可用 → 503（依赖不可用，变更被拒绝且状态不变）
+    ErrorCode.BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE: 503,
+    # v1.4.6 日志导出：留痕通道不可用 → 503（同口径 fail-closed：拒绝导出，不产出无留痕文件）
+    ErrorCode.BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE: 503,
 }

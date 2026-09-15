@@ -1,9 +1,45 @@
 {
   "project": "OpenBase",
   "devflowVersion": "2.18.0",
-  "currentPhase": "v1_4_5_step_5_operations",
-  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design", "v1_1_0_step_3_development", "v1_1_0_step_4_testing", "v1_1_0_step_5_operations", "v1_2_0_step_0_planning", "v1_2_0_step_1_requirements", "v1_2_0_step_2_design", "v1_2_0_step_3_development", "v1_3_0_step_0_planning", "v1_3_0_step_1_requirements", "v1_3_0_step_2_design", "v1_3_0_step_3_development", "v1_3_0_step_4_testing", "v1_4_0_step_0_planning", "v1_4_0_step_1_requirements", "v1_4_0_step_2_design", "v1_4_0_step_3_development", "v1_4_0_step_4_testing", "v1_4_0_step_5_operations", "v1_4_1_step_0_planning", "v1_4_1_step_1_requirements", "v1_4_1_step_2_design", "v1_4_1_step_3_development", "v1_4_1_step_4_testing", "v1_4_1_step_5_operations", "v1_4_2_step_0_planning", "v1_4_2_step_1_requirements", "v1_4_2_step_2_design", "v1_4_2_step_3_development", "v1_4_2_step_4_testing", "v1_4_2_step_5_operations", "v1_4_3_step_0_planning", "v1_4_3_step_1_requirements", "v1_4_3_step_2_design", "v1_4_3_step_3_development", "v1_4_3_step_4_testing", "v1_4_3_step_5_operations", "v1_4_3_step_5_closed", "v1_4_4_step_0_planning", "v1_4_4_step_1_requirements"],
+  "currentPhase": "v1_4_6_step_3_development",
+  "completedPhases": ["step_0_planning", "step_1_requirements", "step_2_design", "step_3_development", "step_4_testing", "step_5_operations", "v1_1_0_step_0_planning", "v1_1_0_step_1_requirements", "v1_1_0_step_2_design", "v1_1_0_step_3_development", "v1_1_0_step_4_testing", "v1_1_0_step_5_operations", "v1_2_0_step_0_planning", "v1_2_0_step_1_requirements", "v1_2_0_step_2_design", "v1_2_0_step_3_development", "v1_3_0_step_0_planning", "v1_3_0_step_1_requirements", "v1_3_0_step_2_design", "v1_3_0_step_3_development", "v1_3_0_step_4_testing", "v1_4_0_step_0_planning", "v1_4_0_step_1_requirements", "v1_4_0_step_2_design", "v1_4_0_step_3_development", "v1_4_0_step_4_testing", "v1_4_0_step_5_operations", "v1_4_1_step_0_planning", "v1_4_1_step_1_requirements", "v1_4_1_step_2_design", "v1_4_1_step_3_development", "v1_4_1_step_4_testing", "v1_4_1_step_5_operations", "v1_4_2_step_0_planning", "v1_4_2_step_1_requirements", "v1_4_2_step_2_design", "v1_4_2_step_3_development", "v1_4_2_step_4_testing", "v1_4_2_step_5_operations", "v1_4_3_step_0_planning", "v1_4_3_step_1_requirements", "v1_4_3_step_2_design", "v1_4_3_step_3_development", "v1_4_3_step_4_testing", "v1_4_3_step_5_operations", "v1_4_3_step_5_closed", "v1_4_4_step_0_planning", "v1_4_4_step_1_requirements", "v1_4_4_step_2_design", "v1_4_4_step_3_development", "v1_4_4_step_4_testing", "v1_4_4_step_5_operations", "v1_4_4_step_5_closed", "v1_4_5_step_0_planning", "v1_4_5_step_1_requirements", "v1_4_5_step_2_design", "v1_4_5_step_3_development", "v1_4_5_step_4_testing", "v1_4_5_step_5_operations", "v1_4_5_released", "v1_4_6_step_0_planning", "v1_4_6_step_1_requirements", "v1_4_6_step_2_design", "v1_4_6_step_3_development"],
   "currentDocuments": {
+    "version_v1.4.6": [
+      "doc/version/releases/v1.4.6/OpenBase-单版本规划文档-v1.4.6.md",
+      "doc/version/releases/v1.4.6/OpenBase-本版本Backlog-v1.4.6.md",
+      "doc/version/releases/v1.4.6/OpenBase-Phase迭代计划-v1.4.6.md",
+      "doc/version/releases/v1.4.6/OpenBase-版本规划评审记录-v1.4.6.md"
+    ],
+    "requirements_v1.4.6": [
+      "doc/requirements/OpenBase-开发需求文档-v1.4.6.md",
+      "doc/requirements/OpenBase-需求来源与干系人-v1.4.6.md",
+      "doc/requirements/OpenBase-需求追溯矩阵-v1.4.6.md",
+      "doc/requirements/OpenBase-需求评审记录-v1.4.6.md",
+      "doc/requirements/OpenBase-需求基线及设计移交说明-v1.4.6.md",
+      "doc/audit/assessment/OpenBase-需求评估报告-v1.4.6.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage1-v1.4.6.md"
+    ],
+    "design_v1.4.6": [
+      "doc/design/OpenBase-系统架构设计文档-v1.4.6.md",
+      "doc/design/OpenBase-API接口设计文档-v1.4.6.md",
+      "doc/design/OpenBase-UI设计文档-v1.4.6.md",
+      "doc/design/OpenBase-前端架构设计文档-v1.4.6.md",
+      "doc/design/OpenBase-第三方集成设计文档-v1.4.6.md",
+      "doc/design/OpenBase-非功能设计说明-v1.4.6.md",
+      "doc/design/OpenBase-部署架构草案-v1.4.6.md",
+      "doc/design/OpenBase-设计评审记录-v1.4.6.md",
+      "doc/design/OpenBase-路径归属矩阵-v1.4.6.md",
+      "doc/design/prototype/index.html",
+      "doc/audit/review/OpenBase-需求架构对比审计报告-v1.4.6.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage2-v1.4.6.md"
+    ],
+    "development_v1.4.6": [
+      "doc/development/OpenBase-DevLogReport-v1.4.6.md",
+      "doc/development/OpenBase-设计开发追溯矩阵-v1.4.6.md",
+      "doc/development/OpenBase-代码逻辑审查记录-v1.4.6.md",
+      "doc/development/OpenBase-开发审计移交材料-v1.4.6.md",
+      "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.6.md"
+    ],
     "global": [
       "doc/version/global/OpenBase-版本规划总纲.md",
       "doc/version/global/OpenBase-版本迭代路线图.md",
@@ -473,6 +509,38 @@
       "date": "2026-09-01",
       "tag": "v1.4.5",
       "releaseNote": "doc/release/OpenBase-Release-Note-v1.4.5.md"
+    },
+    "v1_4_6_step_0": {
+      "status": "passed",
+      "date": "2026-09-15",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/version/releases/v1.4.6/OpenBase-版本规划评审记录-v1.4.6.md",
+      "note": "v1.4.6 未单独产出 Stage0 阶段审计报告，Step 0 门禁以版本规划评审记录为准（含人工批准）；如需补齐独立审计报告，须在发布前由 AU 补出"
+    },
+    "v1_4_6_step_1": {
+      "status": "passed",
+      "date": "2026-09-15",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage1-v1.4.6.md"
+    },
+    "v1_4_6_step_2": {
+      "status": "passed",
+      "date": "2026-09-15",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage2-v1.4.6.md"
+    },
+    "v1_4_6_step_3": {
+      "status": "passed",
+      "date": "2026-09-15",
+      "auditor": "AU-OpenBase-Dev",
+      "report": "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.6.md",
+      "coverage": "DT-146-01~20 -> TD-146-01~20 = 100%",
+      "evidenceAuthenticity": "9/9 一致（100%）",
+      "constraints": [
+        "跨仓 BL-146-16/17/18/20 不在本仓审计范围，发布前须明确处置",
+        "导出契约 10 项待评审口径需在 Step 4 入场前确认",
+        "asyncpg 环境性失败 4 项与 test_s7_t6_gate.py 阻塞需在稳定环境重跑"
+      ]
     }
   },
   "versionCheck": {

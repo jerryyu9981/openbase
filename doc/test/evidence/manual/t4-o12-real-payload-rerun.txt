@@ -1,0 +1,13 @@
+﻿[PASS] POST   /ai-apps                                 -> 200 (expect 200)
+[FAIL] POST   /ai-apps/1/publish                       -> 404 (expect None)
+[PASS] POST   /users                                   -> 200 (expect 200)
+[FAIL] POST   /tenants                                 -> 409 (expect 200)
+[PASS] POST   /test-runs                               -> 200 (expect 200)
+[PASS] POST   /test-records                            -> 200 (expect 200)
+[PASS] GET    /test-runs/run-o12-20260914-2234/summary -> 200 (expect 200)
+[PASS] POST   /gateway/aggregate                       -> 200 (expect 200)
+=== O-12 复跑汇总 ===
+{"executed": 8, "pass": 6, "fail": 2, "with_oplog": 8, "coverage": 100.0}
+  FAIL: POST /api/v1/ai-apps/1/publish -> 404 {"code":"BIZ_404","message":"ai app not found: 1","detail":null,"request_id":"req-896884c7caaa"}
+  FAIL: POST /api/v1/tenants -> 409 {"code":"BIZ_CONFLICT","message":"tenant code/name already exists: t4walk2234","detail":null,"request_id":"req-077b2479b
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-o12-real-payload-rerun.json

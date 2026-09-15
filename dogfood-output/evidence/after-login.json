@@ -1,0 +1,88 @@
+{
+ "url": "http://localhost:5173/dashboard",
+ "aside": "OpenBase\n仪表盘\n租户管理\nOpenLLM\n知识库\n记忆\n画像\n统一网关",
+ "menu": [
+  {
+   "t": "仪表盘",
+   "href": null,
+   "cls": "el-menu-item is-active"
+  },
+  {
+   "t": "租户管理",
+   "href": null,
+   "cls": "el-menu-item"
+  },
+  {
+   "t": "OpenLLM",
+   "href": null,
+   "cls": "el-menu-item"
+  },
+  {
+   "t": "知识库",
+   "href": null,
+   "cls": "el-menu-item"
+  },
+  {
+   "t": "记忆",
+   "href": null,
+   "cls": "el-menu-item"
+  },
+  {
+   "t": "画像",
+   "href": null,
+   "cls": "el-menu-item"
+  },
+  {
+   "t": "统一网关",
+   "href": null,
+   "cls": "el-menu-item"
+  },
+  {
+   "t": "仪表盘",
+   "href": null,
+   "cls": "ob-header-title"
+  },
+  {
+   "t": "admin",
+   "href": null,
+   "cls": "ob-user el-tooltip__trigger el-tooltip__trigger"
+  },
+  {
+   "t": "退出登录",
+   "href": null,
+   "cls": "el-dropdown-menu__item"
+  }
+ ],
+ "body": "OpenBase\n仪表盘\n租户管理\nOpenLLM\n知识库\n记忆\n画像\n统一网关\n仪表盘\nadmin\n已启用模块\n5\n当前用户\nadmin\n系统版本\nv1.2.0\n统一入口\n5 系统\n统一入口\n\n单前端登录访问四系统特色模块（对话监控 / 知识库 / 记忆 / 画像）与统一网关控制台。\n\n动态模块\nOpenLLM\n知识库\n记忆\n画像\n统一网关\n\n登录成功",
+ "console": [
+  {
+   "type": "debug",
+   "text": "[vite] connecting..."
+  },
+  {
+   "type": "debug",
+   "text": "[vite] connected."
+  },
+  {
+   "type": "warning",
+   "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /openllm, component: , meta: Object, children: Array(35)}"
+  },
+  {
+   "type": "warning",
+   "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /knowledge, component: , meta: Object, children: Array(8)}"
+  },
+  {
+   "type": "warning",
+   "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /memory, component: , meta: Object, children: Array(11)}"
+  },
+  {
+   "type": "warning",
+   "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /portrait, component: , meta: Object, children: Array(13)}"
+  },
+  {
+   "type": "warning",
+   "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /gateway, component: , meta: Object, children: Array(3)}"
+  }
+ ],
+ "failed": []
+}

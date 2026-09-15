@@ -150,12 +150,12 @@ describe('S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）', (
     expect(menu.props('defaultActive')).toBe('/portrait')
   })
 
-  it('顶层菜单项 = 静态项 + 权限过滤后启用模块（无重复、无越权项）', async () => {
+  it('三层菜单：顶层 + 权限过滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪）', async () => {
     const infos = MODULE_INFOS.map((module) =>
       module.id === 'portrait' ? { ...module, status: 'disabled' as const } : module,
     )
     vi.spyOn(modulesApi, 'list').mockResolvedValue(infos)
-    loginWith(['openllm:view', 'openrag:view'])
+    loginWith(['openllm:view', 'openrag:view']) // 无 '*'：业务模块按权限码、平台受限叶子按权限码裁剪
     const registry = useModuleRegistry()
     await registry.init(['openllm:view', 'openrag:view'])
 
@@ -164,7 +164,23 @@ describe('S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）', (
 
     const wrapper = mountWith(AppLayout, router)
     const texts = wrapper.findAll('.el-menu-item').map((item) => item.text())
-    expect(texts).toEqual(['仪表盘', '租户管理', 'OpenLLM', '知识库'])
+    // 顶层：仪表盘 + 个人设置（无权限码恒可见）
+    expect(texts).toContain('仪表盘')
+    expect(texts).toContain('个人设置')
+    // 业务模块：仅 openllm + knowledge（memory/portrait 权限不足、portrait 停用、gateway 已迁出）
+    expect(texts).toContain('OpenLLM')
+    expect(texts).toContain('知识库')
+    expect(texts).not.toContain('记忆')
+    expect(texts).not.toContain('画像')
+    expect(texts).not.toContain('网关')
+    // 平台受限叶子按权限码裁剪（缺失则菜单不可见，与路由守卫/接口 403 同源）
+    expect(texts).not.toContain('日志中心') // 缺 log:read
+    expect(texts).not.toContain('测试记录') // 缺 test:record
+    expect(texts).not.toContain('模块开关') // 缺 module:manage
+    // 平台非受限叶子仍可见（迁移后原系统页可达）
+    expect(texts).toContain('租户管理')
+    expect(texts).toContain('全局配置')
+    // 模块子页高亮回退到 route_prefix
     expect(wrapper.findComponent({ name: 'ElMenu' }).props('defaultActive')).toBe('/knowledge')
   })
 
@@ -189,20 +205,22 @@ describe('S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）', (
     const wrapper = mountWith(AppLayout, router)
 
     const svgs = wrapper.findAll('.el-menu-item .el-icon svg')
-    const expected: Component[] = [
-      Odometer, // 静态：仪表盘
-      OfficeBuilding, // 静态：租户管理
-      ChatDotRound,
-      Collection,
-      Memo,
-      User,
-      Connection,
-      OfficeBuilding,
-      Odometer,
-      ChatDotRound, // 未命中回退
+    // 扁平顺序前 10 项 = 顶层（仪表盘/个人设置）+ 业务模块（8 个，gateway 口径不缩），未命中回退 ChatDotRound
+    const expectedHead: Component[] = [
+      Odometer, // 顶部：仪表盘
+      User, // 顶部：个人设置
+      ChatDotRound, // m-llm
+      Collection, // m-kb
+      Memo, // m-mem
+      User, // m-por
+      Connection, // m-gw
+      OfficeBuilding, // m-sys
+      Odometer, // m-dash
+      ChatDotRound, // m-unknown 未命中回退
     ]
-    expect(svgs.length).toBe(expected.length)
-    expected.forEach((icon, index) => {
+    // 平台四域叶子在其后追加（v1.4.6 三层菜单），前项校验不因新增叶子而失效
+    expect(svgs.length).toBeGreaterThanOrEqual(expectedHead.length)
+    expectedHead.forEach((icon, index) => {
       expect(iconSignature(svgs[index].html())).toBe(standaloneIconSignature(icon))
     })
   })
@@ -252,7 +270,8 @@ describe('S6-T2-4: 装载幂等与告警清零 / 空态兜底', () => {
     const registry = useModuleRegistry()
     await registry.init(['*'])
     const { router } = createAppRouter(createMemoryHistory())
-    await router.push('/gateway/services')
+    // v1.4.6 gateway 已迁出业务模块（非模块路由）；改用 openllm（仍为业务模块、具 navItems）
+    await router.push('/openllm/conversations')
     const wrapper = mountWith(ModuleLayout, router)
     expect(wrapper.find('.module-menu').exists()).toBe(true)
     const groups = (router.currentRoute.value.meta.navItems as unknown[]) || []

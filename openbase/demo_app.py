@@ -69,6 +69,8 @@ for module in (
     "identity",
     # 批 2 C-10：人工测试结论记录（受权 API test:record）
     "testing",
+    # v1.4.6：日志中心（四源统一检索，受权 log:read）
+    "logs",
 ):
     settings.enable_module(module)
 
@@ -152,3 +154,21 @@ async def _record_capture_switch_state() -> None:
     from openbase.modules.audit.capture_switches import record_capture_switch_state
 
     await record_capture_switch_state(settings)
+
+
+@app.on_event("startup")
+async def _start_audit_persist_worker() -> None:
+    """TT-056 性能整改：启动审计落库 writer 协程（请求路径零 await DB，批量提交）."""
+    from openbase.modules.audit import start_audit_persist_worker
+
+    start_audit_persist_worker()
+    logger.info("audit persist worker started")
+
+
+@app.on_event("shutdown")
+async def _stop_audit_persist_worker() -> None:
+    """TT-056 性能整改：关闭时排空在途审计条目（不丢最近审计行，超时则登记丢弃）."""
+    from openbase.modules.audit import audit_persist_queue, stop_audit_persist_worker
+
+    await stop_audit_persist_worker()
+    logger.info("audit persist worker stopped", extra={"stats": audit_persist_queue.stats()})

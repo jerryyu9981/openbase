@@ -1,0 +1,132 @@
+{
+  "run_id": "run-l2-1-20260914-2210",
+  "phases": {
+    "baseline": {
+      "checked_at": "2026-09-14T22:03:06+08:00",
+      "openrag_direct_health": 200,
+      "steps": [
+        {
+          "case_id": "L21-RAG-COLLECTIONS",
+          "path": "/api/v1/rag-proxy/collections?page=1&page_size=5",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 188,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"976cdafa-8925-451d-b8a5-c23fea2b36c2\",\"name\":\"smoke_v6_kb_20260914205452\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dime"
+        },
+        {
+          "case_id": "L21-DPS-PORTRAITS",
+          "path": "/api/v1/dps-proxy/portraits",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 396,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000"
+        },
+        {
+          "case_id": "L21-MEM-MEMORIES",
+          "path": "/api/v1/memory-proxy/memories?page=1&page_size=5",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 81,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"memory_id\":\"c559fec1-59eb-423d-b617-35ee8f32473f\",\"content\":\"bypass-write 1788545783\",\"score\":0.06705199,\"memory_type\":\"persistent\",\"metadata\":{\"agent_"
+        },
+        {
+          "case_id": "L21-LLM-HEALTH",
+          "path": "/api/v1/llm-proxy/health",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 138,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"ok\",\"latency_ms\":30},\"dps\":{\"status\":\"ok\",\"la"
+        }
+      ]
+    },
+    "degraded": {
+      "checked_at": "2026-09-14T22:03:23+08:00",
+      "openrag_direct_health": "ConnectionError",
+      "steps": [
+        {
+          "case_id": "L21-RAG-COLLECTIONS",
+          "path": "/api/v1/rag-proxy/collections?page=1&page_size=5",
+          "expect": null,
+          "status_code": 502,
+          "duration_ms": 2150,
+          "verdict": "FAIL",
+          "body": "{\"code\":\"SYS_502\",\"message\":\"OpenRAG upstream unreachable: All connection attempts failed\",\"detail\":null,\"request_id\":\"req-bb93286000b5\"}"
+        },
+        {
+          "case_id": "L21-DPS-PORTRAITS",
+          "path": "/api/v1/dps-proxy/portraits",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 485,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000"
+        },
+        {
+          "case_id": "L21-MEM-MEMORIES",
+          "path": "/api/v1/memory-proxy/memories?page=1&page_size=5",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 111,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"memory_id\":\"c559fec1-59eb-423d-b617-35ee8f32473f\",\"content\":\"bypass-write 1788545783\",\"score\":0.06705199,\"memory_type\":\"persistent\",\"metadata\":{\"agent_"
+        },
+        {
+          "case_id": "L21-LLM-HEALTH",
+          "path": "/api/v1/llm-proxy/health",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 2098,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2015,\"reason\":\"组件 o"
+        }
+      ]
+    },
+    "restored": {
+      "checked_at": "2026-09-14T22:04:12+08:00",
+      "openrag_direct_health": 200,
+      "steps": [
+        {
+          "case_id": "L21-RAG-COLLECTIONS",
+          "path": "/api/v1/rag-proxy/collections?page=1&page_size=5",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 361,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"976cdafa-8925-451d-b8a5-c23fea2b36c2\",\"name\":\"smoke_v6_kb_20260914205452\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dime"
+        },
+        {
+          "case_id": "L21-DPS-PORTRAITS",
+          "path": "/api/v1/dps-proxy/portraits",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 192,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000"
+        },
+        {
+          "case_id": "L21-MEM-MEMORIES",
+          "path": "/api/v1/memory-proxy/memories?page=1&page_size=5",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 78,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"memory_id\":\"c559fec1-59eb-423d-b617-35ee8f32473f\",\"content\":\"bypass-write 1788545783\",\"score\":0.06705199,\"memory_type\":\"persistent\",\"metadata\":{\"agent_"
+        },
+        {
+          "case_id": "L21-LLM-HEALTH",
+          "path": "/api/v1/llm-proxy/health",
+          "expect": 200,
+          "status_code": 200,
+          "duration_ms": 238,
+          "verdict": "PASS",
+          "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"ok\",\"latency_ms\":46},\"dps\":{\"status\":\"ok\",\"la"
+        }
+      ]
+    }
+  },
+  "note": "degraded 阶段 rag-proxy 期望为 5xx/不可达（可归因），其余通道期望 200（业务不中断）"
+}

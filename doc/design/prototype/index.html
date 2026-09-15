@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenBase 统一前端设计总览 - v1.4.3</title>
+<title>OpenBase 统一前端设计总览 - v1.4.6</title>
 <style>
   :root{--primary:#2563EB;--bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;--text:#0F172A;--sub:#475569;--ok:#16A34A;--warn:#D97706;--err:#DC2626;}
   *{margin:0;padding:0;box-sizing:border-box}
@@ -34,7 +34,7 @@
 <div class="wrap">
 <header>
   <h1>OpenBase 统一前端 · 设计总览</h1>
-  <p>版本 v1.4.0 · 四系统统一入口 · 动态模块架构 · 统一网关增强（服务发现/聚合编排）· 响应式三端（≥1280 / 768-1280 / &lt;768）</p>
+  <p>版本 v1.4.6 · 四系统统一入口 · 动态模块架构 · 统一网关增强（服务发现/聚合编排）· <b>日志中心（三源统一检索）</b> · 响应式三端（≥1280 / 768-1280 / &lt;768）</p>
   <span class="badge">Vue 3 + TypeScript + Vite + Element Plus + Pinia + ECharts</span>
 </header>
 
@@ -184,7 +184,18 @@
   <div class="card"><h3>dps-proxy API 契约（8 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/dps-proxy/portraits* · tags/categories · reports/overview · batch/tasks/{id} · audit/logs · health（OpenBase JWT；四头注入 X-User-ID/X-Tenant-ID/X-Org-ID/X-User-Role；{detail} 归一化；无 SSE）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · 身份头注入</b></div></div>
 </div>
 
-<footer>OpenBase v1.4.5 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 2 页 + v1.4.4 OpenRAG 2 页 + v1.4.5 DPS 2 页）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.5》《OpenBase-API接口设计文档-v1.4.5》为准；Step 4 E2E 断言以交互状态清单为基线</footer>
+<h2>六、v1.4.6 日志中心 + 信息架构重构 · 新增 2 页（R-382 / R-383 / R-384）</h2>
+<div class="note">v1.4.6 两批新增（VC-012 + VC-013 + VC-014）：①「<b>日志中心</b>」<b>四源</b>统一检索（L1 结构化日志 / 审计库 <code>audit_logs</code> / 测试记录 / <b>四仓日志 <code>repo_log</code></b>）+ 四维分类 + 关键字与多条件检索 + 时间窗与分页 + 测试三元组 + CSV/JSON 导出（含 <code>log.export</code> 留痕）；权限码 <code>log:read</code>（仅管理员，跨租户）；旧「审计日志」页 <code>/system/audit</code> <b>下线重定向</b>；②「<b>统一前端信息架构重构</b>」顶层三分 + 平台管理四域 + 系统性能力上收 + 全量旧路径重定向（含 <b>模块开关管理页</b>，权限码 <code>module:manage</code>）。设计依据：《OpenBase-UI设计文档-v1.4.6》v1.1.0《OpenBase-前端架构设计文档-v1.4.6》v1.1.0《OpenBase-API接口设计文档-v1.4.6》v1.1.0。</div>
+<div class="grid">
+  <div class="card"><h3>信息架构：三分 + 四域（IA 重构总览） <span class="tag t-p0">P0</span></h3><p>顶层三分（仪表盘 / 业务模块 / 平台管理）+ 平台管理四域二级分组（身份与权限 / 平台配置与密钥 / 可观测与审计 / 开发者资源）；四业务模块平行且<b>特色页零删减</b>；系统性能力统一上收。</p><div class="state">状态：<b>顶层三分 / 四域分组 / 上收与迁出标注 / 重定向映射表 / 特色页保留</b></div>
+    <details><summary>交互要点</summary><ul><li>平台管理区<b>不受任何单一模块启停影响</b>（AC-146-10-2）</li><li>权限码驱动菜单可见性；无权限项不渲染（空分组不显示）</li><li>旧路径<b>全量重定向、禁 404</b>；Step 3 施工前由脚本生成全量映射表</li></ul></details>
+    <p style="margin-top:10px"><a href="ia-overview.html" style="display:inline-block;background:#7C3AED;color:#fff;text-decoration:none;border-radius:8px;padding:7px 14px;font-size:13px">▶ 打开信息架构原型（ia-overview.html）</a></p></div>
+  <div class="card"><h3>日志中心 /platform/observability/logs <span class="tag t-p0">P0</span></h3><p>顶部检索栏（<b>四源</b>：L1 / 审计库 / 测试记录 / <b>四仓日志 repo_log</b>；关键字 / 时间窗 / 导出）+ 左侧分类导航（含计数）+ 主体表格（服务端分页）+ 详情抽屉（完整 LogEntry + 测试三元组 + 脱敏摘要）。</p><div class="state">状态：<b>加载 / 空态×2 / 错误 / 截断 / 导出成功 / 筛选提交 / 数据源切换</b></div>
+    <details><summary>交互要点</summary><ul><li>分类点选<b>即过滤</b>（无需提交按钮）；数据源切换保留关键字与时间窗、清空分类并显式提示</li><li><code>truncated=true</code> 时顶部黄色提示条要求收窄时间窗（禁止静默截断）</li><li>点击行打开详情抽屉；错误态显示 <code>request_id</code> 便于排障；空态区分"无数据"与"条件未命中"</li></ul></details>
+    <p style="margin-top:10px"><a href="logs.html" style="display:inline-block;background:var(--primary);color:#fff;text-decoration:none;border-radius:8px;padding:7px 14px;font-size:13px">▶ 打开日志中心原型（logs.html）</a> <a href="ia-overview.html" style="display:inline-block;background:#7C3AED;color:#fff;text-decoration:none;border-radius:8px;padding:7px 14px;font-size:13px;margin-left:8px">▶ 打开信息架构原型（ia-overview.html）</a></p></div>
+</div>
+
+<footer>OpenBase v1.4.6 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 2 页 + v1.4.4 OpenRAG 2 页 + v1.4.5 DPS 2 页 + <b>v1.4.6 日志中心 1 页 + 信息架构重构总览 1 页</b>）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.6》v1.1.0《OpenBase-API接口设计文档-v1.4.6》v1.1.0《OpenBase-前端架构设计文档-v1.4.6》v1.1.0 为准；Step 4 E2E 断言以交互状态清单为基线</footer>
 </div>
 </body>
 </html>

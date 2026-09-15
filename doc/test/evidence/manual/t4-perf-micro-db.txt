@@ -1,0 +1,2 @@
+﻿[审计库] insert+commit mean=6.432ms p50=6.154ms p95=8.374ms p99=10.977ms | 2 行/代理请求 → 12.865ms
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-perf-micro-db.json

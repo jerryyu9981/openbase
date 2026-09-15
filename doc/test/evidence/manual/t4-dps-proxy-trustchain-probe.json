@@ -1,0 +1,64 @@
+{
+  "login_status": 200,
+  "cases": [
+    {
+      "case": "A_仅JWT",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "sent_headers": [],
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001"
+    },
+    {
+      "case": "B_JWT+身份头(无来源)",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "sent_headers": [
+        "X-User-ID"
+      ],
+      "status_code": 403,
+      "body": "{\"code\":\"PERM_UNTRUSTED_IDENTITY_HEADER\",\"message\":\"identity headers from untrusted source\",\"detail\":{\"proxy_source\":null,\"headers\":[\"X-User-ID\"]},\"request_id\":\"req-dcf4c431d82c\"}"
+    },
+    {
+      "case": "C_JWT+身份头+受信来源",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "sent_headers": [
+        "X-Proxy-Source",
+        "X-User-ID"
+      ],
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001"
+    },
+    {
+      "case": "D_JWT+身份头+非受信来源",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "sent_headers": [
+        "X-Proxy-Source",
+        "X-User-ID"
+      ],
+      "status_code": 403,
+      "body": "{\"code\":\"PERM_UNTRUSTED_IDENTITY_HEADER\",\"message\":\"identity headers from untrusted source\",\"detail\":{\"proxy_source\":\"evil-source\",\"headers\":[\"X-User-ID\"]},\"request_id\":\"req-cec580"
+    },
+    {
+      "case": "E_PUT_仅JWT",
+      "method": "PUT",
+      "path": "/api/v1/dps-proxy/portraits/dps-tenant-001_admin1_001",
+      "sent_headers": [],
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"person_id\":\"dps-tenant-001_admin1_001\",\"updated\":\"2026-09-14T12:58:21.964114+00:00\",\"attributes\":{\"smoke_grade\":\"t4_probe\"}},\"timestamp\":\"202"
+    },
+    {
+      "case": "F_PUT_JWT+身份头+受信来源",
+      "method": "PUT",
+      "path": "/api/v1/dps-proxy/portraits/dps-tenant-001_admin1_001",
+      "sent_headers": [
+        "X-Proxy-Source",
+        "X-User-ID"
+      ],
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"person_id\":\"dps-tenant-001_admin1_001\",\"updated\":\"2026-09-14T12:58:22.079306+00:00\",\"attributes\":{\"smoke_grade\":\"t4_probe\"}},\"timestamp\":\"202"
+    }
+  ]
+}

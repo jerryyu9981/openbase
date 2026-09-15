@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 import os
 import time
@@ -318,6 +320,240 @@ class AuditService:
         return rows
 
 
+# ---------------------------------------------------------------------------
+# 审计落库异步化（TT-056 性能整改）
+# ---------------------------------------------------------------------------
+#
+# 实测依据（``doc/test/evidence/manual/t4-perf-tt056-verdict.json``）：
+# ``INSERT+COMMIT`` 6.43 ms/行，代理请求落 2 行 → 请求路径内同步 await ≈12.9 ms，
+# 超过方案 §6「P99 增量 <5ms」。
+#
+# 整改口径：请求路径**只做入队**（µs 级，零 await DB），由 writer 协程
+# 按批（默认 ≤50 条）**单次提交**落库；保留「尽力留痕 + 失败降级不阻断 +
+# 既有 WARN 文案」语义；进程内队列有界（默认 10000），满则丢弃并 WARN。
+
+DEFAULT_PERSIST_QUEUE_MAXSIZE = 10000
+DEFAULT_PERSIST_BATCH_SIZE = 50
+DEFAULT_PERSIST_STOP_TIMEOUT = 5.0
+
+
+async def _write_batch_records(items: list[tuple[str, dict[str, Any]]]) -> int:
+    """批量落库（按 ``api_request`` / ``proxy_hop`` 分类，**单会话单次提交**）.
+
+    Args:
+        items: ``[(kind, payload)]``；kind ∈ {``api_request``, ``proxy_hop``}。
+
+    Returns:
+        成功落库的条目数（失败条目计入队列 ``failed`` 统计，不抛出）。
+    """
+    if os.getenv(ENV_AUDIT_DB_PERSIST, "1") == "0":
+        return 0
+    api_items = [payload for kind, payload in items if kind == "api_request"]
+    hop_items = [payload for kind, payload in items if kind == "proxy_hop"]
+    if not api_items and not hop_items:
+        return 0
+
+    from openbase.core.db.session import get_session_factory
+    from openbase.core.models import AuditLog
+
+    session = None
+    try:
+        async with get_session_factory()() as session:
+            for payload in api_items:
+                operator_text = str(payload.get("operator_id") or "")
+                session.add(
+                    AuditLog(
+                        user_id=int(operator_text) if operator_text.isdigit() else None,
+                        tenant_id=None,
+                        action=ACTION_API_REQUEST,
+                        resource=(payload.get("path") or "")[:128] or None,
+                        resource_id=None,
+                        ip=payload.get("ip_address"),
+                        user_agent=(payload.get("user_agent") or "")[:255] or None,
+                        request_id=payload.get("request_id"),
+                        detail=payload.get("detail") or {},
+                    )
+                )
+            if hop_items:
+                from openbase.modules.protocol_headers.identity_audit import (
+                    record_proxy_hop,
+                )
+
+                for payload in hop_items:
+                    await record_proxy_hop(
+                        session,
+                        identity=payload["identity"],
+                        system=str(payload["system"]),
+                        method=payload["method"],
+                        path=payload["path"],
+                        request_id=payload["request_id"],
+                    )
+            await session.commit()
+        return len(api_items) + len(hop_items)
+    except Exception:  # noqa: BLE001 - 审计尽力留痕，不阻断请求
+        if api_items:
+            logger.warning(
+                "audit db persist failed (degraded)",
+                extra={"request_id": api_items[0].get("request_id"), "batch_size": len(items)},
+            )
+        if hop_items:
+            logger.warning(
+                "proxy outbound audit persist failed (degraded)",
+                extra={
+                    "system": hop_items[0].get("system"),
+                    "request_id": hop_items[0].get("request_id"),
+                    "batch_size": len(items),
+                },
+            )
+        if session is not None:
+            try:
+                await session.rollback()
+            except Exception:  # noqa: BLE001
+                pass
+        raise
+
+
+class AuditPersistQueue:
+    """进程内审计落库队列（请求路径零 await DB + writer 协程批量提交）.
+
+    设计要点：
+    - ``submit`` 为**同步**方法（``put_nowait``），请求路径不等待 DB；
+    - writer 协程由应用生命周期显式启动（``start_audit_persist_worker``），
+      ``stop`` 时**排空在途条目**（避免丢失最近审计行）；
+    - 队列有界：满则丢弃最新条目并 WARN（``stats().dropped`` 可观测）；
+    - 落库失败：不计入成功数、``failed`` 计数 + WARN（沿用既有降级文案）。
+    """
+
+    def __init__(
+        self,
+        *,
+        maxsize: int = DEFAULT_PERSIST_QUEUE_MAXSIZE,
+        batch_size: int = DEFAULT_PERSIST_BATCH_SIZE,
+    ) -> None:
+        self._queue: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue(maxsize=maxsize)
+        self._batch_size = batch_size
+        self._task: asyncio.Task[None] | None = None
+        self._submitted = 0
+        self._persisted = 0
+        self._dropped = 0
+        self._failed = 0
+
+    # ---- 提交侧（请求路径） ----
+
+    def submit(self, kind: str, payload: dict[str, Any]) -> bool:
+        """入队（同步、零 DB）；返回是否成功入队。"""
+        if os.getenv(ENV_AUDIT_DB_PERSIST, "1") == "0":
+            return False
+        try:
+            self._queue.put_nowait((kind, payload))
+        except asyncio.QueueFull:
+            self._dropped += 1
+            logger.warning(
+                "audit persist queue full; record dropped",
+                extra={"queue_size": self._queue.qsize(), "request_id": payload.get("request_id")},
+            )
+            return False
+        self._submitted += 1
+        return True
+
+    # ---- writer 侧 ----
+
+    def start(self) -> None:
+        """启动 writer 协程（幂等；无运行中的事件循环时静默跳过）。"""
+        if self._task is not None and not self._task.done():
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self._task = loop.create_task(self._run(), name="audit-persist-worker")
+
+    async def stop(self, timeout: float = DEFAULT_PERSIST_STOP_TIMEOUT) -> None:
+        """停止 writer 并**排空在途条目**（超时则放弃剩余并登记 dropped）。"""
+        task, self._task = self._task, None
+        if task is not None and not task.done():
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        try:
+            await asyncio.wait_for(self.drain_once(), timeout=timeout)
+        except Exception:  # noqa: BLE001 - 收尾尽力，不阻断关闭
+            remaining = self._queue.qsize()
+            if remaining:
+                self._dropped += remaining
+                logger.warning("audit persist drain on shutdown timed out", extra={"pending": remaining})
+
+    async def drain_once(self) -> int:
+        """处理当前队列中的全部条目（批次内单次提交）；返回**已处理条目数**（含失败项）.
+
+        成功/失败分别计入 ``stats().persisted`` / ``stats().failed``。
+        """
+        processed = 0
+        while True:
+            batch: list[tuple[str, dict[str, Any]]] = []
+            while len(batch) < self._batch_size:
+                try:
+                    batch.append(self._queue.get_nowait())
+                except asyncio.QueueEmpty:
+                    break
+            if not batch:
+                break
+            processed += len(batch)
+            try:
+                self._persisted += await _write_batch_records(batch)
+            except Exception:  # noqa: BLE001 - 降级已 WARN，跳过该批
+                self._failed += len(batch)
+        return processed
+
+    async def _run(self) -> None:
+        try:
+            while True:
+                item = await self._queue.get()
+                batch = [item]
+                while len(batch) < self._batch_size:
+                    try:
+                        batch.append(self._queue.get_nowait())
+                    except asyncio.QueueEmpty:
+                        break
+                try:
+                    self._persisted += await _write_batch_records(batch)
+                except Exception:  # noqa: BLE001 - 降级已 WARN，继续消费
+                    self._failed += len(batch)
+        except asyncio.CancelledError:
+            raise
+
+    # ---- 可观测 ----
+
+    def stats(self) -> dict[str, int]:
+        """队列统计（提交/落库/丢弃/失败/在途 + writer 状态）."""
+        return {
+            "submitted": self._submitted,
+            "persisted": self._persisted,
+            "dropped": self._dropped,
+            "failed": self._failed,
+            "pending": self._queue.qsize(),
+            "writer_running": int(self._task is not None and not self._task.done()),
+        }
+
+
+audit_persist_queue = AuditPersistQueue()
+
+
+def submit_audit_persist(kind: str, payload: dict[str, Any]) -> bool:
+    """模块级提交入口（供中间件调用；同步、零 DB）."""
+    return audit_persist_queue.submit(kind, payload)
+
+
+def start_audit_persist_worker() -> None:
+    """应用启动时启动 writer 协程."""
+    audit_persist_queue.start()
+
+
+async def stop_audit_persist_worker() -> None:
+    """应用关闭时排空并停止 writer."""
+    await audit_persist_queue.stop()
+
+
 class AuditMiddleware(BaseHTTPMiddleware):
     """审计中间件.
 
@@ -546,11 +782,12 @@ class AuditMiddleware(BaseHTTPMiddleware):
     async def _persist_audit_record(
         self, request: Request, record: APICallRecord | None
     ) -> None:
-        """C-4：审计记录 best-effort 落 ``audit_logs``（复用 JSON ``detail``，零迁移）.
+        """C-4：审计记录 **入队**（TT-056 整改：请求路径零 await DB）.
 
-        设计口径（方案 §5 批 1 C-4 / D-2=①）：内存环形缓冲保留作加速，DB 仅作**可选持久化**
-        （跨重启可查）。失败仅 WARN 且回滚，**绝不阻断请求**；生产可用
-        ``OPENBASE_AUDIT_DB_PERSIST=0`` 关闭。
+        设计口径（方案 §5 批 1 C-4 / D-2=①；v1.6.0 TT-056 性能整改）：请求路径只做
+        「构造 payload + 入队」（µs 级），落库由 ``AuditPersistQueue`` 的 writer 协程
+        批量提交（``_write_batch_records``）；失败仅 WARN 且回滚，**绝不阻断请求**；
+        生产可用 ``OPENBASE_AUDIT_DB_PERSIST=0`` 关闭。
 
         Args:
             request: 当前请求（取操作者兜底来源）。
@@ -582,47 +819,29 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 detail[name] = value
         detail = {key: value for key, value in detail.items() if value is not None}
 
-        session = None
-        try:
-            from openbase.core.db.session import get_session_factory
-            from openbase.core.models import AuditLog
-
-            operator_text = str(operator_id) if operator_id is not None else ""
-            async with get_session_factory()() as session:
-                session.add(
-                    AuditLog(
-                        user_id=int(operator_text) if operator_text.isdigit() else None,
-                        tenant_id=None,
-                        action=ACTION_API_REQUEST,
-                        resource=(record.path or "")[:128] or None,
-                        resource_id=None,
-                        ip=record.ip_address,
-                        user_agent=(record.user_agent or "")[:255] or None,
-                        request_id=record.request_id,
-                        detail=detail,
-                    )
-                )
-                await session.commit()
-        except Exception:  # noqa: BLE001 - 审计尽力留痕，不阻断请求
-            logger.warning(
-                "audit db persist failed (degraded)",
-                extra={"request_id": record.request_id},
-            )
-            if session is not None:
-                try:
-                    await session.rollback()
-                except Exception:  # noqa: BLE001
-                    pass
+        submit_audit_persist(
+            "api_request",
+            {
+                "request_id": record.request_id,
+                "operator_id": operator_id,
+                "method": record.method,
+                "path": record.path,
+                "ip_address": record.ip_address,
+                "user_agent": record.user_agent,
+                "detail": detail,
+            },
+        )
 
     async def _persist_outbound_proxy_hop(
         self, request: Request, request_id: str
     ) -> None:
-        """T8（OB-13 §8.3）：proxy 出站审计 DB 钩子（best-effort，action=proxy.outbound）.
+        """T8（OB-13 §8.3）：proxy 出站审计**入队**（TT-056 整改：请求路径零 await DB）.
 
         入站请求在出站装配（build_outbound_headers→attach_outbound_identity）时已标注
         ``request.state.outbound_assembled`` 与 ``request.state.outbound_system``；
-        本钩子在响应后以同一 request_id 落 ``audit_logs``（detail.identity §8.2 全链
-        proxy_chain），供 OpenBase 侧审计与子系统侧审计经 request_id 串联（U4 前置）。
+        本钩子把出站审计项入队，由 writer 协程以同一 request_id 落 ``audit_logs``
+        （detail.identity §8.2 全链 proxy_chain），供 OpenBase 侧与子系统侧审计经
+        request_id 串联（U4 前置）。
 
         失败仅 WARN（尽力留痕不阻断响应），参照 K03 白名单审计降级语义。
         """
@@ -632,33 +851,16 @@ class AuditMiddleware(BaseHTTPMiddleware):
         identity = getattr(request.state, "identity", None)
         if not system or not isinstance(identity, dict) or not identity.get("principal"):
             return
-        session = None
-        try:
-            from openbase.core.db.session import get_session_factory
-            from openbase.modules.protocol_headers.identity_audit import (
-                record_proxy_hop,
-            )
-
-            async with get_session_factory()() as session:
-                await record_proxy_hop(
-                    session,
-                    identity=identity,
-                    system=str(system),
-                    method=request.method,
-                    path=request.url.path,
-                    request_id=request_id,
-                )
-                await session.commit()
-        except Exception:  # noqa: BLE001 - 审计尽力留痕，不阻断请求
-            logger.warning(
-                "proxy outbound audit persist failed (degraded)",
-                extra={"system": system, "request_id": request_id},
-            )
-            if session is not None:
-                try:
-                    await session.rollback()
-                except Exception:  # noqa: BLE001
-                    pass
+        submit_audit_persist(
+            "proxy_hop",
+            {
+                "identity": identity,
+                "system": system,
+                "method": request.method,
+                "path": request.url.path,
+                "request_id": request_id,
+            },
+        )
 
     def _observation_fields(
         self, request: Request, observation: dict[str, Any] | None

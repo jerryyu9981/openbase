@@ -5,8 +5,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-DEVLOG-LOGS-v1.4.0 |
-| 版本 | v1.4.0 |
-| 状态 | [Review]（批 5（专用代理族上游专段接线）开发记录：批 4 §14#2 遗留项关闭；沙箱可执行面已完成并留证，未执行项显式登记为 PENDING，禁伪造） |
+| 版本 | v1.6.0 |
+| 状态 | [Review]（批 5 开发记录 + **v1.5.0 联调窗口缺陷修复记录**：P1 缺陷 AD-20260914-02（`extra` 保留键冲突 → `api-keys` 500，同类 5 处）已修复并闭环；+ **v1.6.0 审计落库异步化改造（TT-056 性能整改）**：请求路径由同步 await DB 改为入队 + writer 协程批量提交，新增区域覆盖率 100%；未执行项显式登记 PENDING，禁伪造） |
 | 日期 | 2026-09-14 |
 | 作者 | AI（S7 批 5 开发会话：TDD 实现、实跑验证与证据归档） |
 | 版本主题 | **批 5 专用代理族上游专段接线（批 4 §14#2 收尾）**——①`upstream_observe.publish_upstream_response()` 一行式统一出口（**采集开关与脱敏唯一读取点**）；②`UPSTREAM_SYSTEM_*` 常量（与通用通道路由键逐字对齐）；③`content_type_of()` 共用读取口径（消除四处重复）；④四族非流式出口接线（`dps_proxy._forward` / `llm_proxy._forward` / `rag_proxy._forward` + `_forward_multipart` / `memory_proxy._forward` + `_forward_raw`）；⑤流式端点头部级专段（`rag_proxy._forward_sse` / `llm_proxy._forward_sse`）；⑥通用代理通道收敛到同一出口；⑦**实施期缺陷修复 AD-20260914-01**。含逐项改动清单、RED→GREEN 如实记录、静态质量检查、单测与覆盖率证据、代码逻辑审查、追溯矩阵、变更统计、测试/开发审计移交与遗留说明 |
@@ -24,6 +24,8 @@
 | v1.2.0 | 2026-09-14 | AI（S7 批 2 开发会话） | 批 2（C-10~C-12）人工结论记录入口落地（已归档） |
 | v1.3.0 | 2026-09-14 | AI（S7 批 4 开发会话） | 批 4（C-15~C-19）响应级观测与错误归因落地（已归档） |
 | v1.4.0 | 2026-09-14 | AI（S7 批 5 开发会话） | **批 5（专用代理族上游专段接线，批 4 §14#2 收尾）实施落地**：新增 §16 批 5 实施记录（统一出口 / 四族非流式出口接线 / 流式头部级专段 / 通用通道收敛 / 缺陷修复），同步更新 §1 目标与范围、§3 任务清单、§5 静态质量、§6 测试与覆盖、§7 实跑、§8 代码逻辑审查、§9 问题修复、§10 追溯矩阵、§11 变更统计、§12/§13 移交材料与 §14 遗留。设计依据升至方案 **v1.5.0**。旧版 v1.3.0 按版本管理流程移入 `doc/development/archive/`（只读）。 |
+| v1.5.0 | 2026-09-14 | AI（S7 批 7 联调窗口真实面执行会话） | **联调窗口缺陷修复记录并入（新增 §17）**：真实联调 T5 M1 子探针发现 **P1 既有缺陷 AD-20260914-02**（`logger.info(..., extra={"name": …})` 撞 LogRecord 保留键 → `KeyError` → `POST /api/v1/auth/api-keys` 500；同类 **5 处**，引入于 `3b25326`/v1.4.2，此前零覆盖）；按 TDD 修复（`tests/test_log_reserved_keys.py` 先 RED 3 例 → GREEN 4 例）+ 现场复验（端点 200、T5-4 复跑 PASS）+ `ruff` 0 错；同步登记真实验证结论（checkall 27 PASS、冒烟 25/2/5、T2-1/2/3 PASS、T4-1 PASS、真实人工 E2E 归因 3/3、前端 E2E 9/9）。**改动 3 个生产文件（+5/−5）+ 1 个新测试文件** |
+| v1.6.0 | 2026-09-14 | AI（S7 批 12 性能整改会话，AD 开发工程师 + AT 测试视图） | **审计落库异步化改造并入（新增 §18，TT-LOGS-056 性能整改）**：依据实测（审计落库 `INSERT+COMMIT` **6.432 ms/行** × 2 行/代理请求 ≈ **12.865 ms** 在请求路径内同步 await，超方案 §6「P99 增量 <5ms」），改为「**请求路径零 await DB（同步入队）+ writer 协程批内单次提交**」；保留尽力留痕/失败降级不阻断/既有 WARN 文案语义，回滚异常抑制不掩盖原始错误；队列有界（10000，满则丢弃+WARN）。按 TDD 新增 `tests/test_audit_persist_queue.py`（**16 例**，含 4 例异常边界），同步既有 `test_audit_db_persist.py` / `test_audit_identity_chain.py` 为「入队→drain」口径。**验证**：请求路径开销 **12.865 ms → 0.0037 ms**；真实请求异步落库 2 行可见；新增区域覆盖率 **100.0%**（115/115）；定向 **49 例全绿**；`ruff` **0 错**；全量回归 **837 例（通过 829 / 失败 4 / 跳过 4）**，失败 4 例为既有共享 PG 抖动（单文件复跑 10/10 全绿）。**改动 2 个生产文件 + 1 个新测试文件 + 2 个测试文件同步** |
 
 ---
 
@@ -429,5 +431,109 @@ publish_upstream_response()  ← 一行式入口（本批新增，五族共用�
 
 ---
 
-> 结束：批 5（专用代理族上游专段接线）开发记录完成。沙箱可执行面结论：单测 **14 例全绿** + `upstream_observe` 覆盖率 **100%** + `ruff` 0 错 + 定向回归 **121 例全绿** + 全量回归 **824 例**（4 例既有 PG 抖动，复核 10/10 全绿）；三项沙箱外执行项登记 PENDING，未伪造；**RED 顺序与过程失败按项如实登记**（§6.1 五轮台账），并关闭一处 P1 既有缺陷（AD-20260914-01）。
+## §17 联调窗口缺陷修复记录（v1.5.0：AD-20260914-02）
+
+> 本节为 **v1.5.0 新增**。来源：S7 批 7 联调窗口真实面执行（七服务在线 + 真实 HTTP），在 T5 L3-1 的 M1 子探针（`ob_k_*` 服务密钥签发）上暴露。
+
+### 17.1 现象与根因
+
+| 项 | 内容 |
+|----|------|
+| 现象 | `POST /api/v1/auth/api-keys` → **500**（`{"code":"SYS_500", … "request_id":"req-b9743f1eec30"}`）；`/api/v1/auth/api-keys` 列表链路同源受影响 |
+| 根因 | `logger.info("api key created", extra={"name": name})`：`extra` 使用 **LogRecord 保留属性名** `name`，CPython `logging.Logger.makeRecord()` 抛出 `KeyError: "Attempt to overwrite 'name' in LogRecord"` |
+| 为何只在真实服务暴露 | 生产由 `logging_setup.setup_logging()` 统一置 INFO（记录才会被创建）；pytest 默认级别下 `logger.info` 不生成记录 → 缺陷在单测环境被「假绿」掩盖 |
+| 同类站点（全仓扫描） | **5 处**：`openbase/modules/auth/api_keys.py:62`（create）、`:72`（revoke）、`openbase/modules/mcp/__init__.py:83`（tool_registered）、`:171`（server_started）、`openbase/modules/ai_apps/__init__.py:89`（app created） |
+| 引入点 | commit `3b25326`（2026-08-30，v1.4.2「四维身份管理基础 + OpenMemory 对接发布」）——**既有缺陷**，此前零用例覆盖 |
+
+### 17.2 修复（TDD：先 RED 后 GREEN）
+
+| 阶段 | 内容 |
+|------|------|
+| RED | 新增 `tests/test_log_reserved_keys.py`（3 例：`openbase/**` 保留键静态扫描 / `api-keys` 端点 200 / 根因级 INFO 复现）→ **3 例失败**（静态扫描列出 5 处；端点在 INFO 级别抛 `KeyError`） |
+| 修复 | 5 处 `extra` 键改非保留名：`key_name`（api_keys create/revoke）、`tool_name`（mcp tool_registered）、`server_name`（mcp server_started）、`app_name`（ai_apps created）；**3 文件 +5/−5 行** |
+| GREEN | 回归 **4 例全绿**；`ruff check openbase tests` → `All checks passed!`（0 错） |
+| 现场复验 | 重启 OpenBase 后 `POST /api/v1/auth/api-keys` → **200**（返回一次性 `ob_k_*` 明文）；T5 复跑 → **S7-T5-4 PASS**（首跑为 FAIL） |
+
+> **反「假绿」设计**：根因级用例显式把模块 logger 置为 INFO 后再调用 `ApiKeyStore.create()`，确保在 pytest 默认级别下也能捕获该类缺陷（否则将成为又一处「绿而不真」的用例）。
+
+### 17.3 证据与影响
+
+| 项 | 内容 |
+|----|------|
+| 证据 | `doc/test/evidence/manual/t4-defect-apikeys-500.json`（500 复现，含 `request_id`）、`t4-defect-apikeys-junit.xml`（回归 RED→GREEN） |
+| 影响范围 | 仅「日志调用参数」，不改变任何接口契约、响应结构与权限语义；对既有已通过用例零影响（10 依赖模块回归未受影响） |
+| 与本流关系 | 属**日志调用规范**（`extra` 保留键）类缺陷，与批 1/批 4/批 5 建立的「结构化日志」口径同源，故并入本流 DevLogReport 登记 |
+| 建议 | ① 将静态扫描纳入 CI/门禁；② 新增日志调用统一使用非保留键命名（`*_name`/`*_id`） |
+
+---
+
+## §18 审计落库异步化改造（v1.6.0：TT-LOGS-056 性能整改）
+
+> 本节为 **v1.6.0 新增**。来源：S7 批 12 性能量化会话（TT-LOGS-056）实测——审计落库在**请求路径内同步 await**（`INSERT+COMMIT` **6.432 ms/行** × **2 行/代理请求** ≈ **12.865 ms**），超出方案 §6「日志写入不阻塞主请求；P99 增量 <5ms」。按 P2 优化项实施**异步化改造**。
+
+### 18.1 整改依据（实测，非估算）
+
+| 项 | 实测值 | 证据 |
+|----|--------|------|
+| L1 文件日志写入 | **0.0889 ms/条**（p99 0.1702 ms） | `doc/test/evidence/manual/t4-perf-micro.json` |
+| 审计库 `INSERT+COMMIT` | **6.432 ms/行**（p95 8.374 ms） | `doc/test/evidence/manual/t4-perf-micro-db.json` |
+| 代理请求落库行数 | **2 行**（`api.request` + `proxy.outbound`） | 同上 |
+| 请求路径内审计开销 | **12.865 ms/代理请求**（p95 16.748 ms） | `doc/test/evidence/manual/t4-perf-tt056-verdict.json` |
+| 端到端差分可判性 | **不可判**：同配置重复跑 p50 波动 **8~16 ms** > 5 ms 阈值 | 同上（`same_config_noise`） |
+| 容量 | **2.47 MB/日**（阈值 200 MB/日，余量 ≈81×） | 同上（`capacity`） |
+
+> 定性：容量**达标**；「仅 L1 日志写入」口径**达标**；「**含审计落库的日志链路**」严格口径**未达标** → 触发本改造。
+
+### 18.2 改造设计（请求路径零 await DB + writer 协程批提交）
+
+| 要素 | 设计 |
+|------|------|
+| 提交侧 | `AuditPersistQueue.submit()`：**同步 `put_nowait`**，请求路径**不触碰 DB**；队列有界（默认 10000），满则丢弃最新条目 + WARN（`stats().dropped` 可观测） |
+| 落库侧 | `_write_batch_records()`：按 `api_request` / `proxy_hop` 分类，**单会话单次 `commit`** 批量提交（默认批 ≤50 条） |
+| 生命周期 | `start_audit_persist_worker()` / `stop_audit_persist_worker()` 由 `openbase/demo_app.py` 的 `startup` / `shutdown` 钩子调用；`stop` **排空在途条目**（超时则登记 `dropped`） |
+| 降级语义 | 保持「**尽力留痕 + 失败降级不阻断请求 + 既有 WARN 文案**」；回滚异常被抑制，**不掩盖原始错误** |
+| 开关 | 沿用 `OPENBASE_AUDIT_DB_PERSIST`（=0 时提交与落库均为 no-op，语义不变） |
+| 可观测 | `stats()`：`submitted` / `persisted` / `dropped` / `failed` / `pending` / `writer_running` |
+| 落库字段 | **零变更**（沿用既有 `audit_logs.detail` 白名单与 `action` 取值；表结构零迁移） |
+
+### 18.3 TDD 记录（RED→GREEN）与变更清单
+
+| 阶段 | 内容 |
+|------|------|
+| RED | 新增 `tests/test_audit_persist_queue.py`（先写用例）：`AuditPersistQueue` 尚不存在 → **首轮失败**（模块无该符号） |
+| GREEN | 实现 `openbase/modules/audit/__init__.py` 队列段 + 批量写库，并在 `openbase/demo_app.py` 挂载生命周期钩子 → **16 例全绿** |
+| 语义同步 | 既有 `tests/test_audit_db_persist.py` 与 `tests/test_audit_identity_chain.py`（T8-3）由「同步落库」口径改为「**入队 + `drain_once()`**」口径 |
+| 边界补齐 | 新增 4 例异常边界：回滚亦失败时抑制、无运行事件循环时 `start()` 静默跳过、关停排空超时计 `dropped`、writer 单批失败登记 `failed` 后继续消费 |
+| 过程中如实登记 | ① 静态检查 `B017`（宽泛 `pytest.raises(Exception)`）暴露**测试桩缺陷**——该桩 `identity` 写成 `{"principal": "agent:7"}`（字符串），实际触发 `AttributeError` 而非预期的提交失败，此前靠宽泛断言「假通过」；已修正为 `{"principal": {"subject_id": 7}}` 并收窄断言；② 落库断言口径需由「同步」改「drain」（否则 `submit` 后立即断言必然失败） |
+
+| 文件 | 变更性质 | 说明 |
+|------|---------|------|
+| `openbase/modules/audit/__init__.py` | 修改 | 新增落库队列段（`_write_batch_records` / `AuditPersistQueue` / `submit_audit_persist` / `start·stop_audit_persist_worker`）；`_persist_audit_record`、`_persist_outbound_proxy_hop` 改为**入队** |
+| `openbase/demo_app.py` | 修改 | 新增 `startup` / `shutdown` 钩子启停 writer（启动日志 `audit persist worker started`） |
+| `tests/test_audit_persist_queue.py` | **新增** | 16 例（含 4 例异常边界） |
+| `tests/test_audit_db_persist.py`、`tests/test_audit_identity_chain.py` | 修改 | 落库断言口径同步为「入队 → `drain_once()`」 |
+
+### 18.4 改造后验证（实测）
+
+| 项 | 结果 | 证据 |
+|----|------|------|
+| 请求路径提交开销 | **3.68 µs 均值**（p50 2.7 / p95 4.4 / p99 7.0 µs）← 改造前 **12.865 ms** | `doc/test/evidence/manual/t4-async-persist-verify.json` |
+| 异步落库可见性（真实请求） | `status=200`、`request_id=req-05db341795cb` 返回后**异步落库 2 行**（等待 0.00 s） | 同上 |
+| 新增区域覆盖率 | **100.0%**（115/115 语句；改造前口径为 90.4%） | 本轮 `pytest --cov=openbase.modules.audit` 实跑 |
+| 定向用例 | **49 例全绿**（审计 4 文件；其中新文件 16 例） | 本轮实跑 |
+| 静态质量 | `python -m ruff check openbase tests` → **All checks passed（0 错）** | 本轮实跑 |
+| 全量回归 | **837 例（通过 829 / 失败 4 / 跳过 4 / 错误 0，440.1s）**；失败 4 例为既有共享 PG 抖动，单文件复跑 **10/10 全绿** | `t4-async-persist-full-junit.xml`、`t4-async-persist-full-junit-2.xml` |
+
+### 18.5 遗留与口径（不伪造）
+
+| # | 项 | 处置 |
+|---|----|------|
+| 1 | 进程崩溃/强杀时**可能丢最近若干条**审计行（队列在途） | 正常关闭路径 `stop()` 会**排空**；异常终止的存在途条目为**设计可接受窗口**；如需强一致需另立需求（同步确认落库） |
+| 2 | TT-056「P99 增量 <5ms」严格口径 | 路径内新增 **0.0037 ms << 5 ms → 达标**；**端到端差分在本机噪声（8~16 ms）下不可判**，故不以端到端数字冒充达标 |
+| 3 | 「仅 L1 文件写入」口径 | 0.0889 ms/条，**达标** |
+| 4 | 容量 | **2.47 MB/日 << 200 MB/日，达标**（余量 ≈81×） |
+
+---
+
+> 结束：批 5（专用代理族上游专段接线）开发记录完成；已追加 **v1.5.0 联调窗口缺陷修复记录（AD-20260914-02 已闭环）** 与 **v1.6.0 审计落库异步化改造（TT-056 性能整改）**。沙箱可执行面结论：批 5 单测 **14 例全绿** + `upstream_observe` 覆盖率 **100%** + 定向回归 **121 例全绿** + 全量回归 **824 例**（4 例既有 PG 抖动，复核 10/10 全绿）；**v1.6.0 异步化**：定向 **49 例全绿** + 新增区域覆盖率 **100.0%** + `ruff` **0 错** + 全量回归 **837 例（829 通过 / 4 失败 / 4 跳过）**（失败项单文件复跑 10/10 全绿），请求路径审计开销 **12.865 ms → 0.0037 ms**。联调窗口真实面结论：`checkall` **27 PASS**、冒烟 **25/2/5**、T2-1/2/3 **PASS**、T4-1 **PASS**、T5-4 **修复后 PASS**、真实人工 E2E **归因 3/3**、前端 E2E **9/9**；未执行项（T3 演练 / L3-2）登记 PENDING，未伪造；**RED 顺序与过程失败按项如实登记**（§6.1 五轮台账 + §17.2 + §18.3），累计关闭两处 P1 既有缺陷（AD-20260914-01、AD-20260914-02）。
 

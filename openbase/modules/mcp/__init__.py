@@ -80,7 +80,7 @@ class MCPServer:
         name = tool_def.get("name", "")
         if name:
             self._tools[name] = tool_def
-            logger.info("mcp_tool_registered", extra={"name": name})
+            logger.info("mcp_tool_registered", extra={"tool_name": name})
 
     def register_tools(self, tools: list[dict[str, Any]]) -> None:
         """批量注册工具."""
@@ -168,7 +168,7 @@ class MCPServer:
     async def start(self) -> None:
         """启动 MCP 服务器."""
         self._running = True
-        logger.info("mcp_server_started", extra={"name": self.name, "version": self.version})
+        logger.info("mcp_server_started", extra={"server_name": self.name, "version": self.version})
 
     async def stop(self) -> None:
         """停止 MCP 服务器."""

@@ -172,22 +172,17 @@
         "reason": "错误提示文案，非网络直连"
       },
       {
-        "path": "src/modules/openllm/pages/ConfigManageView.vue",
+        "path": "src/pages/platform/config/ConfigManageView.vue",
         "line_contains": "proxy.openllm.instances",
         "reason": "配置管理页 mock 展示数据（实例列表），非网络直连"
       },
       {
-        "path": "src/modules/openllm/pages/AuditLogsView.vue",
-        "line_contains": "10.0.0.5:8001",
-        "reason": "审计日志 mock 数据文本，非网络直连"
-      },
-      {
-        "path": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "path": "src/pages/platform/developers/EdgeRouterView.vue",
         "line_contains": "10.0.0.5:8001/v1",
         "reason": "EdgeRouter 适配器 mock 数据 endpoint 文本，非网络直连"
       },
       {
-        "path": "src/modules/gateway/pages/GatewayServicesView.vue",
+        "path": "src/pages/platform/observability/GatewayServicesView.vue",
         "line_contains": "port: 8001",
         "reason": "实例注册表单默认值（经 gateway /services 受信通道提交），非前端直连"
       }
@@ -199,12 +194,12 @@
         "reason": "API 控制台示例文档 base_url 展示文本（示例域名，非网络调用）"
       },
       {
-        "path": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "path": "src/pages/platform/developers/EdgeRouterView.vue",
         "line_contains": "http://10.0.0.5:8001/v1",
         "reason": "适配器 mock 数据 endpoint 文本，非网络调用"
       },
       {
-        "path": "src/modules/openllm/pages/EdgeRouterView.vue",
+        "path": "src/pages/platform/developers/EdgeRouterView.vue",
         "line_contains": "http://127.0.0.1:11434",
         "reason": "Ollama 适配器 mock 数据 endpoint 文本，非网络调用"
       },
@@ -224,7 +219,7 @@
         "reason": "Azure 提供商 mock 数据 base_url 文本，非网络调用"
       },
       {
-        "path": "src/modules/openllm/pages/Settings.vue",
+        "path": "src/pages/personal/SettingsView.vue",
         "line_contains": "https://example.com/avatar.png",
         "reason": "头像地址输入框占位文案，非网络调用"
       },

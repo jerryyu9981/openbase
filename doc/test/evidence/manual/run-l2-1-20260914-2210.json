@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "tool": "test_log_aggregate.py",
+  "openbase_commit": "43586d5e9f81e6929904104f7d8c2ee79e074535",
+  "checked_at": "2026-09-14T14:04:12+00:00",
+  "logs_root": "D:/Trae CN/myproject/Dev/OpenBase/logs",
+  "run_id": "run-l2-1-20260914-2210",
+  "status": "FAIL",
+  "totals": {
+    "records": 12,
+    "cases": 4,
+    "failed_steps": 1
+  },
+  "cases": [
+    {
+      "case_id": "L21-DPS-PORTRAITS",
+      "run_id": "run-l2-1-20260914-2210",
+      "status": "PASS",
+      "records": 3,
+      "failed_steps": 0,
+      "steps": [
+        {
+          "step_id": "baseline",
+          "request_id": "req-04b57edf94ef",
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits",
+          "status_code": 200,
+          "duration_ms": 356,
+          "message": "api.request"
+        },
+        {
+          "step_id": "degraded",
+          "request_id": "req-7c25ad898400",
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits",
+          "status_code": 200,
+          "duration_ms": 413,
+          "message": "api.request"
+        },
+        {
+          "step_id": "restored",
+          "request_id": "req-00a406778e58",
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits",
+          "status_code": 200,
+          "duration_ms": 163,
+          "message": "api.request"
+        }
+      ]
+    },
+    {
+      "case_id": "L21-LLM-HEALTH",
+      "run_id": "run-l2-1-20260914-2210",
+      "status": "PASS",
+      "records": 3,
+      "failed_steps": 0,
+      "steps": [
+        {
+          "step_id": "baseline",
+          "request_id": "req-16416b676592",
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/health",
+          "status_code": 200,
+          "duration_ms": 107,
+          "message": "api.request"
+        },
+        {
+          "step_id": "degraded",
+          "request_id": "req-8701a98b5de9",
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/health",
+          "status_code": 200,
+          "duration_ms": 2073,
+          "message": "api.request"
+        },
+        {
+          "step_id": "restored",
+          "request_id": "req-9f0525d41355",
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/health",
+          "status_code": 200,
+          "duration_ms": 201,
+          "message": "api.request"
+        }
+      ]
+    },
+    {
+      "case_id": "L21-MEM-MEMORIES",
+      "run_id": "run-l2-1-20260914-2210",
+      "status": "PASS",
+      "records": 3,
+      "failed_steps": 0,
+      "steps": [
+        {
+          "step_id": "baseline",
+          "request_id": "req-66786acc1e83",
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/memories",
+          "status_code": 200,
+          "duration_ms": 53,
+          "message": "api.request"
+        },
+        {
+          "step_id": "degraded",
+          "request_id": "req-5245e4e43d68",
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/memories",
+          "status_code": 200,
+          "duration_ms": 76,
+          "message": "api.request"
+        },
+        {
+          "step_id": "restored",
+          "request_id": "req-a0d2b5168432",
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/memories",
+          "status_code": 200,
+          "duration_ms": 37,
+          "message": "api.request"
+        }
+      ]
+    },
+    {
+      "case_id": "L21-RAG-COLLECTIONS",
+      "run_id": "run-l2-1-20260914-2210",
+      "status": "FAIL",
+      "records": 3,
+      "failed_steps": 1,
+      "steps": [
+        {
+          "step_id": "baseline",
+          "request_id": "req-8ab7142ee86f",
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "status_code": 200,
+          "duration_ms": 87,
+          "message": "api.request"
+        },
+        {
+          "step_id": "degraded",
+          "request_id": "req-bb93286000b5",
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "status_code": 502,
+          "duration_ms": 2064,
+          "message": "api.request"
+        },
+        {
+          "step_id": "restored",
+          "request_id": "req-45526cf805f5",
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "status_code": 200,
+          "duration_ms": 280,
+          "message": "api.request"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    "logs/openbase/openbase-20260914.jsonl"
+  ],
+  "skipped_lines": 0
+}

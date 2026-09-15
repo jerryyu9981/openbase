@@ -59,7 +59,7 @@ class ApiKeyStore:
                 "created": time.time(),
                 "revoked": False,
             }
-        logger.info("api key created", extra={"name": name})
+        logger.info("api key created", extra={"key_name": name})
         return raw_key
 
     def revoke(self, raw_key: str) -> None:
@@ -69,7 +69,7 @@ class ApiKeyStore:
             record = self._keys.get(key_hash)
             if record is not None:
                 record["revoked"] = True
-                logger.info("api key revoked", extra={"name": record["name"]})
+                logger.info("api key revoked", extra={"key_name": record["name"]})
 
     # ---- 校验 ----
 

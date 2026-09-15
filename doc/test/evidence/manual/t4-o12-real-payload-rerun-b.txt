@@ -1,0 +1,9 @@
+﻿[PASS] POST   /tenants                               -> 200 (expect 200) {"id":4,"name":"走查租户-223526","code":"o12b223526","status":1,"isolation
+   tenant id = 4
+[FAIL] PUT    /tenants/4                             -> 422 (expect 200) {"code":"PARAM_422","message":"parameter validation error","detail":[{
+[PASS] DELETE /tenants/4                             -> 200 (expect 200) {"code":0,"tenant_id":4,"status":0}
+[PASS] POST   /ai-apps                               -> 200 (expect 200) {"code":0,"message":"ok","data":{"id":"app-2","name":"o12b-app-223526"
+   app id = app-2
+[PASS] POST   /ai-apps/app-2/publish                 -> 200 (expect 200) {"code":0,"message":"ok","data":{"id":"app-2","name":"o12b-app-223526"
+汇总: {"executed": 5, "pass": 4, "fail": 1, "with_oplog": 5, "coverage": 100.0}
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-o12-real-payload-rerun-b.json

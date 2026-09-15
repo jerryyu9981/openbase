@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 
 from openbase.core.models import AuditLog
+from openbase.modules.audit import ENV_AUDIT_DB_PERSIST, audit_persist_queue
 from openbase.modules.identity.delegation import (
     DELEGATION_ACTION_ISSUE,
     enqueue_delegation_audit,
@@ -288,6 +289,7 @@ def test_t8_3_audit_middleware_persists_outbound_hop(
     """AuditMiddleware 响应后接线：outbound_assembled → 落库 proxy.outbound."""
     import importlib
 
+    monkeypatch.setenv(ENV_AUDIT_DB_PERSIST, "1")
     from openbase.modules.audit import AuditMiddleware
 
     session_mod = importlib.import_module("openbase.core.db.session")
@@ -336,7 +338,13 @@ def test_t8_3_audit_middleware_persists_outbound_hop(
     request.state.outbound_assembled = True
     request.state.outbound_system = "dps"
     request.state.identity = identity
-    asyncio.run(middleware._persist_outbound_proxy_hop(request, "req-t8-3m"))
+
+    async def _run() -> None:
+        # TT-056 整改：出站审计改为入队 → 由 writer（drain）批量落库
+        await middleware._persist_outbound_proxy_hop(request, "req-t8-3m")
+        await audit_persist_queue.drain_once()
+
+    asyncio.run(_run())
     assert len(recording.added) == 1
     record = recording.added[0]
     assert record.action == ACTION_PROXY_OUTBOUND

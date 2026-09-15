@@ -86,7 +86,7 @@ class AiAppService:
             "created_at": None,
         }
         type(self)._apps[app_id] = app
-        logger.info("ai app created", extra={"app_id": app_id, "name": name})
+        logger.info("ai app created", extra={"app_id": app_id, "app_name": name})
         return app
 
     def get(self, app_id: str) -> dict | None:

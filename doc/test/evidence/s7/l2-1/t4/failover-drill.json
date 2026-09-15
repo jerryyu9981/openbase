@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "tool": "drill_l2_1_failover.ps1",
+  "task": "S7-T3",
+  "evidence_ref": "S7-T3-1~4",
+  "title": "S7-T3 L2-1 主备切换演练",
+  "mode": "run",
+  "execution_face": "B",
+  "generated_at": "2026-09-14T22:02:36+0800",
+  "commit": "43586d5e9f81e6929904104f7d8c2ee79e074535",
+  "openllm_backend": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+  "status": "PASS",
+  "exit_code": 0,
+  "checks": [
+    {
+      "id": "S7-T3-1",
+      "name": "B 断 -> A 接管（A 直连接管，降级告警产生，业务不中断）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/drill-report.md（场景 1）+ route-after.json"
+    },
+    {
+      "id": "S7-T3-2",
+      "name": "A 断 -> B 维持（B 编排维持，业务不中断）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/drill-report.md（场景 2）"
+    },
+    {
+      "id": "S7-T3-3",
+      "name": "单主路径：同一动作同一时刻仅一条主路径，禁双主双写",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/route-before.json + route-after.json"
+    },
+    {
+      "id": "S7-T3-4",
+      "name": "演练报告字段齐备（场景/命令/路由/降级头/告警/回切条件/结论）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l2-1/drill-report.md"
+    }
+  ],
+  "artifacts": {
+    "scenario_b_down": {
+      "route_before": "b",
+      "consecutive_failures": 3,
+      "takeover": true,
+      "route_after": "a",
+      "primary_paths_after": [
+        "a"
+      ],
+      "write_on_a_allowed": true,
+      "write_on_b_rejected": true,
+      "alert_events": [
+        "component_failure",
+        "component_failure",
+        "component_failure",
+        "failover_b_to_a"
+      ]
+    },
+    "scenario_a_down": {
+      "route_before": "b",
+      "a_consecutive_failures": 1,
+      "route_after": "b",
+      "primary_paths_after": [
+        "b"
+      ],
+      "auto_failover": false,
+      "a_health": {
+        "consecutive_failures": 1,
+        "healthy": true
+      }
+    },
+    "single_primary_samples": [
+      {
+        "stage": "initial",
+        "primary": "b",
+        "paths": [
+          "b"
+        ]
+      },
+      {
+        "stage": "after-failover",
+        "primary": "a",
+        "paths": [
+          "a"
+        ]
+      },
+      {
+        "stage": "after-switch-back",
+        "primary": "b",
+        "paths": [
+          "b"
+        ]
+      }
+    ],
+    "restore_chain": {
+      "switch_back_ok": true,
+      "audit_actions": [
+        "failover_b_to_a",
+        "recover_b",
+        "drill_window_open",
+        "drill_verified",
+        "drill_window_elapsed",
+        "switch_back_to_b"
+      ],
+      "missing_audit_actions": [],
+      "channel_status": {
+        "preference": "b-primary",
+        "primary_channel": "b",
+        "single_primary": true,
+        "state": "b-primary",
+        "healthy_b": true,
+        "drill_window_seconds": 300.0,
+        "auto_failover_enabled": false
+      }
+    }
+  },
+  "reason": ""
+}

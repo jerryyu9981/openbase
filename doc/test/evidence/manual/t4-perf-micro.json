@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-09-14T22:55:39+08:00",
+  "spec": "方案 §6 性能：日志写入不阻塞主请求；P99 增量 <5ms",
+  "l1_log_write": {
+    "records": 3000,
+    "mean_us": 88.9,
+    "p50_us": 84.6,
+    "p95_us": 102.1,
+    "p99_us": 170.2,
+    "mean_ms": 0.0889,
+    "p99_ms": 0.1702,
+    "bytes_written": 1260000,
+    "bytes_per_record": 420.0
+  },
+  "audit_db_insert": {
+    "error": "connection was closed in the middle of operation",
+    "schema_info": {
+      "error": "connection was closed in the middle of operation"
+    }
+  },
+  "combined_per_request": {
+    "file_log_only_ms": 0.0889,
+    "file_log_plus_audit_ms_mean": 0.089,
+    "note": "代理请求含 1 条 api.request + 1 条 proxy.outbound 落库；非代理请求仅 1 条 aud\tit 行"
+  }
+}

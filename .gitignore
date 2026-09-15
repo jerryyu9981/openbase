@@ -22,6 +22,10 @@ htmlcov/
 coverage.xml
 *.log
 
+# ---- Node / 前端依赖与工具缓存 ----
+node_modules/
+.vite/
+
 # ---- 虚拟环境 ----
 .venv/
 venv/
@@ -40,7 +44,8 @@ tmp/
 *.tmp
 pytest_out.txt
 reports_junit.xml
-logs/
+# 仅忽略仓库根目录的运行时日志目录；不得命中 openbase/modules/logs/（源码模块）
+/logs/
 
 # ---- 本地存储测试数据 ----
 storage/

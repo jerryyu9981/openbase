@@ -5,10 +5,10 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-OUTSIDE-RUN-v1.0.0 |
-| 版本 | v1.0.11 |
+| 版本 | v1.0.13 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-12 |
-| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45；批次 9 K07 终验回填 2026-09-11 22:15；批次 10 OpenLLM K07 补填回填 2026-09-11；批次 11 OpenMemory K07 缺口补填回填 2026-09-12；批次 19 DPS 豁免续期入库回填 2026-09-13；批次 20 OpenLLM 快照落仓脚本登记 2026-09-13；批次 21 DPS 门禁恢复入库回填 2026-09-13；批次 22 OpenLLM 快照落仓完成回填 2026-09-13） |
+| 作者 | AI（S7 批次 5 沙箱外执行单编制；现状只读实测 2026-09-11；批次 7 全量冒烟执行回填 2026-09-11 19:00；批次 8 F-4 修复 + openbase_test 建库回填 2026-09-11 20:45；批次 9 K07 终验回填 2026-09-11 22:15；批次 10 OpenLLM K07 补填回填 2026-09-11；批次 11 OpenMemory K07 缺口补填回填 2026-09-12；批次 19 DPS 豁免续期入库回填 2026-09-13；批次 20 OpenLLM 快照落仓脚本登记 2026-09-13；批次 21 DPS 门禁恢复入库回填 2026-09-13；批次 22 OpenLLM 快照落仓完成回填 2026-09-13；批次 23 联调窗口真实面执行与 T3 主备切换演练会话 2026-09-14） |
 | 用途 | **S7 沙箱外 / 联调窗口执行单**：将 S7 段（总收官段）全部 B 面（联调窗口必需面）与跨仓收口待办，整理为可逐项执行、可回填证据、可勾选收口的**唯一执行清单**；沙箱内仅可执行 OpenBase 仓操作，四仓 git 与真实运行态操作须由用户在沙箱外按本单执行 |
 | 上游依据 | ①《OpenBase-S7-全域门禁与总收官-设计草案-v1.0.0.md》（仓根，OB-S7-DESIGN-v1.0.0，内部 **v1.0.1 [Approved]**，§4 逐任务设计 §4.1~§4.9（34 断言与执行面 A/A+B/B）、§5 证据与报告规范）；②《OpenBase-S7-全域门禁与总收官-测试报告-v1.0.0.md》（`doc/test/`，OB-S7-TEST-v1.0.0，**[Review]**，34 断言矩阵：通过 5 / 部分达成 9 / PENDING 20）；③《OpenBase-S7-全域门禁与总收官报告-v1.0.0.md》（`doc/development/`，内部 **v1.0.1**，[Review]）；④《OpenBase-S7-跨仓入仓与会签执行模板-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2 [Approved]**）；⑤《OpenBase-联调产物清点核对总清单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.7 [Approved]**，§1.1 五仓对照表 / §4.1 会签五步 / §5.10 四仓入仓完成登记）；⑥《OpenBase-多系统联调-跨仓提交放行清单-v1.0.0.md》（`doc/development/`，内部 **v1.0.9 [Approved]**，§0 通用红线）；⑦各段测试报告 PENDING 清单（S2 / S3 / S4 / S5 段级真实双签 + S6 B1~B6，见总收官报告 §4.1）；⑧《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，OB-INTG-SMOKE-v1.1.0，内部 **v1.1.0**，§3 用例矩阵 S0-S6） |
 | 事实基线（2026-09-11 实测） | 四仓入仓 = **OpenRAG** `release/v1.10.0` @ `a2eb92b`（三远端同步、勾稽差异 0、残余 1）；**DPS** `main` @ `e772c01`（三远端同步、勾稽差异 0、残余 4）；**OpenMemory** `release/v7.3.0` @ `cc7c06f`（origin+backup 已同步、**github 待推**、**勾稽 A 类回读待做**（残余 89））；**OpenLLM** `feature/s4-identity-channel-b` @ `be1886d`（**四远端 origin/backup/github/jerry.yu 均未推送**；need-star 隔离分支 `feature/need-star-orchestration` @ `ce40f90` 亦未推，残余 1459）。**OpenBase 提交链** = `402ff8e` / `2235229` / `d3faa7f` / `2d97d1a` / `a5020fa` / `9056f48`（S7 段内提交，`main`）。**S7 段门禁当前结论 = 未达最终通过**（① ② 真实面、④ 三原则总验证、⑤ 两仓远端推送为 PENDING） |
@@ -49,6 +49,8 @@
 | v1.0.6 | 2026-09-11 | AI（S7 批次 9 K07 终验会话） | **K07/SYS-1 端点-过滤矩阵真实导出终验回填（§3.4/§3.5）**：五实例真实导出 openapi（`openbase:8000` 137 / `openllm:8001` 351 / `openrag:8010` 115 / `openmemory:8020` 36 / `dps:8030` 161，均 HTTP 200）并保真落盘；与各仓填报矩阵逐行核对 → **缺口 352（OpenLLM 344 / OpenMemory 8）、未覆盖 0、豁免 56（有效 21；DPS 35 需续期）→ FAIL**。§3.4 与 §3.5 P2-T6-4 行更新；证据 `doc/test/evidence/s7/gate/k07-finalize.json` + `k07-openapi/*.openapi.json`。**子系统仓缺口只登记不代改。**（注：本批次元信息版本 v1.0.6 与 §3.4/§3.5 标注一致，修订历史行此处补记。） |
 | v1.0.8 | 2026-09-12 | AI（S7 批次 11 OpenMemory K07 缺口补填回填会话） | **OpenMemory K07 8 条缺口补填结果回填（§3.4/§3.5/§6）**：OpenMemory 仓已在其工作树完成 8 条缺口补填（4 文件；矩阵 32→**40 行** / 覆盖 25→31 / 豁免 7→9；**缺口 8→0**；新增隔离注册 `IS-OM-R26~R31`；隔离用例 **81 passed**；门禁复跑 `missing_rows=0`，exit 0；K07/identity 组 **372 passed**；ruff 0 错误），**因沙箱拒写 `.git/objects` 未能 commit（无 hash，禁伪造），工作树保留，需在可写环境提交**。§3.4「执行状态」追加 v1.0.8 行；§3.5/§6 P2-T6-4 状态更新；**待提交项扩为两仓（OpenMemory 4 文件 + OpenLLM 5 文件），建议 message：`docs(k07): OpenMemory 端点过滤矩阵 8 条缺口补填与隔离用例注册（缺口归零）`**。**缺口合计 0/未覆盖 0；仅 DPS 35 条豁免需续期。未改动子系统仓功能语义代码。** |
 | v1.0.9 | 2026-09-13 | AI（S7 批次 19~20 DPS 入库回填 + OpenLLM 快照落仓脚本登记会话） | ① **补记 v1.0.8 之后的 DPS 入库闭环**：DPS 仓 K07 35 条豁免续期已于 2026-09-13 提交 **`b5f5c06`**（3 文件 = 填报矩阵 + 一键提交脚本 2；`origin`/`backup`/`github` 三远端 `ls-remote` 与本地 HEAD 一致）——§3.4 执行状态、§3.5 待提交项、附录 B DPS HEAD、§5.6 与 `k07-finalize.json` / `gate-aggregate.json` 同步；② **本批次：OpenLLM `backend\data\openapi-llm-snapshot.json` 落仓项收口为可执行形态** —— 生成一键脚本`openllm-k07-snapshot-commit-push.bat` + `scripts/openllm_k07_snapshot_commit_push.ps1`（宿主仓库＝OpenBase，因 OpenLLM 在本沙箱全仓只读）；脚本干跑通过（源快照校验 351 操作 / 提交面守卫 / 三远端校验），提交分支与 K07 补填提交 `41af780` 同源（`feature/s4-identity-channel-b`，三远端均有该分支）；③ 受限说明：OpenLLM `backend/data/**` 与 `.git` 写入被沙箱拦截，**实测无残留**（无目标文件、无 `index.lock`、暂存区为空）→ 该项**待沙箱外执行并回填 hash**。**未改动任何子系统仓文件；敏感文件零进入。** |
+| v1.0.12 | 2026-09-14 | AI（S7 批次 23 联调窗口真实面执行与 T3 演练会话） | **联调窗口 P2 面真实执行回填（含 T3 停服演练）**：① §2.2 新增「执行状态」行——**P2-T3 演练本体 T3-1~T3-4 全 PASS**（真实通道状态机驱动）+ **真实上游中断注入**（停 OpenRAG → rag-proxy 502 可归因、dps/memory/llm 通道 200 业务不中断）+ 恢复后 `checkall` **27 PASS**；② §6 勾选表回填五类行状态：P2-T2（T2-1/2/3 PASS，T2-4 PENDING）、**P2-T3（达成）**、P2-T4（T4-1 PASS，T4-2~4 PENDING）、P2-T5（T5-1/2 PASS + **T5-4 修复后 PASS**，T5-3 PENDING）、P2-T6-2（冒烟 25/2/5，2 例 FAIL 定性为用例口径缺陷）、P2-B1（前端 E2E 9/9 PASS）、P2-B2（L3-2 仍 PENDING，脚本为骨架）；③ 期间发现并闭环 P1 缺陷 **AD-20260914-02**（`extra` 保留键冲突 → `api-keys` 500，同类 5 处；TDD 修复 + 回归 4 例 + 现场复验 + T5-4 复跑 PASS）——详见 `doc/test/OpenBase-S7-人工端到端测试日志落盘-测试报告-v1.0.0.md` §13.7/§13.12 与 `doc/development/OpenBase-S7-人工端到端测试日志落盘-DevLogReport-v1.4.0.md` §17。**仅回填执行状态与证据索引；未改动四仓任何文件** |
+| v1.0.13 | 2026-09-14 | AI（S7 批次 23 续：purge 正例关闭会话） | **S7-T2-4 关闭（P2-T2 → 达成）**：§2.1 新增「执行状态」行——服务层签发一次性 purge 授权码 → `POST /api/v1/identity/purge` **200**（`deactivated → purged`），负例错误码 **403** `BIZ_PURGE_AUTH_REQUIRED`、重复 **400** `BIZ_NOT_PURGEABLE` 终态幂等、留痕 `purge_records=1` + `audit_logs(action=identity.purge)=1`；§6 P2-T2 行由「部分达成」更正为**达成**（T2-1~T2-4 全 PASS）。主体为专用冒烟主体（`smoke_l1_1_*`）；如实登记 1 处用例预期偏差与 1 处证据查询口径勘误（均已修正）。**仅回填执行状态；未改动代码与四仓文件** |
 
 ---
 
@@ -189,6 +191,7 @@
 | **期望证据** | `doc/test/evidence/s7/l1-1/dps-block.json`（S7-T2-1）、`openmemory-block.json` + `event-idempotency.json`（S7-T2-2）、`restore.json` + `scan-auto-purge.txt`（S7-T2-3）、`purge.json`（S7-T2-4） |
 | **回填位置** | 测试报告 §2 「S7-T2-1~4」行状态（PENDING → PASS/FAIL）；门禁项 ④ 三原则总验证；`gate-aggregate.json` 相关分项引用；总收官报告 v1.0.1 §4.2 第 6 项 |
 | **失败处置** | 契约不符 / 阻断未生效 → 登记 `FAIL` + `reason`，回溯 U1 §8 事件契约与 DPS/OpenMemory 消费端；不得以「预期通过」替代 |
+| **执行状态（v1.0.13 实测，2026-09-14 22:03~22:15）** | ✅ **已完成（S7-T2-1~4 全 PASS）**：① 首轮（v1.0.12）T2-1/T2-2/T2-3 **PASS**（DPS 画像读阻断 403 + 数据保留、OpenMemory 记忆数据面阻断 + `event_id` 幂等、Q-5=A 保留 + `restored` 解除阻断），T2-4 PENDING（授权码需 CLI/服务层签发）；② **v1.0.13 关闭 T2-4**：服务层 `IdentityPurgeService.issue_authorization(subject_id=35)` 签发一次性授权码（明文仅内存、未落盘未打印）→ `POST /api/v1/identity/purge` **200**（`previous_state=deactivated → status_state=purged`）；**负例**错误授权码 → **403** `BIZ_PURGE_AUTH_REQUIRED`；**终态**重复 purge → **400** `BIZ_NOT_PURGEABLE`；**留痕** `purge_records=1`（`smoke_l1_1_1789390731`/`purged`）+ `audit_logs(action=identity.purge)=1`（含 `scope_report_hash`）。主体为专用冒烟主体（`smoke_l1_1_*`），未触碰生产主体。证据：`doc/test/evidence/s7/l1-1/t4/cascade-result.json`、`doc/test/evidence/manual/t4-t2-4-purge.json`；回填：测试报告 §13.4/§13.13、回溯审计 §9.2#4。**口径说明**：脚本内 1 处用例预期偏差（"未 deactivate 应 400" 不成立——主体运行前已 deactivated）与 1 处证据查询口径勘误（已修正），均如实登记 |
 
 ### 2.2 [P2-T3] S7-T3 L2-1 主备切换演练（关联断言 S7-T3-1~4）
 
@@ -204,6 +207,7 @@
 | **期望证据** | `doc/test/evidence/s7/l2-1/drill-report.md`（含**场景/命令/切换前后路由/降级头/告警/回切条件/结论**字段）+ `route-before.json` / `route-after.json`（单主断言）+ `degrade-headers.json` + `alerts.json` |
 | **回填位置** | 测试报告 §2 「S7-T3-1~4」行状态；门禁项 ④；总收官报告 §3 S7-T3 行 |
 | **失败处置** | 双写 / 业务中断 / 无降级头 → 登记 `FAIL`，回溯 S4-T7 单主状态机与路由配置；演练窗口不可得 → `PENDING` + 排期 |
+| **执行状态（v1.0.12 实测，2026-09-14 22:00~22:05）** | ✅ **已完成（部分达成 → 达成）**：① **演练本体**（真实通道状态机驱动，非骨架）：`python scripts/drill_l2_1_failover.py --evidence-dir doc/test/evidence/s7/l2-1/t4 …` → `status=PASS exit=0`，**S7-T3-1~T3-4 全 PASS**（B 组件连续 3 次降级达阈值 → 显式 B→A 接管且 **B 写被拒**；A 断不改主、单主保持 `['b']`；单主采样恒长 1；报告与回切审计动作序列齐备）；② **真实上游中断注入**（经人工批准停服窗口）：停 OpenRAG(8010) → `rag-proxy/collections` **502（归因=网络/上游不可达、首现、`request_id=req-bb93286000b5`）**，而 `dps-proxy`/`memory-proxy`/`llm-proxy` 通道 **全 200（业务不中断）**，OpenRAG 直连 `ConnectionError`；③ **恢复复验**：重启 OpenRAG 后三条通道全 200，`checkall` **27 PASS / 0 FAIL / 0 SKIP**，7 服务全健康。证据：`doc/test/evidence/s7/l2-1/t4/{failover-drill.json,drill-report.md}`、`doc/test/evidence/manual/{t4-l2-1-outage-drill.json,run-l2-1-20260914-2210-analysis.md,t4-checkall-after-drill.txt}`；回填：测试报告 §13.12、回溯审计 §9.2#10。**观察项**：演练包装层把运行器 stderr 日志行渲染为 PowerShell 错误（`$LASTEXITCODE=1` 假失败信号，python 直跑 `exit=0`）；运行器证据目录硬编码 `s7/l2-1`（`--evidence-dir` 未完全生效）→ 已登记观察项 O-9/O-10 |
 
 ### 2.3 [P2-T4] S7-T4 L2-2 通道矩阵终验（关联断言 S7-T4-1~4）
 
@@ -381,20 +385,20 @@
 | P1-1 | OpenMemory 推送 github 远端 | P1 | ☐ | | | `doc/test/evidence/s7/signoff/om-github-push.json` | | S7-T7-1 |
 | P1-2 | OpenMemory 勾稽 A 类回读 | P1 | ☐ | | | `doc/test/evidence/s7/signoff/om-reconcile-readback.json` | | S7-T7-2 |
 | P1-3 | OpenLLM 四远端推送 | P1 | ☐ | | | `doc/test/evidence/s7/signoff/ll-remote-push.json` | | S7-T7-1 |
-| P2-T2 | L1-1 级联全链核验 | P2 | ☐ | | | `doc/test/evidence/s7/l1-1/**` | | S7-T2-1~4 |
-| P2-T3 | L2-1 主备切换演练 | P2 | ☐ | | | `doc/test/evidence/s7/l2-1/**` | | S7-T3-1~4 |
-| P2-T4 | L2-2 通道矩阵终验 | P2 | ☐ | | | `doc/test/evidence/s7/l2-2/**` | | S7-T4-1~4 |
-| P2-T5 | L3-1 Agent 端到端 | P2 | ☐ | | | `doc/test/evidence/s7/l3-1/**` | | S7-T5-1~4 |
+| P2-T2 | L1-1 级联全链核验 | P2 | ☑ | 2026-09-14 | **达成（v1.0.13：T2-1~T2-4 全 PASS）**：T2-1/2/3 PASS（DPS 阻断 + 记忆阻断与幂等 + restored 解除）；**T2-4 purge 正例 200（`deactivated→purged`）+ 错误码 403 + 重复 400 终态 + 留痕齐备** | `doc/test/evidence/s7/l1-1/t4/cascade-result.json`、`doc/test/evidence/manual/t4-t2-4-purge.json` | | S7-T2-1~4 |
+| P2-T3 | L2-1 主备切换演练 | P2 | ☑ | 2026-09-14 | **达成（v1.0.12）**：演练本体 T3-1~T3-4 **全 PASS**（真实通道状态机）；真实中断注入（停 OpenRAG）→ 单通道 502 可归因、其余通道 200 不中断；恢复后 `checkall` 27 PASS | `doc/test/evidence/s7/l2-1/t4/**`、`t4-l2-1-outage-drill.json`、`t4-checkall-after-drill.txt` | | S7-T3-1~4 |
+| P2-T4 | L2-2 通道矩阵终验 | P2 | ☑ | 2026-09-14 | **部分达成（v1.0.12）**：T4-1 **PASS**（矩阵 17 行 / 缺口 0）；T4-2~T4-4 按 B 面口径 PENDING（需受控 A/B 双通道面） | `doc/test/evidence/s7/l2-2/matrix-finalize-t4.json` | | S7-T4-1~4 |
+| P2-T5 | L3-1 Agent 端到端 | P2 | ☑ | 2026-09-14 | **部分达成（v1.0.12）**：T5-1/T5-2 **PASS**、**T5-4 修复后 PASS**（缺陷 AD-20260914-02 闭环）；T5-3 PENDING（双域数据面未预置） | `doc/test/evidence/s7/l3-1/t4/agent-e2e.json` | | S7-T5-1~4 |
 | P2-T6-1 | RA-06 五项真实面 | P2 | ☐ | | | `doc/test/evidence/s7/gate/gate-aggregate.json` §RA-06 | | S7-T6-1 |
-| P2-T6-2 | 冒烟 S0-S6 真实执行 | P2 | ☐ | | | `gate-aggregate.json` §SMOKE-S0-S6；冒烟清单 §3 | | S7-T6-2 |
+| P2-T6-2 | 冒烟 S0-S6 真实执行 | P2 | ☑ | 2026-09-14 | **达成（v1.0.12）**：Ollama 在线轮 **PASS 25 / FAIL 2 / PENDING 5**（2 例 FAIL 经探针确认为**用例口径缺陷**：未带 `X-Proxy-Source`） | `doc/test/evidence/s7/smoke/smoke-summary-t4.json`、`t4-dps-proxy-trustchain-probe.json` | | S7-T6-2 |
 | P2-T6-3 | PG-ENV-1~4 复跑关闭 | P2 | ☐ | | | `gate-aggregate.json` §TEST-ALIGN-CLOSE | | S7-T6-3 |
 | P2-T6-4 | K07/SYS-1 真实终验 | P2 | ☑ | 2026-09-12 | **PASS（v1.0.9）**：缺口 0 / 未覆盖 0 / 豁免 59 全有效（DPS 35 条已续期至 2026-12-31）；两仓补填已提交（`41af780` / `0a6f351`） | `gate-aggregate.json` §K07-SYS-1（`status=PASS`）；`k07-finalize.json`（`gate_verdict=PASS`） | | S7-T6-4 |
 | P2-S2 | S2 段级真实 HTTP 双签 | P2 | ☐ | | | `doc/test/evidence/s2/**` | | S7-T2-2、S7-T6-1 |
 | P2-S3 | S3 段级真实 HTTP 双签 | P2 | ☐ | | | `doc/test/evidence/s3/**` | | S7-T2-1、S7-T6-1 |
 | P2-S4 | S4 段级真实 HTTP 双签 | P2 | ☐ | | | `doc/test/evidence/s4/**` | | S7-T3-4、S7-T4-4、S7-T6-4 |
 | P2-S5 | S5 段级真实 HTTP 双签 | P2 | ☐ | | | `doc/test/evidence/s5/**` | | S7-T2-1、S7-T6-2 |
-| P2-B1 | S6 B1 Playwright 9 关键页 | P2 | ☐ | | | `doc/test/evidence/s6/ui-e2e/**` | | S7-T6-2 |
-| P2-B2 | S6 B2 L3-2 真实双签 | P2 | ☐ | | | `doc/test/evidence/s6/l3-2-smoke.json` | | S7-T7-3 |
+| P2-B1 | S6 B1 Playwright 9 关键页 | P2 | ☑ | 2026-09-14 | **达成（v1.0.12）**：9 关键页 **9 passed / 0 failed**（14.2s，含 Q-FE-4b 无渲染兜底与无 console error/warn）；需注入登录态（`OPENBASE_ACCESS_TOKEN`） | `doc/test/evidence/manual/t4-frontend-e2e.txt`、`doc/test/evidence/s6/ui-e2e/results.json` | | S7-T6-2 |
+| P2-B2 | S6 B2 L3-2 真实双签 | P2 | ☐ | | **PENDING（v1.0.12 复跑）**：OpenBase 侧脚本为骨架（受信通道可达）；真实双签以各子系统仓脚本为准 | `doc/test/evidence/s7/l3-2/smoke-result-t4.json` | | S7-T7-3 |
 | P2-B3 | S6 B3 真实双租户数据面 | P2 | ☐ | | | `doc/test/evidence/s6/**` | | S7-T6-2 |
 | P2-B4 | S6 B4 真实 IdP 吊销 | P2 | ☐ | | | `doc/test/evidence/s6/**` | | S7-T2-1 |
 | P2-B5 | S6 B5 四仓 frontend 物理改造与 CI 收敛 | P2 | ☐ | | | 各仓改造 hash + CI 结果 | | S7-T7-3 |

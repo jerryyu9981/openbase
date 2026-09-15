@@ -1,0 +1,11 @@
+﻿[OK ] POST   /llm-proxy/conversations                     -> 201 {"code":0,"message":"success","data":{"id":"bc60d320-22de-43c2-a242-1c
+   conversation_id = bc60d320-22de-43c2-a242-1c4536c1d3d0
+[OK ] GET    /llm-proxy/conversations/bc60d320-22de-43c2- -> 200 {"code":0,"message":"success","data":[],"timestamp":"2026-09-14T14:25:
+[OK ] POST   /llm-proxy/conversations/bc60d320-22de-43c2- -> 200 {"code":0,"message":"success","data":{"message":"对话已归档"},"timestamp":"
+[OK ] DELETE /llm-proxy/conversations/bc60d320-22de-43c2- -> 204 
+[DIF] GET    /memory-proxy/sessions                       -> -1 ('Connection aborted.', RemoteDisconnected('Remote end closed connecti
+   session_id = None
+[OK ] GET    /memory-proxy/decay/config                   -> 200 {"code":0,"message":"success","data":{"tenant_id":"default","strategy"
+[OK ] PUT    /memory-proxy/decay/config                   -> 403 {"code":403,"message":"Forbidden","data":null,"timestamp":"2026-09-14T
+补走查 3 覆盖: {"operations": 7, "with_oplog": 6, "coverage": 85.7}
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-all-pages-oplog-walkthrough-3.json

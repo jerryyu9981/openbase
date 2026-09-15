@@ -1,0 +1,96 @@
+{
+  "task": "TT-LOGS-056 性能：日志写入不阻塞主请求，P99 增量 <5ms；容量：单服务单日 <200MB（1000 请求/日，含样本）",
+  "checked_at": "2026-09-14T22:55:39+08:00",
+  "perf": {
+    "l1_file_log_per_record_ms": 0.0889,
+    "l1_file_log_p99_ms": 0.1702,
+    "l1_verdict": "PASS（0.089ms << 5ms）",
+    "audit_db_insert_mean_ms": 6.432,
+    "audit_db_insert_p95_ms": 8.374,
+    "audit_rows_per_proxied_request": 2,
+    "audit_db_per_request_ms_mean": 12.865,
+    "audit_persist_location": "请求路径内同步 await（openbase/modules/audit/__init__.py:472/482），失败 try/except 降级不阻断",
+    "strict_verdict": "FAIL（含审计落库的日志链路 ≈12.865 ms/代理请求 > 5ms）",
+    "narrow_verdict": "PASS（仅 L1 日志写入 0.089ms）",
+    "e2e_diff_pairs": [
+      {
+        "pair": "A(日志开) − B(日志关)",
+        "workload": "W1_dps_proxy_health",
+        "n": 300,
+        "p50_delta_ms": 5.53,
+        "p95_delta_ms": 57.56,
+        "p99_delta_ms": 28.5,
+        "note": "同 n 成对"
+      },
+      {
+        "pair": "A(日志开) − B(日志关)",
+        "workload": "W2_auth_me",
+        "n": 300,
+        "p50_delta_ms": 2.88,
+        "p95_delta_ms": 5.26,
+        "p99_delta_ms": 57.84,
+        "note": "同 n 成对"
+      },
+      {
+        "pair": "A2(日志开) − B2(日志关)",
+        "workload": "W1_dps_proxy_health",
+        "n": 500,
+        "p50_delta_ms": 7.89,
+        "p95_delta_ms": 20.67,
+        "p99_delta_ms": 51.67,
+        "note": "同 n 成对"
+      },
+      {
+        "pair": "A2(日志开) − B2(日志关)",
+        "workload": "W2_auth_me",
+        "n": 500,
+        "p50_delta_ms": 0.99,
+        "p95_delta_ms": 5.77,
+        "p99_delta_ms": 28.24,
+        "note": "同 n 成对"
+      }
+    ],
+    "same_config_noise": [
+      {
+        "workload": "W1_dps_proxy_health",
+        "p50_ms_runs": [
+          79.285,
+          82.778,
+          66.76
+        ],
+        "spread_ms": 16.02,
+        "range": "66.76 ~ 82.778 ms"
+      },
+      {
+        "workload": "W2_auth_me",
+        "p50_ms_runs": [
+          28.227,
+          27.526,
+          23.012
+        ],
+        "spread_ms": 5.21,
+        "range": "23.012 ~ 28.227 ms"
+      }
+    ],
+    "e2e_conclusion": "端到端差分不可判：同配置重复跑 p50 波动达 8~16ms（>5ms 阈值），且 p99 受 PG 提交抖动主导（max 280~340ms）；故以进程内直测为准（文件 0.089ms / 审计 6.43ms·行）"
+  },
+  "capacity": {
+    "bytes_per_request_capture_off": 865.3,
+    "bytes_per_request_capture_on": 1317.7,
+    "audit_db_bytes_per_row": 768.7,
+    "audit_rows_per_request": 1.65,
+    "audit_db_bytes_per_request": 1268.4,
+    "combined_bytes_per_request_capture_on": 2586.1,
+    "extrapolation_1000_req_per_day_mb": 2.47,
+    "threshold_mb": 200,
+    "verdict": "PASS（≈2.47 MB/日 << 200MB；余量约 81×）"
+  },
+  "remediation": {
+    "item": "审计落库异步化（P2 优化项，非阻断）",
+    "why": "2 次 insert+commit（api.request + proxy.outbound）在请求路径内同步等待，占代理请求 ~12.9ms",
+    "how": "改用 BackgroundTasks / 进程内队列 + writer 协程（保留既有 try/except 降级语义与 WARN 留痕），或对非关键路径合并为单次批量提交",
+    "expected": "请求路径内仅保留 L1 文件写入（0.089ms）→ 严格口径 <5ms 可达标",
+    "risk": "异步落库在进程崩溃时可能丢最近若干条审计行（需在设计 §3 明确可接受窗口）"
+  },
+  "verdict_summary": "TT-056：**部分达标** —— 容量达标（≈2.6MB/日）；性能在「仅 L1 日志写入」口径下达标（0.089ms），在「含审计落库的日志链路」严格口径下**未达标**（≈12.9ms/代理请求），已登记 P2 优化项（异步化落库）"
+}

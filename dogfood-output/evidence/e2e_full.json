@@ -1,0 +1,2877 @@
+[
+ {
+  "pid": "01-仪表盘",
+  "label": "仪表盘",
+  "kind": "shell",
+  "nav_by": "login",
+  "url": "http://localhost:5173/dashboard",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\01-仪表盘.png",
+  "content_len": 121,
+  "content_sel": ".el-main / el-main ob-main",
+  "content_sample": "已启用模块\n5\n当前用户\nadmin\n系统版本\nv1.2.0\n统一入口\n5 系统\n统一入口\n\n单前端登录访问四系统特色模块（对话监控 / 知识库 / 记忆 / 画像）与统一网关控制台。\n\n动态模块\nOpenLLM\n知识库\n记忆\n画像\n统一网关",
+  "body_text_len": 178,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 7,
+   "table_rows": 0,
+   "cards": 6,
+   "module_menu_groups": 0
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [
+    "登录成功"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": true
+  },
+  "console_errors": [],
+  "console_warnings": [
+   {
+    "type": "warning",
+    "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /openllm, component: , meta: Object, children: Array(35)}"
+   },
+   {
+    "type": "warning",
+    "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /knowledge, component: , meta: Object, children: Array(8)}"
+   },
+   {
+    "type": "warning",
+    "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /memory, component: , meta: Object, children: Array(11)}"
+   },
+   {
+    "type": "warning",
+    "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /portrait, component: , meta: Object, children: Array(13)}"
+   },
+   {
+    "type": "warning",
+    "text": "[Vue Router warn]: Parent route \"\" not found when adding child route {path: /gateway, component: , meta: Object, children: Array(3)}"
+   }
+  ],
+  "req_failures": [],
+  "http_bad": [],
+  "login_user": "admin"
+ },
+ {
+  "pid": "02-租户管理",
+  "label": "租户管理",
+  "kind": "module",
+  "nav_by": "sidebar-click",
+  "url": "http://localhost:5173/system/tenants",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\02-租户管理.png",
+  "content_len": 90,
+  "content_sel": ".el-main / el-main ob-main",
+  "content_sample": "状态\n创建租户\n租户编码\n\t\n租户名称\n\t\n状态\n\t\n配额\n\t\n创建时间\n\t\n操作\ntenant-1\n\t\ncompany-1\n\t\n启用\n\t\n\t\n\t\n配额\n停用\n删除\n共 1 条\n1",
+  "body_text_len": 142,
+  "interactive": {
+   "buttons": 7,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 7,
+   "table_rows": 1,
+   "cards": 0,
+   "module_menu_groups": 0
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": true
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "sidebar_click_ok": true,
+  "has_module_menu": false,
+  "content_tabs": [],
+  "toolbar_buttons": [
+   "创建租户",
+   "配额",
+   "停用",
+   "删除"
+  ]
+ },
+ {
+  "pid": "03-OpenLLM",
+  "label": "OpenLLM",
+  "kind": "module",
+  "nav_by": "sidebar-click",
+  "url": "http://localhost:5173/openllm/models",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM.png",
+  "content_len": 803,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "状态筛选\n新增模型\n模型\n\t\nProvider\n\t\n类型\n\t\n能力\n\t\n模型 ID\n\t\n状态\n\t\n更新时间\n\t\n操作\ngpt-4\n\t\nDeepSeek2\n\t\n商业\n\t\n—\n\t\ngpt-4\n\t\n在线\n\t\n\t\n详情\n编辑\n删除\n\n\ndeepseek-v4-flash\n\t\nDeepSeek\n\t\n商业\n\t\n—\n\t\ndeepseek-v4-flash\n\t\n在线\n\t\n\t\n详情\n编辑\n删除\n\n\nqwen3:0.",
+  "body_text_len": 824,
+  "interactive": {
+   "buttons": 34,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 11,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "sidebar_click_ok": true,
+  "has_module_menu": true,
+  "menu_discovery": [
+   {
+    "group": "模型中心",
+    "items": [
+     "模型管理",
+     "本地模型",
+     "模型分类",
+     "模型对比",
+     "开源市场",
+     "下载管理",
+     "提供商管理",
+     "我的收藏",
+     "用量统计",
+     "个人设置",
+     "提供商注册",
+     "API 密钥",
+     "模型部署",
+     "GPU 监控",
+     "EdgeRouter 适配器"
+    ]
+   },
+   {
+    "group": "AI 应用",
+    "items": [
+     "应用管理",
+     "Playground",
+     "Prompt 模板",
+     "Prompt 实验",
+     "插件管理",
+     "工具调用监控",
+     "A/B 测试",
+     "调用记录"
+    ]
+   },
+   {
+    "group": "对话监控",
+    "items": [
+     "对话管理",
+     "监控仪表盘",
+     "链路追踪",
+     "成本分析",
+     "预算管理",
+     "告警中心"
+    ]
+   },
+   {
+    "group": "平台联动",
+    "items": [
+     "路由策略",
+     "熔断器",
+     "模型对比推荐",
+     "报表趋势"
+    ]
+   }
+  ]
+ },
+ {
+  "pid": "03-OpenLLM-01-模型管理",
+  "label": "OpenLLM/模型中心/模型管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/models",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-01-模型管理.png",
+  "content_len": 803,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "状态筛选\n新增模型\n模型\n\t\nProvider\n\t\n类型\n\t\n能力\n\t\n模型 ID\n\t\n状态\n\t\n更新时间\n\t\n操作\ngpt-4\n\t\nDeepSeek2\n\t\n商业\n\t\n—\n\t\ngpt-4\n\t\n在线\n\t\n\t\n详情\n编辑\n删除\n\n\ndeepseek-v4-flash\n\t\nDeepSeek\n\t\n商业\n\t\n—\n\t\ndeepseek-v4-flash\n\t\n在线\n\t\n\t\n详情\n编辑\n删除\n\n\nqwen3:0.",
+  "body_text_len": 915,
+  "interactive": {
+   "buttons": 34,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 15,
+   "table_rows": 11,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-02-本地模型",
+  "label": "OpenLLM/模型中心/本地模型",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/models/local",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-02-本地模型.png",
+  "content_len": 135,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "拉取新模型（Ollama）\n模型仓库\nGPU 调度\nqwen2.5-7b\n\n大小：4.7GB · 运行时长：2h 15m · GPU 占用：38%\n\n停止\n更新\n删除\nllama3.1-8b\n\n大小：4.9GB · 运行时长：- · GPU 占用：-\n\n启动\n更新\n删除",
+  "body_text_len": 156,
+  "interactive": {
+   "buttons": 9,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 2,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-03-模型分类",
+  "label": "OpenLLM/模型中心/模型分类",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/models/categories",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-03-模型分类.png",
+  "content_len": 791,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "能力\n场景\n规模\n共 10 个模型\n分类标签云\n对话 (7)\n多模态 (3)\n代码生成 (3)\n视觉理解 (2)\n推理 (2)\nEmbedding (2)\n模型列表\n模型\n\t\nProvider\n\t\n类型\n\t\n能力\n\t\n场景\n\t\n规模\n\t\n状态\ngpt-4o\n\t\nOpenAI\n\t\n商业\n\t\n对话\n多模态\n视觉理解\n\t\n客服\n内容创作\n\t\n超大型(70B+)\n\t\n在线\n\n\ngpt-4o-mini\n\t\n",
+  "body_text_len": 812,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 4,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 10,
+   "cards": 2,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-04-模型对比",
+  "label": "OpenLLM/模型中心/模型对比",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/models/comparison",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-04-模型对比.png",
+  "content_len": 283,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "模型对比\n添加对比模型\n清空对比\n已选 2 / 4 个模型\n对比项\n\t\ngpt-4o\n移除\n\t\nclaude-3-5-sonnet\n移除\n名称\n\t\ngpt-4o\n\t\nclaude-3-5-sonnet\n\n\nProvider\n\t\nOpenAI\n\t\nAnthropic\n\n\n类型\n\t\n商业\n\t\n商业\n\n\n能力\n\t\nchat\nvision\n\t\nchat\ncode\n\n\n定价(输入/输出)\n\t\n$0.005 ",
+  "body_text_len": 304,
+  "interactive": {
+   "buttons": 4,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 7,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-05-开源市场",
+  "label": "OpenLLM/模型中心/开源市场",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/models/market",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-05-开源市场.png",
+  "content_len": 398,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "分类\n查询\nLlama 3 8B\n通用\n\nMeta 开源通用大模型，支持对话/代码/推理。\n\n8B\n4.9GB\nLlama 3 License\n下载部署\nQwen2 7B\n通用\n\n通义千问开源版，中文能力强，支持多轮对话。\n\n7B\n4.4GB\nApache 2.0\n下载部署\nDeepSeek Coder 6.7B\n代码\n\n代码生成/补全专用模型，支持多语言。\n\n6.7B\n3.8GB\nDeepSee",
+  "body_text_len": 419,
+  "interactive": {
+   "buttons": 9,
+   "inputs": 3,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 6,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-06-下载管理",
+  "label": "OpenLLM/模型中心/下载管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/downloads",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-06-下载管理.png",
+  "content_len": 225,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "状态筛选\n刷新\n下载任务\n模型\n\t\n大小\n\t\n进度\n\t\n速度\n\t\n状态\n\t\n操作\nllama3-8b\n\t\n4.9GB\n\t\n\t\n18.5 MB/s\n\t\n下载中\n\t\n暂停\n删除\n\n\nqwen2-7b\n\t\n4.4GB\n\t\n\t\n—\n\t\n已完成\n\t\n部署\n删除\n\n\ndeepseek-coder-6.7b\n\t\n3.8GB\n\t\n\t\n12.0 MB/s\n\t\n下载中\n\t\n暂停\n删除\n\n\nbge-large-zh\n\t",
+  "body_text_len": 246,
+  "interactive": {
+   "buttons": 9,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 4,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-07-提供商管理",
+  "label": "OpenLLM/模型中心/提供商管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/providers",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-07-提供商管理.png",
+  "content_len": 242,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "新增提供商\n商业\nOpenAI\n\nhttps://api.openai.com\n\n支持模型：8 · P50 延迟：320ms\n\n测试连接\n同步模型\n编辑\n删除\n本地\nOllama 本地\n\nhttp://127.0.0.1:11434\n\n支持模型：5 · P50 延迟：85ms\n\n测试连接\n同步模型\n编辑\n删除\nAzure\nAzure OpenAI\n\nhttps://xxx.openai.azure",
+  "body_text_len": 263,
+  "interactive": {
+   "buttons": 13,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-08-我的收藏",
+  "label": "OpenLLM/模型中心/我的收藏",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/favorites",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-08-我的收藏.png",
+  "content_len": 295,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "我的收藏\n8 个收藏模型\n对话模型 (3)\n多模态 (2)\nEmbedding (2)\n代码生成 (1)\ngpt-4o\n商业\n\nProvider：OpenAI\n\nchat\nvision\n\n旗舰多模态对话模型\n\n收藏时间：2026-08-20\n\n下载\n取消收藏\nclaude-3-5-sonnet\n商业\n\nProvider：Anthropic\n\nchat\ncode\n\n擅长代码与长文本理解\n\n收藏时间：",
+  "body_text_len": 316,
+  "interactive": {
+   "buttons": 6,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 4,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 4,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-09-用量统计",
+  "label": "OpenLLM/模型中心/用量统计",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/usage",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-09-用量统计.png",
+  "content_len": 756,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "至\n查询\n导出 CSV\n用量趋势\n用量明细\n模型筛选\n状态筛选\n日期\n\t\n模型\n\t\n状态\n\t\n调用次数\n\t\n输入 Tokens\n\t\n输出 Tokens\n\t\n费用($)\n2026-08-08\n\t\ngpt-4o\n\t\n计费\n\t\n1535\n\t\n289551\n\t\n132706\n\t\n1.5295\n\n\n2026-08-08\n\t\ngpt-4o-mini\n\t\n免费\n\t\n559\n\t\n702046\n\t\n171020\n\t",
+  "body_text_len": 868,
+  "interactive": {
+   "buttons": 4,
+   "inputs": 6,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 15,
+   "table_rows": 10,
+   "cards": 2,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-10-个人设置",
+  "label": "OpenLLM/模型中心/个人设置",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/settings",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-10-个人设置.png",
+  "content_len": 83,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "个人设置\n资料编辑\n昵称\n邮箱\n头像地址\nA\n保存资料\n修改密码\n旧密码\n新密码\n确认新密码\n修改密码\n通知偏好\n邮件通知\n站内通知\n版本更新提醒\n用量告警\n保存偏好",
+  "body_text_len": 104,
+  "interactive": {
+   "buttons": 3,
+   "inputs": 6,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-11-提供商注册",
+  "label": "OpenLLM/模型中心/提供商注册",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/providers/register",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-11-提供商注册.png",
+  "content_len": 57,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "提供商注册\n\n提供商注册（v1.2.0 已规划，深度对接依赖四系统 API，经 openbase 代理就绪后启用）",
+  "body_text_len": 78,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-12-API-密钥",
+  "label": "OpenLLM/模型中心/API 密钥",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/api-keys",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-12-API-密钥.png",
+  "content_len": 204,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "创建密钥\n名称\n\t\n模型权限\n\t\n速率限制\n\t\n过期时间\n\t\n状态\n\t\n操作\n生产环境密钥\n\t\ngpt-4o\ngpt-4o-mini\n\t\n120 rps\n\t\n2027-08-27\n\t\n有效\n\t\n详情\n删除\n\n\n测试环境密钥\n\t\n全部模型\n\t\n30 rps\n\t\n永不过期\n\t\n有效\n\t\n详情\n删除\n\n\n已过期密钥\n\t\nqwen2.5-7b\n\t\n10 rps\n\t\n2026-06-30\n\t\n已过期\n\t\n详",
+  "body_text_len": 225,
+  "interactive": {
+   "buttons": 7,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-13-模型部署",
+  "label": "OpenLLM/模型中心/模型部署",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/deploy",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-13-模型部署.png",
+  "content_len": 55,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "模型部署\n\n模型部署（v1.2.0 已规划，深度对接依赖四系统 API，经 openbase 代理就绪后启用）",
+  "body_text_len": 76,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-14-GPU-监控",
+  "label": "OpenLLM/模型中心/GPU 监控",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/gpu",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-14-GPU-监控.png",
+  "content_len": 59,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "GPU 资源\n\nGPU 资源（v1.2.0 已规划，深度对接依赖四系统 API，经 openbase 代理就绪后启用）",
+  "body_text_len": 80,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-15-EdgeRouter-适配器",
+  "label": "OpenLLM/模型中心/EdgeRouter 适配器",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/adapters",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-15-EdgeRouter-适配器.png",
+  "content_len": 75,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "EdgeRouter 适配器\n\nEdgeRouter 适配器（v1.2.0 已规划，深度对接依赖四系统 API，经 openbase 代理就绪后启用）",
+  "body_text_len": 188,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 15,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-16-应用管理",
+  "label": "OpenLLM/AI 应用/应用管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/apps",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-16-应用管理.png",
+  "content_len": 36,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "创建应用\n应用名称\n\t\n模型绑定\n\t\n状态\n\t\n版本\n\t\n操作\n暂无数据",
+  "body_text_len": 117,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 8,
+   "table_rows": 0,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [
+    "暂无数据"
+   ],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-17-Playground",
+  "label": "OpenLLM/AI 应用/Playground",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/playground",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-17-Playground.png",
+  "content_len": 30,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "qwen2.5:0.5b\n发送\n\n选择模型并开始一段对话调试",
+  "body_text_len": 51,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-18-Prompt-模板",
+  "label": "OpenLLM/AI 应用/Prompt 模板",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/prompt-templates",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-18-Prompt-模板.png",
+  "content_len": 136,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "状态\n新建模板\n导入\nPrompt 模板\n模板名称\n\t\n分类\n\t\n状态\n\t\n版本\n\t\n操作\n通用客服助手\n\t\n客服\n\t\n\t\n3\n\t\n编辑\n版本\n删除\n\n\n代码审查助手\n\t\n代码\n\t\n\t\n1\n\t\n编辑\n版本\n删除\n\n\n文章摘要模板\n\t\n摘要\n\t\n\t\n2\n\t\n编辑\n版本\n删除",
+  "body_text_len": 157,
+  "interactive": {
+   "buttons": 11,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-19-Prompt-实验",
+  "label": "OpenLLM/AI 应用/Prompt 实验",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/prompt-experiments",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-19-Prompt-实验.png",
+  "content_len": 128,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "创建实验\nPrompt 实验列表\n实验名称\n\t\n关联模板\n\t\n变体数\n\t\n流量分配\n\t\n状态\n\t\n操作\n客服开场白优化\n\t\n通用客服助手\n\t\n2\n\t\n50%\n\t\n\t\n报表\n删除\n\n\n代码审查温度对比\n\t\n代码审查助手\n\t\n2\n\t\n30%\n\t\n\t\n报表\n删除",
+  "body_text_len": 149,
+  "interactive": {
+   "buttons": 5,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 2,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-20-插件管理",
+  "label": "OpenLLM/AI 应用/插件管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/plugins",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-20-插件管理.png",
+  "content_len": 227,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "插件列表\n插件\n\t\n版本\n\t\n描述\n\t\n状态\n\t\n操作\nweb-search\n\t\n1.2.0\n\t\n联网搜索工具（搜索引擎 API 封装）\n\t\n\t\n内置工具\n\n\ncalculator\n\t\n1.0.0\n\t\n数学计算工具（安全沙箱执行）\n\t\n\t\n内置工具\n\n\ndatabase-reader\n\t\n0.9.1\n\t\n只读数据库查询工具（白名单表）\n\t\n\t\n内置工具\n内置工具详情\nweb_search\nsear",
+  "body_text_len": 248,
+  "interactive": {
+   "buttons": 3,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 2,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-21-工具调用监控",
+  "label": "OpenLLM/AI 应用/工具调用监控",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/tool-calls",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-21-工具调用监控.png",
+  "content_len": 246,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "状态\n至\n查询\n刷新\n工具调用记录\n时间\n\t\n模型\n\t\n工具\n\t\n耗时(ms)\n\t\n状态\n\t\n操作\n2026-08-28 13:40:12\n\t\nqwen2-7b\n\t\nweb_search\n\t\n812\n\t\n成功\n\t\n调用链\n\n\n2026-08-28 13:38:05\n\t\nllama3-8b\n\t\ndb_query\n\t\n3200\n\t\n执行中\n\t\n调用链\n取消执行\n\n\n2026-08-28 13:30:4",
+  "body_text_len": 267,
+  "interactive": {
+   "buttons": 8,
+   "inputs": 3,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-22-A-B-测试",
+  "label": "OpenLLM/AI 应用/A/B 测试",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/ab-tests",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-22-A-B-测试.png",
+  "content_len": 151,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "状态\n创建实验\nA/B 测试实验\n实验名称\n\t\n版本\n\t\n流量分配\n\t\n状态\n\t\n操作\n客服模型 A/B\n\t\n3\n\t\n50%\n\t\n运行中\n\t\n停止\n归档\n详情\n\n\n摘要提示词灰度\n\t\n1\n\t\n70%\n\t\n已停止\n\t\n启动\n归档\n详情\n\n\n代码模型切换验证\n\t\n2\n\t\n30%\n\t\n已归档\n\t\n启动\n详情",
+  "body_text_len": 172,
+  "interactive": {
+   "buttons": 9,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-23-调用记录",
+  "label": "OpenLLM/AI 应用/调用记录",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/apps/calls",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-23-调用记录.png",
+  "content_len": 55,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "调用记录\n\n调用记录（v1.2.0 已规划，深度对接依赖四系统 API，经 openbase 代理就绪后启用）",
+  "body_text_len": 137,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 8,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-24-对话管理",
+  "label": "OpenLLM/对话监控/对话管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/conversations",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-24-对话管理.png",
+  "content_len": 67,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "模型筛选\n新建会话\n导出（JSON）\n批量删除\n\t\n标题\n\t\n模型\n\t\n消息数\n\t\n开始时间\n\t\nToken 消耗\n\t\n操作\n暂无数据",
+  "body_text_len": 104,
+  "interactive": {
+   "buttons": 3,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [
+    "暂无数据"
+   ],
+   "alerts": [
+    "upstream error"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+   }
+  ],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [
+   {
+    "url": "http://localhost:5173/api/v1/llm-proxy/models",
+    "status": 500
+   }
+  ],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-25-监控仪表盘",
+  "label": "OpenLLM/对话监控/监控仪表盘",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/monitoring",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-25-监控仪表盘.png",
+  "content_len": 224,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "1 小时\n6 小时\n24 小时\n7 天\n请求量\n12,480\nToken 消耗\n8.2M\n成本\n$1,204.5\n错误率\n0.8%\n请求量趋势（自动轮询）\n最新告警\n时间\n\t\n级别\n\t\n内容\n2026-08-27 09:42\n\t\n严重\n\t\nP99 延迟超过 1s 阈值\n\n\n2026-08-27 09:15\n\t\n警告\n\t\nOpenAI 提供商错误率升高\n\n\n2026-08-27 08:58\n\t\n提示",
+  "body_text_len": 245,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 4,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 6,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-26-链路追踪",
+  "label": "OpenLLM/对话监控/链路追踪",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/monitoring/traces",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-26-链路追踪.png",
+  "content_len": 55,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "链路追踪\n\n链路追踪（v1.2.0 已规划，深度对接依赖四系统 API，经 openbase 代理就绪后启用）",
+  "body_text_len": 108,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 6,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": true
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-27-成本分析",
+  "label": "OpenLLM/对话监控/成本分析",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/monitoring/costs",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-27-成本分析.png",
+  "content_len": 435,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "模型\n提供商\n租户\n创建预算\n成本分布\n预算列表\n预算名\n\t\n周期\n\t\n额度\n\t\n已用\n\t\n进度\n\t\n告警阈值\nAI 研发月度预算\n\t\n月度\n\t\n$800\n\t\n$642\n\t\n\t\n80%\n\n\n生产环境季度预算\n\t\n季度\n\t\n$3000\n\t\n$1200\n\t\n\t\n70%\n\n\n数据标注年度预算\n\t\n年度\n\t\n$12000\n\t\n$4320\n\t\n\t\n60%\n优化建议\n低优先级任务切换至 gpt-4o-mini",
+  "body_text_len": 456,
+  "interactive": {
+   "buttons": 5,
+   "inputs": 3,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 7,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-28-预算管理",
+  "label": "OpenLLM/对话监控/预算管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/monitoring/budgets",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-28-预算管理.png",
+  "content_len": 55,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "预算管理\n\n预算管理（v1.2.0 已规划，深度对接依赖四系统 API，经 openbase 代理就绪后启用）",
+  "body_text_len": 76,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-29-告警中心",
+  "label": "OpenLLM/对话监控/告警中心",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/monitoring/alerts",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-29-告警中心.png",
+  "content_len": 269,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "新建规则\n告警规则\n告警历史\n规则名\n\t\n指标\n\t\n条件阈值\n\t\n级别\n\t\n启停\n\t\n操作\n延迟超过 500ms 告警\n\t\n延迟(ms)\n\t\n延迟(ms) 大于 > 500\n\t\n警告\n\t\n\t\n编辑\n删除\n\n\n错误率过高告警\n\t\n错误率(%)\n\t\n错误率(%) 大于等于 ≥ 5\n\t\n严重\n\t\n\t\n编辑\n删除\n\n\n每日费用超支告警\n\t\n费用($)\n\t\n费用($) 大于 > 100\n\t\n警告\n\t\n\t\n编",
+  "body_text_len": 290,
+  "interactive": {
+   "buttons": 9,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 2,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 4,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-30-路由策略",
+  "label": "OpenLLM/平台联动/路由策略",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/routing/strategies",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-30-路由策略.png",
+  "content_len": 241,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "路由策略\n熔断器\n新建策略\n策略名\n\t\n类型\n\t\n优先级\n\t\n目标模型\n\t\n状态\n\t\n操作\n默认权重路由\n\t\n权重路由\n\t\n10\n\t\ngpt-4o-mini\n\t\n启用\n\t\n编辑\n测试\n删除\n\n\n付费用户优先\n\t\n优先级路由\n\t\n5\n\t\ngpt-4o\n\t\n启用\n\t\n编辑\n测试\n删除\n\n\n高并发降级策略\n\t\n兜底路由\n\t\n20\n\t\nqwen2.5-7b\n\t\n启用\n\t\n编辑\n测试\n删除\n\n\n夜间省钱策略",
+  "body_text_len": 262,
+  "interactive": {
+   "buttons": 13,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 2,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 4,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-31-熔断器",
+  "label": "OpenLLM/平台联动/熔断器",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/openllm/routing/circuit-breakers",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-31-熔断器.png",
+  "content_len": 241,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "路由策略\n熔断器\n新建策略\n策略名\n\t\n类型\n\t\n优先级\n\t\n目标模型\n\t\n状态\n\t\n操作\n默认权重路由\n\t\n权重路由\n\t\n10\n\t\ngpt-4o-mini\n\t\n启用\n\t\n编辑\n测试\n删除\n\n\n付费用户优先\n\t\n优先级路由\n\t\n5\n\t\ngpt-4o\n\t\n启用\n\t\n编辑\n测试\n删除\n\n\n高并发降级策略\n\t\n兜底路由\n\t\n20\n\t\nqwen2.5-7b\n\t\n启用\n\t\n编辑\n测试\n删除\n\n\n夜间省钱策略",
+  "body_text_len": 283,
+  "interactive": {
+   "buttons": 13,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 2,
+   "links": 0,
+   "menu_items": 4,
+   "table_rows": 4,
+   "cards": 0,
+   "module_menu_groups": 4
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-32-模型对比推荐",
+  "label": "OpenLLM/平台联动/模型对比推荐",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/dashboard",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-32-模型对比推荐.png",
+  "content_len": 121,
+  "content_sel": ".el-main / el-main ob-main",
+  "content_sample": "已启用模块\n5\n当前用户\nadmin\n系统版本\nv1.2.0\n统一入口\n5 系统\n统一入口\n\n单前端登录访问四系统特色模块（对话监控 / 知识库 / 记忆 / 画像）与统一网关控制台。\n\n动态模块\nOpenLLM\n知识库\n记忆\n画像\n统一网关",
+  "body_text_len": 172,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 7,
+   "table_rows": 0,
+   "cards": 6,
+   "module_menu_groups": 0
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": true
+  },
+  "console_errors": [],
+  "console_warnings": [
+   {
+    "type": "warning",
+    "text": "[Vue Router warn]: No match found for location with path \"/openllm/recommend\""
+   }
+  ],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "03-OpenLLM-err-33",
+  "label": "OpenLLM/平台联动/报表趋势",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/dashboard",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\03-OpenLLM-err-33.png",
+  "content_len": 121,
+  "content_sel": ".el-main / el-main ob-main",
+  "content_sample": "已启用模块\n5\n当前用户\nadmin\n系统版本\nv1.2.0\n统一入口\n5 系统\n统一入口\n\n单前端登录访问四系统特色模块（对话监控 / 知识库 / 记忆 / 画像）与统一网关控制台。\n\n动态模块\nOpenLLM\n知识库\n记忆\n画像\n统一网关",
+  "body_text_len": 172,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 7,
+   "table_rows": 0,
+   "cards": 6,
+   "module_menu_groups": 0
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": true
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "error": "Locator.hover: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\".module-menu .el-sub-menu__title\").filter(has_text=\"平台联动\").first\n"
+ },
+ {
+  "pid": "04-知识库",
+  "label": "知识库",
+  "kind": "module",
+  "nav_by": "sidebar-click",
+  "url": "http://localhost:5173/knowledge/list",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\04-知识库.png",
+  "content_len": 374,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "创建知识库\n刷新\nidentity-test-coll2\n\n文档 0 · 策略 structured · 2026/9/5\n\n进入\n删除\nidentity-test-coll\n\n文档 0 · 策略 structured · 2026/9/5\n\n进入\n删除\nintegration-test-coll\n\n文档 0 · 策略 structured · 2026/9/5\n\n进入\n删除\nkb_smoke_2",
+  "body_text_len": 378,
+  "interactive": {
+   "buttons": 16,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 6,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "sidebar_click_ok": true,
+  "has_module_menu": true,
+  "menu_discovery": [
+   {
+    "group": "知识库",
+    "items": [
+     "知识库管理",
+     "RAG 对话",
+     "用户管理",
+     "系统配置",
+     "管理后台",
+     "控制台"
+    ]
+   }
+  ]
+ },
+ {
+  "pid": "04-知识库-01-知识库管理",
+  "label": "知识库/知识库/知识库管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/knowledge/list",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\04-知识库-01-知识库管理.png",
+  "content_len": 374,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "创建知识库\n刷新\nidentity-test-coll2\n\n文档 0 · 策略 structured · 2026/9/5\n\n进入\n删除\nidentity-test-coll\n\n文档 0 · 策略 structured · 2026/9/5\n\n进入\n删除\nintegration-test-coll\n\n文档 0 · 策略 structured · 2026/9/5\n\n进入\n删除\nkb_smoke_2",
+  "body_text_len": 410,
+  "interactive": {
+   "buttons": 16,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 6,
+   "table_rows": 0,
+   "cards": 6,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": false
+ },
+ {
+  "pid": "04-知识库-02-RAG-对话",
+  "label": "知识库/知识库/RAG 对话",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/knowledge/chat",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\04-知识库-02-RAG-对话.png",
+  "content_len": 83,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "知识库选择\n选择知识库\n\n请选择知识库后开始对话\n\n对话将基于所选知识库的检索结果生成回答，并附带来源引用。\n\n刷新列表\n\n开始你的 RAG 对话吧\n\n重新生成\n发送",
+  "body_text_len": 87,
+  "interactive": {
+   "buttons": 3,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 0,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "04-知识库-03-用户管理",
+  "label": "知识库/知识库/用户管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/knowledge/users",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\04-知识库-03-用户管理.png",
+  "content_len": 306,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "新建用户\n用户名\n\t\n邮箱\n\t\n角色\n\t\n状态\n\t\n最后登录\n\t\n操作\nadmin\n\t\nadmin@openbase.dev\n\t\n管理员\n\t\n启用\n\t\n2026-08-27 09:12\n\t\n编辑角色\n删除\n\n\nalice\n\t\nalice@openbase.dev\n\t\n编辑者\n\t\n启用\n\t\n2026-08-26 18:40\n\t\n编辑角色\n删除\n\n\nbob\n\t\nbob@openbase.dev\n\t\n只",
+  "body_text_len": 310,
+  "interactive": {
+   "buttons": 9,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 4,
+   "cards": 0,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "04-知识库-04-系统配置",
+  "label": "知识库/知识库/系统配置",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/knowledge/settings",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\04-知识库-04-系统配置.png",
+  "content_len": 182,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "检索配置\n默认分块大小\n字符数，范围 100 - 5000\n检索 TopK\n召回候选分块数，范围 1 - 50\n重排序\n已开启：检索后对候选分块精排\nEmbedding 模型\nBAAI/bge-m3\n召回阈值\n低于该相似度的分块将被过滤，当前 0.50\n存储设置\n上传目录\n连接状态\n测试连接\n尚未测试\n保存配置\n重置\n配置版本历史\n\n暂无配置变更记录，保存后生成",
+  "body_text_len": 219,
+  "interactive": {
+   "buttons": 3,
+   "inputs": 5,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 6,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "04-知识库-05-管理后台",
+  "label": "知识库/知识库/管理后台",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/knowledge/admin",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\04-知识库-05-管理后台.png",
+  "content_len": 1424,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "知识库数\n17\n当前页 17 条\n文档总数\n0\n列表统计\n上游健康度\nhealthy\ndatabase:up / vector_store:up / elasticsearch:disabled / cache:disabled\n数据来源\nOpenRAG\n经 rag-proxy 代理\n知识库管理后台\n新建知识库\n刷新\n知识库\n\t\n文档数\n\t\n分块策略\n\t\n状态\n\t\n创建时间\n\t\n操作\nidenti",
+  "body_text_len": 1428,
+  "interactive": {
+   "buttons": 55,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 17,
+   "cards": 5,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "04-知识库-06-控制台",
+  "label": "知识库/知识库/控制台",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/knowledge/console",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\04-知识库-06-控制台.png",
+  "content_len": 355,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "概览\nAPI 调试器\n接口文档\n性能监控\n接入 Base URL\thttps://openbase.example.com/api/v1/rag\n鉴权方式\t\nBearer Token\n 在「API 密钥」创建后注入\n接入示例（Python）\nimport httpx\n\nclient = httpx.Client(\n    base_url=\"https://openbase.example.com",
+  "body_text_len": 359,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 4,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 2,
+   "cards": 1,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [
+   {
+    "type": "warning",
+    "text": "[ECharts] Can't get DOM width or height. Please check dom.clientWidth and dom.clientHeight. They should not be 0.For example, you may need to call this in the callback of window.onload."
+   }
+  ],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "05-记忆",
+  "label": "记忆",
+  "kind": "module",
+  "nav_by": "sidebar-click",
+  "url": "http://localhost:5173/memory/list",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆.png",
+  "content_len": 771,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "记忆类型\n写入记忆\n批量删除\n\t\n记忆内容（摘要）\n\t\n类型\n\t\n标签\n\t\n衰减权重\n\t\n创建时间\n\t\n操作\n\t\nbypass-write 1788545783\n\t\npersistent\n\t\n\t\n0.07\n\t\n2026-09-04T18:16:23.947408+00:00\n\t\n详情\n删除\n\n\n\t\ncross-channel consistency test data v2\n\t\npersisten",
+  "body_text_len": 776,
+  "interactive": {
+   "buttons": 18,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 7,
+   "cards": 0,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "sidebar_click_ok": true,
+  "has_module_menu": true,
+  "menu_discovery": [
+   {
+    "group": "记忆管理",
+    "items": [
+     "记忆列表",
+     "记忆搜索",
+     "会话管理",
+     "记忆图谱",
+     "API 网关",
+     "管理后台",
+     "衰减配置",
+     "写入记忆"
+    ]
+   }
+  ]
+ },
+ {
+  "pid": "05-记忆-01-记忆列表",
+  "label": "记忆/记忆管理/记忆列表",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/list",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-01-记忆列表.png",
+  "content_len": 771,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "记忆类型\n写入记忆\n批量删除\n\t\n记忆内容（摘要）\n\t\n类型\n\t\n标签\n\t\n衰减权重\n\t\n创建时间\n\t\n操作\n\t\nbypass-write 1788545783\n\t\npersistent\n\t\n\t\n0.07\n\t\n2026-09-04T18:16:23.947408+00:00\n\t\n详情\n删除\n\n\n\t\ncross-channel consistency test data v2\n\t\npersisten",
+  "body_text_len": 818,
+  "interactive": {
+   "buttons": 18,
+   "inputs": 2,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 8,
+   "table_rows": 7,
+   "cards": 0,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": false
+ },
+ {
+  "pid": "05-记忆-02-记忆搜索",
+  "label": "记忆/记忆管理/记忆搜索",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/search",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-02-记忆搜索.png",
+  "content_len": 86,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "记忆搜索\n语义召回：输入查询词，经 memory-proxy 调用 OpenMemory recall 检索最相关记忆\n查询词\n策略\n语义\n数量\n搜索\n\n输入查询词开始搜索",
+  "body_text_len": 91,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 3,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "05-记忆-03-会话管理",
+  "label": "记忆/记忆管理/会话管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/sessions",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-03-会话管理.png",
+  "content_len": 107,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "会话管理\nOpenMemory 会话：查看会话列表与详情，可终止并清空会话上下文\n刷新\n会话 ID\n\t\n用户 ID\n\t\n消息数\n\t\n创建时间\n\t\n更新时间\n\t\n操作\n暂无会话（OpenMemory 当前无活跃会话）",
+  "body_text_len": 112,
+  "interactive": {
+   "buttons": 1,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 0,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "05-记忆-04-记忆图谱",
+  "label": "记忆/记忆管理/记忆图谱",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/graph",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-04-记忆图谱.png",
+  "content_len": 393,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "新建实体\n新建关系\n拖动节点调整布局 · 滚轮缩放 · 悬停查看实体详情\n记忆图谱\n张伟\n李娜\nOpenBase\n记忆图谱\n语义检索\n2026 产品发布会\nRAG 架构评审\nOpenMemory\n王强\n知识蒸馏\n人物\n事件\n概念\n项目\n实体列表\n实体\n\t\n类型\n\t\n关系数\n\t\n操作\n张伟\n\t\n人物\n\t\n2\n\t\n编辑\n删除\n\n\n李娜\n\t\n人物\n\t\n2\n\t\n编辑\n删除\n\n\nOpenBase\n\t\n项目\n",
+  "body_text_len": 398,
+  "interactive": {
+   "buttons": 22,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 10,
+   "cards": 2,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "05-记忆-05-API-网关",
+  "label": "记忆/记忆管理/API 网关",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/api-gateway",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-05-API-网关.png",
+  "content_len": 133,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "API 网关\n统一网关：服务密钥（OpenBase 签发）+ 审计日志（真实记录）+ 网关健康（服务发现）\n访问密钥\n审计日志\n网关健康\n创建密钥\n刷新\n密钥创建后仅展示一次，请妥善保管；列表不回显明文\n名称\n\t\n权限范围\n\t\n描述\n\t\n状态\n\t\n创建时间\n暂无密钥",
+  "body_text_len": 138,
+  "interactive": {
+   "buttons": 2,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 3,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 0,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "05-记忆-06-管理后台",
+  "label": "记忆/记忆管理/管理后台",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/admin",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-06-管理后台.png",
+  "content_len": 343,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "记忆维护\n记忆管理后台：概览统计 + 运行监控（真实 OpenMemory 数据）+ 记忆维护操作\n记忆概览\n运行监控\n记忆维护\n记忆类型说明\n\nOpenMemory 的 memory_type 表示存储层级（persistent 持久 / session 会话 / episode 情景），非内容模态；内容模态（文本/图像/音频）由写入时的 metadata.source 或标签区分。\n\n记忆总数",
+  "body_text_len": 348,
+  "interactive": {
+   "buttons": 0,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 3,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 2,
+   "cards": 6,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [
+    "记忆类型说明\n\nOpenMemory 的 memory_type 表示存储层级（persistent 持久 / session 会话 / episode 情景），非内容模态；内容模态（文本/图像/音频）由写入时的 metadata.source 或标签区分。"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "05-记忆-07-衰减配置",
+  "label": "记忆/记忆管理/衰减配置",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/decay",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-07-衰减配置.png",
+  "content_len": 200,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "衰减配置\n记忆衰减引擎参数：控制记忆随时间的权重衰减策略（OpenMemory GET/PUT /decay/config）\n当前配置\n衰减策略\n自适应（adaptive）\n时间衰减因子\n半衰期（天）\n情感权重\n频率权重\n租户\ndefault\n保存配置\n重置\n更新时间\n创建时间\t2026-08-30T11:05:15.895460Z\t更新时间\t2026-09-01T19:38:03.505007Z",
+  "body_text_len": 205,
+  "interactive": {
+   "buttons": 2,
+   "inputs": 5,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 1,
+   "cards": 2,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "05-记忆-08-写入记忆",
+  "label": "记忆/记忆管理/写入记忆",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/memory/write",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\05-记忆-08-写入记忆.png",
+  "content_len": 222,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "写入记忆\n内容将经 memory-proxy 写入 OpenMemory 持久存储（POST /api/v1/remember）\n记忆内容\n记忆内容\n0 / 50000\n用户 ID\n会话 ID\n智能体 ID\n标签\n输入后回车创建标签\n写入记忆\n重置\n提示\n写入内容将经 OpenBase 统一认证（JWT）与双层密钥通道转发至 OpenMemory 8020。\n带标签的记忆便于后续列表页按标签过滤。",
+  "body_text_len": 269,
+  "interactive": {
+   "buttons": 2,
+   "inputs": 4,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 8,
+   "table_rows": 0,
+   "cards": 2,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像",
+  "label": "画像",
+  "kind": "module",
+  "nav_by": "sidebar-click",
+  "url": "http://localhost:5173/portrait/list",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像.png",
+  "content_len": 191,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "画像总数\n-\n报表概览（真实 DPS 数据）\n高风险画像\n-\n风险分 ≥ 70\n上游健康度\nhealthy\nDPS v2.8.1\n画像查询\n刷新\n画像列表加载失败：Request failed with status code 403\n\n点击重试\n\n画像名称\n\t\n画像 ID\n\t\n标签\n\t\n风险等级\n\t\n更新时间\n\t\n操作\n\n加载失败，请点击上方提示条「点击重试」\n\n共 0 条\n1",
+  "body_text_len": 210,
+  "interactive": {
+   "buttons": 5,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [
+    "加载失败",
+    "不存在"
+   ],
+   "alerts": [
+    "画像列表加载失败：Request failed with status code 403\n\n点击重试",
+    "组织不存在",
+    "组织不存在"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   },
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   }
+  ],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/portraits?page=1&page_size=20",
+    "status": 403
+   },
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/reports/overview",
+    "status": 403
+   }
+  ],
+  "sidebar_click_ok": true,
+  "has_module_menu": true,
+  "menu_discovery": [
+   {
+    "group": "画像管理",
+    "items": [
+     "数据总览",
+     "画像列表",
+     "画像搜索",
+     "标签管理",
+     "规则引擎",
+     "分析报表",
+     "限流管理",
+     "API 管理",
+     "权限管理",
+     "系统监控",
+     "批量任务"
+    ]
+   }
+  ]
+ },
+ {
+  "pid": "06-画像-01-数据总览",
+  "label": "画像/画像管理/数据总览",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/overview",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-01-数据总览.png",
+  "content_len": 201,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "数据总览加载失败：Request failed with status code 403\n重新加载\n\n画像总数\n0\n平均综合分 -\n今日新增\n0\n当日创建画像\n高风险画像\n0\n中风险 0 / 低风险 0\n活跃画像率\n0%\n画像风险分布\n\n暂无画像风险数据\n\n画像新增趋势（近 30 天）\n\n暂无趋势数据\n\n最新画像\n查看全部\n姓名\n\t\n画像 ID\n\t\n风险等级\n\t\n综合分\n\t\n更新时间\n\n暂无画像数",
+  "body_text_len": 279,
+  "interactive": {
+   "buttons": 2,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 11,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [
+    "加载失败",
+    "不存在"
+   ],
+   "alerts": [
+    "数据总览加载失败：Request failed with status code 403\n重新加载",
+    "组织不存在",
+    "组织不存在"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   },
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   }
+  ],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/reports/overview",
+    "status": 403
+   },
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/portraits?page=1&page_size=5",
+    "status": 403
+   }
+  ],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-02-画像列表",
+  "label": "画像/画像管理/画像列表",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/list",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-02-画像列表.png",
+  "content_len": 191,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "画像总数\n-\n报表概览（真实 DPS 数据）\n高风险画像\n-\n风险分 ≥ 70\n上游健康度\nhealthy\nDPS v2.8.1\n画像查询\n刷新\n画像列表加载失败：Request failed with status code 403\n\n点击重试\n\n画像名称\n\t\n画像 ID\n\t\n标签\n\t\n风险等级\n\t\n更新时间\n\t\n操作\n\n加载失败，请点击上方提示条「点击重试」\n\n共 0 条\n1",
+  "body_text_len": 267,
+  "interactive": {
+   "buttons": 5,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 11,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [
+    "加载失败",
+    "不存在"
+   ],
+   "alerts": [
+    "画像列表加载失败：Request failed with status code 403\n\n点击重试",
+    "组织不存在",
+    "组织不存在"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   },
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   }
+  ],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/portraits?page=1&page_size=20",
+    "status": 403
+   },
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/reports/overview",
+    "status": 403
+   }
+  ],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-03-画像搜索",
+  "label": "画像/画像管理/画像搜索",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/search",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-03-画像搜索.png",
+  "content_len": 77,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "关键字\n风险等级\n全部\n创建时间\n至\n查询\n重置\n画像 ID\n\t\n姓名\n\t\n风险等级\n\t\n创建时间\n\t\n更新时间\n\t\n操作\n\n请输入查询条件后点击「查询」",
+  "body_text_len": 140,
+  "interactive": {
+   "buttons": 2,
+   "inputs": 4,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 11,
+   "table_rows": 0,
+   "cards": 1,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-04-标签管理",
+  "label": "画像/画像管理/标签管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/tags",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-04-标签管理.png",
+  "content_len": 106,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "标签分类加载失败：Request failed with status code 403\n0\n标签分类总数\n0\n含描述分类\n新建分类\n刷新\n分类名\n\t\n描述\n\t\n创建时间\n\t\n操作\n\n暂无标签分类，点击右上角新建",
+  "body_text_len": 176,
+  "interactive": {
+   "buttons": 2,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 11,
+   "table_rows": 0,
+   "cards": 2,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [
+    "加载失败",
+    "不存在"
+   ],
+   "alerts": [
+    "标签分类加载失败：Request failed with status code 403",
+    "组织不存在"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   }
+  ],
+  "console_warnings": [
+   {
+    "type": "warning",
+    "text": "ElementPlusError: [ElForm] unexpected width 0\n    at debugWarn (http://localhost:5173/node_modules/.vite/deps/element-plus.js?v=3011cc9a:10638:37)\n    at getLabelWidthIndex (http://localhost:5173/node_modules/.vite/deps/element-plus.js?v=3011cc9a:15195:55)\n    at Proxy.deregisterLabelWidth (http://localhost:5173/node_modules/.vite/deps/element-plus.js?v=3011cc9a:15205:19)\n    at http://localhost:5173/node_modules/.vite/deps/element-plus.js?v=3011cc9a:15437:84"
+   }
+  ],
+  "req_failures": [],
+  "http_bad": [
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/tags/categories",
+    "status": 403
+   }
+  ],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-05-规则引擎",
+  "label": "画像/画像管理/规则引擎",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/rules",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-05-规则引擎.png",
+  "content_len": 249,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "画像规则\n执行任务\n新建规则\n规则名\n\t\n触发条件描述\n\t\n执行动作\n\t\n状态\n\t\n操作\n高频访问自动打标签\n\t\n行为：访问页面 满足「10 次/周」\n\t\n打标签\n\t\n\t\n立即执行\n编辑\n删除\n\n\n会员等级自动升级\n\t\n属性：会员等级 满足「Lv5」\n\t\n更新属性\n\t\n\t\n立即执行\n编辑\n删除\n\n\n付费用户画像合并\n\t\n标签：付费用户 满足「存在」\n\t\n新建画像\n\t\n\t\n立即执行\n编辑\n删除\n\n\n",
+  "body_text_len": 254,
+  "interactive": {
+   "buttons": 13,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 2,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 4,
+   "cards": 0,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-06-分析报表",
+  "label": "画像/画像管理/分析报表",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/reports",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-06-分析报表.png",
+  "content_len": 191,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "画像总数\n-\n报表概览（真实 DPS 数据）\n高风险画像\n-\n风险分 ≥ 70\n上游健康度\nhealthy\nDPS v2.8.1\n画像查询\n刷新\n画像列表加载失败：Request failed with status code 403\n\n点击重试\n\n画像名称\n\t\n画像 ID\n\t\n标签\n\t\n风险等级\n\t\n更新时间\n\t\n操作\n\n加载失败，请点击上方提示条「点击重试」\n\n共 0 条\n1",
+  "body_text_len": 210,
+  "interactive": {
+   "buttons": 5,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [
+    "加载失败",
+    "不存在"
+   ],
+   "alerts": [
+    "画像列表加载失败：Request failed with status code 403\n\n点击重试",
+    "组织不存在",
+    "组织不存在"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   },
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   }
+  ],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/portraits?page=1&page_size=20",
+    "status": 403
+   },
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/reports/overview",
+    "status": 403
+   }
+  ],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-07-限流管理",
+  "label": "画像/画像管理/限流管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/rate-limit",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-07-限流管理.png",
+  "content_len": 328,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "限流规则\n新建规则\n规则名\n\t\n租户\n\t\nQPS\n\t\n并发\n\t\n窗口\n\t\n状态\n\t\n操作\n全局默认限流\n\t\n全部\n\t\n500\n\t\n100\n\t\n1s\n\t\n\t\n编辑\n删除\n\n\n模型组高优\n\t\n模型组\n\t\n2000\n\t\n300\n\t\n1s\n\t\n\t\n编辑\n删除\n\n\nAPI 批量防刷\n\t\nAI 平台部\n\t\n100\n\t\n20\n\t\n1m\n\t\n\t\n编辑\n删除\n租户配额\n租户\n\t\n配额\n\t\n已用\nAI 平台部\n\t\n5",
+  "body_text_len": 335,
+  "interactive": {
+   "buttons": 8,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 7,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-08-API-管理",
+  "label": "画像/画像管理/API 管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/api-manage",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-08-API-管理.png",
+  "content_len": 192,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "新增端点\n导出文档\nAPI 端点\n端点名\n\t\n方法\n\t\n路径\n\t\n版本\n\t\n操作\n画像列表\n\t\nGET\n\t\n/portrait/list\n\t\n2\n\t\n调试\n版本\n错误码\n删除\n\n\n标签管理\n\t\nPOST\n\t\n/portrait/tags\n\t\n1\n\t\n调试\n版本\n错误码\n删除\n\n\n规则引擎\n\t\nPUT\n\t\n/portrait/rules/{id}\n\t\n3\n\t\n调试\n版本\n错误码\n删除",
+  "body_text_len": 197,
+  "interactive": {
+   "buttons": 14,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 1,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-09-权限管理",
+  "label": "画像/画像管理/权限管理",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/permissions",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-09-权限管理.png",
+  "content_len": 348,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "角色管理\n新建角色\n角色\n\t\n描述\n\t\n操作\nDPS 管理员\n\t\n画像全量管理\n\t\n权限矩阵\n删除\n\n\n分析师\n\t\n画像与报表只读\n\t\n权限矩阵\n删除\n\n\n规则工程师\n\t\n规则引擎维护\n\t\n权限矩阵\n删除\n权限矩阵\nportrait:read\nportrait:write\nportrait:delete\ntag:read\ntag:write\ntag:delete\nrule:read\nrule:wr",
+  "body_text_len": 353,
+  "interactive": {
+   "buttons": 11,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 6,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-10-系统监控",
+  "label": "画像/画像管理/系统监控",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/monitor",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-10-系统监控.png",
+  "content_len": 258,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "OpenLLM\n健康\n延迟 42ms\nOpenRAG\n健康\n延迟 38ms\nOpenMemory\n健康\n延迟 8ms\n对象存储\n异常\n延迟 1200ms\nQPS 趋势\n内存 / CPU\n告警规则\n新增规则\n规则名\n\t\n指标\n\t\n条件\n\t\n通知渠道\n\t\n操作\nQPS 过高告警\n\t\nqps\n\t\n> 2000 持续 5m\n\t\n邮件+钉钉\n\t\n删除\n\n\n内存水位告警\n\t\nmemory\n\t\n> 85%\n\t\n",
+  "body_text_len": 263,
+  "interactive": {
+   "buttons": 4,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 3,
+   "cards": 7,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "06-画像-11-批量任务",
+  "label": "画像/画像管理/批量任务",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/portrait/batch",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\06-画像-11-批量任务.png",
+  "content_len": 191,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "画像总数\n-\n报表概览（真实 DPS 数据）\n高风险画像\n-\n风险分 ≥ 70\n上游健康度\nhealthy\nDPS v2.8.1\n画像查询\n刷新\n画像列表加载失败：Request failed with status code 403\n\n点击重试\n\n画像名称\n\t\n画像 ID\n\t\n标签\n\t\n风险等级\n\t\n更新时间\n\t\n操作\n\n加载失败，请点击上方提示条「点击重试」\n\n共 0 条\n1",
+  "body_text_len": 210,
+  "interactive": {
+   "buttons": 5,
+   "inputs": 1,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 3,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [
+    "加载失败",
+    "不存在"
+   ],
+   "alerts": [
+    "画像列表加载失败：Request failed with status code 403\n\n点击重试",
+    "组织不存在",
+    "组织不存在"
+   ],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   },
+   {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+   }
+  ],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/portraits?page=1&page_size=20",
+    "status": 403
+   },
+   {
+    "url": "http://localhost:5173/api/v1/dps-proxy/reports/overview",
+    "status": 403
+   }
+  ],
+  "nav_changed": true
+ },
+ {
+  "pid": "07-统一网关",
+  "label": "统一网关",
+  "kind": "module",
+  "nav_by": "sidebar-click",
+  "url": "http://localhost:5173/gateway/services",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\07-统一网关.png",
+  "content_len": 419,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "刷新\n连通性检测\n注册实例\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n",
+  "body_text_len": 424,
+  "interactive": {
+   "buttons": 7,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 4,
+   "cards": 4,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "sidebar_click_ok": true,
+  "has_module_menu": true,
+  "menu_discovery": [
+   {
+    "group": "网关管理",
+    "items": [
+     "服务列表",
+     "聚合测试"
+    ]
+   }
+  ]
+ },
+ {
+  "pid": "07-统一网关-01-服务列表",
+  "label": "统一网关/网关管理/服务列表",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/gateway/services",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\07-统一网关-01-服务列表.png",
+  "content_len": 419,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "刷新\n连通性检测\n注册实例\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n",
+  "body_text_len": 434,
+  "interactive": {
+   "buttons": 7,
+   "inputs": 0,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 2,
+   "table_rows": 4,
+   "cards": 4,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": false
+ },
+ {
+  "pid": "07-统一网关-02-聚合测试",
+  "label": "统一网关/网关管理/聚合测试",
+  "kind": "sub",
+  "nav_by": "menu-hover-click",
+  "url": "http://localhost:5173/gateway/aggregate",
+  "title": "OpenBase 统一管理平台",
+  "screenshot": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\dogfood-output\\screenshots\\full\\07-统一网关-02-聚合测试.png",
+  "content_len": 131,
+  "content_sel": ".module-content / module-content",
+  "content_sample": "执行聚合\n重置\n聚合步骤配置（阶段一代码式）\nopenllm\nGET\n删除\nopenrag\nGET\n删除\n+ 添加步骤\n整体超时(ms)\n部分失败策略\nreturn_errors（推荐）\n结果映射\n→\n删除\n→\n删除\n+ 添加映射\n聚合结果\n\n配置步骤后点击执行",
+  "body_text_len": 136,
+  "interactive": {
+   "buttons": 8,
+   "inputs": 14,
+   "selects": 0,
+   "tabs": 0,
+   "links": 0,
+   "menu_items": 0,
+   "table_rows": 0,
+   "cards": 2,
+   "module_menu_groups": 1
+  },
+  "hints": {
+   "empty_words": [],
+   "alerts": [],
+   "loading": 0
+  },
+  "has_shell_nav": {
+   "退出登录": false,
+   "仪表盘": false
+  },
+  "console_errors": [],
+  "console_warnings": [],
+  "req_failures": [],
+  "http_bad": [],
+  "nav_changed": true
+ },
+ {
+  "pid": "ext-user-menu",
+  "kind": "ext",
+  "label": "header-user-menu",
+  "url": "http://localhost:5173/dashboard",
+  "dropdown_items": [
+   "退出登录"
+  ]
+ }
+]

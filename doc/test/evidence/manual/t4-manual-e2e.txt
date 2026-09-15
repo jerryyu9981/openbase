@@ -1,0 +1,12 @@
+﻿login: 200 token= True
+[PASS] UI-E2E-T4-01 GET /api/v1/dps-proxy/portraits -> 200 (expect 200, 486ms)
+[PASS] UI-E2E-T4-02 GET /api/v1/rag-proxy/collections?page=1&page_size=5 -> 200 (expect 200, 118ms)
+[PASS] UI-E2E-T4-03 POST /api/v1/memory-proxy/recall -> 200 (expect 200, 128ms)
+[FAIL] UI-E2E-T4-04 POST /api/v1/llm-proxy/chat -> 502 (expect 200, 20062ms)
+[PASS] UI-E2E-T4-05 GET /api/v1/dps-proxy/portraits/00000000-0000-0000-0000-0000000000ff -> 404 (expect 404, 235ms)
+[PASS] UI-E2E-T4-06 GET /api/v1/dps-proxy/portraits -> 401 (expect 401, 23ms)
+[audit] case_id=UI-E2E-T4-01 -> 200
+summary: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-manual-e2e-summary.json
+L1 记录数(run_id 命中)=6 resp_*=6 upstream_*=5 summary=5
+test_log_aggregate.py exit=1 | [test_log_aggregate.py] run_id=run-20260914-2146 status=FAIL records=6 cases=6 failed_steps=3 skipped_lines=0 /   证据已落盘：D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\run-20260914-2146.json /   报告已落盘：D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\run-20260914-2146.md
+test_log_analyze.py exit=1 |     "网络/上游不可达" /   ] / }

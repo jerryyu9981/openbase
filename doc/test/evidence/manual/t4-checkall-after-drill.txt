@@ -1,0 +1,51 @@
+﻿===== 全量服务检查报告（2026-09-14 22:04:43）=====
+
+---- [openllm] OpenLLM 大模型网关（端口 8001）----
+  [INFO] 端口 8001 监听中（PID 9308）
+  [PASS] 健康探活 OK（http://127.0.0.1:8001/health / http://127.0.0.1:8001/api/v1/system/health）
+  [PASS] 健康检查（GET /health → 200）
+  [PASS] API 状态（GET /api/v1/status → 200）
+  [PASS] 开源模型列表(401=门禁)（GET /api/v1/open-models → 401，符合预期）
+
+---- [openrag] OpenRAG 知识库/检索（端口 8010）----
+  [INFO] 端口 8010 监听中（PID 32280）
+  [PASS] 健康探活 OK（http://127.0.0.1:8010/api/v1/system/health）
+  [PASS] 系统健康（GET /api/v1/system/health → 200）
+  [PASS] 集合列表（GET /api/v1/collections → 200）
+  [PASS] 系统统计（GET /api/v1/system/stats → 200）
+
+---- [openmemory] OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j）（端口 8020）----
+  [INFO] 端口 8020 监听中（PID 20576）
+  [PASS] 健康探活 OK（http://127.0.0.1:8020/health）
+  [PASS] 健康检查（GET /health → 200）
+  [PASS] 就绪探针（GET /health/readiness → 200）
+  [PASS] 存活探针（GET /health/liveness → 200）
+  [PASS] V1 健康别名（GET /api/v1/health → 200）
+
+---- [oidc-idp] 本地 OIDC IdP（标准授权码流程，演示用户池）（端口 8090）----
+  [INFO] 端口 8090 监听中（PID 31860）
+  [PASS] 健康探活 OK（http://127.0.0.1:8090/health / http://127.0.0.1:8090/.well-known/openid-configuration）
+  [PASS] 健康检查（GET /health → 200）
+  [PASS] Discovery（GET /.well-known/openid-configuration → 200）
+  [PASS] JWKS（GET /jwks → 200）
+
+---- [dps] DPS 数据画像系统（端口 8030）----
+  [INFO] 端口 8030 监听中（PID 17468）
+  [PASS] 健康探活 OK（http://127.0.0.1:8030/health/liveness）
+  [PASS] 存活探针（GET /health/liveness → 200）
+  [PASS] API 文档(401=门禁)（GET /openapi.json → 401，符合预期）
+
+---- [openbase] OpenBase 统一底座（JWT 门禁 + 四 proxy）（端口 8000）----
+  [INFO] 端口 8000 监听中（PID 12556）
+  [PASS] 健康探活 OK（http://127.0.0.1:8000/openapi.json）
+  [PASS] OpenAPI 文档（GET /openapi.json → 200）
+  [PASS] 健康端点(401=门禁)（GET /api/v1/health → 401，符合预期）
+  [PASS] 登录端点（GET /api/v1/auth/login → 405，符合预期）
+
+---- [frontend] 统一前端（vite dev，proxy → 8000）（端口 5173）----
+  [INFO] 端口 5173 监听中（PID 19132）
+  [PASS] 健康探活 OK（http://localhost:5173/）
+  [PASS] 首页 HTML（GET / → 200）
+  [PASS] 入口脚本（GET /index.html → 200）
+
+===== 汇总：PASS 27 | FAIL 0 | SKIP 0 =====

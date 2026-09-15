@@ -1,0 +1,91 @@
+{
+  "run_id": "run-20260914-2146",
+  "task": "TT-055 真实人工 E2E（采集开关开启）",
+  "base_url": "http://127.0.0.1:8000",
+  "capture_switches": {
+    "OPENBASE_CAPTURE_RESPONSE": "1",
+    "OPENBASE_CAPTURE_UPSTREAM": "1"
+  },
+  "steps": [
+    {
+      "case_id": "UI-E2E-T4-01",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "expect": 200,
+      "status_code": 200,
+      "duration_ms": 486,
+      "verdict": "PASS",
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":3,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"022b0429-315f-41f0-ab82-ad581064660f\",\"person_id\":\"dps-tenant-001_admin1_001\",\"org_id\":\"10000000-0000-0000-0000-0000",
+      "note": "DPS 族（画像列表）"
+    },
+    {
+      "case_id": "UI-E2E-T4-02",
+      "method": "GET",
+      "path": "/api/v1/rag-proxy/collections?page=1&page_size=5",
+      "expect": 200,
+      "status_code": 200,
+      "duration_ms": 118,
+      "verdict": "PASS",
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"976cdafa-8925-451d-b8a5-c23fea2b36c2\",\"name\":\"smoke_v6_kb_20260914205452\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_s",
+      "note": "OpenRAG 族（集合列表）"
+    },
+    {
+      "case_id": "UI-E2E-T4-03",
+      "method": "POST",
+      "path": "/api/v1/memory-proxy/recall",
+      "expect": 200,
+      "status_code": 200,
+      "duration_ms": 128,
+      "verdict": "PASS",
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"results\":[],\"trace_id\":null,\"waypoints\":[]},\"timestamp\":\"2026-09-14T13:46:53.910645+00:00\"}",
+      "note": "OpenMemory 族（召回）"
+    },
+    {
+      "case_id": "UI-E2E-T4-04",
+      "method": "POST",
+      "path": "/api/v1/llm-proxy/chat",
+      "expect": 200,
+      "status_code": 502,
+      "duration_ms": 20062,
+      "verdict": "FAIL",
+      "body": "{\"code\":\"SYS_502\",\"message\":\"OpenLLM upstream unreachable: \",\"detail\":null,\"request_id\":\"req-3520ffa7a91d\"}",
+      "note": "OpenLLM 族（非流式对话，含上游专段）"
+    },
+    {
+      "case_id": "UI-E2E-T4-05",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits/00000000-0000-0000-0000-0000000000ff",
+      "expect": 404,
+      "status_code": 404,
+      "duration_ms": 235,
+      "verdict": "PASS",
+      "body": "{\"code\":\"NOT_FOUND\",\"message\":\"画像不存在\",\"data\":null,\"timestamp\":\"2026-09-14T13:47:14.205104+00:00\"}",
+      "note": "业务错误路径（上游 404 → upstream_error_code 归因）"
+    },
+    {
+      "case_id": "UI-E2E-T4-06",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "expect": 401,
+      "status_code": 401,
+      "duration_ms": 23,
+      "verdict": "PASS",
+      "body": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-df109031dbea\"}",
+      "note": "鉴权失败路径（401 → 网关鉴权层归因）"
+    }
+  ],
+  "audit_query": {
+    "status_code": 200,
+    "body": "{\"records\":[{\"request_id\":\"req-a111edd9f752\",\"method\":\"GET\",\"path\":\"/api/v1/dps-proxy/portraits\",\"status_code\":200,\"duration_ms\":366,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":\"127.0.0.1\",\"error\":null,\"case_id\":\"UI"
+  },
+  "l1_log_check": {
+    "file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\logs\\openbase\\openbase-20260914.jsonl",
+    "records_with_run_id": 6,
+    "records_with_resp_status": 6,
+    "records_with_upstream_segment": 5,
+    "records_with_summary": 5
+  },
+  "pass_count": 5,
+  "fail_count": 1,
+  "checked_at": "2026-09-14T21:47:14+08:00"
+}

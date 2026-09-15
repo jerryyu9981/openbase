@@ -1,0 +1,87 @@
+{
+  "checked_at": "2026-09-14T22:56:23+08:00",
+  "inserts": 200,
+  "mean_ms": 6.432,
+  "p50_ms": 6.154,
+  "p95_ms": 8.374,
+  "p99_ms": 10.977,
+  "rows_per_proxied_request": 2,
+  "per_request_ms_mean": 12.865,
+  "per_request_ms_p95": 16.748,
+  "schema_info": {
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "nullable": "NO",
+        "default": "nextval('audit_logs_id_seq'::regclass)"
+      },
+      {
+        "name": "user_id",
+        "type": "bigint",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "tenant_id",
+        "type": "bigint",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "action",
+        "type": "character varying",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "resource",
+        "type": "character varying",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "resource_id",
+        "type": "character varying",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "ip",
+        "type": "character varying",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "user_agent",
+        "type": "character varying",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "request_id",
+        "type": "character varying",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "detail",
+        "type": "json",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "nullable": "NO",
+        "default": null
+      }
+    ],
+    "target_columns": [
+      "action",
+      "request_id",
+      "created_at"
+    ]
+  },
+  "note": "代理请求落 2 行（api.request + proxy.outbound）；非代理请求 1 行。基准行已清理。"
+}

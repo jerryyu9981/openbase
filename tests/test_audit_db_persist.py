@@ -22,6 +22,7 @@ from openbase.modules.audit import (
     ENV_AUDIT_DB_PERSIST,
     APICallRecord,
     AuditMiddleware,
+    audit_persist_queue,
     query_audit_logs_by_case,
 )
 
@@ -143,7 +144,13 @@ def test_persist_audit_record_writes_audit_log_row(
     _patch_session_factory(monkeypatch, session)
 
     middleware = AuditMiddleware(app=object())  # type: ignore[arg-type]
-    asyncio.run(middleware._persist_audit_record(_request_with_case(), _sample_record()))
+
+    async def _run() -> None:
+        # TT-056 整改：请求路径只入队；由 writer（drain）批量提交
+        await middleware._persist_audit_record(_request_with_case(), _sample_record())
+        await audit_persist_queue.drain_once()
+
+    asyncio.run(_run())
 
     assert session.committed is True
     assert len(session.added) == 1
@@ -190,9 +197,12 @@ def test_persist_audit_record_degrades_without_blocking(
 
     middleware = AuditMiddleware(app=object())  # type: ignore[arg-type]
     with caplog.at_level(logging.WARNING, logger="openbase.audit"):
-        asyncio.run(
-            middleware._persist_audit_record(_request_with_case(), _sample_record())
-        )
+
+        async def _run() -> None:
+            await middleware._persist_audit_record(_request_with_case(), _sample_record())
+            await audit_persist_queue.drain_once()
+
+        asyncio.run(_run())
 
     assert session.rolled_back is True
     assert any(r.levelno == logging.WARNING for r in caplog.records), "缺少降级 WARN"
@@ -215,7 +225,14 @@ def test_dispatch_persists_audit_record_after_response(
     from openbase.modules.audit import AuditService
 
     AuditService._records.clear()
-    response = asyncio.run(middleware.dispatch(request, _call_next))
+
+    async def _run() -> object:
+        response = await middleware.dispatch(request, _call_next)
+        # TT-056 整改：dispatch 只入队 → 由 writer（drain）落库
+        await audit_persist_queue.drain_once()
+        return response
+
+    response = asyncio.run(_run())
 
     assert response.status_code == 201
     assert len(session.added) == 1
@@ -237,6 +254,12 @@ def _sqlite_rows(case_id: str | None, run_id: str | None) -> list[dict]:
     from openbase.core.models import AuditLog, Base
 
     async def _scenario() -> list[dict]:
+        # 同进程内若有其他用例触发了 PG 初始化，会把 ``Base.metadata.schema`` 全局置为
+        # "openbase"（见 ``openbase/core/db/session.init_db``），使 SQLite 建表报
+        # "unknown database openbase"；此处显式复位，保证本用例与执行顺序无关。
+        Base.metadata.schema = None
+        for table in Base.metadata.tables.values():
+            table.schema = None
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

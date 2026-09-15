@@ -1,0 +1,19 @@
+
+> openbase-ui@1.3.0 test:e2e
+> playwright test
+
+
+Running 9 tests using 1 worker
+
+  ok 1 [chromium] › tests\e2e\chat.spec.ts:22:5 › S6-T5-2 对话关键页 PASS（Q-FE-4b） › 对话（OpenLLM 会话） /openllm/conversations 渲染且无渲染兜底/无 console error/warn (1.6s)
+  ok 2 [chromium] › tests\e2e\chat.spec.ts:22:5 › S6-T5-2 对话关键页 PASS（Q-FE-4b） › 对话（RAG 知识问答） /knowledge/chat 渲染且无渲染兜底/无 console error/warn (1.1s)
+  ok 3 [chromium] › tests\e2e\knowledge.spec.ts:23:5 › S6-T5-2 知识关键页 PASS（Q-FE-4b） › 知识列表 /knowledge/list 渲染且无渲染兜底/无 console error/warn (1.3s)
+  ok 4 [chromium] › tests\e2e\knowledge.spec.ts:23:5 › S6-T5-2 知识关键页 PASS（Q-FE-4b） › 知识详情 /knowledge/:id 渲染且无渲染兜底/无 console error/warn (1.0s)
+  ok 5 [chromium] › tests\e2e\memory.spec.ts:21:5 › S6-T5-2 记忆关键页 PASS（Q-FE-4b） › 记忆列表 /memory/list 渲染且无渲染兜底/无 console error/warn (954ms)
+  ok 6 [chromium] › tests\e2e\memory.spec.ts:21:5 › S6-T5-2 记忆关键页 PASS（Q-FE-4b） › 记忆会话 /memory/sessions 渲染且无渲染兜底/无 console error/warn (962ms)
+  ok 7 [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像列表 /portrait/list 渲染且无渲染兜底/无 console error/warn (1.1s)
+  ok 8 [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像总览 /portrait/overview 渲染且无渲染兜底/无 console error/warn (1.5s)
+  ok 9 [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn (918ms)
+
+  9 passed (14.2s)
+

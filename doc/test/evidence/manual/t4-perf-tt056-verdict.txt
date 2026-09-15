@@ -1,0 +1,55 @@
+﻿{
+  "l1_file_log_per_record_ms": 0.0889,
+  "l1_file_log_p99_ms": 0.1702,
+  "l1_verdict": "PASS（0.089ms << 5ms）",
+  "audit_db_insert_mean_ms": 6.432,
+  "audit_db_insert_p95_ms": 8.374,
+  "audit_rows_per_proxied_request": 2,
+  "audit_db_per_request_ms_mean": 12.865,
+  "audit_persist_location": "请求路径内同步 await（openbase/modules/audit/__init__.py:472/482），失败 try/except 降级不阻断",
+  "strict_verdict": "FAIL（含审计落库的日志链路 ≈12.865 ms/代理请求 > 5ms）",
+  "narrow_verdict": "PASS（仅 L1 日志写入 0.089ms）",
+  "e2e_diff_pairs": [
+    {
+      "pair": "A(日志开) − B(日志关)",
+      "workload": "W1_dps_proxy_health",
+      "n": 300,
+      "p50_delta_ms": 5.53,
+      "p95_delta_ms": 57.56,
+      "p99_delta_ms": 28.5,
+      "note": "同 n 成对"
+    },
+    {
+      "pair": "A(日志开) − B(日志关)",
+      "workload": "W2_auth_me",
+      "n": 300,
+      "p50_delta_ms": 2.88,
+      "p95_delta_ms": 5.26,
+      "p99_delta_ms": 57.84,
+      "note": "同 n 成对"
+    },
+    {
+      "pair": "A2(日志开) − B2(日志关)",
+      "workload": "W1_dps_proxy_health",
+      "n": 500,
+      "p50_delta_ms": 7.89,
+      "p95_delta_ms": 20.67,
+      "p99_delta_ms": 51.67,
+      "note": "同 n 成对"
+    },
+    {
+      "pair": "A2(日志开) − B2(日志关)",
+      "workload": "W2_auth_
+---
+{
+  "bytes_per_request_capture_off": 865.3,
+  "bytes_per_request_capture_on": 1317.7,
+  "audit_db_bytes_per_row": 768.7,
+  "audit_rows_per_request": 1.65,
+  "audit_db_bytes_per_request": 1268.4,
+  "combined_bytes_per_request_capture_on": 2586.1,
+  "extrapolation_1000_req_per_day_mb": 2.47,
+  "threshold_mb": 200,
+  "verdict": "PASS（≈2.47 MB/日 << 200MB；余量约 81×）"
+}
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-perf-tt056-verdict.json

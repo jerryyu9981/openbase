@@ -1,0 +1,5 @@
+﻿login: 200 token= True
+[A3] W1_dps_proxy_health    n=500 p50=66.76 p95=101.677 p99=339.194 err=0
+[A3] W2_auth_me             n=500 p50=23.012 p95=32.165 p99=246.203 err=0
+delta: {"jsonl_bytes": 865079, "errlog_bytes": 865079, "audit_rows": null, "audit_bytes": null, "total_requests": 1000, "window_s": 56.87}
+out: doc\test\evidence\manual\t4-perf-tt056.json

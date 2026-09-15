@@ -3,6 +3,20 @@ import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 import { tokenStore } from '@/core/api/http'
 import { registerLoginNavigator } from '@/core/api/redirect'
+import { platformRoutes } from '@/pages/platform/routes'
+import { personalRoutes } from '@/pages/personal/routes'
+import { legacyRedirectRoutes } from '@/core/router/legacyRedirects'
+
+/**
+ * 平台管理四域 + 个人 路由（v1.4.6 IA 重构，ADR-146-08）作为 `/` AppLayout 子路由。
+ * 与业务模块路由平行；不受单一模块启停影响（AC-146-10-2）。
+ * 旧 `/system/**` 已迁出，交由 legacyRedirectRoutes 顶层承接（禁 404）。
+ */
+const appChildren: RouteRecordRaw[] = [
+  { path: 'dashboard', name: 'dashboard', component: () => import('@/pages/Dashboard.vue'), meta: { title: '仪表盘', icon: 'Odometer' } },
+  ...platformRoutes,
+  ...personalRoutes,
+]
 
 /** 公共静态路由 */
 export const staticRoutes: RouteRecordRaw[] = [
@@ -12,31 +26,21 @@ export const staticRoutes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('@/core/layouts/AppLayout.vue'),
     redirect: '/dashboard',
-    children: [
-      { path: 'dashboard', name: 'dashboard', component: () => import('@/pages/Dashboard.vue'), meta: { title: '仪表盘', icon: 'Odometer' } },
-      { path: 'system/tenants', name: 'system-tenants', component: () => import('@/pages/SystemTenants.vue'), meta: { title: '租户管理', icon: 'OfficeBuilding' } },
-      // v1.4.0 系统管理分组（OpenLLM 系统管理 8 页，DT-14-09~16）
-      { path: 'system/roles', name: 'system-roles', component: () => import('@/modules/openllm/pages/RolesView.vue'), meta: { title: '角色权限', icon: 'UserFilled' } },
-      { path: 'system/org', name: 'system-org', component: () => import('@/modules/openllm/pages/OrgTeamsUsersView.vue'), meta: { title: '组织/团队/用户', icon: 'OfficeBuilding' } },
-      { path: 'system/workspaces', name: 'system-workspaces', component: () => import('@/modules/openllm/pages/WorkspacesView.vue'), meta: { title: '工作空间', icon: 'Grid' } },
-      { path: 'system/config', name: 'system-config', component: () => import('@/modules/openllm/pages/ConfigManageView.vue'), meta: { title: '配置管理', icon: 'Setting' } },
-      { path: 'system/audit', name: 'system-audit', component: () => import('@/modules/openllm/pages/AuditLogsView.vue'), meta: { title: '审计日志', icon: 'Document' } },
-      // 批 2 C-12：人工测试记录面板（复用 system/audit 风格，需 test:record 权限）
-      { path: 'system/test-records', name: 'system-test-records', component: () => import('@/pages/SystemTestRecords.vue'), meta: { title: '测试记录', icon: 'Memo', permission: 'test:record' } },
-      { path: 'system/edgerouter', name: 'system-edgerouter', component: () => import('@/modules/openllm/pages/EdgeRouterView.vue'), meta: { title: 'EdgeRouter', icon: 'Connection' } },
-      { path: 'system/docs', name: 'system-docs', component: () => import('@/modules/openllm/pages/DocCenterView.vue'), meta: { title: '文档中心', icon: 'Reading' } },
-      { path: 'system/billing', name: 'system-billing', component: () => import('@/modules/openllm/pages/BillingView.vue'), meta: { title: '计费', icon: 'Money' } },
-    ],
+    children: appChildren,
   },
+  // 权限 403 页（平台权限门禁见 guard；无权限跳此页，不回退 /dashboard —— §3.2 ③）
+  { path: '/forbidden', name: 'forbidden', component: () => import('@/pages/Forbidden.vue'), meta: { title: '无权限访问' } },
+  // 旧路径重定向（顶层承接，禁 404；保留 query/hash，ADR-146-08 §3.1/§3.3）
+  ...legacyRedirectRoutes,
 ]
 
-/** 模块路由表注册（模块 index.ts 导出 routes + navItems，实现路由级懒加载与页内导航，RT-203） */
+/** 模块路由表注册（模块 index.ts 导出 routes + navItems，实现路由级懒加载与页内导航，RT-203）。
+ * v1.4.6：`gateway` 整体迁入平台管理「可观测与审计」域（ADR-146-08），不再作为业务模块装载。 */
 const moduleRouteLoaders: Record<string, () => Promise<{ routes: RouteRecordRaw[]; navItems?: unknown[] }>> = {
   openllm: () => import('@/modules/openllm'),
   knowledge: () => import('@/modules/knowledge'),
   memory: () => import('@/modules/memory'),
   portrait: () => import('@/modules/portrait'),
-  gateway: () => import('@/modules/gateway'),
 }
 
 /**
@@ -131,6 +135,12 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ap
       return { path: to.fullPath, replace: true }
     }
     if (to.matched.length === 0) return { path: '/dashboard' }
+    // 平台权限门禁（§3.2 ③）：`meta.permission` 路由无权限 → 403 页（不回退 /dashboard）。
+    // 权限码与菜单可见性（AppLayout）同源，避免「菜单可见但接口 403」割裂。
+    const perm = to.meta.permission as string | undefined
+    if (perm && !(auth.permissions.includes('*') || auth.permissions.includes(perm))) {
+      return { path: '/forbidden', query: to.path !== '/forbidden' ? { from: to.fullPath } : undefined }
+    }
     const moduleId = to.meta.module as string | undefined
     if (moduleId) {
       const found = registry.enabledModules.find((m) => m.info.id === moduleId)

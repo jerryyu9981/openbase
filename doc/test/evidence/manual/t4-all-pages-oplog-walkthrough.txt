@@ -1,0 +1,47 @@
+﻿login: 200 token= True
+[OK ] GET    /dps-proxy/portraits?page=1&page_size=5        -> 200
+[OK ] GET    /dps-proxy/portraits/dps-tenant-001_admin1_001 -> 200
+[OK ] GET    /dps-proxy/reports/overview                    -> 200
+[OK ] GET    /dps-proxy/portraits?q=admin&page=1&page_size= -> 200
+[OK ] GET    /dps-proxy/tags/categories                     -> 200
+[OK ] POST   /dps-proxy/tags/categories                     -> 200
+[OK ] PUT    /dps-proxy/tags/categories/cat-1789395816580   -> 200
+[OK ] DELETE /dps-proxy/tags/categories/cat-1789395816580   -> 200
+[OK ] GET    /dps-proxy/health                              -> 200
+[OK ] GET    /dps-proxy/audit/logs                          -> 200
+[OK ] GET    /rag-proxy/collections?page=1&page_size=5      -> 200
+[OK ] POST   /rag-proxy/collections                         -> 200
+[OK ] GET    /rag-proxy/collections/81c1c44b-b72f-4683-88a0 -> 200
+[OK ] POST   /rag-proxy/collections/81c1c44b-b72f-4683-88a0 -> 200
+[OK ] DELETE /rag-proxy/collections/81c1c44b-b72f-4683-88a0 -> 200
+[OK ] GET    /rag-proxy/health                              -> 200
+[OK ] GET    /memory-proxy/memories?page=1&page_size=5      -> 200
+[OK ] POST   /memory-proxy/recall                           -> 200
+[OK ] GET    /memory-proxy/sessions                         -> 200
+[OK ] GET    /memory-proxy/decay/config                     -> 200
+[OK ] GET    /memory-proxy/monitor                          -> 200
+[OK ] POST   /memory-proxy/remember                         -> 200
+[DIF] GET    /memory-proxy/memories/82e15a48-7363-4881-a4bf -> 404
+[OK ] POST   /memory-proxy/forget                           -> 200
+[OK ] GET    /llm-proxy/models                              -> 200
+[OK ] GET    /llm-proxy/conversations?page=1&page_size=5    -> 200
+[OK ] POST   /llm-proxy/conversations                       -> 201
+[OK ] GET    /llm-proxy/health                              -> 200
+[OK ] GET    /services                                      -> 200
+[OK ] GET    /services/openrag                              -> 200
+[OK ] POST   /gateway/aggregate                             -> 422
+[OK ] GET    /gateway/ping                                  -> 200
+[OK ] GET    /gateway/health                                -> 200
+[OK ] GET    /tenants                                       -> 200
+[OK ] GET    /test-runs?page=1&page_size=5                  -> 405
+[OK ] GET    /test-runs/run-pages-20260914-2223/summary     -> 404
+=== 操作日志覆盖 ===
+operations=36 with_oplog=30 without=6 coverage=83.3%
+  MISSING: PAGE-PORTRAIT-LIST GET /api/v1/dps-proxy/portraits?page=1&page_size=5 st= 200 
+  MISSING: PAGE-PORTRAIT-SEARCH GET /api/v1/dps-proxy/portraits?q=admin&page=1&page_size=5 st= 200 
+  MISSING: PAGE-KNOWLEDGE-LIST GET /api/v1/rag-proxy/collections?page=1&page_size=5 st= 200 
+  MISSING: PAGE-MEMORY-LIST GET /api/v1/memory-proxy/memories?page=1&page_size=5 st= 200 
+  MISSING: PAGE-LLM-CONVS GET /api/v1/llm-proxy/conversations?page=1&page_size=5 st= 200 
+  MISSING: PAGE-TEST-RUNS GET /api/v1/test-runs?page=1&page_size=5 st= 405 
+audit actions(15min) = {"api.request": 42, "proxy.outbound": 28, "identity.purge": 1}
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-all-pages-oplog-walkthrough.json

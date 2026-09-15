@@ -1,0 +1,135 @@
+{
+  "run_id": "run-o12c-20260914-223608",
+  "checked_at": "2026-09-14T22:36:08+08:00",
+  "log_file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\logs\\openbase\\openbase-20260914.jsonl",
+  "summary": {
+    "executed": 6,
+    "pass": 6,
+    "fail": 0,
+    "with_oplog": 6,
+    "coverage": 100.0
+  },
+  "calls": [
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "O12C-TENANT-CREATE",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "payload": {
+        "code": "o12c223608",
+        "name": "走查租户c-223608",
+        "status": 1
+      },
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"id\":5,\"name\":\"走查租户c-223608\",\"code\":\"o12c223608\",\"status\":1,\"isolation_level\":1,\"quota\":null}",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-c9c83aec65a9"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "O12C-TENANT-UPDATE",
+      "step_id": "2",
+      "method": "PUT",
+      "path": "/api/v1/tenants/5",
+      "payload": {
+        "name": "走查租户改c-223608",
+        "status": 1
+      },
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"id\":5,\"name\":\"走查租户改c-223608\",\"code\":\"o12c223608\",\"status\":1,\"isolation_level\":1,\"quota\":null}",
+      "verdict": "PASS",
+      "note": "页面对应『编辑保存』负载",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-5d9556032b50"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "O12C-TENANT-TOGGLE",
+      "step_id": "3",
+      "method": "PUT",
+      "path": "/api/v1/tenants/5",
+      "payload": {
+        "status": 0
+      },
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"id\":5,\"name\":\"走查租户改c-223608\",\"code\":\"o12c223608\",\"status\":0,\"isolation_level\":1,\"quota\":null}",
+      "verdict": "PASS",
+      "note": "页面对应『停用/启用』切换负载",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-0c651f622cbd"
+      ]
+    },
+    {
+      "page": "pages/SystemTenants",
+      "case_id": "O12C-TENANT-DELETE",
+      "step_id": "4",
+      "method": "DELETE",
+      "path": "/api/v1/tenants/5",
+      "payload": null,
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"tenant_id\":5,\"status\":0}",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-330fa8aaa80e"
+      ]
+    },
+    {
+      "page": "openllm/AppForm",
+      "case_id": "O12C-AIAPPS-CREATE",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/ai-apps",
+      "payload": {
+        "name": "o12c-app-223608",
+        "description": "O-12 复跑",
+        "llm_config": {
+          "provider": "Ollama",
+          "model": "qwen3:0.6b",
+          "parameters": {
+            "temperature": 0.7
+          }
+        }
+      },
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"app-3\",\"name\":\"o12c-app-223608\",\"description\":\"O-12 复跑\",\"model_config\":{\"provider\":\"Ollama\",\"model\":\"qwen3:0.6b\",\"parameters\":{\"temperature\":0.7}},\"prompt_templa",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-5f8a3e5a8b3d"
+      ]
+    },
+    {
+      "page": "openllm/Apps",
+      "case_id": "O12C-AIAPPS-PUBLISH",
+      "step_id": "2",
+      "method": "POST",
+      "path": "/api/v1/ai-apps/app-3/publish",
+      "payload": {},
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"app-3\",\"name\":\"o12c-app-223608\",\"description\":\"O-12 复跑\",\"model_config\":{\"provider\":\"Ollama\",\"model\":\"qwen3:0.6b\",\"parameters\":{\"temperature\":0.7}},\"prompt_templa",
+      "verdict": "PASS",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-8c8351955a3c"
+      ]
+    }
+  ]
+}

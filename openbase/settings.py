@@ -53,6 +53,8 @@ AVAILABLE_MODULES: tuple[str, ...] = (
     "identity",
     # 批 2 C-10：人工测试结论记录（受权 API test:record）
     "testing",
+    # v1.4.6：日志中心（四源统一检索，受权 log:read）
+    "logs",
 )
 
 

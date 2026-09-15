@@ -1,0 +1,832 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="143" time="761.054" timestamp="2026-09-14T19:32:23.229935+08:00" hostname="DESKTOP-JERRY"><testcase classname="tests.test_logging_setup" name="test_formatter_emits_required_fields" time="0.240" /><testcase classname="tests.test_logging_setup" name="test_formatter_keeps_structured_extras" time="0.010" /><testcase classname="tests.test_logging_setup" name="test_formatter_masks_sensitive_keys_recursively" time="0.029" /><testcase classname="tests.test_logging_setup" name="test_formatter_truncates_oversized_values" time="0.006" /><testcase classname="tests.test_logging_setup" name="test_formatter_request_id_defaults_to_dash" time="0.005" /><testcase classname="tests.test_logging_setup" name="test_bind_log_context_injects_fields_into_every_record" time="0.005" /><testcase classname="tests.test_logging_setup" name="test_sensitive_filter_keeps_non_sensitive_records" time="0.007" /><testcase classname="tests.test_logging_setup" name="test_daily_file_handler_splits_by_date" time="0.084" /><testcase classname="tests.test_logging_setup" name="test_daily_file_handler_never_deletes_historical_logs" time="0.028" /><testcase classname="tests.test_logging_setup" name="test_module_declares_no_auto_purge_path" time="0.013" /><testcase classname="tests.test_logging_setup" name="test_setup_logging_writes_jsonl_and_is_idempotent" time="5.320" /><testcase classname="tests.test_logging_setup" name="test_setup_logging_level_follows_env" time="0.011" /><testcase classname="tests.test_logging_setup" name="test_resolve_version_prefers_explicit_then_env" time="0.004" /><testcase classname="tests.test_logging_setup" name="test_resolve_version_falls_back_to_git_commit" time="0.004" /><testcase classname="tests.test_logging_setup" name="test_resolve_version_defaults_when_git_unavailable" time="0.004" /><testcase classname="tests.test_logging_setup" name="test_setup_logging_version_flows_into_records" time="0.015" /><testcase classname="tests.test_logging_setup" name="test_oidc_idp_entry_wires_structured_logging" time="0.042" /><testcase classname="tests.test_test_case_context" name="test_test_case_headers_are_not_identity_headers" time="0.042" /><testcase classname="tests.test_test_case_context" name="test_extract_test_context_reads_headers" time="0.012" /><testcase classname="tests.test_test_case_context" name="test_extract_test_context_absent_returns_none_values" time="0.009" /><testcase classname="tests.test_test_case_context" name="test_extract_test_context_run_id_falls_back_to_env" time="0.030" /><testcase classname="tests.test_test_case_context" name="test_dispatch_puts_test_context_into_request_state" time="0.041" /><testcase classname="tests.test_test_case_context" name="test_record_extra_carries_case_context_and_channel" time="0.065" /><testcase classname="tests.test_test_case_context" name="test_record_emits_l1_json_log_with_case_context" time="0.024" /><testcase classname="tests.test_test_case_context" name="test_record_without_case_context_omits_fields" time="0.041" /><testcase classname="tests.test_test_case_context" name="test_outbound_headers_carry_test_case_id_from_request_state" time="0.027" /><testcase classname="tests.test_test_case_context" name="test_outbound_headers_omit_test_case_id_when_absent" time="0.078" /><testcase classname="tests.test_test_case_context" name="test_outbound_headers_explicit_test_case_id_wins" time="0.103" /><testcase classname="tests.test_test_case_context" name="test_outbound_headers_reject_header_injection_in_case_id" time="0.083" /><testcase classname="tests.test_test_case_context" name="test_audit_service_records_expose_case_context_and_filter" time="0.308" /><testcase classname="tests.test_test_case_context" name="test_audit_records_endpoint_accepts_case_and_run_filters" time="0.047" /><testcase classname="tests.test_audit_db_persist" name="test_persist_audit_record_writes_audit_log_row" time="0.221" /><testcase classname="tests.test_audit_db_persist" name="test_persist_audit_record_disabled_by_switch" time="0.046" /><testcase classname="tests.test_audit_db_persist" name="test_persist_audit_record_degrades_without_blocking" time="0.154" /><testcase classname="tests.test_audit_db_persist" name="test_dispatch_persists_audit_record_after_response" time="0.168" /><testcase classname="tests.test_audit_db_persist" name="test_query_audit_logs_by_case_id" time="10.456"><failure message="sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unknown database openbase&#10;[SQL: &#10;CREATE TABLE openbase.outbox_events (&#10;&#09;id INTEGER NOT NULL, &#10;&#09;event_id VARCHAR(64) NOT NULL, &#10;&#09;event_type VARCHAR(64) NOT NULL, &#10;&#09;payload JSON NOT NULL, &#10;&#09;status VARCHAR(16) NOT NULL, &#10;&#09;publish_attempts INTEGER NOT NULL, &#10;&#09;next_retry_at DATETIME, &#10;&#09;published_at DATETIME, &#10;&#09;created_at DATETIME NOT NULL, &#10;&#09;updated_at DATETIME NOT NULL, &#10;&#09;PRIMARY KEY (id), &#10;&#09;UNIQUE (event_id)&#10;)&#10;&#10;]&#10;(Background on this error at: https://sqlalche.me/e/20/e3q8)">self = &lt;sqlalchemy.engine.base.Connection object at 0x0000024689EEAEC0&gt;
+dialect = &lt;sqlalchemy.dialects.sqlite.aiosqlite.SQLiteDialect_aiosqlite object at 0x000002468B400940&gt;
+context = &lt;sqlalchemy.dialects.sqlite.aiosqlite.SQLiteExecutionContext_aiosqlite object at 0x0000024689EE8700&gt;
+statement = &lt;sqlalchemy.dialects.sqlite.base.SQLiteDDLCompiler object at 0x0000024689EE9000&gt;
+parameters = [()]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:183: in execute
+    self._adapt_connection._handle_exception(error)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:343: in _handle_exception
+    raise error
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:165: in execute
+    self.await_(_cursor.execute(operation, parameters))
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = &lt;_queue.SimpleQueue object at 0x000002468B657FB0&gt;
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+&gt;               result = function()
+E               sqlite3.OperationalError: unknown database openbase
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:63: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+    def test_query_audit_logs_by_case_id() -&gt; None:
+        """DB 查询：按 case_id 过滤（跨重启持久化后的检索口）。"""
+&gt;       rows = _sqlite_rows("UI-DPS-0007", None)
+
+tests\test_audit_db_persist.py:265: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_audit_db_persist.py:260: in _sqlite_rows
+    return asyncio.run(_scenario())
+asyncio\runners.py:44: in run
+    ???
+asyncio\base_events.py:649: in run_until_complete
+    ???
+tests\test_audit_db_persist.py:242: in _scenario
+    await conn.run_sync(Base.metadata.create_all)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:888: in run_sync
+    return await greenlet_spawn(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\schema.py:5930: in create_all
+    bind._run_ddl_visitor(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:2469: in _run_ddl_visitor
+    ).traverse_single(element)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:985: in visit_metadata
+    self.traverse_single(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:1023: in visit_table
+    )._invoke_with(self.connection)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:322: in _invoke_with
+    return bind.execute(self)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1421: in execute
+    return meth(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:188: in _execute_on_connection
+    return connection._execute_ddl(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1532: in _execute_ddl
+    ret = self._execute_context(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1848: in _execute_context
+    return self._exec_single_context(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:183: in execute
+    self._adapt_connection._handle_exception(error)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:343: in _handle_exception
+    raise error
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:165: in execute
+    self.await_(_cursor.execute(operation, parameters))
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = &lt;_queue.SimpleQueue object at 0x000002468B657FB0&gt;
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+&gt;               result = function()
+E               sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unknown database openbase
+E               [SQL: 
+E               CREATE TABLE openbase.outbox_events (
+E               	id INTEGER NOT NULL, 
+E               	event_id VARCHAR(64) NOT NULL, 
+E               	event_type VARCHAR(64) NOT NULL, 
+E               	payload JSON NOT NULL, 
+E               	status VARCHAR(16) NOT NULL, 
+E               	publish_attempts INTEGER NOT NULL, 
+E               	next_retry_at DATETIME, 
+E               	published_at DATETIME, 
+E               	created_at DATETIME NOT NULL, 
+E               	updated_at DATETIME NOT NULL, 
+E               	PRIMARY KEY (id), 
+E               	UNIQUE (event_id)
+E               )
+E               
+E               ]
+E               (Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:63: OperationalError</failure></testcase><testcase classname="tests.test_audit_db_persist" name="test_query_audit_logs_by_run_id" time="1.094"><failure message="sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unknown database openbase&#10;[SQL: &#10;CREATE TABLE openbase.outbox_events (&#10;&#09;id INTEGER NOT NULL, &#10;&#09;event_id VARCHAR(64) NOT NULL, &#10;&#09;event_type VARCHAR(64) NOT NULL, &#10;&#09;payload JSON NOT NULL, &#10;&#09;status VARCHAR(16) NOT NULL, &#10;&#09;publish_attempts INTEGER NOT NULL, &#10;&#09;next_retry_at DATETIME, &#10;&#09;published_at DATETIME, &#10;&#09;created_at DATETIME NOT NULL, &#10;&#09;updated_at DATETIME NOT NULL, &#10;&#09;PRIMARY KEY (id), &#10;&#09;UNIQUE (event_id)&#10;)&#10;&#10;]&#10;(Background on this error at: https://sqlalche.me/e/20/e3q8)">self = &lt;sqlalchemy.engine.base.Connection object at 0x0000024686C30730&gt;
+dialect = &lt;sqlalchemy.dialects.sqlite.aiosqlite.SQLiteDialect_aiosqlite object at 0x0000024686C30100&gt;
+context = &lt;sqlalchemy.dialects.sqlite.aiosqlite.SQLiteExecutionContext_aiosqlite object at 0x0000024686CF7100&gt;
+statement = &lt;sqlalchemy.dialects.sqlite.base.SQLiteDDLCompiler object at 0x0000024686CF4A30&gt;
+parameters = [()]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:183: in execute
+    self._adapt_connection._handle_exception(error)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:343: in _handle_exception
+    raise error
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:165: in execute
+    self.await_(_cursor.execute(operation, parameters))
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = &lt;_queue.SimpleQueue object at 0x000002468C238220&gt;
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+&gt;               result = function()
+E               sqlite3.OperationalError: unknown database openbase
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:63: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+    def test_query_audit_logs_by_run_id() -&gt; None:
+        """DB 查询：按 run_id 过滤。"""
+&gt;       rows = _sqlite_rows(None, "run-2")
+
+tests\test_audit_db_persist.py:273: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_audit_db_persist.py:260: in _sqlite_rows
+    return asyncio.run(_scenario())
+asyncio\runners.py:44: in run
+    ???
+asyncio\base_events.py:649: in run_until_complete
+    ???
+tests\test_audit_db_persist.py:242: in _scenario
+    await conn.run_sync(Base.metadata.create_all)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:888: in run_sync
+    return await greenlet_spawn(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\schema.py:5930: in create_all
+    bind._run_ddl_visitor(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:2469: in _run_ddl_visitor
+    ).traverse_single(element)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:985: in visit_metadata
+    self.traverse_single(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:1023: in visit_table
+    )._invoke_with(self.connection)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:322: in _invoke_with
+    return bind.execute(self)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1421: in execute
+    return meth(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:188: in _execute_on_connection
+    return connection._execute_ddl(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1532: in _execute_ddl
+    ret = self._execute_context(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1848: in _execute_context
+    return self._exec_single_context(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:183: in execute
+    self._adapt_connection._handle_exception(error)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:343: in _handle_exception
+    raise error
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:165: in execute
+    self.await_(_cursor.execute(operation, parameters))
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = &lt;_queue.SimpleQueue object at 0x000002468C238220&gt;
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+&gt;               result = function()
+E               sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unknown database openbase
+E               [SQL: 
+E               CREATE TABLE openbase.outbox_events (
+E               	id INTEGER NOT NULL, 
+E               	event_id VARCHAR(64) NOT NULL, 
+E               	event_type VARCHAR(64) NOT NULL, 
+E               	payload JSON NOT NULL, 
+E               	status VARCHAR(16) NOT NULL, 
+E               	publish_attempts INTEGER NOT NULL, 
+E               	next_retry_at DATETIME, 
+E               	published_at DATETIME, 
+E               	created_at DATETIME NOT NULL, 
+E               	updated_at DATETIME NOT NULL, 
+E               	PRIMARY KEY (id), 
+E               	UNIQUE (event_id)
+E               )
+E               
+E               ]
+E               (Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:63: OperationalError</failure></testcase><testcase classname="tests.test_audit_db_persist" name="test_query_audit_logs_without_filter_returns_all" time="1.619"><failure message="sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unknown database openbase&#10;[SQL: &#10;CREATE TABLE openbase.outbox_events (&#10;&#09;id INTEGER NOT NULL, &#10;&#09;event_id VARCHAR(64) NOT NULL, &#10;&#09;event_type VARCHAR(64) NOT NULL, &#10;&#09;payload JSON NOT NULL, &#10;&#09;status VARCHAR(16) NOT NULL, &#10;&#09;publish_attempts INTEGER NOT NULL, &#10;&#09;next_retry_at DATETIME, &#10;&#09;published_at DATETIME, &#10;&#09;created_at DATETIME NOT NULL, &#10;&#09;updated_at DATETIME NOT NULL, &#10;&#09;PRIMARY KEY (id), &#10;&#09;UNIQUE (event_id)&#10;)&#10;&#10;]&#10;(Background on this error at: https://sqlalche.me/e/20/e3q8)">self = &lt;sqlalchemy.engine.base.Connection object at 0x000002468BD8C2E0&gt;
+dialect = &lt;sqlalchemy.dialects.sqlite.aiosqlite.SQLiteDialect_aiosqlite object at 0x000002468BD8FD60&gt;
+context = &lt;sqlalchemy.dialects.sqlite.aiosqlite.SQLiteExecutionContext_aiosqlite object at 0x000002468BD8EBC0&gt;
+statement = &lt;sqlalchemy.dialects.sqlite.base.SQLiteDDLCompiler object at 0x000002468BD8F340&gt;
+parameters = [()]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:183: in execute
+    self._adapt_connection._handle_exception(error)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:343: in _handle_exception
+    raise error
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:165: in execute
+    self.await_(_cursor.execute(operation, parameters))
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = &lt;_queue.SimpleQueue object at 0x000002468B544A40&gt;
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+&gt;               result = function()
+E               sqlite3.OperationalError: unknown database openbase
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:63: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+    def test_query_audit_logs_without_filter_returns_all() -&gt; None:
+        """DB 查询：无过滤条件返回全部（按 id 倒序）。"""
+&gt;       rows = _sqlite_rows(None, None)
+
+tests\test_audit_db_persist.py:280: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_audit_db_persist.py:260: in _sqlite_rows
+    return asyncio.run(_scenario())
+asyncio\runners.py:44: in run
+    ???
+asyncio\base_events.py:649: in run_until_complete
+    ???
+tests\test_audit_db_persist.py:242: in _scenario
+    await conn.run_sync(Base.metadata.create_all)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:888: in run_sync
+    return await greenlet_spawn(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\schema.py:5930: in create_all
+    bind._run_ddl_visitor(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:2469: in _run_ddl_visitor
+    ).traverse_single(element)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:985: in visit_metadata
+    self.traverse_single(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:1023: in visit_table
+    )._invoke_with(self.connection)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:322: in _invoke_with
+    return bind.execute(self)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1421: in execute
+    return meth(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\sql\ddl.py:188: in _execute_on_connection
+    return connection._execute_ddl(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1532: in _execute_ddl
+    ret = self._execute_context(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1848: in _execute_context
+    return self._exec_single_context(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\engine\default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:183: in execute
+    self._adapt_connection._handle_exception(error)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:343: in _handle_exception
+    raise error
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:165: in execute
+    self.await_(_cursor.execute(operation, parameters))
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = &lt;_queue.SimpleQueue object at 0x000002468B544A40&gt;
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+&gt;               result = function()
+E               sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) unknown database openbase
+E               [SQL: 
+E               CREATE TABLE openbase.outbox_events (
+E               	id INTEGER NOT NULL, 
+E               	event_id VARCHAR(64) NOT NULL, 
+E               	event_type VARCHAR(64) NOT NULL, 
+E               	payload JSON NOT NULL, 
+E               	status VARCHAR(16) NOT NULL, 
+E               	publish_attempts INTEGER NOT NULL, 
+E               	next_retry_at DATETIME, 
+E               	published_at DATETIME, 
+E               	created_at DATETIME NOT NULL, 
+E               	updated_at DATETIME NOT NULL, 
+E               	PRIMARY KEY (id), 
+E               	UNIQUE (event_id)
+E               )
+E               
+E               ]
+E               (Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\aiosqlite\core.py:63: OperationalError</failure></testcase><testcase classname="tests.test_test_log_aggregate" name="test_aggregate_groups_by_run_and_case" time="3.320" /><testcase classname="tests.test_test_log_aggregate" name="test_aggregate_filters_other_runs" time="5.343" /><testcase classname="tests.test_test_log_aggregate" name="test_aggregate_skips_malformed_lines_and_non_jsonl" time="4.582" /><testcase classname="tests.test_test_log_aggregate" name="test_aggregate_marks_pending_without_records" time="3.874" /><testcase classname="tests.test_test_log_aggregate" name="test_main_writes_json_and_markdown" time="7.214" /><testcase classname="tests.test_test_log_aggregate" name="test_main_returns_fail_when_failed_step_present" time="6.238" /><testcase classname="tests.test_test_log_aggregate" name="test_main_returns_pending_when_no_records" time="7.225" /><testcase classname="tests.test_test_log_aggregate" name="test_markdown_contains_evidence_columns" time="9.467" /><testcase classname="tests.test_testing_api" name="test_testing_requires_auth" time="0.635" /><testcase classname="tests.test_testing_api" name="test_testing_forbidden_without_permission" time="28.656" /><testcase classname="tests.test_testing_api" name="test_create_test_run_auto_generates_run_id" time="5.518" /><testcase classname="tests.test_testing_api" name="test_create_test_run_duplicate_conflict" time="11.200" /><testcase classname="tests.test_testing_api" name="test_create_pass_record" time="7.915" /><testcase classname="tests.test_testing_api" name="test_fail_requires_reason" time="11.816" /><testcase classname="tests.test_testing_api" name="test_fail_with_reason_ok" time="12.856" /><testcase classname="tests.test_testing_api" name="test_blocked_requires_reason" time="16.929" /><testcase classname="tests.test_testing_api" name="test_record_unknown_run_not_found" time="6.934" /><testcase classname="tests.test_testing_api" name="test_invalid_result_validation_error" time="12.007" /><testcase classname="tests.test_testing_api" name="test_update_record_pass_to_fail" time="16.132" /><testcase classname="tests.test_testing_api" name="test_update_record_fail_without_reason" time="15.345" /><testcase classname="tests.test_testing_api" name="test_update_unknown_record_not_found" time="5.772" /><testcase classname="tests.test_testing_api" name="test_summary_aggregates_counts" time="27.429" /><testcase classname="tests.test_testing_api" name="test_summary_passed_all_green" time="21.714" /><testcase classname="tests.test_testing_api" name="test_summary_unknown_run_not_found" time="4.585" /><testcase classname="tests.test_testing_api" name="test_db_persist_disabled_is_silent" time="8.390" /><testcase classname="tests.test_testing_api" name="test_non_numeric_step_id_kept_as_is" time="0.715" /><testcase classname="tests.test_testing_api" name="test_update_record_with_observed" time="1.030" /><testcase classname="tests.test_testing_api" name="test_result_service_require_reason" time="0.004" /><testcase classname="tests.test_testing_api" name="test_summary_aggregates_blocked_and_skipped" time="1.218" /><testcase classname="tests.test_testing_api" name="test_db_persist_success_path" time="0.023" /><testcase classname="tests.test_testing_api" name="test_db_persist_failure_degraded" time="0.029" /><testcase classname="tests.test_audit_response_observe" name="test_response_summary_absent_when_switch_off" time="0.022" /><testcase classname="tests.test_audit_response_observe" name="test_l1_log_carries_structured_response_fields" time="0.023" /><testcase classname="tests.test_audit_response_observe" name="test_summary_captured_and_masked_when_switch_on" time="0.466" /><testcase classname="tests.test_audit_response_observe" name="test_deep_response_keeps_keys_only" time="4.201" /><testcase classname="tests.test_audit_response_observe" name="test_credential_headers_are_never_captured" time="1.031" /><testcase classname="tests.test_audit_response_observe" name="test_should_capture_body_matrix[application/json-True]" time="0.048" /><testcase classname="tests.test_audit_response_observe" name="test_should_capture_body_matrix[application/json; charset=utf-8-True]" time="0.083" /><testcase classname="tests.test_audit_response_observe" name="test_should_capture_body_matrix[text/event-stream-False]" time="0.036" /><testcase classname="tests.test_audit_response_observe" name="test_should_capture_body_matrix[text/html; charset=utf-8-False]" time="0.071" /><testcase classname="tests.test_audit_response_observe" name="test_should_capture_body_matrix[application/octet-stream-False]" time="0.031" /><testcase classname="tests.test_audit_response_observe" name="test_should_capture_body_matrix[-False]" time="0.083" /><testcase classname="tests.test_audit_response_observe" name="test_structural_digest_without_body_capture" time="0.017" /><testcase classname="tests.test_audit_response_observe" name="test_observation_with_payload_reports_real_bytes_and_summary" time="0.023" /><testcase classname="tests.test_audit_response_observe" name="test_allowlist_threaded_into_observation" time="0.012" /><testcase classname="tests.test_proxy_upstream_observe" name="test_segment_records_status_duration_and_digest" time="0.047" /><testcase classname="tests.test_proxy_upstream_observe" name="test_segment_extracts_business_error_code" time="0.052" /><testcase classname="tests.test_proxy_upstream_observe" name="test_error_code_extraction_returns_none_for_unsupported_payloads" time="0.036" /><testcase classname="tests.test_proxy_upstream_observe" name="test_segment_unreachable_keeps_same_structure" time="0.045" /><testcase classname="tests.test_proxy_upstream_observe" name="test_segment_capture_masks_summary" time="0.033" /><testcase classname="tests.test_proxy_upstream_observe" name="test_segment_capture_deep_payload_keeps_keys_only" time="0.042" /><testcase classname="tests.test_proxy_upstream_observe" name="test_segment_capture_allowlist_keeps_attribution_field" time="0.041" /><testcase classname="tests.test_proxy_upstream_observe" name="test_publish_accumulates_calls_and_keeps_latest" time="0.014" /><testcase classname="tests.test_proxy_upstream_observe" name="test_generic_proxy_records_upstream_segment" time="5.469" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_upstream_system_identifiers_align_with_generic_channel" time="0.026" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_dps_forward_publishes_success_segment" time="0.044" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_llm_forward_publishes_success_segment" time="0.247" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_rag_forward_publishes_business_error_code" time="0.202" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_rag_multipart_forward_publishes_segment" time="0.220" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_memory_forward_and_raw_publish_segments" time="0.251" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_dps_forward_unreachable_publishes_error_segment" time="0.395" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_capture_switch_off_keeps_no_summary" time="0.082" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_capture_switch_on_masks_summary" time="0.180" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_capture_is_permanently_off_in_production" time="0.144" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_forward_without_request_skips_observation_silently" time="0.282" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_sse_forward_publishes_header_level_segment" time="0.154" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_sse_upstream_error_publishes_payload_segment" time="0.086" /><testcase classname="tests.test_specialized_proxy_upstream_observe" name="test_dps_proxy_endpoint_records_segment_in_audit" time="7.985" /><testcase classname="tests.test_test_log_analyze" name="test_attribute_matrix_covers_design_rows" time="0.053" /><testcase classname="tests.test_test_log_analyze" name="test_attribute_prefers_upstream_over_gateway_5xx" time="0.031" /><testcase classname="tests.test_test_log_analyze" name="test_analyze_writes_report_with_attribution" time="0.196" /><testcase classname="tests.test_test_log_analyze" name="test_analyze_never_prints_response_plaintext" time="0.687" /><testcase classname="tests.test_test_log_analyze" name="test_analyze_all_pass_returns_zero" time="1.107" /><testcase classname="tests.test_test_log_analyze" name="test_analyze_no_records_is_pending" time="0.217" /><testcase classname="tests.test_test_log_analyze" name="test_analyze_run_id_filter" time="0.508" /><testcase classname="tests.test_mask" name="test_sensitive_keys_are_masked" time="0.016" /><testcase classname="tests.test_mask" name="test_nested_credential_container_keeps_shape_only" time="0.008" /><testcase classname="tests.test_mask" name="test_phone_keeps_prefix_and_suffix" time="0.013" /><testcase classname="tests.test_mask" name="test_id_card_keeps_head_and_tail" time="0.028" /><testcase classname="tests.test_mask" name="test_email_local_part_is_masked" time="0.052" /><testcase classname="tests.test_mask" name="test_privacy_masked_inside_free_text" time="0.043" /><testcase classname="tests.test_mask" name="test_redacted_domain_keeps_shape_not_content" time="0.043" /><testcase classname="tests.test_mask" name="test_redacted_domain_is_exact_match" time="0.026" /><testcase classname="tests.test_mask" name="test_depth_over_limit_is_collapsed" time="0.032" /><testcase classname="tests.test_mask" name="test_oversized_payload_keeps_digest_and_keys_only" time="0.027" /><testcase classname="tests.test_mask" name="test_summary_is_produced_under_limit" time="0.028" /><testcase classname="tests.test_mask" name="test_allowlist_keeps_raw_value_for_attribution" time="0.017" /><testcase classname="tests.test_mask" name="test_default_allowlist_is_empty_means_mask_all" time="0.010" /><testcase classname="tests.test_mask" name="test_digest_is_stable_and_differs_by_content" time="0.015" /><testcase classname="tests.test_mask" name="test_observe_payload_none_means_not_captured" time="0.012" /><testcase classname="tests.test_mask" name="test_non_json_body_is_masked_preview" time="0.037" /><testcase classname="tests.test_mask" name="test_json_array_payload_is_summarized_with_size" time="0.018" /><testcase classname="tests.test_mask" name="test_scalar_and_empty_payloads_are_handled" time="0.038" /><testcase classname="tests.test_mask" name="test_oversized_and_deep_array_payloads_keep_array_marker" time="0.044" /><testcase classname="tests.test_mask" name="test_allowlist_supports_subtree_prefix_and_ignores_blank_entries" time="0.067" /><testcase classname="tests.test_mask" name="test_redacted_domain_scalar_and_array_values_keep_shape_only" time="0.047" /><testcase classname="tests.test_capture_switches" name="test_capture_switches_default_off" time="0.149" /><testcase classname="tests.test_capture_switches" name="test_capture_switches_env_override" time="0.067" /><testcase classname="tests.test_capture_switches" name="test_capture_is_permanently_off_in_production" time="0.061" /><testcase classname="tests.test_capture_switches" name="test_capture_switch_state_payload" time="0.102" /><testcase classname="tests.test_capture_switches" name="test_record_switch_state_off_logs_without_db" time="0.059" /><testcase classname="tests.test_capture_switches" name="test_record_switch_state_on_persists_audit_row" time="0.066" /><testcase classname="tests.test_capture_switches" name="test_record_switch_state_db_failure_is_degraded" time="0.206" /><testcase classname="tests.test_capture_switches" name="test_record_switch_state_tolerates_rollback_failure" time="0.067" /><testcase classname="tests.test_capture_switches" name="test_record_switch_state_db_disabled_is_silent" time="0.075" /></testsuite></testsuites>

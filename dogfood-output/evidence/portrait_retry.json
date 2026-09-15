@@ -1,0 +1,29 @@
+{
+ "url": "http://localhost:5173/portrait/list",
+ "retry_clicked": true,
+ "body_tail": "画像管理\n画像总数\n-\n报表概览（真实 DPS 数据）\n高风险画像\n-\n风险分 ≥ 70\n上游健康度\nhealthy\nDPS v2.8.1\n画像查询\n刷新\n画像列表加载失败：Request failed with status code 403\n\n点击重试\n\n画像名称\n\t\n画像 ID\n\t\n标签\n\t\n风险等级\n\t\n更新时间\n\t\n操作\n\n加载失败，请点击上方提示条「点击重试」\n\n共 0 条\n1\n\n组织不存在\n\n组织不存在",
+ "http_after_retry": [
+  {
+   "url": "http://localhost:5173/api/v1/dps-proxy/portraits?page=1&page_size=20",
+   "status": 403
+  },
+  {
+   "url": "http://localhost:5173/api/v1/dps-proxy/reports/overview",
+   "status": 403
+  },
+  {
+   "url": "http://localhost:5173/api/v1/dps-proxy/portraits?page=1&page_size=20",
+   "status": 403
+  },
+  {
+   "url": "http://localhost:5173/api/v1/dps-proxy/reports/overview",
+   "status": 403
+  }
+ ],
+ "console_errors_after_retry": [
+  "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+  "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+  "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+  "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+ ]
+}

@@ -1,0 +1,64 @@
+[
+ {
+  "step": "landing",
+  "url": "http://localhost:5173/gateway/services",
+  "body": "网关管理\n刷新\n连通性检测\n注册实例\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenMemory（openmemory）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8020\n\t\n127.0.0.1:8020\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nDPS（dps）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8030\n\t\n127.0.0.1:8030\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线"
+ },
+ {
+  "step": "after-refresh",
+  "url": "http://localhost:5173/gateway/services",
+  "body": "网关管理\n刷新\n连通性检测\n注册实例\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenMemory（openmemory）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8020\n\t\n127.0.0.1:8020\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nDPS（dps）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8030\n\t\n127.0.0.1:8030\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线",
+  "evidence": {
+   "errors": [],
+   "warns": [],
+   "reqfail": [],
+   "http": []
+  }
+ },
+ {
+  "step": "after-connectivity",
+  "url": "http://localhost:5173/gateway/services",
+  "body": "网关管理\n刷新\n连通性检测\n注册实例\n连通性检测结果\n系统\n\t\n可达\n\t\n延迟(ms)\nopenllm\n\t\n可达\n\t\n78\n\n\nopenrag\n\t\n不可达\n\t\n31\n\n\nopenmemory\n\t\n可达\n\t\n16\n\n\ndps\n\t\n不可达\n\t\n16\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenMemory（openmemory）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8020\n\t\n127.0.0.1:8020\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nDPS（dps）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8030\n\t\n127.0.0.1:8030\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线",
+  "evidence": {
+   "errors": [],
+   "warns": [],
+   "reqfail": [],
+   "http": []
+  }
+ },
+ {
+  "step": "register-dialog-open",
+  "url": "http://localhost:5173/gateway/services",
+  "body": "网关管理\n刷新\n连通性检测\n注册实例\n连通性检测结果\n系统\n\t\n可达\n\t\n延迟(ms)\nopenllm\n\t\n可达\n\t\n78\n\n\nopenrag\n\t\n不可达\n\t\n31\n\n\nopenmemory\n\t\n可达\n\t\n16\n\n\ndps\n\t\n不可达\n\t\n16\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenMemory（openmemory）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8020\n\t\n127.0.0.1:8020\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nDPS（dps）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8030\n\t\n127.0.0.1:8030\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\n注册服务实例\n系统\nopenllm\n主机\n端口\n权重\n取消\n提交",
+  "evidence": {
+   "errors": [],
+   "warns": [],
+   "reqfail": [],
+   "http": []
+  },
+  "dialog_text": "注册服务实例\n系统\nopenllm\n主机\n端口\n权重\n取消\n提交"
+ },
+ {
+  "step": "register-dialog-closed",
+  "url": "http://localhost:5173/gateway/services",
+  "body": "网关管理\n刷新\n连通性检测\n注册实例\n连通性检测结果\n系统\n\t\n可达\n\t\n延迟(ms)\nopenllm\n\t\n可达\n\t\n78\n\n\nopenrag\n\t\n不可达\n\t\n31\n\n\nopenmemory\n\t\n可达\n\t\n16\n\n\ndps\n\t\n不可达\n\t\n16\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenMemory（openmemory）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8020\n\t\n127.0.0.1:8020\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nDPS（dps）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8030\n\t\n127.0.0.1:8030\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线",
+  "closed": true
+ },
+ {
+  "step": "offline-confirm-open",
+  "url": "http://localhost:5173/gateway/services",
+  "body": "网关管理\n刷新\n连通性检测\n注册实例\n连通性检测结果\n系统\n\t\n可达\n\t\n延迟(ms)\nopenllm\n\t\n可达\n\t\n78\n\n\nopenrag\n\t\n不可达\n\t\n31\n\n\nopenmemory\n\t\n可达\n\t\n16\n\n\ndps\n\t\n不可达\n\t\n16\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenMemory（openmemory）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8020\n\t\n127.0.0.1:8020\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nDPS（dps）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8030\n\t\n127.0.0.1:8030\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\n确认下线该实例？\n取消\n确定",
+  "evidence": {
+   "errors": [],
+   "warns": [],
+   "reqfail": [],
+   "http": []
+  },
+  "cancelled": true
+ },
+ {
+  "step": "offline-confirm-cancelled",
+  "url": "http://localhost:5173/gateway/services",
+  "body": "网关管理\n刷新\n连通性检测\n注册实例\n连通性检测结果\n系统\n\t\n可达\n\t\n延迟(ms)\nopenllm\n\t\n可达\n\t\n78\n\n\nopenrag\n\t\n不可达\n\t\n31\n\n\nopenmemory\n\t\n可达\n\t\n16\n\n\ndps\n\t\n不可达\n\t\n16\nOpenLLM（openllm）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8001\n\t\n127.0.0.1:8001\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenRAG（openrag）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8010\n\t\n127.0.0.1:8010\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nOpenMemory（openmemory）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8020\n\t\n127.0.0.1:8020\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线\nDPS（dps）\n实例 ID\n\t\n地址\n\t\n权重\n\t\n健康状态\n\t\n连续失败\n\t\n操作\n127.0.0.1:8030\n\t\n127.0.0.1:8030\n\t\n1\n\t\n健康\n\t\n0\n\t\n下线"
+ }
+]

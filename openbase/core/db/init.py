@@ -183,6 +183,34 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                 f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
             )
         )
+        # 日志中心 / 模块开关权限点种子（v1.4.6，ADR-146-07 / AC-146-15）：
+        # log:read（日志中心 search/facets/export 三端点）与 module:manage（模块启停写端点）
+        # 此前仅存在于受权点（modules/logs/router.py、modules/frontend/__init__.py），
+        # 未登记进权限矩阵 → 非 admin 用户经 user→role→permission 链查询为空（页面不可用）。
+        # 分配口径同 auth:api-keys:*：org_admin 获授（平台级管理操作）；
+        # user/viewer 不授——日志读取与模块启停属平台级操作，非普通业务浏览面。
+        for _code, _name, _module in (
+            ("log:read", "日志查看", "logs"),
+            ("module:manage", "模块启停管理", "frontend"),
+        ):
+            await conn.execute(
+                text(
+                    f"INSERT INTO {schema}.permissions "
+                    "(code, name, module, type, created_at, updated_at) "
+                    "SELECT :code, :name, :module, 1, now(), now() "
+                    f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = :code)"
+                ).bindparams(code=_code, name=_name, module=_module)
+            )
+        await conn.execute(
+            text(
+                f"INSERT INTO {schema}.role_permission (role_id, permission_id) "
+                f"SELECT r.id, p.id FROM {schema}.roles r, {schema}.permissions p "
+                f"WHERE r.code = 'org_admin' AND p.code IN "
+                "('log:read','module:manage') "
+                f"AND NOT EXISTS (SELECT 1 FROM {schema}.role_permission rp "
+                f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
+            )
+        )
         # U1 统一身份收口（RA-01/OB-1）：identity 面权限点种子（幂等）。
         # 仅登记权限行；分配面：admin 持 '*' 通配，其余角色由 identity/lifecycle 授权显式分配。
         for _code, _name in (

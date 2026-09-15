@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日志中心 /platform/observability/logs - 原型 - v1.4.6</title>
+<style>
+  :root{--primary:#2563EB;--bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;--text:#0F172A;--sub:#475569;--ok:#16A34A;--warn:#D97706;--err:#DC2626;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:24px 16px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header{background:linear-gradient(135deg,#1E3A8A,#2563EB);color:#fff;border-radius:16px;padding:24px 28px;margin-bottom:20px}
+  header h1{font-size:22px;margin-bottom:6px}
+  header p{opacity:.9;font-size:13px}
+  .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:4px 12px;font-size:12px;margin-top:8px}
+  .note{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:14px;margin:16px 0;font-size:13px;line-height:1.8}
+  h2{font-size:17px;margin:24px 0 10px;padding-left:10px;border-left:4px solid var(--primary)}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .bar{display:flex;gap:8px;align-items:center;padding:12px;border-bottom:1px solid var(--border);flex-wrap:wrap;background:#FCFDFF}
+  .ctl{border:1px solid var(--border);border-radius:8px;background:#fff;padding:6px 10px;font-size:13px;color:var(--text);min-height:32px;display:flex;align-items:center;gap:6px}
+  .ctl.k{min-width:220px;color:#94A3B8}
+  .btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--primary);border:1px solid #BFDBFE}
+  .layout{display:flex;min-height:320px}
+  .nav{width:210px;border-right:1px solid var(--border);padding:12px;font-size:13px;background:#FCFDFF}
+  .nav .grp{font-size:11px;color:var(--sub);letter-spacing:.5px;margin:12px 0 6px;font-weight:600}
+  .nav .item{display:flex;justify-content:space-between;padding:5px 8px;border-radius:6px;color:var(--sub)}
+  .nav .item.on{background:#EFF6FF;color:var(--primary);font-weight:600}
+  .nav .item .c{color:#94A3B8;font-size:12px}
+  .nav .item.on .c{color:var(--primary)}
+  .main{flex:1;padding:0}
+  .trunc{background:#FEF3C7;color:#92400E;font-size:12.5px;padding:8px 12px;border-bottom:1px solid #FDE68A;display:flex;justify-content:space-between;gap:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;color:var(--sub);font-weight:600;background:#F8FAFC;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:8px 10px;border-bottom:1px solid #F1F5F9;color:var(--text);white-space:nowrap}
+  tr:hover td{background:#F8FAFC}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;color:var(--sub)}
+  .tag{font-size:11px;border-radius:99px;padding:2px 8px;white-space:nowrap}
+  .t-ok{background:#DCFCE7;color:var(--ok)}.t-warn{background:#FEF3C7;color:var(--warn)}.t-err{background:#FEE2E2;color:var(--err)}
+  .t-gray{background:#F1F5F9;color:var(--sub)}
+  .pager{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;font-size:12.5px;color:var(--sub)}
+  .drawer{border-top:1px solid var(--border);background:#FCFDFF;padding:14px;font-size:13px}
+  .drawer h4{font-size:13px;margin-bottom:8px}
+  .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px 16px;font-size:12.5px}
+  .kv div{display:flex;gap:8px}
+  .kv b{color:var(--sub);font-weight:500;min-width:78px}
+  .states{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .state{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .state h5{font-size:13px;margin-bottom:6px}
+  .state p{font-size:12px;color:var(--sub);line-height:1.7}
+  .mock{margin-top:8px;border:1px dashed var(--border);border-radius:8px;padding:14px;font-size:12px;color:var(--sub);text-align:center;background:#FCFDFF}
+  .skel{height:10px;border-radius:6px;background:linear-gradient(90deg,#EEF2F7,#E2E8F0,#EEF2F7);margin:6px 0}
+  footer{margin-top:28px;text-align:center;color:var(--sub);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>日志中心 · /platform/observability/logs</h1>
+  <p>v1.4.6 新增页 · <b>四源</b>统一检索（L1 结构化日志 / 审计库 audit_logs / 测试记录 / <b>四仓日志 repo_log</b>）· 四维分类 · 权限 log:read（仅管理员）· 归入「平台管理 · 可观测与审计」域（旧 /system/logs 保留重定向）</p>
+  <span class="badge">Vue 3 + TypeScript + Vite + Element Plus</span>
+</header>
+
+<div class="note">
+  <b>使用说明：</b>本页为设计阶段原型（<code>file://</code> 可直接打开，零外部依赖）。实现对照本页 + 《OpenBase-UI设计文档-v1.4.6》§3 布局与 §4 状态清单；E2E 断言以 §4 八项状态为基线。
+</div>
+
+<h2>一、主界面（默认态：L1 文件 · 近 24h · 无筛选）</h2>
+<div class="panel">
+  <div class="bar">
+    <div class="ctl">数据源：L1 结构化日志 ▾ &nbsp;(L1 / 审计库 / 测试记录 / <b>四仓日志</b>)</div>
+    <div class="ctl k">搜索 路径 / 请求 ID / 操作人 / IP</div>
+    <div class="ctl">近 24 小时 ▾</div>
+    <div class="ctl">近 1h · 24h · 7d · 自定义</div>
+    <button class="btn ghost">导出 ▾</button>
+  </div>
+  <div class="layout">
+    <div class="nav">
+      <div class="grp">业务模块</div>
+      <div class="item"><span>全部</span><span class="c">137</span></div>
+      <div class="item"><span>身份鉴权</span><span class="c">12</span></div>
+      <div class="item on"><span>记忆</span><span class="c">41</span></div>
+      <div class="item"><span>网关与系统</span><span class="c">3</span></div>
+      <div class="grp">操作类型</div>
+      <div class="item"><span>查询</span><span class="c">30</span></div>
+      <div class="item on"><span>写入提交</span><span class="c">18</span></div>
+      <div class="grp">结果</div>
+      <div class="item"><span>成功 2xx</span><span class="c">48</span></div>
+      <div class="item on"><span>失败 4xx/5xx</span><span class="c">8</span></div>
+      <div class="grp">操作人</div>
+      <div class="item"><span>全部 ▾</span><span class="c"></span></div>
+    </div>
+    <div class="main">
+      <table>
+        <thead><tr><th>时间</th><th>源</th><th>模块</th><th>操作</th><th>结果</th><th>方法</th><th>路径</th><th>码</th><th>耗时</th><th>操作人</th><th>请求 ID</th></tr></thead>
+        <tbody>
+          <tr><td>22:37:41</td><td class="mono">L1</td><td>memory</td><td>查询</td><td><span class="tag t-ok">成功</span></td><td class="mono">GET</td><td class="mono">/memory-proxy/search</td><td>200</td><td>12ms</td><td>42</td><td class="mono">req-a19f…</td></tr>
+          <tr><td>22:37:12</td><td class="mono">L1</td><td>memory</td><td>写入提交</td><td><span class="tag t-err">5xx</span></td><td class="mono">POST</td><td class="mono">/memory-proxy/records</td><td>503</td><td>2013ms</td><td>42</td><td class="mono">req-7c02…</td></tr>
+          <tr><td>22:36:55</td><td class="mono">L1</td><td>identity</td><td>登录鉴权</td><td><span class="tag t-warn">4xx</span></td><td class="mono">POST</td><td class="mono">/auth/login</td><td>401</td><td>8ms</td><td>—</td><td class="mono">req-3d88…</td></tr>
+          <tr><td>22:36:30</td><td class="mono">L1</td><td>dps</td><td>代理转发</td><td><span class="tag t-ok">成功</span></td><td class="mono">GET</td><td class="mono">/dps-proxy/portraits</td><td>200</td><td>47ms</td><td>7</td><td class="mono">req-b401…</td></tr>
+        </tbody>
+      </table>
+      <div class="pager"><span>共 137 条</span><span>‹ 1 2 3 … 7 › &nbsp; 20 条/页 ▾</span></div>
+    </div>
+  </div>
+</div>
+<div class="note">点击表格行 → 打开下方详情抽屉（含测试三元组与脱敏摘要）。</div>
+
+<h2>二、详情抽屉（点击行后）</h2>
+<div class="panel drawer">
+  <h4>日志详情</h4>
+  <div class="kv">
+    <div><b>时间</b>2026-09-15 22:37:12</div>
+    <div><b>数据源</b>l1_file（L1 结构化日志）</div>
+    <div><b>业务模块</b>memory</div>
+    <div><b>操作类型</b>写入提交</div>
+    <div><b>结果</b>server_error（503）</div>
+    <div><b>方法 / 路径</b>POST /api/v1/memory-proxy/records</div>
+    <div><b>耗时</b>2013ms</div>
+    <div><b>操作人 / 租户</b>42 / acme</div>
+    <div><b>客户端 IP</b>127.0.0.1</div>
+    <div><b>请求 ID</b><span class="mono">req-7c02c9f3a1b8</span></div>
+    <div><b>测试三元组</b>UI-MEM-0003 / step 4 / run-20260915-2231</div>
+    <div><b>审计动作</b>api.request</div>
+  </div>
+  <div style="margin-top:10px"><b style="color:var(--sub);font-weight:500">摘要（已脱敏）</b>
+    <div class="mono" style="margin-top:6px">{"upstream_system":"memory","upstream_status":503,"resp_status":503,"resp_error_code":"SYS_503","Authorization":"[MASKED]","api_key":"[MASKED]"}</div>
+  </div>
+</div>
+
+<h2>三、交互状态（E2E 断言基线）</h2>
+<div class="states">
+  <div class="state"><h5>① 加载态</h5><p>骨架占位 + 表格遮罩；分类计数显示占位。</p><div class="mock"><div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:60%"></div></div></div>
+  <div class="state"><h5>② 空态 · 无数据</h5><p>时间窗内该源确无记录（total=0 且无筛选条件）。</p><div class="mock">该时间段暂无日志<br><span style="font-size:11px">试试扩大时间窗：近 7d</span></div></div>
+  <div class="state"><h5>③ 空态 · 条件未命中</h5><p>total=0 但存在筛选条件 → 提供一键清空。</p><div class="mock">无匹配结果<br><button class="btn ghost" style="margin-top:8px">清空筛选条件</button></div></div>
+  <div class="state"><h5>④ 错误态</h5><p>显示 code / message / request_id（可复制）+ 重试。</p><div class="mock" style="border-color:#FECACA;background:#FEF2F2;color:#B91C1C">SYS_503 数据源不可用（audit_db）<br><span class="mono" style="font-size:11px">request_id: req-9f1c2d4e</span><br><button class="btn" style="margin-top:8px">重试</button></div></div>
+  <div class="state"><h5>⑤ 截断态（truncated）</h5><p>触及扫描上限，结果不完整，须显著提示。</p><div class="mock" style="border-color:#FDE68A;background:#FFFBEB;color:#92400E">结果不完整：已触及扫描上限（2 个日分片 / 200,000 行），请收窄时间窗后重试</div></div>
+  <div class="state"><h5>⑥ 导出成功 / 超限</h5><p>成功提示条数；超限提示收窄。</p><div class="mock" style="border-color:#BBF7D0;background:#F0FDF4;color:#166534">已导出 137 条（CSV）</div><div class="mock" style="border-color:#FECACA;background:#FEF2F2;color:#B91C1C">命中 15,320 条，超过上限 10,000，请收窄条件</div></div>
+  <div class="state"><h5>⑦ 筛选提交态</h5><p>分类点选即过滤（无需提交按钮）；导航项显示选中态。</p><div class="mock">已选：模块=记忆 · 操作=写入提交 · 结果=失败<br><span style="font-size:11px">共 8 条</span></div></div>
+  <div class="state"><h5>⑧ 数据源切换态</h5><p>保留关键字与时间窗，清空分类并显式提示。</p><div class="mock">已切换数据源（→ 审计库），分类已重置<br><span style="font-size:11px">关键字「portraits」与时间窗已保留</span></div></div>
+</div>
+
+<h2>四、下线重定向（BL-146-09 / ADR-146-08）</h2>
+<div class="note">
+  <b>/system/audit</b>（旧「审计日志」页，原为纯前端 mock）<b>下线并重定向</b>到本页 <b>/platform/observability/logs</b>；同时清理 mock 数据源（<code>mockLogs</code> 静态扫描须 0 命中，AC-146-09-1~2）。<br>
+  旧 <b>/system/logs</b> 亦保留重定向至本页（<b>禁 404</b>）；全量旧→新重定向映射表见 <a href="ia-overview.html">统一前端信息架构原型（ia-overview.html）</a> 第三节。
+</div>
+
+<h2>五、四仓日志接入（VC-014）</h2>
+<div class="note">
+  数据源下拉新增 <b>四仓日志</b>（<code>source=repo_log</code>），以 <code>module</code> 维度区分：<code>dps→dps</code>、<code>openrag→rag</code>、<code>openmemory→memory</code>、<code>openllm→llm</code>（<b>三个 svc 名与 module 名不同名</b>）。<br>
+  <b>能力前提</b>：四仓须完成 D-6（<code>request_id</code> 接线）与 <b>JSONL 结构化</b>（BL-146-16/17，跨仓由各仓自行评审发布）。<br>
+  <b>降级语义</b>：某仓未就绪 → 该仓 <code>request_id</code> 显示为 <code>null</code>（<b>可见的缺失，不伪造</b>）；未结构化 → 走纯文本回退解析（能力受限，须在交付说明逐仓列明覆盖状态）。
+</div>
+
+<footer>OpenBase v1.4.6 · 日志中心原型 · 生成于 2026-09-15 · 本页零外部依赖，可直接 file:// 打开</footer>
+</div>
+</body>
+</html>

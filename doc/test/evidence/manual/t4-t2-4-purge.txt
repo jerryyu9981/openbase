@@ -1,0 +1,9 @@
+﻿login: 200 token= True
+[200] 签发前置校验 unexpected: non-deactivated subject issued
+[400] 注销主体（deactivate） {"code":"BIZ_STATE_TRANSITION_INVALID","message":"illegal state transition: deactivated -> deactivated","detail":{"from":"deactivated","to":"deactivated"},"requ
+[403] 负例：错误授权码 → 403 BIZ_PURGE_AUTH_REQUIRED {"code":"BIZ_PURGE_AUTH_REQUIRED","message":"purge authorization code missing or invalid","detail":{"subject_id":35},"request_id":"req-e70375fcb378"}
+[200] 服务层签发授权码 code_suffix=dnbRDq hash=540432f091f3e899
+[200] 正例：POST /purge → 200 {"purged":true,"subject_id":35,"subject_type":"user","username":"smoke_l1_1_1789390731","tenant_code":null,"previous_state":"deactivated","status_state":"purged
+[400] 终态：重复 purge → 400 BIZ_NOT_PURGEABLE {"code":"BIZ_NOT_PURGEABLE","message":"subject already purged: 35","detail":{"subject_id":35,"status_state":"purged"},"request_id":"req-cd8ad4ac9ccc"}
+purge_records = 1 audit_rows(identity.purge) = 0
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-t2-4-purge.json

@@ -1,0 +1,37 @@
+﻿[PASS] S0-1 st=200 | components={"openmemory": "ok", "openrag": "ok", "dps": "ok"}
+[PASS] S0-2 st=200 | status=200; contains_documents_text=True; endpoints=114
+[PASS] S0-3 st=200 | liveness=200; /health=404; openapi PUT /api/v2/portrait/{person_id} registered=True
+[PASS] S0-4 st=200 | trusted proxy_source=openbase-llm-proxy principal.subject_id=1 | forged principal=None
+[PASS] S0-5 st=200 | smoke_ 前缀 create=200 replay=200 memory_id=b5150e8f...
+[PASS] S1-1 st=200 | RAG no-key=401 key=200; MEM no-key=401 key=200
+[PASS] S1-2 st=200 | components={"openmemory": "ok", "openrag": "ok", "dps": "ok"}
+[PASS] S2-1 st=200 | status=200 memory_id=014fe69d memory_type=persistent
+[PASS] S2-2 st=200 | recall=200 命中=True items=5; session 会话内命中=True
+[PASS] S2-3 st=422 | 无内容=422; 错误 X-API-Key=401
+[PENDING] S2-4 st=502 | chat=502 body={"code":"SYS_502","message":"OpenLLM upstream unreachable: ","detail":null,"request_id":"req-919
+[PASS] S2-5 st=422 | 空 query=422; 无 session remember=200 session_id=None type=persistent
+[PASS] S2-6 st=403 | status=403 body={"detail":"Forbidden","reason":"角色 'user' 无权访问: GET /api/v1/history/smoke_s2_user"}
+[PASS] S3-1 st=200 | create=200 cid=976cdafa list=200 retrieve=200
+[PASS] S3-2 st=200 | submit=200 status0=PENDING doc=dcd8392e 轮询=COMPLETED
+[PASS] S3-3 st=200 | retrieve=200 命中=True items=1
+[PASS] S3-4 st=200 | chat=200 body={"code":0,"message":"success","data":{"request_id":"openllm-2cc90b7f59aa4280a64816ef","mode":"au
+[FAIL] S4-0 st=403 | dps-proxy 列表=403 body={"code":"PERM_UNTRUSTED_IDENTITY_HEADER","message":"identity headers from untrusted sour
+[PASS] S4-1 st=200 | calculate=200 六维=True; get=200 attrs=True
+[PASS] S4-2 st=200 | PUT=200; GET 后 smoke_grade 可见=True
+[FAIL] S4-3 st=200 | 缺头=401; 四头=200; dps-proxy PUT=403
+[PENDING] S4-4 st=500 | writeback=500 body={"code":5001,"message":"回写队列不可用，请稍后重试","request_id":"openllm-wb-cdc85bc19bad4bbc8787ebd0"}
+[PASS] S5-1 st=200 | chat=200 body={"code":0,"message":"success","data":{"request_id":"openllm-e5f49e8ed8e84e1592ef0723","mode":"au
+[PASS] S5-2 st=200 | SSE status=200 routing=True done=True error=False body=event: routing data: {"components": {"need_memory": tru
+[PASS] S5-3 st=200 | trusted principal.subject_id=1 tenant=dps-tenant-001 proxy_source=openbase-llm-proxy | forged principal=None
+[PENDING] S5-4 st=None | 依赖 S5-2 流式成功；本轮 S5-2 因 LLM 上游不可用未产生 done
+[PASS] S5-5 st=200 | status=200 routing_need_false=True error=False body=event: routing data: {"components": {"need_memory": false,
+[PENDING] S5-6 st=None | 需停 OpenRAG 服务注入故障；任务约束禁止停止/重启服务，未执行
+[PASS] S6-1 st=200 | retrieve=200 items=1; stream=200 start/done=True
+[PASS] S6-2 st=200 | remember=200; recall=200 命中=True
+[PENDING] S6-3 st=None | 旁路 remember/recall 可用；主通道沉淀受 LLM 上游/回写队列阻塞
+[PASS] S6-4 st=None | S4-4 / S6-3 本轮如实登记为 PENDING，不作为真实模式启用决策阻塞项
+
+=== SUMMARY ===
+total=32 pass=25 fail=2 pending=5
+commit=43586d5 out=D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\s7\smoke\smoke-summary-t4.json
+ollama_info=status=200

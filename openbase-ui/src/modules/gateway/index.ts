@@ -1,13 +1,14 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 /**
- * 统一网关管理模块路由（v1.4.0，VC-006）
- * 板块：服务发现 / 聚合编排 —— 对齐《前端架构设计文档 v1.4.0》§2
+ * 统一网关模块路由（v1.4.0，VC-006）—— v1.4.6 已整体迁入平台管理「可观测与审计」域
+ * （ADR-146-08），本文件不再由 router 装载；保留组件指向为避免历史引用悬空（禁 404）。
+ * 服务发现 → `/platform/observability/service-discovery`；聚合测试 → `/platform/observability/gateway-test`。
  */
 export const routes: RouteRecordRaw[] = [
-  { path: '', redirect: '/gateway/services' },
-  { path: 'services', name: 'gateway-services', component: () => import('./pages/GatewayServicesView.vue'), meta: { title: '服务列表' } },
-  { path: 'aggregate', name: 'gateway-aggregate', component: () => import('./pages/GatewayAggregateView.vue'), meta: { title: '聚合测试' } },
+  { path: '', redirect: '/platform/observability/service-discovery' },
+  { path: 'services', name: 'gateway-services', component: () => import('@/pages/platform/observability/GatewayServicesView.vue'), meta: { title: '服务列表' } },
+  { path: 'aggregate', name: 'gateway-aggregate', component: () => import('@/pages/platform/observability/GatewayAggregateView.vue'), meta: { title: '聚合测试' } },
 ]
 
 /** 板块导航（ModuleLayout 菜单数据） */

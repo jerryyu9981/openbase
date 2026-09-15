@@ -1,0 +1,357 @@
+{
+  "phases": {
+    "A": {
+      "label": "A",
+      "log_level": "(default INFO)",
+      "capture_response": "0",
+      "capture_upstream": "0",
+      "n_per_workload": 300,
+      "warmup": 30,
+      "results": [
+        {
+          "workload": "W1_dps_proxy_health",
+          "path": "/api/v1/dps-proxy/health",
+          "n": 300,
+          "errors": 0,
+          "mean_ms": 90.531,
+          "p50_ms": 79.285,
+          "p95_ms": 201.765,
+          "p99_ms": 292.464,
+          "max_ms": 323.312
+        },
+        {
+          "workload": "W2_auth_me",
+          "path": "/api/v1/auth/me",
+          "n": 300,
+          "errors": 0,
+          "mean_ms": 33.3,
+          "p50_ms": 28.227,
+          "p95_ms": 41.831,
+          "p99_ms": 272.68,
+          "max_ms": 284.02
+        }
+      ],
+      "before": {
+        "jsonl_bytes": 291535,
+        "errlog_bytes": 89432,
+        "audit": {
+          "rows": 759,
+          "bytes": 606208
+        },
+        "ts": 1789397232.7477198
+      },
+      "after": {
+        "jsonl_bytes": 830212,
+        "errlog_bytes": 628109,
+        "audit": {
+          "error": "'NoneType' object has no attribute 'send'"
+        },
+        "ts": 1789397274.0032687
+      },
+      "delta": {
+        "jsonl_bytes": 538677,
+        "errlog_bytes": 538677,
+        "audit_rows": null,
+        "audit_bytes": null,
+        "total_requests": 600,
+        "window_s": 41.26
+      },
+      "ts": "2026-09-14T22:47:54+08:00"
+    },
+    "B": {
+      "label": "B",
+      "log_level": "ERROR",
+      "capture_response": "0",
+      "capture_upstream": "0",
+      "n_per_workload": 300,
+      "warmup": 30,
+      "results": [
+        {
+          "workload": "W1_dps_proxy_health",
+          "path": "/api/v1/dps-proxy/health",
+          "n": 300,
+          "errors": 0,
+          "mean_ms": 84.187,
+          "p50_ms": 73.755,
+          "p95_ms": 144.2,
+          "p99_ms": 263.962,
+          "max_ms": 340.108
+        },
+        {
+          "workload": "W2_auth_me",
+          "path": "/api/v1/auth/me",
+          "n": 300,
+          "errors": 0,
+          "mean_ms": 28.831,
+          "p50_ms": 25.352,
+          "p95_ms": 36.571,
+          "p99_ms": 214.839,
+          "max_ms": 280.691
+        }
+      ],
+      "before": {
+        "jsonl_bytes": 830212,
+        "errlog_bytes": 540,
+        "audit": {
+          "rows": 1750,
+          "bytes": 1351680
+        },
+        "ts": 1789397352.213036
+      },
+      "after": {
+        "jsonl_bytes": 830212,
+        "errlog_bytes": 540,
+        "audit": {
+          "error": "'NoneType' object has no attribute 'send'"
+        },
+        "ts": 1789397390.2204132
+      },
+      "delta": {
+        "jsonl_bytes": 0,
+        "errlog_bytes": 0,
+        "audit_rows": null,
+        "audit_bytes": null,
+        "total_requests": 600,
+        "window_s": 38.01
+      },
+      "ts": "2026-09-14T22:49:50+08:00"
+    },
+    "B2": {
+      "label": "B2",
+      "log_level": "(default INFO)",
+      "capture_response": "0",
+      "capture_upstream": "0",
+      "n_per_workload": 500,
+      "warmup": 30,
+      "results": [
+        {
+          "workload": "W1_dps_proxy_health",
+          "path": "/api/v1/dps-proxy/health",
+          "n": 500,
+          "errors": 0,
+          "mean_ms": 83.882,
+          "p50_ms": 74.89,
+          "p95_ms": 154.333,
+          "p99_ms": 254.403,
+          "max_ms": 337.39
+        },
+        {
+          "workload": "W2_auth_me",
+          "path": "/api/v1/auth/me",
+          "n": 500,
+          "errors": 0,
+          "mean_ms": 30.121,
+          "p50_ms": 26.535,
+          "p95_ms": 37.02,
+          "p99_ms": 217.303,
+          "max_ms": 235.305
+        }
+      ],
+      "before": {
+        "jsonl_bytes": 830212,
+        "errlog_bytes": 540,
+        "audit": {
+          "rows": 2741,
+          "bytes": 2121728
+        },
+        "ts": 1789397422.3445437
+      },
+      "after": {
+        "jsonl_bytes": 830212,
+        "errlog_bytes": 540,
+        "audit": {
+          "error": "'NoneType' object has no attribute 'send'"
+        },
+        "ts": 1789397482.7517827
+      },
+      "delta": {
+        "jsonl_bytes": 0,
+        "errlog_bytes": 0,
+        "audit_rows": null,
+        "audit_bytes": null,
+        "total_requests": 1000,
+        "window_s": 60.41
+      },
+      "ts": "2026-09-14T22:51:22+08:00"
+    },
+    "A2": {
+      "label": "A2",
+      "log_level": "(default INFO)",
+      "capture_response": "0",
+      "capture_upstream": "0",
+      "n_per_workload": 500,
+      "warmup": 30,
+      "results": [
+        {
+          "workload": "W1_dps_proxy_health",
+          "path": "/api/v1/dps-proxy/health",
+          "n": 500,
+          "errors": 0,
+          "mean_ms": 92.916,
+          "p50_ms": 82.778,
+          "p95_ms": 175.006,
+          "p99_ms": 306.069,
+          "max_ms": 499.052
+        },
+        {
+          "workload": "W2_auth_me",
+          "path": "/api/v1/auth/me",
+          "n": 500,
+          "errors": 0,
+          "mean_ms": 32.621,
+          "p50_ms": 27.526,
+          "p95_ms": 42.792,
+          "p99_ms": 245.543,
+          "max_ms": 299.476
+        }
+      ],
+      "before": {
+        "jsonl_bytes": 833300,
+        "errlog_bytes": 3626,
+        "audit": {
+          "rows": 4332,
+          "bytes": 3342336
+        },
+        "ts": 1789397526.6847568
+      },
+      "after": {
+        "jsonl_bytes": 1698596,
+        "errlog_bytes": 868922,
+        "audit": {
+          "error": "'NoneType' object has no attribute 'send'"
+        },
+        "ts": 1789397594.0482712
+      },
+      "delta": {
+        "jsonl_bytes": 865296,
+        "errlog_bytes": 865296,
+        "audit_rows": null,
+        "audit_bytes": null,
+        "total_requests": 1000,
+        "window_s": 67.36
+      },
+      "ts": "2026-09-14T22:53:14+08:00"
+    },
+    "A3": {
+      "label": "A3",
+      "log_level": "(default INFO)",
+      "capture_response": "0",
+      "capture_upstream": "0",
+      "n_per_workload": 500,
+      "warmup": 30,
+      "results": [
+        {
+          "workload": "W1_dps_proxy_health",
+          "path": "/api/v1/dps-proxy/health",
+          "n": 500,
+          "errors": 0,
+          "mean_ms": 77.719,
+          "p50_ms": 66.76,
+          "p95_ms": 101.677,
+          "p99_ms": 339.194,
+          "max_ms": 478.019
+        },
+        {
+          "workload": "W2_auth_me",
+          "path": "/api/v1/auth/me",
+          "n": 500,
+          "errors": 0,
+          "mean_ms": 27.756,
+          "p50_ms": 23.012,
+          "p95_ms": 32.165,
+          "p99_ms": 246.203,
+          "max_ms": 287.779
+        }
+      ],
+      "before": {
+        "jsonl_bytes": 1699042,
+        "errlog_bytes": 869368,
+        "audit": {
+          "rows": 5923,
+          "bytes": 4571136
+        },
+        "ts": 1789397632.6783242
+      },
+      "after": {
+        "jsonl_bytes": 2564121,
+        "errlog_bytes": 1734447,
+        "audit": {
+          "error": "'NoneType' object has no attribute 'send'"
+        },
+        "ts": 1789397689.5514035
+      },
+      "delta": {
+        "jsonl_bytes": 865079,
+        "errlog_bytes": 865079,
+        "audit_rows": null,
+        "audit_bytes": null,
+        "total_requests": 1000,
+        "window_s": 56.87
+      },
+      "ts": "2026-09-14T22:54:49+08:00"
+    },
+    "C": {
+      "label": "C",
+      "log_level": "(default INFO)",
+      "capture_response": "1",
+      "capture_upstream": "1",
+      "n_per_workload": 300,
+      "warmup": 30,
+      "results": [
+        {
+          "workload": "W1_dps_proxy_health",
+          "path": "/api/v1/dps-proxy/health",
+          "n": 300,
+          "errors": 0,
+          "mean_ms": 80.452,
+          "p50_ms": 69.331,
+          "p95_ms": 134.695,
+          "p99_ms": 288.043,
+          "max_ms": 315.543
+        },
+        {
+          "workload": "W2_auth_me",
+          "path": "/api/v1/auth/me",
+          "n": 300,
+          "errors": 0,
+          "mean_ms": 30.113,
+          "p50_ms": 23.611,
+          "p95_ms": 40.443,
+          "p99_ms": 235.479,
+          "max_ms": 308.879
+        }
+      ],
+      "before": {
+        "jsonl_bytes": 2567668,
+        "errlog_bytes": 4085,
+        "audit": {
+          "rows": 7514,
+          "bytes": 5775360
+        },
+        "ts": 1789397819.8490725
+      },
+      "after": {
+        "jsonl_bytes": 3358312,
+        "errlog_bytes": 794729,
+        "audit": {
+          "error": "'NoneType' object has no attribute 'send'"
+        },
+        "ts": 1789397857.0762599
+      },
+      "delta": {
+        "jsonl_bytes": 790644,
+        "errlog_bytes": 790644,
+        "audit_rows": null,
+        "audit_bytes": null,
+        "total_requests": 600,
+        "window_s": 37.23
+      },
+      "ts": "2026-09-14T22:57:37+08:00"
+    }
+  },
+  "spec": {
+    "acceptance_perf": "日志写入不阻塞主请求；P99 增量 < 5ms（压测对比）",
+    "acceptance_capacity": "单服务单日日志 < 200MB（1000 请求/日量级，含样本）",
+    "method": "同一端点同负载量（n=300，warmup=30）× 三段对照（A 默认 / B 关文件日志 / C 开采集）；ΔP99 = P99_A − P99_B（文件日志链路增量）；容量按实测字节/请求外推 1000 请求/日"
+  }
+}

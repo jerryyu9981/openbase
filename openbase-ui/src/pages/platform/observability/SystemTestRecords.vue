@@ -123,7 +123,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { testingApi, resultTagType, resultLabel, type CaseSummary, type StepSummary, type TestResult } from '@/core/api/testing'
+import { testingApi, resultTagType, resultLabel, type CaseSummary, type TestResult } from '@/core/api/testing'
 import { TEST_MODE_KEY } from '@/core/api/http'
 
 const runIdInput = ref('')

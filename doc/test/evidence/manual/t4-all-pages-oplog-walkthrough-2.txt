@@ -1,0 +1,19 @@
+﻿login: 200 token= True
+[OK ] POST   /auth/login                                  -> 200
+[OK ] GET    /auth/me                                     -> 200
+[OK ] GET    /modules                                     -> 200
+[OK ] GET    /auth/api-keys                               -> 200
+[OK ] POST   /auth/api-keys                               -> 200
+[OK ] GET    /ai-apps                                     -> 200
+[OK ] POST   /ai-apps                                     -> 422
+[OK ] POST   /ai-apps/1/publish                           -> 404
+[OK ] GET    /users                                       -> 200
+[OK ] POST   /users                                       -> 422
+[OK ] POST   /tenants                                     -> 200
+[OK ] PUT    /tenants/3                                   -> 422
+[OK ] DELETE /tenants/3                                   -> 200
+[OK ] POST   /test-runs                                   -> 200
+[OK ] POST   /test-records                                -> 422
+[OK ] POST   /gateway/aggregate                           -> 422
+补走查覆盖: {"operations": 16, "with_oplog": 16, "without_oplog": 0, "coverage": 100.0}
+out: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\manual\t4-all-pages-oplog-walkthrough-2.json

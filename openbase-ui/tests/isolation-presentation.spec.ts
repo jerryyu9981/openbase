@@ -8,8 +8,14 @@
  * - 5xx → 错误条 + 重试；
  * - 任何分支容器内均有可见文案（无白屏），且不泄漏堆栈/原始 JSON；
  * - `request_id` 仅在页面详情内展示，不落入 URL / localStorage。
+ *
+ * 用例卫生（S6-T3-2 首例并发超时根因修复）：本文件每个用例都整页挂载 Element Plus 组件，
+ * 若挂载后的包装器不卸载，共享 jsdom 文档会逐例线性累积 DOM（实测 document.body 节点数
+ * 0→20→39→55→72→89→105），已挂载组件及其未完成的异步渲染在**后续用例执行期间**仍会运行，
+ * 与当前用例争抢事件循环 —— 并发执行时表现为 `Test timed out in 5000ms`。
+ * 故：`mountPage` 登记全部包装器 + `afterEach` 统一卸载并清空挂载点，用例之间零残留。
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
@@ -32,6 +38,9 @@ import ChatView from '@/modules/knowledge/pages/ChatView.vue'
 import AppLayout from '@/core/layouts/AppLayout.vue'
 
 let pinia: Pinia
+
+/** 本用例已挂载的包装器登记表：`afterEach` 统一卸载，杜绝 DOM/副作用跨用例残留 */
+const mountedWrappers: VueWrapper[] = []
 
 /** 构造契约形状的 axios 错误（消费 http.ts 的 ErrorResponse 契约） */
 function apiError(status: number, body: Partial<ErrorResponse> = {}): AxiosError<ErrorResponse> {
@@ -67,6 +76,7 @@ async function mountPage(component: Component, path = '/portrait/list'): Promise
   const wrapper = mount(component, {
     global: { plugins: [ElementPlus, router, pinia] },
   })
+  mountedWrappers.push(wrapper)
   await flushPromises()
   return { wrapper, router }
 }
@@ -93,6 +103,17 @@ beforeEach(() => {
   pinia = createPinia()
   setActivePinia(pinia)
   vi.restoreAllMocks()
+})
+
+afterEach(async () => {
+  // 卸载本用例挂载的全部包装器并清空全局挂载点：已挂载组件（及其未完成的异步渲染/定时器）
+  // 若不卸载会一直在共享 jsdom 文档内存活，后续用例执行期间其残留任务仍会运行 —— 这正是
+  // S6-T3-2 首例并发偶发 `Test timed out in 5000ms` 的竞态来源：DOM 逐例线性累积
+  // （实测 document.body 节点数 0→20→39→55→72→89→105）使后置用例成本抬升，且残留活动组件
+  // 在调度器繁忙时与当前用例争抢事件循环。此处逐例收敛，保证用例之间零残留。
+  for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  await flushPromises()
+  document.body.innerHTML = ''
 })
 
 describe('S6-T3-4: 错误契约分类（error.ts）', () => {
@@ -382,6 +403,7 @@ describe('S6-T3-4: 渲染异常兜底（防白屏）', () => {
     await router.push('/boom')
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const wrapper = mount(AppLayout, { global: { plugins: [ElementPlus, router, pinia] } })
+    mountedWrappers.push(wrapper)
     await flushPromises()
 
     expect(wrapper.find('[data-test="layout-render-fallback"]').exists()).toBe(true)

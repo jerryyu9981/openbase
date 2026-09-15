@@ -1,0 +1,12 @@
+{
+  "defect_id": "AD-20260914-02",
+  "endpoint": "POST /api/v1/auth/api-keys",
+  "request_body": {
+    "name": "t4-defect-probe"
+  },
+  "status_code": 500,
+  "body": "{\"code\":\"SYS_500\",\"message\":\"internal server error\",\"detail\":null,\"request_id\":\"req-b9743f1eec30\"}",
+  "root_cause": "openbase/modules/auth/api_keys.py: logger.info(\"api key created\", extra={\"name\": name}) → LogRecord 保留键 name 冲突 → KeyError: Attempt to overwrite 'name' in LogRecord → 500",
+  "discovered_by": "S7-T5 L3-1 M1 子探针（ob_k_* 服务密钥签发）",
+  "checked_at": "2026-09-14"
+}

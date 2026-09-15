@@ -1,0 +1,45 @@
+﻿........................................................................ [ 52%]
+................................................................         [100%]
+============================== warnings summary ===============================
+openbase\demo_app.py:131
+  D:\Trae CN\myproject\Dev\OpenBase\openbase\demo_app.py:131: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\fastapi\applications.py:4675
+C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\fastapi\applications.py:4675
+  C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\fastapi\applications.py:4675: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+openbase\demo_app.py:145
+  D:\Trae CN\myproject\Dev\OpenBase\openbase\demo_app.py:145: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.10.11-final-0 _______________
+
+Name                                         Stmts   Miss  Cover   Missing
+--------------------------------------------------------------------------
+openbase\core\logging_setup.py                 170     18    89%   130-131, 133, 179, 232, 242-243, 296-297, 325-330, 338, 370-371
+openbase\core\mask.py                          116      2    98%   207, 222
+openbase\modules\audit\capture_switches.py      38      0   100%
+openbase\modules\proxy\upstream_observe.py      78      1    99%   84
+openbase\modules\testing\__init__.py           183      4    98%   70, 225, 330-331
+openbase\modules\testing\schemas.py             26      0   100%
+--------------------------------------------------------------------------
+TOTAL                                          611     25    96%

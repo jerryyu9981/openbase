@@ -1,0 +1,115 @@
+{
+  "run_id": "run-pages3-20260914-2225",
+  "checked_at": "2026-09-14T22:25:28+08:00",
+  "log_file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\logs\\openbase\\openbase-20260914.jsonl",
+  "summary": {
+    "operations": 7,
+    "with_oplog": 6,
+    "coverage": 85.7
+  },
+  "calls": [
+    {
+      "page": "openllm/Conversations",
+      "case_id": "PAGE-LLM-CONV-CREATE2",
+      "step_id": "1",
+      "method": "POST",
+      "path": "/api/v1/llm-proxy/conversations",
+      "expect": null,
+      "status_code": 201,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"id\":\"bc60d320-22de-43c2-a242-1c4536c1d3d0\",\"tenant_id\":\"11111111-1111-1111-1111-111111111111\",\"user_id\":\"179fc89c-c76b-47e7-a0b1-9659d03de663",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-e14a6623ac18"
+      ]
+    },
+    {
+      "page": "openllm/Conversations",
+      "case_id": "PAGE-LLM-MSGS",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/llm-proxy/conversations/bc60d320-22de-43c2-a242-1c4536c1d3d0/messages",
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-09-14T14:25:27.627855+00:00\"}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-542652388ebd"
+      ]
+    },
+    {
+      "page": "openllm/Conversations",
+      "case_id": "PAGE-LLM-CONV-ARCHIVE",
+      "step_id": "2",
+      "method": "POST",
+      "path": "/api/v1/llm-proxy/conversations/bc60d320-22de-43c2-a242-1c4536c1d3d0/archive",
+      "expect": null,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"message\":\"对话已归档\"},\"timestamp\":\"2026-09-14T14:25:27.791635+00:00\"}",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-b648099c875d"
+      ]
+    },
+    {
+      "page": "openllm/Conversations",
+      "case_id": "PAGE-LLM-CONV-DELETE",
+      "step_id": "3",
+      "method": "DELETE",
+      "path": "/api/v1/llm-proxy/conversations/bc60d320-22de-43c2-a242-1c4536c1d3d0",
+      "expect": null,
+      "status_code": 204,
+      "body": "",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-7afc35683bb8"
+      ]
+    },
+    {
+      "page": "memory/MemorySessions",
+      "case_id": "PAGE-MEM-SESSIONS",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/sessions",
+      "expect": 200,
+      "status_code": -1,
+      "body": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+      "note": "",
+      "oplog": false,
+      "oplog_request_ids": []
+    },
+    {
+      "page": "memory/MemoryDecay",
+      "case_id": "PAGE-MEM-DECAY-GET2",
+      "step_id": "1",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/decay/config",
+      "expect": 200,
+      "status_code": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"tenant_id\":\"default\",\"strategy\":\"adaptive\",\"time_decay_factor\":0.8,\"half_life_days\":45,\"emotion_weight\":0.9,\"frequency_weight\":1.0,\"recency_w",
+      "note": "",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-b03f60674d52"
+      ]
+    },
+    {
+      "page": "memory/MemoryDecay",
+      "case_id": "PAGE-MEM-DECAY-PUT",
+      "step_id": "2",
+      "method": "PUT",
+      "path": "/api/v1/memory-proxy/decay/config",
+      "expect": null,
+      "status_code": 403,
+      "body": "{\"code\":403,\"message\":\"Forbidden\",\"data\":null,\"timestamp\":\"2026-09-14T14:25:28.156843+00:00\"}",
+      "note": "写回同值，避免改变配置语义",
+      "oplog": true,
+      "oplog_request_ids": [
+        "req-24d7414958fd"
+      ]
+    }
+  ]
+}

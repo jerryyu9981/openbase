@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "tool": "verify_l1_1_cascade.ps1",
+  "task": "S7-T2",
+  "evidence_ref": "S7-T2-1~4",
+  "title": "S7-T2 L1-1 级联全链核验",
+  "mode": "run",
+  "execution_face": "B",
+  "base_url": "http://127.0.0.1:8000",
+  "generated_at": "2026-09-14T20:58:50+0800",
+  "commit": "43586d5e9f81e6929904104f7d8c2ee79e074535",
+  "subject_id": 35,
+  "status": "PENDING",
+  "exit_code": 2,
+  "checks": [
+    {
+      "id": "S7-T2-1",
+      "name": "DPS 画像读阻断（绑定失效 -> 403，数据保留）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l1-1/dps-block.json"
+    },
+    {
+      "id": "S7-T2-2",
+      "name": "OpenMemory 记忆数据面阻断 + event_id 幂等（重放不双写）",
+      "execution_face": "B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l1-1/openmemory-block.json + event-idempotency.json"
+    },
+    {
+      "id": "S7-T2-3",
+      "name": "Q-5=A 保留 + 全链阻断 + restored 解除阻断",
+      "execution_face": "A+B",
+      "status": "PASS",
+      "reason": "",
+      "evidence": "doc/test/evidence/s7/l1-1/restore.json + scan-auto-purge.txt"
+    },
+    {
+      "id": "S7-T2-4",
+      "name": "purge 显式触发（负例 400/403 已通过；物理清除 + 审计留痕待 CLI 授权码）",
+      "execution_face": "B",
+      "status": "PENDING",
+      "reason": "purge 授权码仅可由 CLI/服务层签发（DB 直连受限的执行面无法完成正例）",
+      "evidence": "doc/test/evidence/s7/l1-1/purge.json"
+    }
+  ],
+  "reason": "存在未闭合项（见 checks[].reason）"
+}

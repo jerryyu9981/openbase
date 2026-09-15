@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>统一前端信息架构（三分 + 四域）· 原型 · v1.4.6</title>
+<style>
+  :root{--primary:#2563EB;--bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;--text:#0F172A;--sub:#475569;--ok:#16A34A;--warn:#D97706;--err:#DC2626;--new:#7C3AED;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:24px 16px;font-size:14px}
+  .wrap{max-width:1240px;margin:0 auto}
+  header{background:linear-gradient(135deg,#1E3A8A,#2563EB);color:#fff;border-radius:16px;padding:24px 28px;margin-bottom:18px}
+  header h1{font-size:22px;margin-bottom:6px}
+  header p{opacity:.92;font-size:13px;line-height:1.7}
+  .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:4px 12px;font-size:12px;margin-top:10px;margin-right:6px}
+  .note{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:14px;margin:14px 0;font-size:13px;line-height:1.85}
+  h2{font-size:17px;margin:24px 0 10px;padding-left:10px;border-left:4px solid var(--primary)}
+  .app{display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);min-height:520px}
+  .side{width:266px;background:#FCFDFF;border-right:1px solid var(--border);padding:14px 10px}
+  .side .brand{font-weight:700;font-size:13px;color:var(--primary);padding:0 8px 10px;border-bottom:1px solid var(--border);margin-bottom:10px}
+  .g{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.6px;margin:12px 8px 5px}
+  .it{padding:6px 8px;border-radius:7px;color:var(--sub);display:flex;justify-content:space-between;font-size:13px}
+  .it.on{background:#EFF6FF;color:var(--primary);font-weight:600}
+  .it .dot{width:6px;height:6px;border-radius:50%;background:#CBD5E1;margin-top:7px}
+  .it.on .dot{background:var(--primary)}
+  .d1{padding-left:8px}.d2{padding-left:22px;font-size:12.5px}.d3{padding-left:36px;font-size:12.5px}
+  .main{flex:1;padding:18px}
+  .main h3{font-size:16px;margin-bottom:6px}
+  .main .crumb{font-size:12px;color:var(--sub);margin-bottom:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px}
+  .card{border:1px solid var(--border);border-radius:10px;padding:12px;background:#FCFDFF}
+  .card h4{font-size:13px;margin-bottom:6px}
+  .card p{font-size:12px;color:var(--sub);line-height:1.7}
+  .tag{display:inline-block;font-size:11px;border-radius:99px;padding:2px 8px;margin:2px 4px 2px 0}
+  .t-new{background:#EDE9FE;color:var(--new)}
+  .t-move{background:#FEF3C7;color:var(--warn)}
+  .t-keep{background:#DCFCE7;color:var(--ok)}
+  .t-del{background:#FEE2E2;color:var(--err)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  th{text-align:left;background:#F1F5F9;color:var(--sub);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border)}
+  td{padding:7px 10px;border-bottom:1px solid #F1F5F9;vertical-align:top}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;color:var(--sub)}
+  footer{margin-top:26px;text-align:center;color:var(--sub);font-size:12px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>统一前端信息架构 · 三分 + 四域</h1>
+  <p>v1.4.6 IA 重构（VC-013）目标形态：<b>仪表盘 / 业务模块 / 平台管理</b> 三分顶层，平台管理下设 <b>四域</b>二级分组；四业务模块保持平行且特色页零删减；系统性能力统一上收。</p>
+  <span class="badge">VC-013 顶层三分</span><span class="badge">VC-014 repo_log 数据源</span><span class="badge">旧路径全量重定向（禁 404）</span>
+</header>
+
+<div class="note">
+  <b>使用说明：</b>本页为 IA 设计原型（零外部依赖，<code>file://</code> 可直接打开）。用于核对：
+  ① 顶层三分的语义与归属；② 平台管理四域的分组是否合理；③ 业务模块是否只留特色（特色页零删减）；④ 旧路径重定向去向。
+  路径字面值以路由表实测为准（UI 设计 §9.1 脚本生成），本页为结构示意。
+</div>
+
+<h2>一、目标侧栏形态（三分 + 个人）</h2>
+<div class="app">
+  <div class="side">
+    <div class="brand">OpenBase 统一底座</div>
+
+    <div class="g">仪表盘</div>
+    <div class="it d1"><span>总览</span><span class="dot"></span></div>
+
+    <div class="g">业务模块（四模块平行 · 特色页零删减）</div>
+    <div class="it d1"><span>画像（DPS）</span><span class="dot"></span></div>
+    <div class="it d1"><span>知识库（RAG）</span><span class="dot"></span></div>
+    <div class="it d1"><span>记忆（Memory）</span><span class="dot"></span></div>
+    <div class="it d1"><span>模型（LLM）</span><span class="dot"></span></div>
+
+    <div class="g">平台管理</div>
+    <div class="it d2"><span>身份与权限</span><span class="dot"></span></div>
+    <div class="it d2"><span>平台配置与密钥</span><span class="dot"></span></div>
+    <div class="it d2 on"><span>可观测与审计</span><span class="dot"></span></div>
+    <div class="it d3 on"><span>日志中心</span><span class="dot"></span></div>
+    <div class="it d3"><span>测试记录 / 监控 / 告警</span><span class="dot"></span></div>
+    <div class="it d2"><span>开发者资源</span><span class="dot"></span></div>
+
+    <div class="g">个人与帮助</div>
+    <div class="it d1"><span>个人设置</span><span class="dot"></span></div>
+    <div class="it d1"><span>帮助与文档</span><span class="dot"></span></div>
+  </div>
+
+  <div class="main">
+    <h3>日志中心</h3>
+    <div class="crumb">平台管理 / 可观测与审计 / 日志中心 &nbsp;·&nbsp; <span class="mono">/platform/observability/logs</span> &nbsp;·&nbsp; 权限 <span class="mono">log:read</span></div>
+    <div class="cards">
+      <div class="card"><h4>数据源（四类）</h4><p>L1 结构化日志 · 审计库 · 测试记录 · <b>四仓日志（repo_log）</b></p></div>
+      <div class="card"><h4>四维分类</h4><p>模块 / 操作类型 / 结果 / 操作人（点选即过滤 + 计数）</p></div>
+      <div class="card"><h4>检索与分页</h4><p>关键字 · 时间窗 · 测试三元组 · 服务端分页 · 截断显式提示</p></div>
+      <div class="card"><h4>导出</h4><p>CSV / JSON（≤10000）+ <span class="mono">log.export</span> 留痕</p></div>
+    </div>
+    <div class="note" style="margin-top:14px">
+      <b>四仓日志接入（VC-014）：</b>以 <span class="mono">source=repo_log</span> + <span class="mono">module</span> 维度区分四仓 ——
+      <span class="mono">dps→dps</span>、<span class="mono">openrag→rag</span>、<span class="mono">openmemory→memory</span>、<span class="mono">openllm→llm</span>（<b>三个 svc 名与 module 名不同名</b>，映射须显式化）。
+      某仓未就绪时该仓 <span class="mono">request_id</span> 为 <span class="mono">null</span>（可见的缺失，不伪造），并在交付说明逐仓列明覆盖状态。
+    </div>
+  </div>
+</div>
+
+<h2>二、平台管理四域（归并与上收）</h2>
+<div class="cards">
+  <div class="card"><h4>身份与权限</h4><p>用户 · 团队 · 组织 · 租户 · 角色与权限 · 工作空间 · 认证扩展</p><span class="tag t-move">迁出模块目录</span><span class="tag t-new">上收</span></div>
+  <div class="card"><h4>平台配置与密钥</h4><p>全局配置 · <b>模块开关</b> · API 密钥与凭据 · 限流与配额</p><span class="tag t-new">模块开关页新建</span><span class="tag t-move">迁出</span></div>
+  <div class="card"><h4>可观测与审计</h4><p>日志中心 · 测试记录 · 监控 · 链路追踪 · GPU · 用量 · 成本与预算 · 告警 · 计费 · 服务发现与编排</p><span class="tag t-new">日志中心</span><span class="tag t-move">上收 4 项</span></div>
+  <div class="card"><h4>开发者资源</h4><p>文档中心 · EdgeRouter 与适配器 · 接入指南 · 插件（扩展集成）</p><span class="tag t-move">迁出</span><span class="tag t-new">上收</span></div>
+</div>
+
+<h2>三、旧 → 新 重定向（禁 404，抽样 24 条）</h2>
+<table>
+  <thead><tr><th>旧路径（保持可达）</th><th>新路径</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">/system/logs</td><td class="mono">/platform/observability/logs</td><td>日志中心按新 IA 归位</td></tr>
+    <tr><td class="mono">/system/audit</td><td class="mono">/platform/observability/logs</td><td>mock 页下线（BL-146-09）</td></tr>
+    <tr><td class="mono">/system/tenants · /system/roles · /system/org · /system/workspaces</td><td class="mono">/platform/identity/**</td><td>身份与权限域</td></tr>
+    <tr><td class="mono">/system/config</td><td class="mono">/platform/config/general</td><td>平台配置与密钥域</td></tr>
+    <tr><td class="mono">/system/billing · /system/test-records</td><td class="mono">/platform/observability/**</td><td>可观测与审计域</td></tr>
+    <tr><td class="mono">/system/docs · /system/edgerouter</td><td class="mono">/platform/developers/**</td><td>开发者资源域</td></tr>
+    <tr><td class="mono">/openllm/settings</td><td class="mono">/personal/settings</td><td>个人设置归位（原误置模块内）</td></tr>
+    <tr><td class="mono">/openllm/api-keys</td><td class="mono">/platform/config/api-keys</td><td>上收（密钥）</td></tr>
+    <tr><td class="mono">/openllm/usage · /openllm/gpu · /openllm/monitoring/**</td><td class="mono">/platform/observability/**</td><td>上收（用量 / GPU / 监控 / 成本 / 预算 / 告警 / 链路）</td></tr>
+    <tr><td class="mono">/openllm/plugins</td><td class="mono">/platform/developers/plugins</td><td>上收（扩展集成）</td></tr>
+    <tr><td class="mono">/openllm/auth-ext</td><td class="mono">/platform/identity/auth-ext</td><td>上收（认证扩展）</td></tr>
+    <tr><td class="mono">/memory/admin</td><td class="mono">/platform/identity/memory-admin</td><td>上收（管理席位）</td></tr>
+    <tr><td class="mono">/memory/api-gateway</td><td class="mono">/platform/observability/service-discovery</td><td>上收（服务发现与编排）</td></tr>
+    <tr><td class="mono">/memory/monitor · /portrait/dps-monitor</td><td class="mono">/platform/observability/monitoring</td><td>上收（统一监控）</td></tr>
+    <tr><td class="mono">/knowledge/settings</td><td class="mono">/platform/config/general</td><td>上收（模块级设置 → 全局配置）</td></tr>
+    <tr><td class="mono">/knowledge/users</td><td class="mono">/platform/identity/users</td><td>上收（统一身份）</td></tr>
+  </tbody>
+</table>
+<div class="note" style="margin-top:12px">
+  <b>上表为设计基线</b>（<b>不做人工转写</b>为长期口径）：Step 3 施工前按 UI 设计 §9.1 的<b>脚本方式</b>从
+  <code>core/router/index.ts</code> + 各 <code>modules/*/index.ts</code> 生成「现路径 → 目标域 → 目标路径 → 重定向来源」全量四列表并替换本表；
+  <code>GenericPage</code> 承载的多路由按 UI 设计 §9.3 规则逐条登记。
+</div>
+
+<h2>四、四模块特色页（零删减门禁）</h2>
+<div class="cards">
+  <div class="card"><h4>画像（DPS）<span class="tag t-keep">留</span></h4><p>概览 · 画像列表 · 画像详情 · 画像搜索 · 标签管理 · 规则管理 · DPS 业务权限 · DPS 业务限流 · DPS 接口管理</p><p style="margin-top:6px"><span class="tag t-move">上收</span>DPS 服务监控</p></div>
+  <div class="card"><h4>知识库（RAG）<span class="tag t-keep">留</span></h4><p>知识库列表 · 详情 · 知识库管理 · 问答 · 健康</p><p style="margin-top:6px"><span class="tag t-move">上收</span>模块设置 · 模块用户</p></div>
+  <div class="card"><h4>记忆（Memory）<span class="tag t-keep">留</span></h4><p>记忆列表 · 详情 · 搜索 · 写入 · 会话 · 衰减 · 图谱</p><p style="margin-top:6px"><span class="tag t-move">上收</span>管理席位 · 记忆监控 · API 网关</p></div>
+  <div class="card"><h4>模型（LLM）<span class="tag t-keep">留</span></h4><p>模型管理 · 本地模型 · 分类 · 对比 · 市场 · 下载 · 提供商 · 收藏 · AI 应用 · Playground · Prompt 模板/实验 · 对话 · 工具调用监控 · 路由与熔断 · 推荐 / 报表趋势</p><p style="margin-top:6px"><span class="tag t-move">上收</span>个人设置 · API 密钥 · 用量 · 监控 · 成本 · 预算 · 告警 · 认证扩展 · 插件</p></div>
+</div>
+<div class="note"><b>硬门禁：</b>上收仅变更<b>归属与入口</b>，四模块业务功能<b>一律不删</b>（AC-146-12-2：删除数 = 0）；模块内以链接/快捷入口指向平台域对应页。</div>
+
+<footer>
+  OpenBase v1.4.6 · 统一前端信息架构原型（三分 + 四域）· 生成于 2026-09-15 · 零外部依赖，可直接 file:// 打开<br>
+  结构依据：《OpenBase-UI设计文档-v1.4.6》v1.1.0 §2/§9、《OpenBase-前端架构设计文档-v1.4.6》v1.1.0 §3.1、《OpenBase-系统架构设计文档-v1.4.6》v1.1.0 ADR-146-05/06/08
+</footer>
+</div>
+</body>
+</html>
