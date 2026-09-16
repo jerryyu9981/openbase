@@ -8,7 +8,7 @@
 - 审计阶段：Stage 5（部署与运维）
 - 审计日期：2026-09-16
 - 审计能力：Phase 1+2+3（追溯链验证 + 产出物盘点 + 部署检查点复查）
-- 文档版本：v1.0.2
+- 文档版本：v1.0.3
 - 审计性质：正式运维审计（R-382 日志中心 + R-383 IA 重构 + R-384 四仓接入适配器发布）
 - 审计师：AU-OpenBase-Ops
 
@@ -27,20 +27,22 @@
 
 | # | 产出文件 | 版本 | 实际存在 |
 |---|---------|:---:|:---:|
-| 1 | doc/release/OpenBase-Release-Note-v1.4.6.md | v1.0.0 | ✅ |
+| 1 | doc/release/OpenBase-Release-Note-v1.4.6.md | v1.0.x | ✅ |
 | 2 | doc/release/OpenBase-Release-Note-All.md（v1.4.6 行） | - | ✅ |
-| 3 | doc/release/OpenBase-发布入场检查记录与发布计划-v1.4.6.md | v1.0.0 | ✅ |
-| 4 | doc/release/OpenBase-部署执行与上线检查报告-v1.4.6.md | v1.0.0 | ✅ |
-| 5 | doc/release/OpenBase-回滚方案与运维手册-v1.4.6.md | v1.0.0 | ✅ |
-| 6 | doc/release/OpenBase-发布复盘与问题跟踪记录-v1.4.6.md | v1.0.0 | ✅ |
-| 7 | doc/audit/comprehensive/OpenBase-运维审计报告-v1.4.6.md | v1.0.0 | ✅ |
-| 8 | doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.6.md | v1.0.0 | ✅ |
-| 9 | doc/version/global/OpenBase-版本迭代路线图.md（v1.4.6 已发布行） | v0.23.0 | ✅ |
+| 3 | doc/release/OpenBase-发布入场检查记录与发布计划-v1.4.6.md | v1.0.x | ✅ |
+| 4 | doc/release/OpenBase-部署执行与上线检查报告-v1.4.6.md | v1.0.x | ✅ |
+| 5 | doc/release/OpenBase-回滚方案与运维手册-v1.4.6.md | v1.0.x | ✅ |
+| 6 | doc/release/OpenBase-发布复盘与问题跟踪记录-v1.4.6.md | v1.0.x | ✅ |
+| 7 | doc/audit/comprehensive/OpenBase-运维审计报告-v1.4.6.md | v1.0.x | ✅ |
+| 8 | doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.6.md | v1.0.x | ✅ |
+| 9 | doc/version/global/OpenBase-版本迭代路线图.md（v1.4.6 已发布行） | v0.23.x | ✅ |
 | 10 | .devflow/project-config.json（1.4.6 / lastRelease v1.4.6） | - | ✅ |
 | 11 | .devflow/state.json（v1_4_6_step_5_operations） | - | ✅ |
-| 12 | doc/release/OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6.md（发布后补充交付物：逐仓覆盖状态 4 行清单） | v1.0.0 | ✅ |
-| 13 | doc/version/global/OpenBase-候选需求池.md（§1.13 R-384 余项回登记） | v0.23.0 | ✅ |
-| 14 | doc/version/global/OpenBase-技术债务总表.md（§1.5 TD-新增-020 交付欠账） | v0.5.0 | ✅ |
+| 12 | doc/release/OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6.md（发布后补充交付物：逐仓覆盖状态 4 行清单） | v1.0.x | ✅ |
+| 13 | doc/version/global/OpenBase-候选需求池.md（§1.13 R-384 余项回登记） | v0.23.x | ✅ |
+| 14 | doc/version/global/OpenBase-技术债务总表.md（§1.5 TD-新增-020 交付欠账） | v0.5.x | ✅ |
+
+> 版本列口径说明（v1.0.3）：版本列记为 `主.次.x`，**不锁定补丁号**——补丁级升版（纠错/补链）以各文档自身「修订历史」为准，避免本审计报告随他文补丁版本反复升版而失真。
 
 **产出物通过率：14/14 = 100%**（1~11 为发布当次交付物；12~14 为发布后补充交付物，见 §8.4）
 
@@ -53,7 +55,7 @@
 | 3 | 版本一致性 | project-config vs state vs tag | 3 处一致 | 1.4.6/lastRelease v1.4.6/v1_4_6_step_5 一致 | ✅ |
 | 4 | Release Note 存在性 | Test-Path doc/release/...v1.4.6.md | 存在 | 存在 | ✅ |
 | 5 | Changelog 更新 | Grep Release-Note-All v1.4.6 | 已更新 | v1.4.6 行存在 | ✅ |
-| 6 | 文档版本号 | 文件头 vs 修订历史 | 6 份 doc/release 正文（v1.0.0~v1.0.1）+ 路线图 v0.23.1 / 候选需求池 v0.23.0 / 技术债务总表 v0.5.0 | 全部一致 | ✅ |
+| 6 | 文档版本号 | 文件头 vs 修订历史 | 6 份 doc/release 正文（v1.0.x）+ 路线图 / 候选需求池 v0.23.x + 技术债务总表 v0.5.x | 全部一致 | ✅ |
 
 **检查点一致性：6/6 = 100%**
 
@@ -105,3 +107,4 @@
 | v1.0.0 | 2026-09-16 | AU-OpenBase-Ops | 初始创建：v1.4.6 运维审计（产出 11/11，检查点 6/6，tag 双远程，结论批准关闭全流程） |
 | v1.0.1 | 2026-09-16 | AU-OpenBase-Ops | 回填发布实际证据：版本追溯锚点由 b39ed64 更正为 bfc0572（tag v1.4.6 = 6e86d7d7 → bfc0572，双远程 ls-remote 复核一致） |
 | v1.0.2 | 2026-09-16 | AU-OpenBase-Ops | **发布后补充交付物复核（§8.4）**：纳入 3 项补充交付物——R-384 覆盖状态说明（逐仓 4 行清单）、候选需求池 §1.13 余项回登记、技术债务总表 §1.5 TD-新增-020；产出物存在性 11/11 → **14/14**；风险归集与文档版本号（checkpoint 6）同步；结论不变（Step 5 完成、版本周期关闭） |
+| v1.0.3 | 2026-09-16 | AU-OpenBase-Ops | 版本列口径收敛：产出物盘点与 checkpoint 6 的版本引用改为 `主.次.x`（不锁补丁号），避免随他文补丁级升版反复升版；承接作业单《OpenBase-R384四仓施工派单-v1.0.0》属下一承接版本的规划输入（`doc/planning/`），**不计入本阶段 Step 5 交付物清单** |
