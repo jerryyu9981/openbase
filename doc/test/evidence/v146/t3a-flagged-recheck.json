@@ -1,0 +1,363 @@
+{
+  "meta": {
+    "suite": "T3a 标记页复测（计数修正 + 抗误报）",
+    "executed_at": "2026-09-15T15:28:10.211Z",
+    "base_url": "http://127.0.0.1:4173",
+    "fix_note": "按钮探测的请求增量改为「已发起 API 请求数」（原实现仅统计已完成响应 → 请求挂起被误判为无请求）；并记录 DOM 前后快照以识别本地过滤型按钮。",
+    "targets": [
+      "/platform/config/modules",
+      "/platform/observability/service-discovery",
+      "/gateway/services",
+      "/memory/api-gateway",
+      "/openllm/models/market",
+      "/openllm/tool-calls",
+      "/openllm/recommend",
+      "/platform/identity/roles"
+    ]
+  },
+  "reports": [
+    {
+      "route": "/platform/config/modules",
+      "mount_ms": 9374,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 3593
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 3537
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": "PENDING",
+          "duration_ms": null
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": "PENDING",
+          "duration_ms": null
+        }
+      ],
+      "pending_at_measure": [
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "elapsed_ms": 2734
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "elapsed_ms": 1621
+        }
+      ],
+      "probe": {
+        "executed": true,
+        "region": ".ob-main",
+        "label": "刷新",
+        "click_error": null,
+        "mutations": 0,
+        "requests_started_delta": 1,
+        "new_requests": [
+          {
+            "url": "/api/v1/modules",
+            "method": "GET",
+            "status": "PENDING",
+            "duration_ms": null
+          }
+        ],
+        "dom_before": {
+          "text_len": 91,
+          "rows": 0,
+          "inputs": ""
+        },
+        "dom_after": {
+          "text_len": 91,
+          "rows": 0,
+          "inputs": ""
+        },
+        "heuristic_silent": false
+      }
+    },
+    {
+      "route": "/platform/observability/service-discovery",
+      "mount_ms": 7443,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 3210
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 2436
+        },
+        {
+          "url": "/api/v1/services",
+          "method": "GET",
+          "status": "PENDING",
+          "duration_ms": null
+        }
+      ],
+      "pending_at_measure": [
+        {
+          "url": "/api/v1/services",
+          "method": "GET",
+          "elapsed_ms": 787
+        }
+      ],
+      "probe": {
+        "executed": false,
+        "reason": "no-candidate"
+      }
+    },
+    {
+      "route": "/gateway/services",
+      "mount_ms": 11016,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 5184
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 4180
+        },
+        {
+          "url": "/api/v1/services",
+          "method": "GET",
+          "status": 403,
+          "duration_ms": 4108
+        },
+        {
+          "url": "/api/v1/services",
+          "method": "GET",
+          "status": "PENDING",
+          "duration_ms": null
+        }
+      ],
+      "pending_at_measure": [
+        {
+          "url": "/api/v1/services",
+          "method": "GET",
+          "elapsed_ms": 1893
+        }
+      ],
+      "probe": {
+        "executed": true,
+        "region": ".ob-main",
+        "label": "刷新",
+        "click_error": null,
+        "mutations": 11,
+        "requests_started_delta": 1,
+        "new_requests": [
+          {
+            "url": "/api/v1/services",
+            "method": "GET",
+            "status": "PENDING",
+            "duration_ms": null
+          }
+        ],
+        "dom_before": {
+          "text_len": 56,
+          "rows": 0,
+          "inputs": ""
+        },
+        "dom_after": {
+          "text_len": 13,
+          "rows": 0,
+          "inputs": ""
+        },
+        "heuristic_silent": false
+      }
+    },
+    {
+      "route": "/memory/api-gateway",
+      "mount_ms": 11379,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 5252
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 4536
+        },
+        {
+          "url": "/api/v1/services",
+          "method": "GET",
+          "status": "PENDING",
+          "duration_ms": null
+        }
+      ],
+      "pending_at_measure": [
+        {
+          "url": "/api/v1/services",
+          "method": "GET",
+          "elapsed_ms": 806
+        }
+      ],
+      "probe": {
+        "executed": false,
+        "reason": "no-candidate"
+      }
+    },
+    {
+      "route": "/openllm/models/market",
+      "mount_ms": 13844,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 5996
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 5688
+        }
+      ],
+      "pending_at_measure": [],
+      "probe": {
+        "executed": true,
+        "region": ".module-content",
+        "label": "查询",
+        "click_error": null,
+        "mutations": 0,
+        "requests_started_delta": 0,
+        "new_requests": [],
+        "dom_before": {
+          "text_len": 386,
+          "rows": 2,
+          "inputs": "||"
+        },
+        "dom_after": {
+          "text_len": 386,
+          "rows": 2,
+          "inputs": "||"
+        },
+        "heuristic_silent": true
+      }
+    },
+    {
+      "route": "/openllm/tool-calls",
+      "mount_ms": 7057,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 2419
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 2682
+        }
+      ],
+      "pending_at_measure": [],
+      "probe": {
+        "executed": true,
+        "region": ".module-content",
+        "label": "查询",
+        "click_error": null,
+        "mutations": 0,
+        "requests_started_delta": 0,
+        "new_requests": [],
+        "dom_before": {
+          "text_len": 202,
+          "rows": 4,
+          "inputs": "||"
+        },
+        "dom_after": {
+          "text_len": 202,
+          "rows": 4,
+          "inputs": "||"
+        },
+        "heuristic_silent": true
+      }
+    },
+    {
+      "route": "/openllm/recommend",
+      "mount_ms": 7858,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 3853
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 3181
+        }
+      ],
+      "pending_at_measure": [],
+      "probe": {
+        "executed": true,
+        "region": ".module-content",
+        "label": "检索",
+        "click_error": null,
+        "mutations": 0,
+        "requests_started_delta": 0,
+        "new_requests": [],
+        "dom_before": {
+          "text_len": 136,
+          "rows": 4,
+          "inputs": "|"
+        },
+        "dom_after": {
+          "text_len": 136,
+          "rows": 4,
+          "inputs": "|"
+        },
+        "heuristic_silent": true
+      }
+    },
+    {
+      "route": "/platform/identity/roles",
+      "mount_ms": 6824,
+      "api_requests": [
+        {
+          "url": "/api/v1/auth/me",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 2333
+        },
+        {
+          "url": "/api/v1/modules",
+          "method": "GET",
+          "status": 200,
+          "duration_ms": 2897
+        }
+      ],
+      "pending_at_measure": [],
+      "probe": {
+        "executed": false,
+        "reason": "no-candidate"
+      }
+    }
+  ]
+}

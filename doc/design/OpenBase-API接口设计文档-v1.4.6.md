@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.6 |
-| 文档版本 | v1.2.0 |
+| 文档版本 | v1.3.0 |
 | 状态 | [Review] |
 | 作者 | AD-OpenBase-Dev（后端）/ FA-OpenBase-Dev（前端契约） |
 | 创建日期 | 2026-09-15 |
@@ -272,6 +272,8 @@
 
 统一错误体：`{code, message, detail, request_id}`。
 
+> **备注（v1.3.0，detail 结构定案）**：`detail` 为**明细数组**（可含多个字段项），非单对象示例；当多个字段同时非法时，单对象样例无法承载，故实现侧采用数组，形如 `[{"field":"from"},{"field":"to"}]`。字段项不含第三方校验库内部键（`type`/`loc`/`ctx`/`url`），`input` 保留（脱敏后的校验输入源）。上表各行为**单字段示例**，语义与数组元素一致。
+
 ---
 
 ## 6. 分页、排序与截断语义（汇总）
@@ -317,3 +319,4 @@
 | v1.0.0 | 2026-09-15 | AD-OpenBase-Dev | 初始版本：3 新端点契约（search/facets/export）+ 统一 `LogEntry` 18 字段 × 三源映射表 + 分类派生契约表（module/operation/result）+ 9 项错误码 + 分页/排序/截断语义 + 前后端契约对齐 6 项；既有端点零修改 |
 | v1.1.0 | 2026-09-15 | AD-OpenBase-Dev | **VC-013 + VC-014 回溯重出（设计增补轮）**：① §1 范围由「3 个只读端点」扩为 **4 个端点**（新增模块状态写端点）并声明 `source` 新增 `repo_log`；② §2 `source` 枚举新增 **`repo_log`**（四仓日志）；③ §3.1 `source` 参数约束同步；④ **新增 §3.4 `PATCH /api/v1/modules/{id}`**（权限 `module:manage`、请求体 `status`、响应含 `previous_status` 与 `effective=next_login`、**强制留痕 `module.switch`**、幂等口径、**只读降级路径**）；⑤ **新增 §4.4 `repo_log` 源的 module 派生**（svc↔module **显式映射表**，含 `openrag`→`rag` 等**非同名**提示；未知 svc 不纳入检索）；⑥ §5 错误码新增 3 项（`module:manage` 403 / 模块不存在 404 / `status` 非法 400） |
 | v1.2.0 | 2026-09-15 | AD-OpenBase-Dev | **Step 3 定案回写（编码阶段设计-实现对齐）**：① §3.3 新增「文件名 `ts` 格式定案」（`YYYYMMDD-HHMMSS`，本地时区）与「留痕通道被显式关闭」口径（`OPENBASE_AUDIT_DB_PERSIST=0` → fail-closed 503）；② §3.4 三项定案：幂等采用「200 且不重复留痕」、**留痕失败处置=变更失败并回滚**（先留痕后变更，失败返回 503）、**状态持久化至 `dynamic_modules`**，并实测结论「只读降级路径不适用」；③ §5 错误码新增 2 项（`BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE` / `BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE`，均 503）；④ 依据：设计评审记录 §9「带入 Step 3 的必办项 ③」与 Stage2 阶段审计 §7（`module.switch` 留痕失败口径 Step 3 定案） |
+| v1.3.0 | 2026-09-16 | AD-OpenBase-Dev | **Step 4 契约对齐裁定回写（实现-设计对齐）**：① §5 新增 `detail` 结构定案备注（明细数组、可承载多字段同时非法、剔除 pydantic 内部键、`input` 保留）；② 同步 §5 错误码表——模块同资源 404 统一 `PARAM_404`、日志/模块 403 统一 `PERM_403`、§3.4 路径参数规范为 `{id}`（与实现 DEF-BE-146-007 契约一致性对齐） |

@@ -1,0 +1,664 @@
+{
+  "/api/v1/modules": {
+    "GET": {
+      "operationId": "list_modules_api_v1_modules_get",
+      "parameters": [],
+      "responses": [
+        "200"
+      ],
+      "has_security": false,
+      "requestBody": null
+    }
+  },
+  "/api/v1/modules/{module_id}": {
+    "GET": {
+      "operationId": "get_module_api_v1_modules__module_id__get",
+      "parameters": [
+        {
+          "name": "module_id",
+          "in": "path",
+          "required": true,
+          "schema_type": "string",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        }
+      ],
+      "responses": [
+        "200",
+        "422"
+      ],
+      "has_security": false,
+      "requestBody": null
+    },
+    "PATCH": {
+      "operationId": "switch_module_api_v1_modules__module_id__patch",
+      "parameters": [
+        {
+          "name": "module_id",
+          "in": "path",
+          "required": true,
+          "schema_type": "string",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        }
+      ],
+      "responses": [
+        "200",
+        "422"
+      ],
+      "has_security": false,
+      "requestBody": [
+        "content",
+        "required"
+      ]
+    }
+  },
+  "/api/v1/logs/search": {
+    "GET": {
+      "operationId": "search_logs_api_v1_logs_search_get",
+      "parameters": [
+        {
+          "name": "source",
+          "in": "query",
+          "required": true,
+          "schema_type": "string",
+          "default": null,
+          "enum": [
+            "l1_file",
+            "audit_db",
+            "test_record",
+            "repo_log"
+          ],
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "module",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "operation",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "result",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "operator",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "q",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "from",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "to",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "case_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "run_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "step_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "required": false,
+          "schema_type": "integer",
+          "default": 1,
+          "enum": null,
+          "maximum": null,
+          "minimum": 1,
+          "maxLength": null
+        },
+        {
+          "name": "page_size",
+          "in": "query",
+          "required": false,
+          "schema_type": "integer",
+          "default": 20,
+          "enum": null,
+          "maximum": 100,
+          "minimum": 1,
+          "maxLength": null
+        }
+      ],
+      "responses": [
+        "200",
+        "422"
+      ],
+      "has_security": false,
+      "requestBody": null
+    }
+  },
+  "/api/v1/logs/facets": {
+    "GET": {
+      "operationId": "facets_logs_api_v1_logs_facets_get",
+      "parameters": [
+        {
+          "name": "source",
+          "in": "query",
+          "required": true,
+          "schema_type": "string",
+          "default": null,
+          "enum": [
+            "l1_file",
+            "audit_db",
+            "test_record",
+            "repo_log"
+          ],
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "module",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "operation",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "result",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "operator",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "q",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "from",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "to",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "case_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "run_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "step_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        }
+      ],
+      "responses": [
+        "200",
+        "422"
+      ],
+      "has_security": false,
+      "requestBody": null
+    }
+  },
+  "/api/v1/logs/facets/presets": {
+    "GET": {
+      "operationId": "facets_presets_api_v1_logs_facets_presets_get",
+      "parameters": [],
+      "responses": [
+        "200"
+      ],
+      "has_security": false,
+      "requestBody": null
+    }
+  },
+  "/api/v1/logs/export": {
+    "GET": {
+      "operationId": "export_logs_api_v1_logs_export_get",
+      "parameters": [
+        {
+          "name": "source",
+          "in": "query",
+          "required": true,
+          "schema_type": "string",
+          "default": null,
+          "enum": [
+            "l1_file",
+            "audit_db",
+            "test_record",
+            "repo_log"
+          ],
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "module",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "operation",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "result",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "operator",
+          "in": "query",
+          "required": false,
+          "schema_type": "array",
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "q",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "from",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "to",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "case_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "run_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "step_id",
+          "in": "query",
+          "required": false,
+          "schema_type": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": null,
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        },
+        {
+          "name": "format",
+          "in": "query",
+          "required": false,
+          "schema_type": "string",
+          "default": "csv",
+          "enum": [
+            "csv",
+            "json"
+          ],
+          "maximum": null,
+          "minimum": null,
+          "maxLength": null
+        }
+      ],
+      "responses": [
+        "200",
+        "422"
+      ],
+      "has_security": false,
+      "requestBody": null
+    }
+  }
+}

@@ -1,0 +1,1296 @@
+{
+  "base_url": "http://127.0.0.1:8021",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "no_token",
+      "params": {
+        "source": "l1_file",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-d4c6c50bd5d9\"}",
+      "body_bytes": 98
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/facets",
+      "token_key": "no_token",
+      "params": {
+        "source": "l1_file"
+      },
+      "json_body": null,
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-77dc9a5c14a7\"}",
+      "body_bytes": 98
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/facets/presets",
+      "token_key": "no_token",
+      "params": null,
+      "json_body": null,
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-daf3aab77c96\"}",
+      "body_bytes": 98
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/export",
+      "token_key": "no_token",
+      "params": {
+        "source": "l1_file",
+        "format": "csv"
+      },
+      "json_body": null,
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-a0c19eb9f91f\"}",
+      "body_bytes": 98
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/modules",
+      "token_key": "no_token",
+      "params": null,
+      "json_body": null,
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-bbd3f616ac95\"}",
+      "body_bytes": 98
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/modules/openllm",
+      "token_key": "no_token",
+      "params": null,
+      "json_body": {
+        "status": "disabled"
+      },
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-50774820c76a\"}",
+      "body_bytes": 98
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "viewer",
+      "params": {
+        "source": "l1_file",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 403,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-f8f71464ae54\"}",
+      "body_bytes": 106
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/facets",
+      "token_key": "viewer",
+      "params": {
+        "source": "l1_file"
+      },
+      "json_body": null,
+      "status": 403,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-f857991510b3\"}",
+      "body_bytes": 106
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/facets/presets",
+      "token_key": "viewer",
+      "params": null,
+      "json_body": null,
+      "status": 403,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-78f85b8dc952\"}",
+      "body_bytes": 106
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/export",
+      "token_key": "viewer",
+      "params": {
+        "source": "l1_file",
+        "format": "csv"
+      },
+      "json_body": null,
+      "status": 403,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-b3e895c64640\"}",
+      "body_bytes": 106
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "logread_only",
+      "params": {
+        "source": "l1_file",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null}],\"total\":50000,\"page\":1,\"page_size\":1,\"truncated\":false}}",
+      "body_bytes": 474
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/modules/openllm",
+      "token_key": "viewer",
+      "params": null,
+      "json_body": {
+        "status": "disabled"
+      },
+      "status": 403,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: module:manage\",\"detail\":null,\"request_id\":\"req-369dc2960b1b\"}",
+      "body_bytes": 111
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/modules/openllm",
+      "token_key": "logread_only",
+      "params": null,
+      "json_body": {
+        "status": "disabled"
+      },
+      "status": 403,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: module:manage\",\"detail\":null,\"request_id\":\"req-af7c7dfd150c\"}",
+      "body_bytes": 111
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "forged",
+      "params": {
+        "source": "l1_file",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"invalid or expired token\",\"detail\":null,\"request_id\":\"req-4e17a55058f4\"}",
+      "body_bytes": 102
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "garbage",
+      "params": {
+        "source": "l1_file",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 401,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"invalid or expired token\",\"detail\":null,\"request_id\":\"req-80d60e5e15b0\"}",
+      "body_bytes": 102
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/modules",
+      "token_key": "viewer",
+      "params": null,
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"ok\",\"data\":{\"items\":[{\"id\":\"openllm\",\"name\":\"OpenLLM\",\"icon\":\"chat\",\"route_prefix\":\"/openllm\",\"entry\":\"modules/openllm\",\"permission\":\"openllm:view\",\"status\":\"enabled\",\"sort_order\":10},{\"id\":\"knowledge\",\"name\":\"知识库\",\"icon\":\"collection\",\"route_prefix\":\"/knowledge\",\"entry\":\"modules/knowledge\",\"permission\":\"openrag:view\",\"status\":\"enabled\",\"sort_order\":20},{\"id\":\"memory\",\"name\":\"记忆\",\"icon\":\"memo\",\"route_prefix\":\"/memory\",\"entry\":\"modules/memory\",\"permission\":\"openmemory:view\",\"status\":\"enabled\",\"sort_order\":30},{\"id\":\"portrait\",\"name\":\"画像\",\"icon\":\"user\",\"route_prefix\":\"/portrait\",\"entry\":\"modules/portrait\",\"permission\":\"dps:view\",\"status\":\"enabled\",\"sort_order\":40},{\"id\":\"gateway\",\"name\":\"统一网关\",\"icon\":\"connection\",\"route_prefix\":\"/gateway\",\"entry\":\"modules/gateway\",\"permission\":\"gateway:view\",\"status\":\"enabled\",\"sort_order\":50}],\"total\":5}}",
+      "body_bytes": 891
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/modules/openllm",
+      "token_key": "privileged",
+      "params": null,
+      "json_body": {
+        "status": "enabled"
+      },
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"openllm\",\"status\":\"enabled\",\"previous_status\":\"enabled\",\"effective\":\"next_login\",\"request_id\":\"req-9bdb11c33c0c\"}}",
+      "body_bytes": 153
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/modules/openllm",
+      "token_key": "privileged",
+      "params": null,
+      "json_body": {
+        "status": "hacked"
+      },
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"body\",\"status\"],\"msg\":\"Input should be 'enabled' or 'disabled'\",\"input\":\"hacked\",\"ctx\":{\"expected\":\"'enabled' or 'disabled'\"}}],\"request_id\":\"req-98545619853f\"}",
+      "body_bytes": 261
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/modules/../../etc/passwd",
+      "token_key": "privileged",
+      "params": null,
+      "json_body": {
+        "status": "disabled"
+      },
+      "status": 404,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"404\",\"message\":\"Not Found\",\"detail\":null,\"request_id\":\"req-c018e26bd26f\"}",
+      "body_bytes": 82
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "../../../../etc/passwd",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"../../../../etc/passwd\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-a06f688c9889\"}",
+      "body_bytes": 332
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "..\\..\\..\\windows\\win.ini",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"..\\\\..\\\\..\\\\windows\\\\win.ini\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-66aeaaa08da2\"}",
+      "body_bytes": 338
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "/etc/passwd",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"/etc/passwd\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-9ff18897ccac\"}",
+      "body_bytes": 321
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "C:\\Windows\\win.ini",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"C:\\\\Windows\\\\win.ini\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-abb162b271f6\"}",
+      "body_bytes": 330
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "openbase-20260914.jsonl",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"openbase-20260914.jsonl\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-e8386e3fbfc6\"}",
+      "body_bytes": 333
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "openbase-20260914-evil.jsonl",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"openbase-20260914-evil.jsonl\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-71ab8eccb963\"}",
+      "body_bytes": 338
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "../openbase/openbase-20260914.jsonl",
+        "page": 1,
+        "page_size": 1
+      },
+      "json_body": null,
+      "status": 422,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"../openbase/openbase-20260914.jsonl\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-f085e1063c11\"}",
+      "body_bytes": 345
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "from": "../../../../etc/passwd",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 1953
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "from": "/etc/passwd",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 1953
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "from": "20260914",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 1953
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "to": "..\\..\\..\\windows\\win.ini",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 1953
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "from": "2026-09-14T00:00:00Z' OR 1=1 --",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 1953
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "to": "1900-01-01T00:00:00Z",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "case_id": "../../etc/passwd",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 1953
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "run_id": "/etc/shadow",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 1953
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "q": "../../../../etc/passwd",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "page": 1,
+        "page_size": 100
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":17,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-032399\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"sourc",
+      "body_bytes": 37107
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/export",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "format": "csv",
+        "q": "OPENBASE_TRAVERSAL_LEAK_MARKER_DO_NOT_RETURN"
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "text/csv; charset=utf-8",
+      "content_disposition": "attachment; filename=\"logs-l1_file-20260915-220348.csv\"",
+      "body_head": "﻿ts,source,module,operation,result,request_id,method,path,status_code,duration_ms,operator_id,tenant_id,ip_address,case_id,step_id,run_id,action,summary\r\n",
+      "body_bytes": 156
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "q": "SECRETSEARCH",
+        "page": 1,
+        "page_size": 50
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T10:00:03.000+00:00\",\"source\":\"l1_file\",\"module\":\"identity\",\"operation\":\"auth_login\",\"result\":\"success\",\"request_id\":\"req-SECRETSEARCH-0004\",\"method\":\"GET\",\"path\":\"/api/v1/auth/login\",\"status_code\":200,\"duration_ms\":8,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":\"auth.login\",\"summary\":{\"resp_status\":{\"jwt\":\"***\"}}},{\"ts\":\"2026-09-14T10:00:02.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-SECRETSEARCH-0003\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":7,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":\"log.export\",\"summary\":{\"resp_status\":{\"credential\":\"***\"}}},{\"ts\":\"2026-09-14T10:00:01.000+00:00\",\"source\":\"l1_file\",\"module\":\"llm\",\"operation\":\"proxy\",\"result\":\"success\",\"request_id\":\"req-SECRETSEARCH-0002\",\"method\":\"POST\",\"path\":\"/api/v1/llm-proxy/v1/chat/completions\",\"status_code\":200,\"duration_ms\":6,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"ste",
+      "body_bytes": 1879
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/export",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "format": "csv",
+        "q": "SECRETSEARCH"
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "text/csv; charset=utf-8",
+      "content_disposition": "attachment; filename=\"logs-l1_file-20260915-220354.csv\"",
+      "body_head": "﻿ts,source,module,operation,result,request_id,method,path,status_code,duration_ms,operator_id,tenant_id,ip_address,case_id,step_id,run_id,action,summary\r\n2026-09-14T10:00:03.000+00:00,l1_file,identity,auth_login,success,req-SECRETSEARCH-0004,GET,/api/v1/auth/login,200,8,1,tenant-1,10.20.30.40,,,,auth.login,\"{\"\"resp_status\"\":{\"\"jwt\"\":\"\"***\"\"}}\"\r\n2026-09-14T10:00:02.000+00:00,l1_file,gateway,read,success,req-SECRETSEARCH-0003,GET,/api/v1/logs/search,200,7,1,tenant-1,10.20.30.40,,,,log.export,\"{\"\"resp_status\"\":{\"\"credential\"\":\"\"***\"\"}}\"\r\n2026-09-14T10:00:01.000+00:00,l1_file,llm,proxy,success,req-SECRETSEARCH-0002,POST,/api/v1/llm-proxy/v1/chat/completions,200,6,1,tenant-1,10.20.30.40,,,,,\r\n2026-09-14T10:00:00.000+00:00,l1_file,llm,proxy,success,req-SECRETSEARCH-0001,POST,/api/v1/llm-proxy/v1/chat/completions,200,5,1,tenant-1,10.20.30.40,,,,,\"{\"\"resp_status\"\":{\"\"access_token\"\":\"\"***\"\",\"\"ok\"\":true},\"\"resp_headers\"\":{\"\"authorization\"\":\"\"***\"\",\"\"set-cookie\"\":\"\"***\"\",\"\"content-type\"\":\"\"application/json\"\"},\"\"upstream_status\"\":{\"\"api_key\"\":\"\"***\"\",\"\"code\"\":200}}\"\r\n",
+      "body_bytes": 1074
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/export",
+      "token_key": "privileged",
+      "params": {
+        "source": "l1_file",
+        "format": "json",
+        "q": "SECRETSEARCH"
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": "attachment; filename=\"logs-l1_file-20260915-220355.json\"",
+      "body_head": "[{\"ts\": \"2026-09-14T10:00:03.000+00:00\", \"source\": \"l1_file\", \"module\": \"identity\", \"operation\": \"auth_login\", \"result\": \"success\", \"request_id\": \"req-SECRETSEARCH-0004\", \"method\": \"GET\", \"path\": \"/api/v1/auth/login\", \"status_code\": 200, \"duration_ms\": 8, \"operator_id\": \"1\", \"tenant_id\": \"tenant-1\", \"ip_address\": \"10.20.30.40\", \"case_id\": null, \"step_id\": null, \"run_id\": null, \"action\": \"auth.login\", \"summary\": {\"resp_status\": {\"jwt\": \"***\"}}}, {\"ts\": \"2026-09-14T10:00:02.000+00:00\", \"source\": \"l1_file\", \"module\": \"gateway\", \"operation\": \"read\", \"result\": \"success\", \"request_id\": \"req-SECRETSEARCH-0003\", \"method\": \"GET\", \"path\": \"/api/v1/logs/search\", \"status_code\": 200, \"duration_ms\": 7, \"operator_id\": \"1\", \"tenant_id\": \"tenant-1\", \"ip_address\": \"10.20.30.40\", \"case_id\": null, \"step_id\": null, \"run_id\": null, \"action\": \"log.export\", \"summary\": {\"resp_status\": {\"credential\": \"***\"}}}, {\"ts\": \"2026-09-14T10:00:01.000+00:00\", \"source\": \"l1_file\", \"module\": \"llm\", \"operation\": \"proxy\", \"result\": \"success\", \"request_id\": \"req-SECRETSEARCH-0002\", \"method\": \"POST\", \"path\": \"/api/v1/llm-proxy/v1/chat/completions\", \"status_code\": 200, \"duration_ms\": 6, \"operator_id\": \"1\", \"tenant_id\": \"ten",
+      "body_bytes": 1942
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "repo_log",
+        "q": "SECRETSEARCH",
+        "page": 1,
+        "page_size": 20
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T13:00:01.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"auth_login\",\"result\":\"client_error\",\"request_id\":\"req-SECRETSEARCH-repo-0002\",\"method\":\"POST\",\"path\":\"/v1/auth/login\",\"status_code\":401,\"duration_ms\":null,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":null,\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":{\"level\":\"ERROR\",\"service\":\"openllm\",\"message\":\"auth failed for credential=sk-upstream-abcdef1234567890abcdef1234567890\",\"event\":\"auth.login\"}},{\"ts\":\"2026-09-14T13:00:00.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"write\",\"result\":\"success\",\"request_id\":\"req-SECRETSEARCH-repo-0001\",\"method\":\"POST\",\"path\":\"/v1/chat/completions\",\"status_code\":200,\"duration_ms\":null,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":null,\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":{\"level\":\"INFO\",\"service\":\"openllm\",\"message\":\"upstream call ok, token=Bearer sk-openllm-ffffffffffffffffffffffffffffffff\"}}],\"total\":2,\"page\":1,\"page_size\":20,\"truncated\":false}}",
+      "body_bytes": 1092
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "audit_db",
+        "q": "' OR 1=1 --",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "audit_db",
+        "q": "%' OR '1'='1",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "audit_db",
+        "q": "'; DROP TABLE openbase.audit_logs; --",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "audit_db",
+        "q": "') UNION SELECT null,password,null,null,null,null,null,null,null,null,null,null from openbase.users --",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "audit_db",
+        "operator": "' OR 1=1 --",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "token_key": "privileged",
+      "params": {
+        "source": "audit_db",
+        "operator": "1 OR 1=1",
+        "page": 1,
+        "page_size": 5
+      },
+      "json_body": null,
+      "status": 200,
+      "content_type": "application/json",
+      "content_disposition": null,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}",
+      "body_bytes": 101
+    }
+  ],
+  "checks": [
+    {
+      "check": "401 无令牌 /api/v1/logs/search",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-d4c6c50bd5d9\"}"
+      }
+    },
+    {
+      "check": "401 无令牌 /api/v1/logs/facets",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-77dc9a5c14a7\"}"
+      }
+    },
+    {
+      "check": "401 无令牌 /api/v1/logs/facets/presets",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-daf3aab77c96\"}"
+      }
+    },
+    {
+      "check": "401 无令牌 /api/v1/logs/export",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-a0c19eb9f91f\"}"
+      }
+    },
+    {
+      "check": "401 无令牌 /api/v1/modules",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-bbd3f616ac95\"}"
+      }
+    },
+    {
+      "check": "401 无令牌 PATCH /api/v1/modules/openllm",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-50774820c76a\"}"
+      }
+    },
+    {
+      "check": "403 无 log:read /api/v1/logs/search",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "body": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-f8f71464ae54\"}"
+      }
+    },
+    {
+      "check": "403 无 log:read /api/v1/logs/facets",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "body": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-f857991510b3\"}"
+      }
+    },
+    {
+      "check": "403 无 log:read /api/v1/logs/facets/presets",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "body": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-78f85b8dc952\"}"
+      }
+    },
+    {
+      "check": "403 无 log:read /api/v1/logs/export",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "body": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: log:read\",\"detail\":null,\"request_id\":\"req-b3e895c64640\"}"
+      }
+    },
+    {
+      "check": "200 有 log:read 检索放行",
+      "passed": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "check": "403 viewer 无 module:manage PATCH",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "body": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: module:manage\",\"detail\":null,\"request_id\":\"req-369dc2960b1b\"}"
+      }
+    },
+    {
+      "check": "403 仅 log:read 无 module:manage PATCH",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "body": "{\"code\":\"AUTH_403\",\"message\":\"missing permission: module:manage\",\"detail\":null,\"request_id\":\"req-af7c7dfd150c\"}"
+      }
+    },
+    {
+      "check": "401 伪造签名",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"invalid or expired token\",\"detail\":null,\"request_id\":\"req-4e17a55058f4\"}"
+      }
+    },
+    {
+      "check": "401 畸形令牌",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"AUTH_401\",\"message\":\"invalid or expired token\",\"detail\":null,\"request_id\":\"req-80d60e5e15b0\"}"
+      }
+    },
+    {
+      "check": "观察 viewer 可读模块注册表",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "note": "GET /api/v1/modules 仅 get_current_user，无权限点约束（设计口径，非缺陷）",
+        "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"items\":[{\"id\":\"openllm\",\"name\":\"OpenLLM\",\"icon\":\"chat\",\"route_prefix\":\"/openllm\",\"entry\":\"modules/openllm\",\"permission\":\"openllm:view\",\"status\":\"enabled\",\"sort_order\":10},{\"id\":\"knowledge\",\"name\":\"知识库\",\"icon\":\"collection\",\"route_prefix\":\"/knowledge\",\"entry\":\"modules/knowledge\",\"permission\":\"openrag:view\",\"status\":\"enabled\",\"sort_order\":20},{\"id\":\"memory\",\"name\":\"记忆\",\"icon\":\"memo\",\"route_prefix\":\"/memory\",\"entry\":\"modules/memory\",\"permission\":\"openmemory:view\",\"status\":\"enabled\",\"sort_order\":30},{\"id\":\"portrait\",\"name\":\"画像\",\"icon\":\"user\",\"route_prefix\":\"/portra"
+      }
+    },
+    {
+      "check": "200 幂等 PATCH（状态一致）",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body": "{\"code\":0,\"message\":\"ok\",\"data\":{\"id\":\"openllm\",\"status\":\"enabled\",\"previous_status\":\"enabled\",\"effective\":\"next_login\",\"request_id\":\"req-9bdb11c33c0c\"}}"
+      }
+    },
+    {
+      "check": "400 非法 status 枚举",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"body\",\"status\"],\"msg\":\"Input should be 'enabled' or 'disabled'\",\"input\":\"hacked\",\"ctx\":{\"expected\":\"'enabled' or 'disabled'\"}}],\"request_id\":\"req-98545619853f\"}"
+      }
+    },
+    {
+      "check": "4xx 不存在模块 PATCH",
+      "passed": true,
+      "detail": {
+        "status": 404,
+        "body": "{\"code\":\"404\",\"message\":\"Not Found\",\"detail\":null,\"request_id\":\"req-c018e26bd26f\"}"
+      }
+    },
+    {
+      "check": "source 注入 ../../../../etc/passwd → 4xx 且无系统文件内容",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"../../../../etc/passwd\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-a06f688c9889\"}",
+        "leaked": false
+      }
+    },
+    {
+      "check": "source 注入 ..\\..\\..\\windows\\win.ini → 4xx 且无系统文件内容",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"..\\\\..\\\\..\\\\windows\\\\win.ini\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-66aeaaa08da2\"}",
+        "leaked": false
+      }
+    },
+    {
+      "check": "source 注入 /etc/passwd → 4xx 且无系统文件内容",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"/etc/passwd\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-9ff18897ccac\"}",
+        "leaked": false
+      }
+    },
+    {
+      "check": "source 注入 C:\\Windows\\win.ini → 4xx 且无系统文件内容",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"C:\\\\Windows\\\\win.ini\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-abb162b271f6\"}",
+        "leaked": false
+      }
+    },
+    {
+      "check": "source 注入 openbase-20260914.jsonl → 4xx 且无系统文件内容",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"openbase-20260914.jsonl\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-e8386e3fbfc6\"}",
+        "leaked": false
+      }
+    },
+    {
+      "check": "source 注入 openbase-20260914-evil.jsonl → 4xx 且无系统文件内容",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"openbase-20260914-evil.jsonl\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-71ab8eccb963\"}",
+        "leaked": false
+      }
+    },
+    {
+      "check": "source 注入 ../openbase/openbase-20260914.jsonl → 4xx 且无系统文件内容",
+      "passed": true,
+      "detail": {
+        "status": 422,
+        "body": "{\"code\":\"PARAM_422\",\"message\":\"parameter validation error\",\"detail\":[{\"type\":\"literal_error\",\"loc\":[\"query\",\"source\"],\"msg\":\"Input should be 'l1_file', 'audit_db', 'test_record' or 'repo_log'\",\"input\":\"../openbase/openbase-20260914.jsonl\",\"ctx\":{\"expected\":\"'l1_file', 'audit_db', 'test_record' or 'repo_log'\"}}],\"request_id\":\"req-f085e1063c11\"}",
+        "leaked": false
+      }
+    },
+    {
+      "check": "from 注入 ../../../../etc/passwd → 不泄漏系统文件",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/log"
+      }
+    },
+    {
+      "check": "from 注入 /etc/passwd → 不泄漏系统文件",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/log"
+      }
+    },
+    {
+      "check": "from 注入 20260914 → 不泄漏系统文件",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/log"
+      }
+    },
+    {
+      "check": "to 注入 ..\\..\\..\\windows\\win.ini → 不泄漏系统文件",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/log"
+      }
+    },
+    {
+      "check": "from 注入 2026-09-14T00:00:00Z' OR 1=1 -- → 不泄漏系统文件",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":null},{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-035999\",\"method\":\"GET\",\"path\":\"/api/v1/log"
+      }
+    },
+    {
+      "check": "to 注入 1900-01-01T00:00:00Z → 不泄漏系统文件",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "case_id 注入 ../../etc/passwd → 不泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null"
+      }
+    },
+    {
+      "check": "run_id 注入 /etc/shadow → 不泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T12:59:59.000+00:00\",\"source\":\"l1_file\",\"module\":\"gateway\",\"operation\":\"read\",\"result\":\"success\",\"request_id\":\"req-bench-gw-039599\",\"method\":\"GET\",\"path\":\"/api/v1/logs/search\",\"status_code\":200,\"duration_ms\":28,\"operator_id\":\"1\",\"tenant_id\":\"tenant-1\",\"ip_address\":\"10.20.30.40\",\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null"
+      }
+    },
+    {
+      "check": "q 注入 ../../../../etc/passwd → 不泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "非白名单分片（openbase-YYYYMMDD-evil.jsonl）不参与检索",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "marker_present": false
+      }
+    },
+    {
+      "check": "导出不含目录外/非白名单文件内容",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "body_head": "﻿ts,source,module,operation,result,request_id,method,path,status_code,duration_ms,operator_id,tenant_id,ip_address,case_id,step_id,run_id,action,summary\r\n"
+      }
+    },
+    {
+      "check": "适配器 _slice_documents 仅纳入白名单分片",
+      "passed": true,
+      "detail": {
+        "scanned": [
+          "openbase\\openbase-20260914.jsonl"
+        ]
+      }
+    },
+    {
+      "check": "适配器 _safe_path 拒绝越权路径",
+      "passed": true,
+      "detail": {
+        "evil_shard_allowed": false,
+        "outside_file_allowed": false,
+        "traversal_allowed": false,
+        "absolute_allowed": false,
+        "whitelisted_allowed": true
+      }
+    },
+    {
+      "check": "检索命中敏感样本行",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "total": 4,
+        "items": 4
+      }
+    },
+    {
+      "check": "检索响应不含任何明文凭据",
+      "passed": true,
+      "detail": {
+        "leaked_secrets": []
+      }
+    },
+    {
+      "check": "L1 检索结果敏感键已掩码（authorization/set-cookie/access_token/api_key/jwt/password）",
+      "passed": true,
+      "detail": {
+        "masked_fields": [
+          "resp_status=MASKED",
+          "resp_status=MASKED",
+          "resp_status=MASKED",
+          "resp_headers=MASKED",
+          "upstream_status=MASKED"
+        ],
+        "unmasked": []
+      }
+    },
+    {
+      "check": "L1 视图实体不透出顶层凭据字段（字段白名单收敛）",
+      "passed": true,
+      "detail": {
+        "leaked_items": []
+      }
+    },
+    {
+      "check": "CSV 导出不含明文凭据",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked_secrets": [],
+        "filename": "attachment; filename=\"logs-l1_file-20260915-220354.csv\""
+      }
+    },
+    {
+      "check": "CSV 含 BOM 与表头（契约 §3.3）",
+      "passed": true,
+      "detail": {
+        "head": "﻿ts,source,module,operation,result,request_id,method,path,status_code,duration_m"
+      }
+    },
+    {
+      "check": "JSON 导出不含明文凭据",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "leaked_secrets": []
+      }
+    },
+    {
+      "check": "repo_log 源检索响应不含明文凭据",
+      "passed": false,
+      "detail": {
+        "status": 200,
+        "leaked_secrets": [
+          "sk-openllm-ffffffffffffffffffffffffffffffff",
+          "sk-upstream-abcdef1234567890abcdef1234567890"
+        ],
+        "total": 2,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T13:00:01.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"auth_login\",\"result\":\"client_error\",\"request_id\":\"req-SECRETSEARCH-repo-0002\",\"method\":\"POST\",\"path\":\"/v1/auth/login\",\"status_code\":401,\"duration_ms\":null,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":null,\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":{\"level\":\"ERROR\",\"service\":\"openllm\",\"message\":\"auth failed for credential=sk-upstream-abcdef1234567890abcdef1234567890\",\"event\":\"auth.login\"}},{\"ts\":\"2026-09-14T13:00:00.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"write\",\"result\":\"success\",\"request_id\":\"req-SECRETSEARCH-repo-0001\",\"method\":\"POST\",\"path\":\"/v1/chat/completions\",\"status_code\":200,\"duration_ms\":null,\"operator"
+      }
+    },
+    {
+      "check": "audit_logs 留痕不含检索关键字 SECRETSEARCH",
+      "passed": true,
+      "detail": {
+        "keyword_hits": 0,
+        "export_audit_total": 3,
+        "switch_audit_total": 0
+      }
+    },
+    {
+      "check": "log.export 留痕含 actor/source/filters/row_count/format 且无 q 字段",
+      "passed": true,
+      "detail": {
+        "sample": {
+          "id": 8751,
+          "action": "log.export",
+          "resource": "logs:export",
+          "request_id": "req-5fc8ae45de03",
+          "detail": "{\"actor\": \"1\", \"source\": \"l1_file\", \"filters\": {}, \"row_count\": 4, \"format\": \"json\"}"
+        },
+        "content_like_rows": 5478
+      }
+    },
+    {
+      "check": "audit_db q 注入 ' OR 1=1 -- → 无 500 / 无越权 / 无泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "total": 0,
+        "overreach": false,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "audit_db q 注入 %' OR '1'='1 → 无 500 / 无越权 / 无泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "total": 0,
+        "overreach": false,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "audit_db q 注入 '; DROP TABLE openbase.audit_logs; -- → 无 500 / 无越权 / 无泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "total": 0,
+        "overreach": false,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "audit_db q 注入 ') UNION SELECT null,password,null,null, → 无 500 / 无越权 / 无泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "total": 0,
+        "overreach": false,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "audit_db operator 注入 ' OR 1=1 -- → 无 500 / 无越权 / 无泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "total": 0,
+        "overreach": false,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "audit_db operator 注入 1 OR 1=1 → 无 500 / 无越权 / 无泄漏",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "total": 0,
+        "overreach": false,
+        "leaked": false,
+        "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+      }
+    },
+    {
+      "check": "注入后 audit_logs/users 表结构完好（行数未异常减少）",
+      "passed": true,
+      "detail": {
+        "before": 8551,
+        "after": 8557,
+        "users": 30
+      }
+    }
+  ],
+  "token_subjects": {
+    "no_token": null,
+    "privileged": "<redacted>",
+    "viewer": "<redacted>",
+    "logread_only": "<redacted>",
+    "forged": "<redacted>",
+    "garbage": "<redacted>"
+  },
+  "audit_rows": [
+    {
+      "id": 8751,
+      "action": "log.export",
+      "resource": "logs:export",
+      "request_id": "req-5fc8ae45de03",
+      "detail": "{\"actor\": \"1\", \"source\": \"l1_file\", \"filters\": {}, \"row_count\": 4, \"format\": \"json\"}"
+    },
+    {
+      "id": 8749,
+      "action": "log.export",
+      "resource": "logs:export",
+      "request_id": "req-33e526b9b4e7",
+      "detail": "{\"actor\": \"1\", \"source\": \"l1_file\", \"filters\": {}, \"row_count\": 4, \"format\": \"csv\"}"
+    },
+    {
+      "id": 8746,
+      "action": "log.export",
+      "resource": "logs:export",
+      "request_id": "req-f055d9878b99",
+      "detail": "{\"actor\": \"1\", \"source\": \"l1_file\", \"filters\": {}, \"row_count\": 0, \"format\": \"csv\"}"
+    }
+  ],
+  "summary": {
+    "total_checks": 56,
+    "passed": 55,
+    "failed": [
+      {
+        "check": "repo_log 源检索响应不含明文凭据",
+        "passed": false,
+        "detail": {
+          "status": 200,
+          "leaked_secrets": [
+            "sk-openllm-ffffffffffffffffffffffffffffffff",
+            "sk-upstream-abcdef1234567890abcdef1234567890"
+          ],
+          "total": 2,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T13:00:01.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"auth_login\",\"result\":\"client_error\",\"request_id\":\"req-SECRETSEARCH-repo-0002\",\"method\":\"POST\",\"path\":\"/v1/auth/login\",\"status_code\":401,\"duration_ms\":null,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":null,\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":{\"level\":\"ERROR\",\"service\":\"openllm\",\"message\":\"auth failed for credential=sk-upstream-abcdef1234567890abcdef1234567890\",\"event\":\"auth.login\"}},{\"ts\":\"2026-09-14T13:00:00.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"write\",\"result\":\"success\",\"request_id\":\"req-SECRETSEARCH-repo-0001\",\"method\":\"POST\",\"path\":\"/v1/chat/completions\",\"status_code\":200,\"duration_ms\":null,\"operator"
+        }
+      }
+    ]
+  }
+}

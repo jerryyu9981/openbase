@@ -1,0 +1,585 @@
+{
+  "description": "v1.4.6 安全专项补充探测证据（合并）",
+  "generated_by": [
+    "repro_auditdb.py",
+    "auditdb_http_probe.py",
+    "failclosed_probe.py",
+    "module_switch_probe.py",
+    "repo_text_probe.py",
+    "grab_samples.py"
+  ],
+  "auditdb_source_http": {
+    "search_audit_db": {
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+    },
+    "facets_audit_db": {
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"module\":{},\"operation\":{},\"result\":{},\"operator\":{}}}"
+    },
+    "search_audit_db_with_q": {
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":5,\"truncated\":false}}"
+    },
+    "db_audit_logs_total": 8566,
+    "db_audit_api_request": 5492,
+    "conclusion": "audit_db 源经 HTTP 检索返回 200 + total=0（空结果），而库内 audit_logs 实际行数远大于 0；服务端 WARN 'audit_db source fetch degraded' —— 与设计 §5「单源不可用 → SYS_503」不符（静默降级）"
+  },
+  "auditdb_degrade_repro": {
+    "python": "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+    "db_url_env": "postgresql://<redacted-db-url>",
+    "1_main_loop_query_before": {
+      "ok": true,
+      "rows": 1
+    },
+    "2_thread_fetch_after_main_pool": {
+      "ok": false,
+      "error": "AttributeError: 'NoneType' object has no attribute 'send'",
+      "traceback_tail": [
+        "  File \"asyncpg/protocol/protocol.pyx\", line 362, in asyncpg.protocol.protocol.BaseProtocol.query",
+        "  File \"asyncpg/protocol/coreproto.pyx\", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query",
+        "  File \"asyncpg/protocol/protocol.pyx\", line 956, in asyncpg.protocol.protocol.BaseProtocol._write",
+        "  File \"asyncio\\proactor_events.py\", line 365, in write",
+        "  File \"asyncio\\proactor_events.py\", line 401, in _loop_writing",
+        "AttributeError: 'NoneType' object has no attribute 'send'"
+      ]
+    },
+    "3_main_loop_query_after_thread": {
+      "ok": false,
+      "error": "InterfaceError: (sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) <class 'asyncpg.exceptions._base.InterfaceError'>: cannot perform operation: another operation is in progress\n[SQL: SELECT openbase.audit_logs.id \nFROM openbase.audit_logs \n LIMIT $1::INTEGER]\n[parameters: (1,)]\n(Background on this error at: https://sqlalche.me/e/20/rvf5)",
+      "traceback_tail": [
+        "sqlalchemy.exc.InterfaceError: (sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) <class 'asyncpg.exceptions._base.InterfaceError'>: cannot perform operation: another operation is in progress",
+        "[SQL: SELECT openbase.audit_logs.id ",
+        "FROM openbase.audit_logs ",
+        " LIMIT $1::INTEGER]",
+        "[parameters: (1,)]",
+        "(Background on this error at: https://sqlalche.me/e/20/rvf5)"
+      ]
+    },
+    "4_thread_fetch_2nd": {
+      "ok": false,
+      "error": "InterfaceError: (sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) <class 'asyncpg.exceptions._base.InterfaceError'>: cannot perform operation: another operation is in progress\n[SQL: SELECT openbase.audit_logs.id, openbase.audit_logs.user_id, openbase.audit_logs.tenant_id, openbase.audit_logs.action, openbase.audit_logs.resource, openbase.audit_logs.resource_id, openbase.audit_logs.ip, openbase.audit_logs.user_agent, openbase.audit_logs.request_id, openbase.audit_logs.detail, openbase.audit_logs.created_at \nFROM openbase.audit_logs ORDER BY openbase.audit_logs.created_at DESC, openbase.audit_logs.id DESC \n LIMIT $1::INTEGER]\n[parameters: (1000,)]\n(Background on this error at: https://sqlalche.me/e/20/rvf5)",
+      "traceback_tail": [
+        "sqlalchemy.exc.InterfaceError: (sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) <class 'asyncpg.exceptions._base.InterfaceError'>: cannot perform operation: another operation is in progress",
+        "[SQL: SELECT openbase.audit_logs.id, openbase.audit_logs.user_id, openbase.audit_logs.tenant_id, openbase.audit_logs.action, openbase.audit_logs.resource, openbase.audit_logs.resource_id, openbase.audit_logs.ip, openbase.audit_logs.user_agent, openbase.audit_logs.request_id, openbase.audit_logs.detail, openbase.audit_logs.created_at ",
+        "FROM openbase.audit_logs ORDER BY openbase.audit_logs.created_at DESC, openbase.audit_logs.id DESC ",
+        " LIMIT $1::INTEGER]",
+        "[parameters: (1000,)]",
+        "(Background on this error at: https://sqlalche.me/e/20/rvf5)"
+      ]
+    },
+    "5_adapter_fetch_degraded": {
+      "items": 0,
+      "total": 0,
+      "truncated": false,
+      "note": "adapter.fetch 内部吞掉异常并返回空集合（repository.py AuditDbAdapter.fetch）"
+    },
+    "6_main_loop_query_final": {
+      "ok": false,
+      "error": "InterfaceError: (sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) <class 'asyncpg.exceptions._base.InterfaceError'>: cannot perform operation: another operation is in progress\n[SQL: SELECT openbase.audit_logs.id \nFROM openbase.audit_logs \n LIMIT $1::INTEGER]\n[parameters: (1,)]\n(Background on this error at: https://sqlalche.me/e/20/rvf5)",
+      "traceback_tail": [
+        "sqlalchemy.exc.InterfaceError: (sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) <class 'asyncpg.exceptions._base.InterfaceError'>: cannot perform operation: another operation is in progress",
+        "[SQL: SELECT openbase.audit_logs.id ",
+        "FROM openbase.audit_logs ",
+        " LIMIT $1::INTEGER]",
+        "[parameters: (1,)]",
+        "(Background on this error at: https://sqlalche.me/e/20/rvf5)"
+      ]
+    }
+  },
+  "failclosed_persist_disabled": {
+    "server": "http://127.0.0.1:8023",
+    "env": "OPENBASE_AUDIT_DB_PERSIST=0",
+    "export": {
+      "status": 503,
+      "body": "{\"code\":\"BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE\",\"message\":\"log export rejected: audit trail unavailable\",\"detail\":{\"reason\":\"audit persist disabled\"},\"request_id\":\"req-803f78dd2f12\"}",
+      "headers": {
+        "date": "Tue, 15 Sep 2026 14:05:32 GMT",
+        "server": "uvicorn",
+        "content-length": "177",
+        "content-type": "application/json",
+        "x-request-id": "req-803f78dd2f12"
+      }
+    },
+    "patch_module": {
+      "status": 503,
+      "body": "{\"code\":\"BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE\",\"message\":\"module switch rejected: audit trail unavailable\",\"detail\":{\"module_id\":\"memory\",\"reason\":\"audit persist disabled\"},\"request_id\":\"req-81b8abf8b2fd\"}"
+    },
+    "db_before": {
+      "dynamic_modules": [],
+      "module_switch_audit_rows": 0
+    },
+    "db_after": {
+      "dynamic_modules": [],
+      "module_switch_audit_rows": 0
+    }
+  },
+  "module_switch_audit": [
+    {
+      "step": "state_before",
+      "db": {
+        "dynamic_modules": [],
+        "recent_module_switch_audit": []
+      }
+    },
+    {
+      "step": "patch_disable",
+      "status": 200,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "id": "memory",
+          "status": "disabled",
+          "previous_status": "enabled",
+          "effective": "next_login",
+          "request_id": "req-533ad689aeea"
+        }
+      }
+    },
+    {
+      "step": "state_after_disable",
+      "db": {
+        "dynamic_modules": [
+          [
+            "memory",
+            "disabled"
+          ]
+        ],
+        "recent_module_switch_audit": [
+          [
+            8771,
+            "module.switch",
+            "module:memory",
+            "req-533ad689aeea",
+            "{\"operator_id\": \"1\", \"module_id\": \"memory\", \"previous_status\": \"enabled\", \"status\": \"disabled\"}"
+          ]
+        ]
+      }
+    },
+    {
+      "step": "patch_enable",
+      "status": 200,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "id": "memory",
+          "status": "enabled",
+          "previous_status": "disabled",
+          "effective": "next_login",
+          "request_id": "req-08fe7cf0b40e"
+        }
+      }
+    },
+    {
+      "step": "state_after_enable",
+      "db": {
+        "dynamic_modules": [
+          [
+            "memory",
+            "disabled"
+          ]
+        ],
+        "recent_module_switch_audit": [
+          [
+            8771,
+            "module.switch",
+            "module:memory",
+            "req-533ad689aeea",
+            "{\"operator_id\": \"1\", \"module_id\": \"memory\", \"previous_status\": \"enabled\", \"status\": \"disabled\"}"
+          ]
+        ]
+      }
+    },
+    {
+      "step": "patch_idempotent",
+      "status": 200,
+      "body": {
+        "code": 0,
+        "message": "ok",
+        "data": {
+          "id": "memory",
+          "status": "enabled",
+          "previous_status": "enabled",
+          "effective": "next_login",
+          "request_id": "req-1c2055cadb51"
+        }
+      }
+    },
+    {
+      "step": "state_after_idempotent",
+      "db": {
+        "dynamic_modules": [
+          [
+            "memory",
+            "disabled"
+          ]
+        ],
+        "recent_module_switch_audit": [
+          [
+            8771,
+            "module.switch",
+            "module:memory",
+            "req-533ad689aeea",
+            "{\"operator_id\": \"1\", \"module_id\": \"memory\", \"previous_status\": \"enabled\", \"status\": \"disabled\"}"
+          ]
+        ]
+      }
+    },
+    {
+      "step": "list_modules",
+      "status": 200,
+      "items": [
+        {
+          "id": "openllm",
+          "status": "enabled"
+        },
+        {
+          "id": "knowledge",
+          "status": "enabled"
+        },
+        {
+          "id": "memory",
+          "status": "enabled"
+        },
+        {
+          "id": "portrait",
+          "status": "enabled"
+        },
+        {
+          "id": "gateway",
+          "status": "enabled"
+        }
+      ]
+    }
+  ],
+  "repo_log_text_fallback": {
+    "status": 200,
+    "total": 3,
+    "items": [
+      {
+        "ts": "2026-09-14T13:00:01.000+00:00",
+        "source": "repo_log",
+        "module": "llm",
+        "operation": "auth_login",
+        "result": "client_error",
+        "request_id": "req-SECRETSEARCH-repo-0002",
+        "method": "POST",
+        "path": "/v1/auth/login",
+        "status_code": 401,
+        "duration_ms": null,
+        "operator_id": null,
+        "tenant_id": null,
+        "ip_address": null,
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": null,
+        "summary": {
+          "level": "ERROR",
+          "service": "openllm",
+          "message": "auth failed for credential=sk-upstream-abcdef1234567890abcdef1234567890",
+          "event": "auth.login"
+        }
+      },
+      {
+        "ts": "2026-09-14T13:00:00.000+00:00",
+        "source": "repo_log",
+        "module": "llm",
+        "operation": "write",
+        "result": "success",
+        "request_id": "req-SECRETSEARCH-repo-0001",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "status_code": 200,
+        "duration_ms": null,
+        "operator_id": null,
+        "tenant_id": null,
+        "ip_address": null,
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": null,
+        "summary": {
+          "level": "INFO",
+          "service": "openllm",
+          "message": "upstream call ok, token=Bearer sk-openllm-ffffffffffffffffffffffffffffffff"
+        }
+      },
+      {
+        "ts": "2026-09-14 14:00:00 10.0.0.9 - -",
+        "source": "repo_log",
+        "module": "llm",
+        "operation": "write",
+        "result": "success",
+        "request_id": null,
+        "method": "POST",
+        "path": "/v1/SECRETSEARCH/chat",
+        "status_code": 200,
+        "duration_ms": null,
+        "operator_id": null,
+        "tenant_id": null,
+        "ip_address": null,
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": null,
+        "summary": {
+          "raw": {
+            "line": "2026-09-14 14:00:00 10.0.0.9 - - \"POST /v1/SECRETSEARCH/chat HTTP/1.1\" 200 123 p***@ssw0rd-Plaintext-2026 token=sk-openllm-ffffffffffffffffffffffffffffffff"
+          }
+        }
+      }
+    ],
+    "raw_body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"ts\":\"2026-09-14T13:00:01.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"auth_login\",\"result\":\"client_error\",\"request_id\":\"req-SECRETSEARCH-repo-0002\",\"method\":\"POST\",\"path\":\"/v1/auth/login\",\"status_code\":401,\"duration_ms\":null,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":null,\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":{\"level\":\"ERROR\",\"service\":\"openllm\",\"message\":\"auth failed for credential=sk-upstream-abcdef1234567890abcdef1234567890\",\"event\":\"auth.login\"}},{\"ts\":\"2026-09-14T13:00:00.000+00:00\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"write\",\"result\":\"success\",\"request_id\":\"req-SECRETSEARCH-repo-0001\",\"method\":\"POST\",\"path\":\"/v1/chat/completions\",\"status_code\":200,\"duration_ms\":null,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":null,\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":{\"level\":\"INFO\",\"service\":\"openllm\",\"message\":\"upstream call ok, token=Bearer sk-openllm-ffffffffffffffffffffffffffffffff\"}},{\"ts\":\"2026-09-14 14:00:00 10.0.0.9 - -\",\"source\":\"repo_log\",\"module\":\"llm\",\"operation\":\"write\",\"result\":\"success\",\"request_id\":null,\"method\":\"POST\",\"path\":\"/v1/SECRETSEARCH/chat\",\"status_code\":200,\"duration_ms\":null,\"operator_id\":null,\"tenant_id\":null,\"ip_address\":null,\"case_id\":null,\"step_id\":null,\"run_id\":null,\"action\":null,\"summary\":{\"raw\":{\"line\":\"2026-09-14 14:00:00 10.0.0.9 - - \\\"POST /v1/SECRETSEARCH/chat HTTP/1.1\\\" 200 123 p***@ssw0rd-Plaintext-2026"
+  },
+  "l1_masking_samples": {
+    "l1_search_status": 200,
+    "l1_items": [
+      {
+        "ts": "2026-09-14T10:00:03.000+00:00",
+        "source": "l1_file",
+        "module": "identity",
+        "operation": "auth_login",
+        "result": "success",
+        "request_id": "req-SECRETSEARCH-0004",
+        "method": "GET",
+        "path": "/api/v1/auth/login",
+        "status_code": 200,
+        "duration_ms": 8,
+        "operator_id": "1",
+        "tenant_id": "tenant-1",
+        "ip_address": "10.20.30.40",
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": "auth.login",
+        "summary": {
+          "resp_status": {
+            "jwt": "***"
+          }
+        }
+      },
+      {
+        "ts": "2026-09-14T10:00:02.000+00:00",
+        "source": "l1_file",
+        "module": "gateway",
+        "operation": "read",
+        "result": "success",
+        "request_id": "req-SECRETSEARCH-0003",
+        "method": "GET",
+        "path": "/api/v1/logs/search",
+        "status_code": 200,
+        "duration_ms": 7,
+        "operator_id": "1",
+        "tenant_id": "tenant-1",
+        "ip_address": "10.20.30.40",
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": "log.export",
+        "summary": {
+          "resp_status": {
+            "credential": "***"
+          }
+        }
+      },
+      {
+        "ts": "2026-09-14T10:00:01.000+00:00",
+        "source": "l1_file",
+        "module": "llm",
+        "operation": "proxy",
+        "result": "success",
+        "request_id": "req-SECRETSEARCH-0002",
+        "method": "POST",
+        "path": "/api/v1/llm-proxy/v1/chat/completions",
+        "status_code": 200,
+        "duration_ms": 6,
+        "operator_id": "1",
+        "tenant_id": "tenant-1",
+        "ip_address": "10.20.30.40",
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": null,
+        "summary": null
+      },
+      {
+        "ts": "2026-09-14T10:00:00.000+00:00",
+        "source": "l1_file",
+        "module": "llm",
+        "operation": "proxy",
+        "result": "success",
+        "request_id": "req-SECRETSEARCH-0001",
+        "method": "POST",
+        "path": "/api/v1/llm-proxy/v1/chat/completions",
+        "status_code": 200,
+        "duration_ms": 5,
+        "operator_id": "1",
+        "tenant_id": "tenant-1",
+        "ip_address": "10.20.30.40",
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": null,
+        "summary": {
+          "resp_status": {
+            "access_token": "***",
+            "ok": true
+          },
+          "resp_headers": {
+            "authorization": "***",
+            "set-cookie": "***",
+            "content-type": "application/json"
+          },
+          "upstream_status": {
+            "api_key": "***",
+            "code": 200
+          }
+        }
+      }
+    ],
+    "repo_search_status": 200,
+    "repo_items": [
+      {
+        "ts": "2026-09-14T13:00:01.000+00:00",
+        "source": "repo_log",
+        "module": "llm",
+        "operation": "auth_login",
+        "result": "client_error",
+        "request_id": "req-SECRETSEARCH-repo-0002",
+        "method": "POST",
+        "path": "/v1/auth/login",
+        "status_code": 401,
+        "duration_ms": null,
+        "operator_id": null,
+        "tenant_id": null,
+        "ip_address": null,
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": null,
+        "summary": {
+          "level": "ERROR",
+          "service": "openllm",
+          "message": "auth failed for credential=sk-upstream-abcdef1234567890abcdef1234567890",
+          "event": "auth.login"
+        }
+      },
+      {
+        "ts": "2026-09-14T13:00:00.000+00:00",
+        "source": "repo_log",
+        "module": "llm",
+        "operation": "write",
+        "result": "success",
+        "request_id": "req-SECRETSEARCH-repo-0001",
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "status_code": 200,
+        "duration_ms": null,
+        "operator_id": null,
+        "tenant_id": null,
+        "ip_address": null,
+        "case_id": null,
+        "step_id": null,
+        "run_id": null,
+        "action": null,
+        "summary": {
+          "level": "INFO",
+          "service": "openllm",
+          "message": "upstream call ok, token=Bearer sk-openllm-ffffffffffffffffffffffffffffffff"
+        }
+      }
+    ],
+    "page_meta": {
+      "total": 50000,
+      "page": 1,
+      "page_size": 3,
+      "truncated": false
+    },
+    "first_item": {
+      "ts": "2026-09-14T12:59:59.000+00:00",
+      "source": "l1_file",
+      "module": "gateway",
+      "operation": "read",
+      "result": "success",
+      "request_id": "req-bench-gw-039599",
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "status_code": 200,
+      "duration_ms": 28,
+      "operator_id": "1",
+      "tenant_id": "tenant-1",
+      "ip_address": "10.20.30.40",
+      "case_id": null,
+      "step_id": null,
+      "run_id": null,
+      "action": null,
+      "summary": null
+    },
+    "presets": {
+      "code": 0,
+      "message": "success",
+      "data": {
+        "source": {
+          "values": [
+            "l1_file",
+            "audit_db",
+            "test_record",
+            "repo_log"
+          ]
+        },
+        "module": {
+          "values": [
+            "identity",
+            "dps",
+            "rag",
+            "memory",
+            "llm",
+            "gateway",
+            "testing",
+            "other"
+          ]
+        },
+        "operation": {
+          "values": [
+            "auth_login",
+            "read",
+            "write",
+            "delete",
+            "config",
+            "proxy"
+          ]
+        },
+        "result": {
+          "values": [
+            "success",
+            "client_error",
+            "server_error",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "facets_l1": {
+      "module": {
+        "llm": 8002,
+        "gateway": 41997,
+        "identity": 1
+      },
+      "operation": {
+        "proxy": 8002,
+        "read": 41997,
+        "auth_login": 1
+      },
+      "result": {
+        "success": 45800,
+        "server_error": 4200
+      },
+      "operator": {
+        "1": 50000
+      }
+    }
+  }
+}

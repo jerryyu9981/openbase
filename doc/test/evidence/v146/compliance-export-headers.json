@@ -1,0 +1,20 @@
+{
+  "csv": {
+    "status": 200,
+    "content_type": "text/csv; charset=utf-8",
+    "content_disposition": "attachment; filename=\"logs-l1_file-20260915-223228.csv\"",
+    "content_length": "1074",
+    "filename_matches_design": true,
+    "first_bytes": "efbbbf74732c736f757263652c6d6f64756c652c6f706572",
+    "bom_present": true
+  },
+  "json": {
+    "status": 200,
+    "content_type": "application/json",
+    "content_disposition": "attachment; filename=\"logs-l1_file-20260915-223249.json\"",
+    "content_length": "1942",
+    "filename_matches_design": true,
+    "first_bytes": "5b7b227473223a2022323032362d30392d31345431303a30",
+    "bom_present": false
+  }
+}

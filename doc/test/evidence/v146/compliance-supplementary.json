@@ -1,0 +1,84 @@
+{
+  "patch_unknown_module": {
+    "status": 404,
+    "body": "{\"code\":\"PARAM_404\",\"message\":\"module not found\",\"detail\":{\"module_id\":\"not-a-module\",\"allowed\":[\"openllm\",\"knowledge\",\"memory\",\"portrait\",\"gateway\"]},\"request_id\":\"req-f8e53872bac4\"}"
+  },
+  "get_unknown_module": {
+    "status": 404,
+    "body": "{\"code\":\"BIZ_404\",\"message\":\"module not found: not-a-module\",\"detail\":null,\"request_id\":\"req-02157baba089\"}"
+  },
+  "versions_json": {
+    "generated": "openbase-cli gen-versions",
+    "modules": {
+      "audit": {
+        "version": "1.1.0"
+      },
+      "auth": {
+        "version": "1.1.0"
+      },
+      "config": {
+        "version": "1.1.0"
+      },
+      "dict": {
+        "version": "1.1.0"
+      },
+      "gateway": {
+        "version": "1.0.0"
+      },
+      "mcp": {
+        "version": "1.1.0"
+      },
+      "notify": {
+        "version": "1.1.0"
+      },
+      "observability": {
+        "version": "1.1.0"
+      },
+      "org": {
+        "version": "1.1.0"
+      },
+      "proxy": {
+        "version": "1.4.0"
+      },
+      "scheduler": {
+        "version": "1.1.0"
+      },
+      "storage": {
+        "version": "1.1.0"
+      },
+      "tenant": {
+        "version": "1.1.0"
+      }
+    }
+  },
+  "versions_json_logs_entry": null,
+  "versions_json_frontend_entry": null,
+  "module___version__": {
+    "logs": "1.0.0",
+    "frontend": "1.3.0",
+    "testing": "1.0.0",
+    "gateway": "1.0.0"
+  },
+  "package___version__": "1.0.0",
+  "openapi_info": {
+    "title": "OpenBase",
+    "version": "1.0.0"
+  },
+  "openapi_security_schemes": null,
+  "openapi_path_param_module_id": [
+    {
+      "name": "module_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "title": "Module Id"
+      }
+    }
+  ],
+  "openapi_error_response_schema_documented": true,
+  "openapi_logs_search_responses": [
+    "200",
+    "422"
+  ]
+}

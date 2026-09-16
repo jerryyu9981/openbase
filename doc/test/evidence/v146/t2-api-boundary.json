@@ -1,0 +1,1389 @@
+{
+  "meta": {
+    "version": "v1.0.0",
+    "status": "[Draft]",
+    "role": "AT-OpenBase-Test（Step 4 测试 · 后端轨道 T2）",
+    "generated_at": "2026-09-15 22:05:09",
+    "target_version": "v1.4.6",
+    "runner": "fastapi.testclient.TestClient（进程内，未启 uvicorn）"
+  },
+  "environment": {
+    "python": "3.10.11",
+    "postgres_5432": "在监听（本脚本不依赖）",
+    "redis": "未启动（本脚本不依赖）",
+    "upstream": "OpenLLM/OpenRAG/OpenMemory/DPS 未启动（本脚本不依赖）",
+    "audit_channel": "SQLite 内存库（真实建表 + 真实 commit）",
+    "log_source": "临时目录 L1 JSONL（OPENBASE_LOG_DIR）",
+    "token_issuer": "openbase.modules.auth.jwt.create_access_token"
+  },
+  "summary": {
+    "total": 39,
+    "passed": 39,
+    "failed": 0
+  },
+  "summary_by_endpoint": {
+    "GET /logs/search": {
+      "total": 14,
+      "passed": 14,
+      "failed": 0
+    },
+    "GET /logs/facets": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0
+    },
+    "GET /logs/facets/presets": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0
+    },
+    "GET /logs/export": {
+      "total": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    "GET /modules": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    "PATCH /modules/{id}": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "T2-A1",
+      "endpoint": "GET /logs/search",
+      "scenario": "正常检索（source=l1_file，默认分页）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "data.items 为 list",
+          "ok": true,
+          "detail": "type=list"
+        },
+        {
+          "name": "data.total 为 int",
+          "ok": true,
+          "detail": "value=3"
+        },
+        {
+          "name": "data.page 为 int",
+          "ok": true,
+          "detail": "value=1"
+        },
+        {
+          "name": "data.page_size 为 int",
+          "ok": true,
+          "detail": "value=20"
+        },
+        {
+          "name": "data.truncated 为 bool",
+          "ok": true,
+          "detail": "value=False"
+        },
+        {
+          "name": "条目含 18 字段（§2 契约）",
+          "ok": true,
+          "detail": "keys=18"
+        },
+        {
+          "name": "total==3",
+          "ok": true,
+          "detail": "total=3"
+        }
+      ],
+      "verdict": "PASS",
+      "extra": {
+        "data_keys": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "truncated"
+        ],
+        "item_keys": [
+          "action",
+          "case_id",
+          "duration_ms",
+          "ip_address",
+          "method",
+          "module",
+          "operation",
+          "operator_id",
+          "path",
+          "request_id",
+          "result",
+          "run_id",
+          "source",
+          "status_code",
+          "step_id",
+          "summary",
+          "tenant_id",
+          "ts"
+        ]
+      }
+    },
+    {
+      "id": "T2-A2",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：page_size=0（下界越界，schema ge=1）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        },
+        {
+          "name": "detail 含参数定位",
+          "ok": true,
+          "detail": "list"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A3",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：page_size=101（上界越界，schema le=100）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A4",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：page_size=100（上界内最大值）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "page_size 回显 100",
+          "ok": true,
+          "detail": "value=100"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A5",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：page=0（下界越界，schema ge=1）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A6",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：非法 source（枚举白名单）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A7",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：非法 module（枚举白名单）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A8",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：非法 result（枚举白名单）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A9",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：非法 operation（枚举白名单）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A10",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：q 超长 201（schema max_length=200）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A11",
+      "endpoint": "GET /logs/search",
+      "scenario": "边界：from>to（时间窗倒置）",
+      "expected_status": [
+        200,
+        400
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "无 5xx",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "200 时空集（无静默返回全量）",
+          "ok": true,
+          "detail": "status=200, total=0"
+        },
+        {
+          "name": "400 时错误码为 PARAM 前缀",
+          "ok": true,
+          "detail": "code=n/a"
+        }
+      ],
+      "verdict": "PASS",
+      "extra": {
+        "observed": "200 且 total=0（后端未对时间窗倒置做参数拒绝，按空集处理）"
+      }
+    },
+    {
+      "id": "T2-A12",
+      "endpoint": "GET /logs/search",
+      "scenario": "重复同名参数（module=dps&module=rag，OR 语义）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "命中 2 条（OR 生效）",
+          "ok": true,
+          "detail": "total=2"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A13",
+      "endpoint": "GET /logs/search",
+      "scenario": "无令牌 → 401",
+      "expected_status": [
+        401
+      ],
+      "actual_status": 401,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_401",
+      "checks": [
+        {
+          "name": "401",
+          "ok": true,
+          "detail": "status=401"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-A14",
+      "endpoint": "GET /logs/search",
+      "scenario": "无权限（令牌无 log:read）→ 403",
+      "expected_status": [
+        403
+      ],
+      "actual_status": 403,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_403",
+      "checks": [
+        {
+          "name": "403",
+          "ok": true,
+          "detail": "status=403"
+        },
+        {
+          "name": "错误码 AUTH_FORBIDDEN",
+          "ok": true,
+          "detail": "code=AUTH_403"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-B1",
+      "endpoint": "GET /logs/facets",
+      "scenario": "正常聚合（四维度计数）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "module 为 dict",
+          "ok": true,
+          "detail": "value={'dps': 1, 'rag': 1, 'identity': 1}"
+        },
+        {
+          "name": "operation 为 dict",
+          "ok": true,
+          "detail": "value={'proxy': 2, 'auth_login': 1}"
+        },
+        {
+          "name": "result 为 dict",
+          "ok": true,
+          "detail": "value={'success': 2, 'server_error': 1}"
+        },
+        {
+          "name": "operator 为 dict",
+          "ok": true,
+          "detail": "value={'other': 3}"
+        },
+        {
+          "name": "module 计数=identity/dps/rag 各 1",
+          "ok": true,
+          "detail": "value={'dps': 1, 'rag': 1, 'identity': 1}"
+        }
+      ],
+      "verdict": "PASS",
+      "extra": {
+        "data_keys": [
+          "module",
+          "operation",
+          "operator",
+          "result"
+        ],
+        "frontend_type_declares": [
+          "source",
+          "module",
+          "operation",
+          "result",
+          "operator",
+          "truncated"
+        ],
+        "note": "前端 LogFacetsResponse 声明 source/truncated 两字段，后端未返回（页面仅消费三个维度字典）"
+      }
+    },
+    {
+      "id": "T2-B2",
+      "endpoint": "GET /logs/facets",
+      "scenario": "边界：非法 source",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-B3",
+      "endpoint": "GET /logs/facets",
+      "scenario": "无令牌 → 401",
+      "expected_status": [
+        401
+      ],
+      "actual_status": 401,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_401",
+      "checks": [
+        {
+          "name": "401",
+          "ok": true,
+          "detail": "status=401"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-B4",
+      "endpoint": "GET /logs/facets",
+      "scenario": "无权限 → 403",
+      "expected_status": [
+        403
+      ],
+      "actual_status": 403,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_403",
+      "checks": [
+        {
+          "name": "403",
+          "ok": true,
+          "detail": "status=403"
+        },
+        {
+          "name": "错误码 AUTH_FORBIDDEN",
+          "ok": true,
+          "detail": "code=AUTH_403"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-C1",
+      "endpoint": "GET /logs/facets/presets",
+      "scenario": "候选枚举（供前端下拉）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "source.values 全枚举",
+          "ok": true,
+          "detail": "value=['l1_file', 'audit_db', 'test_record', 'repo_log']"
+        },
+        {
+          "name": "module.values 含 identity/dps/rag",
+          "ok": true,
+          "detail": "value=['identity', 'dps', 'rag', 'memory', 'llm', 'gateway', 'testing', 'other']"
+        },
+        {
+          "name": "values 均为 list",
+          "ok": true,
+          "detail": "types=['list', 'list', 'list', 'list']"
+        }
+      ],
+      "verdict": "PASS",
+      "extra": {
+        "data_keys": [
+          "module",
+          "operation",
+          "result",
+          "source"
+        ]
+      }
+    },
+    {
+      "id": "T2-C2",
+      "endpoint": "GET /logs/facets/presets",
+      "scenario": "边界：无声明参数的端点收到多余参数",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200（FastAPI 忽略未声明查询参数）",
+          "ok": true,
+          "detail": "status=200"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-C3",
+      "endpoint": "GET /logs/facets/presets",
+      "scenario": "无令牌 → 401",
+      "expected_status": [
+        401
+      ],
+      "actual_status": 401,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_401",
+      "checks": [
+        {
+          "name": "401",
+          "ok": true,
+          "detail": "status=401"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-C4",
+      "endpoint": "GET /logs/facets/presets",
+      "scenario": "无权限 → 403",
+      "expected_status": [
+        403
+      ],
+      "actual_status": 403,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_403",
+      "checks": [
+        {
+          "name": "403",
+          "ok": true,
+          "detail": "status=403"
+        },
+        {
+          "name": "错误码 AUTH_FORBIDDEN",
+          "ok": true,
+          "detail": "code=AUTH_403"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-D1",
+      "endpoint": "GET /logs/export",
+      "scenario": "正常导出 CSV（附件名/BOM/表头）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": null,
+      "error_code": null,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "Content-Type=text/csv; charset=utf-8",
+          "ok": true,
+          "detail": "value=text/csv; charset=utf-8"
+        },
+        {
+          "name": "Content-Disposition 附件名合规",
+          "ok": true,
+          "detail": "value=attachment; filename=\"logs-l1_file-20260915-220508.csv\""
+        },
+        {
+          "name": "BOM 存在",
+          "ok": true,
+          "detail": "head=b'\\xef\\xbb\\xbfts,'"
+        },
+        {
+          "name": "1 表头 + 3 数据行",
+          "ok": true,
+          "detail": "lines=4"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-D2",
+      "endpoint": "GET /logs/export",
+      "scenario": "正常导出 JSON",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": null,
+      "error_code": null,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "Content-Type=application/json",
+          "ok": true,
+          "detail": "value=application/json"
+        },
+        {
+          "name": "附件扩展名 .json",
+          "ok": true,
+          "detail": "value=attachment; filename=\"logs-l1_file-20260915-220508.json\""
+        },
+        {
+          "name": "3 条记录",
+          "ok": true,
+          "detail": "len=3"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-D3",
+      "endpoint": "GET /logs/export",
+      "scenario": "边界：format 非法（xml）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        },
+        {
+          "name": "不得返回附件",
+          "ok": true,
+          "detail": "has_cd=False"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-D4",
+      "endpoint": "GET /logs/export",
+      "scenario": "边界：非法 source",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-D5",
+      "endpoint": "GET /logs/export",
+      "scenario": "边界：命中 10005 条 > 上限 10000",
+      "expected_status": [
+        400
+      ],
+      "actual_status": 400,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_400",
+      "checks": [
+        {
+          "name": "400",
+          "ok": true,
+          "detail": "status=400"
+        },
+        {
+          "name": "错误码 PARAM_400",
+          "ok": true,
+          "detail": "code=PARAM_400"
+        },
+        {
+          "name": "detail.limit=10000",
+          "ok": true,
+          "detail": "detail={'matched': 10005, 'limit': 10000}"
+        },
+        {
+          "name": "detail.matched>10000",
+          "ok": true,
+          "detail": "detail={'matched': 10005, 'limit': 10000}"
+        },
+        {
+          "name": "统一错误体含 request_id",
+          "ok": true,
+          "detail": "request_id=req-eb4b79e64d41"
+        },
+        {
+          "name": "不得返回附件",
+          "ok": true,
+          "detail": "has_cd=False"
+        }
+      ],
+      "verdict": "PASS",
+      "extra": {
+        "observed_matched": 10005
+      }
+    },
+    {
+      "id": "T2-D6",
+      "endpoint": "GET /logs/export",
+      "scenario": "边界：留痕通道显式不可用（OPENBASE_AUDIT_DB_PERSIST=0）",
+      "expected_status": [
+        503
+      ],
+      "actual_status": 503,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE",
+      "checks": [
+        {
+          "name": "503",
+          "ok": true,
+          "detail": "status=503"
+        },
+        {
+          "name": "错误码 BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE",
+          "ok": true,
+          "detail": "code=BIZ_LOG_EXPORT_AUDIT_UNAVAILABLE"
+        },
+        {
+          "name": "不得返回未留痕文件",
+          "ok": true,
+          "detail": "has_cd=False"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-D7",
+      "endpoint": "GET /logs/export",
+      "scenario": "无令牌 → 401",
+      "expected_status": [
+        401
+      ],
+      "actual_status": 401,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_401",
+      "checks": [
+        {
+          "name": "401",
+          "ok": true,
+          "detail": "status=401"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-D8",
+      "endpoint": "GET /logs/export",
+      "scenario": "无权限 → 403",
+      "expected_status": [
+        403
+      ],
+      "actual_status": 403,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_403",
+      "checks": [
+        {
+          "name": "403",
+          "ok": true,
+          "detail": "status=403"
+        },
+        {
+          "name": "错误码 AUTH_FORBIDDEN",
+          "ok": true,
+          "detail": "code=AUTH_403"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-E1",
+      "endpoint": "GET /modules",
+      "scenario": "模块注册表（5 模块，字段齐备）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "data.items 为 list",
+          "ok": true,
+          "detail": "type=list"
+        },
+        {
+          "name": "data.total 为 int",
+          "ok": true,
+          "detail": "value=5"
+        },
+        {
+          "name": "包含 gateway 模块（v1.4.6 可达性修复）",
+          "ok": true,
+          "detail": "ids=['openllm', 'knowledge', 'memory', 'portrait', 'gateway']"
+        },
+        {
+          "name": "模块字段集齐备",
+          "ok": true,
+          "detail": "keys=['entry', 'icon', 'id', 'name', 'permission', 'route_prefix', 'sort_order', 'status']"
+        }
+      ],
+      "verdict": "PASS",
+      "extra": {
+        "items": [
+          {
+            "id": "openllm",
+            "status": "enabled"
+          },
+          {
+            "id": "knowledge",
+            "status": "enabled"
+          },
+          {
+            "id": "memory",
+            "status": "enabled"
+          },
+          {
+            "id": "portrait",
+            "status": "enabled"
+          },
+          {
+            "id": "gateway",
+            "status": "enabled"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T2-E2",
+      "endpoint": "GET /modules",
+      "scenario": "无令牌 → 401（get_current_user 门禁）",
+      "expected_status": [
+        401
+      ],
+      "actual_status": 401,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_401",
+      "checks": [
+        {
+          "name": "401",
+          "ok": true,
+          "detail": "status=401"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-E3",
+      "endpoint": "PATCH /modules/{id}",
+      "scenario": "边界：非法 status（paused）",
+      "expected_status": [
+        422
+      ],
+      "actual_status": 422,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_422",
+      "checks": [
+        {
+          "name": "422",
+          "ok": true,
+          "detail": "status=422"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-E4",
+      "endpoint": "PATCH /modules/{id}",
+      "scenario": "边界：模块不存在",
+      "expected_status": [
+        404
+      ],
+      "actual_status": 404,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "PARAM_404",
+      "checks": [
+        {
+          "name": "404",
+          "ok": true,
+          "detail": "status=404"
+        },
+        {
+          "name": "错误码 PARAM_404",
+          "ok": true,
+          "detail": "code=PARAM_404"
+        },
+        {
+          "name": "detail 含 allowed 提示",
+          "ok": true,
+          "detail": "detail={'module_id': 'nosuchmodule', 'allowed': ['openllm', 'knowledge', 'memory', 'portrait', 'gateway']}"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-E5",
+      "endpoint": "PATCH /modules/{id}",
+      "scenario": "无令牌 → 401",
+      "expected_status": [
+        401
+      ],
+      "actual_status": 401,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_401",
+      "checks": [
+        {
+          "name": "401",
+          "ok": true,
+          "detail": "status=401"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-E6",
+      "endpoint": "PATCH /modules/{id}",
+      "scenario": "无权限（无 module:manage）→ 403",
+      "expected_status": [
+        403
+      ],
+      "actual_status": 403,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "AUTH_403",
+      "checks": [
+        {
+          "name": "403",
+          "ok": true,
+          "detail": "status=403"
+        },
+        {
+          "name": "错误码 AUTH_FORBIDDEN",
+          "ok": true,
+          "detail": "code=AUTH_403"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-E7",
+      "endpoint": "PATCH /modules/{id}",
+      "scenario": "正常停用（enabled→disabled，先留痕后生效）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "status=disabled",
+          "ok": true,
+          "detail": "value=disabled"
+        },
+        {
+          "name": "previous_status=enabled",
+          "ok": true,
+          "detail": "value=enabled"
+        },
+        {
+          "name": "effective=next_login",
+          "ok": true,
+          "detail": "value=next_login"
+        },
+        {
+          "name": "含 request_id",
+          "ok": true,
+          "detail": "value=req-748e7652866b"
+        }
+      ],
+      "verdict": "PASS",
+      "extra": {
+        "data_keys": [
+          "effective",
+          "id",
+          "previous_status",
+          "request_id",
+          "status"
+        ]
+      }
+    },
+    {
+      "id": "T2-E8",
+      "endpoint": "PATCH /modules/{id}",
+      "scenario": "幂等：同状态重复停用（不重复留痕）",
+      "expected_status": [
+        200
+      ],
+      "actual_status": 200,
+      "response_body_keys": [
+        "code",
+        "data",
+        "message"
+      ],
+      "error_code": 0,
+      "checks": [
+        {
+          "name": "200",
+          "ok": true,
+          "detail": "status=200"
+        },
+        {
+          "name": "previous_status==status（无变更标记）",
+          "ok": true,
+          "detail": "previous=disabled, status=disabled"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "T2-E9",
+      "endpoint": "PATCH /modules/{id}",
+      "scenario": "边界：留痕不可用 → 拒绝变更（fail-closed）",
+      "expected_status": [
+        400,
+        503
+      ],
+      "actual_status": 503,
+      "response_body_keys": [
+        "code",
+        "detail",
+        "message",
+        "request_id"
+      ],
+      "error_code": "BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE",
+      "checks": [
+        {
+          "name": "受控错误（非未捕获 500）",
+          "ok": true,
+          "detail": "status=503"
+        },
+        {
+          "name": "错误码 BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE",
+          "ok": true,
+          "detail": "code=BIZ_MODULE_SWITCH_AUDIT_UNAVAILABLE"
+        }
+      ],
+      "verdict": "PASS"
+    }
+  ],
+  "audit_evidence": {
+    "log_export_rows": [
+      {
+        "action": "log.export",
+        "user_id": 7,
+        "resource": "logs:export",
+        "detail": {
+          "actor": "7",
+          "source": "l1_file",
+          "filters": {},
+          "row_count": 3,
+          "format": "csv"
+        },
+        "request_id": "req-0fdf52ad5e0a"
+      },
+      {
+        "action": "log.export",
+        "user_id": 7,
+        "resource": "logs:export",
+        "detail": {
+          "actor": "7",
+          "source": "l1_file",
+          "filters": {},
+          "row_count": 3,
+          "format": "json"
+        },
+        "request_id": "req-e7c140abf681"
+      }
+    ],
+    "module_switch_rows": [
+      {
+        "action": "module.switch",
+        "user_id": 1,
+        "resource": "module:openllm",
+        "detail": {
+          "operator_id": "1",
+          "module_id": "openllm",
+          "previous_status": "enabled",
+          "status": "disabled"
+        },
+        "request_id": "req-748e7652866b"
+      },
+      {
+        "action": "module.switch",
+        "user_id": 1,
+        "resource": "module:openllm",
+        "detail": {
+          "operator_id": "1",
+          "module_id": "openllm",
+          "previous_status": "disabled",
+          "status": "enabled"
+        },
+        "request_id": "req-2caee09d146d"
+      }
+    ],
+    "dynamic_modules_openllm": {
+      "id": "openllm",
+      "status": "enabled"
+    }
+  }
+}

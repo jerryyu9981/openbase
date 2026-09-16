@@ -1,0 +1,1241 @@
+{
+  "base": "http://localhost:4199",
+  "axeAvailable": false,
+  "results": [
+    {
+      "page": "登录页",
+      "target": "http://localhost:4199/auth/login",
+      "httpStatus": 200,
+      "finalUrl": "http://localhost:4199/auth/login",
+      "consoleMessages": [],
+      "pageErrors": [],
+      "facts": {
+        "url": "http://localhost:4199/auth/login",
+        "documentTitle": "OpenBase 统一管理平台",
+        "htmlLang": "zh-CN",
+        "landmarks": {
+          "header": 0,
+          "nav": 0,
+          "main": 0,
+          "aside": 0,
+          "footer": 0,
+          "roleBanner": 0,
+          "roleNavigation": 0,
+          "roleMain": 0,
+          "roleContentinfo": 0,
+          "ariaLive": [],
+          "roleAlert": []
+        },
+        "headings": [
+          {
+            "level": 1,
+            "text": "OpenBase 统一管理平台"
+          }
+        ],
+        "interactiveCount": 4,
+        "nameSources": {
+          "placeholder(占位文本，非标签)": 2,
+          "text": 2
+        },
+        "interactiveWithoutAccessibleName": [],
+        "inputsWithoutLabel": 0,
+        "imagesWithoutAlt": 0,
+        "tables": [],
+        "skipLinkPresent": false,
+        "duplicateIds": [],
+        "positiveTabindex": [],
+        "contrastSummary": {
+          "sampled": 4,
+          "failures": [
+            {
+              "text": "登 录",
+              "tag": "span",
+              "cls": "",
+              "color": "rgb(255, 255, 255)",
+              "background": "rgb(64, 158, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.78,
+              "passAA": false
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "button",
+          "text": "登 录",
+          "ariaLabel": null,
+          "cls": "el-button el-button--primary login-btn",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "button",
+          "text": "OIDC 统一登录",
+          "ariaLabel": null,
+          "cls": "el-button login-btn oidc-btn",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "body",
+          "text": "OpenBase 统一管理平台登 录或 OIDC 统一登录",
+          "ariaLabel": null,
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        }
+      ]
+    },
+    {
+      "page": "403 页",
+      "target": "http://localhost:4199/forbidden",
+      "httpStatus": 200,
+      "finalUrl": "http://localhost:4199/auth/login?redirect=/forbidden",
+      "consoleMessages": [],
+      "pageErrors": [],
+      "facts": {
+        "url": "http://localhost:4199/auth/login?redirect=/forbidden",
+        "documentTitle": "OpenBase 统一管理平台",
+        "htmlLang": "zh-CN",
+        "landmarks": {
+          "header": 0,
+          "nav": 0,
+          "main": 0,
+          "aside": 0,
+          "footer": 0,
+          "roleBanner": 0,
+          "roleNavigation": 0,
+          "roleMain": 0,
+          "roleContentinfo": 0,
+          "ariaLive": [],
+          "roleAlert": []
+        },
+        "headings": [
+          {
+            "level": 1,
+            "text": "OpenBase 统一管理平台"
+          }
+        ],
+        "interactiveCount": 4,
+        "nameSources": {
+          "placeholder(占位文本，非标签)": 2,
+          "text": 2
+        },
+        "interactiveWithoutAccessibleName": [],
+        "inputsWithoutLabel": 0,
+        "imagesWithoutAlt": 0,
+        "tables": [],
+        "skipLinkPresent": false,
+        "duplicateIds": [],
+        "positiveTabindex": [],
+        "contrastSummary": {
+          "sampled": 4,
+          "failures": [
+            {
+              "text": "登 录",
+              "tag": "span",
+              "cls": "",
+              "color": "rgb(255, 255, 255)",
+              "background": "rgb(64, 158, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.78,
+              "passAA": false
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "button",
+          "text": "登 录",
+          "ariaLabel": null,
+          "cls": "el-button el-button--primary login-btn",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "button",
+          "text": "OIDC 统一登录",
+          "ariaLabel": null,
+          "cls": "el-button login-btn oidc-btn",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "body",
+          "text": "OpenBase 统一管理平台登 录或 OIDC 统一登录",
+          "ariaLabel": null,
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        }
+      ]
+    },
+    {
+      "page": "仪表盘",
+      "target": "http://localhost:4199/dashboard",
+      "httpStatus": 200,
+      "finalUrl": "http://localhost:4199/dashboard",
+      "consoleMessages": [],
+      "pageErrors": [],
+      "facts": {
+        "url": "http://localhost:4199/dashboard",
+        "documentTitle": "OpenBase 统一管理平台",
+        "htmlLang": "zh-CN",
+        "landmarks": {
+          "header": 1,
+          "nav": 0,
+          "main": 1,
+          "aside": 1,
+          "footer": 0,
+          "roleBanner": 0,
+          "roleNavigation": 0,
+          "roleMain": 0,
+          "roleContentinfo": 0,
+          "ariaLive": [],
+          "roleAlert": []
+        },
+        "headings": [],
+        "interactiveCount": 2,
+        "nameSources": {
+          "none": 1,
+          "text": 1
+        },
+        "interactiveWithoutAccessibleName": [
+          {
+            "tag": "button",
+            "role": "",
+            "type": "button",
+            "cls": "el-button is-link",
+            "dataTest": ""
+          }
+        ],
+        "inputsWithoutLabel": 0,
+        "imagesWithoutAlt": 0,
+        "tables": [],
+        "skipLinkPresent": false,
+        "duplicateIds": [],
+        "positiveTabindex": [],
+        "contrastSummary": {
+          "sampled": 26,
+          "failures": [
+            {
+              "text": "OpenLLM",
+              "tag": "span",
+              "cls": "el-tag__content",
+              "color": "rgb(64, 158, 255)",
+              "background": "rgb(236, 245, 255)",
+              "fontSizePx": 12,
+              "large": false,
+              "ratio": 2.53,
+              "passAA": false
+            },
+            {
+              "text": "知识库",
+              "tag": "span",
+              "cls": "el-tag__content",
+              "color": "rgb(64, 158, 255)",
+              "background": "rgb(236, 245, 255)",
+              "fontSizePx": 12,
+              "large": false,
+              "ratio": 2.53,
+              "passAA": false
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "tag": "button",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "span",
+          "text": "admin",
+          "ariaLabel": null,
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigger",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "body",
+          "text": "OpenBase仪表盘个人设置业务模块OpenLLM知识库平",
+          "ariaLabel": null,
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "span",
+          "text": "admin",
+          "ariaLabel": null,
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigger",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "body",
+          "text": "OpenBase仪表盘个人设置业务模块OpenLLM知识库平",
+          "ariaLabel": null,
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "span",
+          "text": "admin",
+          "ariaLabel": null,
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigger",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": true
+        }
+      ]
+    },
+    {
+      "page": "日志中心",
+      "target": "http://localhost:4199/platform/observability/logs",
+      "httpStatus": 200,
+      "finalUrl": "http://localhost:4199/platform/observability/logs",
+      "consoleMessages": [],
+      "pageErrors": [],
+      "facts": {
+        "url": "http://localhost:4199/platform/observability/logs",
+        "documentTitle": "OpenBase 统一管理平台",
+        "htmlLang": "zh-CN",
+        "landmarks": {
+          "header": 2,
+          "nav": 0,
+          "main": 1,
+          "aside": 1,
+          "footer": 0,
+          "roleBanner": 0,
+          "roleNavigation": 0,
+          "roleMain": 0,
+          "roleContentinfo": 0,
+          "ariaLive": [
+            {
+              "tag": "span",
+              "live": "polite",
+              "text": "2026 年"
+            },
+            {
+              "tag": "span",
+              "live": "polite",
+              "text": "9 月"
+            },
+            {
+              "tag": "span",
+              "live": "polite",
+              "text": "2026 年"
+            },
+            {
+              "tag": "span",
+              "live": "polite",
+              "text": "10 月"
+            }
+          ],
+          "roleAlert": []
+        },
+        "headings": [],
+        "interactiveCount": 16,
+        "nameSources": {
+          "none": 2,
+          "text": 5,
+          "label[for]": 5,
+          "placeholder(占位文本，非标签)": 1,
+          "aria-label": 3
+        },
+        "interactiveWithoutAccessibleName": [
+          {
+            "tag": "button",
+            "role": "",
+            "type": "button",
+            "cls": "el-button is-link",
+            "dataTest": ""
+          },
+          {
+            "tag": "input",
+            "role": "combobox",
+            "type": "text",
+            "cls": "el-select__input",
+            "dataTest": ""
+          }
+        ],
+        "inputsWithoutLabel": 1,
+        "imagesWithoutAlt": 0,
+        "tables": [
+          {
+            "caption": null,
+            "ariaLabel": null,
+            "th": 9,
+            "thWithScope": 9,
+            "ariaRowCount": null
+          },
+          {
+            "caption": null,
+            "ariaLabel": null,
+            "th": 0,
+            "thWithScope": 0,
+            "ariaRowCount": null
+          },
+          {
+            "caption": null,
+            "ariaLabel": "使用方向键与 Enter 键可选择日期",
+            "th": 7,
+            "thWithScope": 7,
+            "ariaRowCount": null
+          },
+          {
+            "caption": null,
+            "ariaLabel": "使用方向键与 Enter 键可选择日期",
+            "th": 7,
+            "thWithScope": 7,
+            "ariaRowCount": null
+          }
+        ],
+        "skipLinkPresent": false,
+        "duplicateIds": [],
+        "positiveTabindex": [],
+        "contrastSummary": {
+          "sampled": 60,
+          "failures": [
+            {
+              "text": "L1 文件",
+              "tag": "span",
+              "cls": "el-radio-button__inner",
+              "color": "rgb(255, 255, 255)",
+              "background": "rgb(64, 158, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.78,
+              "passAA": false
+            },
+            {
+              "text": "全部模块",
+              "tag": "span",
+              "cls": "",
+              "color": "rgb(168, 171, 178)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.3,
+              "passAA": false
+            },
+            {
+              "text": "全部操作",
+              "tag": "span",
+              "cls": "",
+              "color": "rgb(168, 171, 178)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.3,
+              "passAA": false
+            },
+            {
+              "text": "全部结果",
+              "tag": "span",
+              "cls": "",
+              "color": "rgb(168, 171, 178)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.3,
+              "passAA": false
+            },
+            {
+              "text": "检索",
+              "tag": "span",
+              "cls": "",
+              "color": "rgb(255, 255, 255)",
+              "background": "rgb(64, 158, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.78,
+              "passAA": false
+            },
+            {
+              "text": "导出",
+              "tag": "span",
+              "cls": "",
+              "color": "rgb(64, 158, 255)",
+              "background": "rgb(236, 245, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.53,
+              "passAA": false
+            },
+            {
+              "text": "时间",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "模块",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "操作",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "结果",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "请求",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "路径",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "request_id",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "操作者",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "耗时",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "200",
+              "tag": "span",
+              "cls": "mono status-ok",
+              "color": "rgb(103, 194, 58)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 12,
+              "large": false,
+              "ratio": 2.24,
+              "passAA": false
+            },
+            {
+              "text": "/",
+              "tag": "span",
+              "cls": "muted",
+              "color": "rgb(168, 171, 178)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 2.3,
+              "passAA": false
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "tag": "aside",
+          "text": "OpenBase仪表盘个人设置业务模块OpenLLM知识库平",
+          "ariaLabel": null,
+          "cls": "el-aside ob-sidebar",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "span",
+          "text": "admin",
+          "ariaLabel": null,
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigger",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-radio-button__original-radio",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(0, 0, 0)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-select__input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-select__input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-select__input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-range-input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-range-input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "button",
+          "text": "检索",
+          "ariaLabel": null,
+          "cls": "el-button el-button--primary",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "button",
+          "text": "重置",
+          "ariaLabel": null,
+          "cls": "el-button",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "hasVisibleFocusIndicator": true
+        }
+      ]
+    },
+    {
+      "page": "模块开关",
+      "target": "http://localhost:4199/platform/config/modules",
+      "httpStatus": 200,
+      "finalUrl": "http://localhost:4199/platform/config/modules",
+      "consoleMessages": [],
+      "pageErrors": [],
+      "facts": {
+        "url": "http://localhost:4199/platform/config/modules",
+        "documentTitle": "OpenBase 统一管理平台",
+        "htmlLang": "zh-CN",
+        "landmarks": {
+          "header": 2,
+          "nav": 0,
+          "main": 1,
+          "aside": 1,
+          "footer": 0,
+          "roleBanner": 0,
+          "roleNavigation": 0,
+          "roleMain": 0,
+          "roleContentinfo": 0,
+          "ariaLive": [],
+          "roleAlert": []
+        },
+        "headings": [
+          {
+            "level": 2,
+            "text": "模块开关"
+          }
+        ],
+        "interactiveCount": 3,
+        "nameSources": {
+          "none": 1,
+          "text": 2
+        },
+        "interactiveWithoutAccessibleName": [
+          {
+            "tag": "button",
+            "role": "",
+            "type": "button",
+            "cls": "el-button is-link",
+            "dataTest": ""
+          }
+        ],
+        "inputsWithoutLabel": 0,
+        "imagesWithoutAlt": 0,
+        "tables": [
+          {
+            "caption": null,
+            "ariaLabel": null,
+            "th": 6,
+            "thWithScope": 6,
+            "ariaRowCount": null
+          },
+          {
+            "caption": null,
+            "ariaLabel": null,
+            "th": 0,
+            "thWithScope": 0,
+            "ariaRowCount": null
+          }
+        ],
+        "skipLinkPresent": false,
+        "duplicateIds": [],
+        "positiveTabindex": [],
+        "contrastSummary": {
+          "sampled": 45,
+          "failures": [
+            {
+              "text": "控制各业务模块的启用状态。修改后",
+              "tag": "p",
+              "cls": "page-desc",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(248, 250, 252)",
+              "fontSizePx": 13,
+              "large": false,
+              "ratio": 2.94,
+              "passAA": false
+            },
+            {
+              "text": "下次登录/刷新生效",
+              "tag": "b",
+              "cls": "",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(248, 250, 252)",
+              "fontSizePx": 13,
+              "large": false,
+              "ratio": 2.94,
+              "passAA": false
+            },
+            {
+              "text": "（不热生效，ADR-146-07）；操作会写入审计留痕。",
+              "tag": "p",
+              "cls": "page-desc",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(248, 250, 252)",
+              "fontSizePx": 13,
+              "large": false,
+              "ratio": 2.94,
+              "passAA": false
+            },
+            {
+              "text": "模块",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "模块 ID",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "路由前缀",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "权限标识",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "状态",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "操作",
+              "tag": "div",
+              "cls": "cell",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(255, 255, 255)",
+              "fontSizePx": 14,
+              "large": false,
+              "ratio": 3.08,
+              "passAA": false
+            },
+            {
+              "text": "已启用",
+              "tag": "span",
+              "cls": "el-tag__content",
+              "color": "rgb(103, 194, 58)",
+              "background": "rgb(240, 249, 235)",
+              "fontSizePx": 12,
+              "large": false,
+              "ratio": 2.08,
+              "passAA": false
+            },
+            {
+              "text": "已启用",
+              "tag": "span",
+              "cls": "el-tag__content",
+              "color": "rgb(103, 194, 58)",
+              "background": "rgb(240, 249, 235)",
+              "fontSizePx": 12,
+              "large": false,
+              "ratio": 2.08,
+              "passAA": false
+            },
+            {
+              "text": "已停用",
+              "tag": "span",
+              "cls": "el-tag__content",
+              "color": "rgb(144, 147, 153)",
+              "background": "rgb(244, 244, 245)",
+              "fontSizePx": 12,
+              "large": false,
+              "ratio": 2.8,
+              "passAA": false
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "tag": "button",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "span",
+          "text": "admin",
+          "ariaLabel": null,
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigger",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "button",
+          "text": "刷新",
+          "ariaLabel": null,
+          "cls": "el-button",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-switch__input",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-switch__input",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-switch__input",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "body",
+          "text": "OpenBase仪表盘个人设置业务模块OpenLLM知识库平",
+          "ariaLabel": null,
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "hasVisibleFocusIndicator": false
+        },
+        {
+          "tag": "button",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "span",
+          "text": "admin",
+          "ariaLabel": null,
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigger",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "button",
+          "text": "刷新",
+          "ariaLabel": null,
+          "cls": "el-button",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-switch__input",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        },
+        {
+          "tag": "input",
+          "text": "",
+          "ariaLabel": null,
+          "cls": "el-switch__input",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "hasVisibleFocusIndicator": true
+        }
+      ]
+    }
+  ]
+}

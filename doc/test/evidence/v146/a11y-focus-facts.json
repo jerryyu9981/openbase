@@ -1,0 +1,1521 @@
+[
+  {
+    "page": "登录页",
+    "target": "/auth/login",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:4199/auth/login",
+    "headingText": [
+      "H1:OpenBase 统一管理平台"
+    ],
+    "focus": [
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-input__wrapper is-focus",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "rgb(139, 189, 243) 0px 0px 0px 1px inset",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": true
+          },
+          {
+            "tag": "div",
+            "cls": "el-input el-input--prefix",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-input__wrapper is-focus",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "rgb(220, 223, 230) 0px 0px 0px 1px inset",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": true
+          },
+          {
+            "tag": "div",
+            "cls": "el-input el-input--prefix el-input--suffix",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button el-button--primary login-btn",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "form",
+            "cls": "el-form el-form--default el-form--label-right",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-card__body",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "登 录"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button login-btn oidc-btn",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-card__body",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-card is-always-shadow login-card",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "rgba(0, 0, 0, 0.12) 0px 0px 12px 0px",
+            "borderColor": "rgb(228, 231, 237)",
+            "indicator": true
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "OIDC 统一登录"
+      },
+      {
+        "focused": {
+          "tag": "body",
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "html",
+            "cls": "",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(0, 0, 0)",
+            "boxShadow": "none",
+            "borderColor": "rgb(0, 0, 0)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "OpenBase 统一管理平台登 录或 OIDC 统一登录"
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-input__wrapper is-focus",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "rgb(121, 182, 246) 0px 0px 0px 1px inset",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": true
+          },
+          {
+            "tag": "div",
+            "cls": "el-input el-input--prefix",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-input__wrapper is-focus",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "rgb(214, 220, 231) 0px 0px 0px 1px inset",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": true
+          },
+          {
+            "tag": "div",
+            "cls": "el-input el-input--prefix el-input--suffix",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button el-button--primary login-btn",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "form",
+            "cls": "el-form el-form--default el-form--label-right",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-card__body",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "登 录"
+      }
+    ],
+    "focusWithoutAnyIndicator": 1,
+    "screenshot": "d:/Trae CN/myproject/Dev/OpenBase/doc/test/evidence/v146/a11y-screenshots/登录页-_auth_login.png"
+  },
+  {
+    "page": "403页",
+    "target": "/forbidden",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:4199/forbidden",
+    "headingText": [],
+    "focus": [
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button el-button--primary",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-result__extra",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-result",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "返回仪表盘"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-result__extra",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-result",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "返回上一页"
+      },
+      {
+        "focused": {
+          "tag": "body",
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "html",
+            "cls": "",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(0, 0, 0)",
+            "boxShadow": "none",
+            "borderColor": "rgb(0, 0, 0)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "无权限访问当前账号缺少访问该页面所需的权限返回仪表盘返回上一"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button el-button--primary",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-result__extra",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-result",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "返回仪表盘"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-result__extra",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-result",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "返回上一页"
+      },
+      {
+        "focused": {
+          "tag": "body",
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "html",
+            "cls": "",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(0, 0, 0)",
+            "boxShadow": "none",
+            "borderColor": "rgb(0, 0, 0)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "无权限访问当前账号缺少访问该页面所需的权限返回仪表盘返回上一"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button el-button--primary",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(64, 158, 255)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-result__extra",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-result",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "返回仪表盘"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-result__extra",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-result",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "返回上一页"
+      }
+    ],
+    "focusWithoutAnyIndicator": 2,
+    "screenshot": "d:/Trae CN/myproject/Dev/OpenBase/doc/test/evidence/v146/a11y-screenshots/403页-_forbidden.png"
+  },
+  {
+    "page": "仪表盘",
+    "target": "/dashboard",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:4199/dashboard",
+    "headingText": [],
+    "focus": [
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "ob-header-left",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "span",
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigge",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-dropdown",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "button",
+        "accessibleText": "admin"
+      },
+      {
+        "focused": {
+          "tag": "body",
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "html",
+            "cls": "",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(0, 0, 0)",
+            "boxShadow": "none",
+            "borderColor": "rgb(0, 0, 0)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "OpenBase仪表盘个人设置业务模块OpenLLM平台管理"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "ob-header-left",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "span",
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigge",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-dropdown",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "button",
+        "accessibleText": "admin"
+      },
+      {
+        "focused": {
+          "tag": "body",
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "html",
+            "cls": "",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(0, 0, 0)",
+            "boxShadow": "none",
+            "borderColor": "rgb(0, 0, 0)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "OpenBase仪表盘个人设置业务模块OpenLLM平台管理"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "ob-header-left",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "span",
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigge",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-dropdown",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "button",
+        "accessibleText": "admin"
+      }
+    ],
+    "focusWithoutAnyIndicator": 2,
+    "screenshot": "d:/Trae CN/myproject/Dev/OpenBase/doc/test/evidence/v146/a11y-screenshots/仪表盘-_dashboard.png"
+  },
+  {
+    "page": "日志中心",
+    "target": "/platform/observability/logs",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:4199/platform/observability/logs",
+    "headingText": [],
+    "focus": [
+      {
+        "focused": {
+          "tag": "aside",
+          "cls": "el-aside ob-sidebar",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "section",
+            "cls": "el-container ob-layout",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "OpenBase仪表盘个人设置业务模块OpenLLM平台管理"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "ob-header-left",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "span",
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigge",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-dropdown",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "button",
+        "accessibleText": "admin"
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-radio-button__original-radio",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(0, 0, 0)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "label",
+            "cls": "el-radio-button is-active is-focus el-radio-bu",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-radio-group",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-input__inner",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-input__wrapper is-focus",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "rgb(220, 223, 230) 0px 0px 0px 1px inset",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": true
+          },
+          {
+            "tag": "div",
+            "cls": "el-input el-input--suffix",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-select__input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-select__selected-item el-select__input-wrap",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-select__selection",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": "combobox",
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-select__input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-select__selected-item el-select__input-wrap",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-select__selection",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": "combobox",
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-select__input",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(96, 98, 102)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-select__selected-item el-select__input-wrap",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "el-select__selection",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(48, 49, 51)",
+            "boxShadow": "none",
+            "borderColor": "rgb(48, 49, 51)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": "combobox",
+        "accessibleText": ""
+      }
+    ],
+    "focusWithoutAnyIndicator": 4,
+    "screenshot": "d:/Trae CN/myproject/Dev/OpenBase/doc/test/evidence/v146/a11y-screenshots/日志中心-_platform_observability_logs.png"
+  },
+  {
+    "page": "模块开关",
+    "target": "/platform/config/modules",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:4199/platform/config/modules",
+    "headingText": [
+      "H2:模块开关"
+    ],
+    "focus": [
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "ob-header-left",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "span",
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigge",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-dropdown",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "button",
+        "accessibleText": "admin"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgb(220, 223, 230)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "page-toolbar",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "page",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "刷新"
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-switch__input",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-switch is-checked",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "cell",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "switch",
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "input",
+          "cls": "el-switch__input",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-switch",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "div",
+            "cls": "cell",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "switch",
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "body",
+          "cls": "",
+          "outlineStyle": "none",
+          "outlineWidth": "3px",
+          "outlineColor": "rgb(15, 23, 42)",
+          "boxShadow": "none",
+          "borderColor": "rgb(15, 23, 42)",
+          "indicator": false
+        },
+        "ancestors": [
+          {
+            "tag": "html",
+            "cls": "",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(0, 0, 0)",
+            "boxShadow": "none",
+            "borderColor": "rgb(0, 0, 0)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": false,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": "OpenBase仪表盘个人设置业务模块OpenLLM平台管理"
+      },
+      {
+        "focused": {
+          "tag": "button",
+          "cls": "el-button is-link",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineColor": "rgb(160, 207, 255)",
+          "boxShadow": "none",
+          "borderColor": "rgba(0, 0, 0, 0)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "ob-header-left",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": null,
+        "accessibleText": ""
+      },
+      {
+        "focused": {
+          "tag": "span",
+          "cls": "ob-user el-tooltip__trigger el-tooltip__trigge",
+          "outlineStyle": "auto",
+          "outlineWidth": "1px",
+          "outlineColor": "rgb(16, 16, 16)",
+          "boxShadow": "none",
+          "borderColor": "rgb(96, 98, 102)",
+          "indicator": true
+        },
+        "ancestors": [
+          {
+            "tag": "div",
+            "cls": "el-dropdown",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(96, 98, 102)",
+            "boxShadow": "none",
+            "borderColor": "rgb(96, 98, 102)",
+            "indicator": false
+          },
+          {
+            "tag": "header",
+            "cls": "el-header ob-header",
+            "outlineStyle": "none",
+            "outlineWidth": "3px",
+            "outlineColor": "rgb(15, 23, 42)",
+            "boxShadow": "none",
+            "borderColor": "rgb(15, 23, 42) rgb(15, 23, 42) rgb(226, 232, 240)",
+            "indicator": false
+          }
+        ],
+        "indicatorFound": true,
+        "ariaLabel": null,
+        "role": "button",
+        "accessibleText": "admin"
+      }
+    ],
+    "focusWithoutAnyIndicator": 1,
+    "screenshot": "d:/Trae CN/myproject/Dev/OpenBase/doc/test/evidence/v146/a11y-screenshots/模块开关-_platform_config_modules.png"
+  }
+]

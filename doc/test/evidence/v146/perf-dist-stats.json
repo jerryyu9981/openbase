@@ -1,0 +1,85 @@
+{
+  "dist_root": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\dist",
+  "file_count": 157,
+  "total_bytes": 3061075,
+  "total_gzip_bytes": 978184,
+  "by_extension": {
+    ".js": {
+      "files": 83,
+      "bytes": 2668030,
+      "gzip_bytes": 913643
+    },
+    ".css": {
+      "files": 73,
+      "bytes": 392570,
+      "gzip_bytes": 64207
+    },
+    ".html": {
+      "files": 1,
+      "bytes": 475,
+      "gzip_bytes": 334
+    }
+  },
+  "top_10": [
+    {
+      "path": "assets/echarts-ClPwX7rX.js",
+      "bytes": 1036306,
+      "gzip_bytes": 341878
+    },
+    {
+      "path": "assets/element-plus-CZdQSH-C.js",
+      "bytes": 1034658,
+      "gzip_bytes": 335778
+    },
+    {
+      "path": "assets/index-DmoTU3W7.css",
+      "bytes": 362235,
+      "gzip_bytes": 48141
+    },
+    {
+      "path": "assets/index-D0uylQhk.js",
+      "bytes": 104001,
+      "gzip_bytes": 39412
+    },
+    {
+      "path": "assets/MemoryGraph-Dn1A4Air.js",
+      "bytes": 74328,
+      "gzip_bytes": 26036
+    },
+    {
+      "path": "assets/LogsView-CnHIFnWa.js",
+      "bytes": 15809,
+      "gzip_bytes": 5376
+    },
+    {
+      "path": "assets/KnowledgeAdminView-DS1T0FIt.js",
+      "bytes": 11985,
+      "gzip_bytes": 4252
+    },
+    {
+      "path": "assets/Alerts-B-hRSMBk.js",
+      "bytes": 11039,
+      "gzip_bytes": 3648
+    },
+    {
+      "path": "assets/MemoryAdminView-f2RwQAbE.js",
+      "bytes": 10432,
+      "gzip_bytes": 3723
+    },
+    {
+      "path": "assets/Conversations-DMEBXUHI.js",
+      "bytes": 10200,
+      "gzip_bytes": 4066
+    }
+  ],
+  "js_top_chunk": {
+    "path": "assets/echarts-ClPwX7rX.js",
+    "bytes": 1036306,
+    "gzip_bytes": 341878
+  },
+  "html": {
+    "path": "index.html",
+    "bytes": 475,
+    "gzip_bytes": 334
+  }
+}

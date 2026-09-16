@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.6 |
-| 文档版本 | v1.0.1 |
+| 文档版本 | v1.0.2 |
 | 状态 | [Review] |
 | 作者 | AD-OpenBase-Dev（后端轨）/ FD-OpenBase-Dev（前端轨） |
 | 创建日期 | 2026-09-15 |
@@ -31,7 +31,7 @@
 | DT-146-10 权限与脱敏（`log:read` + 跨租户 + 路径三重校验 + 检索词不留痕） | TD-146-10 权限种子 + 脱敏 + 校验 | BL-146-07 | `openbase/modules/logs/router.py`、`repository.py`；`openbase/core/db/init.py`；`openbase/core/mask.py` | ✅ 完成（权限码已入种子并授 org_admin） |
 | DT-146-11 前端日志中心页 + `core/api/logs.ts` + `/system/audit` 重定向 | TD-146-11 页面 + API 层 + 下线重定向 | BL-146-08/09 | `openbase-ui/src/pages/platform/observability/LogsView.vue`、`src/core/api/logs.ts`、`src/core/router/legacyRedirects.ts`；删除 `src/modules/openllm/pages/AuditLogsView.vue` | ✅ 完成（模板静态扫描 mockLogs 命中 0） |
 | DT-146-12 目录边界治理：平台/全局页迁出 `modules/*/pages/` | TD-146-12 目录迁移 + 引用修复 | BL-146-13 | `openbase-ui/src/pages/platform/{identity,config,observability,developers}/**`、`src/pages/personal/**`（22 项迁移 + 1 项删除） | ✅ 完成 |
-| DT-146-13 `RepoLogAdapter`（第四类源：JSONL 优先/纯文本回退 + svc↔module 映射 + 脱敏） | TD-146-13 适配器 + 前端数据源 | BL-146-19 | `openbase/modules/logs/repository.py`（`RepoLogAdapter`）、`derivation.py`；`openbase-ui/src/core/api/logs.ts` | ✅ 完成（**本仓侧**；四仓实际产出待 BL-146-16/17 就绪） |
+| DT-146-13 `RepoLogAdapter`（第四类源：JSONL 优先/纯文本回退 + svc↔module 映射 + 脱敏） | TD-146-13 适配器 + 前端数据源 | BL-146-19 | `openbase/modules/logs/repository.py`（`RepoLogAdapter`）、`derivation.py`；`openbase-ui/src/core/api/logs.ts` | ✅ 完成（**本仓侧**；四仓实际产出待 BL-146-16/17 就绪）；**2026-09-16 返工**：`_parse_line` 行级容错（无时间戳行跳过）+ `fetch` 丢弃汇总告警（DEF-BE-146-001，P1，见 DevLogReport §9.3） |
 | DT-146-14 重定向映射表 + 权限三处一致（`/platform/**` 前缀；旧路径禁 404） | TD-146-14 重定向表 + 菜单/路由权限一致 | BL-146-14 | `openbase-ui/src/core/router/legacyRedirects.ts`、`src/core/router/index.ts`、`src/pages/platform/routes.ts`、`src/core/layouts/AppLayout.vue`、`tests/platform-ia.spec.ts` | ✅ 完成（32 条旧路径，矩阵差异 0） |
 | DT-146-15 模块状态写路径：`PATCH /api/v1/modules/{id}` + `module:manage` + 留痕 + 只读降级 | TD-146-15 写端点 + 持久化 + 定案口径 | BL-146-15 | `openbase/modules/frontend/__init__.py`、`modules/frontend/repository.py`、`openbase/core/errors/codes.py`、`openbase/core/models/__init__.py`、`openbase/core/db/init.py`；`openbase-ui/src/core/api/modules.ts`、`src/pages/platform/config/ModuleSwitchView.vue` | ✅ 完成（状态落 `dynamic_modules`；留痕失败 fail-closed 定案） |
 | DT-146-16 路径级归属矩阵 + GenericPage 四规则 | TD-146-16 矩阵脚本化生成 + 规则落地 | BL-146-11 | `openbase-ui/scripts/gen_ownership_matrix.mjs`；`doc/design/OpenBase-路径归属矩阵-v1.4.6.md`（脚本产物） | ✅ 完成（106 路由 / 未登记 0 / 差异 0） |
@@ -117,3 +117,4 @@
 |------|------|--------|------|
 | v1.0.0 | 2026-09-15 | AD-OpenBase-Dev | 初始创建：DT-146-01~20 → TD-146-01~20 追溯矩阵（20 项全落地）、跨仓挂起项 4 项（BL-146-16/17/18/20）、Subtask CheckList（16 项核对，2 项偏差登记）、版本控制记录与文件索引 |
 | v1.0.1 | 2026-09-15 | AD-OpenBase-Dev | 版本控制记录回填：新增「本版本基线提交 `db5682b`（父 `43586d5`）」行，记录提交范围 266 files / +25,497 / −440 与提交后校验（fsck 无错误、工作区干净、logs 模块 6 文件入库） |
+| v1.0.2 | 2026-09-16 | AD-OpenBase-Dev | Step 4 走查返工回填：DT-146-13（`RepoLogAdapter`）行追加返工说明（`_parse_line` 行级容错 + `fetch` 丢弃汇总告警，DEF-BE-146-001 / P1）；追溯链 DT-146-13 → TD-146-13 → `repository.py` 保持不变，仅补状态与证据 |

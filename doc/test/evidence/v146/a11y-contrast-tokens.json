@@ -1,0 +1,182 @@
+{
+  "tokens": {
+    "--el-text-color-primary": "#303133",
+    "--el-text-color-regular": "#606266",
+    "--el-text-color-secondary": "#909399",
+    "--el-text-color-placeholder": "#a8abb2",
+    "--el-text-color-disabled": "#c0c4cc",
+    "--el-bg-color": "#fff",
+    "--el-bg-color-page": "#f2f3f5",
+    "--el-fill-color-blank": "#fff",
+    "--el-fill-color-light": "#f5f7fa",
+    "--el-color-primary": "#409eff",
+    "--el-color-primary-light-9": "#ecf5ff",
+    "--el-border-color": "#dcdfe6",
+    "--el-color-success": "#67c23a"
+  },
+  "custom_color_usages": {
+    "#fff": "core\\layouts\\AppLayout.vue",
+    "#cbd5e1": "core\\layouts\\AppLayout.vue",
+    "#1e293b": "core\\layouts\\AppLayout.vue",
+    "#6b7280": "modules\\knowledge\\pages\\ChatView.vue",
+    "var(--ob-text-disabled)": "modules\\knowledge\\pages\\ChatView.vue",
+    "var(--ob-text-secondary)": "modules\\knowledge\\pages\\ChatView.vue",
+    "var(--el-color-primary-light-7)": "modules\\knowledge\\pages\\ChatView.vue",
+    "var(--ob-primary)": "modules\\knowledge\\pages\\ChatView.vue",
+    "#9ca3af": "modules\\knowledge\\pages\\KnowledgeAdminView.vue",
+    "#e2e8f0": "modules\\knowledge\\pages\\KnowledgeConsoleView.vue",
+    "#334155": "modules\\knowledge\\pages\\KnowledgeConsoleView.vue",
+    "var(--ob-success)": "modules\\knowledge\\pages\\Settings.vue",
+    "var(--ob-danger)": "modules\\knowledge\\pages\\Settings.vue",
+    "var(--el-text-color-regular)": "modules\\memory\\pages\\ApiGateway.vue",
+    "#1677FF": "modules\\openllm\\pages\\AbTestView.vue",
+    "#475569": "modules\\openllm\\pages\\ModelMarketView.vue",
+    "#909399": "modules\\openllm\\pages\\ModelMarketView.vue",
+    "#94a3b8": "modules\\portrait\\pages\\Overview.vue",
+    "#ffffff": "modules\\portrait\\pages\\Overview.vue",
+    "#64748b": "modules\\portrait\\pages\\Overview.vue",
+    "#374151": "modules\\portrait\\pages\\PortraitDetail.vue",
+    "var(--ob-text)": "modules\\portrait\\pages\\Tags.vue",
+    "#606266": "pages\\OidcCallback.vue",
+    "var(--el-text-color-secondary)": "pages\\platform\\config\\ModuleSwitchView.vue",
+    "var(--el-color-danger)": "pages\\platform\\identity\\MemoryAdminView.vue",
+    "#303133": "pages\\platform\\observability\\LogsView.vue",
+    "#a8abb2": "pages\\platform\\observability\\LogsView.vue",
+    "#67c23a": "pages\\platform\\observability\\LogsView.vue",
+    "#e6a23c": "pages\\platform\\observability\\LogsView.vue",
+    "#f56c6c": "pages\\platform\\observability\\LogsView.vue",
+    "var(--el-color-success)": "pages\\platform\\observability\\SystemTestRecords.vue"
+  },
+  "contrast": {
+    "--el-text-color-primary": {
+      "vs white": {
+        "ratio": 13.02,
+        "passAA_text": true
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 12.44,
+        "passAA_text": true
+      }
+    },
+    "--el-text-color-regular": {
+      "vs white": {
+        "ratio": 6.11,
+        "passAA_text": true
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 5.84,
+        "passAA_text": true
+      }
+    },
+    "--el-text-color-secondary": {
+      "vs white": {
+        "ratio": 3.08,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 2.94,
+        "passAA_text": false
+      }
+    },
+    "--el-text-color-placeholder": {
+      "vs white": {
+        "ratio": 2.3,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 2.2,
+        "passAA_text": false
+      }
+    },
+    "--el-text-color-disabled": {
+      "vs white": {
+        "ratio": 1.75,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 1.67,
+        "passAA_text": false
+      }
+    },
+    "--el-bg-color": {
+      "vs white": {
+        "ratio": 1.0,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 1.05,
+        "passAA_text": false
+      }
+    },
+    "--el-bg-color-page": {
+      "vs white": {
+        "ratio": 1.11,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 1.06,
+        "passAA_text": false
+      }
+    },
+    "--el-fill-color-blank": {
+      "vs white": {
+        "ratio": 1.0,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 1.05,
+        "passAA_text": false
+      }
+    },
+    "--el-fill-color-light": {
+      "vs white": {
+        "ratio": 1.07,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 1.03,
+        "passAA_text": false
+      }
+    },
+    "--el-color-primary": {
+      "vs white": {
+        "ratio": 2.78,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 2.66,
+        "passAA_text": false
+      }
+    },
+    "--el-color-primary-light-9": {
+      "vs white": {
+        "ratio": 1.1,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 1.05,
+        "passAA_text": false
+      }
+    },
+    "--el-border-color": {
+      "vs white": {
+        "ratio": 1.33,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 1.28,
+        "passAA_text": false
+      }
+    },
+    "--el-color-success": {
+      "vs white": {
+        "ratio": 2.24,
+        "passAA_text": false
+      },
+      "vs page(#f8fafc)": {
+        "ratio": 2.15,
+        "passAA_text": false
+      }
+    }
+  }
+}

@@ -1,0 +1,539 @@
+{
+  "meta": {
+    "suite": "T3b 深度用例（日志中心 / 模块开关）",
+    "version": "v1.4.6",
+    "assertion_level": "L1 硬断言（assert 抛错即 FAIL；无 if-else 软断言；无吞异常）",
+    "executed_at": "2026-09-15T16:38:17.621Z",
+    "base_url": "http://127.0.0.1:4173",
+    "runner": "playwright chromium headless（临时脚本 work/t3b-deep-cases.mjs）",
+    "env_probe": {
+      "logs_search_status": 403,
+      "logs_search_code": "AUTH_403",
+      "env_blocked": true
+    },
+    "cases": 19,
+    "passed": 18,
+    "failed": 1,
+    "note": "每条用例末尾执行 assert_network_clean()；白名单仅含已登记环境类（DB 403/500、上游 502、浏览器网络镜像）"
+  },
+  "cases": [
+    {
+      "id": "E2E-LOGS-01",
+      "module": "logs",
+      "title": "页面可达 + 检索区/表格/分页骨架渲染",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（仅静态骨架）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "final_path": "/platform/observability/logs",
+        "source_labels": [
+          "L1 文件",
+          "审计库",
+          "测试记录",
+          "四仓日志"
+        ]
+      },
+      "screenshots": [
+        "t3b-logs-01-skeleton.png"
+      ],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 1795
+    },
+    {
+      "id": "E2E-LOGS-02",
+      "module": "logs",
+      "title": "检索请求契约（URL/方法/query 硬断言）+ 环境阻断口径登记",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "DB 不可用 → log:read RBAC 查询失败（环境类 H）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "request": {
+          "url": "/api/v1/logs/search?source=l1_file&page=1&page_size=20",
+          "method": "GET",
+          "ts": 1789490258512
+        },
+        "status": 403,
+        "environment_block": {
+          "classification": "H 环境类（本机 DB localhost:5432 连接被重置 → 权限矩阵不可查 → log:read 403）",
+          "evidence": "doc/test/evidence/v146/t3b-deep-cases.json#meta.env_probe",
+          "remediation": "修复 localhost:5432/openbase 连接（或把 DATABASE_URL 指向共享库 192.168.0.151/nuct）后重跑本用例",
+          "not_silently_skipped": true
+        }
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 2,
+        "violations": 2
+      },
+      "duration_ms": 2300
+    },
+    {
+      "id": "E2E-LOGS-03",
+      "module": "logs",
+      "title": "四维分类筛选器（关键字/模块/操作/结果/时间）枚举完整",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（下拉枚举前端常量）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "logs_time_datatest_visible": false,
+        "logs_time_datatest_count": 0,
+        "module_options": [
+          "身份",
+          "数据处理",
+          "检索",
+          "记忆",
+          "大模型",
+          "网关",
+          "测试",
+          "其他"
+        ],
+        "operation_options": [
+          "登录",
+          "读取",
+          "写入",
+          "删除",
+          "配置",
+          "代理"
+        ],
+        "result_options": [
+          "成功",
+          "客户端错误",
+          "服务端错误",
+          "未知"
+        ]
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 2,
+        "violations": 2
+      },
+      "duration_ms": 2836
+    },
+    {
+      "id": "E2E-LOGS-04",
+      "module": "logs",
+      "title": "数据源切换重置分页并改发 source=audit_db",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（请求可观测）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "request": {
+          "url": "/api/v1/logs/search?source=audit_db&page=1&page_size=20",
+          "method": "GET",
+          "ts": 1789490263351
+        }
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 4,
+        "violations": 4
+      },
+      "duration_ms": 2153
+    },
+    {
+      "id": "E2E-LOGS-05",
+      "module": "logs",
+      "title": "加载态（请求在途时 loading 呈现并消失）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（运行时延迟拦截）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "loading_visible": true,
+        "search_button_loading": true
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 4,
+        "violations": 4
+      },
+      "duration_ms": 4944
+    },
+    {
+      "id": "E2E-LOGS-06",
+      "module": "logs",
+      "title": "错误三态之一：错误态渲染（error 提示 + 重试可用）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "DB 不可用下 403 触发（环境类 H），错误态 UI 属产品行为须验证",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "error_text": "Request failed with status code 403\n\n重试"
+      },
+      "screenshots": [
+        "t3b-logs-06-error-state.png"
+      ],
+      "network_clean": {
+        "allowance_used": 4,
+        "violations": 4
+      },
+      "duration_ms": 3014
+    },
+    {
+      "id": "E2E-LOGS-07",
+      "module": "logs",
+      "title": "空态（受控桩：200 + items=[] → 空文案/计数/导出禁用）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（page.route 受控桩构造）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {},
+      "screenshots": [
+        "t3b-logs-07-empty-state.png"
+      ],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 2357
+    },
+    {
+      "id": "E2E-LOGS-08",
+      "module": "logs",
+      "title": "成功态 + facets 四维分类 + 详情抽屉（受控桩 2 行数据）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（page.route 受控桩构造）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "facet_tags": [
+          "身份 ×1",
+          "数据处理 ×1",
+          "读取 ×2",
+          "成功 ×1",
+          "服务端错误 ×1"
+        ],
+        "detail_summary": "{\n  \"note\": \"t3b-sample-1\"\n}"
+      },
+      "screenshots": [
+        "t3b-logs-08-success-detail.png"
+      ],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 2451
+    },
+    {
+      "id": "E2E-LOGS-09",
+      "module": "logs",
+      "title": "分页交互（受控桩 total=25 → 第 2 页请求 page=2 且增量可观测）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（page.route 受控桩构造）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "request": {
+          "url": "/api/v1/logs/search?source=l1_file&page=2&page_size=20",
+          "method": "GET",
+          "ts": 1789490278941
+        }
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 3186
+    },
+    {
+      "id": "E2E-LOGS-10",
+      "module": "logs",
+      "title": "导出（受控桩 total>0 → 导出 CSV 触发 /api/v1/logs/export?format=csv 并落地文件名）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（page.route 受控桩构造）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "filename": "logs-csv-l1_file.csv",
+        "request": {
+          "url": "/api/v1/logs/export?source=l1_file&format=csv",
+          "method": "GET",
+          "ts": 1789490282431
+        }
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 2590
+    },
+    {
+      "id": "E2E-LOGS-11",
+      "module": "logs",
+      "title": "关键字防抖自动检索（400ms 防抖 → 仅 1 次请求且携带 q）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（请求可观测）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "request": {
+          "url": "/api/v1/logs/search?source=l1_file&q=req-t3b&page=1&page_size=20",
+          "method": "GET",
+          "ts": 1789490284476
+        }
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 4,
+        "violations": 4
+      },
+      "duration_ms": 2571
+    },
+    {
+      "id": "E2E-LOGS-12",
+      "module": "logs",
+      "title": "权限门禁：无 log:read 的用户直访日志中心 → /forbidden（前端守卫硬断言）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（/auth/me 受控桩构造非管理员权限集）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "final_path": "/forbidden",
+        "from_param": "/platform/observability/logs"
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 273
+    },
+    {
+      "id": "E2E-MOD-01",
+      "module": "modules",
+      "title": "模块列表加载（表头 6 列 + 行数 + 字段渲染）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（/api/v1/modules 不依赖 DB）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "headers": [
+          "模块",
+          "模块 ID",
+          "路由前缀",
+          "权限标识",
+          "状态",
+          "操作"
+        ],
+        "row_count": 5
+      },
+      "screenshots": [
+        "t3b-modules-01-list.png"
+      ],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 2116
+    },
+    {
+      "id": "E2E-MOD-02",
+      "module": "modules",
+      "title": "启停写请求契约 + 环境阻断口径 + 失败回滚（PATCH /api/v1/modules/{id}）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "DB 不可用 → module:manage RBAC 查询失败（环境类 H），403 属已登记阻断",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "raw_status": 403,
+        "request": {
+          "url": "/api/v1/modules/openllm",
+          "method": "PATCH",
+          "ts": 1789490289503
+        },
+        "status": 403,
+        "error_message": "Request failed with status code 403",
+        "environment_block": {
+          "classification": "H 环境类（本机 DB 连接被重置 → RBAC module:manage 不可查 → 403）",
+          "not_silently_skipped": true,
+          "remediation": "修复 DB 连接后重跑；届时断言 200 + 抽屉生效语义"
+        }
+      },
+      "screenshots": [
+        "t3b-modules-02-toggle-403.png"
+      ],
+      "network_clean": {
+        "allowance_used": 2,
+        "violations": 2
+      },
+      "duration_ms": 3784
+    },
+    {
+      "id": "E2E-MOD-03",
+      "module": "modules",
+      "title": "启停成功路径（受控桩 200）→ 抽屉呈现 request_id 与「下次登录/刷新」生效语义",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（page.route 受控桩构造，桩响应体与后端 PATCH 契约一致：{code,message,data} 信封）",
+      "defect": {
+        "id": "DEF-FE-146-001",
+        "severity": "P1",
+        "title": "模块开关「修改详情」抽屉字段全空：modulesWriteApi.switch() 未解包 ApiSuccess 信封",
+        "root_cause": "src/core/api/modules.ts:41-43 `const { data } = await http.patch<ModuleSwitchResult>(...)` 直接返回 axios body（即 {code,message,data} 信封），而 src/pages/platform/config/ModuleSwitchView.vue:54-60 按扁平字段读取 lastResult.id/status/effective/request_id → 全部 undefined。",
+        "impact": "启停成功后抽屉仅显示标签、字段值全空，用户无法获知 request_id 与生效方式（v1.4.6 AC-146-15 生效语义不可见）",
+        "evidence": "doc/test/evidence/v146/t3b-deep-cases.json（E2E-MOD-03 observed.drawer_text）+ screenshots/t3b-modules-03-success-drawer.png",
+        "fix_direction": "modules.ts 改为 `return data.data`（与 logs.ts 的 `data.data` 口径一致），或页面按 `lastResult.data.*` 读取"
+      },
+      "result": "FAIL",
+      "failure": "Error: E2E-MOD-03 抽屉未渲染 request_id（未包含「req-t3b-mod-switch」，实际 \"修改详情\\n模块\\t\\n新状态\\t\\n生效方式\\t\\n请求号\\t\"）",
+      "assertions": [],
+      "observed": {
+        "drawer_text": "修改详情 模块 新状态 生效方式 请求号 "
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0,
+        "checked_after_failure": true
+      },
+      "duration_ms": 2174
+    },
+    {
+      "id": "E2E-MOD-04",
+      "module": "modules",
+      "title": "空态（受控桩 items=[] → 暂无模块 空文案）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（page.route 受控桩构造）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {},
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 1076
+    },
+    {
+      "id": "E2E-MOD-05",
+      "module": "modules",
+      "title": "错误态（受控桩：首轮 200 供启动装载，刷新轮 500 → el-alert 加载失败提示）",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（page.route 计数桩：避免 500 破坏启动期注册表装载）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "alert_text": "加载失败：Request failed with status code 500",
+        "modules_calls": 3
+      },
+      "screenshots": [
+        "t3b-modules-05-error-state.png"
+      ],
+      "network_clean": {
+        "allowance_used": 1,
+        "violations": 1
+      },
+      "duration_ms": 1216
+    },
+    {
+      "id": "E2E-MOD-06",
+      "module": "modules",
+      "title": "权限门禁：无 module:manage 的用户直访模块开关 → /forbidden",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（/auth/me 受控桩构造非管理员权限集）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "final_path": "/forbidden",
+        "from_param": "/platform/config/modules",
+        "menu_leaf_present": 0
+      },
+      "screenshots": [],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 275
+    },
+    {
+      "id": "E2E-MOD-07",
+      "module": "modules",
+      "title": "权限提示（菜单级同源）：无 module:manage 时侧栏不渲染「模块开关」，有 log:read 时渲染「日志中心」",
+      "assertion_level": "L1 硬断言",
+      "environment_dependency": "无（/auth/me 受控桩构造非管理员权限集）",
+      "defect": null,
+      "result": "PASS",
+      "failure": null,
+      "assertions": [],
+      "observed": {
+        "sidebar_menu_items": [
+          "仪表盘",
+          "个人设置",
+          "租户管理",
+          "角色与权限",
+          "组织/团队/用户",
+          "工作空间",
+          "用户管理",
+          "记忆管理席位",
+          "注册/找回密码",
+          "全局配置",
+          "API密钥",
+          "日志中心",
+          "统一监控",
+          "GPU资源",
+          "用量统计",
+          "计费",
+          "服务发现与编排",
+          "聚合网关测试",
+          "成本分析",
+          "告警中心",
+          "文档中心",
+          "EdgeRouter与适配器",
+          "插件管理"
+        ],
+        "sidebar_has_module_switch": false,
+        "sidebar_has_logs": true
+      },
+      "screenshots": [
+        "t3b-modules-07-menu-permission.png"
+      ],
+      "network_clean": {
+        "allowance_used": 0,
+        "violations": 0
+      },
+      "duration_ms": 1612
+    }
+  ]
+}

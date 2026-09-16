@@ -1,0 +1,344 @@
+{
+  "meta": {
+    "version": "v1.0.0",
+    "status": "[Draft]",
+    "role": "AT-OpenBase-Test（Step 4 测试 · 后端轨道 集成测试）",
+    "generated_at": "2026-09-15 22:07:10",
+    "target_version": "v1.4.6",
+    "runner": "fastapi.testclient.TestClient（进程内，未启 uvicorn）",
+    "isolation": {
+      "audit_and_rbac_db": "SQLite 内存库（真实建表 / 真实 commit / 真实 SELECT 校验）",
+      "log_source": "临时 L1 JSONL 目录（OPENBASE_LOG_DIR）",
+      "queue_guard": "submit_audit_persist 阻断入队（防跨用例污染）"
+    }
+  },
+  "verdict": "PASS",
+  "verdict_checks": {
+    "① 登录（DB 用户 + 密码校验）200 且签发令牌": true,
+    "① 令牌权限点来自 DB RBAC（含 *）": true,
+    "① 日志检索 200": true,
+    "① 导出 200 且返回附件": true,
+    "① audit_logs(log.export) 恰好 1 条": true,
+    "① 留痕 request_id 与导出响应头一致": true,
+    "① 留痕操作人 = 登录用户": true,
+    "② 模块列表 200（5 模块含 gateway）": true,
+    "② PATCH 200 且 status=disabled": true,
+    "② audit_logs(module.switch) 首轮恰 1 条": true,
+    "② 留痕 detail 记录 enabled→disabled": true,
+    "② GET 复核 openllm=disabled": true,
+    "② dynamic_modules 状态落库": true,
+    "② 语义字段（route_prefix/permission）未被改动": true,
+    "② 二次变更→共 2 条留痕（每次变更 1 条）": true,
+    "负向：错误口令 401": true,
+    "负向：无令牌 401": true,
+    "负向：无权限令牌 403": true,
+    "负向：无权限请求未产生留痕": true
+  },
+  "observations": [
+    {
+      "id": "OBS-1",
+      "title": "DB 不可达（降级模式）下登录令牌无权限点，权限门禁端点返回 403",
+      "evidence": {
+        "login_status": 200,
+        "me_permissions": [
+          "*"
+        ],
+        "logs_search_status": 403
+      },
+      "analysis": "login 签发令牌只带 role，不带 permissions；require_permission 走 payload 权限 → DB 权限矩阵 → 内存 PermissionStore 三级回退。DB 不可达且内存 PermissionStore 未配置时，登录令牌对 log:read / module:manage 均无授权（/auth/me 的 admin 通配只影响响应体，不参与门禁）。",
+      "classification": "环境限制 + 降级模式行为登记（非 v1.4.6 增量代码缺陷）"
+    }
+  ],
+  "steps": [
+    {
+      "step": "A-1",
+      "name": "降级模式：POST /auth/login（DB 不可达 → 内存演示用户）",
+      "status": 200,
+      "token_issued": true,
+      "me_status": 200,
+      "me_permissions": [
+        "*"
+      ],
+      "search_status": 403,
+      "search_code": "AUTH_403"
+    },
+    {
+      "step": "B-0",
+      "name": "SQLite 建表 + 种子 admin/RBAC（真实 commit）",
+      "admin_user_id": 1,
+      "schema": "sqlite+aiosqlite:///:memory:"
+    },
+    {
+      "step": "B-1-1",
+      "name": "POST /api/v1/auth/login（DB 用户 + 密码校验）",
+      "status": 200,
+      "response_keys": [
+        "access_token",
+        "expires_in",
+        "refresh_expires_in",
+        "refresh_token",
+        "token_type"
+      ],
+      "token_type": "bearer",
+      "expires_in": 7200,
+      "login_ok": true
+    },
+    {
+      "step": "B-1-2",
+      "name": "GET /api/v1/auth/me（权限点来自 DB RBAC）",
+      "status": 200,
+      "id": 1,
+      "username": "admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "step": "B-1-3",
+      "name": "GET /api/v1/logs/search（登录令牌）",
+      "status": 200,
+      "data_keys": [
+        "items",
+        "page",
+        "page_size",
+        "total",
+        "truncated"
+      ],
+      "total": 1,
+      "items_request_ids": [
+        "int-req-1"
+      ],
+      "x_request_id": "req-18cb88c7a808"
+    },
+    {
+      "step": "B-1-4",
+      "name": "GET /api/v1/logs/export（登录令牌）",
+      "status": 200,
+      "content_type": "text/csv; charset=utf-8",
+      "content_disposition": "attachment; filename=\"logs-l1_file-20260915-220710.csv\"",
+      "content_preview": "ts,source,module,operation,result,request_id,method,path,status_code,duration_ms,operator_id,tenant_id,ip_address,case_i",
+      "x_request_id": "req-6c4ae806d783"
+    },
+    {
+      "step": "B-1-5",
+      "name": "SELECT audit_logs WHERE action='log.export'（留痕校验）",
+      "row_count": 1,
+      "rows": [
+        {
+          "id": 1,
+          "user_id": 1,
+          "action": "log.export",
+          "resource": "logs:export",
+          "resource_id": "l1_file",
+          "request_id": "req-6c4ae806d783",
+          "detail": {
+            "actor": "1",
+            "source": "l1_file",
+            "filters": {
+              "module": [
+                "dps"
+              ]
+            },
+            "row_count": 1,
+            "format": "csv"
+          }
+        }
+      ],
+      "checks": {
+        "恰好 1 条留痕": true,
+        "action=log.export": true,
+        "user_id=登录用户": true,
+        "detail 字段集 = actor/source/filters/row_count/format": true,
+        "检索关键字 q 未落留痕": true,
+        "request_id 与响应头一致": true
+      }
+    },
+    {
+      "step": "B-2-1",
+      "name": "GET /api/v1/modules（变更前）",
+      "status": 200,
+      "total": 5,
+      "statuses": {
+        "openllm": "enabled",
+        "knowledge": "enabled",
+        "memory": "enabled",
+        "portrait": "enabled",
+        "gateway": "enabled"
+      },
+      "gateway_present": true
+    },
+    {
+      "step": "B-2-2",
+      "name": "PATCH /api/v1/modules/openllm {status:disabled}",
+      "status": 200,
+      "data": {
+        "id": "openllm",
+        "status": "disabled",
+        "previous_status": "enabled",
+        "effective": "next_login",
+        "request_id": "req-33606f569b42"
+      },
+      "x_request_id": "req-33606f569b42"
+    },
+    {
+      "step": "B-2-3",
+      "name": "SELECT audit_logs WHERE action='module.switch'（留痕校验）",
+      "row_count": 1,
+      "rows": [
+        {
+          "id": 2,
+          "user_id": 1,
+          "action": "module.switch",
+          "resource": "module:openllm",
+          "resource_id": "openllm",
+          "request_id": "req-33606f569b42",
+          "detail": {
+            "operator_id": "1",
+            "module_id": "openllm",
+            "previous_status": "enabled",
+            "status": "disabled"
+          }
+        }
+      ],
+      "checks": {
+        "恰好 1 条留痕（先留痕后生效）": true,
+        "action=module.switch": true,
+        "resource=module:openllm": true,
+        "detail.previous_status=enabled": true,
+        "detail.status=disabled": true,
+        "operator=登录用户": true,
+        "request_id 与响应头一致": true
+      }
+    },
+    {
+      "step": "B-2-4",
+      "name": "SELECT dynamic_modules WHERE id='openllm'（状态持久化）",
+      "row": {
+        "id": "openllm",
+        "status": "disabled",
+        "route_prefix": "/openllm",
+        "permission": "openllm:view"
+      },
+      "checks": {
+        "status 落库为 disabled": true
+      }
+    },
+    {
+      "step": "B-2-5",
+      "name": "GET /api/v1/modules（变更后复核）",
+      "status": 200,
+      "statuses": {
+        "openllm": "disabled",
+        "knowledge": "enabled",
+        "memory": "enabled",
+        "portrait": "enabled",
+        "gateway": "enabled"
+      },
+      "checks": {
+        "openllm=disabled": true
+      }
+    },
+    {
+      "step": "B-2-6",
+      "name": "GET /api/v1/modules/openllm（语义不变复核）",
+      "status": "disabled",
+      "id": "openllm",
+      "route_prefix": "/openllm",
+      "permission": "openllm:view",
+      "checks": {
+        "route_prefix 未改动": true,
+        "permission 未改动": true
+      }
+    },
+    {
+      "step": "B-2-7",
+      "name": "PATCH /api/v1/modules/openllm {status:enabled}（测试清理 + 二次留痕验证）",
+      "status": 200,
+      "data": {
+        "id": "openllm",
+        "status": "enabled",
+        "previous_status": "disabled",
+        "effective": "next_login",
+        "request_id": "req-83329b5e138a"
+      },
+      "switch_rows_after": 2
+    },
+    {
+      "step": "B-3-1",
+      "name": "POST /auth/login（错误口令）",
+      "status": 401,
+      "body": {
+        "code": "AUTH_401",
+        "message": "invalid username or password",
+        "detail": null,
+        "request_id": "req-1b7cb81082e7"
+      }
+    },
+    {
+      "step": "B-3-2",
+      "name": "GET /logs/search（无令牌）",
+      "status": 401
+    },
+    {
+      "step": "B-3-3",
+      "name": "无权限令牌（无 log:read / module:manage）",
+      "search_status": 403,
+      "search_code": "AUTH_403",
+      "patch_status": 403,
+      "patch_code": "AUTH_403"
+    }
+  ],
+  "final_audit_rows": {
+    "log.export": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "action": "log.export",
+        "resource": "logs:export",
+        "resource_id": "l1_file",
+        "request_id": "req-6c4ae806d783",
+        "detail": {
+          "actor": "1",
+          "source": "l1_file",
+          "filters": {
+            "module": [
+              "dps"
+            ]
+          },
+          "row_count": 1,
+          "format": "csv"
+        }
+      }
+    ],
+    "module.switch": [
+      {
+        "id": 2,
+        "user_id": 1,
+        "action": "module.switch",
+        "resource": "module:openllm",
+        "resource_id": "openllm",
+        "request_id": "req-33606f569b42",
+        "detail": {
+          "operator_id": "1",
+          "module_id": "openllm",
+          "previous_status": "enabled",
+          "status": "disabled"
+        }
+      },
+      {
+        "id": 3,
+        "user_id": 1,
+        "action": "module.switch",
+        "resource": "module:openllm",
+        "resource_id": "openllm",
+        "request_id": "req-83329b5e138a",
+        "detail": {
+          "operator_id": "1",
+          "module_id": "openllm",
+          "previous_status": "disabled",
+          "status": "enabled"
+        }
+      }
+    ]
+  }
+}

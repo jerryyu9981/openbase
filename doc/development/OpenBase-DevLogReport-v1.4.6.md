@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.6 |
-| 文档版本 | v1.0.1 |
+| 文档版本 | v1.4.0 |
 | 状态 | [Review] |
 | 作者 | AD-OpenBase-Dev（后端轨）/ FD-OpenBase-Dev（前端轨） |
 | 创建日期 | 2026-09-15 |
@@ -214,14 +214,118 @@ Copy-Item -Path "$objs\*" -Destination "$repo\.git\objects\" -Recurse -Force
 | TD-新增-015 | 健壮性债务 | P2 | `L1FileAdapter.fetch` 对 `json.loads` 无容错，粘连行抛 `JSONDecodeError` → 500 | 登记，后续版本偿还（RS-146-05） |
 | TD-新增-016 | 契约一致性债务 | P2 | 导出契约 10 项细节口径未定（`<ts>` 格式/时区、`matched` 口径、失败路径是否留痕、`PARAM_400` vs `PARAM_INVALID` 并存等） | 登记，Step 4 评审裁定后回写设计文档（RS-146-01） |
 | TD-新增-017 | 架构一致性债务 | P2 | 后端 `gateway` 仍在 `AVAILABLE_MODULES`/`DEFAULT_MODULES` 注册，前端已不装载为业务模块 | 登记，Step 4 明确口径（RS-146-04） |
+| TD-新增-018 | 健壮性债务 | P1（残余面 P2） | 日志适配器行级容错覆盖不全：`RepoLogAdapter._parse_line` 无时间戳行构造 `LogEntry(ts=None)` → 校验异常穿透为 500 | **本轮回退已偿还 repo_log 路径**（§9.3）；同族缺口（`L1FileAdapter`/`test_record`/`audit_db`）登记后续版本偿还（RS-146-07） |
 
-> 编号口径：v1.4.6 新增债务在总表中占用 **TD-新增-013~017**（TD-新增-012 已被 v1.4.4 的「OpenRAG 上游契约缺口」占用，本版本不重复使用）。
+> 编号口径：v1.4.6 新增债务在总表中占用 **TD-新增-013~018**（TD-新增-012 已被 v1.4.4 的「OpenRAG 上游契约缺口」占用，本版本不重复使用；TD-新增-018 由 Step 4 实环境走查回退登记）。
 
 > 归集动作：上述 P1/P2 债务已按「风险归集门禁」写入 `doc/version/global/OpenBase-技术债务总表.md`（版本升位）。
 
 ### 9.2 环境性失败说明（非业务缺陷）
 
 `pytest` 全量中 `tests/test_tenant_admin.py`（2）与 `tests/test_users_admin.py`（2）共 4 例失败，错误为 `asyncpg.exceptions.ConnectionDoesNotExistError: connection was closed in the middle of operation`；**隔离复跑 10/10 全部通过**（`python -m pytest tests/test_tenant_admin.py tests/test_users_admin.py` → `10 passed in 10.22s`），且与本次改动无关（改动前基线同为这 4 例）。归因为沙箱真实 PostgreSQL 连接不稳定，与《OpenBase-存量测试对齐任务清单》§7.3 同类，移交 Step 4 在稳定环境重跑登记。
+
+### 9.3 Step 4 走查回退修复记录（DEF-BE-146-001）
+
+**回退触发**：Step 4 实环境人工走查发现 P1 缺陷（日志中心「四仓日志」源 500），按 `project-development-workflow` Step 4 门禁 5 回退至 Step 3 修复。回退记录见 `.devflow/state.json` → `auditResults.v1_4_6_step_4_rollback_to_step_3`。
+
+| 项 | 内容 |
+|----|------|
+| 缺陷 | DEF-BE-146-001（P1）：`GET /api/v1/logs/search?source=repo_log` → HTTP 500 且响应体为空 |
+| 根因 | `openbase/modules/logs/repository.py::_parse_line`：JSON 路径 `_iso(...)` 与纯文本路径 `timestamps[0] if timestamps else None` 均可能在无时间戳时得到 `None`，而 `LogEntry.ts` 为必填 `str` → `pydantic ValidationError` 未捕获 → 容器级异常穿透为 500 |
+| 触发条件 | 编排器按 stdout 原样采集的四仓日志含无时间戳行（厂商横幅 `INFO:     Application startup complete.`、堆栈续行） |
+| 修复 | ① 两条解析路径时间戳不可解析时 `return None`（沿用既有「坏行跳过」口径）；② 新增 `_warn_dropped`，`fetch` 统计扫描/解析数并输出丢弃汇总 WARNING（不静默降级） |
+
+**TDD 与验证证据**：
+
+| 验证项 | 命令 | 结果 |
+|--------|------|------|
+| TDD 红灯（修复前） | `pytest -k without_timestamp` | 🔴 3 例失败（`ValidationError: ts input_value=None`，与线上同一根因） |
+| TDD 绿灯（修复后） | `pytest -k without_timestamp` | 🟢 3 例通过 |
+| 增量面回归 | `pytest tests/test_logs_service.py tests/test_logs_endpoints_api.py tests/test_logs_derivation.py tests/test_log_reserved_keys.py tests/test_mask.py` | 🟢 **137 通过 / 0 失败** |
+| 静态质量 | `python -m ruff check openbase tests` | 🟢 `All checks passed!`（0 错误） |
+| 全量回归（修复后） | `pytest tests --ignore=tests/test_s7_t6_gate.py --junitxml=...` | 🟢 **953 收集 / 945 通过 / 4 环境性失败 / 4 跳过 / errors=0**（较修复前基线 950/942 **+3**，即新增用例；失败项集合不变，仍为 PG-ENV-1~4） |
+| 实环境复测 | `GET /api/v1/logs/search?source=repo_log`（编排器已拉起 7 服务，OpenBase 重启加载修复） | 🟢 **HTTP 200，items=5 / total=4937**（修复前 500 + 空响应体）；日志中心页面切换「四仓日志」→ **20 行 / 共 4937 条**，无错误提示 |
+
+**新增回归用例（3 条）**：
+
+| 用例 | 层级 | 断言口径 |
+|------|:----:|----------|
+| `tests/test_logs_service.py::test_repolog_text_line_without_timestamp_skipped` | 适配器 | 无时间戳文本行跳过，仅返回可解析行（L1-硬断言） |
+| `tests/test_logs_service.py::test_repolog_json_without_timestamp_skipped` | 适配器 | JSON 行缺 `ts` 且无行首时间戳时同口径跳过（L1-硬断言） |
+| `tests/test_logs_endpoints_api.py::test_repo_log_dirty_lines_without_timestamp_do_not_break_source` | 端点 | 检索返回 200（不再 500/空体），`total` 与条目 `source` 正确（L1-硬断言） |
+
+**遗留说明**：实环境复测中观察到前端 `timeout of 15000ms exceeded` 告警（`logs/facets` 响应 7.3～14.6 s，超出前端 15 s 超时），属已登记的性能项（测试报告 §4 DEF-BE-146-004），不在本次 P1 修复范围；同族行级容错缺口（`L1FileAdapter`/`test_record`/`audit_db`）登记为 RS-146-07 / TD-新增-018。
+
+> 修复文件：`openbase/modules/logs/repository.py`（`_parse_line` ×2 处 + 新增 `_warn_dropped` + `fetch` 计数）；用例文件：`tests/test_logs_service.py`、`tests/test_logs_endpoints_api.py`。
+
+### 9.4 第二次回退修复记录（DEF-BE-146-006 契约口径，2026-09-16）
+
+**回退触发**：Step 4 重测发现参数校验口径与设计 §5 不一致（422 `PARAM_422` vs 400 `PARAM_400`），经**人工裁定「改实现对齐设计 400」**后回退 Step 3 修复。
+
+| 项 | 内容 |
+|----|------|
+| 裁定 | 改实现对齐《API接口设计文档-v1.4.6》§5 的 400；不修改设计文档 |
+| 实现变更 | ① `core/errors/codes.py`：`PARAM_VALIDATION_ERROR` 字面值 → `PARAM_400`、`ERROR_HTTP_MAP` 422 → 400、`PARAM_EXPORT_LIMIT_EXCEEDED` 退化为同值兼容别名（消除同义双码）；② `core/errors/base.py`：校验处理器状态码改由 `ERROR_HTTP_MAP` 单点解析（`detail` 数组保留——`detail[].input` 是 C-18 响应观测的脱敏输入源）；③ `modules/logs/service.py`：`_parse_datetime` 由静默返回 None 改为抛 400（`detail.field=from`/`to`），新增 `_validate_window`（`from > to` → 400，`detail.field=from/to`） |
+| 破坏性变更 | 参数校验失败 **422 → 400**、字面值 `PARAM_422` → `PARAM_400`（波及 logs / test-records / services / gateway / ai-apps / modules 等端点）。回滚方式：还原 `core/errors/{codes,base}.py` |
+| 影响面评估 | 前端 `core/api/error.ts` 对 400/422 同分支处理（按 `PARAM_` 前缀）→ 无破坏；7 处既有断言同步为 400；前端参考列表 `DpsApiManageView.vue` 同步 `PARAM_400` |
+
+**验证证据**：
+
+| 验证项 | 命令 | 结果 |
+|--------|------|------|
+| TDD 红灯 → 绿灯 | `pytest -k "param_validation or invalid_format or unknown_source or time_window or time_format"` | 🔴 6 → 🟢 9 |
+| 关联套件 | `pytest`（9 个受影响文件） | 🟢 149 通过 / 0 失败 |
+| 静态质量 | `ruff check openbase tests` | 🟢 0 错误 |
+| 全量回归 | `pytest tests --ignore=tests/test_s7_t6_gate.py --junitxml=regression-param400-junit.xml` | 🟢 **959 收集 / 951 通过 / 4 环境性失败 / 4 跳过 / errors=0** |
+| 实环境复测 | OpenBase 重启后逐分支实测 | 🟢 非法 source / `page=0` / `page_size=1000` / `format=xml` / `q` 超长 / `from>to` / `from=not-a-date` 全部 **400 `PARAM_400`**；`step_id=abc` 仍 200（契约不变） |
+
+> 修复文件：`openbase/core/errors/codes.py`、`openbase/core/errors/base.py`、`openbase/modules/logs/service.py`、`openbase-ui/src/modules/portrait/pages/DpsApiManageView.vue`。
+
+### 9.5 第三次回退修复记录（detail 结构对齐，2026-09-16）
+
+**回退触发**：`detail` 结构裁定为「继续对齐」（见问题跟踪记录 §3.7），回退 Step 3 实施。
+
+| 项 | 内容 |
+|----|------|
+| 裁定 | **继续对齐**：`detail` 由「pydantic 错误数组」改为「字段式明细数组」 |
+| 核心动因 | 原实现直接回传 `exc.errors()`，将 **pydantic 内部键**（`type`/`loc`/`ctx`/`url`）固化为公开 API 契约——第三方库升级即可改变对外结构；且项目内其余错误明细本就是字段式，数组形态为唯一异类 |
+| 实现变更 | `core/errors/base.py`：新增 `_validation_detail`（归一化为 `field`/`msg` + 约束键 + `allowed`）、`_parse_allowed`（解析 `ctx.expected` 候选值）、`_LOCATION_PREFIXES`（剔除位置前缀使 `field` 为纯字段名）；处理器改调 `_validation_detail(exc.errors())` |
+| 保留项 | `input` 保留（C-18 响应观测的脱敏输入源，移除会破坏 `tests/test_audit_response_observe.py` 的掩码验证前提） |
+| 契约影响 | 前端零影响（`ErrorPresentation.detail` 为 string，不消费后端 detail）；3 条新增契约用例锁定形态 |
+| 形态说明 | 采用数组而非设计样例的单对象：多字段同时非法时单对象无法承载（建议回写设计文档 §5 备注） |
+
+**验证证据**：
+
+| 验证项 | 命令 | 结果 |
+|--------|------|------|
+| 契约用例（新增 3 条） | `pytest tests/test_logs_endpoints_api.py` | 🟢 通过（字段式明细 / 不暴露内部键 / 多字段并列 / 约束值） |
+| 关联套件 | `pytest`（10 个文件） | 🟢 **170 通过 / 0 失败** |
+| 静态质量 | `ruff check openbase tests` | 🟢 0 错误 |
+| 全量回归 | `pytest tests --ignore=tests/test_s7_t6_gate.py --junitxml=regression-detail-junit.xml` | 🟢 **962 收集 / 954 通过 / 4 环境性失败 / 4 跳过 / errors=0** |
+| 实环境复测 | OpenBase 重启后实测 | 🟢 `{"field":"source",…,"allowed":[…]}` / `{"field":"page_size",…,"max":100}` / `{"field":"page",…,"min":1}` / `{"field":"format",…,"allowed":["csv","json"]}`；无 pydantic 内部键 |
+
+> 修复文件：`openbase/core/errors/base.py`；用例文件：`tests/test_logs_endpoints_api.py`。
+
+### 9.6 第四次回退修复记录（DEF-BE-146-007 三个契约残留合并对齐，2026-09-16）
+
+**回退触发**：Step 4 审计回溯发现三个 P2-3 契约一致性残留，经人工裁定**合并一轮回退 Step 3**（避免逐条回退导致审计重出成本叠加）。
+
+| 项 | 内容 |
+|----|------|
+| 裁定 | ① 403 权限码：**仅对齐 v1.4.6 面**——日志/模块端点权限不足字面值统一为设计 §5 `PERM_403`；历史遗留 `AUTH_403`/`PERM_FORBIDDEN` **不改**（记技术债务 TD-新增-019），避免跨版本破坏既有客户端；② 404 双码：模块同资源 GET/PATCH 统一 `PARAM_404`；③ 路径参数：模块路由统一 `{id}` |
+| 实现变更 | `core/errors/codes.py`（新增 `PERM_403` + HTTP 403 映射）；`modules/auth/rbac.py`（`require_permission` 增 `error_code` 参数，默认 `AUTH_FORBIDDEN` 保历史，日志/模块显式传 `PERM_403`——不改共享门禁默认码，避免级联影响 gateway/testing）；`modules/logs/router.py`（4 处 `log:read` → `PERM_403`）；`modules/frontend/__init__.py`（PATCH 依赖传 `PERM_403`；GET/PATCH 路径参数 `{module_id}`→`{id}`；GET 模块不存在 `BIZ_404`→`PARAM_NOT_FOUND`） |
+| 测试变更 | `test_logs_endpoints_api.py::test_logs_endpoints_forbidden_without_log_read` 断言 `AUTH_FORBIDDEN`→`PERM_403`；`test_modules_switch_api.py` 增 `PERM_403` 字面值断言 + 新增 `GET 未知模块 → PARAM_404` 契约用例 |
+| 契约影响 | 破坏性变更：模块端点权限不足 `AUTH_403`→`PERM_403`、模块 GET 未知 `BIZ_404`→`PARAM_404`、OpenAPI 路径参数 `module_id`→`id`；**前端零影响**（`modules.ts` 动态路径拼接 ${moduleId}，参数名变化不中断调用；`DpsApiManageView.vue` 参照表本用 `PERM_403`） |
+
+**验证证据**：
+
+| 验证项 | 命令 | 结果 |
+|--------|------|------|
+| 受影响套件 | `pytest tests/test_modules_switch_api.py tests/test_logs_endpoints_api.py` | 🟢 **56 通过 / 0 失败** |
+| 静态质量 | `ruff check openbase tests` | 🟢 0 错误 |
+| 全量回归 | `pytest tests --ignore=tests/test_s7_t6_gate.py --junitxml=regression-contract3-junit.xml` | 🟢 **963 收集 / 959 通过 / 4 环境性失败 / 4 跳过 / errors=0**（证据 `doc/test/evidence/v146/regression-contract3-junit.xml`；失败项集合与前三轮一致，均为 asyncpg 环境性） |
+
+> 修复文件：`openbase/core/errors/codes.py`、`openbase/modules/auth/rbac.py`、`openbase/modules/logs/router.py`、`openbase/modules/frontend/__init__.py`；用例文件：`tests/test_logs_endpoints_api.py`、`tests/test_modules_switch_api.py`。
 
 ## 10. 产出物存在性验证（3.15 门禁）
 
@@ -255,3 +359,7 @@ Copy-Item -Path "$objs\*" -Destination "$repo\.git\objects\" -Recurse -Force
 |------|------|--------|------|
 | v1.0.0 | 2026-09-15 | AD-OpenBase-Dev / FD-OpenBase-Dev | 初始版本：v1.4.6 Step 3 编码记录。范围 BL-146-01~15 + BL-146-19 本仓侧（跨仓 4 项挂起）；实现后端 11 文件 + 前端 30 文件 + 测试 9 文件；静态质量（ruff/vue-tsc/eslint/build）全通过；实际运行验证 L1/L2/L3 通过；自测后端 926 passed、前端 157 passed；逻辑审查 2 P0 + 8 P1 全部闭环；新增债务 5 项（TD-新增-013~017）已归集；产出物存在性 9/9 通过 |
 | v1.0.1 | 2026-09-15 | AD-OpenBase-Dev | 基线提交闭环：新增 §8.1 提交记录（commit `db5682b`，父 `43586d5`，266 files / +25,497 / −440），记录 `.git/objects` 写入受限的环境绕行方式与验证结果（fsck 无错误、工作区干净、logs 模块 6 文件入库、Vitest 缓存移出跟踪并补 `.gitignore`）；§8 自检表「基线提交」由待办改为已完成 |
+| v1.1.0 | 2026-09-16 | AD-OpenBase-Dev / AT-OpenBase-Test | Step 4 走查回退修复（DEF-BE-146-001，P1）：新增 §9.3 回退修复记录（TDD 红→绿 3 例、增量面 137 全绿、ruff 0 错误、全量回归 953/945、实环境 `repo_log` 源 200/4937 条）；§9.1 补 TD-新增-018 与 RS-146-07；编号口径更新为 TD-新增-013~018 |
+| v1.2.0 | 2026-09-16 | AD-OpenBase-Dev / AT-OpenBase-Test | **第二次回退修复**（DEF-BE-146-006 契约口径，人工裁定改实现对齐设计 400）：新增 §9.4 记录（422/`PARAM_422` → 400/`PARAM_400` 统一、时间窗语义校验、破坏性变更与回滚声明、TDD 6→9、关联套件 149、全量回归 **959/951**、实环境全分支 400） |
+| v1.3.0 | 2026-09-16 | AD-OpenBase-Dev | **第三次回退修复**（detail 结构裁定为「继续对齐」）：新增 §9.5 记录（`detail` 改字段式明细、剔除 pydantic 内部键、`input` 保留、3 条契约用例、关联套件 170、全量回归 **962/954**、实环境复核） |
+| v1.4.0 | 2026-09-16 | AD-OpenBase-Dev | **第四次回退修复（DEF-BE-146-007 三个契约残留合并对齐）**：新增 §9.6 记录（403 → `PERM_403` 仅对齐 v1.4.6 面 + 历史遗留记 TD-新增-019、404 同资源统一 `PARAM_404`、路径参数 `{module_id}`→`{id}`；`require_permission` 增可选 `error_code` 默认 `AUTH_FORBIDDEN` 保历史、避免网关/测试门禁级联；受影响套件 56 全绿、ruff 0 错误、全量回归 **963/959**、契约3 JUnit 证据落盘） |
