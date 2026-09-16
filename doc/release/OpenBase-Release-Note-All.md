@@ -2,6 +2,7 @@
 
 | 版本 | 主题 | 发布日期 | 状态 |
 |------|------|---------|------|
+| [v1.4.6](OpenBase-Release-Note-v1.4.6.md) | 日志中心 R-382 + 统一前端 IA 重构 R-383 + 四仓日志接入（本仓适配器）R-384 + 契约一致性对齐 | 2026-09-16 | 已发布（Dev） |
 | [v1.4.5](OpenBase-Release-Note-v1.4.5.md) | DPS 系统对接（对接线第 3 站：dps-proxy 8 端点 + 身份头注入四头 + 前端画像 2 页真实化 + 还债 TD-新增-011） | 2026-09-01 | 已发布（Dev） |
 | [v1.4.4](OpenBase-Release-Note-v1.4.4.md) | OpenRAG 系统对接（对接线第 2 站：rag-proxy 12 端点 + 前端 2 页真实化 + SSE 流式） | 2026-08-31 | 已发布（Dev） |
 | [v1.4.3](OpenBase-Release-Note-v1.4.3.md) | OpenLLM 系统对接（对接线第 1 站：llm-proxy 12 端点 + 前端 2 页真实化 + SSE 流式） | 2026-08-30 | 已发布（Dev） |
