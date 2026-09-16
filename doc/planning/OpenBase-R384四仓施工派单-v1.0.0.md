@@ -3,13 +3,13 @@
 | 项 | 内容 |
 |------|------|
 | 文档编号 | OB-DISPATCH-R384-CROSSREPO-v1.0.0 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | [Review] |
 | 作者 | PM-OpenBase-Dev / AA-OpenBase-Dev |
 | 日期 | 2026-09-16 |
 | 存放 | doc/planning/ |
 | 接收方 | **DPS / OpenLLM / OpenMemory / OpenRAG 四仓**（各仓独立评审、独立提交、独立发布） |
-| 上游依据 | 《OpenBase-D6四仓request_id日志接线改动说明-v1.0.0》（施工依据本体）；《OpenBase-R384-四仓日志接入可行性粗筛与D6施工量评估-v1.0.0》；《OpenBase-Phase迭代计划-v1.4.6》§7 Phase 6；《OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6》；《OpenBase-技术债务总表》TD-新增-020；《OpenBase-候选需求池》§1.13 |
+| 上游依据 | 《OpenBase-D6四仓request_id日志接线改动说明-v1.0.0》（施工依据本体）；**《OpenBase-R384改动包-v1.0.0》（可落地代码，含 D-6 落点更正）**；《OpenBase-R384-四仓日志接入可行性粗筛与D6施工量评估-v1.0.0》；《OpenBase-Phase迭代计划-v1.4.6》§7 Phase 6；《OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6》；《OpenBase-单版本规划文档-v1.4.7》；《OpenBase-技术债务总表》TD-新增-020；《OpenBase-候选需求池》§1.13/§1.14 |
 | 性质 | **跨仓施工派单**（分发给四仓对话的作业单）。派单不等于施工：各仓以此为依据走自身评审与发布流程，OpenBase 侧不代改他仓代码 |
 
 ---
@@ -35,6 +35,17 @@
 
 > 基线为只读实测（未对四仓执行任何 git 写操作）。各仓施工前请以**自身 HEAD** 复核本表。
 
+### 2.1 启动路径实测（**关键：决定改动落点**，2026-09-16 依据 OpenBase 编排器实测）
+
+| 仓 | 编排器实际启动命令 | 日志配置现状 | **D-6 原落点是否生效** | **修正落点** |
+|----|------------------|-------------|:--------------------:|-------------|
+| **DPS** | `python -m uvicorn rest_api.app:app --app-dir src` | `src/rest_api/app.py:40` 仅 `logger = logging.getLogger(__name__)`，**无日志配置** | ❌ **不生效**（`src/main.py:37-40` 的 `basicConfig` 不被执行） | **`src/rest_api/app.py`**（+ 抽 `src/logging_setup.py` 供 `main.py` 共用） |
+| **OpenLLM** | `python -m uvicorn main:app`（cwd=`backend`） | `backend/main.py:80-83` `basicConfig(format=settings.LOG_FORMAT)` | ✅ 生效 | 不变 |
+| **OpenMemory** | `python scripts\start_openmemory.py`（→ `create_app()`） | `src/openmemory/api/server.py:788` 的 `basicConfig` **在 `main()` 内** | ❌ **不生效** | **`src/openmemory/api/server.py`（模块级或 `create_app()`）** + `structured_log.py` 门面改造 |
+| **OpenRAG** | `python -m uvicorn openrag.main:app --app-dir src` | `src/openrag/main.py:51` `setup_logging(json_format=settings.is_production)`（lifespan 内） | ✅ 生效 | 不变；另需 `json_format=True`（采集环境）方为 JSONL |
+
+> **施工前必读**：DPS 与 OpenMemory 若按 D-6 原落点实施，**改动不会生效**。已按修正落点给出可落地改动，见《OpenBase-R384改动包-v1.0.0》。
+
 ## 3. Phase 6 任务 6.0 前置核实派单（跨仓开工前必做）
 
 | # | 核实项 | 核实方法（可执行） | 判据 / 产出 | 本派单实测提示 |
@@ -43,7 +54,9 @@
 | 2 | **OpenRAG 两套日志栈统一方案** | 核对 `observability/logging.py` 与 `config/logging.py` 的 `get_logger` 来源、`set_correlation_id` 定义来源是否同一对象；确认 `setup_logging` 的调用点与传参 | 产出「统一为哪一套」的定论 + contextvar 单一来源确认 | 已实测：`observability/logging.py:410` 的 `self.logger = get_logger("openrag.api")` 与 `config/logging.py:71` 的 `get_logger` **同源**（structlog 门面），kwargs 调用风格成立，注册**不会**报错 → D-6 R-3 风险由"两套栈并存"降级为"确认 contextvar 单一来源" |
 | 3 | **四仓受信来源判定口径对齐** | 逐仓列出既有"受信代理来源"判定实现位置（对标 OpenBase 侧 `TRUSTED_PROXY_SOURCES`），并确认其用于 `X-Request-Id` 透传判定的可行性 | 产出四仓各自的实现位置 + "受信=透传 / 非受信=重生成"两分支单测方案 | D-6 R-6：各仓沿用自身既有校验实现，口径以 OpenBase 协议头规范为准 |
 
-> **门禁**：上述三项未产出结论前，不得开始 6.1/6.2 的跨仓代码改动。
+| 4 | **各仓启动路径与日志配置生效点**（决定改动落在哪个文件） | 对照 §2.1 实测表，在各仓内确认：① 生产/编排启动命令；② 该路径下日志配置是否执行（打印一条应用 INFO 日志并观察采集文件/控制台） | 产出「实际生效的日志配置位置」结论；若与 §2.1 不一致，须先更正落点再施工 | ⚠️ **本派单已实测**：DPS 实走 `rest_api.app:app`（`main.py` 配置不生效）、OpenMemory 实走启动脚本（`main()` 的 `basicConfig` 不生效）→ 两仓落点已更正，见 §2.1 |
+
+> **门禁**：上述四项未产出结论前，不得开始 6.1/6.2 的跨仓代码改动。
 
 ## 4. 统一契约（四仓一致，强制）
 
@@ -97,7 +110,8 @@
 
 | 项 | 内容 |
 |----|------|
-| 改动文件 | `src/main.py`（`basicConfig` 位于 `:37-40`） |
+| 改动文件 | **`src/rest_api/app.py`**（实际生效落点，`:40` 处插入装配）；新增 `src/logging_setup.py`（通用件）；`src/main.py` 同步改为调用同一装配函数（开发模式一致性） |
+| 落点更正说明 | **D-6 §3.1 原落点 `src/main.py` 在本仓实际启动路径下不生效**（编排器实启 `rest_api.app:app`）——详见 §2.1 与《改动包》§1 |
 | 改动 1 | 在 `logging.basicConfig` **之前**引入 `from identity.request_id import get_current_request_id` |
 | 改动 2 | 新增 `RequestIdFilter(logging.Filter)`：`record.request_id = get_current_request_id() or "-"` |
 | 改动 3 | `format` 改为 `"%(asctime)s [%(levelname)s] [%(request_id)s] %(name)s: %(message)s"`，并在 `basicConfig` 之后 `logging.getLogger().addFilter(RequestIdFilter())` |
@@ -237,3 +251,4 @@ OpenBase 侧回填 hash 与技术债务总表；TD-新增-020 状态更新
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-16 | PM-OpenBase-Dev / AA-OpenBase-Dev | 初始创建：R-384 四仓施工派单。含四仓基线快照（实测 HEAD）、6.0 前置核实三项（附实测提示——OpenMemory 启动路径与 OpenRAG 日志栈统一已取得关键证据）、统一契约与 **JSONL 字段契约（按 OpenBase 适配器实测读取键逐项对齐）**、逐仓施工单（文件/改动/单测/回归/风险）、采集侧派单、验收判据与端到端验证方法、提交回执与 hash 回填位、9 项风险与施工时序 |
+| v1.1.0 | 2026-09-16 | AA-OpenBase-Dev | **新增 §2.1 启动路径实测表并更正两处改动落点**（依据 OpenBase 编排器 `scripts/service-orchestrator.ps1` 实测命令）：① **DPS** 实走 `rest_api.app:app`，D-6 原落点 `src/main.py` 的 `basicConfig` **不生效** → 落点更正为 `src/rest_api/app.py`（+ 抽 `src/logging_setup.py` 双入口共用）；② **OpenMemory** 实走 `scripts\start_openmemory.py` → `create_app()`，`api/server.py:788 main()` 内的 `basicConfig` **不生效** → 落点更正为 `src/openmemory/api/server.py`（模块级或 `create_app()`）；③ OpenLLM / OpenRAG 落点确认有效。同步：§3 核实项新增 **④ 各仓启动路径与日志配置生效点**、门禁表述由三项改为四项；上游依据增列《OpenBase-R384改动包-v1.0.0》（可落地代码）。文件内版本 v1.1.0，文件名沿用 -v1.0.0（与项目既有 D-6 说明同例） |
