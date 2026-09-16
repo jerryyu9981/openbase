@@ -177,6 +177,51 @@ def test_repolog_sensitive_masked(tmp_path: Path) -> None:
     assert summary["event"]["api_key"] == "***"
 
 
+def test_repolog_text_line_without_timestamp_skipped(tmp_path: Path) -> None:
+    """DEF-BE-146-001：纯文本无时间戳行（服务横幅 / 堆栈续行）跳过，不得使整源崩坏.
+
+    现场复现：四仓采集日志 ``logs/<svc>/`` 由编排器按 stdout 原样落盘，含
+    ``INFO: Application startup complete.`` 一类无时间戳行 → 旧实现构造
+    ``LogEntry(ts=None)`` 触发 pydantic 校验错误 → 接口 500。
+    """
+    svc_dir = tmp_path / "logs" / "openllm"
+    svc_dir.mkdir(parents=True, exist_ok=True)
+    (svc_dir / f"openllm-{TODAY}.log").write_text(
+        "\n".join(
+            [
+                "INFO:     Application startup complete.",  # 无时间戳：厂商横幅
+                '2026-09-15T11:01:00+00:00 10.0.0.1 - - "GET /v1/models HTTP/1.1" 200 -',
+                "    at module.exports (jsdom/browser/not-implemented.js:9:17)",  # 无时间戳：堆栈续行
+            ]
+        ),
+        encoding="utf-8",
+    )
+    adapter = RepoLogAdapter(log_root=tmp_path / "logs")
+    result = adapter.fetch(_filters(source="repo_log"))
+    assert result.total == 1  # 仅保留可解析时间戳的行
+    assert result.items[0].path == "/v1/models"
+    assert isinstance(result.items[0].ts, str) and result.items[0].ts
+
+
+def test_repolog_json_without_timestamp_skipped(tmp_path: Path) -> None:
+    """DEF-BE-146-001：JSON 行缺 ts/timestamp/time 且无行首时间戳时跳过（同一容错口径）."""
+    svc_dir = tmp_path / "logs" / "dps"
+    svc_dir.mkdir(parents=True, exist_ok=True)
+    (svc_dir / f"dps-{TODAY}.log").write_text(
+        "\n".join(
+            [
+                '{"level":"info","message":"no ts here","method":"GET","path":"/x","status":200}',
+                '{"ts":"2026-09-15T11:02:00+00:00","method":"GET","path":"/ok","status":200}',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    adapter = RepoLogAdapter(log_root=tmp_path / "logs")
+    result = adapter.fetch(_filters(source="repo_log"))
+    assert result.total == 1
+    assert result.items[0].path == "/ok"
+
+
 # ---- service 层 ----
 
 def test_service_search_pagination_and_facets(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -270,3 +315,120 @@ def test_get_adapter_unknown_source_raises() -> None:
 
     with pytest.raises(KeyError):
         get_adapter("no_such_source")
+
+
+# ---- PERF-146-001：分片扫描的「廉价预筛 + 分页收口」不得改变既有语义 ----
+
+def _write_l1_rows(root: Path, rows: list[dict]) -> None:
+    directory = root / "openbase"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"openbase-{TODAY}.jsonl").write_text(
+        "\n".join(json.dumps(row, ensure_ascii=False) for row in rows), encoding="utf-8"
+    )
+
+
+def _bulk_rows(count: int) -> list[dict]:
+    return [
+        {
+            "ts": f"2026-09-15T10:{index // 60:02d}:{index % 60:02d}+00:00",
+            "path": "/api/v1/dps-proxy/forward",
+            "method": "GET",
+            "status_code": 200,
+            "request_id": f"req-bulk-{index:04d}",
+        }
+        for index in range(count)
+    ]
+
+
+def test_l1_item_cap_returns_prefix_of_full_scan(tmp_path: Path) -> None:
+    """分页收口（``item_cap``）返回的 items 必须是全量倒序结果的前缀，且 total 精确."""
+    root = tmp_path / "logs"
+    _write_l1_rows(root, _bulk_rows(8))
+    adapter = L1FileAdapter(log_root=root)
+
+    full = adapter.fetch(_filters(source="l1_file"))
+    capped = adapter.fetch(_filters(source="l1_file", item_cap=3))
+
+    assert capped.total == full.total == 8
+    assert capped.truncated == full.truncated is False
+    assert [entry.request_id for entry in capped.items] == [
+        entry.request_id for entry in full.items[:3]
+    ]
+
+
+def test_l1_item_cap_keeps_truncated_semantics(tmp_path: Path) -> None:
+    """扫描上限触顶（``limit``）时 ``truncated=True``，且 total 仍为扫描范围内的命中数."""
+    root = tmp_path / "logs"
+    _write_l1_rows(root, _bulk_rows(8))
+    adapter = L1FileAdapter(log_root=root)
+
+    result = adapter.fetch(_filters(source="l1_file", limit=3, item_cap=1))
+
+    assert result.total == 3  # 触顶截断：仅返回扫描集内已匹配条数（既有口径）
+    assert result.truncated is True
+    assert len(result.items) == 1
+    assert result.items[0].request_id == "req-bulk-0007"  # ts 倒序首条（最新）
+
+
+def test_l1_search_pages_match_full_scan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """经 service.search（分页收口开启）逐页结果与全量扫描切片一致（跨页不重不漏）."""
+    root = tmp_path / "logs"
+    _write_l1_rows(root, _bulk_rows(8))
+    monkeypatch.setenv("OPENBASE_LOG_DIR", str(root))
+    adapter = L1FileAdapter(log_root=root)
+    full_scan = adapter.fetch(_filters(source="l1_file"))
+    expected = [entry.request_id for entry in full_scan.items]
+
+    observed: list[str] = []
+    for page in (1, 2, 3):
+        body = log_service.search(
+            LogSearchParams(source="l1_file", page=page, page_size=3)
+        )
+        assert body["total"] == 8
+        assert body["truncated"] is False
+        observed.extend(item["request_id"] for item in body["items"])
+
+    assert observed == expected
+
+
+def test_l1_search_keyword_with_non_simple_chars_still_matches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """含 JSON 转义字符的关键字（如引号）不得被廉价预筛误杀（回退全量解析）."""
+    root = tmp_path / "logs"
+    _write_l1_rows(
+        root,
+        [
+            {
+                "ts": "2026-09-15T10:00:00+00:00",
+                "path": '/api/v1/dps-proxy/forward?q="a"',
+                "method": "GET",
+                "status_code": 200,
+                "request_id": "req-quoted-1",
+            }
+        ],
+    )
+    monkeypatch.setenv("OPENBASE_LOG_DIR", str(root))
+
+    body = log_service.search(LogSearchParams(source="l1_file", q='"a"'))
+
+    assert body["total"] == 1
+    assert body["items"][0]["request_id"] == "req-quoted-1"
+
+
+# ---- INT-146-001：audit_db 源的同步入口必须显式失败（不静默、不跨事件循环复用）----
+
+
+def test_audit_db_sync_fetch_path_rejected_with_sys_503() -> None:
+    """同步取数入口（工作线程内自建事件循环复用进程级连接池）→ 显式 503，不静默返回空集."""
+    from openbase.core.errors import ErrorCode
+    from openbase.modules.logs.repository import AuditDbAdapter
+
+    adapter = AuditDbAdapter()
+    with pytest.raises(BaseError) as exc_info:
+        adapter.fetch(_filters(source="audit_db"))
+
+    assert exc_info.value.code is ErrorCode.SYS_SOURCE_UNAVAILABLE
+    assert exc_info.value.code.value == "SYS_503"
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.detail == {"source": "audit_db"}

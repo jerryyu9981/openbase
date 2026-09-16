@@ -226,12 +226,12 @@ async def list_modules(user: dict = Depends(get_current_user)) -> dict:
     return {"code": 0, "message": "ok", "data": {"items": items, "total": len(items)}}
 
 
-@router.get("/{module_id}")
-async def get_module(module_id: str, user: dict = Depends(get_current_user)) -> dict:
+@router.get("/{id}")
+async def get_module(id: str, user: dict = Depends(get_current_user)) -> dict:
     """模块详情（状态读取优先 DB）."""
-    item = await ModuleService().aget_module(module_id)
+    item = await ModuleService().aget_module(id)
     if item is None:
-        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"module not found: {module_id}")
+        raise BaseError(ErrorCode.PARAM_NOT_FOUND, f"module not found: {id}")
     return {"code": 0, "message": "ok", "data": item}
 
 
@@ -307,11 +307,11 @@ async def _record_module_switch(
 
 
 @router.patch(
-    "/{module_id}",
-    dependencies=[Depends(require_permission("module:manage"))],
+    "/{id}",
+    dependencies=[Depends(require_permission("module:manage", error_code=ErrorCode.PERM_403))],
 )
 async def switch_module(
-    module_id: str,
+    id: str,
     payload: ModuleStatusRequest,
     request: Request,
     user: dict = Depends(get_current_user),
@@ -326,13 +326,13 @@ async def switch_module(
     - 语义不变：不改动 ``id``/``route_prefix``/``permission``（AC-146-15-4）。
     """
     service = ModuleService()
-    module = await service.aget_module(module_id)
+    module = await service.aget_module(id)
     if module is None:
         allowed = [item["id"] for item in service.list_modules()]
         raise BaseError(
             ErrorCode.PARAM_NOT_FOUND,
             "module not found",
-            detail={"module_id": module_id, "allowed": allowed},
+            detail={"module_id": id, "allowed": allowed},
         )
 
     request_id = _request_id(request)
@@ -343,7 +343,7 @@ async def switch_module(
             "code": 0,
             "message": "ok",
             "data": {
-                "id": module_id,
+                "id": id,
                 "status": payload.status,
                 "previous_status": previous_status,
                 "effective": "next_login",
@@ -353,17 +353,17 @@ async def switch_module(
 
     await _record_module_switch(
         operator_id=user.get("id"),
-        module_id=module_id,
+        module_id=id,
         previous_status=previous_status,
         status=payload.status,
         request_id=request_id,
     )
-    result = await service.aset_status(module_id, payload.status)
+    result = await service.aset_status(id, payload.status)
     return {
         "code": 0,
         "message": "ok",
         "data": {
-            "id": module_id,
+            "id": id,
             "status": result["module"]["status"],
             "previous_status": result["previous_status"],
             "effective": "next_login",

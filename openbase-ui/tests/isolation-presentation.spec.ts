@@ -14,6 +14,12 @@
  * 0→20→39→55→72→89→105），已挂载组件及其未完成的异步渲染在**后续用例执行期间**仍会运行，
  * 与当前用例争抢事件循环 —— 并发执行时表现为 `Test timed out in 5000ms`。
  * 故：`mountPage` 登记全部包装器 + `afterEach` 统一卸载并清空挂载点，用例之间零残留。
+ *
+ * 用例预算（DEF-FE-146-003 根因收口）：本文件「整页挂载」用例实测单条 2~11s；`v8` 覆盖率
+ * 插桩后整体耗时放大约 4.7 倍（Step 4 证据：1187s vs 253s），默认 5s 用例超时会**非确定性**
+ * 击杀其中的整页挂载用例（Step 4 证据：本文件 5 条 `Test timed out in 5000ms`）。因此对本文件
+ * **全部整页挂载用例**统一显式声明 15000ms 用例预算（与文件内既有 6 条同口径）—— 这是按用例的
+ * 针对性配置，未放宽全局 `testTimeout`；纯函数用例（error.ts）保持默认预算不变。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
@@ -179,7 +185,7 @@ describe('S6-T3-1: 画像关键页跨域呈现', () => {
     expect(empty.text()).toContain('当前租户暂无数据')
     expect(wrapper.find('[data-test="isolation-error-bar"]').exists()).toBe(false)
     expectNotBlank(wrapper)
-  })
+  }, 15000)
 
   it('403 → 页面级 403 提示（含 request_id 详情，且不落 URL/localStorage）', async () => {
     healthyPortraitDeps()
@@ -194,7 +200,7 @@ describe('S6-T3-1: 画像关键页跨域呈现', () => {
     expect(window.location.href).not.toContain('req-403-portrait')
     expect(JSON.stringify(localStorage)).not.toContain('req-403-portrait')
     expectNotBlank(wrapper)
-  })
+  }, 15000)
 
   it('404 → 「资源不存在」空态（非错误态）', async () => {
     healthyPortraitDeps()
@@ -203,7 +209,7 @@ describe('S6-T3-1: 画像关键页跨域呈现', () => {
     expect(wrapper.find('[data-test="isolation-not-found"]').text()).toContain('资源不存在')
     expect(wrapper.find('[data-test="isolation-error-bar"]').exists()).toBe(false)
     expectNotBlank(wrapper)
-  })
+  }, 15000)
 
   it('5xx → 错误条 + 重试，且不泄漏堆栈/原始 JSON', async () => {
     healthyPortraitDeps()
@@ -215,7 +221,7 @@ describe('S6-T3-1: 画像关键页跨域呈现', () => {
     expect(wrapper.find('[data-test="isolation-retry"]').exists()).toBe(true)
     expectNoStackLeak(wrapper)
     expectNotBlank(wrapper)
-  })
+  }, 15000)
 
   it('5xx 后点击重试恢复数据', async () => {
     healthyPortraitDeps()
@@ -230,7 +236,7 @@ describe('S6-T3-1: 画像关键页跨域呈现', () => {
     await flushPromises()
     expect(wrapper.find('[data-test="isolation-error-bar"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('测试画像')
-  })
+  }, 15000)
 
   it('画像详情 404 / 403 / 5xx 三分支呈现', async () => {
     vi.spyOn(dpsApi, 'getPortrait').mockRejectedValue(apiError(404))
@@ -263,7 +269,7 @@ describe('S6-T3-2: 记忆关键页跨域呈现', () => {
     expect(empty.exists()).toBe(true)
     expect(empty.text()).toContain('当前租户暂无数据')
     expectNotBlank(wrapper)
-  })
+  }, 15000)
 
   it('403 → 页面级 403；5xx → 错误条 + 重试', async () => {
     vi.spyOn(http, 'get').mockRejectedValue(apiError(403, { code: 'PERM_DENIED', message: '无权查看' }))
@@ -359,7 +365,7 @@ describe('S6-T3-3: 知识关键页跨域呈现', () => {
     expect(wrapper.find('[data-test="isolation-retry"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('隔离测试问题')
     expectNotBlank(wrapper)
-  })
+  }, 15000)
 })
 
 describe('S6-T3-3: 对话关键页（OpenLLM 会话）呈现', () => {
@@ -369,7 +375,7 @@ describe('S6-T3-3: 对话关键页（OpenLLM 会话）呈现', () => {
     const { wrapper } = await mountPage(Conversations, '/openllm/conversations')
     expect(wrapper.find('[data-test="isolation-empty"]').text()).toContain('当前租户暂无数据')
     expectNotBlank(wrapper)
-  })
+  }, 15000)
 
   it('403 → 页面级 403；5xx → 错误条 + 重试', async () => {
     vi.spyOn(llmApi, 'fetchModels').mockResolvedValue({ models: [] })
@@ -410,5 +416,5 @@ describe('S6-T3-4: 渲染异常兜底（防白屏）', () => {
     expect(wrapper.text()).toContain('页面加载失败')
     expectNotBlank(wrapper)
     errorSpy.mockRestore()
-  })
+  }, 15000)
 })

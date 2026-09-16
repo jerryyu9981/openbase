@@ -44,7 +44,7 @@ def test_base_error_status_mapping():
     err = BaseError(ErrorCode.AUTH_UNAUTHORIZED, "unauthorized")
     assert err.status_code == 401
     err2 = BaseError(ErrorCode.PARAM_VALIDATION_ERROR, "bad param")
-    assert err2.status_code == 422
+    assert err2.status_code == 400  # v1.4.6 Step 4 裁定：参数校验统一 400 PARAM_400
     err3 = BaseError(ErrorCode.SYS_INTERNAL_ERROR, "boom")
     assert err3.status_code == 500
 

@@ -106,7 +106,10 @@ class PermissionService:
         return PermissionStore.permissions_for(user_id)
 
 
-def require_permission(permission_code: str) -> Callable[..., Any]:
+def require_permission(
+    permission_code: str,
+    error_code: ErrorCode = ErrorCode.AUTH_FORBIDDEN,
+) -> Callable[..., Any]:
     """生成 RBAC 权限校验依赖.
 
     校验链（来源: OpenLLM RBACManager 模式）：
@@ -120,6 +123,8 @@ def require_permission(permission_code: str) -> Callable[..., Any]:
 
     Args:
         permission_code: 所需权限点（如 "user:list"）。
+        error_code: 权限不足时抛出的错误码。默认为 ``AUTH_FORBIDDEN``（历史契约）；
+            v1.4.6 起日志/模块端点显式传 ``PERM_403`` 对齐设计 §5。
 
     Returns:
         FastAPI 依赖函数。
@@ -142,7 +147,7 @@ def require_permission(permission_code: str) -> Callable[..., Any]:
             return user
 
         raise BaseError(
-            ErrorCode.AUTH_FORBIDDEN,
+            error_code,
             f"missing permission: {permission_code}",
         )
 

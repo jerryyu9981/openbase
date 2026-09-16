@@ -90,7 +90,9 @@ def test_ai_apps_router_validation():
     app = _build_app_with_router(ai_apps_router)
     client = TestClient(app)
     resp = client.post("/api/v1/ai-apps", json={"name": "", "llm_config": {}}, headers=_auth_headers())
-    assert resp.status_code == 422
+    # v1.4.6 Step 4 裁定（DEF-BE-146-006）：参数校验统一 400 `PARAM_400`
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "PARAM_400"
 
 
 # ---- proxy 代理 ----

@@ -19,6 +19,11 @@
 
 - 手机号（11 位）→ 保留前 3 后 4（``138****8888``）；证件号（18 位）→ 保留前 4 后 4；
   邮箱 → 本地部分仅留首字符（``a***@example.com``）；
+- **自由文本凭据兜底（SEC-146-001）**：键名脱敏只覆盖结构化敏感键，而上游日志常把凭据
+  写在自由文本里（``summary.message`` / ``summary.raw.line`` / ``resp_headers`` 等）——
+  故对**字符串值**额外按凭据形态遮蔽：``Bearer <token>`` / ``sk-*`` / AWS ``AKIA*`` /
+  ``token=`` / ``password=`` / ``secret=`` / ``api[_-]?key=`` / ``authorization:``；
+  该兜底**只增不减**：既有键名与隐私文本口径保持不变；
 - :func:`digest_of` 输出 ``sha256:<16 hex>``：**只用于比对两次响应是否同源**，
   不可逆推原文（不存原文亦可比对）。
 """
@@ -88,6 +93,65 @@ _PHONE_PATTERN = re.compile(r"(?<!\d)(\d{3})\d{4}(\d{4})(?!\d)")
 _ID_CARD_PATTERN = re.compile(r"(?<!\d)(\d{4})\d{10}(\d{3}[\dXx])(?!\d)")
 _EMAIL_PATTERN = re.compile(r"([^\s@])([^\s@]*)@([^\s@]+)")
 
+# ---- 自由文本凭据兜底（缺陷 SEC-146-001）----
+#
+# 键名脱敏只覆盖「结构化的敏感键」，而上游日志常把凭据写在**自由文本**里
+# （repo_log 的 ``summary.message``、纯文本回退的 ``summary.raw.line``、
+# l1_file 的 ``summary.resp_headers`` 等），键名无从命中 → 明文回显。
+# 下列模式对**字符串值**逐条兜底（键名脱敏口径不放宽、不被替代）。
+#
+# 覆盖（缺陷要求的最小集）：``Bearer <token>`` / ``sk-*`` / ``token=*`` /
+# ``password=*`` / ``secret=*`` / ``api[_-]?key=*`` / AWS ``AKIA*``；
+# 另附 ``authorization: <凭据>``（非 Bearer 方案形态，如 Basic）以封闭同类旁路。
+#
+# 凭据键名（自由文本 ``key=value`` / ``key: value`` 形态），与 :data:`SENSITIVE_KEY_FRAGMENTS`
+# 保持同一语汇，但用于**值域**兜底；两处口径互不替代（键名命中仍整体遮蔽）。
+_CREDENTIAL_KEY_ALTERNATION: str = (
+    r"token|passwd|password|pwd|secret|api[_-]?key|apikey"
+    r"|access[_-]?key|client[_-]?secret|authorization"
+)
+
+_CREDENTIAL_KEYED_PATTERN = re.compile(
+    rf"(?i)\b({_CREDENTIAL_KEY_ALTERNATION})\b"
+    r"(\s*[:=]\s*)"
+    r"(?!basic\s|bearer\s|token\s)"  # 方案前缀交由前序规则覆盖，避免重复遮蔽
+    r"([^\s,;&\"'\]\)}]+)"
+)
+
+_CREDENTIAL_SUBSTITUTIONS: tuple[tuple[re.Pattern[str], str], ...] = (
+    # Bearer <token>（HTTP 头 / 日志行内任意位置）
+    (re.compile(r"(?i)\bbearer\s+[A-Za-z0-9\-._~+/]{4,}=*"), f"Bearer {MASKED}"),
+    # sk-* 形态的服务 API Key（OpenLLM 等）
+    (re.compile(r"\bsk-[A-Za-z0-9_-]{6,}"), MASKED),
+    # AWS Access Key ID（AKIA + 16 位大写字母数字）
+    (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), MASKED),
+)
+
+# 廉价前置判定：文本不含任何凭据线索时直接返回原值（避免每条字符串跑 4 次正则）
+_CREDENTIAL_HINT_PATTERN = re.compile(rf"(?i)bearer|sk-|akia|{_CREDENTIAL_KEY_ALTERNATION}")
+
+
+def _mask_keyed_credential(match: re.Match[str]) -> str:
+    """``key=value`` / ``key: value`` → 保留键名与分隔符，凭据值整体遮蔽."""
+    return f"{match.group(1)}{match.group(2)}{MASKED}"
+
+
+def _mask_credentials_in_text(value: str) -> str:
+    """自由文本凭据兜底（键名脱敏之外的补充口径，不改动键名匹配语义）.
+
+    Args:
+        value: 待检查的字符串值。
+
+    Returns:
+        遮蔽凭据后的文本；无线索时原样返回（零额外开销路径）。
+    """
+    if _CREDENTIAL_HINT_PATTERN.search(value) is None:
+        return value
+    masked = value
+    for pattern, replacement in _CREDENTIAL_SUBSTITUTIONS:
+        masked = pattern.sub(replacement, masked)
+    return _CREDENTIAL_KEYED_PATTERN.sub(_mask_keyed_credential, masked)
+
 
 def digest_of(payload: bytes | str) -> str:
     """计算内容摘要（``sha256:<16 hex>``）——只用于同源比对，不可逆推原文.
@@ -103,8 +167,9 @@ def digest_of(payload: bytes | str) -> str:
 
 
 def _mask_text(value: str) -> str:
-    """掩码文本中的个人隐私（手机号 / 证件号 / 邮箱）."""
-    masked = _PHONE_PATTERN.sub(r"\1****\2", value)
+    """掩码文本中的凭据（自由文本兜底）与个人隐私（手机号 / 证件号 / 邮箱）."""
+    masked = _mask_credentials_in_text(value)
+    masked = _PHONE_PATTERN.sub(r"\1****\2", masked)
     masked = _ID_CARD_PATTERN.sub(r"\1**********\2", masked)
     return _EMAIL_PATTERN.sub(lambda m: f"{m.group(1)}{MASKED}@{m.group(3)}", masked)
 

@@ -4,7 +4,7 @@
 - 全部端点挂 require_permission("test:record")：无 token 401 / 无权用户 403；
 - 开轮 / 单条记录 / 改判 / summary 聚合完整闭环；
 - FAIL/BLOCKED 强制 reason，缺 reason → 400；
-- result 非法 → 422（schema 校验）；
+- result 非法 → 400（schema 校验）；
 - best-effort 落库降级不阻断（OPENBASE_AUDIT_DB_PERSIST=0 静默跳过）；
 - 已知 run/record 不存在 → 404。
 """
@@ -143,14 +143,15 @@ def test_record_unknown_run_not_found() -> None:
 
 
 def test_invalid_result_validation_error() -> None:
-    """非法 result（枚举外）→ 422（schema 校验）. """
+    """非法 result（枚举外）→ 400 `PARAM_400`（schema 校验；v1.4.6 Step 4 裁定）."""
     _open_run()
     resp = client.post(
         "/api/v1/test-records",
         json={"run_id": "run-e2e", "case_id": "S0-1", "result": "WEIRD"},
         headers=admin_headers,
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "PARAM_400"
 
 
 # ---- 改判 ----

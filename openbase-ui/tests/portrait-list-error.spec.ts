@@ -10,6 +10,12 @@
  *    不再误导性显示「暂无画像数据」；
  * 3. KPI/上游健康度独立降级，不阻断页面渲染；
  * 4. 重试成功后错误条自动消失并恢复数据。
+ *
+ * 用例预算（DEF-FE-146-003 根因收口）：本文件三条用例均整页挂载 `PortraitList`
+ * （el-table + 固定列 + el-pagination + el-empty）。v8 覆盖率插桩使该挂载耗时放大约 4.7 倍
+ * （实测单用例 3~11s），默认 5s 用例超时会随机击杀其中一条（Step 4 证据：`portrait-list-error`
+ * 1 条 `Test timed out in 5000ms`）。此处**按用例**显式声明 15000ms 预算，不放宽全局
+ * `testTimeout`，避免掩盖其它文件的真实超时。
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -58,7 +64,7 @@ describe('ISSUE-002: 画像列表页错误态（静默吞错回归）', () => {
     expect(empty.exists()).toBe(true)
     expect(empty.text()).toContain('加载失败，请点击上方提示条「点击重试」')
     expect(empty.text()).not.toContain('暂无画像数据')
-  })
+  }, 15000)
 
   it('点击「点击重试」恢复成功后错误条消失并渲染数据', async () => {
     healthyUpstream()
@@ -79,7 +85,7 @@ describe('ISSUE-002: 画像列表页错误态（静默吞错回归）', () => {
     expect(listSpy).toHaveBeenCalledTimes(2)
     expect(wrapper.findAll('.el-table__row').length).toBeGreaterThan(0)
     expect(wrapper.text()).toContain('测试画像')
-  })
+  }, 15000)
 
   it('KPI 与上游健康度独立降级/展示，不因列表失败而静默空白', async () => {
     vi.spyOn(dpsApi, 'getDpsHealth').mockResolvedValue({ status: 'healthy', version: 'v2.8.1' })
@@ -92,5 +98,5 @@ describe('ISSUE-002: 画像列表页错误态（静默吞错回归）', () => {
     expect(kpis.length).toBe(3)
     expect(kpis[0].text()).toContain('40')
     expect(kpis[2].text()).toContain('healthy')
-  })
+  }, 15000)
 })

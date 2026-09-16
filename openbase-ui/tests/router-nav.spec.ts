@@ -6,6 +6,11 @@
  * - S6-T2-2：模块来源唯一（`/modules` + 权限过滤），禁用模块 / 无权模块不可达且不进菜单；
  * - S6-T2-3：顶层导航高亮与当前路由一致（模块子页回退到 `route_prefix`）、图标映射覆盖 + 回退；
  * - S6-T2-4：装载幂等（连续调用路由表稳定）、`console.warn` = 0、`ModuleLayout` 空态兜底。
+ *
+ * 用例预算（DEF-FE-146-003 根因收口）：挂载 `AppLayout` / `ModuleLayout`（el-menu 三层 + 图标 +
+ * 平台四域叶子）的用例实测单条 4~8s；`v8` 覆盖率插桩后放大约 4.7 倍，默认 5s 用例超时会随机击杀
+ * 其中一条（Step 4 证据：本文件 1 条 `Test timed out in 5000ms`）。故对**整壳挂载**用例按用例显式
+ * 声明 15000ms 预算，未放宽全局 `testTimeout`；不挂载壳的路由/注册表用例保持默认预算。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, type Router } from 'vue-router'
@@ -148,7 +153,7 @@ describe('S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）', (
     const wrapper = mountWith(AppLayout, router)
     const menu = wrapper.findComponent({ name: 'ElMenu' })
     expect(menu.props('defaultActive')).toBe('/portrait')
-  })
+  }, 15000)
 
   it('三层菜单：顶层 + 权限过滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪）', async () => {
     const infos = MODULE_INFOS.map((module) =>
@@ -182,7 +187,7 @@ describe('S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）', (
     expect(texts).toContain('全局配置')
     // 模块子页高亮回退到 route_prefix
     expect(wrapper.findComponent({ name: 'ElMenu' }).props('defaultActive')).toBe('/knowledge')
-  })
+  }, 15000)
 
   it('模块图标按 ModuleInfo.icon 映射，未命中回退 ChatDotRound', async () => {
     const iconModules: ModuleInfo[] = [
@@ -223,7 +228,7 @@ describe('S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）', (
     expectedHead.forEach((icon, index) => {
       expect(iconSignature(svgs[index].html())).toBe(standaloneIconSignature(icon))
     })
-  })
+  }, 15000)
 })
 
 describe('S6-T2-4: 装载幂等与告警清零 / 空态兜底', () => {
@@ -262,7 +267,7 @@ describe('S6-T2-4: 装载幂等与告警清零 / 空态兜底', () => {
     expect(router.currentRoute.value.meta.navItems).toBeUndefined()
     expect(wrapper.find('.module-menu').exists()).toBe(false)
     expect(wrapper.find('.module-content').exists()).toBe(true)
-  })
+  }, 15000)
 
   it('ModuleLayout 在 navItems 存在时渲染二级导航分组', async () => {
     vi.spyOn(modulesApi, 'list').mockResolvedValue(MODULE_INFOS)
@@ -276,7 +281,7 @@ describe('S6-T2-4: 装载幂等与告警清零 / 空态兜底', () => {
     expect(wrapper.find('.module-menu').exists()).toBe(true)
     const groups = (router.currentRoute.value.meta.navItems as unknown[]) || []
     expect(groups.length).toBeGreaterThan(0)
-  })
+  }, 15000)
 
   it('一致性检查非空化自检：合成违规子路由必须被检出', () => {
     expect(findNavItemsOverrides([{ path: 'x', meta: {} } as never])).toEqual([])

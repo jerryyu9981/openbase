@@ -111,11 +111,15 @@ def test_switch_requires_auth() -> None:
 
 
 def test_switch_forbidden_without_permission() -> None:
-    """普通用户无 module:manage → 403. """
+    """普通用户无 module:manage → 403 PERM_403（设计 §5 字面值）.
+
+    v1.4.6 契约对齐：module:manage 权限不足字面值由 AUTH_403 调整为 PERM_403。
+    """
     resp = client.patch(
         "/api/v1/modules/openllm", json={"status": "disabled"}, headers=user_headers
     )
     assert resp.status_code == 403
+    assert resp.json()["code"] == "PERM_403"
 
 
 # ---- 状态变更（留痕成功 → 生效） ----
@@ -165,11 +169,12 @@ def test_switch_idempotent_same_status(sqlite_session_factory) -> None:
 
 
 def test_switch_invalid_status_validation() -> None:
-    """status 非法 → 422（schema 枚举白名单）. """
+    """status 非法 → 400 `PARAM_400`（schema 枚举白名单；v1.4.6 Step 4 裁定）."""
     resp = client.patch(
         "/api/v1/modules/openllm", json={"status": "paused"}, headers=admin_headers
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "PARAM_400"
 
 
 def test_switch_unknown_module_not_found() -> None:
@@ -181,6 +186,17 @@ def test_switch_unknown_module_not_found() -> None:
     body = resp.json()
     assert body["code"] == "PARAM_404"
     assert "nosuchmodule" in (body.get("detail") or {}).get("module_id", "")
+
+
+def test_get_unknown_module_not_found() -> None:
+    """GET 单模块不存在 → 404 PARAM_404（v1.4.6 契约对齐：与原 PATCH 双码统一）.
+
+    v1.4.6 裁定：同资源 GET/PATCH 在模块不存在时应返回同一错误码 PARAM_404，
+    消除 BIZ_404 与 PARAM_404 的双码歧义（设计 §5 仅定义 PARAM_404）。
+    """
+    resp = client.get("/api/v1/modules/nosuchmodule", headers=admin_headers)
+    assert resp.status_code == 404
+    assert resp.json()["code"] == "PARAM_404"
 
 
 def test_switch_semantics_unchanged(sqlite_session_factory) -> None:

@@ -119,7 +119,7 @@ const debugging = ref(false)
 const versionOpen = ref(false)
 const versionTimeline = ref([{ version: 3, time: '2026-08-20', desc: '新增熔断参数' }, { version: 2, time: '2026-07-15', desc: '支持租户过滤' }, { version: 1, time: '2026-06-01', desc: '初始发布' }])
 const errorOpen = ref(false)
-const errorCodes = ref([{ code: 'PARAM_422', message: '参数校验失败' }, { code: 'AUTH_401', message: '未登录' }, { code: 'PERM_403', message: '无权限' }, { code: 'SYS_500', message: '内部错误' }])
+const errorCodes = ref([{ code: 'PARAM_400', message: '参数校验失败' }, { code: 'AUTH_401', message: '未登录' }, { code: 'PERM_403', message: '无权限' }, { code: 'SYS_500', message: '内部错误' }])
 
 const filteredApis = computed(() =>
   keyword.value ? apis.value.filter((a) => a.name.includes(keyword.value) || a.path.includes(keyword.value)) : apis.value,

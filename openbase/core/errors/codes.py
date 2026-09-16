@@ -21,12 +21,16 @@ class ErrorCode(str, Enum):
     AUTH_USER_DISABLED = "AUTH_401_DISABLED"
 
     # ---- 参数 ----
-    PARAM_VALIDATION_ERROR = "PARAM_422"
+    # v1.4.6 Step 4 裁定（DEF-BE-146-006 / TD-新增-016）：请求参数校验失败统一
+    # 返回 HTTP 400 + 码字面值 `PARAM_400`，对齐《OpenBase-API接口设计文档-v1.4.6》§5
+    # （source 非法 / page 越界 / page_size 越界 / q 超长 / 时间窗非法 / 导出超限 同码）。
+    # 原全局口径 `PARAM_422`（HTTP 422，FastAPI 默认语义）废止；因「导出超限」与
+    # 「参数校验失败」共用同一码字面值，故合并为同一枚举成员（后者为兼容别名）。
+    PARAM_VALIDATION_ERROR = "PARAM_400"
     PARAM_NOT_FOUND = "PARAM_404"
     PARAM_INVALID = "PARAM_INVALID"
     PARAM_AGGREGATE_STEP_INVALID = "PARAM_AGGREGATE_STEP_INVALID"
-    # 导出命中数超上限（> 10000）→ 按《OpenBase-API接口设计文档-v1.4.6》§5
-    # 「导出超限」行的契约码字面值 `PARAM_400`（HTTP 400，detail 含 {matched, limit}）
+    # 兼容别名：导出命中数超上限（> 10000）→ 与上同码（HTTP 400，detail 含 {matched, limit}）
     PARAM_EXPORT_LIMIT_EXCEEDED = "PARAM_400"
 
     # ---- 业务 ----
@@ -42,6 +46,10 @@ class ErrorCode(str, Enum):
 
     # ---- 权限（PERM_ 前缀，四维管理域） ----
     PERM_FORBIDDEN = "PERM_FORBIDDEN"
+    # v1.4.6 契约对齐（设计 §5 错误码表）：日志/模块端点的权限不足统一字面值
+    # `PERM_403`（原 AUTH_403 实现偏离设计，裁定「仅对齐 v1.4.6 面」）。历史遗留
+    # PERM_FORBIDDEN / AUTH_403 保持现状，记入技术债务总表。
+    PERM_403 = "PERM_403"
 
     # ---- P2-1 协议头/信任链（设计草案 §3.8 错误码表） ----
     # 非受信来源携带身份头（V-5 定案/D-V5）：门禁后入口校验 / 下游 K02 落地
@@ -62,6 +70,10 @@ class ErrorCode(str, Enum):
     SYS_INTERNAL_ERROR = "SYS_500"
     SYS_UPSTREAM_ERROR = "SYS_502"
     SYS_TIMEOUT = "SYS_TIMEOUT"
+    # v1.4.6 日志中心（INT-146-001）：单源不可用必须显式失败，不得静默返回空集。
+    # 契约字面值取自《OpenBase-API接口设计文档-v1.4.6》§5「数据源不可用 → SYS_503 | 503 |
+    # detail={"source":"<源>"}」，与《OpenBase-非功能设计说明-v1.4.6》§5 同口径。
+    SYS_SOURCE_UNAVAILABLE = "SYS_503"
 
     # ---- 网关权限（PERM_ 前缀，统一网关域） ----
     PERM_GATEWAY_REGISTER = "PERM_GATEWAY_REGISTER"
@@ -100,11 +112,11 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.AUTH_TOKEN_INVALID: 401,
     ErrorCode.AUTH_RATE_LIMITED: 429,
     ErrorCode.AUTH_USER_DISABLED: 401,
-    ErrorCode.PARAM_VALIDATION_ERROR: 422,
+    # 参数校验失败（含导出超限，同码字面值）→ 400（v1.4.6 Step 4 裁定）
+    ErrorCode.PARAM_VALIDATION_ERROR: 400,
     ErrorCode.PARAM_NOT_FOUND: 404,
     ErrorCode.PARAM_INVALID: 400,
     ErrorCode.PARAM_AGGREGATE_STEP_INVALID: 400,
-    ErrorCode.PARAM_EXPORT_LIMIT_EXCEEDED: 400,
     ErrorCode.BIZ_TENANT_EXISTS: 409,
     ErrorCode.BIZ_TENANT_NOT_FOUND: 404,
     ErrorCode.BIZ_USER_EXISTS: 409,
@@ -115,6 +127,7 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.BIZ_MODEL_QUOTA: 402,
     ErrorCode.BIZ_AGGREGATE_PARTIAL_FAILURE: 200,
     ErrorCode.PERM_FORBIDDEN: 403,
+    ErrorCode.PERM_403: 403,
     # P2-1 协议头/信任链
     ErrorCode.PERM_UNTRUSTED_IDENTITY_HEADER: 403,
     ErrorCode.PERM_DELEGATION_VERIFY_UNAVAILABLE: 403,
@@ -125,6 +138,8 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.SYS_INTERNAL_ERROR: 500,
     ErrorCode.SYS_UPSTREAM_ERROR: 502,
     ErrorCode.SYS_TIMEOUT: 503,
+    # 单源不可用（数据源/DB 连接失败）→ 503（不静默降级为 200 + 空集）
+    ErrorCode.SYS_SOURCE_UNAVAILABLE: 503,
     ErrorCode.PERM_GATEWAY_REGISTER: 403,
     ErrorCode.PERM_GATEWAY_AGGREGATE: 403,
     ErrorCode.PERM_GATEWAY_VIEW: 403,

@@ -7,21 +7,29 @@
 - ``facets(filters) -> {dimension: Counter}``
 
 排序与过滤在适配器内完成（ts 倒序 + 稳定次序）；分类派生统一走 ``derivation``。
+
+两类源的执行面（INT-146-001）：
+- **文件/内存类源**（``l1_file`` / ``repo_log`` / ``test_record``）→ 同步扫描，由 Service 经
+  ``asyncio.to_thread`` 下沉线程池（阻塞 I/O 不占用事件循环）；
+- **DB 类源**（``audit_db``）→ 只能由主事件循环执行 ``fetch_async``（``async_source=True``）；
+  进程级 async 连接池不可跨事件循环复用，同步入口显式 ``SYS_503`` 而非静默降级。
 """
 
 from __future__ import annotations
 
+import heapq
 import json
 import logging
 import os
 import re
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
+from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.mask import mask_sensitive
 from openbase.modules.logs.derivation import (
     REPO_LOG_SOURCES,
@@ -29,6 +37,7 @@ from openbase.modules.logs.derivation import (
     derive_operation,
     derive_result_from_status,
     derive_result_from_test,
+    module_path_prefixes,
     module_to_svc_dir,
     svc_dir_to_module,
 )
@@ -40,6 +49,7 @@ from openbase.modules.logs.schemas import (
 )
 
 logger = logging.getLogger("openbase.logs")
+
 
 def _default_log_root() -> Path:
     """日志根目录：每次调用实时读 ``OPENBASE_LOG_DIR``，便于测试注入与配置切换（不缓存）。"""
@@ -55,6 +65,9 @@ _TAG_RE = re.compile(r"\[[^]]*\]|\s+")
 _ACCESS_RE = re.compile(
     r"(?P<ip>[\d.:]+)\s+-\s+-\s+\"(?P<method>[A-Z]+)\s+(?P<path>\S+)[^\"]*\".*?(?P<code>\d{3})"
 )
+# 可用作**原始文本预筛**的过滤值字符集：这些字符不会被 JSON 序列化转义，
+# 故「原文包含该值」与「解析后取值包含该值」等价（预筛只做保守的否定判定）。
+_RAW_FILTER_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.:/@+\-]+$")
 
 # 脱敏 allowlist：result/level 等非敏感键保留，summary 内含敏感键会被 mask_sensitive 遮蔽
 MASK_ALLOWLIST: tuple[str, ...] = (
@@ -65,6 +78,13 @@ MASK_ALLOWLIST: tuple[str, ...] = (
     "method",
     "path",
 )
+
+
+def _raw_filter_token(value: str | None) -> str | None:
+    """把过滤值转换为可用于原始文本预筛的形式（不适合预筛时返回 None = 放弃该维度预筛）."""
+    if not value:
+        return None
+    return value if _RAW_FILTER_TOKEN_RE.match(value) else None
 
 
 @dataclass
@@ -83,6 +103,10 @@ class Filters:
     run_id: str | None = None
     step_id: int | str | None = None
     limit: int = 200000
+    # 分页收口（PERF-146-001）：仅返回排序前 ``item_cap`` 条（``None`` = 全量返回）。
+    # ``total`` / ``truncated`` 语义**不变**（仍为扫描范围内的精确命中数与截断标注），
+    # 供分页检索按「本页末尾下标」收口，避免为一个分页请求物化整片命中集。
+    item_cap: int | None = None
 
 
 @dataclass
@@ -124,10 +148,31 @@ def _parse_ts(ts: str | None) -> datetime | None:
     return parsed
 
 
+class MatchableLogRow(Protocol):
+    """过滤所需的字段子集（``LogEntry`` 与 :class:`_ScannedEntry` 共同满足）.
+
+    适配器可在**不物化 Pydantic 实体**的前提下复用同一套过滤口径（避免口径分叉）。
+    """
+
+    ts: str | None
+    module: str
+    operation: str
+    result: str
+    request_id: str | None
+    path: str | None
+    operator_id: str | None
+    ip_address: str | None
+
+
 class BaseRepository:
     """共享的 filter 匹配与 facets 归集（按同口径供各适配器复用）。"""
 
-    def _entry_matches(self, entry: LogEntry, filters: Filters) -> bool:
+    #: 取数是否**必须**在主事件循环内执行（DB 类源为 True：进程级 async 连接池不可
+    #: 跨事件循环复用，见 :class:`AuditDbAdapter`）；文件/内存类源为 False（同步扫描，
+    #: 由 Service 经 ``asyncio.to_thread`` 下沉线程池）。
+    async_source: bool = False
+
+    def _entry_matches(self, entry: MatchableLogRow, filters: Filters) -> bool:
         if filters.modules and entry.module not in filters.modules:
             return False
         if filters.operations and entry.operation not in filters.operations:
@@ -161,7 +206,7 @@ class BaseRepository:
             return False
         return True
 
-    def _matches(self, entry: LogEntry, filters: Filters) -> bool:
+    def _matches(self, entry: MatchableLogRow, filters: Filters) -> bool:
         return self._time_window(entry.ts, filters) and self._entry_matches(entry, filters)
 
     def _aggregate(
@@ -194,10 +239,73 @@ class BaseRepository:
         return FetchResult(items=sorted_entries, total=len(sorted_entries), truncated=truncated)
 
 
+@dataclass(slots=True)
+class _ScannedEntry:
+    """L1 分片扫描的轻量候选（PERF-146-001：**延迟物化** LogEntry）.
+
+    字段与 :class:`LogEntry` 的过滤/排序相关字段逐一对应，使 ``_matches`` 与排序口径
+    零分叉复用；Pydantic 校验与脱敏（``mask_sensitive``）推迟到真正对外返回时执行——
+    分页请求只需「排序前 N 条」，scan 阶段不做整片物化。
+    """
+
+    ts: str | None
+    module: LogModule
+    operation: LogOperation
+    result: LogResult
+    request_id: str | None
+    method: str | None
+    path: str | None
+    status_code: int | None
+    duration_ms: int | None
+    operator_id: str | None
+    tenant_id: str | None
+    ip_address: str | None
+    case_id: str | None
+    step_id: int | str | None
+    run_id: str | None
+    action: str | None
+    summary_props: dict[str, Any] | None
+    sequence: int = 0
+    source: str = "l1_file"
+
+    def heap_key(self) -> tuple[str, str, str, int]:
+        """排序键（与既有 ``_slice`` 口径一致：ts → request_id → path 倒序；同键按扫描序）."""
+        return (self.ts or "", self.request_id or self.source, self.path or "", -self.sequence)
+
+    def to_log_entry(self) -> LogEntry:
+        """物化为对外契约实体（此处才脱敏：summary 必经 :func:`mask_sensitive`）."""
+        return LogEntry(
+            ts=self.ts,
+            source="l1_file",
+            module=self.module,
+            operation=self.operation,
+            result=self.result,
+            request_id=self.request_id,
+            method=self.method,
+            path=self.path,
+            status_code=self.status_code,
+            duration_ms=self.duration_ms,
+            operator_id=self.operator_id,
+            tenant_id=self.tenant_id,
+            ip_address=self.ip_address,
+            case_id=self.case_id,
+            step_id=self.step_id,
+            run_id=self.run_id,
+            action=self.action,
+            summary=_mask_props(self.summary_props) if self.summary_props else None,
+        )
+
+
 class L1FileAdapter(BaseRepository):
     """读取 L1 结构化日志 ``logs/openbase/openbase-YYYYMMDD.jsonl``.
 
     三重路径校验（AC-146-07-3）：时间窗推导文件名（非用户拼接）+ 白名单正则 + Path.resolve 确认在目录内。
+
+    扫描实现（PERF-146-001）：
+    ① **逐分片**读取（分片内按行序倒转，newest-first；上限 ``limits["max_lines"]`` 兜底）；
+    ② ``json.loads`` 前做**廉价文本预筛**（关键字 / module 前缀 / 操作人；仅做保守否定判定）；
+    ③ 匹配判定在轻量候选上完成，仅对需要返回的条目物化 ``LogEntry`` + 脱敏；
+    ④ ``filters.item_cap`` 允许分页检索只保留「排序前 N 条」，``total`` / ``truncated`` 语义不变。
     """
 
     name_re: Callable[[], re.Pattern[str]] = staticmethod(lambda: _L1_NAME_RE)
@@ -240,30 +348,109 @@ class L1FileAdapter(BaseRepository):
         return resolved.is_relative_to(base.resolve()) and bool(self.name_re().match(target.name))
 
     def fetch(self, filters: Filters) -> FetchResult:
-        matched: list[LogEntry] = []
+        """分片倒序流式扫描 → 命中计数 + 排序 + 按 ``item_cap`` 收口（禁止静默截断）."""
+        item_cap = None if filters.item_cap is None else max(1, filters.item_cap)
+        kept: list[tuple[tuple[str, str, str, int], _ScannedEntry]] = []
+        total = 0
         for path in self._slice_documents(filters):
-            for raw in self._safe_read_lines(path):
-                if len(matched) >= filters.limit:
+            for raw in self._iter_raw_lines(path):
+                if total >= filters.limit:
                     break
-                if not raw.strip():
+                if not self._prefilter_hits(raw, filters):
                     continue
                 data = json.loads(raw) if _looks_json(raw) else None
                 if data is None:
                     continue
-                entry = self._parse_entry_from_data(data)
-                if entry is not None and self._matches(entry, filters):
-                    matched.append(entry)
-        return self._slice(matched, filters)
+                candidate = self._scan_entry_from_data(data)
+                if candidate is None or not self._matches(candidate, filters):
+                    continue
+                total += 1
+                candidate.sequence = total
+                self._keep_candidate(kept, candidate, item_cap)
+        return FetchResult(
+            items=self._materialize(kept),
+            total=total,
+            truncated=total >= filters.limit,
+        )
 
-    def _parse_entry_from_data(self, data: dict[str, Any]) -> LogEntry | None:
+    def _iter_raw_lines(self, path: Path) -> Iterator[str]:
+        """读取某日分片为「新→旧」行序（去掉行尾换行与空白）.
+
+        分片内按行序倒转：日志按时间追加、新行在文件末尾，倒转后与「分片倒序流式扫描」
+        （`_slice_documents` 新分片优先）口径一致——`limit` 触顶提前 break 时命中最新一组，
+        保证偶发截断不吞掉最新窗口。不可读/编码异常 → 中止该分片（不中断整体检索）。
+        """
+        try:
+            handle = path.open("r", encoding="utf-8")
+        except OSError:
+            return
+        try:
+            with handle:
+                lines = [line.strip() for line in handle if line.strip()]
+        except (OSError, UnicodeDecodeError):
+            logger.warning("l1 shard read aborted", extra={"shard": path.name})
+            return
+        yield from reversed(lines)
+
+    def _prefilter_hits(self, raw: str, filters: Filters) -> bool:
+        """廉价字符串预筛：仅在**必然不可能命中**时返回 False（保守否定，不做正判定）.
+
+        仅覆盖过滤条件中与「解析后取值」同形的维度（关键字 / module path 前缀 / 操作人）；
+        取值含 JSON 转义字符时自动放弃该维度预筛（回退全量解析），保证不误杀。
+        """
+        lowered: str | None = None
+        keyword = _raw_filter_token(filters.q)
+        if keyword is not None:
+            lowered = raw.lower()
+            if keyword.lower() not in lowered:
+                return False
+        if filters.operators:
+            operator_tokens = [_raw_filter_token(value) for value in filters.operators]
+            if all(token is not None for token in operator_tokens):
+                if lowered is None:
+                    lowered = raw.lower()
+                if not any(str(token).lower() in lowered for token in operator_tokens):
+                    return False
+        if filters.modules:
+            prefixes = tuple(
+                prefix for module in filters.modules for prefix in module_path_prefixes(module)
+            )
+            if prefixes and "other" not in filters.modules:
+                if not any(prefix in raw for prefix in prefixes):
+                    return False
+        return True
+
+    def _keep_candidate(
+        self,
+        kept: list[tuple[tuple[str, str, str, int], _ScannedEntry]],
+        candidate: _ScannedEntry,
+        item_cap: int | None,
+    ) -> None:
+        """维护「排序键倒序前 ``item_cap`` 条」（``None`` = 全量保留，次序由物化阶段统一排序）."""
+        entry = (candidate.heap_key(), candidate)
+        if item_cap is None:
+            kept.append(entry)
+        elif len(kept) < item_cap:
+            heapq.heappush(kept, entry)
+        elif entry[0] > kept[0][0]:
+            heapq.heapreplace(kept, entry)
+
+    def _materialize(
+        self, kept: list[tuple[tuple[str, str, str, int], _ScannedEntry]]
+    ) -> list[LogEntry]:
+        """按排序键倒序物化（``total`` 已由扫描阶段精确计数，与返回条数解耦）."""
+        ordered = sorted(kept, key=lambda pair: pair[0], reverse=True)
+        return [candidate.to_log_entry() for _, candidate in ordered]
+
+    def _scan_entry_from_data(self, data: Any) -> _ScannedEntry | None:
+        """把单行 JSON 解析为轻量候选（不做 Pydantic 校验与脱敏）."""
         if not isinstance(data, dict):
             return None
         method = data.get("method")
         status = data.get("status_code")
         summary = {k: data[k] for k in ("resp_status", "resp_headers", "upstream_status") if k in data}
-        return LogEntry(
+        return _ScannedEntry(
             ts=_iso(data.get("ts")),
-            source="l1_file",
             module=derive_module_from_path(data.get("path")),
             operation=derive_operation(method, data.get("path"), data.get("action")),
             result=derive_result_from_status(status),
@@ -279,36 +466,37 @@ class L1FileAdapter(BaseRepository):
             step_id=data.get("step_id"),
             run_id=data.get("run_id"),
             action=data.get("action"),
-            summary=_mask_props(summary) if summary else None,
+            summary_props=summary or None,
         )
 
-    def _safe_read_lines(self, path: Path) -> list[str]:
-        try:
-            return path.read_text(encoding="utf-8").splitlines()
-        except (OSError, UnicodeDecodeError):
-            return []
+    def _parse_entry_from_data(self, data: Any) -> LogEntry | None:
+        """把单行 JSON 解析为对外契约实体（候选物化，summary 必经脱敏）."""
+        candidate = self._scan_entry_from_data(data)
+        return None if candidate is None else candidate.to_log_entry()
 
     def facets(self, filters: Filters) -> dict[str, Counter]:
-        entries = self._fetch_all(filters)
-        return self._aggregate(entries)
-
-    def _fetch_all(self, filters: Filters) -> list[LogEntry]:
-        matched: list[LogEntry] = []
-        for path in self._slice_documents(filters):
-            for raw in self._safe_read_lines(path):
-                if not raw.strip():
-                    continue
-                data = json.loads(raw) if _looks_json(raw) else None
-                if data is None:
-                    continue
-                entry = self._parse_entry_from_data(data)
-                if entry is not None and self._matches(entry, filters):
-                    matched.append(entry)
-        return matched
+        return self._aggregate(self.fetch(filters).items)
 
 
 class AuditDbAdapter(BaseRepository):
-    """查询 ``audit_logs`` 表（SQL 参数化，detail JSON 取值，COUNT + 分页两步）。"""
+    """查询 ``audit_logs`` 表（SQL 参数化，detail JSON 取值，分页由 limit 收口）.
+
+    取数**必须**在主事件循环内执行（:meth:`fetch_async`）：进程级 async 连接池
+    （``core.db.session.get_session_factory``）不可跨事件循环复用——原实现在工作线程内
+    ``asyncio.run()`` 复用主循环的连接池，线程内报
+    ``AttributeError: 'NoneType' object has no attribute 'send'``，并反向污染主循环
+    （``InterfaceError: cannot perform operation: another operation is in progress``）；
+    且该异常被吞成「200 + total=0」的**静默降级**。
+
+    当前口径（INT-146-001 / 非功能设计 §5）：
+    - 正常路径 → 真实返回库内行；
+    - 源不可用 → :class:`BaseError` ``SYS_503``（HTTP 503，``detail={"source":"audit_db"}``），
+      不静默返回空集、不跨源兜底；
+    - **同步入口显式失败**（不自行驱动事件循环），保证任何调用方都不会再踩跨循环复用。
+    """
+
+    #: DB 源取数须在主事件循环执行（见类文档）
+    async_source: bool = True
 
     def __init__(self) -> None:
         self.limits = {"max_days": 2, "max_lines": 200000}
@@ -338,7 +526,7 @@ class AuditDbAdapter(BaseRepository):
             )
         return conditions
 
-    async def _fetch_async(self, filters: Filters) -> list:
+    async def _fetch_rows(self, filters: Filters) -> list:
         from sqlalchemy import select
 
         from openbase.core.models import AuditLog
@@ -379,20 +567,52 @@ class AuditDbAdapter(BaseRepository):
             summary=_mask_props(detail) if detail else None,
         )
 
-    def fetch(self, filters: Filters) -> FetchResult:
-        try:
-            import asyncio
+    async def fetch_async(self, filters: Filters) -> FetchResult:
+        """主事件循环内取数；源不可用 → ``SYS_503``（不静默降级）.
 
-            rows = asyncio.run(self._fetch_async(filters))
-        except Exception:  # noqa: BLE001 -> 单源降级
-            logger.warning("audit_db source fetch degraded", extra={"exc": "AuditDbAdapter"})
-            return FetchResult(items=[], total=0, truncated=False)
-        entries = [self._to_entry(r) for r in rows]
-        return self._slice(entries, filters)
+        Raises:
+            BaseError: ``SYS_SOURCE_UNAVAILABLE``（``SYS_503``，503），
+                ``detail={"source": "audit_db"}``。
+        """
+        try:
+            rows = await self._fetch_rows(filters)
+        except BaseError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - 单源不可用 → 显式 503（不静默）
+            logger.warning(
+                "audit_db source unavailable",
+                extra={"source": "audit_db", "error": type(exc).__name__},
+            )
+            raise BaseError(
+                ErrorCode.SYS_SOURCE_UNAVAILABLE,
+                "audit_db source unavailable",
+                detail={"source": "audit_db"},
+            ) from exc
+        return self._slice([self._to_entry(row) for row in rows], filters)
+
+    def fetch(self, filters: Filters) -> FetchResult:
+        """同步入口：显式失败（禁止在工作线程内自建事件循环复用进程级连接池）.
+
+        Raises:
+            BaseError: ``SYS_SOURCE_UNAVAILABLE``（``SYS_503``）。调用方应改用
+                :meth:`fetch_async`（由 Service/Router 在主事件循环内调用）。
+        """
+        raise BaseError(
+            ErrorCode.SYS_SOURCE_UNAVAILABLE,
+            "audit_db source requires the async query path",
+            detail={"source": "audit_db"},
+        )
+
+    async def facets_async(self, filters: Filters) -> dict[str, Counter]:
+        return self._aggregate((await self.fetch_async(filters)).items)
 
     def facets(self, filters: Filters) -> dict[str, Counter]:
-        fetch = self.fetch(filters)
-        return self._aggregate(fetch.items)
+        """同步入口：同 :meth:`fetch`（显式失败，不静默）."""
+        raise BaseError(
+            ErrorCode.SYS_SOURCE_UNAVAILABLE,
+            "audit_db source requires the async query path",
+            detail={"source": "audit_db"},
+        )
 
 
 class TestRecordAdapter(BaseRepository):
@@ -538,6 +758,10 @@ class RepoLogAdapter(BaseRepository):
                 data = None
             if isinstance(data, dict):
                 ts = _iso(data.get("ts") or data.get("timestamp") or data.get("time") or (timestamps[0] if timestamps else None))
+                if ts is None:
+                    # DEF-BE-146-001：无法解析时间戳的行不能进入 LogEntry（ts 为必填 str），
+                    # 否则整源以容器级异常崩坏；按既有「坏行跳过」口径丢弃（由 fetch 汇总告警）。
+                    return None
                 method = data.get("method")
                 path = data.get("path") or data.get("url")
                 status = data.get("status") or data.get("status_code")
@@ -564,7 +788,10 @@ class RepoLogAdapter(BaseRepository):
                     ),
                 )
         # 纯文本回退：解析时间戳 + 接入访问日志（method/path/code）
-        ts = timestamps[0] if timestamps else None
+        if not timestamps:
+            # DEF-BE-146-001：厂商横幅 / 堆栈续行等无时间戳行丢弃，不得使整源崩坏。
+            return None
+        ts = timestamps[0]
         access = _ACCESS_RE.search(line)
         if access:
             method = access.group("method")
@@ -595,8 +822,20 @@ class RepoLogAdapter(BaseRepository):
             summary={"raw": _mask_props({"line": line[:200]})} if line else None,
         )
 
+    def _warn_dropped(self, scanned: int, parsed: int) -> None:
+        """丢弃行汇总告警（DEF-BE-146-001 可观测性）：不静默降级，丢弃量可追溯."""
+        dropped = scanned - parsed
+        if dropped <= 0:
+            return
+        logger.warning(
+            "repo_log unscannable lines dropped",
+            extra={"source": "repo_log", "scanned": scanned, "parsed": parsed, "dropped": dropped},
+        )
+
     def fetch(self, filters: Filters) -> FetchResult:
         matched: list[LogEntry] = []
+        scanned = 0
+        parsed = 0
         for svc in self._module_to_svc(filters):
             svc_dir = self.log_root / svc
             svc_counter = 0
@@ -608,10 +847,17 @@ class RepoLogAdapter(BaseRepository):
                 for line in lines:
                     if svc_counter >= filters.limit:
                         break
+                    if not line.strip():
+                        continue
+                    scanned += 1
                     entry = self._parse_line(svc, line)
-                    if entry is not None and self._matches(entry, filters):
+                    if entry is None:
+                        continue
+                    parsed += 1
+                    if self._matches(entry, filters):
                         svc_counter += 1
                         matched.append(entry)
+        self._warn_dropped(scanned, parsed)
         return self._slice(matched, filters)
 
     def facets(self, filters: Filters) -> dict[str, Counter]:

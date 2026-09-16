@@ -103,7 +103,7 @@ def test_l1_log_carries_structured_response_fields(
 def test_summary_captured_and_masked_when_switch_on(monkeypatch: pytest.MonkeyPatch) -> None:
     """开：读取 JSON 响应体生成摘要，且摘要中的手机号已被掩码（开时脱敏生效）."""
     monkeypatch.setenv("OPENBASE_CAPTURE_RESPONSE", "1")
-    # 触发 422 校验错误：错误信封的 detail[].input 会回带提交原文（承载隐私文本）
+    # 触发参数校验错误：错误信封的 detail[].input 会回带提交原文（承载隐私文本）
     resp = client.post(
         "/api/v1/test-records",
         json={
@@ -115,7 +115,7 @@ def test_summary_captured_and_masked_when_switch_on(monkeypatch: pytest.MonkeyPa
         },
         headers=admin_headers,
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 400  # v1.4.6 Step 4 裁定：参数校验统一 400 PARAM_400
 
     row = _last_record()
     assert "resp_summary" in row, "开关开启且层级合规时应产出摘要"

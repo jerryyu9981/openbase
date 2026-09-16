@@ -71,6 +71,76 @@ def test_privacy_masked_inside_free_text() -> None:
     assert "bob@corp.io" not in masked["remark"]
 
 
+# ---- 自由文本凭据兜底（缺陷 SEC-146-001）----
+#
+# 背景：键名脱敏只覆盖「键名命中敏感片段」的结构化字段；上游日志（尤其 repo_log 源的
+# ``summary.message`` 与纯文本回退的 ``summary.raw.line``）常把凭据写在**自由文本**里，
+# 键名脱敏无从命中 → 明文回显（实测 ``assert 'sk-...' in body → True``）。
+# 下列断言锁定「自由文本凭据模式兜底」：值域内的凭据必须被遮蔽为 ``***``。
+
+# 真实形态样例：OpenLLM 服务 Key / Bearer JWT / AWS Access Key ID
+SECRET_SK_KEY = "sk-openllm-ffffffffffffffffffffffffffffffff"
+SECRET_BEARER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3In0.c2lnbmF0dXJl"
+SECRET_AWS_AKIA = "AKIAIOSFODNN7EXAMPLE"
+
+
+def _credential_free_text() -> str:
+    """构造同时含 5 类凭据写法的上游自由文本（覆盖要求的最小模式集）."""
+    return (
+        f"upstream=openllm api_key={SECRET_SK_KEY} "
+        f"Authorization: Bearer {SECRET_BEARER} "
+        f"token=t-9f8e7d6c5b4a password=P@ssw0rd-2026 secret=s3cr3t-value-2026 "
+        f"aws_access={SECRET_AWS_AKIA}"
+    )
+
+
+def test_free_text_credentials_are_masked() -> None:
+    """自由文本内的凭据（sk-* / Bearer * / token=* / password=* / secret=* / api_key=* / AKIA*）被遮蔽."""
+    text = _credential_free_text()
+    masked = mask_sensitive({"message": text})["message"]
+
+    assert SECRET_SK_KEY not in masked
+    assert SECRET_BEARER not in masked
+    assert SECRET_AWS_AKIA not in masked
+    assert "t-9f8e7d6c5b4a" not in masked
+    assert "P@ssw0rd-2026" not in masked
+    assert "s3cr3t-value-2026" not in masked
+    # 键名保留（便于归因），值整体遮蔽
+    assert "api_key=***" in masked
+    assert "Bearer ***" in masked
+    assert "token=***" in masked
+    assert "password=***" in masked
+    assert "secret=***" in masked
+
+
+def test_credentials_masked_in_nested_and_list_values() -> None:
+    """嵌套对象 / 数组内的自由文本同样逐字符串值兜底（``raw.line`` 形态）."""
+    masked = mask_sensitive(
+        {
+            "raw": {"line": f'POST /v1/chat/completions x-api-key={SECRET_SK_KEY} 200'},
+            "events": [f"retry with Bearer {SECRET_BEARER}"],
+        }
+    )
+    assert SECRET_SK_KEY not in masked["raw"]["line"]
+    assert SECRET_BEARER not in masked["events"][0]
+
+
+def test_credential_patterns_do_not_widen_key_name_masking() -> None:
+    """既有键名脱敏口径不放宽：非敏感键的非凭据文本保持原值."""
+    masked = mask_sensitive(
+        {
+            "user": "alice",
+            "event.name": "proxy.outbound",
+            "batch_id": "B-2026-0915",
+            "api_key": "any-non-pattern-value",
+        }
+    )
+    assert masked["user"] == "alice"
+    assert masked["event.name"] == "proxy.outbound"
+    assert masked["batch_id"] == "B-2026-0915"
+    assert masked["api_key"] == MASKED  # 键名命中 → 整体遮蔽（不变）
+
+
 # ---- 隐私业务域 ----
 
 def test_redacted_domain_keeps_shape_not_content() -> None:

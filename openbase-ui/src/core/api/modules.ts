@@ -9,7 +9,7 @@
  */
 import { http, type ApiSuccess } from './http'
 
-/** 模块开关响应（后端 PATCH 返回 data，扁平字段） */
+/** 模块开关响应（后端 PATCH 返回统一信封 `{code, message, data}`，`data` 为扁平字段） */
 export interface ModuleSwitchResult {
   id: string
   status: 'enabled' | 'disabled'
@@ -34,12 +34,16 @@ export const modulesWriteApi = {
   /**
    * 模块启用/停用（POST → PATCH）。返回生效语义与请求号。
    *
+   * 解包口径与 `logs.ts` 一致：后端返回统一信封 `{code, message, data}`，
+   * 此处**必须**取 `data.data`（业务对象），否则调用方按扁平字段读取会全部得到
+   * `undefined`（DEF-FE-146-001）。类型声明同步为 `ApiSuccess<ModuleSwitchResult>`。
+   *
    * @param moduleId 模块 ID（如 `openllm`）
    * @param status   目标状态
    */
   async switch(moduleId: string, status: 'enabled' | 'disabled'): Promise<ModuleSwitchResult> {
-    const { data } = await http.patch<ModuleSwitchResult>(`/modules/${moduleId}`, { status })
-    return data
+    const { data } = await http.patch<ApiSuccess<ModuleSwitchResult>>(`/modules/${moduleId}`, { status })
+    return data.data
   },
 }
 

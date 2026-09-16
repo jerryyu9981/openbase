@@ -51,7 +51,8 @@ export interface LogQuery {
   to?: string
   case_id?: string
   run_id?: string
-  step_id?: number | string
+  /** `null` 显式剔除（与后端 `int|str|None` 契约及 buildLogParams 运行时处理一致） */
+  step_id?: number | string | null
 }
 
 /** search 响应（API §3.1） */

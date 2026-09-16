@@ -49,6 +49,25 @@ def derive_module_from_path(path: str | None) -> LogModule:
     return "other"
 
 
+def module_path_prefixes(module: LogModule) -> tuple[str, ...]:
+    """module → 其 path 前缀集合（供扫描期**廉价预筛**复用同一派生规则，避免口径分裂）.
+
+    预筛只做「必然不命中」的否定判定：请求的 module 对应的前缀均未出现在原始行文本中时，
+    该行的派生 module 必不等于请求值（``derive_module_from_path`` 仅依赖 path 前缀）。
+    规则表仍以 :data:`_MODULE_PREFIX_RULES` 为唯一事实源，本函数不新增规则。
+
+    Args:
+        module: 目标 module 枚举值。
+
+    Returns:
+        该 module 的 path 前缀元组；``other`` 等无前缀规则的取值返回空元组。
+    """
+    for prefixes, candidate_module in _MODULE_PREFIX_RULES:
+        if candidate_module == module:
+            return prefixes
+    return ()
+
+
 # ---- operation 派生（API §4.2，顺序优先）----
 _AUTH_LOGIN_PATH_TOKENS: tuple[str, ...] = ("/auth/login", "/oidc/")
 _CONFIG_TOKENS: tuple[str, ...] = ("config", "settings", "switch")
@@ -134,6 +153,7 @@ __all__ = [
     "derive_operation",
     "derive_result_from_status",
     "derive_result_from_test",
+    "module_path_prefixes",
     "svc_dir_to_module",
     "module_to_svc_dir",
 ]

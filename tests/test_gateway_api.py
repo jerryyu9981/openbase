@@ -72,13 +72,14 @@ def test_register_and_deregister_via_api() -> None:
 
 
 def test_register_schema_validation() -> None:
-    """非法端口 → 422 校验错误."""
+    """非法端口 → 400 `PARAM_400` 校验错误（v1.4.6 Step 4 裁定）."""
     resp = client.post(
         "/api/v1/services",
         headers=admin_headers,
         json={"system": "openllm", "host": "h", "port": 99999},
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "PARAM_400"
 
 
 # ---- 网关健康 API ----
@@ -113,13 +114,14 @@ def test_gateway_ping_api() -> None:
 # ---- 聚合 API ----
 
 def test_aggregate_api_validation() -> None:
-    """空 steps → 422（schema 层 min_length 校验拦截，契约预期）."""
+    """空 steps → 400 `PARAM_400`（schema 层 min_length 校验拦截，契约预期）."""
     resp = client.post(
         "/api/v1/gateway/aggregate",
         headers=admin_headers,
         json={"steps": [], "mapping": {}},
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "PARAM_400"
 
 
 def test_aggregate_api_return_errors(monkeypatch: pytest.MonkeyPatch) -> None:
