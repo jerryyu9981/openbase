@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.6 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 状态 | [Approved] |
 | 审计师 | AU-OpenBase-Ops |
 | 审计日期 | 2026-09-16 |
@@ -54,7 +54,7 @@
 | 4 | 审计报告确认 | 本报告 §2 阶段 6/6 通过 | ✅ |
 | 5 | 全阶段产出物盘点 | §3 空输出率 0% | ✅ |
 | 6 | 路线图已更新 | `grep v1.4.6 版本迭代路线图.md` → 已发布（v0.23.0） | ✅ |
-| 7 | release 执行 | commit b39ed64 + tag v1.4.6 | ✅ |
+| 7 | release 执行 | commit bfc0572 + tag v1.4.6（6e86d7d7） | ✅ |
 | 8 | tag 推送 origin | `git ls-remote origin refs/tags/v1.4.6` → 匹配 | ✅ |
 | 9 | tag 推送 backup | `git ls-remote backup refs/tags/v1.4.6` → 匹配 | ✅ |
 | 10 | Tag 存在性 | `git tag -l v1.4.6` → v1.4.6 | ✅ |
@@ -101,3 +101,4 @@
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-16 | AU-OpenBase-Ops | 初始创建：v1.4.6 全流程闭环审计（阶段 6/6，产出 0% 空，Checklist 14/14，追溯 100% 闭环） |
+| v1.0.1 | 2026-09-16 | AU-OpenBase-Ops | 回填 release 证据：release 执行锚点由 b39ed64 更正为 bfc0572；Checklist #7~#11 经 `git ls-remote` 独立复验一致 |
