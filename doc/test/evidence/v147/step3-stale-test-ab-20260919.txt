@@ -1,0 +1,67 @@
+﻿=== R-384 / BL-147-04 存量测试日期腐化 A/B 对照（2026-09-19） ===
+被测: tests/test_logs_service.py（3 项失败）；命令: python -m pytest tests/test_logs_service.py -q
+臂 A = 未含本次改动（git stash 回退 repository.py / service-orchestrator.ps1 / test_logs_service.py）；臂 B = 含本次改动
+
+---- 臂 A：未含本次改动（pristine HEAD + 硬编码 fixture）----
+git : warning: in the working copy of 'tests/test_logs_service.py', LF will be replaced by CRLF the next time Git touch
+es it
+At line:21 char:1
++ git stash push -m 'ab-arm-a' -- openbase/modules/logs/repository.py s ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Saved working directory and index state On main: ab-arm-a
+warning: in the working copy of 'tests/test_logs_service.py', LF will be replaced by CRLF the next time Git touches it
+
+E       assert 0 == 3
+E       AssertionError: assert 0 == 3
+E        +  where 0 = ExportPayload(media_type='text/csv; charset=utf-8', filename='logs-l1_file-20260919-210424.csv', 
+content='\ufeffts,sou...,path,status_code,duration_ms,operator_id,tenant_id,ip_address,case_id,step_id,run_id,action,su
+mmary\r\n', row_count=0).row_count
+E       Failed: DID NOT RAISE BaseError
+tests\test_logs_service.py:306: Failed
+FAILED tests/test_logs_service.py::test_service_search_pagination_and_facets - assert 0 == 3
+FAILED tests/test_logs_service.py::test_service_export_csv_and_json - AssertionError: assert 0 == 3
+ +  where 0 = ExportPayload(media_type='text/csv; charset=utf-8', filename='logs-l1_file-20260919-210424.csv', content=
+'\ufeffts,sou...,path,status_code,duration_ms,operator_id,tenant_id,ip_address,case_id,step_id,run_id,action,summary\r\
+n', row_count=0).row_count
+FAILED tests/test_logs_service.py::test_service_export_over_limit_raises_param_error - Failed: DID NOT RAISE BaseError
+3 failed, 15 passed in 34.01s
+
+
+git stash pop:
+On branch main
+Your branch is up to date with 'backup/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .devflow/state.json
+	modified:   "doc/planning/OpenBase-R384\345\233\233\344\273\223\346\226\275\345\267\245\346\264\276\345\215\225-v1.0.0.md"
+	modified:   "doc/planning/OpenBase-R384\346\224\271\345\212\250\345\214\205-v1.0.0.md"
+	modified:   "doc/planning/OpenBase-R384\346\264\276\345\215\225\345\210\206\345\217\221\346\270\205\345\215\225-v1.0.0.md"
+	modified:   "doc/release/OpenBase-R384\345\233\233\344\273\223\346\227\245\345\277\227\346\216\245\345\205\245\350\246\206\347\233\226\347\212\266\346\200\201\350\257\264\346\230\216-v1.4.6.md"
+	modified:   "doc/version/releases/v1.4.7/OpenBase-\346\234\254\347\211\210\346\234\254Backlog-v1.4.7.md"
+	modified:   openbase/modules/logs/repository.py
+	modified:   scripts/service-orchestrator.ps1
+	modified:   tests/test_logs_service.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	doc/development/OpenBase-DevLogReport-v1.4.7.md
+	doc/test/evidence/v147/
+	openbase-ui/coverage-gate-result.json
+	scripts/verify_repo_log_naming.py
+	tests/test_r384_repo_log_naming.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Dropped refs/stash@{0} (3955c03ceaf96556e4c25ea0171f76d323540692)
+
+---- 臂 B：含本次改动（fixture 改回该文件自身 TODAY 动态口径）----
+
+18 passed in 23.61s
+
+
+
+结论：两臂对照 —— 臂 A 同样 3 项失败（断言逐字一致）→ 与本次改动无因果关系；臂 B 全绿。

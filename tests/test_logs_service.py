@@ -228,7 +228,7 @@ def test_service_search_pagination_and_facets(monkeypatch: pytest.MonkeyPatch, t
     """service.search：分页/总数/排序；facets 与列表同口径. """
     root = tmp_path / "logs"
     (root / "openbase").mkdir(parents=True, exist_ok=True)
-    (root / "openbase" / "openbase-20260915.jsonl").write_text(
+    (root / "openbase" / f"openbase-{TODAY}.jsonl").write_text(
         "\n".join(L1_LINES), encoding="utf-8"
     )
     monkeypatch.setenv("OPENBASE_LOG_DIR", str(tmp_path / "logs"))
@@ -259,7 +259,7 @@ def test_service_export_csv_and_json(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     """
     root = tmp_path / "logs"
     (root / "openbase").mkdir(parents=True, exist_ok=True)
-    (root / "openbase" / "openbase-20260915.jsonl").write_text(
+    (root / "openbase" / f"openbase-{TODAY}.jsonl").write_text(
         "\n".join(L1_LINES), encoding="utf-8"
     )
     monkeypatch.setenv("OPENBASE_LOG_DIR", str(tmp_path / "logs"))
@@ -296,7 +296,7 @@ def test_service_export_over_limit_raises_param_error(
     """
     root = tmp_path / "logs"
     (root / "openbase").mkdir(parents=True, exist_ok=True)
-    (root / "openbase" / "openbase-20260915.jsonl").write_text(
+    (root / "openbase" / f"openbase-{TODAY}.jsonl").write_text(
         "\n".join(L1_LINES), encoding="utf-8"
     )
     monkeypatch.setenv("OPENBASE_LOG_DIR", str(tmp_path / "logs"))

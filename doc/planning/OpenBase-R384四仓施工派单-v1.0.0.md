@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |------|------|
 | 文档编号 | OB-DISPATCH-R384-CROSSREPO-v1.0.0 |
-| 文档版本 | v1.2.0 |
+| 文档版本 | v1.3.0 |
 | 状态 | [Review] |
 | 作者 | PM-OpenBase-Dev / AA-OpenBase-Dev |
 | 日期 | 2026-09-16 |
@@ -193,13 +193,16 @@ root 直发（logging.getLogger().info）  → "request_id": "req-abc123456789"
 | 回归命令 | `python run_tests.py`；`python -B -m pytest tests/unit -p no:cacheprovider`；`python -m ruff check src scripts tests/unit`；四静态扫描（`scan_no_edgerouter_assembly` / `scan_no_identity_header_bypass` / `scan_tenant_scope` / `scan_auto_purge`）；`python scripts/k07_endpoint_matrix.py`；`python scripts/smoke_l3_2.py`；`python scripts/verify_env_contract.py --fail-fast` |
 | 风险 | 中（启用中间件后日志量上升 → 保持 `log_request_body=False` / `log_response_body=False` 默认；必要时按级别采样） |
 
-## 7. 采集侧施工单（BL-146-18，OpenBase 编排器）
+## 7. 采集侧施工单（BL-146-18 / v1.4.7 BL-147-04，OpenBase 编排器）
 
 | 项 | 内容 |
 |----|------|
 | 归属 | OpenBase 侧（本仓），不在四仓派单范围 |
 | 内容 | 编排器输出命名对齐 `{svc}-YYYYMMDD.jsonl`；扩展名随四仓结构化切换为 `.jsonl` |
-| 当前状态 | DPS / OpenLLM / OpenMemory 已见 `{svc}-YYYYMMDD.log`（按日切分基本落地）；**OpenRAG 仍为启动时间戳命名**，`.jsonl` 扩展名待结构化后对齐 |
+| 当前状态 | **✅ 已实施（2026-09-19，v1.4.7 / BL-147-04）** |
+| 落地口径 | ① **结构化流**采集文件改用 `.jsonl`：stdout 结构化（OpenRAG）→ `{svc}-YYYYMMDD.jsonl`；stderr 结构化（DPS / OpenLLM / OpenMemory）→ `{svc}-YYYYMMDD.err.jsonl`；非结构化流保持 `.log` / `.err.log`；② **归档命名缺陷修复**：同日重复启动归档由 `{svc}-YYYYMMDD.err-HHmmss.log` 改为 `{svc}-YYYYMMDD-HHmmss.err.log`（时间戳须在 `.err` **之前**，否则不匹配适配器白名单 `REPO_LOG_NAME_RE`、日志中心按目录扫描会漏读）；③ 命名单点抽为 `Get-ServiceLogFileName` / `Get-ServiceLogArchiveName`；④ 新增 `-Action namecheck` 命名实测动作（编排器命名校验 + 在盘扫描 + 临时目录归档自检） |
+| 校验判据 | `openbase/modules/logs/repository.py::REPO_LOG_NAME_RE`（唯一判据，禁止他处复刻正则）；实测证据 `doc/test/evidence/v147/step3-namecheck-20260919.txt` |
+| 余项（待人工裁定） | 四仓结构化流中仍混有 **uvicorn 自身访问日志**（纯文本）→ 采集文件非严格 100% 合法 JSON。「严格全 JSON」需**四仓侧**统一 uvicorn 日志配置（或关闭 access log），属跨仓余项；见《OpenBase-DevLogReport-v1.4.7》§5 |
 
 ## 8. 验收判据（四仓统一）
 
@@ -244,10 +247,13 @@ Select-String -Path 'logs/dps/*.jsonl' -Pattern $rid
 
 | 仓 | 批 A（`request_id` 接线） | 批 B（JSONL 结构化） | 回归结论 | 回填日期 |
 |----|--------------------------|---------------------|---------|---------|
-| DPS | `________` | `________` | `________` | `________` |
-| OpenLLM | `________` | `________` | `________` | `________` |
-| OpenMemory | `________` | `________` | `________` | `________` |
-| OpenRAG | `________` | `________` | `________` | `________` |
+| DPS | `145d858`（A+B 合并同批） | `145d858`（同批） | 专项单测 **10 passed**（OpenBase 侧独立复跑，P1 修正后；修正前 9）；仓内全量回归见《覆盖状态说明》§2.0（含 A/B 归因） | 2026-09-19 |
+| OpenLLM | `0c44c26`（A+B 合并同批） | `0c44c26`（同批） | 专项单测 **7 passed**（独立复跑）；仓内全量 **2643 passed / 6 failed**（非本批变更面） | 2026-09-19 |
+| OpenMemory | `6d18e49`（A+B 合并同批） | `6d18e49`（同批） | 专项单测 **12 passed**（独立复跑）；仓内全量 **1431 passed / 36 skipped** | 2026-09-19 |
+| OpenRAG | `390f5dd`（A+B 合并同批） | `390f5dd`（同批） | 专项单测 **7 passed**（独立复跑） | 2026-09-19 |
+
+> 逐仓文档提交：DPS `75bb420`、OpenLLM `13eeccd`、OpenMemory `0613fef`、OpenRAG `a005a87` / `f134d2f`（见《R384派单分发清单》§3）。
+> **待办**：DPS 的 P1 修正（filter 挂 handler）**尚在工作树未提交**，该仓提交后须回填本表与其代码 commit。
 
 ## 10. 风险与未决项
 
@@ -286,3 +292,4 @@ OpenBase 侧回填 hash 与技术债务总表；TD-新增-020 状态更新
 | v1.0.0 | 2026-09-16 | PM-OpenBase-Dev / AA-OpenBase-Dev | 初始创建：R-384 四仓施工派单。含四仓基线快照（实测 HEAD）、6.0 前置核实三项（附实测提示——OpenMemory 启动路径与 OpenRAG 日志栈统一已取得关键证据）、统一契约与 **JSONL 字段契约（按 OpenBase 适配器实测读取键逐项对齐）**、逐仓施工单（文件/改动/单测/回归/风险）、采集侧派单、验收判据与端到端验证方法、提交回执与 hash 回填位、9 项风险与施工时序 |
 | v1.1.0 | 2026-09-16 | AA-OpenBase-Dev | **新增 §2.1 启动路径实测表并更正两处改动落点**（依据 OpenBase 编排器 `scripts/service-orchestrator.ps1` 实测命令）：① **DPS** 实走 `rest_api.app:app`，D-6 原落点 `src/main.py` 的 `basicConfig` **不生效** → 落点更正为 `src/rest_api/app.py`（+ 抽 `src/logging_setup.py` 双入口共用）；② **OpenMemory** 实走 `scripts\start_openmemory.py` → `create_app()`，`api/server.py:788 main()` 内的 `basicConfig` **不生效** → 落点更正为 `src/openmemory/api/server.py`（模块级或 `create_app()`）；③ OpenLLM / OpenRAG 落点确认有效。同步：§3 核实项新增 **④ 各仓启动路径与日志配置生效点**、门禁表述由三项改为四项；上游依据增列《OpenBase-R384改动包-v1.0.0》（可落地代码）。文件内版本 v1.1.0，文件名沿用 -v1.0.0（与项目既有 D-6 说明同例） |
 | v1.2.0 | 2026-09-19 | AA-OpenBase-Dev | **新增 §2.2 勘误（P1）：`RequestIdFilter` 必须挂 handler、不可挂 root logger**——§5/§6 通用件原将 filter 加在 root logger，而 CPython 语义下祖先 logger 的 filter 不参与子 logger 记录传播，致 `logging.getLogger(__name__)`（四仓普遍）记录 `request_id` 恒为 `-`、验收①对应用日志不可达。含独立复现证据（DPS 修正前：子 logger `-` / root 直发正确）、修正代码、幂等语义附带修正（filter 须重整为本次 getter）、四仓落实状态表（OpenLLM/OpenMemory/OpenRAG 仓内独立修正，DPS 由 OpenBase 侧修正并加 P1 回归护栏）。**后续引用一律以修正版为准** |
+| v1.3.0 | 2026-09-19 | AD-OpenBase-Dev | **§7 采集侧施工单置「已实施」（v1.4.7 / BL-147-04）**：补落地口径（结构化流 `.jsonl` 命名规则／归档命名缺陷修复〔时间戳须在 `.err` 之前〕／命名单点抽取／`-Action namecheck`）与校验判据（`REPO_LOG_NAME_RE`）+ 实测证据路径；新增「余项（待人工裁定）——uvicorn 访问日志非结构化」；**§9.1 hash 回填位回填四仓 commit 与回归结论**（DPS `145d858`/OpenLLM `0c44c26`/OpenMemory `6d18e49`/OpenRAG `390f5dd`，并标注 DPS P1 修正待入库） |

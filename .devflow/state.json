@@ -1,7 +1,7 @@
 ﻿{
     "project":  "OpenBase",
     "devflowVersion":  "2.18.0",
-    "currentPhase":  "v1_4_6_step_5_operations",
+    "currentPhase":  "v1_4_7_step_3_development",
     "completedPhases":  [
                             "step_0_planning",
                             "step_1_requirements",
@@ -67,9 +67,38 @@
                             "v1_4_6_step_1_requirements",
                             "v1_4_6_step_2_design",
                             "v1_4_6_step_3_development",
-                            "v1_4_6_step_4_testing"
+                            "v1_4_6_step_4_testing",
+                            "v1_4_6_step_5_operations",
+                            "v1_4_6_released",
+                            "v1_4_7_step_0_planning"
                         ],
     "currentDocuments":  {
+                             "version_v1.4.7":  [
+                                                    "doc/version/releases/v1.4.7/OpenBase-单版本规划文档-v1.4.7.md",
+                                                    "doc/version/releases/v1.4.7/OpenBase-本版本Backlog-v1.4.7.md",
+                                                    "doc/version/releases/v1.4.7/OpenBase-Phase迭代计划-v1.4.7.md",
+                                                    "doc/version/releases/v1.4.7/OpenBase-版本规划评审记录-v1.4.7.md",
+                                                    "doc/audit/review/OpenBase-阶段审计报告-Stage0-v1.4.7.md"
+                                                ],
+                             "development_v1.4.7":  [
+                                                        "doc/development/OpenBase-DevLogReport-v1.4.7.md",
+                                                        "doc/test/evidence/v147/step3-namecheck-20260919.txt",
+                                                        "doc/test/evidence/v147/step3-regression-junit.xml",
+                                                        "doc/test/evidence/v147/step3-stale-test-ab-20260919.txt"
+                                                    ],
+                             "r384_v1.4.7":  [
+                                                 "doc/planning/OpenBase-R384四仓施工派单-v1.0.0.md",
+                                                 "doc/planning/OpenBase-R384改动包-v1.0.0.md",
+                                                 "doc/planning/OpenBase-R384派单分发清单-v1.0.0.md",
+                                                 "doc/release/OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6.md"
+                                             ],
+                             "operations_v1.4.6":  [
+                                                      "doc/release/OpenBase-Release-Note-v1.4.6.md",
+                                                      "doc/release/OpenBase-部署执行与上线检查报告-v1.4.6.md",
+                                                      "doc/audit/comprehensive/OpenBase-运维审计报告-v1.4.6.md",
+                                                      "doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.6.md",
+                                                      "doc/audit/review/OpenBase-阶段审计报告-Stage5-v1.4.6.md"
+                                                  ],
                              "version_v1.4.6":  [
                                                     "doc/version/releases/v1.4.6/OpenBase-单版本规划文档-v1.4.6.md",
                                                     "doc/version/releases/v1.4.6/OpenBase-本版本Backlog-v1.4.6.md",
@@ -704,7 +733,47 @@
                                                                                   "doc/test/evidence/v146/regression-detail-junit.xml"
                                                                               ],
                                                                  "verification":  "全量回归 962/954（errors=0）；实环境 detail 字段式明细、无 pydantic 内部键；关联套件 170 全绿；前端零影响"
-                                                             }
+                                                             },
+                         "v1_4_6_step_5":  {
+                                               "status":  "passed",
+                                               "date":  "2026-09-16",
+                                               "auditor":  "AU-OpenBase-Ops",
+                                               "report":  "doc/audit/review/OpenBase-阶段审计报告-Stage5-v1.4.6.md",
+                                               "opsAudit":  "doc/audit/comprehensive/OpenBase-运维审计报告-v1.4.6.md",
+                                               "closureAudit":  "doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.6.md"
+                                           },
+                         "v1_4_6_released":  {
+                                                 "status":  "closed",
+                                                 "date":  "2026-09-16",
+                                                 "tag":  "v1.4.6",
+                                                 "releaseCommit":  "bfc0572",
+                                                 "releaseNote":  "doc/release/OpenBase-Release-Note-v1.4.6.md"
+                                             },
+                         "v1_4_7_step_0":  {
+                                               "status":  "passed",
+                                               "date":  "2026-09-16",
+                                               "auditor":  "AU-OpenBase-Ops",
+                                               "report":  "doc/audit/review/OpenBase-阶段审计报告-Stage0-v1.4.7.md",
+                                               "note":  "承接型小版本：Step 1/2 以差异化确认为主（不重新论证 R-384 需求本体）；v1.4.7 未产出独立需求/设计文档，Step 1/2 依据为《单版本规划文档-v1.4.7》§2 范围、《R384四仓施工派单》与《R384改动包》（设计输入）"
+                                           },
+                         "v1_4_7_step_3_increment_bl147_04":  {
+                                                                  "status":  "in_progress",
+                                                                  "date":  "2026-09-19",
+                                                                  "owner":  "AD-OpenBase-Dev",
+                                                                  "report":  "doc/development/OpenBase-DevLogReport-v1.4.7.md",
+                                                                  "scope":  "BL-147-04 本仓采集命名对齐（结构化流 .jsonl + 归档命名缺陷修复 + -Action namecheck）",
+                                                                  "evidence":  [
+                                                                                   "doc/test/evidence/v147/step3-namecheck-20260919.txt",
+                                                                                   "doc/test/evidence/v147/step3-regression-junit.xml",
+                                                                                   "doc/test/evidence/v147/step3-stale-test-ab-20260919.txt"
+                                                                               ],
+                                                                  "openItems":  [
+                                                                                    "采集文件非严格 100% 合法 JSON（uvicorn 访问日志行为纯文本；需四仓侧统一日志配置或经裁定关闭 access log）",
+                                                                                    "DPS P1 修正（filter 挂 handler）待该仓提交后回填 hash",
+                                                                                    "BL-147-05 端到端串联验收未执行（v1.4.6 Phase 6 门禁 M10/M11 仍未闭合）"
+                                                                                ],
+                                                                  "note":  "本仓侧增量开发记录（BL-147-04）。Step 3 正式门禁（静态质量检查 + 代码逻辑审查 + 开发审计 + Stage3 阶段审计报告）尚未执行，须在 Step 3 收口前补齐"
+                                                              }
                      },
     "versionCheck":  {
                          "lastCheck":  "2026-08-24T00:00:00+08:00",

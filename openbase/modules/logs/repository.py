@@ -57,10 +57,16 @@ def _default_log_root() -> Path:
 
 # 文件名白名单（防路径穿越，AC-146-07-3）：openbase-YYYYMMDD.jsonl
 _L1_NAME_RE = re.compile(r"^openbase-\d{8}\.jsonl$")
-# 四仓采集文件名（orchestrator C-6 输出）：<svc>-YYYYMMDD.log / .err.log / -HHmmss.log
+# 四仓采集文件名（orchestrator C-6 输出；R-384/BL-147-04 命名对齐口径）：
+#   结构化流 <svc>-YYYYMMDD.jsonl（stdout 结构化）/ <svc>-YYYYMMDD.err.jsonl（stderr 结构化）；
+#   非结构化流 <svc>-YYYYMMDD.log / <svc>-YYYYMMDD.err.log；
+#   归档 <svc>-YYYYMMDD-HHmmss + 原后缀（时间戳须在 .err 之前，否则本白名单不匹配）。
 _REPO_NAME_RE = re.compile(
     r"^(?P<svc>[a-zA-Z][a-zA-Z0-9_-]*)-(?P<date>\d{8})(?:-\d{6})?(?:\.err)?\.(?:jsonl|log)$"
 )
+#: 四仓采集文件名白名单（**命名契约的唯一判据**）：编排器侧命名实测工具
+#: （``scripts/verify_repo_log_naming.py``）与测试直接复用本常量，禁止在他处复刻正则。
+REPO_LOG_NAME_RE = _REPO_NAME_RE
 _TAG_RE = re.compile(r"\[[^]]*\]|\s+")
 _ACCESS_RE = re.compile(
     r"(?P<ip>[\d.:]+)\s+-\s+-\s+\"(?P<method>[A-Z]+)\s+(?P<path>\S+)[^\"]*\".*?(?P<code>\d{3})"
@@ -907,6 +913,7 @@ __all__ = [
     "L1FileAdapter",
     "LogRepository",
     "RepoLogAdapter",
+    "REPO_LOG_NAME_RE",
     "TestRecordAdapter",
     "get_adapter",
 ]

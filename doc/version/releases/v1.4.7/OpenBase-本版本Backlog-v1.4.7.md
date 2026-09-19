@@ -4,13 +4,15 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | [Review] |
 | 作者 | PM-OpenBase-Dev |
 | 创建日期 | 2026-09-16 |
 | 存放 | doc/version/releases/v1.4.7/ |
 
-**上游依据**：《OpenBase-候选需求池》§1.13（R-384 余项回登记）；《OpenBase-R384-四仓施工派单-v1.0.0》；《OpenBase-Phase迭代计划-v1.4.6》§7 Phase 6 任务 6.0~6.6；《OpenBase-技术债务总表》TD-新增-020。
+**上游依据**：《OpenBase-候选需求池》§1.13（R-384 余项回登记）；《OpenBase-R384-四仓施工派单-v1.0.0》；《OpenBase-Phase迭代计划-v1.4.6》§7 Phase 6 任务 6.0~6.6；《OpenBase-技术债务总表》TD-新增-020；《OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6》（执行期状态刷新）。
+
+> **状态口径（v1.1.0，2026-09-19）**：BL-147-01/02/03 为**四仓侧**交付（各仓独立评审/提交/发布，回执见《R384派单分发清单》§3）；BL-147-04 为**本仓侧**交付（编排器采集命名对齐，见《OpenBase-DevLogReport-v1.4.7》）；BL-147-05 为**跨仓端到端验收**，需运行态五方服务与抽样比对，**未执行**。
 
 ***
 
@@ -18,13 +20,15 @@
 
 | ID | 需求/任务 | 来源 | 价值 | 成本 | 风险 | Phase | 优先级 | 状态 |
 |----|----------|------|:---:|:---:|:---:|:-----:|:-----:|------|
-| **BL-147-01** | **6.0 前置核实三项**：① OpenMemory 实际启动路径与根 logger 生效性；② OpenRAG 日志栈单一来源（contextvar 同一性）；③ 四仓受信来源判定口径对齐 | Phase 6 任务 6.0；D-6 §5 前置依赖 | 高（跨仓开工门禁） | 低（≈0.5 人天） | 低 | Phase 1 | **P0** | 待启动 |
-| **BL-147-02** | **D-6 四仓 `request_id` 接线**（DPS `src/main.py`；OpenLLM `backend/main.py` + `backend/app/core/config.py`；OpenMemory `src/openmemory/api/middleware/structured_log.py`（+ 视核实 `api/server.py`）；OpenRAG `src/openrag/main.py` + `src/openrag/observability/logging.py`） | BL-146-16；D-6 §3 | 高（串联能力唯一来源，价值自足） | 中（≈4.2 人天含跨仓流程） | **高**（跨仓排期） | Phase 1 | **P0** | 待启动 |
-| **BL-147-03** | **四仓日志结构化（JSONL）**：按 OpenBase `RepoLogAdapter` 实测读取键对齐字段（`ts`/`request_id`/`method`/`path`/`status_code`（**必须 JSON 数字**）/`duration_ms`/`level`，可选 `operator_id`/`tenant_id`/`ip` 等；`module` 无需输出） | BL-146-17；《施工派单》§5 | 高（决定检索能力上限） | 中（≈3 人天） | 中 | Phase 1（**建议与 BL-147-02 合并同批**，省一轮跨仓流程 ≈8h） | **P0** | 待启动 |
-| **BL-147-04** | **采集按日切分与命名对齐**：编排器输出 `{svc}-YYYYMMDD.jsonl`；OpenRAG 启动时间戳命名（`openrag-YYYYMMDD-HHMMSS.log`）收口 | BL-146-18 | 中（扫描效率） | 低（≈0.5 人天，本仓） | 低 | Phase 2 | P1 | 待启动 |
-| **BL-147-05** | **端到端串联与接入验收**（含本仓侧适配器 JSONL 优先路径实数据复核）：同一 `request_id` 网关↔四仓抽样 ≥20 次 100% 一致；四仓日志在日志中心可按 `source=repo_log` + `module` 检索；四仓与本仓回归通过 | BL-146-20；《施工派单》§8 | 高（闭合 Phase 6 门禁与 M10/M11） | 中（≈2 人天） | 中（依赖四仓就绪） | Phase 2 | **P0** | 待启动 |
+| **BL-147-01** | **6.0 前置核实三项**：① OpenMemory 实际启动路径与根 logger 生效性；② OpenRAG 日志栈单一来源（contextvar 同一性）；③ 四仓受信来源判定口径对齐 | Phase 6 任务 6.0；D-6 §5 前置依赖 | 高（跨仓开工门禁） | 低（≈0.5 人天） | 低 | Phase 1 | **P0** | ✅ **已完成**（2026-09-16~17；结论随四仓回执登记：启动路径实测表见《施工派单》§2.1、filter 落点勘误见 §2.2、OpenRAG 栈同源结论见《改动包》§6.1） |
+| **BL-147-02** | **D-6 四仓 `request_id` 接线**（DPS `src/main.py`；OpenLLM `backend/main.py` + `backend/app/core/config.py`；OpenMemory `src/openmemory/api/middleware/structured_log.py`（+ 视核实 `api/server.py`）；OpenRAG `src/openrag/main.py` + `src/openrag/observability/logging.py`） | BL-146-16；D-6 §3 | 高（串联能力唯一来源，价值自足） | 中（≈4.2 人天含跨仓流程） | **高**（跨仓排期） | Phase 1 | **P0** | ✅ **已完成**（四仓各自入库：DPS `145d858`／OpenLLM `0c44c26`／OpenMemory `6d18e49`／OpenRAG `390f5dd`；专项单测独立复跑合计 **36 例**全绿）⚠️ **DPS P1 修正（filter 挂 handler）尚在工作树未提交**，待该仓提交后回填 hash |
+| **BL-147-03** | **四仓日志结构化（JSONL）**：按 OpenBase `RepoLogAdapter` 实测读取键对齐字段（`ts`/`request_id`/`method`/`path`/`status_code`（**必须 JSON 数字**）/`duration_ms`/`level`，可选 `operator_id`/`tenant_id`/`ip` 等；`module` 无需输出） | BL-146-17；《施工派单》§5 | 高（决定检索能力上限） | 中（≈3 人天） | 中 | Phase 1（**与 BL-147-02 合并同批**，省一轮跨仓流程 ≈8h） | **P0** | ✅ **已完成**（与 BL-147-02 同批入库；JSONL 行经适配器解析口径对齐） |
+| **BL-147-04** | **采集按日切分与命名对齐**：编排器输出 `{svc}-YYYYMMDD.jsonl`；OpenRAG 启动时间戳命名（`openrag-YYYYMMDD-HHMMSS.log`）收口 | BL-146-18 | 中（扫描效率） | 低（≈0.5 人天，本仓） | 低 | Phase 2 | P1 | ✅ **已完成**（2026-09-19，本仓）：结构化流采集文件对齐 `.jsonl`（stdout 结构化 → `{svc}-YYYYMMDD.jsonl`；stderr 结构化 → `{svc}-YYYYMMDD.err.jsonl`）；**归档命名缺陷修复**（旧 `{svc}-YYYYMMDD.err-HHmmss.log` 不匹配适配器白名单 → 新 `{svc}-YYYYMMDD-HHmmss.err.log`）；新增 `-Action namecheck` 命名实测动作。见《OpenBase-DevLogReport-v1.4.7》§3 |
+| **BL-147-05** | **端到端串联与接入验收**（含本仓侧适配器 JSONL 优先路径实数据复核）：同一 `request_id` 网关↔四仓抽样 ≥20 次 100% 一致；四仓日志在日志中心可按 `source=repo_log` + `module` 检索；四仓与本仓回归通过 | BL-146-20；《施工派单》§8 | 高（闭合 Phase 6 门禁与 M10/M11） | 中（≈2 人天） | 中（依赖四仓就绪） | Phase 2 | **P0** | ⏸ **未执行**（需运行态五方服务 + 抽样 ≥20 次「网关响应头 ↔ 四仓日志」逐条比对；本仓侧回归已完成，见《DevLogReport-v1.4.7》§4.3） |
 
 **合计**：5 项（**4 P0 / 1 P1**）；周期约 1.5~2 周（单人串行 ≈12~15 人天，视四仓排期等待而定）。
+
+> **执行期口径补充（2026-09-19）**：① **采集文件「严格全 JSON」未达成**——四仓结构化流中仍混有 uvicorn 自身访问日志（纯文本，走适配器纯文本回退解析）；`uvicorn.access` 的结构化需在**四仓侧**统一日志配置（非本仓可单方完成），列为余项待人工裁定，见《DevLogReport-v1.4.7》§5；② BL-147-05 的抽样判据须先明确该项口径（是否纳入 uvicorn 访问行）。
 
 ## 2. 风险评级（Backlog 行）
 
@@ -51,3 +55,4 @@
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-16 | PM-OpenBase-Dev | 初始创建：v1.4.7 Backlog 5 项（4 P0 / 1 P1），逐项登记来源、价值/成本/风险、Phase 归属与状态；含风险评级与 P0 覆盖检查 |
+| v1.1.0 | 2026-09-19 | PM-OpenBase-Dev | **执行期状态刷新**：BL-147-01/02/03 置「已完成」（四仓入库 + 36 例专项单测独立复跑；DPS P1 修正待该仓提交）；BL-147-04 置「已完成」（本仓采集命名对齐 + 归档命名缺陷修复 + `-Action namecheck`）；BL-147-05 置「未执行」；新增「状态口径」与「执行期口径补充」（采集文件严格全 JSON 未达成 → 四仓侧 uvicorn 日志配置余项） |

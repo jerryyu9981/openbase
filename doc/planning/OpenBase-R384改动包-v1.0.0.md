@@ -466,7 +466,7 @@ python scripts/smoke_l3_2.py
 | 1 | **本改动包未在目标仓运行验证** | 沙箱禁止写入同级四仓，无法在本会话跑各仓测试 → **各仓应用后必须执行 §3.5/§4.5/§5.5/§6.6 回归** |
 | 2 | DPS 双入口一致性 | `rest_api/app.py`（实启路径）与 `main.py`（开发模式）均需装配；`configure_logging` 已做幂等 |
 | 3 | OpenMemory 循环导入 | 见 §5.2 注（延迟导入兜底） |
-| 4 | uvicorn 访问日志仍为文本 | 同一文件内 JSON 行与文本行混存，适配器逐行判断可解析；严格全 JSON 需采集侧 `--log-config`（BL-147-04） |
+| 4 | uvicorn 访问日志仍为文本 | 同一文件内 JSON 行与文本行混存，适配器逐行判断可解析（`method`/`path`/`status_code` 走纯文本回退）。**v1.4.7 / BL-147-04 已收口其命名侧**（结构化流 `.jsonl` + 归档命名对齐），但**「严格全 JSON」仍未达成**：四仓未对 `uvicorn.access` 做结构化（实测各仓代码无 `log_config` / `access_log` 定制）→ 需**四仓侧**统一 uvicorn 日志配置（或经裁定关闭 access log），属跨仓余项、待人工裁定（见《OpenBase-DevLogReport-v1.4.7》§5） |
 | 5 | `status_code` 类型 | 必须输出 **JSON 数字**（字符串不会被适配器采纳，导致"结果"维度落 `unknown`） |
 
 ## 9. 修订历史
@@ -475,3 +475,4 @@ python scripts/smoke_l3_2.py
 |------|------|--------|------|
 | v1.0.0 | 2026-09-16 | AD-OpenBase-Dev / AA-OpenBase-Dev | 初始创建：R-384 四仓改动包。**含对 D-6 的两处落点更正**（依据编排器实测启动命令：DPS 实走 `rest_api.app:app`、OpenMemory 实走启动脚本，原落点不生效）；提供四仓可复用通用件（`RequestIdFilter` + `JsonLineFormatter` + 幂等 `configure_logging`）、DPS/OpenLLM 完整改动与单测、OpenMemory/OpenRAG 改动（含 6.0 核实结论与降险结论）、逐仓校验命令与提交流程、5 项未决风险 |
 | v1.1.0 | 2026-09-19 | AA-OpenBase-Dev | **新增 §2.1 勘误（P1）并修正 §2 通用件代码**：filter 由 root logger 改为**挂 handler**（CPython 语义下祖先 logger 的 filter 不参与子 logger 记录传播）；幂等分支改为将 filter 重整为本次 getter；新增 `_HANDLER` 模块级引用。附四仓实施反馈（OpenLLM/OpenMemory/OpenRAG 独立修正，DPS 经 OpenBase 侧探针复现后修正，专项单测 9 → 10 passed） |
+| v1.2.0 | 2026-09-19 | AD-OpenBase-Dev | **§8 未决 #4 口径刷新（BL-147-04 收口结果）**：命名侧已对齐（结构化流 `.jsonl` + 归档命名修正），但「严格全 JSON」仍未达成——实测四仓无 `log_config`/`access_log` 定制，需四仓侧统一 uvicorn 日志配置，列为跨仓余项待人工裁定 |

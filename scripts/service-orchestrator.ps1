@@ -22,22 +22,33 @@
 #   .\scripts\service-orchestrator.ps1 -Action status
 #   .\scripts\service-orchestrator.ps1 -Action stop
 #   .\scripts\service-orchestrator.ps1 -Action start -ServiceLogRoot D:\tmp\svc-logs   # 覆盖服务日志采集根目录
+#   .\scripts\service-orchestrator.ps1 -Action namecheck        # 采集文件命名实测（不改动任何服务）
 #
 # 环境要求：Windows PowerShell 5+；各服务 Python 依赖已安装（各项目自有环境）
 #
 # 服务日志采集（C-6，消 G-2）：
 #   start/monitor 启动子进程时，把每个服务的 stdout/stderr 重定向落盘到
-#     <ServiceLogRoot>\<service>\<service>-YYYYMMDD.log      （stdout）
-#     <ServiceLogRoot>\<service>\<service>-YYYYMMDD.err.log  （stderr）
+#     <ServiceLogRoot>\<service>\<service>-YYYYMMDD.log      （stdout，纯文本流）
+#     <ServiceLogRoot>\<service>\<service>-YYYYMMDD.err.log  （stderr，纯文本流）
 #   默认 ServiceLogRoot = OpenBase\logs（与 openbase 侧 C-1 JSONL 落盘同根，
 #   便于 C-7 聚合脚本一次扫描）。同日重复启动会把上一轮内容归档为
-#   <service>-YYYYMMDD-HHmmss.log，避免重定向覆盖历史输出。
+#   <service>-YYYYMMDD-HHmmss[.err].log，避免重定向覆盖历史输出。
 #   仅改动「子进程输出去向」，不改启停/健康检查/拓扑语义。
+#
+# 命名对齐（R-384 / BL-147-04）：
+#   四仓日志已于 v1.4.7 结构化（JSON Lines），故对声明了 JsonStream 的服务，
+#   其**结构化流**采集文件改用 .jsonl 扩展名（其余流保持 .log）：
+#     结构化流为 stdout 的仓（openrag）      → <svc>-YYYYMMDD.jsonl
+#     结构化流为 stderr 的仓（dps/openllm/openmemory）→ <svc>-YYYYMMDD.err.jsonl
+#   归档命名同步对齐为 <svc>-YYYYMMDD-HHmmss[.err].<ext>（时间戳置于 .err **之前**）：
+#   旧形态 <svc>-YYYYMMDD.err-HHmmss.log 不匹配适配器白名单（会被日志中心漏读），已修正。
+#   命名契约的**唯一判据** = openbase/modules/logs/repository.py::REPO_LOG_NAME_RE；
+#   可用 `-Action namecheck` 做命名实测（见该动作说明）。
 # ============================================================================
 
 [CmdletBinding()]
 param(
-    [ValidateSet('start', 'startcheck', 'monitor', 'status', 'checkall', 'stop')]
+    [ValidateSet('start', 'startcheck', 'monitor', 'status', 'checkall', 'stop', 'namecheck')]
     [string]$Action = 'start',
     [string[]]$Only = @(),
     [int]$Interval = 15,
@@ -100,6 +111,8 @@ $services = @(
         Health  = @('http://127.0.0.1:8001/health', 'http://127.0.0.1:8001/api/v1/system/health')
         Depends = @()
         DepType = 'hard'
+        # R-384/BL-147-04：JSON Lines 走 stderr（JsonLineFormatter → StreamHandler()）→ .err.jsonl
+        JsonStream = 'stderr'
         Desc    = 'OpenLLM 大模型网关'
         Checks  = @(
             @{ Name = '健康检查';      Method = 'GET'; Path = '/health';              Expect = 200 }
@@ -119,6 +132,8 @@ $services = @(
         Health  = @('http://127.0.0.1:8010/api/v1/system/health')
         Depends = @()
         DepType = 'hard'
+        # R-384/BL-147-04：JSON Lines 走 stdout（structlog → sys.stdout）→ 采集文件 .jsonl
+        JsonStream = 'stdout'
         Desc    = 'OpenRAG 知识库/检索'
         Checks  = @(
             @{ Name = '系统健康';   Method = 'GET'; Path = '/api/v1/system/health';  Expect = 200 }
@@ -140,6 +155,8 @@ $services = @(
         Health  = @('http://127.0.0.1:8020/health')
         Depends = @()
         DepType = 'hard'
+        # R-384/BL-147-04：JSON Lines 走 stderr（JsonLineFormatter → StreamHandler()）→ .err.jsonl
+        JsonStream = 'stderr'
         Desc    = 'OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j）'
         Checks  = @(
             @{ Name = '健康检查';     Method = 'GET'; Path = '/health';             Expect = 200 }
@@ -185,6 +202,8 @@ $services = @(
         Health  = @('http://127.0.0.1:8030/health/liveness')
         Depends = @()
         DepType = 'hard'
+        # R-384/BL-147-04：JSON Lines 走 stderr（JsonLineFormatter → StreamHandler()）→ .err.jsonl
+        JsonStream = 'stderr'
         Desc    = 'DPS 数据画像系统'
         Checks  = @(
             @{ Name = '存活探针';   Method = 'GET'; Path = '/health/liveness'; Expect = 200 }
@@ -260,22 +279,49 @@ function Get-ServiceLogDir {
     return (Join-Path $ServiceLogDir $Name)
 }
 
-# C-6：准备服务 stdout/stderr 采集文件。
-# 同日重复启动时先把上一轮非空内容归档为 <name>-YYYYMMDD-HHmmss.log，
-# 因为 Start-Process 的重定向是「覆盖写」，不归档会丢历史输出。
+# C-6：准备服务 stdout/stderr 采集文件（R-384/BL-147-04 命名对齐）。
+# 命名契约（唯一判据 = openbase/modules/logs/repository.py::REPO_LOG_NAME_RE）：
+#   结构化流（JsonStream 声明所在流）→ <svc>-YYYYMMDD.jsonl / <svc>-YYYYMMDD.err.jsonl
+#   非结构化流                        → <svc>-YYYYMMDD.log   / <svc>-YYYYMMDD.err.log
+# 同日重复启动时先把上一轮非空内容归档为 <svc>-YYYYMMDD-HHmmss[.err].<ext>
+# （时间戳须在 .err **之前**，否则适配器按目录扫描会漏读），因为 Start-Process 的
+# 重定向是「覆盖写」，不归档会丢历史输出。
+function Get-ServiceLogFileName {
+    param([hashtable]$Svc, [string]$Day)
+    # 结构化流扩展名：声明 JsonStream 的服务，其结构化流采集文件用 .jsonl
+    $outExt = if ($Svc.JsonStream -eq 'stdout') { '.jsonl' } else { '.log' }
+    $errExt = if ($Svc.JsonStream -eq 'stderr') { '.jsonl' } else { '.log' }
+    return @{
+        Out = ("{0}-{1}{2}" -f $Svc.Name, $Day, $outExt)
+        Err = ("{0}-{1}.err{2}" -f $Svc.Name, $Day, $errExt)
+    }
+}
+
+function Get-ServiceLogArchiveName {
+    param([string]$LeafName, [string]$Stamp)
+    # 归档名 = <svc>-<date>-<HHmmss>[.err]<ext>：保留扩展名，时间戳置于 .err 之前
+    $leaf = [System.IO.Path]::GetFileName($LeafName)
+    $extension = [System.IO.Path]::GetExtension($leaf)                    # .jsonl / .log
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($leaf)          # dps-20260919[.err]
+    $isErrStream = $stem.EndsWith('.err')
+    $baseName = if ($isErrStream) { $stem.Substring(0, $stem.Length - 4) } else { $stem }
+    $errTag = if ($isErrStream) { '.err' } else { '' }
+    return ("{0}-{1}{2}{3}" -f $baseName, $Stamp, $errTag, $extension)
+}
+
 function Initialize-ServiceLogTarget {
     param([hashtable]$Svc)
     $svcDir = Get-ServiceLogDir $Svc.Name
     New-Item -ItemType Directory -Force -Path $svcDir | Out-Null
     $day = Get-Date -Format 'yyyyMMdd'
-    $outPath = Join-Path $svcDir ("{0}-{1}.log" -f $Svc.Name, $day)
-    $errPath = Join-Path $svcDir ("{0}-{1}.err.log" -f $Svc.Name, $day)
+    $names = Get-ServiceLogFileName -Svc $Svc -Day $day
+    $outPath = Join-Path $svcDir $names.Out
+    $errPath = Join-Path $svcDir $names.Err
     $archiveStamp = Get-Date -Format 'HHmmss'
     foreach ($path in @($outPath, $errPath)) {
         if (-not (Test-Path $path)) { continue }
         if ((Get-Item $path).Length -le 0) { continue }
-        $archiveName = "{0}-{1}.log" -f ([System.IO.Path]::GetFileNameWithoutExtension($path)), $archiveStamp
-        $archivePath = Join-Path (Split-Path $path -Parent) $archiveName
+        $archivePath = Join-Path (Split-Path $path -Parent) (Get-ServiceLogArchiveName -LeafName $path -Stamp $archiveStamp)
         Move-Item -Path $path -Destination $archivePath -Force
         Write-Log 'INFO' ("{0} 上一轮日志已归档：{1}" -f $Svc.Name, $archivePath)
     }
@@ -608,6 +654,103 @@ function Invoke-Status {
     "脚本日志：$LogFile"
 }
 
+# R-384/BL-147-04：归档命名自检（**在系统临时目录内**完成，不触碰真实采集目录）。
+# 目的：让「同日重复启动 → 归档改名」这条真实路径被实际执行并校验——
+# 旧实现产出 <svc>-YYYYMMDD.err-HHmmss.log（适配器白名单不匹配、日志中心漏读），
+# 新实现须产出 <svc>-YYYYMMDD-HHmmss[.err].<ext>。
+function Test-ServiceLogArchiveSelfCheck {
+    param([string]$VerifierPath)
+    $selfCheckRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("openbase-namecheck-{0}" -f ([Guid]::NewGuid().ToString('N').Substring(0, 8)))
+    $day = Get-Date -Format 'yyyyMMdd'
+    $originalRoot = $script:ServiceLogDir
+    $archiveLeaves = @()
+    try {
+        $script:ServiceLogDir = $selfCheckRoot
+        foreach ($svc in ($services | Where-Object { $_.JsonStream })) {
+            $svcDir = Get-ServiceLogDir $svc.Name
+            New-Item -ItemType Directory -Force -Path $svcDir | Out-Null
+            $names = Get-ServiceLogFileName -Svc $svc -Day $day
+            foreach ($leaf in @($names.Out, $names.Err)) {
+                # 造出「上一轮非空内容」→ 触发归档分支
+                Set-Content -Path (Join-Path $svcDir $leaf) -Value '{"ts":"2026-01-01T00:00:00Z"}' -Encoding UTF8
+            }
+            $target = Initialize-ServiceLogTarget $svc
+            foreach ($leaf in @($names.Out, $names.Err)) {
+                if (Test-Path (Join-Path $svcDir $leaf)) {
+                    throw ("归档自检失败：{0}/{1} 未被归档（重定向会覆盖历史输出）" -f $svc.Name, $leaf)
+                }
+            }
+            foreach ($archived in @(Get-ChildItem -Path $svcDir -File)) {
+                $archiveLeaves += ("{0}/{1}" -f $svc.Name, $archived.Name)
+            }
+            if (($target.Out -notlike ("*" + $names.Out)) -or ($target.Err -notlike ("*" + $names.Err))) {
+                throw ("归档自检失败：{0} 返回目标与实际命名不一致" -f $svc.Name)
+            }
+        }
+        $cliArgs = @($VerifierPath)
+        foreach ($leaf in $archiveLeaves) { $cliArgs += @('--file', $leaf) }
+        & python @cliArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "归档自检失败：归档文件名存在适配器不可见的形态"
+        }
+        "  [PASS] 归档自检通过：{0} 个归档文件全部被适配器白名单接受" -f $archiveLeaves.Count
+    }
+    finally {
+        $script:ServiceLogDir = $originalRoot
+        if (Test-Path $selfCheckRoot) { Remove-Item -Recurse -Force $selfCheckRoot -ErrorAction SilentlyContinue }
+    }
+}
+
+# R-384/BL-147-04：采集文件命名实测（**不启停任何服务**；归档自检在系统临时目录内完成）。
+# ① 打印各服务将产出的采集文件名（含归档样例），并把四仓条目交由
+#    scripts/verify_repo_log_naming.py 以适配器白名单（REPO_LOG_NAME_RE，唯一判据）
+#    逐条校验——非 0 退出即抛错（命名漂移不得静默放过）；
+# ② 对在盘日志目录做一次实测扫描（修复前旧归档命名按 legacy 登记，不阻断）；
+# ③ 归档命名自检（临时目录内实跑 Initialize-ServiceLogTarget）。
+function Invoke-NameCheck {
+    $day = Get-Date -Format 'yyyyMMdd'
+    $stamp = Get-Date -Format 'HHmmss'
+    $verifier = Join-Path (Split-Path $PSScriptRoot -Parent) 'scripts\verify_repo_log_naming.py'
+    if (-not (Test-Path $verifier)) {
+        throw "缺少命名校验脚本：$verifier"
+    }
+    "===== 采集文件命名实测（{0}）=====" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+    "采集根目录（ServiceLogRoot）：$ServiceLogDir"
+    "{0,-11} {1,-10} {2,-30} {3,-30} {4}" -f '服务', '结构化流', 'stdout 采集文件', 'stderr 采集文件', '归档样例（stdout / stderr）'
+    $entries = @()
+    foreach ($svc in $services) {
+        $names = Get-ServiceLogFileName -Svc $svc -Day $day
+        $archiveOut = Get-ServiceLogArchiveName -LeafName $names.Out -Stamp $stamp
+        $archiveErr = Get-ServiceLogArchiveName -LeafName $names.Err -Stamp $stamp
+        $stream = if ($svc.JsonStream) { $svc.JsonStream } else { '-' }
+        "{0,-11} {1,-10} {2,-30} {3,-30} {4} / {5}" -f $svc.Name, $stream, $names.Out, $names.Err, $archiveOut, $archiveErr
+        foreach ($leaf in @($names.Out, $names.Err, $archiveOut, $archiveErr)) {
+            $entries += ("{0}/{1}" -f $svc.Name, $leaf)
+        }
+    }
+    "" 
+    "---- ① 编排器命名校验（唯一判据 = REPO_LOG_NAME_RE）----"
+    $cliArgs = @($verifier)
+    foreach ($entry in $entries) { $cliArgs += @('--file', $entry) }
+    & python @cliArgs
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log 'ERROR' ("采集文件命名实测失败（退出码 {0}）：存在适配器不可见的命名" -f $LASTEXITCODE)
+        throw "采集文件命名未对齐：请修正 Get-ServiceLogFileName / Get-ServiceLogArchiveName"
+    }
+    "" 
+    "---- ② 在盘日志实测扫描（历史旧命名按 legacy 登记）----"
+    & python $verifier --logs-root $ServiceLogDir --tolerate-legacy-err-archive
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log 'WARN' ("在盘日志扫描存在不可见文件（退出码 {0}），请核对是否为新命名漂移" -f $LASTEXITCODE)
+    }
+    "" 
+    "---- ③ 归档命名自检（临时目录内实跑归档路径）----"
+    Test-ServiceLogArchiveSelfCheck -VerifierPath $verifier
+    "" 
+    "===== 命名实测完成（① 全部通过；② 结果见上；③ 归档自检已通过）====="
+    "脚本日志：$LogFile"
+}
+
 function Invoke-Stop {
     $targets = if ($Only.Count -gt 0) { $Only } else { ($services | ForEach-Object { $_.Name }) }
     $topo = Get-TopoOrder | Where-Object { $targets -contains $_ }
@@ -627,5 +770,6 @@ switch ($Action) {
     'monitor'    { Invoke-Monitor }
     'status'     { Invoke-Status }
     'checkall'   { Invoke-CheckAll }
+    'namecheck'  { Invoke-NameCheck }
     'stop'       { Invoke-Stop }
 }
