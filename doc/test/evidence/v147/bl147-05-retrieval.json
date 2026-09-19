@@ -1,237 +1,247 @@
 {
-  "checked_at": "2026-09-19T15:19:33+00:00",
+  "checked_at": "2026-09-19T17:29:48+00:00",
   "by_module": {
     "dps": {
       "svc": "dps",
-      "total": 217
+      "total": 277
     },
     "rag": {
       "svc": "openrag",
-      "total": 108
+      "total": 166
     },
     "memory": {
       "svc": "openmemory",
-      "total": 240
+      "total": 302
     },
     "llm": {
       "svc": "openllm",
-      "total": 2741
+      "total": 3610
     }
   },
   "request_id_lookup": {
-    "req-2b9db011110f": {
+    "req-26e56f19876f": {
       "total": 2,
       "modules": [
         "dps"
       ]
     },
-    "req-1ddd92297ddc": {
+    "req-a0e89a8f8620": {
       "total": 1,
       "modules": [
         "dps"
       ]
     },
-    "req-b6f9111e7e1d": {
+    "req-d6e799599599": {
       "total": 0,
       "modules": []
     },
-    "req-516505f9adf0": {
+    "req-c62407aa0955": {
       "total": 2,
       "modules": [
         "dps"
       ]
     },
-    "req-6a996a28e631": {
+    "req-ddd1473e4759": {
       "total": 1,
       "modules": [
         "dps"
       ]
     },
-    "req-3f16449a470a": {
+    "req-b50b7a76afdf": {
       "total": 0,
       "modules": []
     },
-    "req-5d77d9f12712": {
+    "req-82bef7d05232": {
       "total": 2,
       "modules": [
         "dps"
       ]
     },
-    "req-84f6e45ce073": {
+    "req-36fd90dba4ee": {
       "total": 1,
       "modules": [
         "dps"
       ]
     },
-    "req-0c3f1752a19a": {
+    "req-26da4dd806fc": {
       "total": 0,
       "modules": []
     },
-    "req-bb38861cc2ef": {
+    "req-79e1e459b7c9": {
       "total": 2,
       "modules": [
         "dps"
       ]
     },
-    "req-1136b8ab7a85": {
+    "req-ceae9f169412": {
       "total": 3,
       "modules": [
         "rag"
       ]
     },
-    "req-c1cfb1448f25": {
+    "req-a8ee5f4df511": {
       "total": 2,
       "modules": [
         "rag"
       ]
     },
-    "req-a268f21c36c2": {
+    "req-399a388bb833": {
       "total": 3,
       "modules": [
         "rag"
       ]
     },
-    "req-7bad4e52a19c": {
+    "req-46e1597e723a": {
       "total": 2,
       "modules": [
         "rag"
       ]
     },
-    "req-ff63adba1f5a": {
+    "req-2c527e0d2432": {
       "total": 3,
       "modules": [
         "rag"
       ]
     },
-    "req-5ce27382a125": {
+    "req-acb0d3db680d": {
       "total": 2,
       "modules": [
         "rag"
       ]
     },
-    "req-5dd0657ef7fd": {
+    "req-a93d1acbe9f9": {
       "total": 3,
       "modules": [
         "rag"
       ]
     },
-    "req-de3b4ef8757d": {
+    "req-79f14d242401": {
       "total": 2,
       "modules": [
         "rag"
       ]
     },
-    "req-fda5fdcd42f0": {
+    "req-a4b260b6959c": {
       "total": 3,
       "modules": [
         "rag"
       ]
     },
-    "req-3727b1b8bb80": {
+    "req-1c1aa9518860": {
       "total": 2,
       "modules": [
         "rag"
       ]
     },
-    "req-7adf55b67e8d": {
-      "total": 0,
-      "modules": []
-    },
-    "req-937a6b075487": {
+    "req-bfa8d9a25022": {
       "total": 1,
       "modules": [
         "memory"
       ]
     },
-    "req-65e24860d380": {
-      "total": 0,
-      "modules": []
-    },
-    "req-727268184a83": {
+    "req-6f0aaa0f1cf5": {
       "total": 1,
       "modules": [
         "memory"
       ]
     },
-    "req-ff1b19b83a1f": {
-      "total": 0,
-      "modules": []
-    },
-    "req-c851151cfd4e": {
+    "req-a867f9b9f9eb": {
       "total": 1,
       "modules": [
         "memory"
       ]
     },
-    "req-1f47da700868": {
-      "total": 0,
-      "modules": []
-    },
-    "req-cce564fd1f5f": {
+    "req-d00dcb20b006": {
       "total": 1,
       "modules": [
         "memory"
       ]
     },
-    "req-fa2374d1351a": {
-      "total": 0,
-      "modules": []
-    },
-    "req-cae340482b9d": {
+    "req-99eafea67b0d": {
       "total": 1,
       "modules": [
         "memory"
       ]
     },
-    "req-bce56505d6f3": {
+    "req-aae0ac8b733a": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-4d55096bf65b": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-bd295bd61d18": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-9c77b9572a56": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-82f6d79a20ad": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-0a8f16a1cc74": {
       "total": 22,
       "modules": [
         "llm"
       ]
     },
-    "req-99b0f21494fe": {
+    "req-fea68cf1042f": {
       "total": 6,
       "modules": [
         "llm"
       ]
     },
-    "req-c0b225878c37": {
+    "req-d2a78d688e67": {
       "total": 22,
       "modules": [
         "llm"
       ]
     },
-    "req-aa032ebd28ab": {
+    "req-ad2efffa356a": {
       "total": 0,
       "modules": []
     },
-    "req-66ce900afdd4": {
+    "req-d3c19297921a": {
       "total": 22,
       "modules": [
         "llm"
       ]
     },
-    "req-72fc79ea0e50": {
+    "req-5960983cad47": {
       "total": 0,
       "modules": []
     },
-    "req-0015c089f09b": {
+    "req-f13bff72b0f8": {
       "total": 22,
       "modules": [
         "llm"
       ]
     },
-    "req-d3196decb9f7": {
+    "req-b6b3d8463541": {
       "total": 0,
       "modules": []
     },
-    "req-eddc413e958a": {
+    "req-ece9033f289d": {
       "total": 22,
       "modules": [
         "llm"
       ]
     },
-    "req-db7dd8fad26e": {
+    "req-e8770d0635dd": {
       "total": 0,
       "modules": []
     }

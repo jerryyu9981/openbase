@@ -162,7 +162,15 @@ $services = @(
         # 首次启动会预载 faster-whisper/CLIP 模型，耗时较长（约 2~4 分钟），健康探测需放宽等待
         Args    = @('scripts\start_openmemory.py')
         # PYTHONDONTWRITEBYTECODE 绕过沙箱禁止写 __pycache__ 的限制（与 openrag/dps 一致）
-        Env     = @{ PYTHONDONTWRITEBYTECODE = '1' }
+        # R-384/BL-147-05 修复（DEF-BE-147-003）：声明受信代理来源。OpenMemory 的
+        # IdentityGate 仅在受信来源下才允许复用入站 X-Request-Id；白名单为空时业务路径
+        # （/api/v1/monitor）会本地重生成——而 /health 在 whitelist_paths 内直接放行、
+        # 由 StructuredLogMiddleware 回退复用合规头，故此前表现为「探活命中、业务路径不命中」。
+        # 同样必须以 JSON 数组形态传值（list[str] 字段先经 pydantic-settings JSON 解码）。
+        Env     = @{
+            PYTHONDONTWRITEBYTECODE = '1'
+            OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES = '["openbase-memory-proxy"]'
+        }
         Health  = @('http://127.0.0.1:8020/health')
         Depends = @()
         DepType = 'hard'

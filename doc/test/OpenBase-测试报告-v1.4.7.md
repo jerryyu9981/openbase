@@ -4,13 +4,13 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓） |
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.2.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test |
 | 创建日期 | 2026-09-19 |
 | 存放 | doc/test/ |
 | 测试范围 | **BL-147-05 端到端串联与接入验收**（专项验收口径，见 §1 偏差声明） |
-| **测试结论** | **不通过**（首轮 8/24 命中；**修复后复测 17/22 = 77.3%**，DPS/OpenRAG 缺陷已闭环，OpenMemory（DEF-BE-147-003）与 M2 激活副作用（DEF-BE-147-005）仍开放） |
+| **测试结论** | **不通过（仅剩 1 项）**：串联一致性核心判据已达成 **22/22 = 100%**（DEF-BE-147-001/002/003 全部修复并复测通过）；仍阻塞于 **DEF-BE-147-005**（`rag-proxy/collections` 在 OpenRAG M2 模式下 200→400，P1） |
 
 **上游依据**：《OpenBase-测试计划-v1.4.7》《OpenBase-测试用例-v1.4.7》；《OpenBase-R384四仓施工派单-v1.0.0》§8；《OpenBase-DevLogReport-v1.4.7》§5.1（判据口径裁定）；《OpenBase-问题跟踪记录-v1.4.7》。
 
@@ -138,9 +138,29 @@
 
 `doc/test/evidence/v147/`：`bl147-05-env.txt`（环境 + 40 次抽样逐条）、`bl147-05-sampling.json`、`bl147-05-chain-consistency.json`（含 `totals` 业务判据与 `probe_totals` 探活单列）、`bl147-05-jsonl-contract.json`、`bl147-05-retrieval.json`、`bl147-05-namecheck.txt`。
 
+### 7.4 复测 2（2026-09-20）：OpenMemory 修复后（DEF-BE-147-003）
+
+**修复**：编排器为 `openmemory` 注入 `OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES='["openbase-memory-proxy"]'`（本仓单点，未改 OpenMemory 代码；护栏用例扩至 4 例）。
+
+**根因（本次定位）**：`/health` 等探针路径在 OpenMemory `IdentityTrustConfig.whitelist_paths` 内 → 身份门**直接放行、不裁决 `request_id`**，由 `StructuredLogMiddleware` 回退复用合规入站头 → **表现为"探活路径命中"的假象**；业务路径（`/api/v1/monitor`）走门裁决，受信白名单为空 → `allow_reuse=False` → 忽略网关 id 并本地重生成（`identity_gate.py:104-121`、`structured_log.py:119-125`）。
+
+| 判据 | 目标 | 复测 1（DPS/OpenRAG 修复后） | **复测 2（+OpenMemory 修复）** | 判定 |
+|------|------|:---------------------------:|:-----------------------------:|:----:|
+| 串联一致性（**业务路径**） | 100% | 17/22 = 77.3% | **22/22 = 100%** | **✅ 达标** |
+| └ 逐族 | — | dps 7/7、rag 5/5、llm 5/5、memory 0/5 | **dps 7/7、rag 5/5、memory 5/5、llm 5/5** | ✅ |
+| 探活/豁免路径（单列） | — | 11/18 | **18/18**（同样全部命中） | 证据性 |
+| 应用日志行 JSONL 契约 | 100% 合法 | 100%（四仓） | **100%**（dps 277 / rag 87 / memory 302 / llm 1936；`status_code` 非数字 0） | ✅ |
+| 四仓可检索（`repo_log`+`module`） | 4/4 | 4/4 | **4/4**（dps 277 / rag 166 / memory 302 / llm 3610），`request_id` 反查命中 | ✅ |
+| 本仓回归 + 静态检查 | 无新增失败 | ✅ | ✅（`ruff` 0；4 例护栏全绿） | ✅ |
+
+**结论**：**BL-147-05 的串联一致性核心判据已达成 100%**；DEF-BE-147-001/002/003 三项缺陷全部修复并复测通过（修复方式均为**本仓编排器 env 注入**，未改他仓代码）。
+
+**仍开放（本轮不在范围内）**：**DEF-BE-147-005（P1）** —— 复测 2 中 `rag-proxy/collections` 仍为 **400**（其响应 `request_id` 与网关一致，说明**串联正常、功能异常**，属 OpenRAG M2 模式下的校验副作用）。因此本报告结论仍为**不通过（第 2 项门禁未闭合）**：需 DEF-005 闭环后重跑 TT-147-003~TT-147-009 并补齐测试回溯审计。
+
 ## 8. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-19 | AT-OpenBase-Test | 初始创建：v1.4.7 BL-147-05 专项验收测试报告。含入场检查与 3 项环境/工具坑、10 条用例结果（8 通过 / 2 不通过 / 1 未执行）、**串联一致性逐仓原文命中矩阵**（openllm 6/6、openmemory 3/6、dps 0/6、openrag 0/6）、4 项缺陷（3 项 P0/P1 待修复 + 1 项 P2 已闭环）、覆盖率说明、3 项跳过项、4 项遗留风险；**结论：不通过 → 回退 Step 3** |
 | v1.1.0 | 2026-09-19 | AT-OpenBase-Test | **新增 §7 修复与复测记录**：登记 DPS/OpenRAG 两项缺陷的修复位置与内容（编排器 env 注入 + JSON 数组形态坑 + 3 例 TDD 护栏 + 判据细化）；复测（40 次真实请求）结果——业务路径串联 **17/22（dps 7/7、rag 5/5、llm 5/5、memory 0/5）**、JSONL 契约四仓合法率 **100%**、可检索 4/4、本仓回归通过；**结论仍为不通过**，剩余阻塞为 DEF-BE-147-003（OpenMemory）与新登记 DEF-BE-147-005（M2 副作用：rag `/collections` 200→400） |
+| v1.2.0 | 2026-09-20 | AT-OpenBase-Test | **新增 §7.4 复测 2（OpenMemory 修复后）**：注入 `OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES=["openbase-memory-proxy"]`（根因＝探针路径在 `whitelist_paths` 内免门裁决，造成"探活命中"假象；业务路径受信白名单为空 → 本地重生成）；复测结果——**串联一致性业务路径 22/22 = 100%**（四族各 5~7/5~7 全中）、探活路径 18/18、JSONL 契约四仓 100%、可检索 4/4、护栏 4 例全绿；**结论更新为「不通过（仅剩 1 项）」**，唯一残留为 DEF-BE-147-005（rag `/collections` 400，串联正常/功能异常） |

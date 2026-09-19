@@ -21,6 +21,7 @@ from pathlib import Path
 
 from openbase.modules.protocol_headers.constants import (
     PROXY_SOURCE_DPS,
+    PROXY_SOURCE_MEMORY,
     PROXY_SOURCE_RAG,
 )
 
@@ -63,3 +64,19 @@ def test_openrag_enables_json_lines() -> None:
     assert re.search(r"OPENRAG_LOG_JSON\s*=\s*'true'", block), (
         "openrag 未开启 OPENRAG_LOG_JSON（JSONL 结构化契约不满足）"
     )
+
+
+def test_openmemory_declares_trusted_proxy_source() -> None:
+    """OpenMemory 须声明受信代理来源.
+
+    `/health` 在 `IdentityTrustConfig.whitelist_paths` 内 → 身份门直接放行、不裁决 request_id，
+    故 StructuredLogMiddleware 回退复用合规入站头（表现为「探活路径能命中」）；
+    业务路径（如 `/api/v1/monitor`）会走门裁决，白名单为空 → `allow_reuse=False`
+    → 忽略网关 `X-Request-Id` 并本地重生成（表现为「业务路径 0 命中」）。
+    """
+    block = _service_block("openmemory")
+
+    assert "OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES" in block, (
+        "openmemory 未注入 OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES"
+    )
+    assert PROXY_SOURCE_MEMORY in block, f"openmemory 白名单缺少网关来源 {PROXY_SOURCE_MEMORY}"

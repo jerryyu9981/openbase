@@ -1,14 +1,14 @@
 {
-  "checked_at": "2026-09-19T15:19:33+00:00",
+  "checked_at": "2026-09-19T17:29:48+00:00",
   "sampling_file": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\v147\\bl147-05-sampling.json",
   "logs_root": "D:/Trae CN/myproject/Dev/OpenBase/logs",
   "totals": {
     "requests": 22,
-    "hits": 17,
-    "misses": 5,
-    "hit_rate": 0.7727,
+    "hits": 22,
+    "misses": 0,
+    "hit_rate": 1.0,
     "criterion": "业务路径命中率 100% 且取值逐字相等（判据口径：应用日志行）",
-    "passed": false
+    "passed": true
   },
   "probe_totals": {
     "requests": 18,
@@ -21,10 +21,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/reports/overview",
       "status": 200,
-      "request_id": "req-2b9db011110f",
-      "duration_ms": 1171,
+      "request_id": "req-26e56f19876f",
+      "duration_ms": 3460,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:39",
+      "sampled_at": "2026-09-20T01:29:05",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -32,9 +32,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 50,
-          "ts": "2026-09-19T15:18:39.063Z",
+          "ts": "2026-09-19T17:29:05.356Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -42,9 +42,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 51,
-          "ts": "2026-09-19T15:18:39.168Z",
+          "ts": "2026-09-19T17:29:05.421Z",
           "method": "GET",
           "path": "/api/v2/reports/overview",
           "status_code": 200
@@ -56,10 +56,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/tags/categories",
       "status": 200,
-      "request_id": "req-1ddd92297ddc",
-      "duration_ms": 250,
+      "request_id": "req-a0e89a8f8620",
+      "duration_ms": 230,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:39",
+      "sampled_at": "2026-09-20T01:29:05",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -67,9 +67,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 52,
-          "ts": "2026-09-19T15:18:39.681Z",
+          "ts": "2026-09-19T17:29:05.740Z",
           "method": "GET",
           "path": "/api/v2/tags/categories",
           "status_code": 200
@@ -81,10 +81,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/health",
       "status": 200,
-      "request_id": "req-b6f9111e7e1d",
-      "duration_ms": 272,
+      "request_id": "req-d6e799599599",
+      "duration_ms": 350,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:06",
       "hit": false,
       "consistent": false,
       "exempt_probe": true,
@@ -95,10 +95,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/reports/overview",
       "status": 200,
-      "request_id": "req-516505f9adf0",
-      "duration_ms": 270,
+      "request_id": "req-c62407aa0955",
+      "duration_ms": 457,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:06",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -106,9 +106,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 54,
-          "ts": "2026-09-19T15:18:40.200Z",
+          "ts": "2026-09-19T17:29:06.381Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -116,9 +116,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 55,
-          "ts": "2026-09-19T15:18:40.262Z",
+          "ts": "2026-09-19T17:29:06.411Z",
           "method": "GET",
           "path": "/api/v2/reports/overview",
           "status_code": 200
@@ -130,10 +130,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/tags/categories",
       "status": 200,
-      "request_id": "req-6a996a28e631",
-      "duration_ms": 122,
+      "request_id": "req-ddd1473e4759",
+      "duration_ms": 203,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:06",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -141,9 +141,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 56,
-          "ts": "2026-09-19T15:18:40.446Z",
+          "ts": "2026-09-19T17:29:06.795Z",
           "method": "GET",
           "path": "/api/v2/tags/categories",
           "status_code": 200
@@ -155,10 +155,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/health",
       "status": 200,
-      "request_id": "req-3f16449a470a",
-      "duration_ms": 55,
+      "request_id": "req-b50b7a76afdf",
+      "duration_ms": 164,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:07",
       "hit": false,
       "consistent": false,
       "exempt_probe": true,
@@ -169,10 +169,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/reports/overview",
       "status": 200,
-      "request_id": "req-5d77d9f12712",
-      "duration_ms": 81,
+      "request_id": "req-82bef7d05232",
+      "duration_ms": 198,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:07",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -180,9 +180,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 58,
-          "ts": "2026-09-19T15:18:40.628Z",
+          "ts": "2026-09-19T17:29:07.230Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -190,9 +190,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 59,
-          "ts": "2026-09-19T15:18:40.642Z",
+          "ts": "2026-09-19T17:29:07.252Z",
           "method": "GET",
           "path": "/api/v2/reports/overview",
           "status_code": 200
@@ -204,10 +204,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/tags/categories",
       "status": 200,
-      "request_id": "req-84f6e45ce073",
-      "duration_ms": 94,
+      "request_id": "req-36fd90dba4ee",
+      "duration_ms": 138,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:07",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -215,9 +215,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 60,
-          "ts": "2026-09-19T15:18:40.722Z",
+          "ts": "2026-09-19T17:29:07.380Z",
           "method": "GET",
           "path": "/api/v2/tags/categories",
           "status_code": 200
@@ -229,10 +229,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/health",
       "status": 200,
-      "request_id": "req-0c3f1752a19a",
-      "duration_ms": 65,
+      "request_id": "req-26da4dd806fc",
+      "duration_ms": 247,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:07",
       "hit": false,
       "consistent": false,
       "exempt_probe": true,
@@ -243,10 +243,10 @@
       "family": "dps",
       "path": "/api/v1/dps-proxy/reports/overview",
       "status": 200,
-      "request_id": "req-bb38861cc2ef",
-      "duration_ms": 84,
+      "request_id": "req-79e1e459b7c9",
+      "duration_ms": 160,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:07",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -254,9 +254,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 62,
-          "ts": "2026-09-19T15:18:40.864Z",
+          "ts": "2026-09-19T17:29:07.782Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -264,9 +264,9 @@
         {
           "svc": "dps",
           "module": "dps",
-          "file": "dps-20260919.err.jsonl",
+          "file": "dps-20260920.err.jsonl",
           "line": 63,
-          "ts": "2026-09-19T15:18:40.879Z",
+          "ts": "2026-09-19T17:29:07.805Z",
           "method": "GET",
           "path": "/api/v2/reports/overview",
           "status_code": 200
@@ -278,10 +278,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/collections",
       "status": 400,
-      "request_id": "req-1136b8ab7a85",
-      "duration_ms": 62,
+      "request_id": "req-ceae9f169412",
+      "duration_ms": 204,
       "error": "远程服务器返回错误: (400) 错误的请求。",
-      "sampled_at": "2026-09-19T23:18:40",
+      "sampled_at": "2026-09-20T01:29:08",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -289,7 +289,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 20,
           "ts": null,
           "method": "GET",
@@ -299,7 +299,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 21,
           "ts": null,
           "method": "GET",
@@ -309,7 +309,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 22,
           "ts": null,
           "method": "GET",
@@ -323,10 +323,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/health",
       "status": 200,
-      "request_id": "req-c1cfb1448f25",
-      "duration_ms": 105,
+      "request_id": "req-a8ee5f4df511",
+      "duration_ms": 208,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:08",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -334,7 +334,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 23,
           "ts": null,
           "method": "GET",
@@ -344,7 +344,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 24,
           "ts": null,
           "method": "GET",
@@ -358,10 +358,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/collections",
       "status": 400,
-      "request_id": "req-a268f21c36c2",
-      "duration_ms": 39,
+      "request_id": "req-399a388bb833",
+      "duration_ms": 95,
       "error": "远程服务器返回错误: (400) 错误的请求。",
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:08",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -369,7 +369,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 25,
           "ts": null,
           "method": "GET",
@@ -379,7 +379,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 26,
           "ts": null,
           "method": "GET",
@@ -389,7 +389,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 27,
           "ts": null,
           "method": "GET",
@@ -403,10 +403,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/health",
       "status": 200,
-      "request_id": "req-7bad4e52a19c",
-      "duration_ms": 91,
+      "request_id": "req-46e1597e723a",
+      "duration_ms": 375,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:08",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -414,7 +414,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 28,
           "ts": null,
           "method": "GET",
@@ -424,7 +424,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 29,
           "ts": null,
           "method": "GET",
@@ -438,10 +438,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/collections",
       "status": 400,
-      "request_id": "req-ff63adba1f5a",
-      "duration_ms": 325,
+      "request_id": "req-2c527e0d2432",
+      "duration_ms": 79,
       "error": "远程服务器返回错误: (400) 错误的请求。",
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:08",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -449,7 +449,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 30,
           "ts": null,
           "method": "GET",
@@ -459,7 +459,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 31,
           "ts": null,
           "method": "GET",
@@ -469,7 +469,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 32,
           "ts": null,
           "method": "GET",
@@ -483,10 +483,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/health",
       "status": 200,
-      "request_id": "req-5ce27382a125",
-      "duration_ms": 106,
+      "request_id": "req-acb0d3db680d",
+      "duration_ms": 272,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:09",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -494,7 +494,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 33,
           "ts": null,
           "method": "GET",
@@ -504,7 +504,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 34,
           "ts": null,
           "method": "GET",
@@ -518,10 +518,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/collections",
       "status": 400,
-      "request_id": "req-5dd0657ef7fd",
-      "duration_ms": 109,
+      "request_id": "req-a93d1acbe9f9",
+      "duration_ms": 116,
       "error": "远程服务器返回错误: (400) 错误的请求。",
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:09",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -529,7 +529,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 35,
           "ts": null,
           "method": "GET",
@@ -539,7 +539,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 36,
           "ts": null,
           "method": "GET",
@@ -549,7 +549,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 37,
           "ts": null,
           "method": "GET",
@@ -563,10 +563,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/health",
       "status": 200,
-      "request_id": "req-de3b4ef8757d",
-      "duration_ms": 121,
+      "request_id": "req-79f14d242401",
+      "duration_ms": 162,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:09",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -574,7 +574,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 38,
           "ts": null,
           "method": "GET",
@@ -584,7 +584,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 39,
           "ts": null,
           "method": "GET",
@@ -598,10 +598,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/collections",
       "status": 400,
-      "request_id": "req-fda5fdcd42f0",
-      "duration_ms": 46,
+      "request_id": "req-a4b260b6959c",
+      "duration_ms": 146,
       "error": "远程服务器返回错误: (400) 错误的请求。",
-      "sampled_at": "2026-09-19T23:18:41",
+      "sampled_at": "2026-09-20T01:29:09",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -609,7 +609,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 40,
           "ts": null,
           "method": "GET",
@@ -619,7 +619,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 41,
           "ts": null,
           "method": "GET",
@@ -629,7 +629,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 42,
           "ts": null,
           "method": "GET",
@@ -643,10 +643,10 @@
       "family": "rag",
       "path": "/api/v1/rag-proxy/health",
       "status": 200,
-      "request_id": "req-3727b1b8bb80",
-      "duration_ms": 90,
+      "request_id": "req-1c1aa9518860",
+      "duration_ms": 212,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:42",
+      "sampled_at": "2026-09-20T01:29:09",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -654,7 +654,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 43,
           "ts": null,
           "method": "GET",
@@ -664,7 +664,7 @@
         {
           "svc": "openrag",
           "module": "rag",
-          "file": "openrag-20260919.jsonl",
+          "file": "openrag-20260920.jsonl",
           "line": 44,
           "ts": null,
           "method": "GET",
@@ -678,24 +678,35 @@
       "family": "memory",
       "path": "/api/v1/memory-proxy/monitor",
       "status": 200,
-      "request_id": "req-7adf55b67e8d",
-      "duration_ms": 140,
+      "request_id": "req-bfa8d9a25022",
+      "duration_ms": 236,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:42",
-      "hit": false,
-      "consistent": false,
+      "sampled_at": "2026-09-20T01:29:10",
+      "hit": true,
+      "consistent": true,
       "exempt_probe": false,
-      "matches": []
+      "matches": [
+        {
+          "svc": "openmemory",
+          "module": "memory",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 57,
+          "ts": "2026-09-19T17:29:09.955Z",
+          "method": "GET",
+          "path": "/api/v1/monitor",
+          "status_code": 200
+        }
+      ]
     },
     {
       "seq": 22,
       "family": "memory",
       "path": "/api/v1/memory-proxy/health",
       "status": 200,
-      "request_id": "req-937a6b075487",
-      "duration_ms": 210,
+      "request_id": "req-6f0aaa0f1cf5",
+      "duration_ms": 217,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:42",
+      "sampled_at": "2026-09-20T01:29:10",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -703,9 +714,9 @@
         {
           "svc": "openmemory",
           "module": "memory",
-          "file": "openmemory-20260919.err.jsonl",
-          "line": 59,
-          "ts": "2026-09-19T15:18:42.181Z",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 58,
+          "ts": "2026-09-19T17:29:10.210Z",
           "method": "GET",
           "path": "/health",
           "status_code": 200
@@ -717,24 +728,35 @@
       "family": "memory",
       "path": "/api/v1/memory-proxy/monitor",
       "status": 200,
-      "request_id": "req-65e24860d380",
-      "duration_ms": 138,
+      "request_id": "req-a867f9b9f9eb",
+      "duration_ms": 130,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:42",
-      "hit": false,
-      "consistent": false,
+      "sampled_at": "2026-09-20T01:29:10",
+      "hit": true,
+      "consistent": true,
       "exempt_probe": false,
-      "matches": []
+      "matches": [
+        {
+          "svc": "openmemory",
+          "module": "memory",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 59,
+          "ts": "2026-09-19T17:29:10.352Z",
+          "method": "GET",
+          "path": "/api/v1/monitor",
+          "status_code": 200
+        }
+      ]
     },
     {
       "seq": 24,
       "family": "memory",
       "path": "/api/v1/memory-proxy/health",
       "status": 200,
-      "request_id": "req-727268184a83",
-      "duration_ms": 168,
+      "request_id": "req-d00dcb20b006",
+      "duration_ms": 334,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:42",
+      "sampled_at": "2026-09-20T01:29:10",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -742,9 +764,9 @@
         {
           "svc": "openmemory",
           "module": "memory",
-          "file": "openmemory-20260919.err.jsonl",
-          "line": 62,
-          "ts": "2026-09-19T15:18:42.534Z",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 60,
+          "ts": "2026-09-19T17:29:10.518Z",
           "method": "GET",
           "path": "/health",
           "status_code": 200
@@ -756,24 +778,35 @@
       "family": "memory",
       "path": "/api/v1/memory-proxy/monitor",
       "status": 200,
-      "request_id": "req-ff1b19b83a1f",
-      "duration_ms": 178,
+      "request_id": "req-99eafea67b0d",
+      "duration_ms": 119,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:42",
-      "hit": false,
-      "consistent": false,
+      "sampled_at": "2026-09-20T01:29:10",
+      "hit": true,
+      "consistent": true,
       "exempt_probe": false,
-      "matches": []
+      "matches": [
+        {
+          "svc": "openmemory",
+          "module": "memory",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 61,
+          "ts": "2026-09-19T17:29:10.853Z",
+          "method": "GET",
+          "path": "/api/v1/monitor",
+          "status_code": 200
+        }
+      ]
     },
     {
       "seq": 26,
       "family": "memory",
       "path": "/api/v1/memory-proxy/health",
       "status": 200,
-      "request_id": "req-c851151cfd4e",
-      "duration_ms": 119,
+      "request_id": "req-aae0ac8b733a",
+      "duration_ms": 142,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:42",
+      "sampled_at": "2026-09-20T01:29:11",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -781,9 +814,9 @@
         {
           "svc": "openmemory",
           "module": "memory",
-          "file": "openmemory-20260919.err.jsonl",
-          "line": 65,
-          "ts": "2026-09-19T15:18:42.880Z",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 62,
+          "ts": "2026-09-19T17:29:10.998Z",
           "method": "GET",
           "path": "/health",
           "status_code": 200
@@ -795,24 +828,35 @@
       "family": "memory",
       "path": "/api/v1/memory-proxy/monitor",
       "status": 200,
-      "request_id": "req-1f47da700868",
-      "duration_ms": 37,
+      "request_id": "req-4d55096bf65b",
+      "duration_ms": 181,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:43",
-      "hit": false,
-      "consistent": false,
+      "sampled_at": "2026-09-20T01:29:11",
+      "hit": true,
+      "consistent": true,
       "exempt_probe": false,
-      "matches": []
+      "matches": [
+        {
+          "svc": "openmemory",
+          "module": "memory",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 63,
+          "ts": "2026-09-19T17:29:11.191Z",
+          "method": "GET",
+          "path": "/api/v1/monitor",
+          "status_code": 200
+        }
+      ]
     },
     {
       "seq": 28,
       "family": "memory",
       "path": "/api/v1/memory-proxy/health",
       "status": 200,
-      "request_id": "req-cce564fd1f5f",
-      "duration_ms": 34,
+      "request_id": "req-bd295bd61d18",
+      "duration_ms": 72,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:43",
+      "sampled_at": "2026-09-20T01:29:11",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -820,9 +864,9 @@
         {
           "svc": "openmemory",
           "module": "memory",
-          "file": "openmemory-20260919.err.jsonl",
-          "line": 68,
-          "ts": "2026-09-19T15:18:43.040Z",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 64,
+          "ts": "2026-09-19T17:29:11.325Z",
           "method": "GET",
           "path": "/health",
           "status_code": 200
@@ -834,24 +878,35 @@
       "family": "memory",
       "path": "/api/v1/memory-proxy/monitor",
       "status": 200,
-      "request_id": "req-fa2374d1351a",
-      "duration_ms": 33,
+      "request_id": "req-9c77b9572a56",
+      "duration_ms": 116,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:43",
-      "hit": false,
-      "consistent": false,
+      "sampled_at": "2026-09-20T01:29:11",
+      "hit": true,
+      "consistent": true,
       "exempt_probe": false,
-      "matches": []
+      "matches": [
+        {
+          "svc": "openmemory",
+          "module": "memory",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 65,
+          "ts": "2026-09-19T17:29:11.421Z",
+          "method": "GET",
+          "path": "/api/v1/monitor",
+          "status_code": 200
+        }
+      ]
     },
     {
       "seq": 30,
       "family": "memory",
       "path": "/api/v1/memory-proxy/health",
       "status": 200,
-      "request_id": "req-cae340482b9d",
-      "duration_ms": 40,
+      "request_id": "req-82f6d79a20ad",
+      "duration_ms": 115,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:43",
+      "sampled_at": "2026-09-20T01:29:11",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -859,9 +914,9 @@
         {
           "svc": "openmemory",
           "module": "memory",
-          "file": "openmemory-20260919.err.jsonl",
-          "line": 71,
-          "ts": "2026-09-19T15:18:43.112Z",
+          "file": "openmemory-20260920.err.jsonl",
+          "line": 66,
+          "ts": "2026-09-19T17:29:11.555Z",
           "method": "GET",
           "path": "/health",
           "status_code": 200
@@ -873,10 +928,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/models",
       "status": 200,
-      "request_id": "req-bce56505d6f3",
-      "duration_ms": 498,
+      "request_id": "req-0a8f16a1cc74",
+      "duration_ms": 639,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:43",
+      "sampled_at": "2026-09-20T01:29:12",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -884,9 +939,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 271,
-          "ts": "2026-09-19T15:18:43.158Z",
+          "ts": "2026-09-19T17:29:11.786Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -894,9 +949,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 272,
-          "ts": "2026-09-19T15:18:43.164Z",
+          "ts": "2026-09-19T17:29:11.790Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -904,9 +959,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 273,
-          "ts": "2026-09-19T15:18:43.175Z",
+          "ts": "2026-09-19T17:29:11.791Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -914,9 +969,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 274,
-          "ts": "2026-09-19T15:18:43.184Z",
+          "ts": "2026-09-19T17:29:11.807Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -924,9 +979,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 275,
-          "ts": "2026-09-19T15:18:43.187Z",
+          "ts": "2026-09-19T17:29:11.812Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -934,9 +989,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 276,
-          "ts": "2026-09-19T15:18:43.194Z",
+          "ts": "2026-09-19T17:29:11.838Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -944,9 +999,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 277,
-          "ts": "2026-09-19T15:18:43.196Z",
+          "ts": "2026-09-19T17:29:11.853Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -954,9 +1009,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 278,
-          "ts": "2026-09-19T15:18:43.199Z",
+          "ts": "2026-09-19T17:29:11.862Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -964,9 +1019,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 279,
-          "ts": "2026-09-19T15:18:43.207Z",
+          "ts": "2026-09-19T17:29:11.879Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -974,9 +1029,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 280,
-          "ts": "2026-09-19T15:18:43.210Z",
+          "ts": "2026-09-19T17:29:11.886Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -984,9 +1039,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 281,
-          "ts": "2026-09-19T15:18:43.214Z",
+          "ts": "2026-09-19T17:29:11.888Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -994,9 +1049,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 282,
-          "ts": "2026-09-19T15:18:43.222Z",
+          "ts": "2026-09-19T17:29:11.907Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1004,9 +1059,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 283,
-          "ts": "2026-09-19T15:18:43.224Z",
+          "ts": "2026-09-19T17:29:11.911Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1014,9 +1069,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 284,
-          "ts": "2026-09-19T15:18:43.233Z",
+          "ts": "2026-09-19T17:29:11.956Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1024,9 +1079,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 285,
-          "ts": "2026-09-19T15:18:43.235Z",
+          "ts": "2026-09-19T17:29:11.959Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1034,9 +1089,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 286,
-          "ts": "2026-09-19T15:18:43.347Z",
+          "ts": "2026-09-19T17:29:11.970Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1044,9 +1099,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 287,
-          "ts": "2026-09-19T15:18:43.503Z",
+          "ts": "2026-09-19T17:29:11.974Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1054,9 +1109,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 288,
-          "ts": "2026-09-19T15:18:43.508Z",
+          "ts": "2026-09-19T17:29:11.986Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1064,9 +1119,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 289,
-          "ts": "2026-09-19T15:18:43.510Z",
+          "ts": "2026-09-19T17:29:11.990Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1074,9 +1129,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 290,
-          "ts": "2026-09-19T15:18:43.516Z",
+          "ts": "2026-09-19T17:29:12.005Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1084,9 +1139,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 291,
-          "ts": "2026-09-19T15:18:43.518Z",
+          "ts": "2026-09-19T17:29:12.007Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1094,9 +1149,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 297,
-          "ts": "2026-09-19T15:18:43.617Z",
+          "ts": "2026-09-19T17:29:12.227Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1108,10 +1163,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/health",
       "status": 200,
-      "request_id": "req-99b0f21494fe",
-      "duration_ms": 574,
+      "request_id": "req-fea68cf1042f",
+      "duration_ms": 1829,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:44",
+      "sampled_at": "2026-09-20T01:29:14",
       "hit": true,
       "consistent": true,
       "exempt_probe": true,
@@ -1119,9 +1174,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 298,
-          "ts": "2026-09-19T15:18:44.025Z",
+          "ts": "2026-09-19T17:29:13.606Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1129,9 +1184,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 299,
-          "ts": "2026-09-19T15:18:44.038Z",
+          "ts": "2026-09-19T17:29:13.634Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1139,9 +1194,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 300,
-          "ts": "2026-09-19T15:18:44.052Z",
+          "ts": "2026-09-19T17:29:13.725Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1149,9 +1204,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 301,
-          "ts": "2026-09-19T15:18:44.053Z",
+          "ts": "2026-09-19T17:29:13.735Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1159,9 +1214,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 302,
-          "ts": "2026-09-19T15:18:44.085Z",
+          "ts": "2026-09-19T17:29:13.879Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1169,9 +1224,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 303,
-          "ts": "2026-09-19T15:18:44.169Z",
+          "ts": "2026-09-19T17:29:13.963Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1183,10 +1238,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/models",
       "status": 200,
-      "request_id": "req-c0b225878c37",
-      "duration_ms": 165,
+      "request_id": "req-d2a78d688e67",
+      "duration_ms": 835,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:44",
+      "sampled_at": "2026-09-20T01:29:14",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -1194,9 +1249,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 309,
-          "ts": "2026-09-19T15:18:44.228Z",
+          "ts": "2026-09-19T17:29:14.157Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1204,9 +1259,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 310,
-          "ts": "2026-09-19T15:18:44.230Z",
+          "ts": "2026-09-19T17:29:14.294Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1214,9 +1269,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 311,
-          "ts": "2026-09-19T15:18:44.234Z",
+          "ts": "2026-09-19T17:29:14.308Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1224,9 +1279,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 312,
-          "ts": "2026-09-19T15:18:44.241Z",
+          "ts": "2026-09-19T17:29:14.350Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1234,9 +1289,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 313,
-          "ts": "2026-09-19T15:18:44.243Z",
+          "ts": "2026-09-19T17:29:14.357Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1244,9 +1299,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 314,
-          "ts": "2026-09-19T15:18:44.253Z",
+          "ts": "2026-09-19T17:29:14.372Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1254,9 +1309,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 315,
-          "ts": "2026-09-19T15:18:44.259Z",
+          "ts": "2026-09-19T17:29:14.379Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1264,9 +1319,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 316,
-          "ts": "2026-09-19T15:18:44.264Z",
+          "ts": "2026-09-19T17:29:14.392Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1274,9 +1329,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 317,
-          "ts": "2026-09-19T15:18:44.270Z",
+          "ts": "2026-09-19T17:29:14.408Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1284,9 +1339,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 318,
-          "ts": "2026-09-19T15:18:44.275Z",
+          "ts": "2026-09-19T17:29:14.413Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1294,9 +1349,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 319,
-          "ts": "2026-09-19T15:18:44.278Z",
+          "ts": "2026-09-19T17:29:14.417Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1304,9 +1359,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 320,
-          "ts": "2026-09-19T15:18:44.289Z",
+          "ts": "2026-09-19T17:29:14.441Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1314,9 +1369,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 321,
-          "ts": "2026-09-19T15:18:44.293Z",
+          "ts": "2026-09-19T17:29:14.450Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1324,9 +1379,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 322,
-          "ts": "2026-09-19T15:18:44.306Z",
+          "ts": "2026-09-19T17:29:14.477Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1334,9 +1389,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 323,
-          "ts": "2026-09-19T15:18:44.311Z",
+          "ts": "2026-09-19T17:29:14.492Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1344,9 +1399,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 324,
-          "ts": "2026-09-19T15:18:44.319Z",
+          "ts": "2026-09-19T17:29:14.506Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1354,9 +1409,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 325,
-          "ts": "2026-09-19T15:18:44.320Z",
+          "ts": "2026-09-19T17:29:14.519Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1364,9 +1419,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 326,
-          "ts": "2026-09-19T15:18:44.326Z",
+          "ts": "2026-09-19T17:29:14.524Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1374,9 +1429,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 327,
-          "ts": "2026-09-19T15:18:44.330Z",
+          "ts": "2026-09-19T17:29:14.541Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1384,9 +1439,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 328,
-          "ts": "2026-09-19T15:18:44.334Z",
+          "ts": "2026-09-19T17:29:14.785Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1394,9 +1449,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 329,
-          "ts": "2026-09-19T15:18:44.336Z",
+          "ts": "2026-09-19T17:29:14.788Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1404,9 +1459,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 335,
-          "ts": "2026-09-19T15:18:44.362Z",
+          "ts": "2026-09-19T17:29:14.902Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1418,10 +1473,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/health",
       "status": 200,
-      "request_id": "req-aa032ebd28ab",
-      "duration_ms": 53,
+      "request_id": "req-ad2efffa356a",
+      "duration_ms": 221,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:44",
+      "sampled_at": "2026-09-20T01:29:15",
       "hit": false,
       "consistent": false,
       "exempt_probe": true,
@@ -1432,10 +1487,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/models",
       "status": 200,
-      "request_id": "req-66ce900afdd4",
-      "duration_ms": 228,
+      "request_id": "req-d3c19297921a",
+      "duration_ms": 471,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:44",
+      "sampled_at": "2026-09-20T01:29:15",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -1443,9 +1498,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 341,
-          "ts": "2026-09-19T15:18:44.457Z",
+          "ts": "2026-09-19T17:29:15.235Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1453,9 +1508,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 342,
-          "ts": "2026-09-19T15:18:44.470Z",
+          "ts": "2026-09-19T17:29:15.239Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1463,9 +1518,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 343,
-          "ts": "2026-09-19T15:18:44.478Z",
+          "ts": "2026-09-19T17:29:15.241Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1473,9 +1528,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 344,
-          "ts": "2026-09-19T15:18:44.487Z",
+          "ts": "2026-09-19T17:29:15.249Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1483,9 +1538,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 345,
-          "ts": "2026-09-19T15:18:44.490Z",
+          "ts": "2026-09-19T17:29:15.253Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1493,9 +1548,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 346,
-          "ts": "2026-09-19T15:18:44.497Z",
+          "ts": "2026-09-19T17:29:15.257Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1503,9 +1558,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 347,
-          "ts": "2026-09-19T15:18:44.500Z",
+          "ts": "2026-09-19T17:29:15.259Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1513,9 +1568,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 348,
-          "ts": "2026-09-19T15:18:44.505Z",
+          "ts": "2026-09-19T17:29:15.268Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1523,9 +1578,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 349,
-          "ts": "2026-09-19T15:18:44.523Z",
+          "ts": "2026-09-19T17:29:15.281Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1533,9 +1588,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 350,
-          "ts": "2026-09-19T15:18:44.527Z",
+          "ts": "2026-09-19T17:29:15.289Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1543,9 +1598,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 351,
-          "ts": "2026-09-19T15:18:44.531Z",
+          "ts": "2026-09-19T17:29:15.294Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1553,9 +1608,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 352,
-          "ts": "2026-09-19T15:18:44.538Z",
+          "ts": "2026-09-19T17:29:15.311Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1563,9 +1618,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 353,
-          "ts": "2026-09-19T15:18:44.542Z",
+          "ts": "2026-09-19T17:29:15.316Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1573,9 +1628,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 354,
-          "ts": "2026-09-19T15:18:44.549Z",
+          "ts": "2026-09-19T17:29:15.333Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1583,9 +1638,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 355,
-          "ts": "2026-09-19T15:18:44.552Z",
+          "ts": "2026-09-19T17:29:15.347Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1593,9 +1648,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 356,
-          "ts": "2026-09-19T15:18:44.560Z",
+          "ts": "2026-09-19T17:29:15.375Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1603,9 +1658,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 357,
-          "ts": "2026-09-19T15:18:44.568Z",
+          "ts": "2026-09-19T17:29:15.378Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1613,9 +1668,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 358,
-          "ts": "2026-09-19T15:18:44.575Z",
+          "ts": "2026-09-19T17:29:15.401Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1623,9 +1678,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 359,
-          "ts": "2026-09-19T15:18:44.578Z",
+          "ts": "2026-09-19T17:29:15.404Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1633,9 +1688,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 360,
-          "ts": "2026-09-19T15:18:44.583Z",
+          "ts": "2026-09-19T17:29:15.420Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1643,9 +1698,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 361,
-          "ts": "2026-09-19T15:18:44.608Z",
+          "ts": "2026-09-19T17:29:15.423Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1653,9 +1708,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 367,
-          "ts": "2026-09-19T15:18:44.644Z",
+          "ts": "2026-09-19T17:29:15.531Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1667,10 +1722,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/health",
       "status": 200,
-      "request_id": "req-72fc79ea0e50",
-      "duration_ms": 77,
+      "request_id": "req-5960983cad47",
+      "duration_ms": 134,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:44",
+      "sampled_at": "2026-09-20T01:29:15",
       "hit": false,
       "consistent": false,
       "exempt_probe": true,
@@ -1681,10 +1736,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/models",
       "status": 200,
-      "request_id": "req-0015c089f09b",
-      "duration_ms": 178,
+      "request_id": "req-f13bff72b0f8",
+      "duration_ms": 368,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:44",
+      "sampled_at": "2026-09-20T01:29:16",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -1692,9 +1747,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 373,
-          "ts": "2026-09-19T15:18:44.759Z",
+          "ts": "2026-09-19T17:29:15.844Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1702,9 +1757,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 374,
-          "ts": "2026-09-19T15:18:44.768Z",
+          "ts": "2026-09-19T17:29:15.850Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1712,9 +1767,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 375,
-          "ts": "2026-09-19T15:18:44.776Z",
+          "ts": "2026-09-19T17:29:15.855Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1722,9 +1777,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 376,
-          "ts": "2026-09-19T15:18:44.788Z",
+          "ts": "2026-09-19T17:29:15.870Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1732,9 +1787,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 377,
-          "ts": "2026-09-19T15:18:44.791Z",
+          "ts": "2026-09-19T17:29:15.874Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1742,9 +1797,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 378,
-          "ts": "2026-09-19T15:18:44.798Z",
+          "ts": "2026-09-19T17:29:15.915Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1752,9 +1807,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 379,
-          "ts": "2026-09-19T15:18:44.800Z",
+          "ts": "2026-09-19T17:29:15.929Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1762,9 +1817,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 380,
-          "ts": "2026-09-19T15:18:44.805Z",
+          "ts": "2026-09-19T17:29:15.940Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1772,9 +1827,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 381,
-          "ts": "2026-09-19T15:18:44.812Z",
+          "ts": "2026-09-19T17:29:15.959Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1782,9 +1837,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 382,
-          "ts": "2026-09-19T15:18:44.824Z",
+          "ts": "2026-09-19T17:29:15.965Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1792,9 +1847,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 383,
-          "ts": "2026-09-19T15:18:44.828Z",
+          "ts": "2026-09-19T17:29:15.970Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1802,9 +1857,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 384,
-          "ts": "2026-09-19T15:18:44.834Z",
+          "ts": "2026-09-19T17:29:15.980Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1812,9 +1867,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 385,
-          "ts": "2026-09-19T15:18:44.837Z",
+          "ts": "2026-09-19T17:29:15.986Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1822,9 +1877,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 386,
-          "ts": "2026-09-19T15:18:44.842Z",
+          "ts": "2026-09-19T17:29:15.997Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1832,9 +1887,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 387,
-          "ts": "2026-09-19T15:18:44.846Z",
+          "ts": "2026-09-19T17:29:16.001Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1842,9 +1897,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 388,
-          "ts": "2026-09-19T15:18:44.852Z",
+          "ts": "2026-09-19T17:29:16.012Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1852,9 +1907,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 389,
-          "ts": "2026-09-19T15:18:44.857Z",
+          "ts": "2026-09-19T17:29:16.016Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1862,9 +1917,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 390,
-          "ts": "2026-09-19T15:18:44.865Z",
+          "ts": "2026-09-19T17:29:16.031Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1872,9 +1927,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 391,
-          "ts": "2026-09-19T15:18:44.869Z",
+          "ts": "2026-09-19T17:29:16.034Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1882,9 +1937,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 392,
-          "ts": "2026-09-19T15:18:44.873Z",
+          "ts": "2026-09-19T17:29:16.042Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1892,9 +1947,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 393,
-          "ts": "2026-09-19T15:18:44.876Z",
+          "ts": "2026-09-19T17:29:16.054Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1902,9 +1957,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 399,
-          "ts": "2026-09-19T15:18:44.907Z",
+          "ts": "2026-09-19T17:29:16.117Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1916,10 +1971,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/health",
       "status": 200,
-      "request_id": "req-d3196decb9f7",
-      "duration_ms": 62,
+      "request_id": "req-b6b3d8463541",
+      "duration_ms": 157,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:44",
+      "sampled_at": "2026-09-20T01:29:16",
       "hit": false,
       "consistent": false,
       "exempt_probe": true,
@@ -1930,10 +1985,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/models",
       "status": 200,
-      "request_id": "req-eddc413e958a",
-      "duration_ms": 233,
+      "request_id": "req-ece9033f289d",
+      "duration_ms": 809,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:45",
+      "sampled_at": "2026-09-20T01:29:17",
       "hit": true,
       "consistent": true,
       "exempt_probe": false,
@@ -1941,9 +1996,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 405,
-          "ts": "2026-09-19T15:18:45.002Z",
+          "ts": "2026-09-19T17:29:16.361Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1951,9 +2006,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 406,
-          "ts": "2026-09-19T15:18:45.013Z",
+          "ts": "2026-09-19T17:29:16.366Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1961,9 +2016,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 407,
-          "ts": "2026-09-19T15:18:45.016Z",
+          "ts": "2026-09-19T17:29:16.381Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1971,9 +2026,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 408,
-          "ts": "2026-09-19T15:18:45.032Z",
+          "ts": "2026-09-19T17:29:16.395Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1981,9 +2036,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 409,
-          "ts": "2026-09-19T15:18:45.039Z",
+          "ts": "2026-09-19T17:29:16.401Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -1991,9 +2046,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 410,
-          "ts": "2026-09-19T15:18:45.046Z",
+          "ts": "2026-09-19T17:29:16.414Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2001,9 +2056,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 411,
-          "ts": "2026-09-19T15:18:45.054Z",
+          "ts": "2026-09-19T17:29:16.426Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2011,9 +2066,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 412,
-          "ts": "2026-09-19T15:18:45.070Z",
+          "ts": "2026-09-19T17:29:16.455Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2021,9 +2076,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 413,
-          "ts": "2026-09-19T15:18:45.083Z",
+          "ts": "2026-09-19T17:29:16.475Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2031,9 +2086,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 414,
-          "ts": "2026-09-19T15:18:45.092Z",
+          "ts": "2026-09-19T17:29:16.485Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2041,9 +2096,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 415,
-          "ts": "2026-09-19T15:18:45.096Z",
+          "ts": "2026-09-19T17:29:16.488Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2051,9 +2106,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 416,
-          "ts": "2026-09-19T15:18:45.103Z",
+          "ts": "2026-09-19T17:29:16.522Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2061,9 +2116,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 417,
-          "ts": "2026-09-19T15:18:45.109Z",
+          "ts": "2026-09-19T17:29:16.525Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2071,9 +2126,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 418,
-          "ts": "2026-09-19T15:18:45.118Z",
+          "ts": "2026-09-19T17:29:16.552Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2081,9 +2136,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 419,
-          "ts": "2026-09-19T15:18:45.124Z",
+          "ts": "2026-09-19T17:29:16.560Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2091,9 +2146,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 420,
-          "ts": "2026-09-19T15:18:45.140Z",
+          "ts": "2026-09-19T17:29:16.901Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2101,9 +2156,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 421,
-          "ts": "2026-09-19T15:18:45.148Z",
+          "ts": "2026-09-19T17:29:16.905Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2111,9 +2166,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 422,
-          "ts": "2026-09-19T15:18:45.153Z",
+          "ts": "2026-09-19T17:29:16.934Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2121,9 +2176,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 423,
-          "ts": "2026-09-19T15:18:45.155Z",
+          "ts": "2026-09-19T17:29:16.940Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2131,9 +2186,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 424,
-          "ts": "2026-09-19T15:18:45.160Z",
+          "ts": "2026-09-19T17:29:16.951Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2141,9 +2196,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 425,
-          "ts": "2026-09-19T15:18:45.162Z",
+          "ts": "2026-09-19T17:29:16.956Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2151,9 +2206,9 @@
         {
           "svc": "openllm",
           "module": "llm",
-          "file": "openllm-20260919.err.jsonl",
+          "file": "openllm-20260920.err.jsonl",
           "line": 431,
-          "ts": "2026-09-19T15:18:45.203Z",
+          "ts": "2026-09-19T17:29:17.093Z",
           "method": null,
           "path": null,
           "status_code": null
@@ -2165,10 +2220,10 @@
       "family": "llm",
       "path": "/api/v1/llm-proxy/health",
       "status": 200,
-      "request_id": "req-db7dd8fad26e",
-      "duration_ms": 378,
+      "request_id": "req-e8770d0635dd",
+      "duration_ms": 612,
       "error": null,
-      "sampled_at": "2026-09-19T23:18:45",
+      "sampled_at": "2026-09-20T01:29:17",
       "hit": false,
       "consistent": false,
       "exempt_probe": true,

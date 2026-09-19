@@ -837,7 +837,23 @@
                                                                                   "guards":  [
                                                                                                   "tests/test_bl147_trust_env_wiring.py（3 例 TDD 护栏，含网关来源常量一致性）"
                                                                                               ],
-                                                                                  "conclusion":  "BL-147-05 仍不通过；剩余 2 项 P1，须下一轮修复后复测"
+                                                                                  "conclusion":  "BL-147-05 仍不通过；剩余 2 项 P1，须下一轮修复后复测",
+                                                                                  "retest2":  {
+                                                                                                  "date":  "2026-09-20",
+                                                                                                  "note":  "DEF-BE-147-003（OpenMemory）修复后复测；仍未派单、本仓单点修复",
+                                                                                                  "fix":  "编排器为 openmemory 注入 OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES=[openbase-memory-proxy]（JSON 数组形态）",
+                                                                                                  "rootCause":  "/health 等在 whitelist_paths 内 → 身份门免裁决、由 StructuredLogMiddleware 回退复用入站头（探活命中假象）；业务路径走门裁决且受信白名单为空 → allow_reuse=False → 本地重生成",
+                                                                                                  "result":  "串联一致性（业务路径）22/22 = 100%（dps 7/7、rag 5/5、memory 5/5、llm 5/5）；探活/豁免路径 18/18；JSONL 契约四仓应用日志行合法率 100%；repo_log 可检索 4/4（dps 277 / rag 166 / memory 302 / llm 3610）；护栏 4 例全绿；ruff 0",
+                                                                                                  "closed":  [
+                                                                                                                 "DEF-BE-147-001（DPS，P0）",
+                                                                                                                 "DEF-BE-147-002（OpenRAG，P0）",
+                                                                                                                 "DEF-BE-147-003（OpenMemory，P1）"
+                                                                                                             ],
+                                                                                                  "stillOpen":  [
+                                                                                                                    "DEF-BE-147-005（P1，rag-proxy/collections 在 OpenRAG M2 下 200→400；串联正常、功能异常）"
+                                                                                                                ],
+                                                                                                  "conclusion":  "串联一致性核心判据已达成 100%；BL-147-05 仍判不通过仅因 DEF-BE-147-005；Phase 6 门禁 M10/M11 仍未闭合"
+                                                                                              }
                                                                               }
                                                               }
                      },

@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓，承接型小版本） |
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.2.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / AD-OpenBase-Dev |
 | 创建日期 | 2026-09-19 |
@@ -19,7 +19,7 @@
 |---------|:----:|------|------|---------|------|:--------:|---------|
 | **DEF-BE-147-001** | **P0** | BL-147-05 / TT-147-005 | **DPS 仓（跨仓，经本仓编排器配置修复）** | 未透传网关 `X-Request-Id`：首轮 dps 族 6/6 原文未命中；DPS 采集日志仅含**本地生成** id | `bl147-05-chain-consistency.json`；《测试报告-v1.4.7》§2.1/§7 | **已修复（2026-09-19）**：本仓编排器注入 `TRUSTED_PROXY_SOURCES='openbase-dps-proxy,openbase-orchestrator'`（DPS 既有受信判定即生效，未改其代码） | **复测通过**：业务路径 7/7 命中（探活路径 3 次按契约豁免输出 `-`） |
 | **DEF-BE-147-002** | **P0** | 同上 | **OpenRAG 仓（跨仓，经本仓编排器配置修复）** | ① 未透传 `X-Request-Id`（rag 族 6/6 未命中）② 请求日志**非 JSONL**（structlog 控制台渲染器，采集文件应用日志行 0） | 同上 + `bl147-05-jsonl-contract.json` | **已修复（2026-09-19）**：编排器注入 `OPENRAG_LOG_JSON='true'` + `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES='["openbase-rag-proxy"]'`（**必须 JSON 数组形态**，逗号串触发 pydantic-settings `SettingsError` 并使服务启动即崩） | **复测通过**：rag 族 10/10 命中（业务 5/5）；应用日志行 41 / 合法率 100% |
-| **DEF-BE-147-003** | **P1** | 同上 | **OpenMemory 仓（边界待定位）** | 透传行为按路径分化：`/api/v1/memory-proxy/health` 命中、业务路径 `/api/v1/memory-proxy/monitor` 0/5 命中（日志中为本地生成 id） | `bl147-05-chain-consistency.json` §7.2 | **仍开放**（未修复） | 复测仍 0/5。**已排除本仓**：proxy 侧 `/monitor` 与 `/health` 走同一 `_proxy_json` 装配点；差异在 OpenMemory 侧 |
+| **DEF-BE-147-003** | **P1** | 同上 | **OpenMemory 仓（经本仓编排器配置修复）** | 透传行为按路径分化：`/health` 命中、业务路径 `/api/v1/monitor` 0/5 命中（日志中为本地生成 id） | `bl147-05-chain-consistency.json` §7.2/§7.4 | **已修复（2026-09-20）**：编排器注入 `OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES='["openbase-memory-proxy"]'`。根因：`/health` 在 OpenMemory `IdentityTrustConfig.whitelist_paths` 内 → 身份门直接放行、不裁决 `request_id`，由 `StructuredLogMiddleware` 回退复用合规入站头（故表现为「探活命中」）；业务路径走门裁决，白名单为空 → `allow_reuse=False` → 忽略网关 id 并本地重生成 | **复测通过**：业务路径 **5/5** 命中，且全部返回 200（未触发 M2 角色/租户校验副作用） |
 | **DEF-BE-147-005** | **P1** | 2026-09-19 复测（修复副作用） | 本仓/OpenRAG 边界 | **修复 DEF-002 时引入**：启用 OpenRAG M2 受信模式后，`rag-proxy/collections` 由 **200 → 400**（响应 171 B / 5 ms；OpenRAG 仅记 `api_key_authed` + `request_completed 400`，无拒绝原因日志） | 首轮采样（提交 `bb78e77`）rag `/collections`=200 vs 复测=400；`bl147-05-sampling.json` | **待定位** | 未复测（定向复现因 OpenRAG 冷启 > 60s 超时窗口未完成） |
 | DEF-BE-147-004 | P2（工具链） | 首轮验收执行 | 本仓（验收脚本） | 新增验收脚本首轮失败：① 含中文的 `.ps1` 若无 UTF-8 BOM，Windows PowerShell 5 按 ANSI 解析 → `ParserError UnexpectedToken`；② `$ErrorActionPreference='Stop'` 下 Python 校验器的 stderr（适配器 WARN）被 PS5 视为终止性错误 → 脚本中断（校验证据缺失） | 本轮复现与修复记录；`scripts/bl147_05_e2e_check.ps1` 注释 | **已闭环** | 已复跑通过（三段证据齐备） |
 
@@ -50,12 +50,12 @@
 | 归集日期 | 2026-09-19 | — |
 | 技术债务总表版本 | v0.5.1（2026-09-16） | 本轮未改版；如登记 TD-新增-021 则同步升版 |
 
-## 4. 结论（v1.1.0 更新）
+## 4. 结论（v1.2.0 更新）
 
-- **BL-147-05 仍不通过**（复测业务路径串联 17/22 = 77.3%），但**阻塞面已收敛**：DEF-BE-147-001（DPS）、DEF-BE-147-002（OpenRAG）**已修复并复测闭环**（修复方式为**本仓编排器 env 注入**，未改他仓代码；OpenRAG 同时达成 JSONL 与 request_id 透传）。
-- 剩余阻塞 2 项：**DEF-BE-147-003（OpenMemory 业务路径透传，P1）** 与 **DEF-BE-147-005（本仓修复引入的 M2 副作用：`rag-proxy/collections` 200→400，P1）**，两项均需下一轮修复 + 复测。
-- v1.4.6 Phase 6 门禁（M10/M11）**仍未闭合**；TD-新增-020 **不得**置为「已偿还」。
-- 修复产物：`scripts/service-orchestrator.ps1`（env 注入）、`tests/test_bl147_trust_env_wiring.py`（3 例 TDD 护栏）、`scripts/bl147_05_verify_chain.py`（探活路径判据细化）。
+- **BL-147-05 的核心判据（串联一致性）已达成**：复测 2（2026-09-20）**业务路径 22/22 = 100%**（dps 7/7、rag 5/5、memory 5/5、llm 5/5），探活/豁免路径 18/18 亦全部命中；四仓应用日志行合法率 **100%**；`repo_log` 可检索四仓覆盖 4/4 且 `request_id` 反查命中。
+- **缺陷闭环**：DEF-BE-147-001（DPS）、DEF-BE-147-002（OpenRAG）、DEF-BE-147-003（OpenMemory）**均已修复并复测通过**；三处修复均为**本仓编排器 env 注入**（信任链白名单 / JSONL 开关），**未改他仓代码**。
+- **剩余阻塞 1 项**：**DEF-BE-147-005（P1）** —— `rag-proxy/collections` 在 OpenRAG M2 模式下由 200 变 400（复测 2 仍复现，且响应 request_id 与网关一致，即串联正常、功能异常）。
+- 版本门禁：v1.4.6 Phase 6 门禁（M10/M11）**仍未闭合**（待 DEF-005 闭环 + 测试回溯审计）；TD-新增-020 **不得**置为「已偿还」。
 
 ## 5. 修订历史
 
@@ -63,3 +63,4 @@
 |------|------|--------|------|
 | v1.0.0 | 2026-09-19 | AT-OpenBase-Test | 初始创建：v1.4.7 问题跟踪记录。登记 4 项缺陷（3 项 P0/P1 跨仓待修复 + 1 项 P2 工具链已闭环）、3 项变更请求（含人工裁定 CR-147-001）、**风险归集检查章节**（TD-新增-020 仍为待偿还；建议 TD-新增-021 待版本收口定稿）；结论：回退 Step 3，跨仓派单修复 |
 | v1.1.0 | 2026-09-19 | AD-OpenBase-Dev | **修复与复测登记**：DEF-BE-147-001/002 由「待修复」改为「**已修复 + 复测通过**」（本仓编排器 env 注入：dps `TRUSTED_PROXY_SOURCES`；openrag `OPENRAG_LOG_JSON` + `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES`（JSON 数组形态坑））；新增 **DEF-BE-147-005（P1，M2 激活副作用）**；DEF-BE-147-003 标注「已排除本仓、差异在 OpenMemory 侧」；§4 结论更新为「阻塞面收敛为 2 项」；依据《OpenBase-测试报告-v1.4.7》§7 |
+| v1.2.0 | 2026-09-20 | AD-OpenBase-Dev | **DEF-BE-147-003 闭环**：OpenMemory 由「仍开放」改为「**已修复 + 复测通过**」（编排器注入 `OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES=["openbase-memory-proxy"]`；根因＝`whitelist_paths` 内 `/health` 免门裁决致「探活命中假象」，业务路径受信白名单为空 → 本地重生成）；§4 结论更新为「**串联判据 100% 达成**（22/22），剩余阻塞 1 项（DEF-005）」；依据《OpenBase-测试报告-v1.4.7》§7.4 |
