@@ -128,7 +128,18 @@ $services = @(
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'openrag.main:app', '--app-dir', 'src', '--host', '127.0.0.1', '--port', '8010')
         # PYTHONDONTWRITEBYTECODE 绕过沙箱禁止写 __pycache__ 的限制（与 DPS 一致）
-        Env     = @{ OPENRAG_API_PORT = '8010'; PYTHONDONTWRITEBYTECODE = '1' }
+        # R-384/BL-147-05 修复（DEF-BE-147-002）：① 开启 JSONL（否则请求日志为 structlog
+        # 控制台文本，日志中心看不到「应用日志行」）② 声明受信代理来源，使入站
+        # X-Request-Id 走「受信透传复用」分支（否则忽略并本地重生成 → 跨系统串联断链）。
+        Env     = @{
+            OPENRAG_API_PORT = '8010'
+            PYTHONDONTWRITEBYTECODE = '1'
+            OPENRAG_LOG_JSON = 'true'
+            # 注意：该字段为 list[str]，pydantic-settings 会在 field_validator 之前先按 JSON 解码
+            # EnvSettingsSource 的值 → **必须传 JSON 数组形态**；传逗号分隔串会导致
+            # SettingsError（首轮实测：OpenRAG 启动即崩、rag-proxy 全 502）。
+            OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES = '["openbase-rag-proxy"]'
+        }
         Health  = @('http://127.0.0.1:8010/api/v1/system/health')
         Depends = @()
         DepType = 'hard'
@@ -198,6 +209,10 @@ $services = @(
             DATABASE_URL = $env:POSTGRES_URL
             SQLITE_FALLBACK = 'false'
             PYTHONDONTWRITEBYTECODE = '1'
+            # R-384/BL-147-05 修复（DEF-BE-147-001）：声明受信代理来源，使入站
+            # X-Request-Id 走「受信透传复用」分支（白名单为空时 DPS 会忽略网关 id
+            # 并本地重生成 → 跨系统串联断链）。取值示例见 DPS 仓 src/config.py:194。
+            TRUSTED_PROXY_SOURCES = 'openbase-dps-proxy,openbase-orchestrator'
         }
         Health  = @('http://127.0.0.1:8030/health/liveness')
         Depends = @()

@@ -821,8 +821,25 @@
                                                                                    "doc/test/evidence/v147/bl147-05-chain-consistency.json",
                                                                                    "doc/test/evidence/v147/bl147-05-jsonl-contract.json",
                                                                                    "doc/test/evidence/v147/bl147-05-retrieval.json"
-                                                                               ]
-                                                               }
+                                                                               ],
+                                                                   "retest":  {
+                                                                                  "date":  "2026-09-19",
+                                                                                  "note":  "Step 3 回退后**未派单、直接修复**：本仓编排器 env 注入 DPS/OpenRAG 信任链与 JSONL 开关（他仓代码未改）",
+                                                                                  "fixed":  [
+                                                                                                "DEF-BE-147-001（DPS，P0）已修复并复测通过：业务路径 7/7 命中",
+                                                                                                "DEF-BE-147-002（OpenRAG，P0）已修复并复测通过：rag 族 10/10 命中 + 应用日志行 41 行（合法率 100%）"
+                                                                                            ],
+                                                                                  "stillOpen":  [
+                                                                                                    "DEF-BE-147-003（P1，OpenMemory 业务路径 0/5；已排除本仓 proxy 差异）",
+                                                                                                    "DEF-BE-147-005（P1，本轮修复引入的 M2 副作用：rag /collections 200→400，待定位）"
+                                                                                                ],
+                                                                                  "criterion":  "业务路径串联 17/22 = 77.3%（探活/豁免路径 18 次单列、不计入判据；dps 7/7、rag 5/5、llm 5/5、memory 0/5）",
+                                                                                  "guards":  [
+                                                                                                  "tests/test_bl147_trust_env_wiring.py（3 例 TDD 护栏，含网关来源常量一致性）"
+                                                                                              ],
+                                                                                  "conclusion":  "BL-147-05 仍不通过；剩余 2 项 P1，须下一轮修复后复测"
+                                                                              }
+                                                              }
                      },
     "versionCheck":  {
                          "lastCheck":  "2026-08-24T00:00:00+08:00",

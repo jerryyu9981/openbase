@@ -4,13 +4,13 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test |
 | 创建日期 | 2026-09-19 |
 | 存放 | doc/test/ |
 | 测试范围 | **BL-147-05 端到端串联与接入验收**（专项验收口径，见 §1 偏差声明） |
-| **测试结论** | **不通过**（串联一致性 33.3%、OpenRAG JSONL 契约不满足；已登记 3 项缺陷，按流程回退 Step 3） |
+| **测试结论** | **不通过**（首轮 8/24 命中；**修复后复测 17/22 = 77.3%**，DPS/OpenRAG 缺陷已闭环，OpenMemory（DEF-BE-147-003）与 M2 激活副作用（DEF-BE-147-005）仍开放） |
 
 **上游依据**：《OpenBase-测试计划-v1.4.7》《OpenBase-测试用例-v1.4.7》；《OpenBase-R384四仓施工派单-v1.0.0》§8；《OpenBase-DevLogReport-v1.4.7》§5.1（判据口径裁定）；《OpenBase-问题跟踪记录-v1.4.7》。
 
@@ -105,8 +105,42 @@
 2. **处置**：按门禁回退 **Step 3**（跨仓缺陷以派单项分发 DPS / OpenRAG / OpenMemory），修复后重跑 TT-147-003~TT-147-009；本仓侧无需代码修复（网关注入已由 OpenLLM 6/6 命中证伪）。
 3. **不得**据此报告宣称 v1.4.6 Phase 6 门禁或 M10/M11 达成，也不得将 TD-新增-020 置为「已偿还」。
 
+## 7. BL-147-05 修复与复测记录（2026-09-19，v1.1.0 增补）
+
+### 7.1 本轮修复（Step 3 回退后，**未派单、直接修复**）
+
+| 缺陷 | 修复位置 | 修复内容 |
+|------|---------|---------|
+| DEF-BE-147-001（DPS） | **本仓** `scripts/service-orchestrator.ps1`（dps `Env`） | 注入 `TRUSTED_PROXY_SOURCES='openbase-dps-proxy,openbase-orchestrator'`（DPS 侧无需改码；其 `src/config.py:194` 已给出该取值示例） |
+| DEF-BE-147-002（OpenRAG） | **本仓** 同上（openrag `Env`） | ① 注入 `OPENRAG_LOG_JSON='true'`（OpenRAG 已内置该开关，默认 False）；② 注入 `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES='["openbase-rag-proxy"]'`（**必须 JSON 数组形态**：pydantic-settings 对 `list[str]` 字段先按 JSON 解码 EnvSettingsSource 值，逗号串会导致 `SettingsError` 且服务启动即崩 → 首轮实测 rag-proxy 全 502） |
+| 护栏 | 本仓 `tests/test_bl147_trust_env_wiring.py`（新增 3 例，TDD：先 RED 后 GREEN） | 断言编排器为 dps/openrag 注入上述键，且白名单值与 `protocol_headers.constants.PROXY_SOURCE_*`（网关来源单一事实源）一致 |
+| 判据细化 | 本仓 `scripts/bl147_05_verify_chain.py` | 按《施工派单》§4 兜底条款，**探活/豁免路径**（`*/health`、`openapi.json`）契约上不可能携带 request_id → 单列 `probe_totals`、**不计入串联判据**（避免把契约豁免误记为缺陷）；业务路径判据不变（100%） |
+
+### 7.2 复测结果（40 次真实请求：4 族 × 10；服务全健康，40/40 带回 `X-Request-Id`）
+
+| 判据 | 目标 | 首轮（未修复） | **复测（修复后）** | 判定 |
+|------|------|:-------------:|:-----------------:|:----:|
+| 串联一致性（**业务路径**） | 100% | 8/24（33.3%，未区分探活） | **17/22 = 77.3%** | 未达标（受 DEF-003 阻塞） |
+| └ 逐族（业务路径） | — | — | **dps 7/7 ✅、rag 5/5 ✅、llm 5/5 ✅、memory 0/5 ❌** | — |
+| └ 探活/豁免路径（单列） | — | — | 18 次 / 命中 11（不计入判据） | 证据性 |
+| 应用日志行 JSONL 契约 | 100% 合法 | openrag 应用行 0 | **dps 217 / rag 41 / memory 240 / llm 1473，合法率均 100%**，`status_code` 非数字 0 | ✅ |
+| 四仓可检索（`repo_log`+`module`） | 4/4 | 4/4 | 4/4 | ✅ |
+| 本仓回归 + 静态检查 | 无新增失败 | ✅ | ✅（`ruff` 0；`pytest` 992/988/4 环境性） | ✅ |
+
+**结论**：DPS（DEF-001）与 OpenRAG（DEF-002）两项缺陷**已修复并验证闭环**（OpenRAG 同时达成 JSONL 与透传）；整体仍**不通过**，剩余阻塞为：
+
+| 缺陷 ID | 级别 | 归属 | 现状 |
+|---------|:----:|------|------|
+| DEF-BE-147-003 | P1 | OpenMemory（+ 边界待定位） | 仍开放：业务路径 `/api/v1/memory-proxy/monitor` 0/5 命中（探活 5/5 命中）；**proxy 侧 `/monitor` 与 `/health` 走同一 `_proxy_json` 装配点（本仓无差异）→ 差异在 OpenMemory 侧** |
+| **DEF-BE-147-005**（新） | **P1** | 本仓/OpenRAG 边界 | **本轮修复引入的副作用**：启用 M2 后 `rag-proxy/collections` 由 200 → **400**（响应 171 B、耗时 5 ms；OpenRAG 仅记 `api_key_authed` + `request_completed 400`，无拒绝原因日志）。已排除网关注入缺失（DPS 用同一装配点且业务全通）；判据证据：首轮 `bl147-05-sampling.json`（提交 `bb78e77`）rag `/collections` = **200**，复测 = **400**。定向复现未完成（OpenRAG 冷启需 >60s，本次 60s 超时窗口内未监听） |
+
+### 7.3 复测证据
+
+`doc/test/evidence/v147/`：`bl147-05-env.txt`（环境 + 40 次抽样逐条）、`bl147-05-sampling.json`、`bl147-05-chain-consistency.json`（含 `totals` 业务判据与 `probe_totals` 探活单列）、`bl147-05-jsonl-contract.json`、`bl147-05-retrieval.json`、`bl147-05-namecheck.txt`。
+
 ## 8. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-19 | AT-OpenBase-Test | 初始创建：v1.4.7 BL-147-05 专项验收测试报告。含入场检查与 3 项环境/工具坑、10 条用例结果（8 通过 / 2 不通过 / 1 未执行）、**串联一致性逐仓原文命中矩阵**（openllm 6/6、openmemory 3/6、dps 0/6、openrag 0/6）、4 项缺陷（3 项 P0/P1 待修复 + 1 项 P2 已闭环）、覆盖率说明、3 项跳过项、4 项遗留风险；**结论：不通过 → 回退 Step 3** |
+| v1.1.0 | 2026-09-19 | AT-OpenBase-Test | **新增 §7 修复与复测记录**：登记 DPS/OpenRAG 两项缺陷的修复位置与内容（编排器 env 注入 + JSON 数组形态坑 + 3 例 TDD 护栏 + 判据细化）；复测（40 次真实请求）结果——业务路径串联 **17/22（dps 7/7、rag 5/5、llm 5/5、memory 0/5）**、JSONL 契约四仓合法率 **100%**、可检索 4/4、本仓回归通过；**结论仍为不通过**，剩余阻塞为 DEF-BE-147-003（OpenMemory）与新登记 DEF-BE-147-005（M2 副作用：rag `/collections` 200→400） |

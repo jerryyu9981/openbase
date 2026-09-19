@@ -1,249 +1,409 @@
 {
-    "generated_at":  "2026-09-19T22:11:32",
+    "generated_at":  "2026-09-19T23:18:45",
     "base_url":  "http://127.0.0.1:8000",
-    "per_family":  6,
-    "total_requests":  24,
-    "with_request_id":  24,
+    "per_family":  10,
+    "total_requests":  40,
+    "with_request_id":  40,
     "requests":  [
                      {
                          "seq":  1,
                          "family":  "dps",
                          "path":  "/api/v1/dps-proxy/reports/overview",
                          "status":  200,
-                         "request_id":  "req-cb587eec69f5",
-                         "duration_ms":  4822,
+                         "request_id":  "req-2b9db011110f",
+                         "duration_ms":  1171,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:12"
+                         "sampled_at":  "2026-09-19T23:18:39"
                      },
                      {
                          "seq":  2,
                          "family":  "dps",
                          "path":  "/api/v1/dps-proxy/tags/categories",
                          "status":  200,
-                         "request_id":  "req-4d2361d09419",
-                         "duration_ms":  699,
+                         "request_id":  "req-1ddd92297ddc",
+                         "duration_ms":  250,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:13"
+                         "sampled_at":  "2026-09-19T23:18:39"
                      },
                      {
                          "seq":  3,
                          "family":  "dps",
                          "path":  "/api/v1/dps-proxy/health",
                          "status":  200,
-                         "request_id":  "req-d247aa736e2f",
-                         "duration_ms":  595,
+                         "request_id":  "req-b6f9111e7e1d",
+                         "duration_ms":  272,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:14"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  4,
                          "family":  "dps",
                          "path":  "/api/v1/dps-proxy/reports/overview",
                          "status":  200,
-                         "request_id":  "req-6f1bdb66b6e1",
-                         "duration_ms":  526,
+                         "request_id":  "req-516505f9adf0",
+                         "duration_ms":  270,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:14"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  5,
                          "family":  "dps",
                          "path":  "/api/v1/dps-proxy/tags/categories",
                          "status":  200,
-                         "request_id":  "req-8c8d5940fea0",
-                         "duration_ms":  507,
+                         "request_id":  "req-6a996a28e631",
+                         "duration_ms":  122,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:15"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  6,
                          "family":  "dps",
                          "path":  "/api/v1/dps-proxy/health",
                          "status":  200,
-                         "request_id":  "req-e528a43101b6",
-                         "duration_ms":  402,
+                         "request_id":  "req-3f16449a470a",
+                         "duration_ms":  55,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:15"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  7,
-                         "family":  "rag",
-                         "path":  "/api/v1/rag-proxy/collections",
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/reports/overview",
                          "status":  200,
-                         "request_id":  "req-10217ff46acc",
-                         "duration_ms":  988,
+                         "request_id":  "req-5d77d9f12712",
+                         "duration_ms":  81,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:16"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  8,
-                         "family":  "rag",
-                         "path":  "/api/v1/rag-proxy/health",
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/tags/categories",
                          "status":  200,
-                         "request_id":  "req-c416afe056d1",
-                         "duration_ms":  684,
+                         "request_id":  "req-84f6e45ce073",
+                         "duration_ms":  94,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:17"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  9,
-                         "family":  "rag",
-                         "path":  "/api/v1/rag-proxy/collections",
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/health",
                          "status":  200,
-                         "request_id":  "req-a419459536cf",
-                         "duration_ms":  702,
+                         "request_id":  "req-0c3f1752a19a",
+                         "duration_ms":  65,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:18"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  10,
-                         "family":  "rag",
-                         "path":  "/api/v1/rag-proxy/health",
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/reports/overview",
                          "status":  200,
-                         "request_id":  "req-bda9ce9799fc",
-                         "duration_ms":  415,
+                         "request_id":  "req-bb38861cc2ef",
+                         "duration_ms":  84,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:18"
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  11,
                          "family":  "rag",
                          "path":  "/api/v1/rag-proxy/collections",
-                         "status":  200,
-                         "request_id":  "req-0eeb526bb856",
-                         "duration_ms":  819,
-                         "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:19"
+                         "status":  400,
+                         "request_id":  "req-1136b8ab7a85",
+                         "duration_ms":  62,
+                         "error":  "远程服务器返回错误: (400) 错误的请求。",
+                         "sampled_at":  "2026-09-19T23:18:40"
                      },
                      {
                          "seq":  12,
                          "family":  "rag",
                          "path":  "/api/v1/rag-proxy/health",
                          "status":  200,
-                         "request_id":  "req-dd8c44696c8f",
-                         "duration_ms":  419,
+                         "request_id":  "req-c1cfb1448f25",
+                         "duration_ms":  105,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:20"
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  13,
-                         "family":  "memory",
-                         "path":  "/api/v1/memory-proxy/monitor",
-                         "status":  200,
-                         "request_id":  "req-da07e9101f72",
-                         "duration_ms":  327,
-                         "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:20"
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/collections",
+                         "status":  400,
+                         "request_id":  "req-a268f21c36c2",
+                         "duration_ms":  39,
+                         "error":  "远程服务器返回错误: (400) 错误的请求。",
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  14,
-                         "family":  "memory",
-                         "path":  "/api/v1/memory-proxy/health",
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/health",
                          "status":  200,
-                         "request_id":  "req-761679224ef1",
-                         "duration_ms":  245,
+                         "request_id":  "req-7bad4e52a19c",
+                         "duration_ms":  91,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:20"
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  15,
-                         "family":  "memory",
-                         "path":  "/api/v1/memory-proxy/monitor",
-                         "status":  200,
-                         "request_id":  "req-9983c783fb9f",
-                         "duration_ms":  349,
-                         "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:21"
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/collections",
+                         "status":  400,
+                         "request_id":  "req-ff63adba1f5a",
+                         "duration_ms":  325,
+                         "error":  "远程服务器返回错误: (400) 错误的请求。",
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  16,
-                         "family":  "memory",
-                         "path":  "/api/v1/memory-proxy/health",
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/health",
                          "status":  200,
-                         "request_id":  "req-c00b9ee18881",
-                         "duration_ms":  505,
+                         "request_id":  "req-5ce27382a125",
+                         "duration_ms":  106,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:21"
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  17,
-                         "family":  "memory",
-                         "path":  "/api/v1/memory-proxy/monitor",
-                         "status":  200,
-                         "request_id":  "req-49372cac200c",
-                         "duration_ms":  379,
-                         "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:21"
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/collections",
+                         "status":  400,
+                         "request_id":  "req-5dd0657ef7fd",
+                         "duration_ms":  109,
+                         "error":  "远程服务器返回错误: (400) 错误的请求。",
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  18,
-                         "family":  "memory",
-                         "path":  "/api/v1/memory-proxy/health",
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/health",
                          "status":  200,
-                         "request_id":  "req-fd3c003bd7b2",
-                         "duration_ms":  375,
+                         "request_id":  "req-de3b4ef8757d",
+                         "duration_ms":  121,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:22"
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  19,
-                         "family":  "llm",
-                         "path":  "/api/v1/llm-proxy/models",
-                         "status":  200,
-                         "request_id":  "req-6ca336c705af",
-                         "duration_ms":  1237,
-                         "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:23"
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/collections",
+                         "status":  400,
+                         "request_id":  "req-fda5fdcd42f0",
+                         "duration_ms":  46,
+                         "error":  "远程服务器返回错误: (400) 错误的请求。",
+                         "sampled_at":  "2026-09-19T23:18:41"
                      },
                      {
                          "seq":  20,
-                         "family":  "llm",
-                         "path":  "/api/v1/llm-proxy/health",
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/health",
                          "status":  200,
-                         "request_id":  "req-7f8603790576",
-                         "duration_ms":  6681,
+                         "request_id":  "req-3727b1b8bb80",
+                         "duration_ms":  90,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:30"
+                         "sampled_at":  "2026-09-19T23:18:42"
                      },
                      {
                          "seq":  21,
-                         "family":  "llm",
-                         "path":  "/api/v1/llm-proxy/models",
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
                          "status":  200,
-                         "request_id":  "req-c46e13241610",
-                         "duration_ms":  554,
+                         "request_id":  "req-7adf55b67e8d",
+                         "duration_ms":  140,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:30"
+                         "sampled_at":  "2026-09-19T23:18:42"
                      },
                      {
                          "seq":  22,
-                         "family":  "llm",
-                         "path":  "/api/v1/llm-proxy/health",
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
                          "status":  200,
-                         "request_id":  "req-29c9b1d84fb6",
-                         "duration_ms":  852,
+                         "request_id":  "req-937a6b075487",
+                         "duration_ms":  210,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:31"
+                         "sampled_at":  "2026-09-19T23:18:42"
                      },
                      {
                          "seq":  23,
-                         "family":  "llm",
-                         "path":  "/api/v1/llm-proxy/models",
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
                          "status":  200,
-                         "request_id":  "req-3b9c8a0e0926",
-                         "duration_ms":  650,
+                         "request_id":  "req-65e24860d380",
+                         "duration_ms":  138,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:32"
+                         "sampled_at":  "2026-09-19T23:18:42"
                      },
                      {
                          "seq":  24,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-727268184a83",
+                         "duration_ms":  168,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:42"
+                     },
+                     {
+                         "seq":  25,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
+                         "status":  200,
+                         "request_id":  "req-ff1b19b83a1f",
+                         "duration_ms":  178,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:42"
+                     },
+                     {
+                         "seq":  26,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-c851151cfd4e",
+                         "duration_ms":  119,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:42"
+                     },
+                     {
+                         "seq":  27,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
+                         "status":  200,
+                         "request_id":  "req-1f47da700868",
+                         "duration_ms":  37,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:43"
+                     },
+                     {
+                         "seq":  28,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-cce564fd1f5f",
+                         "duration_ms":  34,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:43"
+                     },
+                     {
+                         "seq":  29,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
+                         "status":  200,
+                         "request_id":  "req-fa2374d1351a",
+                         "duration_ms":  33,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:43"
+                     },
+                     {
+                         "seq":  30,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-cae340482b9d",
+                         "duration_ms":  40,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:43"
+                     },
+                     {
+                         "seq":  31,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-bce56505d6f3",
+                         "duration_ms":  498,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:43"
+                     },
+                     {
+                         "seq":  32,
                          "family":  "llm",
                          "path":  "/api/v1/llm-proxy/health",
                          "status":  200,
-                         "request_id":  "req-a01988f3559d",
-                         "duration_ms":  180,
+                         "request_id":  "req-99b0f21494fe",
+                         "duration_ms":  574,
                          "error":  null,
-                         "sampled_at":  "2026-09-19T22:11:32"
+                         "sampled_at":  "2026-09-19T23:18:44"
+                     },
+                     {
+                         "seq":  33,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-c0b225878c37",
+                         "duration_ms":  165,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:44"
+                     },
+                     {
+                         "seq":  34,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-aa032ebd28ab",
+                         "duration_ms":  53,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:44"
+                     },
+                     {
+                         "seq":  35,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-66ce900afdd4",
+                         "duration_ms":  228,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:44"
+                     },
+                     {
+                         "seq":  36,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-72fc79ea0e50",
+                         "duration_ms":  77,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:44"
+                     },
+                     {
+                         "seq":  37,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-0015c089f09b",
+                         "duration_ms":  178,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:44"
+                     },
+                     {
+                         "seq":  38,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-d3196decb9f7",
+                         "duration_ms":  62,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:44"
+                     },
+                     {
+                         "seq":  39,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-eddc413e958a",
+                         "duration_ms":  233,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:45"
+                     },
+                     {
+                         "seq":  40,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-db7dd8fad26e",
+                         "duration_ms":  378,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T23:18:45"
                      }
                  ]
 }

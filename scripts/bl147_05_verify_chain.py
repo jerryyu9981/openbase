@@ -45,6 +45,19 @@ from openbase.modules.logs.schemas import LogSearchParams  # noqa: E402
 
 REQUIRED_FIELDS: tuple[str, ...] = ("ts", "request_id", "method", "path", "status_code")
 DASH = "-"
+#: 探活/豁免路径：按《施工派单》§4 兜底条款「无上下文路径（豁免/健康检查/非请求上下文）
+#: 一律输出 "-"」，该类请求**契约上不可能**携带网关 request_id → 不纳入串联一致性判据，
+#: 仅作兜底健壮性证据单列（避免把契约豁免记为缺陷）。
+EXEMPT_PROBE_SUFFIXES: tuple[str, ...] = (
+    "/health",
+    "/health/liveness",
+    "/health/readiness",
+    "/openapi.json",
+)
+
+
+def _is_exempt_probe(path: str | None) -> bool:
+    return bool(path) and str(path).rstrip("/").endswith(tuple(s.rstrip("/") for s in EXEMPT_PROBE_SUFFIXES))
 
 
 def _now() -> str:
@@ -179,18 +192,30 @@ def main(argv: list[str] | None = None) -> int:
     index = scan["index"]
 
     per_request: list[dict[str, Any]] = []
-    hits = misses = 0
+    hits = misses = probe_hits = probe_requests = 0
     for sample in samples:
         request_id = sample.get("request_id")
         matched = index.get(request_id, []) if isinstance(request_id, str) else []
-        if matched:
+        probe = _is_exempt_probe(sample.get("path"))
+        if probe:
+            probe_requests += 1
+            if matched:
+                probe_hits += 1
+        elif matched:
             hits += 1
         else:
             misses += 1
-        consistent = bool(matched) and all(row["svc"] for row in matched)
-        per_request.append({**sample, "hit": bool(matched), "consistent": consistent, "matches": matched})
+        per_request.append(
+            {
+                **sample,
+                "hit": bool(matched),
+                "consistent": bool(matched),
+                "exempt_probe": probe,
+                "matches": matched,
+            }
+        )
 
-    total = len(samples)
+    total = hits + misses
     chain = {
         "checked_at": _now(),
         "sampling_file": str(args.sampling),
@@ -200,8 +225,13 @@ def main(argv: list[str] | None = None) -> int:
             "hits": hits,
             "misses": misses,
             "hit_rate": round(hits / total, 4) if total else None,
-            "criterion": "命中率 100% 且取值逐字相等（判据口径：应用日志行）",
+            "criterion": "业务路径命中率 100% 且取值逐字相等（判据口径：应用日志行）",
             "passed": bool(total) and misses == 0,
+        },
+        "probe_totals": {
+            "requests": probe_requests,
+            "hits": probe_hits,
+            "note": "探活/豁免路径不计入串联判据（契约上无请求上下文，按 §4 兜底条款输出 '-'）",
         },
         "per_request": per_request,
     }
@@ -225,7 +255,10 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(retrieval, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
 
-    print(f"[chain] 抽样 {total} / 命中 {hits} / 未命中 {misses} / 命中率 {chain['totals']['hit_rate']}")
+    print(f"[chain] 业务路径抽样 {total} / 命中 {hits} / 未命中 {misses} / 命中率 {chain['totals']['hit_rate']}")
+    print(
+        f"[probe] 探活/豁免路径 {probe_requests} 次（命中 {probe_hits}，不计入串联判据）"
+    )
     for svc, stats in scan["per_svc"].items():
         print(
             f"[contract] {svc}: 应用行 {stats['app_lines']}（合法 {stats['valid_json']}，"
