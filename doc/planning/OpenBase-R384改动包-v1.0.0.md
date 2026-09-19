@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |------|------|
 | 文档编号 | OB-CHANGESET-R384-CROSSREPO-v1.0.0 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | [Review] |
 | 作者 | AD-OpenBase-Dev / AA-OpenBase-Dev |
 | 日期 | 2026-09-16 |
@@ -42,6 +42,8 @@ from datetime import datetime, timezone
 from typing import Callable
 
 _CONFIGURED = False
+# 托管 handler 引用（filter 挂 handler 上，见 §2.1 勘误）
+_HANDLER: logging.Handler | None = None
 
 
 class RequestIdFilter(logging.Filter):
@@ -101,17 +103,21 @@ def configure_logging(
     get_request_id: Callable[[], str | None],
     json_lines: bool = True,
 ) -> None:
-    """装配日志：root filter（request_id）+ root handler formatter（JSON Lines）。
+    """装配日志：**handler 级** request_id 注入 + JSON Lines 输出。
 
-    - 幂等：重复调用仅生效一次（DPS 的 `app.py` 与 `main.py` 双入口会各调一次）。
+    - 幂等：不重复添加 handler（DPS 的 `app.py` 与 `main.py` 双入口会各调一次）；
+      但每次调用都把 filter 重整为本次传入的 getter（见 §2.1 勘误）。
     - **输出流不变**：仍为 stderr（DPS/OpenLLM/OpenMemory）/ stdout（OpenRAG）。
+
+    filter 必须挂 handler：CPython 语义下祖先 logger 的 filter **不参与**子 logger 记录
+    传播，挂 root logger 会让 `logging.getLogger(__name__)` 记录的 request_id 恒为 "-"。
     """
-    global _CONFIGURED
+    global _CONFIGURED, _HANDLER
     logger = logging.getLogger()
-    # 幂等挂 filter（root logger 上只挂一次）
-    if not any(isinstance(f, RequestIdFilter) for f in logger.filters):
-        logger.addFilter(RequestIdFilter(get_request_id))
-    if _CONFIGURED:
+    if _CONFIGURED and _HANDLER is not None:
+        for stale in [f for f in _HANDLER.filters if isinstance(f, RequestIdFilter)]:
+            _HANDLER.removeFilter(stale)
+        _HANDLER.addFilter(RequestIdFilter(get_request_id))
         return
     numeric_level = getattr(logging, level.upper(), logging.INFO)
     logger.setLevel(numeric_level)
@@ -123,9 +129,25 @@ def configure_logging(
     )
     handler = logging.StreamHandler()  # 默认 stderr；OpenRAG 传 sys.stdout
     handler.setFormatter(formatter)
+    handler.addFilter(RequestIdFilter(get_request_id))  # ← 挂 handler，不是 root logger
     logger.addHandler(handler)
+    _HANDLER = handler
     _CONFIGURED = True
 ```
+
+### 2.1 勘误（P1，2026-09-19）：filter 挂 **handler**，而非 root logger
+
+> **本节修正上述代码的原始版本**（原版将 filter 加在 root logger）。四仓实施反馈：**OpenLLM / OpenMemory / OpenRAG 三仓独立复现并各自修正**；**DPS 按原版实现后由 OpenBase 侧探针复现并修正**。
+
+| 项 | 内容 |
+|----|------|
+| 缺陷 | `logging.getLogger().addFilter(RequestIdFilter(...))`（root logger 级）→ 子 logger 记录**不会**被注入 |
+| 根因 | CPython `logging` 语义：logger 级 filter 只对「自该 logger 发起」的记录生效；子 logger 记录向祖先传播时**只执行祖先的 handler，不执行祖先的 filter** |
+| 影响 | 四仓业务代码普遍 `logging.getLogger(__name__)` → 这些记录 `request_id` 恒为 `-`（即便上下文存在）→ 验收①对应用日志不可达 |
+| 复现 | OpenBase 探针（DPS 修正前）：子 logger → `"request_id": "-"`；root 直发 → 正确值 |
+| 修正 | `handler.addFilter(RequestIdFilter(get_request_id))`；filter 挂 handler 后所有经该 handler 的记录均被注入 |
+| 附带修正 | 幂等分支须把 filter **重整为本次 getter**，否则首个调用方的取值函数被固化（DPS 实测：前序 `lambda: None` 使后续注入失效） |
+| 验证 | DPS 专项单测 9 → **10 passed**（新增子 logger 注入护栏）；独立探针复测：子 logger 携带 `req-abc123456789` |
 
 > **访问日志说明（重要）**：uvicorn 自身的 `uvicorn.access` 行仍为纯文本——其携带 `ip - - "METHOD /path HTTP/1.1" 200`，**OpenBase 适配器可按"纯文本回退"解析出 `method/path/status_code`**（`_parse_line` 逐行判断 `{` 开头，故**同一文件内 JSON 行与文本行可混存**）。若要求全文件严格 JSONL，需在**采集侧**用 `--log-config` 统一 uvicorn 访问日志格式（属 BL-147-04 范围，见施工派单 §7）。
 
@@ -452,3 +474,4 @@ python scripts/smoke_l3_2.py
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-16 | AD-OpenBase-Dev / AA-OpenBase-Dev | 初始创建：R-384 四仓改动包。**含对 D-6 的两处落点更正**（依据编排器实测启动命令：DPS 实走 `rest_api.app:app`、OpenMemory 实走启动脚本，原落点不生效）；提供四仓可复用通用件（`RequestIdFilter` + `JsonLineFormatter` + 幂等 `configure_logging`）、DPS/OpenLLM 完整改动与单测、OpenMemory/OpenRAG 改动（含 6.0 核实结论与降险结论）、逐仓校验命令与提交流程、5 项未决风险 |
+| v1.1.0 | 2026-09-19 | AA-OpenBase-Dev | **新增 §2.1 勘误（P1）并修正 §2 通用件代码**：filter 由 root logger 改为**挂 handler**（CPython 语义下祖先 logger 的 filter 不参与子 logger 记录传播）；幂等分支改为将 filter 重整为本次 getter；新增 `_HANDLER` 模块级引用。附四仓实施反馈（OpenLLM/OpenMemory/OpenRAG 独立修正，DPS 经 OpenBase 侧探针复现后修正，专项单测 9 → 10 passed） |

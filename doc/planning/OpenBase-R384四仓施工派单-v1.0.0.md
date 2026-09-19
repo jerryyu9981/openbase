@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |------|------|
 | 文档编号 | OB-DISPATCH-R384-CROSSREPO-v1.0.0 |
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.2.0 |
 | 状态 | [Review] |
 | 作者 | PM-OpenBase-Dev / AA-OpenBase-Dev |
 | 日期 | 2026-09-16 |
@@ -45,6 +45,39 @@
 | **OpenRAG** | `python -m uvicorn openrag.main:app --app-dir src` | `src/openrag/main.py:51` `setup_logging(json_format=settings.is_production)`（lifespan 内） | ✅ 生效 | 不变；另需 `json_format=True`（采集环境）方为 JSONL |
 
 > **施工前必读**：DPS 与 OpenMemory 若按 D-6 原落点实施，**改动不会生效**。已按修正落点给出可落地改动，见《OpenBase-R384改动包-v1.0.0》。
+
+### 2.2 勘误（P1）：`RequestIdFilter` 必须挂 **handler**，不可挂 root logger
+
+> 2026-09-19 追加（源自四仓实施反馈）。**OpenLLM / OpenMemory / OpenRAG 三仓独立复现并各自修正**；DPS 按 §4.1 原样实现后由 OpenBase 侧独立探针复现并修正。**后续任何仓引用本派单 §5/§6 或《改动包》§2 的 `configure_logging` 代码，一律以下方修正版为准。**
+
+**问题**：§5/§6 的通用件把 `RequestIdFilter` 加在 **root logger**（`logging.getLogger().addFilter(...)`）。CPython `logging` 语义为：**logger 级 filter 只对「自该 logger 发起」的记录生效**；子 logger 记录向祖先传播时**只执行祖先的 handler，不执行祖先的 filter**。四仓业务代码普遍使用 `logging.getLogger(__name__)`（子 logger），故原样实现会让这些记录的 `request_id` 恒为 `-`（即便请求上下文存在）→ 验收①「请求日志携带 request_id」对**应用日志**不可达。
+
+**独立复现证据**（OpenBase 侧探针，针对 DPS 修正前版本）：
+
+```text
+子 logger（middleware.audit_middleware）→ "request_id": "-"
+root 直发（logging.getLogger().info）  → "request_id": "req-abc123456789"
+```
+
+**修正**：filter 挂到**托管 handler** 上——所有经该 handler 输出的记录（无论源自哪个 logger）均被注入。
+
+```python
+    handler = logging.StreamHandler()                    # 默认 stderr
+    handler.setFormatter(formatter)
+    handler.addFilter(RequestIdFilter(get_request_id))   # ← 挂在 handler，不是 root logger
+    logger.addHandler(handler)
+```
+
+**附带修正（幂等语义）**：重复调用时**不重复添加 handler**，但须把 filter 重整为**本次**传入的取值函数，避免首个调用方的 getter 被永久固化（DPS 实测：前序调用传入 `lambda: None` 会使后续注入失效）。
+
+**四仓落实状态（各仓实现差异均视为等效合规）**：
+
+| 仓 | 注入机制 | 落实状态 |
+|----|---------|---------|
+| DPS | handler 级 filter | ✅ 已修正（2026-09-19，OpenBase 侧；专项单测 9 → **10 passed**，含 P1 回归护栏；独立探针复测通过）。另保留"已显式携带 `request_id` 不被覆盖"适配（`BaseHTTPMiddleware` 子 task 下 contextvar 不可见） |
+| OpenLLM | handler 级 filter | ✅ 仓内已修正（回执记录 4 处偏离，含清理既有 root handler 防双写、`ensure_ascii=True`） |
+| OpenMemory | handler 级 filter | ✅ 仓内已修正（另含接管 `basicConfig` 遗留 handler、`_revive_app_loggers` 复启被 alembic `fileConfig` 停用的 logger） |
+| OpenRAG | structlog `contextvars.bind_contextvars` | ✅ 结构性正确，无需 filter（`merge_contextvars` 自动合入每条日志） |
 
 ## 3. Phase 6 任务 6.0 前置核实派单（跨仓开工前必做）
 
@@ -252,3 +285,4 @@ OpenBase 侧回填 hash 与技术债务总表；TD-新增-020 状态更新
 |------|------|--------|------|
 | v1.0.0 | 2026-09-16 | PM-OpenBase-Dev / AA-OpenBase-Dev | 初始创建：R-384 四仓施工派单。含四仓基线快照（实测 HEAD）、6.0 前置核实三项（附实测提示——OpenMemory 启动路径与 OpenRAG 日志栈统一已取得关键证据）、统一契约与 **JSONL 字段契约（按 OpenBase 适配器实测读取键逐项对齐）**、逐仓施工单（文件/改动/单测/回归/风险）、采集侧派单、验收判据与端到端验证方法、提交回执与 hash 回填位、9 项风险与施工时序 |
 | v1.1.0 | 2026-09-16 | AA-OpenBase-Dev | **新增 §2.1 启动路径实测表并更正两处改动落点**（依据 OpenBase 编排器 `scripts/service-orchestrator.ps1` 实测命令）：① **DPS** 实走 `rest_api.app:app`，D-6 原落点 `src/main.py` 的 `basicConfig` **不生效** → 落点更正为 `src/rest_api/app.py`（+ 抽 `src/logging_setup.py` 双入口共用）；② **OpenMemory** 实走 `scripts\start_openmemory.py` → `create_app()`，`api/server.py:788 main()` 内的 `basicConfig` **不生效** → 落点更正为 `src/openmemory/api/server.py`（模块级或 `create_app()`）；③ OpenLLM / OpenRAG 落点确认有效。同步：§3 核实项新增 **④ 各仓启动路径与日志配置生效点**、门禁表述由三项改为四项；上游依据增列《OpenBase-R384改动包-v1.0.0》（可落地代码）。文件内版本 v1.1.0，文件名沿用 -v1.0.0（与项目既有 D-6 说明同例） |
+| v1.2.0 | 2026-09-19 | AA-OpenBase-Dev | **新增 §2.2 勘误（P1）：`RequestIdFilter` 必须挂 handler、不可挂 root logger**——§5/§6 通用件原将 filter 加在 root logger，而 CPython 语义下祖先 logger 的 filter 不参与子 logger 记录传播，致 `logging.getLogger(__name__)`（四仓普遍）记录 `request_id` 恒为 `-`、验收①对应用日志不可达。含独立复现证据（DPS 修正前：子 logger `-` / root 直发正确）、修正代码、幂等语义附带修正（filter 须重整为本次 getter）、四仓落实状态表（OpenLLM/OpenMemory/OpenRAG 仓内独立修正，DPS 由 OpenBase 侧修正并加 P1 回归护栏）。**后续引用一律以修正版为准** |
