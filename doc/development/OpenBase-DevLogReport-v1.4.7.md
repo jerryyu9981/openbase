@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓，**承接型小版本**） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 状态 | [Review] |
 | 作者 | AD-OpenBase-Dev |
 | 创建日期 | 2026-09-19 |
@@ -143,6 +143,7 @@
 
 - 变更自检：本次修改/新建**代码与测试文件 5 个**（`scripts/service-orchestrator.ps1`、`openbase/modules/logs/repository.py`、`scripts/verify_repo_log_naming.py`、`tests/test_r384_repo_log_naming.py`、`tests/test_logs_service.py`）+ **文档 6 份**（含本报告）+ `.devflow/state.json`；每次写入后均回读确认，自检 **12 次全部通过**。
 - DevFlow 状态同步：`.devflow/state.json` → `currentPhase = v1_4_7_step_3_development`，`completedPhases` 补记 `v1_4_6_step_5_operations` / `v1_4_6_released` / `v1_4_7_step_0_planning`，`auditResults` 补记 `v1_4_6_step_5`（passed，报告存在）/ `v1_4_6_released`（closed，tag `v1.4.6`）/ `v1_4_7_step_0`（passed）/ `v1_4_7_step_3_increment_bl147_04`（in_progress，含未闭项）。
+- 版本控制：本次开发提交 **`e6452b1`**（`feat(v1.4.7): R-384 采集命名对齐与归档命名修复（BL-147-04）`，15 文件 / +2029 −40），已推送 **origin `main`** 与 **backup `main`** 双远程（`1ad316a..e6452b1`）。
 - 文档同步（均按文档版本管理规范升版并登记修订历史）：
   - 《OpenBase-本版本Backlog-v1.4.7》v1.0.0 → **v1.1.0**（执行期状态刷新）
   - 《OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6》v1.2.0 → **v1.3.0**（BL-147-04 闭环 + 余项 + §5 能力表刷新）
@@ -155,3 +156,4 @@
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-19 | AD-OpenBase-Dev | 初始创建：v1.4.7 Step 3 开发记录（BL-147-04 本仓采集命名对齐）。含命名契约（结构化流 `.jsonl`）、归档命名缺陷修复（根因与前后对照）、文件级变更表、TDD 单测、`-Action namecheck` 三段实测、全量回归与**存量测试日期腐化 A/B 归因**、3 项未闭项（uvicorn 访问日志非结构化 / DPS P1 修正待入库 / BL-147-05 未执行）与证据清单 |
+| v1.0.1 | 2026-09-19 | AD-OpenBase-Dev | **回填开发提交与推送证据**：§6 登记提交 `e6452b1`（15 文件 / +2029 −40）及 origin / backup 双远程推送结果（`1ad316a..e6452b1`） |
