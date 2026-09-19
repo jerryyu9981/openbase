@@ -1,0 +1,98 @@
+{
+  "checked_at": "2026-09-19T14:15:34+00:00",
+  "criterion": "应用日志行 100% 合法 JSON 且含必需字段（框架自身输出行不纳入判据，占比如实披露）",
+  "required_fields": [
+    "ts",
+    "request_id",
+    "method",
+    "path",
+    "status_code"
+  ],
+  "per_svc": {
+    "dps": {
+      "module": "dps",
+      "files": [
+        "dps-20260914.err.log",
+        "dps-20260914.log",
+        "dps-20260916.err.log",
+        "dps-20260916.log",
+        "dps-20260919-220617.err.jsonl",
+        "dps-20260919-220617.log",
+        "dps-20260919.err.jsonl",
+        "dps-20260919.log"
+      ],
+      "app_lines": 103,
+      "framework_lines": 2793,
+      "valid_json": 103,
+      "invalid_json": 0,
+      "missing_required": 88,
+      "status_code_non_numeric": 0,
+      "request_id_dash": 97,
+      "validity_rate": 1.0
+    },
+    "openrag": {
+      "module": "rag",
+      "files": [
+        "openrag-20260914-220336.log",
+        "openrag-20260914.err.log",
+        "openrag-20260914.log",
+        "openrag-20260916.err.log",
+        "openrag-20260916.log",
+        "openrag-20260919-215911.err.log",
+        "openrag-20260919-215911.jsonl",
+        "openrag-20260919.err.log",
+        "openrag-20260919.jsonl"
+      ],
+      "app_lines": 0,
+      "framework_lines": 185,
+      "valid_json": 0,
+      "invalid_json": 0,
+      "missing_required": 0,
+      "status_code_non_numeric": 0,
+      "request_id_dash": 0,
+      "validity_rate": null
+    },
+    "openmemory": {
+      "module": "memory",
+      "files": [
+        "openmemory-20260914.err.log",
+        "openmemory-20260914.log",
+        "openmemory-20260916.err.log",
+        "openmemory-20260916.log",
+        "openmemory-20260919-220109.err.jsonl",
+        "openmemory-20260919-220109.log",
+        "openmemory-20260919.err.jsonl",
+        "openmemory-20260919.log"
+      ],
+      "app_lines": 112,
+      "framework_lines": 466,
+      "valid_json": 112,
+      "invalid_json": 0,
+      "missing_required": 100,
+      "status_code_non_numeric": 0,
+      "request_id_dash": 100,
+      "validity_rate": 1.0
+    },
+    "openllm": {
+      "module": "llm",
+      "files": [
+        "openllm-20260914.err.log",
+        "openllm-20260914.log",
+        "openllm-20260916.err.log",
+        "openllm-20260916.log",
+        "openllm-20260919-215724.err.jsonl",
+        "openllm-20260919-215724.log",
+        "openllm-20260919.err.jsonl",
+        "openllm-20260919.log"
+      ],
+      "app_lines": 643,
+      "framework_lines": 9674,
+      "valid_json": 643,
+      "invalid_json": 0,
+      "missing_required": 635,
+      "status_code_non_numeric": 0,
+      "request_id_dash": 568,
+      "validity_rate": 1.0
+    }
+  }
+}

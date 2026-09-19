@@ -1,0 +1,135 @@
+{
+  "checked_at": "2026-09-19T14:15:34+00:00",
+  "by_module": {
+    "dps": {
+      "svc": "dps",
+      "total": 103
+    },
+    "rag": {
+      "svc": "openrag",
+      "total": 60
+    },
+    "memory": {
+      "svc": "openmemory",
+      "total": 112
+    },
+    "llm": {
+      "svc": "openllm",
+      "total": 1189
+    }
+  },
+  "request_id_lookup": {
+    "req-cb587eec69f5": {
+      "total": 0,
+      "modules": []
+    },
+    "req-4d2361d09419": {
+      "total": 0,
+      "modules": []
+    },
+    "req-d247aa736e2f": {
+      "total": 0,
+      "modules": []
+    },
+    "req-6f1bdb66b6e1": {
+      "total": 0,
+      "modules": []
+    },
+    "req-8c8d5940fea0": {
+      "total": 0,
+      "modules": []
+    },
+    "req-e528a43101b6": {
+      "total": 0,
+      "modules": []
+    },
+    "req-10217ff46acc": {
+      "total": 0,
+      "modules": []
+    },
+    "req-c416afe056d1": {
+      "total": 0,
+      "modules": []
+    },
+    "req-a419459536cf": {
+      "total": 0,
+      "modules": []
+    },
+    "req-bda9ce9799fc": {
+      "total": 0,
+      "modules": []
+    },
+    "req-0eeb526bb856": {
+      "total": 0,
+      "modules": []
+    },
+    "req-dd8c44696c8f": {
+      "total": 0,
+      "modules": []
+    },
+    "req-da07e9101f72": {
+      "total": 0,
+      "modules": []
+    },
+    "req-761679224ef1": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-9983c783fb9f": {
+      "total": 0,
+      "modules": []
+    },
+    "req-c00b9ee18881": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-49372cac200c": {
+      "total": 0,
+      "modules": []
+    },
+    "req-fd3c003bd7b2": {
+      "total": 1,
+      "modules": [
+        "memory"
+      ]
+    },
+    "req-6ca336c705af": {
+      "total": 22,
+      "modules": [
+        "llm"
+      ]
+    },
+    "req-7f8603790576": {
+      "total": 6,
+      "modules": [
+        "llm"
+      ]
+    },
+    "req-c46e13241610": {
+      "total": 22,
+      "modules": [
+        "llm"
+      ]
+    },
+    "req-29c9b1d84fb6": {
+      "total": 3,
+      "modules": [
+        "llm"
+      ]
+    },
+    "req-3b9c8a0e0926": {
+      "total": 22,
+      "modules": [
+        "llm"
+      ]
+    },
+    "req-a01988f3559d": {
+      "total": 0,
+      "modules": []
+    }
+  }
+}

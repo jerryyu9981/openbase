@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.6 |
-| 文档版本 | v1.3.0 |
+| 文档版本 | v1.5.0 |
 | 状态 | [Review] |
 | 作者 | PM-OpenBase-Dev |
 | 创建日期 | 2026-09-16 |
@@ -43,9 +43,9 @@
 
 - **BL-147-02（四仓 `request_id` 接线）与 BL-147-03（JSONL 结构化）已完成**并逐仓独立复跑通过（合计 **36 例**）。
 - **BL-147-04（采集按日切分与命名对齐）已闭环（2026-09-19，本仓）**：编排器对四仓**结构化流**采集文件改用 `.jsonl`（stdout 结构化 → `{svc}-YYYYMMDD.jsonl`；stderr 结构化 → `{svc}-YYYYMMDD.err.jsonl`），并**修复归档命名缺陷**（旧 `{svc}-YYYYMMDD.err-HHmmss.log` 不匹配适配器白名单、日志中心按目录扫描会漏读 → 新 `{svc}-YYYYMMDD-HHmmss.err.log`）；新增 `-Action namecheck` 命名实测动作。实测证据：`doc/test/evidence/v147/step3-namecheck-20260919.txt`（16 条编排器命名条目全部被白名单接受；在盘扫描 17 可见 / 1 历史旧命名；归档自检 8/8 通过）。详见《OpenBase-DevLogReport-v1.4.7》§3。
-- **仍未闭环**：**BL-147-05** 端到端串联验收（未执行；需运行态五方服务 + 抽样 ≥20 次「网关响应头 ↔ 四仓日志」比对）。
+- **仍未闭环**：**BL-147-05 端到端串联验收已执行（2026-09-19）并判定「不通过」**：24 次真实请求抽样串联命中 **8/24（33.3%）**，逐仓原文命中 **openllm 6/6、openmemory 3/6（仅 `/health`）、dps 0/6、openrag 0/6**；OpenRAG 请求日志为 structlog 控制台文本（采集文件应用日志行 **0**，JSONL 契约不满足）。网关侧注入已被 OpenLLM 6/6 命中证明正确 → 缺陷在四仓透传判定/输出格式（DEF-BE-147-001/002/003），已回退 Step 3 并按跨仓派单修复。详见《OpenBase-测试报告-v1.4.7》《OpenBase-问题跟踪记录-v1.4.7》。
 - **待入库**：**DPS 的 P1 修正目前在工作树未提交**（修正人：OpenBase 侧；待 DPS 仓对话或其 `r384-closeout-commit-push.ps1` 提交后回填 hash）。
-- **余项（待人工裁定）**：四仓结构化流中仍混有 **uvicorn 自身访问日志**（`uvicorn.access`，纯文本；各仓未配置 `--log-config`／未关闭 access log，实测各仓代码无 `log_config`/`access_log` 定制）→ 采集文件**非严格 100% 合法 JSON**，该部分行走适配器「纯文本回退」解析（可解析 `method`/`path`/`status_code`，`request_id` 仅应用日志行具备）。「严格全 JSON」需在**四仓侧**统一 uvicorn 日志配置（或在采集侧令其静默），属跨仓余项，见《OpenBase-DevLogReport-v1.4.7》§5。
+- **余项（**已裁定，2026-09-19**）**：四仓结构化流中仍混有 **uvicorn 自身访问日志**（`uvicorn.access`，纯文本；各仓未配置 `--log-config`／未关闭 access log，实测各仓代码无 `log_config`/`access_log` 定制）。经**人工裁定采用「收窄判据口径」**：版本目标 2 的「采集文件抽样 100% 行为合法 JSON」**限定为四仓输出的应用日志行**（行首 `{`），uvicorn 等框架自身输出行不纳入该判据；该类行继续由适配器「纯文本回退」解析（可解析 `method`/`path`/`status_code`，`request_id` 仅应用日志行具备）。BL-147-05 串联抽样**以应用日志行为比对对象**。「严格全 JSON」（四仓统一 uvicorn JSON formatter / 关闭 access log）不在 v1.4.7 范围，登记为后续版本候选（《OpenBase-候选需求池》§1.15）。裁定记录见《OpenBase-DevLogReport-v1.4.7》§5.1。
 - **勘误**：派单 §4.1 与改动包 §2 原将 `RequestIdFilter` 挂 root logger（错误）→ 已发 §2.2 勘误 / §2.1 勘误，改为挂 handler。见《OpenBase-R384四仓施工派单》§2.2。
 - **DPS 全量回归口径（2026-09-19 复核）**：`tests` 合计 **504 passed / 46 failed / 97 errors**（本次复核在无 `DATABASE_URL` 等环境变量的裸 shell 下执行）。失败项集中两类环境原因：① **数据库连接 8 项**（报错原文「数据库初始化失败…PostgreSQL 连接失败且 SQLite 降级已禁用」；共享库 `192.168.0.151:5432` **端口实测可达**，属账号/配置缺失而非网络）；② **身份/租户门禁**（`test_e2e_v2_6.py` 全组 18 项 + 其余，形如 `assert 403 == 200`）。**已做 A/B 对照**：`tests/test_e2e_v2_6.py` 在「HEAD 无修正」与「工作树含修正」下均为 **18 failed / 5 passed**（逐字一致）→ 失败与本批改动**无因果关系**。
 - **回归命令口径更正**：DPS 的仓级回归须以 `cwd=src` 执行（`python -m pytest tests`）；以仓根执行会因 `config`/`identity` 不在 `sys.path` 而报 `ModuleNotFoundError`（该结论与 DPS 仓《R384派单评估报告》§R1 一致）。
@@ -119,3 +119,5 @@
 | v1.1.0 | 2026-09-19 | PM-OpenBase-Dev | **新增 §2.0 状态刷新（四仓已实施）**：逐仓登记代码/文档 commit（DPS `145d858`/`75bb420`、OpenLLM `0c44c26`/`13eeccd`、OpenMemory `6d18e49`/`0613fef`、OpenRAG `390f5dd`/`a005a87`+`f134d2f`）、OpenBase 侧独立复跑专项单测结果（10/7/12/7，合计 36 例全绿）、filter 落点勘误结论；标注 BL-147-02/03 已完成、BL-147-04/05 未闭环、DPS P1 修正待入库；原 §2/§3/§4 标注为 v1.4.6 交付时点历史记录（§2 章号顺延为 §2.1） |
 | v1.2.0 | 2026-09-19 | AA-OpenBase-Dev | **补入 DPS 全量回归复核口径**：登记 `tests` 合计 504 passed / 46 failed / 97 errors，失败项逐条归类为两类环境原因（数据库连接 8 项；身份/租户门禁 403 系列）；记录 **A/B 对照结论**（`test_e2e_v2_6.py` 在 HEAD 无修正与工作树含修正下均 18 failed / 5 passed，逐字一致 → 与本批改动无因果）；新增「回归命令口径更正」（DPS 须 `cwd=src` 执行，与 DPS 仓评估报告 §R1 一致） |
 | v1.3.0 | 2026-09-19 | AD-OpenBase-Dev | **BL-147-04 闭环刷新**：§2.0 增记本仓采集命名对齐（结构化流 `.jsonl`）+ 归档命名缺陷修复（时间戳须在 `.err` 之前）+ `-Action namecheck` 命名实测证据路径；新增「余项（待人工裁定）」——四仓结构化流仍混有 uvicorn 访问日志（纯文本，非严格 100% JSON，需四仓侧统一日志配置）；§5 能力表 3 行刷新（串联＝能力已具备待抽样验收／结构化过滤＝应用行已结构化·访问行仍文本／采集切片＝已对齐） |
+| v1.4.0 | 2026-09-19 | PM-OpenBase-Dev | **「严格全 JSON」判据口径人工裁定登记（选项③）**：§2.0 余项由「待人工裁定」改为「已裁定」——判据适用面**限定为四仓应用日志行**，uvicorn 等框架自身输出行不纳入；BL-147-05 串联抽样以应用日志行为比对对象；被否选项（四仓统一 JSON formatter / 关闭 access log）登记为后续版本候选（候选需求池 §1.15） |
+| v1.5.0 | 2026-09-19 | AT-OpenBase-Test | **BL-147-05 验收结论：不通过**：§2.0「仍未闭环」改写为执行结果——24 次抽样串联命中 8/24（33.3%；openllm 6/6、openmemory 3/6、dps 0/6、openrag 0/6）+ OpenRAG 请求日志非 JSONL（应用行 0）；网关注入正确（OpenLLM 6/6 证伪本仓侧），缺陷为四仓透传判定/输出格式；登记 DEF-BE-147-001/002/003 并回退 Step 3；依据《OpenBase-测试报告-v1.4.7》 |

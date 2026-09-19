@@ -73,6 +73,20 @@
                             "v1_4_7_step_0_planning"
                         ],
     "currentDocuments":  {
+                             "test_v1.4.7":  [
+                                                 "doc/test/OpenBase-测试计划-v1.4.7.md",
+                                                 "doc/test/OpenBase-测试用例-v1.4.7.md",
+                                                 "doc/test/OpenBase-测试报告-v1.4.7.md",
+                                                 "doc/test/evidence/v147/bl147-05-env.txt",
+                                                 "doc/test/evidence/v147/bl147-05-namecheck.txt",
+                                                 "doc/test/evidence/v147/bl147-05-sampling.json",
+                                                 "doc/test/evidence/v147/bl147-05-chain-consistency.json",
+                                                 "doc/test/evidence/v147/bl147-05-jsonl-contract.json",
+                                                 "doc/test/evidence/v147/bl147-05-retrieval.json"
+                                             ],
+                             "operation_v1.4.7":  [
+                                                      "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md"
+                                                  ],
                              "version_v1.4.7":  [
                                                     "doc/version/releases/v1.4.7/OpenBase-单版本规划文档-v1.4.7.md",
                                                     "doc/version/releases/v1.4.7/OpenBase-本版本Backlog-v1.4.7.md",
@@ -773,7 +787,42 @@
                                                                                     "BL-147-05 端到端串联验收未执行（v1.4.6 Phase 6 门禁 M10/M11 仍未闭合）"
                                                                                 ],
                                                                   "note":  "本仓侧增量开发记录（BL-147-04）。Step 3 正式门禁（静态质量检查 + 代码逻辑审查 + 开发审计 + Stage3 阶段审计报告）尚未执行，须在 Step 3 收口前补齐"
-                                                              }
+                                                              },
+                         "v1_4_7_step_4_acceptance_bl147_05":  {
+                                                                   "status":  "not_passed_rollback",
+                                                                   "date":  "2026-09-19",
+                                                                   "from":  "v1_4_7_step_3_development",
+                                                                   "to":  "v1_4_7_step_4_testing",
+                                                                   "rollbackTo":  "v1_4_7_step_3_development",
+                                                                   "scope":  "BL-147-05 端到端串联与接入验收（专项验收口径）",
+                                                                   "report":  "doc/test/OpenBase-测试报告-v1.4.7.md",
+                                                                   "issues":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md",
+                                                                   "plan":  "doc/test/OpenBase-测试计划-v1.4.7.md",
+                                                                   "cases":  "doc/test/OpenBase-测试用例-v1.4.7.md",
+                                                                   "result":  {
+                                                                                  "sampling":  "24 次真实请求（dps/rag/memory/llm 各 6），24/24 返回 X-Request-Id",
+                                                                                  "chainConsistency":  "命中 8/24 = 33.3%（判据要求 100%）→ 不通过",
+                                                                                  "perRepoPassThrough":  "openllm 6/6、openmemory 3/6（仅 /health）、dps 0/6、openrag 0/6",
+                                                                                  "jsonlContract":  "dps/openllm/openmemory 应用行合法率 100%；openrag 应用行 0（structlog 控制台文本）→ 不通过",
+                                                                                  "retrieval":  "repo_log + module 四仓覆盖 4/4（dps 103 / rag 60 / memory 112 / llm 1189）→ 通过",
+                                                                                  "repoRegression":  "本仓 ruff 0 + pytest 992/988/4 环境性（复用 Step 3 证据）→ 通过"
+                                                                              },
+                                                                   "defects":  [
+                                                                                   "DEF-BE-147-001（P0，DPS 仓）未透传网关 X-Request-Id",
+                                                                                   "DEF-BE-147-002（P0，OpenRAG 仓）未透传 + 请求日志非 JSONL",
+                                                                                   "DEF-BE-147-003（P1，OpenMemory 仓/memory-proxy）仅 /health 透传",
+                                                                                   "DEF-BE-147-004（P2，本仓工具链）已闭环"
+                                                                               ],
+                                                                   "gate":  "testing-stage-execution：P0/P1 未关闭不得进入下一阶段 → 回退 Step 3 修复后重跑 TT-147-003~009；v1.4.6 Phase 6 门禁（M10/M11）仍未闭合，TD-新增-020 不得置为已偿还",
+                                                                   "evidence":  [
+                                                                                   "doc/test/evidence/v147/bl147-05-env.txt",
+                                                                                   "doc/test/evidence/v147/bl147-05-namecheck.txt",
+                                                                                   "doc/test/evidence/v147/bl147-05-sampling.json",
+                                                                                   "doc/test/evidence/v147/bl147-05-chain-consistency.json",
+                                                                                   "doc/test/evidence/v147/bl147-05-jsonl-contract.json",
+                                                                                   "doc/test/evidence/v147/bl147-05-retrieval.json"
+                                                                               ]
+                                                               }
                      },
     "versionCheck":  {
                          "lastCheck":  "2026-08-24T00:00:00+08:00",

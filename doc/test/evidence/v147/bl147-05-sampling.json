@@ -1,0 +1,249 @@
+{
+    "generated_at":  "2026-09-19T22:11:32",
+    "base_url":  "http://127.0.0.1:8000",
+    "per_family":  6,
+    "total_requests":  24,
+    "with_request_id":  24,
+    "requests":  [
+                     {
+                         "seq":  1,
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/reports/overview",
+                         "status":  200,
+                         "request_id":  "req-cb587eec69f5",
+                         "duration_ms":  4822,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:12"
+                     },
+                     {
+                         "seq":  2,
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/tags/categories",
+                         "status":  200,
+                         "request_id":  "req-4d2361d09419",
+                         "duration_ms":  699,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:13"
+                     },
+                     {
+                         "seq":  3,
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-d247aa736e2f",
+                         "duration_ms":  595,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:14"
+                     },
+                     {
+                         "seq":  4,
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/reports/overview",
+                         "status":  200,
+                         "request_id":  "req-6f1bdb66b6e1",
+                         "duration_ms":  526,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:14"
+                     },
+                     {
+                         "seq":  5,
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/tags/categories",
+                         "status":  200,
+                         "request_id":  "req-8c8d5940fea0",
+                         "duration_ms":  507,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:15"
+                     },
+                     {
+                         "seq":  6,
+                         "family":  "dps",
+                         "path":  "/api/v1/dps-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-e528a43101b6",
+                         "duration_ms":  402,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:15"
+                     },
+                     {
+                         "seq":  7,
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/collections",
+                         "status":  200,
+                         "request_id":  "req-10217ff46acc",
+                         "duration_ms":  988,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:16"
+                     },
+                     {
+                         "seq":  8,
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-c416afe056d1",
+                         "duration_ms":  684,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:17"
+                     },
+                     {
+                         "seq":  9,
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/collections",
+                         "status":  200,
+                         "request_id":  "req-a419459536cf",
+                         "duration_ms":  702,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:18"
+                     },
+                     {
+                         "seq":  10,
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-bda9ce9799fc",
+                         "duration_ms":  415,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:18"
+                     },
+                     {
+                         "seq":  11,
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/collections",
+                         "status":  200,
+                         "request_id":  "req-0eeb526bb856",
+                         "duration_ms":  819,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:19"
+                     },
+                     {
+                         "seq":  12,
+                         "family":  "rag",
+                         "path":  "/api/v1/rag-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-dd8c44696c8f",
+                         "duration_ms":  419,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:20"
+                     },
+                     {
+                         "seq":  13,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
+                         "status":  200,
+                         "request_id":  "req-da07e9101f72",
+                         "duration_ms":  327,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:20"
+                     },
+                     {
+                         "seq":  14,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-761679224ef1",
+                         "duration_ms":  245,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:20"
+                     },
+                     {
+                         "seq":  15,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
+                         "status":  200,
+                         "request_id":  "req-9983c783fb9f",
+                         "duration_ms":  349,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:21"
+                     },
+                     {
+                         "seq":  16,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-c00b9ee18881",
+                         "duration_ms":  505,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:21"
+                     },
+                     {
+                         "seq":  17,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/monitor",
+                         "status":  200,
+                         "request_id":  "req-49372cac200c",
+                         "duration_ms":  379,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:21"
+                     },
+                     {
+                         "seq":  18,
+                         "family":  "memory",
+                         "path":  "/api/v1/memory-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-fd3c003bd7b2",
+                         "duration_ms":  375,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:22"
+                     },
+                     {
+                         "seq":  19,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-6ca336c705af",
+                         "duration_ms":  1237,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:23"
+                     },
+                     {
+                         "seq":  20,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-7f8603790576",
+                         "duration_ms":  6681,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:30"
+                     },
+                     {
+                         "seq":  21,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-c46e13241610",
+                         "duration_ms":  554,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:30"
+                     },
+                     {
+                         "seq":  22,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-29c9b1d84fb6",
+                         "duration_ms":  852,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:31"
+                     },
+                     {
+                         "seq":  23,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/models",
+                         "status":  200,
+                         "request_id":  "req-3b9c8a0e0926",
+                         "duration_ms":  650,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:32"
+                     },
+                     {
+                         "seq":  24,
+                         "family":  "llm",
+                         "path":  "/api/v1/llm-proxy/health",
+                         "status":  200,
+                         "request_id":  "req-a01988f3559d",
+                         "duration_ms":  180,
+                         "error":  null,
+                         "sampled_at":  "2026-09-19T22:11:32"
+                     }
+                 ]
+}
