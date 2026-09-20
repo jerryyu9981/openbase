@@ -1,0 +1,429 @@
+# OpenBase 智能体会话上下文编排评估报告 - v2.0.0
+
+| 项目 | 内容 |
+|------|------|
+| 项目名称 | OpenBase（开放底座） |
+| 评估主题 | 智能体会话上下文编排：编排归属、LiteLLM 选型、上下文预算裁剪、会话轴与回写闭环 |
+| 文档版本 | v2.0.0 |
+| 状态 | [Review] |
+| 作者 | AU-OpenBase-Dev（审计师视图，独立于设计与开发视图） |
+| 评估日期 | 2026-09-20（首轮）／2026-09-21（深化与合并） |
+| 存放 | doc/audit/assessment/ |
+| 关联版本 | v1.4.7（已发布，commit `a835132`）／v1.4.8+（候选承接） |
+| 合并说明 | 本文档由原《OpenBase-智能体会话上下文编排评估报告-v1.0.0》（文档版本 v1.2.0）与《OpenBase-编排链路上下文预算裁剪评估报告-v1.0.0》（文档版本 v1.1.0）**合并升版**而来，两份原文档已归档至 `doc/audit/assessment/archive/`（只读）。合并依据：二者属同一评估主题的两次深化，原拆分导致现状实测、方案比选、风险、待决策、修订历史、范围与方法等 6 类内容在多份文档中重复，并形成双向引用耦合。**合并后本报告为事实与结论的单一事实源**；实施设计见《OpenBase-会话上下文编排统一方案》（`doc/planning/`），本报告不承载设计细节、工作量与测试策略。 |
+| 评估起因 | 用户提问：「如何让智能体会话通过网关进入 OpenLLM 后，可以自动处理 memory（OpenMemory）和知识库（OpenRAG）以及上下文发送给合适的 LLM？」；追加提问：「是落在网关侧还是落在 OpenLLM 侧更合理？为什么不借鉴或者使用 LiteLLM？」；再追问：「每次会话同样还是要回写更新记忆、知识库、画像的」 |
+
+---
+
+## 1. 评估范围与方法
+
+| 项 | 内容 |
+|----|------|
+| 评估对象 | ① 会话上下文编排链路的现有实现边界；② 编排层归属（OpenBase 网关侧 vs OpenLLM 侧）；③ 是否引入 LiteLLM 作为编排/路由框架；④ 上下文预算裁剪的可行性与方案；⑤ 会话轴与三路回写闭环的现状 |
+| 评估方式 | 双侧代码勘察（读文件 + 结构化检索）+ 依赖清点 + **关键事实定点复核** + 既有设计文档口径核对 + 方案比选 |
+| 勘察范围 | OpenBase：`openbase/modules/llm_proxy/__init__.py`、`openbase-ui/src/core/api/llm.ts`、`openbase-ui/src/modules/openllm/pages/{Conversations,Playground}.vue`。OpenLLM：`backend/app/services/context_manager.py`（871 行）、`backend/app/api/{context,conversations,writeback,openllm_gateway}.py`、`backend/app/edgerouter/orchestration/{assembler,executor,auto,explicit,component_router}.py`、`backend/app/edgerouter/adapters/{openmemory,openrag}.py`、`backend/app/services/writeback_queue.py` |
+| 关键事实定点复核 | 对四项**改变结论**的事实逐行复核（非二手转述）：① `MODEL_CONTEXT_LIMITS` 表结构与匹配算法（`context_manager.py:43-86`、`:161-203`）；② 组装结果如何进入 LLM（`openllm_gateway.py:1122-1133`）；③ 流式路径的 Prompt 组装点（`openllm_gateway.py:1985-2005`）；④ 回写幂等键与计数器（`openllm_gateway.py:620-664`、`writeback_queue.py:83/110-130/314-322`） |
+| 纪律 | 只读勘察，**未修改任何生产代码**；不代改需求文档与产品代码；发现项如实登记，含对前期结论的两次修正（见 §5.1、§8） |
+| 局限声明 | ① LiteLLM 能力对照基于其公开特性描述，本轮**未做代码级核验**，其许可与商用边界亦未复验，不作为决策的唯一依据；② 未实机运行 OpenLLM 服务，预算裁剪效果与 F-08 回写丢失均未端到端复现；③ 「无调用点」结论的检索范围覆盖 OpenBase 前端与网关，OpenLLM 仓内是否有其他内部调用方未逐一核对；④ 未逐行核对 `ConversationMessage.token_count` 是否在写入时恒被赋值 |
+
+---
+
+## 2. 结论摘要
+
+| 序号 | 结论 | 置信度 |
+|------|------|:------:|
+| 1 | **编排层归属 OpenLLM 侧，且该能力已实现**；网关侧保持「薄策略层」定位，**不新建** Context Orchestrator | 高（代码实测） |
+| 2 | **不引入 LiteLLM 作为框架依赖**；其能力与 OpenLLM 既有实现高度重叠，且我们所缺的（上下文装配）恰是它不提供的。可借鉴其 pre/post-call 生命周期命名、fallback/cooldown、virtual-key→预算映射三处语义 | 高 |
+| 3 | 早期「方案 A：网关侧新建编排层」结论**已撤回**；根因是「聚合编排」一词在两侧同名不同物（网关侧指业务数据 BFF 跨系统取数 G3，OpenLLM 侧指 LLM 调用链上下文装配） | 高 |
+| 4 | **上下文预算裁剪不是「接线」任务，而是「新建能力」任务**。现有 `ContextManager` 裁剪能力是**消息列表级**，待裁剪对象是**片段级拼接字符串**，二者粒度错配 | 高（逐行复核） |
+| 5 | 强行把整段 Prompt 作为单条消息交给 `manage_context`，**裁剪不会发生**；换 `recent` 策略且超限时会返回**空列表**，属灾难性行为 | 高 |
+| 6 | 需求必须新增**片段级预算裁剪能力**，并在**同步与流式两条路径**同时接入 | 高（逐行复核） |
+| 7 | 方案取 **B2（结构化片段 + 配额保底 + 相关性竞争）**，B1（按条目尾截断）降为过渡形态。依据人工给定的「既精准又省 token」原则，B1 只满足省 token | 高 |
+| 8 | **会话轴缺位**是「精准」的前置条件：会话历史未进入上下文（仅取 `messages` 中最后一条 user 消息），请求体亦无会话标识字段 | 高（逐行复核） |
+| 9 | **三路回写一条都未生效**：前端全部走流式而流式路径零回写，编排链路又只接了 memory 与 rag 两路。**记忆、知识库、画像当前恒为初始状态** | 高（逐行复核） |
+| 10 | 实施位置为**四段实施链的第二批**（前置零 R-397 → 第一批 R-396 + R-398 → 第二批 R-395 → 第三批回写质量与反馈）；R-395 依赖 R-396 完成 | 高 |
+| 11 | 五项待决策参数中，**仅「分段 token 配额」构成硬依赖**；「回写粒度」经复核**不受预算裁剪影响**（回写 payload 为 query + response，非组装后 Prompt） | 高（代码复核） |
+| 12 | 累计发现 **12 项**既有缺陷/隐患（F-01~F-12），其中 **F-08**（回写幂等键）与 **F-09**（三路回写未接线）为 **P1** | 高（逐行复核） |
+
+**总体结论：维持现有归属（编排在 OpenLLM，网关不新增编排组件），不引入 LiteLLM；需求口径由「接入 `ContextManager`」修正为「新增片段级预算裁剪能力并双路径接入」；会话轴与三路回写须先行接入，否则「精准」与「省 token」均缺乏基础。**
+
+---
+
+## 3. 现状实测
+
+### 3.1 编排能力的既有落位与网关侧形态
+
+网关侧 `openbase/modules/llm_proxy/` **仅有 `__init__.py` 一个文件**，无编排子模块、无 pre/post-call 钩子、无组件路由（结构化检索零命中）。其职责为：转发 OpenLLM 编排入口（`/openllm/v1/models`、`/chat`、`/chat/stream`、`/health`、`/conversations/*`）；经 `build_outbound_headers(..., TARGET_SYSTEM_LLM)` 组装四维身份头并改写 `X-Proxy-Source=openbase-llm-proxy`；`/chat/stream` 按 SSE 逐事件转发（`routing → chunk×N → done`），**不做组装**。网关已是「身份 + 透传」形态，本身就是薄层，不是待补齐的编排层。
+
+OpenLLM 侧 `backend/app/edgerouter/` 与相关模块已实现完整编排能力：
+
+| 能力 | 实现位置 | 已实现职责 |
+|------|----------|------------|
+| 组件路由器 | `orchestration/component_router.py` | R001~R005 规则引擎；置信度阈值 0.85 优先匹配；置信度不足走轻量 LLM 兜底分类；兜底失败回落规则；规则集 YAML/JSON 热更新 |
+| auto 编排器 | `orchestration/auto.py` | 决策映射 4 路径：A（memory）/ B（rag）/ C（memory+rag）/ D（空）；含 `enable_memory` 覆盖与 `enable_llm` 开关 |
+| explicit 编排器 | `orchestration/explicit.py` | pipeline 结构校验（错误码 4001~4005）；`llm` 必须在末尾；memory 必填 `user_id`、rag 必填 `kb_id` |
+| Prompt 组装器 | `orchestration/assembler.py` | Jinja2 严格顺序：System + 画像 + 记忆 + 知识库 + 用户问题；未调用组件不注入 |
+| 管道执行器 | `orchestration/executor.py` | 按 pipeline 顺序调度组件 handler，支持并行开关与画像上下文透传 |
+| 三路回写 | `api/writeback.py` | `POST /openllm/v1/writeback`：memory / rag / profile 三路，异步默认 + 同步可选；幂等键 `session_id + seq + target`；指数退避 ≤3 次；字段先行校验 |
+| 编排入口与流式 | `api/openllm_gateway.py` | `POST /chat`、`/chat/stream`、`GET /rag/collections`、`POST /rag/ingest`、`GET /models`、`GET /trace/{request_id}`、`GET /health`；含 `_run_orchestrated_chat`、`_run_stream_components`、`_build_writeback_callback`、`_route_model_auto`、语义缓存、trace 落库 |
+| 模型路由与预算 | `api/budgets.py` + `core/{router,strategy,registry}.py` | `BudgetScope` / `BudgetPeriod` / USD 上限 / `is_exceeded` / `usage_percentage`；`RouteEngine` 提供 `parse_request` / `inject_context` / `route` |
+| 隔离与鉴权 | `isolator.py`、`auth/`、`middleware/` | org namespace 隔离、JWT/API Key 双通道（`get_gateway_identity`）、RBAC、配额与审计中间件 |
+| 组件适配器 | `adapters/` | openllm、openmemory、openrag、profile、dps_client、hermes_agent |
+| 上下文计量 | `services/context_manager.py` | `count_tokens` / `count_messages_tokens` / `manage_context` / `get_context_stats` / `get_model_context_limit` |
+
+**小结：用户所问的「自动处理 memory + 知识库 + 上下文并分发至合适 LLM」，其四要素（组件路由、上下文装配、模型选择、结果回写）在 OpenLLM 侧均已实现，链路骨架是通的；缺口在于素材不完整（§3.6）与回写未接线（§3.7）。**
+
+### 3.2 依赖实测：无外部编排框架
+
+| 勘察项 | 实测结果 |
+|--------|----------|
+| OpenLLM 是否依赖 litellm | **否**（全仓检索零命中） |
+| OpenLLM 是否依赖 langchain / vllm / openai SDK | **否**（全仓检索零命中） |
+| OpenLLM 实际声明的 HTTP 依赖 | 仅 `requests`（`backend/tests/locust/requirements.txt`、`edgerouter-sdk/pyproject.toml`） |
+
+**小结：OpenLLM 是自建的 LLM 网关，不是任何现有网关框架的封装层。这一点直接决定 §6 的选型结论。**
+
+### 3.3 上下文素材的形态与计量能力
+
+**待裁剪对象的真实形态：**
+
+| 环节 | 实测事实 | 来源 |
+|------|----------|------|
+| 记忆上下文产生 | `OpenMemoryAdapter.search(...)` 返回 **dict**，条目含 `content` 与 **`score`**（按 score 降序 top_k 截断） | `adapters/openmemory.py` |
+| 知识库上下文产生 | `OpenRAGAdapter.search(...)` 返回 **dict**（`{"results": [...]}`），条目含 `content` 与 **`score`**；内置回退路径返回 `list[dict]` | `adapters/openrag.py` |
+| 格式化为 Prompt 片段 | `PromptAssembler.format_context(name, data)` → **纯字符串** `"1. {content}\n2. {content}"`。**`score` 与 `metadata` 在此步被丢弃** | `assembler.py:78-129` |
+| 片段落位 | `contexts["memory_ctx"]` / `contexts["rag_ctx"]`（仅非空时写入） | `executor.py:233-265` |
+| 组装 | `assembler.render(...)` → 单一字符串，模板顺序 System + 画像 + 记忆 + 知识库 + 问题 | `executor.py:137-143`；`assembler.py:19-25` |
+| 进入 LLM | `_build_gateway_request(model_code, query=prompt, ...)` → **`messages=[Message(role=USER, content=prompt)]`**，整段 Prompt 成为**唯一一条 user 消息** | **逐行复核** `openllm_gateway.py:1122-1133` |
+| `system_prompt` 实参 | 网关全链路恒传空字符串，模板 system 段当前不会渲染出内容 | `executor.py:137-143`、`openllm_gateway.py:1993-1999` |
+
+**结论：待裁剪对象是「4~5 个文本片段拼成的单一字符串」，而非「消息数组」；片段内条目仍保持检索时的排序（编号列表尾部即低分条目）。**
+
+**`ContextManager` 现有能力与边界：**
+
+| 能力 | 签名 / 事实 | 可用性 |
+|------|-------------|--------|
+| 文本计数 | `count_tokens(text, model_name="default") -> int`（tiktoken，编码器由硬编码表决定） | **可直接复用** |
+| 消息计数 | `count_messages_tokens(messages, model_name="default") -> int`（每条 +4，末尾 +2） | 可用，口径为消息级 |
+| 窗口上限 | `get_model_context_limit(model_name) -> int`（硬编码 `MODEL_CONTEXT_LIMITS`，33 个模型 + `default=128000`） | **可复用，但存在 F-02 缺陷** |
+| 消息级裁剪 | `prune_context(messages, max_tokens, strategy="preserve_system", model="default", preserve_recent_n=4)`；6 种策略 | **粒度不匹配** |
+| 编排入口 | `async manage_context(messages, model, max_tokens=None, strategy=..., preserve_recent_n=4, summarize_threshold=0.7)` | 同上；`summarize_threshold` 为死参数 |
+| 会话统计 | `get_context_stats(conversation_id) -> dict` | 与编排链路无关 |
+
+现有能力的**三处结构缺口**：① 无片段/字符串级裁剪契约（全部入口类型注解为消息列表，无接受片段集合 + `budget_tokens` 的方法，也无「encode → 截断 → decode」式文本裁剪）；② 无「预算」概念（全仓 `budget_tokens|token_budget|reserved_tokens` 零命中，`get_model_context_limit()` 只返回裸整数，**未预留输出 token、无安全余量系数**）；③ 无丢弃回执（`pruned_count` 按长度差推算，不返回被丢弃内容、ID 或原因）。
+
+**两点已知脆弱性**（影响是否复用）：`manage_context` 裁剪后**不二次校验、不重试**；`_prune_recent` 在末条即超限时返回**空列表**；构造参数 `max_context_tokens` 存而不用（F-04）。
+
+### 3.4 编排链路数据流（同步 `/openllm/v1/chat`）
+
+| 步骤 | 函数 | 关键事实 |
+|:----:|------|----------|
+| 1 | `openllm_chat` | 身份校验（`identity is None → 1001`）；`request_id = openllm-{uuid24}` |
+| 2 | `_normalize_request` | 归一为 `(mode, pipeline, query, output_mode)`；OpenAI 兼容通道只取最后一条 user 消息（见 §3.6）；explicit 走 `_validate_pipeline`，auto 走 `_auto_pipeline` |
+| 3 | `_route_model_auto` | 网关级预路由（5 因子：成本权重 0.4 / 时延权重 0.3 / 能力 `chat`），写回 `comp["model"]` 与 `fallback_model` |
+| 4 | `_get_semantic_cache` | 语义缓存命中则直接返回（不执行编排） |
+| 5 | `_build_profile_ctx` | 取用户画像 → `profile_ctx: str \| None` |
+| 6 | `_build_writeback_callback` | 构造 **memory / rag 两路**回写回调（`kwargs = {user_id, session_id}`），session_id 记为 `identity.user_id` |
+| 7 | `_run_orchestrated_chat` | `explicit/openai` → `ExplicitOrchestrator.run`；`auto` → `AutoOrchestrator.run` |
+| 8 | `PipelineExecutor.execute` | 组件调度（默认 `enable_parallel=False` 串行）；`_run_component` 内 `format_context` → `contexts["*_ctx"]` |
+| 9 | `assembler.render(...)` | 预算裁剪的**候选插入点 A**（`executor.py:137-143`），此处 memory/rag 上下文均已就绪 |
+| 10 | `llm_handler` → `_call_llm` → `_call_llm_once` | `check_quota(quota_type="token_input", amount=1000, ...)`（**固定常量 1000**，非实际 token，见 F-03） |
+| 11 | `_build_gateway_request` | 整段 Prompt 作为唯一 user 消息 |
+| 12 | 回写触发 | LLM 成功后异步（`_schedule_writeback` + 指数退避 ≤3 次），不阻塞主链路 |
+
+**token 计量现状：整条编排链路无任何 token 计量或预算判断。** `orchestration/` 目录对 `token|budget|max_tokens|context_window|truncat` 的匹配仅命中 `evaluate.py` 的响应长度判定（`MIN_RESPONSE_LENGTH = 2`），与 token 无关；`openllm_gateway.py` 与 `orchestration/` **均未 import `context_manager`**。这构成发现 **F-11（编排链路预算裁剪缺位）**。
+
+### 3.5 流式路径实测：独立实现、绕过编排层
+
+| 维度 | 同步 `/chat` | 流式 `/chat/stream` |
+|------|--------------|---------------------|
+| 组件执行 | 经 `PipelineExecutor` | **绕过编排层**，`_run_stream_components` 直接调 adapter 并自行 `format_context` |
+| Prompt 组装 | `executor.py:137-143` | **`openllm_gateway.py:1993-1999` 另起一处**（逐行复核确认） |
+| 模型 `"auto"` | 5 因子路由 + fallback 重试 | 仅 `_resolve_model_code` → `settings.DEFAULT_LLM_MODEL`（**无 5 因子、无 fallback**） |
+| `mode="auto"` | 经 `ComponentRouter` 决策 | 仅 `_auto_pipeline`（**无组件路由决策**） |
+| 记忆/知识库回写 | 有（memory + rag） | **无** |
+| 语义缓存 | 读 + 写 | **无** |
+| 画像上下文时机 | 编排前 | 组件执行**之后**才获取 |
+
+**结论（构成发现 F-01）：预算裁剪若只接入同步路径，流式路径仍会超窗；若两处各自实现，将形成第三处实现分叉。**
+
+### 3.6 会话轴缺位
+
+| 事实 | 位置 |
+|------|------|
+| OpenAI 兼容通道只取 `messages` 中**最后一条 user 消息**作为 `query`，其余全部丢弃 | `openllm_gateway.py:995-1009` |
+| explicit / auto 模式请求体无会话字段（`OpenLLMChatRequest` 字段清单无 `conversation_id`） | `openllm_gateway.py:909-927` |
+| 前端发消息时只提交 `{ model, messages }`，不提交会话标识（前端已具备会话 API，但未在发消息时使用） | `openbase-ui/src/core/api/llm.ts:101`、`:113` |
+| `ContextManager.get_context_window` 全仓无调用方 | `context_manager.py:582` |
+| 网关链路零引用会话消息表 | `openllm_gateway.py` 无 `ConversationMessage` 引用 |
+| 回写幂等键把「会话」记为「用户」 | `openllm_gateway.py:647` |
+
+**由此得到一条重要判断：会话历史其实已经在请求里**（前端提交了完整 `messages`），只是 OpenLLM 侧把它丢掉了。这使「历史接入」可以在 OpenLLM 侧单独完成，不必等待前端改造；前端需补的只是会话标识（用于记账与幂等键）。本条构成发现 **F-07（会话轴缺位，原 G-04）**。
+
+### 3.7 回写未接线与写入质量
+
+回写能力本身齐全（memory / rag / profile 三路 + 幂等 + 指数退避 + 落盘 + 启动恢复），但在运行中的调用链上**一条都没接起来**：
+
+| 层次 | 实测事实 | 后果 |
+|------|----------|------|
+| 调用面 | 前端会话页与 Playground 全部走流式（`Conversations.vue:246`、`Playground.vue:117` 均调 `sendChatStream`）；非流式的 `sendChat` **无任何调用点** | 实际只走流式路径 |
+| 流式路径 | 流式端点未构造回写回调，`_run_stream_components` 也不接收回写参数 | 记忆、知识库、画像三者全不更新 |
+| 同步路径 | `_build_writeback_callback` 只返回 memory 与 rag 两个回调；`PipelineExecutor.execute` 也只接收这两个；`profile` 仅存在于独立 API | 三路里仍缺画像 |
+| 独立 API | `POST /openllm/v1/writeback` 在 OpenBase 前端与网关**均无调用点** | 画像回写实际无调用方 |
+
+本条构成发现 **F-09（三路回写未接线，P1，原 G-06）**。
+
+写入质量方面：`save_if_valuable` 在 `/writeback` 请求中默认 `True`（`writeback.py:53`）并透传进队列 payload（`:396`），但执行侧 `_rag_writeback` **从未读取它**；同一语义只在编排选项路径 `orchestration/evaluate.py:139` 有实现。两处口径不一致，后果是走该 API 时每轮模型回复都会原样写入知识库，存在模型生成内容回灌为事实来源的自引用污染风险。本条构成发现 **F-10**。
+
+**回写对原则的意义：** 回写是编排的对偶面。只做检索（读上下文）不做更新（写上下文），系统不具备学习能力 —— 记忆不增长则下一轮检索不到新内容（精准度随时间下降）、知识库不沉淀则检索面恒为初始语料、画像不演化则画像段恒为初始值；且缺少「哪些片段被使用、是否真有用」的反馈，配额与相关性竞争就失去关键特征，只能靠分数猜，直接削弱省 token 能力。
+
+---
+
+## 4. 关键判断：为什么「直接接入 `ContextManager`」不可行
+
+| 判断 | 依据 | 后果 |
+|------|------|------|
+| **粒度错配** | 待裁剪对象是片段拼接字符串；`ContextManager` 只处理消息列表 | 调用后不会发生裁剪 |
+| **单条消息结构** | 整段 Prompt 成为唯一 user 消息（已逐行复核） | 无法通过「删消息」达成降预算；换 `recent` 策略且有超限时返回空列表 |
+| **双路径分叉** | 流式路径为独立实现（已逐行复核） | 单点接入必然覆盖不全 |
+| **无预算概念** | 无输出预留、无余量系数、无丢弃回执 | 即使能裁，也无法安全地裁（可能把输出空间挤没） |
+
+**因此需求描述应修正为：新增「片段级预算裁剪」能力（含输出预留与余量）→ 抽取公共组装步骤 → 在同步与流式两条路径接入 → 输出可观测回执。**
+
+---
+
+## 5. 方案比选
+
+### 5.1 编排归属
+
+| 方案 | 落点 | 结论 | 主要理由 |
+|------|------|:----:|----------|
+| A 网关侧新建编排层 | OpenBase 网关 | 不采纳 | 与既有编排重复，形成两套实现；网关热路径新增 3 个跨服务依赖（memory/rag/profile），放大故障面；SSE 从直通变为两跳组装；`llm_proxy` 当前无任何编排代码，等于从零构建；模型/上下文语义每次调整都要发一次网关版本 |
+| **B 复用并扩展 OpenLLM 既有编排** | OpenLLM | **采纳** | 编排引擎、组件适配器、回写队列、预算与上下文计量均已在位且可复用；OpenLLM 侧已有 `RequestContext` + `isolator` 承接隔离；变更面最小，不触四仓边界争议；网关保持薄层符合《系统架构设计文档-v1.4.6》既有定位 |
+| C 引入 LiteLLM 作编排框架 | OpenLLM（替换） | 不采纳 | 详见 §6 |
+| D LiteLLM 作 upstream adapter | OpenLLM 之下 | 条件性保留 | 仅在需接百级外部供应商且 `registry.py` 覆盖不足时评估；「引入但不接管编排」 |
+
+**结论修正声明：** 评估早期曾输出「方案 A：网关侧薄 Context Orchestrator」建议，产生原因是**只勘察了网关侧 `llm_proxy`（确为纯透传），未读 OpenLLM 的 `edgerouter/orchestration`**，因而误判编排能力缺位；经 §3.1 代码实测后**撤回该建议**。根因是「聚合编排」一词在两侧同名不同物：网关侧指业务数据 BFF 跨系统一次取数（G3），OpenLLM 侧指 LLM 调用链上下文装配。本项构成发现 **F-12（原 G-02）**。
+
+### 5.2 预算裁剪实现
+
+| 方案 | 结论 | 理由 | 估算工作量 |
+|------|:----:|------|:----------:|
+| A 复用消息级 `manage_context` | 不采纳 | 单条消息场景下默认策略不裁剪，等于无效；换 `recent` 策略有返回空列表风险；即便裁成也是「整条保/整条丢」，无法保留高价值片段；无输出预留与回执 | — |
+| B1 片段级 + 按条目尾截断 | 过渡形态 | 匹配真实形态、改动面小、两路径可共用，但只满足省 token，精准不足（依赖「编号列表尾部即低分条目」的隐含假设） | ≈6 人天 |
+| **B2 结构化片段 + 配额保底 + 相关性竞争** | **采纳** | 与「既精准又省 token」原则一致：保留结构化片段（含 score）后再裁剪，配额与竞争显式化 | ≈8~9 人天 |
+| C 适配器层前置裁剪 | 不采纳 | 适配器不掌握最终模型与输出预留（模型在编排后段才确定），算不出正确预算；会把预算策略散落到每个适配器，破坏单一职责 | — |
+
+B1 曾在评估早期被列为首选，按人工给定的原则**修正为过渡形态**，B2 为终态。本项构成发现 **F-11（预算裁剪缺位，原 G-01）** 的解决路径。
+
+### 5.3 会话轴归属
+
+| 方案 | 结论 | 理由 |
+|------|:----:|------|
+| 并入 R-395 | 不采纳 | 与预算裁剪作用方向相反（会话轴补素材、预算裁剪减素材）；先减后加会把配额与竞争规则按不完整输入集调两遍；一个需求同时改「给什么」和「给多少」，故障无法二分 |
+| **独立成条并作 R-395 前置** | **采纳** | 依赖方向清晰；验收可独立（历史是否进入上下文可直接观测）；会话轴自带历史窗口，不引入超窗 |
+
+### 5.4 双路径
+
+| 方案 | 结论 | 理由 |
+|------|:----:|------|
+| 保持分叉，两处各实现 | 不采纳 | 每项编排改动都要写两遍，行为必然漂移；F-08 类修正对流式路径无效 |
+| **收敛为共用步骤** | **采纳** | 流式路径当前绕过 `PipelineExecutor`，且无回写、无语义缓存、`model="auto"` 不走 5 因子路由与 fallback（F-01）；不收敛则后续每项都翻倍 |
+
+### 5.5 回写接线
+
+| 方案 | 结论 | 理由 |
+|------|:----:|------|
+| 保持现状（能力在、无线） | 不采纳 | 主用路径零回写，记忆与知识库恒为初始状态，画像恒为初始值；编排只有读没有写 |
+| **三路接齐，并补流式路径** | **采纳** | 回写是编排的对偶面，读与写须同批设计；三路齐全才能形成「检索 → 使用 → 回写 → 再检索」的闭环 |
+| 仅补 memory 一路 | 不采纳 | 知识库与画像仍不更新，闭环仍不成立 |
+
+### 5.6 统一选定组合
+
+**方案 B（编排归 OpenLLM）+ B2（结构化片段与预算竞争）+ 会话轴独立前置 + 双路径收敛 + 三路回写接齐（含流式）。** 实施链为四段：前置零 R-397 → 第一批 R-396 + R-398 → 第二批 R-395 → 第三批（回写质量与反馈）。设计细节、工作量与验收判据见《OpenBase-会话上下文编排统一方案》。
+
+---
+
+## 6. LiteLLM 能力对照与不采纳理由
+
+> 说明：下表「LiteLLM 能力」列基于其公开特性描述（本轮未做代码级核验）；「OpenLLM 对位」列为 §3.1 实测结果。
+
+| LiteLLM 能力 | OpenLLM 对位实现 | 是否缺失 |
+|---|---|:---:|
+| 多供应商 / provider 抽象 | `edgerouter/adapters/` + `core/registry.py` | 不缺 |
+| 模型路由与回退策略 | `core/router.py`（`RouteEngine`）+ `core/strategy.py` + `_route_model_auto` | 不缺 |
+| 成本预算与虚拟密钥 | `api/budgets.py`（scope / period / USD 上限 / `is_exceeded`） | 不缺 |
+| 限流与配额 | `edgerouter/middleware/quota.py` | 不缺 |
+| 审计与用量记录 | `edgerouter/middleware/audit.py` + `edgerouter/metrics/collector.py` | 不缺 |
+| 鉴权与 RBAC | `edgerouter/auth/`（`edge_auth` / `jwt_handler` / `rbac`） | 不缺 |
+| pre/post-call 钩子 | `orchestration/` 四段式（路由 → 组装 → 执行 → 回写） | 不缺 |
+| **记忆 / 知识库 / 画像的上下文装配** | `orchestration/{auto,explicit}` + `assembler.py` + adapters | **LiteLLM 不提供该能力** |
+
+**四条不采纳理由：**
+
+1. **功能重叠导致双路由权威不明。** 两套模型路由与两套预算治理同时存在时，线上异常无法界定责任主体，排障成本高于收益。
+2. **与四仓边界和变更控制冲突。** `VC-014` 规定本仓不得修改其他仓代码；引入 LiteLLM 属 OpenLLM 侧编排层重构，须走该仓立项与跨仓派单，成本与风险均高于补齐既有缺口。
+3. **身份与隔离契约不匹配。** OpenLLM 的编排建立在四维身份（`X-Tenant-ID` / `X-User-ID` / `X-Org-ID` / `X-User-Role`）、org namespace 隔离（`isolator.py`）与 `request_id` 日志链之上；LiteLLM 无对应概念，接入仍需自写适配器，且会把隔离保证移出中间层。
+4. **缺口恰在其能力之外。** 我们所缺的是**上下文预算感知裁剪**与**回写治理口径**；LiteLLM 的钩子仅是扩展点，不提供上下文装配实现，引入后仍需自行补齐。
+
+**可借鉴而非引入的三处语义：**
+
+| 借鉴项 | 用途 |
+|--------|------|
+| `async_pre_call_hook` / `async_post_call_success_hook` 的生命周期命名 | 固化编排三段契约（组装前 / 调用中 / 回写后），统一 `_build_writeback_callback` 一类回调的命名口径 |
+| fallback 列表 + cooldown + 预算门限 | 扩展 `core/strategy.py` 的回退策略（当前较薄） |
+| virtual-key → 预算映射 | 对接 `api/budgets.py`，形成租户级预算视图 |
+
+**合规提示：** LiteLLM 的许可条款与商用边界本轮**未复验**，若后续进入方案 D 评估，须先完成许可与法务确认，不得以本轮结论直接豁免。
+
+---
+
+## 7. 职责边界定义（建议条款）
+
+| 维度 | OpenBase 网关（策略与身份边界） | OpenLLM（编排与执行） |
+|------|--------------------------------|----------------------|
+| 身份 | JWT / API Key 校验；四维身份头组装；`X-Proxy-Source` 标记 | 解析为 `RequestContext`；org 隔离与 namespace 前缀 |
+| 策略 | 模型白名单、租户预算上限的**策略下发与准入** | 策略**执行**（选模、预算扣减、组件可用性探测） |
+| 编排 | **不编排** LLM 调用链 | 组件路由 → Prompt 组装 → 模型路由 → 调用 → 回写 |
+| 组件依赖 | 不直连 OpenMemory / OpenRAG / 画像 | 经 adapters 直连上述组件 |
+| 传输 | SSE 逐事件透传 | 事件序列 `routing → chunk×N → done` |
+| 审计 | `request_id` 贯通、网关侧结构化日志 | `request_id` 落地、`/trace/{request_id}` 查询 |
+| 变更归属 | 本仓（OpenBase） | OpenLLM 仓（须跨仓派单） |
+
+**边界条款建议（R-394 拟纳入，对应发现 F-12）：**
+
+1. 「聚合编排」在 OpenBase 文档中**专指**网关侧 BFF 跨系统业务数据取数（G3），**不得**用于描述 LLM 调用链上下文装配。
+2. LLM 调用链的上下文装配与组件编排**唯一归属** OpenLLM `edgerouter/orchestration/`，网关侧不得新增同类实现。
+3. 网关对模型与组件的控制形式限定为**策略下发与准入**，不体现为调用链编排。
+4. 条件性保留项（方案 D）在触发条件成立前不纳入设计，触发条件须经 Step 0 版本规划评估。
+
+---
+
+## 8. 发现清单（F-01~F-12）
+
+> 编号说明：本清单为**唯一编号体系**。原两份报告的 G-01~G-06 已并入本编号 —— G-01→**F-11**、G-02→**F-12**、G-04→**F-07**、G-05→**F-01**、G-06→**F-09**；G-03（五项参数未决策）非缺陷，改为 §11 的待决策清单，不再占用发现编号。
+
+**编排链结构类**
+
+| ID | 发现 | 等级 | 实测依据 | 影响 | 建议承接 |
+|----|------|:----:|----------|------|----------|
+| **F-01** | **流式路径绕过编排层**：`_run_stream_components` 不经 `PipelineExecutor`；流式无记忆/知识库回写、无语义缓存；`model="auto"` 不走 5 因子路由与 fallback；`mode="auto"` 不经 `ComponentRouter` 决策 | P2 | 逐行复核 `openllm_gateway.py:1985-2005` 与流式端点实现 | 直接放大 R-395 范围；修正对流式路径无效 | 候选需求池 **R-397** + 技术债务总表 **TD-新增-024** |
+
+**预算与计量类**
+
+| ID | 发现 | 等级 | 实测依据 | 影响 | 建议承接 |
+|----|------|:----:|----------|------|----------|
+| **F-11** | **编排链路预算裁剪缺位**（原 G-01）：`ContextManager` 具备 token 计数与模型窗口上限能力，但编排链路未调用；`PromptAssembler` 为纯 Jinja2 渲染、无截断；整条链路无 token 计量或预算判断 | 高 | ① 结构化检索显示 `ContextManager` 仅被 `api/conversations.py` 与 `api/context.py` 引用；② `assembler.py` 的 `DEFAULT_TEMPLATE` 与 `render()` 无截断或预算参数；③ `openllm_gateway.py` 与 `orchestration/` 均未 import `context_manager` | 双路注入（记忆 + 知识库）存在超窗风险，属调用链稳定性 | 候选需求池 **R-395** |
+| **F-02** | **`MODEL_CONTEXT_LIMITS` 前缀匹配缺陷**：`gpt-4` 是表中**首个键**（`context_manager.py:45`），匹配算法在精确匹配失败后**按插入顺序**做 `startswith`（`:176-178`、`:198-200`）。日期化模型名 `gpt-4o-2024-08-06`、`gpt-4-turbo-2024-04-09`、`gpt-4-32k-0314` 均会**先命中 `gpt-4`**，返回 **8192 / cl100k_base**（应为 128000 / `o200k_base` 或 32768） | P2 | 逐行复核（表结构 + 两个匹配函数） | 窗口被低估 15.6 倍时上下文被过度裁剪，高价值片段被无谓丢弃；编码器选错还导致计数偏差 | 随 R-395 同批修正（最长键优先或显式别名表），补日期化模型名用例；技术债务总表 **TD-新增-025** |
+| **F-06** | **现有裁剪方法无二次校验**：`manage_context` 裁剪后不校验 `final_tokens <= model_limit`，也不重试；`_prune_recent` 末条超限时返回**空列表**；`summarize_old` 的摘要切片按长度推断被丢弃的旧消息，与 `_prune_preserve_system` 的非连续输出语义不符 | P2 | `context_manager.py:249-273`、`:311-330`、`:268`、`:472-480` | 若复用现有方法做预算，需先补二次校验 | 随 R-395 修正（实施时**不复用**这些方法）；技术债务总表 **TD-新增-026** |
+
+**会话与回写类**
+
+| ID | 发现 | 等级 | 实测依据 | 影响 | 建议承接 |
+|----|------|:----:|----------|------|----------|
+| **F-07** | **会话轴缺位**（原 G-04）：会话历史未进入上下文 —— OpenAI 兼容通道只取 `messages` 中最后一条 user 消息、其余丢弃；explicit/auto 模式请求体无会话标识字段；`get_context_window` 全仓无调用方；网关链路零引用会话消息表；回写幂等键把「会话」记为「用户」 | 高 | `openllm_gateway.py:995-1009`、`:909-927`、`:647`；前端 `llm.ts:101`/`:113` 只提交 `{model, messages}`；`context_manager.py:582` 无调用方 | 无历史则「精准」无从谈起；会话记账退化为按用户 | 候选需求池 **R-396** |
+| **F-08** | **回写幂等键缺陷**：`_build_writeback_callback` 把 `session_id` 记为 `identity.user_id`，`seq` 取**进程内内存计数器**（`openllm_gateway.py:620-626`，注释自承「重启后归零」）；队列表 `UNIQUE(session_id, seq, target)` + `INSERT OR IGNORE`，幂等命中时 `submit` 返回 False 且不执行。进程重启后计数器归零，某用户历史上有 N 次回写，则重启后其**前 N 次回写全部静默丢弃**，响应仍报 `duplicated=true`；启动恢复只重跑已入库行，不回填计数器。**他仓同缺陷类已有 P1 先例**（OpenLLM v2.13.0 代码逻辑审查 R-003），修复仅落在 `api/writeback.py`，编排侧未同步；DB 侧 `max_seq(session_id)` 已存在可用 | **P1** | 逐行复核 `openllm_gateway.py:647`、`:620-626`；`writeback_queue.py:83`、`:110-130`、`:314-322`、`:230` | 静默数据丢失且运行期不可见；触发条件为常规部署即会发生的进程重启 | 技术债务总表 **TD-新增-023**；修正随第一批。**登记前须按受控重启复现确认**（当前为代码推演） |
+| **F-09** | **三路回写未接线**（原 G-06）：回写能力齐全，但运行中的调用链一条都未接 —— ① 流式端点未构造回写回调；② `_build_writeback_callback` 仅返回 memory 与 rag 两个回调，profile 仅存在于独立 API；③ `POST /openllm/v1/writeback` 在 OpenBase 前端与网关均无调用点。**记忆、知识库、画像当前恒为初始状态** | **P1** | 前端会话页与 Playground 全部走流式（`Conversations.vue:246`、`Playground.vue:117`），非流式 `sendChat` 无调用点；`_build_writeback_callback` 返回两个回调；调用点检索覆盖前端与网关 | 系统不具备学习能力：精准度随时间下降，配额与竞争缺「哪些片段有用」的反馈 | 候选需求池 **R-398** + 技术债务总表 **TD-新增-022** |
+| **F-10** | **写入质量开关失效**：`save_if_valuable` 默认 `True` 并透传进队列 payload，但执行侧 `_rag_writeback` 从未读取；同一语义只在 `orchestration/evaluate.py:139` 有实现 | P2 | `writeback.py:53`、`:396` 与 `_rag_writeback` 实现比对 | 模型生成内容回灌为事实来源，自引用污染，长期降低检索可信度 | 随 R-398 修正；间隔期内建议先关闭 `rag` 路回写 |
+
+**其他既有隐患**
+
+| ID | 发现 | 等级 | 实测依据 | 影响 | 建议承接 |
+|----|------|:----:|----------|------|----------|
+| **F-03** | `check_quota(quota_type="token_input", amount=1000, ...)` 使用**固定常量 1000**，与 Prompt 实际 token 无关 | P3 | `openllm_gateway.py:1156-1164`、`:1249-1257` | 不阻塞 R-395；预算能力就绪后可顺带改为实际 token | 可选随批优化 |
+| **F-04** | 死参数 / 语义不符：`ContextManager.max_context_tokens`（构造参数，全文未读）；`manage_context.summarize_threshold`（未参与逻辑）；`get_context_stats.estimated_context_window` 实为 `total_tokens` 的复制值 | P3 | `context_manager.py:92`、`:214`、`:851` | 增加阅读成本，易误判预算来源 | 建议随批清理 |
+| **F-05** | `system_prompt` 在网关全链路**恒为空字符串**（两处 `render` 均传 `""`），模板 system 段永不渲染 | P3（信息性） | `executor.py:137-143`、`openllm_gateway.py:1993-1999` | 预算分配可暂不预留 system 段 | 记录不修 |
+
+**口径类**
+
+| ID | 发现 | 等级 | 实测依据 | 影响 | 建议承接 |
+|----|------|:----:|----------|------|----------|
+| **F-12** | **编排归属与 DSL 边界未定界**（原 G-02）：网关侧 BFF 聚合编排 DSL 与 OpenLLM 侧 pipeline DSL 并存，文档口径未明确各自适用范围，**已实际导致一次误判**（见 §5.1 结论修正声明） | 中高 | 《OpenBase-网关服务发现与聚合编排技术方案》定义聚合层（BFF 编排执行器 DSL、G3 聚合编排）；OpenLLM `orchestration/explicit.py` 定义 pipeline DSL；两处均用「编排」 | 同类误判可能在设计与评审环节重复发生 | 候选需求池 **R-394**（本仓文档口径整合） |
+
+---
+
+## 9. 风险、假设与约束
+
+| ID | 类型 | 内容 | 等级 | 应对 |
+|----|------|------|:----:|------|
+| RSK-01 | 范围 | 流式路径为独立实现，单点接入覆盖不全（F-01） | 高 | 双路径同批接入；优先抽取公共步骤 |
+| RSK-02 | 准确性 | `MODEL_CONTEXT_LIMITS` 前缀匹配缺陷使窗口被低估（F-02），预算过紧导致过度裁剪 | 高 | 随 R-395 修正；补日期化模型名用例 |
+| RSK-03 | 数据 | 回写幂等键缺陷造成重启后静默丢写（F-08） | 高 | 第一批修正；先复现确认定级 |
+| RSK-04 | 可见性 | 回写失败无回执，静默丢写在运行期不可见（F-08 已属此类，F-09 使问题面扩大到全路径） | 高 | 回写回执纳入第一批验收，无回执视为未完成 |
+| RSK-05 | 数据质量 | 模型生成文本未加治理即入知识库，形成自引用污染（F-10） | 中高 | 第三批加价值判定；在此之前建议先关闭 `rag` 路回写 |
+| RSK-06 | 实现 | 若复用现有 `manage_context` / `prune_*`，存在不二次校验与返回空列表风险（F-06） | 中高 | 实施时明确不复用，仅复用计数与窗口查询 |
+| RSK-07 | 技术 | 记忆与知识库双路注入在长上下文场景下超出模型窗口，导致调用失败或静默截断 | 中高 | 由 F-11 / R-395 处理；超窗须有显式降级与可观测口径，禁止静默丢弃 |
+| RSK-08 | 切分 | 按字符截断会破坏编号列表结构，导致 Prompt 语义破损 | 中 | 按条目切分；单条超限才做文本级截断并显式标记 |
+| RSK-09 | 过程 | 「编排」同名歧义在设计与评审环节被重复误判（**已实际发生一次并导致结论撤回**） | 中 | 由 F-12 / R-394 定界，写入文档口径条款 |
+| RSK-10 | 观测 | 裁剪静默发生，排障时无法判断上下文为何变短 | 中 | 强制预算回执入 `routing_trace`；无回执视为未完成 |
+| RSK-11 | 排期 | 落点在 OpenLLM 仓，受跨仓立项与排期制约 | 中 | 走跨仓派单；本仓不代改（`VC-014`） |
+| RSK-12 | 合规 | LiteLLM 许可与商用边界本轮未复验 | 低 | 仅作条件性保留；进入方案 D 评估前完成法务确认 |
+| ASM-01 | 假设 | 会话历史由 OpenLLM 会话存储承接、长期记忆由 OpenMemory 承接、知识库由 OpenRAG 承接，三者职责不重叠 | — | 若出现职责重叠需重新评估回写策略 |
+| ASM-02 | 假设 | auto 编排（规则 + LLM 兜底）在主要场景下决策质量可接受 | — | 置信度阈值 0.85 与兜底链路已在位，可观测后再调 |
+| ASM-03 | 假设 | 适配器返回结果按 score 降序，「编号列表尾部 = 低分条目」 | — | 若某适配器不保证排序，B2 改为结构化片段入参 |
+| ASM-04 | 假设 | `get_model_context_limit` 可代表所选模型的真实窗口 | — | 依赖 F-02 修正后成立 |
+| CON-01 | 约束 | 本仓不得修改其他仓代码（`VC-014`） | — | 跨仓变更一律走派单 |
+| CON-02 | 约束 | 编排层变更须经 Step 0 版本规划评估后方可进入实施 | — | 本报告仅评估与登记，不构成排期承诺 |
+
+---
+
+## 10. 登记建议与承接
+
+登记载体判据：既有债务走技术债务总表（TD）；发布期发现的缺陷走问题跟踪记录（DEF）；能力缺口与设计取舍走候选需求池（R）；跨仓执行走 `doc/planning/` 派单项。本轮 12 项发现均为**评估期发现的既有缺口**（非 v1.4.7 发布缺陷），故主要归 TD 与 R，未走 DEF。
+
+| ID | 建议 | 载体 | 目标版本 | 优先级 | 状态 |
+|----|------|------|----------|:------:|:----:|
+| R-394 | 编排归属与 DSL 边界定界（文档口径整合，不涉代码） | 候选需求池 | 待定（建议 v1.4.8+） | P2 | 候选 |
+| R-395 | 编排链路上下文预算裁剪（OpenLLM 仓改造） | 候选需求池 | 待定 | P2 | 候选 |
+| R-396 | 会话轴接入 | 候选需求池 | 待定 | P2 | 候选 |
+| R-397 | 编排双路径收敛（**前置项**） | 候选需求池 | 待定 | P2 | 候选 |
+| R-398 | 三路回写接线 | 候选需求池 | 待定 | **P1** | 候选 |
+| TD-新增-022 | 三路回写未接线（F-09） | 技术债务总表 | 待定 | **P1** | 待偿还 |
+| TD-新增-023 | 回写幂等键缺陷（F-08） | 技术债务总表 | 待定 | **P1** | 待偿还 |
+| TD-新增-024 | 编排双路径分叉（F-01） | 技术债务总表 | 待定 | P2 | 待偿还 |
+| TD-新增-025 | 模型窗口前缀匹配缺陷（F-02） | 技术债务总表 | 待定 | P2 | 待偿还 |
+| TD-新增-026 | 现有裁剪方法无二次校验（F-06） | 技术债务总表 | 待定 | P2 | 待偿还 |
+| — | F-10（`save_if_valuable` 空开关）随 R-398 修正；F-03~F-05 仅记录于本报告 | — | — | P3 | 记录 |
+
+落地位置：候选需求池 **§1.18 / §1.19**（现文档版本 v0.30.1）、技术债务总表 **§1.6**（现文档版本 v0.5.5）。**五项需求均未纳入任何版本**，实施时机由后续 Step 0 版本规划决定。跨仓执行载体（`doc/planning/` 派单项）待版本归属明确后产出。
+
+---
+
+## 11. 待人工决策
+
+| 序号 | 参数 | 候选取值 | 影响面 | 硬依赖 |
+|:----:|------|----------|--------|:------:|
+| 1 | 触发模式 | auto（现默认）/ explicit 强制 / 按租户或场景混合 | 编排入口契约与前端行为；影响裁剪算法是动态还是静态配置 | 否 |
+| 2 | 单次调用延迟预算 | 未定；记忆 + 知识库双路检索串行会线性叠加时延 | 是否需开并行（现 `enable_parallel` 默认 False）与超时降级口径 | 否 |
+| 3 | 回写粒度与幂等键 | 现为 `session_id + seq + target`（且 session_id 记为 user_id） | 重复写入与幂等语义；**经复核不受预算裁剪影响**（回写 payload 为 query + response） | 否 |
+| 4 | scope 命名口径 | 记忆 / 知识库作用域命名规则未定 | 与 R-387 跨域租户码语义议题相邻；对 R-395 无直接影响 | 否 |
+| 5 | **分段 token 配额** | 未定 | 画像 / 记忆 / 知识库各占多少 token 配额；**直接决定算法形态**（定配额走 B2 配额制，不定走优先级 + 相关性竞争） | **是** |
+| 6 | 前端提交会话标识是否纳入本次范围 | 建议纳入第一批 | 否则会话记账只能在 OpenLLM 侧按用户退化 | 否 |
+| 7 | 三路回写是否全部纳入第一批（R-398） | 建议全部纳入 | 回写与读取共用会话标识，拆开会产生两次契约变更 | 否 |
+| 8 | 回写反馈闭环（第三批）是否本次纳入 | 建议纳入规划但排在最后 | 可独立验收 | 否 |
+| 9 | 间隔期内是否先关闭 `rag` 路回写 | 建议关闭或降级 | 避免知识库被模型生成内容污染（F-10） | 否 |
+
+**仅第 5 项构成硬依赖。** 上述未定项不影响先行推进 R-397 与 R-396 / R-398。
+
+---
+
+## 12. 结论与后续动作
+
+1. **归属维持**：编排层归 OpenLLM，网关保持薄策略层，网关侧不新增编排组件。方案 A 结论已撤回并记录原因（§5.1）。
+2. **不引入 LiteLLM**：以 §6 四条理由为决策依据，借鉴其三处语义；方案 D 作条件性保留。
+3. **需求口径修正**：由「接入 `ContextManager`」改为「新增片段级预算裁剪能力并双路径接入，含输出预留与可观测回执」；方案取 B2。
+4. **实施位置**：四段实施链的第二批；前置零 R-397，第一批 R-396 + R-398。R-395 依赖 R-396 完成。
+5. **同批修正**：F-02、F-06 随 R-395；F-10 随 R-398；F-01 已登记为 R-397 并前置；F-12 由 R-394 承接。
+6. **前置动作**：R-398 / R-397 / R-396 / R-395 落点均在 OpenLLM 仓，须由该仓立项或走跨仓派单；本仓仅保留评估与登记职责。
+7. **本报告不修改任何生产代码**；对既有文档的交叉引用由各文档自身升版维护。
+
+---
+
+## 13. 修订历史
+
+| 版本 | 日期 | 修改人 | 修改摘要 |
+|------|------|--------|----------|
+| v1.0.0 | 2026-09-20 | AU-OpenBase-Dev | 初始创建（原《OpenBase-智能体会话上下文编排评估报告》）。范围：会话上下文编排链路的归属裁决与 LiteLLM 选型评估。结论：编排归属 OpenLLM 侧且已实现；网关侧保持薄策略层；不引入 LiteLLM（借鉴三处语义，方案 D 条件性保留）；登记缺口 G-01（预算裁剪，→ R-395）、G-02（边界定界，→ R-394）、G-03（五参数待决策）。含结论修正声明（撤回早期「方案 A 网关侧新建编排」建议）与根因分析（「聚合编排」同名不同物）。 |
+| v1.1.0 | 2026-09-21 | AU-OpenBase-Dev | 下游报告交叉引用与口径更正：新增 §11 第 6 条，指向《OpenBase-编排链路上下文预算裁剪评估报告-v1.0.0》（承接 G-01），并记录该报告对 G-01 需求口径的修正与新增缺陷发现 F-01~F-06；前置动作口径收窄为「仅分段 token 配额构成硬依赖」。 |
+| v1.2.0 | 2026-09-21 | AU-OpenBase-Dev | 缺口清单补全：新增 G-04 会话轴缺位、G-05 编排双路径分叉、G-06 三路回写未接线（P1）；§11 新增第 7 条记录统一方案与登记落定结果。 |
+| **v2.0.0** | **2026-09-21** | **AU-OpenBase-Dev** | **两份评估报告合并升版（主版本递增）**。合并对象：本报告 v1.2.0 + 《OpenBase-编排链路上下文预算裁剪评估报告-v1.0.0》v1.1.0；后者已归档至 `doc/audit/assessment/archive/`。合并依据：二者为同一评估主题的两次深化，原拆分导致现状实测、方案比选、风险、待决策、修订历史、范围与方法等 6 类内容重复，并形成双向引用耦合。合并动作：① §3 现状实测由 4 节扩为 7 节（补入上下文素材形态与计量能力、同步数据流、流式实测、会话轴缺位、回写未接线与写入质量）；② §4 新增关键判断章；③ §5 方案比选由编排归属 1 类扩为 6 类（补入预算裁剪实现、会话轴归属、双路径、回写接线、统一选定组合）；④ §8 发现清单**统一编号为 F-01~F-12**（原 G-01→F-11、G-02→F-12、G-04→F-07、G-05→F-01、G-06→F-09；G-03 非缺陷，移至 §11 待决策清单不再占用发现编号）；⑤ §9 风险表由 8 行扩为 18 行；⑥ §11 待决策由 5 项扩为 9 项。**移出内容**：工作量估算与测试策略移至《OpenBase-会话上下文编排统一方案》（本报告只承载事实与结论）。**未改变既有结论**，仅重组与补全。 |
