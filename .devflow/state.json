@@ -1138,12 +1138,26 @@
                                  "opsAuditInput":  "doc/operation/OpenBase-运维审计输入清单-v1.4.7.md（v1.0.3）"
                              },
                              "remaining":  [
-                                 "T3 Pro 监控/告警配置（建议 v1.5 立项；依赖 OTLP/Prometheus/告警通道）",
-                                 "T4-3~T4-8 Pro 实机蓝绿切流/异常切回/自动回滚/回滚时限演练（待 Pro 承载决策：当前 Pro 目录无 OpenBase 仓库）",
-                                 "R7 openbase.__version__ 与发布版本对齐（下版本正规流程）",
-                                 "F5 流水线平台化 / F6 README 版本行（P3 观察项）"
+                                 "全部转入候选需求池 §1.17（人工指示：暂纳入需求池，待后续版本评估）——R-389 Pro 可观测性与告警（承继 BL-108/OPS-001 P1，建议 v1.5）、R-390 Pro 蓝绿切流与回滚演练闭环（工装已备齐，待 Pro 承载决策）、R-391 openbase.__version__ 与发布版本对齐（R7）、R-392 CI/CD 流水线平台化（F5）、R-393 交付物版本可读性规范（F6）",
+                                 "本轮不实施、不纳入 v1.4.7 已发布范围"
                              ],
                              "gate":  "v1.4.7 发布闭环后的收尾项：可立即执行部分（T4-1/T4-2/F1-R5）已完成；其余待 Pro 承载决策与版本规划"
+                         },
+                         "v1_4_7_backlog_intake_to_pool":  {
+                             "status":  "closed",
+                             "date":  "2026-09-20",
+                             "owner":  "PM-OpenBase-Dev",
+                             "scope":  "v1.4.7 遗留运维/工程化欠账登记进候选需求池（人工指示：暂纳入需求池，以待后续版本评估）",
+                             "target":  "doc/version/global/OpenBase-候选需求池.md（v0.28.0，§1.17）",
+                             "items":  [
+                                 "R-389 Pro 环境可观测性与告警落地（Prometheus RED + OTLP + 四级告警 + Dashboard）——承继 v1.1.0 BL-108/OPS-001（P1），建议 v1.5 立项时合并为一条",
+                                 "R-390 Pro 蓝绿切流与回滚演练闭环（切流/异常切回/自动回滚/数据回滚/回滚后 15 分钟时限）——T4-1/T4-2 工装已完成，前置为 Pro 承载决策",
+                                 "R-391 openbase.__version__ 与发布版本对齐（复盘 R7，由 verify_release.py 版本可见性 WARN 暴露）",
+                                 "R-392 CI/CD 流水线平台化（运维审计 F5）",
+                                 "R-393 交付物版本可读性规范：README 版本行 / Changelog 载体统一（运维审计 F6）"
+                             ],
+                             "notIncluded":  "均未纳入任何版本；不在 v1.4.7 已发布范围（v1.4.7 已闭环）",
+                             "related":  "§1.16 已登记 R-387/R-388（跨仓租户码语义对齐 / OpenRAG 拒绝日志可观测性，跨仓派单项待分发）；已完成项不复列：T4-1、T4-2、F1/R5"
                          }
                      },
     "versionCheck":  {
