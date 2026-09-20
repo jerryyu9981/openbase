@@ -6,3 +6,13 @@
 - **结论**：本次全量复核**未取得结果**（不构成证据）。因此本轮按「**增量面已验证**（`python -m pytest tests/test_settings.py` → 19 passed / 0 failed）+ **回归基线计数 996 → 1008（+12）**」口径登记，依据见《OpenBase-测试报告-v1.4.7》**v1.9.0 §7.10** 与《OpenBase-测试回溯对比审计报告-v1.4.7》**v1.0.6** §5.2。
 - **后续动作**：全量回归复核建议在**联调窗口**（五方服务齐备、无并发覆盖率运行）重跑 `python scripts/run_regression.py`，以刷新 `passed` 基线，并与 v1.4.7 Step 4 基线（`passed=996 / failed=0 / skipped=4`）对账；若计数与 1008 不一致（例如存在环境性失败），须在《OpenBase-测试报告-v1.4.7》新增运行章节中如实登记。
 - **备注**：同窗口内另有一次全量覆盖率口径尝试（`scripts/run_regression.py --cov`）在沙箱内未跑完，其数据文件 `.coverage.fullrun-partial`（中间态 TOTAL 84.9%）已在《OpenBase-测试报告-v1.4.7》v1.7.0 §7.9 标注为**参考值、非权威**。
+
+---
+
+## 后续（同日补充，2026-09-20 21:41）
+
+本文件所记的「未取得结果」已被**同日稍后的完整跑完**取代：`python scripts/run_regression.py --cov`（85 文件 / **29 组**）于 **20:51 启动 → 21:41 完成**（退出码 0，前置 `ruff` 0 错误），结果 **`passed=1008 / failed=0 / skipped=4`**（与预期基线 996 + 12 一致），全量覆盖率 **TOTAL 87.7%**（`settings.py` 100%、`rag_proxy/__init__.py` 93.8%）。
+
+- 回归原始输出：`doc/test/evidence/v147/regression-fullrun-v1.4.7.txt`
+- 覆盖率报告：`doc/test/evidence/v147/coverage-fullrun-baseline-v1.4.7.txt` / `.json`
+- 登记：本报告 §7.11（v1.10.0）、回溯审计报告 v1.0.8 §5.2/§9、Stage4 阶段审计报告 v1.0.6 §4、问题跟踪记录 v1.5.8 §4

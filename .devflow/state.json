@@ -937,7 +937,6 @@
                                  ]
                              },
                              "stillOpen":  [
-                                 "全量套件覆盖率基线（可选；本轮已发起全量回归复核，沙箱窗口未完成前按「增量面已验 + 基线计数 1008」口径登记）",
                                  "openbase-ui/coverage-gate-result.json 已按前端运行产物纳入 .gitignore（如需作为证据归档请另行指示）"
                              ],
                              "gate":  "Step 5（部署与运维）已放行；发布检查通过并创建本仓 tag v1.4.7 前不得宣称已发布"
@@ -1029,6 +1028,35 @@
                                  "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.6，§4 未闭项②）"
                              },
                              "gate":  "O-3 全部遗留提示清零：两个修改文件（rag_proxy 94% / settings 100%）均达 AGENTS.md >=90% 口径"
+                         },
+                         "v1_4_7_fullrun_baseline":  {
+                             "status":  "closed",
+                             "date":  "2026-09-20",
+                             "owner":  "AT-OpenBase-Test",
+                             "scope":  "收口 §7.10 遗留的全量复核口径：全量回归 + 全量覆盖率基线刷新",
+                             "command":  "python scripts/run_regression.py --cov",
+                             "window":  "2026-09-20 20:51:00 -> 21:41:20（约 50 分钟，退出码 0）",
+                             "scopeDetail":  "85 个测试文件 / 29 组分组子进程隔离 + --cov-append 累积；同批前置 ruff check openbase tests",
+                             "result":  {
+                                 "regression":  "passed=1008 / failed=0 / skipped=4（与 Step 4 基线 996 的差值恰为新增 12 例护栏；failed/skipped 未变）",
+                                 "ruff":  "0 错误",
+                                 "coverageTotal":  "openbase 包 TOTAL 8715 语句 / 1072 未覆盖 = 87.7%",
+                                 "coverageModifiedFiles":  "openbase/settings.py 170/0 = 100%；openbase/modules/rag_proxy/__init__.py 176/11 = 93.8%（小计 346/11 = 96.8%）",
+                                 "crossCheck":  "与定向口径（coverage-increment-v1.4.7 / coverage-settings-supplement-v1.4.7）结论一致，互为独立验证"
+                             },
+                             "evidence":  [
+                                 "doc/test/evidence/v147/regression-fullrun-v1.4.7.txt",
+                                 "doc/test/evidence/v147/coverage-fullrun-baseline-v1.4.7.txt",
+                                 "doc/test/evidence/v147/coverage-fullrun-baseline-v1.4.7.json",
+                                 "doc/test/evidence/v147/regression-after-settings-supplement.txt"
+                             ],
+                             "documents":  {
+                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.7.md（v1.10.0，§7.11）",
+                                 "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md（v1.0.8，§5.2/§9）",
+                                 "stage4Audit":  "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md（v1.0.6，检查点 1/2/3）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.8，§4 未闭项②）"
+                             },
+                             "gate":  "v1.4.7 测试侧遗留开放项清零（O-3 条件提示、全量回归复核、全量覆盖率基线三项结清）；剩余一项为非门禁的前端运行产物归属确认"
                          }
                      },
     "versionCheck":  {

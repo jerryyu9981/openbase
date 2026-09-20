@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓） |
-| 文档版本 | v1.9.1 |
+| 文档版本 | v1.10.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test |
 | 创建日期 | 2026-09-19 |
@@ -85,7 +85,8 @@
 |----|------|
 | 白盒覆盖率（**2026-09-20 O-3 补测出证**） | 以本版本**增量面导向用例**（`test_rag_proxy_identity_policy.py` 3 例、`test_bl147_trust_env_wiring.py` 4 例、`test_rag_proxy.py`、`test_proxy_outbound_matrix.py`、`test_r384_repo_log_naming.py` 13 例、`test_service_agent_outbound.py`、`test_settings.py`）对 `--cov=openbase` 出证：**`openbase/modules/rag_proxy/__init__.py` 94%**（176 语句 / 11 未覆盖）、**`openbase/settings.py` 80%**（170 / 34）——两者均为本版本**修改文件**，**满足「修改文件覆盖率 ≥80%」门禁**（《testing-stage-execution》Step 4 通过标准第 4 条）。`scripts/verify_repo_log_naming.py` 为脚本件（不在 `openbase` 包内），由 13 例单测覆盖判据与反例；`openbase/modules/logs/repository.py` 本版本仅注释 + 公开常量导出（无行为变更）。证据：`doc/test/evidence/v147/coverage-increment-v1.4.7.json` 与 `coverage-increment-v1.4.7.txt`，详见 §7.9 |
 | 白盒覆盖率（**O-3 后续补测出证：`settings.py` 100%**） | 针对上表 `settings.py` 80% 未达 `AGENTS.md`「新增代码 ≥90%」更严口径的提示，本轮**补齐分支护栏用例**（`tests/test_settings.py` 新增 12 例：DB/Redis URL 解析优先级与 `+asyncpg` 规范化、JWT 密钥三分支（production 拒绝 / development WARN / 未配置 WARN）、K03 白名单与服务账号主体映射的「空 / 非法 JSON / 非数组 / 非 dict 条目过滤」四态、`dps_default_*` 弃用面、观测三开关与允许清单、受信来源白名单、`dps_code_map` 登记式基线解析）→ 复测 **`openbase/settings.py` 170 语句 / 0 未覆盖 = 100%**；证据 `doc/test/evidence/v147/coverage-settings-supplement-v1.4.7.json` / `.txt`，详见 §7.10 |
-| 白盒覆盖率（全量套件口径，**参考值、非权威**） | 经项目脚本化分组口径（`python scripts/run_regression.py --cov`，`--cov-append` 累计）启动后，沙箱内分组执行在限定窗口内**未跑完**（**中间态 TOTAL 84.9%**，数据文件 `.coverage.fullrun-partial`，未出报告图证）；**不作为 O-3 结论**，如需全量覆盖率基线，建议 Step 5 前于联调窗口补跑 |
+| 白盒覆盖率（**全量套件口径，已跑完·权威，v1.10.0 新增**） | **2026-09-20 20:51 启动 → 21:41 完成**（`python scripts/run_regression.py --cov`，85 文件 / **29 组**分组子进程 + `--cov-append` 累积；同批前置 `ruff` 0 错误）：**`openbase` 包 TOTAL 8715 语句 / 1072 未覆盖 = 87.7%**；本版本两个修改文件 **`openbase/settings.py` 170/0 = 100%**、**`openbase/modules/rag_proxy/__init__.py` 176/11 = 93.8%**（两文件小计 346/11 = 96.8%）；证据 `doc/test/evidence/v147/coverage-fullrun-baseline-v1.4.7.json` / `.txt`，详见 §7.11 |
+| 白盒覆盖率（全量套件口径，**历史中间态**） | 早前一次 `--cov` 尝试在沙箱窗口内未跑完（中间态 TOTAL 84.9%，数据文件 `.coverage.fullrun-partial`，未出报告图证）——**已被上表全量复跑取代**，此处仅作过程留痕 |
 | 黑盒覆盖差异 | BL-147-05 为**跨仓端到端**验收，其覆盖对象为四仓运行态行为（本仓白盒覆盖率不适用），已以 24 次真实请求 + 四仓原文命中矩阵覆盖（**首轮口径，历史留存**；最终权威口径为 `-PerFamily 10` 的 **40 次抽样（4 族 × 10）**，见 §7.6） |
 
 ## 5. 测试跳过项说明
@@ -356,7 +357,34 @@
 
 **结论**：**O-3 条件提示已闭合**——本版本两个修改文件（`rag_proxy/__init__.py` 94%、`settings.py` **100%**）**均达标**，观察项 O-3 的遗留提示清零。
 
-**回归基线口径说明（如实登记）**：本补测新增 12 例护栏，因此**全量回归的用例总数基线由 Step 4 的 `passed=996` 变为 `passed=1008`**（996 + 12，`failed=0`、`skipped=4` 不变的前提为无新增环境性失败）；本轮已同批发起全量回归复核（`python scripts/run_regression.py`），因**沙箱执行窗口限制未跑完**（20:27:24 启动、20:46:48 终止，运行记录见 `doc/test/evidence/v147/regression-after-settings-supplement.txt`）→ 按「**增量面已验证（`test_settings.py` 19/19 通过）+ 基线计数 996→1008**」口径登记，**全量复核结论留待联调窗口刷新**（届时若计数与 1008 不一致，须在本报告新增章节如实登记）。
+**回归基线口径说明（如实登记）**：本补测新增 12 例护栏，因此**全量回归的用例总数基线由 Step 4 的 `passed=996` 变为 `passed=1008`**（996 + 12，`failed=0`、`skipped=4` 不变的前提为无新增环境性失败）；本轮已同批发起全量回归复核（`python scripts/run_regression.py`），因**沙箱执行窗口限制未跑完**（20:27:24 启动、20:46:48 终止，运行记录见 `doc/test/evidence/v147/regression-after-settings-supplement.txt`）→ 当时按「**增量面已验证（`test_settings.py` 19/19 通过）+ 基线计数 996→1008**」口径登记；**该全量复核已于同日 21:41 完整跑完且结果与预期一致**（`passed=1008 / failed=0 / skipped=4`），见 §7.11。
+
+### 7.11 全量回归与覆盖率基线刷新（2026-09-20）
+
+> **性质**：收口 §7.10 遗留的「全量复核口径」——此前登记为「增量面已验 + 基线计数 996 → 1008（待联调窗口刷新）」。本轮在沙箱执行窗口内**完整跑完全量回归与全量覆盖率**，以下为权威结果。
+
+**命令与口径**
+
+| 项 | 内容 |
+|----|------|
+| 命令 | `python scripts/run_regression.py --cov`（脚本化分组口径：**85 个测试文件 / 29 组**，每组独立 pytest 子进程隔离，`--cov=openbase --cov-append` 累积；同批前置步骤 `ruff check openbase tests`） |
+| 时间 | 2026-09-20 **20:51 启动 → 21:41 完成**（约 50 分钟），退出码 **0** |
+| 回归结果 | **`passed=1008 / failed=0 / skipped=4`**，末行 `[OK] 全量回归通过（TD-新增-009 脚本化回归）`；前置 `[OK] ruff` —— **与 §7.10 登记的预期基线 `996 + 12 = 1008` 完全一致**，`failed=0`、`skipped=4` 与 Step 4 基线一致，**无新增环境性失败** |
+
+**覆盖率结果（全量套件口径，权威）**
+
+| 范围 | 语句数 | 未覆盖 | 覆盖率 |
+|------|:-----:|:-----:|:-----:|
+| `openbase` 包 TOTAL | 8715 | 1072 | **87.7%** |
+| 本版本修改文件：`openbase/settings.py` | 170 | 0 | **100%** |
+| 本版本修改文件：`openbase/modules/rag_proxy/__init__.py` | 176 | 11 | **93.8%** |
+| 两个修改文件小计 | 346 | 11 | **96.8%** |
+
+> 口径说明：本表由全量回归产出的累积数据文件同源生成（`python -m coverage report --precision=1` / `coverage json`），故与 §7.9 / §7.10 的**定向口径**（以增量面导向用例运行）互为独立验证：两次运行对 `settings.py`（100% vs 100%）与 `rag_proxy/__init__.py`（93.8% vs 94%）的结论**一致**。
+
+**证据**：`doc/test/evidence/v147/regression-fullrun-v1.4.7.txt`（回归输出：29 组逐组 `passed/failed/skipped` + 汇总 + `[OK]` 结论）、`coverage-fullrun-baseline-v1.4.7.txt` 与 `coverage-fullrun-baseline-v1.4.7.json`（覆盖率报告，与数据文件 `.coverage` 同源）。
+
+**结论**：① **全量回归基线刷新为 `passed=1008 / failed=0 / skipped=4`**（与 §7.10 预期一致）；② **全量覆盖率基线确立为 `87.7%`**（`openbase` 包级，**非项目门禁项**，作为后续版本对比基线使用），两个修改文件 **100% / 93.8%** 均达 `AGENTS.md`「新增代码 ≥90%」口径；③ §7.9 登记的「全量套件口径未跑完（中间态 84.9%，参考值、非权威）」**已由本轮复跑取代**；④ 至此**O-3 条件提示、全量回归复核、全量覆盖率基线三项全部结清**，v1.4.7 测试侧**无遗留开放项**。
 
 ## 8. 修订历史
 
@@ -374,3 +402,4 @@
 | **v1.8.0** | **2026-09-20** | **AT-OpenBase-Test** | **观察项 O-2 裁定与 O-4 残项修订（文档侧收口）**：① §7.6 口径提示②追加 2026-09-20 人工裁定结论——采纳审计建议方案 (a)：**维持现行判定口径**，并在《OpenBase-测试计划-v1.4.7》**v1.0.2 §2.2** 增列「生命周期类应用行豁免」补充条款及可执行判别规则（以 `method`/`path` 是否为空判定；实测 `missing_required` 全落生命周期类），观察项 **O-2 闭合**；② **修正 O-4 同类残项**：§7.5 范围声明中「见 §7.6（**待执行**）」改为「见 §7.6（**已完成**，2026-09-20 全量重跑与 §7.7 补跑均已执行）」；③ 全文交叉引用同步《测试计划》**v1.0.2**；文档版本 v1.7.0 → **v1.8.0** |
 | **v1.9.0** | **2026-09-20** | **AT-OpenBase-Test** | **settings.py 覆盖率补测（O-3 后续收口）**：① 新增 **§7.10 settings.py 覆盖率补测**——在 `tests/test_settings.py` 新增 **12 例**分支护栏（原 7 → **19 例**），覆盖此前未覆盖的 12 处行：DB/Redis URL 解析优先级与 `+asyncpg` 规范化、JWT 密钥三分支（production 拒绝 / development 弱密钥 WARN / 未配置 WARN）、K03 白名单与服务账号映射解析四态、`dps_default_*` 弃用面、观测三开关与允许清单（含 production 永久关闭红线 4）、受信来源白名单、`dps_code_map` 登记式基线解析；② 复测结果——**`openbase/settings.py` 170 语句 / 0 未覆盖 = 100%**（原 80%），`19 passed / 0 failed`，`ruff` 0 错误；证据 `doc/test/evidence/v147/coverage-settings-supplement-v1.4.7.json` / `.txt`；③ §4 覆盖率表新增「**O-3 后续补测出证：settings.py 100%**」行；④ 如实登记**回归基线计数由 996 → 1008（+12）**及全量复核口径；⑤ 实现留痕：因 `openbase.settings` 被包属性遮蔽，测试改用 `importlib.import_module` 取模块对象；**未改动生产代码**；文档版本 v1.8.0 → **v1.9.0** |
 | **v1.9.1** | **2026-09-20** | **AT-OpenBase-Test** | **§7.10 回归基线口径补正（纠错）**：将「本轮已同批发起全量回归复核」的表述补正为**实测结论**——全量复核因**沙箱执行窗口限制未跑完**（`python scripts/run_regression.py`，2026-09-20 20:27:24 启动、20:46:48 终止），运行记录落盘为 `doc/test/evidence/v147/regression-after-settings-supplement.txt`（**说明性文件，非 pytest 原始输出**，明确标注「未取得结果、不构成证据」）；据此明确登记口径为「**增量面已验证（`test_settings.py` 19/19 通过）+ 回归基线计数 996 → 1008（+12）**」，全量复核结论留待联调窗口刷新；交叉引用刷新为回溯审计报告 **v1.0.6**、Stage4 阶段审计报告 **v1.0.4**、问题跟踪记录 **v1.5.6**；文档版本 v1.9.0 → **v1.9.1** |
+| **v1.10.0** | **2026-09-20** | **AT-OpenBase-Test** | **全量回归与覆盖率基线刷新（§7.11 新增）**：① 以 `python scripts/run_regression.py --cov`（85 文件 / **29 组**分组子进程 + `--cov-append`）在沙箱窗口内**完整跑完**（20:51 → **21:41**，约 50 分钟，退出码 0）：**`passed=1008 / failed=0 / skipped=4`**、前置 `ruff` 0 错误 —— 与 §7.10 登记的预期基线 `996 + 12 = 1008` **完全一致**；② **全量覆盖率基线确立**：`openbase` 包 TOTAL **87.7%**（8715/1072），本版本修改文件 `settings.py` **100%**、`rag_proxy/__init__.py` **93.8%**（小计 96.8%），与 §7.9/§7.10 的定向口径**互相印证**；③ §7.9 的「全量套件口径未跑完（中间态 84.9%）」条由复跑结果取代、§7.10 的待刷新口径注记改为「已复核一致」；④ 证据：`regression-fullrun-v1.4.7.txt`、`coverage-fullrun-baseline-v1.4.7.txt` / `.json`；⑤ 至此 **O-3 条件提示、全量回归复核、全量覆盖率基线三项全部结清**，测试侧无遗留开放项；文档版本 v1.9.1 → **v1.10.0** |
