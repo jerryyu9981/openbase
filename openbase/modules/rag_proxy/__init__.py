@@ -102,6 +102,10 @@ def _build_upstream_headers(
     P2-1 T1（K01，§3.5 rag-proxy 行）：原零身份头 → 现补 X-User-ID/X-Tenant-ID/
     X-Org-ID/X-User-Role + X-Proxy-Source(openbase-rag-proxy) + X-Request-Id，
     取值只来自统一主体上下文（``build_outbound_headers`` 唯一装配点）。
+
+    DEF-BE-147-005（v1.4.7）：``settings.rag_inject_identity_headers=False`` 时
+    **不注入四头**（仍经同一装配点产出 X-Proxy-Source + X-Request-Id，保持串联契约）。
+    原因见 settings 同名字段注释与 `doc/test/evidence/v147/def005-multiprobe-20260920.json`。
     """
     _, _, _, rag_api_key = _upstream_config()
     headers: dict[str, str] = {
@@ -111,9 +115,10 @@ def _build_upstream_headers(
     if rag_api_key:
         headers["X-API-Key"] = rag_api_key
     settings = get_settings()
+    effective_user = user if settings.rag_inject_identity_headers else None
     return build_outbound_headers(
         request,
-        user,
+        effective_user,
         target_system=TARGET_SYSTEM_RAG,
         extra_headers=headers,
         enforce_org_alias=settings.enforce_org_alias,

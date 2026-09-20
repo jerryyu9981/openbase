@@ -1,126 +1,149 @@
-﻿=== BL-147-05 端到端串联验收环境核验（2026-09-20 01:23:23）===
+﻿=== BL-147-05 端到端串联验收环境核验（2026-09-20 14:39:33）===
 主机：DESKTOP-JERRY；PowerShell：5.1.26100.9444；Python：Python 3.10.11
-[2026-09-20 01:23:23] TT-147-001 基础设施可达性预检（共享 PG / Redis / Qdrant）
+[2026-09-20 14:39:33] TT-147-001 基础设施可达性预检（共享 PG / Redis / Qdrant）
 PostgreSQL   192.168.0.151:5432 = True
 Redis        192.168.0.151:6380 = True
 Qdrant       192.168.0.151:6333 = True
-[2026-09-20 01:23:25] TT-147-001 四仓 R-384 改动就位核验（工作树装配点计数）
+[2026-09-20 14:39:42] TT-147-001 四仓 R-384 改动就位核验（工作树装配点计数）
 DPS          app.py ← setup_dps_logging = 2
 OpenLLM      main.py ← setup_openllm_logging = 2
 OpenMemory   server.py ← configure_logging = 2
 OpenRAG      main.py ← LoggingMiddleware = 3
 OpenRAG      logging.py ← X-Request-Id = 3
-[2026-09-20 01:23:25] TT-147-002 采集命名契约实测（-Action namecheck，读侧动作）
-[2026-09-20 01:23:43] 启动五方服务 + OIDC IdP（健康检查超时 600s；OpenMemory complete 模式约 5~7 分钟）
-2026-09-20 01:23:43 [INFO] 一键启动开始，服务拓扑序：openllm → openrag → openmemory → oidc-idp → dps → openbase → frontend
-2026-09-20 01:23:45 [INFO] 启动 openllm（OpenLLM 大模型网关）：python -m uvicorn main:app --host 127.0.0.1 --port 8001（cwd=D:\Tra
+[2026-09-20 14:39:42] TT-147-002 采集命名契约实测（-Action namecheck，读侧动作）
+[2026-09-20 14:40:50] 启动五方服务 + OIDC IdP（健康检查超时 600s；OpenMemory complete 模式约 5~7 分钟）
+2026-09-20 14:40:51 [INFO] 一键启动开始，服务拓扑序：openllm → openrag → openmemory → oidc-idp → dps → openbase → frontend
+2026-09-20 14:40:56 [INFO] openllm 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openllm\openllm-20260920-144056.log
+2026-09-20 14:40:56 [INFO] openllm 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openllm\openllm-20260920-144056.err.
+jsonl
+2026-09-20 14:40:56 [INFO] 启动 openllm（OpenLLM 大模型网关）：python -m uvicorn main:app --host 127.0.0.1 --port 8001（cwd=D:\Tra
 e CN\myproject\Dev\OpenLLM\backend）
-2026-09-20 01:23:45 [INFO] openllm 进程已创建（PID 23832），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openllm\openllm-20
+2026-09-20 14:41:00 [INFO] openllm 进程已创建（PID 13540），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openllm\openllm-20
 260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\openllm\openllm-20260920.err.jsonl
-2026-09-20 01:23:45 [INFO] openllm 等待健康检查（超时 600s）...
-2026-09-20 01:24:06 [INFO] openllm 健康检查通过 ✅（PID 23832，端口 8001）
+2026-09-20 14:41:00 [INFO] openllm 等待健康检查（超时 600s）...
+2026-09-20 14:41:58 [INFO] openllm 健康检查通过 ✅（PID 13540，端口 8001）
 True
-2026-09-20 01:24:07 [INFO] 启动 openrag（OpenRAG 知识库/检索）：python -m uvicorn openrag.main:app --app-dir src --host 127.0.0.1
+2026-09-20 14:42:02 [INFO] openrag 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openrag\openrag-20260920-144202.json
+l
+2026-09-20 14:42:02 [INFO] openrag 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openrag\openrag-20260920-144202.err.
+log
+2026-09-20 14:42:02 [INFO] 启动 openrag（OpenRAG 知识库/检索）：python -m uvicorn openrag.main:app --app-dir src --host 127.0.0.1
  --port 8010（cwd=D:\Trae CN\myproject\Dev\OpenRAG）
-2026-09-20 01:24:07 [INFO] openrag 进程已创建（PID 24392），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openrag\openrag-20
-260920.jsonl，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\openrag\openrag-20260920.err.log
-2026-09-20 01:24:07 [INFO] openrag 等待健康检查（超时 600s）...
-2026-09-20 01:24:30 [INFO] openrag 健康检查通过 ✅（PID 24392，端口 8010）
+2026-09-20 14:42:07 [INFO] openrag 进程已创建（PID 9924），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openrag\openrag-202
+60920.jsonl，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\openrag\openrag-20260920.err.log
+2026-09-20 14:42:07 [INFO] openrag 等待健康检查（超时 600s）...
+2026-09-20 14:43:09 [INFO] openrag 健康检查通过 ✅（PID 9924，端口 8010）
 True
-2026-09-20 01:24:30 [INFO] 启动 openmemory（OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j））：python scripts\start_openm
+2026-09-20 14:43:11 [INFO] openmemory 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openmemory\openmemory-20260920-14
+4311.log
+2026-09-20 14:43:11 [INFO] openmemory 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openmemory\openmemory-20260920-14
+4311.err.jsonl
+2026-09-20 14:43:11 [INFO] 启动 openmemory（OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j））：python scripts\start_openm
 emory.py（cwd=D:\Trae CN\myproject\Dev\OpenMemory）
-2026-09-20 01:24:30 [INFO] openmemory 进程已创建（PID 14884），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openmemory\open
-memory-20260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\openmemory\openmemory-20260920.err.jsonl
-2026-09-20 01:24:30 [INFO] openmemory 等待健康检查（超时 600s）...
-2026-09-20 01:25:25 [INFO] openmemory 健康检查通过 ✅（PID 14884，端口 8020）
+2026-09-20 14:43:16 [INFO] openmemory 进程已创建（PID 8612），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openmemory\openm
+emory-20260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\openmemory\openmemory-20260920.err.jsonl
+2026-09-20 14:43:16 [INFO] openmemory 等待健康检查（超时 600s）...
+2026-09-20 14:45:33 [INFO] openmemory 健康检查通过 ✅（PID 8612，端口 8020）
 True
-2026-09-20 01:25:26 [INFO] 启动 oidc-idp（本地 OIDC IdP（标准授权码流程，演示用户池））：python scripts\oidc-idp\idp_server.py（cwd=D:\Trae CN
+2026-09-20 14:45:34 [INFO] oidc-idp 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\oidc-idp\oidc-idp-20260920-144534.l
+og
+2026-09-20 14:45:34 [INFO] oidc-idp 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\oidc-idp\oidc-idp-20260920-144534.e
+rr.log
+2026-09-20 14:45:34 [INFO] 启动 oidc-idp（本地 OIDC IdP（标准授权码流程，演示用户池））：python scripts\oidc-idp\idp_server.py（cwd=D:\Trae CN
 \myproject\Dev\OpenBase）
-2026-09-20 01:25:26 [INFO] oidc-idp 进程已创建（PID 17740），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\oidc-idp\oidc-idp
--20260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\oidc-idp\oidc-idp-20260920.err.log
-2026-09-20 01:25:26 [INFO] oidc-idp 等待健康检查（超时 600s）...
-2026-09-20 01:26:00 [INFO] oidc-idp 健康检查通过 ✅（PID 17740，端口 8090）
+2026-09-20 14:45:34 [INFO] oidc-idp 进程已创建（PID 7044），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\oidc-idp\oidc-idp-
+20260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\oidc-idp\oidc-idp-20260920.err.log
+2026-09-20 14:45:34 [INFO] oidc-idp 等待健康检查（超时 600s）...
+2026-09-20 14:45:39 [INFO] oidc-idp 健康检查通过 ✅（PID 7044，端口 8090）
 True
-2026-09-20 01:26:04 [INFO] 启动 dps（DPS 数据画像系统）：python -m uvicorn rest_api.app:app --app-dir src --host 127.0.0.1 --port 
+2026-09-20 14:45:39 [INFO] dps 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\dps\dps-20260920-144539.log
+2026-09-20 14:45:40 [INFO] dps 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\dps\dps-20260920-144539.err.jsonl
+2026-09-20 14:45:40 [INFO] 启动 dps（DPS 数据画像系统）：python -m uvicorn rest_api.app:app --app-dir src --host 127.0.0.1 --port 
 8030（cwd=D:\Trae CN\myproject\Dev\DPS）
-2026-09-20 01:26:05 [INFO] dps 进程已创建（PID 22944），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\dps\dps-20260920.log，s
-tderr=D:\Trae CN\myproject\Dev\OpenBase\logs\dps\dps-20260920.err.jsonl
-2026-09-20 01:26:05 [INFO] dps 等待健康检查（超时 600s）...
-2026-09-20 01:26:53 [INFO] dps 健康检查通过 ✅（PID 22944，端口 8030）
+2026-09-20 14:45:40 [INFO] dps 进程已创建（PID 3272），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\dps\dps-20260920.log，st
+derr=D:\Trae CN\myproject\Dev\OpenBase\logs\dps\dps-20260920.err.jsonl
+2026-09-20 14:45:40 [INFO] dps 等待健康检查（超时 600s）...
+2026-09-20 14:45:47 [INFO] dps 健康检查通过 ✅（PID 3272，端口 8030）
 True
-2026-09-20 01:26:57 [INFO] 启动 openbase（OpenBase 统一底座（JWT 门禁 + 四 proxy））：python -m uvicorn openbase.demo_app:app --host 
+2026-09-20 14:45:48 [INFO] openbase 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openbase\openbase-20260920-144548.l
+og
+2026-09-20 14:45:48 [INFO] openbase 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\openbase\openbase-20260920-144548.e
+rr.log
+2026-09-20 14:45:48 [INFO] 启动 openbase（OpenBase 统一底座（JWT 门禁 + 四 proxy））：python -m uvicorn openbase.demo_app:app --host 
 127.0.0.1 --port 8000（cwd=D:\Trae CN\myproject\Dev\OpenBase）
-2026-09-20 01:26:58 [INFO] openbase 进程已创建（PID 22996），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openbase\openbase
--20260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\openbase\openbase-20260920.err.log
-2026-09-20 01:26:58 [INFO] openbase 等待健康检查（超时 600s）...
-2026-09-20 01:27:56 [INFO] openbase 健康检查通过 ✅（PID 22996，端口 8000）
+2026-09-20 14:45:49 [INFO] openbase 进程已创建（PID 8968），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\openbase\openbase-
+20260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\openbase\openbase-20260920.err.log
+2026-09-20 14:45:49 [INFO] openbase 等待健康检查（超时 600s）...
+2026-09-20 14:45:56 [INFO] openbase 健康检查通过 ✅（PID 8968，端口 8000）
 True
-2026-09-20 01:27:59 [INFO] 启动 frontend（统一前端（vite dev，proxy → 8000））：npm.cmd run dev（cwd=D:\Trae CN\myproject\Dev\OpenBa
+2026-09-20 14:45:57 [INFO] frontend 上一轮日志已归档：D:\Trae CN\myproject\Dev\OpenBase\logs\frontend\frontend-20260920-144557.l
+og
+2026-09-20 14:45:57 [INFO] 启动 frontend（统一前端（vite dev，proxy → 8000））：npm.cmd run dev（cwd=D:\Trae CN\myproject\Dev\OpenBa
 se\openbase-ui）
-2026-09-20 01:28:01 [INFO] frontend 进程已创建（PID 23104），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\frontend\frontend
+2026-09-20 14:45:57 [INFO] frontend 进程已创建（PID 11620），日志 stdout=D:\Trae CN\myproject\Dev\OpenBase\logs\frontend\frontend
 -20260920.log，stderr=D:\Trae CN\myproject\Dev\OpenBase\logs\frontend\frontend-20260920.err.log
-2026-09-20 01:28:01 [INFO] frontend 等待健康检查（超时 600s）...
-2026-09-20 01:28:35 [INFO] frontend 健康检查通过 ✅（PID 23104，端口 5173）
+2026-09-20 14:45:57 [INFO] frontend 等待健康检查（超时 600s）...
+2026-09-20 14:46:05 [INFO] frontend 健康检查通过 ✅（PID 11620，端口 5173）
 True
-2026-09-20 01:28:35 [INFO] 一键启动完成，最终状态：
-openllm     8001   OpenLLM 大模型网关                  健康 ✅ PID=23832
-openrag     8010   OpenRAG 知识库/检索                 健康 ✅ PID=24392
-openmemory  8020   OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j） 健康 ✅ PID=14884
-oidc-idp    8090   本地 OIDC IdP（标准授权码流程，演示用户池）     健康 ✅ PID=17740
-dps         8030   DPS 数据画像系统                     健康 ✅ PID=22944
-openbase    8000   OpenBase 统一底座（JWT 门禁 + 四 proxy） 健康 ✅ PID=22996
-frontend    5173   统一前端（vite dev，proxy → 8000）    健康 ✅ PID=684
-[2026-09-20 01:28:58] 编排器启动返回；开始端点健康轮询
-[2026-09-20 01:28:58] 五方服务健康轮询
+2026-09-20 14:46:05 [INFO] 一键启动完成，最终状态：
+openllm     8001   OpenLLM 大模型网关                  健康 ✅ PID=13540
+openrag     8010   OpenRAG 知识库/检索                 健康 ✅ PID=9924
+openmemory  8020   OpenMemory 记忆服务（complete 模式，Qdrant+PG+Redis+Neo4j） 健康 ✅ PID=8612
+oidc-idp    8090   本地 OIDC IdP（标准授权码流程，演示用户池）     健康 ✅ PID=7044
+dps         8030   DPS 数据画像系统                     健康 ✅ PID=3272
+openbase    8000   OpenBase 统一底座（JWT 门禁 + 四 proxy） 健康 ✅ PID=8968
+frontend    5173   统一前端（vite dev，proxy → 8000）    健康 ✅ PID=12548
+[2026-09-20 14:46:09] 编排器启动返回；开始端点健康轮询
+[2026-09-20 14:46:09] 五方服务健康轮询
 openllm      http://127.0.0.1:8001/health = 健康
 openrag      http://127.0.0.1:8010/api/v1/system/health = 健康
 openmemory   http://127.0.0.1:8020/health = 健康
 dps          http://127.0.0.1:8030/health/liveness = 健康
 openbase     http://127.0.0.1:8000/openapi.json = 健康
-[2026-09-20 01:28:59] 登录取访问令牌（令牌不落盘，仅记录是否获取成功）
+[2026-09-20 14:46:09] 登录取访问令牌（令牌不落盘，仅记录是否获取成功）
 登录成功 = True
-[2026-09-20 01:29:01] TT-147-003 网关串联抽样开始（每族 10 次）
-[1] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-26e56f19876f (3460 ms)
-[2] dps /api/v1/dps-proxy/tags/categories → status=200 request_id=req-a0e89a8f8620 (230 ms)
-[3] dps /api/v1/dps-proxy/health → status=200 request_id=req-d6e799599599 (350 ms)
-[4] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-c62407aa0955 (457 ms)
-[5] dps /api/v1/dps-proxy/tags/categories → status=200 request_id=req-ddd1473e4759 (203 ms)
-[6] dps /api/v1/dps-proxy/health → status=200 request_id=req-b50b7a76afdf (164 ms)
-[7] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-82bef7d05232 (198 ms)
-[8] dps /api/v1/dps-proxy/tags/categories → status=200 request_id=req-36fd90dba4ee (138 ms)
-[9] dps /api/v1/dps-proxy/health → status=200 request_id=req-26da4dd806fc (247 ms)
-[10] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-79e1e459b7c9 (160 ms)
-[11] rag /api/v1/rag-proxy/collections → status=400 request_id=req-ceae9f169412 (204 ms)
-[12] rag /api/v1/rag-proxy/health → status=200 request_id=req-a8ee5f4df511 (208 ms)
-[13] rag /api/v1/rag-proxy/collections → status=400 request_id=req-399a388bb833 (95 ms)
-[14] rag /api/v1/rag-proxy/health → status=200 request_id=req-46e1597e723a (375 ms)
-[15] rag /api/v1/rag-proxy/collections → status=400 request_id=req-2c527e0d2432 (79 ms)
-[16] rag /api/v1/rag-proxy/health → status=200 request_id=req-acb0d3db680d (272 ms)
-[17] rag /api/v1/rag-proxy/collections → status=400 request_id=req-a93d1acbe9f9 (116 ms)
-[18] rag /api/v1/rag-proxy/health → status=200 request_id=req-79f14d242401 (162 ms)
-[19] rag /api/v1/rag-proxy/collections → status=400 request_id=req-a4b260b6959c (146 ms)
-[20] rag /api/v1/rag-proxy/health → status=200 request_id=req-1c1aa9518860 (212 ms)
-[21] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-bfa8d9a25022 (236 ms)
-[22] memory /api/v1/memory-proxy/health → status=200 request_id=req-6f0aaa0f1cf5 (217 ms)
-[23] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-a867f9b9f9eb (130 ms)
-[24] memory /api/v1/memory-proxy/health → status=200 request_id=req-d00dcb20b006 (334 ms)
-[25] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-99eafea67b0d (119 ms)
-[26] memory /api/v1/memory-proxy/health → status=200 request_id=req-aae0ac8b733a (142 ms)
-[27] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-4d55096bf65b (181 ms)
-[28] memory /api/v1/memory-proxy/health → status=200 request_id=req-bd295bd61d18 (72 ms)
-[29] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-9c77b9572a56 (116 ms)
-[30] memory /api/v1/memory-proxy/health → status=200 request_id=req-82f6d79a20ad (115 ms)
-[31] llm /api/v1/llm-proxy/models → status=200 request_id=req-0a8f16a1cc74 (639 ms)
-[32] llm /api/v1/llm-proxy/health → status=200 request_id=req-fea68cf1042f (1829 ms)
-[33] llm /api/v1/llm-proxy/models → status=200 request_id=req-d2a78d688e67 (835 ms)
-[34] llm /api/v1/llm-proxy/health → status=200 request_id=req-ad2efffa356a (221 ms)
-[35] llm /api/v1/llm-proxy/models → status=200 request_id=req-d3c19297921a (471 ms)
-[36] llm /api/v1/llm-proxy/health → status=200 request_id=req-5960983cad47 (134 ms)
-[37] llm /api/v1/llm-proxy/models → status=200 request_id=req-f13bff72b0f8 (368 ms)
-[38] llm /api/v1/llm-proxy/health → status=200 request_id=req-b6b3d8463541 (157 ms)
-[39] llm /api/v1/llm-proxy/models → status=200 request_id=req-ece9033f289d (809 ms)
-[40] llm /api/v1/llm-proxy/health → status=200 request_id=req-e8770d0635dd (612 ms)
-[2026-09-20 01:29:17] 抽样完成：40 次，其中带回 X-Request-Id 的 40 次
-[2026-09-20 01:29:17] TT-147-004/005/006/007/010 串联一致性 + JSONL 契约 + 可检索 + 兜底校验
+[2026-09-20 14:46:10] TT-147-003 网关串联抽样开始（每族 10 次）
+[1] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-d59f7a08d3f9 (792 ms)
+[2] dps /api/v1/dps-proxy/tags/categories → status=200 request_id=req-834cea89740f (158 ms)
+[3] dps /api/v1/dps-proxy/health → status=200 request_id=req-7fb08c893883 (124 ms)
+[4] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-8dbded40a998 (141 ms)
+[5] dps /api/v1/dps-proxy/tags/categories → status=200 request_id=req-6fbb9d18f44d (89 ms)
+[6] dps /api/v1/dps-proxy/health → status=200 request_id=req-76e924e7e086 (58 ms)
+[7] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-8dff971d8719 (68 ms)
+[8] dps /api/v1/dps-proxy/tags/categories → status=200 request_id=req-c16fc69dc83a (71 ms)
+[9] dps /api/v1/dps-proxy/health → status=200 request_id=req-e5006de86800 (58 ms)
+[10] dps /api/v1/dps-proxy/reports/overview → status=200 request_id=req-23cd57d7abc9 (70 ms)
+[11] rag /api/v1/rag-proxy/collections → status=200 request_id=req-7838bdd29761 (113 ms)
+[12] rag /api/v1/rag-proxy/health → status=200 request_id=req-96798c376a57 (88 ms)
+[13] rag /api/v1/rag-proxy/collections → status=200 request_id=req-2301f3bab413 (53 ms)
+[14] rag /api/v1/rag-proxy/health → status=200 request_id=req-8e57a02d3290 (102 ms)
+[15] rag /api/v1/rag-proxy/collections → status=200 request_id=req-515967f6fcd3 (42 ms)
+[16] rag /api/v1/rag-proxy/health → status=200 request_id=req-914573296802 (92 ms)
+[17] rag /api/v1/rag-proxy/collections → status=200 request_id=req-73e63a7e5097 (44 ms)
+[18] rag /api/v1/rag-proxy/health → status=200 request_id=req-ea8052988476 (91 ms)
+[19] rag /api/v1/rag-proxy/collections → status=200 request_id=req-70997f5cb4e4 (44 ms)
+[20] rag /api/v1/rag-proxy/health → status=200 request_id=req-48ed2399fe0c (93 ms)
+[21] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-f2d038f62c23 (214 ms)
+[22] memory /api/v1/memory-proxy/health → status=200 request_id=req-c4f3aec9ed74 (53 ms)
+[23] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-c51a1ff13f32 (73 ms)
+[24] memory /api/v1/memory-proxy/health → status=200 request_id=req-6c3e58847dca (75 ms)
+[25] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-d1de245668d8 (57 ms)
+[26] memory /api/v1/memory-proxy/health → status=200 request_id=req-b27cedf05026 (69 ms)
+[27] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-263996f9de79 (36 ms)
+[28] memory /api/v1/memory-proxy/health → status=200 request_id=req-cbcb0a2533ca (32 ms)
+[29] memory /api/v1/memory-proxy/monitor → status=200 request_id=req-b04276182f11 (33 ms)
+[30] memory /api/v1/memory-proxy/health → status=200 request_id=req-d8947d37801b (30 ms)
+[31] llm /api/v1/llm-proxy/models → status=200 request_id=req-f49bd8329f9f (252 ms)
+[32] llm /api/v1/llm-proxy/health → status=200 request_id=req-8ce3223bc7e5 (500 ms)
+[33] llm /api/v1/llm-proxy/models → status=200 request_id=req-e1f1c9d3abe0 (164 ms)
+[34] llm /api/v1/llm-proxy/health → status=200 request_id=req-0f50878668a5 (56 ms)
+[35] llm /api/v1/llm-proxy/models → status=200 request_id=req-c293df2ee3f6 (146 ms)
+[36] llm /api/v1/llm-proxy/health → status=200 request_id=req-09fd3c8e3f6a (54 ms)
+[37] llm /api/v1/llm-proxy/models → status=200 request_id=req-f1e86556d850 (413 ms)
+[38] llm /api/v1/llm-proxy/health → status=200 request_id=req-f3edf89bf531 (49 ms)
+[39] llm /api/v1/llm-proxy/models → status=200 request_id=req-a461c9f5c310 (120 ms)
+[40] llm /api/v1/llm-proxy/health → status=200 request_id=req-10c51d70324d (57 ms)
+[2026-09-20 14:46:15] 抽样完成：40 次，其中带回 X-Request-Id 的 40 次
+[2026-09-20 14:46:15] TT-147-004/005/006/007/010 串联一致性 + JSONL 契约 + 可检索 + 兜底校验
 校验脚本退出码 = 0
-[2026-09-20 01:32:16] BL-147-05 验收执行完成（校验退出码 0；0=通过，1=未通过）
+[2026-09-20 14:46:56] BL-147-05 验收执行完成（校验退出码 0；0=通过，1=未通过）

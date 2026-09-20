@@ -1,4 +1,4 @@
-﻿{
+{
     "project":  "OpenBase",
     "devflowVersion":  "2.18.0",
     "currentPhase":  "v1_4_7_step_3_development",
@@ -852,7 +852,22 @@
                                                                                                   "stillOpen":  [
                                                                                                                     "DEF-BE-147-005（P1，rag-proxy/collections 在 OpenRAG M2 下 200→400；串联正常、功能异常）"
                                                                                                                 ],
-                                                                                                  "conclusion":  "串联一致性核心判据已达成 100%；BL-147-05 仍判不通过仅因 DEF-BE-147-005；Phase 6 门禁 M10/M11 仍未闭合"
+                                                                                                  "conclusion":  "串联一致性核心判据已达成 100%；BL-147-05 仍判不通过仅因 DEF-BE-147-005；Phase 6 门禁 M10/M11 仍未闭合",
+                                                                                                  "retest3":  {
+                                                                                                    "date":  "2026-09-20",
+                                                                                                    "defect":  "DEF-BE-147-005（P1：rag-proxy/collections 在 OpenRAG M2 受信模式下 200→400）",
+                                                                                                    "rootCause":  "OpenRAG identity_gate.py L224-239 保留租户码碰撞防护：M2 受信路径下 X-Tenant-ID 缺省即保留码 default",
+                                                                                                    "decision":  "裁定方案 B：rag-proxy 对 OpenRAG 不注入身份头（新增显式开关 rag_inject_identity_headers，默认 true 保持既有语义；联调由编排器声明 false）",
+                                                                                                    "rejected":  "方案 A（非保留租户码）实测 200 但 data.items=[]（租户隔离致既有知识库不可见）；方案 C（跨仓放行）削弱保留码防护语义",
+                                                                                                    "evidence":  [
+                                                                                                      "doc/test/evidence/v147/def005-multiprobe-20260920.json",
+                                                                                                      "doc/test/evidence/v147/def005-gateway-retest-20260920.json"
+                                                                                                    ],
+                                                                                                    "result":  "经网关 GET /api/v1/rag-proxy/collections → 200 且 data.items=12（total=12）；响应头 X-Request-Id 与 OpenRAG 应用日志行 request_id 完全一致（串联未破）；网关 4xx 响应体 190 字节完整 envelope",
+                                                                                                    "guards":  "tests/test_rag_proxy_identity_policy.py（新增 3 例）+ tests/test_bl147_trust_env_wiring.py（+1 例编排器声明护栏）",
+                                                                                                    "correction":  "证据口径纠错：原「400 响应体为空」经原始 socket + httpx 双口径复核判定为 PowerShell 5.1 测量假阳性（上游实发 385 字节完整 envelope），派生次级发现已撤回（CR-147-005）",
+                                                                                                    "conclusion":  "DEF-BE-147-005 闭环，缺陷清单 4/4 全闭环；BL-147-05 最终结论待全量重跑（TT-147-003~009）+ 测试回溯对比审计定稿"
+                                                                                                  }
                                                                                               }
                                                                               }
                                                               }

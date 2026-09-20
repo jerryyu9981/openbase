@@ -176,6 +176,15 @@ class Settings(BaseSettings):
     # 任务书 M1：OpenRAG 服务级 API Key（X-API-Key，与 OPENRAG_API_SERVICE_API_KEY 同密钥），
     # rag-proxy 转发时注入；空则不注入（向后兼容）
     rag_api_key: str = "openbase-rag-gw-key-20260901"
+    # DEF-BE-147-005（v1.4.7）rag-proxy 身份头注入策略显式开关：
+    #   True （默认）＝维持 P2-1 四维身份透传（注入四头 + 来源 + 请求 id）；
+    #   False       ＝**不注入身份头**，仅 `X-API-Key` + `X-Proxy-Source` + `X-Request-Id`。
+    # 背景：OpenRAG 受信入站（M2）对「保留租户码」（default/openrag-local）返回 400
+    # BIZ_RESERVED_TENANT_CODE_COLLISION；改用非保留租户码（方案 A）虽 200 却因租户隔离
+    # 使既有知识库不可见（items=[]，实测证据见 doc/test/evidence/v147/def005-multiprobe-20260920.json）。
+    # 故联调环境按方案 B 关闭身份注入，并由编排器**显式声明**（不静默降级）；
+    # 「租户码语义对齐」另行登记为跨仓/设计议题。
+    rag_inject_identity_headers: bool = True
 
     # ---- DPS 对接（v1.4.5 R-381，JWT 门禁 + 身份头注入转发） ----
     # P0-3 端口对齐（评审 Q5）：默认对齐 DPS 源码 api_port=8000（DPS src/config.py

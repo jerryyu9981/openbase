@@ -1,44 +1,44 @@
-﻿===== 采集文件命名实测（2026-09-20 01:23:25）=====
+﻿===== 采集文件命名实测（2026-09-20 14:39:44）=====
 采集根目录（ServiceLogRoot）：D:\Trae CN\myproject\Dev\OpenBase\logs
 服务          结构化流       stdout 采集文件                    stderr 采集文件                    归档样例（stdout / stderr）
-openllm     stderr     openllm-20260920.log           openllm-20260920.err.jsonl     openllm-20260920-012325.log / openllm-20260920-012325.err.jsonl
-openrag     stdout     openrag-20260920.jsonl         openrag-20260920.err.log       openrag-20260920-012325.jsonl / openrag-20260920-012325.err.log
-openmemory  stderr     openmemory-20260920.log        openmemory-20260920.err.jsonl  openmemory-20260920-012325.log / openmemory-20260920-012325.err.jsonl
-oidc-idp    -          oidc-idp-20260920.log          oidc-idp-20260920.err.log      oidc-idp-20260920-012325.log / oidc-idp-20260920-012325.err.log
-dps         stderr     dps-20260920.log               dps-20260920.err.jsonl         dps-20260920-012325.log / dps-20260920-012325.err.jsonl
-openbase    -          openbase-20260920.log          openbase-20260920.err.log      openbase-20260920-012325.log / openbase-20260920-012325.err.log
-frontend    -          frontend-20260920.log          frontend-20260920.err.log      frontend-20260920-012325.log / frontend-20260920-012325.err.log
+openllm     stderr     openllm-20260920.log           openllm-20260920.err.jsonl     openllm-20260920-143944.log / openllm-20260920-143944.err.jsonl
+openrag     stdout     openrag-20260920.jsonl         openrag-20260920.err.log       openrag-20260920-143944.jsonl / openrag-20260920-143944.err.log
+openmemory  stderr     openmemory-20260920.log        openmemory-20260920.err.jsonl  openmemory-20260920-143944.log / openmemory-20260920-143944.err.jsonl
+oidc-idp    -          oidc-idp-20260920.log          oidc-idp-20260920.err.log      oidc-idp-20260920-143944.log / oidc-idp-20260920-143944.err.log
+dps         stderr     dps-20260920.log               dps-20260920.err.jsonl         dps-20260920-143944.log / dps-20260920-143944.err.jsonl
+openbase    -          openbase-20260920.log          openbase-20260920.err.log      openbase-20260920-143944.log / openbase-20260920-143944.err.log
+frontend    -          frontend-20260920.log          frontend-20260920.err.log      frontend-20260920-143944.log / frontend-20260920-143944.err.log
 
 ---- ① 编排器命名校验（唯一判据 = REPO_LOG_NAME_RE）----
 [verify_repo_log_naming] 编排器命名校验（28 条）
   [OK  ] openllm/openllm-20260920.log  适配器可见
   [OK  ] openllm/openllm-20260920.err.jsonl  适配器可见
-  [OK  ] openllm/openllm-20260920-012325.log  适配器可见
-  [OK  ] openllm/openllm-20260920-012325.err.jsonl  适配器可见
+  [OK  ] openllm/openllm-20260920-143944.log  适配器可见
+  [OK  ] openllm/openllm-20260920-143944.err.jsonl  适配器可见
   [OK  ] openrag/openrag-20260920.jsonl  适配器可见
   [OK  ] openrag/openrag-20260920.err.log  适配器可见
-  [OK  ] openrag/openrag-20260920-012325.jsonl  适配器可见
-  [OK  ] openrag/openrag-20260920-012325.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-143944.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-143944.err.log  适配器可见
   [OK  ] openmemory/openmemory-20260920.log  适配器可见
   [OK  ] openmemory/openmemory-20260920.err.jsonl  适配器可见
-  [OK  ] openmemory/openmemory-20260920-012325.log  适配器可见
-  [OK  ] openmemory/openmemory-20260920-012325.err.jsonl  适配器可见
+  [OK  ] openmemory/openmemory-20260920-143944.log  适配器可见
+  [OK  ] openmemory/openmemory-20260920-143944.err.jsonl  适配器可见
   [SKIP] oidc-idp/oidc-idp-20260920.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] oidc-idp/oidc-idp-20260920.err.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
-  [SKIP] oidc-idp/oidc-idp-20260920-012325.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
-  [SKIP] oidc-idp/oidc-idp-20260920-012325.err.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] oidc-idp/oidc-idp-20260920-143944.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] oidc-idp/oidc-idp-20260920-143944.err.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
   [OK  ] dps/dps-20260920.log  适配器可见
   [OK  ] dps/dps-20260920.err.jsonl  适配器可见
-  [OK  ] dps/dps-20260920-012325.log  适配器可见
-  [OK  ] dps/dps-20260920-012325.err.jsonl  适配器可见
+  [OK  ] dps/dps-20260920-143944.log  适配器可见
+  [OK  ] dps/dps-20260920-143944.err.jsonl  适配器可见
   [SKIP] openbase/openbase-20260920.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] openbase/openbase-20260920.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
-  [SKIP] openbase/openbase-20260920-012325.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
-  [SKIP] openbase/openbase-20260920-012325.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-143944.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-143944.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] frontend/frontend-20260920.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] frontend/frontend-20260920.err.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
-  [SKIP] frontend/frontend-20260920-012325.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
-  [SKIP] frontend/frontend-20260920-012325.err.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] frontend/frontend-20260920-143944.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] frontend/frontend-20260920-143944.err.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
   汇总：可见 16 / 跳过 12 / 不可见 0 / 历史旧命名 0
 
 ---- ② 在盘日志实测扫描（历史旧命名按 legacy 登记）----
@@ -55,6 +55,10 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [OK  ] dps/dps-20260919-231811.log  适配器可见
   [OK  ] dps/dps-20260919.err.jsonl  适配器可见
   [OK  ] dps/dps-20260919.log  适配器可见
+  [OK  ] dps/dps-20260920-142553.err.jsonl  适配器可见
+  [OK  ] dps/dps-20260920-142553.log  适配器可见
+  [OK  ] dps/dps-20260920.err.jsonl  适配器可见
+  [OK  ] dps/dps-20260920.log  适配器可见
   [SKIP] frontend/frontend-20260914-204028.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] frontend/frontend-20260914.err.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] frontend/frontend-20260914.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
@@ -65,6 +69,9 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [SKIP] frontend/frontend-20260919-231827.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] frontend/frontend-20260919.err.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] frontend/frontend-20260919.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] frontend/frontend-20260920-142646.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] frontend/frontend-20260920.err.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] frontend/frontend-20260920.log  frontend 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] oidc-idp/oidc-idp-20260914-203755.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] oidc-idp/oidc-idp-20260914.err-203755.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] oidc-idp/oidc-idp-20260914.err.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
@@ -82,6 +89,11 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [SKIP] oidc-idp/oidc-idp-20260919.err.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] oidc-idp/oidc-idp-20260919.jsonl  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] oidc-idp/oidc-idp-20260919.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] oidc-idp/oidc-idp-20260920-142530.err.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] oidc-idp/oidc-idp-20260920-142530.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] oidc-idp/oidc-idp-20260920.err.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] oidc-idp/oidc-idp-20260920.jsonl  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] oidc-idp/oidc-idp-20260920.log  oidc-idp 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] openbase/openbase-20260913.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] openbase/openbase-20260913.jsonl  openbase 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] openbase/openbase-20260913.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
@@ -125,6 +137,19 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [SKIP] openbase/openbase-20260919.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] openbase/openbase-20260919.jsonl  openbase 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] openbase/openbase-20260919.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-014830.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-014830.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-130618.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-130618.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-130908.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-130908.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-131039.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-131039.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-142617.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920-142617.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920.err.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920.jsonl  openbase 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] openbase/openbase-20260920.log  openbase 非 repo_log 源目录（文件名不受白名单约束）
   [OK  ] openllm/openllm-20260914.err.log  适配器可见
   [OK  ] openllm/openllm-20260914.log  适配器可见
   [OK  ] openllm/openllm-20260916.err.log  适配器可见
@@ -137,6 +162,10 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [OK  ] openllm/openllm-20260919-231708.log  适配器可见
   [OK  ] openllm/openllm-20260919.err.jsonl  适配器可见
   [OK  ] openllm/openllm-20260919.log  适配器可见
+  [OK  ] openllm/openllm-20260920-142135.err.jsonl  适配器可见
+  [OK  ] openllm/openllm-20260920-142135.log  适配器可见
+  [OK  ] openllm/openllm-20260920.err.jsonl  适配器可见
+  [OK  ] openllm/openllm-20260920.log  适配器可见
   [OK  ] openmemory/openmemory-20260914.err.log  适配器可见
   [OK  ] openmemory/openmemory-20260914.log  适配器可见
   [OK  ] openmemory/openmemory-20260916.err.log  适配器可见
@@ -149,6 +178,10 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [OK  ] openmemory/openmemory-20260919-231738.log  适配器可见
   [OK  ] openmemory/openmemory-20260919.err.jsonl  适配器可见
   [OK  ] openmemory/openmemory-20260919.log  适配器可见
+  [OK  ] openmemory/openmemory-20260920-142320.err.jsonl  适配器可见
+  [OK  ] openmemory/openmemory-20260920-142320.log  适配器可见
+  [OK  ] openmemory/openmemory-20260920.err.jsonl  适配器可见
+  [OK  ] openmemory/openmemory-20260920.log  适配器可见
   [OK  ] openrag/openrag-20260914-220336.log  适配器可见
   [LEGC] openrag/openrag-20260914.err-220336.log  修复前旧归档命名（历史文件；新命名不再产生）
   [OK  ] openrag/openrag-20260914.err.log  适配器可见
@@ -165,6 +198,28 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [OK  ] openrag/openrag-20260919-232644.jsonl  适配器可见
   [OK  ] openrag/openrag-20260919.err.log  适配器可见
   [OK  ] openrag/openrag-20260919.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-014802.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-014802.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-015024.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-015024.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-015140.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-015140.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-015238.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-015238.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-015351.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-015351.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-113642.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-113642.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-113803.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-113803.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-130542.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-130542.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-131019.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-131019.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920-142228.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-142228.jsonl  适配器可见
+  [OK  ] openrag/openrag-20260920.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920.jsonl  适配器可见
   [SKIP] service-orchestrator/orchestrator-20260901.log  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] service-orchestrator/orchestrator-20260902.log  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] service-orchestrator/orchestrator-20260903.log  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
@@ -176,35 +231,36 @@ frontend    -          frontend-20260920.log          frontend-20260920.err.log 
   [SKIP] service-orchestrator/orchestrator-20260914.log  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] service-orchestrator/orchestrator-20260916.log  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] service-orchestrator/orchestrator-20260919.log  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
+  [SKIP] service-orchestrator/orchestrator-20260920.log  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
   [SKIP] service-orchestrator/service-pids.json  service-orchestrator 非 repo_log 源目录（文件名不受白名单约束）
-  汇总：可见 51 / 跳过 82 / 不可见 0 / 历史旧命名 1
+  汇总：可见 85 / 跳过 104 / 不可见 0 / 历史旧命名 1
 
 ---- ③ 归档命名自检（临时目录内实跑归档路径）----
-2026-09-20 01:23:38 [INFO] openllm 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\openllm\openl
-lm-20260920-012338.log
-2026-09-20 01:23:38 [INFO] openllm 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\openllm\openl
-lm-20260920-012338.err.jsonl
-2026-09-20 01:23:38 [INFO] openrag 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\openrag\openr
-ag-20260920-012338.jsonl
-2026-09-20 01:23:38 [INFO] openrag 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\openrag\openr
-ag-20260920-012338.err.log
-2026-09-20 01:23:38 [INFO] openmemory 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\openmemory
-\openmemory-20260920-012338.log
-2026-09-20 01:23:38 [INFO] openmemory 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\openmemory
-\openmemory-20260920-012338.err.jsonl
-2026-09-20 01:23:38 [INFO] dps 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\dps\dps-20260920-
-012338.log
-2026-09-20 01:23:38 [INFO] dps 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-84935c00\dps\dps-20260920-
-012338.err.jsonl
+2026-09-20 14:40:29 [INFO] openllm 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\openllm\openl
+lm-20260920-144029.log
+2026-09-20 14:40:29 [INFO] openllm 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\openllm\openl
+lm-20260920-144029.err.jsonl
+2026-09-20 14:40:29 [INFO] openrag 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\openrag\openr
+ag-20260920-144029.jsonl
+2026-09-20 14:40:29 [INFO] openrag 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\openrag\openr
+ag-20260920-144029.err.log
+2026-09-20 14:40:30 [INFO] openmemory 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\openmemory
+\openmemory-20260920-144030.log
+2026-09-20 14:40:30 [INFO] openmemory 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\openmemory
+\openmemory-20260920-144030.err.jsonl
+2026-09-20 14:40:30 [INFO] dps 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\dps\dps-20260920-
+144030.log
+2026-09-20 14:40:30 [INFO] dps 上一轮日志已归档：C:\Users\jerry\AppData\Local\Temp\openbase-namecheck-caf931d1\dps\dps-20260920-
+144030.err.jsonl
 [verify_repo_log_naming] 编排器命名校验（8 条）
-  [OK  ] openllm/openllm-20260920-012338.err.jsonl  适配器可见
-  [OK  ] openllm/openllm-20260920-012338.log  适配器可见
-  [OK  ] openrag/openrag-20260920-012338.err.log  适配器可见
-  [OK  ] openrag/openrag-20260920-012338.jsonl  适配器可见
-  [OK  ] openmemory/openmemory-20260920-012338.err.jsonl  适配器可见
-  [OK  ] openmemory/openmemory-20260920-012338.log  适配器可见
-  [OK  ] dps/dps-20260920-012338.err.jsonl  适配器可见
-  [OK  ] dps/dps-20260920-012338.log  适配器可见
+  [OK  ] openllm/openllm-20260920-144029.err.jsonl  适配器可见
+  [OK  ] openllm/openllm-20260920-144029.log  适配器可见
+  [OK  ] openrag/openrag-20260920-144029.err.log  适配器可见
+  [OK  ] openrag/openrag-20260920-144029.jsonl  适配器可见
+  [OK  ] openmemory/openmemory-20260920-144030.err.jsonl  适配器可见
+  [OK  ] openmemory/openmemory-20260920-144030.log  适配器可见
+  [OK  ] dps/dps-20260920-144030.err.jsonl  适配器可见
+  [OK  ] dps/dps-20260920-144030.log  适配器可见
   汇总：可见 8 / 跳过 0 / 不可见 0 / 历史旧命名 0
   [PASS] 归档自检通过：8 个归档文件全部被适配器白名单接受
 

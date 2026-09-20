@@ -80,3 +80,22 @@ def test_openmemory_declares_trusted_proxy_source() -> None:
         "openmemory 未注入 OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES"
     )
     assert PROXY_SOURCE_MEMORY in block, f"openmemory 白名单缺少网关来源 {PROXY_SOURCE_MEMORY}"
+
+
+def test_openbase_declares_rag_identity_injection_policy() -> None:
+    """OpenBase（网关）须**显式声明** rag-proxy 身份注入策略关闭（DEF-BE-147-005 联调口径）.
+
+    OpenRAG 受信入站（M2）对保留租户码（`default`/`openrag-local`）返回 400
+    `BIZ_RESERVED_TENANT_CODE_COLLISION`；改用非保留租户码虽 200，却因租户隔离使既有
+    知识库不可见（`items=[]`）——两方案实测见
+    `doc/test/evidence/v147/def005-multiprobe-20260920.json`。故联调按方案 B 关闭注入。
+
+    本用例为护栏：口径变更必须同步修改编排器与本文档说明，防止被无意改回 true
+    （即「不得静默降级/静默恢复」）。
+    """
+    block = _service_block("openbase")
+
+    assert re.search(r"OPENBASE_RAG_INJECT_IDENTITY_HEADERS\s*=\s*'false'", block), (
+        "openbase 未显式声明 OPENBASE_RAG_INJECT_IDENTITY_HEADERS='false'"
+        "（DEF-BE-147-005 联调口径：rag-proxy 不注入身份头）"
+    )

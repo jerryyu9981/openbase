@@ -1,0 +1,109 @@
+{
+  "openrag": "127.0.0.1:8010",
+  "path": "/api/v1/collections",
+  "results": [
+    {
+      "case": "B0-baseline-source-only",
+      "echo_request_id": "req-def005-bebee1e0",
+      "extra_headers": {},
+      "status": 200,
+      "content_length_header": "5386",
+      "body_bytes": 5386,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"976cdafa-8925-451d-b8a5-c23fea2b36c2\",\"name\":\"smoke_v6_kb_20260914205452\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-14T12:56:32.406420Z\",\"updated_at\":\"2026-09-14T12:56:34.354924Z\"},{\"id\":\"8ff30999-db8e-4001-a7a4-778d89c9684a\",\"name\":\"smoke_v6_kb_20260914204543\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-14T12:46:57.158968Z\",\"updated_at\":\"2026-09-14T12:47:02.422679Z\"},{\"id\":\"01090150-0c35-4514-a9ef-25697b97f557\",\"name\":\"技术文档\",\"description\":null,\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":0,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":0,\"created_at\":\"2026-09-13T13:20:34.899349Z\",\"updated_at\":\"2026-09-13T13:20:34.899349Z\"},{\"id\":\"8bdc064a-fdc2-449b-b0ef-d832cba3adfd\",\"name\":\"smoke_v6_kb_20260913182508\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-13T10:26:31.144093Z\",\"updated_at\":\"2026-09-13T10:26:33.162914Z\"},{\"id\":\"1e39b480-1e25-4bb3-81de-8a1d1047880c\",\"name\":\"smoke_v5_kb_20260913162149\",\"description\":\"smoke v5\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-13T08:22:45.842679Z\",\"updated_at\":\"2026-09-13T08:22:49.346331Z\"},{\"id\":\"03141379-af90-47f0-872d-ce38bb63be80\",\"name\":\"smoke_v5_kb_20260913161535\",\"description\":\"smoke v5\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-13T08:15:47.853129Z\",\"updated_at\":\"2026-09-13T08:16:21.043908Z\"},{\"id\":\"49009904-8b2d-4250-a392-317140a9b427\",\"name\":\"smoke_kb_20260912192112\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-12T11:21:43.234049Z\",\"updated_at\":\"2026-09-12T11:21:45.887229Z\"},{\"id\":\"b1b1a409-bdfa-4de6-9f3f-522277d5936c\",\"name\":\"smoke_kb_20260912191903\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-12T11:19:17.262884Z\",\"updated_at\":\"2026-09-12T11:19:32.722543Z\"},{\"id\":\"1a91f7ea-ae1a-4a3f-8fb5-186a481626ca\",\"name\":\"smoke_kb_f7b0c275\",\"description\":\"smoke v3\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-12T08:36:54.763669Z\",\"updated_at\":\"2026-09-12T08:36:57.081227Z\"},{\"id\":\"ea7075f1-86e4-4374-ac0e-c7aac3ecb4d9\",\"name\":\"smoke_kb_v3_84f9aa\",\"descript...(truncated)",
+      "body_json_code": 0,
+      "body_json_message": "success",
+      "consistency_raw_socket_vs_httpx": false,
+      "httpx_status": 200,
+      "httpx_body_bytes": 5386,
+      "data_shape": {
+        "parsed": false
+      }
+    },
+    {
+      "case": "R1-repro-reserved-tenant-default",
+      "echo_request_id": "req-def005-7c091245",
+      "extra_headers": {
+        "X-User-ID": "admin",
+        "X-Tenant-ID": "default",
+        "X-Org-ID": "default",
+        "X-User-Role": "admin"
+      },
+      "status": 400,
+      "content_length_header": "385",
+      "body_bytes": 385,
+      "body": "{\"code\":\"BIZ_RESERVED_TENANT_CODE_COLLISION\",\"message\":\"reserved tenant code is not allowed on trusted inbound\",\"data\":null,\"detail\":{\"tenant_code\":\"default\",\"reserved_code\":\"default\",\"reserved_codes\":[\"default\",\"openrag-local\"],\"rg_error_code\":\"BIZ-4091\"},\"request_id\":\"req-def005-7c091245\",\"trace_id\":\"f64efee7459d4149b1b68002652747ee\",\"timestamp\":\"2026-09-20T05:06:36.700463+00:00\"}",
+      "body_json_code": "BIZ_RESERVED_TENANT_CODE_COLLISION",
+      "body_json_message": "reserved tenant code is not allowed on trusted inbound",
+      "consistency_raw_socket_vs_httpx": false,
+      "httpx_status": 400,
+      "httpx_body_bytes": 385
+    },
+    {
+      "case": "A1-non-reserved-tenant-openbase",
+      "echo_request_id": "req-def005-49f91b33",
+      "extra_headers": {
+        "X-User-ID": "admin",
+        "X-Tenant-ID": "openbase",
+        "X-Org-ID": "openbase",
+        "X-User-Role": "admin"
+      },
+      "status": 200,
+      "content_length_header": "228",
+      "body_bytes": 228,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":20,\"total_pages\":0},\"trace_id\":\"fa78af9076bf4caa883c29a312a5471a\",\"timestamp\":\"2026-09-20T05:06:36.775000+00:00\",\"request_id\":\"req-def005-49f91b33\"}",
+      "body_json_code": 0,
+      "body_json_message": "success",
+      "consistency_raw_socket_vs_httpx": false,
+      "httpx_status": 200,
+      "httpx_body_bytes": 228,
+      "data_shape": {
+        "parsed": true,
+        "data_type": "dict",
+        "total": 0,
+        "items_count": 0
+      }
+    },
+    {
+      "case": "A2-non-reserved-tenant-openbase-demo",
+      "echo_request_id": "req-def005-d1f88718",
+      "extra_headers": {
+        "X-User-ID": "admin",
+        "X-Tenant-ID": "openbase-demo",
+        "X-Org-ID": "openbase-demo",
+        "X-User-Role": "admin"
+      },
+      "status": 200,
+      "content_length_header": "228",
+      "body_bytes": 228,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":20,\"total_pages\":0},\"trace_id\":\"ca212b2416df4a85b02b7f097b7885c0\",\"timestamp\":\"2026-09-20T05:06:36.849080+00:00\",\"request_id\":\"req-def005-d1f88718\"}",
+      "body_json_code": 0,
+      "body_json_message": "success",
+      "consistency_raw_socket_vs_httpx": false,
+      "httpx_status": 200,
+      "httpx_body_bytes": 228,
+      "data_shape": {
+        "parsed": true,
+        "data_type": "dict",
+        "total": 0,
+        "items_count": 0
+      }
+    },
+    {
+      "case": "B1-no-identity-headers",
+      "echo_request_id": "req-def005-3c6e503c",
+      "extra_headers": {},
+      "status": 200,
+      "content_length_header": "5386",
+      "body_bytes": 5386,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"976cdafa-8925-451d-b8a5-c23fea2b36c2\",\"name\":\"smoke_v6_kb_20260914205452\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-14T12:56:32.406420Z\",\"updated_at\":\"2026-09-14T12:56:34.354924Z\"},{\"id\":\"8ff30999-db8e-4001-a7a4-778d89c9684a\",\"name\":\"smoke_v6_kb_20260914204543\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-14T12:46:57.158968Z\",\"updated_at\":\"2026-09-14T12:47:02.422679Z\"},{\"id\":\"01090150-0c35-4514-a9ef-25697b97f557\",\"name\":\"技术文档\",\"description\":null,\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":0,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":0,\"created_at\":\"2026-09-13T13:20:34.899349Z\",\"updated_at\":\"2026-09-13T13:20:34.899349Z\"},{\"id\":\"8bdc064a-fdc2-449b-b0ef-d832cba3adfd\",\"name\":\"smoke_v6_kb_20260913182508\",\"description\":\"smoke v6\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-13T10:26:31.144093Z\",\"updated_at\":\"2026-09-13T10:26:33.162914Z\"},{\"id\":\"1e39b480-1e25-4bb3-81de-8a1d1047880c\",\"name\":\"smoke_v5_kb_20260913162149\",\"description\":\"smoke v5\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-13T08:22:45.842679Z\",\"updated_at\":\"2026-09-13T08:22:49.346331Z\"},{\"id\":\"03141379-af90-47f0-872d-ce38bb63be80\",\"name\":\"smoke_v5_kb_20260913161535\",\"description\":\"smoke v5\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-13T08:15:47.853129Z\",\"updated_at\":\"2026-09-13T08:16:21.043908Z\"},{\"id\":\"49009904-8b2d-4250-a392-317140a9b427\",\"name\":\"smoke_kb_20260912192112\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-12T11:21:43.234049Z\",\"updated_at\":\"2026-09-12T11:21:45.887229Z\"},{\"id\":\"b1b1a409-bdfa-4de6-9f3f-522277d5936c\",\"name\":\"smoke_kb_20260912191903\",\"description\":\"smoke v4\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-12T11:19:17.262884Z\",\"updated_at\":\"2026-09-12T11:19:32.722543Z\"},{\"id\":\"1a91f7ea-ae1a-4a3f-8fb5-186a481626ca\",\"name\":\"smoke_kb_f7b0c275\",\"description\":\"smoke v3\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"default\",\"document_count\":0,\"chunk_count\":1,\"created_at\":\"2026-09-12T08:36:54.763669Z\",\"updated_at\":\"2026-09-12T08:36:57.081227Z\"},{\"id\":\"ea7075f1-86e4-4374-ac0e-c7aac3ecb4d9\",\"name\":\"smoke_kb_v3_84f9aa\",\"descript...(truncated)",
+      "body_json_code": 0,
+      "body_json_message": "success",
+      "consistency_raw_socket_vs_httpx": false,
+      "httpx_status": 200,
+      "httpx_body_bytes": 5386,
+      "data_shape": {
+        "parsed": false
+      }
+    }
+  ]
+}

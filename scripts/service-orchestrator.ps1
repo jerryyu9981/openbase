@@ -249,6 +249,14 @@ $services = @(
             OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030'
             OPENBASE_DPS_ORG_MAP = '{"org-1":"dps-org-001","tenant-1":"dps-org-001"}'
             OPENBASE_DPS_TENANT_MAP = '{"org-1":"dps-tenant-001","tenant-1":"dps-tenant-001"}'
+            # DEF-BE-147-005（v1.4.7）：rag-proxy **不注入身份头**（仅 X-API-Key +
+            # X-Proxy-Source + X-Request-Id）。原因：OpenRAG 受信入站（M2）对保留租户码
+            # （default/openrag-local）返回 400 BIZ_RESERVED_TENANT_CODE_COLLISION；改用
+            # 非保留租户码则因租户隔离使既有知识库不可见（items=[]，200 但空数据）——
+            # 两方案实测见 doc/test/evidence/v147/def005-multiprobe-20260920.json。
+            # 此处为**显式声明**的联调口径（非静默降级）；「租户码语义对齐」另行登记为
+            # 跨仓/设计议题，设计确认后可回到注入模式（置 true 即可，护栏用例会同步失败提醒）。
+            OPENBASE_RAG_INJECT_IDENTITY_HEADERS = 'false'
         }
         Health  = @('http://127.0.0.1:8000/openapi.json')
         Depends = @('openllm', 'openrag', 'openmemory', 'dps')
