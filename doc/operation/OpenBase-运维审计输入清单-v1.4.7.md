@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 状态 | [Review] |
 | 作者 | DO-OpenBase-Ops |
 | 日期 | 2026-09-20 |
@@ -23,7 +23,7 @@
 | 5 | 问题跟踪记录（主文档） | `doc/operation/OpenBase-问题跟踪记录-v1.4.7.md` | **v1.5.9** | ✅ | 缺陷 5/5 闭环、CR-147-004~006、§3 风险归集检查（终态：总表 v0.5.4）、Step 5 执行登记、唯一遗留项 tag |
 | 6 | 数据运维说明 | `doc/operation/OpenBase-数据运维说明-v1.4.7.md` | v1.0.0 | ✅ | 无 DB schema 变更声明 + 依据 + 缓存/消息说明 + 数据一致性证据索引 |
 | 7 | 部署核验证据 | `doc/test/evidence/v147/deploy-verify-v1.4.7.txt` | — | ✅ | 端口 5432 OPEN / 6379 CLOSED / 8000 CLOSED；后端 8010 `/health` 200（10s）；401/400/docs 契约；实例回收 |
-| 8 | 后端实例日志 | `doc/test/evidence/v147/deploy-uvicorn-8010.log` | — | ✅ | 启动日志（核验实例） |
+| 8 | 后端实例日志 | `doc/test/evidence/v147/deploy-uvicorn-8010.log` | — | ⚠️ 本地留存（**未入库**：被 `.gitignore` 的 `*.log` 规则排除） | 启动日志（核验实例）；如需长期归档须 `git add -f` 或改存 `.txt`，本轮按项目约定不强制入库 |
 | 9 | 前端构建证据 | `doc/test/evidence/v147/ui-build-release-v1.4.7.txt` | — | ✅ | `npm run build` 退出码 0、`built in 1m 41s`、产物清单 |
 | 10 | 全量回归证据 | `doc/test/evidence/v147/regression-fullrun-v1.4.7.txt` | — | ✅ | 29 组逐组计数 + `passed=1008 / failed=0 / skipped=4` |
 | 11 | 全量覆盖率基线证据 | `doc/test/evidence/v147/coverage-fullrun-baseline-v1.4.7.txt` / `.json` | — | ✅ | 包级 TOTAL 87.7%；`settings.py` 100%、`rag_proxy/__init__.py` 93.8% |
@@ -47,3 +47,4 @@
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-20 | DO-OpenBase-Ops | 初始创建：17 项审计输入（含 Step 5 四份正文文档 + 问题跟踪记录 v1.5.9 + 5 类证据）+ 审计范围与排除项 + 待执行项（T3/T4/I5/tag） |
+| v1.0.1 | 2026-09-20 | DO-OpenBase-Ops | **纠错**：第 8 项「后端实例日志」存在性由 ✅ 更正为 ⚠️ 本地留存（该 `.log` 被 `.gitignore` 的 `*.log` 规则排除、**未入库**）并补充归档方式说明，避免审计侧误按「已入库证据」采信 |
