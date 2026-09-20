@@ -1090,9 +1090,10 @@
                                  "releaseNote":  "doc/release/OpenBase-Release-Note-v1.4.7.md（v1.0.0）+ OpenBase-Release-Note-All.md（已追加 v1.4.7 行）",
                                  "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.9，含 Step 5 登记）"
                              },
-                             "remaining":  [
-                                 "Pro 环境监控/告警配置（T3）与蓝绿自动切回演练（T4）",
-                                 "github 远程补齐或正式豁免（F1 / I5 / R5）；README 版本行（F6）与流水线平台化（F5）待人工决定"
+                             "remaining":  [ 
+                                 "T3 Pro 监控/告警配置——建议纳入 v1.5 立项（依赖基础设施；BL-108/OPS-001 P1 跨版本欠账）",
+                                 "T4 Pro 实机蓝绿切流 / 异常切回 / 自动回滚 / 回滚后 15 分钟时限演练——工装已备齐（deploy_pro.ps1 修正 + verify_release.py），待 Pro 承载决策",
+                                 "F5 流水线平台化、F6 README 版本行——P3 观察项，待人工决定" 
                              ],
                              "gate":  "上线发布批准（人工门禁）→ 批准后创建并推送 tag、回填发布计划 §3 与部署报告 §5、更新 lastRelease、全流程闭环审计报告升终版并关闭全流程"
                          },
@@ -1116,6 +1117,33 @@
                                  "releaseNote":  "doc/release/OpenBase-Release-Note-v1.4.7.md（v1.0.1，已发布 Dev）+ OpenBase-Release-Note-All.md"
                              },
                              "gate":  "全流程闭环：Dev 发布完成；Pro 部署与告警、蓝绿演练为后续窗口移交项（T3/T4）"
+                         },
+                         "v1_4_7_ops_tooling_and_exemptions":  {
+                             "status":  "closed",
+                             "date":  "2026-09-20",
+                             "owner":  "DO-OpenBase-Ops / AU-OpenBase-Ops",
+                             "scope":  "发布后收尾：T4-1 部署脚本修正 + T4-2 上线验证自动化 + F1/R5 github 豁免（人工批准）",
+                             "t4_1":  "scripts/deploy_pro.ps1：Version 默认取 project-config.json 的 project.version（原硬编码 1.1.0）；tag 校验改为存在性判空（原按退出码判断，tag 缺失时静默通过）；新增 Green 端口占用检查；末尾提示改为可执行验证命令",
+                             "t4_2":  "新建 scripts/verify_release.py（10 项验证：健康/鉴权门禁/日志检索鉴权/参数契约/文档/OpenAPI/版本可见性/登录成功路径/前端/本地发布基线），退出码 0 = 可切流；配套 tests/test_release_verify.py（18 例，ruff 0 错误）",
+                             "t4_2LiveRun":  "对真实实例 127.0.0.1:8011 实跑：PASS 7 / WARN 1 / INFO 2 / FAIL 0，退出码 0；证据 doc/test/evidence/v147/verify-release-live-v1.4.7.txt / .json",
+                             "processDefect":  "现场运行暴露单测未覆盖缺陷：CLI 传字符串路径而函数期望 Path → 已修（兼容 str|Path）并补回归用例，复跑 18 例通过",
+                             "f1_r5Exemption":  "《OpenBase-版本发布策略总则》v0.5.0 新增 §6.1：正式豁免 github 远程（remote.github 空配置），规定 main+tag 双远程推送与 ls-remote 校验、禁止 --mirror 推 backup、上线验证统一命令、豁免复核时机",
+                             "newFinding":  "R7：openbase.__version__=\"1.0.0\" 与发布版本 v1.4.7 不一致（由版本可见性 WARN 项暴露）→ 建议下版本按正规流程修正，本轮未改生产代码",
+                             "documents":  {
+                                 "releaseStrategy":  "doc/version/global/OpenBase-版本发布策略总则.md（v0.5.0，§6.1 + §6 口径校正）",
+                                 "retro":  "doc/release/OpenBase-发布复盘与问题跟踪记录-v1.4.7.md（v1.0.2，§8 补记 / R5 闭合 / R7 新增 / I5 已执行）",
+                                 "deployAndOnline":  "doc/release/OpenBase-部署执行与上线检查报告-v1.4.7.md（v1.0.2，§2 自动化补充）",
+                                 "rollbackAndOps":  "doc/release/OpenBase-回滚方案与运维手册-v1.4.7.md（v1.0.2，§1.6 验证脚本化 / §3.3 命令 / T4 部分完成）",
+                                 "opsAudit":  "doc/audit/comprehensive/OpenBase-运维审计报告-v1.4.7.md（v1.0.2，F1 闭合 + §6 追记）",
+                                 "opsAuditInput":  "doc/operation/OpenBase-运维审计输入清单-v1.4.7.md（v1.0.3）"
+                             },
+                             "remaining":  [
+                                 "T3 Pro 监控/告警配置（建议 v1.5 立项；依赖 OTLP/Prometheus/告警通道）",
+                                 "T4-3~T4-8 Pro 实机蓝绿切流/异常切回/自动回滚/回滚时限演练（待 Pro 承载决策：当前 Pro 目录无 OpenBase 仓库）",
+                                 "R7 openbase.__version__ 与发布版本对齐（下版本正规流程）",
+                                 "F5 流水线平台化 / F6 README 版本行（P3 观察项）"
+                             ],
+                             "gate":  "v1.4.7 发布闭环后的收尾项：可立即执行部分（T4-1/T4-2/F1-R5）已完成；其余待 Pro 承载决策与版本规划"
                          }
                      },
     "versionCheck":  {

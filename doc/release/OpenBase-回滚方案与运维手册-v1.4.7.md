@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7 |
-| 文档版本 | v1.0.1 |
+| 文档版本 | v1.0.2 |
 | 状态 | **[Approved]**（随 v1.4.7 Dev 发布完成） |
 | 作者 | DO-OpenBase-Ops / OE-OpenBase-Pro |
 | 日期 | 2026-09-20 |
@@ -77,7 +77,7 @@
 | 验证项 | 方法 | 通过标准 | 时限 |
 |--------|------|---------|:----:|
 | 服务健康 | `GET /health` | 200 `{"status":"ok"}` | 回滚后 15 分钟内 |
-| 核心接口 | 冒烟：鉴权门禁 401 / 参数契约 400 / 受保护接口可达 | 契约与回滚前一致 | 同上 |
+| 核心接口 | **`python scripts/verify_release.py --base-url <实例> --expected-version <版本>`**（自动化 10 项） | **退出码 0**（PASS 项全通过；FAIL 项 0） | 同上 |
 | 错误率 / 延迟 | 监控面板（Pro） | 5xx <0.1%、P99 回到基线 | 同上 |
 | 数据一致性 | 无 DB 变更 → 无需数据校验（如发生数据回滚则必须二次备份后校验） | — | — |
 
@@ -135,6 +135,8 @@ Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue
 python scripts/verify_repo_log_naming.py --help
 # 全量回归
 python scripts/run_regression.py --cov
+# 上线验证（10 项，退出码 0 = 可切流；发布 / 切流 / 回滚后统一使用）
+python scripts/verify_release.py --base-url http://127.0.0.1:8000 --expected-version 1.4.7
 # 版本/标签
 git tag -l 'v1.4*'; git ls-remote origin refs/tags/v1.4.7
 ```
@@ -165,7 +167,7 @@ git tag -l 'v1.4*'; git ls-remote origin refs/tags/v1.4.7
 | T1 | 部署执行与上线检查报告 | ✅ | 本批交付（含实环境核验证据） |
 | T2 | 回滚方案 + 演练记录 | ✅ | 本地项 5/5；数据/蓝绿演练不适用说明在案 |
 | T3 | Pro 环境监控/告警配置 | ⚠️ 待执行 | 按 `observability-standards`（RED 指标 + 四级告警）；责任人 `OE-OpenBase-Pro` |
-| T4 | Pro 蓝绿部署与自动切回演练 | ⚠️ 待执行 | `scripts/deploy_pro.ps1 -Env pro -Strategy bluegreen`；须先满足弱密钥校验与 DB 注入 |
+| T4 | Pro 蓝绿部署与自动切回演练 | ⚠️ 部分完成 | **工装已备齐（2026-09-20）**：`scripts/deploy_pro.ps1` 已修正（版本取配置/ tag 真校验/ 端口占用检查）+ **新建 `scripts/verify_release.py`（10 项验证，退出码 0 = 可切流；现场实跑 PASS 7 / WARN 1 / FAIL 0）**；**待执行**：Pro 承载决策后的实机蓝绿切流、异常切回（<30s）、自动回滚触发与回滚后 15 分钟时限演练 |
 | T5 | 备份远程同步核验 | ✅ 已完成 | origin + backup 的 `main` 与 tag `v1.4.7` 均已同步（`main = 8d22302`、`tag = b29ae9e6`，`git ls-remote` 三处 hash 一致）；**本项目未配置 `github` 远程**（`remote.github` 为空串）→ 三远程模板中 github 项 **N/A**（维持豁免，登记 F1/R5）。备份动作采用**非破坏式** `push main + tag`；**未执行 `git push --mirror`**（backup 仓含 `refs/remotes/*`，mirror 语义会删除远端 ref，属破坏性操作） |
 | T6 | 运维手册与排障命令 | ✅ | 本章 §3 |
 | T7 | 数据运维说明 | ✅ | 独立文档（无 DB 变更声明 + 依据） |
@@ -177,3 +179,4 @@ git tag -l 'v1.4*'; git ls-remote origin refs/tags/v1.4.7
 |------|------|--------|------|
 | v1.0.0 | 2026-09-20 | DO-OpenBase-Ops | 初始创建：回滚基线与路径（含 `v1.4.6=bfc0572`、本地 `ac3a5b2`、远端 `738472e` 快进关系）+ 触发条件 + 审批矩阵 + 演练记录（5/5 通过、2 项不适用说明）+ 运维手册（服务/故障/排障/SLO/联系人）+ 移交清单（T3/T4 待执行、T5 github N/A） |
 | v1.0.1 | 2026-09-20 | DO-OpenBase-Ops | **发布后同步**：§4 **T5 升级为「已完成」**——登记 origin + backup 的 `main`/tag 同步实测（`main=8d22302`、`tag=b29ae9e6`）与**非破坏式备份决策**（未执行 `--mirror`，理由：backup 仓含 `refs/remotes/*` 会被删除）；状态置 **[Approved]**；文档版本 v1.0.0 → **v1.0.1** |
+| v1.0.2 | 2026-09-20 | DO-OpenBase-Ops | **回滚验证与移交项同步（T4-1/T4-2 落地）**：§1.6「核心接口」验证改为**自动化脚本** `python scripts/verify_release.py --base-url <实例> --expected-version <版本>`（退出码 0 = 通过）；§3.3 排障命令速查新增该命令；§4 **T4 改记「部分完成」**——工装已备齐（`deploy_pro.ps1` 四项修正 + 新建 `verify_release.py` 10 项验证），Pro 实机切流/切回/自动回滚/回滚时限演练待 Pro 承载决策后执行；文档版本 v1.0.1 → **v1.0.2** |
