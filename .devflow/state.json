@@ -937,9 +937,9 @@
                                  ]
                              },
                              "stillOpen":  [
-                                 "O-2 应用行五字段齐备口径（待人工确认）",
-                                                                  "O-4 文档版本/交叉引用一致性（待后续维护统一）",
-                                 "CR-147-006 待登记候选需求池与跨仓派单"
+                                 "全量套件覆盖率基线（可选，建议 Step 5 联调窗口补跑并出证）",
+                                 "openbase/settings.py 覆盖率 80% 未达 AGENTS.md「新增代码 ≥90%」更严口径（待人工决定是否补测）",
+                                 "openbase-ui/coverage-gate-result.json 归属待确认（忽略规则或归档证据）"
                              ],
                              "gate":  "Step 5（部署与运维）已放行；发布检查通过并创建本仓 tag v1.4.7 前不得宣称已发布"
                          },
@@ -969,6 +969,38 @@
                                  "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.4，§4 未闭项②）"
                              },
                              "gate":  "O-3 已闭合；Step 4 门禁无遗留证据缺口（余 O-2 字段口径、O-4 文档一致性、CR-147-006 三项非阻断）"
+                         },
+                         "v1_4_7_remaining_items_closure":  {
+                             "status":  "closed",
+                             "date":  "2026-09-20",
+                             "approver":  "用户（人工门禁）",
+                             "scope":  "第 1 项 O-2 选 (a) / 第 3、4 项先登记不实施 / 第 8 项推动 DPS 入库 / 第 2、6 项顺手结清",
+                             "items":  {
+                                 "O-2":  "已裁定方案 (a)：维持现行判定口径 + 《测试计划》v1.0.2 §2.2 增列「生命周期类应用行豁免」与以 method/path 是否为空的可执行判别规则；《测试报告》v1.8.0 §7.6 登记；审计报告 v1.0.5 §8 复核闭合",
+                                 "CR-147-006":  "先登记不实施：候选需求池 §1.16（R-387 / R-388，均 P2、目标版本待定）+ 跨仓派单项 doc/planning/OpenBase-CR-147-006-跨仓派单项-v1.0.0.md（待分发）",
+                                 "TD-新增-021":  "经人工裁定本轮不登记（由候选需求池 §1.16 承接；保留版本收口/发布前复核一次）——技术债务总表 v0.5.4",
+                                 "DPS-入库":  "DPS 仓 P1 修正已提交并推送：commit 0954b9a（fix(r384): RequestIdFilter 改挂 handler 级，含 src/logging_setup.py + 护栏 9→10 例）；origin/backup/github main 同 hash（git ls-remote 复核一致）；回填落点：Backlog v1.6.4 BL-147-02、覆盖状态说明 v1.5.1 §2.0、技术债务总表 v0.5.4 语境",
+                                 "O-4":  "经现行文档复核已闭合：DevLogReport-v1.4.7 已升 v1.2.2 且 §4.5 章节存在 → 原两项不一致/引用失配自然消除；同类残项 1 处已修（测试报告 v1.8.0 §7.5「待执行」→「已完成」）",
+                                 "housekeeping":  ".gitignore 第 20 行改为 .coverage*（覆盖 .coverage.increment / .coverage.fullrun-partial 等）；已删除残留 .coverage.increment"
+                             },
+                             "remaining":  [
+                                 "全量套件覆盖率基线（可选，建议 Step 5 联调窗口补跑并出证）",
+                                 "openbase/settings.py 覆盖率 80%（本轮门禁达标，低于 AGENTS.md 新增代码 ≥90% 更严口径）",
+                                 "openbase-ui/coverage-gate-result.json 归属待确认"
+                             ],
+                             "documents":  {
+                                 "testPlan":  "doc/test/OpenBase-测试计划-v1.4.7.md（v1.0.2，§2.2 豁免条款）",
+                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.7.md（v1.8.0）",
+                                 "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md（v1.0.5）",
+                                 "stage4Audit":  "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md（v1.0.3）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.5）",
+                                 "debtLedger":  "doc/version/global/OpenBase-技术债务总表.md（v0.5.4）",
+                                 "candidatePool":  "doc/version/global/OpenBase-候选需求池.md（v0.27.0）",
+                                 "coverageStatus":  "doc/release/OpenBase-R384四仓日志接入覆盖状态说明-v1.4.6.md（v1.5.1）",
+                                 "backlog":  "doc/version/releases/v1.4.7/OpenBase-本版本Backlog-v1.4.7.md（v1.6.4）",
+                                 "dispatch":  "doc/planning/OpenBase-CR-147-006-跨仓派单项-v1.0.0.md（待分发）"
+                             },
+                             "gate":  "Step 4 门禁无遗留证据缺口与观察项；Step 5（部署与运维）进行中，tag v1.4.7 待发布检查通过后创建"
                          }
                      },
     "versionCheck":  {
