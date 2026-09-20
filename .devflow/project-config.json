@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "OpenBase",
-    "version": "1.4.7",
+    "version": "1.4.8",
     "description": "四系统（OpenLLM / OpenRAG / OpenMemory / DPS）及未来类似系统的统一基础设施公共底座框架",
     "lastRelease": "v1.4.7"
   },

@@ -1,7 +1,7 @@
 {
     "project":  "OpenBase",
     "devflowVersion":  "2.18.0",
-    "currentPhase":  "v1_4_7_released",
+    "currentPhase":  "v1_4_8_step_0_pending_approval",
     "completedPhases":  [
                             "step_0_planning",
                             "step_1_requirements",
@@ -72,7 +72,8 @@
                             "v1_4_6_released",
                             "v1_4_7_step_0_planning",
                             "v1_4_7_step_3_development",
-                            "v1_4_7_step_4_testing"
+                            "v1_4_7_step_4_testing",
+                            "v1_4_7_released"
                         ],
     "currentDocuments":  {
                              "test_v1.4.7":  [
@@ -95,6 +96,15 @@
                              "operation_v1.4.7":  [
                                                       "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md"
                                                   ],
+                             "version_v1.4.8":  [
+                                                    "doc/version/releases/v1.4.8/OpenBase-单版本规划文档-v1.4.8.md",
+                                                    "doc/version/releases/v1.4.8/OpenBase-本版本Backlog-v1.4.8.md",
+                                                    "doc/version/releases/v1.4.8/OpenBase-Phase迭代计划-v1.4.8.md",
+                                                    "doc/version/releases/v1.4.8/OpenBase-版本规划评审记录-v1.4.8.md"
+                                                ],
+                             "version_v1.4.9":  [
+                                                    "doc/version/releases/v1.4.9/OpenBase-单版本规划文档-v1.4.9.md"
+                                                ],
                              "version_v1.4.7":  [
                                                     "doc/version/releases/v1.4.7/OpenBase-单版本规划文档-v1.4.7.md",
                                                     "doc/version/releases/v1.4.7/OpenBase-本版本Backlog-v1.4.7.md",
