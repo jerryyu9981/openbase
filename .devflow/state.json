@@ -1057,6 +1057,45 @@
                                  "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.8，§4 未闭项②）"
                              },
                              "gate":  "v1.4.7 测试侧遗留开放项清零（O-3 条件提示、全量回归复核、全量覆盖率基线三项结清）；剩余一项为非门禁的前端运行产物归属确认"
+                         },
+                         "v1_4_7_step_5_release_materials":  {
+                             "status":  "materials_complete",
+                             "date":  "2026-09-20",
+                             "owner":  "DO-OpenBase-Ops / OE-OpenBase-Pro / AU-OpenBase-Ops",
+                             "scope":  "Step 5 部署与运维：入场检查、发布计划、部署执行、上线检查、回滚方案与演练、运维移交、发布复盘、运维审计",
+                             "entryCheck":  "12 项通过；唯一待办为 tag v1.4.7 创建（属上线发布批准人工门禁）；全阶段产出物盘点空输出率 0%",
+                             "versionConsistency":  ".devflow/project-config.json project.version=1.4.7（与待发布版本一致，强制规则 10 无需自动更新）、lastRelease=v1.4.6（发布完成后更新）；state.json devflowVersion=2.18.0（DevFlow 工具版本）；本项目无 devflow-plugin/devflow-config.json",
+                             "deployVerification":  {
+                                 "ports":  "5432 OPEN / 6379 CLOSED（缓存降级容忍）/ 8000 CLOSED",
+                                 "backend":  "uvicorn 127.0.0.1:8010 启动成功，GET /health => 200 {\"status\":\"ok\"}（10s 就绪），实例已回收无残留",
+                                 "endpoints":  "GET /api/v1/modules => 401 AUTH_401；GET /api/v1/logs/search => 401 AUTH_401；POST /api/v1/auth/login {} => 400 PARAM_400（字段级 detail）；GET /docs => 200",
+                                 "frontendBuild":  "npm run build 退出码 0，built in 1m 41s，dist 157 文件 / 3061080 B（node v22.16.0 / npm 10.9.4）",
+                                 "evidence":  ["doc/test/evidence/v147/deploy-verify-v1.4.7.txt", "doc/test/evidence/v147/deploy-uvicorn-8010.log", "doc/test/evidence/v147/ui-build-release-v1.4.7.txt"]
+                             },
+                             "onlineVerification":  "12/12 通过（5 项实环境现场核验 + 7 项 Step 4 证据复验），逐项关联 TT-147-001~010",
+                             "rollbackDrill":  "本地可执行项 5/5 通过（基线 v1.4.6=bfc0572 可解析、单文件可检出、服务启停与端口释放、配置回退等价性、远端 738472e 为本地祖先无分叉）；数据回滚与蓝绿自动切回不适用/待 Pro 窗口（T4）",
+                             "releaseChecklist":  "17 项：9 项通过（含审计复现）、4 项 N/A 附依据（发布脚本等价物 / Changelog 约定 / HTML 产物不适用）、4 项 tag 链阻塞（第 8~12 项）",
+                             "auditResults":  {
+                                 "opsAudit":  "doc/audit/comprehensive/OpenBase-运维审计报告-v1.4.7.md（v1.0.0）：允许进入全流程闭环审计；发现项 F1~F6（F4 tag 为唯一流程阻塞）",
+                                 "fullCycleAudit":  "doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.7.md（v1.0.0）：条件通过——材料与验证齐备，未允许标记已发布（待 tag 链闭合）",
+                                 "antiFabrication":  "5.11b 抽查 3/3 可复现一致（版本号双口径 / tag 未执行如实记录 / Release Note 存在性）"
+                             },
+                             "documents":  {
+                                 "entryAndPlan":  "doc/release/OpenBase-发布入场检查记录与发布计划-v1.4.7.md（v1.0.0）",
+                                 "deployAndOnline":  "doc/release/OpenBase-部署执行与上线检查报告-v1.4.7.md（v1.0.0）",
+                                 "rollbackAndOps":  "doc/release/OpenBase-回滚方案与运维手册-v1.4.7.md（v1.0.0）",
+                                 "retroAndTracking":  "doc/release/OpenBase-发布复盘与问题跟踪记录-v1.4.7.md（v1.0.0，含风险归集检查）",
+                                 "dataOps":  "doc/operation/OpenBase-数据运维说明-v1.4.7.md（v1.0.0）",
+                                 "opsAuditInput":  "doc/operation/OpenBase-运维审计输入清单-v1.4.7.md（v1.0.0，17 项输入）",
+                                 "releaseNote":  "doc/release/OpenBase-Release-Note-v1.4.7.md（v1.0.0）+ OpenBase-Release-Note-All.md（已追加 v1.4.7 行）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.9，含 Step 5 登记）"
+                             },
+                             "remaining":  [
+                                 "tag v1.4.7 创建与推送（origin + backup；本项目无 github 远程）——待上线发布批准（审批人＝用户）",
+                                 "Pro 环境监控/告警配置（T3）与蓝绿自动切回演练（T4）",
+                                 "github 远程补齐或正式豁免（F1 / I5 / R5）；README 版本行（F6）与流水线平台化（F5）待人工决定"
+                             ],
+                             "gate":  "上线发布批准（人工门禁）→ 批准后创建并推送 tag、回填发布计划 §3 与部署报告 §5、更新 lastRelease、全流程闭环审计报告升终版并关闭全流程"
                          }
                      },
     "versionCheck":  {

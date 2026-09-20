@@ -1,0 +1,27 @@
+=== OpenBase v1.4.7 部署核验（2026-09-20 21:50:10）===
+
+--- 1) 依赖端口可达性（TcpClient 等价直连，超时 2s）---
+port 5432 => OPEN
+port 6379 => CLOSED (TimeoutError: timed out)
+port 8000 => CLOSED (TimeoutError: timed out)
+
+--- 2) 启动后端实例（python -m uvicorn openbase.demo_app:app --host 127.0.0.1 --port 8010）---
+uvicorn PID = 5416
+GET /health => 200 {"status":"ok"}
+health ready = True（等待 10s）
+
+--- 3) 核心端点探测（未鉴权 / 空请求体，校验统一错误契约）---
+GET /api/v1/modules => 401 | body={"code":"AUTH_401","message":"missing bearer token","detail":null,"request_id":"req-f6933f891df8"}
+GET /api/v1/logs/search?limit=1 => 401 | body={"code":"AUTH_401","message":"missing bearer token","detail":null,"request_id":"req-7f463dbeebf6"}
+POST /api/v1/auth/login => 400 | body={"code":"PARAM_400","message":"parameter validation error","detail":[{"field":"username","msg":"Field required","input":{}},{"field":"password","msg":"Field required","input":{}}],"request_id":"req-56
+GET /docs => 200 | body=
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swag
+
+--- 4) 停止实例（释放端口，避免残留进程）---
+stopped PID 5416（returncode=1）
+
+=== 核验结束（2026-09-20 21:50:50）===
