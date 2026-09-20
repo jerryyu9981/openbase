@@ -1,7 +1,7 @@
 {
     "project":  "OpenBase",
     "devflowVersion":  "2.18.0",
-    "currentPhase":  "v1_4_7_step_3_development",
+    "currentPhase":  "v1_4_7_step_4_testing",
     "completedPhases":  [
                             "step_0_planning",
                             "step_1_requirements",
@@ -70,7 +70,8 @@
                             "v1_4_6_step_4_testing",
                             "v1_4_6_step_5_operations",
                             "v1_4_6_released",
-                            "v1_4_7_step_0_planning"
+                            "v1_4_7_step_0_planning",
+                            "v1_4_7_step_3_development"
                         ],
     "currentDocuments":  {
                              "test_v1.4.7":  [
@@ -82,8 +83,14 @@
                                                  "doc/test/evidence/v147/bl147-05-sampling.json",
                                                  "doc/test/evidence/v147/bl147-05-chain-consistency.json",
                                                  "doc/test/evidence/v147/bl147-05-jsonl-contract.json",
-                                                 "doc/test/evidence/v147/bl147-05-retrieval.json"
+                                                 "doc/test/evidence/v147/bl147-05-retrieval.json",
+                                                 "doc/test/evidence/v147/bl147-05-tt009-four-repo-rerun.txt"
                                              ],
+                                                          "audit_v1.4.7":  [
+                                     "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md",
+                                     "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.7.md",
+                                     "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md"
+                             ],
                              "operation_v1.4.7":  [
                                                       "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md"
                                                   ],
@@ -870,7 +877,40 @@
                                                                                                   }
                                                                                               }
                                                                               }
-                                                              }
+                                                              },
+                         "v1_4_7_step_4_closure_tt009":  {
+                             "status":  "passed_pending_human_approval",
+                             "date":  "2026-09-20",
+                             "owner":  "AT-OpenBase-Test",
+                             "auditor":  "AU-OpenBase-Test",
+                             "scope":  "TT-147-009 四仓 R-384 专项单测独立复跑（补跑）与 Step 4 门禁收口",
+                             "result":  "四仓合计 36/36 passed（DPS 10 / OpenLLM 7 / OpenMemory 12 / OpenRAG 7，失败 0；与《R384四仓施工派单》§9 回执基线逐仓逐例一致）；判据 4 之① 达成，《测试计划》§2.1 四项判据全达成",
+                             "evidence":  [
+                                 "doc/test/evidence/v147/bl147-05-tt009-four-repo-rerun.txt"
+                             ],
+                             "envAdaptation":  [
+                                 "DPS：测试模块导入路径要求，显式设 PYTHONPATH=src",
+                                 "OpenLLM：沙箱下 conftest 前置 pgAdmin py313 依赖（jwt/cryptography）DLL 冲突，按 pytest 官方选项 --noconftest 执行；该用例不依赖 conftest fixture（已回读源码核验）；四仓文件均未修改"
+                             ],
+                             "documents":  {
+                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.7.md（v1.5.0，含 §7.7 补跑记录）",
+                                 "testCases":  "doc/test/OpenBase-测试用例-v1.4.7.md（v1.1.0）",
+                                 "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md（v1.0.2，判据 4 改为达成、跳过项改记已补跑、证据完整性无缺口）",
+                                 "stage4Audit":  "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md（v1.0.0，结论＝允许进入 Stage 5）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.2）",
+                                 "backlog":  "doc/version/releases/v1.4.7/OpenBase-本版本Backlog-v1.4.7.md（v1.6.2，BL-147-05 无未闭项）"
+                             },
+                             "openObservations":  [
+                                 "O-2 应用行五字段齐备口径（待人工确认）",
+                                 "O-3 覆盖率未实测（待人工决定补测或书面豁免）",
+                                 "O-4 文档版本/交叉引用一致性（待后续维护统一）"
+                             ],
+                             "closedObservations":  [
+                                 "O-1 业务路径样本口径（已消除：22 ≥ 20）",
+                                 "O-5 Step 3 门禁材料（已闭合：材料 2026-09-20 入库）"
+                             ],
+                             "gate":  "Step 4 门禁材料齐备、Stage4 阶段审计结论＝允许进入 Stage 5；放行须经人工批准，且不得将 TD-新增-020 置为已偿还、不得登记 v1.4.6 Phase 6 门禁（M10/M11）为已闭合"
+                         }
                      },
     "versionCheck":  {
                          "lastCheck":  "2026-08-24T00:00:00+08:00",

@@ -1,0 +1,95 @@
+=== TT-147-009 四仓 R-384 专项单测独立复跑（补跑执行，2026-09-20）===
+用例：TT-147-009（《OpenBase-测试用例-v1.4.7》§TT-147-009）
+判据：BL-147-05 判据 4 之①（四仓 R-384 专项单测独立复跑通过）；《R384四仓施工派单》§9 回执要求
+执行角色：AT-OpenBase-Test（测试执行方）；执行方式：逐仓原地复跑，不改动他仓任何文件
+执行解释器：Python 3.10.11（C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\python.exe），pytest 9.1.1
+
+--- [DPS] python -B -m pytest src/tests/test_r384_request_id_filter.py -p no:randomly -p no:cacheprovider -q  (cwd=D:\Trae CN\myproject\Dev\DPS, PYTHONPATH=src) ---
+Python 3.10.11
+..........                                                               [100%]
+10 passed in 6.53s
+
+
+--- [OpenMemory] python -B -m pytest tests/unit/test_r384_logging_contract.py -p no:cacheprovider -q  (cwd=D:\Trae CN\myproject\Dev\OpenMemory) ---
+Python 3.10.11
+............                                                             [100%]
+12 passed in 6.72s
+
+
+--- [OpenRAG] python -B -m pytest tests/unit/test_r384_request_id.py -p no:cacheprovider -q  (cwd=D:\Trae CN\myproject\Dev\OpenRAG) ---
+Python 3.10.11
+============================= test session starts =============================
+platform win32 -- Python 3.10.11, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Trae CN\myproject\Dev\OpenRAG
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.14.2, respx-0.23.1, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=auto, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 7 items
+
+tests\unit\test_r384_request_id.py .......                               [100%]
+
+============================== 7 passed in 3.03s ==============================
+
+
+--- [OpenLLM-标准口径] python -B -m pytest tests/unit/test_r384_request_id_filter.py -p no:cacheprovider -q  (cwd=D:\Trae CN\myproject\Dev\OpenLLM\backend) ---
+Python 3.10.11
+NVML初始化失败: Unknown Error
+ImportError while loading conftest 'D:\Trae CN\myproject\Dev\OpenLLM\backend\tests\conftest.py'.
+tests\conftest.py:245: in <module>
+    app = _create_test_app()
+tests\conftest.py:140: in _create_test_app
+    from app.api.auth import router as auth_router
+app\api\__init__.py:16: in <module>
+    from app.api.openllm_gateway import router as openllm_gateway_router  # DT-211-001: 统一网关
+app\api\openllm_gateway.py:32: in <module>
+    from app.edgerouter.auth import (
+app\edgerouter\__init__.py:34: in <module>
+    from app.edgerouter.auth.jwt_handler import (
+app\edgerouter\auth\__init__.py:5: in <module>
+    from app.edgerouter.auth.jwt_handler import (
+app\edgerouter\auth\jwt_handler.py:16: in <module>
+    import jwt
+D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages\jwt\__init__.py:1: in <module>
+    from .api_jwk import PyJWK, PyJWKSet
+D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages\jwt\api_jwk.py:8: in <module>
+    from .algorithms import get_default_algorithms, has_crypto, requires_cryptography
+D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages\jwt\algorithms.py:23: in <module>
+    from .utils import (
+D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages\jwt\utils.py:7: in <module>
+    from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
+D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages\cryptography\hazmat\primitives\asymmetric\ec.py:11: in <module>
+    from cryptography.exceptions import UnsupportedAlgorithm, _Reasons
+D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages\cryptography\exceptions.py:9: in <module>
+    from cryptography.hazmat.bindings._rust import exceptions as rust_exceptions
+E   ImportError: DLL load failed while importing _rust: 找不到指定的程序。
+
+
+--- [OpenLLM-环境适配口径] python -B -m pytest tests/unit/test_r384_request_id_filter.py --noconftest -p no:cacheprovider -q  (cwd=D:\Trae CN\myproject\Dev\OpenLLM\backend) ---
+============================= test session starts =============================
+platform win32 -- Python 3.10.11, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Trae CN\myproject\Dev\OpenLLM\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, respx-0.23.1, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=auto, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 7 items
+
+tests\unit\test_r384_request_id_filter.py .......                        [100%]
+
+============================== 7 passed in 1.86s ==============================
+
+
+=== 结论（TT-147-009，2026-09-20 补跑）===
+DPS        10 passed  | 命令：python -B -m pytest src/tests/test_r384_request_id_filter.py -p no:randomly -p no:cacheprovider -q（cwd=DPS，PYTHONPATH=src）
+OpenLLM     7 passed  | 命令：python -B -m pytest tests/unit/test_r384_request_id_filter.py --noconftest -p no:cacheprovider -q（cwd=OpenLLM/backend）
+OpenMemory 12 passed  | 命令：python -B -m pytest tests/unit/test_r384_logging_contract.py -p no:cacheprovider -q（cwd=OpenMemory）
+OpenRAG     7 passed  | 命令：python -B -m pytest tests/unit/test_r384_request_id.py -p no:cacheprovider -q（cwd=OpenRAG）
+合计 36/36 passed，唯一失败数为 0；与四仓回执基线 10 / 7 / 12 / 7 = 36 例**逐仓逐例一致**。
+
+调用口径说明（环境适配，非仓内缺陷；未改动四仓任何文件）：
+1. DPS：其测试模块以 `from logging_setup import ...` 导入被测模块，需将仓内 `src` 置入 sys.path，故显式设 `PYTHONPATH=src`。
+2. OpenLLM：其 `tests/conftest.py` 在收集阶段即导入 `app.api` → `app.edgerouter.auth.jwt_handler` → `jwt` / `cryptography`，本沙箱下解析到 `D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages` 的 py313 依赖组合，触发 `cryptography ... _rust` DLL 加载失败（环境依赖冲突，与本用例断言对象无关）。本用例文件 `tests/unit/test_r384_request_id_filter.py` 仅使用模块内 `autouse` fixture（`_restore_root_logging`）与 `app.core.r384_logging` 直接导入，**不依赖 `tests/conftest.py` 的任何 fixture**，故按 pytest 官方选项 `--noconftest` 绕开该环境前置，取得全量 7 例通过；标准口径的失败原文已同步留证（见上）。
+3. OpenMemory / OpenRAG：按仓内既有 pytest 配置直跑，无需适配。
+
+剩余未复跑范围（如实标注，本轮判据范围之外）：
+- 各仓「仓级全量回归」命令（《R384四仓施工派单》§6 所列 ruff / K07 矩阵 / smoke 等）本轮未复跑——TT-147-009 的判据范围为**四仓 R-384 专项单测文件**；
+- 四仓仓级质量由其自身流程与回执负责（《测试计划》§1 偏差声明）。
