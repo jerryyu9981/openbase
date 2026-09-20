@@ -4,8 +4,8 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7 |
-| 文档版本 | v1.0.0 |
-| 状态 | [Review] |
+| 文档版本 | v1.0.1 |
+| 状态 | **[Approved]**（上线发布批准：2026-09-20） |
 | 执行 | DO-OpenBase-Ops / OE-OpenBase-Pro |
 | 日期 | 2026-09-20 |
 | 存放 | doc/release/ |
@@ -73,19 +73,21 @@
 | 依赖风险 | ✅ 本版本无新增第三方依赖（后端无新增；前端 `package-lock.json` 未变更）；Critical 依赖告警沿用既有基线 |
 | TLS / CORS | ⚠️ Dev 环境直连 `127.0.0.1` 无 TLS；Pro 环境按部署架构草案由网关终结 TLS，CORS 白名单在 Pro 配置中显式声明（未在本窗口执行） |
 
-## 5. 发布制品与标签证据（发布时回填）
+## 5. 发布制品与标签证据（已回填）
 
 | 项 | 值 | 验证 |
 |----|----|------|
-| 发布分支 | `main` | 待回填 |
-| 发布 commit | 待回填（发布提交 `chore(v1.4.7): ...`） | 待回填 |
-| 注释标签 | **待创建** `v1.4.7`（需「上线发布批准」） | `git tag -l 'v1.4*'` 现值：v1.4.2~v1.4.6（**无 v1.4.7**） |
-| origin 推送 | 待回填（`git ls-remote origin refs/tags/v1.4.7`） | 待回填 |
-| backup 推送 | 待回填（`git ls-remote backup refs/tags/v1.4.7`） | 待回填 |
-| github 推送 | 待回填（`git ls-remote github refs/tags/v1.4.7`） | 待回填 |
+| 发布分支 | `main` | ✅ `git rev-parse HEAD` = `8d22302c29801131ec981a76a1b868d8b4c192d1` |
+| 发布 commit | **`8d22302`**（`docs(v1.4.7): 运维审计输入清单 v1.0.1（后端日志未入库如实更正）`，2026-09-20 21:59:16） | ✅ 与本地 HEAD 一致 |
+| 注释标签 | **`v1.4.7`** → tag object `b29ae9e6a1fc74cfd9806f1a8fbeb84cf9a638c7`，peel 至 `8d22302`（`git cat-file -t` = `tag`） | ✅ `git rev-parse v1.4.7` / `'v1.4.7^{commit}'` |
+| origin 推送 | `738472e..8d22302  main -> main`；`* [new tag] v1.4.7 -> v1.4.7` | ✅ `git ls-remote origin`：`refs/heads/main = 8d22302`、`refs/tags/v1.4.7 = b29ae9e6` |
+| backup 推送 | `738472e..8d22302  main -> main`；`* [new tag] v1.4.7 -> v1.4.7` | ✅ `git ls-remote backup`：`refs/heads/main = 8d22302`、`refs/tags/v1.4.7 = b29ae9e6` |
+| github 推送 | **N/A** | 本项目**无 `github` 远程**（`git remote -v` 仅 origin + backup；`remote.github` 为空串配置）→ 维持豁免，见《发布复盘与问题跟踪记录》R5/I5 |
+| 备份动作偏差 | 未执行 `git push --mirror`；改以非破坏式 `push main + tag` 完成归档 | backup 仓含 `refs/remotes/*`，mirror 会删除远端 ref（破坏性）——依据登记于《回滚方案与运维手册》§4 T5 |
 
 ## 6. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-20 | DO-OpenBase-Ops | 初始创建：部署执行记录（依赖端口 5432 OPEN / 6379 CLOSED / 8000 CLOSED、后端 8010 健康 200 并回收、前端构建退出码 0 与 dist 明细）+ 上线验证 **12/12**（5 项现场 + 7 项 Step 4 证据复验，关联 TT-147-001~010）+ 监控/日志/告警检查 + 性能/安全上线检查；标签证据待发布时回填 |
+| v1.0.1 | 2026-09-20 | DO-OpenBase-Ops | **标签证据回填**：§5 由「待回填」改为实测值——发布 commit `8d22302`、附注标签 `v1.4.7`（`b29ae9e6` → `8d22302`）、origin/backup 推送输出原文与 `ls-remote` 双远程 hash 一致（`main=8d22302`、`tag=b29ae9e6`）；`github` 项标注 **N/A**（无该远程，维持豁免）；备份动作偏差（未执行 mirror）附依据；状态置 **[Approved]**；文档版本 v1.0.0 → **v1.0.1** |

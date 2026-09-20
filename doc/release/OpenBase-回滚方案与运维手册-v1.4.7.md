@@ -4,8 +4,8 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7 |
-| 文档版本 | v1.0.0 |
-| 状态 | [Review] |
+| 文档版本 | v1.0.1 |
+| 状态 | **[Approved]**（随 v1.4.7 Dev 发布完成） |
 | 作者 | DO-OpenBase-Ops / OE-OpenBase-Pro |
 | 日期 | 2026-09-20 |
 | 存放 | doc/release/ |
@@ -166,7 +166,7 @@ git tag -l 'v1.4*'; git ls-remote origin refs/tags/v1.4.7
 | T2 | 回滚方案 + 演练记录 | ✅ | 本地项 5/5；数据/蓝绿演练不适用说明在案 |
 | T3 | Pro 环境监控/告警配置 | ⚠️ 待执行 | 按 `observability-standards`（RED 指标 + 四级告警）；责任人 `OE-OpenBase-Pro` |
 | T4 | Pro 蓝绿部署与自动切回演练 | ⚠️ 待执行 | `scripts/deploy_pro.ps1 -Env pro -Strategy bluegreen`；须先满足弱密钥校验与 DB 注入 |
-| T5 | 备份远程同步核验 | ✅ 部分 | origin + backup 可达；**本项目未配置 `github` 远程**（`git remote -v` 仅 origin/backup）→ 三远程模板中的 github 项 **N/A**，已在发布复盘中登记为观察项 |
+| T5 | 备份远程同步核验 | ✅ 已完成 | origin + backup 的 `main` 与 tag `v1.4.7` 均已同步（`main = 8d22302`、`tag = b29ae9e6`，`git ls-remote` 三处 hash 一致）；**本项目未配置 `github` 远程**（`remote.github` 为空串）→ 三远程模板中 github 项 **N/A**（维持豁免，登记 F1/R5）。备份动作采用**非破坏式** `push main + tag`；**未执行 `git push --mirror`**（backup 仓含 `refs/remotes/*`，mirror 语义会删除远端 ref，属破坏性操作） |
 | T6 | 运维手册与排障命令 | ✅ | 本章 §3 |
 | T7 | 数据运维说明 | ✅ | 独立文档（无 DB 变更声明 + 依据） |
 | T8 | 发布复盘报告 | ✅ | 独立文档（含风险归集检查） |
@@ -176,3 +176,4 @@ git tag -l 'v1.4*'; git ls-remote origin refs/tags/v1.4.7
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-20 | DO-OpenBase-Ops | 初始创建：回滚基线与路径（含 `v1.4.6=bfc0572`、本地 `ac3a5b2`、远端 `738472e` 快进关系）+ 触发条件 + 审批矩阵 + 演练记录（5/5 通过、2 项不适用说明）+ 运维手册（服务/故障/排障/SLO/联系人）+ 移交清单（T3/T4 待执行、T5 github N/A） |
+| v1.0.1 | 2026-09-20 | DO-OpenBase-Ops | **发布后同步**：§4 **T5 升级为「已完成」**——登记 origin + backup 的 `main`/tag 同步实测（`main=8d22302`、`tag=b29ae9e6`）与**非破坏式备份决策**（未执行 `--mirror`，理由：backup 仓含 `refs/remotes/*` 会被删除）；状态置 **[Approved]**；文档版本 v1.0.0 → **v1.0.1** |

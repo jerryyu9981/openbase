@@ -4,8 +4,8 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓，承接型小版本） |
-| 文档版本 | v1.0.0 |
-| 状态 | [Review] |
+| 文档版本 | v1.1.0 |
+| 状态 | **[Final]**（终版：发布动作完成后复审，允许关闭全流程） |
 | 审计师 | AU-OpenBase-Test / AU-OpenBase-Ops（独立于执行方） |
 | 日期 | 2026-09-20 |
 | 存放 | doc/audit/comprehensive/ |
@@ -80,23 +80,23 @@
 | # | 检查项 | 验证命令 / 方式 | 实际输出 | 审计复验 |
 |:-:|--------|----------------|---------|:--------:|
 | 7 | 发布脚本执行完成 | 本项目**无 `devflow-plugin/release.ps1`**；等价质量门禁为 `run_regression.py`（退出码 0）+ `ruff`（0 错误） | `passed=1008 / failed=0 / skipped=4`；`[OK] ruff` | N/A（等价物已通过，附依据） |
-| 8 | Git Tag 已创建并推送 origin | `git tag -l v1.4.7`；`git ls-remote origin refs/tags/v1.4.7` | **tag 未创建（输出空）**；origin 当前 `refs/heads/main = 738472e`（本地领先 9 提交） | ⛔ **阻塞（未执行，如实记录，非造假）** |
-| 9 | Git Tag 已推送 backup | `git ls-remote backup refs/tags/v1.4.7` | 同上（待 tag 创建后执行；backup 可达，`main = 738472e`） | ⛔ 阻塞（同上） |
+| 8 | Git Tag 已创建并推送 origin | `git tag -l v1.4.7`；`git ls-remote origin refs/heads/main refs/tags/v1.4.7` | **tag 已创建**（附注 `b29ae9e6a1fc74cfd9806f1a8fbeb84cf9a638c7` → `8d22302`）；origin：`refs/heads/main = 8d22302`、`refs/tags/v1.4.7 = b29ae9e6`；推送输出 `738472e..8d22302  main -> main`、`* [new tag] v1.4.7 -> v1.4.7` | ✅ **通过（发布时闭合）** |
+| 9 | Git Tag 已推送 backup | `git ls-remote backup refs/heads/main refs/tags/v1.4.7` | backup：`refs/heads/main = 8d22302`、`refs/tags/v1.4.7 = b29ae9e6`；推送输出同上 | ✅ **通过（发布时闭合）** |
 
 **发布后**
 
 | # | 检查项 | 验证命令 / 方式 | 实际输出 | 审计复验 |
 |:-:|--------|----------------|---------|:--------:|
-| 10 | Tag 存在性验证 | `git tag -l v1.4.7` | 待 tag 创建后执行 | ⛔ 待执行 |
-| 11 | 远程仓库同步验证 | `git ls-remote origin refs/tags/v1.4.7` | 待执行（origin 可达） | ⛔ 待执行 |
-| 12 | 备份仓库同步验证 | `git ls-remote backup refs/tags/v1.4.7` | 待执行（backup 可达） | ⛔ 待执行 |
-| 13 | 版本号一致性验证 | 对比 `project-config.json` / `state.json` | `project.version=1.4.7` 与 `state.json currentPhase=v1_4_7_step_5_operations` 一致；`devflowVersion=2.18.0` 为 DevFlow 工具版本（非发布版本）；**本项目无 `devflow-plugin/devflow-config.json`** | ✅ 一致（附结构说明） |
+| 10 | Tag 存在性验证 | `git tag -l v1.4.7` + `git rev-parse v1.4.7` | 输出 `v1.4.7`；tag object `b29ae9e6`，peel `8d22302` | ✅ 通过 |
+| 11 | 远程仓库同步验证 | `git ls-remote origin refs/tags/v1.4.7` | `b29ae9e6…  refs/tags/v1.4.7`（与本地一致） | ✅ 通过 |
+| 12 | 备份仓库同步验证 | `git ls-remote backup refs/tags/v1.4.7` | `b29ae9e6…  refs/tags/v1.4.7`（与本地一致） | ✅ 通过 |
+| 13 | 版本号一致性验证 | 对比 `project-config.json` / `state.json` | `project.version=1.4.7`、`project.lastRelease=**v1.4.7**`（发布后更新）与 `state.json currentPhase=**v1_4_7_released**` 一致；`devflowVersion=2.18.0` 为 DevFlow 工具版本（非发布版本）；**本项目无 `devflow-plugin/devflow-config.json`** | ✅ 一致（附结构说明） |
 | 14 | Release Note 已生成 | `Test-Path doc/release/OpenBase-Release-Note-v1.4.7.md` | **True**；`OpenBase-Release-Note-All.md` **True**（已含 v1.4.7 行） | ✅ 复现一致 |
 | 15 | Changelog 已更新 | `Select-String 'v1\.4\.\d' README.md` | README **无版本行**；本项目 Changelog 以 `doc/release/OpenBase-Release-Note-All.md` 为准（已更新） | ⚠️ N/A（约定替代，已登记 F6） |
 | 16 | 用户指南 / 用户手册 HTML | `Get-ChildItem '*.html'`（项目根） | **无此类文件**（属 DevFlow 插件产物，本项目不产出；v1.4.6 亦同） | N/A（附依据） |
 | 17 | 候选需求池状态已同步 | 读取《候选需求池》v0.27.0 §1.16 | R-387 / R-388 已登记、**未纳入任何版本** | ✅ 一致 |
 
-**Checklist 汇总：17 项中 9 项 ✅ 通过（含审计复现）、1 项 N/A（脚本等价物）、1 项 N/A（Changelog 约定替代）、1 项 N/A（HTML 产物不适用）、4 项 ⛔ 阻塞/待执行（均为 tag 创建与推送链，须「上线发布批准」）。**
+**Checklist 汇总（终版）：17 项中 13 项 ✅ 通过（含审计复现与发布时闭合的 tag 链）、4 项 N/A（发布脚本等价物 / Changelog 约定替代 / HTML 产物不适用，均附依据）、0 项阻塞 —— 全部闭合。**
 
 ## 6. 遗留问题与风险归集
 
@@ -111,18 +111,25 @@
 
 **风险归集检查：无未归集 P1+ 风险**（TD-新增-020 已偿还；TD-新增-021 裁定不登记并由候选需求池承接；总表 v0.5.4）。
 
-## 7. 审计结论
+## 7. 审计结论（终版）
 
-**条件通过 —— 材料齐备、验证通过、无未闭环 P0/P1、无未归集 P1+ 风险；全流程闭环的最后一步为发布动作本身。**
+**允许关闭全流程 —— v1.4.7 已完成 Dev 发布并闭环。**
 
 | 判定项 | 结论 |
 |--------|------|
-| 是否允许进入发布 | ✅ 允许（发布材料与验证齐备） |
-| 是否允许标记「已发布」 | ⛔ **暂不允许**（`tag v1.4.7` 未创建，Checklist 第 8~12 项未闭合） |
-| 是否允许关闭全流程 | ⛔ **待发布动作完成后关闭**：获「上线发布批准」→ 创建并推送 tag（origin + backup）→ 回填《发布计划》§3 与《部署执行与上线检查报告》§5 → 更新 `.devflow/project-config.json` 的 `lastRelease` → 本报告升版为终版（v1.1.0）后关闭全流程 |
+| 材料齐备 | ✅（Step 0~5 产出物空输出率 0%，追溯链无断点） |
+| 验证通过 | ✅（上线验证 12/12；全量回归 `passed=1008 / failed=0 / skipped=4`；覆盖率 87.7%（修改文件 100% / 93.8%）） |
+| 缺陷与风险 | ✅（P0/P1 遗留 0；无未归集 P1+ 风险；观察项 5/5 闭合） |
+| 发布动作 | ✅ **已完成**：tag `v1.4.7`（`b29ae9e6` → `8d22302`）创建并推送 origin + backup，三处 hash 一致；Release Checklist 第 8~12 项闭合 |
+| 版本一致性 | ✅ `project-config.json`：`version=1.4.7`、`lastRelease=v1.4.7`；`state.json`：`currentPhase=v1_4_7_released` |
+| 发布允许标记 | ✅ **允许标记「已发布（Dev）」** |
+| 全流程关闭 | ✅ **允许关闭**（后续仅剩 Pro 侧移交项 T3/T4 与三项 P3 观察项，不阻塞本版本闭环） |
+
+**遗留（不阻塞闭环）**：T3 Pro 监控/告警配置、T4 Pro 蓝绿与数据回滚演练、F1/R5 `github` 远程豁免（`remote.github` 空配置）、F5 流水线平台化、F6 README 版本行。
 
 ## 8. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-09-20 | AU-OpenBase-Test / AU-OpenBase-Ops | 初始创建：全阶段产出物盘点（空输出率 0%）+ 阶段门禁汇总 + 追溯链闭环检查（无断点）+ **Release Checklist 17 项重放验证与审计复验**（9 项通过 / 4 项 N/A 附依据 / 4 项 tag 链阻塞）+ 遗留风险归集（无未归集 P1+）+ 条件通过结论（发布动作完成后升终版并关闭全流程） |
+| **v1.1.0** | **2026-09-20** | AU-OpenBase-Test / AU-OpenBase-Ops | **终版（发布动作完成后复审，状态 [Final]）**：经「上线发布批准」后执行发布动作——tag `v1.4.7`（附注 `b29ae9e6` → `8d22302`）已创建并**同 `main` 推送 origin + backup**（`738472e..8d22302  main -> main`、`* [new tag] v1.4.7`）；审计侧独立复验 Checklist 第 8~12 项**全部转为 ✅**（本地/ origin / backup 三处 `main` 与 tag hash 一致）；§5 汇总改为 **13 项通过 / 4 项 N/A / 0 项阻塞**；§7 结论由「条件通过」改为 **允许关闭全流程**（允许标记「已发布（Dev）」）；同步核对版本一致性（`project-config.json` `lastRelease=v1.4.7`、`state.json` `currentPhase=v1_4_7_released`）；文档版本 v1.0.0 → **v1.1.0** |
