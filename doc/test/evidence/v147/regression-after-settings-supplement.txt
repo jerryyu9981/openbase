@@ -1,0 +1,8 @@
+# 全量回归复核运行记录（说明性文件，非 pytest 原始输出）
+
+- **目的**：v1.4.7 `settings.py` 覆盖率补测（`tests/test_settings.py` 新增 12 例护栏）后，刷新全量回归用例总数基线（预期 `passed` 996 → 1008）。
+- **命令**：`python scripts/run_regression.py`（stdout/stderr 重定向至本文件）。
+- **运行窗口**：2026-09-20 **20:27:24** 启动，2026-09-20 **20:46:48** 因沙箱执行窗口限制**终止**（项目脚本为分组串行口径，逐组子进程执行耗时较长；受 stdout 块缓冲影响，终止时本文件未落盘可用输出）。
+- **结论**：本次全量复核**未取得结果**（不构成证据）。因此本轮按「**增量面已验证**（`python -m pytest tests/test_settings.py` → 19 passed / 0 failed）+ **回归基线计数 996 → 1008（+12）**」口径登记，依据见《OpenBase-测试报告-v1.4.7》**v1.9.0 §7.10** 与《OpenBase-测试回溯对比审计报告-v1.4.7》**v1.0.6** §5.2。
+- **后续动作**：全量回归复核建议在**联调窗口**（五方服务齐备、无并发覆盖率运行）重跑 `python scripts/run_regression.py`，以刷新 `passed` 基线，并与 v1.4.7 Step 4 基线（`passed=996 / failed=0 / skipped=4`）对账；若计数与 1008 不一致（例如存在环境性失败），须在《OpenBase-测试报告-v1.4.7》新增运行章节中如实登记。
+- **备注**：同窗口内另有一次全量覆盖率口径尝试（`scripts/run_regression.py --cov`）在沙箱内未跑完，其数据文件 `.coverage.fullrun-partial`（中间态 TOTAL 84.9%）已在《OpenBase-测试报告-v1.4.7》v1.7.0 §7.9 标注为**参考值、非权威**。
