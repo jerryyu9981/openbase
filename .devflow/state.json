@@ -1,7 +1,7 @@
 {
     "project":  "OpenBase",
     "devflowVersion":  "2.18.0",
-    "currentPhase":  "v1_4_7_step_4_testing",
+    "currentPhase":  "v1_4_7_step_5_operations",
     "completedPhases":  [
                             "step_0_planning",
                             "step_1_requirements",
@@ -71,7 +71,8 @@
                             "v1_4_6_step_5_operations",
                             "v1_4_6_released",
                             "v1_4_7_step_0_planning",
-                            "v1_4_7_step_3_development"
+                            "v1_4_7_step_3_development",
+                            "v1_4_7_step_4_testing"
                         ],
     "currentDocuments":  {
                              "test_v1.4.7":  [
@@ -910,6 +911,39 @@
                                  "O-5 Step 3 门禁材料（已闭合：材料 2026-09-20 入库）"
                              ],
                              "gate":  "Step 4 门禁材料齐备、Stage4 阶段审计结论＝允许进入 Stage 5；放行须经人工批准，且不得将 TD-新增-020 置为已偿还、不得登记 v1.4.6 Phase 6 门禁（M10/M11）为已闭合"
+                         },
+                         "v1_4_7_step_4_gate_approval":  {
+                             "status":  "approved",
+                             "date":  "2026-09-20",
+                             "approver":  "用户（人工门禁）",
+                             "scope":  "G1 Step 4 门禁放行 + G2 v1.4.6 Phase 6 门禁（M10/M11）与 TD-新增-020 偿还登记",
+                             "baseline":  {
+                                 "criteria":  "《测试计划》§2.1 四项判据全达成（判据 1 业务路径 22/22 = 100%；判据 2 四仓可检索 4/4；判据 3 应用日志行 JSONL 合法率 100%；判据 4 四仓专项单测复跑 36/36 + 本仓 ruff 0 与回归 996/0/4）",
+                                 "defects":  "5/5 闭环，P0/P1 遗留 0",
+                                 "evidence":  "doc/test/evidence/v147/ 14 件（含 bl147-05-tt009-four-repo-rerun.txt）",
+                                 "audit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md（v1.0.3）+ doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md（v1.0.1，结论＝允许进入 Stage 5）"
+                             },
+                             "registration":  {
+                                 "g1":  "Step 4 门禁放行生效（允许进入 Step 5 部署与运维）",
+                                 "g2_phase6_gate":  "v1.4.6 Phase 6 门禁（M10/M11）登记为达成 —— doc/version/releases/v1.4.6/OpenBase-Phase迭代计划-v1.4.6.md v1.3.1 §7/§8",
+                                 "g2_debt":  "TD-新增-020 登记为「已偿还」（待偿还 12→11、已偿还 8→9、总计 21）—— doc/version/global/OpenBase-技术债务总表.md v0.5.3",
+                                 "g3_deferred":  "TD-新增-021 未登记（登记时点仍为版本收口/发布前，待人工决定）",
+                                 "docs":  [
+                                     "doc/test/OpenBase-测试报告-v1.4.7.md（v1.6.0，§7.8 门禁批准登记）",
+                                     "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md（v1.0.3）",
+                                     "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md（v1.0.1）",
+                                     "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.3）",
+                                     "doc/version/releases/v1.4.7/OpenBase-本版本Backlog-v1.4.7.md（v1.6.3）",
+                                     "doc/version/releases/v1.4.7/OpenBase-单版本规划文档-v1.4.7.md（v1.1.0）"
+                                 ]
+                             },
+                             "stillOpen":  [
+                                 "O-2 应用行五字段齐备口径（待人工确认）",
+                                 "O-3 覆盖率补测（本轮同批执行 --cov=openbase 出证）",
+                                 "O-4 文档版本/交叉引用一致性（待后续维护统一）",
+                                 "CR-147-006 待登记候选需求池与跨仓派单"
+                             ],
+                             "gate":  "Step 5（部署与运维）已放行；发布检查通过并创建本仓 tag v1.4.7 前不得宣称已发布"
                          }
                      },
     "versionCheck":  {
