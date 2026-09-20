@@ -156,6 +156,11 @@ $services = @(
     @{
         Name    = 'openmemory'
         Port    = 8020
+        # 服务级健康等待窗口（秒）：本服务 /health 需在四后端初始化（Qdrant/PG/Redis/Neo4j）
+        # 与 CPU 模型预热（CLIP ViT-B/32 + faster-whisper base/int8）之后才可用。
+        # 冷启动实测 48s / 55s / 125s / 137s（2026-09-20 四次样本），全局默认 60s 窗口会误报超时。
+        # 原先仅在注释中声明「健康探测需放宽等待」，未落到代码；此处改为服务级强制生效。
+        HealthWait = 300
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenMemory'
         Command = 'python'
         # complete 模式（Qdrant + PG + Redis + Neo4j 真实后端，依赖 192.168.0.151 共享基础设施）。
@@ -457,12 +462,17 @@ function Start-Service {
         $proc = Start-Process -FilePath $Svc.Command -ArgumentList $Svc.Args -WorkingDirectory $Svc.Cwd -WindowStyle Hidden -RedirectStandardOutput $logTarget.Out -RedirectStandardError $logTarget.Err -PassThru
         Save-Pid $Svc.Name $proc.Id
         Write-Log 'INFO' ("{0} 进程已创建（PID {1}），日志 stdout={2}，stderr={3}" -f $Svc.Name, $proc.Id, $logTarget.Out, $logTarget.Err)
-        Write-Log 'INFO' ("{0} 等待健康检查（超时 {1}s）..." -f $Svc.Name, $HealthTimeout)
-        $deadline = (Get-Date).AddSeconds($HealthTimeout)
+        # 等待窗口：服务级 HealthWait 优先（如 openmemory 冷启动需数分钟），否则用全局 -HealthTimeout。
+        # 修复背景：全局 60s 对冷启动慢的服务必然误报超时（且下游「软依赖未健康」告警会提前触发）。
+        $wait = if ($Svc.HealthWait) { [int]$Svc.HealthWait } else { $HealthTimeout }
+        $waitSource = if ($Svc.HealthWait) { 'service HealthWait' } else { 'global -HealthTimeout' }
+        Write-Log 'INFO' ("{0} 等待健康检查（超时 {1}s，来源：{2}）..." -f $Svc.Name, $wait, $waitSource)
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $deadline = (Get-Date).AddSeconds($wait)
         while ((Get-Date) -lt $deadline) {
             Start-Sleep -Seconds 2
             if (Test-Health $Svc) {
-                Write-Log 'INFO' ("{0} 健康检查通过 ✅（PID {1}，端口 {2}）" -f $Svc.Name, $proc.Id, $Svc.Port)
+                Write-Log 'INFO' ("{0} 健康检查通过 ✅（PID {1}，端口 {2}，冷启动耗时 {3}s）" -f $Svc.Name, $proc.Id, $Svc.Port, [int]$stopwatch.Elapsed.TotalSeconds)
                 return $true
             }
             if ($proc.HasExited) {
@@ -471,7 +481,7 @@ function Start-Service {
                 return $false
             }
         }
-        Write-Log 'WARN' ("{0} 健康检查超时（进程仍在，PID {1}）" -f $Svc.Name, $proc.Id)
+        Write-Log 'WARN' ("{0} 健康检查超时（进程仍在，PID {1}，已等待 {2}s/{3}s）" -f $Svc.Name, $proc.Id, [int]$stopwatch.Elapsed.TotalSeconds, $wait)
         return $false
     }
     finally {
