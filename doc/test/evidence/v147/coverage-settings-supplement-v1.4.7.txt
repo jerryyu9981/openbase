@@ -1,0 +1,103 @@
+﻿...................                                                      [100%]
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.10.11-final-0 _______________
+
+Name                                                    Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------------------
+openbase\__init__.py                                       28     23    18%   34-73
+openbase\cli\__init__.py                                    2      2     0%   3-10
+openbase\cli\main.py                                       78     78     0%   3-288
+openbase\cli\purge.py                                      67     67     0%   18-166
+openbase\compat\__init__.py                                22     22     0%   9-86
+openbase\core\__init__.py                                   2      0   100%
+openbase\core\cache\__init__.py                             0      0   100%
+openbase\core\cache\redis_client.py                       119     89    25%   40, 57-60, 73-80, 94-100, 112-119, 132-135, 140-146, 163-186, 199-206, 222-249
+openbase\core\crud.py                                      34     34     0%   7-78
+openbase\core\db\__init__.py                                3      3     0%   3-6
+openbase\core\db\init.py                                   45     45     0%   3-235
+openbase\core\db\services.py                               24     24     0%   7-45
+openbase\core\db\session.py                                39     39     0%   3-95
+openbase\core\deps\__init__.py                              3      3     0%   3-6
+openbase\core\deps\auth.py                                222    222     0%   3-544
+openbase\core\errors\__init__.py                            4      0   100%
+openbase\core\errors\base.py                               78     65    17%   28-32, 36, 52-54, 74-99, 113-201
+openbase\core\errors\codes.py                              50      0   100%
+openbase\core\errors\registry.py                           19     12    37%   27, 40-48, 53-62
+openbase\core\logging_setup.py                            170    170     0%   35-407
+openbase\core\mask.py                                     130    130     0%   31-380
+openbase\core\models\__init__.py                            3      0   100%
+openbase\core\models\base.py                              168      1    99%   32
+openbase\core\models\business.py                          123      1    99%   21
+openbase\crud.py                                            2      2     0%   6-8
+openbase\crud\__init__.py                                  65     65     0%   3-126
+openbase\demo_app.py                                       64     64     0%   12-174
+openbase\modules\__init__.py                                1      0   100%
+openbase\modules\ai_apps\__init__.py                      140    140     0%   9-257
+openbase\modules\audit\__init__.py                        402    402     0%   8-1066
+openbase\modules\audit\capture_switches.py                 38     38     0%   17-115
+openbase\modules\audit\middleware.py                        2      2     0%   3-5
+openbase\modules\auth\__init__.py                         212    212     0%   7-540
+openbase\modules\auth\api_keys.py                          52     52     0%   8-120
+openbase\modules\auth\jwt.py                               81     81     0%   9-250
+openbase\modules\auth\oidc.py                             297    297     0%   9-600
+openbase\modules\auth\rbac.py                              56     56     0%   7-167
+openbase\modules\config\__init__.py                       153    153     0%   7-320
+openbase\modules\dict\__init__.py                         143    143     0%   3-234
+openbase\modules\dps_proxy\__init__.py                    163    163     0%   20-522
+openbase\modules\frontend\__init__.py                     121    121     0%   16-375
+openbase\modules\frontend\repository.py                    23     23     0%   12-76
+openbase\modules\gateway\__init__.py                       49     49     0%   9-103
+openbase\modules\gateway\aggregate.py                      84     84     0%   8-155
+openbase\modules\gateway\discovery.py                      35     35     0%   7-87
+openbase\modules\gateway\probe.py                          41     41     0%   7-111
+openbase\modules\gateway\providers\__init__.py              0      0   100%
+openbase\modules\gateway\providers\config_probe.py         72     72     0%   11-147
+openbase\modules\gateway\registry.py                       51     51     0%   7-94
+openbase\modules\gateway\router.py                         79     79     0%   8-187
+openbase\modules\gateway\schemas.py                        34     34     0%   3-58
+openbase\modules\identity\__init__.py                     250    250     0%   19-784
+openbase\modules\identity\agent_keys.py                    70     70     0%   8-165
+openbase\modules\identity\agents.py                        39     39     0%   8-113
+openbase\modules\identity\consumer_stub.py                109    109     0%   16-318
+openbase\modules\identity\delegation.py                   152    152     0%   26-532
+openbase\modules\identity\dispatcher.py                    90     90     0%   16-222
+openbase\modules\identity\events.py                        75     75     0%   13-289
+openbase\modules\identity\lifecycle.py                     74     74     0%   13-292
+openbase\modules\identity\migration.py                     43     43     0%   13-146
+openbase\modules\identity\purge.py                        187    187     0%   23-647
+openbase\modules\identity\state_machine.py                 28     28     0%   9-113
+openbase\modules\identity\verification.py                 113    113     0%   26-308
+openbase\modules\llm_proxy\__init__.py                    156    156     0%   17-507
+openbase\modules\logs\__init__.py                           4      4     0%   8-15
+openbase\modules\logs\derivation.py                        65     65     0%   8-148
+openbase\modules\logs\repository.py                       470    470     0%   18-908
+openbase\modules\logs\router.py                            30     30     0%   23-101
+openbase\modules\logs\schemas.py                           47     47     0%   7-73
+openbase\modules\logs\service.py                          156    156     0%   19-465
+openbase\modules\mcp\__init__.py                          119    119     0%   7-288
+openbase\modules\notify\__init__.py                       157    157     0%   3-263
+openbase\modules\observability\__init__.py                 49     49     0%   7-131
+openbase\modules\org\__init__.py                          108    108     0%   3-167
+openbase\modules\protocol_headers\__init__.py               8      0   100%
+openbase\modules\protocol_headers\constants.py             44      9    80%   93-101
+openbase\modules\protocol_headers\dps_code_map.py         110     80    27%   82-83, 93-100, 118-173, 190-219, 241-253
+openbase\modules\protocol_headers\identity_audit.py        95     73    23%   61-64, 69-75, 79-80, 85-88, 99-102, 115-119, 148-152, 164, 198-210, 247-278, 314-322, 348-372
+openbase\modules\protocol_headers\identity_context.py      64     38    41%   27-33, 67, 72, 77, 90-133
+openbase\modules\protocol_headers\inject.py                78     59    24%   50-56, 64-68, 81-88, 95-98, 150-239
+openbase\modules\protocol_headers\role_map.py             147    126    14%   79, 84, 96-111, 116, 147-163, 185-326, 351-371
+openbase\modules\protocol_headers\validate.py              67     46    31%   56-59, 72-75, 80-85, 103-110, 128-141, 160-171, 185-191
+openbase\modules\proxy\__init__.py                        116    116     0%   10-333
+openbase\modules\proxy\memory_proxy.py                    198    198     0%   11-628
+openbase\modules\proxy\upstream_observe.py                 78     78     0%   21-252
+openbase\modules\rag_proxy\__init__.py                    176    176     0%   19-583
+openbase\modules\scheduler\__init__.py                    152    152     0%   3-230
+openbase\modules\storage\__init__.py                      179    179     0%   3-317
+openbase\modules\tenant\__init__.py                       184    184     0%   8-394
+openbase\modules\tenant\middleware.py                       2      2     0%   3-5
+openbase\modules\testing\__init__.py                      183    183     0%   13-402
+openbase\modules\testing\schemas.py                        26     26     0%   9-66
+openbase\modules\users\__init__.py                        154    154     0%   8-304
+openbase\settings.py                                      170      0   100%
+-------------------------------------------------------------------------------------
+TOTAL                                                    8715   7959     9%
+Coverage JSON written to file doc/test/evidence/v147/coverage-settings-supplement-v1.4.7.json

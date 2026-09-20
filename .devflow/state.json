@@ -937,9 +937,8 @@
                                  ]
                              },
                              "stillOpen":  [
-                                 "全量套件覆盖率基线（可选，建议 Step 5 联调窗口补跑并出证）",
-                                 "openbase/settings.py 覆盖率 80% 未达 AGENTS.md「新增代码 ≥90%」更严口径（待人工决定是否补测）",
-                                 "openbase-ui/coverage-gate-result.json 归属待确认（忽略规则或归档证据）"
+                                 "全量套件覆盖率基线（可选；本轮已发起全量回归复核，沙箱窗口未完成前按「增量面已验 + 基线计数 1008」口径登记）",
+                                 "openbase-ui/coverage-gate-result.json 已按前端运行产物纳入 .gitignore（如需作为证据归档请另行指示）"
                              ],
                              "gate":  "Step 5（部署与运维）已放行；发布检查通过并创建本仓 tag v1.4.7 前不得宣称已发布"
                          },
@@ -1001,6 +1000,35 @@
                                  "dispatch":  "doc/planning/OpenBase-CR-147-006-跨仓派单项-v1.0.0.md（待分发）"
                              },
                              "gate":  "Step 4 门禁无遗留证据缺口与观察项；Step 5（部署与运维）进行中，tag v1.4.7 待发布检查通过后创建"
+                         },
+                         "v1_4_7_settings_coverage_supplement":  {
+                             "status":  "closed",
+                             "date":  "2026-09-20",
+                             "owner":  "AT-OpenBase-Test",
+                             "scope":  "O-3 后续：openbase/settings.py 覆盖率 80% -> 100%（AGENTS.md 新增代码 >=90% 更严口径）",
+                             "testsAdded":  "tests/test_settings.py 新增 12 例分支护栏（7 -> 19 例）",
+                             "command":  "python -m pytest tests/test_settings.py --cov=openbase --cov-report=term-missing --cov-report=json:doc/test/evidence/v147/coverage-settings-supplement-v1.4.7.json -q",
+                             "result":  {
+                                 "openbase/settings.py":  "100%（170 语句 / 0 未覆盖）",
+                                 "openbase/modules/rag_proxy/__init__.py":  "94%（保持，未回归）",
+                                 "tests":  "19 passed / 0 failed（退出码 0）",
+                                 "ruff":  "0 错误",
+                                 "regressionBaseline":  "全量回归用例总数基线 996 -> 1008（+12）；全量复核已在沙箱发起，未完成前按增量面口径登记"
+                             },
+                             "implementationNote":  "openbase.settings 在 openbase/__init__.py 中被 Settings 实例遮蔽（settings = get_settings()），测试改用 importlib.import_module 取模块对象；未改动生产代码（纯测试增量）",
+                             "coveredMissingLines":  "70-72, 79（URL 解析）、248-260（JWT 三分支）、300-304/309/314（观测三开关）、321（受信来源）、330-347（K03 白名单）、357/362-371（服务账号映射）、378-381（dps_code_map）、385-390/394（dps_default_* 弃用面）",
+                             "evidence":  [
+                                 "doc/test/evidence/v147/coverage-settings-supplement-v1.4.7.json",
+                                 "doc/test/evidence/v147/coverage-settings-supplement-v1.4.7.txt",
+                                 "doc/test/evidence/v147/regression-after-settings-supplement.txt"
+                             ],
+                             "documents":  {
+                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.7.md（v1.9.0，§7.10）",
+                                 "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md（v1.0.6，§5.2/§8 O-3）",
+                                 "stage4Audit":  "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md（v1.0.4，检查点 3）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.6，§4 未闭项②）"
+                             },
+                             "gate":  "O-3 全部遗留提示清零：两个修改文件（rag_proxy 94% / settings 100%）均达 AGENTS.md >=90% 口径"
                          }
                      },
     "versionCheck":  {
