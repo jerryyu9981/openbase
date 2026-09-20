@@ -903,8 +903,7 @@
                              },
                              "openObservations":  [
                                  "O-2 应用行五字段齐备口径（待人工确认）",
-                                 "O-3 覆盖率未实测（待人工决定补测或书面豁免）",
-                                 "O-4 文档版本/交叉引用一致性（待后续维护统一）"
+                                                                  "O-4 文档版本/交叉引用一致性（待后续维护统一）"
                              ],
                              "closedObservations":  [
                                  "O-1 业务路径样本口径（已消除：22 ≥ 20）",
@@ -939,11 +938,37 @@
                              },
                              "stillOpen":  [
                                  "O-2 应用行五字段齐备口径（待人工确认）",
-                                 "O-3 覆盖率补测（本轮同批执行 --cov=openbase 出证）",
-                                 "O-4 文档版本/交叉引用一致性（待后续维护统一）",
+                                                                  "O-4 文档版本/交叉引用一致性（待后续维护统一）",
                                  "CR-147-006 待登记候选需求池与跨仓派单"
                              ],
                              "gate":  "Step 5（部署与运维）已放行；发布检查通过并创建本仓 tag v1.4.7 前不得宣称已发布"
+                         },
+                         "v1_4_7_step_4_o3_coverage":  {
+                             "status":  "closed",
+                             "date":  "2026-09-20",
+                             "owner":  "AT-OpenBase-Test",
+                             "scope":  "审计观察项 O-3（覆盖率未实测）补测出证",
+                             "command":  "python -m pytest tests/test_bl147_trust_env_wiring.py tests/test_proxy_outbound_matrix.py tests/test_r384_repo_log_naming.py tests/test_rag_proxy.py tests/test_rag_proxy_identity_policy.py tests/test_service_agent_outbound.py tests/test_settings.py --cov=openbase --cov-report=term-missing --cov-report=json:doc/test/evidence/v147/coverage-increment-v1.4.7.json -q",
+                             "coverageFile":  ".coverage.increment",
+                             "exitCode":  0,
+                             "result":  {
+                                 "openbase/modules/rag_proxy/__init__.py":  "94%（176 语句 / 11 未覆盖）",
+                                 "openbase/settings.py":  "80%（170 / 34）",
+                                 "gate":  "满足《testing-stage-execution》Step 4 通过标准第 4 条「修改文件覆盖率 ≥80%」",
+                                 "referenceOnly":  "全量套件口径（python scripts/run_regression.py --cov，分组子进程隔离）在沙箱限定窗口内未跑完，中间态 TOTAL 84.9%（数据文件 .coverage.fullrun-partial），不作为门禁结论"
+                             },
+                             "conditionalNote":  "若按 AGENTS.md「新增代码覆盖率 ≥90%」更严口径逐文件衡量，openbase/settings.py 为 80%（未覆盖行多为与本次变更无关的历史分支）→ 待人工决定是否后续补测",
+                             "evidence":  [
+                                 "doc/test/evidence/v147/coverage-increment-v1.4.7.json",
+                                 "doc/test/evidence/v147/coverage-increment-v1.4.7.txt"
+                             ],
+                             "documents":  {
+                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.7.md（v1.7.0，§7.9）",
+                                 "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.7.md（v1.0.4，§5.2/§8 O-3/§9）",
+                                 "stage4Audit":  "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.7.md（v1.0.2，检查点 3）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.7.md（v1.5.4，§4 未闭项②）"
+                             },
+                             "gate":  "O-3 已闭合；Step 4 门禁无遗留证据缺口（余 O-2 字段口径、O-4 文档一致性、CR-147-006 三项非阻断）"
                          }
                      },
     "versionCheck":  {

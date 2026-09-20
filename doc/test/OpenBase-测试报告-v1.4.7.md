@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.7（四仓日志接入补完 · 日志域收官 · 跨仓） |
-| 文档版本 | v1.6.0 |
+| 文档版本 | v1.7.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test |
 | 创建日期 | 2026-09-19 |
@@ -83,7 +83,8 @@
 
 | 项 | 结论 |
 |----|------|
-| 白盒覆盖率 | 本版本本仓新增/修改代码：`scripts/verify_repo_log_naming.py`（新增，13 例单测覆盖判据与反例）、`openbase/modules/logs/repository.py`（仅注释 + 公开常量导出，无行为变更）；未单独出覆盖率报告（BL-147-04 无业务逻辑新增） |
+| 白盒覆盖率（**2026-09-20 O-3 补测出证**） | 以本版本**增量面导向用例**（`test_rag_proxy_identity_policy.py` 3 例、`test_bl147_trust_env_wiring.py` 4 例、`test_rag_proxy.py`、`test_proxy_outbound_matrix.py`、`test_r384_repo_log_naming.py` 13 例、`test_service_agent_outbound.py`、`test_settings.py`）对 `--cov=openbase` 出证：**`openbase/modules/rag_proxy/__init__.py` 94%**（176 语句 / 11 未覆盖）、**`openbase/settings.py` 80%**（170 / 34）——两者均为本版本**修改文件**，**满足「修改文件覆盖率 ≥80%」门禁**（《testing-stage-execution》Step 4 通过标准第 4 条）。`scripts/verify_repo_log_naming.py` 为脚本件（不在 `openbase` 包内），由 13 例单测覆盖判据与反例；`openbase/modules/logs/repository.py` 本版本仅注释 + 公开常量导出（无行为变更）。证据：`doc/test/evidence/v147/coverage-increment-v1.4.7.json` 与 `coverage-increment-v1.4.7.txt`，详见 §7.9 |
+| 白盒覆盖率（全量套件口径，**参考值、非权威**） | 经项目脚本化分组口径（`python scripts/run_regression.py --cov`，`--cov-append` 累计）启动后，沙箱内分组执行在限定窗口内**未跑完**（**中间态 TOTAL 84.9%**，数据文件 `.coverage.fullrun-partial`，未出报告图证）；**不作为 O-3 结论**，如需全量覆盖率基线，建议 Step 5 前于联调窗口补跑 |
 | 黑盒覆盖差异 | BL-147-05 为**跨仓端到端**验收，其覆盖对象为四仓运行态行为（本仓白盒覆盖率不适用），已以 24 次真实请求 + 四仓原文命中矩阵覆盖（**首轮口径，历史留存**；最终权威口径为 `-PerFamily 10` 的 **40 次抽样（4 族 × 10）**，见 §7.6） |
 
 ## 5. 测试跳过项说明
@@ -291,7 +292,34 @@
 
 **放行后状态**：Step 5（部署与运维）**可启动**；按 `operations-stage-execution` 须产出部署执行报告 / 上线检查报告 / 数据运维说明 / 回滚方案 / 发布计划 / 运维手册 / 发布复盘报告 / 运维审计输入清单等材料，并接受运维审计。**本仓 tag `v1.4.7` 待四仓回执齐备且发布检查通过后创建**（《OpenBase-单版本规划文档-v1.4.7》v1.1.0 §7）。
 
-**仍开放（非阻断，未随本次门禁关闭）**：覆盖率补测（O-3，本轮同批执行 `--cov=openbase` 出证，见 §7.9）；观察项 O-2（应用行字段齐备口径）与 O-4（文档版本/交叉引用一致性）待后续确认与维护；CR-147-006（跨域租户码语义对齐 + OpenRAG 拒绝路径可观测性）待人工确认后登记候选需求池与跨仓派单项。
+**仍开放（非阻断，未随本次门禁关闭）**：覆盖率补测（O-3，**本轮已完成并出证**，见 §7.9：增量面 `rag_proxy/__init__.py` 94%、`settings.py` 80%，满足「修改文件 ≥80%」门禁）；观察项 O-2（应用行字段齐备口径）与 O-4（文档版本/交叉引用一致性）待后续确认与维护；CR-147-006（跨域租户码语义对齐 + OpenRAG 拒绝路径可观测性）待人工确认后登记候选需求池与跨仓派单项。
+
+### 7.9 覆盖率补测（O-3，2026-09-20）
+
+> **性质**：本节为审计观察项 **O-3（覆盖率未实测）** 的补测出证记录，闭合《OpenBase-测试回溯对比审计报告-v1.4.7》§5.2 与 §8 O-3 所记缺口。
+
+**执行口径**
+
+| 项 | 内容 |
+|----|------|
+| 目标 | 出具**修改文件白盒覆盖率**证据，判定是否满足《testing-stage-execution》Step 4 通过标准第 4 条（修改文件覆盖率 ≥80% 或明确不适用说明） |
+| 命令 | `python -m pytest tests/test_bl147_trust_env_wiring.py tests/test_proxy_outbound_matrix.py tests/test_r384_repo_log_naming.py tests/test_rag_proxy.py tests/test_rag_proxy_identity_policy.py tests/test_service_agent_outbound.py tests/test_settings.py --cov=openbase --cov-report=term-missing --cov-report=json:doc/test/evidence/v147/coverage-increment-v1.4.7.json -q` |
+| 环境 | Python 3.10.11 + pytest 9.1.1 + pytest-cov 7.1.0 + coverage 7.15.2；独立覆盖率数据文件（`COVERAGE_FILE=.coverage.increment`），避免与其他运行相互污染 |
+| 退出码 | **0（全通过）** |
+
+**结果（本版本修改文件）**
+
+| 文件 | 语句数 | 未覆盖 | 覆盖率 | 门禁判定 |
+|------|:-----:|:-----:|:-----:|:--------:|
+| `openbase/modules/rag_proxy/__init__.py`（DEF-BE-147-005 策略分支） | 176 | 11 | **94%** | ✅ 达标（≥80%） |
+| `openbase/settings.py`（`rag_inject_identity_headers` 新增开关） | 170 | 34 | **80%** | ✅ 达标（≥80%，恰达阈值） |
+| （参考）`openbase` 包 TOTAL（本组用例口径） | 8715 | 5601 | 36% | —（仅增量面导向用例，非全量口径，**不作为门禁值**） |
+
+**证据**：`doc/test/evidence/v147/coverage-increment-v1.4.7.json`（覆盖率 JSON，可复算）、`doc/test/evidence/v147/coverage-increment-v1.4.7.txt`（`term-missing` 原文，含未覆盖行号）。
+
+**全量套件覆盖率（参考值，非权威）**：同时按项目脚本化口径启动 `python scripts/run_regression.py --cov`（分组子进程隔离 + `--cov-append`），沙箱内分组执行在限定窗口内**未跑完**（中间态 **TOTAL 84.9%**，数据文件 `.coverage.fullrun-partial`），且并发执行覆盖率时出现一次数据文件冲突（`INTERNALERROR ... no such table: file`）——**该结果不作为门禁结论**；如需全量覆盖率基线，建议 Step 5 前于联调窗口单独补跑并出证。
+
+**结论**：**O-3 已闭合**——本版本**修改文件覆盖率 94% / 80%，均满足 ≥80% 门禁**；覆盖率证据已入库、可复算。**附加提示（供人工确认）**：若按 `AGENTS.md`「新增代码覆盖率 ≥90%」的更严口径逐文件衡量，`openbase/settings.py` 为 **80%**（未覆盖行多为与本次变更无关的历史分支），如需对齐该口径，可在后续版本补充该文件的异常分支用例；本轮**不据此判定不达标**（本次门禁口径为《testing-stage-execution》Step 4 标准的「修改文件 ≥80%」）。
 
 ## 8. 修订历史
 
@@ -305,3 +333,4 @@
 | **v1.4.1** | **2026-09-20** | **AT-OpenBase-Test** | **验收数值同步为最终权威口径（`-PerFamily 10` 强化重跑）**：经 `-PerFamily 10` 重跑强化样本量以满足《测试计划》§2.1/§5 的「**≥20 业务路径样本**」（第一轮 `-PerFamily 6` 抽样 24 次、业务路径 13 条 < 20，记为**中间态**，其日志 `logs/v147-bl147-05-rerun.txt` 仅作历史引用），最终权威口径为 **2026-09-20 14:39:33~14:46:56、4 族 × 10 ＝ 40 次抽样、校验退出码 0**（日志 `logs/v147-bl147-05-rerun-perfamily10.txt`，`E2E10_DONE exit=0`）；§7.6 判据与用例数值全量刷新为——业务路径串联 **22 / 命中 22 / 未命中 0 / 命中率 1.0（100%）**（逐族 dps 7/7、rag 5/5、memory 5/5、llm 5/5；探活/豁免路径 **18** 次、命中 11，单列不计入）、抽样 **40/40** 带回 `X-Request-Id`、四仓应用日志行 JSONL 合法率 **100%**（dps 391 / openrag 348 / openmemory 422 / openllm 2786；`status_code` 非数字 0）、`repo_log` 可检索 **4/4**（dps 391 / rag 493 / memory 422 / llm 5200；`request_id` 反查 40 个 id、其中 7 个 0 命中均为探活/豁免样本）、`collections` 五次（seq 11/13/15/17/19）均 200 且 rag 业务路径 **5/5**；元信息「测试结论」与 §7.6 执行概况/判据表/用例表/口径提示同步刷新，§7.6 口径提示①标注「≥20 业务路径样本已满足」，`missing_required` 计数同步刷新（dps 309 / openrag 348 / openmemory 348 / openllm 2732）；**§2 首轮（2026-09-19）历史结果与 §7.1~§7.5 各轮记录原文保留、不改写**；文档版本 v1.4.0 → **v1.4.1** |
 | **v1.5.0** | **2026-09-20** | **AT-OpenBase-Test** | **Step 4 收口：TT-147-009 补跑通过（《测试计划》§2.1 四项判据全达成）**：① 新增 **§7.7 TT-147-009 补跑（2026-09-20）**——逐仓复跑四仓 R-384 专项单测（DPS **10** / OpenLLM **7** / OpenMemory **12** / OpenRAG **7** ＝ **36/36 passed**、失败 0，与四仓回执基线逐仓逐例一致；证据 `doc/test/evidence/v147/bl147-05-tt009-four-repo-rerun.txt`），并如实登记环境适配（DPS `PYTHONPATH=src`；OpenLLM 因沙箱 `tests/conftest.py` 前置 pgAdmin py313 依赖触发 `cryptography ... _rust` DLL 冲突，改用 pytest 官方选项 `--noconftest`，成立条件已回读源码核验——该用例仅模块内 `autouse` fixture + 直接导入 `app.core.r384_logging`、**不依赖 `conftest` fixture**；**未改四仓任何文件**）与未复跑范围（四仓仓级全量回归不属本判据范围，以回执为准）；② **§5 跳过项（TT-147-009）改记「已闭合（2026-09-20 补跑执行）」**，影响列改为「无（原覆盖缺口已闭合）」、批准列标注「已补跑留证；Step 4 放行仍须人工批准」；③ §6 追溯核对 TT-147-009 由「跳过/⚠️」改为「**通过（36/36）/✅**」，层间追溯由「唯一断点」改为「**无断点、无未执行项**（10/10 用例均取得执行证据）」；④ §2 首轮历史表 TT-147-009 行加注「2026-09-20 补跑通过（36/36）」并保留首轮历史口径；⑤ §7.6 口径说明、分项用例结果与结论同步更新为「TT-147-009 已补跑通过 → 四项判据全达成」；⑥ §1 入场检查「`code-logic-review` / Stage3 开发审计」由「本版本未产出 / ⚠️ 偏差」改为「**已产出（2026-09-20 补齐入库）/ ✅（偏差已消除）**」，§6 遗留风险第 4 项改记「**已闭合**」（Step 3 与 Step 4 审计材料均齐备）；⑦ 元信息「测试结论」补充补跑结论与 **Step 4 收口状态**（Step 3 门禁材料 + 本报告 + 测试回溯对比审计报告 v1.0.2 + Stage4 阶段审计报告 v1.0.0 **均已产出**）；文档版本 v1.4.1 → **v1.5.0** |
 | **v1.6.0** | **2026-09-20** | **AT-OpenBase-Test** | **门禁批准登记（G1/G2，人工批准，批准人＝用户）**：① 新增 **§7.8 门禁批准登记与 Step 5 放行**——登记 G1「Step 4 测试通过确认已批准 → 允许进入 Step 5」、G2「v1.4.6 Phase 6 门禁（M10/M11）登记为达成」与 G2「TD-新增-020 登记为『已偿还』」，并写明登记落点与放行后义务；② §5 跳过项「批准」列由「放行仍须人工批准」改为「**已获人工批准（2026-09-20）**」；③ §6 遗留风险第 3 项（门禁与 TD-020 偿还）改记「**已闭合登记**」；④ 元信息「Step 4 收口状态」刷新为 v1.6.0（含人工批准与两项登记结论，Step 5 可启动）；⑤ 全文交叉引用同步审计报告 v1.0.3、Stage4 阶段审计报告 v1.0.1；文档版本 v1.5.0 → **v1.6.0** |
+| **v1.7.0** | **2026-09-20** | **AT-OpenBase-Test** | **O-3 覆盖率补测出证**：① 新增 **§7.9 覆盖率补测（O-3）**——以本版本增量面导向 7 个测试文件对 `--cov=openbase` 出证，结果为**修改文件 `openbase/modules/rag_proxy/__init__.py` 94%（176/11）** 与 **`openbase/settings.py` 80%（170/34）**，**均满足「修改文件覆盖率 ≥80%」门禁**（退出码 0）；证据 `doc/test/evidence/v147/coverage-increment-v1.4.7.json` / `.txt`；并如实登记全量套件口径（`scripts/run_regression.py --cov`）在沙箱限定窗口内**未跑完**（中间态 TOTAL 84.9%，非权威、不作为门禁值）；② §4 覆盖率表由「未单独出覆盖率报告」刷新为「**O-3 补测出证**」两行（增量面 + 全量参考值）；③ §7.8「仍开放」项中 O-3 改记**已完成出证**；④ 附加提示：`settings.py` 80% 未达 `AGENTS.md`「新增代码 ≥90%」更严口径（未覆盖行多为历史分支），交人工确认是否需要后续补测；文档版本 v1.6.0 → **v1.7.0** |
