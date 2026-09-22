@@ -1,0 +1,104 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第十批：第零段工装 5/6/7）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017；TD-148-01 / BL-148-01（第零段基线工装，仅观测）
+
+==================== 一、改动清单（本批） ====================
+
+新增（4 个源/资产文件 + 3 个测试文件）：
+  app/edgerouter/orchestration/attribution_b.py     工装 5：归因 B 工具（去标识 / 打乱可还原 / 判定解析 / 抽样 / 漏检率校准）
+  app/edgerouter/orchestration/golden_set.py        工装 6：固定集加载与校验 + 四维评分量表 + 记录模板
+  app/edgerouter/orchestration/baseline_report.py   工装 7：基线指标汇总 + 报告骨架渲染
+  data/golden_set_v1.json                           固定集数据：**35 条 / 7 场景 / 每组 5 条 / 2 组负例**
+  tests/unit/test_attribution_b_tool.py            13 例
+  tests/unit/test_golden_set_and_scale.py           7 例
+  tests/unit/test_baseline_report_tool.py           7 例
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（三份工装均未实现）--
+命令：python -B -m pytest tests/unit/test_attribution_b_tool.py
+      tests/unit/test_golden_set_and_scale.py tests/unit/test_baseline_report_tool.py
+      -q --confcutdir=tests/unit
+结果：**25 failed**
+  例：Failed: app.edgerouter.orchestration.attribution_b 缺失：工装 5 未实现
+      Failed: app.edgerouter.orchestration.golden_set 缺失：工装 6 未实现
+      Failed: app.edgerouter.orchestration.baseline_report 缺失：工装 7 未实现
+
+-- 2.2 中间态修正（如实登记）--
+首轮实现后复核 RED 用例，发现 2 处**测试本身的**错误并修正：
+  ① `calibrate_miss_rate` 期望值算错（A 判 unused 为 3 条，非 4 条）→ 期望改为 1/3，
+     并在实现中明确口径（分母 = A 判 unused 数；分子 = 其中 B 判 used 数；uncertain 不算，取保守）；
+  ② `judge_fragments` 用例误设「打乱后第 1 个片段即原始第 1 个」→ 改为断言
+     `labels[order[0]] == "used"`（按还原映射校验）。
+
+-- 2.3 GREEN（实现后）--
+结果：**25 passed**
+
+-- 2.4 合并回归（十批合计）--
+命令：python -B -m pytest（15 个测试文件）
+结果：**134 passed**
+
+-- 2.5 静态检查 --
+py_compile attribution_b.py golden_set.py baseline_report.py   → py_compile OK: 0 errors
+ruff check（新增 3 模块 + 3 测试）                              → 首轮 3 条 C420（dict 推导式）→ 改 `dict.fromkeys` 后 **All checks passed!**
+固定集规模核验（脚本实测）：total=35  negatives=10  scenarios=7
+
+==================== 三、实现要点 ====================
+
+1) 工装 5 归因 B 工具（`attribution_b.py`）
+   - `JUDGE_PROMPT_VERSION = "ab-judge-v1"`：**固定判定 prompt 版本**（同输入同种子下 prompt 逐字一致，
+     用例断言）；模型名由调用方固定注入并回填结果（`judge_model`）；
+   - `anonymize_fragments`：手机号 / ≥12 位长数字 / UUID / 邮箱 → 占位符（**去标识**）；
+   - `shuffle_with_mapping`：按种子打乱并返回**还原映射**；`judge_fragments` 判定后
+     **还原为原始片段顺序**（用例断言）；
+   - `parse_judge_output`：仅接受 `used` / `unused` / `uncertain`，非法或缺失一律降级 `uncertain`；
+   - `sample_records`：每轮 ≥30 条（不足则全取，样本量不足由工装 7 记为「不可判定」）；
+   - `calibrate_miss_rate`：以 B 校准 A 的漏检率（保守口径，uncertain 不计入分子）；
+   - **不含任何裁剪 / 改写对话输出逻辑**，不落存片段与回答正文。
+
+2) 工装 6 固定集与评分表（`golden_set.py` + `data/golden_set_v1.json`）
+   - 7 场景矩阵：S1 多轮指代 / S2 记忆召回 / S3 知识库检索 / S4 画像适配 /
+     S5 跨源综合 / **S6 纯闲聊（负例）** / **S7 无历史单轮（负例）**；
+   - 固定集实测 35 条、每场景 5 条、负例 10 条（2 组负例场景）；
+   - `validate_golden_set` 校验规模与结构（场景缺失 / 条目不足 / 负例不足均给出 issues）；
+   - 四维 1~5 分量表 + 记录模板（评分人 / 日期 / 模型版本 / 问题集版本 / `temperature=0`
+     / 复评比例 20% 与间隔 24h）。
+
+3) 工装 7 汇总脚本（`baseline_report.py`）
+   - `summarize_baseline`：记录点位 / 方法 / 样本量 / **WCR 三分比例（含 sum）** /
+     **漏检率区间** / `judgeable` 与 `notes`；
+   - `render_baseline_report`：输出 Markdown 骨架，含要素「方法 / 样本量 / 漏检率 /
+     硬浪费 / 软占用 / 必要占用 / 判定三要素（A 引用检测、B LLM 归因、C 消融）」；
+   - 样本不足（<30）或 WCR 口径缺失 → 显式记「**不可判定**」，不得以缺失数据充当结论。
+
+4) 与派单契约的对应
+   | 契约项 | 落点 | 用例 |
+   |--------|------|:----:|
+   | 每轮抽样 ≥30 条 | `sample_records` | ✅ |
+   | 固定判定 prompt / 版本 | `JUDGE_PROMPT_VERSION` + 稳定性断言 | ✅ |
+   | 片段去标识 + 打乱可还原 | `anonymize_fragments` / `shuffle_with_mapping` / 还原断言 | ✅ |
+   | used / unused / uncertain | `parse_judge_output`（非法降级） | ✅ |
+   | 7 场景 ≥5 条共 ≥35 含 2 负例 | 固定集数据 + `validate_golden_set` | ✅ |
+   | 四维 1~5 分量表 + 记录模板 | `SCORE_DIMENSIONS` / `build_score_record_template` | ✅ |
+   | 报告含方法/样本量/漏检率区间/WCR 三分/判定三要素 | `render_baseline_report` | ✅ |
+
+==================== 四、遗留（未完成） ====================
+
+1) **真实基线数据未产出**：工装 1~7 已就绪，但 B0/B1 报告仍需 `D3`（可用 LLM 上游 + 网关 API Key）
+   确认后实测；当前仅具备「可测」能力，不具备「已测」数据。
+2) 工装 5 的判定模型调用需接入真实模型（`judge_call` 由调用方注入）；本批未接真实上游。
+3) R3（流式回写可行性）端到端实测：属 Step 4。
+4) 「被丢弃项标识」未落回执（属 v1.4.9 第二批裁剪范畴）。
+5) openbase-ui 会话标识提交（D2）：仓库位置未确认，未实施。
+6) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+
+==================== 五、十批累计 ====================
+
+源文件 18 个（新增 7）：`context_manager`、`writeback_queue`、`openllm_gateway`、
+`api/conversations`、`services/{conversation_service,session_scope}`、
+`orchestration/{assembler,history,prompt_pipeline,context_metrics,attribution_b,golden_set,baseline_report,executor,explicit,auto}`、
+`tests/unit/conftest`；数据资产 1 个（`data/golden_set_v1.json`）。
+
+测试文件 14 个（新增用例 125 个），连同既有回写队列用例共 **134 例全绿**。

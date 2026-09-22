@@ -1,0 +1,133 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第五批：第零段工装 2/3/4）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017；TD-148-01（第零段计量工装，仅观测）
+
+==================== 一、改动清单（本批） ====================
+
+新增（2 个）：
+  app/edgerouter/orchestration/context_metrics.py        工装 2 检索快照 / 工装 3 回执 / 工装 4 归因 A
+  tests/unit/test_context_metrics_instrumentation.py     17 例
+
+修改（1 个）：
+  app/api/openllm_gateway.py    编排助手返回 composition/contexts；同步路径构建回执并写入 routing_trace
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（工装模块未实现）--
+命令：python -B -m pytest tests/unit/test_context_metrics_instrumentation.py -q --confcutdir=tests/unit
+结果：13 failed
+  例：Failed: app.edgerouter.orchestration.context_metrics 缺失：第零段计量工装（TD-148-01）未实现
+
+-- 2.2 GREEN（工装 2/3/4 实现后）--
+结果：13 passed
+  覆盖：检索快照条目数/score/实际注入条目与 token（含空数据、list/str 形态）/
+       归因 A 命中与未命中（含中文片段、空回答、命中词项可追溯）/
+       回执维度字段（request_id/session_id/model/created_at）/计量与判定携带/
+       JSON 可导出/**红线（不落 Prompt 全文、回答全文）**
+
+-- 2.3 第二轮 RED（汇总入口 + 落库护栏）--
+运行结果：4 failed
+  FAILED TestReceiptFromResult::test_builds_receipt_with_snapshots_and_attribution
+         AttributeError: module 'app.edgerouter.orchestration.context_metrics'
+         has no attribute 'build_receipt_from_result'
+  FAILED TestReceiptFromResult::test_tolerates_missing_contexts_and_results
+         （同上）
+  FAILED TestGatewayMetricsWiringGuard::test_gateway_builds_receipt
+         AssertionError: 网关须调用计量回执构建入口（工装 3 落库，TD-148-01）
+  FAILED TestGatewayMetricsWiringGuard::test_gateway_writes_receipt_into_routing_trace
+         AssertionError: 回执须写入 routing_trace（可批量导出，AC-148-01-1）
+
+-- 2.4 GREEN（汇总入口 + 落库接线后）--
+命令：同上
+结果：17 passed
+
+-- 2.5 合并回归（五批合计）--
+命令：python -B -m pytest
+      tests/unit/test_context_manager_model_window.py     （F-02）
+      tests/unit/test_writeback_seq_persistence.py        （F-08）
+      tests/unit/test_v213_writeback_queue.py             （既有回写队列）
+      tests/unit/test_session_axis_*.py                   （会话轴 4 文件）
+      tests/unit/test_prompt_pipeline_shared_step.py      （共用步骤）
+      tests/unit/test_context_metrics_instrumentation.py  （本批计量工装）
+      -q --confcutdir=tests/unit -p no:cacheprovider
+结果：72 passed
+
+-- 2.6 静态检查 --
+py_compile app/api/openllm_gateway.py app/edgerouter/orchestration/context_metrics.py
+                                                          → py_compile OK: 0 errors
+ruff check（新增 1 源 + 1 测试）                             → All checks passed!
+ruff check openllm_gateway.py（本次改动区间 500-530 / 1050-1080 / 1850-1885）→ 无条目
+
+==================== 三、实现要点 ====================
+
+1) 工装 2 检索快照（build_retrieval_snapshot）
+   - 条目数、各条 score、**实际进入 prompt 的条目**（按条目正文是否出现在注入文本判定）、
+     注入文本 token（injected_tokens）；
+   - 条目取值口径与 PromptAssembler（content/text/chunk/name + results/documents/memories/items）
+     保持一致，避免两处口径漂移。
+
+2) 工装 4 归因 A（attribution_a + extract_key_terms）
+   - 词项抽取：ASCII 词（≥3 字符）+ 相邻词二元组；CJK 连续段二元组；
+   - 判定规则：**any-hit**（片段任一词项出现在回答即视为被使用）；零额外模型调用；
+   - 保守规则已在模块内文档声明：**只能纵向对比，不得作绝对值解读**（与派单 §5.3 一致）；
+   - 命中词项逐片段可追溯（matched_terms），供报告核查。
+
+3) 工装 3 回执（ContextReceipt / build_receipt / build_receipt_from_result）
+   - 汇总入口 build_receipt_from_result：一次调用完成「检索快照 → 片段切分（按注入上下文逐行）
+     → 归因 A → 回执」，可被网关直接调用；
+   - 回执字段：维度（request_id / session_id / model / created_at）+ 工装 1（prompt_total_tokens /
+     六段分项 / contexts_tokens）+ 工装 2（memory / rag 快照）+ 工装 4（used / unused /
+     used_ratio / matched_terms）；to_json() 便于批量导出。
+
+4) 落库通道（已核实）
+   - 网关同步路径：routing_trace["context_metrics"] = 回执记录；
+   - _save_trace（openllm_gateway.py:1412）执行
+     `trace_record.set_metadata({"mode","pipeline","routing_trace"})` + `db.commit()`
+     → **回执随 routing_trace 落库**；
+   - 查询通道：`/openllm/v1/trace/{request_id}`（既有接口）可读取该 metadata。
+
+5) 红线（AC-148-01-5）
+   - 回执只落计量数值、判定标记与命中的**短词项**；不落 Prompt 全文、不落回答全文、
+     不落令牌/密码/密钥；单元用例显式断言。
+
+==================== 四、遗留（未完成） ====================
+
+1) 第零段工装剩余 3 项：工装 5（归因 B 工具：抽样 ≥30 条、固定判定 prompt 与模型、
+   片段去标识打乱序）、工装 6（固定集与评分表：7 场景 × ≥5 条 ≥35 条 + 四维量表）、
+   工装 7（汇总脚本：由回执导出指标生成基线报告）。
+2) **批量导出**：现可经 `/openllm/v1/trace/{request_id}` 单条查询；按 `request_id` + 会话标识
+   的**批量导出接口尚未实现**（AC-148-01-1 的「批量导出」仅部分满足）。
+3) 流式路径的计量：本批仅在**同步路径**落库；流式端点共用步骤已收敛但未接回执（下一批）。
+4) 三路回写 profile 路纳入编排（TD-148-05 部分）。
+5) 流式路径回写补齐（TD-148-05 部分，R3 可行性未确认）。
+6) conversations.py 会话消息落库与检索对齐会话标识口径。
+7) openbase-ui 会话标识提交（D2）。
+8) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+
+==================== 五、五批累计 ====================
+
+源文件（11 个）：
+  app/services/context_manager.py                    F-02 最长键优先
+  app/services/writeback_queue.py                    next_seq 持久化序号
+  app/api/openllm_gateway.py                         seq/session_id/历史/回写标识/共用步骤/回执落库
+  app/edgerouter/orchestration/assembler.py          历史槽位
+  app/edgerouter/orchestration/history.py            历史构建（新增）
+  app/edgerouter/orchestration/prompt_pipeline.py    共用组装步骤 + 计量（新增）
+  app/edgerouter/orchestration/context_metrics.py    工装 2/3/4（新增）
+  app/edgerouter/orchestration/executor.py           历史注入 + 共用步骤 + composition
+  app/edgerouter/orchestration/explicit.py           history_ctx 透传
+  app/edgerouter/orchestration/auto.py               history_ctx 透传
+  tests/unit/conftest.py                             环境缺陷修复（末位兜底）
+
+测试文件（8 个，新增用例 63 个）：
+  test_context_manager_model_window.py    8
+  test_writeback_seq_persistence.py       3
+  test_session_axis_gateway.py            7
+  test_session_axis_assembler.py          5
+  test_session_axis_history.py            8
+  test_session_axis_prompt_injection.py   6
+  test_prompt_pipeline_shared_step.py     9
+  test_context_metrics_instrumentation.py 17
+  （连同既有回写队列用例共 72 例全绿）

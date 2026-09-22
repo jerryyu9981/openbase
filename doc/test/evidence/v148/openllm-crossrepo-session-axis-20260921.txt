@@ -1,0 +1,119 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第二批：session_id 与会话轴接入）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017（直接实施跨仓代码改动）；TD-148-04 / BL-148-04（R-396）
+
+==================== 一、改动清单（本批） ====================
+
+新增（3 个）：
+  app/edgerouter/orchestration/history.py            历史素材构建模块（第五类素材）
+  tests/unit/test_session_axis_gateway.py            7 例（请求契约 + 历史产出 + 回写会话标识）
+  tests/unit/test_session_axis_assembler.py          5 例（历史槽位位置与缺省兼容）
+  tests/unit/test_session_axis_history.py            8 例（内容选择 + 窗口截取 + 空值语义）
+  （以上为 4 个文件：1 源 + 3 测试）
+
+修改（3 个）：
+  app/api/openllm_gateway.py                         session_id 字段 + 历史产出 + 回写会话标识传递
+  app/edgerouter/orchestration/assembler.py          历史槽位（模板 + render 入参）
+  tests/unit/conftest.py                             环境缺陷修复（见 §五）
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 组装器历史槽位（AC-148-04-4）--
+RED：python -B -m pytest tests/unit/test_session_axis_assembler.py -q --confcutdir=tests/unit
+     结果：4 failed, 1 passed
+     - AssertionError: PromptAssembler.render 缺少 history_ctx 入参
+       （实际入参集：{'memory_ctx','profile_ctx','query','rag_ctx','self','system_prompt'}）
+     - TypeError: PromptAssembler.render() got an unexpected keyword argument 'history_ctx'（×3）
+GREEN：13 passed（含历史构建 8 例）
+
+-- 2.2 历史素材构建（AC-148-04-3）--
+RED：模块 app/edgerouter/orchestration/history.py 不存在 → 8 例全部 pytest.fail
+     （"app.edgerouter.orchestration.history 缺失：会话轴历史构建模块（TD-148-04）未实现"）
+GREEN：8 passed（多轮内容选择 / 角色标签 / 单轮 None / 空列表 None / 窗口丢最旧保最近 /
+       预算内不超窗 / 无预算纳入全部 / 兼容对象形态消息）
+
+-- 2.3 网关契约与回写会话标识（AC-148-04-2 / AC-148-06-1）--
+RED：python -B -m pytest tests/unit/test_session_axis_gateway.py -q --confcutdir=tests/unit
+     结果：4 failed, 3 passed
+     - AssertionError: OpenLLMChatRequest 须声明 session_id 字段（可选，AC-148-04-2）
+     - AttributeError: 'OpenLLMChatRequest' object has no attribute 'session_id'
+     - AssertionError: 归一化须返回历史素材（第五类素材，AD-03）
+     - TypeError: _build_writeback_callback() got an unexpected keyword argument 'session_id'
+GREEN：7 passed
+
+-- 2.4 合并回归 --
+命令：python -B -m pytest tests/unit/test_context_manager_model_window.py
+      tests/unit/test_writeback_seq_persistence.py tests/unit/test_v213_writeback_queue.py
+      tests/unit/test_session_axis_gateway.py tests/unit/test_session_axis_assembler.py
+      tests/unit/test_session_axis_history.py -q --confcutdir=tests/unit -p no:cacheprovider
+结果：39 passed（F-02 8 例 + F-08 3 例 + 既有回写队列 + 会话轴 20 例）
+
+-- 2.5 静态检查 --
+py_compile app/api/openllm_gateway.py app/edgerouter/orchestration/assembler.py
+           app/edgerouter/orchestration/history.py app/services/writeback_queue.py
+           tests/unit/conftest.py                      → py_compile OK: 0 errors
+ruff check（新增 1 源 + 3 测试 + conftest）             → 首轮 1 条 UP035（已修）→ All checks passed!
+
+==================== 三、实现要点 ====================
+
+1) 请求契约（AC-148-04-2）
+   OpenLLMChatRequest 新增 `session_id: str | None = Field(None, ...)`（可选，缺省 None）。
+   缺省时不改变既有调用方行为；显式传入时原样保留。
+
+2) 会话轴历史素材（AD-02 / AD-03）
+   - 新增 history.build_history_ctx(messages, max_tokens, count_tokens)：
+     排除当前 query（最后一条 user 消息）→ 取此前全部轮次 → 按「role: content」逐行渲染；
+     超预算时**丢最旧保最近**；无历史返回 None。
+   - 网关新增 _history_budget_tokens / _build_history_for_request：
+     预算 = (模型窗口 − 输出预留) × 安全余量（0.2）；模型窗口取 F-02 修正后的
+     resolve_model_context_key（日期化模型名可正确取窗）；计数器用 ContextManager.count_tokens。
+   - _normalize_request 返回值由 4 元组扩为 5 元组（新增 history_ctx），三条返回路径
+     （openai / explicit / auto）均已同步；两处调用点同步解包。
+
+3) 组装器历史槽位（AC-148-04-4）
+   PromptAssembler.DEFAULT_TEMPLATE 新增 `[会话历史]` 段，位置固定为
+   System + 画像 + 记忆 + 知识库 + **[历史]** + Query；render 新增 history_ctx 入参；
+   历史为空时不注入，输出与 v1.4.7 完全一致（用例 test_empty_history_not_injected 断言）。
+
+4) 回写会话标识（AC-148-06-1）
+   _build_writeback_callback(identity, request_id, session_id=None)：
+   base_kwargs["session_id"] = session_id or identity.user_id；编排侧调用点传入
+   `chat_req.session_id` → 传入真实会话标识时不再以 user_id 顶替；缺省仍退化为按用户记账。
+
+==================== 四、遗留（未完成，非本批范围） ====================
+
+1) **历史尚未注入实际 Prompt**：本批已产出历史素材并在两路径记录 DEBUG 日志，但真正注入
+   尚需两处接线——
+   - 同步路径：`_build_gateway_request`（app/api/openllm_gateway.py:1131）当前只发单条
+     USER 消息（F-07 现场）；历史须经编排器（AutoOrchestrator / ExplicitOrchestrator）
+     传入 PipelineExecutor.execute → assembler.render(history_ctx=...)；
+   - 流式路径：`PromptAssembler().render(...)`（app/api/openllm_gateway.py:2002 附近）
+     增加 `history_ctx=history_ctx` 一行即可（变量已在作用域内）。
+   因此 AC-148-04-1（多轮指代能正确利用历史）**尚未满足**。
+
+2) 三路回写 profile 路纳入编排（TD-148-05 部分，_build_writeback_callback 仍返回 2 路）。
+3) 流式路径回写补齐（TD-148-05 部分，R3 可行性）。
+4) 双路径收敛（TD-148-03，含流式自建组装副本）。
+5) 第零段基线工装（TD-148-01，7 项，仅观测）。
+6) conversations.py 会话消息落库与检索对齐会话标识口径。
+7) openbase-ui 会话标识提交（D2）。
+8) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+
+==================== 五、环境缺陷修复（tests/unit/conftest.py） ====================
+
+现象：所有经网关 / 编排链路导入的单测在**收集期**报
+      ImportError: DLL load failed while importing _rust（cryptography 原生扩展）
+根因：conftest 将 pgAdmin site-packages 与 backend/.pylib 以 insert(0)/insert(1) 置于
+      sys.path **首位/次位**，二者自带与本机解释器 ABI 不匹配的 cryptography，
+      遮蔽了虚拟环境中可用且正常的 cryptography / jwt / sqlalchemy。
+证据：python -B -c "import jwt, cryptography, sqlalchemy" → 三者在虚拟环境均正常导入；
+      tests/unit/test_openllm_gateway.py 修复前 28 errors（全部 DLL 失败）。
+处置：两处均改为 `sys.path.append(...)`（末位兜底）：保留「本机缺包时补缺」能力，
+      不再遮蔽可用实现。
+效果：test_openllm_gateway.py 由 **28 errors（收集期 DLL 失败）** → 仅剩
+      `fixture 'client' not found`（因 `--confcutdir=tests/unit` 未加载父级 conftest）
+      → 本次会话轴 20 例与回写/F-02 共 39 例可**真实运行并全部通过**。
+范围声明：仅改 tests/unit/conftest.py；**未**改 tests/conftest.py（其 .pylib 本就为末位，
+      仅 pgAdmin 为首位注入；改动会影响全仓导入解析，风险超出本次范围，遗留待评估）。

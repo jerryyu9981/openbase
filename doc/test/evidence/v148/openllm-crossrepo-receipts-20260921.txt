@@ -1,0 +1,98 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第八批：同步路径逐路回执 + 回执查询接口）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017；TD-148-05 / BL-148-05（AC-148-05-2 回执覆盖率与「可查」）
+
+==================== 一、改动清单（本批） ====================
+
+修改（3 个源文件）：
+  app/services/writeback_queue.py            新增 WritebackStore.list_rows（按会话/请求/通道查询回执）
+  app/edgerouter/orchestration/executor.py   ① ExecuteResult 新增 writeback_receipt
+                                             ② 三路统一经 _schedule_writeback 调度（rag 由内联任务改为共用入口）
+                                             ③ _writeback_with_retry 按回调返回值记录受理状态
+  app/api/openllm_gateway.py                 ① 编排助手返回三路回执
+                                             ② 同步路径把回执写入 routing_trace["writeback"]
+                                             ③ 新增回执查询端点 GET /openllm/v1/writeback/receipts
+
+测试（1 新增，+10 例）：
+  tests/unit/test_writeback_receipts.py
+    TestWritebackStoreListRows（4 例）：三路留痕 / 按请求筛选 / limit / 无匹配返回空
+    TestExecutorWritebackReceipt（3 例）：三路 accepted / 幂等命中记 duplicated / 异常记 failed 且不影响主链路
+    TestReceiptQueryEndpointGuard（2 例）：查询端点已注册 / 同步路径写回执（源码护栏）
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（实现前）--
+命令：python -B -m pytest tests/unit/test_writeback_receipts.py -q --confcutdir=tests/unit
+结果：8 failed, 2 passed
+  FAILED test_lists_three_roads_for_session / test_filters_by_request_id / test_respects_limit /
+         test_returns_empty_when_no_match
+         AttributeError: 'WritebackStore' object has no attribute 'list_rows'
+  FAILED test_records_accepted_for_three_roads / test_records_duplicated_on_idempotent_hit /
+         test_records_failed_when_callback_raises
+         AttributeError: 'ExecuteResult' object has no attribute 'writeback_receipt'
+  FAILED test_query_endpoint_registered
+         AssertionError: 须提供回写回执查询接口（AC-148-05-2：受理状态 / 投递序号可查）
+  （2 passed = asyncio 自检 + 同步路径回执源码护栏，后者因流式批次已引入同名局部变量而先行满足）
+
+-- 2.2 GREEN（实现后）--
+结果：10 passed
+
+-- 2.3 合并回归（八批合计）--
+命令：python -B -m pytest（11 个测试文件）
+结果：99 passed
+
+-- 2.4 静态检查（含对前批遗留问题的修复）--
+首轮 ruff 报 2 条：
+  app/edgerouter/orchestration/executor.py:32 F821 Undefined name `PromptComposition`
+    → 第四批引入的字符串注解未导入；本批修复：新增 TYPE_CHECKING 惰性导入
+  app/services/writeback_queue.py:293 B905 zip() without explicit `strict=`
+    → 本批新增代码；修复：zip(..., strict=False)
+复检：ruff `All checks passed!`；py_compile `0 errors`
+
+==================== 三、实现要点 ====================
+
+1) 同步路径逐路回执（AC-148-05-2）
+   - 执行器新增 `ExecuteResult.writeback_receipt`，由异步回写任务在完成时填充：
+     True→accepted / False→duplicated / 其他→submitted / 最终失败→failed(+reason)；
+   - 三路（memory / rag / profile）**统一经 `_schedule_writeback`** 调度
+     （原 rag 走内联任务，现与 memory/profile 同入口，保证回执一致采集）；
+   - 编排助手 `_run_orchestrated_chat` 把回执带回网关，同步路径写入
+     `routing_trace["writeback"]`。
+
+2) 回执查询接口（AC-148-05-2「可查」）
+   - `WritebackStore.list_rows(session_id=, request_id=, target=, limit=)`：
+     **参数化**查询队列表（status + seq + retry_count + 时间），不返回 payload 正文；
+   - 端点 `GET /openllm/v1/writeback/receipts`：按会话 / 请求 / 通道查询，
+     三路均在同一队列留痕 → 回执覆盖率对三路成立；队列不可用时返回
+     `{"items": [], "total": 0, "note": "writeback_queue_unavailable"}`（降级不报错）。
+
+3) 权威状态口径（重要）
+   - **权威来源**＝回写队列表（`writeback_queue.status/seq`），经查询接口读取；
+   - `routing_trace["writeback"]` 为**尽力而为**快照：同步路径的填充依赖异步任务完成时机，
+     流式路径为逐路实时记录。二者互补，判定以队列表为准。
+
+4) 过程偏差（如实登记）
+   本批中途一次编辑误删 `max_seq` 的 docstring 首行，在下一处编辑前发现并立即修正
+   （未进入测试环节；py_compile 与用例均通过）。
+
+==================== 四、遗留（未完成） ====================
+
+1) 第零段工装剩余 3 项：工装 5（归因 B 工具）、工装 6（固定集与评分表）、工装 7（汇总脚本）。
+2) R3（流式回写可行性）端到端实测：需真实上游 + 真实队列 + 重启对照，属 Step 4 范围，未执行。
+3) 「被丢弃项标识」未落回执（当前无丢弃逻辑，属 v1.4.9 第二批裁剪相关）。
+4) conversations.py 会话消息落库与检索对齐会话标识口径。
+5) openbase-ui 会话标识提交（D2）。
+6) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+7) 本仓 Step 3 文档按 VC-017 变更后的交付形态改写收口（尚未执行）。
+
+==================== 五、八批累计 ====================
+
+源文件（12 个，其中新增 3）：
+  app/services/context_manager.py、writeback_queue.py
+  app/api/openllm_gateway.py
+  app/edgerouter/orchestration/{assembler,history,prompt_pipeline,context_metrics,executor,explicit,auto}.py
+  tests/unit/conftest.py
+
+测试文件（10 个）：新增用例 90 个，连同既有回写队列用例共 **99 例全绿**。

@@ -1,0 +1,143 @@
+{
+  "base_url": "http://127.0.0.1:8041",
+  "concurrency": 1,
+  "rate_limit_per_second": 0.0,
+  "samples_per_metric": 200,
+  "warmup": 1,
+  "conversation_id": "41fceb1f-0cda-4d16-b639-6d77647310ac",
+  "read_endpoints": [
+    {
+      "metric": "P-6 回执查询",
+      "target": "见《非功能设计说明-v1.4.8》v1.1.0 §1.1.2",
+      "samples": 200,
+      "ok": 200,
+      "errors": 0,
+      "rate_limited": 0,
+      "error_rate": 0.0,
+      "achieved_rps": 6.501,
+      "peak_in_flight": 1,
+      "error_samples": [],
+      "wall": {
+        "n": 200,
+        "p50": 132.884,
+        "p95": 274.815,
+        "p99": 657.252,
+        "min": 33.838,
+        "max": 1407.027
+      }
+    },
+    {
+      "metric": "P-8 计量导出",
+      "target": "见《非功能设计说明-v1.4.8》v1.1.0 §1.1.2",
+      "samples": 200,
+      "ok": 200,
+      "errors": 0,
+      "rate_limited": 0,
+      "error_rate": 0.0,
+      "achieved_rps": 2.482,
+      "peak_in_flight": 1,
+      "error_samples": [],
+      "wall": {
+        "n": 200,
+        "p50": 350.926,
+        "p95": 700.958,
+        "p99": 1153.282,
+        "min": 133.755,
+        "max": 1352.217
+      }
+    },
+    {
+      "metric": "P-9 消息查询",
+      "target": "P50 ≤100ms / P95 ≤300ms / P99 ≤500ms",
+      "samples": 200,
+      "ok": 200,
+      "errors": 0,
+      "rate_limited": 0,
+      "error_rate": 0.0,
+      "achieved_rps": 9.895,
+      "peak_in_flight": 1,
+      "error_samples": [],
+      "wall": {
+        "n": 200,
+        "p50": 89.046,
+        "p95": 142.958,
+        "p99": 612.483,
+        "min": 30.225,
+        "max": 722.633
+      }
+    }
+  ],
+  "P-1_sync_chat": {
+    "samples": 60,
+    "ok": 60,
+    "errors": 0,
+    "cache_hits": 0,
+    "n_effective": 60,
+    "rate_limited": 0,
+    "error_samples": [],
+    "wall": {
+      "n": 60,
+      "p50": 3359.465,
+      "p95": 3819.596,
+      "p99": 3924.188,
+      "min": 3047.716,
+      "max": 3924.188
+    },
+    "llm_step": {
+      "n": 60,
+      "p50": 640.0,
+      "p95": 953.0,
+      "p99": 1062.0,
+      "min": 391.0,
+      "max": 1062.0
+    },
+    "repo_overhead_excl_llm": {
+      "n": 60,
+      "p50": 2686.596,
+      "p95": 3132.596,
+      "p99": 3378.188,
+      "min": 2477.095,
+      "max": 3378.188
+    },
+    "repo_overhead_excl_all_steps": {
+      "n": 60,
+      "p50": 640.596,
+      "p95": 1086.596,
+      "p99": 1348.188,
+      "min": 431.095,
+      "max": 1348.188
+    },
+    "pipelines": [
+      "[\"llm\"]"
+    ],
+    "steps_seen": [
+      "auth",
+      "llm",
+      "profile_fetch"
+    ]
+  },
+  "P-3_stream": {
+    "samples": 30,
+    "ok": 30,
+    "errors": 0,
+    "rate_limited": 0,
+    "error_samples": [],
+    "first_event": {
+      "n": 30,
+      "p50": 79.334,
+      "p95": 120.429,
+      "p99": 129.398,
+      "min": 52.715,
+      "max": 129.398
+    },
+    "total": {
+      "n": 30,
+      "p50": 2994.824,
+      "p95": 3290.282,
+      "p99": 3329.986,
+      "min": 2722.027,
+      "max": 3329.986
+    },
+    "routing_first_ok": true
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "base_url": "http://127.0.0.1:8041",
+  "concurrency": 8,
+  "rate_limit_per_second": 0.0,
+  "samples_per_metric": 200,
+  "warmup": 1,
+  "conversation_id": "ba64faf7-6073-4ca2-b418-0f580ed6242e",
+  "read_endpoints": [
+    {
+      "metric": "P-6 回执查询",
+      "target": "见《非功能设计说明-v1.4.8》v1.1.0 §1.1.2",
+      "samples": 200,
+      "ok": 199,
+      "errors": 1,
+      "rate_limited": 0,
+      "error_rate": 0.005,
+      "achieved_rps": 9.317,
+      "peak_in_flight": 8,
+      "error_samples": [
+        "RemoteProtocolError: Server disconnected without sending a response."
+      ],
+      "wall": {
+        "n": 199,
+        "p50": 739.242,
+        "p95": 1696.633,
+        "p99": 1906.687,
+        "min": 178.45,
+        "max": 1907.618
+      }
+    },
+    {
+      "metric": "P-8 计量导出",
+      "target": "见《非功能设计说明-v1.4.8》v1.1.0 §1.1.2",
+      "samples": 200,
+      "ok": 195,
+      "errors": 5,
+      "rate_limited": 0,
+      "error_rate": 0.025,
+      "achieved_rps": 2.848,
+      "peak_in_flight": 8,
+      "error_samples": [
+        "{\"error\":{\"message\":\"服务器内部错误\",\"type\":\"internal_error\",\"code\":\"internal_error\"}}",
+        "ReadError: ",
+        "RemoteProtocolError: Server disconnected without sending a response."
+      ],
+      "wall": {
+        "n": 195,
+        "p50": 2762.077,
+        "p95": 3941.467,
+        "p99": 4014.399,
+        "min": 463.424,
+        "max": 4519.653
+      }
+    },
+    {
+      "metric": "P-9 消息查询",
+      "target": "P50 ≤100ms / P95 ≤300ms / P99 ≤500ms",
+      "samples": 200,
+      "ok": 197,
+      "errors": 3,
+      "rate_limited": 0,
+      "error_rate": 0.015,
+      "achieved_rps": 14.464,
+      "peak_in_flight": 8,
+      "error_samples": [
+        "RemoteProtocolError: Server disconnected without sending a response.",
+        "RemoteProtocolError: Server disconnected without sending a response.",
+        "RemoteProtocolError: Server disconnected without sending a response."
+      ],
+      "wall": {
+        "n": 197,
+        "p50": 468.014,
+        "p95": 1018.398,
+        "p99": 1169.985,
+        "min": 262.116,
+        "max": 1216.134
+      }
+    }
+  ],
+  "P-1_sync_chat": {
+    "samples": 60,
+    "ok": 60,
+    "errors": 0,
+    "cache_hits": 0,
+    "n_effective": 60,
+    "rate_limited": 0,
+    "error_samples": [],
+    "wall": {
+      "n": 60,
+      "p50": 6667.227,
+      "p95": 7555.267,
+      "p99": 8071.603,
+      "min": 3391.115,
+      "max": 8071.603
+    },
+    "llm_step": {
+      "n": 60,
+      "p50": 1532.0,
+      "p95": 3312.0,
+      "p99": 3687.0,
+      "min": 0.0,
+      "max": 3687.0
+    },
+    "repo_overhead_excl_llm": {
+      "n": 60,
+      "p50": 4536.308,
+      "p95": 6583.65,
+      "p99": 7014.648,
+      "min": 2845.115,
+      "max": 7014.648
+    },
+    "repo_overhead_excl_all_steps": {
+      "n": 60,
+      "p50": 1945.51,
+      "p95": 4095.006,
+      "p99": 7014.648,
+      "min": 491.668,
+      "max": 7014.648
+    },
+    "pipelines": [
+      "[\"llm\"]"
+    ],
+    "steps_seen": [
+      "auth",
+      "llm",
+      "profile_fetch"
+    ]
+  },
+  "P-3_stream": {
+    "samples": 30,
+    "ok": 29,
+    "errors": 1,
+    "rate_limited": 0,
+    "error_samples": [
+      "RemoteProtocolError: Server disconnected without sending a response."
+    ],
+    "first_event": {
+      "n": 29,
+      "p50": 205.815,
+      "p95": 958.927,
+      "p99": 1024.452,
+      "min": 25.063,
+      "max": 1024.452
+    },
+    "total": {
+      "n": 29,
+      "p50": 3594.934,
+      "p95": 4704.368,
+      "p99": 4711.779,
+      "min": 2680.353,
+      "max": 4711.779
+    },
+    "routing_first_ok": true
+  }
+}

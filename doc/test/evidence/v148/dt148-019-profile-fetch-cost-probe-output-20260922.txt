@@ -1,0 +1,7 @@
+﻿DPS_BASE_URL=http://127.0.0.1:8030 timeout=5.0s
+[raw#1] ConnectError: All connection attempts failed | 5365.4 ms
+[raw#2] ConnectError: All connection attempts failed | 2064.9 ms
+[raw#3] ConnectError: All connection attempts failed | 2064.4 ms
+[DPSClient#1] ConnectError: All connection attempts failed | 2041.8 ms
+[DPSClient#2] ConnectError: All connection attempts failed | 2036.5 ms
+[DPSClient#3] ConnectError: All connection attempts failed | 2036.2 ms

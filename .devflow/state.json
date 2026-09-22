@@ -1,7 +1,7 @@
 {
     "project":  "OpenBase",
     "devflowVersion":  "2.18.0",
-    "currentPhase":  "v1_4_8_step_0_pending_approval",
+    "currentPhase":  "v1_4_8_step_3_pending_approval",
     "completedPhases":  [
                             "step_0_planning",
                             "step_1_requirements",
@@ -73,10 +73,73 @@
                             "v1_4_7_step_0_planning",
                             "v1_4_7_step_3_development",
                             "v1_4_7_step_4_testing",
-                            "v1_4_7_released"
+                            "v1_4_7_released",
+                            "v1_4_8_step_0_planning",
+                            "v1_4_8_step_1_requirements",
+                            "v1_4_8_step_2_design"
                         ],
     "currentDocuments":  {
-                             "test_v1.4.7":  [
+                             "requirements_v1.4.8":  [
+                                                        "doc/requirements/OpenBase-开发需求文档-v1.4.8.md",
+                                                        "doc/requirements/OpenBase-需求来源与干系人-v1.4.8.md",
+                                                        "doc/requirements/OpenBase-需求追溯矩阵-v1.4.8.md",
+                                                        "doc/requirements/OpenBase-需求评审记录-v1.4.8.md",
+                                                        "doc/requirements/OpenBase-需求基线及设计移交说明-v1.4.8.md",
+                                                        "doc/audit/assessment/OpenBase-需求评估报告-v1.4.8.md",
+                                                        "doc/audit/review/OpenBase-阶段审计报告-Stage1-v1.4.8.md"
+                                                    ],
+                             "design_v1.4.8":  [
+                                                   "doc/design/OpenBase-设计入场检查记录-v1.4.8.md",
+                                                   "doc/design/OpenBase-需求设计追溯矩阵-v1.4.8.md",
+                                                   "doc/design/OpenBase-系统架构设计文档-v1.4.8.md",
+                                                   "doc/design/OpenBase-数据库设计文档-v1.4.8.md",
+                                                   "doc/design/OpenBase-API接口设计文档-v1.4.8.md",
+                                                   "doc/design/OpenBase-安全设计说明-v1.4.8.md",
+                                                   "doc/design/OpenBase-非功能设计说明-v1.4.8.md",
+                                                   "doc/design/OpenBase-部署架构草案-v1.4.8.md",
+                                                   "doc/design/OpenBase-编排归属与DSL边界定界-v1.4.8.md",
+                                                   "doc/design/OpenBase-B0B1基线报告框架-v1.4.8.md",
+                                                   "doc/design/OpenBase-后端覆盖检查报告-v1.4.8.md",
+                                                   "doc/design/OpenBase-API契约对齐确认书-v1.4.8.md",
+                                                   "doc/design/OpenBase-设计评审记录-v1.4.8.md",
+                                                   "doc/design/OpenBase-设计基线及开发测试移交说明-v1.4.8.md",
+                                                   "doc/audit/assessment/OpenBase-设计评估报告-v1.4.8.md",
+                                                   "doc/audit/assessment/OpenBase-设计阶段自检记录-v1.4.8.md",
+                                                   "doc/audit/review/OpenBase-阶段审计报告-Stage2-v1.4.8.md"
+                                               ],
+                             "development_v1.4.8":  [
+                                                       "doc/development/OpenBase-设计开发追溯矩阵-v1.4.8.md",
+                                                       "doc/development/OpenBase-DevLogReport-v1.4.8.md",
+                                                       "doc/development/OpenBase-开发审计移交材料-v1.4.8.md",
+                                                       "doc/planning/OpenBase-会话编排派单分发清单-v1.4.8.md",
+                                                       "doc/planning/OpenBase-会话标识提交派单-openbase-ui-v1.0.0.md",
+                                                       "doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.8.md",
+                                                       "doc/test/evidence/v148/step3-v148-doc-inventory-20260921.txt",
+                                                       "doc/test/evidence/v148/step3-v148-consistency-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-f02-f08-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-session-axis-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-history-injection-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-shared-step-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-metrics-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-metrics-export-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-three-roads-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-receipts-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-session-scope-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-baseline-tooling-20260921.txt",
+                                                       "doc/test/evidence/v148/openbase-ui-session-id-20260921.txt",
+                                                       "doc/test/evidence/v148/openllm-crossrepo-component-pipeline-20260921.txt",
+                                                       "doc/test/evidence/v148/crossrepo-devflow-registration-20260921.txt"
+                                                   ],
+                             "test_v1.4.8":  [
+                                                  "doc/test/OpenBase-测试计划-v1.4.8.md",
+                                                  "doc/test/OpenBase-测试用例-v1.4.8.md",
+                                                  "doc/test/OpenBase-测试报告-v1.4.8.md",
+                                                  "doc/test/evidence/v148/step4-round1-execution-20260921.txt"
+                                              ],
+                             "operation_v1.4.8":  [
+                                                      "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md"
+                                                  ],
+                              "test_v1.4.7":  [
                                                  "doc/test/OpenBase-测试计划-v1.4.7.md",
                                                  "doc/test/OpenBase-测试用例-v1.4.7.md",
                                                  "doc/test/OpenBase-测试报告-v1.4.7.md",
@@ -950,6 +1013,399 @@
                                  "openbase-ui/coverage-gate-result.json 已按前端运行产物纳入 .gitignore（如需作为证据归档请另行指示）"
                              ],
                              "gate":  "Step 5（部署与运维）已放行；发布检查通过并创建本仓 tag v1.4.7 前不得宣称已发布"
+                         },
+                         "v1_4_8_env_defect_disposition":  {
+                             "status":  "approved",
+                             "date":  "2026-09-21",
+                             "approver":  "用户（人工门禁）",
+                             "scope":  "CR-148-001 —— backend/.pylib 处置方案裁定",
+                             "decision":  "采纳建议 1「本仓零改动」：不采方案 A（清理 .pylib）、不采建议 2（OpenLLM 侧未跟踪批次）、不采建议 3（run_backend.py 按 ABI 条件加载）",
+                             "rationale":  [
+                                 "方案 A 会打断上游 Python 3.13 .venv 的依赖覆盖层（.pylib 原生扩展实测 cp313×24 / cp310×3，系 pip install --target 为 3.13 构建）",
+                                 "缺陷上游已编号 CLR-214-004（P2）且已有既定对策，改他仓 vendored 目录不必要且与上游处置冲突",
+                                 "本机权威启动路径不加载 .pylib（service-orchestrator.ps1 = python -m uvicorn main:app --port 8001），方案 A 对 Step 4 零收益"
+                             ],
+                             "execution":  {
+                                 "changed":  "无（本仓零改动）",
+                                 "verification":  ".pylib 0 删除、5,860 文件与 9 个目标包全部在位、git status 无删除项、隔离目录未创建；本裁定轮仅 3 份文档改动",
+                                 "toolsNotInRepo":  "pylib_inventory.py / system_availability.py / pylib_quarantine.py（dry-run 清单 23 项 / 26.2 MB）"
+                             },
+                             "defectReclassification":  {
+                                 "DEF-BE-148-001":  "P1 → P2；与 OpenLLM CLR-214-004 同源，转为纯跨仓引用项",
+                                 "DEF-BE-148-002":  "P2 → P3 并更正为非缺陷（测试环境配置缺口：临时实例未带编排器 Env 致 openrag 401 假故障）"
+                             },
+                             "documents":  {
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.19.0，含 §1.1.1 裁定结论 + DEF-BE-148-001~012 / CR-148-004~015）",
+                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.8.md（v3.5.0，§3 第 11/13 行 + §7 #3/#10~#25 + §8.1 映射 + §11 结论 + §12 修订历史）",
+                                 "testCases":  "doc/test/OpenBase-测试用例-v1.4.8.md（v1.9.0，§2.1 回填 + §4/§5 状态 + §6 TT-038/039 结果回填 + §7 TT-044 → ✅）",
+                                 "performanceRecord":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.1.0，§3 环境约束（C-4 已更正）/ §4 实测 / §5 判定 / §6 发现（#1 已修 / #6 间歇 5001）/ §6.1 修复记录）",
+                                 "nonFunctionalDesign":  "doc/design/OpenBase-非功能设计说明-v1.4.8.md（v1.1.0 §1.1 性能量化目标 P-1~P-12；**状态 [Approved]，2026-09-22 人工批准**）",
+                                 "evidence":  "doc/test/evidence/v148/step4-round1-execution-20260921.txt（§十一~§三十一）；性能批次证据：tt038-perf-batch-base-20260922.json / tt039-receipts-1e4-20260922.json / tt038-perf-env-findings-20260922.txt / tt039-seed-receipts-1e4-20260922.py"
+                             },
+                             "stillOpen":  [
+                                 "按 TT-ID 整批补跑已完成（2026-09-21）：T2 TT-005~014 全 10/10 通过；集成 TT-015~020 经 v2.9.0 复测后 **6/6 通过**；安全 2/2（TT-035、TT-036 消息路补齐）；UAT **4/4 通过**（TT-041/042/043 + **TT-044 于 2026-09-22 v3.2.0 专项补跑转通过**）",
+                                 "DEF-BE-148-009（P2）GET /api/v1/monitoring/traces/{trace_id}/spans → 500 —— **已修复并验证通过（2026-09-21，提交 48610cc）**：根因 traces.spans 同列两形态（OTel / 网关步骤计时），修复＝服务层读取侧归一化 normalize_span_for_response/normalize_spans_for_response，端点契约不变；TDD RED→GREEN 13 passed；运行时 500→200（5/5）",
+                                 "TT-015 / TT-020 复测已完成（2026-09-21）：**两项均转 PASS** —— TT-020 以 context_metrics 为判据（history:100，对照组 0）；TT-015 两组件均执行（executed=memory/rag/llm、degraded=[]、rag.injected_tokens=36）。复测中闭环 2 项 P1 接线缺陷：DEF-BE-148-010（第零段计量未接线，提交 c89ffc2）、DEF-BE-148-011（OpenMemory 读路未按 real_mode 分派 recall，提交 d060b3f）",
+                                 "TT-015 残留：memory 侧 items_count=0（该隔离口径下无可召回记忆，数据侧为空，非组件故障；如需 memory_ctx 非空级证据须先回写再召回）",
+                                 "用例口径更正：原「contexts 含 memory_ctx/rag_ctx」不可从响应观测（响应顶层无 contexts 键）→ 改以回执计量（rag.injected_items/injected_tokens）为等价证据（测试用例文档 v1.4.0 已同步）",
+                                 "环境遗留：dps（8030）连接被拒 → TT-016 的 profile 真链路仍未验证（H 类）；另有「无可用 kb_id」判定已更正为探测未带 X-API-Key（带头上 OpenRAG 返回 12 个集合）",
+                                 "偶发 500（P3，待观察）：POST /openllm/v1/chat 携 session_id=\"\" 主批次首测 1 次 500，其后 5 次观测均 200（未复现；已改为实例日志落盘以便后续取证）",
+                                 "T3 巡检与 Mock 批次已完成（2026-09-22，CR-148-013）：TT-021 7/7 ✅、TT-022 5/5 ✅、TT-023 4/4 ✅、TT-028（T3a 服务间巡检）4/5 链路 OK（代码类 5xx=0；profile 链因 DPS 未启动为 H 类）、TT-029 4/4 ✅（含归档端点 POST /api/v1/conversations/{id}/archive → 200）",
+                                 "DEF-BE-148-012（P1）—— **已修复并验证通过（2026-09-22，提交 ef3d44e）**：根因＝网关 _rag_handler（openllm_gateway.py:341-370）以 except Exception 把「装配缺失」并入「外部失败」统一触发内置回退（与 component_pipeline:112-117 的既有语义不符）；修复＝异常链前置 except (ComponentUnavailableError, asyncio.TimeoutError) → raise；TDD RED（2 failed/2 passed）→ GREEN 4 passed；回归 2203 passed / 13 failed（与基线 failed 数一致）；运行时 3/3（degraded=['rag']、rag_source=skipped）",
+                                 "TT-044 已通过（2026-09-22，v3.2.0），但**真实 B0/B1 数值测量仍未开始**：本轮为工装链端到端骨架验证（判定为演示注入 skeleton-judge-v1、WCR 为注入计数）；真实基线数值须以 D3 + 真实回执导出（AC-148-01-1）为前提，并按判定三要素（A 引用检测主指标仅纵向对比 / B 归因抽样校准漏检率 / C 消融效度检验）补齐",
+                                 "TT-025 / TT-026 不适用（本工作区无 OpenBase/OpenLLM 前端工程，*.spec.ts 仅属其他项目 CoPlayer）—— 待前端就绪补跑；TT-027（T3a 全页面巡检）按纯后端项目规则由 TT-028 服务间集成巡检替代",
+                                 "P3 改进点：openrag / openmemory / profile 三桩无 /health 端点，本轮以只读路由为存活探针（422 = 在线但请求体校验未过）—— 建议三桩补齐 /health",
+                                 "残量 15 项（1 M / 14 ??）已按 CR-148-010 裁定为「不入库/另批」：另批＝test_billing_v2_api.py（联调清单 J-6）、DPS Pro 化设计文档 v1.1.0+archive（J-10/J-11）、OpenRAG 接入迭代规划（J-9）；不入库＝OpenLLM_完整方案文档.html（J-12）、test_debug_gateway_ollama.py（J-7）、仓根 *.bat×4 与 scripts/*_commit_push*.ps1×5、backend/data/*.db*、backup/",
+                                 "backend/.pylib 解除跟踪属上游 CLR-214-004（实测 3510 个已跟踪文件，非「未跟踪」；本轮仅新增 .gitignore 规则，未做索引变更）；联调清单 §3 登记的 need-star 增量在工作树已无痕迹（profile_refine.py 与 4 个 test_*_phase1.py 已从磁盘消失且从未入库）—— 待其立项方确认",
+                                 "DEF-BE-148-005（P2）metrics 的 model 字段两路径填充不一致（同步 null / 流式为模型名）—— 待裁定是否立修",
+                                 "DEF-BE-148-004（P1）残留：组织缺失时「已消耗未记账」由静默转为可观测告警，兜底策略待裁定（建议异步补偿或默认组织）",
+                                 "DEF-BE-148-008（P2）残留：/writeback/receipts 错误体 request_id 为空串（字段存在但未生成）—— 建议纳入 TT-014 补齐",
+                                 "DEF-BE-148-007（P1）残留：消息路（conversation/messages）跨用户隔离与 TT-035 日志侧审查未验证（回执路已证明 B 账号 total=0）",
+                                 "第零段 token 计数器未接线（counted=false，属设计语义非缺陷）→ 「缓存命中」判据项无有效观测值",
+                                 "「回执查询」是否应覆盖 sync 通道结果 —— 设计边界待确认（现仅覆盖异步队列）",
+                                 "profile 回写路失败＝直连客户端缺四维身份（DPS 要求组织/租户标识头），需走 OpenBase 代理链取证；非本仓代码缺陷",
+                                 "回写目标无注册 handler: profile（writeback_queue 告警，与 profile 路 401 属不同层面问题）—— 待跟踪"
+                             ],
+                             "hardCriteria":  {
+                                 "重启不丢写":  "已取证成立（TT-v1.4.8-018；队列 28 行不变、id 408/409 仍在且续投递）",
+                                 "两路径一致性":  "已取证成立（同 session_id/mode=auto/llm_response，sync 与 stream 双双 200；路由决策、模型选型 deepseek-v4-flash、注入片段集合 0/0 三项完全一致）",
+                                 "缓存命中":  "无有效观测值（第零段计数器未接线，counted=false）",
+                                 "evidence":  "doc/test/evidence/v148/step4-round1-execution-20260921.txt 十四~十九",
+                                 "updated":  "2026-09-21"
+                             },
+                             "integrationFix":  {
+                                 "id":  "回写链路跨系统鉴权缺口（OpenMemory 强制 Bearer JWT，本仓出站仅发 X-API-Key）",
+                                 "rootCause":  "OpenMemory 网关鉴权为顺序两段且「并且」关系：先 X-API-Key（未配置不强制），再在 jwt_secret 已配时强制校验 Authorization: Bearer，该层不可被 API Key 旁路",
+                                 "fix":  "openmemory_client 新增 set_shared_jwt_secret/_mint_service_token，_request 并存附加 Bearer（HS256，含 sub/iat/exp）；config 新增 OPENMEMORY_JWT_SECRET/OPENMEMORY_JWT_ALGORITHM；openllm_gateway 装配传入；共享密钥注入 .env.shared-infra；OPENMEMORY_TIMEOUT 5s→30s",
+                                 "verification":  "RED 1 failed → GREEN 39 passed/0 failed；ruff 零告警；回写 401 → 请求超时 → 200；TT-018 重启不丢写取证成立（队列 28 行不变、id 408/409 仍在且续投递）",
+                                 "open":  "改动尚未提交；.env.shared-infra 含密钥需确认已 gitignore",
+                                 "docs":  "OpenLLM-DevLogReport（v1.3.0，第 14 批）；doc/test/evidence/v148/step4-round1-execution-20260921.txt §十七"
+                             },
+                             "defectFix":  {
+                                 "id":  "DEF-BE-148-003（P1，会话标识未落库）",
+                                 "ruling":  "CR-148-005 采纳方案①：回退 Step 3 修复 + 补经 ORM 映射的集成护栏（人工批准，2026-09-21）",
+                                 "fix":  "conversation_service.py 第 54/212 行 metadata= → metadata_=；schemas/conversation.py 抽出 _orm_values_with_metadata() 共用并为 MessageResponse 补 extract_metadata（连带项）",
+                                 "verification":  "TDD RED 3 failed → GREEN 精确回归 37 passed / 0 failed；ruff 新护栏 All checks passed；运行时复测 8/8（POST 500→201、按会话筛选 0→2/1 条、DB metadata 落盘正确）",
+                                 "status":  "已修复（复测通过）；改动尚未提交，建议按 fix 提交并引用 DEF-BE-148-003",
+                                 "docs":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.4.0）；OpenLLM-R396-R398-会话编排前置与回写闭环-DevLogReport（v1.2.0，第 13 批）；doc/test/evidence/v148/step4-round1-execution-20260921.txt §十四"
+                             },
+                             "defectBatchV148":  {
+                                 "commit":  "245b70b（fix(gateway,billing)：回执越权 / 两路径解析 / 错误响应契约 / 计费容错 四项修复；4 文件 +202/-93；显式路径 git add，未用 git add -A）",
+                                 "fixed":  [
+                                     "DEF-BE-148-006（P1）两路径模型解析不一致：流式判据改为「调用方是否显式指定 model」，纳入与同步同一条 _route_model_auto 5 因子路由；原失败条件（DEFAULT_LLM_MODEL=qwen3:0.6b）下流式 3/3 失败 → 3/3 成功；routing_trace.model.selected 由路由前值改为路由后值",
+                                     "DEF-BE-148-007（P1，安全）回执查询跨用户越权：list_rows 加参数化 json_extract(payload_json,'$.user_id') 过滤 + 端点身份依赖 + fail-closed；双对照 自有 total=1 / 他用户 total=0（修复前 1 条）",
+                                     "DEF-BE-148-008（P2）错误响应缺 detail：_error_response 补 detail（保证字段始终存在）；/writeback/receipts 未授权分支 200+note → 401"
+                                 ],
+                                 "processDebt":  [
+                                     "DEF-BE-148-007 未写单元测试（改以运行时双账号对照验证，更贴近真实越权场景）—— 与 TDD 纪律有偏差，已如实登记",
+                                     "DEF-BE-148-006 同一缺陷误判两次（第二次写出永不执行的死代码：判据 model == \"auto\" 恒假）—— 留痕为「先观测再断因」反面教材"
+                                 ],
+                                 "attributionCheck":  {
+                                     "finding":  "writeback_queue.py diff 实测 80 增 / 0 删 ⇒ 基线 ca45639 中不存在 list_rows ⇒ 该实现（约 65 行）为更早批次写完但从未提交，随 245b70b 首次入库",
+                                     "disposition":  "方案 B（人工选定）：不改写 git 历史，改由证据与问题跟踪记录登记该提交真实范围（越权修复 + 首次入库 v1.4.8 回执查询实现）"
+                                 },
+                                 "status":  "三项缺陷（006/007/008）全部闭环；本版本 5 项产品缺陷（003/004/006/007/008）全部闭环",
+                                 "docs":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.10.0，CR-148-008）；doc/test/OpenBase-测试报告-v1.4.8.md（v2.4.0，§7 #14~#16 / §8.1）；证据 §二十二~§二十四"
+                             },
+                             "uncommittedDispositionV148":  {
+                                 "id":  "CR-148-009（三项未提交内容处置，人工指示）",
+                                 "before":  "OpenLLM 仓工作区 86 M / 211 D / 80 ??",
+                                 "after":  "84 M / 0 D / 80 ??",
+                                 "secretHandling":  {
+                                     "object":  "OpenLLM/.env.shared-infra（被 git 跟踪，项目 .gitignore 第 41 行为 !.env.shared-infra 显式取反）",
+                                     "finding":  "git log 各历史版本 OPENRAG_API_KEY 赋值长度恒为 0（空值模板）；工作副本却含真实 OPENRAG_API_KEY/OPENMEMORY_API_KEY 与 v1.4.8 共享 JWT 签名密钥 —— 提交即首次带密入库",
+                                     "decision":  "密钥不落 git（依 AGENTS.md §6 与文件内「勿落 git」注释）",
+                                     "actions":  "① 同源性核验：OpenBase/.env OPENBASE_JWT_SECRET、OpenMemory/.env OPENMEMORY_GATEWAY__JWT_SECRET、OpenLLM/.env.shared-infra OPENMEMORY_JWT_SECRET 三者 len=64 / sha256 前 6 字节 67da1a614a93 一致；② 写入未跟踪的权威注入源 OpenBase/.env.shared-infra（service-orchestrator.ps1:86-95 注入各服务进程环境），使编排器启动路径亦具备回写出站 JWT；③ git update-index --skip-worktree .env.shared-infra（实测 S .env.shared-infra，全仓仅此一个）",
+                                     "reversible":  "git update-index --no-skip-worktree .env.shared-infra",
+                                     "notDone":  "未提交、未删除、未改写任何密钥值；提交版仍为空值模板；本地实值原位保留"
+                                 },
+                                 "commits":  [
+                                     "a5bde45 chore(repo): 清理已入库的 __pycache__ 构建产物（211 文件纯删除，0 增 0 删行；.gitignore 第 2-3 行已覆盖）",
+                                     "9b9fcd5 test(tests): conftest 路径优先级由首位改为末端兜底（+12/-2；对应 §7 #4）"
+                                 ],
+                                 "stagingGuard":  "暂存前后均核验非 __pycache__ 项 = 0；按显式路径 git add，未用 git add -A；提交后暂存区为空",
+                                 "derivedFinding":  "CR-148-010（待裁定）：v1.4.8 8 个交付文件从未入库（见 stillOpen）；已如实登记与 §7 #5「改动已提交」口径不完全一致",
+                                 "docs":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.11.0，CR-148-009/010）；doc/test/OpenBase-测试报告-v1.4.8.md（v2.5.0，§7 #5/#17/#18）；证据 §二十五"
+                             },
+                             "residualCommitV148":  {
+                                 "id":  "CR-148-010（v1.4.8 残量入库范围裁定与实施，人工批准 2026-09-21）",
+                                 "basis":  "沿用《OpenLLM-联调产物待提交清单-v1.0.0》A/B/C + 需人工判定四类框架与「只 add 预期路径、禁止 git add -A」纪律；以《DevLogReport R-396~R-398》§4（19 源文件 + 1 数据资产 + 15 测试）逐项对齐；确认 S4 批次已入库（identity 12 / verify-env 3 / S4 测试 15 / S4 文档 6）",
+                                 "scope":  {
+                                     "commit":  "R1 新增源码 8 + R2 修改源码 6（实测 need-star 命中 0，无需 hunk 拆分）+ R3 数据资产 1 + R4 文档 2 + R5 .devflow/state.json",
+                                     "cleanup":  "C 噪音清理：71 项 __pycache__/*.pyc + 8 项 .pylib dist-info + data/edge_tokens.jsonl 移出跟踪（工作树文件保留）+ .gitignore 增补 backend/.pylib/、backend/data/*.db*、backup/、data/edge_tokens.jsonl",
+                                     "excluded":  "不入库＝.pylib vendored、backend/data/*.db*、backup/、仓根 *.bat×4、scripts/*_commit_push*.ps1×5、OpenLLM_完整方案文档.html（J-12）、test_debug_gateway_ollama.py（J-7）",
+                                     "deferred":  "另批＝test_billing_v2_api.py（J-6）、doc/design DPS Pro 化 v1.1.0+archive（J-10/J-11）、doc/planning OpenRAG 接入迭代规划（J-9）"
+                                 },
+                                 "commits":  [
+                                     "10e4cc6 feat(v148): 第零段计量与会话编排组件实现（R-396~R-398）—— 8 文件 +1262",
+                                     "0fa9e84 feat(v148): 编排组件共用、历史段注入与会话标识透传 —— 6 文件 +173/-81",
+                                     "ab90513 chore(v148): 基线数据资产、开发记录与状态登记入库 —— 4 文件 +704",
+                                     "589012d chore(repo): 清理历史误入库字节码/三方元数据/运行期令牌 + .gitignore 增补 —— 81 文件 +6/-262"
+                                 ],
+                                 "stagingGuard":  "每批提交前 git diff --cached --name-only 计数 = 8/6/4/81，与预期一致；按显式路径 git add，未用 git add -A；工作树文件未被删除（抽验 True）",
+                                 "result":  "工作区 84 M / 80 ?? → 1 M / 14 ??；残量全部属「不入库/另批」",
+                                 "corrections":  [
+                                     "backend/.pylib 并非「未跟踪」——实测 3510 个已跟踪文件（另有约 1157 项未跟踪）；其解除跟踪属上游 CLR-214-004 流程（3510 项索引变更），本轮未执行；本轮仅新增 .gitignore 规则，作用边界＝仅阻止新增文件进入跟踪",
+                                     "联调清单 §3 登记的 need-star 增量在当前工作树已无痕迹（profile_refine.py 与 4 个 test_*_phase1.py 已从磁盘消失且从未入库）—— 按风险登记，交立项方确认"
+                                 ],
+                                 "docs":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.12.0，CR-148-010）；doc/test/OpenBase-测试报告-v1.4.8.md（v2.6.0，§7 #17 / §11）；证据 §二十六"
+                             },
+                             "ttBatchV148":  {
+                                 "id":  "按 TT-ID 整批补跑（消除 Step 4 唯一产品侧卡点）",
+                                 "date":  "2026-09-21",
+                                 "scenario":  "T2 TT-005~014 / 集成 TT-015~020 / 安全 TT-035~036 / UAT TT-041~044，逐 ID 执行，L1 硬断言，无法判定即记 FAIL",
+                                 "environment":  "编排器 start 4 服务全部健康通过后随命令结束被回收；DETACHED_PROCESS 被即时回收；前台长驻模式成功（openrag 8010 ✅ / OpenLLM 8041 ✅）；openmemory 未起；dps 因共享 PG 协议层被重置反复失败（H 类）；实例日志已改为落盘",
+                                 "result":  {
+                                     "t2":  "10/10 通过（TT-005~014）",
+                                     "integration":  "4 通过（TT-016/017/018/019）；2 未通过（TT-015、TT-020）",
+                                     "security":  "2/2 通过（TT-035、TT-036 消息路本轮补齐：他用户 404 / 0 条）",
+                                     "uat":  "3 通过（TT-041/042/043）；1 未执行（TT-044）→ 后续于 2026-09-22（v3.2.0）专项补跑转通过，UAT 收敛为 4/4",
+                                     "totals":  "19 通过 / 2 未通过 / 1 未执行"
+                                 },
+                                 "newDefect":  "DEF-BE-148-009（P2）GET /api/v1/monitoring/traces/{trace_id}/spans → 500；根因 ResponseValidationError: 8 validation errors（traces.py:362；落库 spans 为 {step,ms}，响应模型要求 span_id/name/kind/status）—— 待修复（CR-148-011）",
+                                 "nonDefectObservations":  [
+                                     "TT-015 未通过＝memory 组件 degraded + 无可用 kb_id（H 类环境/前置，与直连四维身份同源）",
+                                     "TT-020 未通过＝历史段注入无可观测面（token 计数器未接线，segment_tokens.history 恒 0）",
+                                     "偶发 500（P3）：空串 session_id 主批次首测 1 次 500，其后 5 次均 200，未复现"
+                                 ],
+                                 "testCaseCorrections":  [
+                                     "TT-005 断言由 choices 改为 content + usage（实现无 choices）",
+                                     "TT-019 流式改以持久化 trace（/openllm/v1/trace/{id}）为口径",
+                                     "TT-020 历史来源为请求体 messages（非会话表）",
+                                     "TT-012 实际路径为 /openllm/v1/trace/{id} 与 /api/v1/monitoring/traces/{id}"
+                                 ],
+                                 "docs":  "doc/test/OpenBase-测试报告-v1.4.8.md（v2.7.0，§3/§7 #19~#21/§8/§11）；doc/test/OpenBase-测试用例-v1.4.8.md（v1.3.0，§2.1）；doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.13.0，CR-148-011）；证据 §二十七"
+                             },
+                             "defectFixDb9":  {
+                                 "id":  "DEF-BE-148-009（P2，spans 端点 500）",
+                                 "rootCause":  "traces.spans 列同一列承载两种写入形态：① OTel 形态（trace_service.TraceContext 写入 span_id/name/kind/status）；② 步骤计时形态（网关轻量写入 [{step,ms}]）；端点 response_model=List[SpanResponse] 对形态②抛 ResponseValidationError（2 span × 4 缺失字段 = 8 项）",
+                                 "fix":  "服务层读取侧归一化：trace_service.normalize_span_for_response / normalize_spans_for_response（形态①透传补默认 kind=internal/status=unset；形态② step→name、ms→duration_ms、status=ok、attributes={step,ms}；未知形态与标量合成合法结构不丢数据；非列表按空列表）；api/traces.py 端点改为返回归一化结果，签名与响应契约不变",
+                                 "rejectedOptions":  [
+                                     "仅放宽响应模型（会把形态②字段静默丢弃、返回空壳）",
+                                     "改落库结构（需历史数据迁移）"
+                                 ],
+                                 "tdd":  "RED：tests/unit/test_trace_spans_shape.py（10 例）收集期 ImportError + 端点级用例修复前 500 → GREEN 13 passed",
+                                 "staticQuality":  "新护栏 ruff All checks passed；两被改文件改动行零告警（首轮 5 条 UP006/UP045 同族告警改用 X | None/dict/list 后清零，两文件总告警 112 → 107）",
+                                 "regression":  "tests/unit 全量（--confcutdir=tests/unit）2188 passed / 13 failed；git stash 基线对照（无本次改动）同为 13 failed → 证明与本次修复无关；615 error 为根 conftest 既知环境缺陷（§7 #4）",
+                                 "runtime":  "重启实例后 5/5：目标端点 500 → 200（样例 span_id=openllm-…-0 / name=auth / kind=internal / duration_ms=0 / status=ok / attributes={step,ms}）；/{id} 仍 200；未知 trace 仍 404",
+                                 "commit":  "48610cc fix(traces): spans 端点适配 traces.spans 双形态，修复 500（DEF-BE-148-009）—— 3 文件 +259/-2，显式路径 git add，TDD 合规",
+                                 "docs":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.14.0）；doc/test/OpenBase-测试报告-v1.4.8.md（v2.8.0，§7 #19 / §11）；OpenLLM DevLogReport（v1.5.0，第 16 批）；证据 §二十八"
+                             },
+                             "tt015Tt020Retest":  {
+                                 "id":  "TT-015 / TT-020 复测（CR-148-012）",
+                                 "date":  "2026-09-21",
+                                 "result":  "两项均转 PASS：TT-020 以 context_metrics 为判据（counted=True、segment_tokens={'history':100,'query':7}、prompt_total=118；对照组不带 messages 时 history=0）；TT-009 残留 PASS（token 分项非 0）；TT-015 两组件均执行（executed=['memory','rag','llm']、degraded=[]、rag_source=external、segment_tokens={'rag':36,'query':21}、rag.injected_items=1/injected_tokens=36）",
+                                 "newDefects":  [
+                                     "DEF-BE-148-010（P1，第零段计量未接线）：两路径组装 build_prompt 未传 count_tokens → counted=False、分项恒 0；修复＝新增 default_token_counter()（两路径同口径）并两处传入；TDD RED→GREEN 8 passed；提交 c89ffc2（4 文件 +138/-2）",
+                                     "DEF-BE-148-011（P1，OpenMemory 读路未按真实契约分派）：search() 硬编码 stub 路径 /openmemory/v1/search → 真实档案下 HTTP 403 → 组件 memory 恒降级（写路 remember() 本已分派、两处 env 均已开 real，故仅读路缺）；修复＝search() 按 real_mode 分派 recall()；TDD RED→GREEN 26 passed（stub 无回归）；提交 d060b3f（2 文件 +97）"
+                                 ],
+                                 "corrections":  [
+                                     "「无可用 kb_id」系探测未带 X-API-Key 所致（带头上 OpenRAG /api/v1/collections 返回 12 个集合），非环境缺陷",
+                                     "原「contexts 含 memory_ctx/rag_ctx」不可从响应观测 → 改以回执计量为等价证据",
+                                     "§7 #13 原将 counted=false 定性为「设计语义」→ 更正为「接线缺失」"
+                                 ],
+                                 "residual":  [
+                                     "TT-015 memory 侧 items_count=0（数据侧无命中，非组件故障）",
+                                     "dps（8030）不可用 → TT-016 profile 真链路未验证（H 类）"
+                                 ],
+                                 "docs":  "doc/test/OpenBase-测试报告-v1.4.8.md（v2.9.0，§3 第 4 行 6/0、§7 #22、§11）；doc/test/OpenBase-测试用例-v1.4.8.md（v1.4.0，§2.1 TT-015/TT-020 → ✅）；doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.15.0，CR-148-012）；OpenLLM DevLogReport（v1.6.0，第 17 批）；证据 §二十九"
+                             },
+                             "t3MockBatchV148":  {
+                                 "id":  "T3 巡检与 Mock 批次（CR-148-013）",
+                                 "date":  "2026-09-22",
+                                 "scope":  "TT-021~024（Mock，4 例）+ TT-028/TT-029（T3，2 例）；TT-025/026 不适用、TT-027 由 TT-028 替代",
+                                 "environment":  "仓库既有 4 桩前台长驻：openrag 8090 / openmemory 8091 / profile 8092 / product 8093；端口预检全空闲；就绪 4/4；三桩无 /health（以只读路由为探针）",
+                                 "result":  {
+                                     "tt021":  "7/7 ✅（端口无冲突、无静默跳过、四桩契约、故障注入端点可用）",
+                                     "tt022":  "5/5 ✅（开关 true + 故障注入 → rag_source=builtin、degraded=[]、回答 696 字；收尾 recover 恢复）",
+                                     "tt023":  "4/4 ✅（开关 false → degraded=['rag']、rag_source=skipped、主流程 200/265 字）",
+                                     "tt024":  "❌ 3/3 断言未达（未注册却触发回退）",
+                                     "tt028":  "⚠️ 4/5 链路 OK（memory / rag / llm / 编排总链；代码类 5xx = 0；profile 链因 DPS 未启动为 H 类）",
+                                     "tt029":  "✅ 4/4（C 201 / U 201×2 / R 本会话 2·异会话 0 / 归档 POST /api/v1/conversations/{id}/archive → 200）"
+                                 },
+                                 "newDefect":  "DEF-BE-148-012（P1，待修复）：RAG 适配器未注册时仍触发内置回退（degraded=[]、rag_source=builtin），与 DevLogReport §13.1 第十二批已批准语义（降级、不触发回退）不符；定位＝handler 装配层把「装配缺失」并入「外部失败」",
+                                 "notApplicable":  "TT-025 / TT-026（无前端工程）；TT-027 由 TT-028 替代",
+                                 "p3":  "三桩缺 /health 端点（以只读路由为存活探针）",
+                                 "docs":  "doc/test/OpenBase-测试报告-v1.4.8.md（v3.0.0，§3 第 5/6 行、§7 #23、§8、§11）；doc/test/OpenBase-测试用例-v1.4.8.md（v1.5.0，§4/§5）；doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.16.0，CR-148-013）；证据 §三十"
+                             },
+                             "defectFixDb12":  {
+                                 "id":  "DEF-BE-148-012（P1，RAG 装配缺失不得触发内置回退）",
+                                 "rootCause":  "openllm_gateway._build_component_handlers._rag_handler（:341-370）以 except Exception 把「装配缺失（适配器未注册 / client 未注入）」与「外部检索失败」混为一类并统一触发内置回退；共用组件步骤 component_pipeline.run_components（:112-117）对 ComponentUnavailableError / asyncio.TimeoutError 恰是记降级、不回退 → 第十二批语义变更只落到 component_pipeline，网关 handler 包装仍是旧行为（违反 AC-148-03-1）",
+                                 "fix":  "异常链前置 except (ComponentUnavailableError, asyncio.TimeoutError) → warning 后 raise（上层记降级、不回退）；原 except Exception 语义不变（外部失败仍按开关回退）；局部导入异常类",
+                                 "tdd":  "tests/unit/test_rag_unregistered_no_fallback.py（4 例）RED 2 failed / 2 passed → GREEN 4 passed（外部失败 2 例为既有行为基线）",
+                                 "staticQuality":  "新护栏 All checks passed；openllm_gateway.py 零告警、改动行零告警（首轮漏导入致 F821，测试即刻暴露）",
+                                 "regression":  "tests/unit 全量 2203 passed / 13 failed（基线 2188 / 13，failed 数一致 → 无回归）；615 error 为根 conftest 既知环境缺陷",
+                                 "runtime":  "TT-024 原配置复测 3/3 通过：degraded=['rag']、rag_source=skipped（原 builtin）、主流程 200/271 字、两形态一致",
+                                 "commits":  [
+                                     "ef3d44e fix(gateway): 装配缺失不触发内置 RAG 回退，与已批准语义对齐 —— 2 文件 +120/-1（显式路径、TDD 合规）",
+                                     "8d390b6 docs(v148): DevLogReport 升版 v1.7.0（第 18 批：RAG 装配缺失不得触发回退）"
+                                 ],
+                                 "docs":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.17.0）；doc/test/OpenBase-测试报告-v1.4.8.md（v3.1.0，§3 第 5 行 4/0、§7 #23、§11）；doc/test/OpenBase-测试用例-v1.4.8.md（v1.6.0，§4 TT-024 → ✅）；OpenLLM DevLogReport（v1.7.0，第 18 批）；证据 §三十一"
+                             },
+                             "tt044BaselineTooling":  {
+                                 "id":  "TT-044（基线工装端到端骨架验证，UAT 第 4 例）",
+                                 "date":  "2026-09-22",
+                                 "scope":  "第零段七项工装端到端跑通 + 报告骨架四要素齐备（TT-044 验收项）",
+                                 "driver":  "OpenLLM/backend/scripts/run_baseline_pipeline.py（仅复用既有工装模块做数据编排，不重复实现，不落存片段/回答正文）",
+                                 "command":  "python scripts/run_baseline_pipeline.py --out doc/test/evidence/v148/tt044-baseline-pipeline-skeleton-20260922.md",
+                                 "exitCode":  0,
+                                 "result":  {
+                                     "goldenSet":  "total=35、场景 7（S1~S7 各 5）、负例 10（S6/S7 两组）、ok=True；评分记录模板 9 项（含四维评分）",
+                                     "sampling":  "抽样 30（= 可判定下限 MIN_SAMPLES）",
+                                     "attributionB":  "判定模型 skeleton-judge-v1 / prompt ab-judge-v1（演示注入；真实判定模型由调用方注入且不与被评同源）；标签计数 used 30 / unused 30 / uncertain 30",
+                                     "calibration":  "漏检率（校准样例）0.500，区间 [0.45, 0.55]（窗口 ±0.05）",
+                                     "wcr":  "硬浪费 0.23 / 软占用 0.29 / 必要占用 0.49，三分之和 = 1.00；judgeable=True、样本量 30",
+                                     "render":  "报告骨架四要素齐备（方法 / 样本量 / 漏检率区间 / WCR 三分）+ 判定方法三要素 + 结论"
+                                 },
+                                 "regression":  "5 个工装相关单测文件（test_golden_set_and_scale / test_attribution_b_tool / test_baseline_report_tool / test_context_metrics_instrumentation / test_s4_t1_baseline_probe）59 passed / 0 failed（--noconftest 规避根 conftest 的 pgAdmin 路径遮蔽既知环境缺陷）",
+                                 "staticQuality":  "ruff check scripts/run_baseline_pipeline.py → All checks passed!",
+                                 "commits":  [
+                                     "cb3d301 test(v148): 新增 TT-044 基线工装端到端驱动（骨架验证，仅数据编排）—— 1 文件 +234（显式路径 add）"
+                                 ],
+                                 "artifact":  "doc/test/evidence/v148/tt044-baseline-pipeline-skeleton-20260922.md（标注「骨架验证」属性；含复现与验证记录、各环节实测值、单测回归）",
+                                 "limitation":  "骨架验证产物：回执为固定集构建样例、判定为演示注入（skeleton-judge-v1）、WCR 计数为注入值；真实 B0/B1 数值测量以 D3 + 真实回执导出（AC-148-01-1）为前提，不得以样例值充当基结论",
+                                 "docs":  "doc/test/OpenBase-测试报告-v1.4.8.md（v3.2.0，§1 结论 UAT 4/4、§3 第 13 行、§8 UAT 行 041~044）；doc/test/OpenBase-测试用例-v1.4.8.md（v1.7.0，§7 TT-044 → ✅）；证据 tt044-baseline-pipeline-skeleton-20260922.md"
+                             },
+                             "perfTargetDefinition":  {
+                                 "id":  "性能批次前置解除：P99 目标值定义（TT-038 / TT-039 通过标准）",
+                                 "date":  "2026-09-22",
+                                 "driver":  "TT-v1.4.8-038 通过标准原为「P99 < 目标值（目标值须在执行前确定）」，且需求 §5 性能仅定性（回写对主链路时延影响 = 0）无数值门禁 → 目标值缺失使性能批次不可执行、不可判定（Step 4 剩余项）",
+                                 "definition":  "doc/design/OpenBase-非功能设计说明-v1.4.8.md v1.1.0 §1.1（新增；状态 [Review] 待人工批准）—— 12 项分级目标 + 口径声明 + 测试方法 + 4 项不适用声明；测试侧只引用不另立",
+                                 "caliber":  "判定对象＝本仓步骤耗时（routing_trace / traces.spans 步骤计时形态 [{step,ms}]，扣除 llm 步骤即本仓额外开销）；端到端只观测不判定（上游 LLM/检索耗时不由本仓决定；本机端到端差分噪声 8~16ms 下 S7 审计已判不可判）；不得以端到端数字冒充达标",
+                                 "targets":  {
+                                     "P-1":  "同步 /chat 本仓步骤耗时（不含 llm）P50 ≤50ms / P95 ≤100ms / P99 ≤200ms",
+                                     "P-2/P-5":  "同步端到端与流式总时长：只观测不判定",
+                                     "P-3":  "SSE routing 首包 P95 ≤1s / P99 ≤2s（须 < 整体超时 5000ms）",
+                                     "P-4":  "SSE 首包本仓额外开销 P95 ≤100ms",
+                                     "P-6":  "GET /openllm/v1/writeback/receipts P50 ≤100ms / P95 ≤300ms / P99 ≤500ms，5xx=0",
+                                     "P-7":  "回执查询 @1e4 行 P95 ≤1s / P99 ≤1.5s；不达标登记技术债、不判版本失败（payload_json 未建索引为已知项）",
+                                     "P-8":  "GET /openllm/v1/trace/metrics/export P95 ≤500ms / P99 ≤2s",
+                                     "P-9":  "GET /api/v1/conversations/{id}/messages P50 ≤100ms / P95 ≤300ms / P99 ≤500ms",
+                                     "P-10":  "回写对主链路时延影响操作化：请求路径内同步新增耗时 P99 ≤5ms 且经异步队列派发（无同步等待）",
+                                     "P-11":  "吞吐 ≥ 首个可复现基线 80%",
+                                     "P-12":  "错误率 < 0.1%；读类端点 5xx = 0"
+                                 },
+                                 "method":  "基准（单用户 5min）→ 负载（并发 8，对齐聚合信号量并发 8）→ 压力；每档 ≥200 请求取分位数；TT-039 以回执 1e4 行为档位；复现须记录实例（端口/是否加载 .pylib/是否带编排器 Env）、模型后端、并发、样本量、库行数、命令与时间",
+                                 "basis":  "数值全部取自本仓既有先例：非功能设计 v1.4.3（llm-proxy P95 ≤500ms / 模型列表 P95 ≤300ms / SSE 首包 P95 ≤1s）、v1.4.4（rag-proxy / 知识库列表 / SSE 首包）、v1.4.5（dps-proxy / 画像列表）、v1.4.6（检索响应 P99 <2s）；系统架构 v1.3.0（代理透传额外延迟 <100ms）；告警规则（P99>500ms → P1）；S7 方案 §6（P99 增量 <5ms）。不新增产品需求",
+                                 "notApplicable":  [
+                                     "容量规划（CPU/内存/磁盘/网络峰值、扩容策略）—— 本机为开发机，无生产容量与流量模型",
+                                     "可用性 SLO ≥99.9% 与错误预算 —— 无生产长周期运行数据",
+                                     "前端性能（Core Web Vitals / 首屏）—— 本工作区无 OpenBase/OpenLLM 前端工程"
+                                 ],
+                                 "docs":  "doc/design/OpenBase-非功能设计说明-v1.4.8.md（v1.1.0 §1.1/§7，状态 [Approved] 2026-09-22 人工批准）；doc/test/OpenBase-测试报告-v1.4.8.md（v3.4.0，§3 第 11 行、§8 性能行、§11 段 + 放行条件 ⑤/⑥/⑦）；doc/test/OpenBase-测试用例-v1.4.8.md（v1.9.0，§6 TT-038/039 结果、§5 跳过项拆分）；doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.0.0）",
+                                 "pending":  "设计文档 v1.1.0 **已获人工批准（2026-09-22）**；`TT-038`/`TT-039` 已执行（见 perfBatchExecution）"
+                             },
+                             "perfBatchExecution":  {
+                                 "id":  "性能批次执行（TT-038 / TT-039，Step 4 剩余项）",
+                                 "date":  "2026-09-22",
+                                 "driver":  "OpenLLM/backend/scripts/run_perf_batch.py（新增；受控、可复现、只观测；并发上限 8 + 客户端节流 + nonce 缓存规避 + 429 重试）；提交 829c756（test(v148)，1 文件 +506，ruff All checks passed）",
+                                 "targets":  "《非功能设计说明-v1.4.8》v1.1.0 §1.1（P-1~P-12；2026-09-22 人工批准）",
+                                 "command":  "基础档：--samples 200 --chat-samples 60 --stream-samples 30 --concurrency 8 --rate 0.75 --warmup 3；TT-039 档：--samples 200 --endpoints receipts（先播种 1e4 行）",
+                                 "environment":  "OpenLLM 8041（常驻，version 2.14.3，280 路径）；openmemory ok / openrag client_not_injected / dps unavailable（latency_ms=2046）；PostgreSQL 5432 + 回写队列 SQLite（backend/data/writeback.db）；账号 v148-perf",
+                                 "result":  {
+                                     "TT-039":  "✅ 通过 —— 回执 @10,140 行 n=200 / 0 错误：P50 236.5ms / P95 664.0ms / P99 864.8ms（目标 P95 ≤1000 / P99 ≤1500）→ 不立技债；规模 140→10,140 行 P95 增至 2.32×（容量观察项）",
+                                     "TT-038":  "❌ 未通过（受限口径）—— 4 达标（P-3 流式首包 P95 68.3ms / P-7 / P-8 计量导出 P95 274.9ms / P-9 消息查询 P99 128.4ms）；2 未达标（P-1 同步本仓开销 P50 2401.3ms vs ≤50ms；P-6 回执查询 P50 112.6ms 超限 12.6ms）；2 未判定（P-10 计量缺口 / P-11 吞吐受全局限流）；P-12 错误率未达标（同步 13.3% / 流式 6.7%）",
+                                     "readEndpoints":  "P-6 n=200 P50 112.6 / P95 286.4 / P99 484.2ms；P-8 n=200 P50 185.6 / P95 274.9 / P99 786.7ms；P-9 n=200 P50 85.0 / P95 118.3 / P99 128.4ms（三档 0 错误 / 0 次 429）",
+                                     "syncChat":  "n=60（成功 52 / 错误 8）；端到端 P50 3110.6 / P95 3368.4 / P99 3530.4ms；llm 步骤 P50 657 / P95 967ms；本仓开销 P50 2401.3 / P95 2585.0 / P99 2650.9ms；未计量差额 = 本仓开销（步骤集合仅 auth/llm）",
+                                     "streamChat":  "n=30（成功 28 / 错误 2）；routing 首包 P50 31.5 / P95 68.3 / P99 115.5ms；序列完整性 True"
+                                 },
+                                 "environmentConstraints":  [
+                                     "C-1 网关全局限流 1 req/s（burst 60，进程环境变量，运行中不可外部修改）→ 并发 8 档位不可达成（突发第 64 次起持续 429 rate_limit_exceeded）；改为客户端节流 0.75 req/s 执行；P-11 吞吐未判定",
+                                     "C-2 语义缓存阈值 0.92（键 user_id+query）命中即返回缓存并落空 timeline → 以唯一 nonce 规避，命中样本剔除（实测 0 命中）",
+                                     "C-3 DPS 不可用（探针 latency_ms=2046）→ 同步对话 ~2.4s 未被 timeline 计量的差额",
+                                     "C-4 成本优先路由选中不可用模型 qwen3:0.6b（reason=cost）→ 对话/流式 5001；定点探测 qwen3:0.6b → HTTP 500 5001（4713ms），deepseek-v4-flash → 200（3237ms）；fallback_model 未救回（原因待确认）"
+                                 ],
+                                 "dataChanges":  [
+                                     "users.organization_id 为 v148-perf 绑定既有租户（affected_rows=1；绑定前 POST /api/v1/conversations → 500 因 conversations.tenant_id NOT NULL）→ 回滚：UPDATE users SET organization_id = NULL WHERE username = 'v148-perf';",
+                                     "新建专用会话 perf-batch-v148 + 3 条消息（P-9 测量对象；测试数据）",
+                                     "回写队列播种 1e4 行（session_id LIKE 'perf-tt039-%'）→ 已清理：删除 10,000 行、残留 0（队列回 213 行）"
+                                 ],
+                                 "newFindings":  [
+                                     "新问题（P2，待定性：缺陷 or 配置）：成本优先路由选中不可用模型 qwen3:0.6b → 对话/流式偶发 5001（流式 event: error 且无 done）；**与既有 P3「偶发 500（未复现）」疑同源**，本轮给出可复现判定路径（已登记 §7 #24 / CR-148-014）",
+                                     "计量口径缺口：timeline 未覆盖「画像拉取 / 回写派发」→ 阻塞 P-1 / P-10 的公平判定（建议补步骤计时或提供压测用关闭画像注入开关）",
+                                     "P-6 边缘超限：回执查询 P50 112.6ms（目标 ≤100ms，超 12.6ms）→ 连续两轮超限即立缺陷",
+                                     "容量观察项（非技债）：TT-039 已达标，但 140→10,140 行 P95 增至 2.32× → ≥1e5 行前评估 payload_json 过滤索引化"
+                                 ],
+                                 "docs":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.1.0）；doc/test/OpenBase-测试报告-v1.4.8.md（v3.5.0，§1/§3 第 11 行/§7 #24/#25/§8/§11/§12）；doc/test/OpenBase-测试用例-v1.4.8.md（v1.9.0，§2.1/§6）；doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.19.0，CR-148-014/015）",
+                                 "pending":  "① 专用压测实例（提高 RATE_LIMIT_PER_SECOND）复测并发 8 档位并测取 P-11 吞吐基线；② 补「画像拉取 / 回写派发」计量覆盖后重判 P-1/P-10；③ **模型路由可用性门禁缺口已修复（见 defectFixDb15）**；④ 核查 P-6 边缘超限"
+                             },
+                             "defectFixDb15":  {
+                                 "id":  "DT-148-015（模型路由可用性门禁缺口；Step 4 发现 → 回溯 Step 3 修复）",
+                                 "date":  "2026-09-22",
+                                 "rootCause":  "三处叠加：① _route_model_auto 候选构建硬编码 health_status='healthy' / fail_count=0 → ModelRouter 健康过滤（health_status != healthy 或 fail_count >= 阈值）恒空转；② 候选构建完全不校验 provider → 「active 模型挂 inactive provider」（实测 gpt-4 ← deepseek2）照样入选；③ 路由器每请求 ModelRouter() 新建 → record_failure 结果随请求丢弃（熔断永不 open），且网关从未调用 record_failure",
+                                 "fix":  "新增 _build_model_candidates()（provider 门禁 + provider 真实健康透传 + 路由器实时失败计数）；_get_model_router() 改进程级单例（@lru_cache(maxsize=1)）；新增 _note_model_outcome() 并在同步 _call_llm_once / 流式 _stream_llm_with_health 回写调用结果（失败累加 / 成功清零）；候选全被 provider 门禁排除时返回 1004",
+                                 "tdd":  "tests/unit/test_model_router_availability_gate.py（7 例）RED（7 failed：缺 _get_model_router/_build_model_candidates）→ GREEN 7 passed",
+                                 "staticQuality":  "ruff check app/api/openllm_gateway.py tests/unit/test_model_router_availability_gate.py → All checks passed（首轮 F401 未用导入已清理）",
+                                 "regression":  "tests/unit 全量 2210 passed / 13 failed / 615 error；13 failed 与基线完全一致（无回归）；615 error 为根 conftest 既知环境缺陷",
+                                 "runtimeVerification":  "进程内真实数据：候选 4 → 1（跳过 inactive provider 的 gpt-4）、首次选中 deepseek-v4-flash、对其记 3 次失败后重选改判 ⇒ 熔断排除生效 = True；定点探测 3 个本地模型均 500（qwen3:0.6b → 5001 LLM 组件调用失败），deepseek-v4-flash → 200",
+                                 "dataChanges":  [
+                                     "qwen3:0.6b 未部署 active 行 → inactive（affected_rows=1）",
+                                     "ollama / ollama-lan 两 provider 下全部 active 模型 → inactive（affected_rows=3）",
+                                     "回滚：UPDATE llm_models SET status='active' WHERE model_code IN ('qwen3:0.6b','qwen2.5:0.5b','llama3.2:1b')"
+                                 ],
+                                 "attributionCorrection":  "重要更正：压测错误率（同步 13.3% / 流式 6.7%）**不是**由「不可用模型被选中」造成 —— routing 事件中的 qwen3:0.6b 是路由前取值（settings.DEFAULT_LLM_MODEL）；失败请求 trace 实测 model=deepseek-v4-flash、error_code=5001、latency_ms=null，错误文案为网关 5001 兜底（非 LLM 组件调用失败）→ 错误率来源拆出为独立项「间歇性 5001（P2 待定性）」",
+                                 "newOpen":  [
+                                     "间歇性 5001（deepseek-v4-flash，latency_ms=null）：根因未捕获（旧实例 stdout 未落盘）→ 须以日志落盘方式重启实例后复现取栈；与既有 P3「偶发 500」并轨跟踪；阻塞 P-12 错误率与 TT-038 复测",
+                                     "被测实例（8041）为修复前构建 → 修复后 HTTP 端到端复测需带编排器 Env 重启实例",
+                                     "失效 provider 的模型治理：inactive provider 下的模型应同步下线（本轮以数据修正临时覆盖）"
+                                 ],
+                                 "commits":  [
+                                     "6cb1f61 fix(gateway): 模型路由可用性门禁补全（provider 门禁 + 真实健康 + 熔断跨请求生效）—— 2 文件 +271/-22（含 7 例护栏，显式路径）"
+                                 ],
+                                 "docs":  "OpenLLM 仓 `doc/development/OpenLLM-R396-R398-会话编排前置与回写闭环-DevLogReport-v1.0.0.md`（**v1.8.0，第 19 批**：§3.1 批次表 / §4 增量 / §5 验证 / §6 回归缺陷 2 + 归因更正 / §7 未完成事项 5~7 / §8 修订历史）；doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.1.0 §6 #1 / §6.1 / §6 #6）；doc/test/OpenBase-测试报告-v1.4.8.md（v3.5.0 §7 #24/#25、§11）；doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.19.0 CR-148-015）；证据 doc/test/evidence/v148/dt148-015-*"
+                             },
+                             "defectFixDb16":  {
+                                 "id":  "DT-148-016（ORM 分离实例访问致间歇 5001；Step 4 复现取证 → 回溯 Step 3 修复）",
+                                 "date":  "2026-09-22",
+                                 "captureMethod":  "以日志落盘方式 1:1 重启被测实例（PORT=8041 + PYTHONDONTWRITEBYTECODE=1，2>&1 | Tee-Object → logs/openllm-20260922.log；经实测后台 Start-Process 会被沙箱回收，须前台长驻）→ 复现 3 处 Traceback",
+                                 "rootCause":  "sqlalchemy.orm.exc.DetachedInstanceError：会话提交/关闭后 ORM 属性过期，请求路径再读该属性触发懒加载刷新即抛错（Instance <Model/User> is not bound to a Session）→ 网关注解为 5001 内部错误（故 latency_ms=null）。三处命中：① _call_llm_once 成功路径读 model_obj.id（DT-148-015 新增行引入）；② _stream_llm 读 identity.user.organization_id（既有）；③ 两处计费读 provider.id / model_obj.id（既有）",
+                                 "fix":  "GatewayIdentity 增 organization_id / role 标量并在 JWT / API Key 两处建身份时固化；请求路径 11 处 identity.user.* 全改标量；_call_llm_once / _stream_llm await 前固化 model_id（流式经 usage_holder 传递）；新增 _safe_orm_id() 兜底计费元数据",
+                                 "runtimeVerification":  "1:1 重启后端到端：同步 20/20、流式 20/20 全通过（错误率 0%）——修复前同口径 3/40 = 7.5%；新实例日志 Traceback 0 / DetachedInstanceError 0 / 「内部错误」0 / status_code 500 0；/openllm/v1/health = healthy（2.14.3）",
+                                 "regression":  "tests/unit 13 failed / 2210 passed / 615 error（与基线逐项一致，无回归）；ruff All checks passed；两处测试替身（test_rag_unregistered_no_fallback.py、test_s4_t5_prefix_normalize.py）按身份契约补齐标量字段（契约漂移修正，非放宽断言）",
+                                 "residual":  "计费 provider_id/model_id 极端情况下可能落 None（以兜底换取可用性）→ 建议后续在模型查询处固化标量并向下透传（未改函数签名以避免大范围波及）",
+                                 "commits":  [
+                                     "da312d6 fix(gateway): 消除 ORM 分离实例访问导致的间歇 5001（身份/模型标识改取标量）—— 3 文件 +73/-24"
+                                 ],
+                                 "instance":  "8041 实例已以日志落盘方式重启（前台长驻，logs/openllm-20260922.log），当前运行修复后构建",
+                                 "docs":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.2.0 §6 #6 / §6.2 / §7 第 7 项）；doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.20.0 CR-148-016）；证据 doc/test/evidence/v148/dt148-016-detached-instance-stack-20260922.log、dt148-016-smoke-after-fix-20260922.json"
+                             },
+                             "perfConcurrencyFinding":  {
+                                 "id":  "TD-新增-027（并发下服务端串行化；P1；Step 4 性能专测发现）",
+                                 "date":  "2026-09-22",
+                                 "evidence":  "专用压测实例 8042（RATE_LIMIT_PER_MINUTE=60000 / PER_HOUR=1000000，限流实质性放开，压测期间 429=0）并发 8 / 不限速 / n=60：peak_in_flight=8（驱动并发确实生效）、achieved_rps=1.578、P50 918.8ms、P95 17145.8ms、P99 21901.0ms、1 次 RemoteProtocolError；对照单发 68~252ms（均值 144ms）→ P50 劣化 6.4×、P95 约 119×、吞吐仅为真并行理论值(约 55 req/s)的 2.9%",
+                                 "rootCause":  "async def 路由内使用同步 SQLAlchemy / SQLite 会话与同步 echo 日志（如 app/api/openllm_gateway.py 的 list_writeback_receipts），阻塞事件循环 → 请求被串行化",
+                                 "attributionCorrection":  "更正：此前判定「驱动脚本客户端侧串行发送」为误判；实测 peak_in_flight=8 证明驱动并发有效，瓶颈在服务端",
+                                 "driverEnhancement":  "scripts/run_perf_batch.py 新增 _InFlight 在飞计数器 + achieved_rps / peak_in_flight 字段（P-11 可判定）；护栏 tests/unit/test_perf_batch_concurrency.py 5 例；ruff 全绿",
+                                 "loadCaliber":  "负载口径已明确为双口径并写入《OpenBase-非功能设计说明-v1.4.8》v1.2.0 §1「判定口径」行：单飞档判功能可用性与基线时延；并发 8 档判吞吐与尾延迟（须同报 achieved_rps 与 peak_in_flight）；任一结论必须注明口径",
+                                 "commits":  [
+                                     "fcae47f test(perf): 驱动补并发可测化计量（在飞峰值/实测吞吐），确认驱动并发有效 —— 2 文件 +159/-4"
+                                 ],
+                                 "docs":  "doc/version/global/OpenBase-技术债务总表.md（v0.7.0，TD-新增-027 + 口径说明 + 修订历史）；doc/design/OpenBase-非功能设计说明-v1.4.8.md（v1.2.0，判定口径行 + 修订历史）；doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.3.0 §6 #7）；证据 doc/test/evidence/v148/tt038-reads-conc8-20260922.json",
+                                 "pending":  "① 并发劣化的偿还（异步化/线程卸载 + 关闭 echo 日志 + 多 worker 评估）属架构级改动，须单独立项；② 补「画像拉取 / 回写派发」timeline 计量覆盖后 P-1/P-10 方可公平判定（Step 3 代码改动，未执行）"
+                             },
+                             "perfDualCaliberClosure":  {
+                                 "id":  "TT-v1.4.8-038 双口径复跑与性能批次收口（Step 4）",
+                                 "date":  "2026-09-22",
+                                 "caliber":  "按《OpenBase-非功能设计说明-v1.4.8》v1.2.0 §1.1.3「判定口径（双口径）」：单飞档（任意时刻仅 1 请求在飞）判功能可用性与基线时延；并发 8 档（不限客户端节流）判吞吐与尾延迟，须同报 achieved_rps 与 peak_in_flight；任一结论必须注明口径",
+                                 "envCorrection":  "① 限流改为中间件实际键名 RATE_LIMIT_ENABLED/RATE_LIMIT_PER_SECOND=10000/RATE_LIMIT_BURST=100000（用户级、路由级同量级），启动日志实证 global=10000.0/s(burst=100000)——此前误用 RATE_LIMIT_PER_MINUTE/PER_HOUR 属 core/config.py 应用层设置，对请求中间件无效，构成「以为已解除 C-1 实则未解除」，该轮 429=124~178 的调试结果已主动废弃、未计入任何结论；② 压测实例置 DEBUG=false 关闭 SQLAlchemy echo（app/db/session.py echo=settings.DEBUG），消除单飞档被 echo 日志 I/O 拖慢至约 2.3 s/请求的污染",
+                                 "results":  {
+                                     "singleFlight":  "concurrency 1 / rate 0.75（与 v1.0.0 基线同节流参数，peak_in_flight=1，429=0）：P-3 80.1/113.1/116.1ms 达标；P-9 72.6/108.8/182.2ms 达标；P-12 错误率 0/690=0% 达标；P-1 本仓开销 2629.4/2964.6/3615.6ms 未达标；P-6 132.1/359.2/613.5ms 未达标（5xx=0 达标）；P-8 339.9/741.7/974.8ms 未达标（P95 超、P99 达标）；P-4/P-10 未判定",
+                                     "concurrency8":  "concurrency 8 / rate 0（不限节流，peak_in_flight=8 自证，429=0）：P-3 205.8/958.9/1024.5ms 达标；P-11 吞吐 9.317 req/s 达标；P-1 4536.3/6583.7/7014.6ms；P-6 739.2/1696.6/1906.7ms；P-8 2762.1/3941.5/4014.4ms；P-9 468.0/1018.4/1170.0ms；P-12 错误率 10/690=1.45%（读类 9/600，含 1 例 internal_error 5xx，9 例 RemoteProtocolError）",
+                                     "throughputBaselineCompare":  "P-11 与 v1.3.0 为同端点（P-6）同口径（并发 8、不限节流）可直接对比：baseline 1.578 req/s → 9.317 req/s（5.9×）；P50 918.8→739.2ms；P95 17145.8→1696.6ms（10.1×↓）；P99 21901.0→1906.7ms（11.5×↓）；错误率 1.67%→0.50%。主导因素为关闭 echo 日志，DT-148-015/016 修复为叠加项（未做分离实验）",
+                                     "diagnosticUnpaced":  "单飞·不限节流（诊断档，peak_in_flight=1）：P-6 P50 132.1→132.9ms、P-8 P50 339.9→350.9ms（差异<1%）→结论对节流不敏感；P-9 P99 182.2→612.5ms（3.4×↑）。并发收益比：单飞 6.501 req/s → 并发 8 9.317 req/s = 1.43×（理想 52 req/s，达 17.9%）→ TD-新增-027 未偿还",
+                                     "verdict":  "TT-v1.4.8-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）；TT-v1.4.8-039 维持通过（未重测）"
+                                 },
+                                 "dataScale":  "writeback_queue 473 行（复测前）→534 行（复测后）；traces 863 行。对比 v1.0.0 基线 140 行 / 242 行 = 3.4× / 3.6×（P-6/P-8 未达标须与该规模增长一并阅读）",
+                                 "newFindings":  {
+                                     "dt148019":  "P1 产品缺陷「画像拉取降级路径无失败短路/负缓存」：DPS 不可用时每请求固定付出约 2.04 s（隔离探针两次运行一致 2041.8/2036.5/2036.2ms 与 2043.1/2032.7/2047.5ms，均为 ConnectError；与健康探针 dps latency_ms=2046、timeline profile_fetch 约 2037ms 三处一致）；该连接失败并非瞬时 ECONNREFUSED 而是稳定约 2.04s；_build_profile_ctx 仅在失败后 return None 降级，无负缓存/短路；DPS 服务未启动属 H 类环境项，须与本缺陷分别处置",
+                                     "targetCaliberGap":  "性能目标未绑定「数据规模档位」：P-6 目标依据规模未绑定（140 行仅 P50 超 12.6ms；473 行三档全超），P-8 由达标转 P95 未达标（traces 242→863 行）",
+                                     "epochPollution":  "SQLAlchemy echo 日志污染曾显著夸大时延（单飞 GET 稳态约 2.3 s/请求；关闭后 P-6 P50 132.1ms），v1.3.0 并发劣化倍数（P95 约 119×）含该污染成分，定性不变"
+                                 },
+                                 "pending":  "① 修复 DT-148-019（画像拉取失败负缓存/短路 + 关闭画像注入开关，含 TDD）后复测 P-1；② 接线 P-10 计量（落点 app/edgerouter/orchestration/executor.py::EdgeRouterExecutor._schedule_writeback，须 TDD 护栏 + 全量回归）；③ 偿还 TD-新增-027（架构级，独立立项）；④ 为 P-6/P-8/P-9 目标补数据规模档位；⑤ 压测环境规范固化（限流以启动日志实证、压测实例一律 DEBUG=false）；⑥ H 类环境项：DPS 未启动，建议在依赖齐备环境补一轮 P-1 复测以分离缺陷与环境贡献",
+                                 "codeChanges":  "本收口轮 0 行产品代码改动（仅压测驱动/探针脚本与文档、证据）；验证命令：python -m pytest tests（沿用基线 13 failed / 2210 passed）、python -m ruff check openbase tests",
+                                 "docs":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.5.0：新增 §2.2 双口径复测环境 / §4.5 双口径结果 / §5.2 双口径最终判定 / §5.3 TT-038 最终结论；§3 新增 C-5/C-6；§6 新增发现 #9~#13；§7 结论与后续动作重排；§8 补登修订行 v1.2.0/v1.4.0 + v1.5.0）；doc/test/OpenBase-测试报告-v1.4.8.md（v3.7.0：§7 #26 + §8 性能行 + §11 v3.7.0 段 + 补登 v3.6.0 修订行与 §11 段 + 状态行/测试结论行）；doc/test/OpenBase-测试用例-v1.4.8.md（v2.0.0：§2.1 TT-038/TT-039 行重写 + 状态行 + 修订历史 v2.0.0）；doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.21.0：新增 CR-148-017 / CR-148-018 + 修订行）；证据 doc/test/evidence/v148/tt038-dual-single-flight-paced-20260922.json、tt038-dual-conc8-20260922.json、tt038-dual-single-flight-unpaced-20260922.json、tt038-dual-caliber-run-20260922.log、dt148-019-profile-fetch-cost-probe-20260922.py、dt148-019-profile-fetch-cost-probe-output-20260922.txt、tt038-scale-count-20260922.py、perf-instance-8041-env-proof-20260922.log"
+                             },
+                             "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 9 项产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012）已全部闭环，**新增待修 P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；两项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6，端到端错误率 0%）。剩余＝① 修复 DT-148-019 后复测 P-1；② 接线 P-10 计量（CR-148-018，须 TDD + 全量回归）；③ 偿还 TD-新增-027（架构级立项）；④ 为 P-6/P-8/P-9 目标补「数据规模档位」；⑤ 压测环境规范固化；⑥ 可访问性 TT-040 待前端服务；⑦ 前端类 TT-025/026 待前端就绪；⑧ TT-032（v1.4.7 报告逐项复测）与 TT-037（注入防护专项）未执行；⑨ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑩ P3 三桩缺 /health 与偶发 500 待观察"
                          },
                          "v1_4_7_step_4_o3_coverage":  {
                              "status":  "closed",

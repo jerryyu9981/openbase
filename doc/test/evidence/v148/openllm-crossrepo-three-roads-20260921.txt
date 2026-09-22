@@ -1,0 +1,112 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第七批：三路回写接齐）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017；TD-148-05 / BL-148-05（R-398 三路回写接齐；F-09 闭环）
+
+==================== 一、改动清单（本批） ====================
+
+修改（4 个源文件）：
+  app/edgerouter/orchestration/executor.py     execute() 新增 profile_writeback(+kwargs) 并在 LLM 成功后调度
+  app/edgerouter/orchestration/explicit.py     run() 新增 profile_writeback(+kwargs) 并透传
+  app/edgerouter/orchestration/auto.py         run() 新增 profile_writeback(+kwargs) 并透传
+  app/api/openllm_gateway.py                   ① _build_writeback_callback 扩为**三路**且回调返回 submit 结果
+                                               ② 同步路径解包 4 元组并向编排助手透传 profile 路
+                                               ③ 编排助手签名 + 两分支（explicit/auto）透传 profile 路
+                                               ④ **流式路径三路回写补齐** + 逐路受理回执写入 routing_trace
+
+测试（1 新增 + 1 更新）：
+  tests/unit/test_writeback_three_roads.py（新增 9 例）
+  tests/unit/test_session_axis_gateway.py（更新 2 例：适配回调 3→4 元组契约）
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（实现前）--
+命令：python -B -m pytest tests/unit/test_writeback_three_roads.py -q --confcutdir=tests/unit
+结果：7 failed, 2 passed
+  FAILED test_executor_invokes_profile_writeback
+         TypeError: PipelineExecutor.execute() got an unexpected keyword argument 'profile_writeback'
+  FAILED test_profile_writeback_skipped_without_llm_response（同上 TypeError）
+  FAILED test_explicit_orchestrator_forwards_profile_writeback
+         TypeError: ExplicitOrchestrator.run() got an unexpected keyword argument 'profile_writeback'
+  FAILED test_orchestrator_signatures_expose_profile_writeback
+         AssertionError: ExplicitOrchestrator.run 缺少 profile_writeback：第三路须贯通
+  FAILED test_returns_three_roads_and_kwargs
+         ValueError: not enough values to unpack (expected 4, got 3)
+  FAILED test_callback_returns_submit_result（同上 ValueError）
+  FAILED test_stream_path_records_writeback_receipt
+         AssertionError: 回执须记录三路受理状态（AC-148-05-2）
+  （2 passed = memory/rag 两路回归 + 流式回调构造护栏）
+
+-- 2.2 中间态修正（如实登记）--
+首轮实现后仍有 2 例失败：
+  - test_executor_invokes_profile_writeback / test_explicit_orchestrator_forwards_profile_writeback
+    原因：profile 回写走 `_schedule_writeback` 的 **asyncio 任务**（异步调度、不阻塞主链路），
+    用例未等待任务完成。修正：用例补 `await executor.drain_writebacks()`
+    （与既有 memory/rag 用例口径一致），非产品缺陷。
+随后全量回归暴露 2 例**契约漂移**：
+  - tests/unit/test_session_axis_gateway.py::TestWritebackSessionId 2 例按旧 3 元组解包，
+    回调扩为 4 元组后 ValueError。修正：用例适配新契约（3→4）。
+
+-- 2.3 GREEN --
+命令：同上
+结果：9 passed
+
+-- 2.4 合并回归（七批合计）--
+命令：python -B -m pytest（10 个测试文件，命令见历史）
+结果：89 passed
+
+-- 2.5 静态检查 --
+py_compile app/api/openllm_gateway.py app/edgerouter/orchestration/{executor,explicit,auto}.py
+                                                        → py_compile OK: 0 errors
+ruff check（新增测试 + explicit.py + auto.py）             → All checks passed!
+ruff check executor.py / openllm_gateway.py（本批改动区间）→ 无条目
+
+==================== 三、实现要点 ====================
+
+1) 第三路（profile）纳入编排（AC-148-05-1）
+   - `PipelineExecutor.execute` 新增 `profile_writeback` / `profile_writeback_kwargs`；
+   - 调度条件：`profile_writeback is not None and llm_response`（空响应不回写，
+     避免污染画像库；画像为固定注入段、不在 pipeline 组件内，故不要求组件存在）；
+   - `ExplicitOrchestrator.run` / `AutoOrchestrator.run` 与网关编排助手
+     `_run_orchestrated_chat`（explicit / auto 两分支）逐层透传。
+
+2) 回调三路化（R-398 核心）
+   `_build_writeback_callback` 返回 `(memory_cb, rag_cb, profile_cb, kwargs)`；
+   队列不可用时三路均为 None（降级语义不变，主链路不受影响）。
+
+3) 回写回执（AC-148-05-2）
+   - 回调**返回 `queue.submit` 结果**（True=新入队=accepted / False=幂等命中=duplicated），
+     使回执可区分受理状态；
+   - 流式路径逐路记录 `routing_trace["writeback"] = {memory|rag|profile: {status, session_id}}`，
+     通道异常逐路隔离（`failed` + 原因类型），**不影响主链路**；
+   - 流式仅在回答非空时回写（与同步路径口径一致）。
+
+4) 流式路径回写补齐（AC-148-05-4 / F-09 闭环）
+   流式端点此前**完全没有回写**；本批在流式收尾前构造三路回调并按路提交，
+   与同步路径共用同一回调构造（同一幂等键、同一持久化队列）。
+
+==================== 四、遗留与边界（如实登记） ====================
+
+1) **同步路径的逐路受理回执**：同步路径的回写由执行器以 asyncio 任务调度（fire-and-forget），
+   网关侧不参与，故 `routing_trace["writeback"]` 目前**仅流式路径**逐路记录；
+   同步路径的受理状态需经队列表（`writeback_queue.status/seq`）查询。
+   → AC-148-05-2「回执覆盖率 100%」**部分满足**，缺口已显式登记。
+2) **投递序号与「被丢弃项」**：seq 已由 F-08 修正为持久化来源；「被丢弃项标识」尚未落回执
+   （当前无丢弃逻辑，属第二批裁剪相关，v1.4.9）。
+3) R3（流式回写可行性）在本批按「收尾点聚合全文 + 逐路提交」实现；**端到端实测**
+   （真实上游 + 真实队列 + 重启对照）属 Step 4 范围，未执行。
+4) 第零段工装剩余 3 项：工装 5（归因 B 工具）、工装 6（固定集与评分表）、工装 7（汇总脚本）。
+5) conversations.py 会话消息落库与检索对齐会话标识口径。
+6) openbase-ui 会话标识提交（D2）。
+7) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+
+==================== 五、七批累计 ====================
+
+源文件（11 个，其中新增 3）：
+  app/services/context_manager.py / writeback_queue.py
+  app/api/openllm_gateway.py
+  app/edgerouter/orchestration/{assembler,history,prompt_pipeline,context_metrics,executor,explicit,auto}.py
+  tests/unit/conftest.py
+
+测试文件（9 个）：新增用例 80 个，连同既有回写队列用例共 **89 例全绿**。

@@ -1,0 +1,35 @@
+# OpenBase v1.4.8 Step 3 变更一致性自检证据（3.9b / 文档型 L3 走查）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / cwd = D:\Trae CN\myproject\Dev\OpenBase
+
+=== A) [Review] 状态残留检查（设计 / 评估 / 阶段审计，v1.4.8）===
+命令：Select-String -Pattern '状态 | [Review]'（SimpleMatch 关）
+扫描范围：doc\design + doc\audit\assessment + doc\audit\review 中 v1.4.8 文件（17 份）
+
+review_left_count=0
+（首轮扫描命中 2 处——设计评估报告 §6 与阶段审计报告-Stage2 §6 的「[Review] → [Approved]」内联写法；
+  已改为「[Approved]（…，由 [Review] 转来）」规范写法，复扫归零。）
+
+# 判定：17 份设计/审计交付物全部处于 [Approved] 或本阶段新增件 [Review]（不被本规则约束），无遗留待批状态。
+
+=== B) 修订历史章节齐备性（Step 3 新增件）===
+OpenBase-设计开发追溯矩阵-v1.4.8.md                修订历史=YES
+OpenBase-会话标识提交派单-openbase-ui-v1.0.0.md    修订历史=YES
+OpenBase-会话编排派单分发清单-v1.4.8.md              修订历史=YES
+
+# 判定：Step 3 新增 3 份交付物均含「修订历史」章节，符合文档版本管理规范。
+
+=== C) 关键契约关键词跨文档覆盖（防契约丢失）===
+session_id           hits=62
+max_seq              hits=16
+o200k_base           hits=3
+最长键优先             hits=7
+仅观测                 hits=18
+VC-014               hits=26
+重启后回写丢失数          hits=7
+
+# 判定：五大关键契约（会话标识 / 幂等序号持久化来源 / F-02 修正目标值 / F-02 修正算法 / 第零段仅观测硬约束）
+# 与两条版本硬约束（VC-014 本仓不改 OpenLLM 代码、重启后回写丢失数=0）在交付物集合中均有覆盖，无孤点契约。
+
+# L3 走查判定（文档型交付）：按各交付物「关键章节 → 判据」路径逐项走查，结论见
+#   doc\development\OpenBase-DevLogReport-v1.4.8.md §5（实际运行验证）。

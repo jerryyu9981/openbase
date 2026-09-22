@@ -1,0 +1,75 @@
+# OpenBase v1.4.8 前端实施证据（openbase-ui，第十一批：会话标识提交 D2 / R-396）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Node（vitest 2.1.8 + jsdom / vue-tsc / TypeScript 5.7）
+# 工作目录：d:\Trae CN\myproject\Dev\OpenBase\openbase-ui
+# 依据：VC-017；D2 契约《OpenBase-会话标识提交派单-openbase-ui-v1.0.0》§2
+
+==================== 一、仓库位置确认 ====================
+
+用户 2026-09-21 确认：**openbase-ui 位于 OpenBase 仓内**（`OpenBase/openbase-ui/`），
+此前「仓库位置未确认」的遗留项据此解除。
+
+==================== 二、改动清单（本批） ====================
+
+新增（1 个源文件 + 1 个测试文件）：
+  src/core/session.ts              前端会话标识模块（读取/新建/重置/注入；sessionStorage + 内存兜底）
+  tests/session-id.spec.ts         6 例
+
+修改（1 个源文件）：
+  src/core/api/llm.ts              `sendChat` / `sendChatStream` 请求体经 `withSessionId(...)` 注入
+                                   **可选** `session_id`；两方法 payload 类型新增 `session_id?: string`
+
+未改动：
+  其它 API 客户端（auth/dps/rag/gateway/http/logs/modules/testing/redirect）与页面组件均未改动；
+  页面调用方（如 Playground / ChatView）无需修改（`session_id` 为可选字段，自动注入）。
+
+==================== 三、RED → GREEN 证据 ====================
+
+-- 3.1 RED（实现前）--
+命令：npx vitest run tests/session-id.spec.ts
+结果：**1 file failed / no tests**
+  Error: Failed to resolve import "@/core/session" from "tests/session-id.spec.ts". Does the file exist?
+  （Vite 静态解析失败 = 被测模块尚不存在；属「功能缺失」型 RED）
+
+-- 3.2 GREEN（实现后）--
+结果：**Test Files 1 passed (1) / Tests 6 passed (6)**
+
+-- 3.3 前端全量回归 --
+命令：npx vitest run
+结果：**Test Files 19 passed (19) / Tests 204 passed (204)**（含本批 6 例；无既有用例回归）
+
+-- 3.4 类型检查 --
+命令：npx vue-tsc --noEmit
+结果：**0 errors**
+
+==================== 四、契约对应 ====================
+
+| D2 契约项 | 落点 | 用例 |
+|-----------|------|:----:|
+| 请求体字段 `session_id`，**可选** | `llm.ts` 两方法 payload 类型 + `session_id?: string` | ✅ |
+| 同一会话多轮**复用同一标识** | `session.ts#getSessionId`（会话内稳定） | ✅ |
+| 新建会话生成**新标识** | `session.ts#resetSessionId` | ✅ |
+| 标识**不含凭据类信息** | 随机值（`crypto.randomUUID`），用例断言不含 bearer/token/secret/password/sk- | ✅ |
+| 覆盖流式与非流式两条路径 | `sendChat`（stream:false）/ `sendChatStream`（stream:true） | ✅ |
+| 显式传入时以传入值为准 | `withSessionId` 显式优先 | ✅ |
+
+实现说明：
+  - 载体为 `sessionStorage`（同一标签页会话内复用）；存储不可用（隐私模式 / 测试环境）时
+    自动退化为内存值，**不抛错、不阻断发消息**；
+  - 标识仅为随机值，**不做用户 / 租户 / 设备编码**（避免承载身份信息）；
+  - 未改动 `http` 拦截器与鉴权链路。
+
+==================== 五、遗留（未完成） ====================
+
+1) **端到端未验证**：本批仅前端单元层与类型层证据；「前端提交的 session_id 经 OpenBase 网关
+   透传至 OpenLLM 并落进 `routing_trace` / 回写幂等键」需在集成环境实测（属 Step 4）。
+2) 页面级「新建会话即重置标识」的产品交互尚未接线（当前 `resetSessionId` 已就绪但无调用方；
+   现有页面无「会话切换」语义）。
+3) B0/B1 基线实测受 `D3` 约束未做。
+4) R3（流式回写可行性）端到端实测：属 Step 4。
+5) 四仓（含 openbase-ui 所属主仓）各自 DevFlow 登记。
+
+==================== 六、十一批累计 ====================
+
+OpenLLM（后端）：源文件 18 个（新增 7）+ 数据资产 1 个；测试文件 14 个；**134 passed**。
+openbase-ui（前端）：源文件 2 个（新增 1）；测试文件 1 个（6 例）；**204 passed / vue-tsc 0 错误**。

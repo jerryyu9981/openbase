@@ -1,0 +1,100 @@
+{
+  "base_url": "http://127.0.0.1:8041",
+  "concurrency": 8,
+  "rate_limit_per_second": 0.75,
+  "samples_per_metric": 0,
+  "warmup": 0,
+  "conversation_id": "8d63efbf-8891-4e9e-b5c4-0760c25b6e8a",
+  "read_endpoints": [
+    {
+      "metric": "P-6 回执查询",
+      "target": "见《非功能设计说明-v1.4.8》v1.1.0 §1.1.2",
+      "samples": 0,
+      "ok": 0,
+      "errors": 0,
+      "rate_limited": 0,
+      "error_rate": 0.0,
+      "error_samples": [],
+      "wall": {
+        "n": 0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      }
+    }
+  ],
+  "P-1_sync_chat": {
+    "samples": 20,
+    "ok": 20,
+    "errors": 0,
+    "cache_hits": 0,
+    "n_effective": 20,
+    "rate_limited": 0,
+    "error_samples": [],
+    "wall": {
+      "n": 20,
+      "p50": 3314.453,
+      "p95": 3746.62,
+      "p99": 5160.567,
+      "min": 2849.902,
+      "max": 5160.567
+    },
+    "llm_step": {
+      "n": 20,
+      "p50": 844.0,
+      "p95": 1203.0,
+      "p99": 1217.0,
+      "min": 343.0,
+      "max": 1217.0
+    },
+    "repo_overhead_excl_llm": {
+      "n": 20,
+      "p50": 2466.369,
+      "p95": 3368.609,
+      "p99": 4207.567,
+      "min": 2314.507,
+      "max": 4207.567
+    },
+    "repo_overhead_excl_all_steps": {
+      "n": 20,
+      "p50": 2466.369,
+      "p95": 3368.609,
+      "p99": 4207.567,
+      "min": 2314.507,
+      "max": 4207.567
+    },
+    "pipelines": [
+      "[\"llm\"]"
+    ],
+    "steps_seen": [
+      "auth",
+      "llm"
+    ]
+  },
+  "P-3_stream": {
+    "samples": 20,
+    "ok": 20,
+    "errors": 0,
+    "rate_limited": 0,
+    "error_samples": [],
+    "first_event": {
+      "n": 20,
+      "p50": 32.872,
+      "p95": 74.835,
+      "p99": 80.653,
+      "min": 25.865,
+      "max": 80.653
+    },
+    "total": {
+      "n": 20,
+      "p50": 2842.262,
+      "p95": 3121.063,
+      "p99": 3245.385,
+      "min": 2486.473,
+      "max": 3245.385
+    },
+    "routing_first_ok": true
+  }
+}

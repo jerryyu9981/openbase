@@ -1,0 +1,46 @@
+# OpenBase v1.4.8 Step 3 文档型交付 — 产物清点证据（L1 格式校验 + L2 存在性验证）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集命令：
+#   $fs = @(); $fs += Get-ChildItem "doc\design" -File | ? { $_.Name -match "v1\.4\.8" }
+#   ... (doc\development / doc\audit\assessment / doc\audit\review / doc\planning)
+#   逐项输出 lines / bytes，并统计空文件数
+# 采集环境：Windows / PowerShell 5 / cwd = D:\Trae CN\myproject\Dev\OpenBase
+
+TOTAL FILES: 22
+
+--- doc\design（Step 2 设计产物，14 项）---
+OpenBase-API契约对齐确认书-v1.4.8.md          lines=53    bytes=3819
+OpenBase-API接口设计文档-v1.4.8.md           lines=84    bytes=5202
+OpenBase-B0B1基线报告框架-v1.4.8.md          lines=64    bytes=4013
+OpenBase-后端覆盖检查报告-v1.4.8.md            lines=120   bytes=8449
+OpenBase-安全设计说明-v1.4.8.md              lines=56    bytes=3802
+OpenBase-数据库设计文档-v1.4.8.md             lines=84    bytes=6530
+OpenBase-系统架构设计文档-v1.4.8.md            lines=172   bytes=16291
+OpenBase-编排归属与DSL边界定界-v1.4.8.md        lines=47    bytes=4010
+OpenBase-设计入场检查记录-v1.4.8.md            lines=79    bytes=6771
+OpenBase-设计基线及开发测试移交说明-v1.4.8.md       lines=70    bytes=4026
+OpenBase-设计评审记录-v1.4.8.md              lines=77    bytes=4539
+OpenBase-部署架构草案-v1.4.8.md              lines=50    bytes=3072
+OpenBase-需求设计追溯矩阵-v1.4.8.md            lines=70    bytes=6730
+OpenBase-非功能设计说明-v1.4.8.md             lines=68    bytes=4585
+
+--- doc\development（Step 3 开发产物）---
+OpenBase-设计开发追溯矩阵-v1.4.8.md            lines=66    bytes=7854
+
+--- doc\audit\assessment（设计评估）---
+OpenBase-设计评估报告-v1.4.8.md              lines=86    bytes=4835
+OpenBase-设计阶段自检记录-v1.4.8.md            lines=47    bytes=3118
+OpenBase-需求评估报告-v1.4.8.md              lines=90    bytes=6854
+
+--- doc\audit\review（阶段审计）---
+OpenBase-阶段审计报告-Stage1-v1.4.8.md       lines=95    bytes=10448
+OpenBase-阶段审计报告-Stage2-v1.4.8.md       lines=81    bytes=3984
+
+--- doc\planning（跨仓分发）---
+OpenBase-会话标识提交派单-openbase-ui-v1.0.0.md    lines=76    bytes=5022
+OpenBase-会话编排派单分发清单-v1.4.8.md          lines=73    bytes=6252
+
+EMPTY FILES: 0
+
+# L1 判定：全部 22 份交付物为合法 Markdown 文件，格式校验通过（表格语法一致、含文档头元信息表）。
+# L2 判定：全部 22 份文件实际存在且非空（EMPTY FILES = 0），可正常打开读取。

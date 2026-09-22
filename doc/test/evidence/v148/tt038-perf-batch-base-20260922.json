@@ -1,0 +1,143 @@
+{
+  "base_url": "http://127.0.0.1:8041",
+  "concurrency": 8,
+  "rate_limit_per_second": 0.75,
+  "samples_per_metric": 200,
+  "warmup": 3,
+  "conversation_id": "dbaaeb33-fdd8-44bb-8737-1be9a9b8eea2",
+  "read_endpoints": [
+    {
+      "metric": "P-6 回执查询",
+      "target": "见《非功能设计说明-v1.4.8》v1.1.0 §1.1.2",
+      "samples": 200,
+      "ok": 200,
+      "errors": 0,
+      "rate_limited": 0,
+      "error_rate": 0.0,
+      "error_samples": [],
+      "wall": {
+        "n": 200,
+        "p50": 112.572,
+        "p95": 286.405,
+        "p99": 484.163,
+        "min": 45.58,
+        "max": 1478.727
+      }
+    },
+    {
+      "metric": "P-8 计量导出",
+      "target": "见《非功能设计说明-v1.4.8》v1.1.0 §1.1.2",
+      "samples": 200,
+      "ok": 200,
+      "errors": 0,
+      "rate_limited": 0,
+      "error_rate": 0.0,
+      "error_samples": [],
+      "wall": {
+        "n": 200,
+        "p50": 185.583,
+        "p95": 274.853,
+        "p99": 786.659,
+        "min": 84.562,
+        "max": 1002.006
+      }
+    },
+    {
+      "metric": "P-9 消息查询",
+      "target": "P50 ≤100ms / P95 ≤300ms / P99 ≤500ms",
+      "samples": 200,
+      "ok": 200,
+      "errors": 0,
+      "rate_limited": 0,
+      "error_rate": 0.0,
+      "error_samples": [],
+      "wall": {
+        "n": 200,
+        "p50": 85.02,
+        "p95": 118.268,
+        "p99": 128.374,
+        "min": 26.573,
+        "max": 500.208
+      }
+    }
+  ],
+  "P-1_sync_chat": {
+    "samples": 60,
+    "ok": 52,
+    "errors": 8,
+    "cache_hits": 0,
+    "n_effective": 52,
+    "rate_limited": 0,
+    "error_samples": [
+      "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"detail\":\"内部错误，请稍后再试\",\"request_id\":\"openllm-86a2a126b75e4c339ab1c9e2\"}",
+      "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"detail\":\"内部错误，请稍后再试\",\"request_id\":\"openllm-e93a9c6f2ef942cfa02b422e\"}",
+      "{\"code\":5001,\"message\":\"内部错误，请稍后再试\",\"detail\":\"内部错误，请稍后再试\",\"request_id\":\"openllm-33c4a0a836a64055b3a3ca26\"}"
+    ],
+    "wall": {
+      "n": 52,
+      "p50": 3110.619,
+      "p95": 3368.379,
+      "p99": 3530.371,
+      "min": 2752.643,
+      "max": 3530.371
+    },
+    "llm_step": {
+      "n": 52,
+      "p50": 657.0,
+      "p95": 967.0,
+      "p99": 1172.0,
+      "min": 405.0,
+      "max": 1172.0
+    },
+    "repo_overhead_excl_llm": {
+      "n": 52,
+      "p50": 2401.266,
+      "p95": 2584.997,
+      "p99": 2650.853,
+      "min": 2296.556,
+      "max": 2650.853
+    },
+    "repo_overhead_excl_all_steps": {
+      "n": 52,
+      "p50": 2401.266,
+      "p95": 2584.997,
+      "p99": 2650.853,
+      "min": 2296.556,
+      "max": 2650.853
+    },
+    "pipelines": [
+      "[\"llm\"]"
+    ],
+    "steps_seen": [
+      "auth",
+      "llm"
+    ]
+  },
+  "P-3_stream": {
+    "samples": 30,
+    "ok": 28,
+    "errors": 2,
+    "rate_limited": 0,
+    "error_samples": [
+      "event_lines=4 has_done=False tail=', \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"qwen3:0.6b\", \"reason\": \"cost\"}, \"parallel\": false}\\nevent: error\\ndata: {\"code\": 5001, \"message\": \"内部错误，请稍后再试\"}'",
+      "event_lines=4 has_done=False tail=', \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"qwen3:0.6b\", \"reason\": \"cost\"}, \"parallel\": false}\\nevent: error\\ndata: {\"code\": 5001, \"message\": \"内部错误，请稍后再试\"}'"
+    ],
+    "first_event": {
+      "n": 28,
+      "p50": 31.509,
+      "p95": 68.313,
+      "p99": 115.515,
+      "min": 24.85,
+      "max": 115.515
+    },
+    "total": {
+      "n": 28,
+      "p50": 2832.643,
+      "p95": 3162.69,
+      "p99": 3170.398,
+      "min": 2594.098,
+      "max": 3170.398
+    },
+    "routing_first_ok": true
+  }
+}

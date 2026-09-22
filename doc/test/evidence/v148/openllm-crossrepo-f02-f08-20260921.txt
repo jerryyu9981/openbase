@@ -1,0 +1,96 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，首批：F-02 + F-08）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017（约束反转：直接实施跨仓代码改动）；TD-148-02 / TD-148-06
+
+==================== 一、改动清单（本批） ====================
+
+修改（2 个源文件）：
+  backend/app/services/context_manager.py     +36 / -14（最长键优先匹配 + 公共解析函数）
+  backend/app/api/openllm_gateway.py          +13 / -9 （seq 改持久化来源；删除进程内计数器）
+
+新增（2 个测试文件）：
+  backend/tests/unit/test_context_manager_model_window.py   8 例
+  backend/tests/unit/test_writeback_seq_persistence.py      3 例
+
+未提交、未推送（git status 显示工作区在本次改动前已有 286 文件未提交，多为 .pyc 噪声）。
+
+==================== 二、F-02 窗口匹配（TD-148-02 / BL-148-02） ====================
+
+-- 2.1 RED：见证失败（修正前）--
+命令：python -B -m pytest tests/unit/test_context_manager_model_window.py -q --confcutdir=tests/unit
+结果：5 failed, 3 passed
+关键失败：
+  FAILED test_gpt4o_dated_model_window_is_128k        assert 8192 == 128000
+  FAILED test_gpt4_turbo_dated_model_window_is_128k   assert 8192 == 128000
+  FAILED test_gpt4_32k_dated_model_window_is_32k      assert 8192 == 32768
+  FAILED test_gpt4o_dated_model_encoding_is_o200k     assert 'cl100k_base' == 'o200k_base'
+  FAILED test_encoding_consistent_with_window_for_same_key  assert 8192 == 128000
+（与 F-02 记录完全一致：日期化模型名先命中首个键 "gpt-4" → 8192 / cl100k_base）
+
+-- 2.2 GREEN：修正后 --
+命令：同上（+ tests/unit/test_context_api.py）
+结果：8 passed
+新增用例：8/8 通过（含 gpt-4o-2024-08-06 → 128000/o200k_base；gpt-4-turbo-2024-04-09 →
+128000/cl100k_base；gpt-4-32k-0314 → 32768/cl100k_base；精确匹配 gpt-4 → 8192 保持；
+未知模型 → default 128000）
+
+-- 2.3 静态检查 --
+命令：python -B -m ruff check app/services/context_manager.py --output-format=concise
+结果：全文件 70 条（均为历史遗留 UP006/UP045：List/Dict/Tuple 旧式注解）；
+      本次改动区间（88-125 / 200-240）无新增条目；新增测试文件 ruff：All checks passed!
+
+==================== 三、F-08 回写序号持久化（TD-148-06 / BL-148-06，硬判据） ====================
+
+-- 3.1 RED：见证失败（修正前）--
+命令：python -B -m pytest tests/unit/test_writeback_seq_persistence.py -q --confcutdir=tests/unit
+结果：3 failed
+失败原因：AssertionError: WritebackQueue.next_seq 缺失：回写 seq 必须取持久化来源
+          max_seq(session_id)+1，禁止进程内计数器（F-08）
+
+-- 3.2 GREEN：修正后 --
+命令：python -B -m pytest tests/unit/test_writeback_seq_persistence.py
+      tests/unit/test_v213_writeback_queue.py tests/unit/test_writeback_degradation.py -q
+结果：14 passed, 4 failed
+  - 新增 3 例全部通过（重启后 seq = 历史最大序号 + 1；重启后首次回写 submit 返回 True
+    即未静默丢弃；序号按会话隔离）
+  - 既有 test_v213_writeback_queue.py 全部通过（回写队列回归无回退）
+  - 4 项失败全部为 tests/unit/test_writeback_degradation.py 的
+    ImportError: DLL load failed while importing _rust（cryptography 原生扩展）
+
+-- 3.3 失败归因（证明与本次改动无关）--
+  ① python -B -c "import cryptography"                        → cryptography OK
+     （独立导入成功，说明问题出在测试期 sys.path 注入）
+  ② tests/unit/conftest.py 将 D:\PostgreSQL\17\pgAdmin 4\python\Lib\site-packages
+     置入 sys.path[0] → 遮蔽正常 cryptography（编译扩展 ABI 不匹配）
+  ③ 对照：既有 tests/unit/test_openllm_gateway.py（与本次改动无关）
+     → 28 errors（同一 DLL 失败）
+  结论：该环境缺陷**先于本次改动存在**，影响所有经测试导入网关模块的用例；
+        记为环境类技术债候选（建议登记）。
+
+-- 3.4 静态检查 --
+命令：python -B -m py_compile app/api/openllm_gateway.py app/services/writeback_queue.py
+结果：py_compile OK: 0 errors
+命令：python -B -m ruff check tests/unit/test_writeback_seq_persistence.py
+结果：All checks passed!
+命令：ruff 本次改动区间（writeback_queue 296-315 / gateway 618-672）→ 无条目
+
+==================== 四、修正前后行为对照（F-08） ====================
+
+修正前（进程内计数器 + INSERT OR IGNORE）：
+  重启后计数器归零 → 同会话 seq 从 1 重新开始 → 与历史行 (session_id, seq, target)
+  幂等命中 → submit 返回 False 且不执行 → 重启前 N 次回写静默丢弃
+修正后（持久化来源 max_seq + 1）：
+  重启后 seq = 落盘最大序号 + 1 → 无幂等命中 → 首次回写正常入队
+  → 硬判据「重启后回写丢失数 = 0」成立（用例 test_no_silent_loss_after_restart 断言 submit is True）
+
+==================== 五、遗留（未完成段，非本批范围） ====================
+  1) 三路回写 profile 路纳入编排（TD-148-05 部分）——待实施
+  2) 会话标识字段（OpenLLMChatRequest.session_id）+ 历史按窗口纳入（TD-148-04）——待实施
+     （注：session_id 现仍为 identity.user_id，AC-148-06-1「真实会话标识」尚未满足）
+  3) 流式路径回写补齐（TD-148-05 部分，R3 可行性）——待实施
+  4) 双路径收敛（TD-148-03）——待实施
+  5) 第零段基线工装（TD-148-01，7 项工装，仅观测）——待实施
+  6) openbase-ui 会话标识提交（D2）——待定位仓库并实施
+  7) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）——待各仓同步

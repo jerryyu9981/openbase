@@ -1,0 +1,118 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第四批：共用组装步骤 + 第零段计量）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017；TD-148-03（R-397 双路径收敛）+ TD-148-01（第零段计量工装 1/2，仅观测）
+
+==================== 一、改动清单（本批） ====================
+
+新增（2 个）：
+  app/edgerouter/orchestration/prompt_pipeline.py    共用组装步骤 + PromptComposition 计量
+  tests/unit/test_prompt_pipeline_shared_step.py     9 例（输出一致 / 顺序 / 计量口径 / 仅观测）
+
+修改（3 个）：
+  app/edgerouter/orchestration/executor.py      同步路径改走共用步骤；ExecuteResult 增 composition
+  app/api/openllm_gateway.py                    流式端点改走共用步骤，删除自建组装副本
+  tests/unit/test_session_axis_prompt_injection.py   双路径护栏升级为「共用步骤 + 素材齐备 + 禁自建副本」
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（共用步骤模块未抽取）--
+命令：python -B -m pytest tests/unit/test_prompt_pipeline_shared_step.py -q --confcutdir=tests/unit
+结果：9 failed
+  例：Failed: app.edgerouter.orchestration.prompt_pipeline 缺失：共用组装步骤未抽取（TD-148-03）:
+      cannot import name 'prompt_pipeline' from 'app.edgerouter.orchestration'
+
+-- 2.2 GREEN（抽取后）--
+结果：9 passed
+  覆盖：模块导出 / 输出与 PromptAssembler.render 逐字一致（第零段不改变行为硬约束）/
+       素材顺序 System+画像+记忆+知识库+历史+Query / 六段分项 token / 分母=四类素材不含 query /
+       总 token 与实长一致 / 无计数器时 counted=False / 空素材计 0 且不注入 /
+       **超长素材原样保留（工装无裁剪改写逻辑）**
+
+-- 2.3 双路径护栏升级后仍 GREEN --
+test_both_paths_call_shared_step            同步路径（executor.py）与流式路径（gateway）
+                                            均调用 build_prompt 且素材参数齐备
+test_gateway_has_no_private_assembly_copy   网关内已无直接 .render 调用（自建副本已消除）
+
+-- 2.4 合并回归（四批合计）--
+命令：python -B -m pytest
+      tests/unit/test_context_manager_model_window.py            （F-02，8 例）
+      tests/unit/test_writeback_seq_persistence.py               （F-08，3 例）
+      tests/unit/test_v213_writeback_queue.py                    （既有回写队列）
+      tests/unit/test_session_axis_gateway.py                    （7 例）
+      tests/unit/test_session_axis_assembler.py                  （5 例）
+      tests/unit/test_session_axis_history.py                    （8 例）
+      tests/unit/test_session_axis_prompt_injection.py           （6 例）
+      tests/unit/test_prompt_pipeline_shared_step.py             （9 例）
+      -q --confcutdir=tests/unit -p no:cacheprovider
+结果：55 passed
+
+-- 2.5 静态检查 --
+py_compile app/api/openllm_gateway.py app/edgerouter/orchestration/prompt_pipeline.py
+           app/edgerouter/orchestration/executor.py        → py_compile OK: 0 errors
+ruff check（新增 1 源 + 2 测试）                            → All checks passed!
+ruff check executor.py（本次改动区间 130-220）               → 无条目
+
+==================== 三、实现要点 ====================
+
+1) 共用组装步骤（TD-148-03 核心）
+   build_prompt(query, system_prompt, memory_ctx, rag_ctx, profile_ctx, history_ctx,
+                count_tokens=None, assembler=None) -> (prompt, PromptComposition)
+   - 同步路径：PipelineExecutor.execute → build_prompt(..., assembler=self.assembler)
+   - 流式路径：网关流式端点 → build_prompt(...)（**删除**原 PromptAssembler().render 自建副本）
+   → 两条路径现在使用**同一个实现**组装 Prompt（F-01 的组装分叉已消除）
+
+2) 第零段计量（工装 1：Prompt 组成计量；工装 2 的检索快照未含）
+   PromptComposition:
+     - prompt_total_tokens            最终 Prompt 总 token
+     - segment_tokens                 六段分项（system/profile/memory/rag/history/query）
+     - contexts_tokens                分母口径 = 四类素材之和（不含 query 与输出预留）
+     - counted                        是否已计量（未传计数器为 False）
+   设计取舍：计数器由调用方注入（缺省不计量），避免在本模块内耦合 tiktoken；
+   网关侧已有 _history_budget_tokens 的取窗与 ContextManager.count_tokens 能力，
+   在下一批「回执落库」时统一注入并写入 routing_trace。
+
+3) 只观测硬约束的**可验证化**
+   共用步骤用例直接断言「输出与既有组装器逐字一致」与「超长素材原样保留」，
+   使「第零段不得含裁剪/改写/截断」从人工审查项变为**回归可证**项。
+
+4) 双路径护栏（防复发）
+   源码级 AST 护栏三项：两路径均调用 build_prompt；素材参数齐备；网关内无直接 render 调用。
+
+==================== 四、遗留（未完成） ====================
+
+1) 第零段工装其余 5 项：工装 2（检索快照）、工装 3（回执落库 + 批量导出）、
+   工装 4（归因 A 引用检测）、工装 5（归因 B 工具）、工装 6（固定集与评分表）、
+   工装 7（汇总脚本）——均未实施；计量回执目前**只算不落库**。
+2) 三路回写 profile 路纳入编排（TD-148-05 部分；_build_writeback_callback 仍返回 2 路）。
+3) 流式路径回写补齐（TD-148-05 部分，R3 可行性未确认）。
+4) conversations.py 会话消息落库与检索对齐会话标识口径。
+5) openbase-ui 会话标识提交（D2）。
+6) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+7) AC-148-03-1 完整判定（路由结果 / 注入片段集合 / 缓存命中一致）需在集成环境实测，
+   本批仅完成「组装环节」的收敛与护栏。
+
+==================== 五、四批累计 ====================
+
+源文件（10 个）：
+  app/services/context_manager.py                    F-02 最长键优先
+  app/services/writeback_queue.py                    next_seq 持久化序号
+  app/api/openllm_gateway.py                         seq/session_id/历史/回写标识/共用步骤接线
+  app/edgerouter/orchestration/assembler.py          历史槽位
+  app/edgerouter/orchestration/history.py            历史构建（新增）
+  app/edgerouter/orchestration/prompt_pipeline.py    共用组装步骤 + 计量（新增）
+  app/edgerouter/orchestration/executor.py           历史注入 + 共用步骤 + composition
+  app/edgerouter/orchestration/explicit.py           history_ctx 透传
+  app/edgerouter/orchestration/auto.py               history_ctx 透传
+  tests/unit/conftest.py                             环境缺陷修复（末位兜底）
+
+测试文件（7 个，新增用例 46 个）：
+  test_context_manager_model_window.py    8
+  test_writeback_seq_persistence.py       3
+  test_session_axis_gateway.py            7
+  test_session_axis_assembler.py          5
+  test_session_axis_history.py            8
+  test_session_axis_prompt_injection.py   6
+  test_prompt_pipeline_shared_step.py     9
+  （连同既有回写队列用例共 55 例全绿）

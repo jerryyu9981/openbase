@@ -1,0 +1,65 @@
+# OpenBase v1.4.8 跨仓 DevFlow 登记证据（批次 13：四仓登记）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5
+# 执行目录：d:\Trae CN\myproject\Dev\OpenBase
+# 依据：devflow-phase-manager（独立模式登记规则）；用户指令「四仓各自 DevFlow 登记」
+
+==================== 一、登记原则 ====================
+
+按《DevFlow 阶段管理器》的**独立模式**登记（本批工作由 OpenBase v1.4.8 需求/设计基线驱动，
+未经各仓自身 Step 1/Step 2 门禁）：
+
+  - **不修改** 任何仓的 `currentPhase` / `completedPhases`（审计报告硬门禁：跨仓施工无对应
+    Stage 审计报告，不得推进各仓阶段状态）；
+  - 在 `standaloneEntries` 写入条目，包含 `entryDate` / `externalSource` / `originalMode` /
+    `downgradeReason` / `auditPassed` / `auditDate` / `auditSource`（审计来源指向 OpenBase
+    Stage3 审计报告 §7 门禁 + §8 VC-017 补记）；
+  - 各仓另出具登记文档 1 份（OpenLLM 为实施方 DevLogReport；其余三仓为契约登记回执单）。
+
+==================== 二、登记结果 ====================
+
+| 仓 | 角色 | 代码改动 | state.json 条目 | 登记文档 |
+|----|------|:--------:|-----------------|----------|
+| OpenLLM | **实施方** | 19 源文件 + 1 数据资产 + 15 测试文件 | `standaloneEntries.step_3_OpenBase_v1.4.8` | `doc/development/OpenLLM-R396-R398-会话编排前置与回写闭环-DevLogReport-v1.0.0.md` |
+| OpenMemory | 契约方（未被施工） | 0 | `standaloneEntries.cross_repo_OpenBase_v1.4.8` | `doc/development/OpenMemory-v1.4.8-跨仓契约登记-回执单-v1.0.0.md` |
+| OpenRAG | 契约方（未被施工） | 0 | `standaloneEntries.cross_repo_OpenBase_v1.4.8` | `doc/development/OpenRAG-v1.4.8-跨仓契约登记-回执单-v1.0.0.md` |
+| DPS | 契约方（未被施工；**新增画像回写第三路接收方**） | 0 | `standaloneEntries.cross_repo_OpenBase_v1.4.8` | `doc/development/DPS-v1.4.8-跨仓契约登记-回执单-v1.0.0.md` |
+
+各仓登记前状态（**均未变更**）：
+  OpenLLM `currentPhase=step_5_deployment_closed`（devflowVersion 2.15.0，step_5_closed=true）；
+  OpenMemory `currentPhase=step_0_version_planning`（2.14.0）；
+  OpenRAG `currentPhase=step_4_testing`（2.10.0）；
+  DPS `currentPhase=step_5_operations`（2.15.0）。
+
+==================== 三、核验命令与结果 ====================
+
+命令（在 OpenBase 目录执行）：
+  foreach ($r in @("OpenLLM","OpenMemory","OpenRAG","DPS")) {
+    Get-Content "..\$r\.devflow\state.json" -Raw | ConvertFrom-Json | Out-Null }
+
+结果：四仓 `state.json` 全部 **VALID**（JSON 合法，未破坏既有键）；
+登记文档 4 份全部存在且非空（实测行数：OpenLLM 实施记录 75 行；
+OpenMemory 41 行；OpenRAG 42 行；DPS 42 行）。
+
+==================== 四、登记内容要点 ====================
+
+1) OpenLLM（实施方）
+   - 12 批交付明细、变更统计（19 源文件 / 15 测试文件 / 1 数据资产）、验证记录
+     （147 passed / py_compile 0 / ruff 全绿）；
+   - 3 项过程偏差 + 1 项语义变更（RAG 适配器未注册 → 降级而非回退）如实登记；
+   - **未提交未推送**声明与回滚口径（以登记文件为单位）；
+   - 11 份证据指向 OpenBase `doc/test/evidence/v148/openllm-crossrepo-*.txt`。
+
+2) OpenMemory / OpenRAG / DPS（契约方）
+   - 逐条登记契约点：记忆检索与回写 / 知识库检索与 ingest 回写与内置回退 / 画像读取与
+     **画像回写第三路**；均注明「无接口变更要求，本仓未改动代码」；
+   - 登记后续联调建议（属 OpenBase Step 4）与「若假设与实际端点不符，由 OpenBase 侧同步派单」。
+
+==================== 五、遗留 ====================
+
+1) 各仓 `standaloneEntries` 条目的**审计归属**为 OpenBase Stage3 审计（跨仓口径）；
+   各仓若要转为本仓正式阶段记录，需在各仓自身流程内补做门禁（本次按用户指令仅做登记）。
+2) 三仓回执单中的契约描述源自 OpenLLM 侧已实施代码与 OpenBase 文档，**未逐条核对三仓
+   实际端点实现**（如需，属联调/Step 4 范围），故统一声明为「登记假设」。
+3) OpenBase 自身 v1.4.8 的 Step 3 阶段文档（DevLogReport / 追溯矩阵 / Stage3 审计）已在
+   批次 9~12 同步；本批另在 OpenBase DevLogReport §13.1/§13.6 追加批次 13。

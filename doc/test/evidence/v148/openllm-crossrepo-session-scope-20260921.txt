@@ -1,0 +1,96 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第九批：会话标识口径收尾 + 会话落库对齐）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017；TD-148-04 / BL-148-04（R-396 收尾：需求 §4.4「conversations.py 会话消息落库与检索对齐新的会话标识口径」）
+
+==================== 一、改动清单（本批） ====================
+
+新增（1 个源文件 + 1 个测试文件）：
+  app/services/session_scope.py                      会话标识口径**单一来源**（归一化 / 记账口径 / 元数据构造）
+  tests/unit/test_session_scope_alignment.py         10 例
+
+修改（3 个源文件）：
+  app/services/conversation_service.py   send_message 写入会话标识与记账口径；
+                                          get_conversation_history 支持按会话标识筛选（缺省不过滤）
+  app/api/conversations.py               消息发送 / 历史查询端点透传可选 session_id（缺省兼容）
+  app/api/openllm_gateway.py             回写回调、同步与流式计量回执统一改用 normalize_session_id
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（实现前）--
+命令：python -B -m pytest tests/unit/test_session_scope_alignment.py -q --confcutdir=tests/unit
+结果：10 failed
+  FAILED test_normalize_prefers_explicit_session_id / test_normalize_falls_back_to_user /
+         test_scope_kind_marks_session_or_user / test_build_metadata_carries_session_and_scope
+         Failed: app.services.session_scope 缺失：会话标识口径未统一（TD-148-04）
+  FAILED test_send_message_records_explicit_session / test_send_message_preserves_caller_metadata
+         TypeError: ConversationService.send_message() got an unexpected keyword argument 'session_id'
+  FAILED test_send_message_marks_user_scope_when_absent
+         KeyError: 'session_id'
+  FAILED test_gateway_uses_shared_normalizer
+         AssertionError: 网关回写会话标识须复用统一口径实现（禁止各处自行 or user_id 兜底）
+  FAILED test_conversation_service_uses_shared_metadata
+         AssertionError: 会话落库须复用统一口径实现写入元数据（需求 §4.4）
+  FAILED test_history_supports_session_filter
+         AssertionError: 会话历史检索须支持按会话标识筛选
+
+-- 2.2 GREEN（实现后）--
+结果：10 passed
+
+-- 2.3 合并回归（九批合计）--
+命令：python -B -m pytest（12 个测试文件）
+结果：**109 passed**
+
+-- 2.4 静态检查 --
+py_compile app/api/openllm_gateway.py app/api/conversations.py app/services/session_scope.py
+           app/services/conversation_service.py                     → py_compile OK: 0 errors
+ruff check app/services/session_scope.py tests/unit/test_session_scope_alignment.py
+                                                                    → All checks passed!
+ruff check app/api/conversations.py / app/services/conversation_service.py
+  → 仅**文件历史遗留**（`List`/`Dict`/`Optional` 旧式注解，本批新增行未引入新条目；
+     为保持与文件既有风格一致，本批只把**自己新增**的注解写为 `str | None`）
+
+==================== 三、实现要点 ====================
+
+1) 会话标识口径单一来源（`app/services/session_scope.py`）
+   - `normalize_session_id(session_id, user_id)`：显式会话标识优先（去空白），缺省退化为
+     `str(user_id)`（保持既有调用方与既有队列数据语义兼容）；
+   - `resolve_session_scope(...)`：返回 `session` / `user`（记账口径）；
+   - `build_session_metadata(...)`：`{session_id, session_scope}`，供会话消息元数据写入。
+   → 消除此前「各处自行 `session_id or user_id` 兜底」的口径漂移风险。
+
+2) 会话落库对齐（需求 §4.4）
+   - `ConversationService.send_message(..., session_id=None)`：把调用方元数据与会话标识口径
+     **合并写入**消息元数据（不覆盖调用方既有元数据；`metadata_` JSONB 列，**无 schema 变更**）；
+   - `ConversationService.get_conversation_history(..., session_id=None)`：提供会话标识时按
+     元数据 `session_id` 筛选；缺省不筛选（既有调用方行为不变）；
+   - `app/api/conversations.py`：`POST /{id}/messages` 与 `GET /{id}/messages` 增加**可选**
+     查询参数 `session_id`，缺省完全兼容。
+
+3) 编排侧口径统一（口径收尾）
+   网关三处改用 `normalize_session_id`：回写回调 `base_kwargs["session_id"]`、同步路径计量回执、
+   流式路径计量回执 → 与会话落库共用同一口径实现。
+
+4) 设计取舍（如实登记）
+   选择在 `metadata_` JSONB 列承载会话标识，**未做表结构变更**（避免在无迁移框架的仓内做
+   破坏性 DDL）；筛选走 `metadata_["session_id"].astext`（PostgreSQL JSONB）。
+   代价：按会话筛选依赖 JSONB 表达式，未建索引（数据量增长后需评估加表达式索引）。
+
+==================== 四、遗留（未完成） ====================
+
+1) 第零段工装 5/6/7（归因 B 工具 / 固定集与评分表 / 汇总脚本）。
+2) R3（流式回写可行性）端到端实测：属 Step 4 范围。
+3) 「被丢弃项标识」未落回执（属 v1.4.9 第二批裁剪范畴）。
+4) openbase-ui 会话标识提交（D2）：**仓库位置与实施方式仍待确认**（本批未实施）。
+5) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+6) JSONB 表达式索引：按会话筛选的查询性能需在数据量增长后评估。
+
+==================== 五、九批累计 ====================
+
+源文件 15 个（新增 4）：`context_manager`、`writeback_queue`、`openllm_gateway`、
+`api/conversations`、`services/conversation_service`、`services/session_scope`（新）、
+`orchestration/{assembler,history,prompt_pipeline,context_metrics,executor,explicit,auto}`、
+`tests/unit/conftest`。
+
+测试文件 11 个（新增用例 100 个），连同既有回写队列用例共 **109 例全绿**。

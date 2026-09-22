@@ -1,0 +1,80 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "expected_version": "1.4.7",
+  "counts": {
+    "PASS": 9,
+    "WARN": 1,
+    "FAIL": 0,
+    "INFO": 0
+  },
+  "results": [
+    {
+      "name": "1 后端健康检查",
+      "status": "PASS",
+      "detail": "200 {\"status\":\"ok\"}",
+      "evidence": {
+        "status_code": 200
+      }
+    },
+    {
+      "name": "2 鉴权门禁（模块列表）",
+      "status": "PASS",
+      "detail": "401 AUTH_401（code=AUTH_401 request_id=req-bc404f9a5292）",
+      "evidence": {
+        "status_code": 401
+      }
+    },
+    {
+      "name": "3 日志检索鉴权门禁",
+      "status": "PASS",
+      "detail": "401 AUTH_401（code=AUTH_401 request_id=req-ac407783be05）",
+      "evidence": {
+        "status_code": 401
+      }
+    },
+    {
+      "name": "4 参数校验契约（空体登录）",
+      "status": "PASS",
+      "detail": "400 PARAM_400（2 项字段错误）",
+      "evidence": {
+        "status_code": 400
+      }
+    },
+    {
+      "name": "5 API 文档可达",
+      "status": "PASS",
+      "detail": "GET /docs => 200",
+      "evidence": {}
+    },
+    {
+      "name": "6 OpenAPI 契约可读",
+      "status": "PASS",
+      "detail": "paths=123",
+      "evidence": {}
+    },
+    {
+      "name": "7 版本可见性（info.version）",
+      "status": "WARN",
+      "detail": "info.version='1.0.0' != 期望 '1.4.7'；注：该值来自 openbase.__version__（框架版本常量），如需与发布版本号对齐须单独变更代码",
+      "evidence": {}
+    },
+    {
+      "name": "8 登录成功路径",
+      "status": "PASS",
+      "detail": "200 且返回 access_token",
+      "evidence": {}
+    },
+    {
+      "name": "9 前端可访问",
+      "status": "PASS",
+      "detail": "GET http://localhost:5173/ => 200",
+      "evidence": {}
+    },
+    {
+      "name": "10 本地发布基线一致",
+      "status": "PASS",
+      "detail": "project.version=1.4.7 / lastRelease=v1.4.7",
+      "evidence": {}
+    }
+  ]
+}

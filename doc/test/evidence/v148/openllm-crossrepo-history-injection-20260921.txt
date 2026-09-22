@@ -1,0 +1,118 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第三批：历史注入 + 双路径素材一致）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017（直接实施跨仓代码改动）；TD-148-04（R-396）+ TD-148-03（R-397，素材级）
+
+==================== 一、改动清单（本批） ====================
+
+新增（1 个）：
+  tests/unit/test_session_axis_prompt_injection.py    6 例（执行器注入 / 编排器透传 / 双路径素材一致）
+
+修改（5 个）：
+  app/edgerouter/orchestration/executor.py      execute() 新增 history_ctx 并注入 assembler.render
+  app/edgerouter/orchestration/explicit.py      run() 新增 history_ctx 并透传执行器
+  app/edgerouter/orchestration/auto.py          run() 新增 history_ctx 并透传执行器
+  app/api/openllm_gateway.py                    _run_orchestrated_chat 贯通 history_ctx（签名+两分支+
+                                                同步调用点）；流式自建组装点注入 history_ctx
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（实现前）--
+命令：python -B -m pytest tests/unit/test_session_axis_prompt_injection.py -q --confcutdir=tests/unit
+结果：5 failed, 1 passed
+  FAILED test_executor_injects_history_into_assembled_prompt
+         TypeError: PipelineExecutor.execute() got an unexpected keyword argument 'history_ctx'
+  FAILED test_explicit_orchestrator_forwards_history
+         TypeError: ExplicitOrchestrator.run() got an unexpected keyword argument 'history_ctx'
+  FAILED test_auto_orchestrator_forwards_history
+         TypeError: AutoOrchestrator.run() got an unexpected keyword argument 'history_ctx'
+  FAILED test_orchestrator_signatures_expose_history_ctx
+         AssertionError: ExplicitOrchestrator.run 缺少 history_ctx 参数：历史须贯通至执行器
+  FAILED test_stream_render_passes_all_five_materials
+         AssertionError: 流式路径组装调用缺少素材参数 ['history_ctx']；
+         双路径须使用同一套素材（含历史），不得漏注入（F-01 / TD-148-03）
+  （1 passed = 无历史时的缺省兼容用例）
+
+-- 2.2 GREEN（实现后）--
+命令：同上
+结果：6 passed
+
+-- 2.3 合并回归（本批次 + 前两批）--
+命令：python -B -m pytest
+      tests/unit/test_context_manager_model_window.py            （F-02，8 例）
+      tests/unit/test_writeback_seq_persistence.py               （F-08，3 例）
+      tests/unit/test_v213_writeback_queue.py                    （既有回写队列）
+      tests/unit/test_session_axis_gateway.py                    （契约/回写标识，7 例）
+      tests/unit/test_session_axis_assembler.py                  （历史槽位，5 例）
+      tests/unit/test_session_axis_history.py                    （历史构建，8 例）
+      tests/unit/test_session_axis_prompt_injection.py           （历史注入，6 例）
+      -q --confcutdir=tests/unit -p no:cacheprovider
+结果：45 passed
+
+-- 2.4 静态检查 --
+py_compile app/api/openllm_gateway.py app/edgerouter/orchestration/{assembler,history,executor,explicit,auto}.py
+           app/services/writeback_queue.py tests/unit/conftest.py   → py_compile OK: 0 errors
+ruff check（新增 1 源 + 4 测试 + conftest）                        → All checks passed!
+
+==================== 三、实现要点 ====================
+
+1) 同步路径贯通链（新增历史参数全链一致）
+   网关（_normalize_request 产出 history_ctx）
+     → _run_orchestrated_chat(..., history_ctx=...)           [签名 + explicit/auto 两分支]
+       → ExplicitOrchestrator.run(..., history_ctx=...)        [透传]
+         / AutoOrchestrator.run(..., history_ctx=...)          [透传]
+         → PipelineExecutor.execute(..., history_ctx=...)      [注入]
+           → PromptAssembler.render(history_ctx=...)           [组装：知识库段之后、问题段之前]
+
+2) 流式路径注入
+   流式端点自建组装点（PromptAssembler().render(...)）补齐 history_ctx，
+   使其与执行器使用**同一套素材**（system/memory/rag/profile/history/query）。
+   → 两条路径素材集与顺序一致（AC-148-03-1 前置条件之一）。
+
+3) 缺省兼容
+   history_ctx 缺省为 None：不注入历史段，输出与 v1.4.7 一致
+   （test_executor_without_history_stays_compatible 断言）。
+
+4) 双路径一致性护栏（源码级）
+   test_stream_render_passes_all_five_materials 以 AST 解析网关源码，
+   断言每一处 render 调用均含 memory_ctx/rag_ctx/profile_ctx/history_ctx/query，
+   防止后续任一路径漏注入素材（F-01 复发护栏）。
+
+==================== 四、遗留（未完成，非本批范围） ====================
+
+1) **双路径「完整收敛」未完成**：本批做到的是「素材级一致」（两路径使用同一套素材与同一
+   组装器）；派单 §4.2 要求的「把组件执行 → 上下文格式化 → 预算 → 组装抽为**共用步骤**、
+   消除流式自建组装副本」尚未实施。流式端点仍在自身函数体内组装，尚未调用同一函数。
+   → AC-148-03-1（两路径路由/注入片段/缓存命中完全一致）**尚未完成**。
+
+2) 三路回写 profile 路纳入编排（TD-148-05 部分；_build_writeback_callback 仍返回 2 路）。
+3) 流式路径回写补齐（TD-148-05 部分，R3 可行性未确认）。
+4) 第零段基线工装（TD-148-01，7 项，仅观测）。
+5) conversations.py 会话消息落库与检索对齐会话标识口径。
+6) openbase-ui 会话标识提交（D2）。
+7) 四仓各自 DevFlow 登记（state.json / DevLogReport / 追溯矩阵）。
+
+==================== 五、累计改动范围（v1.4.8 跨仓实施，三批合计） ====================
+
+源文件（8 个）：
+  1 app/services/context_manager.py                F-02 最长键优先（第一批）
+  2 app/services/writeback_queue.py                next_seq 持久化序号（第一批）
+  3 app/api/openllm_gateway.py                     seq 持久化 / session_id / 历史产出与贯通 / 回写标识（一~三批）
+  4 app/edgerouter/orchestration/assembler.py      历史槽位（第二批）
+  5 app/edgerouter/orchestration/history.py        历史构建（新增，第二批）
+  6 app/edgerouter/orchestration/executor.py       execute 注入历史（第三批）
+  7 app/edgerouter/orchestration/explicit.py       run 透传历史（第三批）
+  8 app/edgerouter/orchestration/auto.py           run 透传历史（第三批）
+
+测试文件（6 个）：
+  tests/unit/test_context_manager_model_window.py    8 例
+  tests/unit/test_writeback_seq_persistence.py       3 例
+  tests/unit/test_session_axis_gateway.py            7 例
+  tests/unit/test_session_axis_assembler.py          5 例
+  tests/unit/test_session_axis_history.py            8 例
+  tests/unit/test_session_axis_prompt_injection.py   6 例
+  （合计新增 37 例；连同既有回写队列用例共 45 例全绿）
+
+测试基建（1 个）：
+  tests/unit/conftest.py                            pgAdmin/.pylib 由首位遮蔽改为末位兜底（第二批）

@@ -1,0 +1,95 @@
+# OpenBase v1.4.8 跨仓实施证据（OpenLLM 仓，第十二批：TD-148-03 组件执行全链共用）
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff 0.15.22
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+# 依据：VC-017；TD-148-03 / BL-148-03（R-397 前置零：双路径收敛）
+
+==================== 一、改动清单（本批） ====================
+
+新增（1 个源文件 + 1 个测试文件）：
+  app/edgerouter/orchestration/component_pipeline.py   共用组件执行步骤 + ComponentRunResult
+  tests/unit/test_component_pipeline_shared.py         13 例
+
+修改（2 个源文件）：
+  app/edgerouter/orchestration/executor.py     同步路径：删除私有 `_run_component`（81 行），
+                                               改调 `run_components`（**消除第二个分叉点**）
+  app/api/openllm_gateway.py                   流式路径 `_run_stream_components`：删除私有
+                                               `_run_one` 与调度循环（约 60 行），改调 `run_components`，
+                                               仅保留流式特有的适配器注入（memory/rag handler 与内置 RAG 回退）
+
+==================== 二、RED → GREEN 证据 ====================
+
+-- 2.1 RED（实现前）--
+命令：python -B -m pytest tests/unit/test_component_pipeline_shared.py -q --confcutdir=tests/unit
+结果：**13 failed**
+  例：Failed: app.edgerouter.orchestration.component_pipeline 缺失：组件执行未共用（TD-148-03）
+      AssertionError: 同步路径须调用共用组件执行步骤
+      AssertionError: 流式路径须调用共用组件执行步骤
+      AssertionError: 同步路径不得保留私有组件执行实现（重复实现即 F-01 分叉风险）
+
+-- 2.2 中间态修正（如实登记）--
+首轮实现后复核 RED 用例，发现 1 处**用例侧**与既有契约不一致并修正：
+  降级错误项键名既有契约为 `{"component", "error"}`（executor `_record_issue`），
+  用例原写 `["reason"]` → 改为 `["error"]`（以既有契约为准，未改产品代码的键名）。
+另有一处**失败尝试**：executor 首次替换时因行号定位偏差未命中（工具报
+  search content not found），重新读取当前文件后按实际内容替换，未产生半成品改动。
+
+-- 2.3 GREEN（实现后）--
+结果：**13 passed**
+
+-- 2.4 合并回归（十二批合计）--
+命令：python -B -m pytest（16 个测试文件）
+结果：**147 passed**（另 1 条 pytest 汇总 warning，不影响用例结果，未逐项核查）
+
+-- 2.5 静态检查 --
+py_compile component_pipeline.py / executor.py / openllm_gateway.py   → py_compile OK: 0 errors
+ruff check（新增模块 + 测试）                                          → All checks passed!
+ruff check executor.py（改动区间 118-145）                             → 无新增条目
+
+==================== 三、共用范围与实现要点 ====================
+
+共用步骤 `run_components(...)` 统一以下语义（两条路径同一实现）：
+
+| 语义 | 说明 |
+|------|------|
+| 条目解析 | 兼容两种 pipeline 结构：同步 `name`+`params` / 流式 `component`+平铺键（`entry_key`） |
+| 调度 | `enable_parallel` 且组件数 > 1 时 `asyncio.gather`；否则串行（§6.2 默认串行） |
+| 组件级降级 | handler 未注册 / `ComponentUnavailableError` / `TimeoutError` / 未知异常 → degraded + errors，**不中断主流程** |
+| RAG 回退 | 外部检索失败且启用回退 → 调注入的 `rag_fallback(params)`，`rag_source=builtin`；成功为 `external`；无 rag 组件为 `skipped` |
+| 上下文格式化 | `assembler.format_context(name, data)` → `contexts["{name}_ctx"]` |
+| 耗时 | 写入调用方 `timeline`：`{"step": name, "ms": int}`（覆盖降级路径，与流式原行为一致） |
+
+依赖注入而非重复实现：适配器（流式）与 handler（同步）由各路径注入；两条路径不再各有一份
+组件执行循环 → 消除 F-01 的第二个分叉点（第一个分叉点在批次 4 收敛为共用组装步骤）。
+
+==================== 四、语义变更（必须知悉） ====================
+
+**流式路径 RAG 适配器未注册的处理语义发生变化**：
+
+| 场景 | 旧行为（流式私有实现） | 新行为（共用步骤） |
+|------|------------------------|--------------------|
+| `rag_adapter is None`（适配器未注册） | 抛出 `ComponentUnavailableError` → 被内层 `except Exception` 捕获 → **回退内置 RAG**（若启用） | 组件级**降级**（degraded 记录），**不触发回退** |
+| 外部 RAG 检索失败（其他异常） | 回退内置 RAG（若启用） | 同上（**保持不变**） |
+
+变更理由：适配器未注册属装配/配置缺陷，回退会把装配缺陷掩盖成「检索成功」；且同步路径从不因
+「适配器未注册」回退，统一为降级后才与同步路径语义一致（AC-148-03-1 要求两路径行为一致）。
+**回归结果：147 例全绿，无既有用例依赖旧语义。**
+
+==================== 五、遗留（未完成） ====================
+
+1) **端到端一致性未实测**：AC-148-03-1 要求「同步与流式同输入的路由结果、注入片段集合、缓存命中
+   一致」，需在集成环境实测（属 Step 4）；本批仅收敛到「同一实现 + 单元层语义一致」。
+2) 流式路径仍保留 `_run_stream_components` 外壳（适配器注入与 SSE 侧参数），属路径特有装配，非重复实现。
+3) RAG 回退策略的具体实现仍由各路径注入（同步路径由 handler 内部处理，未上移）。
+4) B0/B1 基线实测受 `D3` 约束未做；R3 端到端实测属 Step 4。
+5) 四仓各自 DevFlow 登记。
+
+==================== 六、十二批累计 ====================
+
+后端源文件 19 个（新增 8）：`context_manager`、`writeback_queue`、`openllm_gateway`、
+`api/conversations`、`services/{conversation_service,session_scope}`、
+`orchestration/{assembler,history,prompt_pipeline,context_metrics,attribution_b,golden_set,baseline_report,component_pipeline,executor,explicit,auto}`、
+`tests/unit/conftest`；数据资产 1 个（`data/golden_set_v1.json`）。
+
+后端测试文件 15 个（新增用例 138 个），连同既有回写队列用例共 **147 例全绿**。
+前端（openbase-ui）：源文件 2 个；测试文件 1 个（6 例）；**204 passed / vue-tsc 0 错误**。

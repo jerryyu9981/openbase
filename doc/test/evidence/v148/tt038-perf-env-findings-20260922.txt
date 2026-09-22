@@ -1,0 +1,98 @@
+# 性能批次环境取证（TT-038 / TT-039）— 2026-09-22
+
+> 本文件为 `TT-v1.4.8-038` / `TT-v1.4.8-039` 执行过程中的**原始取证**（环境约束与失败根因），
+> 供《OpenBase-性能测试记录-v1.4.8》§3 / §4 / §6 引用。命令均在 `OpenLLM/backend` 下执行。
+
+## 1. 被测实例与上游可用性
+
+```
+GET http://127.0.0.1:8041/openllm/v1/health
+=> {"code":0,"message":"success","data":{"status":"healthy","version":"2.14.3","components":{
+     "openmemory":{"status":"ok","latency_ms":0},
+     "openrag":{"status":"unavailable","latency_ms":0,"reason":"client_not_injected"},
+     "dps":{"status":"unavailable","latency_ms":2046,"reason":"组件 dps 不可用: 服务不可用: All connection attempts failed"}}}}
+```
+
+监听端口（实测）：`5432`（PostgreSQL）/ `8010`（OpenRAG）/ `8020`（OpenMemory）/ `8041`（OpenLLM，被测）/
+`8090~8093`（四桩 Mock，常驻）；**`8030`（DPS）未监听**；`8001` / `8021` 未监听。
+
+## 2. C-1：网关全局限流（并发 8 档位不可达成）
+
+并发 8 突发 250 次 `GET /openllm/v1/writeback/receipts`：
+
+```
+status 分布: {200: 67, 429: 183}
+首个非 200: (index=64, 429, 600.4ms,
+             '{"code":1003,"message":"请求过于频繁，请稍后再试","error":"rate_limit_exceeded","retry_after":1}')
+200 的时延: n=67 min=78ms max=1697ms
+```
+
+限流实现（源码实证）：`app/middleware/rate_limit.py` 每请求重读环境变量
+（`RATE_LIMIT_PER_SECOND` 默认 `1.0`、`RATE_LIMIT_BURST` 默认 `60`；另有 user 20/s burst 200、
+route 50/s burst 100）→ **全局桶 1 req/s 是实际约束**；环境变量属**进程内**读取，
+**运行中不可从外部修改**，故本轮以客户端节流 `--rate 0.75` 执行。
+
+## 3. C-2：语义缓存干扰（已规避）
+
+同一 prompt 连续两次 `/openllm/v1/chat`：
+
+```
+[2nd] status=200 wall=123.6ms  timeline=[]            # 命中缓存：直接返回、无步骤计时
+```
+
+源码实证：`openllm_gateway.py:1900-1918` 命中时 `_save_trace(..., pipeline_names, [], cache_trace)`
+（timeline 传空数组）且 `routing_trace.cache_hit=True`；缓存键为 `(user_id, query)`，阈值 `0.92`
+（`app/core/semantic_cache.py:33`）。**规避方式**：每次采样在 query 注入唯一 nonce；
+加 nonce 后实测 `cache_hit=None` 且 `timeline=[{'step':'auth','ms':0},{'step':'llm','ms':891}]`。
+
+## 4. C-3：DPS 不可用 → 同步对话未计量差额
+
+```
+同步 /chat 单样本：墙钟 3308.0ms = llm 步骤 766ms + （墙钟 − Σ步骤）2542.0ms
+步骤集合 = ['auth', 'llm']          # 画像拉取 / 回写派发 未进入 timeline
+```
+与 `dps` 健康探针 `latency_ms=2046`（连接等待）量级一致 → 该差额**主体为 DPS 连接等待**，
+因其未进 timeline，**本仓开销与外部等待无法逐样本分离**（记录为口径缺口）。
+
+## 5. C-4：成本优先路由选中不可用模型（错误率根因）
+
+流式失败样本的 `routing` 事件（原始）：
+
+```
+... "rag_source": "skipped"}, "model": {"selected": "qwen3:0.6b", "reason": "cost"}, "parallel": false}
+event: error
+data: {"code": 5001, "message": "内部错误，请稍后再试"}
+```
+
+定点探测（同一实例、同一账号）：
+
+```
+[model=qwen3:0.6b]        status=500 wall=4713ms code={'code':5001,'message':'LLM 组件调用失败'}
+[model=deepseek-v4-flash] status=200 wall=3237ms code={'code':0,'message':'success'}
+```
+
+→ **`qwen3:0.6b` 在本环境不可用，但仍在候选池并被「成本优先」选中**；同步对话与流式均因此
+出现偶发失败（同步 8/60 = 13.3%；流式 2/30 = 6.7%）。与既有 **P3「偶发 500（未复现）」**
+疑同源，本轮提供了可复现判定路径。
+
+## 6. 执行命令（可复现）
+
+```
+# 基础档（读类 200/档 + 同步对话 60 + 流式 30；并发上限 8，客户端节流 0.75 req/s）
+python scripts/run_perf_batch.py --samples 200 --chat-samples 60 --stream-samples 30 \
+       --concurrency 8 --rate 0.75 --warmup 3 --out tt038-perf-batch-base-20260922.json
+
+# TT-039 档（先播种 1e4 行，再只压回执查询）
+python seed_receipts_1e4.py --rows 10000
+python scripts/run_perf_batch.py --samples 200 --endpoints receipts \
+       --chat-samples 0 --stream-samples 0 --warmup 0 --rate 0.75 \
+       --out tt039-receipts-1e4-20260922.json
+python seed_receipts_1e4.py --cleanup      # 实测：删除 10000 行、残留 0
+```
+
+## 7. 受控数据变更与其回滚
+
+| 变更 | 实测 | 回滚 |
+|------|------|------|
+| `users.organization_id`（`v148-perf`）绑定 `11111111-…-111111111111` | `affected_rows=1`；绑定前 `POST /api/v1/conversations` → **500**（`conversations.tenant_id NOT NULL`） | `UPDATE users SET organization_id = NULL WHERE username='v148-perf';` |
+| 回写队列播种 1e4 行（`perf-tt039-` 前缀） | 播种 0.25s；队列 140 → 10,140（含轮次内自身增量共 10,213） | 已清理：**删除 10,000 行、残留 0**，队列回 213 行 |

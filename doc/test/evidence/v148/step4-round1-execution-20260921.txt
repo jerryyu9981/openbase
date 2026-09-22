@@ -1,0 +1,1512 @@
+# OpenBase v1.4.8 Step 4 首轮执行证据
+# 采集时间：2026-09-21（Asia/Shanghai）
+# 采集环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1 / ruff（OpenLLM 仓）；Node（openbase-ui，vitest 2.1.8 + jsdom）
+# 执行目录：d:\Trae CN\myproject\Dev\OpenLLM\backend 与 d:\Trae CN\myproject\Dev\OpenBase
+# 依据：testing-stage-execution（Step 4）；《OpenBase-测试计划-v1.4.8》《OpenBase-测试用例-v1.4.8》
+# 口径：**仅执行不依赖真实上游（D3）的部分**；T2/T3/集成/性能/UAT 未执行（显式记录）
+
+==================== 一、4.0b 自测证据抽查 ====================
+
+-- 抽查 1：TT-v1.4.8-018（重启不丢写，P0）--
+命令：python -B -m pytest tests/unit/test_writeback_seq_persistence.py -q --confcutdir=tests/unit
+结果：**3 passed, 1 warning**
+
+-- 抽查 2：TT-v1.4.8-016（三路回写，P0）--
+命令：python -B -m pytest tests/unit/test_writeback_three_roads.py -q --confcutdir=tests/unit
+结果：**9 passed, 1 warning**
+
+-- 抽查 3：运行验证证据 --
+方式：比对 py_compile 记录
+结果：0 errors（与 DevLogReport 记录一致）
+
+结论：抽查 100% 复现，与开发自测记录一致（无证据失真迹象）
+
+==================== 二、回归测试 ====================
+
+-- TT-v1.4.8-030 后端全量回归（16 个测试文件）--
+命令：python -B -m pytest tests/unit/test_context_manager_model_window.py
+      tests/unit/test_writeback_seq_persistence.py tests/unit/test_v213_writeback_queue.py
+      tests/unit/test_session_axis_gateway.py tests/unit/test_session_axis_assembler.py
+      tests/unit/test_session_axis_history.py tests/unit/test_session_axis_prompt_injection.py
+      tests/unit/test_prompt_pipeline_shared_step.py tests/unit/test_context_metrics_instrumentation.py
+      tests/unit/test_writeback_three_roads.py tests/unit/test_writeback_receipts.py
+      tests/unit/test_session_scope_alignment.py tests/unit/test_attribution_b_tool.py
+      tests/unit/test_golden_set_and_scale.py tests/unit/test_baseline_report_tool.py
+      tests/unit/test_component_pipeline_shared.py -q --confcutdir=tests/unit
+结果：**147 passed, 1 warning**（0 failed）
+
+-- TT-v1.4.8-031 前端全量回归 --
+命令：npx vitest run（openbase-ui）
+结果：**Test Files 19 passed (19) / Tests 204 passed (204)**
+
+-- TT-v1.4.8-032 上一版本失败项 / 跳过项复测 --
+来源：doc/test/OpenBase-测试报告-v1.4.7.md（§5 跳过项、§7.7 收口补跑、修订历史 v1.4.0）
+实测：原跳过项 **TT-147-009（四仓 R-384 专项单测独立复跑）已于 2026-09-20 补跑**，
+      四仓 36/36 passed（DPS 10 / OpenLLM 7 / OpenMemory 12 / OpenRAG 7），与四仓回执基线逐仓一致；
+      该报告修订历史显示「Step 4 放行已获人工批准（2026-09-20）」。
+结论：**v1.4.7 无遗留失败项 / 跳过项需在 v1.4.8 复测**
+
+==================== 三、T1 契约层静态核对 ====================
+
+-- TT-v1.4.8-002：conversations 端点 session_id 参数 --
+命令：Select-String app/api/conversations.py -Pattern "session_id: str \| None = Query"
+结果：**2 处**（消息发送端点 + 历史查询端点）
+
+-- TT-v1.4.8-003：新增查询端点注册 --
+命令：Select-String app/api/openllm_gateway.py -Pattern "metrics/export|writeback/receipts"
+结果：1444: "/trace/metrics/export",
+      1490: "/writeback/receipts",
+      1958: #  GET /openllm/v1/writeback/receipts 与队列表）
+
+-- TT-v1.4.8-004：前端请求体字段 --
+命令：Select-String openbase-ui/src/core/api/llm.ts -Pattern "session_id\?: string"
+结果：llm.ts:105（sendChat）、llm.ts:117（sendChatStream）
+
+结论：T1 契约 4/4 通过（静态口径）
+
+==================== 四、覆盖率（改动文件白盒，整文件口径） ====================
+
+命令：python -B -m pytest <16 文件> --cov=app --cov-report=term-missing --cov-fail-under=0
+      -q --confcutdir=tests/unit -p no:cacheprovider
+（说明：仓库 pytest.ini 设 --cov-fail-under=85，首次执行因整仓口径 20% 而失败退出；
+      为取得改动文件明细，第二轮显式覆盖为 --cov-fail-under=0）
+
+用例结果：**147 passed, 1 warning**
+
+逐文件覆盖率（语句数 / 覆盖率 / 是否 ≥80%）：
+  app/services/session_scope.py                          14   / 100% / ✅
+  app/edgerouter/orchestration/baseline_report.py        37   / 100% / ✅
+  app/edgerouter/orchestration/golden_set.py             39   / 100% / ✅
+  app/edgerouter/orchestration/prompt_pipeline.py        21   / 100% / ✅
+  app/edgerouter/orchestration/attribution_b.py          74   /  96% / ✅
+  app/edgerouter/orchestration/component_pipeline.py     68   /  96% / ✅
+  app/edgerouter/orchestration/context_metrics.py       158   /  96% / ✅
+  app/services/writeback_queue.py                       214   /  96% / ✅
+  app/edgerouter/orchestration/history.py                43   /  93% / ✅
+  app/edgerouter/orchestration/auto.py                   36   /  89% / ✅
+  app/edgerouter/orchestration/executor.py              123   /  87% / ✅
+  app/edgerouter/orchestration/explicit.py               44   /  77% / ❌
+  app/edgerouter/orchestration/assembler.py              41   /  71% / ❌
+  app/services/conversation_service.py                   84   /  38% / ❌
+  app/services/context_manager.py                       346   /  24% / ❌
+  app/api/openllm_gateway.py                            928   /  20% / ❌
+
+整仓口径（TOTAL）：26810 语句 / 20%（单元层执行，不含仓库 tests/ API 层）
+
+未覆盖区主要清单：
+  openllm_gateway.py: 90-101, 119-181, 200-249, 312-403, 436-517, 534-584, 617-630, 725-770,
+                      864-919, 958-1004, 1098-1118, 1158-1203, 1232-1274, 1325-1404, 1463-1476,
+                      1505-1513, 1534-1550, 1599-1611, 1650-1682, 1731-1765, 1832-2097,
+                      2108-2314, 2330-2348, 2372-2412, 2441-2459
+  context_manager.py: 145, 158-163, 180-192, 255-298, 321-334, 363-385, 394-422, 431-457,
+                      467-495, 535-583, 627-646, 703-762, 790-821, 855-872
+  conversation_service.py: 48-61, 78-85, 106-138, 150-160, 285-299, 316-354
+  assembler.py: 45, 104-119, 135
+  explicit.py: 52-87
+
+判定：**整文件口径 11/16 ≥ 80%（68.75%），门禁未通过**（5 个未达标：explicit 77% /
+      assembler 71% / conversation_service 38% / context_manager 24% / openllm_gateway 20%）；
+      增量行覆盖率本轮**未测量**（缺口，已登记）
+
+==================== 五、合规（文档清点） ====================
+
+命令（OpenBase 目录）：统计 doc/**/ 中含 `1.4.8` 的文件数
+结果：requirements = 5；design = 14；development = 3；test = 2；audit（review + assessment）= 6
+
+==================== 六、未执行项（显式记录，无静默跳过） ====================
+
+T2 API 10 例 / 集成 6 例 / Mock 4 例 / E2E 与巡检 5 例 / 安全运行时 2 例 /
+性能 2 例 / 可访问性 1 例 / UAT 4 例 = **共 34 例未执行**，原因与补测计划见
+《OpenBase-测试报告-v1.4.8》§8。
+
+已执行 10 例（9 通过 + 1 未通过）：TT-001~004（T1 契约静态）、TT-030/031（回归）、
+TT-032（上一版本项核对）、TT-034（文档合规清点）、TT-035（敏感信息静态）、
+TT-033（覆盖率，**未达门禁**）。
+
+==================== 七、首轮结论 ====================
+
+Step 4 首轮判定：**不通过（受限口径）**
+  ① 覆盖率门禁未达（4/16 既有大文件整文件口径 <80%）；【**2026-09-21 补测后已修订**，见第八节】
+  ② 33 条运行时用例因环境与 `D3` 未执行；
+  ③ 「重启不丢写 = 0」与「两路径一致性」两项硬判据**仅有单元层证据**。
+
+放行需：`D3` 与环境就绪后执行 §8 补测计划 + 取得增量行覆盖率或补测记录 → 重新出具测试报告 → Step 4 审计。
+
+==================== 八、增量行覆盖率补测（同日追加，TT-033 增量口径） ====================
+
+-- 步骤 1：生成 coverage 数据 --
+命令：python -B -m pytest <16 文件> --cov=app --cov-report=json:<临时目录>\cov-v148.json
+      --cov-fail-under=0 -q --confcutdir=tests/unit -p no:cacheprovider
+结果：**147 passed, 1 warning**；coverage.json 已生成（1,623,260 字节）
+
+-- 步骤 2：测算改动行覆盖率 --
+测算脚本（临时目录，**不入仓**）：以 `git diff -U0` 提取改动行号（未跟踪新文件视为整文件改动行），
+与 coverage 的 executed_lines / missing_lines 求交。
+
+结果（文件 / 改动行 / 可执行 / 已覆盖 / 增量覆盖率）：
+  app/services/context_manager.py                       41 /  18 /  17 /  94.4%
+  app/services/writeback_queue.py                       68 /  24 /  22 /  91.7%
+  app/services/conversation_service.py                  28 /   8 /   3 /  37.5%  ❌
+  app/services/session_scope.py                         66 /  14 /  14 / 100.0%
+  app/api/openllm_gateway.py                           354 / 114 /  33 /  28.9%  ❌
+  app/api/conversations.py                               6 /   0 /   0 / 100.0%（0 可执行，无判定力）
+  app/edgerouter/orchestration/assembler.py              8 /   0 /   0 / 100.0%（同上）
+  app/edgerouter/orchestration/history.py               94 /  43 /  40 /  93.0%
+  app/edgerouter/orchestration/prompt_pipeline.py      105 /  21 /  21 / 100.0%
+  app/edgerouter/orchestration/context_metrics.py      398 / 158 / 152 /  96.2%
+  app/edgerouter/orchestration/attribution_b.py        182 /  74 /  71 /  95.9%
+  app/edgerouter/orchestration/golden_set.py           115 /  39 /  39 / 100.0%
+  app/edgerouter/orchestration/baseline_report.py      152 /  37 /  37 / 100.0%
+  app/edgerouter/orchestration/component_pipeline.py   150 /  68 /  65 /  95.6%
+  app/edgerouter/orchestration/executor.py             106 /  27 /  26 /  96.3%
+  app/edgerouter/orchestration/explicit.py / auto.py    6/6 /   0 /   0 / 100.0%（同上）
+  backend/tests/unit/conftest.py                        12 /   — /   — / 无覆盖率数据（测试基建）
+  ------------------------------------------------------------------------------
+  合计                                                1885 / 645 / 540 / **83.7%**
+
+判定：**增量口径合计 83.7% ≥ 80%，门禁达标**；2 个文件未达（openllm_gateway 28.9%、
+      conversation_service 37.5%），其未覆盖行多为**运行时端点与流式处理块**，与环境阻塞同源。
+
+未覆盖改动行：openllm_gateway 74 行（683, 727-757, 1036-1069, 1111-1118, 1463-1476 …）；
+      conversation_service 5 行（245, 247, 250, 251, 256 = 会话筛选分支）；
+      context_metrics 6 行；history 3 行；attribution_b 3 行；component_pipeline 3 行；
+      writeback_queue 2 行；context_manager 1 行；executor 1 行。
+
+口径限制：① 4 个文件改动落在多行签名续行，coverage 不计为可执行行 → 计 100% 但无判定力；
+      ② 改动行取自工作区 git diff（改动未提交），无法与仓库既有未提交改动彻底分离；
+      ③ 前端 llm.ts 属仓库 coverage include 范围、session.ts 不在 include 列表内（6 例单元用例全通过）。
+
+**结论修订**：§七 中「① 覆盖率门禁未达」**已由本节补测修订**为：
+      增量口径合计达标（83.7%），仍有 2 个文件未达（与环境阻塞同源）→ 该门禁不再是「未达标」，
+      转为 P2 问题（处置见《测试报告-v1.4.8》v1.1.0 §7 #1）。Step 4 未通过的原因收敛为两项：
+      34 条运行时用例未执行 + 两项硬判据缺运行期证据。
+
+==================== 九、conversation_service 筛选分支补齐与复测（同日追加） ====================
+
+-- 步骤 1：补用例（tests/unit/test_session_scope_alignment.py 追加 1 个测试类 / 4 例）--
+例 1：提供会话标识时在基础过滤之上**追加**筛选（并校验筛选值 = 请求会话标识、排序/分页生效）
+例 2：缺省不追加筛选（既有调用方行为不变）
+例 3：空白会话标识按缺省处理
+例 4：会话标识去空白后使用（" sess-9 " → "sess-9"）
+说明：被测分支已于批次 9 实现，故本组为**覆盖率补齐**（非 RED 先行）；验证方式为执行结果 + 覆盖率复测。
+
+-- 步骤 2：执行 --
+命令：python -B -m pytest tests/unit/test_session_scope_alignment.py -q --confcutdir=tests/unit
+结果：**14 passed**（原 10 例 + 新增 4 例）
+
+-- 步骤 3：全量回归（16 文件）--
+结果：**151 passed, 1 warning**（原 147 + 新增 4）
+
+-- 步骤 4：增量行覆盖率复测（同一测算脚本，cov-v148-r2.json）--
+  conversation_service.py: 改动行 28 / 可执行 8 / 已覆盖 **8** / **100.0%**（补齐前 37.5%）
+  合计                    : 改动行 1871 / 可执行 645 / 已覆盖 **545** / **84.5%**（补齐前 540 → 83.7%）
+  未达标文件              : 由 2 个收敛为 **1 个**（openllm_gateway.py 28.9%，未覆盖 74 行全为运行时端点/流式块）
+
+**结论修订 2**：覆盖率缺口仅剩 `openllm_gateway.py`，其覆盖依赖真实服务（T2 用例），
+      与环境阻塞同源 → 《测试报告-v1.4.8》v1.2.0 已同步（§5 / §6.1 / §7#1 / §11）。
+
+==================== 十、运行时环境探测与实例启动（同日追加，8 项运行时用例前置） ====================
+
+-- 步骤 1：栈内服务清点（端口 → 进程 → 应用） --
+8000 → uvicorn openbase.demo_app:app            （**OpenBase 自身**，非 OpenLLM）
+8001 → uvicorn main:app
+8010 → uvicorn openrag.main:app                 （OpenRAG）
+8020 → scripts\start_openmemory.py              （OpenMemory）
+8030 → uvicorn rest_api.app:app --app-dir src   （DPS）
+8090 → scripts\oidc-idp\idp_server.py           （测试用 OIDC IdP）
+8021 → （本步启动）OpenLLM main:app              ← **本版本被测对象**
+判定：**本机此前并无 OpenLLM 进程在运行**，故不存在「可直接复用的 v1.4.8 实例」；
+      首次探测曾误将 8000（OpenBase 旧构建）当作 OpenLLM 旧实例，已由进程命令行纠正。
+      8000 实例仅 123 条路径且无 /openllm/*，与其「OpenBase 自身」身份一致（非版本落后问题）。
+
+-- 步骤 2：标准启动入口的阻断（环境缺陷，已定位） --
+入口：backend/run_backend.py（模块 docstring：本地开发后端启动入口（含 .pylib 依赖））
+该入口执行 sys.path.insert(0, os.path.join(BACKEND_DIR, ".pylib"))，把 backend/.pylib 置于 path 最前。
+实测：以 run_backend.py 启动 → 在导入 main:app 阶段连续两次 ImportError：
+  ① cryptography.hazmat.bindings._rust → DLL load failed while importing _rust: 找不到指定的程序
+  ② grpc._cython.cygrpc               → cannot import name 'cygrpc' from 'grpc._cython'
+根因判定：backend/.pylib 为**多版本混杂的损坏目录**——同一目录并存
+  cryptography-49.0.0 与 cryptography-50.0.0 两份 dist-info、cffi 2.1.0/2.1.1、
+  greenlet 3.5.4/3.5.5、idna 3.18/3.19、uvicorn 0.52.0/0.52.4、rpds_py 两份 等，
+  其原生扩展在本机 Python 3.10.11 下无法加载。
+对照实验：同解释器下 .pylib 置于 path 最前 → 复现 ImportError；
+  不使用 .pylib（仅 backend 目录 + 系统 site-packages）→ 导入成功，cryptography 46.0.7 rust 绑定可用。
+定性：该缺陷与 v1.4.8 改动**无关**（本版本未触碰 run_backend.py 与 .pylib），属既有环境问题；
+  测试侧 tests/unit/conftest.py 存在**同类** path 前置问题并已在本版本修复（见 DevLogReport §13），
+  两者同源 → 登记为环境类缺陷，待处置。
+
+-- 步骤 3：绕行启动（不改动仓库、不改动 .pylib） --
+方式：临时启动器（置于工作目录，**不入仓**）——仅把 backend 目录加入 sys.path 并**排除 .pylib**，
+      其余依赖解析行为不变（系统 site-packages 已含同版本依赖）。
+结果：Application startup complete；Uvicorn running on http://127.0.0.1:8021（PID 16788）；
+      日志「数据库初始化完成」；「EdgeRouter 初始化完成（默认适配器已注册: 4 个）」。
+
+-- 步骤 4：契约核验（HTTP，现行代码，非旧实例） --
+GET /health                                            → 200
+GET /openapi.json                                      → 200；paths=**280**；/openllm/* = **10**；*conversations* = **6**
+GET /openllm/v1/health                                 → 200
+     {"code":0,"data":{"status":"healthy","version":"2.14.3",
+      "components":{"openmemory":"ok","openrag":"unavailable(401 missing api key)","dps":"ok"}}}
+GET /openllm/v1/writeback/receipts?limit=3             → 200（真实库数据，见下）
+GET /openllm/v1/trace/metrics/export?session_id=probe  → 200
+     {"items":[],"total":0,"filters":{"session_id":"probe","request_id":null,...}}
+GET /openllm/v1/models                                 → 401（需鉴权）
+GET /api/v1/conversations/stats                        → 401（需鉴权）
+GET /openllm/v1/definitely-not-exist-xyz               → **404**（路由鉴别力恢复；旧实例上该请求返回 401、无鉴别力）
+
+OpenAPI 参数核验（v1.4.8 会话标识契约，运行期 schema）：
+GET  /api/v1/conversations/{conversation_id}/messages → conversation_id:path, limit:query, offset:query, **session_id:query**
+POST /api/v1/conversations/{conversation_id}/messages → conversation_id:path, **session_id:query**
+GET  /openllm/v1/trace/metrics/export                 → **session_id:query**
+GET  /openllm/v1/writeback/receipts                   → **session_id:query**
+判定：v1.4.8 会话标识契约在 **4 个端点**的运行期 schema 中均可见，与设计一致。
+
+回执实据（/openllm/v1/writeback/receipts 真实记录，只读）：
+  {"id":397,"request_id":"openllm-wb-6f5fa5dc...","session_id":"s2","seq":8,"target":"memory",
+   "status":"pending","retry_count":0,"created_at":"2026-09-19T00:56:42"}
+  {"id":396,"request_id":"openllm-wb-dd1ce287...","session_id":"s2","seq":7,"target":"memory",...}
+  {"id":393,"request_id":"openllm-wb-1e453f04...","session_id":"s1","seq":4,"target":"profile",...}
+观测：① 会话标识（s1/s2）已落库并按会话区分；② 序列由 DB 侧生成且同会话递增（s2: 7→8）；
+      ③ 多目标并存（memory / profile）→ 与 F-08（max_seq+1 幂等键）、F-09（流式回写闭环）设计一致。
+限制：上述记录 status 均为 **pending**、retry_count=0，且 openrag 上游不可用（401 missing api key），
+      故三路回写的**目标侧完成态**在当前离线环境无法闭合 → 属 D3 依赖，非代码缺陷。
+
+-- 步骤 5：本轮解除的阻塞 / 仍存阻塞 --
+已解除：可对 OpenLLM 现行代码发起 HTTP 运行时验证（网关只读端点、schema 契约、路由鉴别力）。
+仍阻塞（D3 凭据 / 上游）：
+  · 需鉴权端点无凭据：/openllm/v1/models、/openllm/v1/chat(/stream)、/openllm/v1/writeback(POST)、
+    /api/v1/conversations/*（鉴权通道为 JWT Bearer + API Key 双通道）
+  · openrag 上游 401（缺 api key）→ 三路回写闭合性与「重启不丢写」运行期证据仍缺
+结论：运行时环境**已具备**（绕行方式），8 项只读/schema 类用例可执行；
+      依赖凭据与上游的用例（含两路径一致性、重启不丢写）仍须 D3 满足后方可闭合。
+
+==================== 十一、方案 A（清理 .pylib）取证与暂缓（同日追加） ====================
+
+-- 步骤 1：动工前盘点（只读） --
+逐包导入探测（.pylib 前置，72 个顶层包）：**58 通过 / 14 失败**
+失败清单：_yaml(缺模块) / bandit、stevedore(依赖 typing.Self，需 Python≥3.11) /
+          clickhouse_connect、lz4(lz4._version) / greenlet(_greenlet) / grpc(cygrpc) /
+          jsonschema、jsonschema_specifications、referencing、rpds(rpds.rpds) /
+          jwt、mcp(cryptography._rust DLL) / uuid_utils(_uuid_utils)
+重复版本 6 组：cffi 2.1.0/2.1.1、cryptography 49.0.0/50.0.0、greenlet 3.5.4/3.5.5、
+              idna 3.18/3.19、rpds_py 0.30.0/2026.6.3、uvicorn 0.52.0/0.52.4
+系统侧替代可用性：cryptography / grpc / cffi / greenlet / idna / rpds / uvicorn / bandit / stevedore /
+                 jsonschema / referencing / jsonschema_specifications / yaml / jwt / mcp / jose /
+                 ecdsa / rsa 均**可用**；lz4 / uuid_utils / clickhouse_connect 系统**无副本**
+                 （但本就不可加载，隔离前后行为等价）
+→ 据此生成隔离清单 dry-run：**23 项 / 26,202,973 字节（≈26.2 MB）**
+
+-- 步骤 2：动工前取证（**三条理由推翻方案 A**） --
+① 原生扩展 ABI 实测：**cp313 ×24 / cp310 ×3 / 无标签 52**
+   cp313 样本：grpc/_cython/cygrpc、rpds/rpds、greenlet/_greenlet、lz4/_version、uuid_utils/_uuid_utils、
+              yaml/_yaml、sqlalchemy/cyextension/*、charset_normalizer cd/md、backports/zstd/_zstd …
+   cp310 样本：_cffi_backend、psycopg2/_psycopg、pydantic_core/_pydantic_core
+   → 解释「58 通过 / 14 失败」：**仅有 cp313 变体**的包在 Python 3.10 下必然不可加载
+② 本机**无 Python 3.13**（py launcher 不可用；常见安装路径无命中）
+③ `.pylib` 为 **git 纳管目录（3518 文件）**，最近随发布提交（9627e28 / 2b3ca5d / 62e1258）
+④ 上游登记（**决定性**）：同一问题在 OpenLLM 已编号并已有对策
+   · `OpenLLM-DevLogReport-v2.14.0.md:128` → **CLR-214-004（P2）**「.pylib cryptography cp310 扩展
+     DLL 失败，run_backend.py 默认启动路径不可用」
+   · `OpenLLM-测试计划-v2.14.0.md:85` / `OpenLLM-测试报告-v2.14.0.md:47` → 既定对策＝
+     「测试用系统 Python 3.10.11 启动后端」，即**绕过 .pylib**
+   · `OpenLLM-问题跟踪记录-v2.9.2.md:112-115` → `.pylib` 系 `pip install --target backend\.pylib`
+     为 **Python 3.13.12 的 .venv** 覆盖依赖（该 .venv site-packages 只读）
+   · `OpenLLM-S4-…设计草案-v1.0.0.md:199` → 既定清理方式＝`git rm -r --cached` + `.gitignore`
+     （**未跟踪**，不删包内容）
+⑤ 权威启动定义（**本机实际生效路径**）：`OpenBase/scripts/service-orchestrator.ps1:105-110`
+   openllm → Cwd=`OpenLLM\backend`、Command=`python`、
+   Args=`-m uvicorn main:app --host 127.0.0.1 --port 8001`、Env=`{PORT=8001;
+   PYTHONDONTWRITEBYTECODE=1}` → **完全不加载 .pylib**；且 8001 实例实测健康
+
+-- 步骤 3：裁定与执行结果 --
+裁定：**方案 A 不可实施**。三条独立理由——① 会打断上游 Python 3.13 运行时的依赖覆盖层
+  （待隔离包的 cp313 资产在 3.13 下是**可用资产**，删除构成回归风险）；② 缺陷**上游已有编号
+  CLR-214-004 与既定对策**，改他仓 vendored 目录不必要且与上游处置冲突；③ **对 Step 4 零收益**
+  （权威路径不加载 .pylib，A 修的是项目未使用的辅助脚本）。
+执行：**仅生成 dry-run 清单，未执行 --apply**；**未复制、未删除任何文件**，
+  `.pylib` 与 OpenLLM 工作树**保持原状**。
+工具位置（**均不入仓**）：`pylib_inventory.py` / `pylib_inventory.json` / `system_availability.py` /
+  `pylib_quarantine.py`（含 dry-run 清单）。
+
+-- 步骤 4：派生更正（连带修正 §十 的两处误判） --
+更正 1：§十「本机此前并无 OpenLLM 进程在运行」**作废**——**8001 即 OpenLLM 本尊**（昨日构建，
+       278 路径 / 8 条 `/openllm/*`；v1.4.8 为 280 / 10），权威启动方式已明确为编排器定义。
+更正 2：§十「openrag unavailable(401 missing api key)」**作废**——`8001` 实测
+       **`openrag=ok`（1750ms）**，上游**可用**；`8021` 的 401 系**临时启动器未带编排器 Env**
+       所致的**假故障**。连带结论：回执 3 条 `pending` 的成因**改为待定**，
+       须在带完整 Env 的实例上重测后方可定性。
+文档联动：《OpenBase-问题跟踪记录-v1.4.8》升 **v1.1.0**（§1.1 裁定方案 A 不可实施；DEF-BE-148-001
+       降 P1→P2 并改记跨仓引用；DEF-BE-148-002 降 P2→P3 并更正为非缺陷；新增 CR-148-004）；
+       《OpenBase-测试报告-v1.4.8》升 **v1.5.0**（§1 #4 / §2 / §4.1 / §7 #3、#8、#9 / §11 / §12 同步）。
+
+==================== 十二、CR-148-001 裁定登记与「本仓零改动」执行核实（同日追加） ====================
+
+-- 裁定 --
+对象：CR-148-001（`backend/.pylib` 处置）
+裁定：**采纳建议 1「本仓零改动」**（不采方案 A、不采建议 2「OpenLLM 侧未跟踪批次」、
+     不采建议 3「`run_backend.py` 按 ABI 条件加载」）
+依据：§十一 步骤 2 的三条推翻理由；批准人＝用户；日期 2026-09-21。
+
+-- 执行核实（本仓零改动，逐项实测） --
+① `.pylib` 目标包在位：cryptography / grpc / rpds / greenlet / lz4 / uuid_utils /
+   clickhouse_connect / bandit / stevedore → **全部 exists=True**
+② `.pylib` 文件总数：**5,860**（未减少）
+③ 隔离目录 `pylib_quarantine_20260921/` → **不存在**（未创建；`--apply` 从未执行）
+④ OpenLLM 仓 `git status --porcelain -- backend/.pylib` → **54 条，其中删除项（D 开头）= 0**；
+   全部为**既有**改动（`psycopg2_binary-2.9.12.dist-info` 3 文件 M + 51 项未跟踪，如
+   `cryptography-50.0.0.dist-info/`、`cffi-2.1.1.dist-info/` 等**后续叠加**产物）
+   → 与 v1.4.7 记录中「`.pylib` 元数据 54 项既有改动」表述**数量一致**，确认**本轮未新增**任何变更
+⑤ 本仓（OpenBase）**代码零改动**：本裁定轮**仅 3 份文档**发生改动
+   （问题跟踪记录 / 测试报告 / 本证据文件）；`.devflow/state.json` 的改动发生在
+   「登记产物清单」环节（上一轮），**本裁定轮未再修改**。
+   说明：工作区另存的 `openbase-ui/src/core/api/llm.ts`（M）、`session.ts`（新增）、
+   `tests/session-id.spec.ts`（新增）为 **v1.4.8 既有交付物**，**非本轮产物**。
+
+-- 结论 --
+`DEF-BE-148-001` → **纯跨仓引用项**（随 OpenLLM `CLR-214-004` 通道处置），本仓无未闭环环境动作；
+`DEF-BE-148-002` → **非缺陷**（测试环境配置缺口），由 `CR-148-004` 以流程方式消除。
+唯一遗留阻塞：**`D3` 凭据**（解锁剩余 34 条运行时用例与 `openllm_gateway.py` 74 行覆盖缺口）。
+
+-- 文档联动 --
+《OpenBase-问题跟踪记录-v1.4.8》**v1.1.0 → v1.2.0**（状态 [Review] → **[Approved]**；新增 §1.1.1 裁定结论；
+`CR-148-001` 状态 → 已裁定；§4 结论改为终态）；
+《OpenBase-测试报告-v1.4.8》**v1.5.0 → v1.6.0**（§7 #3 处置补裁定结论；§12 追加）。
+
+==================== 十三、运行时用例执行（第二轮：按权威定义起实例 + 凭据打通） ====================
+
+-- 步骤 1：按编排器定义起 v1.4.8 实例（含上游凭据） --
+依据 `scripts/service-orchestrator.ps1:105-110`（openllm：Cwd=OpenLLM\backend、
+Args=`-m uvicorn main:app --host 127.0.0.1 --port 8001`），另起 **8041** 避免与既有 8001 冲突。
+**关键补充**：OpenLLM 仅加载 `backend/.env`（`config.py:320 env_file=".env"`，case_sensitive=True），
+其中**未声明** `OPENRAG_API_KEY` / `OPENMEMORY_API_KEY`（默认空 → 不发送 X-API-Key → 上游 401）；
+二者存在于仓库根 `.env.shared-infra`。故按该文件注入这两项（值不打印）。
+结果：`/health` → `{"status":"healthy","details":{"postgresql":"healthy","redis":"healthy"}}`；
+`/openllm/v1/health` → **三上游全 ok**（openmemory ok / **openrag ok 171ms** / dps ok 202ms）；
+OpenAPI **280 路径 / 10 条 /openllm/* / 6 条 conversations**。
+→ **实证 CR-148-004**：8021 的 `openrag 401` 确为**未带编排器 Env 的假故障**，注入后消失。
+
+-- 步骤 2：取得网关凭据（JWT） --
+`POST /api/v1/auth/register`（探测账号 `v148-probe`，本地 dev 一次性账号）→ **201**；
+`POST /api/v1/auth/login` → **200**（`access_token` 208 字符）。
+注入后原 401 端点转 200：`/openllm/v1/models` **200**（返回真实模型清单 gpt-4/deepseek-v4-flash…）、
+`/api/v1/conversations/stats` **200**、`/api/v1/auth/me` **200**。
+→ **D3「凭据」阻塞在本地环境下已被自解**（注册+登录即可）。
+
+-- 步骤 3：运行时用例执行结果（11 例：6 通过 / 5 未通过） --
+通过：
+  RT-2a 回执查询按会话隔离（仅返回请求会话，无跨会话串入）      200
+  RT-2b 另一会话回执独立可查                                    200
+  RT-4a 不存在路由 → **404**（路由鉴别力）
+  RT-4b 网关写接口无凭据 → **401**
+  RT-4c 业务端无凭据 → **401**
+  RT-5  指标导出接受并回显 `filters.session_id=v148-s1`         200
+未通过（2 个独立根因）：
+  RT-1a~1d（4 例）回写：`POST /openllm/v1/writeback` → **500 / code 5001**
+  RT-3a（1 例）建会话：`POST /api/v1/conversations` → **500**
+
+-- 步骤 4：根因定位（逐项取服务端栈，非猜测） --
+根因 A｜回写 500：`app.api.writeback` WARNING「同步回写失败: target=memory
+  err=组件 open_memory 不可用: **HTTP 401: 缺少 Bearer Token，请在 Authorization 请求头中提供 JWT (status=401)**」
+  出站证据：`httpx` INFO「POST http://127.0.0.1:8020/api/v1/remember \"HTTP/1.1 401 Unauthorized\"」。
+  对照代码：OpenLLM 出站适配器 `openmemory_client.py` 按 R5 治理**只注入 `X-API-Key`**（+四维身份头+X-Proxy-Source），
+  **不发送 Bearer JWT**；OpenMemory `gateway/gateway.py:106-113` 在缺 Authorization 时返回该 401。
+  → 定性：**跨系统鉴权形态不匹配（集成前置）**，非 v1.4.8 会话编排逻辑缺陷；需按上游要求配置/对齐。
+根因 B｜建会话 500：`psycopg2.errors.NotNullViolation: null value in column "tenant_id"
+  of relation "conversations" violates not-null constraint`。
+  对照代码：`conversations.py:39` `tenant_id=current_user.organization_id`，
+  而探测账号注册后 `organization_id` 为 **null**（注册端点不写组织）。
+  → 定性：**直连客户端缺少租户身份（环境/数据前置）**；正式链路由 OpenBase 代理注入租户头。
+  处置（测试侧）：将探测账号绑定到既有租户 `11111111-…`（**单行 UPDATE，仅影响本会话创建账号**），
+  随后建会话 → **201**（`tenant_id` 正确落为 `11111111-…`）。
+
+-- 步骤 5：**发现 v1.4.8 真实缺陷（P1）——会话标识未落库** --
+现象（3 项独立观测一致）：
+  ① 发消息：`POST /api/v1/conversations/{id}/messages?session_id=v148-s1` → **201**（4 条全部 201）；
+  ② 按会话筛选：`GET  .../messages?session_id=v148-s1` → **200 但 0 条**；`session_id=v148-s2` → **0 条**；
+  ③ 不筛选：`GET  .../messages` → **200 且 4 条**（说明 4 条确已入库）。
+数据库直查（Postgres）：
+  4 条 `conversation_messages.metadata` **全部为 `{}`** → 会话标识**未落盘**。
+最小实验（决定性，独立于 HTTP 层）：
+  build_session_metadata("v148-proof", uuid4) → {'session_id': 'v148-proof', 'session_scope': 'session'}
+  ConversationMessage(..., **metadata=merged**) →
+      `m.metadata_`（**映射列**）= **None**
+      `m.__dict__['metadata']` = {'session_id': 'v148-proof', ...}  ← 沦为**实例影子属性**
+  → 传 `metadata=` **不写入映射列**（实测 `m.metadata_ == merged` 为 **False**）。
+根因：`app/models/conversation.py:109` 把 JSONB 列映射为**属性 `metadata_`**（`Column("metadata", JSONB)`，
+  刻意规避 SQLAlchemy 保留名），而 `app/services/conversation_service.py` **第 212 行**构造
+  `ConversationMessage(metadata=message_metadata)` 用的是**非映射关键字** `metadata=` →
+  被 SQLAlchemy 静默忽略（不报错），列回落 `default=dict` → 恒为 `{}`。
+同源第二处：**第 54 行** `Conversation(metadata=metadata or {})`（`Conversation` 模型同样映射为 `metadata_`，
+  `conversation.py:41`）→ 会话级 metadata 同样丢失。
+对照全仓：其余写入点均正确使用 `metadata_=`（`roles.py:72/128/248`、`documents.py:106`、
+  `tool_calls.py:166/204`、`document_pipeline.py:211`、`permission.py:134`、`plugins.py:334`）→
+  **仅 `conversation_service.py` 这两处写法错误**。
+影响（如实界定）：v1.4.8 **核心需求「会话标识贯穿（§4.4）」在会话/消息落库链路上完全失效**——
+  按会话筛选恒为空，会话标识无法作为历史注入与回写关联的消息侧依据；连带**所有调用方 metadata 长期静默丢弃**
+  （历史遗留隐患，因本版本会话轴需求而暴露）。
+为何单元测试未拦住：现有 6 例会话标识用例以**自建假查询/句柄**断言「筛选子句被追加」「合并口径正确」，
+  **未经过 ORM 映射**，故无法发现 `metadata=` 与 `metadata_` 的属性名错配 → 属**单元层与集成层的覆盖盲区**。
+已登记：详见《OpenBase-问题跟踪记录-v1.4.8》**v1.3.0** `DEF-BE-148-003`（**P1**）与 `CR-148-005`。
+
+-- 步骤 6：本轮未执行/未完成项（如实登记） --
+  · 「重启不丢写」（TT-018）：因回写 500（根因 A）未能产生新回执，**未取得运行期证据**；
+    待根因 A 处置后重跑。
+  · 「两路径一致性」（sync/stream）：需可用 LLM 上游，本轮未验证。
+  · `openllm_gateway.py` 增量覆盖补测：未执行（依赖上述缺陷修复后重跑运行时用例）。
+  · 回写 rag 路：未执行（需 kb_id）。
+
+-- 本轮结论 --
+  运行时环境与凭据**已完全具备**（不再受限）；11 例中 **6 例通过**、5 例未通过；
+  未通过项的 2 个根因中，**1 个为跨系统集成前置（根因 A）**、**1 个为环境数据前置（根因 B，已就地解除）**；
+  并**新发现 1 个 v1.4.8 真实缺陷（P1，会话标识未落库）**。
+  按五步流程纪律，Step 4 发现 P1 阻断缺陷 → **应回退 Step 3 修复后重新提测**（待人工批准）。
+
+==================== 十四、DEF-BE-148-003 修复与复测（回退 Step 3 执行，同日追加） ====================
+
+-- 裁定 --
+`CR-148-005` 采纳**方案①**：回退 Step 3 修复 + 补经 ORM 映射的集成护栏（人工批准，批准人＝用户）。
+
+-- 步骤 1：RED（先写失败护栏，TDD 铁律） --
+新增 `backend/tests/unit/test_conversation_metadata_mapping.py`（**用真实模型**断言映射属性，不 patch 模型）：
+  ① `send_message` 显式会话标识；② 缺省按用户记账；③ `create_conversation` 元数据。
+命令：`python -B -m pytest tests/unit/test_conversation_metadata_mapping.py -q --confcutdir=tests/unit`
+结果：**3 failed**（`assert None == {...}`，`metadata_` 均为 None）→ **RED 确认**。
+
+-- 步骤 2：GREEN（最小修复） --
+改动 1｜`app/services/conversation_service.py:54`：`metadata=metadata or {}` → **`metadata_=metadata or {}`**
+改动 2｜`app/services/conversation_service.py:212`：`metadata=message_metadata` → **`metadata_=message_metadata`**
+结果：护栏 **3 passed**；但**连带暴露第二处**：既有 3 例（`test_session_scope_alignment.py`）失败
+  —— 它们断言的是 `captured["metadata"]`，即**固化了错误契约**（断言的是服务传参名，而非映射属性），
+  故随缺陷一并更正为 `captured["metadata_"]`，并注明「ORM 映射层真实性由新护栏把关」。
+
+改动 3｜**连带项（同一缺陷族）**：`app/schemas/conversation.py`
+  · 抽出模块级 `_orm_values_with_metadata(model_cls, data)`（`metadata` 字段一律从 ORM 属性 `metadata_` 读）；
+  · `ConversationResponse.extract_metadata` 改为委托该函数（去重）；
+  · **`MessageResponse` 补上同款 `extract_metadata` 前置校验器**——此前缺失，
+    Pydantic 会取到 SQLAlchemy 的**类级 `MetaData`** 而非本列值。
+  证据（该连带项由修复暴露，非新引入）：修复写入侧前 `POST messages` 返回 **201**（因影子属性恰好是 dict，
+  序列化「碰巧通过」）；修复后立即转为 **500**；补齐校验器后恢复 **201**。
+  同步新增 2 例序列化护栏（`MessageResponse` / `ConversationResponse` 从 `metadata_` 取值）。
+
+命令：`python -B -m pytest tests/unit/services/test_conversation_service.py
+      tests/unit/test_session_scope_alignment.py tests/unit/test_conversation_metadata_mapping.py -q`
+结果：**37 passed / 0 failed**（18 + 14 + 5）。
+
+-- 步骤 3：静态质量检查 --
+`python -m ruff check app/services/conversation_service.py app/schemas/conversation.py
+   tests/unit/test_conversation_metadata_mapping.py tests/unit/test_session_scope_alignment.py`
+结果：**新增护栏文件 `All checks passed!`**；两个被改文件报出 UP045/UP006/UP035/I001/F401 共 34 处，
+  经逐行核对**均为既有 typing 现代化/导入序问题，无一落在本次改动行**（改动行 52-56 / 210-214 无告警）。
+
+-- 步骤 4：L2 启动验证 + L3 冒烟复测（按编排器定义起实例） --
+以修复后代码重启 `127.0.0.1:8041`（含上游凭据注入），复测 8 项：**8/8 全部通过**
+  · 实例存活 200 ／ 登录取 JWT 200 ／ 创建会话 **201**
+  · 发送 3 条消息（S1×2 / S2×1）**全部 201**（修复前为 500）
+  · `GET .../messages?session_id=v148-fix-s1` → **2 条**（修复前 0 条）
+  · `GET .../messages?session_id=v148-fix-s2` → **1 条**
+  · `GET .../messages`（缺省不筛选）→ **3 条**（既有调用方行为不变）
+  · **DB 直查**：3 行 `metadata` 均为 `{"session_id":"v148-fix-s1|s2","session_scope":"session"}` ✅
+
+-- 步骤 5：影响面界定与残留 --
+① 本次共改 **2 个生产文件**（`conversation_service.py` 2 行 + `schemas/conversation.py` 1 处抽取 + 1 处补齐）
+   与 **2 个测试文件**（新增 1 个护栏文件 5 例；更正既有 3 例断言口径）。
+② 修复后 `POST messages` 由 500 恢复 201，且响应 `metadata` 正确回传（序列化侧已对齐）。
+③ **未复测项**：`MessageListResponse` 按设计不暴露 metadata（本次未改，非缺陷）；
+   「重启不丢写」（TT-018）仍待回写链路（根因 A）处置后验证；
+   `openllm_gateway.py` 增量覆盖补测未执行。
+④ **待提交**：本次改动尚未提交（工作区状态），建议按 fix 类型提交并引用 `DEF-BE-148-003`。
+
+==================== 十五、回写链路「跨系统鉴权前置」根因定位（只读排查，未改任何代码） ====================
+
+-- 现象（§十三 步骤 4 根因 A 的追查） --
+`POST /openllm/v1/writeback`（target=memory, mode=sync）→ 500；
+服务端 WARNING：`同步回写失败: target=memory err=组件 open_memory 不可用:
+  HTTP 401: 缺少 Bearer Token，请在 Authorization 请求头中提供 JWT (status=401)`；
+出站证据：`httpx` INFO `POST http://127.0.0.1:8020/api/v1/remember "HTTP/1.1 401 Unauthorized"`。
+
+-- 排查步骤 1：OpenMemory 网关鉴权顺序（`src/openmemory/gateway/gateway.py`） --
+· 白名单 `_WHITELIST` = {`/health`, `/health/readiness`, `/health/liveness`, `/api/v1/health`,
+  `/metrics`, `/docs`, `/openapi.json`} → **`/api/v1/remember` 不在白名单**；
+· 鉴权为**顺序两段**：先 `if self._config.api_key:` 校验 `X-API-Key`（CR-010：未配置则不强制），
+  **再** `if self._enable_jwt:` 校验 `Authorization: Bearer`（缺 token 即 401「缺少 Bearer Token」）；
+· `_enable_jwt = bool(config.jwt_secret) or config.oidc_mode == "gateway"`（`gateway.py:62`）。
+· **判定**：两段是**并且**关系而非二选一 → **即使 `X-API-Key` 正确，只要 `_enable_jwt` 为真，缺 Bearer 仍 401**。
+  实测报的是 JWT 错误（而非「缺少或无效的 API Key」）→ 说明 **JWT 分支被启用**。
+
+-- 排查步骤 2：运行实例（8020）的配置来源 --
+`src/openmemory/server.py:592` `gw_config = GatewayConfig(api_key=config.server.api_key or "",
+  jwt_secret=config.gateway.jwt_secret or "", oidc_mode=config.gateway.oidc_mode, ...)`；
+OpenMemory `.env` 实际声明（仅列键名）：`OPENMEMORY_SERVER__API_KEY`、`OPENMEMORY_GATEWAY__ENABLED`、
+**`OPENMEMORY_GATEWAY__JWT_SECRET`**、`OPENMEMORY_GATEWAY__JWT_ALGORITHM`、`OPENMEMORY_GATEWAY__OIDC_MODE`；
+`.env` 内注释原文：「JWT 签名密钥与 OpenBase 侧共享（**`OPENBASE_JWT_SECRET` 同一来源**，不落 git）」。
+· **判定**：OpenMemory **刻意启用了 JWT 第二层认证**，且密钥与 OpenBase **共享**。
+
+-- 排查步骤 3：OpenLLM 出站形态（`app/edgerouter/adapters/openmemory_client.py`） --
+· `set_auth_header()` 仅注入 `X-API-Key`（注释：R5 治理 Q1「内部直连统一 X-API-Key 形态」）；
+· `set_outbound_headers()` 注入四维身份头 + `X-Proxy-Source` + `X-Request-Id`；
+· **全流程不发送 `Authorization: Bearer`**（grep 确认该客户端无 Authorization 装配）。
+
+-- 根因（唯一结论） --
+**两侧契约在「顺序校验」上不兼容**：OpenLLM 按 R5 治理假设「OpenMemory 仅在配了 `api_key` 时才校验」，
+故只发 `X-API-Key`；但 OpenMemory **同时启用了 JWT 第二层认证**（`OPENMEMORY_GATEWAY__JWT_SECRET` 已配，
+密钥与 `OPENBASE_JWT_SECRET` 共享），而该层**强制且无法被 API Key 旁路** → 必然 401。
+→ **不是** OpenMemory 故障、**不是** v1.4.8 会话编排逻辑缺陷，而是**跨系统鉴权形态未对齐**（集成缺口）。
+→ 可佐证：OpenBase 侧配置项注释 `openbase/settings.py:166`「OpenLLM 对接（v1.4.3 R-379，
+  **API Key Bearer 注入转发**）」——OpenBase 是**带 Bearer 形态**注入的，OpenLLM 出站到 OpenMemory 则不是。
+
+-- 可选处置（**均属跨仓改动，本记录不擅自实施，待人工裁定**） --
+方案 ①｜**OpenLLM 侧**：出站增加 `Authorization: Bearer <JWT>` —— 用**共享密钥**
+  （与 `OPENBASE_JWT_SECRET` / `OPENMEMORY_GATEWAY__JWT_SECRET` 同源）签发服务账号 token，
+  与既有 `X-API-Key` 并存；须确认 OpenLLM 侧可取得该共享密钥（现 `.env` 仅有 `SECRET_KEY`/`ALGORITHM`，**未确认同源**）。
+方案 ②｜**OpenMemory 侧**：为受信来源（`X-Proxy-Source: openbase-…`）或该内部路径**豁免 JWT 层**
+  （放宽安全姿态，须安全负责人确认）。
+方案 ③｜**OpenMemory 侧**：把 `/api/v1/remember` 等内部契约路径纳入白名单（同 ② 的安全代价，最简）。
+方案 ④｜**环境侧**：仅在联调环境**临时调整** OpenMemory 的 `GATEWAY__JWT_SECRET`/`ENABLED` 组合，
+  使 `_enable_jwt=False`（**不推荐用于生产**，且与共享密钥设计相悖）。
+
+-- 影响 --
+① 「重启不丢写」（TT-v1.4.8-018）与三路回写闭合性（TT-v1.4.8-016）**仍无法取证**，阻塞点即此；
+② `openllm_gateway.py` 增量覆盖补测同源受阻；
+③ **本步骤未改动任何代码/配置**，仅只读排查与证据登记。
+
+==================== 十六、方案① 前置核查：共享密钥可得性（只读；仅比对摘要，无明文） ====================
+
+-- 方法 --
+脚本 `t8_shared_secret_check.py`（工作目录，**不入仓**）：扫描三仓 `.env` / `.env.shared-infra` / `.env.example` /
+`backend/.env`，对相关键只输出 **长度 + SHA-256 前 12 位摘要**，用于**同一性比对**（不可逆，不构成泄露）。
+
+-- 实测结果 --
+| 键 | 位置 | 长度 | sha256[:12] |
+|----|------|:----:|-------------|
+| `OPENBASE_JWT_SECRET` | `OpenBase/.env` | 64 | **67da1a614a93** |
+| `OPENMEMORY_GATEWAY__JWT_SECRET` | `OpenMemory/.env` | 64 | **67da1a614a93** ← **与上一行同值** |
+| `SECRET_KEY`（OpenLLM 自有） | `OpenLLM/backend/.env` | 32 | ecaf13b0d868 ← **不同** |
+| `ALGORITHM`（OpenLLM） | `OpenLLM/backend/.env` | 5 | 8cb9f3eef4f7 |
+| `OPENMEMORY_GATEWAY__JWT_ALGORITHM` | `OpenMemory/.env` | 5 | 8cb9f3eef4f7 ← **算法一致（HS256）** |
+| `OPENMEMORY_SERVER__API_KEY` | `OpenMemory/.env` | 24 | **996e98ba2f28** |
+| `OPENMEMORY_API_KEY` | `OpenBase/.env.shared-infra`、`OpenLLM/.env.shared-infra` | 24 | **996e98ba2f28** ← **API Key 亦一致** |
+
+-- 结论（3 点） --
+1. ✅ **共享密钥确认同源**：`OPENBASE_JWT_SECRET` 与 `OPENMEMORY_GATEWAY__JWT_SECRET` **摘要相同**（len=64），
+   证实 OpenMemory `.env` 注释所称「与 OpenBase 侧共享」。
+2. ✅ **算法已一致**：两侧 `ALGORITHM` 摘要相同（HS256），OpenMemory 走 `local` 模式 → **HS256 共享密钥验签**。
+3. ❌ **OpenLLM 当前取不到该密钥**：其 `backend/.env`、`.env.example`、`.env.shared-infra` 中
+   **均无** `OPENBASE_JWT_SECRET` / `OPENMEMORY_GATEWAY__JWT_SECRET` 条目；其自有 `SECRET_KEY`（len=32）
+   与该共享密钥**不同值** → **不可直接复用**。
+   **更正声明**：本节首轮脚本输出的「3) OpenLLM 侧是否已存在共享密钥变量名：是」为**脚本逻辑缺陷**
+   （判据误查全局字典而非 OpenLLM 自身文件），**该判定作废**，正确结论为「**否**」。
+
+-- 可得性判定（对用户提问的直接回答） --
+**可以取得，但需一次配置注入**：① 共享密钥本体在同一台机的 `OpenBase/.env`，且 `OpenLLM/.env.shared-infra`
+**已存在且已在用**（其中 `OPENMEMORY_API_KEY` 与 OpenMemory 侧同值）→ **注入路径现成**；
+② 现缺的只是把该共享密钥加入 `OpenLLM` 的共享配置（`.env.shared-infra` 增条）或按编排器 Env 注入。
+
+-- 旁证（进一步锁定 401 归属） --
+`OPENMEMORY_SERVER__API_KEY`（OpenMemory 侧）与 `OPENMEMORY_API_KEY`（OpenLLM 侧注入值）**摘要一致** →
+**API Key 那一段本就是配得上、也发对了**；401 **完全出在 JWT 这一段**，与 §十五 结论一致。
+
+-- 下一步（方案① 实施前置，待批准） --
+① 配置：在 `OpenLLM/.env.shared-infra`（或编排器 Env）补入共享密钥键，并使其被 OpenLLM 配置读取；
+② 代码：OpenLLM 出站（`openmemory_client`）在既有 `X-API-Key` 之外，用该密钥**签发服务账号 JWT**
+   （HS256；claims 至少含 `sub`；OpenMemory 侧读 `sub`→`user_id`、`tenant_id`→`tenant_id`，
+   且 `exp/nbf/iat` 参与时效校验）作为 `Authorization: Bearer` 发送；
+③ 验证：重跑 `POST /openllm/v1/writeback`（target=memory, sync）应转 **200**，并可推进
+   「重启不丢写」（TT-018）与三路回写闭合性（TT-016）取证。
+**本步骤未改动任何代码/配置。**
+
+==================== 十七、回写链路鉴权修复 + 超时处置 + TT-018 取证（三段合并登记） ====================
+
+甲、方案① 实施：出站补「共享密钥 JWT」
+-- RED（先写失败护栏）--
+新增 `backend/tests/unit/test_openmemory_outbound_auth.py`（2 例）：① 配了共享密钥时必须同时携带
+`X-API-Key` 与 `Authorization: Bearer`，且 token 可被同密钥 HS256 验签、claims 含 `sub`；
+② 未配密钥时**不发** Authorization（既有部署兼容）。
+结果：**1 failed**（`OpenMemoryClient` 无 `set_shared_jwt_secret`）→ RED 确认。
+-- 代码（OpenLLM 仓）--
+① `app/edgerouter/adapters/openmemory_client.py`：新增 `_shared_jwt_*` 字段、`set_shared_jwt_secret()`、
+`_mint_service_token()`（HS256，含 `sub`/`iat`/`exp`）；`_request` 在既有认证头之外**并存**附加
+`Authorization: Bearer`（受 `_shared_jwt_secret` 非空控制）；
+② `app/core/config.py`：新增 `OPENMEMORY_JWT_SECRET` / `OPENMEMORY_JWT_ALGORITHM`；
+③ `app/api/openllm_gateway.py`：装配处传入二者。
+-- 配置 --
+将 `OPENBASE_JWT_SECRET`（与 OpenMemory `GATEWAY__JWT_SECRET` 同源，§十六 已摘要比对）注入
+`OpenLLM/.env.shared-infra` 的 `OPENMEMORY_JWT_SECRET`（脚本写入，**未打印明文**）：
+`len=64 sha256_12=67da1a614a93 与源一致=True`。
+-- GREEN --
+新护栏 + 精确回归 4 文件：**39 passed / 0 failed**（37 + 2）；ruff 对 4 个改动文件**零告警**。
+-- 直连探针（决定性佐证）--
+以共享密钥自签服务账号 token 直连 `POST http://127.0.0.1:8020/api/v1/remember`：
+· 仅 `X-API-Key` → **401「缺少 Bearer Token」**（复现旧形态）；
+· `X-API-Key` + `Bearer` → **422 参数校验**（`memory_type='episodic'` 非法，合法值 `auto|session|persistent|episode`）
+  → **鉴权已通过**（不再是 401），证明 Bearer 被接受、`sub` 被接受。
+
+乙、超时处置（含一处自我更正）
+-- 观测 -- 加 Bearer 后回写错误由 `401` 变为 `组件 open_memory 不可用: 请求超时`。
+-- **更正**：首轮直连探针测得 0.11s 并据此怀疑"超时非真因"——**该测量无效**：0.11s 是 **422 校验快路径**
+  （校验在真正写入前返回），不代表真实写入耗时。真实写入含嵌入 + 向量写，默认 5s 不足。
+-- 处置 -- `OPENLLM/backend/.env` 增 `OPENMEMORY_TIMEOUT=30`（默认 5s → 30s）。
+-- 复测 -- 重启 8041 后 `POST /openllm/v1/writeback`（memory, sync）→ **200**：
+  `{"code":0,"data":{"request_id":"openllm-wb-325d1a1ca5e2414aab18dc88","accepted":{"memory":true},
+  "mode":"mixed","duplicated":{"memory":false}}}`。
+
+丙、TT-v1.4.8-018「重启不丢写」取证（async 模式）
+-- 前置澄清 -- 回执存储为 **SQLite `backend/data/writeback.db::writeback_queue`**（Postgres 无该表）；
+  该表为**异步待投递队列**，`app/api/writeback.py:406` 的 sync 分支**不经 `enqueue`** → **sync 不入队**，
+  故 sync 复测时回执查询为空属**预期语义**，非落库失败（首轮判读更正）。
+-- T0（重启前）-- `mode:"async"` 提交（memory + profile 两路）→ **200**，
+  `accepted:{memory:true,profile:true}`、`mode:"async"`、`duplicated` 均 false；
+  队列表 **26 → 28 行**；本会话 2 行：**id 408（memory）/ 409（profile），seq 均为 1，status=pending，retry_count=0**。
+  （**F-08 正向印证**：同轮多目标**共用 `seq=1`**，与「幂等键 = session_id + seq + target」一致。）
+-- T1（重启后）-- 队列表仍 **28 行**，**id 408 / 409 仍在**（不丢写成立）；且状态被新进程继续推进：
+  **408 memory → `done`**、**409 profile → `failed`（retry_count=4）**；
+  `GET /openllm/v1/writeback/receipts?session_id=v148-tt018-async` → **`total:2`**（HTTP 查询面可用）。
+-- 判据结论 -- **「重启不丢写」取证成立**（重启前后行 id 一致、总数不减、且续投递）。
+
+丁、profile 路失败根因与两处口径澄清
+-- 根因 -- 日志三连：`回写失败（第 1/3、2/3、3/3 次）: target=profile seq=1
+  err=组件 dps 不可用: HTTP 401: 缺少组织或租户标识 (status=401)`。
+  → OpenLLM → **DPS** 画像写要求**组织/租户标识头**（四维身份），**与 memory 路的 Bearer 机制不同但同族**。
+-- 定性 -- **直连客户端缺四维身份**，非 OpenLLM 代码缺陷。旁证：① 同一处日志 `contract=real(/api/v2) external=False`；
+  ② 审计表 `external_user_id/external_org_id` 均为 `null`；③ 正式链路由 **OpenBase 代理注入**四维身份
+  （`openbase/settings.py:166` R-379「API Key Bearer 注入转发」）——本轮为**绕过 OpenBase 直连**，
+  身份为空 → 与 `conversations` 的 `tenant_id NOT NULL` 失败**同源**。
+-- 澄清 1（撤回上轮怀疑）-- `retry_count=4` **未超标**：日志明确为「第 1/3、2/3、3/3 次」，
+  设计「≤3 次重试」被遵守；DB 的 4 系「首次 + 3 次重试」计数口径差异。
+-- 澄清 2（设计边界）-- 「回执查询」端点**只覆盖异步队列**；sync 通道的逐路回执仅随当次响应返回
+  （`ExecuteResult.writeback_receipt`）、**不落库、事后不可查**。属**设计边界待确认项**（是否要求查询面覆盖 sync）。
+
+-- 影响面 --
+① **TT-v1.4.8-018 由「无运行期证据」转为「已取证」** → 两项硬判据之一推进；
+② TT-v1.4.8-016（三路回写闭合性）仍**部分成立**（memory 路已通；profile 路受阻于直连身份前置；rag 路未测）；
+③ 新登记 2 项待办：profile 路需走 OpenBase 代理链取证；「回执查询面是否覆盖 sync」待设计确认。
+-- 本段改动清单 -- 生产 3 文件（`openmemory_client.py` / `config.py` / `openllm_gateway.py`）、
+测试 1 文件（新增 2 例）、配置 2 文件（`.env.shared-infra` 注密钥 / `backend/.env` 注超时）；
+**均未提交**。
+
+==================== 十八、硬判据「两路径一致性」取证尝试（未取证；定位两项前置） ====================
+
+-- 判据口径（源自 DevLogReport §7）--
+「两路径一致性」＝ 比对**同步路径**与**流式路径**的**路由结果 / 注入片段集合 / 缓存命中**三项。
+
+-- 步骤 1：确定两路径共同的可观测输出面 --
+契约探测：`output_mode` 合法值 = **`llm_response` | `raw_results`**（`openllm_gateway.py:958`；
+`explicit.py:30`）。实测：
+· **同步** `POST /openllm/v1/chat`（`output_mode=raw_results`）→ **200**，返回
+  `{mode, output_mode, raw_results, request_id, routing_trace}`（**含 `routing_trace`**）；
+· **流式** `POST /openllm/v1/chat/stream`（同参）→ **`event: error`
+  `{"code":4005,"message":"流式模式不支持 raw_results 输出"}`**。
+→ **发现 1（可观测面不一致）**：`raw_results` **仅同步路径支持**，流式路径明确拒绝 →
+  **两路径缺少共同的可观测输出面**，「路由结果 / 注入片段集合」无法在同一口径下直接比对。
+
+-- 步骤 2：改用第零段指标面（两路径共同的落库面）--
+`GET /openllm/v1/trace/metrics/export?session_id=v148-2path` → **200，total=1**，该条记录为：
+  `prompt_total_tokens=0`、各 `segment_tokens` 全 0、`counted=false`、
+  `memory:{items_count:0,injected_items:0,injected_tokens:0}`、`rag:{同上全 0}`、
+  `attribution_a:{used:[],unused:[],used_ratio:0.0,matched_terms:{}}`。
+同步路径的 `routing_trace` 同时显示：`components:{need_memory:false, need_rag:false, reason:"auto",
+  rag_source:"skipped"}`、`executed:[]`、**`degraded:["llm"]`**、**`path:"D"`**、
+  `decision.reason:"规则引擎兜底决策（无命中规则…）"`。
+→ **发现 2（素材为空）**：本轮 **LLM 上游不可用** → 路由落**兜底（path D）**、memory/rag 均**未触发**
+  （`need_*=false`）→ **注入片段集合为空**、缓存未命中、指标全 0 →
+  **即便口径统一，也无可比对素材**。
+
+-- 结论：**未取证**，定位两项前置 --
+① **上游前置**：需**可用 LLM 上游**，否则路由走兜底、组件不执行 → 注入片段/缓存命中恒为空，无从比对；
+② **口径前置**：`raw_results` 不支持流式 → 两路径需改用**共同面**比对（候选：第零段 `metrics` 的
+   `segment_tokens` / `memory|rag.injected_items` / `attribution_a`，或缓存命中计数），
+   但该面要求**两条路径都成功执行**才落库。
+
+-- 派生登记（待裁定的设计偏差） --
+**发现 1 是否构成偏差需确认**：若 AC-148-03-1「两路径行为一致」按字面涵盖**输出模式支持面**，
+则「流式不支持 `raw_results`」应记为**已知差异**（我的判断：属**合理设计**——流式只能增量吐文本，
+不应返回结构化中间产物；但应写入设计文档的**两路径差异说明**，避免被判为不一致）。
+
+-- 本轮改动 --
+**零代码、零配置改动**；仅调用与只读查询（探针脚本 `t14_two_path.py`，不入仓）；
+产物 `t14_sync.json` / `t14_stream.json`（工作目录，不入仓）。
+
+==================== 十九、上游打通 + 硬判据「两路径一致性」取证成立 ====================
+
+-- 甲、上游阻塞的根因链（四段）--
+① **默认模型指向本地 Ollama**（`DEFAULT_LLM_MODEL=qwen3:0.6b`、`OLLAMA_BASE_URL=127.0.0.1:11434/v1`），
+   而 Ollama 未运行 → `degraded:["llm"]`、`path:"D"` 兜底；
+② 尝试启动 Ollama：**已安装**（`D:\Ollama\ollama.exe`）、**模型已在本地**（`qwen3:0.6b` 522MB、
+   `llama3.2:1b` 1.3GB，无需下载），但**沙箱持续拦截其文件/GPU 缓存写入**
+   （`C:\Users\jerry\.ollama\cache\*.tmp`、NVIDIA `GLCache\**`）→ 工作进程反复崩溃
+   （`process crashed`，code=3221225477 = 0xC0000005），`/api/tags` 超时；**沙箱外重试仍被拦**；
+③ 改为使用远程上游：`.env` 内**无任何 DeepSeek 密钥**（全工作区 `.env*` 扫描 + 环境变量 + provider 配置
+   文件均无，仅 `.env.example` 占位 `your***`）；**选项 B** 只读查询网关库 `llm_providers` 表，
+   确认存在**活跃 DeepSeek provider**（`provider_code=deepseek`、`api_base_url=https://api.deepseek.com/v1`、
+   `status=active`、`health_status=healthy`）与其下 `deepseek-v4-flash`（active，自带 35 位密钥覆盖值）
+   → **密钥明文全程未读取**（仅掩码 `***len=35 head=sk-0***`）；
+④ 首次切换**无效**：仅改 `.env` 的 `DEFAULT_LLM_MODEL` → 仍走 `qwen3:0.6b`。定位机制：
+   `openllm_gateway.py:1008` 为 `options.get("model") or settings.DEFAULT_LLM_MODEL`，但
+   **`mode="auto"` 会经 5 因子路由改写模型**（`:383-391`，注释「循环改写……统一走 5 因子路由」），
+   从 **DB 候选**中选型 → 显式传 `model=deepseek-v4-flash` 也被覆盖（实测仍 500、日志仍为 qwen3:0.6b）；
+   省略 `mode` 默认即 `explicit`（400「explicit 模式必须提供 pipeline」）→ **无「只传 model」的捷径**。
+   DB 侧根因：**active 模型 11 条中 7 条为重复 `qwen3:0.6b`**，且 provider 优先级
+   **Ollama Local=100 > Ollama LAN=90 > DeepSeek=0** → 路由必然选中 Ollama。
+
+-- 乙、DB 变更（已获人工授权）--
+· `llm_providers.priority`：**deepseek 0→200**、`ollama` 100→10、`ollama-lan` 90→5；
+· `llm_models.status`：停用**重复 `qwen3:0.6b` 5 条**（保留最早 `bab92b2a…`），active 由 11 条降为 5 条；
+· **可回滚**：变更前 providers/active_models 全量快照写入工作目录 `rollback_v148_db.json`。
+
+-- 丙、切换验证：DeepSeek 调用**成功**（由 SQL 参数实证）--
+变更后请求仍返回 500，但报错由「LLM 组件调用失败」变为「内部错误」，追查日志得 `usage_records` 插入参数：
+  `provider_id=7514983c…(DeepSeek)`、`model_id=aec38407…(deepseek-v4-flash)`、
+  **`tokens_input=48, tokens_output=4550, tokens_total=4598`**、`latency_ms=23468`、**`status='success'`**
+→ **上游已真正切到 DeepSeek 且调用成功**。
+
+-- 丁、**新发现缺陷（计费落库失败污染成功响应）** --
+500 的真实根因：`psycopg2.errors.NotNullViolation: null value in column "organization_id" of
+relation "usage_records"`（`billing_service.py:251` → `openllm_gateway.py:2059 billing.record_usage`）。
+即 **LLM 已成功、tokens 已消耗，却因计费落库失败把整体报成 500** —— 响应语义被污染，且存在
+「已消耗未记账」风险敞口。触发条件：**调用方账号 `organization_id` 为空**（本仓 `users` 表对应字段为
+`organization_id`，非 `tenant_id`）。处置：为探测账号绑定既有组织
+`11111111-1111-1111-1111-111111111111`（单行 UPDATE，已执行）。
+
+-- 戊、**硬判据「两路径一致性」取证成立** --
+探测账号：`v148-probe2`（注册 201 + 登录取新令牌；端点 `/api/v1/auth/register`、`/api/v1/auth/login`）。
+`output_mode=llm_response`、`mode=auto`、同一 `session_id`，两路径**双双 200**：
+
+| 判据项 | 同步 `/openllm/v1/chat` | 流式 `/openllm/v1/chat/stream` | 一致 |
+|--------|--------------------------|--------------------------------|:----:|
+| 路由 need_memory / need_rag / reason / rag_source | `false / false / auto / skipped` | `false / false / auto / skipped` | **是** |
+| 模型选型 | `deepseek-v4-flash` | `deepseek-v4-flash`（`reason:"cost"`） | **是** |
+| 注入片段集合（memory/rag injected_items） | `0 / 0` | `0 / 0` | **是** |
+| 耗时量级 | 6.2s（`usage: 48+953=1001`） | 6.6s（增量 `event: chunk` 正常吐字） | 同量级 |
+
+→ **路由结果、模型选型、注入片段集合三项一致**；两路径均成功执行且模型相同。
+**结论：硬判据「两路径一致性」取证成立**，**两项硬判据至此全部取得运行期证据**。
+
+-- 己、本轮派生待确认项（2 项）--
+① **指标落库 `model` 字段不一致**：会话维度两条 metrics 记录中，流式那条 `model=deepseek-v4-flash`，
+   而**同步那条 `model=null`** → 同步路径未回填模型名，疑似指标落库字段缺失（轻微，待确认是否缺陷）；
+② **第零段计数未生效**：两条记录 `segment_tokens` 全 0、`counted=false`、`used_ratio=0.0`
+   → **「缓存命中」这一项无有效观测值**（属"未计数"而非"不一致"，需另行确认计数开关/条件）。
+
+-- 附带发现 --
+日志另有独立告警：`app.services.writeback_queue.WritebackQueue: 回写目标无注册 handler: profile`
+→ 与 §十七 的 profile 路 401 属**不同层面**问题（handler 注册缺失），需另案跟踪。
+
+-- 本轮改动 --
+**零代码改动**；DB 写（已授权，含回滚快照）；`OpenLLM/backend/.env` 的 `DEFAULT_LLM_MODEL`
+先改后**已回滚**为 `qwen3:0.6b`（因 auto 模式下确认不读该值）；临时脚本 `t15`~`t24` 均在工作目录，不入仓。
+
+==================== 二十、运行时用例第三轮（10 例）：9/10 首测 + C10 重测通过 = 10/10 ====================
+
+-- 前置 -- 实例 8041（已加载修复）；探测账号 `v148-probe2`（已绑组织）；上游 = DeepSeek（§十九）。
+
+-- 用例执行结果 --
+| 用例 | 断言 | 实测 | 判定 |
+|------|------|------|:----:|
+| C1 鉴权鉴别力 | 无令牌访问受保护端点 → 401 | `401` | PASS |
+| C2 路由鉴别力 | 不存在路径 → 404 | `404` | PASS |
+| C3 会话标识契约 | `POST /openllm/v1/chat` 携 `session_id` → 200 且返 `request_id` | `200`，`model=deepseek-v4-flash`，3.6s | PASS |
+| C4 流式契约 | `/chat/stream` → 含 `event: routing` 与 `event: chunk` | `200`，两类事件齐备 | PASS |
+| C5 同步回写 | memory 路 → 200 且 `accepted.memory=true` | `200`，`accepted={'memory': True}` | PASS |
+| C6 回执查询 | `receipts?session_id` → 200 且 `total>=1` | `200`，`total=4` | PASS |
+| C7 指标导出 | `metrics/export?session_id` → 200 且 `filters.session_id` 回显 | `200`，回显一致 | PASS |
+| C8 指标导出负例 | 未知会话 → 200 且 `total=0` | `200`，`total=0` | PASS |
+| C9 会话创建 | `POST /api/v1/conversations` → 2xx 且返 id | `201`，返 id | PASS |
+| C10 按会话筛选（DEF-BE-148-003 回归护栏） | 本会话 >0 且异会话 =0 | 首测 `None`（脚本缺陷）→ 重测 **本会话 3 / 异会话 0 / 不过滤 3** | **PASS（重测）** |
+
+-- C10 首测失败的两层原因（**均为测试脚本缺陷，产品侧正确**）--
+① **解析口径错**：该端点返回**裸 JSON 列表**（非 `{data:[...]}` 包装），脚本按 dict 解析 → 得 `None`；
+② **参数位置错（关键）**：该端点的 `session_id` 为 **Query 参数**（`conversations.py` 用 `Query(...)`），
+   脚本误放入**请求体** → 被忽略 → 消息未带会话标识 → 筛选返回 0。
+   改正为 `POST .../messages?session_id=…` 后，筛选立即正确（本会话 3 / 异会话 0）
+   → **DEF-BE-148-003 的 API 级回归护栏确认有效**。
+
+-- 本轮结论 -- **运行时用例 10/10 通过**（含 DEF-BE-148-003 回归护栏）。
+
+-- 两点观察（供记录，待确认是否立问题）--
+① **契约易误用**：会话消息接口的 `session_id` 走 **Query** 而非请求体（与 `Query(...)` 声明一致）；
+   建议在设计文档的接口说明中**显式标注**参数位置（本轮排查耗时即源于此）。
+② **响应未回传会话标识**：消息响应项字段为 `id/role/content/model_name/token_count/created_at`，
+   **不含 `metadata` / `session_id`** → 调用方只能"按会话筛选"，无法从响应确认归属。
+   不影响写入与筛选正确性；是否应回传待确认。
+
+-- 本轮改动 -- **零代码、零配置、零 DB 改动**；仅运行时调用与只读操作；
+新增测试数据：会话 2 个（`3bc55505…`、`5e29fb4a…`）与消息 5 条、若干回写/指标记录（共享 dev 库）；
+临时脚本 `t25`~`t27` 在工作目录，**不入仓**。
+
+==================== 二十一、DEF-BE-148-004（P1 计费落库缺陷）修复与运行时验证 ====================
+
+-- 一、根因（沿用 §十九 丁）--
+LLM 调用**已成功**（`usage_records` 插入参数实证：DeepSeek provider、`tokens_total=4598`、
+`status='success'`），却因 **`usage_records.organization_id` NOT NULL 违约**
+（`billing_service.py:251` → `openllm_gateway.py:2059 billing.record_usage()`）整体报 **500**。
+后果：① 响应语义污染（调用方误判模型失败）；② 「**token 已消耗但未记账**」风险敞口。
+
+-- 二、修复（TDD）--
+**RED**：新增 `tests/unit/test_billing_usage_resilience.py`（3 例：落库异常须被吞掉并回滚+记 ERROR；
+组织缺失须跳过且不发起 insert；正常路径须原样返回）→ **3 failed**
+（`'BillingService' object has no attribute 'record_usage_safely'`；`organization_id=None` 仍返回记录）。
+**实现**（OpenLLM 仓）：
+① `billing_service.py`：引入模块级 logger；`record_usage` 返回类型改 `Optional[UsageRecord]`；
+   **新增组织缺失守卫** —— `organization_id is None` 时记 WARN 并 `return None`，不发起必然违约的插入；
+② **新增 `record_usage_safely(**kwargs)`** —— `try: self.record_usage(...)`
+   `except: self.db.rollback()` → 记 ERROR → `return None`。
+   **`rollback` 是必需项**：落库失败后会话停留在不可用事务状态，不回滚会连带影响后续 DB 操作；
+③ `openllm_gateway.py:2059` 计费调用点由 `record_usage` 改为 **`record_usage_safely`**。
+**GREEN**：新护栏 + 精确回归 4 文件（含元数据映射 / 会话标识对齐 / 出站鉴权）→ **24 passed / 0 failed**。
+**设计一致性旁证**：仓库已存在同类约定先例 `TestAlertRuleDelete.test_delete_rule_audit_failure_does_not_break`
+（审计失败不得中断主流程），本修复与该既有模式一致。
+
+-- 三、运行时验证（PASS）--
+实例 8041 重启加载修复后，用**无组织归属**账号实测：
+· `register` → **201**，`v148-noorg`（id `3932f325-…`，`organization_id=null`）；`login` → **200**；
+· `POST /openllm/v1/chat` → **HTTP 200**（**修复前同条件为 500**）：`code=0`、`model=deepseek-v4-flash`、
+  `usage={prompt:44, completion:362, total:406}`、返回真实内容；
+· 服务端日志出现**新守卫的 WARN**：
+  `logger=app.services.billing_service  "计费跳过：缺少组织标识（usage_records.organization_id 非空），
+  本次用量未落库"  request_id=req-33d63dc1b67c`。
+→ **两条合起来才构成完整证据**：请求不再 500，且原因是守卫按设计拦下违约插入并留痕，
+  而非异常被吞后「碰巧通过」。
+
+-- 四、残留（如实区分）--
+**「已消耗未记账」本身未消除** —— 由**静默**转为**可观测告警**（WARN 级结构化日志）。
+彻底消除需业务侧定策略：落默认组织，或保留告警并接补偿。见 OpenBase《问题跟踪记录》`CR-148-007` 建议②。
+
+-- 五、未完成：全量回归受阻 --
+**不加参数跑全量**：根 `tests/conftest.py` 加载即 `ImportError: DLL load failed while importing _rust`
+（`.pylib`/cp313 环境缺陷族，同 `DEF-BE-148-001`）；
+**加 `--confcutdir=tests/unit` 绕过**：不加载父 conftest，依赖其夹具（`client` / `client_no_auth`）的 API 测试类
+报 `fixture not found` —— 属**绕过手段所致**，非既有失败、非本次改动引入。
+→ 本轮**仅完成精确回归**；全量回归须先解决该环境缺陷。
+
+-- 六、代码提交（本次落库）--
+`feature/s4-identity-channel-b` 分支，两个提交：
+· **`ca45639`** `fix(session,billing): 修复会话标识落库与计费容错，补回写出站鉴权`
+  —— 10 文件（生产 6 + 测试 4），`+1051/-109`。**范围说明**：合并入库 v1.4.8 主体改动与三项修复，
+  `openllm_gateway.py` 等文件亦含前几批未提交交付内容，故行数大于三项修复本身。
+· **`02be4ea`** `test(v148): 补充会话轴/回写/组装/第零段工装护栏` —— 14 个 v1.4.8 测试文件
+  （排除调试脚本 `test_debug_gateway_ollama.py`）。
+**提交方式**：严格按**显式路径** `git add`，未使用 `git add -A`，避免扫入工作区其余未提交内容。
+
+-- 七、口径更正（撤回）--
+上一轮曾判定「`.env.shared-infra` 未被 gitignore、属安全隐患」——**撤回**。
+实测 `.gitignore:41` 为 **`!.env.shared-infra`（显式取反）**，即该文件**被项目有意排除在忽略之外、纳入版本管理**；
+`git check-ignore` 不列出它正是该规则生效的结果，**并非缺少忽略规则**。故**未添加忽略规则**（添加将违背项目设计）。
+**遗留待裁定**：该文件当前含本会话注入的 64 位共享 JWT 密钥，处于 ` M` 未提交状态（本次**未暂存**），
+是否提交由人工决定。
+
+==================== 二十二、补断言批次（映射表未覆盖断言）+ 三项新缺陷 + 两处假设撤回 ====================
+
+-- 甲、补跑 §8.1 映射表列出的未覆盖断言（6 条）--
+| # | 断言 | 实测 | 判定 |
+|:-:|------|------|:----:|
+| 1 | TT-007 流式须含 `done` 终止事件 | 事件序列 `['routing', 'error']`，**无 chunk、无 done** | **FAIL** |
+| 2 | TT-011 回执响应不得含 payload 正文 | 字段 = `id/request_id/session_id/seq/target/status/retry_count/created_at/updated_at`，**无疑似正文键** | PASS |
+| 3 | TT-009 仅该会话 + 含 `segment_tokens` 字段 | 仅该会话=True、字段齐备=True（观察：token 分项**非 0 记录数 = 0**，与 §七 #13 未接线一致） | PASS |
+| 4 | TT-014 未授权响应含 `{code,message,detail,request_id}` | `401`，命中字段 `['code','message','request_id']` → **缺 `detail`** | **FAIL** |
+| 5 | TT-014 越权：他用户查询本会话回执应不可见 | 用 `v148-noorg` 查他人会话回执 → **200 且返回 1 条** | **FAIL** |
+| 6 | TT-013 消息元数据含 `session_id`（DB 直查） | 命中 0 行（本会话未发消息，属正常） | PASS（判据偏弱） |
+
+**小结：3 PASS / 3 FAIL。**
+
+-- 乙、`DEF-BE-148-007`（P1，安全）回执查询跨用户越权 --
+**复现**：账号 A（`v148-probe2`）创建会话 `v148-tt-fill` 并产生回写记录；账号 B（`v148-noorg`，**不同用户**）
+请求 `GET /openllm/v1/writeback/receipts?session_id=v148-tt-fill` → **200，`items` 返回 1 条**。
+**定性**：端点**未按用户/租户隔离**，任一已认证用户可读他人会话回执。
+**关联**：RT-148-04（会话标识隔离）、TT-v1.4.8-036（跨用户越权）。
+**注意**：TT-011「不含 payload 正文」**同时通过** —— 即越权者拿到的是**元数据**（非正文），
+但 session/seq/target/status/timestamp 已构成**信息泄露**，仍需修复。
+
+-- 丙、`DEF-BE-148-008`（P2）错误响应缺 `detail` --
+**复现**：`GET /openllm/v1/models`（无令牌）→ `401`，响应体键 = `['code','message','request_id']`。
+**契约要求**（`AGENTS.md` §2 + TT-v1.4.8-014）：`{code, message, detail, request_id}`。
+**定性**：**缺 `detail` 字段**，属契约偏差。**关联** TT-v1.4.8-014。
+
+-- 丁、`DEF-BE-148-006`（P1）两路径模型解析机制不一致（**对照实验**）--
+**现象**：同一 `mode=auto` 请求，同步 200、流式 **3/3** 失败。
+**流式错误（traceback 实录）**：
+```
+openllm_chat_stream 内部错误, request_id=openllm-75c66e31019245a1b4895e9f
+  httpcore.ConnectError: All connection attempts failed
+  openllm_gateway.py:2213 generate
+  openllm_gateway.py:1372 _stream_llm
+  gateway/ollama_adapter.py:177  chat_completion_stream     ← 落到 Ollama 适配器
+  gateway/openai_adapter.py:75   chat_completion_stream
+  httpx → httpcore → connect_tcp → ConnectError
+```
+错误事件载荷：`{"code": 5001, "message": "内部错误，请稍后再试"}`（**3/3 完全一致，非瞬时**）。
+**代码定位**：`openllm_gateway.py:1352-1361` —— `provider_config` 的 `interface_format`/`api_base_url`/`api_key`
+取自解析出的 `model_obj`/`provider`，据此 `create_adapter(...)`；`:1372` 发起 `chat_completion_stream`。
+即**流式的适配器由模型解析结果决定**，实测解析到 **Ollama provider**。
+**对照实验（决定性）**：
+| 条件 | 同步 | 流式 |
+|------|:----:|:----:|
+| `DEFAULT_LLM_MODEL=qwen3:0.6b` | 200 | **3/3 失败**（`routing → error`，落到 `OllamaAdapter`） |
+| `DEFAULT_LLM_MODEL=deepseek-v4-flash` | 200 | **3/3 成功**（`routing → chunk×38 → done`，`done` 载荷含 `usage` + `request_id`） |
+**结论**：**同步**路径经 **5 因子路由改写**模型（`openllm_gateway.py:383-391`，故选到 `deepseek-v4-flash`）；
+**流式**路径**不经该改写、直接依赖 `DEFAULT_LLM_MODEL`** → 两路径解析机制不一致。
+**危害**：生产环境该值未同步配置时，**流式静默指向错误供应商**（配置期无报错，仅调用时连不上）。
+
+-- 戊、两处假设撤回 + 一处操作责任（如实登记）--
+**撤回一**：此前推断「流式失败＝计费调用点未修（`chat_stream.py`×3、`chat.py`×5 共 8 处漏改）」
+→ **被对照实验证伪**：容错下沉至 `BillingService` 并重启后，**流式失败签名完全不变**
+（仍 `routing → error` / 5001）。计费与该失败**无因果关系**。
+**撤回二**：`t24_final` 曾以「auto 模式下 `.env` 的 `DEFAULT_LLM_MODEL` 不生效」为由将其**回滚**为 `qwen3:0.6b`
+→ **该判断仅对同步路径成立，对流式不成立**。
+**操作责任**：**该回滚是流式失败的直接触发原因**（时间线：11:0x 设为 deepseek → 11:17 流式成功 →
+11:5x 回滚为 qwen3:0.6b → 12:14 流式 3/3 失败 → 改回 deepseek → 3/3 恢复）。
+**当前状态**：`.env` 已改为 `DEFAULT_LLM_MODEL=deepseek-v4-flash`，**建议作为环境前置保留**（否则流式回归）。
+
+-- 己、TT-007 判定更新 --
+由 **FAIL → 通过**：`routing → chunk×N → done` 序列完整，**`done` 终止事件已补齐**（此前映射表唯一缺项）。
+TT-014 维持 **FAIL**（缺 `detail` + 越权）。
+
+-- 庚、本轮改动 --
+**生产代码零改动**；仅改配置 `OpenLLM/backend/.env`（`DEFAULT_LLM_MODEL` 回改为 `deepseek-v4-flash`）+ 实例重启；
+临时脚本 `t29`~`t31` 在工作目录，**不入仓**。
+**未提交**：`billing_service.py` 容错下沉 + `test_billing_usage_resilience.py` 契约升级（见 §二十一 之后的本轮改动）。
+
+==================== 二十三、分次交付一/二：DEF-BE-148-007 越权修复 + DEF-BE-148-006 两路径解析修复 ====================
+
+-- 交付一：`DEF-BE-148-007`（P1，安全）回执查询跨用户越权 —— **已修复并验证通过** --
+**方案 B（人工批准）**：表内无 `user_id` 列（身份存于 `payload_json`），故以 `json_extract` 过滤。
+**改动**：
+① `services/writeback_queue.py` `list_rows()` 新增 `user_id` 筛选：
+   `AND json_extract(payload_json, '$.user_id') = ?`（参数化）；docstring 标注对外查询**必须**传入及
+   **fail-closed** 语义；
+② `api/openllm_gateway.py` `/writeback/receipts` 端点新增 `identity` 依赖，传入已认证用户 id；
+   **无身份时返回空结果**（不返回任何行）。
+**验证（归属隔离双对照，判定 PASS）**：
+| 步骤 | 实测 | 判定 |
+|------|------|:----:|
+| 0) 账号 A 产生回执（`user_id` = A 自身身份） | `200`，`accepted.memory=true` | — |
+| 1) 账号 A 查自己的回执 | `200`，**`total=1`** | PASS（不误伤正常路径） |
+| 2) 账号 B 查**同一会话**（越权路径） | `200`，**`total=0`** | **PASS（修复前为 1 条）** |
+| 3) 无令牌 | `200`，`{"items":[],"total":0,"note":"identity_required"}` | fail-closed |
+**两点如实说明**：
+① **本次未写单元测试** —— `list_rows` 依赖文件型 SQLite 存储，夹具成本高于本次余量；改以**运行时双账号对照**
+   （即越权的真实场景）作为验证手段。**比单测更贴近缺陷，但与 TDD 纪律有偏差**，如实记录。
+② **无令牌返回 `200` + 空列表**而非 `401` —— 安全上 fail-closed（零泄露），但响应语义与 TT-014
+   「未授权应 401」**不完全一致**，建议纳入 TT-014/`DEF-BE-148-008` 同批处理。
+**已知副作用（方案 B 代价，已写入代码 docstring）**：历史回执若 `payload_json` 未含 `user_id`，
+对任何账号均不可见（**有意的安全取舍**）；真实 chat 链路写入用 `identity.user.id`，不受影响。
+
+-- 交付二：`DEF-BE-148-006`（P1）两路径模型解析不一致 —— **已修复并验证通过** --
+**定位过程（先观测、再断因）**：
+· 临时调试日志实测 **`llm_comp = {"component": "llm", "model": "qwen3:0.6b"}`**（3 次一致）
+  → 流式 `pipeline[-1]["model"]` 由 `_normalize_request`（`:2128`）填为**具体默认值**，**并非 `"auto"`**；
+· 故按 `model == "auto"` 判断的改写分支**永不成立** → 流式绕过 5 因子路由、直接用 `DEFAULT_LLM_MODEL`。
+**改动**：判据改为**「调用方是否显式指定 model」**（`not chat_req.model or chat_req.model == "auto"`），
+在流式入口执行与同步（`_llm_handler` 的 "P0-1" 分支）**同一条** `_route_model_auto` 改写；
+**移除 TEMP-DEBUG 日志**。
+**附带正向修正**：`routing_trace["model"]["selected"]` 此前取的是**路由前**的值（会与实际调用模型不一致，
+且影响「两路径一致性」判据的观测面），已改为**路由后** `model_code`。
+**验证（原失败条件回归，判定 PASS）**：`.env` **仍为** `DEFAULT_LLM_MODEL=qwen3:0.6b`（本地 Ollama 不可用）：
+| 路径 | 修复前 | **修复后** |
+|------|:------:|:----------:|
+| 同步 | 200 | 200（`deepseek-v4-flash`） |
+| **流式** | ❌ **3/3 失败**（`routing → error`） | ✅ **3/3 成功**（`routing → chunk×N → done`，含 `usage`） |
+→ **该场景即最佳回归测试**：修复后未改任何配置，流式已不依赖 `DEFAULT_LLM_MODEL`。
+
+-- 过程复盘（值得留痕的反面教材）--
+同一缺陷**误判两次**：① 推断"流式缺路由改写"；② **仍未观测即动手**，写出**永不执行的死代码**
+（条件 `model == "auto"` 恒假）。**第三次先打印 `llm_comp` 实际内容，一次定位。**
+→ 结论：**先观测、再断因**；在既有代码上改判据前，必须先确认被判据所依赖的**运行时实际取值**。
+
+-- 两处连带结论 --
+① **撤回**「必须保留 `.env` 的 `DEFAULT_LLM_MODEL=deepseek-v4-flash` 作为环境前置」的建议 ——
+   流式已纳入路由治理，该值不再是流式的隐式依赖；原缺陷的真实风险（**生产环境流式静默指向错误供应商**）已消除。
+② 流式路径的模型解析现已与同步**同一入口**，两路径分叉点消除（对应 TD-148-03 语义）。
+
+-- 本轮改动清单 --
+生产 2 文件：`services/writeback_queue.py`、`api/openllm_gateway.py`（含两处修复与 routing_trace 修正）；
+配置：`OpenLLM/backend/.env` 保持 `qwen3:0.6b`（作回归条件，现已无害）；临时脚本 `t30`~`t33` 在工作目录，**不入仓**。
+**均未提交。**
+
+==================== 二十四、分次交付三：DEF-BE-148-008 错误响应契约 + TT-014 未授权语义（含代码提交与归属核对） ====================
+
+-- 交付三：`DEF-BE-148-008`（P2）错误响应缺 `detail` + TT-014 未授权语义 —— **已修复并验证通过** --
+**改动**（均落 `api/openllm_gateway.py`）：
+① `_error_response`（原 `:814`）由 `{code, message, request_id}` 补为 **`{code, message, detail, request_id}`**：
+   `detail = getattr(error, "detail", None) or error.message` —— 保证该字段**始终存在**（`GatewayError` 未携带时
+   回退 `message`），对齐 `AGENTS.md` 错误码规范与 TT-v1.4.8-014；
+② `/writeback/receipts` 未授权分支由「`200` + `{"note":"identity_required"}`」改为 **`401`**
+   （复用既有 `GatewayError(1001)` 约定，与 chat 端点一致）—— 使 **fail-closed 与响应契约同时满足**。
+**验证（判定 PASS）**：
+| 项 | 实测 | 判定 |
+|----|------|:----:|
+| 未授权错误体四字段 | `{"code":1001,"message":"未认证或 Token 失效","detail":"未认证或 Token 失效","request_id":""}` | PASS（`detail` 已补齐） |
+| 未授权语义 | `200 + note` → **`401`** | PASS（符合 TT-014） |
+| **越权回归**（交付一的回归检查） | 账号 A 自有回执 `total=2`、**账号 B 同一会话 `total=0`** | PASS（隔离未被本次改动破坏） |
+> 第三行是**必要的回归检查**：本次修改了该端点的未授权分支，必须确认未碰坏交付一修好的归属隔离。
+**残留观察**：该端点错误体的 **`request_id` 为空串**（字段存在但未生成——该端点无 request_id 生成逻辑）。
+字段齐备性满足契约，但**值为空**；属小项，建议纳入 TT-014 范围补齐。
+
+-- 代码提交 `245b70b`（四项修复）--
+`feature/s4-identity-channel-b` 分支 **`245b70b`** `fix(gateway,billing): 回执越权/两路径解析/错误响应契约/计费容错四项修复`
+—— **4 文件 `+202/-93`**：`api/openllm_gateway.py`(+40)、`services/writeback_queue.py`(+80)、
+`services/billing_service.py`(85 变更)、`tests/unit/test_billing_usage_resilience.py`(90 变更)。
+**提交方式**：先打印 `git status --short -- <四文件>` 确认（恰为 4 个 `M`）后按**显式路径** `git add`，
+**未使用 `git add -A`**；提交信息分四段，逐项引用 `DEF-BE-148-007`/`006`/`008`/`004` 并内嵌验证证据。
+
+-- 归属核对（`writeback_queue.py` 完整 diff）——
+`git show --numstat` = **`80  0`**（80 增、**0 删**）；`@@` 头：`-243,6 +243,71`（+65）、`-295,6 +360,21`（+15）。
+**判据**：本次编辑为**替换式**（签名/docstring/SQL 均被改写），若基线已存在这些行，diff **必然出现删除行**；
+**实测 0 删除** ⟹ **基线（`ca45639`）中根本没有 `list_rows`** ⟹ **整个 `list_rows`（约 65 行）为更早批次写完
+但从未提交的实现**，随本次提交**首次入库**；第二块（`WritebackQueue` 类内 +15 行）同理。
+**定性**：**非有害** —— 均属真实的 v1.4.8 交付物（`list_rows` 即 TD-148-05「回执可查」的实现），本就该入库；
+但**提交信息未覆盖**它们。**与 `ca45639` 同型**（该次亦携带 `openllm_gateway.py` 454 行更早未提交内容）。
+**处置（方案 B，人工选定）**：**不改写历史**，改由本证据与《问题跟踪记录》记录该提交的真实范围
+—— 即「越权修复 **+ 首次入库 v1.4.8 回执查询实现**」。
+**连带事实**：该功能此前**从无版本记录**；本次越权修复实为**在功能首次入库的同时一并交付**。
+
+==================== 二十五、三项未提交内容处置（2026-09-21） ====================
+
+-- 甲、处置前状态核实（先观测，再处置）--
+OpenLLM 仓（分支 `feature/s4-identity-channel-b`）处置前工作区：**86 M / 211 D / 80 ??**。
+三项对象的**实测**事实如下：
+
+| # | 对象 | 实测事实 |
+|:-:|------|----------|
+| 1 | `.env.shared-infra` | **被 git 跟踪（M）**。`git log` 各历史版本中 `OPENRAG_API_KEY` 的赋值长度**恒为 0**（**空值模板**），而工作副本已填入真实凭据（`OPENRAG_API_KEY` / `OPENMEMORY_API_KEY`）并新增 **v1.4.8 共享 JWT 签名密钥** → **提交即首次将真实密钥带入版本库** |
+| 2 | `backend/tests/unit/conftest.py` | M；diff = **12 增 / 2 删**，内容为把 pgAdmin site-packages 与 `backend/.pylib` 由 `insert(0/1)` 改为 `append`（**末端兜底**），属**测试基础设施修复**（对应 §7 #4） |
+| 3 | 211 项 `D` | **全部位于 `__pycache__` 目录**（`backend/app` 161 + `backend/tests` 50），均为 **cpython-314** 构建产物；`.gitignore` 第 2-3 行**已覆盖** `__pycache__/` 与 `*.pyc` |
+
+-- 乙、处置 1：密钥载体归位（不落 git） --
+**依据三条**：`AGENTS.md` §6「敏感数据不落日志、不落 git（`.env*` 排除）」；该文件内 v1.4.8 注释「勿落 git」；历史版本为空值模板（甲 #1）。
+
+**动作（三段，均只输出掩码/摘要，无任何密钥明文）**：
+
+1. **同源性核验**：`OpenBase/.env::OPENBASE_JWT_SECRET`、`OpenMemory/.env::OPENMEMORY_GATEWAY__JWT_SECRET`、
+   `OpenLLM/.env.shared-infra::OPENMEMORY_JWT_SECRET` 三者 **len=64、sha256 前 6 字节 = `67da1a614a93`** → **完全一致，同源成立**；
+2. **载体归位**：将共享密钥写入**未被 git 跟踪**的权威注入源 **`OpenBase/.env.shared-infra`**
+   （`.gitignore` 以 `.env.*` 覆盖该文件；`service-orchestrator.ps1:86-95` 逐行注入进程环境、子服务继承）
+   → 使**编排器权威启动路径**下的 OpenLLM 实例具备回写出站 JWT（`CR-148-006` 修复在权威路径上**真正生效**）。
+   写入后复核：**len=64 / sha6=`67da1a614a93`，与源一致 = True**；
+3. **本地文件标记**：OpenLLM 仓执行 `git update-index --skip-worktree .env.shared-infra`
+   → `git ls-files -v` 实测输出 **`S .env.shared-infra`**，且全仓**仅此一个**文件带该标记。
+
+**结果**：该文件**未提交、零删除**，本地实值**保持原位**（仓内 `openrag-env-check.ps1` 等脚本可继续使用）；
+**提交版仍为空值模板**，与既有约定一致；**可逆**（`git update-index --no-skip-worktree .env.shared-infra`）。
+
+-- 丙、处置 2/3：原子提交入库（显式路径，未用 `git add -A`） --
+
+| 提交 | 类型 | 内容 | 规模 |
+|------|------|------|------|
+| **`a5bde45`** | `chore(repo)` | 清理已入库的 `__pycache__` 构建产物 | **211 文件，0 增 0 删行**（纯删除） |
+| **`9b9fcd5`** | `test(tests)` | conftest 路径优先级由首位改为末端兜底 | 1 文件 `+12/-2` |
+
+**暂存范围核验（防误纳）**：暂存前删除项计数 = **211**、其中**非 `__pycache__` = 0**；
+暂存后 `git diff --cached --name-only` = **211**、**非 `__pycache__` = 0**；
+`conftest.py` 单独 `git add -- backend/tests/unit/conftest.py`，提交后**暂存区为空**。
+
+**结果**：工作区 **86 M / 211 D / 80 ?? → 84 M / 0 D / 80 ??**（M 减少 2：`conftest.py` 已入库 + `.env.shared-infra` 转本地标记）。
+
+-- 丁、顺带发现（已登记，**待裁定**）：v1.4.8 部分实现**从未入库** --
+**核验方式**：`git ls-files` + `git log --all -- <path>` 双重核验。
+**结论**：以下 **8 个 v1.4.8 交付文件在全仓历史中从未出现过任何提交** ——
+`backend/app/edgerouter/orchestration/` 下 `context_metrics.py`、`prompt_pipeline.py`、`component_pipeline.py`、
+`golden_set.py`、`baseline_report.py`、`attribution_b.py`、`history.py`，以及 `backend/app/services/session_scope.py`；
+该目录已跟踪者仅 `__init__.py`、`assembler.py`、`auto.py`、`component_router.py`、`errors.py`、`evaluate.py`、`executor.py`、`explicit.py`。
+同时 `assembler.py`、`auto.py`、`explicit.py`、`executor.py`、`context_manager.py`、`conversations.py` 等**已跟踪文件仍为 M**。
+
+**性质**：**版本基线漂移风险** —— 工作树若丢失，v1.4.8 相当一部分实现**不可恢复**；
+且与《测试报告-v1.4.8》§7 #5「改动已提交」的口径**并不完全一致**（该行原指已登记的 10 + 14 + 4 个文件）。
+**处置**：**本轮未处置**（入库范围需人工裁定，须排除 `.pylib` 未跟踪噪声、`backend/data/*.db` 运行期数据、
+`backup/`、仓根临时 `.bat` 与 `data/edge_tokens.jsonl` 等）→ 已登记 **`CR-148-010`**，列为**下一步处置项**。
+
+==================== 二十六、CR-148-010 裁定与实施：v1.4.8 残量入库（4 个原子提交） ====================
+
+-- 甲、裁定依据（三条）--
+① 《**OpenLLM-联调产物待提交清单-v1.0.0**》（2026-09-10，[Review]）：已建立 **A 类联调产物 / B 类子系统在途开发（须隔离）/ C 类噪音 / 需人工判定**四类框架，
+并给出 §6.2 分批 `git add` 模板与「只 add 预期路径，禁止 `git add -A`」纪律 —— 本次裁定**沿用其框架与先例**；
+② 《**DevLogReport R-396~R-398**》§4：后端源文件 **19 个（新增 8）** + **数据资产 1 个** + 测试 **15 个**；
+③ 当前实测残量 **84 M / 80 ??**；S4 批次**已确认入库**（`identity` 包 12 项 / `verify-env` 3 项 / S4 测试 15 项 / S4 文档 6 项）→ 残量即 R-396~R-398 增量 + 噪音。
+
+-- 乙、裁定结论（人工批准 2026-09-21，批准人＝用户）--
+
+| 类 | 内容 | 数量 | 裁定 |
+|:--:|------|:----:|------|
+| **R1** | v1.4.8 新增源码：`orchestration/{prompt_pipeline,context_metrics,attribution_b,component_pipeline,golden_set,baseline_report,history}.py` + `services/session_scope.py` | 8 | **入库**（1 个 `feat` 提交） |
+| **R2** | v1.4.8 修改源码：`api/conversations.py`、`orchestration/{assembler,auto,executor,explicit}.py`、`services/context_manager.py` | 6 | **入库**（1 个 `feat` 提交）；**实测 need-star 关键词命中 = 0 → 无需 hunk 拆分** |
+| **R3** | 数据资产 `backend/data/golden_set_v1.json` | 1 | **入库** |
+| **R4** | 文档：`doc/development/…R396-R398…DevLogReport-v1.0.0.md`、`doc/planning/OpenLLM-联调产物待提交清单-v1.0.0.md` | 2 | **入库** |
+| **R5** | `.devflow/state.json`（v1.4.8 Step 3 状态登记） | 1 | **入库** |
+| **C** | 噪音清理：71 项已跟踪 `__pycache__/*.pyc` + `.pylib/*.dist-info` + `data/edge_tokens.jsonl`（敏感）→ 移出跟踪；`.gitignore` 增补 | 80+1 | **入库**（1 个 `chore` 提交） |
+| **不入库** | `.pylib` vendored、`backend/data/*.db*`、`backup/`、仓根 `*-commit-push.bat`×4、`scripts/*_commit_push*.ps1`×5、`OpenLLM_完整方案文档.html`、`test_debug_gateway_ollama.py` | — | **不入库** |
+| **另批** | `tests/unit/test_billing_v2_api.py`（清单 J-6 判 B 类）、`doc/design/…DPS实例Pro化…v1.1.0`+`archive/v1.0.0`、`doc/planning/OpenLLM-OpenRAG接入迭代规划-v1.0.0.md`（清单 J-9/J-10/J-11） | 4 | **本轮不入库**，登记待办 |
+
+-- 丙、执行结果（4 个原子提交，显式路径，**未用 `git add -A`**）--
+
+| 提交 | 类型 | 主题 | 文件数 | 规模 |
+|------|------|------|:------:|------|
+| **`10e4cc6`** | `feat(v148)` | 第零段计量与会话编排组件实现（R-396~R-398） | 8 | `+1262` |
+| **`0fa9e84`** | `feat(v148)` | 编排组件共用、历史段注入与会话标识透传 | 6 | `+173/-81` |
+| **`ab90513`** | `chore(v148)` | 基线数据资产、开发记录与状态登记入库 | 4 | `+704` |
+| **`589012d`** | `chore(repo)` | 清理历史误入库字节码/三方元数据/运行期令牌 + `.gitignore` 增补 | 81 | `+6/-262` |
+
+**暂存核验（每批提交前）**：`git diff --cached --name-only` 计数依次为 **8 / 6 / 4 / 81**，与预期完全一致；
+批 C 明细 = **71 pyc + 8 `.pylib` dist-info + 1 `data/edge_tokens.jsonl` + 1 `.gitignore`**（核验输出：staged 81、其中 pyc 71、其中 `.pylib` 8、其他 2）。
+**工作树文件未被删除**（抽验 `data/edge_tokens.jsonl` 与 `.pyc` 均 `True`）。
+
+-- 丁、结果 --
+工作区由 **84 M / 80 ??** 收敛为 **1 M / 14 ??**。剩余项**全部**属裁定中的「不入库」或「另批」，见己。
+
+-- 戊、如实更正（本轮新发现，修正裁定书与前序记录的表述）--
+裁定书正文与前序记录将 `backend/.pylib/**` 描述为「**未跟踪**」——**实测不准确**：
+`git ls-files -- backend/.pylib` = **3510 个已跟踪文件**（另有约 1157 项未跟踪的新解包产物）。
+即 `.pylib` 实为**大部分已入库的 vendored 目录**，这正是上游 **`CLR-214-004`** 的实质；
+其正式处置（上游《S4 设计草案》§R-1 规划的 `git rm -r --cached backend/.pylib` + `.gitignore` 未跟踪批次）
+属 **OpenLLM 上游流程**，**本轮未执行**（涉及 **3510 项索引变更**，超出本裁定范围，且与 `CR-148-001`「本仓零改动」纪律一致）。
+本轮对该目录**仅新增一条 `.gitignore` 规则** `backend/.pylib/`，其作用边界如实说明：**仅阻止新增文件进入跟踪，对已跟踪的 3510 项无解除跟踪效果**。
+
+-- 己、残量登记（不入库 / 另批，本轮未提交）--
+
+| 剩余项 | 类别 | 处置 |
+|--------|------|------|
+| `backend/tests/unit/test_billing_v2_api.py`（`M`，`+60/-4`，`DT-213-003` 计费 `cost-analysis`） | 另批 | 清单 **J-6** 判 B 类（v2.13 遗留子系统在途），**不混入 v1.4.8 批次** |
+| `doc/design/OpenLLM-DPS实例Pro化部署架构演进设计文档-v1.1.0.md` + `archive/v1.0.0` | 另批 | 清单 **J-10/J-11** 判 B 类 |
+| `doc/planning/OpenLLM-OpenRAG接入迭代规划-v1.0.0.md` | 另批 | 清单 **J-9** 判 B 类 |
+| `OpenLLM_完整方案文档.html`（63 KB） | 不入库 | 清单 **J-12**；如需保留建议先移入 `doc/archive/` |
+| `backend/tests/unit/test_debug_gateway_ollama.py` | 不入库 | 清单 **J-7**：含本机绝对路径（`C:\Users\jerry\.trae-cn\work\…`），非可移植资产 |
+| 仓根 `{dps,f1,k07,r384}-commit-push.bat` ×4、`scripts/{dps,f1,k07,r384,r384_docs}_commit_push.ps1` ×5 | 不入库 | 本地自动化辅助脚本 |
+| `backend/data/{writeback.db,semantic_cache.db*}`、`backup/` | 不入库 | `.gitignore` 已覆盖（本轮 C 批） |
+
+-- 庚、风险如实登记（本轮附带发现，未处置）--
+《联调产物待提交清单》§3 登记的 **B 类 need-star 增量**（`auto/executor/explicit` 的画像前置注入 + `profile_refine.py` + 4 个 `test_*_phase1.py`）
+在当前工作树**已无痕迹**：3 个编排文件 need-star 关键词命中 **0**，`profile_refine.py` 与 4 个测试文件**已从磁盘消失**（且从未入库）。
+推测该在途开发**已丢失或被后续实现取代** → **本轮不做恢复**，按**风险**登记，交其立项方（need-star 段）确认。
+
+==================== 二十七、运行时用例按 TT-ID 整批补跑（2026-09-21） ====================
+
+-- 甲、目标与范围 --
+目标：消除 Step 4 唯一产品侧卡点「**运行时用例未按 TT-ID 整批补跑**」，对 **T2 接口层（TT-005~014）**、**集成（TT-015~020）**、**安全（TT-035/036）**、**UAT（TT-041~044）**逐 ID 执行并给出逐例判定。
+断言口径：**L1 硬断言**；无法判定时**记 FAIL 并写明原因**（不静默跳过、不用软断言）。
+
+-- 乙、环境准备（含一次环境机制实测）--
+| 步骤 | 动作 | 结果 |
+|------|------|------|
+| 1 | `service-orchestrator.ps1 -Action start -Only openrag,openmemory,dps,openllm`（权威定义） | 4 服务**依次健康通过**（openllm 53s / openrag 52s / openmemory 109s / dps 24s；见 `logs/service-orchestrator/orchestrator-20260921.log`） |
+| 2 | 该命令结束后再次探测 | **4 服务全部消失**（编排器子进程随命令结束被回收）→ 记录为**本环境进程存活机制**事实 |
+| 3 | 以 `DETACHED_PROCESS` 分离启动 3 上游 | **即时退出且日志为空**（分离进程被回收）→ 该方式在本环境不可用 |
+| 4 | **前台长驻 + 非阻塞命令**（`run_svc.py` / `run_be_v148.py`；Env 取自 `.env.shared-infra`，命令/端口/Cwd 与编排器定义一致） | **openrag 8010 ✅**、OpenLLM 8041 ✅；**openmemory 未起**；**dps 反复启动失败** |
+| 5 | dps 失败根因 | `asyncpg…ConnectionDoesNotExistError: connection was closed in the middle of operation` + `RuntimeError: PostgreSQL 连接失败且 SQLite 降级已禁用`（共享库 192.168.0.151:5432 TCP 握手成功但**协议层被重置**）→ **H 类环境遗留**，非产品缺陷 |
+| 6 | 实例归属 | OpenLLM 实例为 `127.0.0.1:8041`（命令/Cwd/Env 与编排器定义一致，不加载 `.pylib`）；**未使用 8001**（其实例在步骤 2 后已消失） |
+
+`GET /openllm/v1/health`（8041）实测：`openmemory: ok`、**`openrag: ok`（218ms）**、`dps: unavailable（连接失败）`。
+
+-- 丙、执行方式（脚本与命令，均不入仓）--
+| 脚本 | 用途 |
+|------|------|
+| `r0_probe_shapes.py` / `r0b_probe_shapes2.py` | **先探测响应结构**再写断言（避免凭记忆断言） |
+| `r2_tt_batch.py` | 主批次：TT-005~014 / 015~017 / 019 / 020 / 035 / 036 / 041 / 042 |
+| `r3_restart_step1.py` + 重启 | TT-018/043 重启取证（重启前快照 `rows=88 / max_seq=14 / last_ids=[466..470]`） |
+| `r4_tt_followup.py` | 重启后复测 + 三项 FAIL 复测 + 加强断言 + 附带发现 |
+| `r5_tt_final.py` / `r6_tt015.py` | TT-018 续投递重测 / TT-008 空串重复 / TT-020 观测面排查 / TT-015 契约修正 |
+
+-- 丁、逐例判定（19 通过 / 2 未通过）--
+| TT-ID | 用例 | 判定 | 关键实测 |
+|:------|------|:----:|----------|
+| TT-005 | 同步对话基线（不带会话标识） | ✅ | 200；`content` 非空、`usage` 三项齐备且 `total=prompt+completion`、`model=deepseek-v4-flash` |
+| TT-006 | 同步对话携带 `session_id` | ✅ | 200；**`routing_trace.context_metrics.session_id` == 请求值**（逐字核对；唯一 query 规避语义缓存短路） |
+| TT-007 | 流式事件序列 | ✅ | 200；`routing → chunk×160 → done`（首 `routing`、末 `done`） |
+| TT-008 | `session_id` 边界参数 | ✅（附偶发登记） | 空串 **4/4 → 200**、超长(512) → 200、特殊字符 → 200、非字符串 → 422；**见庚：主批次曾出现 1 次空串 500** |
+| TT-009 | 计量导出按会话筛选 | ✅ | 200；`items` 仅该会话、字段齐备；**token 分项全 0（计数器未接线，报告 §7 #13）** |
+| TT-010 | 计量导出分页与过滤 | ✅ | `limit=1` → 1 条；非法 `limit` → 422；未知 `request_id` → 0 条 |
+| TT-011 | 回执查询按会话与通道筛选 | ✅ | 200；字段**无越界键**（不含 payload/正文）；`target=memory` 过滤生效；status ∈ {done,failed} |
+| TT-012 | 单条 trace 查询 | ✅ | `/openllm/v1/trace/{id}` → 200；`/api/v1/monitoring/traces/{id}` → 200 |
+| TT-013 | conversations 消息落库与检索 | ✅ | 创建 201；本会话 2 条 / 异会话 0 条 / 不过滤 2 条；**残留：响应体未回传会话标识**（DB 侧已落，见 §十四） |
+| TT-014 | 鉴权与错误响应格式 | ✅ | 无令牌 401、伪造令牌 401；错误体字段 = `[code, detail, message, request_id]`；**残留：`request_id` 空串、403 分支未覆盖** |
+| TT-015 | 记忆 + 知识库检索链路 | ❌ | 契约修正后 200，但 `executed=['llm']`、**`degraded=['memory']`** → **两组件未同时执行**；rag 因**无可用 `kb_id`** 未纳入（见己） |
+| TT-016 | 三路回写接齐 | ✅ | 同步一轮后回执 `targets=['memory','profile','rag']`（三条均被调度、有受理状态） |
+| TT-017 | 回写幂等 | ✅ | 同 `(session,seq,target)` 提交两次均 200，**队列表仅 1 行**（无重复落库） |
+| TT-018 | 重启不丢写（硬判据） | ✅ | 重启前 `rows=88 / max_seq=14` → 重启后 **`rows=88` 且旧行仍在**；**重启后续投递 200**，新行 `(id=482, seq=15, memory, done)` |
+| TT-019 | 计量回执落库（同步 + 流式） | ✅ | 同步：`routing_trace.context_metrics` 字段齐备；**流式：经 `/openllm/v1/trace/{id}` 确认 `context_metrics` 已落库且字段齐备**（SSE 事件体本身不携带，见辛 #2） |
+| TT-020 | 会话历史注入链路 | ❌ | 首轮/次轮均 200；**trace/metadata 未暴露历史段内容或计数**（`segment_tokens` 全 0 因计数器未接线）→ **API 可观测面无法证实或证伪注入**（见己） |
+| TT-035 | 敏感信息不落日志 / 不落回执 | ✅ | 扫描日志 32 个：**探针正文命中 0**、`Bearer eyJ…` 明文令牌 **0**；回执字段集合不含正文类键 |
+| TT-036 | 跨用户越权（会话标识隔离） | ✅ | **回执路**：本人 `total=10`、他用户 **`total=0`**；**消息路（本轮补齐）**：他用户 GET → **404 / 可见 0 条** |
+| TT-041 | UAT 会话轴 + 三路回写闭环 | ✅ | 发消息（带会话标识）200 → 回执三路齐备 → trace 存在且含计量回执 |
+| TT-042 | 两路径一致性（硬判据） | ✅ | **加强口径**：以两路径**持久化 trace** 比对 —— 路由决策（`need_memory/need_rag/rag_source`）**完全一致**、模型选型**均为 `deepseek-v4-flash`** |
+| TT-043 | 重启不丢写（验收视角） | ✅ | **丢失数 = 0**（88 → 88） |
+| TT-044 | 基线工装可用性 | ⏸ | **未执行**：七项工装端到端属专项（非 HTTP 批次范围），本轮**显式记录未执行**，不静默跳过 |
+
+-- 戊、新发现缺陷（1 项）--
+**`DEF-BE-148-009`（P2）`GET /api/v1/monitoring/traces/{trace_id}/spans` → 500**
+- **复现**：对任一存在 `request_id` 调用 → **500**，响应体 `{"error":{"message":"服务器内部错误","type":"internal_error"}}`。
+- **根因（日志实录）**：`fastapi.exceptions.ResponseValidationError: 8 validation errors`（位置 `backend/app/api/traces.py:362 get_trace_spans`）：
+  响应模型要求每个 span 具备 `span_id / name / kind / status`，而**落库 spans 结构为 `[{"step": "auth", "ms": 0}, {"step": "llm", "ms": 10343}]`** → 2 span × 4 缺失字段 = 8 项校验失败 → 响应序列化抛错 → 500。
+- **性质**：**产品缺陷**（响应模型与落库结构不一致），非环境问题；已登记 `CR-148-011`。
+- **附带**：`/openllm/v1/trace/{id}` 与 `/api/v1/monitoring/traces/{id}` **均正常 200**（仅 `spans` 子端点异常）。
+
+-- 己、两项未通过的定性（如实界定，不做产品结论）--
+1. **TT-015**：契约修正后（`pipeline` 为**扁平键**：`{"component":"memory","user_id":…}`；`rag` 需 `kb_id`；`raw_results` 与 `llm` **不得并存**，否则 4005）请求 200，但 **`degraded=['memory']`、`executed=['llm']`** —— memory 组件降级，与既有「profile 路受阻于**直连客户端缺四维身份**」**同源**；且**未找到可用的 `kb_id` 来源端点**（探测 4 个候选路径均不可用）→ **环境/前置数据阻塞（H 类）**，**不判为产品缺陷**，但**用例判 FAIL**。
+2. **TT-020**：历史素材来源为**请求体 `messages`**（`history.py` AD-02：不依赖会话表，排除当前 query），本轮已按要求携带三轮 `messages`；但 **trace / metrics 均不暴露历史段内容或计数**（`context_metrics.segment_tokens.history` 恒 0，因第零段 token 计数器**未接线**）→ **可观测面不足，既不能证实也不能证伪**，故**判 FAIL 并登记观测缺口**（补接线后可用 `segment_tokens.history > 0` 作为判据）。
+
+-- 庚、偶发 500（如实登记，未复现）--
+`POST /openllm/v1/chat` 携 **`session_id=""`** 在**主批次首次**执行时返回 **500**；此后 r4（1 次）+ r5（**连续 4 次**）**共 5 次观测均为 200**。
+**根因未捕获**：该次 500 发生在**重启前的旧实例**上，其 stdout 未落盘、随实例停止丢失（新一轮起实例已改为**日志落盘** `openllm-8041.log`）。
+**处置**：登记为**偶发待观察项（P3）**，不做缺陷定性；后续可在受控条件下复现并取堆栈。
+
+-- 辛、用例口径更正（本轮实测与原用例文字不符，属**用例文档**问题）--
+| # | 原文 | 实测口径 | 处置 |
+|:-:|------|----------|------|
+| 1 | TT-005「`choices` 结构完整」 | 实现返回 **`data.content` + `data.usage` + `data.routing_trace`**，**无 `choices`** | 断言改为「`content` 非空 + `usage` 三项齐备且自洽」 |
+| 2 | TT-019「两路径 `routing_trace` 均存在」 | 同步直接返回；**流式仅在持久化 trace 中可见**（SSE 事件体不携带） | 流式改以 `/openllm/v1/trace/{id}` 为口径 |
+| 3 | TT-020「多轮请求（第 2 轮含指代）」 | 历史来源为**请求体 `messages`**（非会话表） | 用例方式改为显式携带 `messages` |
+| 4 | TT-012 路径 `GET /monitoring/traces/{trace_id}` | 实际为 **`/openllm/v1/trace/{id}`** 与 **`/api/v1/monitoring/traces/{id}`** | 已按实测路径执行 |
+
+==================== 二十八、DEF-BE-148-009 修复与验证（spans 端点 500） ====================
+
+-- 甲、缺陷回顾（§二十七 戊）--
+`GET /api/v1/monitoring/traces/{trace_id}/spans` → **500**；根因 `ResponseValidationError: 8 validation errors`（`traces.py:362`）。
+
+-- 乙、根因定位（先读代码，再动手）--
+`traces.spans` 列存在**两种历史写入形态**，而端点声明 `response_model=List[SpanResponse]`（必填 `span_id/name/kind/status`）：
+
+| 形态 | 写入方 | 结构 |
+|:----:|--------|------|
+| ① **OTel 形态** | `trace_service.TraceContext`（`span_id/name/kind/status/duration_ms/...`） | 与响应模型一致 |
+| ② **步骤计时形态** | 网关轻量写入（`[{"step": "auth", "ms": 0}, {"step": "llm", "ms": 10343}]`） | **缺 4 个必填字段 × 2 span = 8 项校验失败 → 500** |
+
+**同一列承载两种结构**，故修复须在**读取侧归一化**（而非仅放宽响应模型 —— 放宽后形态②的字段会被静默丢弃，等于返回空壳）。
+
+-- 丙、TDD 执行（RED → GREEN）--
+**RED（先写护栏，实测失败）**：新增 `tests/unit/test_trace_spans_shape.py`（10 例，覆盖两种形态、混合形态、未知形态、标量与 None、非列表输入）
+→ 收集期即 **`ImportError: cannot import name 'normalize_spans_for_response'`**（函数尚不存在）；端点级用例在修复前返回 **500**。
+
+**GREEN（最小实现）**：
+| 文件 | 改动 |
+|------|------|
+| `services/trace_service.py` | 新增 `normalize_span_for_response()` / `normalize_spans_for_response()`：形态① 原样透传并按需补默认（`kind=internal`/`status=unset`）；形态② **以 `step` 为 `name`、`ms` 为 `duration_ms`、`status=ok`、`attributes={step, ms}`**；未知形态与标量亦合成合法结构（**不丢数据**）；非列表按空列表处理。**映射置于服务层**（Controller 只调用，符合分层约定） |
+| `api/traces.py` | `get_trace_spans` 返回归一化结果；**端点签名与响应契约不变**（仅修复序列化失败） |
+
+**结果**：**13 passed**（10 例新护栏 + 既有 3 例一并通过）。
+
+-- 丁、静态质量检查 --
+`ruff check`：新护栏 **All checks passed**；两被改文件改动行（`trace_service.py` **52-167**、`traces.py` **24-25 / 379-382 / 394**）**零告警**（总告警由 112 → **107**，余下均为既有历史欠账：`UP006/UP045` 注解现代化族）。
+**零告警的达成方式**：首轮实现曾引入 5 条同族告警，按项目「改动行零告警」标准改用 `X | None` / `dict` / `list` 注解后清零。
+
+-- 戊、回归与基线对照（证明无回归）--
+| 运行 | 结果 |
+|------|------|
+| `tests/unit` 全量（`--confcutdir=tests/unit`） | **2188 passed**；**13 failed**；615 error |
+| **基线对照**（`git stash` 暂存本次改动后重跑同 5 个失败文件） | **13 failed / 78 passed** → **与修复后完全一致** ⟹ **13 项为既有失败，与本次修复无关**（分布于 `test_real_contract_memory/rag`、`test_s4_t14_verify_env`、`test_s4_t5_prefix_normalize`、`test_writeback_degradation`） |
+| 615 error 归因 | 全部为 `fixture 'client' / 'client_no_auth' not found` —— 因 `--confcutdir=tests/unit` 跳过仓库根 `tests/conftest.py`；该根 conftest 存在**既知环境缺陷**（pgAdmin site-packages 置 `sys.path` 首位遮蔽 `jwt`/`cryptography` → `_rust` DLL 加载失败，测试报告 §7 #4），属**环境问题非本次改动** |
+
+> 新护栏因此**自建最小 app**（仅装配 traces 路由 + 覆写鉴权依赖），不依赖根 conftest，可在上述限定口径下稳定运行。
+
+-- 己、运行时验证（重启实例加载修复）--
+| 项 | 实测 |
+|----|------|
+| L2 启动 | 实例重启后鉴权通过（`len=208`） |
+| **L3-1 回归** | `GET /api/v1/monitoring/traces/{id}` → **200** |
+| **L3-2 目标端点** | `GET .../{id}/spans` → **500 → 200**，返回 **2** 条 |
+| **L3-3 字段齐备** | 每项含 `span_id/name/kind/status`；样例：`{"span_id":"openllm-5ddf2318386c4f9782cda04d-0","name":"auth","kind":"internal","duration_ms":0,"status":"ok","attributes":{"step":"auth","ms":0},"events":[]}` |
+| **L3-4 形态②语义保留** | `names=['auth','llm']`、`durations=[0, 3953]` |
+| L3-5 契约保持 | 未知 trace → **404** |
+| **小计** | **5 / 5 通过** |
+
+-- 庚、代码提交 --
+`feature/s4-identity-channel-b` 提交 **`48610cc`** `fix(traces): spans 端点适配 traces.spans 双形态，修复 500（DEF-BE-148-009）`
+—— **3 文件 `+259/-2`**（`services/trace_service.py`、`api/traces.py`、`tests/unit/test_trace_spans_shape.py`），按**显式路径** `git add`（**未用 `git add -A`**），**TDD 合规**（fix 提交内含对应测试文件）。
+
+==================== 二十九、TT-015 / TT-020 复测（含 2 项新缺陷闭环） ====================
+
+-- 甲、复测前的两项阻塞与本次结论 --
+| 用例 | 复测前判定 | 本次结论 |
+|:-----|-----------|----------|
+| `TT-020`（会话历史注入） | **FAIL**：无可观测面（`segment_tokens.history` 恒 0） | **PASS**（`history:100`；对照组 0） |
+| `TT-015`（记忆 + 知识库检索链路） | **FAIL**：memory 组件 `degraded`、无可用 `kb_id` | **PASS**（`executed=['memory','rag','llm']`、`degraded=[]`） |
+
+**共同根因**：二者**都不是测试脚本问题**，而是**产品接线缺失**（第零段计量未接线 → 无观测面；OpenMemory 读路未按真实契约分派 → memory 恒降级）。
+
+-- 乙、新缺陷 `DEF-BE-148-010`（P1）：第零段计量未接线 --
+**取证**（读码，非猜测）：`executor.py:158`（同步）与 `openllm_gateway.py:2219`（流式）调用共用组装步骤 `build_prompt(...)` 时**均未传 `count_tokens`** → `prompt_pipeline.py:94` 的 `PromptComposition.counted=False`、`segment_tokens` 恒 0；两处回执站点虽已传计数器（`:1977` / `:2272`），但**组装时缺计数器**，故回执永远无有效计量值。
+**影响**：`TT-009` token 分项字段齐备但值恒 0；`TT-020` 无任何可观测面（**此前将 `counted=false` 定性为「设计语义（未连接）」应更正为「接线缺失」**）。
+**修复**：`prompt_pipeline.py` 新增 `default_token_counter(model=None)`（统一默认计数器，两路径同口径以保证分项可比），并在两处组装点传入。
+**TDD**：新增 `tests/unit/test_zeroth_segment_counting.py`（8 例）→ **RED**（收集期 `ImportError: cannot import name 'default_token_counter'`）→ **GREEN 8 passed**（含执行器级「compose 已计量」「history 段 > 0」「无历史时 history = 0」）。
+
+-- 丙、新缺陷 `DEF-BE-148-011`（P1）：OpenMemory 读路未按真实契约分派 --
+**取证（日志实录，决定性）**：
+```
+WARNING component_pipeline | 组件 memory 调用失败，组件级降级继续:
+    组件 open_memory 不可用: HTTP 403: Forbidden (status=403)
+WARNING httpx | HTTP Request: POST http://127.0.0.1:8020/openmemory/v1/search
+```
+- 请求打到 **`/openmemory/v1/search`（stub 契约路径）**，而 OpenMemory 真实服务为 `/api/v1/**` → **403**；
+- 读码确认：`OpenMemoryClient.search()` **硬编码 stub 路径**，未按 `real_mode` 分派到**已实现**的 `recall()`（`POST /api/v1/recall`）；而**写路 `remember()` 已分派真实契约**（故回写路正常）→ **仅读路缺失分派**；
+- 复核配置排除误判：`.env.shared-infra` 与 `backend/.env` **均已** `OPENLLM_OPENMEMORY_REAL=true` / `OPENLLM_OPENRAG_REAL=true`，故**不是配置未开**，而是**代码未分派**。
+**修复**：`search()` 内按 `real_mode` 分派——真实模式委派 `recall()`（`query/top_k/user_id/session_id`；真实端点无 stub 的 `memory_types` 过滤，其过滤用 `strategy`，故不透传）；stub 模式行为不变（T7 兼容分支）。
+**TDD**：新增 `tests/unit/test_openmemory_read_path_real_contract.py`（3 例：真实模式必须打 `/api/v1/recall`、stub 模式保持、403 按统一语义降级）→ **RED**（实际 URL 仍为 stub 路径）→ **GREEN 26 passed**（新 3 例 + 既有 client 21 例 + outbound auth 2 例，**stub 分支无回归**）。
+
+-- 丁、`kb_id` 前置发现（本轮解除）--
+OpenRAG 的集合列表端点需 **X-API-Key**：`GET http://127.0.0.1:8010/api/v1/collections`（带 `X-API-Key`，取自共享档案）→ **200，12 个集合**；取首条 `kb_id = 976cdafa-8925-451d-b8a5-c23fea2b36c2`。此前「无可用 kb_id」**系探测未带鉴权头**所致，非环境缺陷 —— **已更正**。
+上游存活复核：`openmemory:8020/health` → **healthy**（vector_store / metadata_store / session_store 均 healthy）；`dps:8030` → **连接被拒（仍不可用，H 类）**。
+
+-- 戊、复测结果 --
+| 用例 / 断言 | 结果 | 关键实测 |
+|:------------|:----:|----------|
+| `TT-020` 次轮（携带 `messages`） | ✅ | `counted=True`、`segment_tokens={'history': 100, 'query': 7}`、`prompt_total=118`、`contexts_tokens=100` |
+| `TT-020` 对照组（不带 `messages`） | ✅ | `history = 0`（判据有效，非误判） |
+| `TT-009` 残留（token 分项非 0） | ✅ | metrics 导出 token 分项非 0 条数 = 1 |
+| `TT-015-a` memory + llm | ✅ | `executed=['memory','llm']`、`degraded=[]` |
+| `TT-015-b` memory + rag + llm（真实 kb_id） | ✅ | `executed=['memory','rag','llm']`、`degraded=[]`、`rag_source=external` |
+| `TT-015-c` memory + rag（raw_results） | ✅ | `executed=['memory','rag']` |
+| **`TT-015` 终局取证** | ✅ | `counted=True`、`segment_tokens={'rag':36,'query':21}`、`contexts_tokens=36`；**rag 计量 `injected_items=1 / injected_tokens=36`**（知识库上下文**确已注入 Prompt**） |
+
+-- 己、残留观测项（如实登记，不视为通过）--
+1. **`TT-015` memory 侧命中为空**：终局取证 `memory` 计量 `items_count=0 / injected_items=0` —— 组件**执行成功**（无降级）但该隔离口径下**无可召回记忆**，故 `memory_ctx` 为空；**属数据侧为空，非组件故障**。如需「memory_ctx 非空」级证据，须先经回写写入同一隔离口径的记忆后再召回 → 列为**后续可选复测**。
+2. **`contexts` 未在响应暴露**：响应顶层键为 `['content','mode','model','pipeline','request_id','routing_trace','usage']`，**无 `contexts`** → 原用例文字「contexts 含 memory_ctx/rag_ctx」**无法从响应观测**，本轮改以**回执计量**（`rag.injected_tokens=36`）作为等价证据；建议用例文档同步更正口径。
+3. **`TT-016` 真链路**：`dps` 仍未起（连接被拒），profile 路真链路**仍未验证**（H 类环境）。
+
+-- 庚、代码提交 --
+| 提交 | 主题 | 规模 |
+|------|------|------|
+| **`c89ffc2`** | `fix(orchestration): 第零段计量接线（两路径组装传入计数器）` | 4 文件 `+138/-2` |
+| **`d060b3f`** | `fix(openmemory): 读路按 real_mode 分派 recall，修复真实档案下 memory 组件恒降级` | 2 文件 `+97` |
+
+均按**显式路径** `git add`（未用 `git add -A`）、**TDD 合规**（fix 提交内含对应测试文件）；`ruff` 新护栏 `All checks passed`、**被改文件改动行零告警**。
+
+==================== 三十、T3 巡检与 Mock 批次（2026-09-22） ====================
+
+-- 甲、范围与不适用声明 --
+| 用例 | 判定 | 说明 |
+|:-----|:----:|------|
+| `TT-021~024`（Mock / 外部依赖，4 例） | **本轮执行** | 仓库既有 `OpenLLM/backend/mock_services/{openrag,openmemory,profile,product}_stub.py` |
+| `TT-028`（T3a **服务间集成巡检**，跨仓） | **本轮执行** | 纯后端口径，逐链路巡检 |
+| `TT-029`（深度用例：会话链路 CRUD 类比） | **本轮执行** | C/R/U 三类操作 + 归档 |
+| `TT-025` / `TT-026`（前端发消息携带会话标识 / 既有前端 E2E 回归） | **不适用** | **本工作区内 OpenBase/OpenLLM 无前端工程**（全量检索 `*.spec.ts` 命中的 `e2e/` 规格**仅属其他项目 CoPlayer**）；无前端 dev 服务与 Playwright 用例集。**影响**：前端侧「会话标识透传」与既有 E2E 未验证；**补救**：前端工程就绪后补跑（已登记 `CR-148-013` 待办） |
+| `TT-027`（T3a 全页面巡检，强制） | **以 `TT-028` 替代** | 依 `testing-stage-execution`「**纯后端项目以 T3a 服务间集成巡检替代全页面巡检**」规则；逐链路问题表见戊 |
+
+-- 乙、Mock 环境搭建（4 桩）--
+| 步骤 | 动作 | 结果 |
+|------|------|------|
+| 1 | 目标端口预检（8090-8094） | **全部空闲**（无端口冲突前提） |
+| 2 | `r12_start_stubs.py` 以**前台长驻**方式启动 4 桩（子进程随宿主存活） | openrag 8090 / openmemory 8091 / profile 8092 / product 8093（`--service openmemory`） |
+| 3 | 就绪判定（端口连通 + 只读路由探针非 5xx） | **4/4 就绪**：openrag 200、openmemory **422**、profile **422**、product 200 |
+| 4 | 如实登记（改进点） | **openrag / openmemory / profile 三桩无 `/health` 端点**，故以只读路由为存活探针（422 为「服务在线但请求体校验未过」）；建议三桩补齐 `/health`（**P3**，不影响本轮判定） |
+
+-- 丙、`TT-021` 四个桩服务健康与契约（**7/7 通过**）--
+| 断言 | 结果 |
+|------|------|
+| 四桩端口监听且**无冲突** | ✅ openrag:8090 / openmemory:8091 / profile:8092 / product:8093 全部 OK |
+| **无静默跳过**（4/4 就绪、无进程缺失、无 5xx 探针） | ✅ 就绪 4/4、缺失 无、5xx 无 |
+| openrag 契约（`POST /openrag/v1/search` + `GET /openrag/v1/collections`） | ✅ 200 / 200（`{"results":[],"total":0}`） |
+| openmemory 契约（`POST /openmemory/v1/search`） | ✅ 200 |
+| profile 契约（`GET /profile/v1/get` + `POST /profile/v1/update`） | ✅ 200 / 200（`{"ok":true,"user_id":"u-tt021","version":2}`） |
+| product 健康（`/health` + `/api/v1/health`） | ✅ 200 / 200（`{"status":"healthy","service":"openmemory"}`） |
+| openrag **故障注入端点可用**（`/__fault__/down` + `/recover`） | ✅ 200 / 200（为 `TT-022/023` 提供前置能力） |
+
+> 首次运行有 1 项 FAIL（profile `update` 返回 422）——**系本批次脚本请求体形状不符**（应为 `{user_id, updates}`），修正后 **7/7**；**非桩缺陷**，如实记录。
+
+-- 丁、`TT-022` / `TT-023`：RAG 外部失败的两条分支（**5/5 + 4/4 通过**）--
+实例配置分别以 `OPENRAG_BASE_URL=http://127.0.0.1:8090`（**stub 契约** `OPENLLM_OPENRAG_REAL=false`）+ 故障注入驱动：
+
+| 用例 | 配置 | 实测 | 判定 |
+|:-----|------|------|:----:|
+| `TT-022` | `OPENRAG_FALLBACK_BUILTIN=true` | 前置：`/__fault__/down` 后桩 `search` → **503**；链路：`rag_source=builtin`、`degraded=[]`、回答 **696 字**；`raw_results` 形态同样 `builtin`；收尾 `/__fault__/recover` → 桩恢复 200 | **✅ 5/5** |
+| `TT-023` | `OPENRAG_FALLBACK_BUILTIN=false` | 前置：桩 `search` → **503**；链路：**`degraded=['rag']`**、`rag_source=skipped`（**未回退**）、主流程 200 且回答 **265 字** | **✅ 4/4** |
+
+-- 戊、`TT-024`：RAG 适配器未注册（**未通过，3/3 断言未达**）→ 新缺陷 `DEF-BE-148-012`（P1）--
+**预期**（用例文字 + 设计侧已批准语义）：**降级、不触发回退**。
+**设计依据（可复核）**：`OpenBase-DevLogReport-v1.4.8.md` §13.1 **第十二批**「**语义变更**」——「『RAG 适配器未注册』由『回退内置 RAG』改为『**组件级降级（不触发回退）**』：理由为适配器未注册属装配缺陷，且同步路径从不因该情况回退，统一后才满足 AC-148-03-1 的『两路径行为一致』。回归 147 例全绿」。
+
+**实测（配置 `OPENRAG_ENABLED=false` + `OPENRAG_FALLBACK_BUILTIN=true`）**：
+
+| 断言 | 实测 | 结果 |
+|------|------|:----:|
+| 组件级降级且不触发回退 | `status=200`、**`degraded=[]`**、**`rag_source=builtin`** | ❌ |
+| 主流程不中断 | `status=200`、`content_len=470` | ❌（因 `degraded` 未含 rag，断言不成立） |
+| 开关开启但 `rag_source` 非 builtin（新语义对照） | `raw_results=builtin`；`llm_response=builtin` | ❌ |
+
+**日志实录（决定性）**：
+```
+WARNING app.api.openllm_gateway | OpenRAG 检索失败，回退内置 RAG（rag_source=builtin）: 组件 o…
+（同实例日志中**无** "OpenRAG client 已注入" 行 → 确认适配器确实未注册）
+```
+**定位**：`openllm_gateway.py` 组件 handler 包装处（`:340-370` 同型逻辑 + 组件路径 `:735-770` 的 `rag_fallback` 装配）把「**适配器未注册/未装配**」与「**外部检索失败**」**并入同一分支** → 只要开关开启即回退；而 `component_pipeline.run_components` 中「**handler is None → 记降级**」的分支（`:109-110`）因此在「handler 已注册、失败发生在适配器内部」的形态下**不会被触达**。
+**结论**：**实现与已批准语义不符**（第十二批仅收敛了流式路径的表现，组件/同步路径仍对未注册触发回退）→ 登记 **`DEF-BE-148-012`（P1，待修复）**；`TT-024` 如实判 **FAIL**。
+
+-- 己、`TT-028` T3a 服务间集成巡检（**4/5 链路 OK**）--
+| 链路 | 结论 | 状态 | 时延 | 结构达标 | 说明 |
+|:-----|:----:|:----:|:----:|:--------:|------|
+| memory | ✅ | 直连 401 / 网关 200 | 37.3s | — | 网关 `executed=['memory','llm']`、`degraded=[]`；直连 401 系**未带鉴权头**（预期） |
+| rag | ✅ | 直连 401（无鉴权预期）/ 网关 200 | 4.9s | 是 | `rag_source=external`、`degraded=[]` |
+| **profile** | ❌ | **直连 DPS 连接被拒 / 网关 200** | 0.7s | 是 | **DPS(8030) 未启动** → 回执 `status=retrying` → **H 类环境遗留**（非代码缺陷） |
+| llm | ✅ | 200 | 9.4s | 是 | `model=deepseek-v4-flash`、回答 406 字、`usage` 齐备 |
+| **编排总链**（memory+rag+llm） | ✅ | 200 | 7.6s | 是 | `executed=['memory','rag','llm']`、`degraded=[]`、`rag_source=external` |
+
+**逐链路问题表结论**：**超时/5xx 链路数 = 1（profile，H 类）**；未达标链路 `['profile']`；**代码类 5xx = 0**。
+
+-- 庚、`TT-029` 深度用例：会话链路 CRUD 类比（**4/4 通过**）--
+| 步骤 | 断言 | 实测 |
+|------|------|------|
+| **C** 新建会话 | 201 + 返回 id | ✅ `201`，`id=dfd96777-…`（`POST /api/v1/conversations`） |
+| **U** 发消息 ×2 | 两条均 200/201 | ✅ `user=201`、`assistant=201` |
+| **R** 查历史 | 会话筛选生效 + 异会话隔离 | ✅ 本会话 **2** / 异会话 **0** / 不过滤 **2** |
+| **U** 归档 | 端点可用 | ✅ **`POST /api/v1/conversations/{id}/archive` → 200**（`{"message":"对话已归档"}`）（仓库存在真实归档端点，未退化使用 DELETE 等价口径） |
+
+-- 辛、本轮新增缺陷与改进点 --
+| 项 | 级别 | 状态 |
+|----|:----:|------|
+| **`DEF-BE-148-012`**：RAG 适配器未注册时触发内置回退，与已批准语义（降级、不触发回退）不符 | **P1** | **待修复**（`CR-148-013`）：建议在 handler 装配层区分「装配缺失」与「外部失败」，前者不下发 `rag_fallback` |
+| 三桩缺 `/health` 端点（openrag/openmemory/profile） | P3 | 记录（本轮以只读路由为存活探针，不影响判定） |
+
+==================== 三十一、DEF-BE-148-012 修复与验证（RAG 装配缺失不得触发回退） ====================
+
+-- 甲、缺陷回顾（§三十 戊）--
+`TT-024`：配置 `OPENRAG_ENABLED=false` + `OPENRAG_FALLBACK_BUILTIN=true` 时，**适配器未注册却触发了内置回退**（实测 `degraded=[]`、`rag_source=builtin`），与 `DevLogReport` §13.1 **第十二批已批准语义**（未注册 → **组件级降级、不触发回退**）不符。
+
+-- 乙、根因定位（读码，非猜测）--
+| 位置 | 现状 | 语义 |
+|------|------|------|
+| `openllm_gateway._build_component_handlers._rag_handler`（`:341-370`） | 适配器调用外包 `try/except Exception`，**任何**异常（含 `ComponentUnavailableError`）都被吞并走内置回退 | ❌ 把「**装配缺失**（适配器未注册 / client 未注入）」与「**外部检索失败**」混为一类 |
+| `component_pipeline.run_components`（`:112-117`） | `except (ComponentUnavailableError, asyncio.TimeoutError)` → **记降级、不回退**；仅其余异常才回退 | ✅ 这正是**已批准语义**（AC-148-03-1「两路径行为一致」） |
+
+**结论**：缺陷在**网关 handler 包装层**未与共用组件步骤的语义对齐 —— 第十二批的语义变更只落到 `component_pipeline`，网关侧的 handler 包装仍是旧行为。
+
+-- 丙、TDD 执行（RED → GREEN）--
+**RED（先写护栏）**：新增 `tests/unit/test_rag_unregistered_no_fallback.py`（4 例）
+→ **2 failed / 2 passed**：装配缺失 2 例失败（被吞成回退，实测 `result={'results':[{'builtin':True}]}`）；外部失败 2 例通过（**既有行为基线**，证明护栏只锁定缺陷边界）。
+> 调试过程如实记录：首轮 RED 因**测试夹具缺陷**（`MagicMock` 身份在 `_build_request_context` 即抛 `TypeError`；且补丁作用域未覆盖调用）而失真 → 修正为**最小可用身份**（`org_id/user_id/role`）并将调用移入补丁作用域后，RED 才精确隔离缺陷。
+
+**GREEN（最小实现）**：在 `_rag_handler` 的异常链中**前置**一个分支：
+```python
+except (ComponentUnavailableError, asyncio.TimeoutError) as exc:
+    # DEF-BE-148-012：装配缺失（适配器未注册 / client 未注入）与超时属组件级降级，不触发回退
+    logger.warning("OpenRAG 组件不可用，降级跳过（不触发内置回退）: %s", exc)
+    raise
+```
+保留原 `except Exception` 分支语义不变（**外部检索失败**仍按开关决定是否回退）；并在该函数内按文件既有风格**局部导入** `ComponentUnavailableError`。
+**结果**：**4 passed**。
+
+-- 丁、静态质量检查 --
+`ruff check`：新护栏 **All checks passed**；`openllm_gateway.py` **总告警 0**、**改动行（317-366）零告警**。
+> 如实记录：首轮实现漏了 `ComponentUnavailableError` 的导入（`F821 Undefined name`），测试即刻暴露（`NameError`），补局部导入后清零。
+
+-- 戊、回归与基线对照（证明无回归）--
+| 运行 | 结果 |
+|------|------|
+| `tests/unit` 全量（`--confcutdir=tests/unit`） | **2203 passed / 13 failed** |
+| 既有基线（本轮修复前同口径） | **2188 passed / 13 failed** |
+| 对照结论 | **failed 数完全一致（13 = 13）→ 无回归**；passed 增量 15 = 累计新增护栏测试 |
+| 615 error | 全为根 `tests/conftest.py` 既知环境缺陷（§7 #4）所致夹具缺失，与本次改动无关 |
+
+-- 己、运行时复测（重启实例，TT-024 原配置 `OPENRAG_ENABLED=false` + 开关 `true`）--
+| 断言 | 修复前 | 修复后 |
+|------|--------|--------|
+| 组件级降级且不触发回退 | `degraded=[]`、`rag_source=builtin` ❌ | **`degraded=['rag']`、`rag_source=skipped` ✅** |
+| 主流程不中断 | 200 / 470 字（但未记降级） | **200 / 271 字且 `degraded=['rag']` ✅** |
+| 新语义对照（开关开启但非 builtin） | 两形态均 `builtin` ❌ | **两形态均 `skipped` ✅** |
+| **小计** | **0 / 3** | **3 / 3 通过** |
+
+-- 庚、代码提交 --
+`feature/s4-identity-channel-b` 提交 **`ef3d44e`** `fix(gateway): 装配缺失不触发内置 RAG 回退，与已批准语义对齐`
+—— **2 文件 `+120/-1`**（`app/api/openllm_gateway.py`、`tests/unit/test_rag_unregistered_no_fallback.py`），**显式路径** `git add`（未用 `git add -A`），**TDD 合规**（fix 提交内含对应测试文件）。
+
+
+
+
+
+
+
+
+
