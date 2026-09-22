@@ -1,0 +1,23 @@
+﻿# DT-148-019 全量回归修复后（pytest tests/unit 摘要）
+# 命令: python -m pytest tests/unit -q -p no:cacheprovider --confcutdir=tests/unit
+# 完整输出未入库（体积约 780KB），按上述命令可复现；此处保留结论行与失败清单
+
+============================= test session starts =============================
+=================================== ERRORS ====================================
+================================== FAILURES ===================================
+============================== warnings summary ===============================
+=========================== short test summary info ===========================
+FAILED tests/unit/test_real_contract_memory.py::TestWritebackDefaultSemanticsReal::test_stub_mode_default_episodic - ImportError: cannot import name '_resolve_memory_metadata' from 'app.api.writeback' (D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\writeback.py)
+FAILED tests/unit/test_real_contract_memory.py::TestWritebackDefaultSemanticsReal::test_real_mode_default_not_episodic - ImportError: cannot import name '_resolve_memory_metadata' from 'app.api.writeback' (D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\writeback.py)
+FAILED tests/unit/test_real_contract_memory.py::TestWritebackDefaultSemanticsReal::test_real_mode_explicit_type_preserved - ImportError: cannot import name '_resolve_memory_metadata' from 'app.api.writeback' (D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\writeback.py)
+FAILED tests/unit/test_real_contract_memory.py::TestRealContractConfig::test_openmemory_real_config_default_false - AssertionError: assert True is False
+FAILED tests/unit/test_real_contract_rag.py::TestRealContractConfig::test_openrag_real_config_default_false - AssertionError: assert True is False
+FAILED tests/unit/test_real_contract_rag.py::TestRagWritebackRealMode::test_save_if_valuable_false_skips_without_request - AssertionError: assert [<Request('PO...ments/text')>] == []
+FAILED tests/unit/test_s4_t14_verify_env.py::TestS4T14VerifyRun::test_dev_profile_all_checks_pass - AssertionError: verify-env dev profile 存在失败项: [{'status': 'FAIL', 'group': 'REAL', 'key': 'OPENLLM_OPENMEMORY_REAL', 'check': 'OPENLLM_OPENMEMORY_REAL', 'message': '值 True（profile=dev 期望 False；dev 默认关闭）'}, {'status': 'FAIL', 'group': 'REAL', 'key': 'OPENLLM_OPENRAG_REAL', 'check': 'OPENLLM_OPENRAG_REAL', 'message': '值 True（profile=dev 期望 False；dev 默认关闭）'}, {'status': 'FAIL', 'group': 'REAL', 'key': 'OPENLLM_DPS_REAL', 'check': 'OPENLLM_DPS_REAL', 'message': '值 True（profile=dev 期望 False；dev 默认关闭）'}]
+FAILED tests/unit/test_s4_t14_verify_env.py::TestS4T14VerifyRun::test_fail_fast_returns_nonzero_exit_code - assert 0 != 0
+FAILED tests/unit/test_s4_t5_prefix_normalize.py::TestS4T5WritebackContextTenantNormalize::test_writeback_payload_with_tenant_uses_tenant_prefix - AssertionError: assert '' == 'acme_'
+FAILED tests/unit/test_s4_t5_prefix_normalize.py::TestS4T5WritebackContextTenantNormalize::test_writeback_without_tenant_keeps_org_prefix_zero_change - AssertionError: assert '' == 'local-org_'
+FAILED tests/unit/test_writeback_degradation.py::TestGatewayWritebackCallbackDegradation::test_build_writeback_callback_degrades_when_queue_unavailable - ValueError: too many values to unpack (expected 3)
+FAILED tests/unit/test_writeback_degradation.py::TestGatewayWritebackCallbackDegradation::test_build_writeback_callback_normal_path_submits - ValueError: too many values to unpack (expected 3)
+FAILED tests/unit/test_writeback_degradation.py::TestGatewayWritebackCallbackDegradation::test_chat_writeback_path_does_not_raise_when_queue_unavailable - ValueError: too many values to unpack (expected 3)
+===== 13 failed, 2228 passed, 17 warnings, 615 errors in 63.87s (0:01:03) =====

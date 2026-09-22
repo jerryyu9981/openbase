@@ -1,0 +1,60 @@
+{
+  "mode": "switch-off",
+  "health": {
+    "status": 200,
+    "data": "healthy"
+  },
+  "receipts_status": 200,
+  "samples": [
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 1195.3,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 578.0
+      },
+      "p1_repo_overhead_ms": 617.3,
+      "unaccounted_ms": 617.3
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 1057.7,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 780.0
+      },
+      "p1_repo_overhead_ms": 277.7,
+      "unaccounted_ms": 277.7
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 948.8,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 546.0
+      },
+      "p1_repo_overhead_ms": 402.8,
+      "unaccounted_ms": 402.8
+    }
+  ],
+  "verdict": {
+    "pass": true,
+    "check": "开关关闭时全部 profile_fetch ≤50ms（完全跳过画像拉取）",
+    "profile_fetch_ms": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "p1_ms": [
+      617.3,
+      277.7,
+      402.8
+    ]
+  }
+}

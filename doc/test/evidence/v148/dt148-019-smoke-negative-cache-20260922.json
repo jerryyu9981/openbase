@@ -1,0 +1,60 @@
+{
+  "mode": "negative-cache",
+  "health": {
+    "status": 200,
+    "data": "healthy"
+  },
+  "receipts_status": 200,
+  "samples": [
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 8916.4,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 2094.0,
+        "llm": 1046.0
+      },
+      "p1_repo_overhead_ms": 7870.4,
+      "unaccounted_ms": 5776.4
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 3156.3,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 1108.0
+      },
+      "p1_repo_overhead_ms": 2048.3,
+      "unaccounted_ms": 2048.3
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 2296.2,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 703.0
+      },
+      "p1_repo_overhead_ms": 1593.2,
+      "unaccounted_ms": 1593.2
+    }
+  ],
+  "verdict": {
+    "pass": true,
+    "check": "首次 profile_fetch ≥1000ms（真实失败）；其后 ≤50ms（短路）；P-1 降幅 >50%",
+    "profile_fetch_ms": [
+      2094.0,
+      0.0,
+      0.0
+    ],
+    "p1_ms": [
+      7870.4,
+      2048.3,
+      1593.2
+    ]
+  }
+}
