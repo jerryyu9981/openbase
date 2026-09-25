@@ -1,0 +1,189 @@
+{
+  "case": "CR-148-018 回写派发计量接线（writeback_dispatch）",
+  "date": "2026-09-26",
+  "base_url": "http://127.0.0.1:8041",
+  "health": {
+    "status": 200,
+    "data": "healthy"
+  },
+  "sync_samples": [
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 3482.1,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 2047.0,
+        "llm": 1079.0,
+        "writeback_dispatch": 0.016
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 0.016,
+      "has_writeback_dispatch": true,
+      "unaccounted_ms": 356.1
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 1093.5,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 843.0,
+        "writeback_dispatch": 0.014
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 0.014,
+      "has_writeback_dispatch": true,
+      "unaccounted_ms": 250.5
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 1158.5,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 905.0,
+        "writeback_dispatch": 0.016
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 0.016,
+      "has_writeback_dispatch": true,
+      "unaccounted_ms": 253.5
+    }
+  ],
+  "stream_samples": [
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 2468.9,
+      "events": [
+        "routing",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "done"
+      ],
+      "delta_count": 22,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 1578.0,
+        "writeback_dispatch": 727.638
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 727.638,
+      "has_writeback_dispatch": true
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "wall_ms": 1954.4,
+      "events": [
+        "routing",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "done"
+      ],
+      "delta_count": 27,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 1297.0,
+        "writeback_dispatch": 555.923
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 555.923,
+      "has_writeback_dispatch": true
+    }
+  ],
+  "verdict": {
+    "pass": true,
+    "check": "同步与流式两条路径的 timeline 均产出 writeback_dispatch 步骤（存在性判定；耗时为观测值，P-10 正式判定须按每档 ≥200 请求出分位）",
+    "sync_all_have_step": true,
+    "stream_all_have_step": true,
+    "stream_judged_samples": 2,
+    "stream_empty_response_samples": 0,
+    "sync_writeback_dispatch_ms": [
+      0.016,
+      0.014,
+      0.016
+    ],
+    "stream_writeback_dispatch_ms": [
+      727.638,
+      555.923
+    ],
+    "observed_max_ms": 727.638,
+    "within_5ms_observed": false
+  }
+}
