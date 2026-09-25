@@ -1,0 +1,290 @@
+{
+  "case": "CR-148-020 流式回写后台派发 + 回执另行持久化",
+  "date": "2026-09-26",
+  "base_url": "http://127.0.0.1:8041",
+  "health": {
+    "status": 200,
+    "data": "healthy"
+  },
+  "streams": [
+    {
+      "ok": true,
+      "status": 200,
+      "request_id": "openllm-d33cd9c896554c0894f47b9d",
+      "session_id": "smoke-cr148020-stream-0",
+      "wall_ms": 4969.2,
+      "events": [
+        "routing",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "done"
+      ],
+      "delta_count": 22,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 2046.0,
+        "llm": 1562.0,
+        "writeback_dispatch": 0.029
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 0.029,
+      "immediate_writeback": {
+        "memory": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-0"
+        },
+        "rag": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-0"
+        },
+        "profile": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-0"
+        },
+        "_dispatch": {
+          "mode": "async",
+          "status": "completed"
+        }
+      },
+      "persisted_writeback": {
+        "memory": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-0"
+        },
+        "rag": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-0"
+        },
+        "profile": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-0"
+        },
+        "_dispatch": {
+          "mode": "async",
+          "status": "completed"
+        }
+      },
+      "receipt_wait_seconds": 0.0
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "request_id": "openllm-47a09ef7b195457e97497aad",
+      "session_id": "smoke-cr148020-stream-1",
+      "wall_ms": 2155.6,
+      "events": [
+        "routing",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "done"
+      ],
+      "delta_count": 20,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 1454.0,
+        "writeback_dispatch": 0.025
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 0.025,
+      "immediate_writeback": {
+        "_dispatch": {
+          "mode": "async",
+          "status": "scheduled"
+        }
+      },
+      "persisted_writeback": {
+        "memory": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-1"
+        },
+        "rag": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-1"
+        },
+        "profile": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-1"
+        },
+        "_dispatch": {
+          "mode": "async",
+          "status": "completed"
+        }
+      },
+      "receipt_wait_seconds": 0.25
+    },
+    {
+      "ok": true,
+      "status": 200,
+      "request_id": "openllm-6ba65c1e26024fc584cffe07",
+      "session_id": "smoke-cr148020-stream-2",
+      "wall_ms": 2220.5,
+      "events": [
+        "routing",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "chunk",
+        "done"
+      ],
+      "delta_count": 26,
+      "steps": {
+        "auth": 0.0,
+        "profile_fetch": 0.0,
+        "llm": 1516.0,
+        "writeback_dispatch": 0.028
+      },
+      "steps_seen": [
+        "auth",
+        "llm",
+        "profile_fetch",
+        "writeback_dispatch"
+      ],
+      "writeback_dispatch_ms": 0.028,
+      "immediate_writeback": {
+        "_dispatch": {
+          "mode": "async",
+          "status": "scheduled"
+        }
+      },
+      "persisted_writeback": {
+        "memory": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-2"
+        },
+        "rag": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-2"
+        },
+        "profile": {
+          "status": "accepted",
+          "session_id": "smoke-cr148020-stream-2"
+        },
+        "_dispatch": {
+          "mode": "async",
+          "status": "completed"
+        }
+      },
+      "receipt_wait_seconds": 0.0
+    }
+  ],
+  "sync": {
+    "ok": true,
+    "status": 200,
+    "steps_seen": [
+      "auth",
+      "llm",
+      "profile_fetch",
+      "writeback_dispatch"
+    ],
+    "writeback_dispatch_ms": 0.025
+  },
+  "receipts": {
+    "status": 200,
+    "total": 3,
+    "items": [
+      {
+        "target": "profile",
+        "status": "pending",
+        "seq": 3
+      },
+      {
+        "target": "rag",
+        "status": "pending",
+        "seq": 2
+      },
+      {
+        "target": "memory",
+        "status": "pending",
+        "seq": 1
+      }
+    ]
+  },
+  "verdict": {
+    "pass": true,
+    "check": "流式 writeback_dispatch ≤5 ms（P-10 达标）+ 三路回执由后台任务另行持久化（_dispatch.mode=async）+ 权威回执端点 200 + 同步路径步骤保留",
+    "all_stream_ok": true,
+    "stream_writeback_dispatch_ms": [
+      0.029,
+      0.025,
+      0.028
+    ],
+    "stream_dispatch_within_5ms": true,
+    "stream_receipt_persisted_all": true,
+    "stream_receipt_async_mode": true,
+    "sync_step_kept": true,
+    "receipts_status": 200,
+    "receipts_total": 3,
+    "note": "本轮为 L3 冒烟（n=3 流式 + 1 同步），P-10 正式分位判定须按每档 ≥200 请求重跑 TT-038"
+  }
+}

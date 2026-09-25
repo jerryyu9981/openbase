@@ -1,0 +1,60 @@
+# OpenBase v1.4.8 CR-148-020 回归基线对照（2026-09-26）
+# 场景：确认「流式回写后台派发 + 回执另行持久化」改动**未引入新失败**
+# 环境：Windows / PowerShell 5 / Python 3.10.11 / pytest 9.1.1
+# 工作目录：d:\Trae CN\myproject\Dev\OpenLLM\backend
+
+==================== 一、全量回归（tests/unit） ====================
+命令：python -m pytest tests/unit -q -p no:cacheprovider --confcutdir=tests/unit
+证据：cr148-020-regression-unit-20260926.txt
+
+修复后：  14 failed, 2243 passed, 615 errors in 419.68s
+基线（CR-148-018 轮，2026-09-26）：13 failed, 2233 passed, 615 errors
+
+差量核算：
+  passed  2233 → 2243（+10）
+  failed    13 →   14（+1）
+  总用例数 2246 → 2257（+11）＝ 本轮新增护栏 11 例（tests/unit/test_stream_writeback_async_dispatch.py）
+  ⇒ passed +10 = 新增 11 例 − 1 例「既有 flaky」由 pass 转 fail
+  ⇒ failed +1 即该 flaky
+
+多出项定位：tests/unit/test_component_pipeline_shared.py::TestScheduling::
+            test_parallel_runs_components_concurrently
+            - 失败信息：AssertionError: 并行未生效（耗时 0.125s）
+            - 隔离重跑 3 次：3/3 passed（时序敏感，全量负载下偶发）
+            - 属**既有 flaky**（DT-148-019 轮已如实登记，非本次改动引入）
+
+==================== 二、基线对照（定向，同命令前后对照） ====================
+口径：仅取「全量回归中出现的失败所在 6 个测试文件」，在**暂存网关改动**（git stash）与
+      **保留改动**两种状态下跑同一命令，逐项比对失败集合。
+
+被测文件（6）：
+  tests/unit/test_component_pipeline_shared.py
+  tests/unit/test_real_contract_memory.py
+  tests/unit/test_real_contract_rag.py
+  tests/unit/test_s4_t14_verify_env.py
+  tests/unit/test_s4_t5_prefix_normalize.py
+  tests/unit/test_writeback_degradation.py
+
+命令：python -m pytest <6 files> -q -p no:cacheprovider --confcutdir=tests/unit --tb=no
+
+-- 2.1 基线（git stash push -- app/api/openllm_gateway.py）--
+结果：13 failed, 91 passed
+
+-- 2.2 保留改动（git stash pop 后同命令）--
+结果：13 failed, 91 passed
+
+-- 2.3 结论 --
+**失败集合逐项完全一致（13 = 13）→ 本次改动新增失败 = 0**。
+13 项均为**既有失败**（与本次改动无关），构成：
+  1) test_real_contract_memory.py           4 项（3 项 ImportError: _resolve_memory_metadata；1 项 REAL 配置默认值）
+  2) test_real_contract_rag.py              2 项（REAL 配置默认值；save_if_valuable 请求计数）
+  3) test_s4_t14_verify_env.py              2 项（dev profile 期望 REAL 关闭，本机环境为 True）
+  4) test_s4_t5_prefix_normalize.py         2 项（租户/组织前缀断言，与既有契约漂移相关）
+  5) test_writeback_degradation.py          3 项（ValueError: too many values to unpack (expected 3)
+     —— 该测试仍按「三路回写前」的二/三返回值契约解包，属**既有陈旧断言**，非本次引入）
+
+==================== 三、数量口径声明 ====================
+* 全量回归的 passed 计数**不可跨绕行方式互比**（CR-148-019 测试工装缺陷：根 conftest 前置
+  pgAdmin site-packages 致导入失败），故本轮基线对照统一采用**同命令前后对照**。
+* 615 errors 为「--confcutdir=tests/unit 跳过根 conftest → client/db_session 等夹具缺失」的
+  下游表现，属既有环境缺陷（CR-148-019），不计入本次判定。
