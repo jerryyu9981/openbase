@@ -279,18 +279,88 @@ def probe_rank_selection() -> dict[str, Any]:
     }
 
 
+def probe_profile_dimensions() -> dict[str, Any]:
+    """(f) 画像维度白名单与维度级优先级（§3.2 / §3.3 profile 行）"""
+    from app.api.openllm_gateway import _format_profile_ctx
+
+    payload = {
+        "person": {
+            "city": "上海" + "甲" * 20,
+            "preference": "简洁" + "乙" * 20,
+        },
+        "business": {
+            "company": "OpenBase" + "丙" * 20,
+            "scale": "200" + "丁" * 20,
+        },
+    }
+    small = {"person": {"city": "上海", "preference": "简洁"}, "business": {"company": "OpenBase"}}
+    default_text = _format_profile_ctx(small)
+    with _temp(PROFILE_DIMENSION_LINES_ENABLED=False):
+        single_line_text = _format_profile_ctx(small)
+    with _temp(PROFILE_DIMENSION_WHITELIST="preference,company"):
+        whitelisted = _format_profile_ctx(small)
+    with _temp(PROFILE_DIMENSION_WHITELIST="nothing_matches"):
+        no_match = _format_profile_ctx(small)
+    trimmed_profile = _format_profile_ctx(payload)
+    prompt, comp = build_prompt(
+        query="问", profile_ctx=trimmed_profile, count_tokens=_chars, budget=_policy()
+    )
+    return {
+        "dimension_lines": default_text,
+        "one_line_per_dimension": len([x for x in default_text.splitlines() if x.strip()]) == 5,
+        "person_before_business": default_text.index("city") < default_text.index("company"),
+        "single_line_fallback": single_line_text,
+        "switch_off_single_line": len([x for x in single_line_text.splitlines() if x.strip()]) == 2,
+        "whitelist_text": whitelisted,
+        "whitelist_keeps_only_listed": "preference" in whitelisted
+        and "company" in whitelisted
+        and "city" not in whitelisted
+        and "scale" not in whitelisted,
+        "whitelist_no_match_empty": no_match == "",
+        "low_priority_dimension_dropped": "company" not in prompt and "city" in prompt,
+        "profile_report": comp.truncated.get("profile"),
+        "profile_within_quota": comp.budget["profile"]["used"] <= comp.budget["profile"]["quota"],
+    }
+
+
+def probe_refine_in_metrics() -> dict[str, Any]:
+    """(g) `refine` 回执落 `context_metrics`（§3.3 产出物 / §5.8 观测行）"""
+    from app.edgerouter.orchestration.context_metrics import ContextReceipt
+
+    memory = "\n".join(["1. " + "甲" * 400, "2. " + "乙" * 400])
+    _prompt, comp = build_prompt(
+        query="问", memory_ctx=memory, count_tokens=_chars, budget=_policy()
+    )
+    record = ContextReceipt(request_id="probe-refine", composition=comp).to_record()
+    _p2, off_comp = build_prompt(
+        query="问", memory_ctx="1. 甲", count_tokens=_chars, budget=BudgetPolicy(enabled=False)
+    )
+    off_record = ContextReceipt(request_id="probe-refine-off", composition=off_comp).to_record()
+    return {
+        "refine_in_record": record.get("refine"),
+        "refine_field_present": "refine" in record,
+        "refine_equals_composition": record.get("refine") == comp.refine,
+        "absent_when_disabled": "refine" not in off_record,
+        "other_fields_intact": all(
+            key in record for key in ("segment_tokens", "budget", "truncated", "contexts_tokens")
+        ),
+    }
+
+
 def main() -> int:
     report = {
         "probe": "assembly_rule_tier",
         "design_ref": (
-            "方案 §3.2 选择（权重排序）＋ §3.4 规则档（元数据噪声剥离 / 相邻同义合并 / "
-            "refine 回执）＋ §3.5 稳定引用编号"
+            "方案 §3.2 选择（权重排序 / 画像维度白名单）＋ §3.3 预算（维度级优先级 / refine 落 metrics）"
+            "＋ §3.4 规则档（元数据噪声剥离 / 相邻同义合并 / refine 回执）＋ §3.5 稳定引用编号"
         ),
         "(a) 元数据噪声剥离": probe_metadata_noise(),
         "(b) 相邻同义合并": probe_adjacent_merge(),
         "(c) refine 回执": probe_refine_receipt(),
         "(d) 稳定引用编号": probe_ref_numbers(),
         "(e) 权重排序": probe_rank_selection(),
+        "(f) 画像维度优先级": probe_profile_dimensions(),
+        "(g) refine 落 context_metrics": probe_refine_in_metrics(),
     }
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assembly_rule_tier_probe-result.json")
     with open(out, "w", encoding="utf-8") as handle:

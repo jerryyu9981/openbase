@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-27T05:11:23",
+  "generated_at": "2026-09-27T05:26:04",
   "simulate": true,
   "summary": {
-    "PASS": 7,
+    "PASS": 8,
     "FAIL": 0,
     "SKIP": 1,
     "BLOCKED": 2
@@ -219,7 +219,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.36,
+        "concurrent_components_wall_seconds": 0.344,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -235,8 +235,8 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.062,
-        "ordered_wall_seconds": 0.11,
+        "parallel_wall_seconds": 0.063,
+        "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
           "rag_start",
@@ -332,10 +332,54 @@
           "switch_off": "1. 低分\n2. 高分",
           "no_rank_key": "1. 甲\n2. 乙\n3. 丙"
         },
+        "profile_dimensions": {
+          "dimension_lines": "[个人画像]\ncity: 上海\npreference: 简洁\n[企业画像]\ncompany: OpenBase",
+          "single_line_fallback": "[个人画像] city: 上海；preference: 简洁\n[企业画像] company: OpenBase",
+          "whitelisted": "[个人画像]\npreference: 简洁\n[企业画像]\ncompany: OpenBase",
+          "whitelist_no_match": "",
+          "over_quota_report": {
+            "dropped_items": 2,
+            "dropped_tokens": 67,
+            "truncated_items": 0,
+            "merged_items": 0,
+            "merged_tokens": 0
+          }
+        },
         "ref_numbers_switch_default": {
           "CONTEXT_REF_NUMBERS_ENABLED": false
         },
-        "evidence": "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ `tests/unit/test_context_rank_selection.py`（12 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
+        "evidence": "`tests/unit/test_assembly_refine_rule_tier.py`（27 例）＋ `tests/unit/test_context_rank_selection.py`（12 例）＋ `tests/unit/test_profile_dimension_priority.py`（10 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T11",
+      "title": "写路径与通道一致：非主通道期间暂停回写（进程内可判）",
+      "status": "PASS",
+      "requires": [],
+      "detail": {
+        "default_primary_submitted": [
+          "memory",
+          "rag",
+          "profile"
+        ],
+        "channel_switch_submitted": [],
+        "channel_switch_returns": {
+          "memory": "skipped",
+          "rag": "skipped",
+          "profile": "skipped"
+        },
+        "guard_switch_off_submitted": [
+          "memory",
+          "rag",
+          "profile"
+        ],
+        "invalid_preference_submitted": [
+          "memory",
+          "rag",
+          "profile"
+        ],
+        "evidence": "`tests/unit/test_writeback_channel_guard.py`（8 例）＋ 运行态探针 `doc/test/evidence/cr149/writeback_channel_guard_probe.py`"
       },
       "reason": ""
     }

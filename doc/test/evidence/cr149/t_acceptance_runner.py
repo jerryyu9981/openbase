@@ -1114,6 +1114,49 @@ def check_t10() -> Verdict:
     if no_rank_key != "1. 甲\n2. 乙\n3. 丙":
         failures.append(f"无排序依据时臆造了顺序：{no_rank_key!r}")
 
+    # ⑤ 画像维度白名单与维度级优先级（§3.2 / §3.3 profile 行；v1.15.0 补入本判据）
+    from app.api.openllm_gateway import _format_profile_ctx
+
+    _small_profile = {
+        "person": {"city": "上海", "preference": "简洁"},
+        "business": {"company": "OpenBase"},
+    }
+    profile_default = _format_profile_ctx(_small_profile)
+    with _temporary_settings(PROFILE_DIMENSION_LINES_ENABLED=False):
+        profile_single_line = _format_profile_ctx(_small_profile)
+    with _temporary_settings(PROFILE_DIMENSION_WHITELIST="preference,company"):
+        profile_whitelisted = _format_profile_ctx(_small_profile)
+    with _temporary_settings(PROFILE_DIMENSION_WHITELIST="nothing_matches"):
+        profile_no_match = _format_profile_ctx(_small_profile)
+    _big_profile = _format_profile_ctx(
+        {
+            "person": {"city": "上海" + "甲" * 20, "preference": "简洁" + "乙" * 20},
+            "business": {"company": "OpenBase" + "丙" * 20, "scale": "200" + "丁" * 20},
+        }
+    )
+    profile_prompt, profile_comp = build_prompt(
+        query="问", profile_ctx=_big_profile, count_tokens=_chars, budget=_policy()
+    )
+
+    if len([x for x in profile_default.splitlines() if x.strip()]) != 5:
+        failures.append(f"画像维度未独立成行（应 5 行：2 段头 + 3 维度）：{profile_default!r}")
+    if profile_default.index("city") > profile_default.index("company"):
+        failures.append(f"person 维度未优先于 business：{profile_default!r}")
+    if len([x for x in profile_single_line.splitlines() if x.strip()]) != 2:
+        failures.append(f"开关关闭未回退为单段一行：{profile_single_line!r}")
+    if not (
+        "preference" in profile_whitelisted
+        and "company" in profile_whitelisted
+        and "city" not in profile_whitelisted
+    ):
+        failures.append(f"白名单未按列出维度过滤：{profile_whitelisted!r}")
+    if profile_no_match != "":
+        failures.append(f"白名单无命中应返回空：{profile_no_match!r}")
+    if "company" in profile_prompt or "city" not in profile_prompt:
+        failures.append("超配额未丢弃低优先（business）维度")
+    if profile_comp.budget["profile"]["used"] > profile_comp.budget["profile"]["quota"]:
+        failures.append("画像维度裁剪后 used > quota")
+
     detail: dict[str, Any] = {
         "noise_stripped_text": stripped,
         "noise_verbatim_when_off": raw,
@@ -1128,10 +1171,18 @@ def check_t10() -> Verdict:
             "switch_off": rank_off,
             "no_rank_key": no_rank_key,
         },
+        "profile_dimensions": {
+            "dimension_lines": profile_default,
+            "single_line_fallback": profile_single_line,
+            "whitelisted": profile_whitelisted,
+            "whitelist_no_match": profile_no_match,
+            "over_quota_report": profile_comp.truncated.get("profile"),
+        },
         "ref_numbers_switch_default": _settings_snapshot(["CONTEXT_REF_NUMBERS_ENABLED"]),
         "evidence": (
-            "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ "
-            "`tests/unit/test_context_rank_selection.py`（12 例）＋ 运行态探针 "
+            "`tests/unit/test_assembly_refine_rule_tier.py`（27 例）＋ "
+            "`tests/unit/test_context_rank_selection.py`（12 例）＋ "
+            "`tests/unit/test_profile_dimension_priority.py`（10 例）＋ 运行态探针 "
             "`doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
         ),
     }
@@ -1140,6 +1191,87 @@ def check_t10() -> Verdict:
         title=title,
         status=STATUS_FAIL if failures else STATUS_PASS,
         detail=detail,
+        reason="；".join(failures),
+    )
+
+
+# ---------------------------------------------------------------- T11 写路径与通道一致
+
+async def check_t11() -> Verdict:
+    """T11：写路径与通道一致（`assert_write_channel_is_primary` 接线；v1.15.0）
+
+    方案 §4.3 表「写路径与通道一致」＋ §8 风险回退：「回写前经
+    `assert_write_channel_is_primary` 校验，避免通道切换期间双写」。
+
+    **进程内可判**（真实回写回调 + 队列替身，不依赖运行态服务）：
+
+      1. 默认主通道（`b-primary`）⇒ 三路正常入队（**行为不变**）；
+      2. 切换期间（`a-primary`，经 B 写属非主通道）⇒ **暂停本轮回写**
+         （三路返回 `"skipped"` 且**不入队**）；
+      3. 开关关闭 ⇒ **逐字回退**（不看通道状态）；
+      4. 配置非法（未知 preference）⇒ WARN + **放行**（fail-open）。
+    """
+    title = "写路径与通道一致：非主通道期间暂停回写（进程内可判）"
+    import app.api.openllm_gateway as gateway
+    import app.services.writeback_queue as queue_module
+
+    _queue_stub_ref = _QueueStub
+    _identity_ref = _IdentityStub
+
+    async def _run(**overrides: Any) -> tuple[list[str], dict[str, Any]]:
+        queue = _queue_stub_ref()
+        original = queue_module.get_writeback_queue
+        queue_module.get_writeback_queue = lambda: queue
+        try:
+            with _temporary_settings(WRITEBACK_DECISION_ENABLED=False, **overrides):
+                memory_cb, rag_cb, profile_cb, _kwargs = gateway._build_writeback_callback(
+                    _identity_ref(), "req-t11", session_id="sess-t11", rag_kb_id="kb-t11"
+                )
+                returns: dict[str, Any] = {}
+                for road, callback in (
+                    ("memory", memory_cb),
+                    ("rag", rag_cb),
+                    ("profile", profile_cb),
+                ):
+                    returns[road] = await callback(query="请记住：我偏好简洁", response="好的")
+        finally:
+            queue_module.get_writeback_queue = original
+        return [item["target"] for item in queue.submitted], returns
+
+    default_submitted, _default_returns = await _run()
+    guarded_submitted, guarded_returns = await _run(CHANNEL_PREFERENCE="a-primary")
+    off_submitted, _off_returns = await _run(
+        WRITEBACK_CHANNEL_GUARD_ENABLED=False, CHANNEL_PREFERENCE="a-primary"
+    )
+    invalid_submitted, _invalid_returns = await _run(CHANNEL_PREFERENCE="b_primary_typo")
+
+    failures: list[str] = []
+    if sorted(default_submitted) != ["memory", "profile", "rag"]:
+        failures.append(f"默认主通道下三路应正常入队，实测 {default_submitted}")
+    if guarded_submitted:
+        failures.append(f"非主通道期间不得写入，实测入队 {guarded_submitted}")
+    if not all(value == "skipped" for value in guarded_returns.values()):
+        failures.append(f"非主通道期间三路应返回 skipped，实测 {guarded_returns}")
+    if "memory" not in off_submitted:
+        failures.append("开关关闭时应逐字回退（不看通道状态）")
+    if "memory" not in invalid_submitted:
+        failures.append("配置非法时应 fail-open 放行（不得静默停库）")
+
+    return Verdict(
+        criterion="T11",
+        title=title,
+        status=STATUS_FAIL if failures else STATUS_PASS,
+        detail={
+            "default_primary_submitted": default_submitted,
+            "channel_switch_submitted": guarded_submitted,
+            "channel_switch_returns": guarded_returns,
+            "guard_switch_off_submitted": off_submitted,
+            "invalid_preference_submitted": invalid_submitted,
+            "evidence": (
+                "`tests/unit/test_writeback_channel_guard.py`（8 例）＋ 运行态探针 "
+                "`doc/test/evidence/cr149/writeback_channel_guard_probe.py`"
+            ),
+        },
         reason="；".join(failures),
     )
 
@@ -1160,6 +1292,7 @@ ASYNC_CHECKS: list[tuple[str, Callable[[], Any]]] = [
     ("T5", check_t5),
     ("T7", check_t7),
     ("T8", check_t8),
+    ("T11", check_t11),
 ]
 
 
@@ -1189,7 +1322,7 @@ def run_all() -> list[Verdict]:
                     reason=f"{type(exc).__name__}: {exc}",
                 )
             )
-    order = {f"T{index}": index for index in range(1, 11)}
+    order = {f"T{index}": index for index in range(1, 12)}
     verdicts.sort(key=lambda verdict: order.get(verdict.criterion, 99))
     return verdicts
 

@@ -1,6 +1,6 @@
 {
   "probe": "assembly_rule_tier",
-  "design_ref": "方案 §3.2 选择（权重排序）＋ §3.4 规则档（元数据噪声剥离 / 相邻同义合并 / refine 回执）＋ §3.5 稳定引用编号",
+  "design_ref": "方案 §3.2 选择（权重排序 / 画像维度白名单）＋ §3.3 预算（维度级优先级 / refine 落 metrics）＋ §3.4 规则档（元数据噪声剥离 / 相邻同义合并 / refine 回执）＋ §3.5 稳定引用编号",
   "(a) 元数据噪声剥离": {
     "switch_on_text": "score: 0.87\nsource: kb-1\nsummary: 知识库摘要内容",
     "switch_off_text": "trace_id: None\nrequest_id: req-abc-123\nsession_id: sess-1\nscore: 0.87\nsource: kb-1\nsummary: 知识库摘要内容\nempty_note:    ",
@@ -82,5 +82,38 @@
       "CONTEXT_RANK_SORT_ENABLED": true,
       "CONTEXT_RANK_DECAY_HALF_LIFE_DAYS": 30.0
     }
+  },
+  "(f) 画像维度优先级": {
+    "dimension_lines": "[个人画像]\ncity: 上海\npreference: 简洁\n[企业画像]\ncompany: OpenBase",
+    "one_line_per_dimension": true,
+    "person_before_business": true,
+    "single_line_fallback": "[个人画像] city: 上海；preference: 简洁\n[企业画像] company: OpenBase",
+    "switch_off_single_line": true,
+    "whitelist_text": "[个人画像]\npreference: 简洁\n[企业画像]\ncompany: OpenBase",
+    "whitelist_keeps_only_listed": true,
+    "whitelist_no_match_empty": true,
+    "low_priority_dimension_dropped": true,
+    "profile_report": {
+      "dropped_items": 2,
+      "dropped_tokens": 67,
+      "truncated_items": 0,
+      "merged_items": 0,
+      "merged_tokens": 0
+    },
+    "profile_within_quota": true
+  },
+  "(g) refine 落 context_metrics": {
+    "refine_in_record": {
+      "mode": "rule",
+      "model": "",
+      "in_tokens": 807,
+      "out_tokens": 100,
+      "elapsed_ms": 0,
+      "fallback": false
+    },
+    "refine_field_present": true,
+    "refine_equals_composition": true,
+    "absent_when_disabled": true,
+    "other_fields_intact": true
   }
 }

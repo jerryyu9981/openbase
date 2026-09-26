@@ -1,0 +1,46 @@
+{
+  "probe": "writeback_channel_guard",
+  "design_ref": "方案 §4.3 表「写路径与通道一致」＋ §8 风险回退（写路径校验 + 切换期间暂停回写）",
+  "default_primary": {
+    "submitted": [
+      "memory",
+      "rag",
+      "profile"
+    ],
+    "returns": {
+      "memory": true,
+      "rag": true,
+      "profile": true
+    },
+    "unchanged": true
+  },
+  "channel_switch_a_primary": {
+    "submitted": [],
+    "returns": {
+      "memory": "skipped",
+      "rag": "skipped",
+      "profile": "skipped"
+    },
+    "paused": true
+  },
+  "guard_switch_off": {
+    "submitted": [
+      "memory",
+      "rag",
+      "profile"
+    ],
+    "verbatim": true
+  },
+  "invalid_preference_fail_open": {
+    "submitted": [
+      "memory",
+      "rag",
+      "profile"
+    ],
+    "allowed": true
+  },
+  "config_defaults": {
+    "WRITEBACK_CHANNEL_GUARD_ENABLED": true,
+    "CHANNEL_PREFERENCE": "b-primary"
+  }
+}
