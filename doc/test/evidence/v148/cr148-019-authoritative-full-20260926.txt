@@ -1,0 +1,262 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.10.11, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Trae CN\myproject\Dev\OpenLLM\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, respx-0.23.1, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0
+asyncio: mode=auto, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 2881 items
+
+tests\unit\edgerouter\test_adapters.py .........................         [  0%]
+tests\unit\edgerouter\test_audit_service.py ............................ [  1%]
+                                                                         [  1%]
+tests\unit\edgerouter\test_edgerouter_service.py ....................... [  2%]
+........                                                                 [  2%]
+tests\unit\edgerouter\test_isolator.py .....................             [  3%]
+tests\unit\edgerouter\test_jwt_handler.py ...................            [  4%]
+tests\unit\edgerouter\test_quota_service.py ....................         [  4%]
+tests\unit\edgerouter\test_rbac.py ..........                            [  5%]
+tests\unit\edgerouter\test_registry.py ...................               [  6%]
+tests\unit\edgerouter\test_registry_service.py .....................     [  6%]
+tests\unit\edgerouter\test_router.py .....................               [  7%]
+tests\unit\edgerouter\test_strategy.py ................                  [  8%]
+tests\unit\services\test_auth_service.py .......................         [  8%]
+tests\unit\services\test_billing_service.py .....................        [  9%]
+tests\unit\services\test_conversation_service.py ..................      [ 10%]
+tests\unit\services\test_gpu_scheduler.py .....................          [ 10%]
+tests\unit\services\test_prompt_experiment_service.py .................  [ 11%]
+tests\unit\services\test_quota_manager.py .........................      [ 12%]
+tests\unit\services\test_usage_tracker.py ..................             [ 12%]
+tests\unit\test_ab_tests_api.py .....                                    [ 13%]
+tests\unit\test_alert_rule_delete.py .....                               [ 13%]
+tests\unit\test_alert_rule_manage.py ................                    [ 13%]
+tests\unit\test_alerts_api.py ................................           [ 14%]
+tests\unit\test_attribution_b_tool.py ...........                        [ 15%]
+tests\unit\test_audit_logs_api.py ...                                    [ 15%]
+tests\unit\test_audit_m3_ext.py .................                        [ 16%]
+tests\unit\test_audit_middleware_ext.py ........................         [ 16%]
+tests\unit\test_audit_service_ext.py ...............................     [ 17%]
+tests\unit\test_auth_api.py ........................                     [ 18%]
+tests\unit\test_baseline_report_tool.py .......                          [ 19%]
+tests\unit\test_billing_api.py .........................                 [ 19%]
+tests\unit\test_billing_usage_resilience.py ....                         [ 20%]
+tests\unit\test_billing_v2_api.py ..........                             [ 20%]
+tests\unit\test_budgets_api.py ....                                      [ 20%]
+tests\unit\test_cascade_routing_api.py ......                            [ 20%]
+tests\unit\test_chat_api.py .....................                        [ 21%]
+tests\unit\test_chat_stream_api.py .................                     [ 22%]
+tests\unit\test_circuit_breakers_api.py .......                          [ 22%]
+tests\unit\test_component_pipeline_shared.py .............               [ 22%]
+tests\unit\test_config_api.py ..........                                 [ 23%]
+tests\unit\test_conftest_path_bootstrap_guard.py .........               [ 23%]
+tests\unit\test_context_api.py .........                                 [ 23%]
+tests\unit\test_context_manager_model_window.py ........                 [ 24%]
+tests\unit\test_context_metrics_instrumentation.py ..................... [ 24%]
+....                                                                     [ 24%]
+tests\unit\test_conversation_metadata_mapping.py .....                   [ 25%]
+tests\unit\test_conversations_api.py .................F...               [ 25%]
+tests\unit\test_coverage_boost_v2112.py ................................ [ 26%]
+.....FF......................F.........                                  [ 28%]
+tests\unit\test_debug_gateway_ollama.py .                                [ 28%]
+tests\unit\test_documents_api.py ....                                    [ 28%]
+tests\unit\test_dps_probe_liveness.py .....                              [ 28%]
+tests\unit\test_dps_probe_real_health.py .....                           [ 28%]
+tests\unit\test_external_identity.py .........                           [ 29%]
+tests\unit\test_fallback_degradation.py ..............                   [ 29%]
+tests\unit\test_gateway_401_format.py FFFFFFF..                          [ 29%]
+tests\unit\test_golden_set_and_scale.py .......                          [ 30%]
+tests\unit\test_gpu_resources_api.py ....                                [ 30%]
+tests\unit\test_hot_reload.py .......................................... [ 31%]
+                                                                         [ 31%]
+tests\unit\test_hybrid_router.py ........................                [ 32%]
+tests\unit\test_isolation_matrix_endpoints.py .......................... [ 33%]
+........................................................................ [ 35%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+.............                                                            [ 58%]
+tests\unit\test_joinedload_asserts.py FF..                               [ 59%]
+tests\unit\test_knowledge_bases_api.py .....                             [ 59%]
+tests\unit\test_local_models_gpu_ext.py ................................ [ 60%]
+...                                                                      [ 60%]
+tests\unit\test_main_m6_ext.py ....                                      [ 60%]
+tests\unit\test_model_categories_api.py ...........                      [ 60%]
+tests\unit\test_model_router.py .........................                [ 61%]
+tests\unit\test_model_router_availability_gate.py .......                [ 62%]
+tests\unit\test_model_router_wiring.py .FF...........                    [ 62%]
+tests\unit\test_monitoring_api.py ...                                    [ 62%]
+tests\unit\test_monitoring_coverage_v2112.py ...................         [ 63%]
+tests\unit\test_open_models_api.py ............                          [ 63%]
+tests\unit\test_openllm_gateway.py ............................          [ 64%]
+tests\unit\test_openmemory_client.py .....................               [ 65%]
+tests\unit\test_openmemory_outbound_auth.py ..                           [ 65%]
+tests\unit\test_openmemory_read_path_real_contract.py ...                [ 65%]
+tests\unit\test_openrag_client.py ....................                   [ 66%]
+tests\unit\test_orchestration.py ...............................         [ 67%]
+tests\unit\test_perf_batch_concurrency.py .....                          [ 67%]
+tests\unit\test_plugin_services.py ...................                   [ 68%]
+tests\unit\test_plugins_api.py ....                                      [ 68%]
+tests\unit\test_profile_fetch_negative_cache.py ..........               [ 68%]
+tests\unit\test_profile_fetch_timeline_guard.py ...                      [ 68%]
+tests\unit\test_prompt_experiments_api.py .....                          [ 68%]
+tests\unit\test_prompt_pipeline_shared_step.py .........                 [ 69%]
+tests\unit\test_prompt_templates_api.py .....                            [ 69%]
+tests\unit\test_provider_registration_api.py ...................         [ 70%]
+tests\unit\test_providers_api.py ..............................          [ 71%]
+tests\unit\test_r384_request_id_filter.py .......                        [ 71%]
+tests\unit\test_rag_api.py ...                                           [ 71%]
+tests\unit\test_rag_unregistered_no_fallback.py ....                     [ 71%]
+tests\unit\test_rate_limit.py ................                           [ 72%]
+tests\unit\test_real_contract_memory.py ........................FFFF..   [ 73%]
+tests\unit\test_real_contract_profile.py ......................          [ 74%]
+tests\unit\test_real_contract_rag.py F..........................F        [ 74%]
+tests\unit\test_roles_api.py .......................                     [ 75%]
+tests\unit\test_router_coverage_v2112.py ...................             [ 76%]
+tests\unit\test_s4_t10_audit_chain.py .............                      [ 76%]
+tests\unit\test_s4_t11_k07_matrix.py ........                            [ 77%]
+tests\unit\test_s4_t12_role_tiers.py ....................                [ 77%]
+tests\unit\test_s4_t13_m1_m2_modes.py ............                       [ 78%]
+tests\unit\test_s4_t14_verify_env.py .......F.F.                         [ 78%]
+tests\unit\test_s4_t15_l3_2_smoke.py ...........                         [ 79%]
+tests\unit\test_s4_t1_baseline_probe.py .........                        [ 79%]
+tests\unit\test_s4_t2_identity_base.py ...........................       [ 80%]
+tests\unit\test_s4_t3_outbound_headers.py ...............                [ 80%]
+tests\unit\test_s4_t4_real_switch.py .............                       [ 81%]
+tests\unit\test_s4_t5_prefix_normalize.py ..........FF...                [ 81%]
+tests\unit\test_s4_t6_service_account_profile.py .............           [ 82%]
+tests\unit\test_s4_t7_channel_preference.py ...........................  [ 83%]
+tests\unit\test_s4_t8_channel_matrix.py ...............                  [ 83%]
+tests\unit\test_s4_t9_strong_verify.py .........................         [ 84%]
+tests\unit\test_semantic_cache.py .....................                  [ 85%]
+tests\unit\test_semantic_cache_redis.py ........................         [ 86%]
+tests\unit\test_semantic_routing_api.py ......                           [ 86%]
+tests\unit\test_session_axis_assembler.py .....                          [ 86%]
+tests\unit\test_session_axis_gateway.py .......                          [ 86%]
+tests\unit\test_session_axis_history.py ........                         [ 87%]
+tests\unit\test_session_axis_prompt_injection.py .......                 [ 87%]
+tests\unit\test_session_scope_alignment.py ..........F..F                [ 87%]
+tests\unit\test_stream_optimization.py ....F.....F.                      [ 88%]
+tests\unit\test_stream_writeback_async_dispatch.py ...........           [ 88%]
+tests\unit\test_structured_output_api.py .....                           [ 88%]
+tests\unit\test_templates_api.py ...........                             [ 89%]
+tests\unit\test_tenant_management_api.py ....                            [ 89%]
+tests\unit\test_tenants_api.py .......................                   [ 90%]
+tests\unit\test_tool_calls_api.py .                                      [ 90%]
+tests\unit\test_trace_spans_shape.py .............                       [ 90%]
+tests\unit\test_traces_api.py .............                              [ 90%]
+tests\unit\test_trusted_proxy.py ...                                     [ 91%]
+tests\unit\test_usage_api.py ..............                              [ 91%]
+tests\unit\test_users_api.py ..................                          [ 92%]
+tests\unit\test_v213_gateway_ext.py ......................F              [ 92%]
+tests\unit\test_v213_profile.py ..............                           [ 93%]
+tests\unit\test_v213_rag_mcp.py ...........                              [ 93%]
+tests\unit\test_v213_writeback_queue.py ........                         [ 94%]
+tests\unit\test_v2142_coverage_boost.py ..................               [ 94%]
+tests\unit\test_v2142_memory_client_injection.py ........                [ 95%]
+tests\unit\test_v2142_memory_types.py ....                               [ 95%]
+tests\unit\test_v2142_memory_writeback.py ......                         [ 95%]
+tests\unit\test_v2142_openmemory_stub.py .......                         [ 95%]
+tests\unit\test_v2143_dps_stub.py .......                                [ 95%]
+tests\unit\test_v2143_drift.py ...........                               [ 96%]
+tests\unit\test_v2143_profile_real.py ........                           [ 96%]
+tests\unit\test_v2143_writeback_profile.py .............                 [ 96%]
+tests\unit\test_virtual_keys_api.py .....                                [ 97%]
+tests\unit\test_websocket_chat_api.py ...............                    [ 97%]
+tests\unit\test_workspaces_api.py .........................              [ 98%]
+tests\unit\test_writeback_degradation.py ...FFF.                         [ 98%]
+tests\unit\test_writeback_dispatch_timeline_guard.py .....               [ 98%]
+tests\unit\test_writeback_receipts.py ..........                         [ 99%]
+tests\unit\test_writeback_seq_persistence.py ...                         [ 99%]
+tests\unit\test_writeback_three_roads.py .........                       [ 99%]
+tests\unit\test_zeroth_segment_counting.py ........                      [100%]
+
+=========================== short test summary info ===========================
+FAILED tests/unit/test_conversations_api.py::TestConversationsAPI::test_send_message_success - fastapi.exceptions.ResponseValidationError: 1 validation error:
+  {'type': 'dict_type', 'loc': ('response', 'metadata'), 'msg': 'Input should be a valid dictionary', 'input': <MagicMock name='ConversationService().send_message().metadata_' id='2041422979680'>}
+
+  File "D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\conversations.py", line 170, in send_message
+    POST /api/v1/conversations/{conversation_id}/messages
+FAILED tests/unit/test_coverage_boost_v2112.py::TestGatewayUnified401Format::test_stream_invalid_token_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-0455ed0e4bc54c0e86e83902'}
+FAILED tests/unit/test_coverage_boost_v2112.py::TestGatewayUnified401Format::test_trace_invalid_token_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-b26210301b0a4141ac05c3b9'}
+FAILED tests/unit/test_coverage_boost_v2112.py::TestGatewayStreamDisconnect::test_stream_2001_model_not_found_error_event - assert '"code": 2001' in 'event: routing\ndata: {"components": {"need_memory": false, "need_rag": false, "reason": "explicit", "rag_source": "s...ghost-model", "reason": "cost"}, "parallel": false}\n\nevent: error\ndata: {"code": 5001, "message": "内部错误，请稍后再试"}\n\n'
+ +  where 'event: routing\ndata: {"components": {"need_memory": false, "need_rag": false, "reason": "explicit", "rag_source": "s...ghost-model", "reason": "cost"}, "parallel": false}\n\nevent: error\ndata: {"code": 5001, "message": "内部错误，请稍后再试"}\n\n' = <Response [200 OK]>.text
+FAILED tests/unit/test_gateway_401_format.py::TestGateway401Format::test_chat_without_auth_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-a26c6494eaa4480a88a655b8'}
+FAILED tests/unit/test_gateway_401_format.py::TestGateway401Format::test_chat_with_invalid_jwt_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-af802c825b674411a6b37860'}
+FAILED tests/unit/test_gateway_401_format.py::TestGateway401Format::test_chat_with_invalid_api_key_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-363e2a892e4e400185320652'}
+FAILED tests/unit/test_gateway_401_format.py::TestGateway401Format::test_chat_with_empty_bearer_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-9399e0c9cfa94c37b457b751'}
+FAILED tests/unit/test_gateway_401_format.py::TestGateway401Format::test_stream_without_auth_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-82e5ef4d625e446592a58bd2'}
+FAILED tests/unit/test_gateway_401_format.py::TestGateway401Format::test_models_without_auth_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-71e7b1d0a9224d40851d6e9d'}
+FAILED tests/unit/test_gateway_401_format.py::TestGateway401Format::test_trace_without_auth_unified_401 - AssertionError: assert 'detail' not in {'code': 1001, 'message': '未认证或 Token 失效', 'detail': '未认证或 Token 失效', 'request_id': 'openllm-d0c8a0ee552840e9995a0479'}
+FAILED tests/unit/test_joinedload_asserts.py::TestJoinedloadSerializeRegression::test_joinedload_model_provider_serialize_after_close - sqlalchemy.exc.ArgumentError: Column expression, FROM clause, or other columns clause element expected, got Table('llm_models', MetaData(), Column('id', GUID(length=36), table=<llm_models>, primary_key=True, nullable=False, default=CallableColumnDefault(<function uuid4 at 0x000001DB3F5012D0>)), Column('provider_id', GUID(length=36), ForeignKey('llm_providers.id'), table=<llm_models>, nullable=False), Column('model_name', String(length=128), table=<llm_models>, nullable=False), Column('model_code', String(length=64), table=<llm_models>, nullable=False), Column('model_type', String(length=32), table=<llm_models>, nullable=False, default=ScalarElementColumnDefault('chat')), Column('capabilities', JSON(), table=<llm_models>, default=CallableColumnDefault(<function list at 0x000001DB3F5013F0>)), Column('context_window', Integer(), table=<llm_models>), Column('max_tokens', Integer(), table=<llm_models>), Column('supports_streaming', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(True)), Column('supports_vision', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(False)), Column('supports_tools', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(False)), Column('supports_json_mode', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(False)), Column('input_price_per_1k', Numeric(precision=10, scale=6), table=<llm_models>), Column('output_price_per_1k', Numeric(precision=10, scale=6), table=<llm_models>), Column('api_base_url_override', String(length=512), table=<llm_models>), Column('api_key_ref_override', String(length=256), table=<llm_models>), Column('interface_format', String(length=32), table=<llm_models>), Column('config', JSON(), table=<llm_models>, default=CallableColumnDefault(<function dict at 0x000001DB3F501360>)), Column('status', String(length=16), table=<llm_models>, nullable=False, default=ScalarElementColumnDefault('active')), Column('is_public', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(True)), Column('metadata', JSON(), table=<llm_models>, default=CallableColumnDefault(<function dict at 0x000001DB3F501510>)), Column('created_at', DateTime(timezone=True), table=<llm_models>, nullable=False, server_default=DefaultClause(<sqlalchemy.sql.functions.now at 0x1db3f513790; now>, for_update=False)), Column('updated_at', DateTime(timezone=True), table=<llm_models>, nullable=False, onupdate=ColumnElementColumnDefault(<sqlalchemy.sql.functions.now at 0x1db3f5139a0; now>), server_default=DefaultClause(<sqlalchemy.sql.functions.now at 0x1db3f513970; now>, for_update=False)), schema=None) object resolved from <class 'app.models.model.Model'> object.
+FAILED tests/unit/test_joinedload_asserts.py::TestJoinedloadSerializeRegression::test_lazy_provider_access_raises_without_joinedload - sqlalchemy.exc.ArgumentError: Column expression, FROM clause, or other columns clause element expected, got Table('llm_models', MetaData(), Column('id', GUID(length=36), table=<llm_models>, primary_key=True, nullable=False, default=CallableColumnDefault(<function uuid4 at 0x000001DB3F5012D0>)), Column('provider_id', GUID(length=36), ForeignKey('llm_providers.id'), table=<llm_models>, nullable=False), Column('model_name', String(length=128), table=<llm_models>, nullable=False), Column('model_code', String(length=64), table=<llm_models>, nullable=False), Column('model_type', String(length=32), table=<llm_models>, nullable=False, default=ScalarElementColumnDefault('chat')), Column('capabilities', JSON(), table=<llm_models>, default=CallableColumnDefault(<function list at 0x000001DB3F5013F0>)), Column('context_window', Integer(), table=<llm_models>), Column('max_tokens', Integer(), table=<llm_models>), Column('supports_streaming', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(True)), Column('supports_vision', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(False)), Column('supports_tools', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(False)), Column('supports_json_mode', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(False)), Column('input_price_per_1k', Numeric(precision=10, scale=6), table=<llm_models>), Column('output_price_per_1k', Numeric(precision=10, scale=6), table=<llm_models>), Column('api_base_url_override', String(length=512), table=<llm_models>), Column('api_key_ref_override', String(length=256), table=<llm_models>), Column('interface_format', String(length=32), table=<llm_models>), Column('config', JSON(), table=<llm_models>, default=CallableColumnDefault(<function dict at 0x000001DB3F501360>)), Column('status', String(length=16), table=<llm_models>, nullable=False, default=ScalarElementColumnDefault('active')), Column('is_public', Boolean(), table=<llm_models>, default=ScalarElementColumnDefault(True)), Column('metadata', JSON(), table=<llm_models>, default=CallableColumnDefault(<function dict at 0x000001DB3F501510>)), Column('created_at', DateTime(timezone=True), table=<llm_models>, nullable=False, server_default=DefaultClause(<sqlalchemy.sql.functions.now at 0x1db3f513790; now>, for_update=False)), Column('updated_at', DateTime(timezone=True), table=<llm_models>, nullable=False, onupdate=ColumnElementColumnDefault(<sqlalchemy.sql.functions.now at 0x1db3f5139a0; now>), server_default=DefaultClause(<sqlalchemy.sql.functions.now at 0x1db3f513970; now>, for_update=False)), schema=None) object resolved from <class 'app.models.model.Model'> object.
+FAILED tests/unit/test_model_router_wiring.py::TestModelRouterWiring::test_model_auto_select_model_receives_real_contract - assert None is not None
+FAILED tests/unit/test_model_router_wiring.py::TestModelRouterWiring::test_model_auto_no_healthy_candidate_1004 - assert 500 == 404
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+FAILED tests/unit/test_real_contract_memory.py::TestWritebackDefaultSemanticsReal::test_stub_mode_default_episodic - ImportError: cannot import name '_resolve_memory_metadata' from 'app.api.writeback' (D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\writeback.py)
+FAILED tests/unit/test_real_contract_memory.py::TestWritebackDefaultSemanticsReal::test_real_mode_default_not_episodic - ImportError: cannot import name '_resolve_memory_metadata' from 'app.api.writeback' (D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\writeback.py)
+FAILED tests/unit/test_real_contract_memory.py::TestWritebackDefaultSemanticsReal::test_real_mode_explicit_type_preserved - ImportError: cannot import name '_resolve_memory_metadata' from 'app.api.writeback' (D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\writeback.py)
+FAILED tests/unit/test_real_contract_memory.py::TestRealContractConfig::test_openmemory_real_config_default_false - AssertionError: assert True is False
+ +  where True = Settings(APP_NAME='OpenLLM', APP_VERSION='2.14.3', DEBUG=True, ENV='development', HOST='0.0.0.0', PORT=8000, SECRET_KE...dmin', PROFILE_DRIFT_CONFIDENCE_THRESHOLD=0.6, PROFILE_DRIFT_RECOMPUTE_INTERVAL=86400.0, OPENLLM_ENABLE_PARALLEL=False).OPENLLM_OPENMEMORY_REAL
+FAILED tests/unit/test_real_contract_rag.py::TestRealContractConfig::test_openrag_real_config_default_false - AssertionError: assert True is False
+ +  where True = Settings(APP_NAME='OpenLLM', APP_VERSION='2.14.3', DEBUG=True, ENV='development', HOST='0.0.0.0', PORT=8000, SECRET_KE...dmin', PROFILE_DRIFT_CONFIDENCE_THRESHOLD=0.6, PROFILE_DRIFT_RECOMPUTE_INTERVAL=86400.0, OPENLLM_ENABLE_PARALLEL=False).OPENLLM_OPENRAG_REAL
+FAILED tests/unit/test_real_contract_rag.py::TestRagWritebackRealMode::test_save_if_valuable_false_skips_without_request - AssertionError: assert [<Request('PO...ments/text')>] == []
+  
+  Left contains one more item: <Request('POST', 'http://openrag.test/api/v1/collections/kb_main/documents/text')>
+  
+  Full diff:
+  - []
+  + [
+  +     <Request('POST', 'http://openrag.test/api/v1/collections/kb_main/documents/text')>,
+  + ]
+FAILED tests/unit/test_s4_t14_verify_env.py::TestS4T14VerifyRun::test_dev_profile_all_checks_pass - AssertionError: verify-env dev profile 存在失败项: [{'status': 'FAIL', 'group': 'REAL', 'key': 'OPENLLM_OPENMEMORY_REAL', 'check': 'OPENLLM_OPENMEMORY_REAL', 'message': '值 True（profile=dev 期望 False；dev 默认关闭）'}, {'status': 'FAIL', 'group': 'REAL', 'key': 'OPENLLM_OPENRAG_REAL', 'check': 'OPENLLM_OPENRAG_REAL', 'message': '值 True（profile=dev 期望 False；dev 默认关闭）'}, {'status': 'FAIL', 'group': 'REAL', 'key': 'OPENLLM_DPS_REAL', 'check': 'OPENLLM_DPS_REAL', 'message': '值 True（profile=dev 期望 False；dev 默认关闭）'}]
+assert [{'status': '...S_REAL', ...}] == []
+  
+  Left contains 3 more items, first extra item: {'status': 'FAIL', 'group': 'REAL', 'key': 'OPENLLM_OPENMEMORY_REAL', 'check': 'OPENLLM_OPENMEMORY_REAL', ...}
+  
+  Full diff:
+  - []
+  + [
+  +     {
+  +         'status': 'FAIL',
+  +         'group': 'REAL',
+  +         'key': 'OPENLLM_OPENMEMORY_REAL',
+  +         'check': 'OPENLLM_OPENMEMORY_REAL',
+  +         'message': '值 True（profile=dev 期望 False；dev 默认关闭）',
+  +     },
+  +     {
+  +         'status': 'FAIL',
+  +         'group': 'REAL',
+  +         'key': 'OPENLLM_OPENRAG_REAL',
+  +         'check': 'OPENLLM_OPENRAG_REAL',
+  +         'message': '值 True（profile=dev 期望 False；dev 默认关闭）',
+  +     },
+  +     {
+  +         'status': 'FAIL',
+  +         'group': 'REAL',
+  +         'key': 'OPENLLM_DPS_REAL',
+  +         'check': 'OPENLLM_DPS_REAL',
+  +         'message': '值 True（profile=dev 期望 False；dev 默认关闭）',
+  +     },
+  + ]
+FAILED tests/unit/test_s4_t14_verify_env.py::TestS4T14VerifyRun::test_fail_fast_returns_nonzero_exit_code - assert 0 != 0
+FAILED tests/unit/test_s4_t5_prefix_normalize.py::TestS4T5WritebackContextTenantNormalize::test_writeback_payload_with_tenant_uses_tenant_prefix - AssertionError: assert '' == 'acme_'
+  
+  - acme_
+FAILED tests/unit/test_s4_t5_prefix_normalize.py::TestS4T5WritebackContextTenantNormalize::test_writeback_without_tenant_keeps_org_prefix_zero_change - AssertionError: assert '' == 'local-org_'
+  
+  - local-org_
+FAILED tests/unit/test_session_scope_alignment.py::TestConversationHistorySessionFilter::test_filters_by_session_when_provided - AttributeError: Neither 'BinaryExpression' object nor 'Comparator' object has an attribute 'astext'
+FAILED tests/unit/test_session_scope_alignment.py::TestConversationHistorySessionFilter::test_identifier_is_trimmed - AttributeError: Neither 'BinaryExpression' object nor 'Comparator' object has an attribute 'astext'
+FAILED tests/unit/test_stream_optimization.py::TestStreamOptimization::test_stream_model_not_found_error_event - assert 1004 == 2001
+FAILED tests/unit/test_stream_optimization.py::TestStreamOptimization::test_finalize_stream_rebuilds_session_when_closed - AssertionError: Expected 'close' to have been called once. Called 0 times.
+FAILED tests/unit/test_v213_gateway_ext.py::TestBypassChannel::test_bypass_marker_injected - assert 500 == 200
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+FAILED tests/unit/test_writeback_degradation.py::TestGatewayWritebackCallbackDegradation::test_build_writeback_callback_degrades_when_queue_unavailable - ValueError: too many values to unpack (expected 3)
+FAILED tests/unit/test_writeback_degradation.py::TestGatewayWritebackCallbackDegradation::test_build_writeback_callback_normal_path_submits - ValueError: too many values to unpack (expected 3)
+FAILED tests/unit/test_writeback_degradation.py::TestGatewayWritebackCallbackDegradation::test_chat_writeback_path_does_not_raise_when_queue_unavailable - ValueError: too many values to unpack (expected 3)
+========== 33 failed, 2848 passed, 20 warnings in 615.89s (0:10:15) ===========
