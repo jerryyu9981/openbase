@@ -143,7 +143,11 @@
                                                   "doc/test/evidence/v148/cr148-020-regression-baseline-20260926.txt",
                                                   "doc/test/evidence/v148/cr148-020-smoke-20260926.py",
                                                   "doc/test/evidence/v148/cr148-020-smoke-20260926.json",
-                                                  "doc/test/evidence/v148/cr148-020-instance-8041-20260926.log（本地 artifact；*.log 被 .gitignore 排除，未入库；已脱敏 Redis 口令）"
+                                                  "doc/test/evidence/v148/cr148-020-instance-8041-20260926.log（本地 artifact；*.log 被 .gitignore 排除，未入库；已脱敏 Redis 口令）",
+                                                  "doc/test/evidence/v148/p10-percentile-20260926.py",
+                                                  "doc/test/evidence/v148/p10-percentile-single-flight-20260926.json",
+                                                  "doc/test/evidence/v148/p10-percentile-conc8-20260926.json",
+                                                  "doc/test/evidence/v148/p10-percentile-conc8-rerun-20260926.json（并发首跑故障版：keep-alive 未禁致 RemoteProtocolError，修复过程证据）"
                                               ],
                              "operation_v1.4.8":  [
                                                       "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md"
@@ -1489,8 +1493,8 @@
                              "regression":  "全量 tests/unit 14 failed / 2243 passed / 615 error（总用例 +11 ＝ 新增护栏；多出失败 1 项为既有 flaky，隔离重跑 3/3 通过）；定向基线对照（失败所在 6 文件 / 同命令 / git stash 前后）13 failed / 91 passed ＝ 13 failed / 91 passed → 新增失败 = 0",
                              "runtime":  "L2 健康 200 / healthy / 2.14.3；L3（8041，3 流式 + 1 同步）：流式 writeback_dispatch = 0.029 / 0.025 / 0.028ms（改造前 556~728ms → P-10 达标）；三路回执由后台任务补齐（accepted + _dispatch.mode=async）；done 占位 scheduled；权威回执 200 / total=3（memory/rag/profile seq=1/2/3）；同步路径 0.025ms 未回退",
                              "featureSpec":  "该需求已在当期《开发需求文档-v1.4.8》建档（§5 性能「回写对主链路时延影响」操作化为 P-10 口径，见《非功能设计说明-v1.4.8》v1.1.0 §1.1）",
+                             "formalPercentile":  "重跑 TT-038（2026-09-26；专用实例 8041 / DEBUG=false / RATE_LIMIT_PER_SECOND=10000 / 禁用 HTTP keep-alive）：单飞档（0.75 req/s）与并发 8 档各同步/流式 200 有效样本（errors=0 / missing_steps=0），回读 trace 提取 writeback_dispatch → 单飞档 P99 = 同步 0.036ms / 流式 0.063ms、并发 8 档 P99 = 同步 0.053ms / 流式 0.069ms，每样本均 ≤5ms（最强口径）→ P-10 正式判定通过、CR-148-020 处置正式收口",
                              "notClosed":  [
-                                 "P-10 正式分位判定仍须按每档 ≥200 请求重跑 TT-038（本轮 L3 冒烟 n=3，不冒充分位）",
                                  "P-4（SSE 首包本仓额外开销 P95 ≤100ms）仍为口径缺口，建议随 TD-新增-027 偿还一并处置",
                                  "test_writeback_degradation.py 3 例既有陈旧断言（按三路回写前的返回值数量解包）本轮未改"
                              ],
@@ -1499,18 +1503,22 @@
                                  "doc/test/evidence/v148/cr148-020-regression-baseline-20260926.txt",
                                  "doc/test/evidence/v148/cr148-020-smoke-20260926.py",
                                  "doc/test/evidence/v148/cr148-020-smoke-20260926.json",
-                                 "doc/test/evidence/v148/cr148-020-instance-8041-20260926.log（本地 artifact：被 .gitignore 第 23 行 *.log 排除，未入库；已脱敏 Redis 口令）"
+                                 "doc/test/evidence/v148/cr148-020-instance-8041-20260926.log（本地 artifact：被 .gitignore 第 23 行 *.log 排除，未入库；已脱敏 Redis 口令）",
+                                 "doc/test/evidence/v148/p10-percentile-20260926.py",
+                                 "doc/test/evidence/v148/p10-percentile-single-flight-20260926.json",
+                                 "doc/test/evidence/v148/p10-percentile-conc8-20260926.json",
+                                 "doc/test/evidence/v148/p10-percentile-conc8-rerun-20260926.json（并发首跑故障版：keep-alive 未禁致 RemoteProtocolError 3/6 例，为修复过程证据）"
                              ],
                              "documents":  {
-                                 "performanceRecord":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.8.0，新增 §6.5 + §6 #14 状态 + §5.3 + §7）",
-                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.8.md（v4.0.0，§7 #28 处置 + §11 + 状态/测试日期行）",
-                                 "testCases":  "doc/test/OpenBase-测试用例-v1.4.8.md（v2.3.0，§2.1 TT-038 第 ⑦ 项）",
-                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.24.0，CR-148-020 已实施 + §3 风险归集追记）",
+                                 "performanceRecord":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.9.0，P-10 正式分位判定通过 + 状态更新）",
+                                 "testReport":  "doc/test/OpenBase-测试报告-v1.4.8.md（v4.1.0，§7 #28 处置正式收口 + §11 + 状态行）",
+                                 "testCases":  "doc/test/OpenBase-测试用例-v1.4.8.md（v2.4.0，§2.1 TT-038 第 ⑧ 项）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.25.0，CR-148-020 正式收口 + §3 风险归集追记 + v1.25.0 修订行）",
                                  "devLogReport":  "OpenLLM 仓 doc/development/OpenLLM-R396-R398-会话编排前置与回写闭环-DevLogReport-v1.0.0.md（v1.12.0，第 23 批）"
                              },
-                             "gate":  "P-10 两路径均达标（同步 0.014~0.026ms / 流式 0.025~0.029ms）；P-10 正式分位复测（每档 ≥200 请求）与 P-4 口径缺口待人工安排；CR-148-020 已闭环"
+                             "gate":  "P-10 两路径均达标且正式分位判定通过（单飞档 P99 同步 0.036ms / 流式 0.063ms、并发 8 档 0.053 / 0.069ms；两档四路径各 200 有效样本、每样本 ≤5ms）；P-4 口径缺口待人工安排（建议随 TD-新增-027 偿还一并处置）；CR-148-020 已正式收口"
                          },
-                         "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 9 项产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012）已全部闭环，**P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）已于本阶段修复并验证（OpenLLM `ad7d472`：失败负缓存 + 关闭画像注入开关；P-1 本仓开销 P50 2629.4 → 1157.9ms，仍未达 ≤50ms）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；三项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6；DT-148-019 画像负缓存 ad7d472）。剩余＝① **接线 P-10 计量（CR-148-018）— 已于 2026-09-26 完成（OpenLLM `72fd01e`）；派生 CR-148-020 亦已于同日完成（OpenLLM `c0d8222`：流式回写改后台派发 + 回执另行持久化；L3 实测流式 `writeback_dispatch` 556~728ms → 0.025~0.029ms，P-10 两路径均达标；新增失败 = 0）**；② **TT-038 正式判定须在修复后按每档 ≥200 请求重跑后出数**；③ 偿还 TD-新增-027（架构级立项）；④ 为 P-6/P-8/P-9 目标补「数据规模档位」；⑤ **CR-148-019 测试工装处置（P2：根 conftest 前置 pgAdmin site-packages 致导入失败）**；⑥ 压测环境规范固化；⑦ 可访问性 TT-040 待前端服务；⑧ 前端类 TT-025/026 待前端就绪；⑨ TT-032（v1.4.7 报告逐项复测）与 TT-037（注入防护专项）未执行；⑩ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑪ P3 三桩缺 /health 与偶发 500 待观察"
+                         "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 9 项产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012）已全部闭环，**P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）已于本阶段修复并验证（OpenLLM `ad7d472`：失败负缓存 + 关闭画像注入开关；P-1 本仓开销 P50 2629.4 → 1157.9ms，仍未达 ≤50ms）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；三项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6；DT-148-019 画像负缓存 ad7d472）。剩余＝① **接线 P-10 计量（CR-148-018）— 已于 2026-09-26 完成（OpenLLM `72fd01e`）；派生 CR-148-020 亦已于同日完成（OpenLLM `c0d8222`：流式回写改后台派发 + 回执另行持久化；L3 实测流式 `writeback_dispatch` 556~728ms → 0.025~0.029ms，P-10 两路径均达标；新增失败 = 0）**；② **`P-10` 正式分位判定已于 2026-09-26 重跑 `TT-038` 完成并通过（单飞档/并发 8 档各同步/流式 200 有效样本，P99 最高 0.069ms ≤5ms）→ `CR-148-020` 正式收口**；③ 偿还 TD-新增-027（架构级立项）；④ 为 P-6/P-8/P-9 目标补「数据规模档位」；⑤ **CR-148-019 测试工装处置（P2：根 conftest 前置 pgAdmin site-packages 致导入失败）**；⑥ 压测环境规范固化；⑦ 可访问性 TT-040 待前端服务；⑧ 前端类 TT-025/026 待前端就绪；⑨ TT-032（v1.4.7 报告逐项复测）与 TT-037（注入防护专项）未执行；⑩ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑪ P3 三桩缺 /health 与偶发 500 待观察"
                          },
                          "v1_4_7_step_4_o3_coverage":  {
                              "status":  "closed",

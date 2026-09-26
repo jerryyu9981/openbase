@@ -1,0 +1,72 @@
+{
+  "case": "P-10 正式分位判定（TT-038 重跑，CR-148-020 后台派发修复后）",
+  "date": "2026-09-26",
+  "base_url": "http://127.0.0.1:8041",
+  "tag": "conc8",
+  "concurrency": 8,
+  "rate_per_second": 0.0,
+  "samples_per_path": 200,
+  "health": {
+    "status": 200,
+    "data": "healthy"
+  },
+  "sync": {
+    "path": "sync",
+    "samples": 200,
+    "ok": 200,
+    "errors": 0,
+    "cache_hits": 0,
+    "missing_steps": 0,
+    "n_effective": 200,
+    "steps_seen": [
+      "auth",
+      "llm",
+      "profile_fetch",
+      "writeback_dispatch"
+    ],
+    "writeback_dispatch": {
+      "n": 200,
+      "p50": 0.017,
+      "p90": 0.028,
+      "p95": 0.034,
+      "p99": 0.053,
+      "min": 0.012,
+      "max": 0.06
+    },
+    "all_within_5ms": true,
+    "error_samples": []
+  },
+  "stream": {
+    "path": "stream",
+    "samples": 200,
+    "ok": 200,
+    "errors": 0,
+    "cache_hits": 0,
+    "missing_steps": 0,
+    "n_effective": 200,
+    "steps_seen": [
+      "auth",
+      "llm",
+      "profile_fetch",
+      "writeback_dispatch"
+    ],
+    "writeback_dispatch": {
+      "n": 200,
+      "p50": 0.022,
+      "p90": 0.034,
+      "p95": 0.04,
+      "p99": 0.069,
+      "min": 0.0,
+      "max": 0.49
+    },
+    "all_within_5ms": true,
+    "error_samples": []
+  },
+  "verdict": {
+    "pass": true,
+    "check": "同步/流式各 ≥200 有效样本，writeback_dispatch P99 ≤5 ms（每样本均 ≤5 ms，最强口径）",
+    "target_ms": 5.0,
+    "sync": true,
+    "stream": true
+  }
+}

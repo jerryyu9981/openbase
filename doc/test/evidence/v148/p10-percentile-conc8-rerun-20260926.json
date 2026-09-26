@@ -1,0 +1,80 @@
+{
+  "case": "P-10 正式分位判定（TT-038 重跑，CR-148-020 后台派发修复后）",
+  "date": "2026-09-26",
+  "base_url": "http://127.0.0.1:8041",
+  "tag": "conc8-rerun",
+  "concurrency": 8,
+  "rate_per_second": 0.0,
+  "samples_per_path": 200,
+  "health": {
+    "status": 200,
+    "data": "healthy"
+  },
+  "sync": {
+    "path": "sync",
+    "samples": 200,
+    "ok": 197,
+    "errors": 3,
+    "cache_hits": 0,
+    "missing_steps": 0,
+    "n_effective": 197,
+    "steps_seen": [
+      "auth",
+      "llm",
+      "profile_fetch",
+      "writeback_dispatch"
+    ],
+    "writeback_dispatch": {
+      "n": 197,
+      "p50": 0.018,
+      "p90": 0.029,
+      "p95": 0.037,
+      "p99": 0.056,
+      "min": 0.012,
+      "max": 0.066
+    },
+    "all_within_5ms": true,
+    "error_samples": [
+      "RemoteProtocolError: Server disconnected without sending a response.",
+      "RemoteProtocolError: Server disconnected without sending a response.",
+      "RemoteProtocolError: Server disconnected without sending a response."
+    ]
+  },
+  "stream": {
+    "path": "stream",
+    "samples": 200,
+    "ok": 194,
+    "errors": 6,
+    "cache_hits": 0,
+    "missing_steps": 0,
+    "n_effective": 194,
+    "steps_seen": [
+      "auth",
+      "llm",
+      "profile_fetch",
+      "writeback_dispatch"
+    ],
+    "writeback_dispatch": {
+      "n": 194,
+      "p50": 0.022,
+      "p90": 0.033,
+      "p95": 0.038,
+      "p99": 0.06,
+      "min": 0.014,
+      "max": 0.083
+    },
+    "all_within_5ms": true,
+    "error_samples": [
+      "RemoteProtocolError: Server disconnected without sending a response.",
+      "RemoteProtocolError: Server disconnected without sending a response.",
+      "RemoteProtocolError: Server disconnected without sending a response."
+    ]
+  },
+  "verdict": {
+    "pass": false,
+    "check": "同步/流式各 ≥200 有效样本，writeback_dispatch P99 ≤5 ms（每样本均 ≤5 ms，最强口径）",
+    "target_ms": 5.0,
+    "sync": false,
+    "stream": false
+  }
+}
