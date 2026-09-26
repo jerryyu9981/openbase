@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.47.0 |
+| 文档版本 | v1.48.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops / AA-OpenBase-Dev |
 | 创建日期 | 2026-09-21 |
@@ -739,6 +739,52 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4P. §4O 登记项实施闭环：组装规则档余项落地（第二批第 ⑦ 项，判据 T10）（2026-09-27）
+
+> **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.13.0** §3.4 / §3.5 / §6 / §7 T10；实现在 OpenLLM 仓（其《DevLogReport》**v1.29.0** 第 40 批，提交 `9f5f711`）。
+> **性质**：**实施登记（第二批第 ⑦ 项完成）**，闭环 §4O 登记的 4 项「正文已指定但未实施」。**无新增缺陷、无新增债务。**
+
+### 4P.1 实施清单
+
+| # | 项 | 实施内容 | 默认值 / 开关 |
+|:-:|----|----------|---------------|
+| a | **元数据噪声剥离** | `PromptAssembler._format_flat_fields`：丢弃 `None`/空白值与链路元数据键（`trace_id`/`request_id`/`span_id`/`session_id`/`created_at`/`updated_at`/`elapsed_ms`/`latency_ms`）；**保留依据性字段**（`score`/`source`/`summary`）；全为噪声返回空串 | `CONTEXT_STRIP_METADATA_ENABLED` **默认 True**（关闭即逐字回退） |
+| b | **相邻记忆条目同义合并** | `_trim_segment` ①' ＋ `_is_adjacent_synonym`（归一化**相互包含** **或** 字符二元组 **Jaccard ≥ 阈值**）＋ `_merge_adjacent_synonyms`（**保留较长者**、编号沿用先出现者）；**仅 `memory` 段、仅相邻**；计数与「完全重复即丢弃」**分离**（`merged_items`/`merged_tokens`） | `CONTEXT_ADJACENT_MERGE_ENABLED` **默认 True**；`CONTEXT_ADJACENT_MERGE_SIMILARITY` 默认 **0.85** |
+| c | **`refine` 回执字段** | `PromptComposition.refine` ＝ `{mode:"rule", model:"", in_tokens, out_tokens, elapsed_ms, fallback:False}`；`in/out` 只计四类素材；**未启用不落痕** | 无独立开关（随预算/精炼开关落痕） |
+| d | **稳定引用编号 `[M#]`/`[K#]`** | `PromptAssembler._format_list` 按组件加前缀；`prompt_pipeline._parse_items` 解析 `(前缀, 正文)`；**去重/合并/裁剪后编号不重排**；保底一条时前缀**连带计入配额** | `CONTEXT_REF_NUMBERS_ENABLED` **默认 False**（与同节 `system` 段开关一致 ⇒ 文本形态不变） |
+
+### 4P.2 判据扩展
+
+| 项 | 变化 |
+|----|------|
+| §7 **新增 T10** | **组装规则档契约**（噪声剥离 / 相邻同义合并 / 稳定编号），**全部进程内可判**；执行器新增 `check_t10` ⇒ 判据由 **T1~T9 扩为 T1~T10** |
+| §7 **T6 拆分** | 与 T4 同思路：**规则档** `refine` 回执改为**进程内判定**（`mode=rule`/`fallback=false`/`out<in`/未启用不落痕）；**模型档（生成式精炼）仍 `BLOCKED`**（第三批，需达标模型 ＋ GPU 节点） |
+
+### 4P.3 验证与证据
+
+| 项 | 结果 |
+|----|------|
+| 新增护栏（TDD） | `tests/unit/test_assembly_refine_rule_tier.py` **25 例**（首轮 **RED 16 failed / 8 passed**，失败信息即缺口证据） |
+| 既有护栏 | 预算族 / 组装族 **101 例全绿** ⇒ 整条丢弃、传统 `N.` 形重排序号等既有语义未变 |
+| **运行态探针（逐项数值）** | `doc/test/evidence/cr149/assembly_rule_tier_probe.py`：(a) 单条载荷省 **74 token**；(b) `merged_items=1`、`merged_tokens=16`、较长者保留、`dropped_items=0`、**rag 不合并**；(c) `in=807 → out=100`、`elapsed_ms=0`、`fallback=false`、未启用不落痕；(d) 默认输出 `1. 甲/2. 乙` 不变、开启后 `[M1]/[M2]` 与 `[K1]/[K2]/[K3]` 下标对齐、去重后 **`[M1]`+`[M3]` 保留 / `[M2]` 不复用**、保底守配额 |
+| 执行器两态实测 | **当前配置** ⇒ `{PASS:4（T3/T7/T9/T10）, SKIP:4（T1/T2/T5/T8）, BLOCKED:2（T4/T6）, FAIL:0}`；`--simulate` ⇒ `{PASS:7, SKIP:1（T8）, BLOCKED:2, FAIL:0}` —— 报告落 `t_acceptance_runner-result.json` 与 `t_acceptance_runner-simulate-result.json` |
+| 全量回归 | `32 failed / 3145 passed / 0 error`（249.81 s） |
+| **基线对照 + 对照实验（决定性）** | 与上一轮基线逐项对照**唯一差异为既有 flaky `test_v213_gateway_ext.py` 一族**；`git stash push -- <本批 3 个生产文件>` 后**隔离复跑该文件得到完全相同的 4 个失败** ⇒ **与本批无关**（如实登记为基线波动） |
+| 静态质量 | 本轮 4 文件 `ruff` **零告警**；执行器 `All checks passed` |
+| 提交 | OpenLLM `9f5f711`（3 生产 + 1 测试，`+610/-54`），显式路径、TDD 合规 |
+
+### 4P.4 语义与影响面
+
+| 项 | 说明 |
+|----|------|
+| (a)(b) 默认开启 | 影响**裁剪结果**（噪声条目与相邻近重复条目不再占额），但**仅在预算开启时生效**（`CONTEXT_BUDGET_ENABLED` 默认 **False**）且各有开关可回退 |
+| (c) | **纯观测**（不改输出），未启用时不落痕 |
+| (d) | **默认关闭** ⇒ **线上 Prompt 文本形态不变** |
+| 残留（未实施） | **模型档生成式精炼**（第三批，需达标模型 ＋ GPU 节点，判据 T6 模型档部分）；通道定性（§9 问题 1）、通道裁决进取数层、内置 RAG 种子底座、§4.3 余项（画像增量升级形态 / 写路径与通道一致）、独立审计落库（§10 待登记项 6） |
+| 全仓未闭环项 | **仍为 0 项**（§4O 的登记项已实施闭环；本批无缺陷、无债务） |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
@@ -802,3 +848,4 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 | **v1.46.0** | **2026-09-27** | **AT-OpenBase-Test / AA-OpenBase-Dev** | **T4 轨迹两路径口径收敛（§4N 新建）—— 方案 §7 T4「轨迹」段转为进程内可判；无新增缺陷，新增 1 项能力缺口登记**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.11.0** §4.1 / §7 T4 / §10；实现在 OpenLLM 仓（其《DevLogReport》**v1.28.0** 第 39 批，提交 `b37e0c0`）。② **动因（判据覆盖不足 → 暴露真实缺口）**：v1.10.0 把 T4 整体判为 `BLOCKED`（依据「内置 RAG 无底座」），但 T4 的**「轨迹」部分并不依赖运行态** ⇒ **本可判定却一直未判**；复核中进而发现**流式路径的接管发生在共用组件步骤** `component_pipeline.run_components`，该步骤**只落 `rag_source`、不落回退归因**，而同步路径 handler 落 `builtin_fallback_reason` ⇒ **两路径轨迹口径不一致**（流式缺「为何接管」），且两处字段**各自手写**、属可再次分叉的形态。③ **收敛**：`ComponentRunResult` 新增 `builtin_fallback_reason`（`REASON_MAX_CHARS=120` ＋ `_fallback_reason()` 截断）；网关新增 `_merge_rag_trace()` 作为**唯一落痕实现**，同步轨迹字面量与流式两处调用**共用**；`_run_stream_components` 回传归因；删除原手写字段与 `if shared_state.get(...)` 分支。④ **语义保持**：未检索仍 `skipped` 且不落空归因；`external` 不落归因；**装配缺失/超时仍不触发回退**（`DEF-BE-148-012` 不变）；回退**不计 `degraded`**。⑤ **执行器拆分**：T4 由「整体待运行态」改为「**轨迹 = 进程内判 ＋ 无 5xx = 运行态**」（7 项判定，轨迹不达标即 `FAIL`；`detail` 增 `trace_contract` / `runtime_pending` / `historical_e2e_evidence`）；状态仍 `BLOCKED` 但 `reason` 明确**轨迹部分已通过**。⑥ **验证（进程内实测，决定性）**：同一故障下两路径轨迹**逐键一致** —— `{rag_source: "builtin", builtin_fallback_reason: "OpenRAG 不可达: connection refused"}`；新增护栏 `tests/unit/test_rag_builtin_fallback_trace.py` **14 例**（首轮 **RED 11 failed / 3 passed**，失败信息即缺口证据）；既有回退/共用步骤/流式一致族 **89 例全绿**；执行器两态 `{PASS:3, SKIP:4, BLOCKED:2, FAIL:0}` / `{PASS:6, SKIP:1, BLOCKED:2, FAIL:0}`；全量 `tests/unit` **31 failed / 3117 passed / 0 error**（245.15 s），**零新增失败**（唯一差异为既有 flaky `test_v213_gateway_ext.py::TestWritebackInternalHandlers::test_rag_writeback_adapter_missing_raises` 本轮**转绿**，如实登记为**基线波动而非本批收益**）；3 文件 `ruff` **零告警**，执行器 5 项既有告警一并清零。⑦ **新增待登记项（能力缺口，非缺陷）**：T4 原文要求的「审计事件」当前落点为**接管 WARNING 日志**，**未写入 `AuditLog`**（`audit_service` 具备能力但**无调用点**）⇒ 接管可复盘但**不入审计库、无法按审计口径统计接管次数 / 时长分布**；已登记入方案 **§10 待登记项 6**，如需强审计须**单独立项**，本批**不代行决定**。⑧ **关系**：第二批第 ⑥ 项由「待做」改为「**部分完成**」（轨迹收敛已做；通道定性 / 通道裁决进取数层 / 内置 RAG 种子底座 / §4.3 余项 / 独立审计落库仍待）；§7 T4 判据表述与 §4.1 人工验证口径同步更新；v1.4.8 既有三项缺陷与既有 flaky 集**不受影响**；**全仓未闭环项仍为 0**。⑨ **同步**：方案 **v1.11.0**（§4.1 + §6 + §7 T4 + §10 + §11）；OpenLLM《DevLogReport》**v1.28.0**（第 39 批）；证据 `doc/test/evidence/cr149/t_acceptance_runner.py`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t4-full.txt`（全量回归）、`cr149-b2h-full.txt`（基线对照）。⑩ 文档版本 **v1.45.0 → v1.46.0**，状态 [Review] |
 | **v1.46.1** | **2026-09-27** | **AT-OpenBase-Test / AA-OpenBase-Dev** | **§4N 同批补充：T4「无 5xx」段补齐端点级（HTTP）故障注入证据（护栏 14 → 18 例），执行器运行态待验范围收窄**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.11.1** §7 T4；实现在 OpenLLM 仓（其《DevLogReport》**v1.28.1** 第 39 批补充，提交 `13707fc`）。② **动因**：v1.46.0 只把 T4 的**轨迹**段做成进程内可判，`runtime_pending` 仍列「故障注入后的 HTTP 响应无 5xx」。复核后确认该段**同样可在进程内判定** —— 以 `TestClient` 打**真实端点**、以**适配器替身抛异常**注入组件故障，无需停服。③ **新增护栏 4 例**（`TestEndpointLevelFaultInjection`，同一文件）：同步 `POST /openllm/v1/chat` 外部失败 + 开关开 → **200** 且轨迹 `rag_source=builtin` + 归因、**不计降级**；开关关 → **200**、`skipped` 无归因、`degraded` 含 `rag`；**装配缺失**（开关开）→ **200**、`skipped` 且**内置回退零调用**（`DEF-BE-148-012`）；**流式** `POST /openllm/v1/chat/stream` → **200**、`event: routing`/`event: done` 齐备且**无 `event: error`**、**落库轨迹入参**同样带来源与归因。④ **口径如实标注**：故障由**适配器替身**注入（＝组件故障），**非**停服务 / 改不可达地址；该层证明「组件故障时两端点均不返回 5xx 且轨迹可复盘」，**不替代运行态真实停服 E2E**；`_save_trace` 被替身替换 ⇒ 证明的是**落库调用入参**而非**实际落库读取**。⑤ **执行器同步**：T4 的 `runtime_pending` 收窄为「**真实**停服/改址注入」与「轨迹**实际落库**读取」两项、新增 `detail.endpoint_level_evidence`，`requires` 同步收窄；**状态仍 `BLOCKED`**（该项与 `has_base=true` 前置未满足）。⑥ **验证与回归**：全量 `tests/unit` **31 failed / 3121 passed / 0 error**（249.69 s；较 v1.46.0 的 3117 增 4 ＝ 本批补充护栏）；**失败集零新增**（与基线逐项 testid 归一化后 `Compare-Object` **无 `=>` 项**；差异项仍为既有 flaky `test_v213_gateway_ext.py` 一族交替转绿 ⇒ 如实登记为**基线波动**）；本轮 2 文件 `ruff` **零告警**。⑦ **关系**：§7 T4 判据表述进一步收窄运行态部分；§4N.2/§4N.3 同步更正；方案 §10 待登记项 6（接管审计事件未独立落库）**仍待**；第二批第 ⑥ 项仍为「部分完成」；**全仓未闭环项仍为 0**。⑧ **同步**：方案 **v1.11.1**（§7 T4 + §11）；OpenLLM《DevLogReport》**v1.28.1**（第 39 批补充）；证据 `t_acceptance_runner.py`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t4b-full.txt`（全量回归）、`cr149-t4-full.txt` / `cr149-b2h-full.txt`（对照）。⑨ 文档版本 **v1.46.0 → v1.46.1**，状态 [Review] |
 | **v1.47.0** | **2026-09-27** | **AT-OpenBase-Test / AA-OpenBase-Dev** | **仓内一致性审计（§4O 新建）：方案 §3.4 规则档余项与 §3.5 引用编号「正文已指定但未实施」登记；非缺陷、非变更请求、无代码改动**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.12.0** §3.4 / §3.5 / §6 / §10。② **动因与目的**：T4 收口后对方案正文做一次**逐条 vs 仓内实现**核对，确认「正文指定 ≠ 已实施」，避免"方案写了"被误读为"已完成"。③ **方法（可复现）**：对 `OpenLLM/backend/app/` 全仓检索 `strip_metadata` / `METADATA_NOISE` / `noise`、`"refine"`、`[M{` / `[K{` / `[M1]` / `[K1]`；并逐行读 `PromptAssembler.format_context` / `_format_list` 与 `prompt_pipeline._trim_segment` / `render()`。④ **结论（4 项未实施，均无外部依赖 ⇒ 可立即实施）**：**(a) 剥离元数据噪声**（`trace_id:None` 一类平铺字段）——检索零命中、平铺分支不过滤 `None`/空值且无噪声键名单；**(b) 相邻记忆条目合并同义重复行**——现有去重为「归一化后精确重复即丢弃」，非合并、无同义判定；**(c) `refine` 回执字段**——`"refine"` 检索零命中（**规则档亦无落痕**）；**(d) 稳定引用编号 `[M1]`/`[K1]`**——检索零命中，现仅 `"{序号}. {正文}"` 且裁剪后会**重排序号**（与「稳定」要求相反）。⑤ **同时确认已实施**（避免结论被扩大化）：§3.4 规则档的**去重 / 配额整条裁剪 / 单条句边界截断**、§3.5 的 **`system` 段启用**。⑥ **登记位置**：方案 §3.4 / §3.5 各增「实施状态」表（含取证）；§6 第二批新增第 **⑦** 行（**未实施且不受阻**，与 ⑥ 中需人工裁定各项明确区分）；§10 新增**待登记项 7**（含默认值建议：(d) 建议开关默认关闭）。⑦ **关系与影响**：**无新增缺陷、无新增债务**；已判 `PASS` 判据（T3/T7/T9）与已知 `BLOCKED`/`SKIP` 结论**不受影响**；**全仓未闭环项仍为 0**；**下一步（不受阻）** 优先实施 (a)~(d)，其中 (c) 需先定义规则档回执的**落痕位置**（`context_metrics` 内嵌字段 还是独立字段）。⑧ **同步**：方案 **v1.12.0**（§3.4 + §3.5 + §6 + §10 + §11）；本记录 **§4O 新建**；**无 OpenLLM 代码提交**（纯文档登记）。⑨ 文档版本 **v1.46.1 → v1.47.0**，状态 [Review] |
+| **v1.48.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **上下文精装配第二批第 ⑦ 项实施登记（§4P 新建）—— 方案 §3.4 规则档余项 ＋ §3.5 引用编号**四项**已实施落地**（闭环 §4O 登记）；**新增判据 T10 并拆分 T6**；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.13.0** §3.4/§3.5/§6/§7 T10/§10；实现在 OpenLLM 仓（其《DevLogReport》**v1.29.0** 第 40 批，提交 `9f5f711`）。② **实施四项**：**(a) 元数据噪声剥离**（`CONTEXT_STRIP_METADATA_ENABLED` 默认 **True**；实测单条载荷省 **74 token**；关闭逐字回退）；**(b) 相邻记忆条目同义合并**（`CONTEXT_ADJACENT_MERGE_ENABLED` 默认 True、阈值 `0.85`；**仅 memory、仅相邻、保留较长者**；`merged_items` 与 `dropped_items` 计数**分离**；口径为**确定性近似**，非语义级同义）；**(c) `refine` 回执**（`{mode:"rule", model:"", in_tokens, out_tokens, elapsed_ms, fallback:False}`，`in/out` 只计四类素材，未启用不落痕）；**(d) 稳定引用编号 `[M#]`/`[K#]`**（`CONTEXT_REF_NUMBERS_ENABLED` **默认 False** ⇒ 文本形态不变；与归因 A 下标对齐；**去重/裁剪后不重排**）。③ **判据扩展**：§7 **新增 T10**（组装规则档契约，**全部进程内可判**）；**T6 拆分** —— 规则档回执进程内可判、模型档仍 `BLOCKED`（第三批）；执行器 `check_t10` ⇒ 判据 **T1~T9 → T1~T10**。④ **验证（决定性）**：新增护栏 `tests/unit/test_assembly_refine_rule_tier.py` **25 例**（首轮 **RED 16 failed / 8 passed**）；预算/组装族既有护栏 **101 例全绿**；**运行态探针** `doc/test/evidence/cr149/assembly_rule_tier_probe.py` 逐项给出数值（(b) `merged_items=1`/`merged_tokens=16`/rag 不合并；(c) `in=807→out=100`；(d) `[M1]`+`[M3]` 保留、`[M2]` 不复用）；**执行器两态** `{PASS:4, SKIP:4, BLOCKED:2, FAIL:0}` / `{PASS:7, SKIP:1, BLOCKED:2, FAIL:0}`。⑤ **回归与静态质量**：全量 `tests/unit` **32 failed / 3145 passed / 0 error**（249.81 s）；**对照实验（决定性）**：`git stash push -- <本批 3 个生产文件>` 后**隔离复跑 `test_v213_gateway_ext.py` 得到完全相同的 4 个失败** ⇒ 该 flaky 一族**与本批无关**（如实登记为基线波动）；本轮 4 文件 `ruff` **零告警**。⑥ **语义与影响面**：(a)(b) 默认开启但**仅在预算开启时生效**（`CONTEXT_BUDGET_ENABLED` 默认 **False**）且各有开关可回退；(c) 纯观测；(d) 默认关闭 ⇒ **线上 Prompt 文本形态不变**。⑦ **载体与登记**：本记录 **§4P 新建**（§4O 登记项实施闭环）；方案 **v1.13.0**（§3.4/§3.5 实施状态 ＋ §6 第二批 ⑦ ＋ §7 T6 拆分/T10 新增 ＋ §10 第 7 项闭环 ＋ §11）；OpenLLM《DevLogReport》**v1.29.0**（第 40 批）；证据 `openbase/doc/test/evidence/cr149/assembly_rule_tier_probe.py` 与 `-result.json`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t10-full.txt`（全量回归）、`cr149-t4b-full.txt`（基线对照）。⑧ **残留（未实施，如实登记）**：模型档生成式精炼（第三批）、通道定性（§9 问题 1 待裁定）、通道裁决进取数层、内置 RAG 种子底座（运行态 DB ＋ 嵌入模型）、§4.3 余项（画像增量升级形态 / 写路径与通道一致）、独立审计落库（方案 §10 待登记项 6）；**全仓未闭环项仍为 0**。⑨ 文档版本 **v1.47.0 → v1.48.0**，状态 [Review] |

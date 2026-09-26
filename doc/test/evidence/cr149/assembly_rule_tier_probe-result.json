@@ -1,0 +1,61 @@
+{
+  "probe": "assembly_rule_tier",
+  "design_ref": "方案 §3.4 规则档（元数据噪声剥离 / 相邻同义合并 / refine 回执）＋ §3.5 稳定引用编号",
+  "(a) 元数据噪声剥离": {
+    "switch_on_text": "score: 0.87\nsource: kb-1\nsummary: 知识库摘要内容",
+    "switch_off_text": "trace_id: None\nrequest_id: req-abc-123\nsession_id: sess-1\nscore: 0.87\nsource: kb-1\nsummary: 知识库摘要内容\nempty_note:    ",
+    "noise_removed": true,
+    "basis_fields_kept": true,
+    "tokens_saved": 74,
+    "all_noise_yields_empty": true
+  },
+  "(b) 相邻同义合并": {
+    "memory_report": {
+      "dropped_items": 0,
+      "dropped_tokens": 0,
+      "truncated_items": 0,
+      "merged_items": 1,
+      "merged_tokens": 16
+    },
+    "rag_report": null,
+    "merged_items": 1,
+    "longer_text_kept": true,
+    "dedup_counter_untouched": true,
+    "rag_not_merged": true,
+    "switch_off_keeps_both": true,
+    "default_enabled": true,
+    "default_similarity": 0.85
+  },
+  "(c) refine 回执": {
+    "receipt": {
+      "mode": "rule",
+      "model": "",
+      "in_tokens": 807,
+      "out_tokens": 100,
+      "elapsed_ms": 0,
+      "fallback": false
+    },
+    "mode_is_rule": true,
+    "fallback_false": true,
+    "counts_material_only": true,
+    "out_lt_in": true,
+    "no_receipt_when_disabled": true,
+    "no_receipt_without_counter": true
+  },
+  "(d) 稳定引用编号": {
+    "default_numbering": "1. 甲\n2. 乙",
+    "labeled_memory": "[M1] 甲\n[M2] 乙",
+    "labeled_rag": "[K1] 一\n[K2] 二\n[K3] 三",
+    "dedup_report": {
+      "dropped_items": 1,
+      "dropped_tokens": 1,
+      "truncated_items": 0,
+      "merged_items": 0,
+      "merged_tokens": 0
+    },
+    "dedup_keeps_m1_m3": true,
+    "dedup_drops_m2": true,
+    "floor_keeps_label": true,
+    "floor_within_quota": true
+  }
+}

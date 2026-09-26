@@ -593,16 +593,91 @@ async def check_t5() -> Verdict:
 # ---------------------------------------------------------------- T6 精炼
 
 def check_t6() -> Verdict:
-    """T6：精炼开启时 fallback=false 且 elapsed_ms ≤ 预算（属第三批：生成式精炼）"""
+    """T6：精炼开启时 fallback=false 且 elapsed_ms ≤ 预算；关闭/超时不降级
+
+    **v1.13.0 起拆分**（与 T4 同思路）：
+
+      ① **规则档**（确定性精炼：去重 / 相邻同义合并 / 单条截断 / 配额裁剪）——
+         `refine` 回执已在进程内可判：`mode=rule`、`fallback=false`、
+         `elapsed_ms` 远小于在线预算、未启用时不落痕 ⇒ **本执行器判定**；
+      ② **模型档**（生成式精炼：`mode=model` 的压缩质量与预算）—— 属方案 §6 **第三批**，
+         需达标本地模型 ＋ GPU 节点（§5.6 门槛，实测 ≤1B 未达标）⇒ 仍 `BLOCKED`。
+    """
+    title = "精炼：规则档回执已可判（进程内）；模型档待第三批（生成式精炼）"
+    from app.edgerouter.orchestration.prompt_pipeline import BudgetPolicy, build_prompt
+
+    def _chars(text: str) -> int:
+        return len(text or "")
+
+    policy = BudgetPolicy(
+        enabled=True,
+        window_tokens=1000,
+        output_reserve_tokens=0,
+        quota_ratios={
+            "system": 0.05,
+            "profile": 0.10,
+            "memory": 0.10,
+            "rag": 0.10,
+            "history": 0.10,
+        },
+        single_item_max_tokens=0,
+    )
+    memory = "\n".join(["1. " + "甲" * 400, "2. " + "乙" * 400])
+    _prompt, comp = build_prompt(
+        query="问", memory_ctx=memory, count_tokens=_chars, budget=policy
+    )
+    _p2, off_comp = build_prompt(
+        query="问", memory_ctx="1. 甲", count_tokens=_chars, budget=BudgetPolicy(enabled=False)
+    )
+    receipt = comp.refine
+
+    failures: list[str] = []
+    if receipt.get("mode") != "rule":
+        failures.append(f"规则档回执 mode 非 rule：{receipt}")
+    if receipt.get("fallback") is not False:
+        failures.append(f"规则档回执 fallback 非 False：{receipt}")
+    if not isinstance(receipt.get("elapsed_ms"), int):
+        failures.append(f"规则档回执缺 elapsed_ms：{receipt}")
+    if receipt.get("out_tokens", 0) >= receipt.get("in_tokens", 0):
+        failures.append(f"规则档回执 out/in 未反映裁剪：{receipt}")
+    if off_comp.refine != {}:
+        failures.append(f"未启用精炼时不得落痕：{off_comp.refine}")
+
+    detail: dict[str, Any] = {
+        "rule_tier_receipt": receipt,
+        "rule_tier_evidence": (
+            "`tests/unit/test_assembly_refine_rule_tier.py::TestRefineReceipt`（5 例）＋ "
+            "运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
+        ),
+        "rule_tier": "FAIL" if failures else "PASS",
+        "model_tier": "BLOCKED",
+        "runtime_pending": [
+            "生成式精炼（`mode=model`）需达标模型（§5.6 门槛）与 GPU 节点",
+            "模型档 `elapsed_ms ≤ §5.8 预算` 与超时回落 `fallback=true` 需在模型就位后实测",
+        ],
+    }
+    if failures:
+        return Verdict(
+            criterion="T6",
+            title=title,
+            status=STATUS_FAIL,
+            detail=detail,
+            reason="规则档回执契约不达标：" + "；".join(failures),
+        )
     return Verdict(
         criterion="T6",
-        title="精炼：fallback=false 且 elapsed_ms ≤ 预算；关闭/超时不降级",
+        title=title,
         status=STATUS_BLOCKED,
-        requires=["生成式精炼（第三批）", "达标本地模型 / GPU 节点（§5.6 门槛）"],
-        detail={"batch": "第三批", "design_ref": "§4.4 / §5.5 / §5.6"},
+        requires=[
+            "生成式精炼（第三批）",
+            "达标本地模型 / GPU 节点（§5.6 门槛）",
+        ],
+        detail=detail,
         reason=(
-            "该判据依赖第三批「生成式精炼」能力，按方案 §6 属第三批；"
-            "且 §5.4/§5.5 实测显示 ≤1B 本地模型未过门槛，需先完成模型选型/节点准备"
+            "规则档（确定性精炼）的 `refine` 回执已在进程内验证通过"
+            "（mode=rule、fallback=false、out<in、未启用不落痕）；"
+            "**模型档（生成式精炼）仍属第三批**：§5.4/§5.5 实测 ≤1B 本地模型未过 §5.6 门槛，"
+            "需先完成模型选型/节点准备"
         ),
     )
 
@@ -856,6 +931,139 @@ def check_t9() -> Verdict:
     )
 
 
+# ---------------------------------------------------------------- T10 组装规则档契约
+
+def check_t10() -> Verdict:
+    """T10：组装侧规则档契约（元数据噪声剥离 / 相邻同义合并 / 稳定引用编号）
+
+    v1.13.0 新增（对应方案 §3.4 规则档 ＋ §3.5 组装；此前的 §10 待登记项 7）。
+    全部**进程内可判**，不依赖运行态服务：
+
+      1. **噪声剥离**：平铺字段的 `None`/空值与链路元数据键（`trace_id`/`request_id`）
+         不进入上下文；**依据性字段**（`score`/`source`）保留；开关关闭时逐字回退；
+      2. **相邻同义合并**：仅 `memory` 段、仅相邻条目、保留较长者；与
+         「完全重复即丢弃」**计数分开**（`merged_items` vs `dropped_items`）；
+      3. **稳定引用编号**：默认关闭时输出 `N. 内容`（逐字不变）；开启时
+         `memory→[M#]`、`rag→[K#]` 且与归因 A 下标对齐；去重/裁剪后**编号不重排**，
+         保底一条仍守配额。
+    """
+    title = "组装规则档：噪声剥离 / 相邻同义合并 / 稳定引用编号（均进程内可判）"
+    from app.edgerouter.orchestration.assembler import PromptAssembler
+    from app.edgerouter.orchestration.prompt_pipeline import BudgetPolicy, build_prompt
+
+    def _chars(text: str) -> int:
+        return len(text or "")
+
+    def _policy(**overrides: Any) -> BudgetPolicy:
+        params: dict[str, Any] = {
+            "enabled": True,
+            "window_tokens": 1000,
+            "output_reserve_tokens": 0,
+            "quota_ratios": {
+                "system": 0.05,
+                "profile": 0.10,
+                "memory": 0.10,
+                "rag": 0.10,
+                "history": 0.10,
+            },
+            "single_item_max_tokens": 0,
+        }
+        params.update(overrides)
+        return BudgetPolicy(**params)
+
+    failures: list[str] = []
+
+    # ① 噪声剥离
+    noise_payload = {
+        "trace_id": None,
+        "request_id": "req-abc",
+        "score": 0.87,
+        "summary": "知识库摘要内容",
+    }
+    with _temporary_settings(CONTEXT_STRIP_METADATA_ENABLED=True):
+        stripped = PromptAssembler().format_context("rag", noise_payload)
+    with _temporary_settings(CONTEXT_STRIP_METADATA_ENABLED=False):
+        raw = PromptAssembler().format_context("rag", noise_payload)
+    if "trace_id" in stripped or "request_id" in stripped:
+        failures.append(f"噪声键未剥离：{stripped!r}")
+    if "score" not in stripped or "summary" not in stripped:
+        failures.append(f"依据性字段被误删：{stripped!r}")
+    if "trace_id: None" not in raw:
+        failures.append(f"开关关闭未逐字回退：{raw!r}")
+    if PromptAssembler().format_context("rag", {"trace_id": None}) != "":
+        failures.append("全为噪声时应返回空串（不得注入空壳）")
+
+    # ② 相邻同义合并
+    memory = "\n".join(
+        ["1. 用户偏好简洁回答", "2. 用户偏好简洁回答，不喜欢冗长解释", "3. 项目使用 Python"]
+    )
+    merged_prompt, merged_comp = build_prompt(
+        query="问", memory_ctx=memory, count_tokens=_chars, budget=_policy()
+    )
+    memory_report = merged_comp.truncated.get("memory") or {}
+    if memory_report.get("merged_items") != 1:
+        failures.append(f"相邻同义未合并：{memory_report}")
+    if memory_report.get("dropped_items") != 0:
+        failures.append(f"合并不得计入 dropped_items：{memory_report}")
+    if "不喜欢冗长解释" not in merged_prompt:
+        failures.append("合并须保留较长者（信息不得丢失）")
+    _p, rag_comp = build_prompt(
+        query="问",
+        rag_ctx="\n".join(["1. 知识甲内容", "2. 知识甲内容，补充说明"]),
+        count_tokens=_chars,
+        budget=_policy(),
+    )
+    if "merged_items" in (rag_comp.truncated.get("rag") or {}):
+        failures.append("rag 段不得合并（方案限定「相邻**记忆**条目」)")
+
+    # ③ 稳定引用编号
+    default_text = PromptAssembler().format_context(
+        "memory", {"results": [{"content": "甲"}, {"content": "乙"}]}
+    )
+    if default_text != "1. 甲\n2. 乙":
+        failures.append(f"默认（开关关闭）编号形态须不变：{default_text!r}")
+    with _temporary_settings(CONTEXT_REF_NUMBERS_ENABLED=True):
+        labeled_memory = PromptAssembler().format_context(
+            "memory", {"results": [{"content": "甲"}, {"content": "乙"}]}
+        )
+        labeled_rag = PromptAssembler().format_context(
+            "rag", {"results": [{"content": "一"}, {"content": "二"}]}
+        )
+        dedup_prompt, dedup_comp = build_prompt(
+            query="问",
+            memory_ctx="[M1] 甲\n[M2] 甲\n[M3] 丙",
+            count_tokens=_chars,
+            budget=_policy(),
+        )
+    if labeled_memory != "[M1] 甲\n[M2] 乙":
+        failures.append(f"memory 引用编号形态不符：{labeled_memory!r}")
+    if labeled_rag != "[K1] 一\n[K2] 二":
+        failures.append(f"rag 引用编号形态不符：{labeled_rag!r}")
+    if "[M3]" not in dedup_prompt or "[M2]" in dedup_prompt:
+        failures.append(f"去重后编号被重排（须稳定）：{dedup_prompt!r}")
+
+    detail: dict[str, Any] = {
+        "noise_stripped_text": stripped,
+        "noise_verbatim_when_off": raw,
+        "memory_merge_report": memory_report,
+        "labeled_memory": labeled_memory,
+        "labeled_rag": labeled_rag,
+        "dedup_report": dedup_comp.truncated.get("memory"),
+        "ref_numbers_switch_default": _settings_snapshot(["CONTEXT_REF_NUMBERS_ENABLED"]),
+        "evidence": (
+            "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ 运行态探针 "
+            "`doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
+        ),
+    }
+    return Verdict(
+        criterion="T10",
+        title=title,
+        status=STATUS_FAIL if failures else STATUS_PASS,
+        detail=detail,
+        reason="；".join(failures),
+    )
+
+
 # ---------------------------------------------------------------- 执行入口
 
 SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
@@ -864,6 +1072,7 @@ SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
     ("T3", check_t3),
     ("T6", check_t6),
     ("T9", check_t9),
+    ("T10", check_t10),
 ]
 
 ASYNC_CHECKS: list[tuple[str, Callable[[], Any]]] = [
@@ -900,7 +1109,7 @@ def run_all() -> list[Verdict]:
                     reason=f"{type(exc).__name__}: {exc}",
                 )
             )
-    order = {f"T{index}": index for index in range(1, 10)}
+    order = {f"T{index}": index for index in range(1, 11)}
     verdicts.sort(key=lambda verdict: order.get(verdict.criterion, 99))
     return verdicts
 

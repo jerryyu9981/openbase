@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-27T04:44:52",
+  "generated_at": "2026-09-27T04:59:05",
   "simulate": true,
   "summary": {
-    "PASS": 6,
+    "PASS": 7,
     "FAIL": 0,
     "SKIP": 1,
     "BLOCKED": 2
@@ -63,17 +63,23 @@
           "memory": {
             "dropped_items": 5,
             "dropped_tokens": 1000,
-            "truncated_items": 0
+            "truncated_items": 0,
+            "merged_items": 0,
+            "merged_tokens": 0
           },
           "rag": {
             "dropped_items": 5,
             "dropped_tokens": 1000,
-            "truncated_items": 0
+            "truncated_items": 0,
+            "merged_items": 0,
+            "merged_tokens": 0
           },
           "history": {
             "dropped_items": 5,
             "dropped_tokens": 1000,
-            "truncated_items": 1
+            "truncated_items": 1,
+            "merged_items": 0,
+            "merged_tokens": 0
           }
         },
         "kept_segments_used": {
@@ -128,7 +134,7 @@
         "trace_contract": "PASS",
         "builtin_rag": {
           "status": "unavailable",
-          "latency_ms": 15,
+          "latency_ms": 0,
           "knowledge_bases": 0,
           "indexes": 0,
           "has_base": false,
@@ -176,17 +182,30 @@
     },
     {
       "criterion": "T6",
-      "title": "精炼：fallback=false 且 elapsed_ms ≤ 预算；关闭/超时不降级",
+      "title": "精炼：规则档回执已可判（进程内）；模型档待第三批（生成式精炼）",
       "status": "BLOCKED",
       "requires": [
         "生成式精炼（第三批）",
         "达标本地模型 / GPU 节点（§5.6 门槛）"
       ],
       "detail": {
-        "batch": "第三批",
-        "design_ref": "§4.4 / §5.5 / §5.6"
+        "rule_tier_receipt": {
+          "mode": "rule",
+          "model": "",
+          "in_tokens": 807,
+          "out_tokens": 100,
+          "elapsed_ms": 0,
+          "fallback": false
+        },
+        "rule_tier_evidence": "`tests/unit/test_assembly_refine_rule_tier.py::TestRefineReceipt`（5 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`",
+        "rule_tier": "PASS",
+        "model_tier": "BLOCKED",
+        "runtime_pending": [
+          "生成式精炼（`mode=model`）需达标模型（§5.6 门槛）与 GPU 节点",
+          "模型档 `elapsed_ms ≤ §5.8 预算` 与超时回落 `fallback=true` 需在模型就位后实测"
+        ]
       },
-      "reason": "该判据依赖第三批「生成式精炼」能力，按方案 §6 属第三批；且 §5.4/§5.5 实测显示 ≤1B 本地模型未过门槛，需先完成模型选型/节点准备"
+      "reason": "规则档（确定性精炼）的 `refine` 回执已在进程内验证通过（mode=rule、fallback=false、out<in、未启用不落痕）；**模型档（生成式精炼）仍属第三批**：§5.4/§5.5 实测 ≤1B 本地模型未过 §5.6 门槛，需先完成模型选型/节点准备"
     },
     {
       "criterion": "T7",
@@ -200,7 +219,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.391,
+        "concurrent_components_wall_seconds": 0.39,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -216,7 +235,7 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.062,
+        "parallel_wall_seconds": 0.047,
         "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
@@ -279,6 +298,37 @@
           "reason": "规则引擎兜底决策（无命中规则）"
         },
         "llm_fallback_switch": false
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T10",
+      "title": "组装规则档：噪声剥离 / 相邻同义合并 / 稳定引用编号（均进程内可判）",
+      "status": "PASS",
+      "requires": [],
+      "detail": {
+        "noise_stripped_text": "score: 0.87\nsummary: 知识库摘要内容",
+        "noise_verbatim_when_off": "trace_id: None\nrequest_id: req-abc\nscore: 0.87\nsummary: 知识库摘要内容",
+        "memory_merge_report": {
+          "dropped_items": 0,
+          "dropped_tokens": 0,
+          "truncated_items": 0,
+          "merged_items": 1,
+          "merged_tokens": 16
+        },
+        "labeled_memory": "[M1] 甲\n[M2] 乙",
+        "labeled_rag": "[K1] 一\n[K2] 二",
+        "dedup_report": {
+          "dropped_items": 1,
+          "dropped_tokens": 1,
+          "truncated_items": 0,
+          "merged_items": 0,
+          "merged_tokens": 0
+        },
+        "ref_numbers_switch_default": {
+          "CONTEXT_REF_NUMBERS_ENABLED": false
+        },
+        "evidence": "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
       },
       "reason": ""
     }
