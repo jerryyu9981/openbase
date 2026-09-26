@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.41.0 |
+| 文档版本 | v1.42.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops / AA-OpenBase-Dev |
 | 创建日期 | 2026-09-21 |
@@ -470,6 +470,47 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4J. 上下文精装配第二批第 ④ 项实施登记（2026-09-27）
+
+> **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.7.0** §4.3「队列可观测与死信」；实现在 OpenLLM 仓（其《DevLogReport》**v1.24.0** 第 35 批，提交 `1a572f7`）。
+> **性质**：**设计项实施登记（非缺陷修复）** —— 把回写链路的**失败可观测性**与**可恢复性**从「直连 SQLite 手工排查/重放」升级为「接口化视图 + 受控重放 + 定时清理」。**本批不新增缺陷、不新增债务。**
+
+### 4J.1 实施清单与证据
+
+| # | 方案条目 | 实现 | 开关 | 证据 |
+|:-:|----------|------|------|------|
+| 1 | 暴露**队列深度 / 失败率 / 重试分布** | `WritebackStore.stats(user_id=None)`：三条聚合 SQL 产出 `total` / `by_status` / `failure_rate`（空库 `0.0`，不除零）/ `retried_rows` / `retry_distribution` / `max_retry_count` / `oldest_open_at`；`WritebackQueue.stats()` 补 `queue_depth` | 无（纯观测） | 护栏 `tests/unit/test_writeback_queue_observability.py`（**22 例**，聚合 4）；探针：`failure_rate=0.75`、`retry_distribution={"2":1,"3":2}`、`max_retry_count=3` |
+| 2 | `failed` 行进入**死信视图** | `list_dead_letters(user_id, limit, offset)`：只含 `failed`、分页（`total` 不受分页影响）、**不返回 `payload_json`** | 无 | 护栏 3 例；探针 `total=3` 且 `has_payload_field=false` |
+| 3 | 提供**重放端点** | `POST /openllm/v1/writeback/dead-letter/replay`（`claim_failed` 原子置回 `pending` 并把 `retry_count` 归零 → `replay_dead_letters` 复用 `_run_item` 重新投递）；**仅显式行 id、单次 ≤100**（超限 4003）；未注册 handler 计 `skipped` 且行留在 `pending` | 无 | 护栏 3+3+2 例；探针 `replayed=2`、handler 实投递 2 次、状态转 `done`；越权取件 `[]` 且对方行仍 `failed` |
+| 4 | **失败 TTL 清理任务化** | `WritebackQueue.run_cleanup_loop(interval)`（单轮异常不终止循环、`interval≤0` 立即返回）+ `main.py` lifespan 启动/关闭取消；间隔 `WRITEBACK_CLEANUP_INTERVAL_SECONDS`（默认 3600 s，**0=关闭**） | 见左 | 护栏 4 例（默认值 / 0 关闭 / 单轮失败仍续跑 / lifespan 接线与取消源码契约）；探针 TTL 对新近死信不误删 |
+| 5 | **归属隔离（fail-closed）** | 统计 / 死信视图 / 重放三处均沿用 `DEF-BE-148-007` 的 `json_extract` 归属过滤；无身份一律 **401（1001）**；无归属的历史行不可见 | 无 | 护栏：`stats` / `dead-letter` 无身份 401 各 1 例、用户作用域统计与取件各 1 例 |
+
+### 4J.2 回归与门禁
+
+| 项 | 结果 |
+|----|------|
+| 全量回归（OpenLLM `python -m pytest tests/unit -q`） | **32 failed / 3063 passed / 0 error**（244.44 s；收集 3095，较上一轮 +22 ＝ 本批护栏） |
+| **基线对照**（同命令 vs 第 33 批基线 `cr149-b2c-full.txt`，逐项 testid 归一化后 `Compare-Object`） | **32 = 32，零差异 ⇒ 零新增失败** |
+| **对照实验（决定性证据，针对波动项）** | 上一轮（第 34 批）`test_v213_gateway_ext.py` 曾少失败 1 例；本批以 `git stash push -- <本批 4 个生产文件>` **回退改动后隔离复跑该文件，得到与改动后完全相同的 4 个失败** ⇒ 判定为**既有序相关 flaky**（`Event loop is closed` 一族 + bypass 500），**与本批改动无关** |
+| 新增护栏 | `tests/unit/test_writeback_queue_observability.py` **22 例** 全绿（聚合 4 / 死信视图 3 / 取件 3 / 队列重放 3 / 接口层 5 / TTL 任务化 4）；既有回写护栏（receipts / queue / recovery / three-roads）35 例未变 |
+| 静态质量 | 本轮 5 文件 `ruff` **零告警**（过程修正：`import asyncio`（main.py）、`Sequence`（writeback_queue.py）、`_sql_where` 助手） |
+| 运行态探针 | `doc/test/evidence/cr149/writeback_observability_probe.py`（真实存储层 + 队列层 + 独立临时 SQLite）：全局与按用户两口径统计、死信视图无正文、重放闭环（`done`）、越权取件不生效、TTL 任务化可关可跑 |
+| 提交 | OpenLLM `1a572f7`（4 生产 + 1 测试，`+782/-2`），显式路径 `git add`、TDD 合规 |
+
+### 4J.3 与既有登记项的关系
+
+| 项 | 变化 |
+|----|------|
+| 方案 §4.3「队列可观测与死信」 | **状态更新为「已实施」**（本批） |
+| 方案 §4.3 余项（画像增量升级 / 写路径与通道一致） | **仍未实施**（后者依赖 §9 问题 1 的通道定性与 `assert_write_channel_is_primary` 接入） |
+| 方案 §9 待裁定问题 1（通道 A 三选一） | 仍待**人工裁定** —— 阻塞通道定性与「写路径与通道一致」 |
+| 方案 §9 待裁定问题 4（记忆写入语义） | 仍为回写决策器**载荷形态**接线的前置阻塞项 |
+| 全局口径统计（运维视图） | **未开放**（现为调用方作用域）；如需全局视图建议按**角色门禁**单独开放，避免以聚合推断他人回写规模 |
+| `CR-148-032` / `TD-新增-028`（生成式精炼缺达标模型与推理节点） | **不受影响**（本批不含模型档能力） |
+| 全仓未闭环项 | **仍为 0 项**（本批为设计项实施登记，无新增缺陷） |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
@@ -526,3 +567,4 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 | **v1.39.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ① 项实施登记（§4G 新建）—— 方案 §10 待登记项 3「写侧价值/重要度/频控/去重决策器未接线」转为「已实施（开关默认关闭）」；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.4.0** §4.3 / §6 第二批 / §7 判据 **T5**；实现在 OpenLLM 仓（其《DevLogReport》**v1.21.0** 第 32 批，提交 `c60ce2b`）。② **实施 4 项**：**(i) 接回写决策器** —— 新增 `evaluate.grade_writeback_targets()`（**纯函数、确定性**）供网关三路回写回调按路消费（价值闸门：窗口非空 / query 与 response 非空 / response ≥2 字 / `save_if_valuable=false` 显式拦截）；**(ii) rag 分级入库** —— `evaluate.grade_rag_ingest()`：明确记忆意图（重要度 ≥0.8）或响应 ≥ `WRITEBACK_RAG_FULL_MIN_CHARS`（默认 120）⇒ `full`（全文入库），其余 ⇒ `skip`（**普通轮次跳过知识库入库**，遏制自产膨胀）；**(iii) T5 可判定** —— 被拦截回调返回 **`"skipped"`**（**不与 `False`（幂等命中）混用**）→ 编排层回执 `{"status":"skipped","reason":"value_gate"}`、流式回执 `skipped`；**(iv) 不代行决定 §9 问题 4** —— 闸门**只决定是否沉淀、不改写载荷**（memory 仍整轮全文），`evaluate_session()` 的**载荷形态**（窗口摘要 / 频控预检 / 画像增量）**未接线**。③ **开关与回退**：新增 `WRITEBACK_DECISION_ENABLED`（默认 **False**）＋ `WRITEBACK_RAG_FULL_MIN_CHARS`（120）；**关闭时三路无条件入队、返回值语义不变 ⇒ 与既有实现逐字一致**。④ **验证**：新增护栏 `tests/unit/test_writeback_decision_gate.py`（**13 例**）全绿；**运行态探针** `doc/test/evidence/cr149/writeback_gate_probe.py`（真实网关回调 + 真实决策器 + 队列替身）—— **关闭态**四类轮次（含空响应）均三路入队；**开启态**低价值轮 `returns` 三路均 `skipped` 且 **`submitted=[]`**、普通轮 `submitted=[memory, profile]`（`rag` 跳过）、高价值轮与长响应轮 `rag` **全文**入库且载荷未改写。⑤ **回归**：全量 `tests/unit` **32 failed / 3019 passed / 0 error**（239.85 s；收集 3051）；**基线对照**（同命令 vs 上一轮 `cr149-b2-full.txt`，逐项 testid 归一化后 `Compare-Object`）**32 = 32，零差异 ⇒ 零新增失败**；静态质量 5 文件 `ruff` **零告警**。⑥ **与既有登记项关系**：`CR-148-032`/`TD-新增-028` **不受影响**；方案 §9 待裁定问题 4（记忆写入语义）**仍未裁定且已成「载荷形态接线」的前置阻塞项**；§9 问题 1（通道 A 三选一）仍待裁定；**全仓未闭环项仍为 0**。⑦ **生产开启待批（不变）**：`WRITEBACK_DECISION_ENABLED` 与 `WRITEBACK_RAG_FULL_MIN_CHARS` 的开启值须人工批准后按方案 §7 判据 **T5** 验证再开，**本记录不代行批准**。⑧ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.4.0**（§4.3 已实施细节 + §6 第二批「进行中 1/3」+ §7 T5 + §10 待登记项 3 + §11 修订行）；OpenLLM《DevLogReport》**v1.21.0**（第 32 批）；证据 `doc/test/evidence/cr149/writeback_gate_probe.py` 与 `writeback_gate_probe-result.json`。⑨ 文档版本 **v1.38.0 → v1.39.0**，状态 [Review] |
 | **v1.40.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ② 项实施登记（§4H 新建）—— 方案 §3.1「组件串并行仍受全局开关控制、依赖图判定未接入」转为「已实施（开关默认关闭）」；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.5.0** §3.1 / §4.2「顺序优化」/ §7 判据 **T8**；实现在 OpenLLM 仓（其《DevLogReport》**v1.22.0** 第 33 批，提交 `ec3485a`）。② **实施 5 项**：**(i) 依赖图模块** —— 新增 `component_graph.py`（`parse_dependencies` 声明解析 / `dependency_levels` Kahn 式波次划分 / `resolve_schedule`），未参与本次执行的依赖视为已满足；**(ii) 「无依赖即并行」** —— `component_pipeline.resolve_schedule_plan()` 返回「波次 ＋ 同波次可否并发」，`run_components` 按波次执行（同波次 >1 用 `asyncio.gather`、波次间有序），按**条目下标**消费以保持重复组件与原有顺序语义；**(iii) 「严格顺序用依赖声明表达」** —— `OPENLLM_COMPONENT_DEPENDENCIES`（如 `memory:rag`），声明**覆盖**全局并行开关；**(iv) fail-safe** —— 成环退化为单波次保序并告警（不抛异常、不打挂请求）、非法声明片段跳过并告警；**(v) 关闭时逐字一致** —— 关闭时计划恒为「单波次」、并发与否仍由 `enable_parallel` 决定。③ **开关**：新增 `COMPONENT_DEPENDENCY_SCHEDULING_ENABLED`（默认 **False**）＋ `OPENLLM_COMPONENT_DEPENDENCIES`（默认 **""**）。④ **验证**：新增护栏 `tests/unit/test_component_dependency_scheduling.py`（**12 例**）全绿，既有共用步骤护栏 13 例未变；**运行态探针** `doc/test/evidence/cr149/component_schedule_probe.py`（真实共用组件步骤 + 真实调度器，组件各 0.12 s、含预热）—— 关闭态串行 **0.25 s** / 全局开关并行 **0.125 s**；**开启态无依赖 ⇒ 0.125 s 重叠**（「无依赖即并行」生效）；**开启态声明 `memory:rag` ⇒ 波次 `[["rag"],["memory"]]`、事件严格 `rag→memory`、不重叠**（0.235~0.25 s）。⑤ **回归**：全量 `tests/unit` **32 failed / 3031 passed / 0 error**（239.55 s；收集 3063）；**基线对照**（同命令 vs 上一轮 `cr149-b2b-full.txt`，逐项 testid 归一化后 `Compare-Object`）**32 = 32，零差异 ⇒ 零新增失败**；静态质量 4 文件 `ruff` **零告警**（过程修正：isort 惰性导入排序、文件末尾换行）。⑥ **与既有登记项关系**：§4.2 余项（阈值语义对齐 / LLM 兜底分类器 / 规则集可配置）**仍未实施**；§4.1（通道定性 / 内置 RAG 底座 / health 组件探测）与 §4.3 余项**仍未实施**，其中「通道定性」需人工裁定（§9 问题 1）、「内置 RAG 底座 / health 探测」为必做项可先行；§9 问题 4 仍为**前置阻塞项**；**全仓未闭环项仍为 0**。⑦ **生产开启待批（不变）**：`COMPONENT_DEPENDENCY_SCHEDULING_ENABLED` 与 `OPENLLM_COMPONENT_DEPENDENCIES` 的开启值须人工批准后按方案 §7 判据 **T8** 验证再开，**本记录不代行批准**。⑧ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.5.0**（§3.1 已实施段 + §4.2 顺序优化标注 + §6 第二批「进行中 2/3」+ §7 T8 + §8 三项风险 + §11 修订行）；OpenLLM《DevLogReport》**v1.22.0**（第 33 批）；证据 `doc/test/evidence/cr149/component_schedule_probe.py` 与 `component_schedule_probe-result.json`。⑨ 文档版本 **v1.39.0 → v1.40.0**，状态 [Review] |
 | **v1.41.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ③ 项实施登记（§4I 新建）—— 方案 §4.1「配套两项必做」之一（备通道健康探针）已实施；§10 待登记项 2（内置 RAG 无底座）转为「部分实施」；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.6.0** §4.1 / §7 判据 **T4** 前置条件；实现在 OpenLLM 仓（其《DevLogReport》**v1.23.0** 第 34 批，提交 `03a624f`）。② **实施 5 项**：**(i) 备通道健康探针** —— `_probe_components(db)` 并行探测 **5 项**（外部三组件 ＋ `builtin_rag` ＋ `ollama`，共用既有结果缓存）；**(ii) 内置 RAG 底座事实** —— `_count_faiss_indexes(root)`（与 `VectorStoreService` 落盘约定同一事实源）＋ `_probe_builtin_rag(db)`（`knowledge_bases`/`indexes`/`has_base`/`reason`）；**(iii) Ollama 可达性** —— `_ollama_probe_tags()`（`GET {OLLAMA_HOST}/api/tags`，2 s 独立超时、URL 取自配置）＋ `_probe_ollama()`；**(iv) 探测不抛异常** —— DB / 文件系统 / HTTP 异常一律降级为 `unavailable` ＋ `reason`；**(v) 同一事实源** —— `/health` 增 `db` 依赖统计 KB 行数，原三键**原样保留**（增量字段、向后兼容）。③ **验证**：新增护栏 `tests/unit/test_health_backup_channel_probe.py`（**10 例**）全绿；**运行态探针** `doc/test/evidence/cr149/health_backup_probe.py`（调真实探测函数）—— `faiss_root_exists=true` 但 `indexes=0`、`has_base=false`，`reason="内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"`；`ollama = {status: ok, latency_ms: 15, models: 2}`；`components_keys = [builtin_rag, dps, ollama, openmemory, openrag]`。④ **回归**：全量 `tests/unit` **31 failed / 3042 passed / 0 error**（238.83 s；收集 3073）；**基线对照**（同命令 vs 上一轮 `cr149-b2c-full.txt`，逐项 testid 归一化后 `Compare-Object`）**无新增失败项**（失败集为基线**子集** 32 → 31），唯一差异为既有 flaky `test_v213_gateway_ext.py::test_memory_writeback_adapter_missing_raises` 本轮**转绿**（如实登记为**基线波动而非本批收益**）；静态质量 2 文件 `ruff` **零告警**（过程修正：gateway 增补缺失的 `import os`）。⑤ **与既有登记项关系**：方案 §10 待登记项 2 更新为「部分实施」（事实前置可视化；**种子动作需运行态 DB ＋ 嵌入模型**，当前口径明确为「内置 RAG 仅在有本地索引时生效」）；§9 问题 1（通道 A 三选一）仍待裁定（阻塞 `components.*.channel` 字段与通道定性）；§4.3 余项（队列指标与死信 / 画像增量升级 / 写路径与通道一致）仍未实施；`CR-148-032`/`TD-新增-028` **不受影响**；**全仓未闭环项仍为 0**。⑥ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.6.0**（§4.1 两项标注 + §6 第二批「③已完成/④待做」+ §7 T4 前置条件 + §10 待登记项 2 + §11 修订行）；OpenLLM《DevLogReport》**v1.23.0**（第 34 批）；证据 `doc/test/evidence/cr149/health_backup_probe.py` 与 `health_backup_probe-result.json`。⑦ 文档版本 **v1.40.0 → v1.41.0**，状态 [Review] |
+| **v1.42.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ④ 项实施登记（§4J 新建）—— 方案 §4.3「队列可观测与死信」已实施；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.7.0** §4.3；实现在 OpenLLM 仓（其《DevLogReport》**v1.24.0** 第 35 批，提交 `1a572f7`）。② **实施 5 项**：**(i) 聚合指标** —— `WritebackStore.stats()`（三条聚合 SQL：状态分组 / `retry_count>0` 直方图 / 最早未完成 `updated_at`）产出深度·失败率（空库 `0.0` 不除零）·重试分布·`max_retry_count`·积压年龄，`WritebackQueue.stats()` 补 `queue_depth`；**(ii) 死信视图** —— `list_dead_letters()`（只含 `failed`、分页、**不含 payload 正文**）；**(iii) 重放端点** —— `claim_failed()` 原子置回 `pending` 且 `retry_count` 归零后由 `replay_dead_letters()` 复用 `_run_item` 重新投递（未注册 handler 计 `skipped`、行留 `pending`）；`POST /writeback/dead-letter/replay` 仅接受显式行 id、单次 ≤100（超限 4003）；**(iv) 失败 TTL 清理任务化** —— `run_cleanup_loop()` 由 lifespan 启动/关闭取消，间隔 `WRITEBACK_CLEANUP_INTERVAL_SECONDS`（默认 3600 s，**0=关闭**）、单轮异常不终止循环；**(v) 归属隔离** —— 三处均沿用 `DEF-BE-148-007` 的 `json_extract` fail-closed，无身份一律 401（1001）。③ **验证**：新增护栏 `tests/unit/test_writeback_queue_observability.py`（**22 例**）全绿；**运行态探针** `doc/test/evidence/cr149/writeback_observability_probe.py`（真实存储层/队列层 + 独立临时 SQLite）—— 全局 `{total:4, done:1, failed:3, failure_rate:0.75, retry_distribution:{"2":1,"3":2}}`；按用户 `u-1 {total:3, failed:2}`（他人行与无归属历史行不可见）；死信视图 `total=3` 且无 payload 字段；**重放 2 行 → `replayed=2`、handler 实投递 2 次、状态转 `done`**；越权取件 `[]` 且对方行仍 `failed`；`run_cleanup_loop(0)` 即时返回、TTL 不误删新近死信。④ **回归**：全量 `tests/unit` **32 failed / 3063 passed / 0 error**（244.44 s；收集 3095）；**基线对照**（同命令 vs 第 33 批基线 `cr149-b2c-full.txt`，逐项 testid 归一化后 `Compare-Object`）**32 = 32，零差异 ⇒ 零新增失败**；**对照实验（决定性证据）**：上一轮 `test_v213_gateway_ext.py` 曾少失败 1 例，本批以 `git stash push -- <本批 4 个生产文件>` **回退改动后隔离复跑，得到与改动后完全相同的 4 个失败** ⇒ 判定**既有序相关 flaky，与本批改动无关**；静态质量 5 文件 `ruff` **零告警**。⑤ **与既有登记项关系**：§4.3 余项（画像增量升级 / 写路径与通道一致）**仍未实施**（后者依赖通道定性与 `assert_write_channel_is_primary` 接入）；§9 问题 1 / 问题 4 仍待裁定；**全局口径统计未开放**（现为调用方作用域，如需全局视图建议按角色门禁单独开放）；`CR-148-032`/`TD-新增-028` 不受影响；**全仓未闭环项仍为 0**。⑥ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.7.0**（§4.3 已实施标注与细节 + §6 第二批进度 + §11 修订行）；OpenLLM《DevLogReport》**v1.24.0**（第 35 批）；证据 `doc/test/evidence/cr149/writeback_observability_probe.py` 与 `writeback_observability_probe-result.json`。⑦ 文档版本 **v1.41.0 → v1.42.0**，状态 [Review] |
