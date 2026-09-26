@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T04:19:44",
+  "generated_at": "2026-09-27T04:38:17",
   "simulate": false,
   "summary": {
     "PASS": 3,
@@ -52,23 +52,38 @@
     },
     {
       "criterion": "T4",
-      "title": "备通道：组件故障后裁决与内置 RAG 接管有轨迹（需运行态故障注入）",
+      "title": "备通道：组件故障后裁决与内置 RAG 接管有轨迹（轨迹=进程内判；无 5xx=运行态）",
       "status": "BLOCKED",
       "requires": [
-        "运行态服务（可注入组件故障）",
-        "内置 RAG 有底座（has_base=true）"
+        "运行态服务（可注入组件故障）→ 判「无 5xx」",
+        "内置 RAG 有底座（has_base=true）→ 判「接管非空」"
       ],
       "detail": {
+        "fault_injected": "RuntimeError: OpenRAG 不可达: connection refused",
+        "sync_trace_components": {
+          "rag_source": "builtin",
+          "builtin_fallback_reason": "OpenRAG 不可达: connection refused"
+        },
+        "stream_trace_components": {
+          "rag_source": "builtin",
+          "builtin_fallback_reason": "OpenRAG 不可达: connection refused"
+        },
+        "trace_contract": "PASS",
         "builtin_rag": {
           "status": "unavailable",
-          "latency_ms": 0,
+          "latency_ms": 16,
           "knowledge_bases": 0,
           "indexes": 0,
           "has_base": false,
           "reason": "内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"
-        }
+        },
+        "runtime_pending": [
+          "故障注入后的 HTTP 响应无 5xx",
+          "端到端轨迹落库（routing_trace / receipts）"
+        ],
+        "historical_e2e_evidence": "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上验过 rag_source=builtin / degraded=[] / 主流程 200；须在**当前提交**上复跑确认"
       },
-      "reason": "前置条件不满足：内置 RAG 无底座 ⇒ 接管后注入为空。须先补底座（KB 记录 + FAISS 索引），或按方案 §4.1 声明「内置 RAG 仅在有本地索引时生效」后再做故障注入验证"
+      "reason": "轨迹部分已在进程内验证通过（两路径 rag_source=builtin 且归因一致、单一落痕实现）；剩余「无 5xx + 端到端轨迹落库」需运行态故障注入。内置 RAG 底座：has_base=False（false 时接管必然注入为空，须先补底座或按 §4.1 声明生效条件）"
     },
     {
       "criterion": "T5",
@@ -106,7 +121,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.375,
+        "concurrent_components_wall_seconds": 0.359,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },

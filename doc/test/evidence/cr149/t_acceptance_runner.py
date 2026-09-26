@@ -33,9 +33,10 @@ import os
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 sys.path.insert(0, os.getcwd())
 os.environ.setdefault("PYTHONDONTWRITEBYTECODE", "1")
@@ -277,7 +278,6 @@ def check_t2() -> Verdict:
 def check_t3() -> Verdict:
     """T3：rerank 与 score_threshold 透传，低分条目被过滤（条目数降、score 单调）"""
     title = "检索：rerank / score_threshold 透传且低分条目被过滤"
-    keys = ["RAG_RERANK_ENABLED", "RAG_SCORE_THRESHOLD"]
     from app.api.openllm_gateway import _rag_search_params
     from app.core.config import settings
 
@@ -299,7 +299,9 @@ def check_t3() -> Verdict:
         item for item in scored_items if item["score"] >= resolved["score_threshold"]
     ]
     scores = [item["score"] for item in filtered]
-    monotonic = all(left >= right for left, right in zip(scores, scores[1:]))
+    monotonic = all(
+        left >= right for left, right in zip(scores, scores[1:], strict=False)
+    )
     failures = []
     if resolved.get("rerank") is not True:
         failures.append("rerank 未透传")
@@ -329,38 +331,172 @@ def check_t3() -> Verdict:
 
 # ---------------------------------------------------------------- T4 备通道轨迹
 
+class _T4FailingRagAdapter:
+    """桩：RAG 适配器调用即抛「外部检索失败」（非装配缺失 / 非超时）"""
+
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    async def search(  # noqa: ANN001
+        self,
+        request_context,
+        kb_id=None,
+        query="",
+        top_k=5,
+        rerank=False,
+        score_threshold=None,
+    ):
+        raise self._exc
+
+
+def _t4_identity():
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        user_id="u-t4",
+        organization_id="org-t4",
+        role="user",
+        external_tenant_id=None,
+        external_user_id=None,
+        external_org_id=None,
+    )
+
+
+async def _t4_sync_trace(exc: Exception) -> dict[str, Any]:
+    """同步路径：handler 落 shared_state → 经单一落痕函数并入轨迹"""
+    from unittest.mock import AsyncMock, patch
+
+    import app.api.openllm_gateway as gateway
+
+    adapter = _T4FailingRagAdapter(exc)
+    with _temporary_settings(OPENRAG_FALLBACK_BUILTIN=True):
+        with patch.object(gateway, "_get_component_adapters", return_value=(None, adapter)), \
+                patch.object(
+                    gateway,
+                    "_builtin_rag_search",
+                    AsyncMock(return_value={"results": []}),
+                ):
+            handlers, _errors, shared = gateway._build_component_handlers(
+                db=None,
+                identity=_t4_identity(),
+                request_id="req-t4",
+                query="q",
+                timeline=[],
+            )
+            await handlers["rag"]("rag", {"kb_id": "kb"})
+    return gateway._merge_rag_trace(
+        {},
+        rag_source=shared.get("rag_source"),
+        builtin_fallback_reason=shared.get("builtin_fallback_reason"),
+    )
+
+
+async def _t4_stream_trace(exc: Exception) -> dict[str, Any]:
+    """流式路径：接管发生在共用组件步骤 → 同样须带归因"""
+    import app.api.openllm_gateway as gateway
+    from app.edgerouter.orchestration.component_pipeline import run_components
+
+    async def _rag_handler(_name: str, _params: dict) -> dict:
+        raise exc
+
+    async def _rag_fallback(_params: dict) -> dict:
+        return {"results": []}
+
+    result = await run_components(
+        pipeline=[{"component": "rag", "params": {"kb_id": "kb"}}],
+        query="q",
+        handlers={"rag": _rag_handler},
+        assembler=None,
+        enable_parallel=False,
+        rag_fallback=_rag_fallback,
+        rag_fallback_enabled=True,
+        entry_key="component",
+        timeline=[],
+    )
+    return gateway._merge_rag_trace(
+        {},
+        rag_source=result.rag_source,
+        builtin_fallback_reason=result.builtin_fallback_reason,
+    )
+
+
 async def check_t4() -> Verdict:
-    """T4：组件故障后通道裁决与内置 RAG 接管有轨迹
+    """T4：组件故障后通道裁决与内置 RAG 接管有轨迹（轨迹部分：进程内可判）
 
-    本判据需要**运行态服务 + 故障注入**（停 OpenRAG / 改不可达地址）；
-    本执行器可**前置判定**其先决条件：`health.components.builtin_rag.has_base`。
-    `has_base=false` ⇒ 接管必然"注入为空"，判据**前置不满足**（记为 BLOCKED，非 FAIL）。
+    **本执行器判定**（进程内，不依赖运行态故障注入）：
+
+      1. 同步路径 handler：「外部检索失败」→ ``rag_source=builtin`` **且带归因**；
+      2. 流式路径（共用组件步骤）：同样落 ``rag_source=builtin`` **且带归因**；
+      3. 两路径经**同一落痕函数**并入 ``routing_trace.components`` → 字段逐键一致。
+
+    **仍需运行态**：真实故障注入（停 OpenRAG / 改不可达地址）后的 HTTP「无 5xx」
+    与端到端轨迹落库；以及 ``health.components.builtin_rag.has_base``（接管是否有底座）。
     """
-    title = "备通道：组件故障后裁决与内置 RAG 接管有轨迹（需运行态故障注入）"
-    from app.api.openllm_gateway import _probe_builtin_rag
+    title = "备通道：组件故障后裁决与内置 RAG 接管有轨迹（轨迹=进程内判；无 5xx=运行态）"
+    from app.api.openllm_gateway import _merge_rag_trace, _probe_builtin_rag
 
+    fault = RuntimeError("OpenRAG 不可达: connection refused")
+    sync_trace = await _t4_sync_trace(fault)
+    stream_trace = await _t4_stream_trace(fault)
     builtin = await _probe_builtin_rag(None)
-    precondition_ok = bool(builtin.get("has_base"))
-    if not precondition_ok:
+
+    failures: list[str] = []
+    if sync_trace.get("rag_source") != "builtin":
+        failures.append(f"同步路径未落 rag_source=builtin：{sync_trace}")
+    if stream_trace.get("rag_source") != "builtin":
+        failures.append(f"流式路径未落 rag_source=builtin：{stream_trace}")
+    if not sync_trace.get("builtin_fallback_reason"):
+        failures.append("同步路径缺接管归因")
+    if not stream_trace.get("builtin_fallback_reason"):
+        failures.append("流式路径缺接管归因（轨迹不完整）")
+    if sync_trace.get("builtin_fallback_reason") != stream_trace.get(
+        "builtin_fallback_reason"
+    ):
+        failures.append(f"两路径归因不一致：{sync_trace} vs {stream_trace}")
+    if sync_trace["rag_source"] != stream_trace["rag_source"]:
+        failures.append(f"两路径来源不一致：{sync_trace} vs {stream_trace}")
+    merged = _merge_rag_trace({})
+    if merged.get("rag_source") != "skipped" or "builtin_fallback_reason" in merged:
+        failures.append(f"未执行检索时应为 skipped 且不落归因：{merged}")
+
+    detail: dict[str, Any] = {
+        "fault_injected": f"{type(fault).__name__}: {fault}",
+        "sync_trace_components": sync_trace,
+        "stream_trace_components": stream_trace,
+        "trace_contract": "FAIL" if failures else "PASS",
+        "builtin_rag": builtin,
+        "runtime_pending": [
+            "故障注入后的 HTTP 响应无 5xx",
+            "端到端轨迹落库（routing_trace / receipts）",
+        ],
+        "historical_e2e_evidence": (
+            "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上"
+            "验过 rag_source=builtin / degraded=[] / 主流程 200；须在**当前提交**上复跑确认"
+        ),
+    }
+    if failures:
         return Verdict(
             criterion="T4",
             title=title,
-            status=STATUS_BLOCKED,
-            requires=["运行态服务（可注入组件故障）", "内置 RAG 有底座（has_base=true）"],
-            detail={"builtin_rag": builtin},
-            reason=(
-                "前置条件不满足：内置 RAG 无底座 ⇒ 接管后注入为空。"
-                "须先补底座（KB 记录 + FAISS 索引），或按方案 §4.1 声明"
-                "「内置 RAG 仅在有本地索引时生效」后再做故障注入验证"
-            ),
+            status=STATUS_FAIL,
+            detail=detail,
+            reason="轨迹契约不达标：" + "；".join(failures),
         )
     return Verdict(
         criterion="T4",
         title=title,
         status=STATUS_BLOCKED,
-        requires=["运行态服务（可注入组件故障）"],
-        detail={"builtin_rag": builtin},
-        reason="前置条件满足，但故障注入需运行态服务（本执行器不改外部服务状态）",
+        requires=[
+            "运行态服务（可注入组件故障）→ 判「无 5xx」",
+            "内置 RAG 有底座（has_base=true）→ 判「接管非空」",
+        ],
+        detail=detail,
+        reason=(
+            "轨迹部分已在进程内验证通过（两路径 rag_source=builtin 且归因一致、"
+            "单一落痕实现）；剩余「无 5xx + 端到端轨迹落库」需运行态故障注入。"
+            f"内置 RAG 底座：has_base={builtin.get('has_base')}"
+            "（false 时接管必然注入为空，须先补底座或按 §4.1 声明生效条件）"
+        ),
     )
 
 
@@ -463,11 +599,11 @@ def check_t6() -> Verdict:
 async def check_t7() -> Verdict:
     """T7：画像取数并发、两路径时序统一且组装前收割"""
     title = "画像：并发取数 + 两路径时序统一 + 组装前收割（含 P-4）"
-    from app.edgerouter.orchestration.deferred_fetch import DeferredFetch
-    from app.edgerouter.orchestration.executor import PipelineExecutor
     import inspect
 
     import app.api.openllm_gateway as gateway
+    from app.edgerouter.orchestration.deferred_fetch import DeferredFetch
+    from app.edgerouter.orchestration.executor import PipelineExecutor
 
     events: list[str] = []
     captured: dict[str, str] = {}
@@ -538,7 +674,6 @@ async def check_t8() -> Verdict:
     """T8：调度由依赖图决定（无依赖即并行 / 声明保序 / 成环 fail-safe）"""
     title = "调度：无依赖即并行、依赖声明保序、成环 fail-safe"
     keys = ["COMPONENT_DEPENDENCY_SCHEDULING_ENABLED", "OPENLLM_COMPONENT_DEPENDENCIES"]
-    from app.core.config import settings
     from app.edgerouter.orchestration.component_graph import dependency_levels
     from app.edgerouter.orchestration.component_pipeline import run_components
     from app.edgerouter.orchestration.prompt_pipeline import PromptAssembler
