@@ -138,7 +138,16 @@ $services = @(
             # 注意：该字段为 list[str]，pydantic-settings 会在 field_validator 之前先按 JSON 解码
             # EnvSettingsSource 的值 → **必须传 JSON 数组形态**；传逗号分隔串会导致
             # SettingsError（首轮实测：OpenRAG 启动即崩、rag-proxy 全 502）。
-            OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES = '["openbase-rag-proxy"]'
+            #
+            # 【受信来源补齐：openbase-orchestrator】OpenLLM 以「真实契约」直连 OpenRAG
+            # （OPENRAG_BASE_URL=http://127.0.0.1:8010，B 通道编排出站统一来源
+            # = openbase-orchestrator，见 OpenLLM app/identity/outbound.py）；
+            # 而 OpenRAG 的 M2 角色守卫按**方法**分类（POST=写），检索端点
+            # `POST /api/v1/collections/{id}/query/retrieve` 因此被判「匿名写」→
+            # 403 PERM_SERVICE_KEY_WRITE_DENIED（实测日志 m2_anonymous_write_denied）。
+            # 仅信任 openbase-rag-proxy 时，OpenLLM 直连检索恒失败 → rag 组件每次降级。
+            # 故将 OpenLLM 出站来源一并纳入受信白名单（不改写任何来源常量值）。
+            OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES = '["openbase-rag-proxy","openbase-orchestrator"]'
         }
         Health  = @('http://127.0.0.1:8010/api/v1/system/health')
         Depends = @()

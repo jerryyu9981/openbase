@@ -1,0 +1,736 @@
+{
+  "generated_at": "2026-09-26T20:43:41+0800",
+  "base_url": "http://127.0.0.1:8000",
+  "mode": "auto",
+  "query": "请结合我的偏好和知识库资料，说明会话编排的前置与回写闭环是怎么设计的？",
+  "query_sent": "请结合我的偏好和知识库资料，说明会话编排的前置与回写闭环是怎么设计的？",
+  "nonce": "",
+  "dependencies": {
+    "openbase": 200,
+    "openllm": 200,
+    "openrag": 200,
+    "openmemory": 200,
+    "dps": 200
+  },
+  "steps": [
+    {
+      "step": "admin_login",
+      "http": 200,
+      "token": true
+    },
+    {
+      "step": "provision_agent",
+      "http": 200,
+      "username": "ob_agent_ctx_426622",
+      "agent_id": 41,
+      "tenant_id": 1,
+      "tenant_code": "tenant-1",
+      "key_issued": true
+    },
+    {
+      "step": "chat",
+      "http": 200,
+      "elapsed_ms": 19174,
+      "x_request_id": null
+    }
+  ],
+  "verdict": {
+    "status": "PASS",
+    "checks": {
+      "chat_http": 200,
+      "code": 0,
+      "mode": "auto",
+      "pipeline": [
+        "memory",
+        "rag",
+        "llm"
+      ],
+      "path": "C",
+      "decision": {
+        "need_memory": true,
+        "need_rag": true,
+        "reason": "信号并集：[R001] 命中记忆关键词 ['我的', '我的偏好'] (confidence=0.95)；[R002] 命中知识库关键词 ['知识', '资料', '知识库'] (confidence=0.95)；[R004] 实体+偏好词 ['偏好'] (confidence=0.88)"
+      },
+      "content_chars": 1383,
+      "executed": [
+        "memory",
+        "rag",
+        "llm"
+      ],
+      "degraded": [],
+      "rag_source": "external",
+      "kb_id_source": "external",
+      "need_memory": true,
+      "need_rag": true,
+      "model": "deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 422,
+        "completion_tokens": 3475,
+        "total_tokens": 3897
+      },
+      "context_metrics": {
+        "request_id": "openllm-2269c3180a0449aab689481a",
+        "session_id": "179fc89c-c76b-47e7-a0b1-9659d03de663",
+        "model": null,
+        "created_at": "2026-09-26T12:44:00.012008+00:00",
+        "prompt_total_tokens": 526,
+        "segment_tokens": {
+          "system": 0,
+          "profile": 0,
+          "memory": 0,
+          "rag": 478,
+          "history": 0,
+          "query": 35
+        },
+        "contexts_tokens": 478,
+        "counted": true,
+        "memory": {
+          "component": "memory",
+          "items_count": 0,
+          "injected_items": 0,
+          "injected_tokens": 0,
+          "scores": [],
+          "items": []
+        },
+        "rag": {
+          "component": "rag",
+          "items_count": 1,
+          "injected_items": 1,
+          "injected_tokens": 478,
+          "scores": [
+            0.01639344262295082
+          ],
+          "items": [
+            {
+              "index": 0,
+              "score": 0.01639344262295082,
+              "injected": true
+            }
+          ]
+        },
+        "attribution_a": {
+          "used": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "unused": [],
+          "used_ratio": 1.0,
+          "matched_terms": {
+            "0": [
+              "会话",
+              "话编",
+              "编排",
+              "与上",
+              "上下",
+              "下文",
+              "文装",
+              "装配",
+              "知识",
+              "识库",
+              "库样",
+              "样本"
+            ],
+            "1": [
+              "agent",
+              "ctx",
+              "20260926",
+              "llm",
+              "样本",
+              "画像",
+              "记忆",
+              "知识",
+              "识库",
+              "装配",
+              "上下",
+              "下文",
+              "投喂"
+            ],
+            "2": [
+              "前置",
+              "置编",
+              "编排",
+              "固定",
+              "顺序"
+            ],
+            "3": [
+              "auth",
+              "profile_fetch",
+              "dps",
+              "memory",
+              "rag",
+              "llm",
+              "画像",
+              "组件",
+              "件执",
+              "执行",
+              "上下",
+              "下文",
+              "文装",
+              "装配",
+              "推理"
+            ],
+            "4": [
+              "prompt",
+              "画像",
+              "记忆",
+              "知识",
+              "识库",
+              "库三",
+              "三段",
+              "段结",
+              "结果",
+              "果统",
+              "统一",
+              "一注",
+              "注入",
+              "的对",
+              "对应",
+              "应分",
+              "分段",
+              "装配",
+              "配后",
+              "后按",
+              "按分",
+              "段计",
+              "计量"
+            ],
+            "5": [
+              "上下",
+              "下文",
+              "文装",
+              "装配",
+              "配分",
+              "分段",
+              "预算"
+            ],
+            "6": [
+              "system",
+              "history",
+              "memory",
+              "rag",
+              "query",
+              "装配",
+              "配分",
+              "分段",
+              "段固",
+              "固定",
+              "定为"
+            ],
+            "7": [
+              "context",
+              "budget",
+              "4096",
+              "memory",
+              "rag",
+              "上下",
+              "下文",
+              "预算",
+              "两段",
+              "段之",
+              "之和",
+              "和不",
+              "不得",
+              "得超",
+              "超过",
+              "过预",
+              "算的"
+            ],
+            "8": [
+              "segment_tokens",
+              "injected_items",
+              "injected_tokens",
+              "超限",
+              "限时",
+              "时按",
+              "按相",
+              "相关",
+              "关性",
+              "性排",
+              "排序",
+              "序截",
+              "截断",
+              "并记",
+              "记录"
+            ],
+            "9": [
+              "writeback",
+              "回写",
+              "写闭",
+              "闭环"
+            ],
+            "10": [
+              "memory",
+              "rag",
+              "profile",
+              "回写",
+              "写三",
+              "三路",
+              "路固",
+              "固定",
+              "定为",
+              "逐路",
+              "路独",
+              "独立",
+              "立入",
+              "入队",
+              "路留",
+              "留回",
+              "回执"
+            ],
+            "11": [
+              "writeback_queue",
+              "trace",
+              "权威",
+              "威回",
+              "回执",
+              "执以",
+              "以回",
+              "回写",
+              "写队",
+              "队列",
+              "列表",
+              "为准",
+              "内快",
+              "快照",
+              "作事",
+              "事后",
+              "后补",
+              "补齐"
+            ],
+            "12": [
+              "降级",
+              "级与",
+              "与边",
+              "边界"
+            ],
+            "13": [
+              "degraded",
+              "组件",
+              "件不",
+              "不可",
+              "可用",
+              "用时",
+              "记入",
+              "列表",
+              "表并",
+              "并跳",
+              "跳过",
+              "过该",
+              "该段",
+              "不得",
+              "得触",
+              "触发",
+              "发内",
+              "内置",
+              "置回",
+              "回退",
+              "装配",
+              "配缺",
+              "缺失",
+              "外部",
+              "部检",
+              "检索",
+              "索失",
+              "失败"
+            ],
+            "14": [
+              "未知",
+              "知组",
+              "组件",
+              "件名",
+              "名一",
+              "一律",
+              "律忽",
+              "忽略",
+              "不得",
+              "得中",
+              "中断",
+              "断主",
+              "主链",
+              "链路"
+            ]
+          }
+        }
+      },
+      "timeline": null,
+      "writeback": null,
+      "kb_marker_in_answer": true
+    },
+    "failures": [],
+    "exit_code": 0
+  },
+  "subject": {
+    "kind": "agent",
+    "username": "ob_agent_ctx_426622",
+    "tenant_code": "tenant-1",
+    "bearer": "sk-agent-***"
+  },
+  "chat_response": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "request_id": "openllm-2269c3180a0449aab689481a",
+      "mode": "auto",
+      "pipeline": [
+        "memory",
+        "rag",
+        "llm"
+      ],
+      "content": "先说明：我当前拿到的上下文只有知识库样本 **AGENT-CTX-KB-20260926**，没有你的 DPS 画像/记忆明细，所以无法引用你的具体偏好。以下说明该会话编排的设计，以及“偏好”会如何接入。\n\n## 1. 前置编排：固定流水线，不随意跳步\n\n前置顺序固定为：\n\n`auth` → `profile_fetch`（DPS 画像）→ 组件执行（`memory` / `rag`）→ 上下文装配 → `llm` 推理。\n\n含义是：\n\n- `auth` 先做鉴权，保证后续画像和组件调用有权限。\n- `profile_fetch` 拉取 DPS 画像。如果你的偏好存在于画像中，会在这里进入链路。\n- 组件执行阶段分别跑 `memory` 和 `rag`：`memory` 取记忆，`rag` 取知识库资料。\n- 画像、记忆、知识库三段结果统一注入 Prompt 的对应分段，装配后按分段计量。\n- 最后才投喂给 LLM。\n\n上下文装配分段固定为：\n\n`system` / `history` / `memory` / `rag` / `query`\n\n预算规则是 **CONTEXT-BUDGET-4096**：`memory` 与 `rag` 两段之和不得超过预算的 40%，即约 1638 tokens。超限时按相关性排序截断，并记录：\n\n- `segment_tokens`\n- `injected_items`\n- `injected_tokens`\n\n## 2. 回写闭环：三路独立入队，队列回执为准\n\n回写三路固定为：\n\n`memory` / `rag` / `profile`\n\n设计要点是：\n\n- 三路逐路独立入队；\n- 每路逐路留回执；\n- 权威回执以回写队列表 `writeback_queue` 为准；\n- trace 内快照只作事后补齐，不作为权威依据。\n\n也就是说，会话结束后，记忆更新走 `memory`，知识库更新走 `rag`，画像/偏好更新走 `profile`。每路是否成功，要看 `writeback_queue`，而不是只看 trace 快照。\n\n## 3. 降级与边界\n\n- 组件不可用时，记入 `degraded` 列表并跳过该段；\n- 不得触发内置回退，因为“装配缺失 ≠ 外部检索失败”；\n- 未知组件名一律忽略，不得中断主链路。\n\n这保证单个组件故障不会阻断整个会话编排。\n\n## 4. 结合你的偏好来看\n\n如果你的偏好已经存在于 DPS 画像中，那么它会在 `profile_fetch` 阶段被拉取；如果偏好以历史记忆形式存在，则会在 `memory` 组件执行时被取出。随后它们会参与上下文装配，并影响 LLM 推理。\n\n但当前上下文没有提供你的具体偏好条目，所以我不能虚构你的偏好内容。可以确认的是：机制上，偏好会从画像或记忆接入，并可通过回写闭环更新到 `profile` 或 `memory`；知识库资料则通过 `rag` 接入，但受 40% 预算和相关性截断约束。\n\n总结：前置是“鉴权 → 画像 → 记忆/知识库组件 → 上下文装配 → LLM”的固定链路；回写是“memory / rag / profile 三路独立入队、逐路回执、以 writeback_queue 为权威”的闭环设计。",
+      "model": "deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 422,
+        "completion_tokens": 3475,
+        "total_tokens": 3897
+      },
+      "routing_trace": {
+        "components": {
+          "need_memory": true,
+          "need_rag": true,
+          "reason": "auto",
+          "memory_params": null,
+          "rag_params": null,
+          "reasoning": "auto 组件路由决策",
+          "rag_source": "external",
+          "kb_id_source": "external"
+        },
+        "executed": [
+          "memory",
+          "rag",
+          "llm"
+        ],
+        "degraded": [],
+        "path": "C",
+        "decision": {
+          "need_memory": true,
+          "need_rag": true,
+          "reason": "信号并集：[R001] 命中记忆关键词 ['我的', '我的偏好'] (confidence=0.95)；[R002] 命中知识库关键词 ['知识', '资料', '知识库'] (confidence=0.95)；[R004] 实体+偏好词 ['偏好'] (confidence=0.88)"
+        },
+        "context_metrics": {
+          "request_id": "openllm-2269c3180a0449aab689481a",
+          "session_id": "179fc89c-c76b-47e7-a0b1-9659d03de663",
+          "model": null,
+          "created_at": "2026-09-26T12:44:00.012008+00:00",
+          "prompt_total_tokens": 526,
+          "segment_tokens": {
+            "system": 0,
+            "profile": 0,
+            "memory": 0,
+            "rag": 478,
+            "history": 0,
+            "query": 35
+          },
+          "contexts_tokens": 478,
+          "counted": true,
+          "memory": {
+            "component": "memory",
+            "items_count": 0,
+            "injected_items": 0,
+            "injected_tokens": 0,
+            "scores": [],
+            "items": []
+          },
+          "rag": {
+            "component": "rag",
+            "items_count": 1,
+            "injected_items": 1,
+            "injected_tokens": 478,
+            "scores": [
+              0.01639344262295082
+            ],
+            "items": [
+              {
+                "index": 0,
+                "score": 0.01639344262295082,
+                "injected": true
+              }
+            ]
+          },
+          "attribution_a": {
+            "used": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "unused": [],
+            "used_ratio": 1.0,
+            "matched_terms": {
+              "0": [
+                "会话",
+                "话编",
+                "编排",
+                "与上",
+                "上下",
+                "下文",
+                "文装",
+                "装配",
+                "知识",
+                "识库",
+                "库样",
+                "样本"
+              ],
+              "1": [
+                "agent",
+                "ctx",
+                "20260926",
+                "llm",
+                "样本",
+                "画像",
+                "记忆",
+                "知识",
+                "识库",
+                "装配",
+                "上下",
+                "下文",
+                "投喂"
+              ],
+              "2": [
+                "前置",
+                "置编",
+                "编排",
+                "固定",
+                "顺序"
+              ],
+              "3": [
+                "auth",
+                "profile_fetch",
+                "dps",
+                "memory",
+                "rag",
+                "llm",
+                "画像",
+                "组件",
+                "件执",
+                "执行",
+                "上下",
+                "下文",
+                "文装",
+                "装配",
+                "推理"
+              ],
+              "4": [
+                "prompt",
+                "画像",
+                "记忆",
+                "知识",
+                "识库",
+                "库三",
+                "三段",
+                "段结",
+                "结果",
+                "果统",
+                "统一",
+                "一注",
+                "注入",
+                "的对",
+                "对应",
+                "应分",
+                "分段",
+                "装配",
+                "配后",
+                "后按",
+                "按分",
+                "段计",
+                "计量"
+              ],
+              "5": [
+                "上下",
+                "下文",
+                "文装",
+                "装配",
+                "配分",
+                "分段",
+                "预算"
+              ],
+              "6": [
+                "system",
+                "history",
+                "memory",
+                "rag",
+                "query",
+                "装配",
+                "配分",
+                "分段",
+                "段固",
+                "固定",
+                "定为"
+              ],
+              "7": [
+                "context",
+                "budget",
+                "4096",
+                "memory",
+                "rag",
+                "上下",
+                "下文",
+                "预算",
+                "两段",
+                "段之",
+                "之和",
+                "和不",
+                "不得",
+                "得超",
+                "超过",
+                "过预",
+                "算的"
+              ],
+              "8": [
+                "segment_tokens",
+                "injected_items",
+                "injected_tokens",
+                "超限",
+                "限时",
+                "时按",
+                "按相",
+                "相关",
+                "关性",
+                "性排",
+                "排序",
+                "序截",
+                "截断",
+                "并记",
+                "记录"
+              ],
+              "9": [
+                "writeback",
+                "回写",
+                "写闭",
+                "闭环"
+              ],
+              "10": [
+                "memory",
+                "rag",
+                "profile",
+                "回写",
+                "写三",
+                "三路",
+                "路固",
+                "固定",
+                "定为",
+                "逐路",
+                "路独",
+                "独立",
+                "立入",
+                "入队",
+                "路留",
+                "留回",
+                "回执"
+              ],
+              "11": [
+                "writeback_queue",
+                "trace",
+                "权威",
+                "威回",
+                "回执",
+                "执以",
+                "以回",
+                "回写",
+                "写队",
+                "队列",
+                "列表",
+                "为准",
+                "内快",
+                "快照",
+                "作事",
+                "事后",
+                "后补",
+                "补齐"
+              ],
+              "12": [
+                "降级",
+                "级与",
+                "与边",
+                "边界"
+              ],
+              "13": [
+                "degraded",
+                "组件",
+                "件不",
+                "不可",
+                "可用",
+                "用时",
+                "记入",
+                "列表",
+                "表并",
+                "并跳",
+                "跳过",
+                "过该",
+                "该段",
+                "不得",
+                "得触",
+                "触发",
+                "发内",
+                "内置",
+                "置回",
+                "回退",
+                "装配",
+                "配缺",
+                "缺失",
+                "外部",
+                "部检",
+                "检索",
+                "索失",
+                "失败"
+              ],
+              "14": [
+                "未知",
+                "知组",
+                "组件",
+                "件名",
+                "名一",
+                "一律",
+                "律忽",
+                "忽略",
+                "不得",
+                "得中",
+                "中断",
+                "断主",
+                "主链",
+                "链路"
+              ]
+            }
+          }
+        },
+        "model": {
+          "selected": "deepseek-v4-flash",
+          "reason": "cost"
+        }
+      }
+    },
+    "timestamp": "2026-09-26T12:44:01.499930+00:00"
+  },
+  "openllm_trace": {
+    "http": 401,
+    "payload": {
+      "code": 1001,
+      "message": "未认证或 Token 失效",
+      "detail": "未认证或 Token 失效",
+      "request_id": "openllm-e255ebc34fca4b86be7608f5"
+    }
+  }
+}

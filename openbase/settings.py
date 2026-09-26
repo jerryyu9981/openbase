@@ -166,7 +166,15 @@ class Settings(BaseSettings):
     # ---- OpenLLM 对接（v1.4.3 R-379，API Key Bearer 注入转发） ----
     llm_api_key: str = "sk-openllm-openbase-gateway-key"
     llm_upstream_base: str = "http://127.0.0.1:8001"
-    llm_upstream_timeout: float = 20.0
+    # 本轮迭代（智能体对话全链路）修正：非流式上游预算 20.0s → 120.0s。
+    # 依据：OpenLLM 在 mode=auto 下按真实契约**同步**完成「画像拉取 + 记忆检索 +
+    # 知识库检索 + 上下文装配 + LLM 推理 + 三路回执」，实测端到端 19~27s
+    # （单「LLM 推理」步骤即约 25.7s；时间线证据见 doc/test/evidence/agent-e2e/）。
+    # 20.0s 预算下 OpenBase 先于上游返回 → 抛 SYS_502「upstream unreachable」，
+    # 即把**上游正常但较慢**的响应误判为不可达（实测 23740ms 触发）。
+    # 非流式与流式共用同一「一次会话总预算」（120.0s）；代理自身开销目标
+    # （P95 ≤ 500ms，不含上游处理）不变，本项仅放宽容忍窗口。
+    llm_upstream_timeout: float = 120.0
     llm_stream_timeout: float = 120.0
 
     # ---- OpenRAG 对接（v1.4.4 R-380，JWT 门禁 + 上游认证转发） ----
