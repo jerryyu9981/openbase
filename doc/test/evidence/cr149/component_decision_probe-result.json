@@ -1,0 +1,152 @@
+﻿{
+  "config": {
+    "single_hit_confidence": 0.86,
+    "composite_confidence": 0.86,
+    "rules_path_default": "",
+    "llm_fallback_default": false,
+    "llm_timeout_seconds": 0.3
+  },
+  "threshold_alignment": {
+    "single_memory_hit": {
+      "legacy_0.8_decides": false,
+      "aligned_0.86_decides": true,
+      "aligned_decision": {
+        "need_memory": true,
+        "need_rag": false,
+        "reason": "[R001] 命中记忆关键词 ['我的'] (confidence=0.86)"
+      },
+      "legacy_qualified_flags": [
+        [
+          "R001",
+          false
+        ]
+      ],
+      "aligned_qualified_flags": [
+        [
+          "R001",
+          true
+        ]
+      ]
+    },
+    "single_rag_hit": {
+      "legacy_0.8_decides": false,
+      "aligned_0.86_decides": true,
+      "aligned_decision": {
+        "need_memory": false,
+        "need_rag": true,
+        "reason": "[R002] 命中知识库关键词 ['手册'] (confidence=0.86)"
+      },
+      "legacy_qualified_flags": [
+        [
+          "R002",
+          false
+        ]
+      ],
+      "aligned_qualified_flags": [
+        [
+          "R002",
+          true
+        ]
+      ]
+    },
+    "composite_intent": {
+      "legacy_0.8_decides": true,
+      "aligned_0.86_decides": true,
+      "aligned_decision": {
+        "need_memory": true,
+        "need_rag": true,
+        "reason": "信号并集：[R002] 命中知识库关键词 ['知识', '文档', '知识库'] (confidence=0.95)；[R001] 命中记忆关键词 ['上次'] (confidence=0.86)；[R005] 复合意图：多轮记忆 ['上次', '接着'] + 知识检索 ['知识', '文档', '知识库'] (confidence=0.86)"
+      },
+      "legacy_qualified_flags": [
+        [
+          "R001",
+          false
+        ],
+        [
+          "R002",
+          true
+        ],
+        [
+          "R005",
+          false
+        ]
+      ],
+      "aligned_qualified_flags": [
+        [
+          "R001",
+          true
+        ],
+        [
+          "R002",
+          true
+        ],
+        [
+          "R005",
+          true
+        ]
+      ]
+    },
+    "two_hits": {
+      "legacy_0.8_decides": true,
+      "aligned_0.86_decides": true,
+      "aligned_decision": {
+        "need_memory": true,
+        "need_rag": true,
+        "reason": "信号并集：[R001] 命中记忆关键词 ['我的', '我的偏好'] (confidence=0.95)；[R004] 实体+偏好词 ['偏好', '习惯'] (confidence=0.88)"
+      },
+      "legacy_qualified_flags": [
+        [
+          "R001",
+          true
+        ],
+        [
+          "R004",
+          true
+        ]
+      ],
+      "aligned_qualified_flags": [
+        [
+          "R001",
+          true
+        ],
+        [
+          "R004",
+          true
+        ]
+      ]
+    },
+    "no_candidate": {
+      "legacy_0.8_decides": false,
+      "aligned_0.86_decides": false,
+      "aligned_decision": null,
+      "legacy_qualified_flags": [],
+      "aligned_qualified_flags": []
+    }
+  },
+  "rules_configurable": {
+    "rules_loaded": [
+      "X001"
+    ],
+    "custom_keyword_routes": {
+      "need_memory": true,
+      "need_rag": false,
+      "reason": "[X001] 命中记忆关键词 ['专有词'] (confidence=0.86)"
+    },
+    "invalid_path_falls_back": [
+      "R001",
+      "R002",
+      "R003",
+      "R004",
+      "R005"
+    ]
+  },
+  "llm_fallback": {
+    "switch_off_classifier_injected": false,
+    "switch_on_classifier_injected": true,
+    "timeout_decision": {
+      "need_memory": false,
+      "need_rag": false,
+      "reason": "规则引擎兜底决策（无命中规则）"
+    }
+  }
+}
