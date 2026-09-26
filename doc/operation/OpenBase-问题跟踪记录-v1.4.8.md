@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.34.0 |
+| 文档版本 | v1.35.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops |
 | 创建日期 | 2026-09-21 |
@@ -200,6 +200,66 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4C. 本轮迭代（智能体对话全链路）收口：**流式与同步双路径收敛**（2026-09-26）
+
+> **收口目标**：§4A/§4B 已把**同步** `mode=auto` 的「画像 + 记忆 + 知识库」三源自动装配跑通，
+> 但遗留 **`CR-148-030`（流式 auto 与同步路径语义分叉）** 未闭环 —— 而流式（SSE）是**智能体/前端
+> 的实际接入面**。本节把它与顺带发现的**流式条目级计量缺口**一并关闭，使两条路径**同一决策入口 +
+> 同一装配语义 + 同一回写闭环**。
+
+### 4C.1 缺陷与根因
+
+| 缺陷 ID | 级别 | 位置 | 现象与根因（含实测） | 处置 |
+|---------|:----:|------|----------------------|------|
+| **DEF-BE-148-027** | **P1** | OpenLLM `api/openllm_gateway.py`（流式端点）、`orchestration/auto.py` | **流式 `mode=auto` 不经组件路由器决策**：`_auto_pipeline(options)` 直接按 `options` 展开组件 → 流式 auto 的「记忆 + 知识库」参与**需调用方显式传 `enable_rag` + `kb_id`**（缺参数时原实现直接 4003），**知识库自动发现完全不生效**；且流式三路回写构造回调时**不带 `kb_id`** → `_rag_writeback` 恒抛「kb_id 缺失」→ 重试耗尽置 `failed`（流式知识库回写闭环不成立）。**实测**：修复前流式 auto 请求 `routing_trace` 无 `path`/`decision`/`kb_id_source`，`context_metrics` 仅 system/query 两段。 | **已修复**（见 4C.2） |
+| **DEF-BE-148-028** | **P2** | OpenLLM `_run_stream_components` → `context_metrics.build_receipt_from_result` | 流式组件执行结果**未回传 `raw_results`** → 回执构造取到空 dict → `memory` / `rag` 快照恒 `items_count=0`、`injected_items=0`，而同一回执内 `injected_tokens>0`（**自相矛盾**）→ 流式路径的**条目级证据与归因 A 全部缺失**。**实测对照**：同步路径同字段 `items_count=5 / injected_items=5`，流式 `0 / 0`。 | **已修复**（见 4C.2） |
+
+**契约更正（同轮，随 `CR-148-030` 收口）**：`mode=auto` 下 `options.enable_memory/enable_rag` 仅作「意向/上限」，
+组件构成由「组件路由器决策 + 知识库自动对接」决定 —— 故**缺 `options.kb_id` / `options.user_id` 不再返回 4003**
+（缺 `kb_id` 由 `_resolve_auto_kb_id` 自动发现；缺 `user_id` 由请求上下文主体兜底）。原 2 例固化旧契约的断言
+（`test_coverage_boost_v2112.py`）按新契约更正为「**不得再按参数缺失拒绝**」；`explicit` 模式的 4003 校验
+（`_validate_pipeline`）**不变**。
+
+### 4C.2 修复内容（双路径收敛，`TD-148-03`）
+
+| # | 修复 | 说明 |
+|:-:|------|------|
+| 1 | **唯一决策入口**：`AutoOrchestrator.decide()` + `apply_option_overrides()` | 把「路由器决策 + 信号并集 + 选项级开关覆盖（含「无 kb_id 不装配 rag」收口）」收敛为**单一实现**；`run()` 新增 `plan=` 参数，调用方已决策时直接复用 → **同一请求只决策一次**（原同步路径 `decide` 被调用两次的浪费一并消除） |
+| 2 | **网关共用规划入口**：`_auto_component_plan()` | 同步 / 流式**共用**：先 `_resolve_auto_kb_id`（explicit → 注册表 → 外部集合）自动对接知识库，再由 `decide()` 产出 `path`/`components`；返回 `{options, decision, plan, kb_id, kb_id_source}` |
+| 3 | **流式流水线组装**：`_compose_auto_stream_pipeline()` | 按决策结论组装 `[memory?, rag?, llm]`（条目键 `component`，参数与编排层同口径：`top_k` / `kb_id`），llm 条目沿用请求参数 |
+| 4 | **流式端点决策位置（P-4 口径不变）** | 决策置于**首包之后**（`sse_first_packet` 之后）—— P-4 明确「首包之前只有本仓工作，首个外部调用在首包之后」，知识库自动发现含外部列举调用**不得前移**；决策耗时单独计入 `auto_component_decision` 步骤。有效执行序列与基线分离（`stream_pipeline` / `effective_pipeline_names`），落库 pipeline 取**有效**序列 |
+| 5 | **kb_id 贯通回写** | `_schedule_stream_writebacks(kb_id=)` → `_run_stream_writebacks(kb_id=)` → `_build_writeback_callback(rag_kb_id=)` **按路绑定**（仅 rag 路带 kb_id，memory/profile 两路不受影响） |
+| 6 | **流式条目级计量收敛** | `_run_stream_components` 回传 `raw_results`（口径与 `PipelineExecutor` 一致，仅 memory/rag）→ 流式回执的条目级证据与归因 A 与同步同口径 |
+| 7 | **`_auto_pipeline` 放宽** | 不再因缺 `kb_id`/`user_id` 抛 4003（仅产出承载 llm 参数的**基线**） |
+
+### 4C.3 端到端验收证据（流式全链路，判据 S1~S10 全绿）
+
+| 项 | 内容 |
+|----|------|
+| 核验脚本 | `doc/test/evidence/agent-e2e/agent_context_e2e_stream.py`（全真实 HTTP：`POST /api/v1/llm-proxy/chat/stream` → OpenLLM `/chat/stream`，SSE 逐事件解析；退出码 0=PASS） |
+| 证据文件 | `doc/test/evidence/agent-e2e/agent-context-e2e-stream.json` |
+| 取数口径 | trace 走 OpenLLM `traces` 落库直读（`GET /openllm/v1/trace/{id}` 带**资源所有者门禁**，脚本持有的网关 Key 身份与请求主体不同 → 401/2001，非功能缺陷）；回写**投递真值**走回写队列表 `writeback_queue` |
+
+**实测（PASS）**：`timeline = auth → sse_first_packet → auto_component_decision → memory → rag → profile_fetch → llm → writeback_dispatch`；
+`path=C`、`kb_id_source=external`、`rag_source=external`；
+**`segment_tokens` 第 1 轮 `{profile:128, memory:8011, rag:1954, query:52}` / 第 2 轮 `{profile:128, memory:6507, rag:1929, query:53}`**；
+**`memory.injected_items=5`、`rag.injected_items=5`（第 1/2 轮）**；归因 A `used` 318 / 310 条片段；
+**回写队列表三路（memory/rag/profile）均 `done` 且 `retry_count=0`**；SSE 事件序列含 `routing` 与 `done`；单轮端到端 9.2~17.4 s。
+
+**同步路径回归复测（同一提交）**：`agent_context_e2e.py` 仍 **PASS** —— `path=C`、`executed=['memory','rag','llm']`、`degraded=[]`、
+`segment_tokens={profile:128, memory:7417, rag:1811}`、`kb_marker_in_answer=true`。
+
+### 4C.4 回归与未闭环项
+
+| 项 | 结果 |
+|----|------|
+| 本轮改动触及模块回归（OpenLLM `tests/unit`） | **26 项既有失败集与基线（`git stash` 回退版本）逐项完全相同**（`Compare-Object` 零差异）→ **零新增失败**；差异仅 2 项为**契约更正的旧断言改名**（旧名 `test_4003_auto_*` 已不存在） |
+| 本轮新增护栏 | `tests/unit/test_stream_auto_parity.py`（16 例，全绿）：决策入口 / 选项覆盖 / `plan=` 复用 / 流式组装 / 决策在首包之后 / kb_id 贯通回写 / `raw_results` 回传 |
+| **未闭环项** | **0 项** —— §4A.4 与 §4B.3 登记的 `CR-148-029`、`CR-148-030`、`CR-148-031` 均已闭环（`CR-148-029` → `DEF-BE-148-024`；`CR-148-031` → `DEF-BE-148-023`；`CR-148-030` → `DEF-BE-148-027`） |
+| 遗留观测备注（非缺陷） | 流式 `routing` **首事件**为**首包快照**（决策在首包之后，P-4 约束所致），客户端可见的 `need_memory/need_rag` 为 options 派生预判；**权威决策以落库 trace 为准**（`routing_trace.path/decision/components`） |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
@@ -249,3 +309,4 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 | **v1.32.0** | **2026-09-26** | **TE-OpenBase-Dev / AD-OpenBase-Dev** | **`CR-148-026` / `DEF-BE-148-013`（P1）修复并验证通过 —— 回退 Step 3 执行（OpenLLM 侧），P1 产品缺陷未关闭数回收为 0**。① **改动**（OpenLLM 提交 **`692ca6d`**，生产 1 文件 + 护栏 1 文件，`+75/-1`，**显式路径** git add、**TDD 合规**）：`app/services/conversation_service.py::get_conversation_history` 的会话筛选分支 `.astext` → **`.as_string()`**（补注释说明依据）。② **定点取证（如实登记「为何此前未暴露」）**：**pytest 会话内**探针确证该列解析为 `sqlalchemy.JSON`（`comparator.__module__ = sqlalchemy.sql.sqltypes`、`hasattr(astext) = False`、`hasattr(as_string) = True`）；而**独立脚本内同一属性解析为 JSONB（仍带 `astext`）** → **离线探测不足以复现**，须在测试会话内取证（探针用后即删，未入库）。③ **TDD**：新增 `tests/unit/test_session_filter_json_api_guard.py`（**4 例**：源码契约不得含 `.astext` / 修复形态须用 `.as_string()` / **全仓零残留**（`app/` 内 `.astext` = 0）/ 双方言可编译，SQLite `JSON_EXTRACT` 与 PostgreSQL `->>`+CAST）→ **RED（契约 2 例失败）→ GREEN**。④ **验证**：定向 **18 项全绿**（`test_session_scope_alignment` **12 passed / 2 failed → 14 passed**）；**权威口径全量回归 31 failed / 2863 passed / 0 error**（506.74 s），对照 `CR-148-019` 轮基线 **33 / 2848 / 0** → **failed −2（正是本例）、passed +15**（本次护栏 4 + 第 25 批护栏 9 + 转通过 2）、收集数 **2881 → 2894**；静态质量：新护栏 `ruff All checks passed`、被改文件 **20 条均为既有欠账**（与 HEAD 基线同为 20 条）、**改动行零告警**。⑤ **门禁回收**：**P0/P1 产品缺陷未关闭数 1 → 0** → 《测试回溯对比审计报告-v1.4.8》§2 判据 3 恢复「✅ **基本满足**」、§3.1 `DEF-BE-148-013` 状态改「✅ 已闭环」、§7 P1 改 **0**、§9.2 ⑨ 标记「✅ 已完成」；**Step 4 判定仍「不通过」**（主因不变：`TT-038` ❌ + 前端类 `TT-025`/`TT-026`、可访问性 `TT-040` 未执行）。⑥ **同步**：《测试报告-v1.4.8》**v4.5.0**（§7 #31 处置回填 + §11 段 + 结论行/修订行）、《测试回溯对比审计报告-v1.4.8》**v1.6.0**、《OpenLLM DevLogReport》**v1.15.0**（第 26 批，含第 24/25 批补登）、`.devflow/state.json` 增补；证据 `doc/test/evidence/v148/cr148-026-regression-unit-20260926.txt`。⑦ 文档版本 **v1.31.0 → v1.32.0**，状态 [Review] |
 | **v1.33.0** | **2026-09-26** | **TE-OpenBase-Dev / AT-OpenBase-Test** | **本轮迭代（智能体对话全链路）端到端跑通 —— 自主定位并修复 7 项缺陷（DEF-BE-148-014 ~ 020）+ 1 项环境配置缺口；端到端验收判据 H1~H9 全绿**。① **目标**：「智能体对话经 OpenLLM 自动对接 DPS / 记忆 / 知识库并科学装配上下文投喂 LLM 的完整全流程跑通实用」（用户 /goal 指令，含「自行按目标修正完成」授权）。② **缺陷与根因归纳**（详见 §4A.1）：**本轮失败不是单点 bug，而是三条跨仓链路从未接线** —— **(i) 受信出站头（S4-T3 K15）**：`OpenRAGClient/OpenMemoryClient/DPSClient` 的 `set_outbound_headers` **全仓 0 处调用** → 下游只收 `X-API-Key`（无受信来源、无主体域）→ OpenRAG 判 `POST /query/retrieve` 为**匿名写 403**、DPS 按非受信来源**忽略**身份头（401）；**(ii) M2 数据面隔离键**：`resolve_tenant_request_scope` 第三返回值被 `_` 丢弃且 `RequestContext` 无该字段 → 出站**恒不发 `X-Tenant-ID`** → 集合**列举**与**检索**落入**不同租户域**；**(iii) 角色码归一**：本地码 `platform_admin` 原样透传 → 下游 `unknown_role` **403 fail-closed**。三者叠加使记忆 / 知识库 / 画像**全链路 fail-closed**，而 OpenRAG 侧白名单缺口使其**先表现为 403**、掩盖了更上游断链。另 4 项：内置 RAG 租户过滤**列名错误**（`organization_id` → `tenant_id`，**恒空结果静默失效**）、组件路由**胜者通吃**使记忆信号抑制知识库信号（知识库已自动对接却被整段丢弃）、auto 模式**知识库未自动对接**（R002 需 `kb_id`）、语义缓存**准入未排除上下文相关请求**（相似提问命中缓存 → 装配被整体旁路）、本仓 `llm_upstream_timeout=20.0` **过窄**使「上游正常但较慢（19~27s）」被判 **SYS_502**。③ **修复与验证**：OpenLLM 仓提交 **`bd4cb0c`**（15 文件 `+1616/-65`，显式路径，**TDD 合规**：5 个新护栏文件 + 1 文件按统一装配口径更正断言）；本仓改动 `openbase/settings.py`（上游预算 20.0 → **120.0**）与 `scripts/service-orchestrator.ps1`（OpenRAG 受信来源白名单补入编排出站来源）；**因果探针**取证（固定其余头仅切换 `X-Tenant-ID`：无 → 400/403；有 → 200）；定向回归 **132 passed / 0 failed**（9 个相关测试文件）。④ **端到端验收（PASS）**：`path=C`、`executed=['memory','rag','llm']`、**`degraded=[]`**、`rag_source=external`、`kb_id_source=external`、**`segment_tokens.rag=478` / `contexts_tokens=478` / `rag.injected_items=1`**、`attribution_a.used_ratio=1.0`、端到端 **19.2s**；决策原因实证**信号并集**（R001+R002+R004 同时保留）；回答正文**显式引用知识库样本**（`AGENT-CTX-KB-20260926`）→ 证明知识库内容**真实进入 Prompt 并被消费**。⑤ **验收口径裁定**：`admin`（JWT）**无 `tenant_code`** → 出站不带租户头 → 自动对接取空；故端到端以**智能体主体**（`sk-agent-*`，`tenant_id=1 → tenant_code='tenant-1'`，经 `POST /api/v1/identity/agents` 正规签发）为准，**不修改任何既有账号数据**。⑥ **未闭环项（4 项，已登记）**：DPS 画像段实际注入（**跨仓租户码映射 + 画像种子**，探针证明**缺口在数据域而非代码**：DPS 预建码 → 404 人员不存在 / 本仓码 → 403 组织不存在 → `CR-148-029` 待裁定）；记忆段注入量（首轮对话注入 0 属正常，连续两轮复测）；流式 auto 与同步路径语义分叉（`CR-148-030`）；回写记忆命名读/写用户键不一致（`CR-148-031`）。⑦ **同步**：本记录 §4A（新建）+ §5 本行；《测试报告-v1.4.8》**v4.6.0**；《测试回溯对比审计报告-v1.4.8》**v1.7.0 → v1.8.0**；OpenLLM《DevLogReport R-396~R-398》**v1.16.0**（第 27 批）；`.devflow/state.json` 增补；证据 `doc/test/evidence/agent-e2e/`（核验脚本 + 判据 JSON + 知识库种子脚本）。⑧ 文档版本 **v1.32.0 → v1.33.0**，状态 [Review] |
 | **v1.34.0** | **2026-09-26** | **TE-OpenBase-Dev / AT-OpenBase-Test** | **本轮迭代续：三源科学装配闭环达成 —— 新增修复 5 项缺陷（DEF-BE-148-021 ~ 025）+ 2 项环境/前置接线；端到端判据扩展至 H1~H10 全绿**。① **目标（续 §4A）**：§4A 已跑通「知识库真实注入 + 记忆组件执行 + 画像链路受信」但留 4 项未闭环；本轮补齐**记忆往返回环**与 **DPS 画像实际注入** → **`profile` + `memory` + `rag` 三段同轮进入 Prompt 并被消费**。② **缺陷与根因**（详见 §4B.1）：**(i) `DEF-BE-148-021`（P1）三路回写「静默不投递」** —— `WritebackQueue._run_item` 取不到 handler 即记 ERROR 后**直接 return、行状态不变**，而 `register_handler` **仅在 `/writeback` API 端点注册**，chat 业务路径从不注册 → 实测 `pending 5968 / done 21 / failed 41`，记忆**永不沉淀**；**(ii) `DEF-BE-148-023`（P1）记忆读/写资源键不一致（K17 声明未落地）** —— 读路径用 `{tenant_code}_{user_id}`、回写取原始键 → 同一主体落在两个键 → 第 2 轮 `memory.injected_items` 恒 0；**(iii) `DEF-BE-148-022`（P1）知识库路回写 kb_id 未透传** → 恒「kb_id 缺失」failed；**(iv) `DEF-BE-148-024`（P1 跨仓）DPS 码值未桥接 + 身份贯通缺失** —— DPS 独立联调演示码空间（`dps-org-001`/`dps-tenant-001`）无等价映射（实测三态 403「组织不存在」/404「人员不存在」/401），且 `_resolve_real_headers` 仅认 `external_*`（回写上下文恒空 dict）、回写 `role` 硬编码 `"user"`（DPS fail-closed）、画像读 `external_user_id` 而写回退资源键（同一主体两个 person_id）；**(v) `DEF-BE-148-025`（P2）画像回写空更新** → DPS 400「无可更新字段」（拒绝为凑合法请求而伪造画像数据）。③ **修复**：`_ensure_writeback_handlers` 业务路径注册（复用 API 端点同一实现）；`_build_wb_request_context` 与读路径**同一事实源**派生资源键并贯通 `org_id`/`role`/`external_*`；rag 回写透传 kb_id（auto 自动对接值 / 显式 pipeline 值）；新增 `apply_dps_code_map()` + `DPS_ORG_CODE_MAP`/`DPS_TENANT_CODE_MAP`（未配置=原样透传）并按本仓 `dps_code_map` 同口径配置编排器 Env；画像回写无字段时**无操作收口**。**因果探针**：固定其余头仅切换码值 → 码值正确时 `calculate`/`GET` **均 200 且返回真实画像**。④ **验收（PASS）**：`path=C`、`executed=['memory','rag','llm']`、`degraded=[]`、`rag_source=external`、`kb_id_source=external`、**`segment_tokens={profile:128, memory:5244, rag:2012, query:35}`**、`rag.injected_items=5`、`memory.injected_items=5`、`attribution.used_ratio≈0.98`、`contexts_tokens=7384`、端到端 **21.4 s**；**回写三路实测均 `done`**。⑤ **环境/前置接线**：DPS 联调前置（`platform.user_roles` 绑定 + `platform.profile` 画像行，幂等脚本 `seed_dps_portrait.py` —— DPS **不提供画像 upsert** 且未绑定主体 fail-closed 403；本环境 `platform.profile` 唯一键实为 `(person_id, tenant_id, template_code)`，按唯一约束写 `ON CONFLICT` 会报 `InvalidColumnReference`，故以显式存在性判定保证幂等）；编排器 openllm Env 增补 DPS 码值互译表（**长驻监控进程 Env 在启动时固化 —— 改脚本后须重启监控器方可生效**）。⑥ **回归**：本轮改动触及模块 24 文件 **12 failed / 362 passed**，12 项**全部落在既有失败集**（陈旧 401 `detail` 断言 / 已删符号 `_resolve_memory_metadata` / 本地 `.env` 三 REAL 开关 / `v213_gateway_ext` 异步卫生 / `writeback_degradation` 陈旧解包），**零新增失败**；其中 `test_s4_t5_prefix_normalize.py` **2 例由红转绿**（K17 归一落地）。⑦ **新增登记未闭环 2 项**：**回写队列启动恢复未接线**（`recover_pending()` 已于类文档声明为「应用启动时」调用但**全仓无调用点** → 重启后存量 pending 不再投递；接入时须加时限/条数上界以防回放数千条历史噪声，建议随 `TD-148-03`/运维批处置）；流式 auto 与同步路径语义分叉（沿用 `CR-148-030`）。⑧ **同步**：本记录 §4B（新建）+ §5 本行；《测试报告-v1.4.8》**v4.7.0**；《测试回溯对比审计报告-v1.4.8》**v1.9.0**；OpenLLM《DevLogReport R-396~R-398》**v1.17.0**（第 28 批）；`.devflow/state.json` 增补；证据 `doc/test/evidence/agent-e2e/`（核验脚本 ＋ 判据 JSON ＋ 知识库种子 ＋ **DPS 前置种子**）。⑨ 文档版本 **v1.33.0 → v1.34.0**，状态 [Review]（**同轮补注（修订号内澄清）**：新增修复 **`DEF-BE-148-026`（P1）** —— **回写队列启动恢复接线 + 双上界**（`lifespan` 接线 `recover_pending()`；时间窗 30 分钟 + 条数 200），实测启动日志「回写队列启动恢复完成: **21 条**待重跑（max_age=30.0 / limit=200）」→ 历史残留 5968 行**未回放**；护栏 `tests/unit/test_writeback_recovery_bounds.py`（9 例）→ **本轮缺陷数 5 → 6**、**§4B.3 未闭环 2 → 1 项**） |
+| **v1.35.0** | **2026-09-26** | **TE-OpenBase-Dev / AT-OpenBase-Test** | **本轮迭代收口：流式与同步双路径收敛 —— 新增修复 2 项缺陷（`DEF-BE-148-027` / `DEF-BE-148-028`）+ 1 项契约更正；流式全链路端到端判据 S1~S10 全绿，登记未闭环项清零**。① **目标**：§4A/§4B 已把**同步** `mode=auto` 的三源自动装配跑通，遗留唯一登记项 **`CR-148-030`（流式 auto 与同步路径语义分叉）** 未闭环 —— 而流式（SSE）是**智能体/前端的实际接入面**，故本轮以「双路径收敛」收口（详见 §4C）。② **缺陷与根因**：**(i) `DEF-BE-148-027`（P1）流式 auto 不经组件路由器决策、知识库不自动对接** —— `_auto_pipeline` 按 `options` 直接展开组件（缺 `enable_rag`+`kb_id` 即 4003），流式路径因此**须调用方显式传参**；且流式三路回写构造回调时不带 `kb_id` → rag 路回写恒「kb_id 缺失」failed（流式知识库回写闭环不成立）；**(ii) `DEF-BE-148-028`（P2）流式条目级计量缺口** —— `_run_stream_components` 未回传 `raw_results` → 回执 `memory`/`rag` 快照恒 `items_count=0 / injected_items=0`，而同回执 `injected_tokens>0`（自相矛盾）→ 流式**条目级证据与归因 A 全部缺失**（同步同字段 5/5）。③ **修复（7 项，§4C.2）**：`AutoOrchestrator.decide()`/`apply_option_overrides()` **唯一决策入口** + `run(plan=)`（同一请求只决策一次）；网关 `_auto_component_plan()` 同步/流式**共用**规划入口（含 `_resolve_auto_kb_id` 自动对接）；`_compose_auto_stream_pipeline()` 按决策组装流式流水线；流式端点**决策置于首包之后**（P-4 口径「首包前只有本仓工作」不变，决策耗时计入 `auto_component_decision`），有效执行序列（`stream_pipeline`/`effective_pipeline_names`）与基线分离；`kb_id` 贯通 `_schedule_stream_writebacks` → `_build_writeback_callback(rag_kb_id=)` **按路绑定**；`_run_stream_components` 回传 `raw_results`；`_auto_pipeline` 放宽 4003。**契约更正**：auto 模式缺 `kb_id`/`user_id` 不再 4003（自动对接 + 主体兜底），2 例固旧契约断言按新契约更正（explicit 的 4003 校验不变）。④ **验收（流式 PASS，判据 S1~S10）**：`timeline = auth → sse_first_packet → auto_component_decision → memory → rag → profile_fetch → llm → writeback_dispatch`；`path=C`、`kb_id_source=external`、`rag_source=external`；`segment_tokens` 第 1 轮 `{profile:128, memory:8011, rag:1954}` / 第 2 轮 `{profile:128, memory:6507, rag:1929}`；**`memory.injected_items=5`、`rag.injected_items=5`**；归因 A `used` 318/310；**回写队列表三路均 `done`（`retry_count=0`）**；单轮 9.2~17.4 s。**同步路径回归复测仍 PASS**（`segment_tokens={profile:128, memory:7417, rag:1811}`、`kb_marker_in_answer=true`）。⑤ **回归**：OpenLLM `tests/unit` 既有失败集与**基线（`git stash` 回退版本）逐项完全相同**（`Compare-Object` 零差异）→ **零新增失败**；新增护栏 `tests/unit/test_stream_auto_parity.py`（16 例全绿）。⑥ **未闭环项**：**0 项**（`CR-148-029/030/031` 全部闭环）。⑦ **同步**：本记录 §4C（新建）+ §5 本行；《测试报告-v1.4.8》**v4.8.0**；《测试回溯对比审计报告-v1.4.8》**v2.0.0**；OpenLLM《DevLogReport R-396~R-398》**v1.18.0**（第 29 批）；`.devflow/state.json` 增补；证据 `doc/test/evidence/agent-e2e/`（**流式核验脚本 ＋ 流式判据 JSON**）。⑧ 文档版本 **v1.34.0 → v1.35.0**，状态 [Review] |
