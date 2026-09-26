@@ -841,8 +841,12 @@ async def check_t8() -> Verdict:
 # ---------------------------------------------------------------- T9 路由一致性
 
 def check_t9() -> Verdict:
-    """T9：路由达标判定与最终决策一致；规则集可配置；LLM 兜底超时回落"""
-    title = "路由：达标即决策、规则集可配置、LLM 兜底超时回落"
+    """T9：路由达标判定与最终决策一致；规则集可配置；LLM 兜底超时回落；兜底分类缓存
+
+    ④（v1.16.0 补入，对方案 §5.8「路由分类按 query 归一化缓存」）：同题（归一化后相同）
+    重复提问**只付一次**兜底分类；不同 query 各付一次；容量置 0 ⇒ **逐字回退**（每次分类）。
+    """
+    title = "路由：达标即决策、规则集可配置、LLM 兜底超时回落、兜底分类按 query 归一化缓存"
     from app.api.openllm_gateway import _build_component_router
     from app.edgerouter.orchestration.component_router import ComponentRouter
 
@@ -908,6 +912,52 @@ def check_t9() -> Verdict:
         failures.append(f"非法规则路径未退回内置规则：{invalid_path_rules}")
     if "无命中规则" not in (timeout_decision or {}).get("reason", ""):
         failures.append(f"LLM 超时未回落规则：{timeout_decision}")
+
+    # ④ 兜底分类缓存（§5.8「路由分类按 query 归一化缓存」；v1.16.0 补入本判据）
+    from app.edgerouter.orchestration.component_router import (
+        ComponentRouter as _CacheRouter,
+    )
+    from app.edgerouter.orchestration.component_router import (
+        clear_llm_decision_cache as _clear_cache,
+    )
+
+    class _CountingClassifier:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        async def __call__(self, query: str, _prompt: str) -> str:
+            self.calls.append(query)
+            return '{"need_memory": true, "need_rag": false, "reason": "分类器判定"}'
+
+    _unmatched = "帮我看看这个东西怎么样"
+    _unmatched_other = "顺便说一下那边的进展如何"
+    _clear_cache()
+    _counter = _CountingClassifier()
+    _cache_router = _CacheRouter(llm_classifier=_counter)
+    _first = asyncio.run(_cache_router.decide(_unmatched))
+    _second = asyncio.run(_cache_router.decide(_unmatched))
+    _same_query_calls = len(_counter.calls)
+    asyncio.run(_cache_router.decide(_unmatched_other))
+    _distinct_calls = len(_counter.calls)
+    _copy_ok = _second == _first
+
+    _clear_cache()
+    _off_counter = _CountingClassifier()
+    _off_router = _CacheRouter(llm_classifier=_off_counter, llm_cache_size=0)
+    asyncio.run(_off_router.decide(_unmatched))
+    asyncio.run(_off_router.decide(_unmatched))
+    _switch_off_calls = len(_off_counter.calls)
+    _clear_cache()
+
+    if _same_query_calls != 1:
+        failures.append(f"同题重复提问未命中缓存（实测分类 {_same_query_calls} 次）")
+    if not _copy_ok:
+        failures.append("缓存命中返回的决策与首次不等")
+    if _distinct_calls != 2:
+        failures.append("不同 query 未各付一次分类（缓存键过宽）")
+    if _switch_off_calls != 2:
+        failures.append("缓存容量置 0 时未逐字回退（仍应每次分类）")
+
     return Verdict(
         criterion="T9",
         title=title,
@@ -923,6 +973,12 @@ def check_t9() -> Verdict:
             "rules_loaded": rules_loaded,
             "invalid_path_rules": invalid_path_rules,
             "timeout_decision": timeout_decision,
+            "classification_cache": {
+                "same_query_calls": _same_query_calls,
+                "distinct_query_calls": _distinct_calls,
+                "capacity_zero_calls": _switch_off_calls,
+                "default_capacity": _CacheRouter(llm_classifier=_CountingClassifier()).llm_cache_size,
+            },
             "llm_fallback_switch": getattr(
                 settings, "COMPONENT_ROUTER_LLM_FALLBACK_ENABLED", None
             ),

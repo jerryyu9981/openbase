@@ -69,6 +69,54 @@ def _compare(query: str, options: dict) -> dict:
     }
 
 
+async def _probe_classification_cache() -> dict:
+    """④ 兜底分类缓存（方案 §5.8）：同题只付一次、异题各付一次、容量 0 逐字回退"""
+    from app.edgerouter.orchestration.component_router import (
+        clear_llm_decision_cache,
+        llm_decision_cache_size,
+    )
+
+    class _CountingClassifier:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        async def __call__(self, query: str, _prompt: str) -> str:
+            self.calls.append(query)
+            return '{"need_memory": true, "need_rag": false, "reason": "分类器判定"}'
+
+    unmatched = CASES["no_candidate"][0]
+    other = "顺便说一下那边的进展如何"
+    clear_llm_decision_cache()
+    counter = _CountingClassifier()
+    router = ComponentRouter(llm_classifier=counter)
+    first = await router.decide(unmatched)
+    second = await router.decide(unmatched)
+    same_query_calls = len(counter.calls)
+    await router.decide(other)
+    distinct_calls = len(counter.calls)
+    entries_after = llm_decision_cache_size()
+
+    clear_llm_decision_cache()
+    off_counter = _CountingClassifier()
+    off_router = ComponentRouter(llm_classifier=off_counter, llm_cache_size=0)
+    await off_router.decide(unmatched)
+    await off_router.decide(unmatched)
+    capacity_zero_calls = len(off_counter.calls)
+    clear_llm_decision_cache()
+
+    return {
+        "same_query_calls": same_query_calls,
+        "same_query_hits_cache": same_query_calls == 1,
+        "distinct_query_calls": distinct_calls,
+        "distinct_queries_each_pay": distinct_calls == 2,
+        "cached_decision_equal": first == second,
+        "cache_entries_after_two_distinct": entries_after,
+        "capacity_zero_calls": capacity_zero_calls,
+        "capacity_zero_disables": capacity_zero_calls == 2,
+        "default_capacity": ComponentRouter(llm_classifier=_CountingClassifier()).llm_cache_size,
+    }
+
+
 async def main() -> dict:
     original_rules_path = settings.COMPONENT_ROUTER_RULES_PATH
     original_enabled = settings.COMPONENT_ROUTER_LLM_FALLBACK_ENABLED
@@ -107,6 +155,9 @@ async def main() -> dict:
     gateway._call_llm = original_call_llm  # type: ignore[assignment]
     settings.COMPONENT_ROUTER_LLM_FALLBACK_ENABLED = original_enabled
 
+    # ④ 兜底分类缓存（方案 §5.8「路由分类按 query 归一化缓存」，v1.16.0 接线）
+    cache_report = await _probe_classification_cache()
+
     return {
         "config": {
             "single_hit_confidence": settings.COMPONENT_ROUTER_SINGLE_HIT_CONFIDENCE,
@@ -114,6 +165,7 @@ async def main() -> dict:
             "rules_path_default": original_rules_path,
             "llm_fallback_default": original_enabled,
             "llm_timeout_seconds": settings.COMPONENT_ROUTER_LLM_TIMEOUT_SECONDS,
+            "llm_cache_size_default": settings.COMPONENT_ROUTER_LLM_CACHE_SIZE,
         },
         "threshold_alignment": decisions,
         "rules_configurable": rules_configured,
@@ -122,6 +174,7 @@ async def main() -> dict:
             "switch_on_classifier_injected": on_router._llm_classifier is not None,
             "timeout_decision": timeout_decision,
         },
+        "classification_cache": cache_report,
     }
 
 

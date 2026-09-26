@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.50.0 |
+| 文档版本 | v1.51.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops / AA-OpenBase-Dev |
 | 创建日期 | 2026-09-21 |
@@ -882,6 +882,56 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4S. 逐条复核发现的第 4 处「正文已指定但未实施」：§5.8 路由分类缓存 → 同版闭环（判据 T9④）（2026-09-27）
+
+> **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.16.0** §5.8 / §7 T9；实现在 OpenLLM 仓（其《DevLogReport》**v1.32.0** 第 43 批，提交 `3bb9a3f`）。
+> **性质**：**复核发现 ＋ 同版实施闭环**。**无新增缺陷、无新增债务。**
+
+### 4S.1 发现与取证
+
+| 项 | 内容 |
+|----|------|
+| **方案要求** | §5.8 在线档预算行：「**路由分类按 query 归一化缓存**」—— 同会话重复提问不重复分类、命中缓存直接返回，**不重付 ≤300ms 兜底预算** |
+| **取证（可复现）** | `ComponentRouter` 全类检索 `cache` ⇒ **零命中**；`decide()` 每次未命中规则都**重新调用** `llm_classifier` ⇒ 重复提问**重复付预算** |
+| **关键约束（决定实现形态）** | **联网关每次请求都会新建 `ComponentRouter`**（分类器闭包捕获 db/identity）⇒ 缓存挂实例上**永不命中**，**必须进程级** |
+| **同批暴露的隔离问题** | 进程级缓存使两处既有文件中「同一 query ＋ **不同分类器替身**」的用例**跨用例命中**（实测 **4 failed**）—— 属**测试隔离缺口**，非被测逻辑缺陷 |
+
+### 4S.2 实施内容（v1.16.0）
+
+| # | 项 | 内容 |
+|:-:|----|------|
+| 1 | **进程级 LRU** | `_LLM_DECISION_CACHE`（`OrderedDict` ＋ 锁）＋ `_cache_get` / `_cache_put`；容量由 `COMPONENT_ROUTER_LLM_CACHE_SIZE` 控制（默认 **256**；**置 0 = 关闭缓存**，逐字回退） |
+| 2 | **键＝（作用域, 归一化 query）** | 归一化 ＝ 压缩空白 ＋ 大小写不敏感（与段内去重口径一致）；作用域 ＝ **`模型标签:规则指纹`** |
+| 3 | **防陈旧（两处指纹刷新）** | `_refresh_rules_fingerprint()` 在 `_load_rules`（初始加载）与 `_check_and_reload`（热更新）两处规则替换点调用 ⇒ **规则变更后旧条目自然失配**；作用域含模型标签 ⇒ **换模型亦失配** |
+| 4 | **不变式** | 命中返回**副本**（调用方改写不污染缓存）；**失败与非法输出不入缓存**（不把分类失败固化成命中）；**规则达标时不触碰分类器/缓存**（既有语义） |
+| 5 | **可观测与可隔离** | 新增 `clear_llm_decision_cache()`（测试隔离/排障）与 `llm_decision_cache_size()`（观测） |
+
+### 4S.3 验证与证据
+
+| 项 | 结果 |
+|----|------|
+| 新增护栏（TDD） | `tests/unit/test_component_router_classification_cache.py` **14 例**（首轮 **RED 6 failed**，失败信息即缺口证据） |
+| 同批隔离修正 | `test_component_router_decision_tuning.py` 与 `test_orchestration.py` 各加 **autouse 清缓存 fixture** —— **不改任何断言**（仅恢复用例隔离）；修正后两文件 **77 例全绿** |
+| **运行态探针（决定性）** | `component_decision_probe.py` **④ classification_cache** 段：`same_query_calls=1`（同题命中）、`distinct_query_calls=2`（异题各付一次）、`cached_decision_equal=true`、`capacity_zero_calls=2`（容量 0 逐字回退）、`default_capacity=256` |
+| 执行器两态实测 | **当前配置** ⇒ `{PASS:5（T3/T7/T9/T10/T11）, SKIP:4, BLOCKED:2, FAIL:0}`；`--simulate` ⇒ `{PASS:8, SKIP:1, BLOCKED:2, FAIL:0}` —— 报告落 `t_acceptance_runner-result.json` 与 `t_acceptance_runner-simulate-result.json` |
+| 全量回归 | `32 failed / 3189 passed / 0 error`（249.94 s） |
+| **基线对照** | 与上一轮基线逐项对照**唯一差异为既有 flaky `test_v213_gateway_ext.py` 一族本轮转红**（该例此前往返红/绿交替，已多次以对照实验证明与本批无关）；**其余失败集完全相同** |
+| **静态质量（逐文件基线对照，决定性）** | `git stash` 回退本批改动后复测：`component_router.py` **39 → 39**、`config.py` **0 → 0**、两个既有测试文件 **0 → 0 / 2 → 2**、新测试文件 **0** ⇒ **零新增告警** |
+| 提交 | OpenLLM `3bb9a3f`（3 生产/配置 ＋ 3 测试，`+333/-3`），显式路径、TDD 合规；另 `9d6537d` 为同批文档订正（提交号回填） |
+
+### 4S.4 关系与影响面
+
+| 项 | 说明 |
+|----|------|
+| 方案 §7 T9 | **补第 ④ 项**（兜底分类缓存：同题只付一次 / 异题各付一次 / 容量 0 逐字回退） |
+| 方案 §5.8 | 缓存行标注「**路由分类缓存已实施（v1.16.0）**」；**精炼结果缓存**（`(query_hash, 段内容 hash)`，10 分钟）**仍待** —— 规则档精炼确定性且亚毫秒（缓存无收益），模型档属第三批 ⇒ **与第三批同批推进** |
+| 方案 §10 | 新增**待登记项 9**（已闭环）；表内共 9 项，其中第 7、8、9 项均实施闭环 |
+| 语义与影响面 | 缓存**仅在 LLM 兜底分类器被注入时生效**（`COMPONENT_ROUTER_LLM_FALLBACK_ENABLED` **默认关闭** ⇒ 线上默认路径**零影响**）；LRU 有界（默认 256）；命中返回副本、失败不固化、规则/模型变更即失配 ⇒ **不引入陈旧决策** |
+| **残留（未实施，如实登记）** | §5.8 **精炼结果缓存**（与第三批同批）；通道 A 定性（§9 问题 1）与 §4.3「写路径 A/B 等价」矩阵项；模型档生成式精炼（第三批）；通道裁决进取数层；内置 RAG 种子底座（运行态 DB ＋ 嵌入模型）；§4.3 画像增量升级的线上 LLM 门控（§9 问题 7）；独立审计落库（方案 §10 待登记项 6） |
+| 全仓未闭环项 | **仍为 0 项**（本批无缺陷、无债务） |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
@@ -948,3 +998,4 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 | **v1.48.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **上下文精装配第二批第 ⑦ 项实施登记（§4P 新建）—— 方案 §3.4 规则档余项 ＋ §3.5 引用编号**四项**已实施落地**（闭环 §4O 登记）；**新增判据 T10 并拆分 T6**；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.13.0** §3.4/§3.5/§6/§7 T10/§10；实现在 OpenLLM 仓（其《DevLogReport》**v1.29.0** 第 40 批，提交 `9f5f711`）。② **实施四项**：**(a) 元数据噪声剥离**（`CONTEXT_STRIP_METADATA_ENABLED` 默认 **True**；实测单条载荷省 **74 token**；关闭逐字回退）；**(b) 相邻记忆条目同义合并**（`CONTEXT_ADJACENT_MERGE_ENABLED` 默认 True、阈值 `0.85`；**仅 memory、仅相邻、保留较长者**；`merged_items` 与 `dropped_items` 计数**分离**；口径为**确定性近似**，非语义级同义）；**(c) `refine` 回执**（`{mode:"rule", model:"", in_tokens, out_tokens, elapsed_ms, fallback:False}`，`in/out` 只计四类素材，未启用不落痕）；**(d) 稳定引用编号 `[M#]`/`[K#]`**（`CONTEXT_REF_NUMBERS_ENABLED` **默认 False** ⇒ 文本形态不变；与归因 A 下标对齐；**去重/裁剪后不重排**）。③ **判据扩展**：§7 **新增 T10**（组装规则档契约，**全部进程内可判**）；**T6 拆分** —— 规则档回执进程内可判、模型档仍 `BLOCKED`（第三批）；执行器 `check_t10` ⇒ 判据 **T1~T9 → T1~T10**。④ **验证（决定性）**：新增护栏 `tests/unit/test_assembly_refine_rule_tier.py` **25 例**（首轮 **RED 16 failed / 8 passed**）；预算/组装族既有护栏 **101 例全绿**；**运行态探针** `doc/test/evidence/cr149/assembly_rule_tier_probe.py` 逐项给出数值（(b) `merged_items=1`/`merged_tokens=16`/rag 不合并；(c) `in=807→out=100`；(d) `[M1]`+`[M3]` 保留、`[M2]` 不复用）；**执行器两态** `{PASS:4, SKIP:4, BLOCKED:2, FAIL:0}` / `{PASS:7, SKIP:1, BLOCKED:2, FAIL:0}`。⑤ **回归与静态质量**：全量 `tests/unit` **32 failed / 3145 passed / 0 error**（249.81 s）；**对照实验（决定性）**：`git stash push -- <本批 3 个生产文件>` 后**隔离复跑 `test_v213_gateway_ext.py` 得到完全相同的 4 个失败** ⇒ 该 flaky 一族**与本批无关**（如实登记为基线波动）；本轮 4 文件 `ruff` **零告警**。⑥ **语义与影响面**：(a)(b) 默认开启但**仅在预算开启时生效**（`CONTEXT_BUDGET_ENABLED` 默认 **False**）且各有开关可回退；(c) 纯观测；(d) 默认关闭 ⇒ **线上 Prompt 文本形态不变**。⑦ **载体与登记**：本记录 **§4P 新建**（§4O 登记项实施闭环）；方案 **v1.13.0**（§3.4/§3.5 实施状态 ＋ §6 第二批 ⑦ ＋ §7 T6 拆分/T10 新增 ＋ §10 第 7 项闭环 ＋ §11）；OpenLLM《DevLogReport》**v1.29.0**（第 40 批）；证据 `openbase/doc/test/evidence/cr149/assembly_rule_tier_probe.py` 与 `-result.json`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t10-full.txt`（全量回归）、`cr149-t4b-full.txt`（基线对照）。⑧ **残留（未实施，如实登记）**：模型档生成式精炼（第三批）、通道定性（§9 问题 1 待裁定）、通道裁决进取数层、内置 RAG 种子底座（运行态 DB ＋ 嵌入模型）、§4.3 余项（画像增量升级形态 / 写路径与通道一致）、独立审计落库（方案 §10 待登记项 6）；**全仓未闭环项仍为 0**。⑨ 文档版本 **v1.47.0 → v1.48.0**，状态 [Review] |
 | **v1.49.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **仓内一致性审计（续，§4Q 新建）：§3.2 权重排序 `rank_score` 未实施 → 同版实施闭环（第二批第 ⑦ 项续，判据 T10 增补第 ④ 项）；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.14.0** §3.2/§3.3/§6/§7 T10/§10；实现在 OpenLLM 仓（其《DevLogReport》**v1.30.0** 第 41 批，提交 `d80085f`）。② **审计发现（取证）**：方案 §3.2 第三项要求「在重排分数之外**叠加时效与来源权重**，产出统一的 `rank_score` 供预算层使用」、§3.3 memory/rag 行要求「按 `rank_score` **降序保留整条**」；**全仓检索 `rank_score` 零命中** ⇒ **未实施**；现有实现按**取数原序**保留并从**尾部**整条丢弃 ⇒ **丢弃对象是「取数最末」而非「排名最低」**（当取数序与相关性/时新性不一致时，可能丢掉更相关或更新的条目 —— 属「**选得不准**」，与方案 §2 原则 1 相悖）。③ **实施**：`PromptAssembler._ordered_items` / `_rank_score` / `_item_decay`；`rank_score` ＝ **来源分数**（`score`/`relevance`，缺失中性 1.0）× **时效衰减**（**仅 memory**：`0.5 ** (age_days / 半衰期)`，默认 30 天；其余段保留原始 score）；**fail-open**（时间戳缺失/不可解析 ⇒ 衰减 1.0，**不得因缺字段被降级**）；**稳定排序**；**排序只改呈现顺序、引用编号仍取原始下标**（与归因 A 不脱钩）；**fail-safe**（开关关 / 条目 < 2 / **无任何可用排序依据** ⇒ **保持原序**，不臆造顺序）。④ **判据扩展**：§7 **T10 增补 ④ 权重排序**，执行器 `check_t10` **PASS**。⑤ **验证（决定性）**：新增护栏 `tests/unit/test_context_rank_selection.py` **12 例**（首轮 **RED 8 failed / 4 passed**）；组装/预算/回退族既有护栏 **143 例全绿**；**运行态探针** `assembly_rule_tier_probe.py` **(e)** 段实测 `rag_order="1. 高分/2. 中分/3. 低分"`、`memory_order="1. 新记忆/2. 无时间戳记忆/3. 旧记忆"`（fail-open 生效）、`labeled_ranked="[K2] 高分\n[K1] 低分"`（编号取原始下标）、开关关 `"1. 低分\n2. 高分"`、无依据 `"1. 甲/2. 乙/3. 丙"`、尾部丢弃 `dropped_items=1` 且排名靠前者存活；执行器两态 `{PASS:4, SKIP:4, BLOCKED:2, FAIL:0}` / `{PASS:7, SKIP:1, BLOCKED:2, FAIL:0}`。⑥ **回归与静态质量**：全量 `tests/unit` **32 failed / 3157 passed / 0 error**（247.93 s）；**失败集与上一轮基线逐项完全相同**（`Compare-Object` **32 = 32，零差异 ⇒ 零新增失败**）；本轮 3 文件 `ruff` **零告警**。⑦ **同时确认（避免结论扩大化）**：§3.3 profile 行「按维度优先级保留（person → business → 其他）」**已按 section 粒度实施**（`_format_profile_ctx` 固定 person → business，配额裁剪从尾部丢弃 ⇒ 低优先 section 先被丢），**字段级**优先级未细分。⑧ **关系与登记**：本记录 **§4Q 新建**；方案 **v1.14.0**（§3.2/§3.3 实施状态 ＋ §6 第二批 ⑦ ＋ §7 T10④ ＋ §10 待登记项 7 合并为三项闭环 ＋ §11）；OpenLLM《DevLogReport》**v1.30.0**（第 41 批）；证据 `doc/test/evidence/cr149/assembly_rule_tier_probe.py` 与 `-result.json`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t14-full.txt`（全量回归）、`cr149-t10-full.txt`（基线对照）。⑨ **残留（未实施，如实登记）**：模型档生成式精炼（第三批）、通道定性（§9 问题 1 待裁定）、通道裁决进取数层、内置 RAG 种子底座（运行态 DB ＋ 嵌入模型）、§4.3 余项（画像增量升级形态 / 写路径与通道一致）、独立审计落库（方案 §10 待登记项 6）；**全仓未闭环项仍为 0**。⑩ 文档版本 **v1.48.0 → v1.49.0**，状态 [Review] |
 | **v1.50.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **逐条复核发现的三处「正文已指定但未实施」同版实施闭环（§4R 新建，判据 T10⑤ / T11 新增）；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.15.0** §3.2/§3.3/§4.3/§5.8/§7 T10·T11；实现在 OpenLLM 仓（其《DevLogReport》**v1.31.0** 第 42 批，提交 `58358c6`）。② **复核方法（可复现）**：对 §3.2/§3.3/§4.2/§4.3/§5.8 **逐行**比对仓内实现，并对关键标识**全仓检索**（`rank_score`、`whitelist`、`assert_write_channel_is_primary`、`refine`）。③ **三处发现**：**(1) §4.3 写路径与通道一致** —— `assert_write_channel_is_primary` **已实现**但全仓**仅被单测与脚本引用**（`app/` 内**零调用点**、状态机**从未实例化**）⇒ §8 风险表所列回退手段**未接线**、「切换期间双写」**无防护**；**(2) §3.2 画像维度白名单 ＋ §3.3 profile 维度级优先级** —— 画像 `whitelist` 配置键**零命中**，且维度被**压成一行** ⇒ 裁剪最小单位是**整段**、「丢弃低优先维度」**无法实现**；**(3) §3.3/§5.8 `refine` 落 `context_metrics`** —— `to_record()` 仅落 `segment_tokens`/`budget`/`truncated`，`refine` **仅在内存** ⇒ **观测链缺一环**。④ **实施**：**(1)** 三路回写在 `submit` 前校验写通道为**唯一主通道**（`_get_channel_manager()` 每次按配置构造 ⇒ 热改生效），**非主通道 ⇒ 暂停本轮回写**（`skipped`、**零入队**、`reason=channel_not_primary`，与价值闸门同口径且不与 `False` 混用；**暂停而非抛错**），开关 `WRITEBACK_CHANNEL_GUARD_ENABLED` **默认 True**、**配置非法 ⇒ WARN + 放行**（fail-open）；**(2)** `PROFILE_DIMENSION_LINES_ENABLED`（**默认 True**）令**每行一个维度** ⇒ 超配额先丢 `business` 维度，`PROFILE_DIMENSION_WHITELIST`（留空=不限制）控制保留与排序、无命中返回空；**(3)** `ContextReceipt.to_record()` 增 `refine`（仅非空时落痕）。⑤ **判据扩展**：§7 **T10 补 ⑤** ＋ **新增 T11**（写路径与通道一致，**进程内可判**）；执行器判据扩为 **T1~T11**。⑥ **验证（决定性）**：新增护栏 **20 例**（`test_writeback_channel_guard.py` 8 ＋ `test_profile_dimension_priority.py` 10 ＋ `test_assembly_refine_rule_tier.py` 增 2，**首轮 RED 14 failed**）；画像/回写/计量族既有护栏 **99 例全绿**；**运行态探针** `writeback_channel_guard_probe.py`（`paused=true`/`unchanged=true`/`verbatim=true`/`allowed=true`）与 `assembly_rule_tier_probe.py` **(f)(g)** 段；**执行器两态** `{PASS:5, SKIP:4, BLOCKED:2, FAIL:0}` / `{PASS:8, SKIP:1, BLOCKED:2, FAIL:0}`。⑦ **回归与静态质量**：全量 `tests/unit` **31 failed / 3176 passed / 0 error**（246.58 s）；**失败集零新增**（逐项 testid 归一化后 `Compare-Object` **无 `=>` 项**；差异项仍是既有 flaky `test_v213_gateway_ext.py` 一族 ⇒ **基线波动**）；本轮 6 文件 `ruff` **零告警**。⑧ **语义与影响面**：(1) 默认 `b-primary` ⇒ **线上行为不变**，仅通道切到 A 的切换期间才暂停回写（**即设计意图**）；(2) 画像文本形态由「单段一行」变为「段头 ＋ 每行一个维度」（**默认开启**、开关可回退；**白名单默认留空 ⇒ 不删任何维度**）；(3) 纯观测扩展。⑨ **关系与登记**：本记录 **§4R 新建**；方案 **v1.15.0**（§3.2/§3.3/§4.3/§5.8 实施状态 ＋ §7 T10⑤/T11 ＋ §10 待登记项 8 ＋ §11）；OpenLLM《DevLogReport》**v1.31.0**（第 42 批）；证据 `doc/test/evidence/cr149/writeback_channel_guard_probe.py` 与 `-result.json`、`assembly_rule_tier_probe.py` 与 `-result.json`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t15-full.txt`（全量回归）、`cr149-t14-full.txt`（基线对照）。⑩ **残留（未实施，如实登记）**：§4.3「写路径 A/B 等价」**矩阵登记项**（取决于 §9 问题 1 通道定性裁定）、通道 A 定性、模型档生成式精炼（第三批）、通道裁决进取数层、内置 RAG 种子底座（运行态 DB ＋ 嵌入模型）、§4.3 画像增量升级的线上 LLM 门控（§9 问题 7）、独立审计落库（方案 §10 待登记项 6）；**全仓未闭环项仍为 0**。⑪ 文档版本 **v1.49.0 → v1.50.0**，状态 [Review] |
+| **v1.51.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **逐条复核发现的第 4 处「正文已指定但未实施」（§4S 新建）：§5.8「路由分类按 query 归一化缓存」同版实施闭环（判据 T9 补 ④）；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.16.0** §5.8/§7 T9；实现在 OpenLLM 仓（其《DevLogReport》**v1.32.0** 第 43 批，提交 `3bb9a3f`）。② **审计发现（取证）**：§5.8 在线档预算行要求「**路由分类按 query 归一化缓存**」（同题重复提问不重复分类、不重付 **≤300ms** 兜底预算）；**`ComponentRouter` 全类检索 `cache` 零命中**、`decide()` 每次未命中规则都**重新调用** `llm_classifier` ⇒ 重复提问**重复付预算**。**关键约束**：**联网关每次请求都新建 `ComponentRouter`**（分类器闭包捕获 db/identity）⇒ 缓存**必须进程级**，否则永不命中。③ **实施**：进程级 LRU（`_LLM_DECISION_CACHE` ＋ 锁）；键 ＝ **`模型标签:规则指纹`** ＋ **归一化 query**（压缩空白 ＋ 大小写不敏感）；`_refresh_rules_fingerprint()` 在两处规则替换点（初始加载 / 热更新）调用 ⇒ **规则变更后旧条目自然失配**；作用域含模型标签 ⇒ **换模型亦失配**；**命中返回副本**、**失败与非法输出不入缓存**、**容量 0 = 关闭**（逐字回退）；`COMPONENT_ROUTER_LLM_CACHE_SIZE` 默认 **256**；新增 `clear_llm_decision_cache()` / `llm_decision_cache_size()` 供隔离与观测。④ **同批隔离修正（非放宽）**：进程级缓存使两处既有文件中「同一 query ＋ 不同分类器替身」用例**跨用例命中**（实测 **4 failed**）⇒ 各加 **autouse 清缓存 fixture**，**不改任何断言**；修正后两文件 **77 例全绿**。⑤ **判据与验证**：§7 **T9 补 ④**，执行器 `check_t9` **PASS**；新增护栏 **14 例**（首轮 **RED 6 failed**）；**运行态探针** `component_decision_probe.py` **④** 段（`same_query_calls=1`/`distinct_query_calls=2`/`cached_decision_equal=true`/`capacity_zero_calls=2`/`default_capacity=256`）；执行器两态 `{PASS:5, SKIP:4, BLOCKED:2, FAIL:0}` / `{PASS:8, SKIP:1, BLOCKED:2, FAIL:0}`。⑥ **回归与静态质量**：全量 `tests/unit` **32 failed / 3189 passed / 0 error**（249.94 s）；与上一轮基线逐项对照**唯一差异为既有 flaky `test_v213_gateway_ext.py` 一族本轮转红**（该例往返红/绿交替，已多次对照实验证明与本批无关）；**ruff 逐文件基线对照（`git stash` 回退后复测）**：`component_router.py` **39 → 39**、`config.py` **0 → 0**、既有测试文件 **0 → 0 / 2 → 2**、新测试文件 **0** ⇒ **零新增告警**。⑦ **语义与影响面**：缓存**仅在 LLM 兜底分类器被注入时生效**（`COMPONENT_ROUTER_LLM_FALLBACK_ENABLED` **默认关闭** ⇒ 线上默认路径**零影响**）；LRU 有界；命中返回副本、失败不固化、规则/模型变更即失配 ⇒ **不引入陈旧决策**。⑧ **关系与登记**：本记录 **§4S 新建**；方案 **v1.16.0**（§5.8 缓存行 ＋ §7 T9④ ＋ §10 待登记项 9 ＋ §11）；OpenLLM《DevLogReport》**v1.32.0**（第 43 批）与 **v1.32.1**（同批文档订正）；证据 `doc/test/evidence/cr149/component_decision_probe.py` 与 `-result.json`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t16-full.txt`（全量回归）、`cr149-t15-full.txt`（基线对照）。⑨ **残留（未实施，如实登记）**：§5.8 **精炼结果缓存**（规则档确定性且亚毫秒 ⇒ 无收益；模型档属第三批 ⇒ 与第三批同批推进）、通道 A 定性（§9 问题 1）与 §4.3「写路径 A/B 等价」矩阵项、模型档生成式精炼、通道裁决进取数层、内置 RAG 种子底座（运行态 DB ＋ 嵌入模型）、§4.3 画像增量升级的线上 LLM 门控（§9 问题 7）、独立审计落库（方案 §10 待登记项 6）；**全仓未闭环项仍为 0**。⑩ 文档版本 **v1.50.0 → v1.51.0**，状态 [Review] |

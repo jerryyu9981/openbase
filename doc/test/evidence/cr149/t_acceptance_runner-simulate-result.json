@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T05:26:04",
+  "generated_at": "2026-09-27T05:44:16",
   "simulate": true,
   "summary": {
     "PASS": 8,
@@ -219,7 +219,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.344,
+        "concurrent_components_wall_seconds": 0.36,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -235,7 +235,7 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.063,
+        "parallel_wall_seconds": 0.062,
         "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
@@ -264,7 +264,7 @@
     },
     {
       "criterion": "T9",
-      "title": "路由：达标即决策、规则集可配置、LLM 兜底超时回落",
+      "title": "路由：达标即决策、规则集可配置、LLM 兜底超时回落、兜底分类按 query 归一化缓存",
       "status": "PASS",
       "requires": [
         "COMPONENT_ROUTER_SINGLE_HIT_CONFIDENCE=0.86",
@@ -296,6 +296,12 @@
           "need_memory": false,
           "need_rag": false,
           "reason": "规则引擎兜底决策（无命中规则）"
+        },
+        "classification_cache": {
+          "same_query_calls": 1,
+          "distinct_query_calls": 2,
+          "capacity_zero_calls": 2,
+          "default_capacity": 256
         },
         "llm_fallback_switch": false
       },
