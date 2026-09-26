@@ -945,7 +945,11 @@ def check_t10() -> Verdict:
          「完全重复即丢弃」**计数分开**（`merged_items` vs `dropped_items`）；
       3. **稳定引用编号**：默认关闭时输出 `N. 内容`（逐字不变）；开启时
          `memory→[M#]`、`rag→[K#]` 且与归因 A 下标对齐；去重/裁剪后**编号不重排**，
-         保底一条仍守配额。
+         保底一条仍守配额；
+      4. **权重排序**（v1.14.0 补入，对方案 §3.2 第三项 / §3.3 memory·rag 行）：
+         rag 按 `score` 降序、memory 按**时效衰减**降序（时间戳缺失视为新鲜，fail-open）；
+         排序只改**呈现顺序**，引用编号仍取**原始下标**（与归因 A 对齐）；
+         开关关闭 / 无排序依据 ⇒ **保持原序**。
     """
     title = "组装规则档：噪声剥离 / 相邻同义合并 / 稳定引用编号（均进程内可判）"
     from app.edgerouter.orchestration.assembler import PromptAssembler
@@ -1042,6 +1046,74 @@ def check_t10() -> Verdict:
     if "[M3]" not in dedup_prompt or "[M2]" in dedup_prompt:
         failures.append(f"去重后编号被重排（须稳定）：{dedup_prompt!r}")
 
+    # ④ 权重排序（§3.2 第三项 / §3.3 memory·rag 行；v1.14.0 补入本判据）
+    from datetime import datetime, timedelta
+
+    _base = datetime(2026, 9, 27, 12, 0, 0)
+
+    def _days_ago(days: float) -> str:
+        return (_base - timedelta(days=days)).isoformat()
+
+    rag_ranked = PromptAssembler().format_context(
+        "rag",
+        {
+            "results": [
+                {"content": "低分", "score": 0.2},
+                {"content": "高分", "score": 0.9},
+                {"content": "中分", "score": 0.55},
+            ]
+        },
+    )
+    memory_ranked = PromptAssembler().format_context(
+        "memory",
+        {
+            "results": [
+                {"content": "旧记忆", "updated_at": _days_ago(120)},
+                {"content": "新记忆", "updated_at": _days_ago(0)},
+                {"content": "无时间戳记忆"},
+            ]
+        },
+    )
+    with _temporary_settings(CONTEXT_REF_NUMBERS_ENABLED=True):
+        labeled_ranked = PromptAssembler().format_context(
+            "rag",
+            {
+                "results": [
+                    {"content": "低分", "score": 0.2},
+                    {"content": "高分", "score": 0.9},
+                ]
+            },
+        )
+    with _temporary_settings(CONTEXT_RANK_SORT_ENABLED=False):
+        rank_off = PromptAssembler().format_context(
+            "rag",
+            {
+                "results": [
+                    {"content": "低分", "score": 0.2},
+                    {"content": "高分", "score": 0.9},
+                ]
+            },
+        )
+    no_rank_key = PromptAssembler().format_context(
+        "rag", {"results": [{"content": "甲"}, {"content": "乙"}, {"content": "丙"}]}
+    )
+    if not (
+        rag_ranked.index("高分") < rag_ranked.index("中分") < rag_ranked.index("低分")
+    ):
+        failures.append(f"rag 未按 score 降序：{rag_ranked!r}")
+    if not (
+        memory_ranked.index("新记忆")
+        < memory_ranked.index("无时间戳记忆")
+        < memory_ranked.index("旧记忆")
+    ):
+        failures.append(f"memory 未按时效降序/未 fail-open：{memory_ranked!r}")
+    if not labeled_ranked.startswith("[K2] 高分"):
+        failures.append(f"排序后引用编号未取原始下标（与归因 A 脱钩）：{labeled_ranked!r}")
+    if rank_off != "1. 低分\n2. 高分":
+        failures.append(f"权重排序开关关闭未保持原序：{rank_off!r}")
+    if no_rank_key != "1. 甲\n2. 乙\n3. 丙":
+        failures.append(f"无排序依据时臆造了顺序：{no_rank_key!r}")
+
     detail: dict[str, Any] = {
         "noise_stripped_text": stripped,
         "noise_verbatim_when_off": raw,
@@ -1049,9 +1121,17 @@ def check_t10() -> Verdict:
         "labeled_memory": labeled_memory,
         "labeled_rag": labeled_rag,
         "dedup_report": dedup_comp.truncated.get("memory"),
+        "rank_order": {
+            "rag": rag_ranked,
+            "memory": memory_ranked,
+            "labeled_ranked": labeled_ranked,
+            "switch_off": rank_off,
+            "no_rank_key": no_rank_key,
+        },
         "ref_numbers_switch_default": _settings_snapshot(["CONTEXT_REF_NUMBERS_ENABLED"]),
         "evidence": (
-            "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ 运行态探针 "
+            "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ "
+            "`tests/unit/test_context_rank_selection.py`（12 例）＋ 运行态探针 "
             "`doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
         ),
     }

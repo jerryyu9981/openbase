@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T04:58:57",
+  "generated_at": "2026-09-27T05:11:15",
   "simulate": false,
   "summary": {
     "PASS": 4,
@@ -135,7 +135,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.359,
+        "concurrent_components_wall_seconds": 0.344,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -241,10 +241,17 @@
           "merged_items": 0,
           "merged_tokens": 0
         },
+        "rank_order": {
+          "rag": "1. 高分\n2. 中分\n3. 低分",
+          "memory": "1. 新记忆\n2. 无时间戳记忆\n3. 旧记忆",
+          "labeled_ranked": "[K2] 高分\n[K1] 低分",
+          "switch_off": "1. 低分\n2. 高分",
+          "no_rank_key": "1. 甲\n2. 乙\n3. 丙"
+        },
         "ref_numbers_switch_default": {
           "CONTEXT_REF_NUMBERS_ENABLED": false
         },
-        "evidence": "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
+        "evidence": "`tests/unit/test_assembly_refine_rule_tier.py`（25 例）＋ `tests/unit/test_context_rank_selection.py`（12 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
       },
       "reason": ""
     }

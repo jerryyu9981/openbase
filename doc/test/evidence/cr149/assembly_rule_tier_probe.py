@@ -1,11 +1,13 @@
-"""方案 §3.4 规则档余项 ＋ §3.5 稳定引用编号 —— 运行态证据探针
+"""方案 §3.2 选择（权重排序）＋ §3.4 规则档余项 ＋ §3.5 稳定引用编号 —— 运行态证据探针
 
-对应方案 v1.12.0 §10 待登记项 7 的 (a)~(d)（v1.13.0 已实施）：
+对应方案 §10 待登记项 7 的 (a)~(d)（v1.13.0 实施）与 v1.14.0 新增的 (e) 权重排序：
 
   (a) 元数据噪声剥离：平铺字段的 `None`/空值与链路元数据键不进入 Prompt；
   (b) 相邻记忆条目同义重复行合并：仅 memory 段、仅相邻，保留较长者、信息不丢失；
   (c) `refine` 回执字段：`{mode, model, in_tokens, out_tokens, elapsed_ms, fallback}`；
-  (d) 稳定引用编号 `[M1]`/`[K1]`：与归因 A 片段下标对齐，且裁剪/去重后**不重排**。
+  (d) 稳定引用编号 `[M1]`/`[K1]`：与归因 A 片段下标对齐，且裁剪/去重后**不重排**；
+  (e) 权重排序 `rank_score`（§3.2 第三项 / §3.3 memory·rag 行）：来源分数 × 时效衰减
+      （仅 memory）降序**呈现**，编号仍取原始下标；无依据 / 开关关 ⇒ 原序。
 
 **口径**：全部走**真实实现**（`PromptAssembler` / `build_prompt` / 真实策略），
 仅 token 计数器用 1 字符 = 1 token 的确定性替身（与既有预算护栏同口径），
@@ -19,6 +21,7 @@ import json
 import os
 import sys
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 from typing import Any
 
 sys.path.insert(0, os.getcwd())
@@ -189,14 +192,105 @@ def probe_ref_numbers() -> dict[str, Any]:
     }
 
 
+def probe_rank_selection() -> dict[str, Any]:
+    """(e) 权重排序：来源分数 + 时效衰减；编号取原始下标；预算只吃尾部"""
+    base = datetime(2026, 9, 27, 12, 0, 0)
+
+    def _days_ago(days: float) -> str:
+        return (base - timedelta(days=days)).isoformat()
+
+    assembler = PromptAssembler()
+    rag_text = assembler.format_context(
+        "rag",
+        {
+            "results": [
+                {"content": "低分", "score": 0.2},
+                {"content": "高分", "score": 0.9},
+                {"content": "中分", "score": 0.55},
+            ]
+        },
+    )
+    memory_text = assembler.format_context(
+        "memory",
+        {
+            "results": [
+                {"content": "旧记忆", "updated_at": _days_ago(120)},
+                {"content": "新记忆", "updated_at": _days_ago(0)},
+                {"content": "无时间戳记忆"},
+            ]
+        },
+    )
+    with _temp(CONTEXT_REF_NUMBERS_ENABLED=True):
+        labeled_ranked = assembler.format_context(
+            "rag",
+            {
+                "results": [
+                    {"content": "低分", "score": 0.2},
+                    {"content": "高分", "score": 0.9},
+                ]
+            },
+        )
+    with _temp(CONTEXT_RANK_SORT_ENABLED=False):
+        switch_off = assembler.format_context(
+            "rag",
+            {
+                "results": [
+                    {"content": "低分", "score": 0.2},
+                    {"content": "高分", "score": 0.9},
+                ]
+            },
+        )
+    no_key = assembler.format_context(
+        "rag", {"results": [{"content": "甲"}, {"content": "乙"}, {"content": "丙"}]}
+    )
+    ranked_memory = assembler.format_context(
+        "memory",
+        {
+            "results": [
+                {"content": "旧" * 60, "updated_at": _days_ago(300)},
+                {"content": "新" * 60, "updated_at": _days_ago(0)},
+            ]
+        },
+    )
+    _prompt, comp = build_prompt(
+        query="问", memory_ctx=ranked_memory, count_tokens=_chars, budget=_policy()
+    )
+    return {
+        "rag_order": rag_text,
+        "rag_sorted_by_score": rag_text.index("高分")
+        < rag_text.index("中分")
+        < rag_text.index("低分"),
+        "memory_order": memory_text,
+        "memory_newest_first": memory_text.index("新记忆") < memory_text.index("旧记忆"),
+        "memory_missing_timestamp_not_demoted": memory_text.index("无时间戳记忆")
+        < memory_text.index("旧记忆"),
+        "labeled_ranked": labeled_ranked,
+        "labels_keep_original_index": labeled_ranked.startswith("[K2] 高分"),
+        "switch_off_order": switch_off,
+        "switch_off_keeps_original": switch_off == "1. 低分\n2. 高分",
+        "no_key_order": no_key,
+        "no_key_keeps_original": no_key == "1. 甲\n2. 乙\n3. 丙",
+        "tail_drop_report": comp.truncated.get("memory"),
+        "tail_drop_keeps_top_ranked": comp.budget["memory"]["used"] > 0,
+        "switch_default": {
+            "CONTEXT_RANK_SORT_ENABLED": settings.CONTEXT_RANK_SORT_ENABLED,
+            "CONTEXT_RANK_DECAY_HALF_LIFE_DAYS": settings.CONTEXT_RANK_DECAY_HALF_LIFE_DAYS,
+        },
+    }
+
+
 def main() -> int:
     report = {
         "probe": "assembly_rule_tier",
-        "design_ref": "方案 §3.4 规则档（元数据噪声剥离 / 相邻同义合并 / refine 回执）＋ §3.5 稳定引用编号",
+        "design_ref": (
+            "方案 §3.2 选择（权重排序）＋ §3.4 规则档（元数据噪声剥离 / 相邻同义合并 / "
+            "refine 回执）＋ §3.5 稳定引用编号"
+        ),
         "(a) 元数据噪声剥离": probe_metadata_noise(),
         "(b) 相邻同义合并": probe_adjacent_merge(),
         "(c) refine 回执": probe_refine_receipt(),
         "(d) 稳定引用编号": probe_ref_numbers(),
+        "(e) 权重排序": probe_rank_selection(),
     }
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assembly_rule_tier_probe-result.json")
     with open(out, "w", encoding="utf-8") as handle:
