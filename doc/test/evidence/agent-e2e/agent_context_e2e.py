@@ -29,6 +29,8 @@
   H8 `context_metrics.counted == True`（分段计量已接线）
   H9 `context_metrics.rag.injected_items >= 1` 且 `segment_tokens.rag > 0`
      （知识库内容**真实进入 Prompt** —— 「装配后投喂」的强证据）
+  H10 `segment_tokens.profile > 0`（DPS 画像段**真实进入 Prompt**；仅当画像前置播种
+      已执行时判定 —— 见 `seed_dps_portrait.py`）
 
 观察项（仅记录，不判定）：记忆注入量、DPS 画像分段 token、归因 A、三路回写回执、
 各步骤时间线（auth/profile_fetch/memory/rag/llm/writeback_dispatch）。
@@ -121,6 +123,37 @@ def _dig(payload: Any, *path: str, default: Any = None) -> Any:
         if cursor is None:
             return default
     return cursor
+
+
+def _seed_dps_profile(person_id: str) -> dict[str, Any]:
+    """为流程主体播种 DPS 画像（幂等前置；DPS 侧不支持画像 upsert）
+
+    画像**查询主体**为**外部平台身份**（agent 主体 id；见 OpenLLM
+    `_resolve_real_person_id` 治理 P0-2），故按该 id 播种 `person_id`；
+    鉴权主体（编排资源键）的角色绑定由 `seed_dps_portrait.py` 首次准备。
+
+    Returns:
+        dict: 成功 {step, person_id, role_binding, profile}；
+            失败 {step, person_id, skipped, reason}（画像段按设计降级，不阻断）
+    """
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from seed_dps_portrait import seed  # noqa: PLC0415
+
+        outcome = seed(person_id, bind_role=False)
+        return {
+            "step": "seed_dps_profile",
+            "person_id": person_id,
+            "role_binding": outcome.get("role_binding"),
+            "profile": outcome.get("profile"),
+        }
+    except Exception as exc:  # noqa: BLE001 - 前置播种失败不阻断（画像段按设计降级）
+        return {
+            "step": "seed_dps_profile",
+            "person_id": person_id,
+            "skipped": True,
+            "reason": f"{type(exc).__name__}: {exc}",
+        }
 
 
 def probe_dependencies() -> dict[str, Any]:
@@ -252,6 +285,17 @@ def main() -> int:
         f"tenant_code={agent_info['tenant_code']}"
     )
 
+    # ①.1 DPS 画像前置播种（幂等）：画像查询主体 = 外部平台身份（agent 主体 id）
+    dps_seed_step = _seed_dps_profile(str(agent_info["agent_id"] or ""))
+    evidence["steps"].append(dps_seed_step)
+    if dps_seed_step.get("skipped"):
+        print(f"    DPS 画像前置未执行（{dps_seed_step['reason']}）→ 画像段按设计降级")
+    else:
+        print(
+            f"    DPS 画像前置 person_id={dps_seed_step['person_id']} "
+            f"profile={dps_seed_step['profile']}"
+        )
+
     # ②③④⑤ 对话（mode=auto）
     started = time.perf_counter()
     status, payload, headers = call(
@@ -363,6 +407,15 @@ def main() -> int:
             "H9 知识库内容未进入 Prompt"
             f"（rag.injected_items={rag_snapshot.get('injected_items')}, "
             f"segment_tokens.rag={segment_tokens.get('rag')}）"
+        )
+    # H10：DPS 画像段进入 Prompt（仅当画像前置播种已执行时判定；未执行 → 不判定）
+    if not dps_seed_step.get("skipped") and int(
+        segment_tokens.get("profile") or 0
+    ) < 1:
+        failures.append(
+            "H10 DPS 画像内容未进入 Prompt"
+            f"（segment_tokens.profile={segment_tokens.get('profile')}；"
+            f"画像前置 person_id={dps_seed_step.get('person_id')}）"
         )
 
     verdict = "PASS" if not failures else "FAIL"

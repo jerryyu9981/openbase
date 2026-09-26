@@ -107,7 +107,18 @@ $services = @(
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenLLM\backend'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8001')
-        Env     = @{ PORT = '8001'; PYTHONDONTWRITEBYTECODE = '1' }
+        # DPS 目标系统**租户/组织码值互译表**（`CR-148-029`）：DPS 以
+        # `dps-org-001`/`dps-tenant-001` 作为**独立联调演示码空间**（`DPS-S5` §Q-DPS-7，
+        # 有意与 OpenBase `tenants.code` 空间隔离并做碰撞防护）→ 本仓 → DPS **直连路径**
+        # 必须桥接码值；否则 DPS 侧 403「组织不存在」→ 画像段恒降级
+        # （`segment_tokens.profile=0`，实测 2026-09-26）。取值与本仓
+        # `OPENBASE_DPS_ORG_MAP`/`OPENBASE_DPS_TENANT_MAP` 对齐（同一联调口径）。
+        Env     = @{
+            PORT = '8001'
+            PYTHONDONTWRITEBYTECODE = '1'
+            DPS_ORG_CODE_MAP = '{"org-1":"dps-org-001","11111111-1111-1111-1111-111111111111":"dps-org-001"}'
+            DPS_TENANT_CODE_MAP = '{"tenant-1":"dps-tenant-001"}'
+        }
         Health  = @('http://127.0.0.1:8001/health', 'http://127.0.0.1:8001/api/v1/system/health')
         Depends = @()
         DepType = 'hard'

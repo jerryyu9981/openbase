@@ -1762,6 +1762,46 @@
                                   "evidence":  "doc/test/evidence/agent-e2e/（agent_context_e2e.py 核验脚本 + agent-context-e2e.json 判据 + seed_kb_and_verify_rag.py 知识库种子）"
                               }
                           },
+                          "agentConversationThreeSourceAssembly":  {
+                              "id":  "三源科学装配闭环（DPS 画像 + 记忆 + 知识库 同轮进入 Prompt 并被消费）",
+                              "status":  "e2e_pass",
+                              "date":  "2026-09-26",
+                              "owner":  "TE-OpenBase-Dev / AT-OpenBase-Test / AD-OpenBase-Dev",
+                              "trigger":  "续上一轮目标：补齐 4 项未闭环（记忆往返回环 / DPS 画像实际注入 / 回写命名归一 / 流式分叉），用户授权『不要让我一个一个挑选 bug，自行按目标修正完成』",
+                              "verdict":  "PASS —— 判据扩展至 H1~H10 全绿；segment_tokens={profile:128, memory:5244, rag:2012, query:35}、executed=['memory','rag','llm']、degraded=[]、rag_source=external、kb_id_source=external、rag.injected_items=5、memory.injected_items=5、attribution.used_ratio≈0.98、contexts_tokens=7384、端到端 21.4s；回写三路（memory/rag/profile）实测均 done",
+                              "defectsFixed":  [
+                                  "DEF-BE-148-021（P1，OpenLLM）三路回写静默不投递：register_handler 仅在 /writeback API 端点注册，chat 业务路径从不注册 → _run_item 取不到 handler 即 return、行永久 pending（实测 pending 5968 / done 21 / failed 41）→ 修复：_ensure_writeback_handlers 在 _build_writeback_callback 注册",
+                                  "DEF-BE-148-022（P1，OpenLLM）知识库路回写 kb_id 未透传 → 恒「kb_id 缺失」failed → 修复：auto 自动对接值 / 显式 pipeline 值注入 rag 回写 kwargs",
+                                  "DEF-BE-148-023（P1，OpenLLM）记忆读/写资源键不一致（K17 未落地）→ 同一主体两个键，第 2 轮 memory.injected_items 恒 0 → 修复：_build_wb_request_context 与读路径同一事实源派生 user_id/namespace_prefix（实测 0 → 5）",
+                                  "DEF-BE-148-024（P1，跨仓）DPS 码值未桥接 + 身份贯通缺失：独立联调演示码空间无等价映射（三态 403 组织不存在 / 404 人员不存在 / 401）、回写上下文恒空身份头、回写 role 硬编码 'user' 触发 fail-closed、画像读写 person_id 不一致 → 修复：apply_dps_code_map + DPS_ORG_CODE_MAP/DPS_TENANT_CODE_MAP + 触发条件放宽 + role/external_* 贯通",
+                                  "DEF-BE-148-025（P2，OpenLLM）画像回写空更新 → DPS 400「无可更新字段」→ 修复：无字段时按无操作收口（拒绝伪造画像数据）"
+                              ],
+                              "environmentPrep":  [
+                                  "DPS 联调前置（幂等）：platform.user_roles 角色绑定（鉴权主体=编排资源键）+ platform.profile 画像行（查询主体=外部平台身份 agent id）；DPS 不提供画像 upsert 且未绑定主体 fail-closed 403；本环境 platform.profile 唯一键为 (person_id, tenant_id, template_code) → 以显式存在性判定保证幂等",
+                                  "编排器 openllm Env 增补 DPS 码值互译表（与本仓 OPENBASE_DPS_ORG_MAP/TENANT_MAP 同口径）；长驻监控进程 Env 启动时固化 → 改脚本后须重启监控器方生效"
+                              ],
+                              "commits":  {
+                                  "openllm":  "本批提交（profile.py / core/config.py / api/openllm_gateway.py / api/writeback.py / tests/unit/test_dps_code_map.py + 护栏更正）",
+                                  "openbase":  "本批提交（scripts/service-orchestrator.ps1 + 证据目录 + 四份文档 + state.json）"
+                              },
+                              "verification":  {
+                                  "targeted":  "本轮改动触及模块 24 文件 12 failed / 362 passed",
+                                  "preExistingOnly":  "12 项逐项落在既有失败集（陈旧 401 detail 断言 / 已删符号 _resolve_memory_metadata / 本地 .env 三 REAL 开关 / v213_gateway_ext 异步卫生 / writeback_degradation 陈旧解包 / model_router_wiring 打桩）→ 零新增失败",
+                                  "redToGreen":  "test_s4_t5_prefix_normalize.py 2 例由红转绿（K17 回写命名归一落地）",
+                                  "causalProbe":  "DPS 三态探针（本仓码 → 403 组织不存在 / DPS 预建码 → 404 人员不存在 / 缺租户头 → 401）；码值正确时 calculate 与 GET 均 200 且返回真实画像"
+                              },
+                              "openItems":  [
+                                  "回写队列启动恢复未接线：recover_pending() 于类文档声明为「应用启动时」调用但全仓无调用点 → 重启后存量 pending 不再投递；接入须加时限/条数上界（防回放数千条历史噪声），建议随 TD-148-03 / 运维批处置",
+                                  "流式 auto 与同步路径语义分叉（沿用 CR-148-030）"
+                              ],
+                              "documents":  {
+                                  "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.34.0：§4B 新建 + §5 修订行）",
+                                  "testReport":  "doc/test/OpenBase-测试报告-v1.4.8.md（v4.7.0：状态行 + 测试日期行 + §5 修订行）",
+                                  "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.8.md（v1.9.0：独立复核 + 修订行）",
+                                  "openllmDevLog":  "OpenLLM/doc/development/OpenLLM-R396-R398-会话编排前置与回写闭环-DevLogReport-v1.0.0.md（v1.17.0：第 28 批 + 修订行）",
+                                  "evidence":  "doc/test/evidence/agent-e2e/（agent_context_e2e.py 核验脚本（H1~H10） + agent-context-e2e.json 判据 + seed_dps_portrait.py DPS 前置种子 + seed_kb_and_verify_rag.py 知识库种子）"
+                              }
+                          },
                           "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 10 项登记产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012 已全部闭环；**`DEF-BE-148-013`（P1，OpenLLM `.astext` 已移除 API 致会话筛选必抛，`CR-148-026`）于 2026-09-26 由 CR-148-021 分诊确证，同日回退 Step 3 修复并验证（OpenLLM `692ca6d`：`.astext` → `.as_string()` + TDD 护栏 4 例；定向 18 项全绿、权威口径全量回归 31 failed / 2863 passed / 0 error，failed −2 正是该 2 例）→ **P0/P1 产品缺陷未关闭数 0**，审计报告 v1.6.0 判据 3 恢复「基本满足」「§9.2 ⑨ 已完成」**），**P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）已于本阶段修复并验证（OpenLLM `ad7d472`：失败负缓存 + 关闭画像注入开关；P-1 本仓开销 P50 2629.4 → 1157.9ms，仍未达 ≤50ms）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；三项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6；DT-148-019 画像负缓存 ad7d472）。剩余＝① **接线 P-10 计量（CR-148-018）— 已于 2026-09-26 完成（OpenLLM `72fd01e`）；派生 CR-148-020 亦已于同日完成（OpenLLM `c0d8222`：流式回写改后台派发 + 回执另行持久化；L3 实测流式 `writeback_dispatch` 556~728ms → 0.025~0.029ms，P-10 两路径均达标；新增失败 = 0）**；② **`P-10` 正式分位判定已于 2026-09-26 重跑 `TT-038` 完成并通过（单飞档/并发 8 档各同步/流式 200 有效样本，P99 最高 0.069ms ≤5ms）→ `CR-148-020` 正式收口**；③ **`P-4` 计量接线（CR-148-025）已于 2026-09-26 完成并双档判定：单飞档达标（P95 40ms ≤100ms，n=200 有效样本）/ 并发 8 档未达标（延迟回读口径 P95 189ms、交织 223ms，归 `TD-新增-027` 偿还后复测）**；④ **偿还 TD-新增-027 — 方案草案已于 2026-09-26 产出（《OpenBase-并发串行化治理技术方案-v1.0.0》[Draft]；债表 v0.7.2 登记；含根因 R-1~R-5、ADR 三方案与分阶段 A→C→（必要时）B、阶段 1 阻塞清单与四条一致性约束、TDD 护栏、验收标准与回退条件、决策请求 5 项）→ 待人工批准立项**；⑤ **为 P-6/P-8/P-9 目标补「数据规模档位」— 草案已于 2026-09-26 产出（《非功能设计说明》v1.3.0 §1.1.2a：S1/S2/S3/S4 档位 + 各档沿用同一目标值 + 三条强制判定规则；[Review] 待人工批准；绑定档位不改变任何既有判定）**；⑥ **CR-148-019 测试工装处置（P2：根 conftest 前置 pgAdmin site-packages 致导入失败）**；⑦ 压测环境规范固化；⑧ 可访问性 TT-040 待前端服务；⑨ 前端类 TT-025/026 待前端就绪；⑩ **`TT-032`（v1.4.7 报告逐项复测）与 `TT-037`（注入防护专项）已于 2026-09-26 补跑并判定：`TT-032` ✅（有限口径，四仓 R-384 单测 36/36 与基线一致）/ `TT-037` ✅（28 探针 0 个 5xx 0 不通过项）→ Step 4 未执行项 4 → 2**；⑪ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑫ P3 三桩缺 /health 与偶发 500 待观察"
                          },
                          "v1_4_7_step_4_o3_coverage":  {
