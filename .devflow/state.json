@@ -1791,9 +1791,9 @@
                                   "causalProbe":  "DPS 三态探针（本仓码 → 403 组织不存在 / DPS 预建码 → 404 人员不存在 / 缺租户头 → 401）；码值正确时 calculate 与 GET 均 200 且返回真实画像"
                               },
                               "openItems":  [
-                                  "回写队列启动恢复未接线：recover_pending() 于类文档声明为「应用启动时」调用但全仓无调用点 → 重启后存量 pending 不再投递；接入须加时限/条数上界（防回放数千条历史噪声），建议随 TD-148-03 / 运维批处置",
                                   "流式 auto 与同步路径语义分叉（沿用 CR-148-030）"
                               ],
+                              "sameBatchFollowUp":  "同批补注：新增修复 DEF-BE-148-026（P1）回写队列启动恢复接线 + 双上界 —— main.py lifespan 接线 recover_pending()（并注册三路 handler）；WritebackStore.recover() 增时间窗 30 分钟 / 条数 200（<=0/None 可显式关闭）。实测启动日志「回写队列启动恢复完成: 21 条待重跑（max_age=30.0 / limit=200）」→ 历史残留 5968 行未回放；护栏 tests/unit/test_writeback_recovery_bounds.py（9 例）；补注后端到端复跑仍 PASS（segment_tokens={profile:128, memory:6283, rag:1595}、degraded=[]、19.3s）→ 本批缺陷数 5 → 6、未闭环 2 → 1 项。提交：OpenLLM 2a2d969 / OpenBase fd7f7d6。",
                               "documents":  {
                                   "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.34.0：§4B 新建 + §5 修订行）",
                                   "testReport":  "doc/test/OpenBase-测试报告-v1.4.8.md（v4.7.0：状态行 + 测试日期行 + §5 修订行）",
