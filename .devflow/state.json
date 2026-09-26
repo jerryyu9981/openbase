@@ -1613,9 +1613,41 @@
                                  "performanceRecord":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.13.0：§5.2 数据规模档位说明追记 + §7 第 4 项改「草案已产出（待批准）」+ 修订行）",
                                  "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.8.md（v1.4.0：§9.2 闭合项 ③ 标记草案已产出待批准 + §1.2 输入版本 + §9.3 进度 + 修订行）",
                                  "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.30.0：③ 草案产出 + 同步清单 + 门禁说明）"
-                             }
-                         },
-                         "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 9 项产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012）已全部闭环，**P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）已于本阶段修复并验证（OpenLLM `ad7d472`：失败负缓存 + 关闭画像注入开关；P-1 本仓开销 P50 2629.4 → 1157.9ms，仍未达 ≤50ms）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；三项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6；DT-148-019 画像负缓存 ad7d472）。剩余＝① **接线 P-10 计量（CR-148-018）— 已于 2026-09-26 完成（OpenLLM `72fd01e`）；派生 CR-148-020 亦已于同日完成（OpenLLM `c0d8222`：流式回写改后台派发 + 回执另行持久化；L3 实测流式 `writeback_dispatch` 556~728ms → 0.025~0.029ms，P-10 两路径均达标；新增失败 = 0）**；② **`P-10` 正式分位判定已于 2026-09-26 重跑 `TT-038` 完成并通过（单飞档/并发 8 档各同步/流式 200 有效样本，P99 最高 0.069ms ≤5ms）→ `CR-148-020` 正式收口**；③ **`P-4` 计量接线（CR-148-025）已于 2026-09-26 完成并双档判定：单飞档达标（P95 40ms ≤100ms，n=200 有效样本）/ 并发 8 档未达标（延迟回读口径 P95 189ms、交织 223ms，归 `TD-新增-027` 偿还后复测）**；④ 偿还 TD-新增-027（架构级立项）；⑤ **为 P-6/P-8/P-9 目标补「数据规模档位」— 草案已于 2026-09-26 产出（《非功能设计说明》v1.3.0 §1.1.2a：S1/S2/S3/S4 档位 + 各档沿用同一目标值 + 三条强制判定规则；[Review] 待人工批准；绑定档位不改变任何既有判定）**；⑥ **CR-148-019 测试工装处置（P2：根 conftest 前置 pgAdmin site-packages 致导入失败）**；⑦ 压测环境规范固化；⑧ 可访问性 TT-040 待前端服务；⑨ 前端类 TT-025/026 待前端就绪；⑩ **`TT-032`（v1.4.7 报告逐项复测）与 `TT-037`（注入防护专项）已于 2026-09-26 补跑并判定：`TT-032` ✅（有限口径，四仓 R-384 单测 36/36 与基线一致）/ `TT-037` ✅（28 探针 0 个 5xx 0 不通过项）→ Step 4 未执行项 4 → 2**；⑪ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑫ P3 三桩缺 /health 与偶发 500 待观察"
+                              }
+                          },
+                          "cr148021Triage":  {
+                              "id":  "CR-148-021 —— 权威回归口径下 33 项用例失败逐项分诊",
+                              "status":  "triaged_completed_with_new_p1_defect",
+                              "date":  "2026-09-26",
+                              "owner":  "TE-OpenBase-Dev / AT-OpenBase-Test",
+                              "basis":  "权威基线证据 doc/test/evidence/v148/cr148-019-authoritative-full-20260926.txt（33 failed / 2848 passed / 0 error）+ 本轮复跑取证（test_joinedload_asserts / test_stream_optimization / test_v213_gateway_ext 共 39 项 → 37 passed / 2 failed）",
+                              "caliber":  "三类（测试陈旧 / 环境前置 / 真实缺陷）+ 扩展两类（flaky / 待复核）；互斥穷尽，合计 = 33",
+                              "result":  {
+                                  "staleTests":  20,
+                                  "envPrerequisite":  5,
+                                  "realDefects":  2,
+                                  "flaky":  2,
+                                  "pendingReview":  4,
+                                  "reconciliation":  "20 + 5 + 2 + 2 + 4 = 33"
+                              },
+                              "staleDetail":  "401 detail 断言过期 9（DEF-BE-148-008 已统一补 detail；test_gateway_401_format×7 + test_coverage_boost_v2112×2）；_resolve_memory_metadata 已删符号 3（仅存于测试）；writeback_degradation 陈旧解包 3；model_router_wiring 打桩因 DT-148-015 lru_cache 单例失效 2；conversations_api 替身未对齐 metadata_ 1；v213_gateway_ext 打桩 4 元组 vs 实现 5 元组（新增 history_ctx；本轮取栈确证）1；流式 2001 vs 1004 1",
+                              "envDetail":  "本地 backend/.env 置真 OPENLLM_OPENMEMORY_REAL / OPENLLM_OPENRAG_REAL / OPENLLM_DPS_REAL（与 dev 默认期望 False 冲突）；涉及 test_real_contract_memory×1 / test_real_contract_rag×2 / test_s4_t14_verify_env×2；未做「dev 默认值复跑」故未判通过",
+                              "realDefect":  "DEF-BE-148-013 / CR-148-026（P1）：OpenLLM app/services/conversation_service.py:254 使用 SQLAlchemy 2.x 已移除的 .astext → 带 session_id 的会话历史筛选必抛 AttributeError（HTTP 500）；修复建议 .as_string() / func.json_extract + TDD + 权威口径全量回归（预期 failed 33 → 31）",
+                              "flakyDetail":  "test_joinedload_asserts ×2：权威轮失败、本轮同命令复跑 4/4 通过（不复现）→ 归 flaky 观察",
+                              "pendingReviewDetail":  "E1 流式权威错误码（2001 vs 1004 vs 5001）；E2 _finalize_stream 是否有意不 close；E3~E4 writeback namespace_prefix 恒空（「有意交由下游按头」还是「K17 未接线」）—— 均须 OpenLLM 侧确认设计意图",
+                              "gateImpact":  "P0/P1 产品缺陷未关闭数 0 → 1 → 审计报告 §2 门禁判据 3 由「✅ 基本满足」收紧为「❌ 未满足」；§9.2 新增 ⑨（回退 Step 3 修复）；Step 4 判定仍「不通过」且理由由 2 条增至 3 条",
+                              "evidence":  [
+                                  "doc/test/evidence/v148/cr148-021-triage-20260926.md",
+                                  "doc/test/evidence/v148/cr148-019-authoritative-full-20260926.txt"
+                              ],
+                              "documents":  {
+                                  "triageReport":  "doc/test/evidence/v148/cr148-021-triage-20260926.md（新建 v1.0.0）",
+                                  "testReport":  "doc/test/OpenBase-测试报告-v1.4.8.md（v4.4.0：§7 #31 + §11 段 + 状态行/测试日期行/结论行/修订行）",
+                                  "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.31.0：CR-148-021 分诊结论 + CR-148-026 新增 + §3 风险归集 + 修订行）",
+                                  "tracebackAudit":  "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.8.md（v1.5.0：§1.2 输入版本 / §2 判据 3 收紧 / §3.1 缺陷表 / §3.2 CR 表 / §7 / §8 第 5 项 / §9.2 ⑧⑨ / §9.3 / 修订行）"
+                              }
+                          },
+                          "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 10 项登记产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012 已全部闭环；**`DEF-BE-148-013`（P1，OpenLLM `.astext` 已移除 API 致会话筛选必抛，`CR-148-026`）于 2026-09-26 由 CR-148-021 分诊确证 → 未闭环，须回退 Step 3**），**P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）已于本阶段修复并验证（OpenLLM `ad7d472`：失败负缓存 + 关闭画像注入开关；P-1 本仓开销 P50 2629.4 → 1157.9ms，仍未达 ≤50ms）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；三项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6；DT-148-019 画像负缓存 ad7d472）。剩余＝① **接线 P-10 计量（CR-148-018）— 已于 2026-09-26 完成（OpenLLM `72fd01e`）；派生 CR-148-020 亦已于同日完成（OpenLLM `c0d8222`：流式回写改后台派发 + 回执另行持久化；L3 实测流式 `writeback_dispatch` 556~728ms → 0.025~0.029ms，P-10 两路径均达标；新增失败 = 0）**；② **`P-10` 正式分位判定已于 2026-09-26 重跑 `TT-038` 完成并通过（单飞档/并发 8 档各同步/流式 200 有效样本，P99 最高 0.069ms ≤5ms）→ `CR-148-020` 正式收口**；③ **`P-4` 计量接线（CR-148-025）已于 2026-09-26 完成并双档判定：单飞档达标（P95 40ms ≤100ms，n=200 有效样本）/ 并发 8 档未达标（延迟回读口径 P95 189ms、交织 223ms，归 `TD-新增-027` 偿还后复测）**；④ 偿还 TD-新增-027（架构级立项）；⑤ **为 P-6/P-8/P-9 目标补「数据规模档位」— 草案已于 2026-09-26 产出（《非功能设计说明》v1.3.0 §1.1.2a：S1/S2/S3/S4 档位 + 各档沿用同一目标值 + 三条强制判定规则；[Review] 待人工批准；绑定档位不改变任何既有判定）**；⑥ **CR-148-019 测试工装处置（P2：根 conftest 前置 pgAdmin site-packages 致导入失败）**；⑦ 压测环境规范固化；⑧ 可访问性 TT-040 待前端服务；⑨ 前端类 TT-025/026 待前端就绪；⑩ **`TT-032`（v1.4.7 报告逐项复测）与 `TT-037`（注入防护专项）已于 2026-09-26 补跑并判定：`TT-032` ✅（有限口径，四仓 R-384 单测 36/36 与基线一致）/ `TT-037` ✅（28 探针 0 个 5xx 0 不通过项）→ Step 4 未执行项 4 → 2**；⑪ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑫ P3 三桩缺 /health 与偶发 500 待观察"
                          },
                          "v1_4_7_step_4_o3_coverage":  {
                              "status":  "closed",
