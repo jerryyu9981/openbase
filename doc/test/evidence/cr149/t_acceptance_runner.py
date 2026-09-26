@@ -429,8 +429,11 @@ async def check_t4() -> Verdict:
       2. 流式路径（共用组件步骤）：同样落 ``rag_source=builtin`` **且带归因**；
       3. 两路径经**同一落痕函数**并入 ``routing_trace.components`` → 字段逐键一致。
 
-    **仍需运行态**：真实故障注入（停 OpenRAG / 改不可达地址）后的 HTTP「无 5xx」
-    与端到端轨迹落库；以及 ``health.components.builtin_rag.has_base``（接管是否有底座）。
+    端点级（HTTP）故障注入另由单元护栏覆盖 4 例（同步 / 流式端点 200、无 error 事件、
+    轨迹带来源与归因、装配缺失不回退），见 ``detail.endpoint_level_evidence``。
+
+    **仍需运行态**：**真实**停 OpenRAG / 改不可达地址的故障注入、端到端轨迹**实际落库**读取；
+    以及 ``health.components.builtin_rag.has_base``（接管是否有底座）。
     """
     title = "备通道：组件故障后裁决与内置 RAG 接管有轨迹（轨迹=进程内判；无 5xx=运行态）"
     from app.api.openllm_gateway import _merge_rag_trace, _probe_builtin_rag
@@ -466,9 +469,17 @@ async def check_t4() -> Verdict:
         "trace_contract": "FAIL" if failures else "PASS",
         "builtin_rag": builtin,
         "runtime_pending": [
-            "故障注入后的 HTTP 响应无 5xx",
-            "端到端轨迹落库（routing_trace / receipts）",
+            "真实停 OpenRAG / 改不可达地址的故障注入（本执行器不改外部服务状态）",
+            "端到端轨迹**实际落库**读取（本执行器只判到「落库调用入参」层）",
         ],
+        "endpoint_level_evidence": (
+            "端点级（HTTP，进程内 TestClient）故障注入已由 "
+            "`tests/unit/test_rag_builtin_fallback_trace.py::TestEndpointLevelFaultInjection` "
+            "覆盖 4 例：同步 POST /openllm/v1/chat 返回 200 且轨迹带 rag_source=builtin 与归因；"
+            "开关关时 200 且记 degraded/rag_source=skipped；装配缺失时不回退；"
+            "流式 POST /openllm/v1/chat/stream 返回 200、无 error 事件、**落库轨迹入参**同样带来源与归因。"
+            "该层证明「组件故障时不返回 5xx 且轨迹可复盘」，**不替代真实停服 E2E**"
+        ),
         "historical_e2e_evidence": (
             "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上"
             "验过 rag_source=builtin / degraded=[] / 主流程 200；须在**当前提交**上复跑确认"
@@ -487,13 +498,15 @@ async def check_t4() -> Verdict:
         title=title,
         status=STATUS_BLOCKED,
         requires=[
-            "运行态服务（可注入组件故障）→ 判「无 5xx」",
+            "运行态服务（真实停服/改址注入 + 轨迹实际落库读取）",
             "内置 RAG 有底座（has_base=true）→ 判「接管非空」",
         ],
         detail=detail,
         reason=(
             "轨迹部分已在进程内验证通过（两路径 rag_source=builtin 且归因一致、"
-            "单一落痕实现）；剩余「无 5xx + 端到端轨迹落库」需运行态故障注入。"
+            "单一落痕实现）；且端点级（HTTP）故障注入 4 例通过（同步/流式端点均 200、"
+            "无 error 事件、轨迹带来源与归因、装配缺失不回退）⇒「无 5xx」已在**进程内**覆盖；"
+            "剩余**真实停服注入**与**轨迹实际落库读取**需运行态。"
             f"内置 RAG 底座：has_base={builtin.get('has_base')}"
             "（false 时接管必然注入为空，须先补底座或按 §4.1 声明生效条件）"
         ),

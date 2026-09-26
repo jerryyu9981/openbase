@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T04:38:26",
+  "generated_at": "2026-09-27T04:44:52",
   "simulate": true,
   "summary": {
     "PASS": 6,
@@ -112,7 +112,7 @@
       "title": "备通道：组件故障后裁决与内置 RAG 接管有轨迹（轨迹=进程内判；无 5xx=运行态）",
       "status": "BLOCKED",
       "requires": [
-        "运行态服务（可注入组件故障）→ 判「无 5xx」",
+        "运行态服务（真实停服/改址注入 + 轨迹实际落库读取）",
         "内置 RAG 有底座（has_base=true）→ 判「接管非空」"
       ],
       "detail": {
@@ -128,19 +128,20 @@
         "trace_contract": "PASS",
         "builtin_rag": {
           "status": "unavailable",
-          "latency_ms": 0,
+          "latency_ms": 15,
           "knowledge_bases": 0,
           "indexes": 0,
           "has_base": false,
           "reason": "内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"
         },
         "runtime_pending": [
-          "故障注入后的 HTTP 响应无 5xx",
-          "端到端轨迹落库（routing_trace / receipts）"
+          "真实停 OpenRAG / 改不可达地址的故障注入（本执行器不改外部服务状态）",
+          "端到端轨迹**实际落库**读取（本执行器只判到「落库调用入参」层）"
         ],
+        "endpoint_level_evidence": "端点级（HTTP，进程内 TestClient）故障注入已由 `tests/unit/test_rag_builtin_fallback_trace.py::TestEndpointLevelFaultInjection` 覆盖 4 例：同步 POST /openllm/v1/chat 返回 200 且轨迹带 rag_source=builtin 与归因；开关关时 200 且记 degraded/rag_source=skipped；装配缺失时不回退；流式 POST /openllm/v1/chat/stream 返回 200、无 error 事件、**落库轨迹入参**同样带来源与归因。该层证明「组件故障时不返回 5xx 且轨迹可复盘」，**不替代真实停服 E2E**",
         "historical_e2e_evidence": "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上验过 rag_source=builtin / degraded=[] / 主流程 200；须在**当前提交**上复跑确认"
       },
-      "reason": "轨迹部分已在进程内验证通过（两路径 rag_source=builtin 且归因一致、单一落痕实现）；剩余「无 5xx + 端到端轨迹落库」需运行态故障注入。内置 RAG 底座：has_base=False（false 时接管必然注入为空，须先补底座或按 §4.1 声明生效条件）"
+      "reason": "轨迹部分已在进程内验证通过（两路径 rag_source=builtin 且归因一致、单一落痕实现）；且端点级（HTTP）故障注入 4 例通过（同步/流式端点均 200、无 error 事件、轨迹带来源与归因、装配缺失不回退）⇒「无 5xx」已在**进程内**覆盖；剩余**真实停服注入**与**轨迹实际落库读取**需运行态。内置 RAG 底座：has_base=False（false 时接管必然注入为空，须先补底座或按 §4.1 声明生效条件）"
     },
     {
       "criterion": "T5",
@@ -215,8 +216,8 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.078,
-        "ordered_wall_seconds": 0.109,
+        "parallel_wall_seconds": 0.062,
+        "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
           "rag_start",
