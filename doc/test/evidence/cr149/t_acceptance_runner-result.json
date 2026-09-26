@@ -1,0 +1,192 @@
+{
+  "generated_at": "2026-09-27T04:19:44",
+  "simulate": false,
+  "summary": {
+    "PASS": 3,
+    "FAIL": 0,
+    "SKIP": 4,
+    "BLOCKED": 2
+  },
+  "verdicts": [
+    {
+      "criterion": "T1",
+      "title": "预算：各段 used ≤ quota；prompt 总长不超窗口扣减输出预留",
+      "status": "SKIP",
+      "requires": [
+        "CONTEXT_BUDGET_ENABLED=False"
+      ],
+      "detail": {},
+      "reason": "所需开关未开启：开启后复跑本判据（--simulate 可先行验证开启态）"
+    },
+    {
+      "criterion": "T2",
+      "title": "裁剪：超配额场景 truncated 有值、dropped_items > 0、保留条目非空",
+      "status": "SKIP",
+      "requires": [
+        "CONTEXT_BUDGET_ENABLED=False"
+      ],
+      "detail": {},
+      "reason": "所需开关未开启：开启后复跑本判据（--simulate 可先行验证开启态）"
+    },
+    {
+      "criterion": "T3",
+      "title": "检索：rerank / score_threshold 透传且低分条目被过滤",
+      "status": "PASS",
+      "requires": [
+        "RAG_RERANK_ENABLED=False",
+        "RAG_SCORE_THRESHOLD=0.0"
+      ],
+      "detail": {
+        "resolved_search_params": {
+          "rerank": true,
+          "score_threshold": 0.5
+        },
+        "items_before": 4,
+        "items_after": 2,
+        "filtered_scores": [
+          0.91,
+          0.62
+        ]
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T4",
+      "title": "备通道：组件故障后裁决与内置 RAG 接管有轨迹（需运行态故障注入）",
+      "status": "BLOCKED",
+      "requires": [
+        "运行态服务（可注入组件故障）",
+        "内置 RAG 有底座（has_base=true）"
+      ],
+      "detail": {
+        "builtin_rag": {
+          "status": "unavailable",
+          "latency_ms": 0,
+          "knowledge_bases": 0,
+          "indexes": 0,
+          "has_base": false,
+          "reason": "内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"
+        }
+      },
+      "reason": "前置条件不满足：内置 RAG 无底座 ⇒ 接管后注入为空。须先补底座（KB 记录 + FAISS 索引），或按方案 §4.1 声明「内置 RAG 仅在有本地索引时生效」后再做故障注入验证"
+    },
+    {
+      "criterion": "T5",
+      "title": "写侧闸门：低价值轮次不入库、高价值轮次正常入库",
+      "status": "SKIP",
+      "requires": [
+        "WRITEBACK_DECISION_ENABLED=False"
+      ],
+      "detail": {},
+      "reason": "所需开关未开启：开启后复跑本判据（--simulate 可先行验证开启态）"
+    },
+    {
+      "criterion": "T6",
+      "title": "精炼：fallback=false 且 elapsed_ms ≤ 预算；关闭/超时不降级",
+      "status": "BLOCKED",
+      "requires": [
+        "生成式精炼（第三批）",
+        "达标本地模型 / GPU 节点（§5.6 门槛）"
+      ],
+      "detail": {
+        "batch": "第三批",
+        "design_ref": "§4.4 / §5.5 / §5.6"
+      },
+      "reason": "该判据依赖第三批「生成式精炼」能力，按方案 §6 属第三批；且 §5.4/§5.5 实测显示 ≤1B 本地模型未过门槛，需先完成模型选型/节点准备"
+    },
+    {
+      "criterion": "T7",
+      "title": "画像：并发取数 + 两路径时序统一 + 组装前收割（含 P-4）",
+      "status": "PASS",
+      "requires": [],
+      "detail": {
+        "events": [
+          "components_start",
+          "profile_start",
+          "components_end",
+          "profile_end"
+        ],
+        "concurrent_components_wall_seconds": 0.375,
+        "prompt_has_profile": true,
+        "gateway_order_contract_ok": true
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T8",
+      "title": "调度：无依赖即并行、依赖声明保序、成环 fail-safe",
+      "status": "SKIP",
+      "requires": [
+        "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED=False",
+        "OPENLLM_COMPONENT_DEPENDENCIES="
+      ],
+      "detail": {
+        "switch_enabled_in_config": false,
+        "parallel_wall_seconds": 0.047,
+        "ordered_wall_seconds": 0.125,
+        "parallel_events": [
+          "memory_start",
+          "rag_start",
+          "memory_end",
+          "rag_end"
+        ],
+        "ordered_events": [
+          "rag_start",
+          "rag_end",
+          "memory_start",
+          "memory_end"
+        ],
+        "cycle_levels": [
+          [
+            "memory",
+            "rag"
+          ]
+        ],
+        "config_state": {
+          "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED": false,
+          "OPENLLM_COMPONENT_DEPENDENCIES": ""
+        }
+      },
+      "reason": "能力已达标（临时置位验证），但配置开关仍为关：开启后本判据即为 PASS"
+    },
+    {
+      "criterion": "T9",
+      "title": "路由：达标即决策、规则集可配置、LLM 兜底超时回落",
+      "status": "PASS",
+      "requires": [
+        "COMPONENT_ROUTER_SINGLE_HIT_CONFIDENCE=0.86",
+        "COMPONENT_ROUTER_LLM_TIMEOUT_SECONDS=0.3"
+      ],
+      "detail": {
+        "single_hit_decision": {
+          "need_memory": true,
+          "need_rag": false,
+          "reason": "[R001] 命中记忆关键词 ['我的'] (confidence=0.86)"
+        },
+        "composite_intent_decision": {
+          "need_memory": true,
+          "need_rag": true,
+          "reason": "信号并集：[R002] 命中知识库关键词 ['知识', '文档', '知识库'] (confidence=0.95)；[R001] 命中记忆关键词 ['上次'] (confidence=0.86)；[R005] 复合意图：多轮记忆 ['上次', '接着'] + 知识检索 ['知识', '文档', '知识库'] (confidence=0.86)"
+        },
+        "legacy_escape_hatch_returns_none": true,
+        "rules_loaded": [
+          "X001"
+        ],
+        "invalid_path_rules": [
+          "R001",
+          "R002",
+          "R003",
+          "R004",
+          "R005"
+        ],
+        "timeout_decision": {
+          "need_memory": false,
+          "need_rag": false,
+          "reason": "规则引擎兜底决策（无命中规则）"
+        },
+        "llm_fallback_switch": false
+      },
+      "reason": ""
+    }
+  ]
+}

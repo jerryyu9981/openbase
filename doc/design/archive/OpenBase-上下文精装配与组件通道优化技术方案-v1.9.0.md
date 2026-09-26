@@ -76,14 +76,20 @@ rag     ┘               去重(内容 hash)         溢出策略             (
 
 | 段 | 配额（相对可用窗口） | 溢出策略 |
 |----|----------------------|----------|
-| system | 固定预留（≤5%） | 不裁剪 |
+| system | 固定预留（≤5%） | 不裁剪（仅观测） |
 | profile | ≤5% | 按维度优先级保留（person → business → 其他），超出丢弃低优先维度 |
-| memory | ≤30% | 按 `rank_score` 降序保留整条，末尾条目整体丢弃，不做半条截断 |
-| rag | ≤40% | 同上；单条超过单条上限（如 800 token）时按句边界截断并标注 |
-| history | ≤20% | 沿用现有窗口截取（丢最旧保最近） |
-| query + 输出预留 | 余量 | 不裁剪 |
+| memory | ≤30%（**默认标定 28%**） | 按 `rank_score` 降序保留整条，末尾条目整体丢弃，不做半条截断；**裁剪将清空该段时保底一条**（见下） |
+| rag | ≤40%（**默认标定 37%**） | 同上；单条超过单条上限（如 800 token）时按句边界截断并标注 |
+| history | ≤20%（**默认标定 19%**） | 沿用现有窗口截取（丢最旧保最近）；**同样受保底一条保护** |
+| query + 模板开销 | **余量 ≥5%** | 不裁剪 |
 
-产出物新增两个观测字段：`text` 层级的 `truncated: {segment: {dropped_items, dropped_tokens}}` 与 `budget: {segment: {quota, used}}`，与现有 `segment_tokens`/`attribution_a` 一同落 `routing_trace.context_metrics`。裁剪规则与配额通过配置键开关（缺省开启），并保证与"计量只读"的边界：计量读的是裁剪后的结果。
+**余量约束（v1.10.0 标定，判据 T1 的结构保证）**：上表「query + 模板开销余量」是本方案**原有要求**（`query` 与段标记/换行不参与配额），但第一批实现把 5 段比例设为 `0.05/0.05/0.30/0.40/0.20`（**和恰为 1.00**）⇒ 各段满额时 `prompt_total_tokens = available + 查询 + 开销 > available`，与 T1「prompt 总长不超窗口扣减输出预留」**结构性冲突**（由 §7 执行器以「填满配额」夹具实测暴露）。故标定为 **`0.05/0.05/0.28/0.37/0.19`（和 = 0.94）**，并以不变量 `Σ 比例 ≤ 0.95` 锁定（配置键同值）。
+
+**保底一条（v1.10.0，判据 T2）**：配额裁剪以「整条丢弃」为主；但若**单条素材本身即大于该段配额**，原实现会一路丢到空（实测 history 段 `used=0`，配额被白白浪费、该段归因彻底缺失）。故增加保底：**仅当裁剪将清空该段时**，保留首条并**硬性压进配额**（先句边界、再按比例收敛，且连同渲染编号前缀一并计入，保证 `used ≤ quota`），并记 `truncated_items`。可装下首条时不触发 ⇒ 既有「整条丢弃」语义不变。
+
+**`quota = 0` 的语义（v1.10.0 显式化）**：视为**「不限」= 不裁剪**（fail-open）——避免误配 `CONTEXT_QUOTA_*_RATIO=0` 静默清空整段；判据 T1 的「各段 `used ≤ quota`」**仅对 `quota > 0` 的段**成立，观测里 `quota=0` 即「不限」。
+
+产出物新增两个观测字段：`text` 层级的 `truncated: {segment: {dropped_items, dropped_tokens, truncated_items}}` 与 `budget: {segment: {quota, used}}`，与现有 `segment_tokens`/`attribution_a` 一同落 `routing_trace.context_metrics`。裁剪规则与配额通过配置键开关（缺省开启），并保证与"计量只读"的边界：计量读的是裁剪后的结果。
 
 ### 3.4 精炼
 
@@ -291,10 +297,12 @@ python merge_bench_reports.py --pattern "small-model-bench-*.json" --out merged-
 
 在现有 E2E 判据（同步 H1~H10、流式 S1~S10）之上扩展：
 
+**执行器（v1.10.0 交付）**：`doc/test/evidence/cr149/t_acceptance_runner.py` —— 一键复跑本表全部判据，逐条输出 `PASS / FAIL / SKIP / BLOCKED` 与**原始测量数据**（JSON 可落盘）；默认按**当前配置**判定，`--simulate` 在**进程内**临时置位开关（退出恢复、不写配置、不影响运行中服务）以验证「开启后即达标」。`SKIP`（开关未开）与 `BLOCKED`（环境/前置缺失，如 T4 需运行态故障注入、T6 属第三批）**均不计入失败**，但会显式列出，避免"没做"被误读为"通过"。
+
 | 判据 | 内容 |
 |------|------|
-| T1 | `context_metrics.budget` 各段 `used ≤ quota`，且 `prompt_total_tokens` 低于模型窗口扣减输出预留后的上限 |
-| T2 | 超配额场景下 `truncated` 有值且 `dropped_items > 0`，回答仍引用保留条目（归因 A 的 `used` 非空） |
+| T1 | `context_metrics.budget` 中 **`quota > 0` 的段**满足 `used ≤ quota`；且**各段填满配额**的最坏场景下 `prompt_total_tokens ≤ 窗口 − 输出预留`（结构保证：**配额比例之和 ≤ 0.95**，留出查询 + 模板开销余量）；`quota = 0` 表示"不限"（见 §3.3） |
+| T2 | 超配额场景下 `truncated` 有值且 `dropped_items > 0`，**且被裁剪段仍保留条目**（`used > 0`）—— 由「保底一条」保证（单条即超配额时保留首条并压进配额；可装下首条时仍为整条丢弃、不触发保底） |
 | T3 | 启用 rerank 后 rag 条目的 score 单调性成立、低分条目被 `score_threshold` 过滤（条目数下降但 `used_ratio` 不降） |
 | T4 | 注入组件故障（停 OpenRAG / 改不可达地址）后，通道裁决与内置 RAG 接管有明确轨迹（`rag_source`、审计事件），且无 5xx　**【前置条件自 v1.6.0 起可判定：`health.components.builtin_rag.has_base` 为 false 时接管必然“注入为空”，须先补底座或声明“仅在有本地索引时生效”】** |
 | T5 | 低价值轮次不产生 rag 入库（队列表无该轮 rag 行或状态为 skipped），高价值轮次正常入库　**【可判定：v1.4.0 起由 `WRITEBACK_DECISION_ENABLED` 开启后经 `skipped` 回执判定】** |

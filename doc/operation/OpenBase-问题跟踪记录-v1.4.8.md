@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.44.0 |
+| 文档版本 | v1.45.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops / AA-OpenBase-Dev |
 | 创建日期 | 2026-09-21 |
@@ -600,6 +600,53 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4M. §7 验收判据执行器交付与 T1/T2 结构缺口更正（2026-09-27）
+
+> **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.10.0** §7 / §3.3；实现在 OpenLLM 仓（其《DevLogReport》**v1.27.0** 第 38 批，提交 `4389ded`）。
+> **性质**：**验证工具交付（非缺陷）＋ 第一批 T1/T2 的实现更正**。执行器**首跑即暴露两处结构性缺口**（T2 `FAIL`、T1 仅有"偶然通过"），故一并更正并登记。**本批不新增债务。**
+
+### 4M.1 交付物与缺口
+
+| # | 项 | 内容 |
+|:-:|----|------|
+| 1 | **判据执行器**（交付） | `doc/test/evidence/cr149/t_acceptance_runner.py`：T1~T9 **一键复跑**，逐条 `PASS / FAIL / SKIP / BLOCKED` ＋**原始测量数据**（`--json` 落盘）；默认按**当前配置**判定；`--simulate` **进程内**临时置位（退出恢复、不写配置、不影响运行中服务）；`SKIP`/`BLOCKED` **不计入失败**但显式列出（避免"没做"被误读成"通过"）；退出码 `0`=无 FAIL。**使"人工批准开关值 → 一键验收"成为可执行闭环**（此前 T1~T9 只存在于方案表格中，无执行体） |
+| 2 | **缺口一（T1，结构冲突）** | §3.3 原本即要求「`query + 模板开销` 留余量」，但第一批把 5 段比例设为 `0.05/0.05/0.30/0.40/0.20`（**和 = 1.00**）⇒ 各段满额时 `prompt_total_tokens = available + 查询 + 开销 > available`，与 T1 判据**结构性冲突**。原夹具条目偏小，留有**偶然空隙**把该冲突掩盖成"通过"（这也说明**判据夹具必须能填满配额**才有判别力） |
+| 3 | **缺口二（T2，单条即超配额 ⇒ 整段清空）** | 配额裁剪从尾部整条丢弃：若**单条素材大于该段配额**，循环一路丢到空（实测 history 段 `dropped_items=6 / used=0`）⇒ 配额被白白浪费、该段归因彻底缺失 |
+
+### 4M.2 更正内容
+
+| # | 更正 | 说明 |
+|:-:|------|------|
+| 1 | **配额余量标定** | 5 段比例标定为 `0.05/0.05/0.28/0.37/0.19`（**和 = 0.94**，恢复 §3.3 的「query + 模板开销余量」本意）；新增常量 `QUOTA_HEADROOM_CEILING = 0.95` 并在配置默认值同步 |
+| 2 | **保底一条** | 新增 `_fit_single_unit()` 与「保底一条」：**仅当裁剪将清空该段时**保留首条，先句边界、再按比例收敛，并**连同渲染编号前缀一并计入**（首版漏算前缀实测 `193 > 190`）硬压进配额，记 `truncated_items`；**可装下首条时不触发** ⇒ 既有「整条丢弃」语义不变 |
+| 3 | **`quota = 0` 语义显式化** | 写入 `BudgetPolicy.quota` docstring：**"不限"= 不裁剪**（fail-open，避免误配 `..._RATIO=0` 静默清空整段）；判据 T1 的 `used ≤ quota` **仅对 `quota > 0` 的段**成立 |
+| 4 | **执行器 T1 夹具强化** | 改用**填满配额**的最坏夹具（单条尺寸按各段配额定制），使结构性溢出**必然**可判 |
+
+### 4M.3 验证与证据
+
+| 项 | 结果 |
+|----|------|
+| 新增护栏 | `tests/unit/test_context_budget_headroom_and_floor.py` **7 例**（保底触发与守配额（含**无句末标点的超长单条**硬性收敛）/ 可装下时不触发 / `quota=0` 语义锁定 / 内置与配置比例余量 / **满额场景 `prompt_total_tokens ≤ available`**） |
+| 既有护栏 | 预算族（`test_context_budget.py` 13 例等，含 `test_system_segment.py` / `test_rag_rerank_wiring.py`）**全绿** ⇒ 整条丢弃语义与其余批次数值未变 |
+| 执行器两态实测 | **当前配置** ⇒ `{PASS:3（T3/T7/T9）, SKIP:4（T1/T2/T5/T8）, BLOCKED:2（T4/T6）, FAIL:0}`；`--simulate` ⇒ `{PASS:6, SKIP:1（T8：能力达标但开关未开）, BLOCKED:2, FAIL:0}` —— 报告落 `t_acceptance_runner-result.json` 与 `t_acceptance_runner-simulate-result.json` |
+| 全量回归 | `32 failed / 3102 passed / 0 error`（245.06 s；收集 3134 ＝ 上一轮 +7） |
+| **基线对照** | 与上一轮失败集**逐项完全相同**（`Compare-Object` **32 = 32，零差异 ⇒ 零新增失败**） |
+| 静态质量 | 本轮 3 文件 `ruff` **零告警** |
+| 提交 | OpenLLM `4389ded`（2 生产 + 1 测试，`+253/-9`），显式路径、TDD 合规 |
+
+### 4M.4 与既有登记项的关系
+
+| 项 | 变化 |
+|----|------|
+| 方案 §7 T1~T9 | **由"表格判据"升级为"可执行判据"**（执行器交付）；T1/T2 表述按实现更正为**精确不变量**（`quota>0` 硬上限 / 保底一条 / Σ比例 ≤ 0.95） |
+| 方案 §3.3 | 补充**余量约束**、**保底一条**与 **`quota=0` 语义**三节；说明第一批实现与原设计「query 余量」要求的偏差已更正 |
+| 第一批实施登记（§4E） | **不改判其"已实施"结论**，但**更正其中 T1/T2 的实现口径**（结构余量 + 保底一条）；其开关仍为默认关闭 ⇒ **线上行为不变** |
+| T4 / T6 | 执行器判为 **`BLOCKED`**（T4 前置：内置 RAG 无底座 ⇒ 接管注入为空；T6 属第三批）—— **不计入失败但显式登记**，与 §4I / §6 一致 |
+| 开关开启值批准 | **仍未批准**：T1/T2/T5/T8 需人工批准开关值后**复跑执行器**（一条命令即可出结论），本记录不代行批准 |
+| 全仓未闭环项 | **仍为 0 项** |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
@@ -659,3 +706,4 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 | **v1.42.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ④ 项实施登记（§4J 新建）—— 方案 §4.3「队列可观测与死信」已实施；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.7.0** §4.3；实现在 OpenLLM 仓（其《DevLogReport》**v1.24.0** 第 35 批，提交 `1a572f7`）。② **实施 5 项**：**(i) 聚合指标** —— `WritebackStore.stats()`（三条聚合 SQL：状态分组 / `retry_count>0` 直方图 / 最早未完成 `updated_at`）产出深度·失败率（空库 `0.0` 不除零）·重试分布·`max_retry_count`·积压年龄，`WritebackQueue.stats()` 补 `queue_depth`；**(ii) 死信视图** —— `list_dead_letters()`（只含 `failed`、分页、**不含 payload 正文**）；**(iii) 重放端点** —— `claim_failed()` 原子置回 `pending` 且 `retry_count` 归零后由 `replay_dead_letters()` 复用 `_run_item` 重新投递（未注册 handler 计 `skipped`、行留 `pending`）；`POST /writeback/dead-letter/replay` 仅接受显式行 id、单次 ≤100（超限 4003）；**(iv) 失败 TTL 清理任务化** —— `run_cleanup_loop()` 由 lifespan 启动/关闭取消，间隔 `WRITEBACK_CLEANUP_INTERVAL_SECONDS`（默认 3600 s，**0=关闭**）、单轮异常不终止循环；**(v) 归属隔离** —— 三处均沿用 `DEF-BE-148-007` 的 `json_extract` fail-closed，无身份一律 401（1001）。③ **验证**：新增护栏 `tests/unit/test_writeback_queue_observability.py`（**22 例**）全绿；**运行态探针** `doc/test/evidence/cr149/writeback_observability_probe.py`（真实存储层/队列层 + 独立临时 SQLite）—— 全局 `{total:4, done:1, failed:3, failure_rate:0.75, retry_distribution:{"2":1,"3":2}}`；按用户 `u-1 {total:3, failed:2}`（他人行与无归属历史行不可见）；死信视图 `total=3` 且无 payload 字段；**重放 2 行 → `replayed=2`、handler 实投递 2 次、状态转 `done`**；越权取件 `[]` 且对方行仍 `failed`；`run_cleanup_loop(0)` 即时返回、TTL 不误删新近死信。④ **回归**：全量 `tests/unit` **32 failed / 3063 passed / 0 error**（244.44 s；收集 3095）；**基线对照**（同命令 vs 第 33 批基线 `cr149-b2c-full.txt`，逐项 testid 归一化后 `Compare-Object`）**32 = 32，零差异 ⇒ 零新增失败**；**对照实验（决定性证据）**：上一轮 `test_v213_gateway_ext.py` 曾少失败 1 例，本批以 `git stash push -- <本批 4 个生产文件>` **回退改动后隔离复跑，得到与改动后完全相同的 4 个失败** ⇒ 判定**既有序相关 flaky，与本批改动无关**；静态质量 5 文件 `ruff` **零告警**。⑤ **与既有登记项关系**：§4.3 余项（画像增量升级 / 写路径与通道一致）**仍未实施**（后者依赖通道定性与 `assert_write_channel_is_primary` 接入）；§9 问题 1 / 问题 4 仍待裁定；**全局口径统计未开放**（现为调用方作用域，如需全局视图建议按角色门禁单独开放）；`CR-148-032`/`TD-新增-028` 不受影响；**全仓未闭环项仍为 0**。⑥ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.7.0**（§4.3 已实施标注与细节 + §6 第二批进度 + §11 修订行）；OpenLLM《DevLogReport》**v1.24.0**（第 35 批）；证据 `doc/test/evidence/cr149/writeback_observability_probe.py` 与 `writeback_observability_probe-result.json`。⑦ 文档版本 **v1.41.0 → v1.42.0**，状态 [Review] |
 | **v1.43.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ⑤ 项实施登记（§4K 新建）—— 方案 §4.2「阈值与单次命中语义对齐 / 规则集可配置 / LLM 兜底接线」三项均已实施；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.8.0** §4.2 / §7 判据 **T9**；实现在 OpenLLM 仓（其《DevLogReport》**v1.25.0** 第 36 批，提交 `0abcaea`）。② **实施 4 项**：**(i) 阈值与单次命中语义对齐** —— `R001`/`R002` 单次命中 0.8 → **0.86**、`R005` 复合意图 0.8 → **0.86**（此前**永不达标**），由 `COMPONENT_ROUTER_SINGLE_HIT_CONFIDENCE` / `COMPONENT_ROUTER_COMPOSITE_CONFIDENCE` 驱动（默认 0.86）、**配回 0.8 即复现旧「回落」语义**、低配时告警；**(ii) 规则集可配置** —— `COMPONENT_ROUTER_RULES_PATH` 接入构造，**路径非法/文件损坏告警并退回内置规则**；**(iii) LLM 兜底接线** —— 新增 `_build_component_router()`（`_auto_component_plan` 统一调用），开关 `COMPONENT_ROUTER_LLM_FALLBACK_ENABLED`（**默认关闭**）开启且存在 DB/身份时注入分类器（复用 `_call_llm`、`temperature=0`、`max_tokens=64、300ms 超时`），超时/异常/非法 JSON **一律回落规则**；**(iv) 语义更正的可复现逃生阀** —— 置信度配置化，旧语义可一键复现。③ **验证**：新增护栏 `tests/unit/test_component_router_decision_tuning.py`（**15 例**）全绿；**3 个既有护栏按新契约更正**（原断言编码的正是方案指出的「隐性分叉」，现改用逃生阀复现旧场景**并同时锁定新默认** —— **契约更正而非放宽断言**）；**运行态探针** `doc/test/evidence/cr149/component_decision_probe.py`（真实路由器 + 网关构造入口）—— 单次记忆/单次知识命中「旧 0.8 不决策 → 新 0.86 直接决策」、`R005.qualified` `false → true`、无候选查询不变；自定义规则文件 `X001` 生效、非法路径退回内置 5 条规则；LLM 兜底「关=不注入 / 开=注入 / 超时=回落规则」。④ **回归**：全量 `tests/unit` **31 failed / 3079 passed / 0 error**（244.08 s；收集 3110）；**基线对照**（同命令 vs 上一轮 `cr149-b2e-full.txt`，逐项 testid 归一化后 `Compare-Object`）**无新增失败项**（失败集为基线**子集** 32 → 31，差异项仍为已用对照实验证实的既有序相关 flaky）；静态质量 7 文件 `ruff` **零新增告警**（`component_router.py` 39 = 39、其余 2 = 2）。⑤ **语义变更提示（已在 §4K.3 与方案 §8 风险表登记）**：单次命中置信度提升使**路由决策面变宽** —— 同一查询可能由「LLM 兜底结论」变为「规则直接结论」，组件装配面随之变化；**生产如需保持旧行为，把两个置信度键配回 0.8**。⑥ **与既有登记项关系**：§9 问题 1（通道 A 三选一）仍待裁定（阻塞通道定性 / 通道裁决进取数层 / §4.3 写路径与通道一致）；§9 问题 4 仍为回写载荷形态接线前置阻塞；LLM 兜底**上线前提**＝按 §5.6 门槛复测出达标分类器；`CR-148-032`/`TD-新增-028` 不受影响；**全仓未闭环项仍为 0**。⑦ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.8.0**（§4.2 三项标注与实现细节 + §6 第二批进度 + §7 T9 + §8 三项风险 + §11 修订行）；OpenLLM《DevLogReport》**v1.25.0**（第 36 批）；证据 `doc/test/evidence/cr149/component_decision_probe.py` 与 `component_decision_probe-result.json`。⑧ 文档版本 **v1.42.0 → v1.43.0**，状态 [Review] |
 | **v1.44.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **缺陷登记与修复：`DEF-BE-148-029` 画像增量提炼服务缺失（§4L 新建）—— 已提交代码引用仓内不存在模块 `app/services/profile_refine.py`；本批补回模块并加 fail-safe，缺陷闭环；无新增债务**。① **来源**：上下文精装配第二批实施中的**仓内一致性审计**（`evaluate.py` 导入契约 vs 仓内实际模块）；修复落于 OpenLLM 仓（其《DevLogReport》**v1.26.0** 第 37 批，提交 `5589ddf`）。② **缺陷**：`evaluate.py::_profile_updates_for` 惰性导入 `DEFAULT_PROFILE_TARGETS` / `get_active_profile_refiner` / `refine_profile_delta`，但 **`app/services/profile_refine.py` 在仓内不存在**（递归查找**仅命中 `__pycache__/profile_refine.cpython-310.pyc`**）；一旦写侧入口 `evaluate_session(..., {"enable_profile_delta": true})` 被接线即 **ModuleNotFoundError** 打挂回写决策。**根因**：同批源码未随提交落库 ＋ 引用方无 fail-safe（静默隐藏）＋ 方案 §4.3 所述配置键 `OPENLLM_PROFILE_LLM_REFINE` **当前树不存在**（文档-实现漂移）。**级别 P1**（当前未触发，属「埋雷」型）。③ **修复 4 项**：**(i) 补回服务模块**（规则提炼语义**逐字取自既有线上实现** `writeback._resolve_profile_updates`/`_extract_topics`/`_infer_tone`，非重新发明）；**(ii) 单一事实源**（回写路三个函数改为薄封装委托，既有公开名保留 ⇒ `test_v2143_writeback_profile.py` 契约不破；两处默认值差异显式化）；**(iii) 提炼器注入位点**（`refine_fn(dialogue)->dict|None` **同步**契约；未注册 ⇒ 纯规则路径；抛异常/返回非 dict/返回空 ⇒ **保留规则结果**）；**(iv) 写侧决策 fail-safe**（整体含导入纳入 try/except ⇒ 降级为空增量并告警，可选目标不打挂主流程）。④ **验证**：新增护栏 `tests/unit/test_profile_refine_service.py`（**17 例**）全绿 —— **首轮 RED 的失败信息本身即缺陷证据**（`ModuleNotFoundError: No module named 'app.services.profile_refine'`）；既有 `test_v2143_writeback_profile.py` **13 例全绿**；**运行态探针** `doc/test/evidence/cr149/profile_refine_probe.py` —— 三符号齐备、`evaluate._profile_updates_for` 真实返回 `business.topics` + `person.tone`、提炼器注入生效且失败回落规则、**回写路与服务模块 5 类入参结果一致**。⑤ **回归**：全量 `tests/unit` **32 failed / 3095 passed / 0 error**（251.93 s；收集 3127）；失败集与已知 32 项集**相同 ⇒ 零新增失败**；**对照实验（决定性）**：`git stash` 本批受跟踪文件 ＋ 临时移除新模块后**隔离复跑 `test_v213_gateway_ext.py` 得到完全相同的 4 个失败** ⇒ 该文件为**既有序相关 flaky**（第 35 批首次登记），与本批无关；静态质量 4 文件 `ruff` **零告警**。⑥ **与既有登记项关系**：方案 §4.3「画像增量升级」状态更新为**「基座已补回；线上 LLM 门控待决策」**（提炼器位点就绪，但线上接线需先裁定**同步/异步提炼器形态**，已作为方案 §9 **追加问题 7**（注意：§9 原已有问题 6「异步精炼触发与产物归属」，本轮登记据此更正编号））；`DEF-BE-148-029` **已修复闭环**；§9 问题 4 与 `CR-148-032`/`TD-新增-028` **不受影响**；**全仓未闭环项仍为 0**。⑦ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.9.0**（§4.3 状态 + §9 追加问题 7 + §11 修订行）；OpenLLM《DevLogReport》**v1.26.0**（第 37 批）；证据 `doc/test/evidence/cr149/profile_refine_probe.py` 与 `profile_refine_probe-result.json`。⑧ 文档版本 **v1.43.0 → v1.44.0**，状态 [Review] |
+| **v1.45.0** | **2026-09-27** | **AT-OpenBase-Test / AA-OpenBase-Dev** | **§7 验收判据执行器交付（§4M 新建）＋ 执行器首跑暴露的 T1/T2 两处结构性缺口更正；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.10.0** §7 / §3.3；实现在 OpenLLM 仓（其《DevLogReport》**v1.27.0** 第 38 批，提交 `4389ded`）。② **交付：判据执行器** `doc/test/evidence/cr149/t_acceptance_runner.py` —— T1~T9 **一键复跑**，逐条 `PASS / FAIL / SKIP / BLOCKED` ＋**原始测量数据**（`--json` 落盘）；默认按**当前配置**判定；`--simulate` **进程内**临时置位（退出恢复、不写配置、不影响运行中服务）；`SKIP`/`BLOCKED` **不计入失败**但显式列出（避免"没做"被误读为"通过"）；退出码 `0`=无 FAIL。**交付前 T1~T9 仅存在于方案表格、无执行体**；交付后「人工批准开关值 → 一键验收」成为**可执行闭环**。③ **缺口一（T1 结构冲突）**：§3.3 原本即要求「`query + 模板开销` 留余量」，但第一批比例 `0.05/0.05/0.30/0.40/0.20`（**和 = 1.00**）⇒ 各段满额时总长超 available；原夹具条目偏小留下**偶然空隙**把冲突掩盖成"通过"。**修法**：标定 `0.05/0.05/0.28/0.37/0.19`（**和 = 0.94**）＋ 常量 `QUOTA_HEADROOM_CEILING=0.95`；执行器 T1 改用**填满配额**的最坏夹具。④ **缺口二（T2 整段清空）**：单条素材 > 段配额时「整条丢弃」一路丢到空（实测 history `dropped_items=6 / used=0`）。**修法**：新增 `_fit_single_unit()` 与「**保底一条**」（仅当将清空该段时保留首条，句边界 → 比例收敛，**连同编号前缀一并计入**，硬压进配额并记 `truncated_items`；可装下首条时不触发 ⇒ 既有语义不变）。⑤ **顺带显式化** `quota=0` 语义（"不限"= 不裁剪，fail-open），T1 的 `used ≤ quota` **仅对 `quota>0` 的段**成立。⑥ **验证**：新增护栏 `tests/unit/test_context_budget_headroom_and_floor.py`（**7 例**）全绿；预算族既有护栏（含 `test_context_budget.py` 13 例）**全绿**；**执行器两态实测** —— 当前配置 `{PASS:3, SKIP:4, BLOCKED:2, FAIL:0}`、`--simulate` `{PASS:6, SKIP:1, BLOCKED:2, FAIL:0}`（报告两份落盘）；全量 `tests/unit` **32 failed / 3102 passed / 0 error**（245.06 s；收集 3134），**失败集与上一轮逐项完全相同 ⇒ 零新增失败**；3 文件 `ruff` **零告警**。⑦ **与既有登记项关系**：§7 T1~T9 由"表格判据"升级为"可执行判据"；§3.3 补充余量约束/保底一条/`quota=0` 语义三节；§4E 第一批"已实施"结论不变但**更正 T1/T2 实现口径**（开关仍默认关闭 ⇒ 线上行为不变）；**T4（内置 RAG 无底座）/ T6（第三批精炼）判为 `BLOCKED`** 并显式登记；**开关开启值仍未批准**（T1/T2/T5/T8 批准后一条命令复跑即可出结论）；**全仓未闭环项仍为 0**。⑧ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.10.0**（§3.3 + §7 T1/T2/执行器 + §11）；OpenLLM《DevLogReport》**v1.27.0**（第 38 批）；证据 `doc/test/evidence/cr149/t_acceptance_runner.py`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`。⑨ 文档版本 **v1.44.0 → v1.45.0**，状态 [Review] |
