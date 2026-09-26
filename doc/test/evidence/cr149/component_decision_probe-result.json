@@ -4,7 +4,8 @@
     "composite_confidence": 0.86,
     "rules_path_default": "",
     "llm_fallback_default": false,
-    "llm_timeout_seconds": 0.3
+    "llm_timeout_seconds": 0.3,
+    "llm_cache_size_default": 256
   },
   "threshold_alignment": {
     "single_memory_hit": {
@@ -148,5 +149,16 @@
       "need_rag": false,
       "reason": "规则引擎兜底决策（无命中规则）"
     }
+  },
+  "classification_cache": {
+    "same_query_calls": 1,
+    "same_query_hits_cache": true,
+    "distinct_query_calls": 2,
+    "distinct_queries_each_pay": true,
+    "cached_decision_equal": true,
+    "cache_entries_after_two_distinct": 2,
+    "capacity_zero_calls": 2,
+    "capacity_zero_disables": true,
+    "default_capacity": 256
   }
 }
