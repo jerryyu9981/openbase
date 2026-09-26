@@ -1518,7 +1518,39 @@
                              },
                              "gate":  "P-10 两路径均达标且正式分位判定通过（单飞档 P99 同步 0.036ms / 流式 0.063ms、并发 8 档 0.053 / 0.069ms；两档四路径各 200 有效样本、每样本 ≤5ms）；P-4 口径缺口待人工安排（建议随 TD-新增-027 偿还一并处置）；CR-148-020 已正式收口"
                          },
-                         "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 9 项产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012）已全部闭环，**P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）已于本阶段修复并验证（OpenLLM `ad7d472`：失败负缓存 + 关闭画像注入开关；P-1 本仓开销 P50 2629.4 → 1157.9ms，仍未达 ≤50ms）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；三项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6；DT-148-019 画像负缓存 ad7d472）。剩余＝① **接线 P-10 计量（CR-148-018）— 已于 2026-09-26 完成（OpenLLM `72fd01e`）；派生 CR-148-020 亦已于同日完成（OpenLLM `c0d8222`：流式回写改后台派发 + 回执另行持久化；L3 实测流式 `writeback_dispatch` 556~728ms → 0.025~0.029ms，P-10 两路径均达标；新增失败 = 0）**；② **`P-10` 正式分位判定已于 2026-09-26 重跑 `TT-038` 完成并通过（单飞档/并发 8 档各同步/流式 200 有效样本，P99 最高 0.069ms ≤5ms）→ `CR-148-020` 正式收口**；③ 偿还 TD-新增-027（架构级立项）；④ 为 P-6/P-8/P-9 目标补「数据规模档位」；⑤ **CR-148-019 测试工装处置（P2：根 conftest 前置 pgAdmin site-packages 致导入失败）**；⑥ 压测环境规范固化；⑦ 可访问性 TT-040 待前端服务；⑧ 前端类 TT-025/026 待前端就绪；⑨ TT-032（v1.4.7 报告逐项复测）与 TT-037（注入防护专项）未执行；⑩ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑪ P3 三桩缺 /health 与偶发 500 待观察"
+                         "cr148025SseFirstPacketMetering":  {
+                             "id":  "CR-148-025 —— `P-4` 计量接线与双档判定（审计闭合项 ②；`P-4` 口径缺口闭合 → 单飞档达标 / 并发 8 档未达标）",
+                             "status":  "implemented_and_verified",
+                             "date":  "2026-09-26",
+                             "owner":  "AD-OpenBase-Dev / AT-OpenBase-Test",
+                             "scope":  "为 `P-4`（SSE 首包本仓额外开销 P95 ≤100ms）补 `timeline` 步骤（`sse_first_packet`），使 `P-4` 可逐样本判定；此前无对应步骤、无法逐样本分离（《性能测试记录-v1.4.8》§6 #2 口径缺口）→ 审计报告「闭合项 ②」待办",
+                             "upstreamCommit":  "OpenLLM（生产 1 文件 `api/openllm_gateway.py`，TDD 9 例，见《OpenLLM DevLogReport》第 25 批）",
+                             "changes":  [
+                                 "新增常量 `SSE_FIRST_PACKET_STEP = \"sse_first_packet\"` + `_mark_sse_first_packet_start`（保留最早时刻，最贴近「请求进入」）+ `_append_sse_first_packet_step`（未打点不落步骤，防 0 值污染 Σ步骤）",
+                                 "认证依赖处打点（应用层最早位置，覆盖鉴权）；流式端点 `yield … event: routing` 之前落 `{\"step\":\"sse_first_packet\",\"ms\":…}`",
+                                 "计时用 `perf_counter`（monotonic 在 Win/Py3.10 分辨率约 15.6ms，会失真）"
+                             ],
+                             "tdd":  "tests/unit/test_sse_first_packet_timeline_guard.py（9 例：步骤名常量锁定 / 打点产出 / 未打点不落 / 保留最早 / 默认计时 / 必须 perf_counter / 环境自检分辨率 <1ms / 源码契约 2 例：追加须早于 event: routing 的 yield、认证依赖处必须打点）RED → GREEN 9 passed",
+                             "staticQuality":  "改动 1 文件 ruff All checks passed",
+                             "singleFlight":  "专用实例 8041 / 编排器等价 Env / DEBUG=false / RATE_LIMIT_PER_SECOND=10000 / 禁 keep-alive；脚本 `p4-first-packet-20260926.py`：0.75 req/s / n=200 有效样本（errors=0 / missing_steps=0 / cache_hits=0）→ P50 / P90 / P95 / P99 = 8.0 / 36.0 / 40.0 / 53.0 ms ⇒ P95 40ms ≤100ms 达标（max 121ms，超限 ≤2 例 <1%，不宣称每样本均 ≤100ms）",
+                             "concurrency8":  "并发 8 / 不限节流 / n=200 / peak_in_flight=8 / achieved_rps=0.7 / errors=0 / missing_steps=0 → 延迟回读口径 P95 189.0ms、交织口径 223.0ms，P50 37.0 / P90 128.0 / P99 1150.0ms → 两口径均 ＞100ms ⇒ 未达标；定性＝与 TD-新增-027（并发下服务端串行化，async 路由内同步 SQLAlchemy/SQLite 阻塞事件循环）同源，非新缺陷，偿还后复测",
+                             "toolingEnhancement":  "`p4-first-packet-20260926.py` 增 `--concurrency` / `--defer-readback` —— 延迟回读口径把回读 trace 的 DB 负载与流式测量窗口分离（交织口径作对照），避免回读污染「本仓开销」度量",
+                             "verdict":  "P-4 口径缺口闭合；单飞档达标 / 并发 8 档未达标（归 TD-新增-027，偿还后复测）；TT-038 并发档未达标项由 5 → 6，Step 4 判定维持「不通过」",
+                             "evidence":  [
+                                 "doc/test/evidence/v148/p4-first-packet-20260926.py",
+                                 "doc/test/evidence/v148/p4-first-packet-smoke-20260926.json",
+                                 "doc/test/evidence/v148/p4-first-packet-single-flight-20260926.json",
+                                 "doc/test/evidence/v148/p4-first-packet-conc8-20260926.json（延迟回读）",
+                                 "doc/test/evidence/v148/p4-first-packet-conc8-interleaved-20260926.json（交织对照）"
+                             ],
+                             "documents":  {
+                                 "performanceRecord":  "doc/test/OpenBase-性能测试记录-v1.4.8.md（v1.10.0 / v1.11.0，§4 P-4 行 / §5 判定表与双口径汇总 / §5.3 结论 / §6.5 残留② / §7 第 2b·3 项 / §8 修订行）",
+                                 "issueTracking":  "doc/operation/OpenBase-问题跟踪记录-v1.4.8.md（v1.27.0，CR-148-025 + 修订行）",
+                                 "devLogReport":  "OpenLLM 仓 doc/development/OpenLLM-R396-R398-会话编排前置与回写闭环-DevLogReport-v1.0.0.md（第 25 批）"
+                             },
+                             "gate":  "P-4 口径缺口已闭合（单飞档达标 / 并发 8 档未达标，归 TD-新增-027 偿还后复测）；TT-038 并发档未达标项 5 → 6；Step 4 判定维持「不通过」"
+                         },
+                         "gate":  "Step 4 判定维持「不通过」；性能批次已收口：TT-039 ✅ 通过、**TT-038 ❌ 未通过（双口径一致，「受限口径」保留已消除）**；本版本累计 9 项产品缺陷（DEF-BE-148-003/004/006/007/008/009/010/011/012）已全部闭环，**P1 缺陷 DT-148-019（画像拉取降级无失败短路，约 2.04 s/请求，CR-148-017）已于本阶段修复并验证（OpenLLM `ad7d472`：失败负缓存 + 关闭画像注入开关；P-1 本仓开销 P50 2629.4 → 1157.9ms，仍未达 ≤50ms）**；**并发劣化已归集 TD-新增-027（P1，未偿还：并发 ×8 仅得吞吐 1.43×）**；三项缺陷已修复并端到端验证（DT-148-015 门禁 6cb1f61；DT-148-016 间歇 5001 da312d6；DT-148-019 画像负缓存 ad7d472）。剩余＝① **接线 P-10 计量（CR-148-018）— 已于 2026-09-26 完成（OpenLLM `72fd01e`）；派生 CR-148-020 亦已于同日完成（OpenLLM `c0d8222`：流式回写改后台派发 + 回执另行持久化；L3 实测流式 `writeback_dispatch` 556~728ms → 0.025~0.029ms，P-10 两路径均达标；新增失败 = 0）**；② **`P-10` 正式分位判定已于 2026-09-26 重跑 `TT-038` 完成并通过（单飞档/并发 8 档各同步/流式 200 有效样本，P99 最高 0.069ms ≤5ms）→ `CR-148-020` 正式收口**；③ **`P-4` 计量接线（CR-148-025）已于 2026-09-26 完成并双档判定：单飞档达标（P95 40ms ≤100ms，n=200 有效样本）/ 并发 8 档未达标（延迟回读口径 P95 189ms、交织 223ms，归 `TD-新增-027` 偿还后复测）**；④ 偿还 TD-新增-027（架构级立项）；⑤ 为 P-6/P-8/P-9 目标补「数据规模档位」；⑥ **CR-148-019 测试工装处置（P2：根 conftest 前置 pgAdmin site-packages 致导入失败）**；⑦ 压测环境规范固化；⑧ 可访问性 TT-040 待前端服务；⑨ 前端类 TT-025/026 待前端就绪；⑩ TT-032（v1.4.7 报告逐项复测）与 TT-037（注入防护专项）未执行；⑪ H 类环境项（DPS 未启动 → profile 链、TT-016 真链路）；⑫ P3 三桩缺 /health 与偶发 500 待观察"
                          },
                          "v1_4_7_step_4_o3_coverage":  {
                              "status":  "closed",

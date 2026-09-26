@@ -1,0 +1,38 @@
+{
+  "case": "P-4 计量判定（SSE 首包本仓额外开销，P95 ≤100ms）",
+  "date": "2026-09-26",
+  "base_url": "http://127.0.0.1:8041",
+  "tag": "conc8",
+  "rate_per_second": 0.0,
+  "concurrency": 8,
+  "defer_readback": true,
+  "peak_in_flight": 8,
+  "achieved_rps": 0.7,
+  "step_name": "sse_first_packet",
+  "health": {
+    "status": 200
+  },
+  "elapsed_s": 285.2,
+  "samples": 200,
+  "ok": 200,
+  "errors": 0,
+  "error_samples": [],
+  "cache_hits": 0,
+  "missing_steps": 0,
+  "n_effective": 200,
+  "sse_first_packet": {
+    "n": 200,
+    "p50": 37.0,
+    "p90": 128.0,
+    "p95": 189.0,
+    "p99": 1150.0,
+    "min": 4.0,
+    "max": 1677.0
+  },
+  "all_within_target": false,
+  "verdict": {
+    "pass": false,
+    "check": "n_effective≥200 且 sse_first_packet P95 ≤ 100.0 ms",
+    "target_p95_ms": 100.0
+  }
+}
