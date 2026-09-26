@@ -1,0 +1,12 @@
+task,model,primary_metric,primary_value,p50_ms,p95_ms,tokens_per_second_p50,failed,compression_ratio,format_ok_rate
+route,qwen3:0.6b,field_accuracy,1.0,2329.7,3760.1,7.5,0,,
+route,llama3.2:1b,field_accuracy,0.375,4706.0,5198.9,3.5,0,,
+select,qwen3:0.6b,f1,0.5442,9248.0,11435.0,5.5,0,,1.0
+select,llama3.2:1b,f1,0.697,29016.8,33556.5,3.0,0,,1.0
+select,rule-baseline(no-model),f1,0.5714,0.0,0.0,0.0,0,,1.0
+compress,qwen3:0.6b,fact_recall,0.5,32588.7,41419.0,5.9,0,0.4595,1.0
+compress,llama3.2:1b,fact_recall,0.6667,76807.2,107736.8,2.3,0,0.4323,1.0
+compress,rule-baseline(no-model),fact_recall,1.0,0.0,0.0,0.0,0,1.0,1.0
+summarize,qwen3:0.6b,fact_recall,0.2917,8733.0,13174.4,6.6,0,0.6318,1.0
+summarize,llama3.2:1b,fact_recall,0.1667,26052.8,39943.7,2.6,0,0.6414,1.0
+summarize,rule-baseline(no-model),fact_recall,1.0,0.0,0.0,0.0,0,1.0,1.0

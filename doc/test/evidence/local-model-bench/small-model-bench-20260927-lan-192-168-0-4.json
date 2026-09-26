@@ -1,0 +1,465 @@
+{
+  "generated_at": "2026-09-27T00:43:44",
+  "base_url": "http://192.168.0.4:11434",
+  "server_version": "0.32.15",
+  "models": [
+    "qwen2.5:0.5b"
+  ],
+  "tasks": [
+    "route",
+    "select",
+    "compress",
+    "summarize"
+  ],
+  "tag": "lan-192-168-0-4",
+  "limit_items": 4,
+  "dataset": {
+    "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\local-model-bench\\dataset_refine_bench.json",
+    "seed": 20260927
+  },
+  "results": {
+    "qwen2.5:0.5b": {
+      "model": "qwen2.5:0.5b",
+      "tasks": {
+        "route": {
+          "aggregate": {
+            "n": 4,
+            "ok": 4,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 602.6,
+              "p95": 621.1,
+              "max": 621.1
+            },
+            "tokens_per_second_p50": 30.3,
+            "json_ok_rate": 1.0,
+            "exact_rate": 0.25,
+            "field_accuracy": 0.375,
+            "primary_metric": "field_accuracy",
+            "primary_value": 0.375
+          },
+          "rows": [
+            {
+              "id": "route-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 569.3,
+              "eval_count": 14,
+              "eval_duration_ms": 496.8,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": true,
+                "rag_hit": false
+              }
+            },
+            {
+              "id": "route-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 609.7,
+              "eval_count": 14,
+              "eval_duration_ms": 428.7,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 602.6,
+              "eval_count": 14,
+              "eval_duration_ms": 415.7,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": false,
+                "rag_hit": false
+              }
+            },
+            {
+              "id": "route-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 621.1,
+              "eval_count": 14,
+              "eval_duration_ms": 462.7,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": false,
+                "rag_hit": false
+              }
+            }
+          ]
+        },
+        "select": {
+          "aggregate": {
+            "n": 4,
+            "ok": 4,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 5849.7,
+              "p95": 6233.6,
+              "max": 6233.6
+            },
+            "tokens_per_second_p50": 28.6,
+            "f1": 0.5678,
+            "precision": 0.6667,
+            "recall": 0.5625,
+            "format_ok_rate": 1.0,
+            "primary_metric": "f1",
+            "primary_value": 0.5678
+          },
+          "rows": [
+            {
+              "id": "select-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 5964.0,
+              "eval_count": 8,
+              "eval_duration_ms": 314.5,
+              "thinking_chars": 0,
+              "raw_preview": "3, 7, 1",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  3,
+                  7,
+                  1
+                ],
+                "precision": 0.6667,
+                "recall": 0.5,
+                "f1": 0.5714
+              }
+            },
+            {
+              "id": "select-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 6233.6,
+              "eval_count": 27,
+              "eval_duration_ms": 943.9,
+              "thinking_chars": 0,
+              "raw_preview": "3, 6, 7, 10, 2, 4, 9, 8, 1",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  3,
+                  6,
+                  7,
+                  10,
+                  2,
+                  4,
+                  9,
+                  8,
+                  1
+                ],
+                "precision": 0.3333,
+                "recall": 0.75,
+                "f1": 0.4615
+              }
+            },
+            {
+              "id": "select-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 5849.7,
+              "eval_count": 8,
+              "eval_duration_ms": 254.1,
+              "thinking_chars": 0,
+              "raw_preview": "3, 7, 1",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  3,
+                  7,
+                  1
+                ],
+                "precision": 0.6667,
+                "recall": 0.5,
+                "f1": 0.5714
+              }
+            },
+            {
+              "id": "select-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 5184.3,
+              "eval_count": 5,
+              "eval_duration_ms": 152.9,
+              "thinking_chars": 0,
+              "raw_preview": "3, 6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  3,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6667
+              }
+            }
+          ]
+        },
+        "compress": {
+          "aggregate": {
+            "n": 4,
+            "ok": 4,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 7067.6,
+              "p95": 11745.2,
+              "max": 11745.2
+            },
+            "tokens_per_second_p50": 27.4,
+            "fact_recall": 0.5833,
+            "compression_ratio": 0.4413,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 0.5833
+          },
+          "rows": [
+            {
+              "id": "compress-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 11745.2,
+              "eval_count": 192,
+              "eval_duration_ms": 6996.1,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排的读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm。知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。回写侧三路（memory / rag / profile）逐路独立入队，权威回执以回写队列表为准。\n2. 记忆往返闭环的判据：同一",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.4413
+              }
+            },
+            {
+              "id": "compress-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 7067.6,
+              "eval_count": 192,
+              "eval_duration_ms": 6992.1,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排的读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm。知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。回写侧三路（memory / rag / profile）逐路独立入队，权威回执以回写队列表为准。\n2. 记忆往返闭环的判据：同一",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.4413
+              }
+            },
+            {
+              "id": "compress-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 7056.3,
+              "eval_count": 192,
+              "eval_duration_ms": 6987.2,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排的读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm。知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。回写侧三路（memory / rag / profile）逐路独立入队，权威回执以回写队列表为准。\n2. 记忆往返闭环的判据：同一",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.3333,
+                "compression_ratio": 0.4413
+              }
+            },
+            {
+              "id": "compress-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 7089.0,
+              "eval_count": 192,
+              "eval_duration_ms": 7032.3,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排的读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm。知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。回写侧三路（memory / rag / profile）逐路独立入队，权威回执以回写队列表为准。\n2. 记忆往返闭环的判据：同一",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 0.4413
+              }
+            }
+          ]
+        },
+        "summarize": {
+          "aggregate": {
+            "n": 4,
+            "ok": 4,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 2713.9,
+              "p95": 3854.4,
+              "max": 3854.4
+            },
+            "tokens_per_second_p50": 30.3,
+            "fact_recall": 0.2083,
+            "compression_ratio": 0.8473,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 0.2083
+          },
+          "rows": [
+            {
+              "id": "summarize-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 2223.2,
+              "eval_count": 28,
+              "eval_duration_ms": 890.1,
+              "thinking_chars": 0,
+              "raw_preview": "会话编排的读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.5,
+                "compression_ratio": 0.337
+              }
+            },
+            {
+              "id": "summarize-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 3599.4,
+              "eval_count": 77,
+              "eval_duration_ms": 2540.6,
+              "thinking_chars": 0,
+              "raw_preview": "记忆往返闭环的判据：同一主体连续两轮对话，第 2 轮记忆段注入 5 条、segment_tokens.memory 应大于 0；读路径资源键为 tenant-1_179fc89c 形态，回写必须用同一事实源派生，否则落在两个键上导致永不沉淀。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.1667,
+                "compression_ratio": 1.0
+              }
+            },
+            {
+              "id": "summarize-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 3854.4,
+              "eval_count": 81,
+              "eval_duration_ms": 2742.7,
+              "thinking_chars": 0,
+              "raw_preview": "知识库段落检索命中真实 OpenRAG 时 rag_source=external；外部不可用且开启回退开关时rag_source=builtin，但内置 RAG 需要本租户存在知识库记录与 FAISS 索引，本环境实测知识库表 0 行、索引目录 0 个，因此接管后注入为空。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.1667,
+                "compression_ratio": 1.0
+              }
+            },
+            {
+              "id": "summarize-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 2713.9,
+              "eval_count": 57,
+              "eval_duration_ms": 1831.6,
+              "thinking_chars": 0,
+              "raw_preview": "原始记忆：画像段由 DPS 提供，固定注入且不受组件路由影响；拉取失败开启 30 秒负缓存，避免每次对话重复付出约 2.04 秒的连接代价，总开关为 PROFILE_INJECTION_ENABLED。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 1.0521
+              }
+            }
+          ]
+        }
+      },
+      "warmup": {
+        "ok": true,
+        "error": null,
+        "load_duration_ms": 5070.9,
+        "elapsed_ms": 6795.4
+      },
+      "unavailable": false,
+      "runtime": {
+        "size_vram_bytes": 0,
+        "size_bytes": 484221909,
+        "inference": "cpu_or_partial"
+      }
+    },
+    "rule-baseline(no-model)": {
+      "model": "rule-baseline(no-model)",
+      "unavailable": false,
+      "runtime": {
+        "inference": "n/a(规则档)",
+        "size_vram_bytes": 0,
+        "size_bytes": 0
+      },
+      "tasks": {
+        "compress": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "fact_recall": 1.0,
+            "compression_ratio": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 1.0,
+            "note": "原文原样保留（未压缩）"
+          },
+          "rows": []
+        },
+        "summarize": {
+          "aggregate": {
+            "n": 5,
+            "ok": 5,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "fact_recall": 1.0,
+            "compression_ratio": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 1.0,
+            "note": "原文原样保留（未压缩）"
+          },
+          "rows": []
+        },
+        "select": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "f1": 0.5714,
+            "precision": 0.4,
+            "recall": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "f1",
+            "primary_value": 0.5714,
+            "note": "全选（不做相关性筛选）"
+          },
+          "rows": []
+        }
+      }
+    }
+  }
+}
