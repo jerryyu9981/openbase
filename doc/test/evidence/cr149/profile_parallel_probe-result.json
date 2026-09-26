@@ -1,0 +1,32 @@
+﻿{
+  "work_seconds_per_stage": 0.15,
+  "repeats": 3,
+  "serial_wall_seconds_all": [
+    0.312,
+    0.313,
+    0.328
+  ],
+  "concurrent_wall_seconds_all": [
+    0.172,
+    0.156,
+    0.156
+  ],
+  "serial_wall_seconds_best": 0.312,
+  "concurrent_wall_seconds_best": 0.156,
+  "overlap_saving_seconds": 0.156,
+  "concurrent_prompt_has_profile": true,
+  "concurrent_timeline": [
+    {
+      "step": "profile_fetch",
+      "ms": 156
+    }
+  ],
+  "serial_timeline": [],
+  "gateway_order": {
+    "sync_handle_before_pipeline": true,
+    "sync_passes_handle_to_pipeline": true,
+    "stream_handle_after_first_packet": true,
+    "stream_resolve_before_assembly": true,
+    "handle_call_sites": 2
+  }
+}
