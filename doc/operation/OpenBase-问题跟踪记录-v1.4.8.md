@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.40.0 |
+| 文档版本 | v1.41.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops / AA-OpenBase-Dev |
 | 创建日期 | 2026-09-21 |
@@ -430,6 +430,46 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4I. 上下文精装配第二批第 ③ 项实施登记（2026-09-27）
+
+> **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.6.0** §4.1「配套两项必做」之一（备通道健康探针）/ §7 判据 **T4** 前置条件；实现在 OpenLLM 仓（其《DevLogReport》**v1.23.0** 第 34 批，提交 `03a624f`）。
+> **性质**：**设计项实施登记（非缺陷修复）** —— 把方案 §4.1 明示的「无论选哪条通道路线都必做」项之一落地，使「备通道存在但无内容」这一**静默劣化**前置可视化。**本批不新增缺陷、不新增债务。**
+
+### 4I.1 实施清单与证据
+
+| # | 方案条目 | 实现 | 开关 | 证据 |
+|:-:|----------|------|------|------|
+| 1 | §4.1 备通道健康探针 | `_probe_components(db)` 一次 `asyncio.gather` 并行探测 **5 项**：外部三组件 ＋ `builtin_rag` ＋ `ollama`（共用既有结果缓存） | 无（纯观测） | 护栏 `tests/unit/test_health_backup_channel_probe.py`（**10 例**）；探针实测 `components_keys = [builtin_rag, dps, ollama, openmemory, openrag]` |
+| 2 | 内置 RAG 底座事实 | 新增 `_count_faiss_indexes(root)`（`<root>/<kb-id>/index.faiss`，与 `VectorStoreService` 落盘约定同一事实源）＋ `_probe_builtin_rag(db)`（`knowledge_bases` / `indexes` / `has_base` / `reason`） | 无 | 探针：`faiss_root_exists=true`、`indexes=0`、`has_base=false`，`reason="内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"` |
+| 3 | Ollama 可达性 | `_ollama_probe_tags()`（`GET {OLLAMA_HOST}/api/tags`，2 s 独立超时、URL 取自配置不硬编码）＋ `_probe_ollama()`（`ok` 含 `models` 数 / `unavailable` 含 `reason`） | 无 | 探针：`ollama = {status: ok, latency_ms: 15, models: 2}`；护栏含可达 / 不可达 / URL 源三例 |
+| 4 | **探测不抛异常** | DB 异常 / FAISS 根缺失 / HTTP 失败一律降级为 `unavailable` ＋ `reason` | 无 | 护栏：DB 失败降级、FAISS 根缺失、Ollama 不可达三例；health 在依赖故障下仍 200 |
+| 5 | 同一事实源（供人工与自动共用） | `/health` 端点增 `db` 依赖（统计 KB 行数）；原三键**原样保留**（增量字段，向后兼容） | 无 | 护栏 `test_health_endpoint_passes_db_into_probe`、`test_probe_components_includes_backup_channel_facts` |
+
+### 4I.2 回归与门禁
+
+| 项 | 结果 |
+|----|------|
+| 全量回归（OpenLLM `python -m pytest tests/unit -q`） | **31 failed / 3042 passed / 0 error**（238.83 s；收集 3073，较上一轮 +10 ＝ 本批护栏） |
+| **基线对照**（同命令 vs 上一轮 `cr149-b2c-full.txt`，逐项 testid 归一化后 `Compare-Object`） | **无新增失败项**（失败集为基线**子集**：32 → 31）；唯一差异 `test_v213_gateway_ext.py::test_memory_writeback_adapter_missing_raises`（既有 flaky）本轮**转绿**，如实登记为**基线波动** |
+| 新增护栏 | `tests/unit/test_health_backup_channel_probe.py` **10 例** 全绿 |
+| 静态质量 | 本轮 2 文件 `ruff` **零告警**（过程修正：gateway 增补缺失的 `import os`） |
+| 运行态探针 | `doc/test/evidence/cr149/health_backup_probe.py`（调真实探测函数）：备通道 ``has_base=false`` 且 reason 显式；`ollama` 可达 2 个模型；`components` 五键同一事实源 |
+| 提交 | OpenLLM `03a624f`（1 生产 + 1 测试，`+327/-9`），显式路径 `git add`、TDD 合规 |
+
+### 4I.3 与既有登记项的关系
+
+| 项 | 变化 |
+|----|------|
+| 方案 §10 待登记项 2（内置 RAG 备通道无底座） | **状态更新为「部分实施」**：事实已**前置可视化**（`has_base` / `reason`）；**种子动作未执行**（需运行态 DB ＋ 嵌入模型），当前口径明确为「内置 RAG 仅在有本地索引时生效」 |
+| 方案 §4.1「备通道健康探针」 | **已实施**（本批）；「内置 RAG 补底座」**部分实施**（可视化完成、种子待运行态） |
+| 方案 §9 待裁定问题 1（通道 A 三选一） | 仍待**人工裁定** —— 阻塞 §4.1「通道定性」与 health 的 `components.*.channel` 字段 |
+| 方案 §7 判据 T4 | **前置条件自本批起可判定**（`has_base=false` ⇒ 接管必然「注入为空」，须先补底座或声明口径） |
+| 方案 §4.3 余项（队列指标与死信 / 画像增量升级 / 写路径与通道一致） | **仍未实施** |
+| `CR-148-032` / `TD-新增-028`（生成式精炼缺达标模型与推理节点） | **不受影响**（本批不含模型档能力） |
+| 全仓未闭环项 | **仍为 0 项**（本批为设计项实施登记，无新增缺陷；失败集为基线子集） |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
@@ -485,3 +525,4 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 | **v1.38.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第一批第 6 项实施登记（§4F 新建）—— 方案 §6 第一批 6/6 完成；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.3.0** §3.1 / §6；实现在 OpenLLM 仓（其《DevLogReport》**v1.20.0** 第 31 批，提交 `2f296bb`）。② **实施 4 项**：**(i) 画像 × 组件并行取数** —— 新增并发取数句柄 `DeferredFetch`（构造即启动后台取数、组装之前统一收割；`resolve()` 幂等、异常降级 `None`、`discard()` 取消）；**(ii) 两路径取数时序统一** —— 同步「构造句柄 → 交编排层 → 组装前收割」、流式「**首包之后**构造（P-4 口径不破）→ 组装前 `resolve()`」，两路径由**相反且串行**收敛为**同序且并发**；**(iii) 计量不丢** —— 步骤改由**取数完成回调**落 `{step, ms}`（耗时＝启动→完成差值），异常路径亦落计量，未启动仍「值 `None` + 步骤恒落」；**(iv) 接口兼容** —— `profile_ctx` 放宽为 `str \| DeferredFetch \| None`，既有字符串调用方与测试替身零影响。**本批为时序收敛（语义等价），无新增开关**。③ **验证**：新增护栏 `tests/unit/test_deferred_fetch.py`（**14 例**）；`test_profile_fetch_timeline_guard.py` 改写为**句柄写法契约**并新增**时序契约**（**4 例**，原三项不变量全部保留且更严）；**运行态探针** `doc/test/evidence/cr149/profile_parallel_probe.py`（走真实 `PipelineExecutor` + `run_components`）：分段各 0.15 s 时 **串行 0.312 s → 并发 0.156 s**（省 0.156 s，3 轮取最优含预热），并发态 `profile_fetch=156 ms` 且画像确入 Prompt；两路径接线时序 4 项判定全 `true`。④ **回归**：全量 `tests/unit` **32 failed / 3005 passed / 0 error**（227.84 s；该测量轮次护栏含 `test_deferred_fetch` **13 例** + 改写护栏 4 例，同批随后补入的端到端护栏 1 例单独验证通过 ⇒ **批末态 32 failed / 3006 passed**）；**基线对照**（同命令 vs 第一批基线 `cr149-full-after-fix.txt`，逐项 testid 归一化后 `Compare-Object`）**32 = 32，零差异 ⇒ 零新增失败**；静态质量 7 文件 `ruff` **零告警**。⑤ **风险如实登记（新增两项入方案 §8）**：并发后 `timeline` 步骤**之和 ≥ 真实墙钟**（区间重叠 → `P-1` 判定需按关键路径复核）；异常路径句柄未显式收割（完成回调兜底计量 + `discard()` 清理）。⑥ **与既有登记项关系**：§4E.3「第 6 项仍未实施」**就此闭环**；方案 §10 待登记项 4 状态更新为「已实施（第一批 6/6）」；`CR-148-032`/`TD-新增-028` **不受影响**；**全仓未闭环项仍为 0**。⑦ **生产开启待批（不变）**：5 项开关的开启值须人工批准后按方案 §7 判据 **T1~T7** 验证再开，**本记录不代行批准**。⑧ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.3.0**（§3.1 已实施段 + §6 6/6 + §7 T7 + §8 两项风险 + §10 待登记项 4 + §11 修订行）；OpenLLM《DevLogReport》**v1.20.0**（第 31 批）；证据 `doc/test/evidence/cr149/profile_parallel_probe.py` 与 `profile_parallel_probe-result.json`。⑨ 文档版本 **v1.37.0 → v1.38.0**，状态 [Review] |
 | **v1.39.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ① 项实施登记（§4G 新建）—— 方案 §10 待登记项 3「写侧价值/重要度/频控/去重决策器未接线」转为「已实施（开关默认关闭）」；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.4.0** §4.3 / §6 第二批 / §7 判据 **T5**；实现在 OpenLLM 仓（其《DevLogReport》**v1.21.0** 第 32 批，提交 `c60ce2b`）。② **实施 4 项**：**(i) 接回写决策器** —— 新增 `evaluate.grade_writeback_targets()`（**纯函数、确定性**）供网关三路回写回调按路消费（价值闸门：窗口非空 / query 与 response 非空 / response ≥2 字 / `save_if_valuable=false` 显式拦截）；**(ii) rag 分级入库** —— `evaluate.grade_rag_ingest()`：明确记忆意图（重要度 ≥0.8）或响应 ≥ `WRITEBACK_RAG_FULL_MIN_CHARS`（默认 120）⇒ `full`（全文入库），其余 ⇒ `skip`（**普通轮次跳过知识库入库**，遏制自产膨胀）；**(iii) T5 可判定** —— 被拦截回调返回 **`"skipped"`**（**不与 `False`（幂等命中）混用**）→ 编排层回执 `{"status":"skipped","reason":"value_gate"}`、流式回执 `skipped`；**(iv) 不代行决定 §9 问题 4** —— 闸门**只决定是否沉淀、不改写载荷**（memory 仍整轮全文），`evaluate_session()` 的**载荷形态**（窗口摘要 / 频控预检 / 画像增量）**未接线**。③ **开关与回退**：新增 `WRITEBACK_DECISION_ENABLED`（默认 **False**）＋ `WRITEBACK_RAG_FULL_MIN_CHARS`（120）；**关闭时三路无条件入队、返回值语义不变 ⇒ 与既有实现逐字一致**。④ **验证**：新增护栏 `tests/unit/test_writeback_decision_gate.py`（**13 例**）全绿；**运行态探针** `doc/test/evidence/cr149/writeback_gate_probe.py`（真实网关回调 + 真实决策器 + 队列替身）—— **关闭态**四类轮次（含空响应）均三路入队；**开启态**低价值轮 `returns` 三路均 `skipped` 且 **`submitted=[]`**、普通轮 `submitted=[memory, profile]`（`rag` 跳过）、高价值轮与长响应轮 `rag` **全文**入库且载荷未改写。⑤ **回归**：全量 `tests/unit` **32 failed / 3019 passed / 0 error**（239.85 s；收集 3051）；**基线对照**（同命令 vs 上一轮 `cr149-b2-full.txt`，逐项 testid 归一化后 `Compare-Object`）**32 = 32，零差异 ⇒ 零新增失败**；静态质量 5 文件 `ruff` **零告警**。⑥ **与既有登记项关系**：`CR-148-032`/`TD-新增-028` **不受影响**；方案 §9 待裁定问题 4（记忆写入语义）**仍未裁定且已成「载荷形态接线」的前置阻塞项**；§9 问题 1（通道 A 三选一）仍待裁定；**全仓未闭环项仍为 0**。⑦ **生产开启待批（不变）**：`WRITEBACK_DECISION_ENABLED` 与 `WRITEBACK_RAG_FULL_MIN_CHARS` 的开启值须人工批准后按方案 §7 判据 **T5** 验证再开，**本记录不代行批准**。⑧ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.4.0**（§4.3 已实施细节 + §6 第二批「进行中 1/3」+ §7 T5 + §10 待登记项 3 + §11 修订行）；OpenLLM《DevLogReport》**v1.21.0**（第 32 批）；证据 `doc/test/evidence/cr149/writeback_gate_probe.py` 与 `writeback_gate_probe-result.json`。⑨ 文档版本 **v1.38.0 → v1.39.0**，状态 [Review] |
 | **v1.40.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ② 项实施登记（§4H 新建）—— 方案 §3.1「组件串并行仍受全局开关控制、依赖图判定未接入」转为「已实施（开关默认关闭）」；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.5.0** §3.1 / §4.2「顺序优化」/ §7 判据 **T8**；实现在 OpenLLM 仓（其《DevLogReport》**v1.22.0** 第 33 批，提交 `ec3485a`）。② **实施 5 项**：**(i) 依赖图模块** —— 新增 `component_graph.py`（`parse_dependencies` 声明解析 / `dependency_levels` Kahn 式波次划分 / `resolve_schedule`），未参与本次执行的依赖视为已满足；**(ii) 「无依赖即并行」** —— `component_pipeline.resolve_schedule_plan()` 返回「波次 ＋ 同波次可否并发」，`run_components` 按波次执行（同波次 >1 用 `asyncio.gather`、波次间有序），按**条目下标**消费以保持重复组件与原有顺序语义；**(iii) 「严格顺序用依赖声明表达」** —— `OPENLLM_COMPONENT_DEPENDENCIES`（如 `memory:rag`），声明**覆盖**全局并行开关；**(iv) fail-safe** —— 成环退化为单波次保序并告警（不抛异常、不打挂请求）、非法声明片段跳过并告警；**(v) 关闭时逐字一致** —— 关闭时计划恒为「单波次」、并发与否仍由 `enable_parallel` 决定。③ **开关**：新增 `COMPONENT_DEPENDENCY_SCHEDULING_ENABLED`（默认 **False**）＋ `OPENLLM_COMPONENT_DEPENDENCIES`（默认 **""**）。④ **验证**：新增护栏 `tests/unit/test_component_dependency_scheduling.py`（**12 例**）全绿，既有共用步骤护栏 13 例未变；**运行态探针** `doc/test/evidence/cr149/component_schedule_probe.py`（真实共用组件步骤 + 真实调度器，组件各 0.12 s、含预热）—— 关闭态串行 **0.25 s** / 全局开关并行 **0.125 s**；**开启态无依赖 ⇒ 0.125 s 重叠**（「无依赖即并行」生效）；**开启态声明 `memory:rag` ⇒ 波次 `[["rag"],["memory"]]`、事件严格 `rag→memory`、不重叠**（0.235~0.25 s）。⑤ **回归**：全量 `tests/unit` **32 failed / 3031 passed / 0 error**（239.55 s；收集 3063）；**基线对照**（同命令 vs 上一轮 `cr149-b2b-full.txt`，逐项 testid 归一化后 `Compare-Object`）**32 = 32，零差异 ⇒ 零新增失败**；静态质量 4 文件 `ruff` **零告警**（过程修正：isort 惰性导入排序、文件末尾换行）。⑥ **与既有登记项关系**：§4.2 余项（阈值语义对齐 / LLM 兜底分类器 / 规则集可配置）**仍未实施**；§4.1（通道定性 / 内置 RAG 底座 / health 组件探测）与 §4.3 余项**仍未实施**，其中「通道定性」需人工裁定（§9 问题 1）、「内置 RAG 底座 / health 探测」为必做项可先行；§9 问题 4 仍为**前置阻塞项**；**全仓未闭环项仍为 0**。⑦ **生产开启待批（不变）**：`COMPONENT_DEPENDENCY_SCHEDULING_ENABLED` 与 `OPENLLM_COMPONENT_DEPENDENCIES` 的开启值须人工批准后按方案 §7 判据 **T8** 验证再开，**本记录不代行批准**。⑧ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.5.0**（§3.1 已实施段 + §4.2 顺序优化标注 + §6 第二批「进行中 2/3」+ §7 T8 + §8 三项风险 + §11 修订行）；OpenLLM《DevLogReport》**v1.22.0**（第 33 批）；证据 `doc/test/evidence/cr149/component_schedule_probe.py` 与 `component_schedule_probe-result.json`。⑨ 文档版本 **v1.39.0 → v1.40.0**，状态 [Review] |
+| **v1.41.0** | **2026-09-27** | **AA-OpenBase-Dev / AD-OpenBase-Dev** | **上下文精装配第二批第 ③ 项实施登记（§4I 新建）—— 方案 §4.1「配套两项必做」之一（备通道健康探针）已实施；§10 待登记项 2（内置 RAG 无底座）转为「部分实施」；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.6.0** §4.1 / §7 判据 **T4** 前置条件；实现在 OpenLLM 仓（其《DevLogReport》**v1.23.0** 第 34 批，提交 `03a624f`）。② **实施 5 项**：**(i) 备通道健康探针** —— `_probe_components(db)` 并行探测 **5 项**（外部三组件 ＋ `builtin_rag` ＋ `ollama`，共用既有结果缓存）；**(ii) 内置 RAG 底座事实** —— `_count_faiss_indexes(root)`（与 `VectorStoreService` 落盘约定同一事实源）＋ `_probe_builtin_rag(db)`（`knowledge_bases`/`indexes`/`has_base`/`reason`）；**(iii) Ollama 可达性** —— `_ollama_probe_tags()`（`GET {OLLAMA_HOST}/api/tags`，2 s 独立超时、URL 取自配置）＋ `_probe_ollama()`；**(iv) 探测不抛异常** —— DB / 文件系统 / HTTP 异常一律降级为 `unavailable` ＋ `reason`；**(v) 同一事实源** —— `/health` 增 `db` 依赖统计 KB 行数，原三键**原样保留**（增量字段、向后兼容）。③ **验证**：新增护栏 `tests/unit/test_health_backup_channel_probe.py`（**10 例**）全绿；**运行态探针** `doc/test/evidence/cr149/health_backup_probe.py`（调真实探测函数）—— `faiss_root_exists=true` 但 `indexes=0`、`has_base=false`，`reason="内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"`；`ollama = {status: ok, latency_ms: 15, models: 2}`；`components_keys = [builtin_rag, dps, ollama, openmemory, openrag]`。④ **回归**：全量 `tests/unit` **31 failed / 3042 passed / 0 error**（238.83 s；收集 3073）；**基线对照**（同命令 vs 上一轮 `cr149-b2c-full.txt`，逐项 testid 归一化后 `Compare-Object`）**无新增失败项**（失败集为基线**子集** 32 → 31），唯一差异为既有 flaky `test_v213_gateway_ext.py::test_memory_writeback_adapter_missing_raises` 本轮**转绿**（如实登记为**基线波动而非本批收益**）；静态质量 2 文件 `ruff` **零告警**（过程修正：gateway 增补缺失的 `import os`）。⑤ **与既有登记项关系**：方案 §10 待登记项 2 更新为「部分实施」（事实前置可视化；**种子动作需运行态 DB ＋ 嵌入模型**，当前口径明确为「内置 RAG 仅在有本地索引时生效」）；§9 问题 1（通道 A 三选一）仍待裁定（阻塞 `components.*.channel` 字段与通道定性）；§4.3 余项（队列指标与死信 / 画像增量升级 / 写路径与通道一致）仍未实施；`CR-148-032`/`TD-新增-028` **不受影响**；**全仓未闭环项仍为 0**。⑥ **同步**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.6.0**（§4.1 两项标注 + §6 第二批「③已完成/④待做」+ §7 T4 前置条件 + §10 待登记项 2 + §11 修订行）；OpenLLM《DevLogReport》**v1.23.0**（第 34 批）；证据 `doc/test/evidence/cr149/health_backup_probe.py` 与 `health_backup_probe-result.json`。⑦ 文档版本 **v1.40.0 → v1.41.0**，状态 [Review] |

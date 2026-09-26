@@ -1,0 +1,53 @@
+﻿{
+  "faiss_root": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\data\\faiss",
+  "faiss_root_exists": true,
+  "faiss_indexes_scanned": 0,
+  "builtin_rag_probe": {
+    "status": "unavailable",
+    "latency_ms": 0,
+    "knowledge_bases": 0,
+    "indexes": 0,
+    "has_base": false,
+    "reason": "内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"
+  },
+  "ollama_probe": {
+    "status": "ok",
+    "latency_ms": 515,
+    "models": 2
+  },
+  "components_keys": [
+    "builtin_rag",
+    "dps",
+    "ollama",
+    "openmemory",
+    "openrag"
+  ],
+  "health_components": {
+    "openmemory": {
+      "status": "ok",
+      "latency_ms": 0
+    },
+    "openrag": {
+      "status": "unavailable",
+      "latency_ms": 15,
+      "reason": "组件 open_rag 不可用: HTTP 401: missing api key (status=401)"
+    },
+    "dps": {
+      "status": "ok",
+      "latency_ms": 63
+    },
+    "builtin_rag": {
+      "status": "unavailable",
+      "latency_ms": 0,
+      "knowledge_bases": 0,
+      "indexes": 0,
+      "has_base": false,
+      "reason": "内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"
+    },
+    "ollama": {
+      "status": "ok",
+      "latency_ms": 15,
+      "models": 2
+    }
+  }
+}
