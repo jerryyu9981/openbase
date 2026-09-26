@@ -1,0 +1,146 @@
+﻿{
+  "switch_key": "WRITEBACK_DECISION_ENABLED",
+  "switch_default": false,
+  "rag_full_min_chars": 120,
+  "switch_off": {
+    "low_value": {
+      "returns": {
+        "memory": true,
+        "rag": true,
+        "profile": true
+      },
+      "submitted": [
+        "memory",
+        "rag",
+        "profile"
+      ],
+      "rag_response_unchanged": true
+    },
+    "high_value": {
+      "returns": {
+        "memory": true,
+        "rag": true,
+        "profile": true
+      },
+      "submitted": [
+        "memory",
+        "rag",
+        "profile"
+      ],
+      "rag_response_unchanged": true
+    },
+    "ordinary": {
+      "returns": {
+        "memory": true,
+        "rag": true,
+        "profile": true
+      },
+      "submitted": [
+        "memory",
+        "rag",
+        "profile"
+      ],
+      "rag_response_unchanged": true
+    },
+    "long_response": {
+      "returns": {
+        "memory": true,
+        "rag": true,
+        "profile": true
+      },
+      "submitted": [
+        "memory",
+        "rag",
+        "profile"
+      ],
+      "rag_response_unchanged": true
+    }
+  },
+  "switch_on": {
+    "low_value": {
+      "returns": {
+        "memory": "skipped",
+        "rag": "skipped",
+        "profile": "skipped"
+      },
+      "submitted": [],
+      "rag_response_unchanged": true
+    },
+    "high_value": {
+      "returns": {
+        "memory": true,
+        "rag": true,
+        "profile": true
+      },
+      "submitted": [
+        "memory",
+        "rag",
+        "profile"
+      ],
+      "rag_response_unchanged": true
+    },
+    "ordinary": {
+      "returns": {
+        "memory": true,
+        "rag": "skipped",
+        "profile": true
+      },
+      "submitted": [
+        "memory",
+        "profile"
+      ],
+      "rag_response_unchanged": true
+    },
+    "long_response": {
+      "returns": {
+        "memory": true,
+        "rag": true,
+        "profile": true
+      },
+      "submitted": [
+        "memory",
+        "rag",
+        "profile"
+      ],
+      "rag_response_unchanged": true
+    }
+  },
+  "decisions": {
+    "low_value": {
+      "valuable": false,
+      "importance": 0.5,
+      "rag_grade": "skip",
+      "allow_memory": false,
+      "allow_rag": false,
+      "allow_profile": false,
+      "reason": "价值闸门未通过（窗口为空 / 响应为空或过短）：跳过沉淀"
+    },
+    "high_value": {
+      "valuable": true,
+      "importance": 0.8,
+      "rag_grade": "full",
+      "allow_memory": true,
+      "allow_rag": true,
+      "allow_profile": true,
+      "reason": "价值闸门通过且达 rag 全文入库档：三路均可沉淀"
+    },
+    "ordinary": {
+      "valuable": true,
+      "importance": 0.5,
+      "rag_grade": "skip",
+      "allow_memory": true,
+      "allow_rag": false,
+      "allow_profile": true,
+      "reason": "价值闸门通过，普通轮次：memory/profile 沉淀，知识库跳过（遏制自产膨胀）"
+    },
+    "long_response": {
+      "valuable": true,
+      "importance": 0.5,
+      "rag_grade": "full",
+      "allow_memory": true,
+      "allow_rag": true,
+      "allow_profile": true,
+      "reason": "价值闸门通过且达 rag 全文入库档：三路均可沉淀"
+    }
+  }
+}
