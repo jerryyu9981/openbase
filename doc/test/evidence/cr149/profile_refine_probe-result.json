@@ -1,0 +1,115 @@
+﻿{
+  "module": "app/services/profile_refine.py",
+  "defect": "DEF-BE-148-029",
+  "symbols_available": {
+    "DEFAULT_PROFILE_TARGETS": [
+      "business",
+      "person"
+    ],
+    "get_active_profile_refiner": true,
+    "refine_profile_delta": true
+  },
+  "evaluate_rule_path": {
+    "business": {
+      "topics": [
+        "怎么优化",
+        "检索速度",
+        "可以考虑"
+      ]
+    },
+    "person": {
+      "tone": "inquisitive"
+    }
+  },
+  "refiner_injected": {
+    "person": {
+      "tone": "assertive"
+    }
+  },
+  "refiner_failure_falls_back_to_rules": {
+    "person": {
+      "tone": "inquisitive"
+    }
+  },
+  "refiner_reset_to_none": true,
+  "equivalence_writeback_vs_service": {
+    "explicit_updates_only": {
+      "writeback": {
+        "person": {
+          "name": "张三"
+        }
+      },
+      "service": {
+        "person": {
+          "name": "张三"
+        }
+      }
+    },
+    "with_targets": {
+      "writeback": {
+        "business": {
+          "topics": [
+            "怎么优化",
+            "检索速度",
+            "可以考虑"
+          ]
+        },
+        "person": {
+          "tone": "inquisitive"
+        }
+      },
+      "service": {
+        "business": {
+          "topics": [
+            "怎么优化",
+            "检索速度",
+            "可以考虑"
+          ]
+        },
+        "person": {
+          "tone": "inquisitive"
+        }
+      }
+    },
+    "business_only": {
+      "writeback": {
+        "business": {
+          "topics": [
+            "怎么优化",
+            "检索速度",
+            "可以考虑"
+          ]
+        }
+      },
+      "service": {
+        "business": {
+          "topics": [
+            "怎么优化",
+            "检索速度",
+            "可以考虑"
+          ]
+        }
+      }
+    },
+    "no_targets": {
+      "writeback": {},
+      "service": {
+        "business": {
+          "topics": [
+            "怎么优化",
+            "检索速度",
+            "可以考虑"
+          ]
+        },
+        "person": {
+          "tone": "inquisitive"
+        }
+      }
+    },
+    "blank_dialogue": {
+      "writeback": {},
+      "service": {}
+    }
+  },
+  "module_reachable_after_import": true
+}
