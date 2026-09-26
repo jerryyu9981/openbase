@@ -1,0 +1,427 @@
+{
+  "case": "TT-037 输入校验与注入防护（无 5xx、无异常堆栈外泄）",
+  "date": "2026-09-26",
+  "base_url": "http://127.0.0.1:8041",
+  "health": {
+    "status": 200,
+    "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2000,\"reason\":\"组件 open_rag 不可用: 请求超时: \"},\"dps\":{\"status\":\"unavailable\",\"latency_ms\":2047,\"reason\":\"组件 dps 不可用: 服务不可用: All connection attempts failed\"}}}}"
+  },
+  "auth": {
+    "account": "v148-perf",
+    "login_status": 200
+  },
+  "tooling_notes": [
+    "E1：原始 CRLF 头值由 httpx 客户端在发送前以 LocalProtocolError 拦截（未到达服务端）→ 改以字面量 %0d%0a 合法头值验证服务端不回显注入头。",
+    "D3：使用专用注入串（不复用于其他探针的 session_id），避免命中其他探针自身写入的回执行（字面量精确匹配属正确行为）。",
+    "本批次探针会写入少量真实对话/回写回执行（测试数据，非产品数据）。"
+  ],
+  "probes": [
+    {
+      "id": "A1",
+      "category": "sql-injection",
+      "desc": "对话 query 含 DROP TABLE 注入串",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-83c4c8e8713e4385b09715ba\",\"mode\":\"auto\",\"pipeline\":[\"llm\"],\"content\":\"这是一段疑似 SQL 注入语句：\\n\\n```sql\\n'; DROP TABLE traces; --\\n```\\n\\n我不会执行它，也不会对任何数据库执行删除、修改或查询操作。它只会被当作普通文本处理。\\n\\n如果你是在做安全测试：这正说明系统应使用参数化查询（预编译语句）、最小权限数据库账号，并对输入进行校验和日志监控，而不是拼接 SQL。\",\"model\":\"deepseek-v4-flash\",\"usage\":{\"prompt_tokens\":41,\"completion_tokens\":253,\"total_tokens\"",
+      "body_len": 572,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "A2",
+      "category": "xss",
+      "desc": "对话 query 含 XSS 脚本串",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-a1d679f675f8453d815f5034\",\"mode\":\"auto\",\"pipeline\":[\"llm\"],\"content\":\"I won’t execute or render that as active HTML. It’s a classic XSS payload:\\n\\n`&lt;script&gt;alert('xss')&lt;/script&gt;`\\n\\nIn a vulnerable page, if this were inserted as raw HTML, it would run `alert('xss')`. To prevent XSS, treat user input as text and use context-aw",
+      "body_len": 765,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "A3",
+      "category": "path-traversal",
+      "desc": "对话 query 含路径遍历串",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-19377b72c9f6431b9216f129\",\"mode\":\"auto\",\"pipeline\":[\"llm\"],\"content\":\"你发送的是一个典型的 **路径遍历（Path Traversal）** 载荷，试图访问系统文件 `/etc/passwd`。\\n\\n我不能读取、返回或执行访问 `/etc/passwd` 或任何服务器系统文件的内容，也不会协助绕过文件访问限制。\\n\\n如果这是安全测试或开发场景，防护建议如下：\\n\\n- 不要将用户输入直接拼接进文件路径。\\n- 使用白名单或 ID 映射到固定文件，而不是让用户传路径。\\n- 对路径做规范化/绝对化后，校验它是否仍位于允许目录内。\\n- 拒绝 `..`、绝对路径、空字节及编码变体，例如 `%2e%2e%",
+      "body_len": 753,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "A4",
+      "category": "union-sql",
+      "desc": "对话 query 含 UNION SELECT 注入串",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-950c16c16674455aa79a3ed5\",\"mode\":\"auto\",\"pipeline\":[\"llm\"],\"content\":\"This looks like a **SQL injection test payload**. It is not a benign query; it attempts to manipulate a vulnerable SQL query.\\n\\nBreakdown:\\n\\n```sql\\n1' UNION SELECT username, password FROM users --\\n```\\n\\n- `1'` — tries to close a string literal in the original query",
+      "body_len": 1769,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "A5",
+      "category": "null-byte",
+      "desc": "对话 query 含 NUL 字节",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-fdf6fe2625e1487ab3fba384\",\"mode\":\"auto\",\"pipeline\":[\"llm\"],\"content\":\"“probe tail”本身不是常见固定术语；最可能是把 **Tail Loss Probe (TLP，尾丢包探测)** 的词序写反了。\\n\\n如果是 TCP 网络里的 **Tail Loss Probe**：\\n\\n- **背景**：TCP 发送端最后几个包（尾部包）丢失时，后面没有足够数据触发重复 ACK，通常只能等 RTO 超时重传，延迟较大。\\n- **TLP 做法**：发送端在 PTO（Probe Timeout，通常基于 RTT，比 RTO 短）后主动发一个探测包，可能是新数据，也可能是重传最后一个未确认包。\\n- **目",
+      "body_len": 945,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "A6",
+      "category": "sql-injection",
+      "desc": "对话 session_id 含注入串",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-750844392ea345fcbf56fd3b\",\"mode\":\"auto\",\"pipeline\":[\"llm\"],\"content\":\"“TT037 session 注入探针”目前没有公开的、广为人知的统一指代。它可能是某个 CTF 靶场、内部测试用例、培训课程编号，或是自定义工具的命名。如果你能提供来源（如平台名称、题目链接、完整上下文），我可以给出更精确的分析。\\n\\n不过，关于 **Session 注入探针** 本身，通常指用于检测 **会话固定（Session Fixation）** 或 **Session 变量注入** 的安全测试工具。以下是一般性原理与实现思路：\\n\\n---\\n\\n### 一、Session 注入常见类型\\n1. **会话固定（Sessi",
+      "body_len": 2201,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "B1",
+      "category": "overlong",
+      "desc": "对话 query 100k 字符",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-f29f4eef2e8e49f6a50b5fe9\",\"mode\":\"auto\",\"pipeline\":[\"llm\"],\"content\":\"你发送了一长串“A”，但没有具体问题或指令。请告诉我你想让我做什么，例如翻译、总结、写代码、分析文本等。\",\"model\":\"deepseek-v4-flash\",\"usage\":{\"prompt_tokens\":12534,\"completion_tokens\":145,\"total_tokens\":12679},\"routing_trace\":{\"components\":{\"need_memory\":false,\"need_rag\":false,\"reason\":\"auto\"},\"model\":{\"selected\":\"deeps",
+      "body_len": 455,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "B2",
+      "category": "overlong-header",
+      "desc": "X-Request-Id 8k 字符",
+      "expect": "2xx_or_4xx",
+      "method": "GET",
+      "path": "/openllm/v1/health",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2000,\"reason\":\"组件 open_rag 不可用: 请求超时: \"},\"dps\":{\"status\":\"unavailable\",\"latency_ms\":2047,\"reason\":\"组件 dps 不可用: 服务不可用: All connection attempts failed\"}}}}",
+      "body_len": 334,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "C1",
+      "category": "malformed-json",
+      "desc": "截断的 JSON 请求体",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"json_invalid\",\"loc\":[\"body\",15],\"msg\":\"JSON decode error\",\"input\":{},\"ctx\":{\"error\":\"Expecting property name enclosed in double quotes\"}}]}",
+      "body_len": 159,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "C2",
+      "category": "type-mismatch",
+      "desc": "query 传整数（应为字符串）",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"query\"],\"msg\":\"Input should be a valid string\",\"input\":12345}]}",
+      "body_len": 111,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "C3",
+      "category": "type-mismatch",
+      "desc": "query 传数组（应为字符串）",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"query\"],\"msg\":\"Input should be a valid string\",\"input\":[\"a\",\"b\"]}]}",
+      "body_len": 115,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "C4",
+      "category": "payload-shape",
+      "desc": "请求体为 JSON 数组（应为对象）",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"model_attributes_type\",\"loc\":[\"body\"],\"msg\":\"Input should be a valid dictionary or object to extract fields from\",\"input\":[1,2,3]}]}",
+      "body_len": 152,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "C5",
+      "category": "deep-nesting",
+      "desc": "深层嵌套 JSON（60 层）",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"model_attributes_type\",\"loc\":[\"body\"],\"msg\":\"Input should be a valid dictionary or object to extract fields from\",\"input\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}]}",
+      "body_len": 265,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "C6",
+      "category": "content-type",
+      "desc": "JSON 体但 Content-Type=text/plain",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"model_attributes_type\",\"loc\":[\"body\"],\"msg\":\"Input should be a valid dictionary or object to extract fields from\",\"input\":\"{\\\"query\\\": \\\"x\\\"}\"}]}",
+      "body_len": 165,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "C7",
+      "category": "empty-body",
+      "desc": "空请求体（无 JSON）",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\"],\"msg\":\"Field required\",\"input\":null}]}",
+      "body_len": 82,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "D0",
+      "category": "baseline",
+      "desc": "回执查询无过滤基线（证明端点有数据）",
+      "expect": "2xx_or_4xx",
+      "method": "GET",
+      "path": "/openllm/v1/writeback/receipts",
+      "status": 200,
+      "body_head": "{\"items\":[{\"id\":16150,\"request_id\":\"openllm-edddcee9401f4d05b9247490\",\"session_id\":\"3ef164f4-6c1b-4469-a4b7-369aa2a17042\",\"seq\":7,\"target\":\"profile\",\"status\":\"pending\",\"retry_count\":0,\"created_at\":\"2026-09-26T17:42:27.871326\",\"updated_at\":\"2026-09-26T17:42:27.871326\"},{\"id\":16149,\"request_id\":\"openllm-1d10a7c92dfe42c3a75eab97\",\"session_id\":\"'; DROP TABLE traces; --\",\"seq\":1,\"target\":\"profile\",\"sta",
+      "body_len": 47149,
+      "resp_headers": {
+        "content-type": "application/json"
+      },
+      "total": 200
+    },
+    {
+      "id": "D1",
+      "category": "path-injection",
+      "desc": "trace 路径参数含注入串",
+      "expect": "4xx",
+      "method": "GET",
+      "path": "/openllm/v1/trace/'; DROP TABLE traces; --",
+      "status": 404,
+      "body_head": "{\"code\":2001,\"message\":\"追踪不存在: '; DROP TABLE traces; --\",\"detail\":\"追踪不存在: '; DROP TABLE traces; --\",\"request_id\":\"'; DROP TABLE traces; --\"}",
+      "body_len": 140,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "D2",
+      "category": "path-traversal",
+      "desc": "trace 路径参数含遍历串",
+      "expect": "4xx",
+      "method": "GET",
+      "path": "/openllm/v1/trace/..%2F..%2Fetc%2Fpasswd",
+      "status": 404,
+      "body_head": "{\"detail\":\"Not Found\"}",
+      "body_len": 22,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "D3",
+      "category": "query-injection",
+      "desc": "回执查询 session_id 专用注入串（须参数化）",
+      "expect": "2xx_or_4xx",
+      "method": "GET",
+      "path": "/openllm/v1/writeback/receipts",
+      "status": 200,
+      "body_head": "{\"items\":[],\"total\":0,\"filters\":{\"session_id\":\"zz' OR '1'='1 -- (tt037-dedicated)\",\"request_id\":null,\"target\":null,\"limit\":200}}",
+      "body_len": 128,
+      "resp_headers": {
+        "content-type": "application/json"
+      },
+      "total": 0
+    },
+    {
+      "id": "D4",
+      "category": "query-injection",
+      "desc": "回执查询 limit 传注入串（数值参数）",
+      "expect": "4xx",
+      "method": "GET",
+      "path": "/openllm/v1/writeback/receipts",
+      "status": 422,
+      "body_head": "{\"detail\":[{\"type\":\"int_parsing\",\"loc\":[\"query\",\"limit\"],\"msg\":\"Input should be a valid integer, unable to parse string as an integer\",\"input\":\"'; DROP TABLE traces; --\"}]}",
+      "body_len": 172,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "D5",
+      "category": "method-not-allowed",
+      "desc": "对只读端点发 DELETE",
+      "expect": "4xx",
+      "method": "DELETE",
+      "path": "/openllm/v1/writeback/receipts",
+      "status": 405,
+      "body_head": "{\"detail\":\"Method Not Allowed\"}",
+      "body_len": 31,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "D6",
+      "category": "not-found",
+      "desc": "不存在的路径",
+      "expect": "4xx",
+      "method": "GET",
+      "path": "/openllm/v1/__probe__/not-exist",
+      "status": 404,
+      "body_head": "{\"detail\":\"Not Found\"}",
+      "body_len": 22,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "E1",
+      "category": "header-crlf-encoded",
+      "desc": "X-Request-Id 含字面量 %0d%0a（合法头值）",
+      "expect": "2xx_or_4xx",
+      "method": "GET",
+      "path": "/openllm/v1/health",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2000,\"reason\":\"组件 open_rag 不可用: 请求超时: \"},\"dps\":{\"status\":\"unavailable\",\"latency_ms\":2047,\"reason\":\"组件 dps 不可用: 服务不可用: All connection attempts failed\"}}}}",
+      "body_len": 334,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "E2",
+      "category": "header-injection",
+      "desc": "X-Request-Id 含脚本串",
+      "expect": "2xx_or_4xx",
+      "method": "GET",
+      "path": "/openllm/v1/health",
+      "status": 200,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2000,\"reason\":\"组件 open_rag 不可用: 请求超时: \"},\"dps\":{\"status\":\"unavailable\",\"latency_ms\":2047,\"reason\":\"组件 dps 不可用: 服务不可用: All connection attempts failed\"}}}}",
+      "body_len": 334,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "F1",
+      "category": "unauthenticated",
+      "desc": "无凭据访问对话端点",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 401,
+      "body_head": "{\"code\":1001,\"message\":\"未认证或 Token 失效\",\"detail\":\"未认证或 Token 失效\",\"request_id\":\"openllm-e107129d17f24e9896bb72d3\"}",
+      "body_len": 112,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "F2",
+      "category": "bad-token",
+      "desc": "伪造 Bearer 令牌",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 401,
+      "body_head": "{\"code\":1001,\"message\":\"未认证或 Token 失效\",\"detail\":\"未认证或 Token 失效\",\"request_id\":\"openllm-3c54503b33f040ea8c285f49\"}",
+      "body_len": 112,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "F3",
+      "category": "bad-token",
+      "desc": "SQL 注入串作 Bearer 令牌",
+      "expect": "4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat",
+      "status": 401,
+      "body_head": "{\"code\":1001,\"message\":\"未认证或 Token 失效\",\"detail\":\"未认证或 Token 失效\",\"request_id\":\"openllm-e2d6887a76424291ac0f8bf2\"}",
+      "body_len": 112,
+      "resp_headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "id": "G1",
+      "category": "sql-injection",
+      "desc": "流式端点 query 含注入串",
+      "expect": "2xx_or_4xx",
+      "method": "POST",
+      "path": "/openllm/v1/chat/stream",
+      "status": 200,
+      "body_head": "event: routing\ndata: {\"components\": {\"need_memory\": false, \"need_rag\": false, \"reason\": \"auto\", \"rag_source\": \"skipped\"}, \"model\": {\"selected\": \"qwen3:0.6b\", \"reason\": \"cost\"}, \"parallel\": false}\n\n",
+      "body_len": 197
+    }
+  ],
+  "verdict": {
+    "pass": true,
+    "rules_checked": [
+      "no-5xx",
+      "validation-4xx",
+      "no-leak",
+      "parameterized",
+      "baseline-nonempty",
+      "no-header-injection"
+    ],
+    "failures": [],
+    "failed_rules": [],
+    "status_5xx_count": 0,
+    "probes": 28,
+    "receipts_baseline_total": 200
+  }
+}

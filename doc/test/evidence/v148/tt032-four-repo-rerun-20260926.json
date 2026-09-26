@@ -1,0 +1,106 @@
+{
+  "case": "TT-032 复测项 · 四仓 R-384 专项单测复跑（TT-147-009 口径）",
+  "date": "2026-09-26",
+  "interpreter": "3.10.11",
+  "source": "v1.4.7《OpenBase-测试报告-v1.4.7》§7.7（补跑口径与基线 10/7/12/7）",
+  "results": [
+    {
+      "repo": "DPS",
+      "cwd": "d:\\Trae CN\\myproject\\Dev\\DPS",
+      "env": {
+        "PYTHONPATH": "src"
+      },
+      "command": "python -B -m pytest src/tests/test_r384_request_id_filter.py -p no:randomly -p no:cacheprovider -q",
+      "adaptation": "仓内模块以 `from logging_setup import ...` 导入，需 `PYTHONPATH=src`",
+      "exit_code": 0,
+      "passed": 10,
+      "failed": 0,
+      "errors": 0,
+      "baseline_passed": 10,
+      "matches_baseline": true,
+      "output_tail": [
+        "..........                                                               [100%]",
+        "10 passed in 1.86s"
+      ]
+    },
+    {
+      "repo": "OpenLLM",
+      "cwd": "d:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+      "env": {},
+      "command": "python -B -m pytest tests/unit/test_r384_request_id_filter.py --noconftest -p no:cacheprovider -q",
+      "adaptation": "该用例不依赖 conftest fixture；沙箱下 conftest 前置依赖组合不可用，按 pytest 官方选项 --noconftest",
+      "exit_code": 0,
+      "passed": 7,
+      "failed": 0,
+      "errors": 0,
+      "baseline_passed": 7,
+      "matches_baseline": true,
+      "output_tail": [
+        "============================= test session starts =============================",
+        "platform win32 -- Python 3.10.11, pytest-9.1.1, pluggy-1.6.0",
+        "rootdir: d:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+        "configfile: pytest.ini",
+        "plugins: anyio-4.14.2, respx-0.23.1, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0",
+        "asyncio: mode=auto, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function",
+        "collected 7 items",
+        "",
+        "tests\\unit\\test_r384_request_id_filter.py .......                        [100%]",
+        "",
+        "============================== 7 passed in 1.26s =============================="
+      ]
+    },
+    {
+      "repo": "OpenMemory",
+      "cwd": "d:\\Trae CN\\myproject\\Dev\\OpenMemory",
+      "env": {},
+      "command": "python -B -m pytest tests/unit/test_r384_logging_contract.py -p no:cacheprovider -q",
+      "adaptation": "按仓内既有 pytest 配置直跑",
+      "exit_code": 0,
+      "passed": 12,
+      "failed": 0,
+      "errors": 0,
+      "baseline_passed": 12,
+      "matches_baseline": true,
+      "output_tail": [
+        "............                                                             [100%]",
+        "12 passed in 5.36s"
+      ]
+    },
+    {
+      "repo": "OpenRAG",
+      "cwd": "d:\\Trae CN\\myproject\\Dev\\OpenRAG",
+      "env": {},
+      "command": "python -B -m pytest tests/unit/test_r384_request_id.py -p no:cacheprovider -q",
+      "adaptation": "按仓内既有 pytest 配置直跑",
+      "exit_code": 0,
+      "passed": 7,
+      "failed": 0,
+      "errors": 0,
+      "baseline_passed": 7,
+      "matches_baseline": true,
+      "output_tail": [
+        "============================= test session starts =============================",
+        "platform win32 -- Python 3.10.11, pytest-9.1.1, pluggy-1.6.0",
+        "rootdir: d:\\Trae CN\\myproject\\Dev\\OpenRAG",
+        "configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)",
+        "plugins: anyio-4.14.2, respx-0.23.1, asyncio-1.4.0, cov-7.1.0, timeout-2.4.0",
+        "asyncio: mode=auto, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function",
+        "collected 7 items",
+        "",
+        "tests\\unit\\test_r384_request_id.py .......                               [100%]",
+        "",
+        "============================== 7 passed in 1.15s =============================="
+      ]
+    }
+  ],
+  "verdict": {
+    "pass": true,
+    "rules_checked": [
+      "rerun-matches-baseline（逐仓 passed 一致且 failed=errors=0）"
+    ],
+    "total_passed": 36,
+    "baseline_total": 36,
+    "failures": [],
+    "note": "本次为单元级复跑（TT-147-009 口径）；四仓仓级全量回归不在本项判据范围（沿 v1.4.7 §7.7 声明）"
+  }
+}

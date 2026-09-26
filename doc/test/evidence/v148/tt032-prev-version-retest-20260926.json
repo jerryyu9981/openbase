@@ -1,0 +1,104 @@
+{
+  "case": "TT-032 上一版本（v1.4.7）失败项 / 跳过项复测",
+  "date": "2026-09-26",
+  "base_url": "http://127.0.0.1:8041",
+  "health": {
+    "status": 200,
+    "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2000,\"reason\":\"组件 open_rag 不可用: 请求超时: \"},\"dps\":{\"status\":\"unavailable\",\"latency_ms\":2046,\"reason\":\"组件 dps 不可用: 服务不可用: All connection attempts failed\"}}}}"
+  },
+  "gateway_request_id_semantics": {
+    "trusted_source_header": "openbase-llm-proxy",
+    "samples": 5,
+    "trusted_records": [
+      {
+        "inbound_request_id": "req-c38d7fd1ace0",
+        "chat_status": 200,
+        "body_request_id": "openllm-808e714517c64dba8e9ef007",
+        "evaluable": false,
+        "note": "关联 id(req-…) 只落应用日志与出站头；响应体仅含网关自有 openllm-… id → 须日志/代理运行态判定"
+      },
+      {
+        "inbound_request_id": "req-33e3953c9b63",
+        "chat_status": 200,
+        "body_request_id": "openllm-3b4ddee3dc2f40da83116c53",
+        "evaluable": false,
+        "note": "关联 id(req-…) 只落应用日志与出站头；响应体仅含网关自有 openllm-… id → 须日志/代理运行态判定"
+      },
+      {
+        "inbound_request_id": "req-06ade0894b8d",
+        "chat_status": 200,
+        "body_request_id": "openllm-6f7f625c14c34efdbae64d76",
+        "evaluable": false,
+        "note": "关联 id(req-…) 只落应用日志与出站头；响应体仅含网关自有 openllm-… id → 须日志/代理运行态判定"
+      },
+      {
+        "inbound_request_id": "req-bdbc98183b77",
+        "chat_status": 200,
+        "body_request_id": "openllm-df4f9cade37c473b8620ba1f",
+        "evaluable": false,
+        "note": "关联 id(req-…) 只落应用日志与出站头；响应体仅含网关自有 openllm-… id → 须日志/代理运行态判定"
+      },
+      {
+        "inbound_request_id": "req-566763c014be",
+        "chat_status": 200,
+        "body_request_id": "openllm-4c46b196b9a74b0a91e78022",
+        "evaluable": false,
+        "note": "关联 id(req-…) 只落应用日志与出站头；响应体仅含网关自有 openllm-… id → 须日志/代理运行态判定"
+      }
+    ],
+    "untrusted_records": [
+      {
+        "inbound_request_id": "req-c6f4a538160e",
+        "chat_status": 200,
+        "body_request_id": "openllm-b0574d4d55034b5c85e6629b",
+        "ignored_inbound": true
+      },
+      {
+        "inbound_request_id": "req-1847c6f3a3c3",
+        "chat_status": 200,
+        "body_request_id": "openllm-b68fd7828a464fddb1994ca3",
+        "ignored_inbound": true
+      },
+      {
+        "inbound_request_id": "req-9f5967254620",
+        "chat_status": 200,
+        "body_request_id": "openllm-525ecb763cbe44b9a31805e0",
+        "ignored_inbound": true
+      },
+      {
+        "inbound_request_id": "req-93fa31abae41",
+        "chat_status": 200,
+        "body_request_id": "openllm-7bc669f571b14393993ea1ee",
+        "ignored_inbound": true
+      },
+      {
+        "inbound_request_id": "req-345f1287826d",
+        "chat_status": 200,
+        "body_request_id": "openllm-da4f9f36c1e546cb83b397f7",
+        "ignored_inbound": true
+      }
+    ],
+    "health_echo_header": null,
+    "verdict": {
+      "pass": true,
+      "scope": "有限口径（含受限项，见 limited_items）",
+      "rules_checked": [
+        "untrusted-forgery-rejected-100%"
+      ],
+      "untrusted_rejected_ok": "5/5",
+      "limited_items": [
+        "受信来源复用入站 X-Request-Id（关联 id 仅落应用日志/出站头，HTTP 不可观测；须 OpenBase 代理 8001 + 应用日志运行态）",
+        "四仓应用日志原文命中 100%（TT-147-005 跨仓部分；须四仓运行态与采集目录）",
+        "X-Request-Id 响应回带（OpenBase 代理责任面；8001 未运行）",
+        "OpenRAG 应用日志 JSONL 契约运行态（TT-147-004；本环境 OpenRAG 不可达）"
+      ],
+      "failures": []
+    }
+  },
+  "limited_scope_items": [
+    "TT-147-005 受信来源复用入站 X-Request-Id（关联 id 仅落应用日志/出站头，HTTP 不可观测；须 OpenBase 代理 8001 + 应用日志运行态）",
+    "TT-147-005 跨仓「四仓应用日志原文命中 100%」（运行态需 OpenBase 代理 8001 + DPS + OpenRAG；本环境均未运行）→ 以四仓 R-384 专项单测复跑作单元级回归证据（不等价于运行态复测）",
+    "X-Request-Id 响应回带（OpenBase 代理责任面；8001 未运行）",
+    "TT-147-004 OpenRAG 应用日志 JSONL 契约运行态（本环境 OpenRAG 不可达）→ 已以仓内实现静态复核留证"
+  ]
+}
