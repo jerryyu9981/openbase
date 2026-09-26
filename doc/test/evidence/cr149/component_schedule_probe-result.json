@@ -1,0 +1,191 @@
+﻿{
+  "switch_key": "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED",
+  "declaration_key": "OPENLLM_COMPONENT_DEPENDENCIES",
+  "switch_default": false,
+  "declaration_default": "",
+  "work_seconds_per_component": 0.12,
+  "cases": [
+    {
+      "switch": false,
+      "enable_parallel": false,
+      "declaration": "",
+      "waves": [
+        [
+          "memory",
+          "rag"
+        ]
+      ],
+      "wave_concurrent": false,
+      "executed": [
+        "memory",
+        "rag"
+      ],
+      "events": [
+        "memory_start",
+        "memory_end",
+        "rag_start",
+        "rag_end"
+      ],
+      "wall_seconds": 0.25,
+      "overlapped": false
+    },
+    {
+      "switch": false,
+      "enable_parallel": false,
+      "declaration": "",
+      "waves": [
+        [
+          "memory",
+          "rag"
+        ]
+      ],
+      "wave_concurrent": false,
+      "executed": [
+        "memory",
+        "rag"
+      ],
+      "events": [
+        "memory_start",
+        "memory_end",
+        "rag_start",
+        "rag_end"
+      ],
+      "wall_seconds": 0.25,
+      "overlapped": false
+    },
+    {
+      "switch": false,
+      "enable_parallel": true,
+      "declaration": "",
+      "waves": [
+        [
+          "memory",
+          "rag"
+        ]
+      ],
+      "wave_concurrent": true,
+      "executed": [
+        "memory",
+        "rag"
+      ],
+      "events": [
+        "memory_start",
+        "rag_start",
+        "memory_end",
+        "rag_end"
+      ],
+      "wall_seconds": 0.125,
+      "overlapped": true
+    },
+    {
+      "switch": true,
+      "enable_parallel": false,
+      "declaration": "",
+      "waves": [
+        [
+          "memory",
+          "rag"
+        ]
+      ],
+      "wave_concurrent": true,
+      "executed": [
+        "memory",
+        "rag"
+      ],
+      "events": [
+        "memory_start",
+        "rag_start",
+        "memory_end",
+        "rag_end"
+      ],
+      "wall_seconds": 0.125,
+      "overlapped": true
+    },
+    {
+      "switch": true,
+      "enable_parallel": true,
+      "declaration": "memory:rag",
+      "waves": [
+        [
+          "rag"
+        ],
+        [
+          "memory"
+        ]
+      ],
+      "wave_concurrent": true,
+      "executed": [
+        "memory",
+        "rag"
+      ],
+      "events": [
+        "rag_start",
+        "rag_end",
+        "memory_start",
+        "memory_end"
+      ],
+      "wall_seconds": 0.25,
+      "overlapped": false
+    },
+    {
+      "switch": true,
+      "enable_parallel": false,
+      "declaration": "memory:rag",
+      "waves": [
+        [
+          "rag"
+        ],
+        [
+          "memory"
+        ]
+      ],
+      "wave_concurrent": true,
+      "executed": [
+        "memory",
+        "rag"
+      ],
+      "events": [
+        "rag_start",
+        "rag_end",
+        "memory_start",
+        "memory_end"
+      ],
+      "wall_seconds": 0.235,
+      "overlapped": false
+    }
+  ],
+  "graph": {
+    "no_dependency": [
+      [
+        "memory",
+        "rag"
+      ]
+    ],
+    "memory_depends_on_rag": [
+      [
+        "rag"
+      ],
+      [
+        "memory"
+      ]
+    ],
+    "cycle_is_failsafe": [
+      [
+        "memory",
+        "rag"
+      ]
+    ],
+    "parse_empty": {},
+    "parse_pair": {
+      "memory": [
+        "rag"
+      ]
+    },
+    "parse_multi": {
+      "a": [
+        "b",
+        "c"
+      ]
+    }
+  }
+}
