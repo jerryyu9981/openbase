@@ -1,0 +1,167 @@
+{
+  "probe": "refine_artifact_cache",
+  "ruling": "§9 问题 6：异步精炼产物归属＝仅装配期缓存（assembly_cache 唯一合法），不改写记忆粒度",
+  "cases": [
+    {
+      "case": "① 默认归属 ⇒ 装配期缓存",
+      "expect": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "actual": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "② 显式 memory_write ⇒ 回退（不写记忆）",
+      "expect": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "actual": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "③ 大小写变体 MEMORY_WRITE ⇒ 回退",
+      "expect": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "actual": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "④ 空值 ⇒ 回退",
+      "expect": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "actual": {
+        "owner": "assembly_cache",
+        "writes_memory": false
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑤ 键归一化（空白/大小写不敏感）⇒ 同键",
+      "expect": {
+        "same": true
+      },
+      "actual": {
+        "same": true
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑥ query 变化 ⇒ 换键",
+      "expect": {
+        "changed": true
+      },
+      "actual": {
+        "changed": true
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑦ 段内容变化 ⇒ 换键",
+      "expect": {
+        "changed": true
+      },
+      "actual": {
+        "changed": true
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑧ 存取往返 ⇒ 命中同值",
+      "expect": {
+        "stored": true,
+        "hit": {
+          "compressed": "压缩结果"
+        }
+      },
+      "actual": {
+        "stored": true,
+        "hit": {
+          "compressed": "被篡改"
+        }
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑨ 命中返回副本（篡改不污染缓存）",
+      "expect": {
+        "hit": {
+          "compressed": "压缩结果"
+        }
+      },
+      "actual": {
+        "hit": {
+          "compressed": "压缩结果"
+        }
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑩ TTL 过期 ⇒ 未命中",
+      "expect": {
+        "hit": null
+      },
+      "actual": {
+        "hit": null
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑪ 容量 0 ⇒ 关闭（不缓存）",
+      "expect": {
+        "stored": false,
+        "hit": null
+      },
+      "actual": {
+        "stored": false,
+        "hit": null
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑫ 超容量淘汰最旧",
+      "expect": {
+        "oldest": null,
+        "newest": 3
+      },
+      "actual": {
+        "oldest": null,
+        "newest": 3
+      },
+      "ok": true,
+      "mismatched": []
+    }
+  ],
+  "guardrail_summary": "归属**恒为** assembly_cache：任何候选（含 memory_write / 大小写变体 / 空值）⇒ WARN ＋ 回退 ⇒ `writes_memory=false`（**不提供开启口**）；缓存键 ＝ (query_hash, 段内容 hash)，命中返回副本、TTL 过期失效、容量 0 关闭",
+  "self_check": {
+    "ok": true,
+    "cases": 12,
+    "mismatched": [],
+    "memory_write_leaked": []
+  }
+}
