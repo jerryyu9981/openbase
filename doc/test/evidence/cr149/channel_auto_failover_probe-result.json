@@ -1,0 +1,138 @@
+{
+  "probe": "channel_auto_failover",
+  "ruling": "§9 问题 5：触发权以人工/运维显式为主；自动接管为显式可选（默认 False 只登记不切换）",
+  "cases": [
+    {
+      "case": "① 关态达阈值 ⇒ 只登记不切换且健康如实",
+      "expect": {
+        "primary_channel": "b",
+        "healthy_b": false,
+        "switched": false
+      },
+      "actual": {
+        "primary_channel": "b",
+        "healthy_b": false,
+        "switched": false
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "② 开态未达阈值（2/3）⇒ 不切换",
+      "expect": {
+        "primary_channel": "b"
+      },
+      "actual": {
+        "primary_channel": "b"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "③ 开态达阈值 ⇒ 自动回落 A 且单主",
+      "expect": {
+        "primary_channel": "a",
+        "single_primary": true
+      },
+      "actual": {
+        "primary_channel": "a",
+        "single_primary": true
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "④ 回落审计可复盘（actor=auto / 含阈值证据）",
+      "expect": {
+        "audit_ok": true
+      },
+      "actual": {
+        "audit_ok": true,
+        "audit_count": 1
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑤ 阈值配置键驱动（5 ⇒ 3 次不切、5 次切）",
+      "expect": {
+        "primary_three": "b",
+        "primary_five": "a"
+      },
+      "actual": {
+        "primary_three": "b",
+        "primary_five": "a"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑥ 幂等（A 已主再达阈值 ⇒ False 且不重复审计）",
+      "expect": {
+        "evaluation": false,
+        "audit_unchanged": true
+      },
+      "actual": {
+        "evaluation": false,
+        "audit_unchanged": true
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑦ A 接管期间写路径暂停（T11 联动）",
+      "expect": {
+        "allowed": false,
+        "reason": "channel_not_primary"
+      },
+      "actual": {
+        "allowed": false,
+        "reason": "channel_not_primary"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑧ 自动接管不代行回切（无演练窗口 ⇒ 拒绝）",
+      "expect": {
+        "blocked": true
+      },
+      "actual": {
+        "blocked": true
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑨ 显式接管 actor=ops（与自动 actor=auto 可区分）",
+      "expect": {
+        "actor": "ops",
+        "source": "manual"
+      },
+      "actual": {
+        "actor": "ops",
+        "source": "manual"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑩ 关态评估返回 False 且不产生切换审计",
+      "expect": {
+        "evaluation": false,
+        "switched": false
+      },
+      "actual": {
+        "evaluation": false,
+        "switched": false
+      },
+      "ok": true,
+      "mismatched": []
+    }
+  ],
+  "contract_summary": "自动回落**仅在**显式开启且达阈值时发生：保持单主（禁双主双写）／审计 actor=auto 可区分／阈值配置键驱动／幂等／A 接管期间写暂停（T11 联动）／回切仍人工门禁；默认关态只登记不切换（不代行裁定）",
+  "self_check": {
+    "ok": true,
+    "mismatched": []
+  }
+}

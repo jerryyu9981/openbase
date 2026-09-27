@@ -1570,7 +1570,9 @@ async def check_t11() -> Verdict:
       2. 切换期间（`a-primary`，经 B 写属非主通道）⇒ **暂停本轮回写**
          （三路返回 `"skipped"` 且**不入队**）；
       3. 开关关闭 ⇒ **逐字回退**（不看通道状态）；
-      4. 配置非法（未知 preference）⇒ WARN + **放行**（fail-open）。
+      4. 配置非法（未知 preference）⇒ WARN + **放行**（fail-open）；
+      5. **自动回落（Q5 触发权 · 可选开态）**：源 1 组件级连续失败达阈值
+         ⇒ 自动接管 A ⇒ **同走单主断言**（写路径同样暂停，三路 `"skipped"` 不入队）。
     """
     title = "写路径与通道一致：非主通道期间暂停回写（进程内可判）"
     import app.api.openllm_gateway as gateway
@@ -1606,6 +1608,55 @@ async def check_t11() -> Verdict:
     )
     invalid_submitted, _invalid_returns = await _run(CHANNEL_PREFERENCE="b_primary_typo")
 
+    # ⑤ Q5 自动回落同走单主断言：源 1 组件级连续失败达阈值 ⇒ 自动接管 A ⇒ 写暂停
+    async def _run_auto_failover() -> tuple[list[str], dict[str, Any], str]:
+        import app.identity.channel as channel_module
+
+        queue = _queue_stub_ref()
+        original = queue_module.get_writeback_queue
+        queue_module.get_writeback_queue = lambda: queue
+        try:
+            with _temporary_settings(
+                WRITEBACK_DECISION_ENABLED=False,
+                WRITEBACK_CHANNEL_GUARD_ENABLED=True,
+                CHANNEL_PREFERENCE="b-primary",
+                CHANNEL_AUTO_FAILOVER_ENABLED=True,
+                CHANNEL_FAILOVER_CONSECUTIVE_THRESHOLD=3,
+            ):
+                channel_module.reset_channel_state_manager()
+                auto_manager = gateway._get_channel_manager()
+                for _ in range(3):
+                    gateway._note_component_channel_health(
+                        type(
+                            "Run",
+                            (),
+                            {
+                                "degraded": ["rag"],
+                                "rag_source": "external",
+                                "builtin_fallback_reason": "",
+                            },
+                        )()
+                    )
+                primary_after = auto_manager.primary_channel
+                memory_cb, rag_cb, profile_cb, _kwargs = gateway._build_writeback_callback(
+                    _identity_ref(), "req-t11-auto", session_id="sess-t11", rag_kb_id="kb-t11"
+                )
+                returns: dict[str, Any] = {}
+                for road, callback in (
+                    ("memory", memory_cb),
+                    ("rag", rag_cb),
+                    ("profile", profile_cb),
+                ):
+                    returns[road] = await callback(query="请记住：我偏好简洁", response="好的")
+        finally:
+            queue_module.get_writeback_queue = original
+            channel_module.reset_channel_state_manager()
+        return [item["target"] for item in queue.submitted], returns, primary_after
+
+    auto_failover_submitted, auto_failover_returns, auto_failover_primary = (
+        await _run_auto_failover()
+    )
+
     failures: list[str] = []
     if sorted(default_submitted) != ["memory", "profile", "rag"]:
         failures.append(f"默认主通道下三路应正常入队，实测 {default_submitted}")
@@ -1617,6 +1668,16 @@ async def check_t11() -> Verdict:
         failures.append("开关关闭时应逐字回退（不看通道状态）")
     if "memory" not in invalid_submitted:
         failures.append("配置非法时应 fail-open 放行（不得静默停库）")
+    if auto_failover_primary != "a":
+        failures.append(f"自动回落（开态达阈值）应达 A 主，实测 {auto_failover_primary}")
+    if auto_failover_submitted:
+        failures.append(
+            f"自动接管 A 期间不得写入（同走单主断言），实测入队 {auto_failover_submitted}"
+        )
+    if not all(value == "skipped" for value in auto_failover_returns.values()):
+        failures.append(
+            f"自动接管 A 期间三路应返回 skipped，实测 {auto_failover_returns}"
+        )
 
     return Verdict(
         criterion="T11",
@@ -1628,9 +1689,14 @@ async def check_t11() -> Verdict:
             "channel_switch_returns": guarded_returns,
             "guard_switch_off_submitted": off_submitted,
             "invalid_preference_submitted": invalid_submitted,
+            "auto_failover_primary": auto_failover_primary,
+            "auto_failover_submitted": auto_failover_submitted,
+            "auto_failover_returns": auto_failover_returns,
             "evidence": (
                 "`tests/unit/test_writeback_channel_guard.py`（8 例）＋ 运行态探针 "
-                "`doc/test/evidence/cr149/writeback_channel_guard_probe.py`"
+                "`doc/test/evidence/cr149/writeback_channel_guard_probe.py`；"
+                "Q5 自动回落联动见 `tests/unit/test_channel_wiring_health.py::"
+                "TestAutoFailoverTriggerChain`（7 例）＋ 探针 `channel_auto_failover_probe.py`（10 例）"
             ),
         },
         reason="；".join(failures),

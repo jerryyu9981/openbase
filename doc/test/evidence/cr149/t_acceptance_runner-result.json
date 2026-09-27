@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T17:59:25",
+  "generated_at": "2026-09-27T19:39:18",
   "simulate": false,
   "summary": {
     "PASS": 10,
@@ -284,7 +284,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.344,
+        "concurrent_components_wall_seconds": 4.359,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -297,8 +297,8 @@
       "requires": [],
       "detail": {
         "switch_enabled_in_config": true,
-        "parallel_wall_seconds": 0.063,
-        "ordered_wall_seconds": 0.125,
+        "parallel_wall_seconds": 0.14,
+        "ordered_wall_seconds": 0.172,
         "parallel_events": [
           "memory_start",
           "rag_start",
@@ -453,7 +453,14 @@
           "rag",
           "profile"
         ],
-        "evidence": "`tests/unit/test_writeback_channel_guard.py`（8 例）＋ 运行态探针 `doc/test/evidence/cr149/writeback_channel_guard_probe.py`"
+        "auto_failover_primary": "a",
+        "auto_failover_submitted": [],
+        "auto_failover_returns": {
+          "memory": "skipped",
+          "rag": "skipped",
+          "profile": "skipped"
+        },
+        "evidence": "`tests/unit/test_writeback_channel_guard.py`（8 例）＋ 运行态探针 `doc/test/evidence/cr149/writeback_channel_guard_probe.py`；Q5 自动回落联动见 `tests/unit/test_channel_wiring_health.py::TestAutoFailoverTriggerChain`（7 例）＋ 探针 `channel_auto_failover_probe.py`（10 例）"
       },
       "reason": ""
     },
