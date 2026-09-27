@@ -1,0 +1,674 @@
+{
+  "generated_at": "2026-09-28T02:27:50",
+  "base_url": "http://192.168.0.4:11434",
+  "server_version": "0.32.15",
+  "models": [
+    "qwen3.5:2b-q4_K_M"
+  ],
+  "tasks": [
+    "route",
+    "select",
+    "compress",
+    "summarize"
+  ],
+  "tag": "lan-qwen35-2b",
+  "limit_items": 0,
+  "dataset": {
+    "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\local-model-bench\\dataset_refine_bench.json",
+    "seed": 20260927
+  },
+  "results": {
+    "qwen3.5:2b-q4_K_M": {
+      "model": "qwen3.5:2b-q4_K_M",
+      "tasks": {
+        "route": {
+          "aggregate": {
+            "n": 12,
+            "ok": 12,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 4841.7,
+              "p95": 4975.8,
+              "max": 4975.8
+            },
+            "tokens_per_second_p50": 8.1,
+            "json_ok_rate": 1.0,
+            "exact_rate": 0.75,
+            "field_accuracy": 0.875,
+            "primary_metric": "field_accuracy",
+            "primary_value": 0.875
+          },
+          "rows": [
+            {
+              "id": "route-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 2722.6,
+              "eval_count": 20,
+              "eval_duration_ms": 2456.3,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": true,\n  \"need_rag\": false\n}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": true,
+                "rag_hit": false
+              }
+            },
+            {
+              "id": "route-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4830.0,
+              "eval_count": 20,
+              "eval_duration_ms": 2444.8,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": true,\n  \"need_rag\": false\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4879.0,
+              "eval_count": 20,
+              "eval_duration_ms": 2482.9,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": false,\n  \"need_rag\": true\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4963.5,
+              "eval_count": 20,
+              "eval_duration_ms": 2482.5,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": false,\n  \"need_rag\": true\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-5",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4007.6,
+              "eval_count": 14,
+              "eval_duration_ms": 1696.3,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-6",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4809.3,
+              "eval_count": 20,
+              "eval_duration_ms": 2454.0,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": false,\n  \"need_rag\": true\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-7",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4889.6,
+              "eval_count": 20,
+              "eval_duration_ms": 2475.8,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": true,\n  \"need_rag\": false\n}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": true,
+                "rag_hit": false
+              }
+            },
+            {
+              "id": "route-8",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4867.1,
+              "eval_count": 20,
+              "eval_duration_ms": 2474.8,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": false,\n  \"need_rag\": true\n}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": true,
+                "rag_hit": false
+              }
+            },
+            {
+              "id": "route-9",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4841.7,
+              "eval_count": 20,
+              "eval_duration_ms": 2465.4,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": true,\n  \"need_rag\": false\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-10",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4975.8,
+              "eval_count": 20,
+              "eval_duration_ms": 2463.8,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": false,\n  \"need_rag\": true\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-11",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4914.1,
+              "eval_count": 20,
+              "eval_duration_ms": 2445.8,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": true,\n  \"need_rag\": false\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-12",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4791.1,
+              "eval_count": 20,
+              "eval_duration_ms": 2471.0,
+              "thinking_chars": 0,
+              "raw_preview": "{\n  \"need_memory\": false,\n  \"need_rag\": true\n}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            }
+          ]
+        },
+        "select": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 11587.9,
+              "p95": 12471.1,
+              "max": 12471.1
+            },
+            "tokens_per_second_p50": 8.9,
+            "f1": 0.564,
+            "precision": 0.7,
+            "recall": 0.5,
+            "format_ok_rate": 1.0,
+            "primary_metric": "f1",
+            "primary_value": 0.564
+          },
+          "rows": [
+            {
+              "id": "select-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 12471.1,
+              "eval_count": 6,
+              "eval_duration_ms": 674.2,
+              "thinking_chars": 0,
+              "raw_preview": "1,5,6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  1,
+                  5,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 0.75,
+                "f1": 0.8571
+              }
+            },
+            {
+              "id": "select-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 12150.7,
+              "eval_count": 4,
+              "eval_duration_ms": 404.0,
+              "thinking_chars": 0,
+              "raw_preview": "1,6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  1,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6667
+              }
+            },
+            {
+              "id": "select-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 12293.0,
+              "eval_count": 4,
+              "eval_duration_ms": 399.9,
+              "thinking_chars": 0,
+              "raw_preview": "5,6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  5,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6667
+              }
+            },
+            {
+              "id": "select-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 11587.9,
+              "eval_count": 6,
+              "eval_duration_ms": 671.0,
+              "thinking_chars": 0,
+              "raw_preview": "5,6,9",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  5,
+                  6,
+                  9
+                ],
+                "precision": 0.6667,
+                "recall": 0.5,
+                "f1": 0.5714
+              }
+            },
+            {
+              "id": "select-5",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 11192.1,
+              "eval_count": 11,
+              "eval_duration_ms": 1342.2,
+              "thinking_chars": 0,
+              "raw_preview": "2,6,8,9,10",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  2,
+                  6,
+                  8,
+                  9,
+                  10
+                ],
+                "precision": 0.2,
+                "recall": 0.25,
+                "f1": 0.2222
+              }
+            },
+            {
+              "id": "select-6",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 11125.5,
+              "eval_count": 13,
+              "eval_duration_ms": 1589.8,
+              "thinking_chars": 0,
+              "raw_preview": "2,5,6,8,9,10",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  2,
+                  5,
+                  6,
+                  8,
+                  9,
+                  10
+                ],
+                "precision": 0.3333,
+                "recall": 0.5,
+                "f1": 0.4
+              }
+            }
+          ]
+        },
+        "compress": {
+          "aggregate": {
+            "n": 6,
+            "ok": 4,
+            "failed": 2,
+            "latency_ms": {
+              "p50": 26632.9,
+              "p95": 38279.7,
+              "max": 38279.7
+            },
+            "tokens_per_second_p50": 7.6,
+            "fact_recall": 0.625,
+            "compression_ratio": 0.5028,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 0.625
+          },
+          "rows": [
+            {
+              "id": "compress-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 36389.0,
+              "eval_count": 192,
+              "eval_duration_ms": 25545.4,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。\n2. 记忆往返闭环判据要求同一主体连续两轮对话第 2 轮记忆段注入 5 条且 segment_tokens.memory 大于 0",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.5028
+              }
+            },
+            {
+              "id": "compress-2",
+              "ok": false,
+              "error": "http=-1 TimeoutError: timed out",
+              "elapsed_ms": 180012.75750000787,
+              "eval_count": null,
+              "eval_duration_ms": null,
+              "thinking_chars": null,
+              "raw_preview": "",
+              "score": {
+                "error": "http=-1 TimeoutError: timed out"
+              }
+            },
+            {
+              "id": "compress-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 38279.7,
+              "eval_count": 192,
+              "eval_duration_ms": 25349.6,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。\n2. 记忆往返闭环判据要求同一主体连续两轮对话第 2 轮记忆段注入 5 条且 segment_tokens.memory 大于 0",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.5028
+              }
+            },
+            {
+              "id": "compress-4",
+              "ok": false,
+              "error": "http=-1 TimeoutError: timed out",
+              "elapsed_ms": 180015.16419999825,
+              "eval_count": null,
+              "eval_duration_ms": null,
+              "thinking_chars": null,
+              "raw_preview": "",
+              "score": {
+                "error": "http=-1 TimeoutError: timed out"
+              }
+            },
+            {
+              "id": "compress-5",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 26632.9,
+              "eval_count": 192,
+              "eval_duration_ms": 25317.1,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。\n2. 记忆往返闭环判据要求同一主体连续两轮对话第 2 轮记忆段注入 5 条且 segment_tokens.memory 大于 0",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.25,
+                "compression_ratio": 0.5028
+              }
+            },
+            {
+              "id": "compress-6",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 25563.7,
+              "eval_count": 192,
+              "eval_duration_ms": 25289.6,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。\n2. 记忆往返闭环判据要求同一主体连续两轮对话第 2 轮记忆段注入 5 条且 segment_tokens.memory 大于 0",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.25,
+                "compression_ratio": 0.5028
+              }
+            }
+          ]
+        },
+        "summarize": {
+          "aggregate": {
+            "n": 5,
+            "ok": 5,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 8785.4,
+              "p95": 15427.3,
+              "max": 15427.3
+            },
+            "tokens_per_second_p50": 7.8,
+            "fact_recall": 0.2333,
+            "compression_ratio": 0.7706,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 0.2333
+          },
+          "rows": [
+            {
+              "id": "summarize-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 15427.3,
+              "eval_count": 94,
+              "eval_duration_ms": 12231.5,
+              "thinking_chars": 0,
+              "raw_preview": "会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，知识库样本标识为 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。回写侧三路（memory / rag / profile）逐路独立入队，权威回执以回写队列表为准。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.9945
+              }
+            },
+            {
+              "id": "summarize-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 10478.2,
+              "eval_count": 59,
+              "eval_duration_ms": 7645.3,
+              "thinking_chars": 0,
+              "raw_preview": "记忆往返闭环判据要求同一主体连续两轮对话中第 2 轮注入 5 条且 segment_tokens.memory 大于 0，读路径资源键为 tenant-1_179fc89c，回写必须用同一事实源派生。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.1667,
+                "compression_ratio": 0.8264
+              }
+            },
+            {
+              "id": "summarize-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 8785.4,
+              "eval_count": 48,
+              "eval_duration_ms": 6124.0,
+              "thinking_chars": 0,
+              "raw_preview": "原始记忆指出在外部不可用且开启回退时，RAG 源切换至内置模式但本租户知识库表为 0 行、FAISS 索引目录为 0 个，导致注入为空。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 0.4928
+              }
+            },
+            {
+              "id": "summarize-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 6621.5,
+              "eval_count": 35,
+              "eval_duration_ms": 4460.0,
+              "thinking_chars": 0,
+              "raw_preview": "画像段由 DPS 提供且固定注入，拉取失败开启 30 秒负缓存以规避连接代价，总开关为 PROFILE_INJECTION_ENABLED。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 0.7292
+              }
+            },
+            {
+              "id": "summarize-5",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 7887.3,
+              "eval_count": 44,
+              "eval_duration_ms": 5603.7,
+              "thinking_chars": 0,
+              "raw_preview": "组件路由阈值 0.85 不达标时回落最优候选，同一规则命中两次置信度达 0.95 进入信号并集，触发记忆与知识库装配路径为 C。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 0.8101
+              }
+            }
+          ]
+        }
+      },
+      "warmup": {
+        "ok": true,
+        "error": null,
+        "load_duration_ms": 60.5,
+        "elapsed_ms": 52644.7
+      },
+      "unavailable": false,
+      "runtime": {
+        "size_vram_bytes": 0,
+        "size_bytes": 1592451397,
+        "inference": "cpu_or_partial"
+      }
+    },
+    "rule-baseline(no-model)": {
+      "model": "rule-baseline(no-model)",
+      "unavailable": false,
+      "runtime": {
+        "inference": "n/a(规则档)",
+        "size_vram_bytes": 0,
+        "size_bytes": 0
+      },
+      "tasks": {
+        "compress": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "fact_recall": 1.0,
+            "compression_ratio": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 1.0,
+            "note": "原文原样保留（未压缩）"
+          },
+          "rows": []
+        },
+        "summarize": {
+          "aggregate": {
+            "n": 5,
+            "ok": 5,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "fact_recall": 1.0,
+            "compression_ratio": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 1.0,
+            "note": "原文原样保留（未压缩）"
+          },
+          "rows": []
+        },
+        "select": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "f1": 0.5714,
+            "precision": 0.4,
+            "recall": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "f1",
+            "primary_value": 0.5714,
+            "note": "全选（不做相关性筛选）"
+          },
+          "rows": []
+        }
+      }
+    }
+  }
+}
