@@ -392,6 +392,14 @@ def check_t3() -> Verdict:
         "items_after": len(filtered),
         "filtered_scores": scores,
         "effective_segment": effective_detail,
+        "evaluation_pending": (
+            "**T3 原文第三条子句「条目数下降但 `used_ratio` 不降」不在本判据内**："
+            "`used_ratio` 是**归因 A** 的指标（`attribution_a()`：回答引用了多少条注入片段），"
+            "**取值依赖 LLM 回答内容**，其自身 docstring 明确「只能纵向对比、不得作绝对值"
+            "解读」⇒ **不能**用构造回答在进程内做成确定性判据；须在**评测集**上做"
+            "「rerank 开 / 关」对照（聚合比较）—— 属 §6 **第三批**「评测集与验收判据扩展」。"
+            "**本判据如实不覆盖该子句**，而非以近似断言冒充覆盖。"
+        ),
         "runtime_pending": (
             "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的"
             "运行态复核；本判据只覆盖网关侧口径与「开启即生效」"

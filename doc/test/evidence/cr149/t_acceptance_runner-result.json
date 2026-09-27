@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T13:17:16",
+  "generated_at": "2026-09-27T13:30:31",
   "simulate": false,
   "summary": {
     "PASS": 5,
@@ -68,6 +68,7 @@
           "switch_on_now": false,
           "threshold_on_now": false
         },
+        "evaluation_pending": "**T3 原文第三条子句「条目数下降但 `used_ratio` 不降」不在本判据内**：`used_ratio` 是**归因 A** 的指标（`attribution_a()`：回答引用了多少条注入片段），**取值依赖 LLM 回答内容**，其自身 docstring 明确「只能纵向对比、不得作绝对值解读」⇒ **不能**用构造回答在进程内做成确定性判据；须在**评测集**上做「rerank 开 / 关」对照（聚合比较）—— 属 §6 **第三批**「评测集与验收判据扩展」。**本判据如实不覆盖该子句**，而非以近似断言冒充覆盖。",
         "runtime_pending": "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的运行态复核；本判据只覆盖网关侧口径与「开启即生效」"
       },
       "reason": "段①口径（无开关，恒可判）已达标：条目级透传优先、阈值 0/非法 ⇒ 不过滤、过滤后条目数下降且 score 单调；段②能力已用**临时置位**验证通过（rerank=true / threshold=0.15，进程内退出恢复）—— 待开关开启后复跑即为 PASS"
@@ -163,7 +164,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.344,
+        "concurrent_components_wall_seconds": 0.36,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -179,7 +180,7 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.046,
+        "parallel_wall_seconds": 0.062,
         "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",

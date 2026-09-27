@@ -1,0 +1,9 @@
+{
+  "probe": "check_doc_claims",
+  "design_doc": "OpenBase-上下文精装配与组件通道优化技术方案-v1.18.1.md",
+  "scanned_py_files": 523,
+  "skipped_as_absent_or_prefix": 50,
+  "checked_as_claimed_present": 214,
+  "missing": [],
+  "method_note": "区分「引用为存在」（须查到）与「引用为缺失/族前缀」（跳过）；首版未区分且不扫 tests/，曾误报 68 项；删除整行级跳过以免审计被宽泛标记吞掉"
+}
