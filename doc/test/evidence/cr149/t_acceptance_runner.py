@@ -828,9 +828,20 @@ def check_t6() -> Verdict:
          `elapsed_ms` 远小于在线预算、未启用时不落痕 ⇒ **本执行器判定**；
       ② **模型档**（生成式精炼：`mode=model` 的压缩质量与预算）—— 属方案 §6 **第三批**，
          需达标本地模型 ＋ GPU 节点（§5.6 门槛，实测 ≤1B 未达标）⇒ 仍 `BLOCKED`。
+
+    **v1.22.0 增段①补（位置门禁，进程内恒可判）**：§9 问题 2 裁定「位置由部署显式声明 ＋
+    四道门禁」⇒ 本判据增判 **在线通道永不放行生成式**（红线）、**非法位置值 fail-safe 回退**、
+    **未声明位置时异步亦不放行且理由非空**、**压缩率目标观测已落规则档回执**。
+    真实端点可达性与模型档实际推理仍属第三批（`model_tier=BLOCKED` 不变）。
     """
-    title = "精炼：规则档回执已可判（进程内）；模型档待第三批（生成式精炼）"
+    title = "精炼：规则档回执与位置门禁已可判（进程内）；模型档待第三批（生成式精炼）"
     from app.edgerouter.orchestration.prompt_pipeline import BudgetPolicy, build_prompt
+    from app.edgerouter.orchestration.refine_placement import (
+        REFINE_CHANNEL_ASYNC,
+        REFINE_CHANNEL_ONLINE,
+        plan_refine_inference,
+        resolve_refine_inference_target,
+    )
 
     def _chars(text: str) -> int:
         return len(text or "")
@@ -869,6 +880,39 @@ def check_t6() -> Verdict:
     if off_comp.refine != {}:
         failures.append(f"未启用精炼时不得落痕：{off_comp.refine}")
 
+    # ---- 段①补：位置门禁（§9 问题 2 裁定；进程内恒可判）----
+    from app.core.config import settings
+
+    previous_target = settings.CONTEXT_REFINE_INFERENCE_TARGET
+    try:
+        settings.CONTEXT_REFINE_INFERENCE_TARGET = "gpu_node"
+        online = plan_refine_inference(channel=REFINE_CHANNEL_ONLINE)
+        async_plan = plan_refine_inference(channel=REFINE_CHANNEL_ASYNC)
+        settings.CONTEXT_REFINE_INFERENCE_TARGET = "typo_target"
+        typo_target, typo_reason = resolve_refine_inference_target()
+    finally:
+        settings.CONTEXT_REFINE_INFERENCE_TARGET = previous_target
+
+    placement_rows = {
+        "online_channel_allowed": online["allowed"],
+        "online_channel_reason": online["reason"],
+        "async_channel_reason": async_plan["reason"],
+        "invalid_target_resolved": typo_target,
+        "invalid_target_reason": typo_reason,
+        "compression_observation": receipt.get("compression", {}),
+    }
+    if online["allowed"] is not False:
+        failures.append(f"在线通道竟放行生成式精炼（红线被破）：{online}")
+    if online["reason"] != "online_path_forbids_generative":
+        failures.append(f"在线通道理由非红线词：{online['reason']}")
+    if not str(async_plan["reason"]).strip():
+        failures.append(f"异步通道阻塞未给理由（静默降级）：{async_plan}")
+    if typo_target != "disabled" or not typo_reason.startswith("invalid_target:"):
+        failures.append(f"非法位置值未 fail-safe 回退：{typo_target} / {typo_reason}")
+    compression = receipt.get("compression") or {}
+    if "memory" not in compression or compression["memory"].get("ratio") is None:
+        failures.append(f"压缩率目标观测未落回执：{compression}")
+
     detail: dict[str, Any] = {
         "rule_tier_receipt": receipt,
         "rule_tier_evidence": (
@@ -876,10 +920,16 @@ def check_t6() -> Verdict:
             "运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
         ),
         "rule_tier": "FAIL" if failures else "PASS",
+        "placement_gate": placement_rows,
+        "placement_gate_evidence": (
+            "`tests/unit/test_refine_placement_policy.py`（42 例）＋ "
+            "探针 `doc/test/evidence/cr149/refine_placement_probe.py`（16 例 ＋ 结尾自检）"
+        ),
         "model_tier": "BLOCKED",
         "runtime_pending": [
             "生成式精炼（`mode=model`）需达标模型（§5.6 门槛）与 GPU 节点",
             "模型档 `elapsed_ms ≤ §5.8 预算` 与超时回落 `fallback=true` 需在模型就位后实测",
+            "端点**真实探活**接线（`register_refine_inference_probe`）与 `gpu_node` 位置实测",
         ],
     }
     if failures:
@@ -888,7 +938,7 @@ def check_t6() -> Verdict:
             title=title,
             status=STATUS_FAIL,
             detail=detail,
-            reason="规则档回执契约不达标：" + "；".join(failures),
+            reason="规则档回执/位置门禁契约不达标：" + "；".join(failures),
         )
     return Verdict(
         criterion="T6",
@@ -900,7 +950,8 @@ def check_t6() -> Verdict:
         ],
         detail=detail,
         reason=(
-            "规则档（确定性精炼）的 `refine` 回执已在进程内验证通过"
+            "规则档（确定性精炼）的 `refine` 回执＋**位置门禁**（在线红线 / fail-safe 回退 / "
+            "阻塞必带理由 / 压缩率目标观测）已在进程内验证通过"
             "（mode=rule、fallback=false、out<in、未启用不落痕）；"
             "**模型档（生成式精炼）仍属第三批**：§5.4/§5.5 实测 ≤1B 本地模型未过 §5.6 门槛，"
             "需先完成模型选型/节点准备"

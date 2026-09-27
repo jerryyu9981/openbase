@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T15:31:02",
+  "generated_at": "2026-09-27T17:59:25",
   "simulate": false,
   "summary": {
     "PASS": 10,
@@ -214,7 +214,7 @@
     },
     {
       "criterion": "T6",
-      "title": "精炼：规则档回执已可判（进程内）；模型档待第三批（生成式精炼）",
+      "title": "精炼：规则档回执与位置门禁已可判（进程内）；模型档待第三批（生成式精炼）",
       "status": "BLOCKED",
       "requires": [
         "生成式精炼（第三批）",
@@ -227,17 +227,50 @@
           "in_tokens": 807,
           "out_tokens": 100,
           "elapsed_ms": 0,
-          "fallback": false
+          "fallback": false,
+          "compression": {
+            "memory": {
+              "segment": "memory",
+              "ratio": 0.1239,
+              "target": [
+                0.2,
+                0.4
+              ],
+              "within": false,
+              "reason": "below_target"
+            }
+          }
         },
         "rule_tier_evidence": "`tests/unit/test_assembly_refine_rule_tier.py::TestRefineReceipt`（5 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`",
         "rule_tier": "PASS",
+        "placement_gate": {
+          "online_channel_allowed": false,
+          "online_channel_reason": "online_path_forbids_generative",
+          "async_channel_reason": "model_absent",
+          "invalid_target_resolved": "disabled",
+          "invalid_target_reason": "invalid_target:typo_target",
+          "compression_observation": {
+            "memory": {
+              "segment": "memory",
+              "ratio": 0.1239,
+              "target": [
+                0.2,
+                0.4
+              ],
+              "within": false,
+              "reason": "below_target"
+            }
+          }
+        },
+        "placement_gate_evidence": "`tests/unit/test_refine_placement_policy.py`（42 例）＋ 探针 `doc/test/evidence/cr149/refine_placement_probe.py`（16 例 ＋ 结尾自检）",
         "model_tier": "BLOCKED",
         "runtime_pending": [
           "生成式精炼（`mode=model`）需达标模型（§5.6 门槛）与 GPU 节点",
-          "模型档 `elapsed_ms ≤ §5.8 预算` 与超时回落 `fallback=true` 需在模型就位后实测"
+          "模型档 `elapsed_ms ≤ §5.8 预算` 与超时回落 `fallback=true` 需在模型就位后实测",
+          "端点**真实探活**接线（`register_refine_inference_probe`）与 `gpu_node` 位置实测"
         ]
       },
-      "reason": "规则档（确定性精炼）的 `refine` 回执已在进程内验证通过（mode=rule、fallback=false、out<in、未启用不落痕）；**模型档（生成式精炼）仍属第三批**：§5.4/§5.5 实测 ≤1B 本地模型未过 §5.6 门槛，需先完成模型选型/节点准备"
+      "reason": "规则档（确定性精炼）的 `refine` 回执＋**位置门禁**（在线红线 / fail-safe 回退 / 阻塞必带理由 / 压缩率目标观测）已在进程内验证通过（mode=rule、fallback=false、out<in、未启用不落痕）；**模型档（生成式精炼）仍属第三批**：§5.4/§5.5 实测 ≤1B 本地模型未过 §5.6 门槛，需先完成模型选型/节点准备"
     },
     {
       "criterion": "T7",

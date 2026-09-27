@@ -113,12 +113,13 @@ def main() -> int:
     sample_ok = 40 <= len(SUMMARY_OK) < len(RESPONSE)
     failed = [item["case"] for item in cases if not item["ok"]]
     verdict_ok = sample_ok and not failed
+    verdict = "PASS" if verdict_ok else "FAIL"
     print(
-        "probe self-check: %s（样例摘要 %d 字，需 40 ≤ n < %d；用例不符 %d 个）"
-        % ("PASS" if verdict_ok else "FAIL", len(SUMMARY_OK), len(RESPONSE), len(failed))
+        f"probe self-check: {verdict}（样例摘要 {len(SUMMARY_OK)} 字，"
+        f"需 40 ≤ n < {len(RESPONSE)}；用例不符 {len(failed)} 个）"
     )
     for name in failed:
-        print("  ! 用例期望与实测不符: %s" % name)
+        print(f"  ! 用例期望与实测不符: {name}")
     report["self_check"] = {"ok": verdict_ok, "sample_summary_chars": len(SUMMARY_OK), "mismatched": failed}
 
     if "--json" in sys.argv:
