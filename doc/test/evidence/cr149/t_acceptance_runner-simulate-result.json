@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T13:30:38",
+  "generated_at": "2026-09-27T14:55:16",
   "simulate": true,
   "summary": {
     "PASS": 10,
@@ -87,7 +87,7 @@
           "rag": 203,
           "history": 190
         },
-        "prompt_total_tokens": 658
+        "prompt_total_tokens": 745
       },
       "reason": ""
     },
@@ -226,7 +226,7 @@
           "model": "",
           "in_tokens": 807,
           "out_tokens": 100,
-          "elapsed_ms": 16,
+          "elapsed_ms": 0,
           "fallback": false
         },
         "rule_tier_evidence": "`tests/unit/test_assembly_refine_rule_tier.py::TestRefineReceipt`（5 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`",
@@ -251,7 +251,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.344,
+        "concurrent_components_wall_seconds": 0.328,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },

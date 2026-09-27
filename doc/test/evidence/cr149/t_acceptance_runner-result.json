@@ -1,40 +1,103 @@
 {
-  "generated_at": "2026-09-27T13:30:31",
+  "generated_at": "2026-09-27T14:20:50",
   "simulate": false,
   "summary": {
-    "PASS": 5,
+    "PASS": 10,
     "FAIL": 0,
-    "SKIP": 5,
+    "SKIP": 0,
     "BLOCKED": 2
   },
   "verdicts": [
     {
       "criterion": "T1",
       "title": "预算：各段 used ≤ quota；prompt 总长不超窗口扣减输出预留",
-      "status": "SKIP",
+      "status": "PASS",
       "requires": [
-        "CONTEXT_BUDGET_ENABLED=False"
+        "CONTEXT_BUDGET_ENABLED=True"
       ],
-      "detail": {},
-      "reason": "所需开关未开启：开启后复跑本判据（--simulate 可先行验证开启态）"
+      "detail": {
+        "window_tokens": 1200,
+        "output_reserve_tokens": 200,
+        "available_tokens": 1000,
+        "quota_ratio_sum": 0.94,
+        "quota_headroom_ceiling": 0.95,
+        "sum_segment_used": 894,
+        "prompt_total_tokens": 950,
+        "headroom_tokens": 50,
+        "segment_budget": {
+          "system": {
+            "quota": 50,
+            "used": 4
+          },
+          "profile": {
+            "quota": 50,
+            "used": 50
+          },
+          "memory": {
+            "quota": 280,
+            "used": 280
+          },
+          "rag": {
+            "quota": 370,
+            "used": 370
+          },
+          "history": {
+            "quota": 190,
+            "used": 190
+          }
+        },
+        "configured_window_tokens": 8192,
+        "fixture": "filled_quota(worst_case)"
+      },
+      "reason": ""
     },
     {
       "criterion": "T2",
       "title": "裁剪：超配额场景 truncated 有值、dropped_items > 0、保留条目非空",
-      "status": "SKIP",
+      "status": "PASS",
       "requires": [
-        "CONTEXT_BUDGET_ENABLED=False"
+        "CONTEXT_BUDGET_ENABLED=True"
       ],
-      "detail": {},
-      "reason": "所需开关未开启：开启后复跑本判据（--simulate 可先行验证开启态）"
+      "detail": {
+        "truncated": {
+          "memory": {
+            "dropped_items": 5,
+            "dropped_tokens": 1000,
+            "truncated_items": 0,
+            "merged_items": 0,
+            "merged_tokens": 0
+          },
+          "rag": {
+            "dropped_items": 5,
+            "dropped_tokens": 1000,
+            "truncated_items": 0,
+            "merged_items": 0,
+            "merged_tokens": 0
+          },
+          "history": {
+            "dropped_items": 5,
+            "dropped_tokens": 1000,
+            "truncated_items": 1,
+            "merged_items": 0,
+            "merged_tokens": 0
+          }
+        },
+        "kept_segments_used": {
+          "memory": 203,
+          "rag": 203,
+          "history": 190
+        },
+        "prompt_total_tokens": 745
+      },
+      "reason": ""
     },
     {
       "criterion": "T3",
       "title": "检索：rerank / score_threshold 透传、低分过滤与「开启即生效」",
-      "status": "SKIP",
+      "status": "PASS",
       "requires": [
-        "RAG_RERANK_ENABLED=False",
-        "RAG_SCORE_THRESHOLD=0.0"
+        "RAG_RERANK_ENABLED=True",
+        "RAG_SCORE_THRESHOLD=0.15"
       ],
       "detail": {
         "item_level_params": {
@@ -42,15 +105,15 @@
           "score_threshold": 0.5
         },
         "global_fallback_params": {
-          "rerank": false,
-          "score_threshold": null
+          "rerank": true,
+          "score_threshold": 0.15
         },
         "zero_threshold_params": {
-          "rerank": false,
+          "rerank": true,
           "score_threshold": null
         },
         "bad_threshold_params": {
-          "rerank": false,
+          "rerank": true,
           "score_threshold": null
         },
         "items_before": 4,
@@ -65,13 +128,17 @@
             "score_threshold": 0.15
           },
           "capability_verified": true,
-          "switch_on_now": false,
-          "threshold_on_now": false
+          "switch_on_now": true,
+          "threshold_on_now": true,
+          "resolved_without_item_params": {
+            "rerank": true,
+            "score_threshold": 0.15
+          }
         },
         "evaluation_pending": "**T3 原文第三条子句「条目数下降但 `used_ratio` 不降」不在本判据内**：`used_ratio` 是**归因 A** 的指标（`attribution_a()`：回答引用了多少条注入片段），**取值依赖 LLM 回答内容**，其自身 docstring 明确「只能纵向对比、不得作绝对值解读」⇒ **不能**用构造回答在进程内做成确定性判据；须在**评测集**上做「rerank 开 / 关」对照（聚合比较）—— 属 §6 **第三批**「评测集与验收判据扩展」。**本判据如实不覆盖该子句**，而非以近似断言冒充覆盖。",
         "runtime_pending": "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的运行态复核；本判据只覆盖网关侧口径与「开启即生效」"
       },
-      "reason": "段①口径（无开关，恒可判）已达标：条目级透传优先、阈值 0/非法 ⇒ 不过滤、过滤后条目数下降且 score 单调；段②能力已用**临时置位**验证通过（rerank=true / threshold=0.15，进程内退出恢复）—— 待开关开启后复跑即为 PASS"
+      "reason": ""
     },
     {
       "criterion": "T4",
@@ -112,18 +179,38 @@
     {
       "criterion": "T5",
       "title": "写侧闸门：低价值轮次不入库、高价值轮次正常入库",
-      "status": "SKIP",
+      "status": "PASS",
       "requires": [
-        "WRITEBACK_DECISION_ENABLED=False"
+        "WRITEBACK_DECISION_ENABLED=True"
       ],
       "detail": {
         "rag_value_gate": {
           "skipped_requests": 0,
           "default_requests": 1,
           "skipped_return": null
+        },
+        "low_value": {
+          "submitted": [],
+          "returns": {
+            "memory": "skipped",
+            "rag": "skipped",
+            "profile": "skipped"
+          }
+        },
+        "high_value": {
+          "submitted": [
+            "memory",
+            "rag",
+            "profile"
+          ],
+          "returns": {
+            "memory": true,
+            "rag": true,
+            "profile": true
+          }
         }
       },
-      "reason": "段②执行层价值闸门（无开关，恒生效）已达标：save_if_valuable=false ⇒ 零请求、缺省逐字回退；段①网关决策闸门待开关开启后复跑"
+      "reason": ""
     },
     {
       "criterion": "T6",
@@ -164,7 +251,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.36,
+        "concurrent_components_wall_seconds": 1.593,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -173,14 +260,11 @@
     {
       "criterion": "T8",
       "title": "调度：无依赖即并行、依赖声明保序、成环 fail-safe",
-      "status": "SKIP",
-      "requires": [
-        "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED=False",
-        "OPENLLM_COMPONENT_DEPENDENCIES="
-      ],
+      "status": "PASS",
+      "requires": [],
       "detail": {
-        "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.062,
+        "switch_enabled_in_config": true,
+        "parallel_wall_seconds": 0.063,
         "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
@@ -201,11 +285,11 @@
           ]
         ],
         "config_state": {
-          "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED": false,
+          "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED": true,
           "OPENLLM_COMPONENT_DEPENDENCIES": ""
         }
       },
-      "reason": "能力已达标（临时置位验证），但配置开关仍为关：开启后本判据即为 PASS"
+      "reason": ""
     },
     {
       "criterion": "T9",

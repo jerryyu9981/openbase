@@ -1,0 +1,21 @@
+{
+  "probe": "assembly_cost",
+  "material": {
+    "items": 20,
+    "chars_per_item": 120
+  },
+  "budget_off": {
+    "budget_enabled": false,
+    "rounds": 50,
+    "median_ms": 2.363,
+    "max_ms": 257.483
+  },
+  "budget_on": {
+    "budget_enabled": true,
+    "rounds": 50,
+    "median_ms": 4.882,
+    "max_ms": 6.911
+  },
+  "median_ratio_on_over_off": 2.066,
+  "verdict": "开启预算后单次装配明显变慢（比值 ≥ 2）—— 见 §8 风险行与 §7.1 备注"
+}
