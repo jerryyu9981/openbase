@@ -1,0 +1,8 @@
+task,model,primary_metric,primary_value,p50_ms,p95_ms,tokens_per_second_p50,failed,compression_ratio,format_ok_rate
+route,qwen3.5:4b-q4_K_M,field_accuracy,0.875,9328.0,9634.6,3.9,0,,
+select,qwen3.5:4b-q4_K_M,f1,0.873,31029.0,35729.9,4.2,0,,1.0
+select,rule-baseline(no-model),f1,0.5714,0.0,0.0,0.0,0,,1.0
+compress,qwen3.5:4b-q4_K_M,fact_recall,0.6333,54979.2,134593.0,3.5,1,0.4623,1.0
+compress,rule-baseline(no-model),fact_recall,1.0,0.0,0.0,0.0,0,1.0,1.0
+summarize,qwen3.5:4b-q4_K_M,fact_recall,0.2667,99477.0,140694.3,3.7,0,0.9335,1.0
+summarize,rule-baseline(no-model),fact_recall,1.0,0.0,0.0,0.0,0,1.0,1.0

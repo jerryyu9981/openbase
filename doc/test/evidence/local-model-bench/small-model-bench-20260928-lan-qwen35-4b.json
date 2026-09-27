@@ -1,0 +1,674 @@
+{
+  "generated_at": "2026-09-28T02:53:12",
+  "base_url": "http://192.168.0.4:11434",
+  "server_version": "0.32.15",
+  "models": [
+    "qwen3.5:4b-q4_K_M"
+  ],
+  "tasks": [
+    "route",
+    "select",
+    "compress",
+    "summarize"
+  ],
+  "tag": "lan-qwen35-4b",
+  "limit_items": 0,
+  "dataset": {
+    "path": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\local-model-bench\\dataset_refine_bench.json",
+    "seed": 20260927
+  },
+  "results": {
+    "qwen3.5:4b-q4_K_M": {
+      "model": "qwen3.5:4b-q4_K_M",
+      "tasks": {
+        "route": {
+          "aggregate": {
+            "n": 12,
+            "ok": 12,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 9328.0,
+              "p95": 9634.6,
+              "max": 9634.6
+            },
+            "tokens_per_second_p50": 3.9,
+            "json_ok_rate": 1.0,
+            "exact_rate": 0.8333,
+            "field_accuracy": 0.875,
+            "primary_metric": "field_accuracy",
+            "primary_value": 0.875
+          },
+          "rows": [
+            {
+              "id": "route-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 4123.4,
+              "eval_count": 14,
+              "eval_duration_ms": 3563.2,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9416.4,
+              "eval_count": 14,
+              "eval_duration_ms": 3577.0,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9328.0,
+              "eval_count": 14,
+              "eval_duration_ms": 3611.6,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": false, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9309.8,
+              "eval_count": 14,
+              "eval_duration_ms": 3599.5,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": false, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-5",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9251.6,
+              "eval_count": 14,
+              "eval_duration_ms": 3540.9,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-6",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9339.3,
+              "eval_count": 14,
+              "eval_duration_ms": 3514.2,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": false, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-7",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9495.2,
+              "eval_count": 14,
+              "eval_duration_ms": 3576.7,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-8",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9041.9,
+              "eval_count": 14,
+              "eval_duration_ms": 3598.2,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": false, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": true,
+                "rag_hit": false
+              }
+            },
+            {
+              "id": "route-9",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9505.2,
+              "eval_count": 14,
+              "eval_duration_ms": 3584.2,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": false, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": false,
+                "memory_hit": false,
+                "rag_hit": false
+              }
+            },
+            {
+              "id": "route-10",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9634.6,
+              "eval_count": 14,
+              "eval_duration_ms": 3614.6,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": false, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-11",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9518.0,
+              "eval_count": 14,
+              "eval_duration_ms": 3547.7,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": true, \"need_rag\": false}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            },
+            {
+              "id": "route-12",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 9144.2,
+              "eval_count": 14,
+              "eval_duration_ms": 3498.2,
+              "thinking_chars": 0,
+              "raw_preview": "{\"need_memory\": false, \"need_rag\": true}",
+              "score": {
+                "json_ok": true,
+                "exact": true,
+                "memory_hit": true,
+                "rag_hit": true
+              }
+            }
+          ]
+        },
+        "select": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 31029.0,
+              "p95": 35729.9,
+              "max": 35729.9
+            },
+            "tokens_per_second_p50": 4.2,
+            "f1": 0.873,
+            "precision": 1.0,
+            "recall": 0.7917,
+            "format_ok_rate": 1.0,
+            "primary_metric": "f1",
+            "primary_value": 0.873
+          },
+          "rows": [
+            {
+              "id": "select-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 31890.0,
+              "eval_count": 8,
+              "eval_duration_ms": 1999.1,
+              "thinking_chars": 0,
+              "raw_preview": "1,3,5,6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  1,
+                  3,
+                  5,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1": 1.0
+              }
+            },
+            {
+              "id": "select-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 31029.0,
+              "eval_count": 8,
+              "eval_duration_ms": 1977.5,
+              "thinking_chars": 0,
+              "raw_preview": "6,5,3,1",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  6,
+                  5,
+                  3,
+                  1
+                ],
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1": 1.0
+              }
+            },
+            {
+              "id": "select-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 32932.9,
+              "eval_count": 4,
+              "eval_duration_ms": 960.2,
+              "thinking_chars": 0,
+              "raw_preview": "5,6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  5,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 0.5,
+                "f1": 0.6667
+              }
+            },
+            {
+              "id": "select-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 35729.9,
+              "eval_count": 6,
+              "eval_duration_ms": 1422.0,
+              "thinking_chars": 0,
+              "raw_preview": "5,6,3",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  5,
+                  6,
+                  3
+                ],
+                "precision": 1.0,
+                "recall": 0.75,
+                "f1": 0.8571
+              }
+            },
+            {
+              "id": "select-5",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 27239.3,
+              "eval_count": 6,
+              "eval_duration_ms": 1399.7,
+              "thinking_chars": 0,
+              "raw_preview": "3,5,6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  3,
+                  5,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 0.75,
+                "f1": 0.8571
+              }
+            },
+            {
+              "id": "select-6",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 27204.0,
+              "eval_count": 6,
+              "eval_duration_ms": 1437.6,
+              "thinking_chars": 0,
+              "raw_preview": "3,5,6",
+              "score": {
+                "format_ok": true,
+                "picked": [
+                  3,
+                  5,
+                  6
+                ],
+                "precision": 1.0,
+                "recall": 0.75,
+                "f1": 0.8571
+              }
+            }
+          ]
+        },
+        "compress": {
+          "aggregate": {
+            "n": 6,
+            "ok": 5,
+            "failed": 1,
+            "latency_ms": {
+              "p50": 54979.2,
+              "p95": 134593.0,
+              "max": 134593.0
+            },
+            "tokens_per_second_p50": 3.5,
+            "fact_recall": 0.6333,
+            "compression_ratio": 0.4623,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 0.6333
+          },
+          "rows": [
+            {
+              "id": "compress-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 85401.3,
+              "eval_count": 192,
+              "eval_duration_ms": 54766.6,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，回写侧三路逐路独立入队且权威回执以回写队列表为准。\n2. 记忆往返闭环判据为同一主体连续两轮对话中第 2 轮注入 5 条且 segment_tokens.memory>0，资源键需为 tenant-1_179fc89c 形态且派生源一致。\n3. 知识库检索命中真实 Open",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 0.4623
+              }
+            },
+            {
+              "id": "compress-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 54405.8,
+              "eval_count": 192,
+              "eval_duration_ms": 53867.7,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，回写侧三路逐路独立入队且权威回执以回写队列表为准。\n2. 记忆往返闭环判据为同一主体连续两轮对话中第 2 轮注入 5 条且 segment_tokens.memory>0，资源键需为 tenant-1_179fc89c 形态且派生源一致。\n3. 知识库检索命中真实 Open",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.4623
+              }
+            },
+            {
+              "id": "compress-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 54979.2,
+              "eval_count": 192,
+              "eval_duration_ms": 54339.7,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，回写侧三路逐路独立入队且权威回执以回写队列表为准。\n2. 记忆往返闭环判据为同一主体连续两轮对话中第 2 轮注入 5 条且 segment_tokens.memory>0，资源键需为 tenant-1_179fc89c 形态且派生源一致。\n3. 知识库检索命中真实 Open",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.6667,
+                "compression_ratio": 0.4623
+              }
+            },
+            {
+              "id": "compress-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 54760.9,
+              "eval_count": 192,
+              "eval_duration_ms": 54144.6,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，回写侧三路逐路独立入队且权威回执以回写队列表为准。\n2. 记忆往返闭环判据为同一主体连续两轮对话中第 2 轮注入 5 条且 segment_tokens.memory>0，资源键需为 tenant-1_179fc89c 形态且派生源一致。\n3. 知识库检索命中真实 Open",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.4623
+              }
+            },
+            {
+              "id": "compress-5",
+              "ok": false,
+              "error": "http=500 {\"error\":\"an error was encountered while running the model: read tcp 127.0.0.1:56530-\\u003e127.0.0.1:62280: wsarecv: An existing connection was forcibly closed by the remote host.\"}",
+              "elapsed_ms": 52738.24720000266,
+              "eval_count": null,
+              "eval_duration_ms": null,
+              "thinking_chars": null,
+              "raw_preview": "",
+              "score": {
+                "error": "http=500 {\"error\":\"an error was encountered while running the model: read tcp 127.0.0.1:56530-\\u003e127.0.0.1:62280: wsarecv: An existing connection was forcibly closed by the remote host.\"}"
+              }
+            },
+            {
+              "id": "compress-6",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 134593.0,
+              "eval_count": 192,
+              "eval_duration_ms": 54309.1,
+              "thinking_chars": 0,
+              "raw_preview": "1. 会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，回写侧三路逐路独立入队且权威回执以回写队列表为准。\n2. 记忆往返闭环判据为同一主体连续两轮对话中第 2 轮注入 5 条且 segment_tokens.memory>0，资源键需为 tenant-1_179fc89c 形态且派生源一致。\n3. 知识库检索命中真实 Open",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.5,
+                "compression_ratio": 0.4623
+              }
+            }
+          ]
+        },
+        "summarize": {
+          "aggregate": {
+            "n": 5,
+            "ok": 5,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 99477.0,
+              "p95": 140694.3,
+              "max": 140694.3
+            },
+            "tokens_per_second_p50": 3.7,
+            "fact_recall": 0.2667,
+            "compression_ratio": 0.9335,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 0.2667
+          },
+          "rows": [
+            {
+              "id": "summarize-1",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 140694.3,
+              "eval_count": 93,
+              "eval_duration_ms": 25401.6,
+              "thinking_chars": 0,
+              "raw_preview": "会话编排读侧顺序固定为 auth → profile_fetch → memory/rag → 上下文装配 → llm，回写侧三路（memory / rag / profile）逐路独立入队且权威回执以回写队列表为准。知识库样本标识 AGENT-CTX-KB-20260926，预算代号 CONTEXT-BUDGET-4096，端到端实测 21.4 秒通过。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 1.0,
+                "compression_ratio": 0.989
+              }
+            },
+            {
+              "id": "summarize-2",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 99477.0,
+              "eval_count": 69,
+              "eval_duration_ms": 18791.4,
+              "thinking_chars": 0,
+              "raw_preview": "同一主体连续两轮对话中，第 2 轮记忆段需注入 5 条且 segment_tokens.memory 大于 0；读路径资源键为 tenant-1_179fc89c 形态。回写必须用同一事实源派生，否则因落在两个键上导致永不沉淀。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.1667,
+                "compression_ratio": 0.9421
+              }
+            },
+            {
+              "id": "summarize-3",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 133667.7,
+              "eval_count": 65,
+              "eval_duration_ms": 16204.8,
+              "thinking_chars": 0,
+              "raw_preview": "OpenRAG 命中时 rag_source=external；外部不可用且开启回退开关时 rag_source=builtin，但内置 RAG 需租户存在知识库记录与 FAISS 索引。本环境实测知识库表 0 行、索引目录 0 个，导致接管后注入为空。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.1667,
+                "compression_ratio": 0.9203
+              }
+            },
+            {
+              "id": "summarize-4",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 19316.0,
+              "eval_count": 45,
+              "eval_duration_ms": 12180.2,
+              "thinking_chars": 0,
+              "raw_preview": "画像段由 DPS 提供且固定注入，受 PROFILE_INJECTION_ENABLED 总开关控制；拉取失败开启 30 秒负缓存以规避约 2.04 秒的连接代价。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 0.8542
+              }
+            },
+            {
+              "id": "summarize-5",
+              "ok": true,
+              "error": null,
+              "elapsed_ms": 20833.6,
+              "eval_count": 52,
+              "eval_duration_ms": 13997.7,
+              "thinking_chars": 0,
+              "raw_preview": "组件路由阈值 0.85：单次关键词命中置信度 0.8 不达标回落最优候选；同一规则命中两次为 0.95 进入信号并集，记忆与知识库同时装配，路径为 C。",
+              "score": {
+                "format_ok": true,
+                "fact_recall": 0.0,
+                "compression_ratio": 0.962
+              }
+            }
+          ]
+        }
+      },
+      "warmup": {
+        "ok": true,
+        "error": null,
+        "load_duration_ms": 48214.9,
+        "elapsed_ms": 60552.9
+      },
+      "unavailable": false,
+      "runtime": {
+        "size_vram_bytes": 0,
+        "size_bytes": 3134277548,
+        "inference": "cpu_or_partial"
+      }
+    },
+    "rule-baseline(no-model)": {
+      "model": "rule-baseline(no-model)",
+      "unavailable": false,
+      "runtime": {
+        "inference": "n/a(规则档)",
+        "size_vram_bytes": 0,
+        "size_bytes": 0
+      },
+      "tasks": {
+        "compress": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "fact_recall": 1.0,
+            "compression_ratio": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 1.0,
+            "note": "原文原样保留（未压缩）"
+          },
+          "rows": []
+        },
+        "summarize": {
+          "aggregate": {
+            "n": 5,
+            "ok": 5,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "fact_recall": 1.0,
+            "compression_ratio": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "fact_recall",
+            "primary_value": 1.0,
+            "note": "原文原样保留（未压缩）"
+          },
+          "rows": []
+        },
+        "select": {
+          "aggregate": {
+            "n": 6,
+            "ok": 6,
+            "failed": 0,
+            "latency_ms": {
+              "p50": 0.0,
+              "p95": 0.0,
+              "max": 0.0
+            },
+            "tokens_per_second_p50": 0.0,
+            "f1": 0.5714,
+            "precision": 0.4,
+            "recall": 1.0,
+            "format_ok_rate": 1.0,
+            "primary_metric": "f1",
+            "primary_value": 0.5714,
+            "note": "全选（不做相关性筛选）"
+          },
+          "rows": []
+        }
+      }
+    }
+  }
+}
