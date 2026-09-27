@@ -1,0 +1,113 @@
+{
+  "probe": "memory_payload_mode",
+  "ruling": "§9 问题 4：默认 verbatim（整轮全文）；摘要可选、可配置、可回退，当前不启用",
+  "source_response_chars": 200,
+  "sample_summary_chars": 60,
+  "cases": [
+    {
+      "case": "① 默认 verbatim",
+      "payload_response_chars": 200,
+      "payload_response_is_verbatim": true,
+      "memory_type": null,
+      "origin_kept": false,
+      "applied": false,
+      "reason": "verbatim（默认口径：整轮全文入库）",
+      "expect_applied": false,
+      "ok": true
+    },
+    {
+      "case": "② summary 但未注入提炼器",
+      "payload_response_chars": 200,
+      "payload_response_is_verbatim": true,
+      "memory_type": null,
+      "origin_kept": false,
+      "applied": false,
+      "reason": "未注入提炼器 ⇒ 回退 verbatim（fail-safe）",
+      "expect_applied": false,
+      "ok": true
+    },
+    {
+      "case": "③ summary 且提炼器异常",
+      "payload_response_chars": 200,
+      "payload_response_is_verbatim": true,
+      "memory_type": null,
+      "origin_kept": false,
+      "applied": false,
+      "reason": "提炼器异常 ⇒ 回退 verbatim: 模型不可用",
+      "expect_applied": false,
+      "ok": true
+    },
+    {
+      "case": "④ summary 返回空",
+      "payload_response_chars": 200,
+      "payload_response_is_verbatim": true,
+      "memory_type": null,
+      "origin_kept": false,
+      "applied": false,
+      "reason": "摘要为空 ⇒ 回退 verbatim",
+      "expect_applied": false,
+      "ok": true
+    },
+    {
+      "case": "⑤ summary 过短（< 40）",
+      "payload_response_chars": 200,
+      "payload_response_is_verbatim": true,
+      "memory_type": null,
+      "origin_kept": false,
+      "applied": false,
+      "reason": "摘要过短（2 < 40）⇒ 回退 verbatim",
+      "expect_applied": false,
+      "ok": true
+    },
+    {
+      "case": "⑥ summary 未压缩（返回原文）",
+      "payload_response_chars": 200,
+      "payload_response_is_verbatim": true,
+      "memory_type": null,
+      "origin_kept": false,
+      "applied": false,
+      "reason": "摘要未短于原文（无压缩收益）⇒ 回退 verbatim",
+      "expect_applied": false,
+      "ok": true
+    },
+    {
+      "case": "⑦ summary 生效（保留原文）",
+      "payload_response_chars": 60,
+      "payload_response_is_verbatim": false,
+      "memory_type": "summary",
+      "origin_kept": true,
+      "applied": true,
+      "reason": "摘要生效（60 / 200 字符）",
+      "expect_applied": true,
+      "ok": true
+    },
+    {
+      "case": "⑧ summary 生效（不保留原文）",
+      "payload_response_chars": 60,
+      "payload_response_is_verbatim": false,
+      "memory_type": "summary",
+      "origin_kept": false,
+      "applied": true,
+      "reason": "摘要生效（60 / 200 字符）",
+      "expect_applied": true,
+      "ok": true
+    },
+    {
+      "case": "⑨ 配置非法 ⇒ fail-safe",
+      "payload_response_chars": 200,
+      "payload_response_is_verbatim": true,
+      "memory_type": null,
+      "origin_kept": false,
+      "applied": false,
+      "reason": "verbatim（默认口径：整轮全文入库）",
+      "expect_applied": false,
+      "ok": true
+    }
+  ],
+  "guardrail_summary": "改写**仅在**以下五条全部满足时发生：已注入提炼器 / 未抛异常 / 非空 / ≥ MIN_CHARS / 严格短于原文；任一不满足 ⇒ 回退 verbatim（默认路径零改动）",
+  "self_check": {
+    "ok": true,
+    "sample_summary_chars": 60,
+    "mismatched": []
+  }
+}
