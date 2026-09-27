@@ -1,0 +1,21 @@
+{
+  "probe": "cr149_log_hygiene",
+  "scanned_files": 15,
+  "logger_calls": 53,
+  "flagged": [
+    {
+      "file": "app/api/writeback.py",
+      "line": 232,
+      "risky_fields": [
+        "updates"
+      ],
+      "safe_markers": [
+        "_id",
+        "id="
+      ],
+      "call": "( \"画像回写无操作（调用方未提供 updates/extract_targets 可提炼字段）: \" \"user_id=%s —— 按契约不发起空更新（避免 400 与伪造数据）\", kwargs.get(\"user_id\", \"\"), )"
+    }
+  ],
+  "rule": "AGENTS.md §3：禁止记录 密码/令牌/密钥/完整请求体/个人隐私",
+  "method_note": "只做「字段名出现」检出；判定须人工确认是否为整值（长度/计数/标识为安全衍生量）"
+}

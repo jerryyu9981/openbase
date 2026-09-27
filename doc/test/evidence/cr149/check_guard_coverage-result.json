@@ -1,0 +1,26 @@
+{
+  "probe": "check_guard_coverage",
+  "design_doc": "OpenBase-上下文精装配与组件通道优化技术方案-v1.18.2.md",
+  "claimed_and_defined": 91,
+  "has_name_reference": 74,
+  "no_name_reference": [
+    "VectorStoreService",
+    "_build_history_for_request",
+    "_cache_get",
+    "_cache_put",
+    "_fit_single_unit",
+    "_format_list",
+    "_history_budget_tokens",
+    "_is_adjacent_synonym",
+    "_merge_adjacent_synonyms",
+    "_parse_timestamp",
+    "_rank_score",
+    "_sql_where",
+    "_writeback_channel_primary",
+    "apply_context_budget",
+    "grade_rag_ingest",
+    "is_redundant_pair",
+    "resolve_system_prompt"
+  ],
+  "method_note": "只审代码符号（def/class），不审配置键；判定＝在 tests/ 与证据目录中出现符号名；无按名引用不等于无护栏（可能仅行为级覆盖）⇒ 清单供人工判定，工具不代判"
+}
