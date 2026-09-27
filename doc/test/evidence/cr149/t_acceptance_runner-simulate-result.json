@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-09-27T13:06:39",
+  "generated_at": "2026-09-27T13:17:24",
   "simulate": true,
   "summary": {
-    "PASS": 9,
+    "PASS": 10,
     "FAIL": 0,
-    "SKIP": 1,
+    "SKIP": 0,
     "BLOCKED": 2
   },
   "verdicts": [
@@ -93,23 +93,49 @@
     },
     {
       "criterion": "T3",
-      "title": "检索：rerank / score_threshold 透传且低分条目被过滤",
+      "title": "检索：rerank / score_threshold 透传、低分过滤与「开启即生效」",
       "status": "PASS",
       "requires": [
-        "RAG_RERANK_ENABLED=False",
-        "RAG_SCORE_THRESHOLD=0.0"
+        "RAG_RERANK_ENABLED=True",
+        "RAG_SCORE_THRESHOLD=0.15"
       ],
       "detail": {
-        "resolved_search_params": {
+        "item_level_params": {
           "rerank": true,
           "score_threshold": 0.5
+        },
+        "global_fallback_params": {
+          "rerank": true,
+          "score_threshold": 0.15
+        },
+        "zero_threshold_params": {
+          "rerank": true,
+          "score_threshold": null
+        },
+        "bad_threshold_params": {
+          "rerank": true,
+          "score_threshold": null
         },
         "items_before": 4,
         "items_after": 2,
         "filtered_scores": [
           0.91,
           0.62
-        ]
+        ],
+        "effective_segment": {
+          "capability_probe": {
+            "rerank": true,
+            "score_threshold": 0.15
+          },
+          "capability_verified": true,
+          "switch_on_now": true,
+          "threshold_on_now": true,
+          "resolved_without_item_params": {
+            "rerank": true,
+            "score_threshold": 0.15
+          }
+        },
+        "runtime_pending": "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的运行态复核；本判据只覆盖网关侧口径与「开启即生效」"
       },
       "reason": ""
     },
@@ -224,7 +250,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.375,
+        "concurrent_components_wall_seconds": 0.343,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -233,14 +259,11 @@
     {
       "criterion": "T8",
       "title": "调度：无依赖即并行、依赖声明保序、成环 fail-safe",
-      "status": "SKIP",
-      "requires": [
-        "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED=False",
-        "OPENLLM_COMPONENT_DEPENDENCIES="
-      ],
+      "status": "PASS",
+      "requires": [],
       "detail": {
-        "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.062,
+        "switch_enabled_in_config": true,
+        "parallel_wall_seconds": 0.063,
         "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
@@ -261,11 +284,11 @@
           ]
         ],
         "config_state": {
-          "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED": false,
+          "COMPONENT_DEPENDENCY_SCHEDULING_ENABLED": true,
           "OPENLLM_COMPONENT_DEPENDENCIES": ""
         }
       },
-      "reason": "能力已达标（临时置位验证），但配置开关仍为关：开启后本判据即为 PASS"
+      "reason": ""
     },
     {
       "criterion": "T9",

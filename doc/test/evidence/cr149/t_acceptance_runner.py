@@ -72,6 +72,16 @@ def _char_counter(text: str) -> int:
     return len(text or "")
 
 
+def _float_or_none(value: Any) -> float | None:
+    """宽松取浮点：`None` / 不可解析一律返回 `None`（判据用，不抛异常）"""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _settings_snapshot(keys: list[str]) -> dict[str, Any]:
     from app.core.config import settings
 
@@ -279,56 +289,149 @@ def check_t2() -> Verdict:
 # ---------------------------------------------------------------- T3 重排与阈值
 
 def check_t3() -> Verdict:
-    """T3：rerank 与 score_threshold 透传，低分条目被过滤（条目数降、score 单调）"""
-    title = "检索：rerank / score_threshold 透传且低分条目被过滤"
+    """T3：rerank / score_threshold 透传与低分过滤（**v1.18.1 起分两段**）
+
+    **订正动因（判据保真度缺陷，与 T10 ④ 同源思路）**：本判据原**只**在**条目级**
+    传参（`rerank=True` / `score_threshold=0.5`）下断言「透传 ＋ 过滤后条目数下降、
+    score 单调」，**全程未触及全局开关**，却在**开关默认关闭**时判 `PASS` —— 而 §7 的
+    T3 原文是「**启用 rerank 后** rag 条目的 score 单调性成立、低分条目被
+    `score_threshold` 过滤」。即：**判据被实现成了「透传契约」，却挂着「启用后生效」的名字**
+    ⇒ 会把「开关关着时透传口径正确」误读为「rerank 已达标可用」。
+
+    现拆两段（与 T4 / T5 / T6 同一写法）：
+
+      ① **口径段（无开关，恒可判）**：条目级参数优先级、`0/负值 ⇒ 不过滤`、
+         非法值不抛异常、阈值过滤后条目数下降且 score 单调；
+      ② **生效段（需开关）**：`RAG_RERANK_ENABLED=True` 且 `RAG_SCORE_THRESHOLD>0` 时，
+         **未传条目参数**的检索其解析结果须确实带上重排与阈值 ⇒ 证明「开关开启即生效」；
+         开关未开 ⇒ 本段 `SKIP`（口径同 T5 段①）。**真实检索侧重排效果**（服务端
+         rerank 质量）仍属运行态，如实留 `runtime_pending`。
+    """
+    title = "检索：rerank / score_threshold 透传、低分过滤与「开启即生效」"
     from app.api.openllm_gateway import _rag_search_params
     from app.core.config import settings
 
-    params = {
-        "rerank": True,
-        "score_threshold": 0.5,
-        "kb_id": "kb-probe",
-        "query": "q",
-        "top_k": 5,
-    }
-    resolved = _rag_search_params(params)
+    failures: list[str] = []
+
+    # ---- 段① 口径（恒可判） ----
+    item_level = _rag_search_params(
+        {
+            "rerank": True,
+            "score_threshold": 0.5,
+            "kb_id": "kb-probe",
+            "query": "q",
+            "top_k": 5,
+        }
+    )
+    global_level = _rag_search_params({"kb_id": "kb-probe", "query": "q"})
+    zero_threshold = _rag_search_params({"score_threshold": 0})
+    bad_threshold = _rag_search_params({"score_threshold": "not-a-number"})
+
     scored_items = [
         {"id": "a", "score": 0.91},
         {"id": "b", "score": 0.62},
         {"id": "c", "score": 0.31},
         {"id": "d", "score": 0.05},
     ]
-    filtered = [
-        item for item in scored_items if item["score"] >= resolved["score_threshold"]
-    ]
+    threshold = float(item_level["score_threshold"] or 0.0)
+    filtered = [item for item in scored_items if item["score"] >= threshold]
     scores = [item["score"] for item in filtered]
     monotonic = all(
         left >= right for left, right in zip(scores, scores[1:], strict=False)
     )
-    failures = []
-    if resolved.get("rerank") is not True:
-        failures.append("rerank 未透传")
-    if resolved.get("score_threshold") != 0.5:
-        failures.append(f"score_threshold 未透传：{resolved.get('score_threshold')}")
+
+    if item_level.get("rerank") is not True:
+        failures.append("条目级 rerank 未透传")
+    if _float_or_none(item_level.get("score_threshold")) != 0.5:
+        failures.append(f"条目级 score_threshold 未透传：{item_level.get('score_threshold')}")
     if len(filtered) >= len(scored_items):
         failures.append("低分条目未被阈值过滤（条目数未下降）")
     if not monotonic:
         failures.append("过滤后 score 非单调递减")
+    if zero_threshold.get("score_threshold") is not None:
+        failures.append(f"阈值 0 应视为「不过滤」（None）：{zero_threshold!r}")
+    if bad_threshold.get("score_threshold") is not None:
+        failures.append(f"非法阈值应归零（None）且不抛异常：{bad_threshold!r}")
+    if bool(global_level.get("rerank")) != bool(
+        getattr(settings, "RAG_RERANK_ENABLED", False)
+    ):
+        failures.append(
+            f"未传条目参数时未按全局配置取 rerank：{global_level!r}"
+        )
+
+    # ---- 段② 生效（需开关；关闭时以临时置位证明「开启后即达标」，口径同 T8） ----
+    switch_on = bool(getattr(settings, "RAG_RERANK_ENABLED", False))
+    threshold_on = float(getattr(settings, "RAG_SCORE_THRESHOLD", 0.0) or 0.0) > 0
+    with _temporary_settings(RAG_RERANK_ENABLED=True, RAG_SCORE_THRESHOLD=0.15):
+        capability = _rag_search_params({"kb_id": "kb-probe", "query": "q"})
+    capability_ok = bool(capability.get("rerank")) and (
+        _float_or_none(capability.get("score_threshold")) == 0.15
+    )
+    if not capability_ok:
+        failures.append(f"临时置位后重排/阈值仍未生效：{capability!r}")
+
+    effective_detail: dict[str, Any] = {
+        "capability_probe": capability,
+        "capability_verified": capability_ok,
+        "switch_on_now": switch_on,
+        "threshold_on_now": threshold_on,
+    }
+    if switch_on and threshold_on:
+        effective_detail["resolved_without_item_params"] = global_level
+        if not global_level.get("rerank"):
+            failures.append("开关已开但重排未生效")
+        if _float_or_none(global_level.get("score_threshold")) is None:
+            failures.append("开关已开但阈值未生效（解析为 None）")
+
+    detail: dict[str, Any] = {
+        "item_level_params": item_level,
+        "global_fallback_params": global_level,
+        "zero_threshold_params": zero_threshold,
+        "bad_threshold_params": bad_threshold,
+        "items_before": len(scored_items),
+        "items_after": len(filtered),
+        "filtered_scores": scores,
+        "effective_segment": effective_detail,
+        "runtime_pending": (
+            "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的"
+            "运行态复核；本判据只覆盖网关侧口径与「开启即生效」"
+        ),
+    }
+
+    if failures:
+        return Verdict(
+            criterion="T3",
+            title=title,
+            status=STATUS_FAIL,
+            requires=[
+                f"RAG_RERANK_ENABLED={switch_on}",
+                f"RAG_SCORE_THRESHOLD={getattr(settings, 'RAG_SCORE_THRESHOLD', None)}",
+            ],
+            detail=detail,
+            reason="；".join(failures),
+        )
+    if not (switch_on and threshold_on):
+        verdict = _switch_off_verdict(
+            "T3",
+            title,
+            ["RAG_RERANK_ENABLED", "RAG_SCORE_THRESHOLD"],
+        )
+        verdict.detail = detail
+        verdict.reason = (
+            "段①口径（无开关，恒可判）已达标：条目级透传优先、阈值 0/非法 ⇒ 不过滤、"
+            "过滤后条目数下降且 score 单调；段②能力已用**临时置位**验证通过"
+            "（rerank=true / threshold=0.15，进程内退出恢复）—— 待开关开启后复跑即为 PASS"
+        )
+        return verdict
     return Verdict(
         criterion="T3",
         title=title,
-        status=STATUS_FAIL if failures else STATUS_PASS,
+        status=STATUS_PASS,
         requires=[
-            f"RAG_RERANK_ENABLED={getattr(settings, 'RAG_RERANK_ENABLED', None)}",
+            f"RAG_RERANK_ENABLED={switch_on}",
             f"RAG_SCORE_THRESHOLD={getattr(settings, 'RAG_SCORE_THRESHOLD', None)}",
         ],
-        detail={
-            "resolved_search_params": resolved,
-            "items_before": len(scored_items),
-            "items_after": len(filtered),
-            "filtered_scores": scores,
-        },
-        reason="；".join(failures),
+        detail=detail,
     )
 
 
@@ -1691,6 +1794,11 @@ def main() -> int:
         _temporary_settings(
             CONTEXT_BUDGET_ENABLED=True,
             WRITEBACK_DECISION_ENABLED=True,
+            # v1.18.1：把另两项开关门控的判据一并纳入模拟置位，使 `--simulate` 能一次
+            # 证明「全部开关开启后即达标」（T3 检索侧重排 / T8 依赖图调度）。
+            RAG_RERANK_ENABLED=True,
+            RAG_SCORE_THRESHOLD=0.15,
+            COMPONENT_DEPENDENCY_SCHEDULING_ENABLED=True,
         )
         if args.simulate
         else None

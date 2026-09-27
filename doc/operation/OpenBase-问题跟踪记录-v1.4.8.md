@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.53.0 |
+| 文档版本 | v1.54.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops / AA-OpenBase-Dev |
 | 创建日期 | 2026-09-21 |
@@ -1029,6 +1029,48 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4V. 判据保真度订正（T3 分段）＋ 开关开启值批准包 ＋ 配置面死开关护栏（2026-09-27）
+
+### 4V.1 发现与取证
+
+| 类别 | 取证 |
+|------|------|
+| **① 判据保真度缺陷（本轮新发现，与 T10④ 同源）** | §7 **T3** 原文＝「**启用 rerank 后** rag 条目的 score 单调性成立、低分条目被 `score_threshold` 过滤」。**取证**：执行器 `check_t3` **只在条目级传参**（`rerank=True` / `score_threshold=0.5`）下断言「透传 ＋ 过滤后条目数下降、score 单调」，**全程未触及全局开关**（`RAG_RERANK_ENABLED` 实测 **False**）却判 `PASS` ⇒ **判据被实现成「透传契约」却挂着「启用后生效」的名字**，会把「开关关着时口径正确」误读为「rerank 已达标可用」 |
+| **② 判据前进的唯一前置未交付** | §7 的 T1/T2/T3/T5/T8 在**当前配置**下为 `SKIP`。`SKIP` 的语义是「**开关未开**」而非「能力不足」，而 §7 要求「**人工批准开关开启值后复跑**」⇒ **批准所需输入（建议开哪些键、什么值、依据、影响、回退）此前无交付物** |
+| **③ 契约面「只写不读」类缺陷的推广面** | §4U 已确认 `save_if_valuable` **只写不读**（本方案范围内的真实缺陷）。同一口径推广到**配置面**：`config.py` 声明、`backend/` 内**无读取点**的键＝**死开关**（打开不产生行为，却被读作「该能力已接线」）。**首版脚本只扫 `app/`**，把读点在 **`backend/main.py`（lifespan 驱动清理循环）** 的 `WRITEBACK_CLEANUP_INTERVAL_SECONDS` **误报**为死开关（**审计口径缺陷，已如实登记并修正**） |
+
+### 4V.2 实施内容
+
+| 项 | 内容 |
+|----|------|
+| **(1) T3 拆两段（判据订正）** | ① **口径段（无开关，恒可判）**＝条目级参数**优先**于全局配置、`0`/非法值 ⇒ **不过滤**（解析为 `None`）、阈值过滤后**条目数下降**且 score **单调**；② **生效段（需开关）**＝`RAG_RERANK_ENABLED=True` 且 `RAG_SCORE_THRESHOLD>0` 时**未传条目参数**的检索其解析结果确实带上重排与阈值；**开关关闭时以临时置位证明能力**（口径同 T8），**真实检索侧重排质量**留 `detail.runtime_pending` |
+| **(2) `--simulate` 置位集合扩展** | 由「`CONTEXT_BUDGET_ENABLED` ＋ `WRITEBACK_DECISION_ENABLED`」**扩为再含** `RAG_RERANK_ENABLED`/`RAG_SCORE_THRESHOLD` 与 `COMPONENT_DEPENDENCY_SCHEDULING_ENABLED` ⇒ **一次运行即可证明全部四处开关门控判据（T1/T2/T3/T5/T8）在开启态均达标** |
+| **(3) 新增方案 §7.1「开关开启值建议（批准包）」** | **18 行**逐键给出「当前值 → 建议值 / 设计·实测依据 / 开启后影响面 / 回退方式」＋**批准粒度与门禁**：**建议本次开启** 6 项（含 `CONTEXT_REFINE_TRIGGER_ENABLED`＝**纯观测、零注入变化**）；**建议暂缓** 1 项（引用编号，依赖归因 A 消费方）；**依赖裁定不得代行** 3 项（§9 问题 1/3/5 与业务文案）；**明确维持关闭** 1 项（LLM 兜底分类器，开启前置未满足）；**复跑命令**随节给出（一条命令） |
+| **(4) 配置面死开关结构护栏** | 新增 `tests/unit/test_cr149_config_keys_wired.py`（**4 例**）：受护栏前缀**全部配置键**须在 **`backend/` 全树**（排除 `tests/` 与 `config.py` 自身）**至少一个读取点**；「未接线集合」须**恰为已登记白名单**（**双向报警**）；白名单**逐项给出理由**；另以断言**锁定扫描覆盖 `backend/main.py`** 与**排除 `tests/`** |
+
+### 4V.3 验证与证据
+
+| 项 | 结果 |
+|----|------|
+| 执行器两态（订正后） | **当前配置** ⇒ `{PASS:5（T7/T9/T10/T11/T12）, SKIP:5（T1/T2/T3/T5/T8）, BLOCKED:2（T4/T6）, FAIL:0}`；`--simulate` ⇒ **`{PASS:10, SKIP:0, BLOCKED:2, FAIL:0}`** —— T3 由「误判 PASS」改为**如实 SKIP ＋ 能力已验证据**（**判据更正，非能力回退**） |
+| 新增护栏 | `test_cr149_config_keys_wired.py` **4 例全绿**；**审计结论**：本方案范围 **48 键全部有读取点 ⇒ 未发现死开关**；唯一未接线键 `PROFILE_DRIFT_RECOMPUTE_INTERVAL` 属 **DT-214-305**（非本方案范围，按设计只交付驱动侧接口）⇒ 白名单并给理由 |
+| **全量回归** | `cr149-t20-full.txt`：**21 failed / 3234 passed / 0 error**（256.99 s；较上轮 3230 增 **4** ＝本批护栏）；**与上一轮逐项 testid 归一化 `Compare-Object` 差异 0 项 ⇒ 零回归**；**连续三轮（`t18`/`t19`/`t20`）失败集逐项零差异** ⇒ 判据订正后**可复现** |
+| 静态质量 | 本批 1 文件 `ruff` **All checks passed**；执行器与探针 `ruff` **All checks passed** |
+| 提交 | OpenLLM `7efa6ec`（`test(v149)`，1 文件 `+121`），显式路径、TDD 合规 |
+
+### 4V.4 关系与影响面
+
+| 项 | 说明 |
+|----|------|
+| 方案 §7 | **T3 拆两段**（口径段恒可判 / 生效段需开关）；`--simulate` 置位集合扩展 |
+| 方案 §7.1 | **新增「开关开启值建议（批准包）」** —— 使「人工批准开关值」成为**单步动作** |
+| 方案 §10 | 新增**待登记项 11**（配置面死开关审计 ＋ 审计口径修正） |
+| 语义与影响面 | **本批无生产代码改动**（执行器 / 文档 / 护栏均在**判据与工具侧**）⇒ **线上行为零变化**；T3 能力本身**未回退**（临时置位验证通过） |
+| **待人工动作（唯一前置）** | 按 §7.1 批准「建议本次开启」6 项（**其中引用编号建议暂缓、3 项依赖 §9 裁定不得代行**）后，执行 `t_acceptance_runner.py` 一条命令复跑 ⇒ T1/T2/T3/T5/T8 由 `SKIP` 转 `PASS` |
+| 本方案内未闭环项 | **0 项**（判据保真度缺陷**已闭环**；未实施项均为受阻项） |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
@@ -1098,3 +1140,4 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 | **v1.51.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **逐条复核发现的第 4 处「正文已指定但未实施」（§4S 新建）：§5.8「路由分类按 query 归一化缓存」同版实施闭环（判据 T9 补 ④）；无新增缺陷、无新增债务**。① **来源**：《OpenBase-上下文精装配与组件通道优化技术方案》**v1.16.0** §5.8/§7 T9；实现在 OpenLLM 仓（其《DevLogReport》**v1.32.0** 第 43 批，提交 `3bb9a3f`）。② **审计发现（取证）**：§5.8 在线档预算行要求「**路由分类按 query 归一化缓存**」（同题重复提问不重复分类、不重付 **≤300ms** 兜底预算）；**`ComponentRouter` 全类检索 `cache` 零命中**、`decide()` 每次未命中规则都**重新调用** `llm_classifier` ⇒ 重复提问**重复付预算**。**关键约束**：**联网关每次请求都新建 `ComponentRouter`**（分类器闭包捕获 db/identity）⇒ 缓存**必须进程级**，否则永不命中。③ **实施**：进程级 LRU（`_LLM_DECISION_CACHE` ＋ 锁）；键 ＝ **`模型标签:规则指纹`** ＋ **归一化 query**（压缩空白 ＋ 大小写不敏感）；`_refresh_rules_fingerprint()` 在两处规则替换点（初始加载 / 热更新）调用 ⇒ **规则变更后旧条目自然失配**；作用域含模型标签 ⇒ **换模型亦失配**；**命中返回副本**、**失败与非法输出不入缓存**、**容量 0 = 关闭**（逐字回退）；`COMPONENT_ROUTER_LLM_CACHE_SIZE` 默认 **256**；新增 `clear_llm_decision_cache()` / `llm_decision_cache_size()` 供隔离与观测。④ **同批隔离修正（非放宽）**：进程级缓存使两处既有文件中「同一 query ＋ 不同分类器替身」用例**跨用例命中**（实测 **4 failed**）⇒ 各加 **autouse 清缓存 fixture**，**不改任何断言**；修正后两文件 **77 例全绿**。⑤ **判据与验证**：§7 **T9 补 ④**，执行器 `check_t9` **PASS**；新增护栏 **14 例**（首轮 **RED 6 failed**）；**运行态探针** `component_decision_probe.py` **④** 段（`same_query_calls=1`/`distinct_query_calls=2`/`cached_decision_equal=true`/`capacity_zero_calls=2`/`default_capacity=256`）；执行器两态 `{PASS:5, SKIP:4, BLOCKED:2, FAIL:0}` / `{PASS:8, SKIP:1, BLOCKED:2, FAIL:0}`。⑥ **回归与静态质量**：全量 `tests/unit` **32 failed / 3189 passed / 0 error**（249.94 s）；与上一轮基线逐项对照**唯一差异为既有 flaky `test_v213_gateway_ext.py` 一族本轮转红**（该例往返红/绿交替，已多次对照实验证明与本批无关）；**ruff 逐文件基线对照（`git stash` 回退后复测）**：`component_router.py` **39 → 39**、`config.py` **0 → 0**、既有测试文件 **0 → 0 / 2 → 2**、新测试文件 **0** ⇒ **零新增告警**。⑦ **语义与影响面**：缓存**仅在 LLM 兜底分类器被注入时生效**（`COMPONENT_ROUTER_LLM_FALLBACK_ENABLED` **默认关闭** ⇒ 线上默认路径**零影响**）；LRU 有界；命中返回副本、失败不固化、规则/模型变更即失配 ⇒ **不引入陈旧决策**。⑧ **关系与登记**：本记录 **§4S 新建**；方案 **v1.16.0**（§5.8 缓存行 ＋ §7 T9④ ＋ §10 待登记项 9 ＋ §11）；OpenLLM《DevLogReport》**v1.32.0**（第 43 批）与 **v1.32.1**（同批文档订正）；证据 `doc/test/evidence/cr149/component_decision_probe.py` 与 `-result.json`、`t_acceptance_runner-result.json`、`t_acceptance_runner-simulate-result.json`、`OpenLLM/backend/cr149-t16-full.txt`（全量回归）、`cr149-t15-full.txt`（基线对照）。⑨ **残留（未实施，如实登记）**：§5.8 **精炼结果缓存**（规则档确定性且亚毫秒 ⇒ 无收益；模型档属第三批 ⇒ 与第三批同批推进）、通道 A 定性（§9 问题 1）与 §4.3「写路径 A/B 等价」矩阵项、模型档生成式精炼、通道裁决进取数层、内置 RAG 种子底座（运行态 DB ＋ 嵌入模型）、§4.3 画像增量升级的线上 LLM 门控（§9 问题 7）、独立审计落库（方案 §10 待登记项 6）；**全仓未闭环项仍为 0**。⑩ 文档版本 **v1.50.0 → v1.51.0**，状态 [Review] |
 | **v1.52.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **复核发现「§5.2 精炼触发条件表 ＋ §5.3 任务护栏」未实施 → 判定部分同版闭环（§4T 新建；判据 T12 新增，执行器扩为 T1~T12）**。① **审计取证**：全仓检索 `should_refine` / `CONTEXT_REFINE` / `validate_refine` **零命中** ⇒ ① `CONTEXT_BUDGET_ENABLED` 打开后**一律走规则档**（无从判断「何时该升级到精炼」）；② 第三批接模型档时**缺少「何时该调模型」与「模型输出是否可用」两道闸门**。**为何可先行**：判定与校验均为**纯函数**（不依赖模型/运行态 DB）⇒ **进程内可判**。② **实施**：新增 `orchestration/refine.py`（纯函数库）—— `refine_triggers()`（行 1~3：超配额 **1.5** 倍 / 条目 > **8** / 重复占比 > **30%**，阈值全配置驱动、**严格大于**；`history`/`profile` 不参与）＋ `validate_refine_output()`（§5.3：`unlocatable` / `new_numbers` / `not_numbered` / `empty_output` ⇒ `valid=false` 即弃）；相似度与「相邻同义合并」**共用** `prompt_pipeline.is_redundant_pair`（避免分叉）；触发**观测**由 `CONTEXT_REFINE_TRIGGER_ENABLED`（默认关闭）驱动、**只读**（开关两态注入文本逐字相同）。③ **行 4（多源冲突）如实标注未实施**（需语义判定）⇒ `unimplemented=["multi_source_conflict"]` 显式列出、词表**不含** conflict 类理由（**不伪实现**）。④ **护栏（TDD，22 例，首轮 RED 5 failed）**：新增 `test_refine_trigger_and_guard.py`（含三条**阈值边界**不触发、行 4 未实施标注、护栏四类违规、开关两态注入文本逐字相同）。⑤ **探针**：新增 `refine_trigger_probe.py`（行 1 `160/100=true`/`150/100=false`；行 2 `9=true`/`8=false`；行 3 `50%=true`/`25%=false`；`prompt_identical=true`）。⑥ **判据**：§7 **新增 T12**（纯进程内可判）。⑦ **回归**：全量 `tests/unit` **31 failed / 3212 passed**，**失败集零新增**（唯一差异为既有 flaky 转绿）；`ruff` 全绿。⑧ **提交**：OpenLLM `4f3e706`（4 生产/配置 ＋ 1 测试，`+605/-7`）。**⑨ 同期文档整改（本次补记）**：本行对应批次**未同步写入 §5 修订历史与文档版本**（仅 §4T 正文），本次随 v1.53.0 一并**补记与升版**。状态 [Review] |
 | **v1.53.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **既有失败逐项分诊（31 → 21，闭环 10）＋ §4.3 执行层价值闸门补齐 ＋ 本方案自身判据的时效基准订正（§4U 新建）**。① **动因**：CR-149 此前各批次均以「与本批无关」的对照实验绕过 **31 项既有失败**，**从未逐项分诊** ⇒ 可能掩盖**本方案范围内的真实缺陷**。② **范围内真实缺陷（1 例，已修）**：`_rag_writeback` **只写不读** `save_if_valuable`（全仓**无读取方**）⇒ §4.3 要求的「实际判定**而非仅契约字段**」只落在**网关决策层**；**执行层**与**直接调用** `POST /openllm/v1/writeback` 的路径**不受闸门约束** ⇒ 显式声明「不值得沉淀」仍入库（**知识库膨胀入口未闭合**）。**修法**：`save_if_valuable=false` ⇒ **零请求**收口（INFO ＋ 返回 `None` ＋ 行置 done），**跳过先于适配器校验**（不写就不需要适配器），**缺省视为 true ⇒ 逐字回退**。③ **范围内陈旧/失隔离用例（9 例，已修且断言不降反升）**：`test_writeback_degradation` **3**（返回值元数 3→4 ＋ **替身注册顺序**须在构造回调之后 —— `DEF-BE-148-021` 的生产 handler 会覆盖先注册的替身）；`test_v213_gateway_ext` **3**（补丁替身 4→**5** 元组致端点 500；两例**不自持前置**致顺序漂移）；`test_real_contract_memory` **3**（`_resolve_memory_metadata` **全仓历史零命中**的**幻影符号**，已按**实际分层**重写为 4 例）。④ **本方案自身判据缺陷（3 项，已修）**：T10 ④ 与探针 (e) 以**硬编码时刻**作时效基准 ⇒ 断言**随壁钟自行翻转**（**同一提交** 12:00 前 `PASS`、之后 `FAIL`），且原断言与 fail-open 语义不符（fail-open 恰 1.0 ⇒ 等价「刚刚发生」而非「更差」）⇒ 改**相对基准** ＋ **严格单调**（1.0 > 0.977 > 0.0625）＋ **fail-open 恰为 1.0** 三条确定性判定，并落 `detail.rank_decay`；同源基准同步订正 `test_context_rank_selection.py::_iso`。⑤ **判据扩展**：**T5 分两段** —— 段②执行层闸门**无开关、恒生效** ⇒ 进程内恒可判、不达标即 `FAIL`；执行器新增 `_rag_value_gate_probe()`。⑥ **护栏**：新增 `test_rag_writeback_value_gate.py` **7 例**（RED 由既有用例 `test_save_if_valuable_false_skips_without_request` 指认）。⑦ **回归（两轮独立）**：`cr149-t18`/`cr149-t19` 均 **21 failed / 3230 passed / 0 error**（252 s），**新增失败集为空 ⇒ 零回归**、已消失 **10** 项，**两轮失败集逐项零差异 ⇒ 可复现**。⑧ **范围外（如实登记，未改）**：401 族 **9**（断言错误体不含 `detail`，与项目错误规范相反）／「模型不存在」错误码族 **3**（`2001` vs `5001`/`1004`）／环境条件类 **4**（工作区 `.env` 置三个 `REAL=true` 而用例断言 dev 缺省 false）／`test_model_router_wiring` **2**／`test_joinedload_asserts` **2**（用例自身构造错误）／`test_conversations_api` **1**。⑨ **提交**：OpenLLM `ee0dba9`（1 生产 ＋ 4 测试，`+327/-46`）。文档版本 **v1.51.0 → v1.53.0**（含补记 v1.52.0）。状态 [Review] |
+| **v1.54.0** | **2026-09-27** | **AA-OpenBase-Dev / AT-OpenBase-Test** | **判据保真度订正（T3 分段）＋ 开关开启值批准包交付（方案 §7.1）＋ 配置面死开关结构护栏（§4V 新建）**。① **判据保真度缺陷（本轮新发现，与 v1.53.0 订正的 T10④ 同源，已修）**：§7 **T3** 原文为「**启用 rerank 后** rag 条目的 score 单调性成立、低分条目被 `score_threshold` 过滤」，但执行器实现**只在条目级传参**（`rerank=True`/`score_threshold=0.5`）下断言「透传 ＋ 过滤后条目数下降、score 单调」，**全程未触及全局开关**（实测 `RAG_RERANK_ENABLED=False`）却判 `PASS` ⇒ **判据被实现成「透传契约」却挂着「启用后生效」的名字**，会把「开关关着时口径正确」误读为「rerank 已达标可用」。**修法（与 T4/T5/T6 同一写法）**：拆为 ① **口径段（无开关，恒可判）**＝条目级参数优先、`0`/非法值 ⇒ **不过滤**、过滤后**条目数下降**且 score **单调**；② **生效段（需开关）**＝开关开启后**未传条目参数**的检索确实带上重排与阈值（关闭时以**临时置位**证明能力，口径同 T8），真实检索侧重排质量留 `runtime_pending`。② **`--simulate` 置位集合扩展**：再含 `RAG_RERANK_ENABLED`/`RAG_SCORE_THRESHOLD` 与 `COMPONENT_DEPENDENCY_SCHEDULING_ENABLED` ⇒ **一次运行即证明全部四处开关门控判据（T1/T2/T3/T5/T8）在开启态均达标**；两态实测 **当前配置** `{PASS:5, SKIP:5, BLOCKED:2, FAIL:0}` / `--simulate` **`{PASS:10, SKIP:0, BLOCKED:2, FAIL:0}`**（T3 由「误判 PASS」改为**如实 SKIP ＋ 能力已验**，属**判据更正而非能力回退**）。③ **新增方案 §7.1「开关开启值建议（批准包）」**：§7 的 T1/T2/T3/T5/T8 在**当前配置**下为 `SKIP`（**开关未开**，非能力不足），而 §7 要求「**人工批准开关开启值后复跑**」——**批准是这些判据前进的唯一前置**，此前**无交付物**。§7.1 以 **18 行**逐键给出「当前值 → 建议值 / 设计·实测依据 / 影响面 / 回退」，并给出**批准粒度与门禁**：**建议本次开启 6 项**（`CONTEXT_BUDGET_ENABLED`、`CONTEXT_SYSTEM_PROMPT_ENABLED`、`RAG_RERANK_ENABLED`＋阈值 `0.15`、`COMPONENT_DEPENDENCY_SCHEDULING_ENABLED`、`WRITEBACK_DECISION_ENABLED`、`CONTEXT_REFINE_TRIGGER_ENABLED`＝**纯观测零注入变化**）；**建议暂缓 1 项**（`CONTEXT_REF_NUMBERS_ENABLED`，依赖**归因 A 消费方**解析标签，否则只是文本形态变更）；**依赖裁定不得代行 3 项**（窗口/预留＝§9 问题 3、system 指令**文案**＝业务口径、`CHANNEL_PREFERENCE`/自动回落＝§9 问题 1、5）；**明确维持关闭 1 项**（`COMPONENT_ROUTER_LLM_FALLBACK_ENABLED`：≤1B 分类器 300 ms 内不达标，本机 P50 2.33 s / 局域网 0.60 s）；**复跑命令**随节给出（一条命令）。**边界如实标注**：#11 `WRITEBACK_DECISION_ENABLED` **只决定「是否沉淀」**、`memory` 载荷**仍为整轮全文** ⇒ **不触及** §9 问题 4。④ **配置面「只写不读」审计推广（新增结构护栏 4 例）**：§4U 已确认 `save_if_valuable` **只写不读**（本方案范围内真实缺陷）；同口径推广到配置面即「**声明了但无读取点的键＝死开关**」。新增 `tests/unit/test_cr149_config_keys_wired.py`：受护栏前缀**全部配置键**须在 **`backend/` 全树**（排除 `tests/` 与 `config.py`）**至少一个读取点**，且「未接线集合」须**恰为已登记白名单**（多一个即新增死开关、少一个即已接线 ⇒ **双向报警**）；白名单**逐项给理由**；另以断言锁定「须覆盖 `backend/main.py`」与「排除 `tests/`」。**审计结论**：本方案范围 **48 键全部有读取点 ⇒ 未发现死开关**；唯一未接线键 `PROFILE_DRIFT_RECOMPUTE_INTERVAL` 属 **DT-214-305**（**非本方案范围**，`profile_drift` 按设计只交付**驱动侧接口**）⇒ 白名单并给理由。**审计口径修正（如实登记）**：首版脚本**只扫 `app/`**，把读点在 **`backend/main.py`（lifespan 驱动清理循环）** 的 `WRITEBACK_CLEANUP_INTERVAL_SECONDS` **误报为死开关** ⇒ 护栏改为**全 `backend/` 扫描**并以断言锁定该口径。⑤ **回归与静态质量**：全量 `tests/unit` **21 failed / 3234 passed / 0 error**（256.99 s；较上轮 3230 增 **4** ＝本批护栏）；**与上一轮逐项 testid 归一化 `Compare-Object` 差异 0 项 ⇒ 零回归**，且**连续三轮（`t18`/`t19`/`t20`）失败集逐项零差异 ⇒ 可复现**；本批 1 文件 `ruff` **All checks passed**；执行器与探针 `ruff` **All checks passed**。⑥ **语义与影响面**：**本批无生产代码改动**（执行器/文档/护栏均在**判据与工具侧**）⇒ **线上行为零变化**。⑦ **提交**：OpenLLM `7efa6ec`（`test(v149)`，1 文件 `+121`）。文档版本 **v1.53.0 → v1.54.0**；状态 [Review] |

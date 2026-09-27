@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-09-27T13:06:10",
+  "generated_at": "2026-09-27T13:17:16",
   "simulate": false,
   "summary": {
-    "PASS": 6,
+    "PASS": 5,
     "FAIL": 0,
-    "SKIP": 4,
+    "SKIP": 5,
     "BLOCKED": 2
   },
   "verdicts": [
@@ -30,25 +30,47 @@
     },
     {
       "criterion": "T3",
-      "title": "检索：rerank / score_threshold 透传且低分条目被过滤",
-      "status": "PASS",
+      "title": "检索：rerank / score_threshold 透传、低分过滤与「开启即生效」",
+      "status": "SKIP",
       "requires": [
         "RAG_RERANK_ENABLED=False",
         "RAG_SCORE_THRESHOLD=0.0"
       ],
       "detail": {
-        "resolved_search_params": {
+        "item_level_params": {
           "rerank": true,
           "score_threshold": 0.5
+        },
+        "global_fallback_params": {
+          "rerank": false,
+          "score_threshold": null
+        },
+        "zero_threshold_params": {
+          "rerank": false,
+          "score_threshold": null
+        },
+        "bad_threshold_params": {
+          "rerank": false,
+          "score_threshold": null
         },
         "items_before": 4,
         "items_after": 2,
         "filtered_scores": [
           0.91,
           0.62
-        ]
+        ],
+        "effective_segment": {
+          "capability_probe": {
+            "rerank": true,
+            "score_threshold": 0.15
+          },
+          "capability_verified": true,
+          "switch_on_now": false,
+          "threshold_on_now": false
+        },
+        "runtime_pending": "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的运行态复核；本判据只覆盖网关侧口径与「开启即生效」"
       },
-      "reason": ""
+      "reason": "段①口径（无开关，恒可判）已达标：条目级透传优先、阈值 0/非法 ⇒ 不过滤、过滤后条目数下降且 score 单调；段②能力已用**临时置位**验证通过（rerank=true / threshold=0.15，进程内退出恢复）—— 待开关开启后复跑即为 PASS"
     },
     {
       "criterion": "T4",
@@ -141,7 +163,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.359,
+        "concurrent_components_wall_seconds": 0.344,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -157,7 +179,7 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.063,
+        "parallel_wall_seconds": 0.046,
         "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
