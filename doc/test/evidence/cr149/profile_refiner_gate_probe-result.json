@@ -1,0 +1,155 @@
+{
+  "probe": "profile_refiner_gate",
+  "ruling": "§9 问题 7：提炼器形态＝独立同步客户端（不放行网关同步桥）；三条件就绪门控，默认关闭",
+  "cases": [
+    {
+      "case": "① 默认关态（有提炼器亦不注入）",
+      "expect": {
+        "will_use_llm": false,
+        "installed": false,
+        "tone": "inquisitive",
+        "form": "standalone_sync_client"
+      },
+      "actual": {
+        "case": "① 默认关态（有提炼器亦不注入）",
+        "form": "standalone_sync_client",
+        "will_use_llm": false,
+        "reason": "disabled（门控关闭 ⇒ 纯规则路径，不注入）",
+        "installed": false,
+        "tone": "inquisitive"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "② 开态 + 提炼器缺失 ⇒ 不注入（refiner_absent）",
+      "expect": {
+        "will_use_llm": false,
+        "installed": false,
+        "tone": "inquisitive"
+      },
+      "actual": {
+        "case": "② 开态 + 提炼器缺失 ⇒ 不注入（refiner_absent）",
+        "form": "standalone_sync_client",
+        "will_use_llm": false,
+        "reason": "refiner_absent（未注入提炼器 ⇒ 不就绪，不臆造能力）",
+        "installed": false,
+        "tone": "inquisitive"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "③ 开态 + 模型未声明 ⇒ 不注入（model_absent）",
+      "expect": {
+        "will_use_llm": false,
+        "installed": false,
+        "tone": "inquisitive"
+      },
+      "actual": {
+        "case": "③ 开态 + 模型未声明 ⇒ 不注入（model_absent）",
+        "form": "standalone_sync_client",
+        "will_use_llm": false,
+        "reason": "model_absent（未声明模型编码 ⇒ 不就绪，不臆造能力）",
+        "installed": false,
+        "tone": "inquisitive"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "④ 三条件齐备 ⇒ 注入且 LLM 产出生效",
+      "expect": {
+        "will_use_llm": true,
+        "installed": true,
+        "tone": "assertive"
+      },
+      "actual": {
+        "case": "④ 三条件齐备 ⇒ 注入且 LLM 产出生效",
+        "form": "standalone_sync_client",
+        "will_use_llm": true,
+        "reason": "ready",
+        "installed": true,
+        "tone": "assertive"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑤ 注入后提炼器异常 ⇒ 规则兜底",
+      "expect": {
+        "installed": true,
+        "tone": "inquisitive"
+      },
+      "actual": {
+        "case": "⑤ 注入后提炼器异常 ⇒ 规则兜底",
+        "form": "standalone_sync_client",
+        "will_use_llm": true,
+        "reason": "ready",
+        "installed": true,
+        "tone": "inquisitive"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑥ 注入后提炼器超时（50ms < 400ms）⇒ 规则兜底",
+      "expect": {
+        "installed": true,
+        "tone": "inquisitive"
+      },
+      "actual": {
+        "case": "⑥ 注入后提炼器超时（50ms < 400ms）⇒ 规则兜底",
+        "form": "standalone_sync_client",
+        "will_use_llm": true,
+        "reason": "ready",
+        "installed": true,
+        "tone": "inquisitive"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑦ 显式传 gateway_sync_bridge ⇒ 回退独立客户端",
+      "expect": {
+        "will_use_llm": true,
+        "form": "standalone_sync_client"
+      },
+      "actual": {
+        "case": "⑦ 显式传 gateway_sync_bridge ⇒ 回退独立客户端",
+        "form": "standalone_sync_client",
+        "will_use_llm": true,
+        "reason": "ready",
+        "installed": true,
+        "tone": "assertive"
+      },
+      "ok": true,
+      "mismatched": []
+    },
+    {
+      "case": "⑧ 门控非法值 ⇒ 回退关闭",
+      "expect": {
+        "will_use_llm": false,
+        "installed": false,
+        "tone": "inquisitive"
+      },
+      "actual": {
+        "case": "⑧ 门控非法值 ⇒ 回退关闭",
+        "form": "standalone_sync_client",
+        "will_use_llm": false,
+        "reason": "disabled（门控关闭 ⇒ 纯规则路径，不注入）",
+        "installed": false,
+        "tone": "inquisitive"
+      },
+      "ok": true,
+      "mismatched": []
+    }
+  ],
+  "guardrail_summary": "形态**恒为** standalone_sync_client（任何候选，含 gateway_sync_bridge）；**三条件就绪**（门控开 ＋ 提炼器已注入 ＋ 模型已声明）缺一即不注入 ⇒ 纯规则；注入后异常/超时 ⇒ 无产出 ⇒ 规则兜底（绝不丢标签）",
+  "self_check": {
+    "ok": true,
+    "cases": 8,
+    "mismatched": [],
+    "bridge_leaked": []
+  }
+}
