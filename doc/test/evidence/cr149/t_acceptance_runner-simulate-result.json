@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T11:43:03",
+  "generated_at": "2026-09-27T13:06:39",
   "simulate": true,
   "summary": {
     "PASS": 9,
@@ -157,6 +157,11 @@
         "WRITEBACK_DECISION_ENABLED=True"
       ],
       "detail": {
+        "rag_value_gate": {
+          "skipped_requests": 0,
+          "default_requests": 1,
+          "skipped_return": null
+        },
         "low_value": {
           "submitted": [],
           "returns": {
@@ -219,7 +224,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 3.203,
+        "concurrent_components_wall_seconds": 0.375,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -235,8 +240,8 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.094,
-        "ordered_wall_seconds": 0.265,
+        "parallel_wall_seconds": 0.062,
+        "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
           "rag_start",
@@ -333,10 +338,16 @@
         },
         "rank_order": {
           "rag": "1. 高分\n2. 中分\n3. 低分",
-          "memory": "1. 新记忆\n2. 无时间戳记忆\n3. 旧记忆",
+          "memory": "1. 无时间戳记忆\n2. 新记忆\n3. 旧记忆",
           "labeled_ranked": "[K2] 高分\n[K1] 低分",
           "switch_off": "1. 低分\n2. 高分",
           "no_rank_key": "1. 甲\n2. 乙\n3. 丙"
+        },
+        "rank_decay": {
+          "fail_open_no_timestamp": 1.0,
+          "one_day_ago": 0.9771599684342459,
+          "one_twenty_days_ago": 0.0625,
+          "half_life_days": 30.0
         },
         "profile_dimensions": {
           "dimension_lines": "[个人画像]\ncity: 上海\npreference: 简洁\n[企业画像]\ncompany: OpenBase",

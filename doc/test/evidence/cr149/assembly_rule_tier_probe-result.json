@@ -61,7 +61,7 @@
   "(e) 权重排序": {
     "rag_order": "1. 高分\n2. 中分\n3. 低分",
     "rag_sorted_by_score": true,
-    "memory_order": "1. 新记忆\n2. 无时间戳记忆\n3. 旧记忆",
+    "memory_order": "1. 无时间戳记忆\n2. 新记忆\n3. 旧记忆",
     "memory_newest_first": true,
     "memory_missing_timestamp_not_demoted": true,
     "labeled_ranked": "[K2] 高分\n[K1] 低分",

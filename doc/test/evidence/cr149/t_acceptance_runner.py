@@ -1,18 +1,21 @@
-"""CR-149 §7 验收判据执行器（T1~T9）
+"""CR-149 §7 验收判据执行器（T1~T12）
 
-**用途**：把《OpenBase-上下文精装配与组件通道优化技术方案》§7 的 T1~T9 判据做成
+**用途**：把《OpenBase-上下文精装配与组件通道优化技术方案》§7 的 T1~T12 判据做成
 **一键可复跑**的判定器 —— 人工批准开关开启值后，只需运行本脚本即可拿到逐条
 `PASS / FAIL / SKIP / BLOCKED` 与**原始测量数据**（不依赖人工肉眼比对）。
 
 **设计约束（重要）**：
 
 * **不改生产配置**：脚本只**读取** `settings` 的当前值；需要开关开启才能判定的判据
-  （T1/T2/T3/T5/T8/T9），若开关为关则返回 `SKIP` 并给出**需要置哪些键**；
+  （T1/T2/T3/T8/T9），若开关为关则返回 `SKIP` 并给出**需要置哪些键**；
   `--simulate` 模式会在**本进程内**临时置位（退出前恢复），用于证明"开启后即达标"，
   **不写任何配置文件、不影响运行中的服务**；
 * **可判定性分级**：`SKIP`（开关未开）≠ `FAIL`（能力不达标）；`BLOCKED` 表示
   **环境/前置条件缺失**（如 T4 需要运行态故障注入、T6 属第三批未实施），
   也**不计入失败**，但会在报告里显式列出，避免"没做"被误读成"通过"；
+* **分段判定（T5，v1.18.0）**：T5 拆为两段 —— ① **网关决策闸门**（开关
+  `WRITEBACK_DECISION_ENABLED`，默认关闭）＝ `SKIP` 口径同前；② **执行层价值闸门**
+  （**无开关、恒生效**）＝ **进程内恒可判**，故 T5 不再整条 `SKIP`：段② 不达标即 `FAIL`；
 * **判据与既有护栏的关系**：T1/T2/T5/T7/T8/T9 在 `tests/unit` 已有细粒度护栏；
   本执行器是**跨判据的验收汇总**（含数值测量），并非替代单测。
 
@@ -559,12 +562,123 @@ async def _run_writeback_round(query: str, response: str) -> tuple[list[str], di
     return [item["target"] for item in queue.submitted], returns
 
 
+async def _rag_value_gate_probe() -> tuple[bool, dict[str, Any], list[str]]:
+    """T5 段②：**执行层**价值闸门（`save_if_valuable` 必须是实际判定）
+
+    **为何单列一段**：段①（网关决策闸门）只在 chat 回写路径生效，且需开关开启；
+    而**直接调用** `POST /openllm/v1/writeback`（或队列内既有行）**不经**决策层
+    —— 若执行层不读该字段，则「显式声明不值得沉淀」仍会入库（v1.18.0 前的实际
+    状态：`payload["save_if_valuable"]` **只写不读**）。该段**无开关、恒生效**，
+    故进程内恒可判。
+
+    Returns:
+        (是否达标, 原始测量, 失败说明列表)
+    """
+    from unittest.mock import Mock, patch
+
+    import httpx
+    from app.edgerouter.adapters.openrag import OpenRAGAdapter
+    from app.edgerouter.adapters.openrag_client import OpenRAGClient
+
+    calls: list[Any] = []
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "message": "success",
+                "data": {
+                    "document_id": "doc-t5",
+                    "filename": "text-t5.txt",
+                    "file_type": "text",
+                    "status": "PENDING",
+                },
+            },
+        )
+
+    client = OpenRAGClient(
+        base_url="http://openrag.probe",
+        timeout=5.0,
+        http_client=httpx.AsyncClient(
+            transport=httpx.MockTransport(_handler), timeout=5.0
+        ),
+        real_mode=True,
+    )
+    router = Mock()
+    router.isolation_engine = Mock()
+    adapter = OpenRAGAdapter(router, client)
+
+    async def _invoke(**kwargs: Any) -> Any:
+        from app.api import writeback as writeback_module
+
+        with patch.object(
+            writeback_module, "_get_gateway_adapters", lambda: (None, adapter)
+        ):
+            return await writeback_module._rag_writeback(**kwargs)
+
+    base: dict[str, Any] = {
+        "user_id": "probe-user",
+        "session_id": "probe-session",
+        "kb_id": "kb_probe",
+        "query": "q",
+        "response": "r",
+    }
+    off_return = await _invoke(**base, save_if_valuable=False)
+    skipped_requests = len(calls)
+    await _invoke(**base)  # 缺省（不传该键）⇒ 逐字回退：应仍提交
+    default_requests = len(calls) - skipped_requests
+    await client.aclose()
+
+    failures: list[str] = []
+    if skipped_requests:
+        failures.append(f"save_if_valuable=false 仍发起 {skipped_requests} 次入库请求")
+    if off_return is not None:
+        failures.append(f"save_if_valuable=false 返回值非 None：{off_return!r}")
+    if default_requests != 1:
+        failures.append(f"缺省（不传该键）应仍提交 1 次，实测 {default_requests}")
+    detail = {
+        "skipped_requests": skipped_requests,
+        "default_requests": default_requests,
+        "skipped_return": off_return,
+    }
+    return (not failures), detail, failures
+
+
 async def check_t5() -> Verdict:
-    """T5：低价值轮次不产生 rag 入库（无该行或 skipped），高价值轮次正常入库"""
+    """T5：低价值轮次不产生 rag 入库（无该行或 skipped），高价值轮次正常入库
+
+    **v1.18.0 起分两段**：
+
+      ① **网关决策闸门**（`WRITEBACK_DECISION_ENABLED`，默认关闭）—— 开启后低价值
+         轮次经 `skipped` 回执拦截、不入队；开关关闭 ⇒ 本段按既有口径 `SKIP`；
+      ② **执行层价值闸门**（**无开关、恒生效**）—— `save_if_valuable=false`
+         ⇒ `_rag_writeback` **零出站请求**，覆盖**不经决策层**的直接调用路径；
+         本段进程内恒可判，**不达标即 `FAIL`**。
+    """
     title = "写侧闸门：低价值轮次不入库、高价值轮次正常入库"
     keys = ["WRITEBACK_DECISION_ENABLED"]
+
+    gate_ok, gate_detail, gate_failures = await _rag_value_gate_probe()
+    if not gate_ok:
+        return Verdict(
+            criterion="T5",
+            title=title,
+            status=STATUS_FAIL,
+            requires=["执行层价值闸门（无开关，恒生效）"],
+            detail={"rag_value_gate": gate_detail},
+            reason="；".join(gate_failures),
+        )
+
     if not _is_on("WRITEBACK_DECISION_ENABLED"):
-        return _switch_off_verdict("T5", title, keys)
+        verdict = _switch_off_verdict("T5", title, keys)
+        verdict.detail = {"rag_value_gate": gate_detail}
+        verdict.reason = (
+            "段②执行层价值闸门（无开关，恒生效）已达标：save_if_valuable=false ⇒ 零请求、"
+            "缺省逐字回退；段①网关决策闸门待开关开启后复跑"
+        )
+        return verdict
 
     low_submitted, low_returns = await _run_writeback_round("你好", "")
     high_submitted, high_returns = await _run_writeback_round(
@@ -583,6 +697,7 @@ async def check_t5() -> Verdict:
         status=STATUS_FAIL if failures else STATUS_PASS,
         requires=[f"WRITEBACK_DECISION_ENABLED={_is_on('WRITEBACK_DECISION_ENABLED')}"],
         detail={
+            "rag_value_gate": gate_detail,
             "low_value": {"submitted": low_submitted, "returns": low_returns},
             "high_value": {"submitted": high_submitted, "returns": high_returns},
         },
@@ -1103,12 +1218,27 @@ def check_t10() -> Verdict:
         failures.append(f"去重后编号被重排（须稳定）：{dedup_prompt!r}")
 
     # ④ 权重排序（§3.2 第三项 / §3.3 memory·rag 行；v1.14.0 补入本判据）
+    # **v1.18.0 订正（本判据自身的缺陷，非生产代码变化）**：原以**硬编码时刻**
+    # `datetime(2026, 9, 27, 12, 0, 0)` 作基准 ⇒ 「新记忆」的 age 在壁钟越过该时刻前
+    # 被 `max(0.0, …)` 钳为 0（衰减恰 1.0），越过之后变为正值（衰减 < 1.0）
+    # ⇒ 断言「新记忆 排在 无时间戳记忆 之前」会**随壁钟自行翻转**（实测同一提交：
+    # 12:00 前 PASS、之后 FAIL）。且该断言本身与实现语义不符：任何**严格过去**的
+    # 时间戳衰减都 < 1.0，而 fail-open 恰为 1.0 ⇒ fail-open 的语义是「**不劣化**」
+    # （等价于「刚刚发生」），不是「排在新记忆之后」。现改为：基准取 `now()`（相对、
+    # 不随壁钟翻转），并以**严格单调**（无时间戳 1.0 > 1 天前 > 120 天前）＋
+    # **fail-open 取值恰为 1.0** 两条确定性断言替代原歧义断言。
     from datetime import datetime, timedelta
 
-    _base = datetime(2026, 9, 27, 12, 0, 0)
+    from app.edgerouter.orchestration.assembler import _item_decay
+
+    _base = datetime.now()
 
     def _days_ago(days: float) -> str:
         return (_base - timedelta(days=days)).isoformat()
+
+    fail_open_decay = _item_decay({"content": "无时间戳"}, half_life_days=30.0)
+    fresh_decay = _item_decay({"content": "一天前", "updated_at": _days_ago(1)}, half_life_days=30.0)
+    stale_decay = _item_decay({"content": "很久前", "updated_at": _days_ago(120)}, half_life_days=30.0)
 
     rag_ranked = PromptAssembler().format_context(
         "rag",
@@ -1125,7 +1255,7 @@ def check_t10() -> Verdict:
         {
             "results": [
                 {"content": "旧记忆", "updated_at": _days_ago(120)},
-                {"content": "新记忆", "updated_at": _days_ago(0)},
+                {"content": "新记忆", "updated_at": _days_ago(1)},
                 {"content": "无时间戳记忆"},
             ]
         },
@@ -1158,11 +1288,18 @@ def check_t10() -> Verdict:
     ):
         failures.append(f"rag 未按 score 降序：{rag_ranked!r}")
     if not (
-        memory_ranked.index("新记忆")
-        < memory_ranked.index("无时间戳记忆")
+        memory_ranked.index("无时间戳记忆")
+        < memory_ranked.index("新记忆")
         < memory_ranked.index("旧记忆")
     ):
         failures.append(f"memory 未按时效降序/未 fail-open：{memory_ranked!r}")
+    if fail_open_decay != 1.0:
+        failures.append(f"缺失时间戳未按 fail-open 取值（应恰为 1.0）：{fail_open_decay!r}")
+    if not (fail_open_decay > fresh_decay > stale_decay):
+        failures.append(
+            f"衰减未严格单调（无时间戳/一天前/120 天前）："
+            f"{fail_open_decay!r}/{fresh_decay!r}/{stale_decay!r}"
+        )
     if not labeled_ranked.startswith("[K2] 高分"):
         failures.append(f"排序后引用编号未取原始下标（与归因 A 脱钩）：{labeled_ranked!r}")
     if rank_off != "1. 低分\n2. 高分":
@@ -1226,6 +1363,12 @@ def check_t10() -> Verdict:
             "labeled_ranked": labeled_ranked,
             "switch_off": rank_off,
             "no_rank_key": no_rank_key,
+        },
+        "rank_decay": {
+            "fail_open_no_timestamp": fail_open_decay,
+            "one_day_ago": fresh_decay,
+            "one_twenty_days_ago": stale_decay,
+            "half_life_days": 30.0,
         },
         "profile_dimensions": {
             "dimension_lines": profile_default,

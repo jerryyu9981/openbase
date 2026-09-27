@@ -20,12 +20,12 @@ import sys
 sys.path.insert(0, os.getcwd())
 os.environ.setdefault("PYTHONDONTWRITEBYTECODE", "1")
 
+from app.api import openllm_gateway as gateway  # noqa: E402
 from app.api.openllm_gateway import (  # noqa: E402
     _count_faiss_indexes,
     _probe_builtin_rag,
     _probe_ollama,
 )
-from app.api import openllm_gateway as gateway  # noqa: E402
 from app.services.vector_store import FAISS_ROOT  # noqa: E402
 
 

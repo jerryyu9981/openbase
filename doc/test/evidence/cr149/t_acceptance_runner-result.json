@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T11:39:42",
+  "generated_at": "2026-09-27T13:06:10",
   "simulate": false,
   "summary": {
     "PASS": 6,
@@ -93,8 +93,14 @@
       "requires": [
         "WRITEBACK_DECISION_ENABLED=False"
       ],
-      "detail": {},
-      "reason": "所需开关未开启：开启后复跑本判据（--simulate 可先行验证开启态）"
+      "detail": {
+        "rag_value_gate": {
+          "skipped_requests": 0,
+          "default_requests": 1,
+          "skipped_return": null
+        }
+      },
+      "reason": "段②执行层价值闸门（无开关，恒生效）已达标：save_if_valuable=false ⇒ 零请求、缺省逐字回退；段①网关决策闸门待开关开启后复跑"
     },
     {
       "criterion": "T6",
@@ -135,7 +141,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 6.437,
+        "concurrent_components_wall_seconds": 0.359,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -151,8 +157,8 @@
       ],
       "detail": {
         "switch_enabled_in_config": false,
-        "parallel_wall_seconds": 0.093,
-        "ordered_wall_seconds": 0.141,
+        "parallel_wall_seconds": 0.063,
+        "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
           "rag_start",
@@ -249,10 +255,16 @@
         },
         "rank_order": {
           "rag": "1. 高分\n2. 中分\n3. 低分",
-          "memory": "1. 新记忆\n2. 无时间戳记忆\n3. 旧记忆",
+          "memory": "1. 无时间戳记忆\n2. 新记忆\n3. 旧记忆",
           "labeled_ranked": "[K2] 高分\n[K1] 低分",
           "switch_off": "1. 低分\n2. 高分",
           "no_rank_key": "1. 甲\n2. 乙\n3. 丙"
+        },
+        "rank_decay": {
+          "fail_open_no_timestamp": 1.0,
+          "one_day_ago": 0.9771599684342459,
+          "one_twenty_days_ago": 0.0625,
+          "half_life_days": 30.0
         },
         "profile_dimensions": {
           "dimension_lines": "[个人画像]\ncity: 上海\npreference: 简洁\n[企业画像]\ncompany: OpenBase",

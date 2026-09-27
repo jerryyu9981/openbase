@@ -193,8 +193,15 @@ def probe_ref_numbers() -> dict[str, Any]:
 
 
 def probe_rank_selection() -> dict[str, Any]:
-    """(e) 权重排序：来源分数 + 时效衰减；编号取原始下标；预算只吃尾部"""
-    base = datetime(2026, 9, 27, 12, 0, 0)
+    """(e) 权重排序：来源分数 + 时效衰减；编号取原始下标；预算只吃尾部
+
+    **v1.18.0 订正**：原基准为**硬编码时刻** `2026-09-27 12:00:00` ⇒ 「新记忆」
+    （`_days_ago(0)`）的 age 在壁钟越过该时刻前被钳为 0（衰减恰 1.0）、越过之后
+    变为正值（衰减 < 1.0）⇒ 输出的 `memory_order` 会**随壁钟自行翻转**
+    （与 T10 ④ 同源缺陷）。现基准改取 `now()`，且把「零龄」样本改为「一天前」，
+    使排序结论**确定性可复现**：无时间戳（fail-open 1.0）> 一天前 > 120 天前。
+    """
+    base = datetime.now()
 
     def _days_ago(days: float) -> str:
         return (base - timedelta(days=days)).isoformat()
@@ -215,7 +222,7 @@ def probe_rank_selection() -> dict[str, Any]:
         {
             "results": [
                 {"content": "旧记忆", "updated_at": _days_ago(120)},
-                {"content": "新记忆", "updated_at": _days_ago(0)},
+                {"content": "新记忆", "updated_at": _days_ago(1)},
                 {"content": "无时间戳记忆"},
             ]
         },
@@ -248,7 +255,7 @@ def probe_rank_selection() -> dict[str, Any]:
         {
             "results": [
                 {"content": "旧" * 60, "updated_at": _days_ago(300)},
-                {"content": "新" * 60, "updated_at": _days_ago(0)},
+                {"content": "新" * 60, "updated_at": _days_ago(1)},
             ]
         },
     )
