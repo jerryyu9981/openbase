@@ -1332,6 +1332,156 @@ async def check_t11() -> Verdict:
     )
 
 
+# ---------------------------------------------------------------- T12 精炼触发与护栏
+
+def check_t12() -> Verdict:
+    """T12：精炼触发条件（§5.2 行 1~3）与输出护栏（§5.3 判定部分）—— **纯进程内可判**
+
+    - §5.2 行 1：`memory`/`rag` 段 token > 配额 × **1.5**（**严格大于** ⇒ 恰为 1.5 倍不触发）；
+    - §5.2 行 2：单段条目数 > **8**（恰为 8 不触发）；
+    - §5.2 行 3：段内相似度 > **0.85** 的条目**占比** > **30%**；
+    - §5.2 行 4：**多源冲突 = 未实施** —— 须由 `unimplemented` 显式列出，**不得伪实现**；
+    - §5.3：逐条可定位 / 不得引入新数值 / 须编号列表 / 空输出非法 ⇒ 违规即弃；
+    - §2 原则 6：触发判定是**只读观测**（开关两态注入文本**逐字相同**）。
+    """
+    title = "精炼：触发条件（§5.2 行 1~3）与输出护栏（§5.3）进程内可判；行 4 如实标注未实施"
+    from app.edgerouter.orchestration import refine as refine_module
+    from app.edgerouter.orchestration.prompt_pipeline import BudgetPolicy, build_prompt
+
+    def _chars(text: str) -> int:
+        return len(text or "")
+
+    def _items(*bodies: str) -> str:
+        return "\n".join(f"{i}. {body}" for i, body in enumerate(bodies, start=1))
+
+    policy = BudgetPolicy(
+        enabled=True,
+        window_tokens=1000,
+        output_reserve_tokens=0,
+        quota_ratios={
+            "system": 0.05,
+            "profile": 0.10,
+            "memory": 0.10,
+            "rag": 0.10,
+            "history": 0.10,
+        },
+        single_item_max_tokens=0,
+    )
+
+    def _trigger(segments: dict[str, str]) -> dict[str, Any]:
+        return refine_module.refine_triggers(segments, policy=policy, count_tokens=_chars)
+
+    sources = [
+        "项目预算上限为 120 万元，由财务部在 3 月核定。",
+        "用户偏好简洁回答，不喜欢冗长解释。",
+        "部署环境使用 Docker Compose，端口 8080。",
+    ]
+    row1_hit = _trigger({"memory": _items("甲" * 157)})
+    row1_edge = _trigger({"memory": _items("甲" * 147)})
+    row1_other = _trigger({"history": _items("历" * 300)})
+    row2_hit = _trigger({"memory": _items(*[f"条目{i}" for i in range(9)])})
+    row2_edge = _trigger({"memory": _items(*[f"条目{i}" for i in range(8)])})
+    row3_hit = _trigger(
+        {"memory": _items("用户偏好简洁回答", "用户偏好简洁回答风格", "项目用 Python", "部署用 Docker")}
+    )
+    row3_edge = _trigger(
+        {
+            "memory": _items(
+                "用户偏好简洁回答",
+                "用户偏好简洁回答风格",
+                *[f"第{i}条截然不同的内容" for i in range(6)],
+            )
+        }
+    )
+    row4_probe = _trigger({"memory": _items("预算代号 A1"), "rag": _items("预算代号 A2")})
+    guard_ok = refine_module.validate_refine_output(
+        ["1. 项目预算上限为 120 万元，由财务部在 3 月核定。", "2. 用户偏好简洁回答，不喜欢冗长解释。"],
+        sources=sources,
+    )
+    guard_rewrite = refine_module.validate_refine_output(
+        ["1. 项目预算由财务部每月复核一次。"], sources=sources
+    )
+    guard_number = refine_module.validate_refine_output(
+        ["1. 部署环境使用 Docker Compose，端口 9090。"], sources=sources
+    )
+    guard_empty = refine_module.validate_refine_output([], sources=sources)
+    guard_unnumbered = refine_module.validate_refine_output(
+        ["项目预算上限为 120 万元，由财务部在 3 月核定。"], sources=sources
+    )
+
+    memory = _items("甲" * 200)
+    with _temporary_settings(CONTEXT_REFINE_TRIGGER_ENABLED=False):
+        prompt_off, comp_off = build_prompt(
+            query="问", memory_ctx=memory, count_tokens=_chars, budget=policy
+        )
+    with _temporary_settings(CONTEXT_REFINE_TRIGGER_ENABLED=True):
+        prompt_on, comp_on = build_prompt(
+            query="问", memory_ctx=memory, count_tokens=_chars, budget=policy
+        )
+
+    failures: list[str] = []
+    if "over_quota:memory" not in row1_hit["reasons"]:
+        failures.append(f"行 1 未触发：{row1_hit['reasons']}")
+    if row1_edge["triggered"]:
+        failures.append("行 1 阈值语义错误（恰为 1.5 倍不应触发）")
+    if row1_other["triggered"]:
+        failures.append("行 1 越界（§5.2 仅列 memory/rag）")
+    if "too_many_items:memory" not in row2_hit["reasons"]:
+        failures.append(f"行 2 未触发：{row2_hit['reasons']}")
+    if row2_edge["triggered"]:
+        failures.append("行 2 阈值语义错误（恰为 8 条不应触发）")
+    if "high_duplication:memory" not in row3_hit["reasons"]:
+        failures.append(f"行 3 未触发：{row3_hit['reasons']}")
+    if row3_edge["triggered"]:
+        failures.append("行 3 阈值语义错误（25% 占比不应触发）")
+    if row4_probe["reasons"] or "multi_source_conflict" not in row4_probe["unimplemented"]:
+        failures.append("行 4 未如实标注为未实施（或伪实现为理由）")
+    if any("conflict" in reason for reason in refine_module.TRIGGER_REASONS):
+        failures.append("行 4 被伪实现（触发理由词表不应含 conflict 类）")
+    if not guard_ok["valid"] or guard_ok["located"] != [0, 1]:
+        failures.append(f"护栏误判合法抽取：{guard_ok}")
+    if guard_rewrite["valid"]:
+        failures.append("护栏未拦截改写（unlocatable）")
+    if guard_number["valid"]:
+        failures.append("护栏未拦截新增数值（new_numbers）")
+    if guard_empty["valid"]:
+        failures.append("护栏未拦截空输出（empty_output）")
+    if guard_unnumbered["valid"]:
+        failures.append("护栏未拦截非编号输出（not_numbered）")
+    if prompt_on != prompt_off or comp_on.prompt_total_tokens != comp_off.prompt_total_tokens:
+        failures.append("触发判定改变了注入内容（违反观测与判定分离）")
+    if comp_off.refine_trigger != {} or not comp_on.refine_trigger:
+        failures.append("触发观测落痕开关语义错误")
+
+    return Verdict(
+        criterion="T12",
+        title=title,
+        status=STATUS_FAIL if failures else STATUS_PASS,
+        detail={
+            "row1_over_quota": {"hit": row1_hit, "edge_1_5x": row1_edge, "history_ignored": row1_other},
+            "row2_item_count": {"hit": row2_hit, "edge_8": row2_edge},
+            "row3_duplication": {"hit_50pct": row3_hit, "edge_25pct": row3_edge},
+            "row4_unimplemented": row4_probe,
+            "guard": {
+                "verbatim": guard_ok,
+                "rewrite": guard_rewrite,
+                "new_number": guard_number,
+                "empty": guard_empty,
+                "unnumbered": guard_unnumbered,
+            },
+            "observation_separation": {
+                "prompt_identical": prompt_on == prompt_off,
+                "tokens_identical": comp_on.prompt_total_tokens == comp_off.prompt_total_tokens,
+            },
+            "evidence": (
+                "`tests/unit/test_refine_trigger_and_guard.py`（22 例）＋ 运行态探针 "
+                "`doc/test/evidence/cr149/refine_trigger_probe.py`"
+            ),
+        },
+        reason="；".join(failures),
+    )
+
+
 # ---------------------------------------------------------------- 执行入口
 
 SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
@@ -1341,6 +1491,7 @@ SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
     ("T6", check_t6),
     ("T9", check_t9),
     ("T10", check_t10),
+    ("T12", check_t12),
 ]
 
 ASYNC_CHECKS: list[tuple[str, Callable[[], Any]]] = [
@@ -1378,7 +1529,7 @@ def run_all() -> list[Verdict]:
                     reason=f"{type(exc).__name__}: {exc}",
                 )
             )
-    order = {f"T{index}": index for index in range(1, 12)}
+    order = {f"T{index}": index for index in range(1, 13)}
     verdicts.sort(key=lambda verdict: order.get(verdict.criterion, 99))
     return verdicts
 

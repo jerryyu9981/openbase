@@ -1,0 +1,299 @@
+{
+  "probe": "refine_trigger",
+  "design_ref": "方案 §5.2 触发条件（行 1~3 已实施 / 行 4 未实施）＋ §5.3 输出护栏（判定部分）",
+  "triggers": {
+    "row1_over_quota": {
+      "memory_160_over_100": {
+        "triggered": true,
+        "reasons": [
+          "over_quota:memory"
+        ],
+        "details": {
+          "memory": {
+            "tokens": 160,
+            "quota": 100,
+            "ratio": 1.6,
+            "items": 1,
+            "dup_share": 0.0
+          },
+          "rag": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      },
+      "exactly_1_5x_150_over_100": {
+        "triggered": false,
+        "reasons": [],
+        "details": {
+          "memory": {
+            "tokens": 150,
+            "quota": 100,
+            "ratio": 1.5,
+            "items": 1,
+            "dup_share": 0.0
+          },
+          "rag": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      },
+      "history_over_quota_ignored": {
+        "triggered": false,
+        "reasons": [],
+        "details": {
+          "memory": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          },
+          "rag": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      }
+    },
+    "row2_item_count": {
+      "nine_items": {
+        "triggered": true,
+        "reasons": [
+          "too_many_items:memory"
+        ],
+        "details": {
+          "memory": {
+            "tokens": 62,
+            "quota": 100,
+            "ratio": 0.62,
+            "items": 9,
+            "dup_share": 0.0
+          },
+          "rag": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      },
+      "eight_items": {
+        "triggered": false,
+        "reasons": [],
+        "details": {
+          "memory": {
+            "tokens": 55,
+            "quota": 100,
+            "ratio": 0.55,
+            "items": 8,
+            "dup_share": 0.0
+          },
+          "rag": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      }
+    },
+    "row3_duplication": {
+      "two_of_four_similar": {
+        "triggered": true,
+        "reasons": [
+          "high_duplication:memory"
+        ],
+        "details": {
+          "memory": {
+            "tokens": 53,
+            "quota": 100,
+            "ratio": 0.53,
+            "items": 4,
+            "dup_share": 0.5
+          },
+          "rag": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      },
+      "two_of_eight_similar": {
+        "triggered": false,
+        "reasons": [],
+        "details": {
+          "memory": {
+            "tokens": 109,
+            "quota": 100,
+            "ratio": 1.09,
+            "items": 8,
+            "dup_share": 0.25
+          },
+          "rag": {
+            "tokens": 0,
+            "quota": 100,
+            "ratio": 0.0,
+            "items": 0,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      }
+    },
+    "row4_multi_source_conflict": {
+      "unimplemented_marker": {
+        "triggered": false,
+        "reasons": [],
+        "details": {
+          "memory": {
+            "tokens": 10,
+            "quota": 100,
+            "ratio": 0.1,
+            "items": 1,
+            "dup_share": 0.0
+          },
+          "rag": {
+            "tokens": 10,
+            "quota": 100,
+            "ratio": 0.1,
+            "items": 1,
+            "dup_share": 0.0
+          }
+        },
+        "unimplemented": [
+          "multi_source_conflict"
+        ]
+      },
+      "reason_vocabulary": [
+        "over_quota",
+        "too_many_items",
+        "high_duplication"
+      ],
+      "no_conflict_reason_faked": true
+    }
+  },
+  "guard": {
+    "verbatim_extraction": {
+      "valid": true,
+      "violations": [],
+      "located": [
+        0,
+        1
+      ]
+    },
+    "rewrite_unlocatable": {
+      "valid": false,
+      "violations": [
+        "unlocatable:line1"
+      ],
+      "located": [
+        -1
+      ]
+    },
+    "new_number": {
+      "valid": false,
+      "violations": [
+        "unlocatable:line1",
+        "new_numbers:line1:['9090']"
+      ],
+      "located": [
+        -1
+      ]
+    },
+    "existing_number": {
+      "valid": true,
+      "violations": [],
+      "located": [
+        2
+      ]
+    },
+    "empty_output": {
+      "valid": false,
+      "violations": [
+        "empty_output"
+      ],
+      "located": []
+    },
+    "not_numbered": {
+      "valid": false,
+      "violations": [
+        "not_numbered:line1"
+      ],
+      "located": [
+        -1
+      ]
+    }
+  },
+  "observation_separation": {
+    "prompt_identical": true,
+    "tokens_identical": true,
+    "trigger_off_empty": true,
+    "trigger_on": {
+      "triggered": true,
+      "reasons": [
+        "over_quota:memory"
+      ],
+      "details": {
+        "memory": {
+          "tokens": 203,
+          "quota": 100,
+          "ratio": 2.03,
+          "items": 1,
+          "dup_share": 0.0
+        },
+        "rag": {
+          "tokens": 0,
+          "quota": 100,
+          "ratio": 0.0,
+          "items": 0,
+          "dup_share": 0.0
+        }
+      },
+      "unimplemented": [
+        "multi_source_conflict"
+      ]
+    },
+    "default_switch": false,
+    "thresholds": {
+      "over_quota_ratio": 1.5,
+      "max_items": 8,
+      "dup_similarity": 0.85,
+      "dup_share": 0.3
+    }
+  }
+}
