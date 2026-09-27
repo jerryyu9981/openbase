@@ -1,0 +1,120 @@
+{
+  "probe": "budget_window_basis",
+  "ruling": "§9 问题 3：按真实窗口 = min(模型声明窗口, 部署生效窗口)；未识别 ⇒ 部署兜底",
+  "deployment_window": 8192,
+  "output_reserve_tokens": 1024,
+  "quota_ratios": {
+    "system": 0.05,
+    "profile": 0.05,
+    "memory": 0.28,
+    "rag": 0.37,
+    "history": 0.19
+  },
+  "current_ruling": [
+    {
+      "model": "qwen3:0.6b",
+      "effective_window": 8192,
+      "window_source": "deployment_fallback",
+      "available_tokens": 7168,
+      "quotas": {
+        "system": 358,
+        "profile": 358,
+        "memory": 2007,
+        "rag": 2652,
+        "history": 1361
+      }
+    },
+    {
+      "model": "qwen3:32b",
+      "effective_window": 8192,
+      "window_source": "deployment_fallback",
+      "available_tokens": 7168,
+      "quotas": {
+        "system": 358,
+        "profile": 358,
+        "memory": 2007,
+        "rag": 2652,
+        "history": 1361
+      }
+    },
+    {
+      "model": "llama-2-7b",
+      "effective_window": 4096,
+      "window_source": "registry:llama-2-7b",
+      "available_tokens": 3072,
+      "quotas": {
+        "system": 153,
+        "profile": 153,
+        "memory": 860,
+        "rag": 1136,
+        "history": 583
+      }
+    },
+    {
+      "model": "llama-3-8b",
+      "effective_window": 8192,
+      "window_source": "registry:llama-3-8b",
+      "available_tokens": 7168,
+      "quotas": {
+        "system": 358,
+        "profile": 358,
+        "memory": 2007,
+        "rag": 2652,
+        "history": 1361
+      }
+    },
+    {
+      "model": "gpt-4-turbo",
+      "effective_window": 8192,
+      "window_source": "deployment_cap:gpt-4-turbo",
+      "available_tokens": 7168,
+      "quotas": {
+        "system": 358,
+        "profile": 358,
+        "memory": 2007,
+        "rag": 2652,
+        "history": 1361
+      }
+    },
+    {
+      "model": "totally-unknown-model",
+      "effective_window": 8192,
+      "window_source": "deployment_fallback",
+      "available_tokens": 7168,
+      "quotas": {
+        "system": 358,
+        "profile": 358,
+        "memory": 2007,
+        "rag": 2652,
+        "history": 1361
+      }
+    }
+  ],
+  "comparison_kb_sample_4096": {
+    "model": "qwen3:0.6b",
+    "effective_window": 4096,
+    "window_source": "deployment_fallback",
+    "available_tokens": 3072,
+    "quotas": {
+      "system": 153,
+      "profile": 153,
+      "memory": 860,
+      "rag": 1136,
+      "history": 583
+    }
+  },
+  "comparison_architecture_cap_128000": {
+    "model": "totally-unknown-model",
+    "effective_window": 128000,
+    "window_source": "deployment_fallback",
+    "available_tokens": 126976,
+    "quotas": {
+      "system": 6348,
+      "profile": 6348,
+      "memory": 35553,
+      "rag": 46981,
+      "history": 24125
+    }
+  },
+  "history_safety_margin": 0.2
+}

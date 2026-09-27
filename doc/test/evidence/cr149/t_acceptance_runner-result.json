@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-27T14:20:50",
+  "generated_at": "2026-09-27T15:31:02",
   "simulate": false,
   "summary": {
     "PASS": 10,
@@ -251,7 +251,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 1.593,
+        "concurrent_components_wall_seconds": 0.344,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
