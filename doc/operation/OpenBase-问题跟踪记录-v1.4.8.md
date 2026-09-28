@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.8（会话编排前置与回写闭环） |
-| 文档版本 | v1.74.0 |
+| 文档版本 | v1.75.0 |
 | 状态 | [Review] |
 | 作者 | AT-OpenBase-Test / DO-OpenBase-Ops / AA-OpenBase-Dev |
 | 创建日期 | 2026-09-21 |
@@ -1888,10 +1888,62 @@ v1.0.0 曾提出 A/B/C 三方案并建议 B，人工裁定执行 **A**。**补�
 
 ---
 
+## 4AP. 装配模板可配置 ＋ 统一前端接口准备（2026-09-28）
+
+### 4AP.1 用户目的与口径更正
+
+| 项 | 内容 |
+|----|------|
+| **用户目的（原话口径）** | 在**统一前端**增加「**提示词模板**」以及「**对比**」等功能，随后准备**相关接口** |
+| **口径更正（用户澄清）** | **统一前端是 OpenBase 的 `openbase-ui`，不是各自独立的前端** ⇒ 前端**不直接**访问 OpenLLM，链路为**两跳**：`openbase-ui → OpenBase /api/v1/llm-proxy/prompt-assembly/*`（OpenBase 信封 `{code,message,data}`）`→ OpenLLM 网关 /openllm/v1/prompt/assembly/*`（本仓信封 `code=0`，API Key 由 OpenBase 注入、**前端零密钥**） |
+| **本批交付** | ① OpenLLM 生产：`assembly_template.py`（R1~R7 校验 ＋ 段标记同源派生）＋ `CONTEXT_ASSEMBLY_TEMPLATE` 键 ＋ `PromptAssembler` 读取 ＋ 网关面 5 条 ＋ 管理面 5 条；② OpenBase 生产：`llm_proxy` 4 条透传；③ 契约文档 **v1.1.0**；④ 护栏 26 ＋ 20 例、OpenBase 4 例 |
+
+### 4AP.2 接口清单（前端视角）
+
+| 功能 | 前端调用（OpenBase 代理） | 上游（OpenLLM 网关） |
+|------|---------------------------|----------------------|
+| 模板·读 | `GET /api/v1/llm-proxy/prompt-assembly/template` | `GET /openllm/v1/prompt/assembly/template` |
+| 模板·**试装配预览** | `POST …/prompt-assembly/preview` | `POST …/prompt/assembly/preview`（**不调 LLM**） |
+| 对比·在线 | `GET …/prompt-assembly/compare?request_id=`／`?session_id=` | `GET …/prompt/assembly/compare` |
+| 对比·**离线两端** | 同上（`request_text` ＋ `final_prompt`） | 同上（**不依赖捕获开关**） |
+| 对比·记录列表 | `GET …/prompt-assembly/compare/records` | `GET …/prompt/assembly/compare/records` |
+| 模板·写 | **代理暂未开放**（待 OpenBase 管理员权限位） | `PUT …/prompt/assembly/template`（默认关 ＋ 来源受信双门禁） |
+
+### 4AP.3 三条关键设计（与既有红线的边界）
+
+| 项 | 内容 |
+|----|------|
+| **模板可写＝可执行面 ⇒ 必须限死** | 校验 R1~R7 **先于渲染**（保存与预览两条路径都判）：仅白名单变量与 `if/endif`，禁过滤器/属性/函数调用 ⇒ 前端可写模板**不成为任意表达式执行面** |
+| **可定位性（R5）与意图不失真（R6/R7）** | 素材段占位符前**必须**保留 `[标题]` 段标记（否则段位分布与保真度对照失准）；`query` **恰好 1 次**（否则用户问题会被丢弃/重复）—— 这两条把「模板自由度」限制在**不破坏对照与保真**的范围内 |
+| **段标记由模板派生（消除漂移）** | 渲染器与解析器取**同一来源** ⇒ 「模板改了而解析没改」在构造上不可能；护栏以「真实渲染后解析须逐段对齐」锁定 |
+| **默认关闭 ×2** | 捕获（`CONTEXT_FIDELITY_CAPTURE_ENABLED`）与远程编辑（`CONTEXT_ASSEMBLY_TEMPLATE_REMOTE_EDIT_ENABLED`）**均默认 False** ⇒ 既有安全红线 AC-148-01-5 的默认形态与既有装配行为**逐字不变** |
+
+### 4AP.4 验证与证据
+
+| 项 | 结果 |
+|----|------|
+| **OpenLLM 护栏** | `test_assembly_template.py` **26 例**（R1~R7 逐条拒绝／自定义标记下渲染与解析仍对齐／空与**非法**配置均回退默认／接口非管理员 403／保存即时生效与清空回退）；`test_fidelity_capture.py` **20 例** |
+| **OpenBase 护栏** | `tests/test_llm_proxy.py` 增 **4 例**（上游路径／载荷原样／查询参数**非空**透传／匿名 401）⇒ 该文件 **24 passed** |
+| **全量回归** | `tests/unit` **21 failed / 3526 passed**；失败集合与基线（`cr149-t30`：21/3388）**逐项一致（零新增、零消失）** |
+| **静态扫描** | K15 扫描**曾命中本批 2 处并已修**（第二写法 ＋ 注释字面量）⇒ 复跑 **0 命中**；`ruff`（改动文件）全绿 |
+| **契约文档** | `OpenLLM/doc/design/OpenLLM-装配模板与保真度对比-前端接口契约-v1.1.0.md` |
+| **运行态复核项** | 真实链路抽样（开启捕获 → 发请求 → 导出 → 出报告）**尚未执行**（属评测环境） |
+
+### 4AP.5 关系与后续
+
+| 项 | 内容 |
+|----|------|
+| **现网影响** | **默认零行为变化**：模板键默认空（回退内置）、远程编辑默认关、捕获默认关 ⇒ 既有装配与回执形态**逐字不变**；新增仅**只读与试装配**能力 |
+| **关联** | 技术方案 **v1.34.0**（§7 顶部「v1.34.0 判据与口径同步」块 ＋ §11）；OpenLLM DevLog **第 64 批（v1.53.0）**；契约文档 **v1.1.0** |
+| **后续** | ① 统一前端页面（模板页／对比页）由 OpenBase 前端批次实现；② **写模板的代理开放**待 OpenBase 管理员权限位确定；③ 评测环境真实链路抽样 |
+
+---
+
 ## 5. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| **v1.75.0** | **2026-09-28** | **AD-OpenBase-Dev** | **装配模板可配置 ＋ 统一前端（OpenBase `openbase-ui`）接口准备（§4AP 新建，依用户口径）**。① **口径更正**：统一前端是 **OpenBase 的** ⇒ 链路**两跳**（`openbase-ui → OpenBase 代理 `/api/v1/llm-proxy/prompt-assembly/*` → OpenLLM 网关 `/openllm/v1/prompt/assembly/*`），前端**零密钥**、只按 OpenBase 信封写代码。② **交付**：`assembly_template.py`（**校验 R1~R7** ＋ **段标记由模板派生**，与保真度解析**同源**）、`CONTEXT_ASSEMBLY_TEMPLATE`（空/非法**逐字回退**）与 `CONTEXT_ASSEMBLY_TEMPLATE_REMOTE_EDIT_ENABLED`（**默认 False**）、网关面 **5 条**接口 ＋ 管理面同构 5 条（管理员 JWT，含**落库＋变更日志**）、OpenBase `llm_proxy` **4 条透传**（写模板暂不开放）、`FLAG_ADVICE` 收敛为生产侧唯一来源。③ **红线边界**：**校验先于渲染**（模板可写**不等于**任意表达式执行面）；R5「素材段须留 `[标题]` 标记」保**可定位性**、R6/R7「`query` 恰好一次」保**意图不失真**；捕获与远程编辑**双双默认关闭** ⇒ 既有形态逐字不变。④ **验证**：OpenLLM 护栏 **26 ＋ 20 例**；OpenBase 透传 **4 例**（该文件 24 passed）；全量 **21 failed / 3526 passed**，失败集合与基线**逐项一致**。⑤ **如实登记**：K15「X-Proxy-Source 单一事实源」扫描**命中本批新增行 2 处已修**（复跑 0 命中）；护栏**未按 TDD 先 RED**的偏差已登记（DevLog 第 64 批）；**真实链路抽样属运行态复核项**。|
 | **v1.74.0** | **2026-09-28** | **AD-OpenBase-Dev** | **装配保真度对照：智能体原文 ⇄ 最终投喂上下文（§4AO 新建，依用户口径）**。① **缺口定位**：既有观测只有计量与索引，**两端文本均不可得**；根因＝`ExecutionResult.assembled_prompt` **仅存在于执行器内部**，网关既未回传亦未落库 ⇒ 对照无从做起。② **交付**：新增 `app/edgerouter/orchestration/fidelity_capture.py`（两端成对采集 ＋ 机读失真判定 `verdict`/`flags`/`query`/`history`/`injected`）＋ 网关 `_attach_fidelity_capture()`（**默认关闭**、fail-open、**同步/流式同一入口**）＋ 编排返回**带出** `assembled_prompt` ＋ 读取接口 `GET /openllm/v1/trace/fidelity/export`（关闭时如实 `note=capture_disabled`）＋ **对照报告工具** `fidelity_diff_report.py`（`--capture`/`--request-file`/`--demo`；`--strict` 门禁）。③ **判据 T16**（七条子句）：逐字保留⇒intact／被改写⇒mutated＋`query_rewritten`／缺问题段⇒missing＋`query_absent`／历史裁剪可见／凭据掩码／有界截断／开关两态。④ **红线边界**：默认关 ⇒ AC-148-01-5 形态**逐字不变**；开启时落库文本**一律掩码 ＋ 有界**，**判定基于原文**（真值）⇒ 凭据不出模块。⑤ **如实登记**：初版把 `analysis.query.request_text` 落为原文 ⇒ 护栏「敏感串不得出现在序列化结果中」**首跑失败并定位**该泄漏点，已改为「判定用原文、落库文本一律掩码」。⑥ **验证**：护栏 **20 例** ＋ 探针 **7 例 PASS** ＋ **T16 PASS**（全表 **15/0/0/1**）＋ `ruff` 全绿 ＋ 报告工具 `--demo --strict` 退出码 0；**真实链路抽样属运行态复核项**（不伪 PASS）。|
 | **v1.73.0** | **2026-09-28** | **AD-OpenBase-Dev** | **题 10（B 类）判别式重排器前置判定＝「前置未满足」（§4AN 新建，依收口方案 §8 判据 #4）**。① **判定**：**不实施判别式重排器，维持 OpenRAG 服务端 rerank**（服务端 rerank **已启用** ⇒ **无需补动作**）。② **事实（本机只读）**：本地 HF 缓存**无判别式重排器模型**（仅 whisper）、**`sentence_transformers` / `transformers` 均未安装**（⇒ 无法实测）、**无 GPU**（`torch 2.13.0+cpu`）、`RAG_RERANK_ENABLED=true` / `RAG_SCORE_THRESHOLD=0.15`；**生成式**做重排已由 §5.4 证不可行（P95 ≈ 35.7s ≫ 100ms）⇒ 不作替代。③ **判定规则可验证**：纯函数 `decide_reranker_prerequisite()` **四分支 ＋ 自检 5 例 PASS**（**含「达标」分支 ⇒ 证明规则非「恒判不达标」空转**；含「须 `action_required`」防「维持」成空话）；**未实测 ⇒ `measured_p95_ms=None`（不伪造数值）**。④ **性质**：**判定 ＋ 登记，零生产代码改动**。⑤ **收口影响**：**B 类前置由此关闭** ⇒ 收口方案 §8 **#1~#6 全部达成**；剩余未闭环仅 **题 3**（运行态段，环境前置）与 **题 11**（条件触发）。|
 | **v1.72.0** | **2026-09-28** | **AD-OpenBase-Dev** | **W2 落地：A 直连三组件取数（§4AM 新建，依收口方案 v1.5.0 §1.1.4 题 14）**。① **新增判据 T15**：「A 直连三组件取数」—— 四条子句（**取数非空**（Q8 内容口径）／**空态如实**／**写读闭环**／**直连拓扑身份面完整**），三组件（DPS 画像 / OpenMemory 记忆 / OpenRAG 知识库）**逐个齐备，缺一即不达标**。② **判据与探针不分叉**：T15 **直接复用**探针 `build_cases()`；探针不可用 ⇒ `BLOCKED`（**不伪 PASS**）。③ **证据**：探针 **4 例 PASS**（记忆 1 条 / 知识库 1 条 / 画像 3 字段 / 身份面 3 系统等价）；护栏 **7 例**；相关面合跑 **113 例全绿**；`ruff` 全绿；执行器全表 **14 PASS / 0 FAIL / 0 SKIP / 1 BLOCKED**。④ **如实登记**：探针首跑 4 例全失败，归因为**探针自身字面量错误**（`"llm-proxy"` vs 常量 `openbase-llm-proxy`），**非生产缺陷**，已改为断言协议常量；**真实外部服务联调仍属运行态复核项**（`detail.runtime_pending`）。⑤ **零生产代码改动**（A 直连能力既已存在，本批补「取数」验收）。|
