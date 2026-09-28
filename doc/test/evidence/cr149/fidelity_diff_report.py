@@ -30,21 +30,15 @@ sys.path.insert(0, os.getcwd())
 
 from app.edgerouter.orchestration.assembler import PromptAssembler  # noqa: E402
 from app.edgerouter.orchestration.fidelity_capture import (  # noqa: E402
+    FLAG_ADVICE,
     SEGMENT_MARKERS,
     analyze_fidelity,
     mask_sensitive,
     split_prompt_segments,
 )
 
-#: 按 `flags` 给出的**调整建议**（把「差异」直接映射到「装配流程可调处」）
-FLAG_ADVICE: dict[str, str] = {
-    "query_absent": "最终 Prompt **未含**用户问题段 —— 检查是否在组装前丢失/被裁剪；应保证 `[用户问题]` 恒在末位。",
-    "query_rewritten": "用户问题**被改写**（非逐字）—— 检查是否经模型改写/摘要/截断；装配层应**原样保留** query。",
-    "query_whitespace_normalized": "用户问题仅**空白差异** —— 属可接受的规范化；若业务要求逐字，请检查 strip/折叠空白环节。",
-    "history_truncated": "历史被**裁剪**（丢最旧保最近）—— 属设计行为；若关键轮次被丢，请调 `CONTEXT_QUOTA_HISTORY` 或历史窗口预算。",
-    "final_prompt_absent": "**未取到最终 Prompt**（组装未发生或未带出）—— 检查是否 `output_mode!=llm_response` 或开关未开。",
-    "capture_failed": "捕获环节异常（fail-open）—— 只影响观测，不影响对话；请查后端 WARN 日志。",
-}
+# 调整建议映射**取自生产侧**（`fidelity_capture.FLAG_ADVICE`，唯一来源）—— 本工具不再自持一份，
+# 避免「接口给的说明」与「工具给的说明」两处漂移。
 
 
 def _record_from_texts(request_text: str, final_prompt: str) -> dict:
