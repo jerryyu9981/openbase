@@ -1,0 +1,127 @@
+{
+  "probe": "fidelity_capture",
+  "ruling": "装配**保真度对照**（2026-09-28 用户口径）：把「智能体原文 ⇄ 最终投喂 Prompt」两端成对采集，**默认关闭**（逐字回退）、开启时**掩码 ＋ 有界**；输出机读`verdict` / `flags` 判定装配是否**失真反馈用户真实意图**",
+  "cases": [
+    {
+      "case": "① 逐字保留、无裁剪 ⇒ intact 且信号为空",
+      "verdict": "intact",
+      "flags": [],
+      "request_chars": 8,
+      "final_chars": 31,
+      "masked": false,
+      "checks": {
+        "verdict_matches": true,
+        "flags_match": true,
+        "masked": true,
+        "truncated_flag_matches": true,
+        "bounded": true
+      },
+      "ok": true
+    },
+    {
+      "case": "② 用户问题被改写 ⇒ mutated ＋ query_rewritten（意图失真）",
+      "verdict": "mutated",
+      "flags": [
+        "query_rewritten"
+      ],
+      "request_chars": 4,
+      "final_chars": 13,
+      "masked": false,
+      "checks": {
+        "verdict_matches": true,
+        "flags_match": true,
+        "masked": true,
+        "truncated_flag_matches": true,
+        "bounded": true
+      },
+      "ok": true
+    },
+    {
+      "case": "③ 最终 Prompt 缺 [用户问题] 段 ⇒ missing ＋ query_absent",
+      "verdict": "missing",
+      "flags": [
+        "query_absent"
+      ],
+      "request_chars": 4,
+      "final_chars": 15,
+      "masked": false,
+      "checks": {
+        "verdict_matches": true,
+        "flags_match": true,
+        "masked": true,
+        "truncated_flag_matches": true,
+        "bounded": true
+      },
+      "ok": true
+    },
+    {
+      "case": "④ 历史被裁剪 ⇒ intact（意图未变）＋ history_truncated（裁剪可见）",
+      "verdict": "intact",
+      "flags": [
+        "history_truncated"
+      ],
+      "request_chars": 40,
+      "final_chars": 31,
+      "masked": false,
+      "checks": {
+        "verdict_matches": true,
+        "flags_match": true,
+        "masked": true,
+        "truncated_flag_matches": true,
+        "bounded": true
+      },
+      "ok": true
+    },
+    {
+      "case": "⑤ 含凭据 ⇒ 落库文本已掩码（敏感串不出现）",
+      "verdict": "intact",
+      "flags": [],
+      "request_chars": 35,
+      "final_chars": 42,
+      "masked": true,
+      "checks": {
+        "verdict_matches": true,
+        "flags_match": true,
+        "masked": true,
+        "truncated_flag_matches": true,
+        "bounded": true
+      },
+      "ok": true
+    },
+    {
+      "case": "⑥ 超长 ⇒ 有界截断并标注 truncated_for_capture",
+      "verdict": "intact",
+      "flags": [],
+      "request_chars": 500,
+      "final_chars": 507,
+      "masked": false,
+      "checks": {
+        "verdict_matches": true,
+        "flags_match": true,
+        "masked": true,
+        "truncated_flag_matches": true,
+        "bounded": true
+      },
+      "ok": true
+    },
+    {
+      "case": "⑦ 开关两态：关 ⇒ None（逐字回退）／开 ⇒ 完整记录",
+      "verdict": "-",
+      "flags": [],
+      "request_chars": 0,
+      "final_chars": 0,
+      "masked": false,
+      "checks": {
+        "disabled_returns_none": true,
+        "enabled_returns_record": true
+      },
+      "ok": true
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "failed": 0,
+    "failed_cases": [],
+    "verdict": "PASS"
+  }
+}

@@ -2526,6 +2526,91 @@ def check_t15() -> Verdict:
     )
 
 
+def check_t16() -> Verdict:
+    """T16（**装配保真度对照 / v1.33.0 新增**）：智能体原文 ⇄ 最终投喂上下文**两端可对照**
+
+    **判据（用户口径，2026-09-28）**：需要对比「智能体发起的对话原文」与「最终投喂给 LLM 的
+    上下文」的异同，据此调整装配流程与装配方案，**确保不失真地反馈用户真实意图**。
+
+    **七条子句（同一份探针驱动，防判据与探针分叉）**：
+
+      ① **逐字保留即 `intact`**（无注入/裁剪时信号为空）；
+      ② **被改写 ⇒ `mutated` ＋ `query_rewritten`**（**意图失真信号**）；
+      ③ **缺 `[用户问题]` 段 ⇒ `missing` ＋ `query_absent`**（装配丢问题，最严重失真）；
+      ④ **历史裁剪可见** ⇒ `turns_dropped > 0` ＋ `history_truncated`（设计行为，但**必须可见**）；
+      ⑤ **凭据不出模块** ⇒ 落库文本中敏感串不出现（掩码生效）；
+      ⑥ **有界** ⇒ 超长截断并标注 `truncated_for_capture`；
+      ⑦ **开关两态** ⇒ 关闭返回 `None`（**逐字回退**，回执不新增字段）、开启返回完整记录。
+
+    **边界（如实登记）**：判定基于**原文**（真值）；落库文本**掩码 ＋ 有界** ⇒ 默认关闭时
+    既有安全红线 AC-148-01-5 的默认形态**逐字不变**；本判据**不据此宣称真实链路的对照已抽样**。
+    """
+    title = "装配保真度对照：两端可对照 ＋ 失真可判（默认关闭、掩码有界；进程内可判）"
+    evidence_dir = os.path.dirname(os.path.abspath(__file__))
+    if evidence_dir not in sys.path:
+        sys.path.insert(0, evidence_dir)
+    try:
+        import fidelity_capture_probe as probe  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        return Verdict(
+            criterion="T16",
+            title=title,
+            status=STATUS_BLOCKED,
+            detail={"blocked_reason": f"探针不可加载：{type(exc).__name__}: {exc}"},
+            reason="保真度对照探针依赖不可用 ⇒ 属环境前置缺失",
+        )
+
+    try:
+        cases = [*probe.build_cases(), probe._switch_case()]
+    except Exception as exc:  # noqa: BLE001
+        return Verdict(
+            criterion="T16",
+            title=title,
+            status=STATUS_BLOCKED,
+            detail={"blocked_reason": f"探针执行失败：{type(exc).__name__}: {exc}"},
+            reason="保真度对照不可在进程内执行 ⇒ 属环境前置缺失",
+        )
+
+    failures: list[str] = []
+    details: list[dict] = []
+    for item in cases:
+        bad = [name for name, ok in item["checks"].items() if not ok]
+        details.append(
+            {"case": item["case"], "verdict": item["verdict"], "flags": item["flags"], "bad": bad}
+        )
+        if bad:
+            failures.append(f"{item['case']} 子句不符：{bad}")
+
+    # 七条子句须**逐条齐备**（数量不足即视为覆盖缺失，不放过）
+    if len(cases) < 7:
+        failures.append(f"判定表例数不足（{len(cases)} < 7）⇒ 子句覆盖缺失")
+
+    return Verdict(
+        criterion="T16",
+        title=title,
+        status=STATUS_FAIL if failures else STATUS_PASS,
+        detail={
+            "cases": details,
+            "switch_off_returns_none": "见 ⑦（关闭 ⇒ None，逐字回退）",
+            "masked_and_bounded": "见 ⑤（掩码）／⑥（有界截断）",
+            "runtime_pending": (
+                "**真实链路**的两端对照抽样（开启开关后发请求 → 导出 → 出报告）属**运行态复核项**；"
+                "本判据只证明契约与判定在进程内成立，**不据此宣称已对真实流量抽样**"
+            ),
+            "tooling": (
+                "对照报告工具 `doc/test/evidence/cr149/fidelity_diff_report.py`"
+                "（`--capture` 读导出产物 / `--demo` 合成样本 / `--strict` 门禁）"
+            ),
+            "probe_evidence": (
+                "`doc/test/evidence/cr149/fidelity_capture_probe.py`"
+                "（7 例判定表 ＋ 结尾自检；本判据**复用同一 `build_cases()`** 防分叉）"
+            ),
+            "unit_evidence": "`tests/unit/test_fidelity_capture.py`（**20 例**护栏）",
+        },
+        reason="；".join(failures),
+    )
+
+
 SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
     ("T1", check_t1),
     ("T2", check_t2),
@@ -2537,6 +2622,7 @@ SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
     ("T13", check_t13),
     ("T14", check_t14),
     ("T15", check_t15),
+    ("T16", check_t16),
 ]
 
 ASYNC_CHECKS: list[tuple[str, Callable[[], Any]]] = [
@@ -2574,7 +2660,7 @@ def run_all() -> list[Verdict]:
                     reason=f"{type(exc).__name__}: {exc}",
                 )
             )
-    order = {f"T{index}": index for index in range(1, 16)}
+    order = {f"T{index}": index for index in range(1, 17)}
     verdicts.sort(key=lambda verdict: order.get(verdict.criterion, 99))
     return verdicts
 
@@ -2638,3 +2724,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

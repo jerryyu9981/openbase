@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-28T19:56:03",
+  "generated_at": "2026-09-28T20:18:37",
   "simulate": false,
   "summary": {
-    "PASS": 14,
+    "PASS": 15,
     "FAIL": 0,
     "SKIP": 0,
     "BLOCKED": 1
@@ -414,7 +414,7 @@
             "source": "manual",
             "reason": "演练",
             "primary_after": "a",
-            "occurred_at": "2026-09-28T11:56:02.235103+00:00"
+            "occurred_at": "2026-09-28T12:18:36.961040+00:00"
           },
           "record_missing_fields": [],
           "no_loop_status": "no_loop",
@@ -1320,6 +1320,71 @@
         "carrier": "mock_services/{openmemory,openrag,profile}_stub（进程内 TestClient，零网络）",
         "runtime_pending": "真实外部服务（生产 DPS / OpenMemory / OpenRAG）联调与真实契约路由（`OPENLLM_*_REAL=true`）仍属运行态复核项 —— 本判据不据此宣称生产已贯通",
         "probe_evidence": "`doc/test/evidence/cr149/a_direct_component_probe.py`（4 例判定表 ＋ 结尾自检；本判据**复用同一 `build_cases()`** 防分叉）"
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T16",
+      "title": "装配保真度对照：两端可对照 ＋ 失真可判（默认关闭、掩码有界；进程内可判）",
+      "status": "PASS",
+      "requires": [],
+      "detail": {
+        "cases": [
+          {
+            "case": "① 逐字保留、无裁剪 ⇒ intact 且信号为空",
+            "verdict": "intact",
+            "flags": [],
+            "bad": []
+          },
+          {
+            "case": "② 用户问题被改写 ⇒ mutated ＋ query_rewritten（意图失真）",
+            "verdict": "mutated",
+            "flags": [
+              "query_rewritten"
+            ],
+            "bad": []
+          },
+          {
+            "case": "③ 最终 Prompt 缺 [用户问题] 段 ⇒ missing ＋ query_absent",
+            "verdict": "missing",
+            "flags": [
+              "query_absent"
+            ],
+            "bad": []
+          },
+          {
+            "case": "④ 历史被裁剪 ⇒ intact（意图未变）＋ history_truncated（裁剪可见）",
+            "verdict": "intact",
+            "flags": [
+              "history_truncated"
+            ],
+            "bad": []
+          },
+          {
+            "case": "⑤ 含凭据 ⇒ 落库文本已掩码（敏感串不出现）",
+            "verdict": "intact",
+            "flags": [],
+            "bad": []
+          },
+          {
+            "case": "⑥ 超长 ⇒ 有界截断并标注 truncated_for_capture",
+            "verdict": "intact",
+            "flags": [],
+            "bad": []
+          },
+          {
+            "case": "⑦ 开关两态：关 ⇒ None（逐字回退）／开 ⇒ 完整记录",
+            "verdict": "-",
+            "flags": [],
+            "bad": []
+          }
+        ],
+        "switch_off_returns_none": "见 ⑦（关闭 ⇒ None，逐字回退）",
+        "masked_and_bounded": "见 ⑤（掩码）／⑥（有界截断）",
+        "runtime_pending": "**真实链路**的两端对照抽样（开启开关后发请求 → 导出 → 出报告）属**运行态复核项**；本判据只证明契约与判定在进程内成立，**不据此宣称已对真实流量抽样**",
+        "tooling": "对照报告工具 `doc/test/evidence/cr149/fidelity_diff_report.py`（`--capture` 读导出产物 / `--demo` 合成样本 / `--strict` 门禁）",
+        "probe_evidence": "`doc/test/evidence/cr149/fidelity_capture_probe.py`（7 例判定表 ＋ 结尾自检；本判据**复用同一 `build_cases()`** 防分叉）",
+        "unit_evidence": "`tests/unit/test_fidelity_capture.py`（**20 例**护栏）"
       },
       "reason": ""
     }

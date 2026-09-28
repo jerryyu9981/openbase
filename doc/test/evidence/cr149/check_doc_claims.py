@@ -71,11 +71,15 @@ ABSENCE_MARKERS = (
     "幻影", "误填", "订正为", "未随提交", "本就不该",
 )
 #: 外部产品/环境变量/语言关键字等（非本仓符号）
+#: **凭据前缀示例（v1.33.0 追加）**：`Bearer` / `AKIA`（及其族 `sk-` / `ghp_`）是**HTTP 鉴权方案与
+#: 云厂商密钥前缀**，在正文里作为「**掩码规则的示例**」出现，**不是本仓符号** —— 与 `json`/`httpx`
+#: 同属外部词，故归入本集合，避免审计被凭据示例淹没（误报边界**如实登记**）。
 EXTERNAL = {
     "OLLAMA_KEEP_ALIVE", "OLLAMA_MODELS", "OLLAMA_HOST", "num_ctx",
     "json_extract", "Sequence",
     "TestClient", "await", "env", "requires", "ruff", "seed", "size_vram", "noise",
     "http", "https", "api", "json", "yaml", "sqlite", "faiss", "pytest", "asyncio",
+    "Bearer", "AKIA",
 }
 #: 正文**已明确声明为零命中**的检索词（审计取证用，逐项可回溯到具体修订行）＋
 #: 工件文件名片段（如「`cr149-t18` / `t19` / `t20`」中的后两项）
