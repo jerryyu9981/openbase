@@ -1,0 +1,103 @@
+{
+  "id": "cr149-v149-increments-eval-set",
+  "version": "1.0.0",
+  "created": "2026-09-28",
+  "purpose": "v1.4.9 增量 I-1~I-8 的**判据样本集**：每个增量给出可离线复现的样本与期望；运行态数据段如实标注「未覆盖」（不冒充）",
+  "criteria_source": "《OpenBase-验收标准清单-v1.4.9》（AC-149-01~16）",
+  "cases": [
+    {
+      "id": "I-1",
+      "ac": "AC-149-01/02",
+      "kind": "offline",
+      "title": "跨段竞争池：开启可回填 / 关闭逐字一致",
+      "expect": "开关开 ⇒ budget.history.competition_filled > 0 且 truncated.history.refilled_items ≥ 1；开关关 ⇒ 两字段均不出现；两者 Σ 素材 used ≤ available（T1）",
+      "sample": "memory 远未用满 + history 8 条（逐条正文不同）× 60 字，窗口 1200 / 预留 200"
+    },
+    {
+      "id": "I-2",
+      "ac": "AC-149-05",
+      "kind": "offline",
+      "title": "逐条丢弃原因明细：原因码在冻结取值域且不落正文",
+      "expect": "提供条目身份 ⇒ truncated.history.dropped 全为 reason=quota 且 len == dropped_items；元素仅含 source/id/reason；回执顶层 dropped 恒有",
+      "sample": "history 8 条逐条不同 + segment_items 8 条身份"
+    },
+    {
+      "id": "I-3",
+      "ac": "AC-149-03/04",
+      "kind": "offline",
+      "title": "显式标记：hard_truncated 恒有 / degraded=empty_guard 仅保底触发",
+      "expect": "整条丢弃 ⇒ hard_truncated=False 且无 degraded 键；保底一条被触发 ⇒ hard_truncated=True 且 degraded=empty_guard",
+      "sample": "单条素材大于段配额（触发保底）与多条超配额（整条丢弃）两组"
+    },
+    {
+      "id": "I-5",
+      "ac": "AC-149-04/12",
+      "kind": "offline",
+      "title": "仍超窗：二次校验与显式失败标记",
+      "expect": "正常 ⇒ over_window=False 且 over_window_tokens=0；无法吸收的溢出 ⇒ over_window=True 且 over_window_tokens=溢出额度；窗口内 ⇒ 从不置位（超窗率 0）",
+      "sample": "窗口 2000（正常）与窗口 100 + system 500（不可吸收）两组"
+    },
+    {
+      "id": "I-6",
+      "ac": "AC-149-13",
+      "kind": "offline",
+      "title": "取数层逐组件通道路由：独立标签与按组件隔离",
+      "expect": "未提供裁决器 ⇒ channels 为空（逐字一致）；提供裁决器 ⇒ 每组件独立标签；某组件达阈值 ⇒ 仅该组件切通道，其余不变；裁决器异常 ⇒ 回落整体偏好",
+      "sample": "阈值 1 的逐组件裁决器 + memory/rag 两组件执行"
+    },
+    {
+      "id": "I-7",
+      "ac": "AC-149-14",
+      "kind": "offline",
+      "title": "审计动作码定稿：取值域与组件级事件",
+      "expect": "AUDIT_ACTION_CODES == {channel_failover_b_to_a, channel_component_failover}；组件级记录 detail 含 component 且不含敏感字段；门控关 ⇒ 投递状态 disabled",
+      "sample": "动作码常量 / 组件级记录构造 / 门控关闭三查"
+    },
+    {
+      "id": "I-8",
+      "ac": "AC-149-15",
+      "kind": "offline",
+      "title": "画像增量与频控预检接线：默认零变化 + fail-open",
+      "expect": "门控默认关闭 ⇒ 提炼器注入位返回 False（纯规则）；无存储 ⇒ 频控预检不拦截；存储异常 ⇒ 按未命中（不阻断）",
+      "sample": "启动注入位（默认关）+ 频控预检（无存储 / 异常）两组"
+    }
+  ],
+  "runtime_pending": [
+    {
+      "id": "I-4",
+      "ac": "AC-149-06/07",
+      "kind": "runtime",
+      "title": "回写携带本轮使用片段标识与得分（used_fragments）",
+      "reason": "**跨仓契约（依赖 D4）**：`used_fragments` 需 OpenBase 侧回写 payload 与 OpenMemory/OpenRAG/DPS 的**运行态往返**才能取证；本仓只保证字段形态与缺省语义",
+      "requires": ["D4 跨仓回写契约确认", "运行态 OpenMemory/OpenRAG 可达"],
+      "not_covered": true
+    },
+    {
+      "id": "I-1-runtime",
+      "ac": "AC-149-01/02",
+      "kind": "runtime",
+      "title": "跨段竞争池在**真实装配链路**上的回填量与超窗率",
+      "reason": "本版离线用例验证**算法与不变量**；真实链路的回填分布与超窗率需运行态回执统计",
+      "requires": ["CONTEXT_BUDGET_ENABLED=true", "运行态回执 context_metrics 采集"],
+      "not_covered": true
+    },
+    {
+      "id": "I-8-runtime",
+      "ac": "AC-149-15",
+      "kind": "runtime",
+      "title": "画像 LLM 提炼**真正生效**（三条件齐备）后的增量质量",
+      "reason": "受 **D3**（上游模型与 Key 未确认）⇒ 本版只交付**接线**，生效与质量评测不在本版承诺内",
+      "requires": ["D3 上游模型与 Key", "评测支撑"],
+      "not_covered": true
+    },
+    {
+      "id": "I-6-runtime",
+      "ac": "AC-149-13",
+      "kind": "runtime",
+      "title": "A 直连取数的**真实路由落点**（组件级切换后的实际取数通道）",
+      "reason": "本仓只做**裁决/发布/回写**（架构 §3.18）；A 直连由**直连拓扑**承担 ⇒ 端到端通道归属需跨仓运行态取证",
+      "requires": ["A 直连拓扑可用", "跨仓通道归属取证"],
+      "not_covered": true
+    }
+  ]
+}

@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（编排与回写代码所在仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 设计开发追溯矩阵（Step 3 产出 2，TD-ID ↔ 设计项 ↔ 代码落点） |
-| 文档版本 | v1.2.0 |
+| 文档版本 | v1.4.0 |
 | 状态 | [Review]（Step 3 进行中） |
 | 日期 | 2026-09-28 |
 | 上游依据 | 设计基线 **v1.2.0**（[Approved]）；《需求设计追溯矩阵-v1.4.9》v1.2.0 |
@@ -16,13 +16,13 @@
 | TD-ID | 设计项（DT） | 需求 | 代码落点（OpenLLM） | 判据 | Phase | 状态 |
 |-------|-------------|------|---------------------|:----:|:-----:|:----:|
 | **TD-14901** | DT-149-03（回执扩展）／I-3 显式标记 | FR-149-06 | `app/edgerouter/orchestration/prompt_pipeline.py`（`_trim_segment` 报告 ＋ 文档同步） | **AC-149-03/04** | P1 | ✅ **已完成（本批）** |
-| TD-14902 | DT-149-03（回执扩展）／I-2 逐条丢弃原因 | FR-149-06 | 同上（需**条目身份**（source/id/score）从取数层透传至段内裁剪）⇒ **先补设计（上游契约变更）**，见 §3bis | AC-149-05 | P1 | ⏳ **解阻塞（设计补充 A 已出，§3.13）⇒ 本批实施** |
-| TD-14903 | DT-149-01／I-1 跨段配额竞争 | FR-149-03 | `prompt_pipeline.py`（预算池）＋ `BudgetPolicy` | AC-149-01/02 | P2 | ⏳ 待做（批次 2） |
-| TD-14904 | DT-149-02／I-5 仍超窗显式失败标记 | FR-149-05 | `prompt_pipeline.py`（verifier 路径） | **AC-149-12** | P2 | ⏳ 待做（批次 3） |
-| TD-14905 | DT-149-15／I-6 取数层逐组件通道路由 | FR-149-09 | `app/edgerouter/orchestration/component_pipeline.py`、`app/identity/channel.py` | AC-149-13 | P5 | ⏳ 待做（批次 4） |
-| TD-14906 | DT-149-16／I-7 审计动作码定稿 | FR-149-10 | `app/identity/channel_audit.py`（动作码定稿 ＋ 组件级事件类型） | AC-149-14 | P5 | ⏳ 待做（批次 4） |
-| TD-14907 | DT-149-17／I-8 画像增量与频控预检接线 | FR-149-11 | `app/edgerouter/orchestration/evaluate.py`、`profile_refine_gate.py` | AC-149-15 | P6 | ⏳ 待做（批次 5） |
-| TD-14908 | DT-149-18／I-9 评测集与判据扩展 | FR-149-12 | `doc/test/evidence/cr149/`（执行器 ＋ 评测集） | AC-149-16 | P6 | ⏳ 待做（批次 6） |
+| TD-14902 | DT-149-03（回执扩展）／I-2 逐条丢弃原因 | FR-149-06 | `prompt_pipeline.py`（`segment_items` 透传 ＋ `dropped` 明细 ＋ 单元三元组）＋ `context_metrics.py`（顶层 `dropped` 导出） | AC-149-05 | P1 | ✅ **已完成（批次 2 收尾）** |
+| TD-14903 | DT-149-01／I-1 跨段配额竞争 | FR-149-03 | `prompt_pipeline.py`（预算池）＋ `BudgetPolicy` | AC-149-01/02 | P2 | ✅ **已完成（批次 2）** |
+| TD-14904 | DT-149-02／I-5 仍超窗显式失败标记 | FR-149-05 | `prompt_pipeline.py`（`_verify_window` 二次校验 ＋ 三标记）＋ `context_metrics.py`（标记导出） | **AC-149-12** | P2 | ✅ **已完成（批次 3）** |
+| TD-14905 | DT-149-15／I-6 取数层逐组件通道路由 | FR-149-09 | `component_pipeline.py`（逐组件裁决/标签/回写）＋ `channel.py`（逐组件状态）＋ `executor.py`/网关（轨迹落痕） | AC-149-13 | P5 | ✅ **已完成（批次 4）** |
+| TD-14906 | DT-149-16／I-7 审计动作码定稿 | FR-149-10 | `channel_audit.py`（定稿 ＋ 组件级事件）＋ 网关调用点 | AC-149-14 | P5 | ✅ **已完成（批次 4）** |
+| TD-14907 | DT-149-17／I-8 画像增量与频控预检接线 | FR-149-11 | `evaluate.py`（两条公开预检）＋ `profile_refine_gate.py`（启动注入位）＋ `writeback_queue.py`（补齐缺失依赖）＋ 网关回写回调 ＋ `main.py` lifespan | AC-149-15 | P6 | ✅ **已完成（批次 5）** |
+| TD-14908 | DT-149-18／I-9 评测集与判据扩展 | FR-149-12 | `doc/test/evidence/cr149/`（`v149-increment-eval-set.json` ＋ `v149_increment_runner.py` ＋ `-result.json`） | AC-149-16 | P6 | ✅ **已完成（批次 6）** |
 | TD-14909 | DT-149-19／I-10 重排器条件项 | FR-149-13 | 仅登记（无代码变更） | AC-149-17（条件） | — | ✅ **按设计不实施** |
 
 ## 2. Subtask CheckList（文件级；命名与设计规划一致）
@@ -31,11 +31,18 @@
 |:-:|------|------|:--------------:|:----:|
 | 1 | `app/edgerouter/orchestration/prompt_pipeline.py` | 修改（`_trim_segment` 报告 ＋ docstring） | ✅（设计 §3.6／API §2 指向该模块） | ✅ 完成 |
 | 2 | `tests/unit/test_context_trim_markers.py` | **新建** | ✅（测试命名遵循仓内 `test_context_*` 约定） | ✅ 完成 |
-| 3 | `prompt_pipeline.py` 预算池（跨段竞争） | 修改 | ✅ | ⏳ 批次 2 |
-| 4 | `component_pipeline.py` ＋ `channel.py`（取数层路由） | 修改 | ✅ | ⏳ 批次 4 |
-| 5 | `channel_audit.py`（动作码定稿） | 修改 | ✅ | ⏳ 批次 4 |
+| 3 | `prompt_pipeline.py` 预算池（跨段竞争）＋ `tests/unit/test_context_cross_segment_competition.py` | 修改／**新建测试** | ✅ | ✅ 完成（批次 2） |
+| 4 | `component_pipeline.py` ＋ `channel.py`（取数层路由） | 修改 | ✅ | ✅ 完成（批次 4） |
+| 5 | `channel_audit.py`（动作码定稿） | 修改 | ✅ | ✅ 完成（批次 4） |
+| 6 | `tests/unit/test_context_dropped_detail.py` | **新建** | ✅（沿用仓内 `test_context_*` 约定） | ✅ 完成（批次 2 收尾） |
+| 7 | `context_metrics.py`（顶层 `dropped` 导出） | 修改 | ✅（设计 §3.16 两级落点） | ✅ 完成（批次 2 收尾） |
+| 8 | `tests/unit/test_context_over_window_verifier.py` | **新建** | ✅（沿用仓内 `test_context_*` 约定） | ✅ 完成（批次 3） |
+| 9 | `tests/unit/test_component_channel_routing.py` ＋ `test_channel_audit_action_codes.py` ＋ `test_component_channel_audit_wiring.py` | **新建** | ✅（沿用仓内 `test_component_*` / `test_channel_*` 约定） | ✅ 完成（批次 4） |
+| 10 | `executor.py`（通道标签上抛）＋ `core/config.py`（`COMPONENT_CHANNEL_ROUTING_ENABLED`）＋ 网关（裁决器/轨迹/审计调用点） | 修改 | ✅ | ✅ 完成（批次 4） |
+| 11 | `tests/unit/test_profile_delta_and_precheck_wiring.py` | **新建** | ✅（沿用仓内 `test_*` 约定） | ✅ 完成（批次 5） |
+| 12 | `evaluate.py`（两条公开预检）＋ `profile_refine_gate.py`（启动注入位）＋ `writeback_queue.py`（补齐 `compute_message_hash`/`exists_message`）＋ 网关回写回调 ＋ `main.py` lifespan | 修改 | ✅ | ✅ 完成（批次 5） |
 
-> **无新增/重命名/删除文件未落地项被隐藏**：本批仅 1 新建测试文件（已落地），其余均为后续批次（已在上表逐项标注批次）。
+> **无新增/重命名/删除文件未落地项被隐藏**：已落地新建测试文件为 8 个（批次 1：`test_context_trim_markers.py`；批次 2：`test_context_cross_segment_competition.py`、`test_context_dropped_detail.py`；批次 3：`test_context_over_window_verifier.py`；批次 4：`test_component_channel_routing.py`、`test_channel_audit_action_codes.py`、`test_component_channel_audit_wiring.py`；批次 5：`test_profile_delta_and_precheck_wiring.py`），其余均为既有文件修改（含 1 项既有护栏随定稿更正），后续批次项已在上表逐项标注批次。
 
 ## 3. 本批实施记录（批次 1＝I-3）与推迟说明
 
@@ -57,14 +64,117 @@
 - 影响面：要产出 `dropped[{source,id,reason}]`，必须让 `build_prompt` 的 `segments` **并行携带条目元数据**，并由**网关侧**（取数层）提供身份 —— 属**跨模块契约变更**，会触及调用方。
 - 处置（按 Step 3 规则 2「不得以代码实现替代设计确认」）：**先在 Step 2 设计侧补一条接口约定/ADR**（`segments` 携带元数据的最小形态与缺省兼容），评审后再实施；本批**不写未经验证的契约改造代码**。
 
+## 3ter. 批次 2 实施记录（I-1 跨段竞争池，2026-09-28 续记）
+
+**已完成**：
+- `BudgetPolicy` 新增 **`cross_segment_competition_enabled`**（**默认 False**；`load_budget_policy` 对应 `CONTEXT_CROSS_SEGMENT_COMPETITION_ENABLED`）⇒ 关闭时与既有实现**逐字一致**。
+- `apply_context_budget` 末尾新增**竞争池**：`pool = min(available − Σ used, Σ dropped_tokens)`（**硬上界**，T1 结构性不破）→ 逐段按放大后的配额重跑**同一套** `_trim_segment` 回填 → 观测落 `budget.<段>.competition_filled` 与 `truncated.<段>.refilled_items`；任何异常按 **fail-safe「视为未启用」** 处理并标记 `degraded="competition_skipped"`。
+- **取消配额旁路参数** `_trim_segment(..., quota_override=...)`（经全仓检索**无任何调用方** ⇒ 死参数）：回填一律以「放大该段比例」单一口径表达，避免两套配额表述破坏 T1/T2 同源性（设计 §3.15②）。
+- 新增测试 `tests/unit/test_context_cross_segment_competition.py`（**先建后改**，TDD）。
+
+**根因定位（如实，含两类缺陷）**：
+| # | 缺陷 | 性质 | 证据 | 处置 |
+|:-:|------|------|------|------|
+| ① | 测试夹具：history 8 行**正文完全相同**（仅序号不同）⇒ 段内**去重先于配额**丢掉 7 条，池内**根本没有「配额丢弃」可回填**（`dropped_items=7` 全为质量规则丢弃） | **测试缺陷** | 直调 `_trim_segment` 在 `quota=190/610/2000` 三档下**返回完全相同**（`used=63, dropped=7`）⇒ 丢弃与配额无关 | 夹具改为逐行正文不同；并把该语义固化为**新护栏用例** `TestQualityDropsAreNotReclaimed` |
+| ② | 生产代码：回填后 `_trim_segment` 返回**空报告**（放宽后已无丢弃）时，`new_report.get("dropped_items")` 抛 `AttributeError`，被 fail-safe **静默吞掉** ⇒ 现象为「池已到达（实测第三次调用配额 190→550、`used` 127→511）但结果不变」 | **实现缺陷** | 插桩看到 `degraded='competition_skipped'` 与 `'NoneType' object has no attribute 'get'` | 改为 `(new_report or {})`，并澄清观测口径为**最终状态**（§3.15③） |
+
+> **更正前一记录**：上一轮排障中出现的 `local variable 'pool' referenced before assignment` **并非模块缺陷**，系**探针自身插桩**造成（探针在 `try` 外引用了 `pool`）⇒ 该线索作废，不作为缺陷登记。
+
+**批次边界（如实）**：**I-2（逐条丢弃原因明细）仍待做** —— 本批已完成其**设计前置**（架构 §3.13 条目元数据最小契约）与 **I-1 落地**，I-2 的代码改造（`segment_items` 透传 ＋ 5 个丢弃点携带原因）进入**批次 2 收尾**（下一动作）。
+
+## 3quater. 批次 2 收尾实施记录（I-2 逐条丢弃原因明细，2026-09-28 续记）
+
+**已完成**：
+- `_trim_segment` 新增可选 `items`（条目元数据，**只读**）→ 段级观测新增增量字段 **`dropped: [{source,id,reason}]`**；单元内部表示升为**三元组** `(编号前缀, 正文, 身份或 None)`（`_merge_adjacent_synonyms`/`_profile_drop_order`/`_drop_empty_profile_sections`/`render` 同步；三者均**仅**本模块内部使用，无外部调用方）。
+- `apply_context_budget(..., segment_items=...)` 与 `build_prompt(..., segment_items=...)` 透传身份；`PromptComposition` 新增顶层 **`dropped`**，由段级明细按 `QUOTA_SEGMENTS` 段序**展平**；`ContextReceipt.to_record()` 导出顶层 `dropped`（**恒有**，`[]` 兜底）⇒ **AC-149-05 齐备率 100%**。
+- 设计前置：架构 **§3.16（设计补充 C）** 冻结原因码取值域、两级落点、排序与字段存在性（v1.5.0）。
+
+**根因/缺陷记录（如实）**：
+| # | 项 | 性质 | 处置 |
+|:-:|----|------|------|
+| ① | **口径缺陷（既有实现，非本批引入）**：②' 画像字段级预丢项被③配额阶段**重复计数**（两者复用同一 `popped`）⇒ `dropped_items`/`dropped_tokens` 在「字段级预丢生效」时**翻倍** | 实现缺陷（既有断言均为 `>= 1` 故未被发现） | 配额阶段改用**独立** `quota_popped`；保底候选按「配额阶段优先、字段级兜底」取用；新增**精确计数**护栏（`test_profile_field_drop_reason_and_exact_count`） |
+| ② | 排序在编期调整：初版按**弹出顺序**（自尾部）落 `dropped` ⇒ 回执可读性差 | 观测口径编期收敛（未改任何取舍） | 冻结为「**处置阶段先后 + 阶段内段内呈现序**」，同步写入设计 §3.16 |
+| ③ | 段级 `dropped` 与 I-3「无裁剪 ⇒ 报告缺失」潜在冲突 | 契约边界澄清 | 冻结：**完全未裁剪 ⇒ 段级报告整体缺席**（但顶层 `dropped` 仍为 `[]`）⇒ 两条不变量同时成立 |
+
+**批次 2 收官状态**：I-1 ✅ ＋ I-2 ✅ ⇒ 批次 2 **全部完成**；下一动作＝**批次 3（I-5 仍超窗显式失败标记 / TD-14904）**。
+
+**本批测试**：`test_context_dropped_detail.py` **先建（RED 10 failed / 1 passed）→ 实现后 GREEN 12 passed**；与 I-1/I-3 双护栏合跑 **22 passed**；相关面 14 文件 **238 passed**；`ruff` 全绿。
+
+## 3quinquies. 批次 3 实施记录（I-5 仍超窗显式失败标记，2026-09-28 续记）
+
+**已完成**：
+- `build_prompt` 组装后新增**二次校验**（`_verify_window`）：`prompt_total_tokens > window_tokens` ⇒ **超窗**；校正**至多一次**（按 `Σratio(有素材的段)` 反算收紧额度并并入输出预留，**实减**素材预算后重组装）；仍超窗 ⇒ 置 `over_window`/`over_window_tokens` 并记 **ERROR**（**不静默**）。
+- 观测：`PromptComposition.over_window` / `over_window_tokens` / `over_window_recovered` **三字段恒有**；`ContextReceipt.to_record()` 同步导出（AC-149-12「实测统计」依据）。
+- 组装顺序调整：`render → 二次校验 → refine 观测/分项计量` ⇒ 校正后的 `segments` 才是「最终状态」，三类观测**同源**（不再出现「refine 记首次、计量记校正后」的不一致）。
+- 设计前置：架构 **§3.17（设计补充 D，v1.6.0）** 冻结判定口径、校正次数、失败表达方式（**不新增对外错误码**）与层级区分。
+
+**编期决策（如实登记，均已回写设计 §3.17）**：
+| # | 决策点 | 结论 |
+|:-:|--------|------|
+| ① | 校正额度是否直接并入输出预留 | **否**：配额＝`available × ratio`，直接并入 `overflow` 会**欠校正**（实测 history-only 场景仅回收 ≈19%）⇒ 改为按 `overflow / Σratio` 反算 |
+| ② | 可用预算不足以吸收溢出时 | **直接判失败**，不做校正 —— 因 `quota=0` 语义为**不限（不裁剪）**，强行收紧会「越校正越宽」 |
+| ③ | 是否新增错误码中断请求 | **否**（API §1「本版本不新增对外错误码」）⇒ 失败以**回执标记**表达，并按 AC-149-12 计入超窗率 |
+| ④ | 标记字段层级 | **Prompt 级**新字段，**不**复用段级 `degraded`（后者语义为裁剪降级） |
+
+**本批测试**：`test_context_over_window_verifier.py` **先建（RED 7 failed / 3 passed）→ GREEN 11 passed**；四护栏合跑 **33 passed**；相关面 16 文件 **269 passed**；`ruff` 全绿。
+
+## 3sexies. 批次 4 实施记录（I-6 逐组件通道路由 ＋ I-7 审计动作码定稿，2026-09-28 续记）
+
+**已完成（I-6）**：
+- `channel.py`：新增**逐组件**状态与裁决 —— `record_component_outcome`（失败累加 / 成功清零）/ `component_switched` / `resolve_component_channel`（**永不抛出**）/ `component_channels()` 视图；**与请求级 `_b_consecutive_failures` 完全隔离**（单组件故障不放大为全链路切换）。
+- `component_pipeline.py`：`ComponentRunResult` 新增 `channels` / `channel_sources`；取数**前**逐组件裁决并把标签经 `_channel` 下发给取数方；调用后**按组件**回写成败；新增门控默认裁决器 `_default_channel_router()`（`COMPONENT_CHANNEL_ROUTING_ENABLED` 默认关闭 ⇒ 不裁决/不注入/不落痕）。
+- 接线与观测：`executor.ExecuteResult` 上抛通道标签 → `routing_trace["components"].per_component_channels`（同步路径）；流式路径组合同口径落痕（AC-149-13③）。
+- **边界（设计 §3.18）**：本仓**不**切换出站拓扑（`X-Proxy-Source` 恒为编排侧身份）⇒ 不破坏 K07 与 AB 等价契约。
+
+**已完成（I-7）**：
+- `channel_audit.py`：动作码 `channel_failover_b_to_a` **由暂定转定稿**（移除 `ACTION_PROVISIONAL_NOTE`）；新增组件级 `channel_component_failover`；新增 `AUDIT_ACTION_CODES` 作为**检索口径单一事实源**；新增 `build_component_failover_record` / `emit_component_failover_audit`（`detail` 记 `component` 维度）；统一投递路径 `_emit`（门控 / `no_loop` / fail-open 语义不变）。
+- **调用点**（避免「有能力零调用点」）：网关 `_emit_component_switch_audit` 在 `_note_component_channel_health` 内投递，**同故障期每组件只投递一次**（恢复后自动复位）。
+- 既有护栏 `test_channel_failover_audit.py::test_action_code_is_declared_provisional` **随定稿更正**为 `test_action_code_is_finalized`（口径变更，非绕过）。
+
+**本批测试**：`test_component_channel_routing.py`（RED 12 failed → GREEN 12）＋ `test_channel_audit_action_codes.py`（RED 9 failed → GREEN 9）＋ `test_component_channel_audit_wiring.py`（接线护栏 4）⇒ 相关面 15 文件 **202 passed**；`ruff` 全绿。
+
+## 3septies. 批次 5 实施记录（I-8 画像增量与频控预检接线，2026-09-28 续记）
+
+**已完成（两条**只接线**，门控三条件不变）**：
+- **画像增量**：`evaluate.profile_delta_precheck`（公开入口）→ 网关回写回调在 **profile 路**携带提炼增量，**契约键为 `updates`**（`_profile_writeback_updates` 读 `kwargs["updates"]` ⇒ **嵌套挂载**，不平铺）；门控未就绪 / 无增量 ⇒ **不新增载荷键**（零变化）。
+- **频控/去重预检**：`evaluate.message_precheck`（公开入口）→ 网关回写回调在入队**前**预检「同消息已存在」⇒ 命中即 `skipped`；**fail-open**（存储异常按未命中）。
+- **提炼器注入位接线**：新增 `profile_refine_gate.install_profile_refine_on_startup()`（fail-open、幂等），并在 **`backend/main.py` lifespan** 调用 —— 此前 `install_profile_refiner_if_enabled` **全仓零调用点**（「有能力但零调用点」）。
+
+**缺陷发现与补齐（如实登记；由「接线」暴露）**：
+| # | 缺陷 | 性质 | 证据 | 处置 |
+|:-:|------|------|------|------|
+| ① | `evaluate._message_exists` 依赖的 `writeback_queue.compute_message_hash` **不存在** ⇒ 该预检一旦接线即 `ImportError` | **既有实现缺陷**（零调用点掩盖） | `python -c "from app.services.writeback_queue import compute_message_hash"` ⇒ `ImportError` | 补齐 **`compute_message_hash`**（纯函数，六段 `U+241F` 分隔的 sha256） |
+| ② | 同处依赖的 `WritebackStore.exists_message` **不存在**（且表结构**无内容哈希列**） | **既有实现缺陷**（同上） | `WritebackStore` 方法清单无该方法 | 补齐 **`exists_message(...)`**：**不改表结构**，以**有界回看**（最近 `MESSAGE_PRECHECK_LOOKBACK=200` 行）＋进程内指纹比对实现；**只读 / fail-open** |
+| ③ | 编期自测发现：增量若**平铺**进载荷，画像路契约键 `updates` 取不到（`person` 变顶层键） | 编期缺陷（本批自纠） | 探针实测载荷 `{... 'person': {...}}`（缺 `updates`） | 改为 `{"updates": <增量>}` 嵌套挂载 |
+
+**边界（如实登记）**：① 频控预检为**有界**去重（回看窗口外不拦截），**强幂等仍由队列 `UNIQUE(session_id, seq, target)` 兜底**；② 画像 LLM 提炼的真正生效需评测支撑（受 **D3**），本版只交付**接线**（默认纯规则路径）。
+
+**本批测试**：`test_profile_delta_and_precheck_wiring.py` **先建（RED 11 failed / 2 passed）→ GREEN 13 passed**（含启动接线**结构护栏**）；相关面 8 文件 **134 passed**；`ruff` 全绿。
+
+## 3octies. 批次 6 实施记录（I-9 评测集与判据扩展，2026-09-28 续记）
+
+**已完成**（落点＝`doc/test/evidence/cr149/`，与既有证据体系同构）：
+- **判据样本集** `v149-increment-eval-set.json`（v1.0.0）：I-1／I-2／I-3／I-5／I-6／I-7／I-8 **七项离线用例**（各带 `ac` 判据号、样本、期望），**外加** `runtime_pending` 四项（I-4 跨仓 D4、I-1-runtime、I-8-runtime 受 D3、I-6-runtime 跨仓通道归属），**逐项标注 `not_covered=true` 并给出所需运行态输入**。
+- **执行器** `v149_increment_runner.py`：加载并结构校验样本集 → 逐项执行 → 输出**样本/期望/实际/问题列表**，并输出 `-result.json`；`--self-check` 可单独做结构自检；**存在失败项即非 0 退出码**。
+- 实测：**离线用例 7/7 通过**；运行态 **4 项未覆盖**（如实标注，不以夹具结论冒充运行态结论）。
+- 附带修正（由本批判据暴露）：`evaluate.message_precheck` 由「调用方 fail-open」升级为**函数自身亦 fail-open**（双层保险），并把该口径写入断言。
+
+**判据映射（AC-149-16）**：新判据**各有样本且执行器可判**（7/7）；运行态段**如实标注未覆盖**（4 项）。
+
 ## 4. 版本控制记录
 
 | 项 | 约定 |
 |----|------|
 | 分支策略 | **github-flow**（沿用仓内现状：`feature/s4-identity-channel-b` 为编排/通道路线特性分支） |
 | commit 模板 | `type(scope): subject`，footer 引用 **TD-ID / RT-ID** |
-| 本批提交 | `feat(orchestration): 段报告显式标记 hard_truncated / degraded=empty_guard（I-3）` ＋ footer `TD-14901 / RT-149-10 / AC-149-03,04` |
-| TDD 合规 | 测试先于生产代码提交（本批：`test_context_trim_markers.py` 先建并 **RED（3 failed）**，后实现 **GREEN（5 passed）**） |
+| 本批提交 ① | `feat(orchestration): 段报告显式标记 hard_truncated / degraded=empty_guard（I-3）` ＋ footer `TD-14901 / RT-149-10 / AC-149-03,04` |
+| 本批提交 ② | `feat(orchestration): 跨段竞争池回填与回填观测（I-1）` ＋ footer `TD-14903 / DT-149-01 / RT-149-01 / AC-149-01,02` |
+| 本批提交 ③ | `feat(orchestration): 逐条丢弃原因明细 dropped[{source,id,reason}]（I-2）` ＋ footer `TD-14902 / DT-149-03 / RT-149-03 / AC-149-05` |
+| 本批提交 ④ | `feat(orchestration): 仍超窗二次校验与显式失败标记（I-5）` ＋ footer `TD-14904 / DT-149-02 / RT-149-02 / AC-149-04,12` |
+| 本批提交 ⑤ | `feat(identity): 逐组件通道路由与审计动作码定稿（I-6＋I-7）` ＋ footer `TD-14905,14906 / DT-149-15,16 / RT-149-11,RT-149-12 / AC-149-13,14` |
+| 本批提交 ⑥ | `feat(writeback): 画像增量与频控预检接线（I-8）` ＋ footer `TD-14907 / DT-149-17 / RT-149-13 / AC-149-15` |
+| 本批提交 ⑦ | `test(evidence): v1.4.9 增量判据执行器与样本集（I-9）` ＋ footer `TD-14908 / DT-149-18 / RT-149-14 / AC-149-16`（OpenBase 仓）＋ `fix(orchestration): 频控预检函数自身 fail-open`（OpenLLM 仓） |
+| TDD 合规 | 测试先于生产代码提交（批次 1：`test_context_trim_markers.py` 先建并 RED，后实现 GREEN 5 passed；批次 2／I-1：`test_context_cross_segment_competition.py` **先建**，本批修复夹具与实现后 GREEN 5 passed，并**补 1 例反例护栏**；批次 2 收尾／I-2：`test_context_dropped_detail.py` **先建**并 **RED（10 failed / 1 passed）**，实现后 **GREEN 12 passed**） |
 | 备份 | 双远程（origin ＋ backup，非 `--mirror`） |
 
 ## 5. 验证证据（本批）
@@ -77,10 +187,80 @@
 | 静态检查 | `ruff check`（生产 ＋ 测试文件）→ **All checks passed** |
 | 全量回归 | 见 DevLogReport（与基线逐项对比，零新增失败） |
 
+**批次 2（I-1）验证**：
+
+| 项 | 结果 |
+|----|------|
+| RED（夹具/实现定位后） | `test_context_cross_segment_competition.py` → **1 failed / 3 passed**（根因：夹具正文重复致去重先于配额；实现：空报告 `AttributeError` 被 fail-safe 吞掉） |
+| GREEN | 同文件 → **5 passed**（含新增反例护栏 `TestQualityDropsAreNotReclaimed`） |
+| 相关面回归 | 预算/裁剪/排序/画像/精炼/保真度 14 文件 → **220 passed** |
+| 静态检查 | `ruff check`（生产 ＋ 测试，含 `context_metrics.py`）→ **All checks passed** |
+| 全量回归 | `pytest tests/unit tests/integration` → **3684 passed / 21 failed**；与既有基线 `cr149-t36-full.txt`（21 failed）**逐项一致 ⇒ 零新增失败** |
+
+**批次 2 收尾（I-2）验证**：
+
+| 项 | 结果 |
+|----|------|
+| **RED**（先建测试） | `test_context_dropped_detail.py` → **10 failed / 1 passed**（`segment_items` 参数不存在、`PromptComposition.dropped` 不存在、回执无 `dropped`） |
+| **GREEN** | 同文件 → **12 passed** |
+| 三护栏合跑 | I-1 ＋ I-2 ＋ I-3 三文件 → **22 passed** |
+| 相关面回归 | 14 文件 → **238 passed** |
+| 静态检查 | `ruff check`（`prompt_pipeline.py`/`context_metrics.py`/新测试）→ **All checks passed** |
+| 全量回归 | `pytest tests/unit tests/integration` → **3696 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败**（新增 12 例即本批测试） |
+
+**批次 3（I-5）验证**：
+
+| 项 | 结果 |
+|----|------|
+| **RED**（先建测试） | `test_context_over_window_verifier.py` → **7 failed / 3 passed**（三标记字段不存在、无 ERROR 记录） |
+| **GREEN** | 同文件 → **11 passed**（含「校正成功可观测」「预算不足直接判失败」「标记不污染段级 degraded」） |
+| 四护栏合跑 | I-1 ＋ I-2 ＋ I-3 ＋ I-5 四文件 → **33 passed** |
+| 相关面回归 | 预算/裁剪/排序/画像/精炼/装配/模板 16 文件 → **269 passed** |
+| 静态检查 | `ruff check` → **All checks passed** |
+| 全量回归 | `pytest tests/unit tests/integration` → **3707 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败**（新增 11 例即本批测试） |
+
+**批次 4（I-6＋I-7）验证**：
+
+| 项 | 结果 |
+|----|------|
+| **RED**（先建测试） | `test_component_channel_routing.py` → **12 failed**（逐组件 API 与 `channels` 落痕缺失）；`test_channel_audit_action_codes.py` → **9 failed**（组件级动作码/定稿取值域/组件级记录与投递缺失） |
+| **GREEN** | 两文件 → **12 ＋ 9 passed**；接线护栏 `test_component_channel_audit_wiring.py` → **4 passed** |
+| 既有护栏更正 | `test_channel_failover_audit.py::test_action_code_is_declared_provisional` → 随定稿更名为 `test_action_code_is_finalized`（口径变更，非绕过）；该文件其余用例全通过 |
+| 相关面回归 | 通道/组件/网关/身份/配置 15 文件 → **202 passed** |
+| 静态检查 | `ruff check`（6 生产文件 ＋ 3 新测试）→ **All checks passed** |
+| 全量回归 | `pytest tests/unit tests/integration` → **3735 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败** |
+
+**批次 5（I-8）验证**：
+
+| 项 | 结果 |
+|----|------|
+| **RED**（先建测试） | `test_profile_delta_and_precheck_wiring.py` → **11 failed / 2 passed**（两条公开预检入口、启动注入位、频控拦截与 `updates` 挂载均缺失） |
+| **GREEN** | 同文件 → **13 passed**（含启动接线**结构护栏**：`main.py` lifespan 必须引用注入位） |
+| 缺陷取证 | `compute_message_hash` 与 `WritebackStore.exists_message` **均不存在**（ImportError／方法缺失）⇒ 已补齐；⑥ 探针实测「增量平铺」⇒ 已改嵌套挂载 |
+| 相关面回归 | 回写/画像/队列 8 文件 → **134 passed** |
+| 静态检查 | `ruff check`（5 生产文件 ＋ 1 新测试）＋ `py_compile main.py` → **All checks passed** |
+| 全量回归 | `pytest tests/unit tests/integration` → **3748 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败**（新增 13 例即本批测试） |
+
+**批次 6（I-9）验证**：
+
+| 项 | 结果 |
+|----|------|
+| 样本集结构自检 | `v149_increment_runner.py --self-check` → **通过**（缺字段／无执行函数即拒绝） |
+| **判据执行** | `v149_increment_runner.py --json …` → **离线用例 7/7 通过**；运行态 **4 项未覆盖**（`not_covered=true`，如实标注） |
+| 判据映射 | I-1↔AC-149-01/02、I-2↔AC-149-05、I-3↔AC-149-03/04、I-5↔AC-149-04/12、I-6↔AC-149-13、I-7↔AC-149-14、I-8↔AC-149-15 **各有样本** |
+| 附带回改 | `message_precheck` 升级为**函数自身 fail-open**（双层保险）⇒ 单测复跑 **13 passed** |
+| 全量回归 | `pytest tests/unit tests/integration` → **3748 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败** |
+
 ## 6. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.8.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3octies：**批次 6（I-9 评测集与判据扩展）** 实施记录 —— 新增 `v149-increment-eval-set.json`（7 项离线用例 ＋ 4 项运行态 `not_covered`）与执行器 `v149_increment_runner.py`（结构校验／逐项执行／`-result.json`／失败非 0 退出码），实测 **7/7 通过、4 项运行态如实未覆盖**；附带把 `message_precheck` 升级为**函数自身 fail-open**（双层保险）。TD-14908 状态改为「已完成」⇒ **批次 1~6 全部落地，9 条 TD-ID 全部收口**，Step 3 进入收尾（静态质量检查／逻辑审查／DevLogReport／Stage3 审计）。 |
+| v1.7.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3septies：**批次 5（I-8 画像增量与频控预检接线）** 实施记录 —— 两条公开预检入口（`profile_delta_precheck`／`message_precheck`）接入回写回调（profile 路携带 `updates`；入队前消息级预检）、新增启动注入位接线并在 `main.py` lifespan 调用；**如实登记 3 项缺陷**：① `compute_message_hash` **不存在**（补齐）② `WritebackStore.exists_message` **不存在**＋表无内容哈希列（以**有界回看＋指纹比对**补齐，不改表结构）③ 增量**平铺**致画像契约键 `updates` 取不到（改为嵌套挂载）。同时登记两条边界（有界去重＋强幂等仍由队列唯一约束兜底；LLM 提炼生效受 D3）。TD-14907 状态改为「已完成」。 |
+| v1.6.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3sexies：**批次 4（I-6 逐组件通道路由 ＋ I-7 审计动作码定稿）** 实施记录 —— 逐组件独立状态/裁决/视图（与请求级计数**隔离**）、取数前裁决＋`_channel` 下发＋按组件回写、`channels` 随 `ExecuteResult` 上抛并在两路径轨迹落痕；动作码由暂定**转定稿**（移除暂定标注，新增组件级 `channel_component_failover` 与 `AUDIT_ACTION_CODES` 单一事实源），并在网关补**调用点**（同故障期去重）；边界＝**不**切换出站拓扑（保 K07/AB 等价契约）。TD-14905/14906 状态改为「已完成」。 |
+| v1.5.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3quinquies：**批次 3（I-5 仍超窗显式失败标记）** 实施记录 —— `_verify_window` 二次校验（判定口径＝最终 Prompt 总 token > 窗口；校正至多一次，按 `Σratio` 反算**实减**素材预算）、三标记 `over_window`/`over_window_tokens`/`over_window_recovered` 恒有并随回执导出、组装顺序调整为「渲染 → 校验 → refine/计量」使观测同源；**如实登记 4 项编期决策**（不足额反算 / 预算不足直接判失败 / 不新增错误码 / 标记不与段级 `degraded` 混用）。TD-14904 状态改为「已完成」。 |
+| v1.4.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3quater：**批次 2 收尾（I-2 逐条丢弃原因明细）** 实施记录 —— 段级 `dropped` ＋ 顶层 `dropped`（恒有，满足 AC-149-05 齐备率）、单元升三元组、`segment_items` 全链透传；**如实登记 3 项**：① 既有实现中**画像字段级预丢被配额阶段重复计数**的口径缺陷（本批修正并加精确计数护栏）；② `dropped` 排序口径编期收敛为「处置阶段先后 ＋ 阶段内呈现序」；③ 段级 `dropped` 与 I-3「无裁剪 ⇒ 报告缺失」的边界澄清。TD-14902 状态改为「已完成」；§2 CheckList 增 2 行；**批次 2（I-1＋I-2）全部完成**。 |
+| v1.3.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3ter：**批次 2／I-1（跨段竞争池）** 实施记录 —— 开关默认关闭、池硬上界保 T1、fail-safe、新增 `competition_filled`/`refilled_items`；**如实登记 2 类缺陷**（① 测试夹具因正文重复致去重先于配额、池内无可回填项；② 回填后空报告触发 `AttributeError` 被 fail-safe 静默吞掉）并**更正上一轮**「`local variable 'pool'`」为探针插桩所致的误判；取消死参数 `quota_override`。TD-14903 状态改为「已完成」。 |
 | v1.2.0 | 2026-09-28 | AD-OpenLLM-Dev | 设计补充 A/B 已出（架构 §3.13／§3.14＋ADR-149-07）⇒ **I-2 解阻塞、I-1 算法与不变量已定**，批次 2 进入实施。 |
 | v1.1.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3bis 批次 2 前置定位：① **I-3 `enabled` 收口＝无需新增字段**（`budget` 存在性已表达开关状态）；② **I-2 阻塞于设计补充**（`_trim_segment` 只收文本、身份在上游丢失 ⇒ 需先补契约约定）。TD-14902 状态改为「阻塞于设计补充」。 |
 | v1.0.0 | 2026-09-28 | AD-OpenLLM-Dev | 初始创建：9 条 TD-ID（TD-14901~14909）↔ DT/需求/代码落点/判据/Phase；Subtask CheckList（含命名一致性核对）；**批次 1（I-3）已完成**并如实登记 **I-2 推迟原因**；版本控制记录与验证证据。状态 [Review] |
