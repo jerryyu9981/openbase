@@ -1,6 +1,6 @@
 {
   "probe": "refine_placement",
-  "ruling": "§9 问题 2：位置由部署显式声明（disabled 默认 / gpu_node / local_cpu_async）；在线通道永不生成式；放行须过四道门禁",
+  "ruling": "§9 问题 2（v1.26.0 方案 B）：位置由部署显式声明（disabled 默认 / local_cpu_async；gpu_node 已移除，遗留值视为非法回退 disabled ＋ WARN）；在线通道永不生成式；放行须过三道门禁（通道 / 位置 / 模型，探活门禁已删）",
   "source_facts": {
     "local_cpu_compress_p50_seconds": {
       "qwen3:0.6b": 32.6,
@@ -11,8 +11,7 @@
     },
     "async_budget_ms": 30000,
     "online_budget_ms": {
-      "cpu": 800,
-      "gpu": 400
+      "cpu": 800
     },
     "fact_retention_gate": 0.9
   },
@@ -27,22 +26,20 @@
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "inference_disabled",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "inference_disabled",
       "ok": true
     },
     {
-      "case": "② 在线通道 + 位置/模型/复测/探活全部就绪 ⇒ 仍规则档（红线）",
+      "case": "② 在线通道 + 位置/模型/复测全部就绪 ⇒ 仍规则档（红线）",
       "channel": "online",
-      "target": "gpu_node",
+      "target": "local_cpu_async",
       "allowed": false,
       "mode": "rule",
       "placement": "",
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "online_path_forbids_generative",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "online_path_forbids_generative",
       "ok": true
@@ -57,88 +54,54 @@
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "invalid_target:gpu",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "invalid_target:gpu",
       "ok": true
     },
     {
-      "case": "④ 位置就绪但未声明模型编码",
+      "case": "④ 遗留 gpu_node ⇒ 视为非法回退 disabled（v1.26.0 回归锁定）",
       "channel": "async",
-      "target": "gpu_node",
+      "target": "disabled",
+      "allowed": false,
+      "mode": "rule",
+      "placement": "",
+      "budget_ms": 0,
+      "capacity_risk": false,
+      "reason": "invalid_target:gpu_node",
+      "expect_allowed": false,
+      "expect_reason": "invalid_target:gpu_node",
+      "ok": true
+    },
+    {
+      "case": "⑤ 位置就绪但未声明模型编码",
+      "channel": "async",
+      "target": "local_cpu_async",
       "allowed": false,
       "mode": "rule",
       "placement": "",
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "model_absent",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "model_absent",
       "ok": true
     },
     {
-      "case": "⑤ 模型已声明但档位未复测（§5.6 门槛）",
+      "case": "⑥ 模型已声明但档位未复测（§5.6 门槛）",
       "channel": "async",
-      "target": "gpu_node",
+      "target": "local_cpu_async",
       "allowed": false,
       "mode": "rule",
       "placement": "",
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "tier_not_verified",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "tier_not_verified",
       "ok": true
     },
     {
-      "case": "⑥ 位置/模型/复测就绪但探活未注入（不臆造能力）",
-      "channel": "async",
-      "target": "gpu_node",
-      "allowed": false,
-      "mode": "rule",
-      "placement": "",
-      "budget_ms": 0,
-      "capacity_risk": false,
-      "reason": "probe_absent",
-      "probe_calls": 0,
-      "expect_allowed": false,
-      "expect_reason": "probe_absent",
-      "ok": true
-    },
-    {
-      "case": "⑦ 探活异常 ⇒ 视为不可达",
-      "channel": "async",
-      "target": "gpu_node",
-      "allowed": false,
-      "mode": "rule",
-      "placement": "",
-      "budget_ms": 0,
-      "capacity_risk": false,
-      "reason": "probe_unavailable",
-      "probe_calls": 1,
-      "expect_allowed": false,
-      "expect_reason": "probe_unavailable",
-      "ok": true
-    },
-    {
-      "case": "⑧ GPU 节点就绪 ⇒ 放行（model / 预算 30000ms）",
-      "channel": "async",
-      "target": "gpu_node",
-      "allowed": true,
-      "mode": "model",
-      "placement": "gpu_node",
-      "budget_ms": 30000,
-      "capacity_risk": false,
-      "reason": "gpu_node_ready",
-      "probe_calls": 1,
-      "expect_allowed": true,
-      "expect_reason": "gpu_node_ready",
-      "ok": true
-    },
-    {
-      "case": "⑨ 本机 CPU 档未声明实测耗时 ⇒ 不放行",
+      "case": "⑦ 本机 CPU 档未声明实测耗时 ⇒ 不放行（不臆造实测值）",
       "channel": "async",
       "target": "local_cpu_async",
       "allowed": false,
@@ -147,13 +110,12 @@
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "cpu_measurement_absent",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "cpu_measurement_absent",
       "ok": true
     },
     {
-      "case": "⑩ 本机 CPU 档实测 32600ms > 预算 30000ms（§5.4 实测值）",
+      "case": "⑧ 本机 CPU 档实测 32600ms > 预算 30000ms（§5.4 实测值）",
       "channel": "async",
       "target": "local_cpu_async",
       "allowed": false,
@@ -162,13 +124,12 @@
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "cpu_over_budget:32600>30000",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "cpu_over_budget:32600>30000",
       "ok": true
     },
     {
-      "case": "⑪ 本机 CPU 档实测 9000ms ≤ 预算 ⇒ 放行但标 capacity_risk",
+      "case": "⑨ 本机 CPU 档实测 9000ms ≤ 预算 ⇒ 放行但标 capacity_risk",
       "channel": "async",
       "target": "local_cpu_async",
       "allowed": true,
@@ -177,28 +138,26 @@
       "budget_ms": 30000,
       "capacity_risk": true,
       "reason": "cpu_async_declared_ok",
-      "probe_calls": 0,
       "expect_allowed": true,
       "expect_reason": "cpu_async_declared_ok",
       "ok": true
     },
     {
-      "case": "⑫ 未触发 ⇒ 不精炼且不调用探活",
+      "case": "⑩ 未触发 ⇒ 不精炼",
       "channel": "async",
-      "target": "gpu_node",
+      "target": "local_cpu_async",
       "allowed": false,
       "mode": "rule",
       "placement": "",
       "budget_ms": 0,
       "capacity_risk": false,
       "reason": "not_triggered",
-      "probe_calls": 0,
       "expect_allowed": false,
       "expect_reason": "not_triggered",
       "ok": true
     },
     {
-      "case": "⑬ 位置放行后输出护栏仍拦（串联）",
+      "case": "⑪ 位置放行后输出护栏仍拦（串联）",
       "placement_allowed": true,
       "valid_output_accepted": true,
       "hallucinated_output_rejected": true,
@@ -209,7 +168,7 @@
       "ok": true
     },
     {
-      "case": "⑭ 压缩率目标 memory 300/1000",
+      "case": "⑫ 压缩率目标 memory 300/1000",
       "ratio": 0.3,
       "target": [
         0.2,
@@ -220,7 +179,7 @@
       "ok": true
     },
     {
-      "case": "⑭ 压缩率目标 memory 100/1000",
+      "case": "⑫ 压缩率目标 memory 100/1000",
       "ratio": 0.1,
       "target": [
         0.2,
@@ -231,7 +190,7 @@
       "ok": true
     },
     {
-      "case": "⑭ 压缩率目标 rag 800/1000",
+      "case": "⑫ 压缩率目标 rag 800/1000",
       "ratio": 0.8,
       "target": [
         0.3,

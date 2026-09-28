@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-09-27T19:39:18",
+  "generated_at": "2026-09-28T04:28:46",
   "simulate": false,
   "summary": {
-    "PASS": 10,
+    "PASS": 11,
     "FAIL": 0,
     "SKIP": 0,
-    "BLOCKED": 2
+    "BLOCKED": 1
   },
   "verdicts": [
     {
@@ -214,12 +214,9 @@
     },
     {
       "criterion": "T6",
-      "title": "精炼：规则档回执与位置门禁已可判（进程内）；模型档待第三批（生成式精炼）",
-      "status": "BLOCKED",
-      "requires": [
-        "生成式精炼（第三批）",
-        "达标本地模型 / GPU 节点（§5.6 门槛）"
-      ],
+      "title": "精炼：规则档回执与位置门禁已可判（进程内）；模型档已搁置（v1.26.0 方案 B）",
+      "status": "PASS",
+      "requires": [],
       "detail": {
         "rule_tier_receipt": {
           "mode": "rule",
@@ -246,7 +243,9 @@
         "placement_gate": {
           "online_channel_allowed": false,
           "online_channel_reason": "online_path_forbids_generative",
-          "async_channel_reason": "model_absent",
+          "async_channel_reason": "invalid_target:gpu_node",
+          "legacy_gpu_node_resolved": "disabled",
+          "legacy_gpu_node_reason": "invalid_target:gpu_node",
           "invalid_target_resolved": "disabled",
           "invalid_target_reason": "invalid_target:typo_target",
           "compression_observation": {
@@ -262,15 +261,13 @@
             }
           }
         },
-        "placement_gate_evidence": "`tests/unit/test_refine_placement_policy.py`（42 例）＋ 探针 `doc/test/evidence/cr149/refine_placement_probe.py`（16 例 ＋ 结尾自检）",
-        "model_tier": "BLOCKED",
+        "placement_gate_evidence": "`tests/unit/test_refine_placement_policy.py`（41 例）＋ 探针 `doc/test/evidence/cr149/refine_placement_probe.py`（14 例 ＋ 结尾自检）",
+        "model_tier": "SHELVED（v1.26.0 方案 B：2B/4B 与 ≤1B 全部不达 §5.6 门槛，生成式精炼整体搁置）",
         "runtime_pending": [
-          "生成式精炼（`mode=model`）需达标模型（§5.6 门槛）与 GPU 节点",
-          "模型档 `elapsed_ms ≤ §5.8 预算` 与超时回落 `fallback=true` 需在模型就位后实测",
-          "端点**真实探活**接线（`register_refine_inference_probe`）与 `gpu_node` 位置实测"
+          "生成式精炼已裁定整体搁置（v1.26.0 方案 B）—— 无达标模型（§5.4 复测：精度 < 0.90、P95 压缩 > 异步档 30s 预算，最慢 134.6s），不再列为第三批交付目标，无运行态遗留项"
         ]
       },
-      "reason": "规则档（确定性精炼）的 `refine` 回执＋**位置门禁**（在线红线 / fail-safe 回退 / 阻塞必带理由 / 压缩率目标观测）已在进程内验证通过（mode=rule、fallback=false、out<in、未启用不落痕）；**模型档（生成式精炼）仍属第三批**：§5.4/§5.5 实测 ≤1B 本地模型未过 §5.6 门槛，需先完成模型选型/节点准备"
+      "reason": "规则档（确定性精炼）的 `refine` 回执＋**位置门禁**（在线红线 / fail-safe 回退 / 遗留 `gpu_node` 视为非法回退 disabled / 阻塞必带理由 / 压缩率目标观测）已在进程内验证通过（mode=rule、fallback=false、out<in、未启用不落痕）；**模型档（生成式精炼）已裁定整体搁置（v1.26.0 方案 B）**：2B/4B 复测精度与时延双不达标（§5.4），不再列为交付目标 ⇒ 本判据无遗留阻塞项，判定 PASS"
     },
     {
       "criterion": "T7",
@@ -284,7 +281,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 4.359,
+        "concurrent_components_wall_seconds": 0.39,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -297,8 +294,8 @@
       "requires": [],
       "detail": {
         "switch_enabled_in_config": true,
-        "parallel_wall_seconds": 0.14,
-        "ordered_wall_seconds": 0.172,
+        "parallel_wall_seconds": 0.047,
+        "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
           "rag_start",

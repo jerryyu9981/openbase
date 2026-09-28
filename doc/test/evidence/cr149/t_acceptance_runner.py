@@ -11,7 +11,7 @@
   `--simulate` 模式会在**本进程内**临时置位（退出前恢复），用于证明"开启后即达标"，
   **不写任何配置文件、不影响运行中的服务**；
 * **可判定性分级**：`SKIP`（开关未开）≠ `FAIL`（能力不达标）；`BLOCKED` 表示
-  **环境/前置条件缺失**（如 T4 需要运行态故障注入、T6 属第三批未实施），
+  **环境/前置条件缺失**（如 T4 需要运行态故障注入），
   也**不计入失败**，但会在报告里显式列出，避免"没做"被误读成"通过"；
 * **分段判定（T5，v1.18.0）**：T5 拆为两段 —— ① **网关决策闸门**（开关
   `WRITEBACK_DECISION_ENABLED`，默认关闭）＝ `SKIP` 口径同前；② **执行层价值闸门**
@@ -826,15 +826,17 @@ def check_t6() -> Verdict:
       ① **规则档**（确定性精炼：去重 / 相邻同义合并 / 单条截断 / 配额裁剪）——
          `refine` 回执已在进程内可判：`mode=rule`、`fallback=false`、
          `elapsed_ms` 远小于在线预算、未启用时不落痕 ⇒ **本执行器判定**；
-      ② **模型档**（生成式精炼：`mode=model` 的压缩质量与预算）—— 属方案 §6 **第三批**，
-         需达标本地模型 ＋ GPU 节点（§5.6 门槛，实测 ≤1B 未达标）⇒ 仍 `BLOCKED`。
+      ② **模型档**（生成式精炼：`mode=model` 的压缩质量与预算）—— **已裁定整体搁置
+         （v1.26.0 方案 B）**：2B/4B 与既有 ≤1B 全部不达 §5.6 门槛（§5.4 复测：
+         精度 < 0.90 且 P95 > 30s），不再列为交付目标 ⇒ `model_tier=SHELVED`。
 
     **v1.22.0 增段①补（位置门禁，进程内恒可判）**：§9 问题 2 裁定「位置由部署显式声明 ＋
-    四道门禁」⇒ 本判据增判 **在线通道永不放行生成式**（红线）、**非法位置值 fail-safe 回退**、
-    **未声明位置时异步亦不放行且理由非空**、**压缩率目标观测已落规则档回执**。
-    真实端点可达性与模型档实际推理仍属第三批（`model_tier=BLOCKED` 不变）。
+    三道门禁（v1.26.0 由四道收窄，探活门禁已删）」⇒ 本判据增判 **在线通道永不放行生成式**
+    （红线）、**非法位置值 fail-safe 回退**、**遗留 `gpu_node` 视为非法回退 `disabled`**
+    （v1.26.0 回归锁定）、**未声明位置时异步亦不放行且理由非空**、**压缩率目标观测已落
+    规则档回执**。
     """
-    title = "精炼：规则档回执与位置门禁已可判（进程内）；模型档待第三批（生成式精炼）"
+    title = "精炼：规则档回执与位置门禁已可判（进程内）；模型档已搁置（v1.26.0 方案 B）"
     from app.edgerouter.orchestration.prompt_pipeline import BudgetPolicy, build_prompt
     from app.edgerouter.orchestration.refine_placement import (
         REFINE_CHANNEL_ASYNC,
@@ -885,9 +887,10 @@ def check_t6() -> Verdict:
 
     previous_target = settings.CONTEXT_REFINE_INFERENCE_TARGET
     try:
-        settings.CONTEXT_REFINE_INFERENCE_TARGET = "gpu_node"
+        settings.CONTEXT_REFINE_INFERENCE_TARGET = "gpu_node"  # 遗留值（v1.26.0 方案 B 回归锁定）
         online = plan_refine_inference(channel=REFINE_CHANNEL_ONLINE)
         async_plan = plan_refine_inference(channel=REFINE_CHANNEL_ASYNC)
+        legacy_target, legacy_reason = resolve_refine_inference_target()
         settings.CONTEXT_REFINE_INFERENCE_TARGET = "typo_target"
         typo_target, typo_reason = resolve_refine_inference_target()
     finally:
@@ -897,6 +900,8 @@ def check_t6() -> Verdict:
         "online_channel_allowed": online["allowed"],
         "online_channel_reason": online["reason"],
         "async_channel_reason": async_plan["reason"],
+        "legacy_gpu_node_resolved": legacy_target,
+        "legacy_gpu_node_reason": legacy_reason,
         "invalid_target_resolved": typo_target,
         "invalid_target_reason": typo_reason,
         "compression_observation": receipt.get("compression", {}),
@@ -907,6 +912,11 @@ def check_t6() -> Verdict:
         failures.append(f"在线通道理由非红线词：{online['reason']}")
     if not str(async_plan["reason"]).strip():
         failures.append(f"异步通道阻塞未给理由（静默降级）：{async_plan}")
+    if legacy_target != "disabled" or not legacy_reason.startswith("invalid_target:"):
+        failures.append(
+            f"遗留 gpu_node 未视为非法回退 disabled（v1.26.0 方案 B）："
+            f"{legacy_target} / {legacy_reason}"
+        )
     if typo_target != "disabled" or not typo_reason.startswith("invalid_target:"):
         failures.append(f"非法位置值未 fail-safe 回退：{typo_target} / {typo_reason}")
     compression = receipt.get("compression") or {}
@@ -922,14 +932,13 @@ def check_t6() -> Verdict:
         "rule_tier": "FAIL" if failures else "PASS",
         "placement_gate": placement_rows,
         "placement_gate_evidence": (
-            "`tests/unit/test_refine_placement_policy.py`（42 例）＋ "
-            "探针 `doc/test/evidence/cr149/refine_placement_probe.py`（16 例 ＋ 结尾自检）"
+            "`tests/unit/test_refine_placement_policy.py`（41 例）＋ "
+            "探针 `doc/test/evidence/cr149/refine_placement_probe.py`（14 例 ＋ 结尾自检）"
         ),
-        "model_tier": "BLOCKED",
+        "model_tier": "SHELVED（v1.26.0 方案 B：2B/4B 与 ≤1B 全部不达 §5.6 门槛，生成式精炼整体搁置）",
         "runtime_pending": [
-            "生成式精炼（`mode=model`）需达标模型（§5.6 门槛）与 GPU 节点",
-            "模型档 `elapsed_ms ≤ §5.8 预算` 与超时回落 `fallback=true` 需在模型就位后实测",
-            "端点**真实探活**接线（`register_refine_inference_probe`）与 `gpu_node` 位置实测",
+            "生成式精炼已裁定整体搁置（v1.26.0 方案 B）—— 无达标模型（§5.4 复测：精度 < 0.90、"
+            "P95 压缩 > 异步档 30s 预算，最慢 134.6s），不再列为第三批交付目标，无运行态遗留项",
         ],
     }
     if failures:
@@ -943,18 +952,14 @@ def check_t6() -> Verdict:
     return Verdict(
         criterion="T6",
         title=title,
-        status=STATUS_BLOCKED,
-        requires=[
-            "生成式精炼（第三批）",
-            "达标本地模型 / GPU 节点（§5.6 门槛）",
-        ],
+        status=STATUS_PASS,
         detail=detail,
         reason=(
             "规则档（确定性精炼）的 `refine` 回执＋**位置门禁**（在线红线 / fail-safe 回退 / "
-            "阻塞必带理由 / 压缩率目标观测）已在进程内验证通过"
-            "（mode=rule、fallback=false、out<in、未启用不落痕）；"
-            "**模型档（生成式精炼）仍属第三批**：§5.4/§5.5 实测 ≤1B 本地模型未过 §5.6 门槛，"
-            "需先完成模型选型/节点准备"
+            "遗留 `gpu_node` 视为非法回退 disabled / 阻塞必带理由 / 压缩率目标观测）已在进程内"
+            "验证通过（mode=rule、fallback=false、out<in、未启用不落痕）；"
+            "**模型档（生成式精炼）已裁定整体搁置（v1.26.0 方案 B）**：2B/4B 复测精度与时延"
+            "双不达标（§5.4），不再列为交付目标 ⇒ 本判据无遗留阻塞项，判定 PASS"
         ),
     )
 
