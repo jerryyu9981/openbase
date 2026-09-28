@@ -15,11 +15,14 @@
 
 **不覆盖**（`runtime_pending`）：I-4（跨仓 D4）、I-1/I-8/I-6 的运行态段。
 
-用法（cwd = OpenLLM/backend，本执行器需导入该仓代码）：
+用法（在任意 cwd 下均可运行；backend 根自动定位）：
 
     python <此脚本>            # 打印汇总（非 0 退出码＝存在失败项）
     python <此脚本> --json 输出路径
     python <此脚本> --self-check   # 样本集结构自检
+
+backend 根定位顺序：`OPENLLM_BACKEND` 环境变量 → 当前工作目录 → 与 OpenBase 同级的
+`OpenLLM/backend`（仓库相邻布局）。定位失败即**显式报错退出**，不静默降级为漏判。
 """
 from __future__ import annotations
 
@@ -30,10 +33,30 @@ import os
 import sys
 from typing import Any
 
-sys.path.insert(0, os.getcwd())
-
 _EVIDENCE_DIR = os.path.dirname(os.path.abspath(__file__))
 _EVAL_SET = os.path.join(_EVIDENCE_DIR, "v149-increment-eval-set.json")
+
+#: backend 根的**判定标记**（存在即认定为 backend 根）
+_BACKEND_MARKER = os.path.join("app", "edgerouter", "orchestration", "prompt_pipeline.py")
+
+
+def _resolve_backend_root() -> str:
+    """定位 OpenLLM backend 根（使执行器在任意 cwd 下可复现）"""
+    sibling = os.path.abspath(
+        os.path.join(_EVIDENCE_DIR, *([os.pardir] * 5), "OpenLLM", "backend")
+    )
+    for candidate in (os.environ.get("OPENLLM_BACKEND", ""), os.getcwd(), sibling):
+        if candidate and os.path.exists(os.path.join(candidate, _BACKEND_MARKER)):
+            return os.path.abspath(candidate)
+    raise SystemExit(
+        "无法定位 OpenLLM backend（应含 app/edgerouter/orchestration/prompt_pipeline.py）："
+        f"已尝试 OPENLLM_BACKEND / {os.getcwd()} / {sibling}；"
+        "请设置 OPENLLM_BACKEND 环境变量后重跑。"
+    )
+
+
+_BACKEND_ROOT = _resolve_backend_root()
+sys.path.insert(0, _BACKEND_ROOT)
 
 
 def _counter(text: str) -> int:

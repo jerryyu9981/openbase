@@ -172,7 +172,7 @@
 | G3 | 取证探针首版把计量字段名（`prompt_total_tokens`）误判为敏感串 | **探针缺陷**（自纠） | 探针输出「回执出现敏感串：token」 | 口径更正为「**精确敏感键名** ＋ **凭据值形态**」双规则 |
 | G4 | **关闭总开关时回执仍新增扩展字段**（扩展字段组共 **12** 项：`dropped`／`over_window`×3／预算四项／裁剪前后 token×2／聚合标记×2）⇒ 破坏 **NFR-149-02／AC-149-09「关闭即逐字回退」** | **不变量破缺（高）** | 探针实测：关闭态回执字段集合含扩展字段（对照探针 `closed_path_keys`） | 扩展字段组改为**与计量组同门**（`budget` 非空才落）⇒ 关闭态**零新增字段**（探针 `leaked_extension_fields: []`）；齐备率 100% 的统计对象＝**预算生效的请求**（口径已写入 §3.19 与 §3.16） |
 | G5 | **I-1 开关未在 `Settings` 声明**（仅 `getattr` 读取）⇒ 本仓 `Settings` 为 `extra=forbid`，该键**无法经配置开启**＝**死开关/功能生产不可达** | **实现缺陷（高）** | 探针断言 `Settings.model_fields` 时 `KeyError` ⇒ 首次暴露 | `config.py` **显式声明** `CONTEXT_CROSS_SEGMENT_COMPETITION_ENABLED`（默认 False）；**并新增结构护栏**（扫描全 `app/` 的 `getattr(settings, "KEY"` 与声明集合比对，白名单为空）⇒ 该类缺陷**不可能再静默** |
-| G6 | 取证探针判据**「键在即齐备」过弱** ⇒ `{"model": null}` 亦判 PASS（不足以证明「齐备率 100%」） | **取证缺陷（中，自纠）** | 探针首轮 `observed.model = null` 却 PASS | 判定升为**「键在且取值非 null」**（仅 `degraded` 按设计允许 null）＋ 样本显式提供 `model`；**并去除 cwd 依赖**（backend 根自动定位，失败显式报错而非静默漏扫）⇒ 任意 cwd 下 **6/6 PASS** |
+| G6 | 取证探针判据**「键在即齐备」过弱** ⇒ `{"model": null}` 亦判 PASS（不足以证明「齐备率 100%」） | **取证缺陷（中，自纠）** | 探针首轮 `observed.model = null` 却 PASS | 判定升为**「键在且取值非 null」**（仅 `degraded` 按设计允许 null）＋ 样本显式提供 `model`；**并去除 cwd 依赖**（**判据探针 ＋ 增量执行器**均按 backend 根自动定位，失败显式报错而非静默漏扫/漏判）⇒ 任意 cwd 下探针 **6/6 PASS**、执行器 **7/7 PASS** |
 
 **设计澄清（后补，如实登记顺序偏差）**：两处口径均回写架构 **§3.19（设计补充 F，v1.6.2）** —— 但本批为**实现先行、设计澄清在后**（非「先补设计再实施」），**该顺序偏差在此显式登记**，不掩盖。
 
@@ -281,7 +281,7 @@
 | **判据探针** | `v149_receipt_and_purity_probe.py` → **AC-149-05 PASS**（10 项必填**键在且取值非 null**，`available_budget` 与公式自洽）／**AC-149-09 PASS**（开关声明默认 False ＋ 关闭态**零新增字段**）／**AC-149-10 PASS**（新链路对 `manage_context`/`_prune_recent` **零命中**）／**AC-149-11 PASS**（无敏感键名/凭据形态/正文哨兵）／**AC-149-12 PASS**（16 组可容纳输入超窗率 0 ＋ 不可容纳显式标记）／**结构护栏 PASS**（全 `app/` 无「读取但未声明」的配置键） |
 | 静态检查 | `ruff check`（3 生产文件 ＋ 1 新测试）→ **All checks passed** |
 | 全量回归 | `pytest tests/unit tests/integration` → **3760 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败**（＝既有基线 3748 ＋ 本批 12 例） |
-| **收尾一致性复验（2026-09-29）** | 取证探针**任意 cwd** 下重跑 → **6/6 PASS**（`backend_root` 自动定位生效）；全量回归**重跑** → **21 failed / 3760 passed**，与基线 `cr149-t36-full.txt` 的 21 项**逐 node id 比对零差异**（`Compare-Object` 双向空）；取证脚本 `ruff check` → **All checks passed** |
+| **收尾一致性复验（2026-09-29）** | 取证探针**任意 cwd** 下重跑 → **6/6 PASS**（`backend_root` 自动定位生效）；增量执行器**任意 cwd** 下重跑 → **离线 7/7 通过**（运行态 4 项如实未覆盖）；全量回归**重跑** → **21 failed / 3760 passed**，与基线 `cr149-t36-full.txt` 的 21 项**逐 node id 比对零差异**（`Compare-Object` 双向空）；两个取证脚本 `ruff check` → **All checks passed** |
 
 ## 6. 修订历史
 

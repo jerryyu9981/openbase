@@ -37,7 +37,7 @@
 | 5 | I-8 接线 | `evaluate.py`、`profile_refine_gate.py`、`writeback_queue.py`、`openllm_gateway.py`、`main.py` / `test_profile_delta_and_precheck_wiring.py` | All checks passed |
 | 6 | I-9 证据 | `evaluate.py`（fail-open 加固）/ — | All checks passed |
 | 7 | **收尾补漏** | `prompt_pipeline.py`（安全余量 ＋ 回执字段）、`context_metrics.py`、`core/config.py` / `test_context_receipt_fields.py` | All checks passed |
-| 7′ | **收尾一致性（续记）** | 取证脚本 `doc/test/evidence/cr149/v149_receipt_and_purity_probe.py`（backend 根自动定位 ＋ 齐备性判定加固）**无生产代码改动** | All checks passed |
+| 7′ | **收尾一致性（续记）** | 取证脚本 `doc/test/evidence/cr149/v149_receipt_and_purity_probe.py` 与 `v149_increment_runner.py`（backend 根自动定位 ＋ 齐备性判定加固）**无生产代码改动** | All checks passed |
 
 ## 3. 编期发现并修正的静态问题（如实登记）
 
