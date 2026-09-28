@@ -1,0 +1,27 @@
+# v1.4.8 Step 5 部署与上线验证原始证据（Dev 环境）
+
+- 采集时间：2026-09-28
+- 发布分支/提交：main @ d146e51
+- Python：3.10.11
+- 环境：**Dev（本机进程内 ASGI）**；Test/Pro 未部署
+
+## 1. 上线冒烟（真实执行输出）
+
+```text
+[上线冒烟1] POST /api/v1/auth/login -> 200
+          取到 access_token: 是（已隐去正文）
+[上线冒烟2] 匿名访问 /api/v1/llm-proxy/prompt-assembly/template -> 401（期望 401）
+[上线冒烟3] 带 token 访问同端点 -> 502；响应片段: {"code": "SYS_502", "message": "OpenLLM upstream unreachable: All connection attempts failed", "detail": null, "request_id": "req-43adde15ea1b"}（上游 OpenLLM 未运行 ⇒ 502 SYS_UPSTREAM_ERROR 属**预期降级**）
+```
+
+## 2. 质量门禁复跑（llm_proxy 用例）
+
+```text
+........................                                                 [100%]
+```
+
+## 3. 边界说明（如实登记，不伪 PASS）
+
+1. 端到端业务链路（OpenLLM 网关 / DPS / OpenRAG / OpenMemory）在 Dev 环境**不可达** ⇒ 冒烟③ 的 502 为**设计内降级**，**不构成**业务可用性通过；业务链路验证属**环境前置**。
+2. 本证据为 **Dev 级**；Test/Pro 环境部署与验证**未执行**。
+3. 未泄露任何密钥：token 与凭据正文一律不落盘。
