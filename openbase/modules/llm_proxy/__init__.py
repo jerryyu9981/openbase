@@ -394,6 +394,97 @@ async def llm_health(
 
 
 # ---------------------------------------------------------------------------
+# 装配模板与保真度对比（统一前端「提示词模板」/「对比」两块功能；v1.34.0）
+# ---------------------------------------------------------------------------
+# 链路：`openbase-ui` → **本代理**（注入 OpenLLM API Key ＋ 身份头）→ OpenLLM 网关
+#      `/openllm/v1/prompt/assembly/*` ⇒ 前端**不接触** OpenLLM 管理面（无本仓 JWT）。
+#
+# **写模板（PUT）暂不经本代理开放**（如实登记）：需先确定 OpenBase 侧的**管理员权限位**
+#   （本仓角色模型与 OpenLLM 管理面不同源，贸然放行等于把「全局装配行为」交给任意登录用户）。
+#   OpenLLM 网关侧**已备**该入口（`CONTEXT_ASSEMBLY_TEMPLATE_REMOTE_EDIT_ENABLED` 默认关闭
+#   ＋ `X-Proxy-Source` 受信来源双门禁）；待权限位确认后，在本模块加一条带校验的路由即可。
+
+
+@router.get("/prompt-assembly/template")
+async def llm_assembly_template(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """装配模板现状透传（GET /openllm/v1/prompt/assembly/template）."""
+    return await _forward(
+        "GET", "/openllm/v1/prompt/assembly/template",
+        headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
+
+
+@router.post("/prompt-assembly/preview")
+async def llm_assembly_preview(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """试装配预览透传（POST /openllm/v1/prompt/assembly/preview；**不调 LLM**）."""
+    return await _forward(
+        "POST", "/openllm/v1/prompt/assembly/preview",
+        json_body=payload,
+        headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
+
+
+@router.get("/prompt-assembly/compare")
+async def llm_assembly_compare(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    request_id: str | None = Query(None),
+    session_id: str | None = Query(None),
+    request_text: str | None = Query(None),
+    final_prompt: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+) -> JSONResponse:
+    """保真度对照透传（GET /openllm/v1/prompt/assembly/compare；在线按 request_id/session_id、离线直传两端文本）."""
+    params = {
+        key: value
+        for key, value in {
+            "request_id": request_id,
+            "session_id": session_id,
+            "request_text": request_text,
+            "final_prompt": final_prompt,
+            "limit": limit,
+        }.items()
+        if value is not None
+    }
+    return await _forward(
+        "GET", "/openllm/v1/prompt/assembly/compare",
+        params=params,
+        headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
+
+
+@router.get("/prompt-assembly/compare/records")
+async def llm_assembly_compare_records(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    session_id: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+) -> JSONResponse:
+    """对照记录列表透传（GET /openllm/v1/prompt/assembly/compare/records）."""
+    params = {
+        key: value
+        for key, value in {"session_id": session_id, "limit": limit}.items()
+        if value is not None
+    }
+    return await _forward(
+        "GET", "/openllm/v1/prompt/assembly/compare/records",
+        params=params,
+        headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
+
+
+# ---------------------------------------------------------------------------
 # 会话端点（对话管理页）
 # ---------------------------------------------------------------------------
 # 上游 /api/v1/conversations* 为 JWT 通道（M1 待完善：OpenLLM 侧需支持 API Key）。

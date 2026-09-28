@@ -513,3 +513,75 @@ def test_llm_proxy_sse_stream_interrupted(client: TestClient) -> None:
     assert resp.status_code == 200, resp.text
     assert "event: error" in resp.text
     assert "stream interrupted" in resp.text
+
+
+# ---------------------------------------------------------------------------
+# 装配模板与保真度对比透传（统一前端「提示词模板」/「对比」；v1.34.0）
+# ---------------------------------------------------------------------------
+# 链路：openbase-ui → 本代理（注入 API Key ＋ 身份头）→ OpenLLM 网关
+#      /openllm/v1/prompt/assembly/*。以下用例锁定「上游路径 / 载荷 / 查询参数 / 鉴权」四项。
+
+
+def test_llm_proxy_assembly_template_passthrough(client: TestClient) -> None:
+    """装配模板现状：透传到网关 /openllm/v1/prompt/assembly/template 并适配统一响应."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 0, "message": "success", "data": {"is_default": True}}),
+    ])
+    resp = client.get(
+        "/api/v1/llm-proxy/prompt-assembly/template",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["is_default"] is True
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert calls[-1]["method"] == "GET"
+    assert calls[-1]["url"].endswith("/openllm/v1/prompt/assembly/template")
+    assert "sk-openllm-" in calls[-1]["headers"]["Authorization"]
+
+
+def test_llm_proxy_assembly_preview_passthrough(client: TestClient) -> None:
+    """试装配预览：POST 载荷原样透传（不调 LLM）."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 0, "message": "success", "data": {"prompt": "[用户问题]\n问"}}),
+    ])
+    resp = client.post(
+        "/api/v1/llm-proxy/prompt-assembly/preview",
+        json={"query": "问", "memory_ctx": "[M1] 素材"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert calls[-1]["url"].endswith("/openllm/v1/prompt/assembly/preview")
+    assert calls[-1]["json"] == {"query": "问", "memory_ctx": "[M1] 素材"}
+
+
+def test_llm_proxy_assembly_compare_passthrough_params(client: TestClient) -> None:
+    """保真度对照：查询参数按非空透传（离线两端文本模式）."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 0, "message": "success", "data": {"source": "offline"}}),
+    ])
+    resp = client.get(
+        "/api/v1/llm-proxy/prompt-assembly/compare",
+        params={"request_text": "原始问法", "final_prompt": "[用户问题]\n被改写的问法"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert calls[-1]["url"].endswith("/openllm/v1/prompt/assembly/compare")
+    sent = calls[-1]["params"]
+    assert sent["request_text"] == "原始问法"
+    assert sent["final_prompt"] == "[用户问题]\n被改写的问法"
+    assert "request_id" not in sent, "空值参数不得透传（避免上游把空串当过滤条件）"
+
+
+def test_llm_proxy_assembly_requires_auth(client: TestClient) -> None:
+    """无认证 → 401（与既有 llm-proxy 端点同一鉴权口径）."""
+    for path in (
+        "/api/v1/llm-proxy/prompt-assembly/template",
+        "/api/v1/llm-proxy/prompt-assembly/compare/records",
+    ):
+        resp = client.get(path)
+        assert resp.status_code == 401, f"{path} 未拦截匿名访问"
