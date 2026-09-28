@@ -1,0 +1,181 @@
+﻿### A4 文档-实现漂移审计工具扩展 · 多文档走查证据（2026-09-28）
+### cwd=OpenLLM/backend；扫描源 542 个 .py（含 OpenBase 证据目录）
+
+===== 1) 技术方案 v1.26.0 =====
+扫描源: 542 个 .py（含 OpenBase 证据目录）
+
+=== 检查一 · 符号存在性 ===
+「引用为缺失 / 族前缀」已跳过: 72
+「引用为存在」待核对: 294
+**仓内查无此项（需判定「文档错」还是「实现缺」）: 0**
+
+=== 检查二 · 配置键存在性 ===
+`Settings` 已声明字段: 158
+**硬缺口（既不在 Settings、也不在源码）: 0**
+提示（不在 Settings 但在源码，如模块级常量）: 8
+  [KEY-SOURCE-ONLY] DEFAULT_PROFILE_TARGETS
+  [KEY-SOURCE-ONLY] DEFAULT_SYSTEM_PROMPT
+  [KEY-SOURCE-ONLY] MODEL_CONTEXT_LIMITS
+  [KEY-SOURCE-ONLY] OLLAMA_KEEP_ALIVE
+  [KEY-SOURCE-ONLY] OPENLLM_PROFILE_LLM_REFINE
+  [KEY-SOURCE-ONLY] OVER_QUOTA_RATIO
+  [KEY-SOURCE-ONLY] PROFILE_FAILURE_COOLDOWN
+  [KEY-SOURCE-ONLY] REFINE_TARGET_GPU_NODE
+
+=== 检查三 · 文档头版本一致性 ===
+文档头版本: 1.26.0；修订历史版本条目: 32；最高版本: 1.26.0
+**判定: 一致**
+
+===== 2) 收口方案 v1.5.0 =====
+扫描源: 542 个 .py（含 OpenBase 证据目录）
+
+=== 检查一 · 符号存在性 ===
+「引用为缺失 / 族前缀」已跳过: 2
+「引用为存在」待核对: 28
+**仓内查无此项（需判定「文档错」还是「实现缺」）: 0**
+
+=== 检查二 · 配置键存在性 ===
+`Settings` 已声明字段: 158
+**硬缺口（既不在 Settings、也不在源码）: 0**
+提示（不在 Settings 但在源码，如模块级常量）: 3
+  [KEY-SOURCE-ONLY] MODEL_CONTEXT_LIMITS
+  [KEY-SOURCE-ONLY] OPENLLM_PROFILE_LLM_REFINE
+  [KEY-SOURCE-ONLY] RAG_SOURCE_BUILTIN
+
+=== 检查三 · 文档头版本一致性 ===
+文档头版本: 1.5.0；修订历史版本条目: 6；最高版本: 1.5.0
+**判定: 一致**
+
+===== 3) 问题跟踪记录 v1.4.8 =====
+扫描源: 542 个 .py（含 OpenBase 证据目录）
+
+=== 检查一 · 符号存在性 ===
+「引用为缺失 / 族前缀」已跳过: 97
+「引用为存在」待核对: 529
+**仓内查无此项（需判定「文档错」还是「实现缺」）: 43**
+  [MISSING] AssertionError
+  [MISSING] BIZ_CODE_SPACE_COLLISION
+  [MISSING] CHANNEL_DRILL_WINDOW_SECONDS
+  [MISSING] DetachedInstanceError
+  [MISSING] DevLogReport
+  [MISSING] ECONNREFUSED
+  [MISSING] Env
+  [MISSING] GetTickCount64
+  [MISSING] InvalidColumnReference
+  [MISSING] JSON_EXTRACT
+  [MISSING] OPENBASE_DPS_TENANT_MAP
+  [MISSING] OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES
+  [MISSING] OrderedDict
+  [MISSING] RemoteProtocolError
+  [MISSING] ResponseValidationError
+  [MISSING] SHELVED
+  [MISSING] Table
+  [MISSING] Traceback
+  [MISSING] _safely
+  [MISSING] append
+  [MISSING] as_string
+  [MISSING] bandit
+  [MISSING] clickhouse_connect
+  [MISSING] cryptography
+  [MISSING] ensure_future
+  [MISSING] gitignore
+  [MISSING] greenlet
+  [MISSING] grpc
+  [MISSING] invalidate_caches
+  [MISSING] llm_stream_timeout
+  [MISSING] llm_upstream_timeout
+  [MISSING] lru_cache
+  [MISSING] lz4
+  [MISSING] python
+  [MISSING] rpds
+  [MISSING] smoke_l3_1_t4
+  [MISSING] steps_seen
+  [MISSING] stevedore
+  [MISSING] subject_required_for_write_under_m2
+  [MISSING] t18
+  [MISSING] test_llm_proxy
+  [MISSING] uuid_utils
+  [MISSING] venv
+
+=== 检查二 · 配置键存在性 ===
+`Settings` 已声明字段: 158
+**硬缺口（既不在 Settings、也不在源码）: 5**
+  [KEY-MISSING] BIZ_CODE_SPACE_COLLISION（**正文未自述 ⇒ 疑似新增漂移**）
+  [KEY-MISSING] CHANNEL_DRILL_WINDOW_SECONDS（**正文未自述 ⇒ 疑似新增漂移**）
+  [KEY-MISSING] OPENBASE_DPS_ORG_MAP（正文已自述其不存在）
+  [KEY-MISSING] OPENBASE_DPS_TENANT_MAP（**正文未自述 ⇒ 疑似新增漂移**）
+  [KEY-MISSING] OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES（**正文未自述 ⇒ 疑似新增漂移**）
+提示（不在 Settings 但在源码，如模块级常量）: 15
+  [KEY-SOURCE-ONLY] DEFAULT_PROFILE_TARGETS
+  [KEY-SOURCE-ONLY] DEFAULT_SYSTEM_PROMPT
+  [KEY-SOURCE-ONLY] LOCAL_TO_OPENBASE_ROLE
+  [KEY-SOURCE-ONLY] MODEL_CONTEXT_LIMITS
+  [KEY-SOURCE-ONLY] OPENLLM_PROFILE_LLM_REFINE
+  [KEY-SOURCE-ONLY] OPENLLM_TEST_EXTRAS
+  [KEY-SOURCE-ONLY] OVER_QUOTA_RATIO
+  [KEY-SOURCE-ONLY] PROXY_SOURCE_LLM
+  [KEY-SOURCE-ONLY] PROXY_SOURCE_ORCHESTRATOR
+  [KEY-SOURCE-ONLY] RAG_SOURCE_BUILTIN
+  [KEY-SOURCE-ONLY] RATE_LIMIT_BURST
+  [KEY-SOURCE-ONLY] RATE_LIMIT_PER_SECOND
+  [KEY-SOURCE-ONLY] RECOVER_MAX_AGE_MINUTES
+  [KEY-SOURCE-ONLY] RECOVER_MAX_ROWS
+  [KEY-SOURCE-ONLY] SSE_FIRST_PACKET_STEP
+
+=== 检查三 · 文档头版本一致性 ===
+文档头版本: 1.67.0；修订历史版本条目: 67；最高版本: 1.67.0
+**判定: 一致**
+
+===== 4) OpenLLM DevLogReport（已修文档头 1.44.0→1.45.0 后复跑）=====
+扫描源: 542 个 .py（含 OpenBase 证据目录）
+
+=== 检查一 · 符号存在性 ===
+「引用为缺失 / 族前缀」已跳过: 59
+「引用为存在」待核对: 501
+**仓内查无此项（需判定「文档错」还是「实现缺」）: 27**
+  [MISSING] ECONNREFUSED
+  [MISSING] GetTickCount64
+  [MISSING] InvalidColumnReference
+  [MISSING] MagicMock
+  [MISSING] MetaData
+  [MISSING] NULL
+  [MISSING] NameError
+  [MISSING] NotNullViolation
+  [MISSING] OPENBASE_JWT_SECRET
+  [MISSING] OPENMEMORY_GATEWAY__JWT_SECRET
+  [MISSING] OrderedDict
+  [MISSING] Table
+  [MISSING] Traceback
+  [MISSING] TypeError
+  [MISSING] _probe_reachable
+  [MISSING] _safely
+  [MISSING] algorithms
+  [MISSING] append
+  [MISSING] as_string
+  [MISSING] cryptography
+  [MISSING] ensure_future
+  [MISSING] getattr
+  [MISSING] invalidate_caches
+  [MISSING] pyc
+  [MISSING] raise
+  [MISSING] step_5_deployment_closed
+  [MISSING] venv
+
+=== 检查二 · 配置键存在性 ===
+`Settings` 已声明字段: 158
+**硬缺口（既不在 Settings、也不在源码）: 1**
+  [KEY-MISSING] OPENBASE_JWT_SECRET（**正文未自述 ⇒ 疑似新增漂移**）
+提示（不在 Settings 但在源码，如模块级常量）: 9
+  [KEY-SOURCE-ONLY] DEFAULT_PROFILE_TARGETS
+  [KEY-SOURCE-ONLY] DEFAULT_SYSTEM_PROMPT
+  [KEY-SOURCE-ONLY] LOCAL_TO_OPENBASE_ROLE
+  [KEY-SOURCE-ONLY] MAX_WRITEBACK_REPLAY_ROWS
+  [KEY-SOURCE-ONLY] OPENLLM_PROFILE_LLM_REFINE
+  [KEY-SOURCE-ONLY] OPENLLM_TEST_EXTRAS
+  [KEY-SOURCE-ONLY] PROFILE_FAILURE_COOLDOWN
+  [KEY-SOURCE-ONLY] REFINE_TARGET_GPU_NODE
+  [KEY-SOURCE-ONLY] REFINE_TARGET_VALUES
+
+=== 检查三 · 文档头版本一致性 ===
+文档头版本: 1.45.0；修订历史版本条目: 48；最高版本: 1.45.0
+**判定: 一致**

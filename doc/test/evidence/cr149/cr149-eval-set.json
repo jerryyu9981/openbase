@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "id": "cr149-eval-set",
+    "version": "v1.0.0",
+    "created": "2026-09-28",
+    "purpose": "CR-149 判据 T3 段③：rerank 开 / 关的**聚合对照**（检索侧口径，可复跑）",
+    "nature": "**构造样本，非生产数据** —— `score` 为构造的 rerank 后分数、`relevant` 为构造标注；本集用于验证**过滤与重排口径**的确定性与可复跑性，**不代表**真实检索质量",
+    "filter_semantics": "网关**不本地过滤**：`score_threshold` 下传检索服务（T3 段① 只验「口径」）。故本集的过滤为该口径的**夹具仿真**，不等于真实检索路径",
+    "rerank_on": "按 `score` 降序、过滤 `score < score_threshold` 的条目",
+    "rerank_off": "不过滤、保持原序（`score_threshold<=0` ⇒ None ⇒ 网关不过滤）",
+    "score_threshold": 0.15,
+    "groups": {
+      "assert": "参与**硬断言**（条目数下降 / 相关项保留率不降 / 噪声剔除率上升）",
+      "stress": "**仅观测**：相关项分数低于阈值 —— 用于暴露固定阈值的适用边界，不作硬断言"
+    },
+    "used_ratio_note": "本集**不含** `used_ratio`（归因 A 指标，取值依赖 LLM 回答内容）⇒ 该子句仍属**运行态**，见 `t_acceptance_runner.py` T3 的 `evaluation_pending`（理由已收窄为「仅缺运行态数据」）"
+  },
+  "samples": [
+    {
+      "id": "s1",
+      "group": "assert",
+      "query": "上下文预算如何分配？",
+      "candidates": [
+        { "id": "s1c1", "score": 0.91, "relevant": true },
+        { "id": "s1c2", "score": 0.62, "relevant": true },
+        { "id": "s1c3", "score": 0.31, "relevant": false },
+        { "id": "s1c4", "score": 0.05, "relevant": false }
+      ]
+    },
+    {
+      "id": "s2",
+      "group": "assert",
+      "query": "rerank 阈值是多少？",
+      "candidates": [
+        { "id": "s2c1", "score": 0.88, "relevant": true },
+        { "id": "s2c2", "score": 0.16, "relevant": false },
+        { "id": "s2c3", "score": 0.14, "relevant": false }
+      ]
+    },
+    {
+      "id": "s3",
+      "group": "assert",
+      "query": "画像维度优先级规则",
+      "candidates": [
+        { "id": "s3c1", "score": 0.7, "relevant": true },
+        { "id": "s3c2", "score": 0.4, "relevant": true },
+        { "id": "s3c3", "score": 0.2, "relevant": true }
+      ]
+    },
+    {
+      "id": "s4",
+      "group": "assert",
+      "query": "写回队列的幂等键",
+      "candidates": [
+        { "id": "s4c1", "score": 0.55, "relevant": true },
+        { "id": "s4c2", "score": 0.3, "relevant": false },
+        { "id": "s4c3", "score": 0.12, "relevant": false },
+        { "id": "s4c4", "score": 0.08, "relevant": false },
+        { "id": "s4c5", "score": 0.03, "relevant": false }
+      ]
+    },
+    {
+      "id": "s5",
+      "group": "assert",
+      "query": "主备通道切换的审计动作码",
+      "candidates": [
+        { "id": "s5c1", "score": 0.35, "relevant": false },
+        { "id": "s5c2", "score": 0.22, "relevant": false },
+        { "id": "s5c3", "score": 0.1, "relevant": false }
+      ]
+    },
+    {
+      "id": "s6",
+      "group": "assert",
+      "query": "评测集样本字段定义",
+      "candidates": [
+        { "id": "s6c1", "score": 0.18, "relevant": false },
+        { "id": "s6c2", "score": 0.16, "relevant": false }
+      ]
+    },
+    {
+      "id": "s7",
+      "group": "assert",
+      "query": "引用编号稳定性",
+      "candidates": [{ "id": "s7c1", "score": 0.95, "relevant": true }]
+    },
+    {
+      "id": "s8",
+      "group": "assert",
+      "query": "模型窗口上限口径",
+      "candidates": [{ "id": "s8c1", "score": 0.02, "relevant": false }]
+    },
+    {
+      "id": "s9",
+      "group": "stress",
+      "query": "低分但相关的边界样本",
+      "candidates": [
+        { "id": "s9c1", "score": 0.6, "relevant": false },
+        { "id": "s9c2", "score": 0.1, "relevant": true }
+      ]
+    },
+    {
+      "id": "s10",
+      "group": "stress",
+      "query": "相关项分数跨越阈值",
+      "candidates": [
+        { "id": "s10c1", "score": 0.75, "relevant": true },
+        { "id": "s10c2", "score": 0.05, "relevant": true }
+      ]
+    }
+  ]
+}

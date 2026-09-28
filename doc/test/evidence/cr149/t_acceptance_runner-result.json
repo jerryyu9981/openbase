@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-28T04:28:46",
+  "generated_at": "2026-09-28T19:56:03",
   "simulate": false,
   "summary": {
-    "PASS": 11,
+    "PASS": 14,
     "FAIL": 0,
     "SKIP": 0,
     "BLOCKED": 1
@@ -135,46 +135,304 @@
             "score_threshold": 0.15
           }
         },
-        "evaluation_pending": "**T3 原文第三条子句「条目数下降但 `used_ratio` 不降」不在本判据内**：`used_ratio` 是**归因 A** 的指标（`attribution_a()`：回答引用了多少条注入片段），**取值依赖 LLM 回答内容**，其自身 docstring 明确「只能纵向对比、不得作绝对值解读」⇒ **不能**用构造回答在进程内做成确定性判据；须在**评测集**上做「rerank 开 / 关」对照（聚合比较）—— 属 §6 **第三批**「评测集与验收判据扩展」。**本判据如实不覆盖该子句**，而非以近似断言冒充覆盖。",
+        "evaluation_set": {
+          "eval_set": "cr149-eval-set",
+          "eval_set_version": "v1.0.0",
+          "score_threshold": 0.15,
+          "rerank_on": {
+            "aggregate": {
+              "items": 15,
+              "relevant_total": 8,
+              "relevant_kept": 8,
+              "noise_total": 14,
+              "noise_kept": 7,
+              "relevant_recall": 1.0,
+              "noise_rejection": 0.5
+            },
+            "per_sample": [
+              {
+                "id": "s1",
+                "items_before": 4,
+                "items_after": 3,
+                "kept_ids": [
+                  "s1c1",
+                  "s1c2",
+                  "s1c3"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s2",
+                "items_before": 3,
+                "items_after": 2,
+                "kept_ids": [
+                  "s2c1",
+                  "s2c2"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s3",
+                "items_before": 3,
+                "items_after": 3,
+                "kept_ids": [
+                  "s3c1",
+                  "s3c2",
+                  "s3c3"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s4",
+                "items_before": 5,
+                "items_after": 2,
+                "kept_ids": [
+                  "s4c1",
+                  "s4c2"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s5",
+                "items_before": 3,
+                "items_after": 2,
+                "kept_ids": [
+                  "s5c1",
+                  "s5c2"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s6",
+                "items_before": 2,
+                "items_after": 2,
+                "kept_ids": [
+                  "s6c1",
+                  "s6c2"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s7",
+                "items_before": 1,
+                "items_after": 1,
+                "kept_ids": [
+                  "s7c1"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s8",
+                "items_before": 1,
+                "items_after": 0,
+                "kept_ids": [],
+                "dropped_relevant_ids": []
+              }
+            ]
+          },
+          "rerank_off": {
+            "aggregate": {
+              "items": 22,
+              "relevant_total": 8,
+              "relevant_kept": 8,
+              "noise_total": 14,
+              "noise_kept": 14,
+              "relevant_recall": 1.0,
+              "noise_rejection": 0.0
+            },
+            "per_sample": [
+              {
+                "id": "s1",
+                "items_before": 4,
+                "items_after": 4,
+                "kept_ids": [
+                  "s1c1",
+                  "s1c2",
+                  "s1c3",
+                  "s1c4"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s2",
+                "items_before": 3,
+                "items_after": 3,
+                "kept_ids": [
+                  "s2c1",
+                  "s2c2",
+                  "s2c3"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s3",
+                "items_before": 3,
+                "items_after": 3,
+                "kept_ids": [
+                  "s3c1",
+                  "s3c2",
+                  "s3c3"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s4",
+                "items_before": 5,
+                "items_after": 5,
+                "kept_ids": [
+                  "s4c1",
+                  "s4c2",
+                  "s4c3",
+                  "s4c4",
+                  "s4c5"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s5",
+                "items_before": 3,
+                "items_after": 3,
+                "kept_ids": [
+                  "s5c1",
+                  "s5c2",
+                  "s5c3"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s6",
+                "items_before": 2,
+                "items_after": 2,
+                "kept_ids": [
+                  "s6c1",
+                  "s6c2"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s7",
+                "items_before": 1,
+                "items_after": 1,
+                "kept_ids": [
+                  "s7c1"
+                ],
+                "dropped_relevant_ids": []
+              },
+              {
+                "id": "s8",
+                "items_before": 1,
+                "items_after": 1,
+                "kept_ids": [
+                  "s8c1"
+                ],
+                "dropped_relevant_ids": []
+              }
+            ]
+          },
+          "failures": [],
+          "verdict": "PASS",
+          "stress_observations": [
+            {
+              "sample": "s9",
+              "dropped_relevant_ids": [
+                "s9c2"
+              ],
+              "threshold": 0.15,
+              "note": "**固定阈值剔除了标注为相关、但分数低于阈值的条目** ⇒ 暴露固定阈值的适用边界；须评估「下调阈值」或「改用相对阈值（如 top-k 内分位数）」"
+            },
+            {
+              "sample": "s10",
+              "dropped_relevant_ids": [
+                "s10c2"
+              ],
+              "threshold": 0.15,
+              "note": "**固定阈值剔除了标注为相关、但分数低于阈值的条目** ⇒ 暴露固定阈值的适用边界；须评估「下调阈值」或「改用相对阈值（如 top-k 内分位数）」"
+            }
+          ],
+          "runtime_pending": {
+            "status": "pending_runtime",
+            "reason": "**真实检索侧聚合对照须运行态**：网关不本地过滤（`score_threshold` 下传检索服务）⇒ 本执行器的开/关过滤是**口径仿真**，不代表真实检索路径；且 `used_ratio`（归因 A：回答引用了多少条注入片段）**取值依赖 LLM 回答内容**。",
+            "required_inputs": [
+              "运行态检索端点（OpenRAG 数据面）＋ 真实 KB 数据",
+              "LLM 回答（用于计算归因 A 的 `used_ratio`）",
+              "同一批 query 在 rerank 开 / 关两态下的注入片段与回答"
+            ]
+          },
+          "coverage_note": "本执行器覆盖**检索侧聚合口径**；**不覆盖** `used_ratio`（依赖 LLM 回答，见 runtime_pending）—— 不以近似断言冒充覆盖。"
+        },
+        "evaluation_pending": "**仍属运行态的只有 `used_ratio` 部分** —— T3 原文第三条子句中的 `used_ratio` 是**归因 A** 的指标（`attribution_a()`：回答引用了多少条注入片段），**取值依赖 LLM 回答内容**，其自身 docstring 明确「只能纵向对比、不得作绝对值解读」⇒ **不能**用构造回答在进程内做成确定性判据。**v1.27.0（A5 / 题 9）已收窄该待办**：评测集与执行器**已就位**（`cr149-eval-set.json` ＋ `eval_set_runner.py`），其**检索侧**聚合对照已由**本判据段③**成为可复跑判据（条目数下降 / 相关项保留率不降 / 噪声剔除率上升）；**唯一缺口＝运行态数据**（真实检索端点 ＋ LLM 回答），执行器已在其 `runtime_pending` 中逐项声明所需输入。**本判据如实不覆盖 `used_ratio`**，而非以近似断言冒充覆盖。",
         "runtime_pending": "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的运行态复核；本判据只覆盖网关侧口径与「开启即生效」"
       },
       "reason": ""
     },
     {
       "criterion": "T4",
-      "title": "备通道：组件故障后裁决与内置 RAG 接管有轨迹（轨迹=进程内判；无 5xx=运行态）",
+      "title": "备通道：组件故障后**如实降级且可观测**（轨迹 ＋ B→A 接管审计落库=进程内判；无 5xx=运行态）",
       "status": "BLOCKED",
       "requires": [
-        "运行态服务（真实停服/改址注入 + 轨迹实际落库读取）",
-        "内置 RAG 有底座（has_base=true）→ 判「接管非空」"
+        "运行态服务（真实停服/改址注入 + 轨迹实际落库读取）"
       ],
       "detail": {
         "fault_injected": "RuntimeError: OpenRAG 不可达: connection refused",
         "sync_trace_components": {
-          "rag_source": "builtin",
-          "builtin_fallback_reason": "OpenRAG 不可达: connection refused"
+          "rag_source": "skipped"
         },
         "stream_trace_components": {
-          "rag_source": "builtin",
-          "builtin_fallback_reason": "OpenRAG 不可达: connection refused"
+          "rag_source": "skipped"
         },
         "trace_contract": "PASS",
-        "builtin_rag": {
-          "status": "unavailable",
-          "latency_ms": 0,
-          "knowledge_bases": 0,
-          "indexes": 0,
-          "has_base": false,
-          "reason": "内置 RAG 无底座（KB 0 行 / FAISS 0 索引）⇒ 备通道接管后将注入为空"
+        "honest_degradation": {
+          "sync_raised": true,
+          "sync_trace": {
+            "rag_source": "skipped"
+          },
+          "stream_trace": {
+            "rag_source": "skipped"
+          },
+          "stream_degraded": [
+            "rag"
+          ],
+          "stream_errors": [
+            {
+              "component": "rag",
+              "error": "RuntimeError: OpenRAG 不可达: connection refused"
+            }
+          ],
+          "stream_executed_keys": []
         },
+        "channel_audit": {
+          "disabled_status": "disabled",
+          "disabled_records": 0,
+          "enabled_status": "scheduled",
+          "enabled_records": 1,
+          "takeover_ok_via_real_path": true,
+          "primary_after": "a",
+          "record_action": "channel_failover_b_to_a",
+          "record_operator": "ops",
+          "record_target": "channel:a",
+          "record_detail": {
+            "source": "manual",
+            "reason": "演练",
+            "primary_after": "a",
+            "occurred_at": "2026-09-28T11:56:02.235103+00:00"
+          },
+          "record_missing_fields": [],
+          "no_loop_status": "no_loop",
+          "fail_open_ok": true,
+          "idempotent_first": true,
+          "idempotent_second": false,
+          "idempotent_records": 1,
+          "provisional_note": "**暂定动作码**：依方案 §10 项 6「建议单独立项」，正式动作码与保留策略**尚未审批** ⇒ 本码**不改动** `AuditAction` 枚举，且由 `CHANNEL_AUDIT_ENABLED`（默认 False）门控。"
+        },
+        "channel_audit_contract": "**A2 / 题 4**：B→A 接管**独立审计落库**已接线（`app/identity/channel_audit.py`，单一落痕点覆盖人工/自动两条触发路径）；`emit_failover_audit` **永不抛出**（fail-open 到「仅日志」）、有运行循环时后台写入（不阻塞事件循环）、无循环时记 WARN 并放弃。**门控 `CHANNEL_AUDIT_ENABLED` 出厂默认 False** ⇒ 关闭即逐字回退现行行为。**审计动作码 `channel_failover_b_to_a` 属暂定**（§10 项 6 建议单独立项审批）⇒ 未扩展 `AuditAction` 枚举、且未审批前不默认写审计库。",
         "runtime_pending": [
           "真实停 OpenRAG / 改不可达地址的故障注入（本执行器不改外部服务状态）",
           "端到端轨迹**实际落库**读取（本执行器只判到「落库调用入参」层）"
         ],
-        "endpoint_level_evidence": "端点级（HTTP，进程内 TestClient）故障注入已由 `tests/unit/test_rag_builtin_fallback_trace.py::TestEndpointLevelFaultInjection` 覆盖 4 例：同步 POST /openllm/v1/chat 返回 200 且轨迹带 rag_source=builtin 与归因；开关关时 200 且记 degraded/rag_source=skipped；装配缺失时不回退；流式 POST /openllm/v1/chat/stream 返回 200、无 error 事件、**落库轨迹入参**同样带来源与归因。该层证明「组件故障时不返回 5xx 且轨迹可复盘」，**不替代真实停服 E2E**",
-        "historical_e2e_evidence": "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上验过 rag_source=builtin / degraded=[] / 主流程 200；须在**当前提交**上复跑确认"
+        "endpoint_level_evidence": "端点级（HTTP，进程内 TestClient）故障注入已由 `tests/unit/test_rag_honest_degradation_trace.py::TestEndpointLevelFaultInjection` 覆盖 2 例：同步 POST /openllm/v1/chat 返回 **200** 且轨迹 `rag_source=skipped`、**记 `degraded`（含 rag）**、**无接管归因字段**；装配缺失同样 200 且降级。该层证明「组件故障时**不返回 5xx** 且**如实降级可复盘**」，**不替代真实停服 E2E**",
+        "historical_e2e_evidence": "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上验过`rag_source=builtin` / `degraded=[]` / 主流程 200 —— **该证据口径已随 Q11 废弃而失效**（内置 RAG 自建数据面不存在）⇒ 若需运行态回归，须按**新契约**重定义期望（`rag_source=skipped` ＋ `degraded` 含 rag ＋ 端到端 200）后复跑"
       },
-      "reason": "轨迹部分已在进程内验证通过（两路径 rag_source=builtin 且归因一致、单一落痕实现）；且端点级（HTTP）故障注入 4 例通过（同步/流式端点均 200、无 error 事件、轨迹带来源与归因、装配缺失不回退）⇒「无 5xx」已在**进程内**覆盖；剩余**真实停服注入**与**轨迹实际落库读取**需运行态。内置 RAG 底座：has_base=False（false 时接管必然注入为空，须先补底座或按 §4.1 声明生效条件）"
+      "reason": "轨迹部分已在进程内验证通过（**失败如实降级且可观测**：同步路径如实上抛、流式路径落 `degraded` / `errors` 带原因、`rag_source` 保持 `skipped`、`executed` 无伪造条目、两路径**逐键一致**、单一落痕实现）；且端点级（HTTP）故障注入 2 例通过（端点均 200、如实降级、**无接管归因字段**）⇒「无 5xx」已在**进程内**覆盖；剩余**真实停服注入**与**轨迹实际落库读取**需运行态。**判据重做说明**：原契约以「内置 RAG 接管」（`rag_source=builtin` ＋ `builtin_fallback_reason`）为证据 —— 该自建数据面已按 **Q11 裁定整体废弃**（两通道均只调用同一批三基础设施、无自建数据面）⇒ 旧证据失效，故本次按「**如实降级**」重定义契约。"
     },
     {
       "criterion": "T5",
@@ -263,6 +521,7 @@
         },
         "placement_gate_evidence": "`tests/unit/test_refine_placement_policy.py`（41 例）＋ 探针 `doc/test/evidence/cr149/refine_placement_probe.py`（14 例 ＋ 结尾自检）",
         "model_tier": "SHELVED（v1.26.0 方案 B：2B/4B 与 ≤1B 全部不达 §5.6 门槛，生成式精炼整体搁置）",
+        "model_tier_quality_framework": "**A5（题 9）第③子项「T6 模型档质量对比判据**框架**」据 v1.26.0 方案 B 裁定 ⇒ 不建（superseded）**：模型档已**整体搁置** ⇒ 该框架**无消费方**；若未来解除搁置（出现达标模型 ＋ 合法推理位置），须**重新立判据**，而非复用空壳框架。**如实登记为「明确保留理由（不建）」**，不以空壳框架冒充已交付。",
         "runtime_pending": [
           "生成式精炼已裁定整体搁置（v1.26.0 方案 B）—— 无达标模型（§5.4 复测：精度 < 0.90、P95 压缩 > 异步档 30s 预算，最慢 134.6s），不再列为第三批交付目标，无运行态遗留项"
         ]
@@ -281,7 +540,7 @@
           "components_end",
           "profile_end"
         ],
-        "concurrent_components_wall_seconds": 0.39,
+        "concurrent_components_wall_seconds": 0.359,
         "prompt_has_profile": true,
         "gateway_order_contract_ok": true
       },
@@ -294,7 +553,7 @@
       "requires": [],
       "detail": {
         "switch_enabled_in_config": true,
-        "parallel_wall_seconds": 0.047,
+        "parallel_wall_seconds": 0.063,
         "ordered_wall_seconds": 0.125,
         "parallel_events": [
           "memory_start",
@@ -416,10 +675,29 @@
             "merged_tokens": 0
           }
         },
+        "profile_field_priority": {
+          "priority_table": [
+            "name",
+            "occupation"
+          ],
+          "enabled_at_quota_40": "你是 OpenBase 的智能助手。回答时以给定的用户画像、记忆与知识库上下文为主要依据；上下文未覆盖的信息不得编造，依据不足时需明确说明；引用知识库内容时标注其来源编号。\n[用户画像]\n[个人画像]\nname: 张三\noccupation: 工程师\n[用户问题]\n问",
+          "disabled_at_quota_40": "你是 OpenBase 的智能助手。回答时以给定的用户画像、记忆与知识库上下文为主要依据；上下文未覆盖的信息不得编造，依据不足时需明确说明；引用知识库内容时标注其来源编号。\n[用户画像]\n[个人画像]\nremark: 无\nnickname: 小张\nname: 张三\n[用户问题]\n问",
+          "over_quota_report": {
+            "dropped_items": 8,
+            "dropped_tokens": 86,
+            "truncated_items": 0,
+            "merged_items": 0,
+            "merged_tokens": 0
+          },
+          "config_keys": {
+            "CONTEXT_PROFILE_FIELD_PRIORITY_ENABLED": false,
+            "CONTEXT_PROFILE_FIELD_PRIORITY": ""
+          }
+        },
         "ref_numbers_switch_default": {
           "CONTEXT_REF_NUMBERS_ENABLED": false
         },
-        "evidence": "`tests/unit/test_assembly_refine_rule_tier.py`（27 例）＋ `tests/unit/test_context_rank_selection.py`（12 例）＋ `tests/unit/test_profile_dimension_priority.py`（10 例）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
+        "evidence": "`tests/unit/test_assembly_refine_rule_tier.py`（27 例）＋ `tests/unit/test_context_rank_selection.py`（12 例）＋ `tests/unit/test_profile_dimension_priority.py`（29 例：维度级 9 ＋ 字段级 20）＋ 运行态探针 `doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
       },
       "reason": ""
     },
@@ -713,6 +991,335 @@
           "tokens_identical": true
         },
         "evidence": "`tests/unit/test_refine_trigger_and_guard.py`（22 例）＋ 运行态探针 `doc/test/evidence/cr149/refine_trigger_probe.py`"
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T13",
+      "title": "LLM 不可达：判定按阈值、告知即时可机读、不污染既有触发链（进程内可判）",
+      "status": "PASS",
+      "requires": [],
+      "detail": {
+        "single_failure_notify_hint": {
+          "primary_channel": "b",
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 1,
+          "threshold": 3,
+          "fallback_action": "use_a_direct",
+          "action_scope": "per_failure",
+          "fallback_hint": "主通道终点（LLM）不可达：可改走 A 直连 —— 经 OpenBase 分别单独调用 DPS / OpenMemory / OpenRAG（不经编排）",
+          "reason": "RuntimeError: OpenLLM 端点不可达"
+        },
+        "single_failure_state_action": "none",
+        "reached_health": {
+          "healthy": false,
+          "consecutive_failures": 0,
+          "threshold": 3,
+          "llm_consecutive_failures": 3,
+          "llm_unreachable": true
+        },
+        "reached_state_action": "use_a_direct",
+        "unpolluted_health": {
+          "healthy": false,
+          "consecutive_failures": 0,
+          "threshold": 3,
+          "llm_consecutive_failures": 5,
+          "llm_unreachable": true
+        },
+        "auto_failover_on_llm_failures": false,
+        "channel_status_keys": [
+          "auto_failover_enabled",
+          "drill_window_seconds",
+          "fallback_action",
+          "healthy_b",
+          "llm_consecutive_failures",
+          "llm_unreachable",
+          "preference",
+          "primary_channel",
+          "single_primary",
+          "state"
+        ],
+        "error_payload_with_hint": {
+          "code": 5001,
+          "message": "模型服务暂时不可用",
+          "detail": "模型服务暂时不可用",
+          "request_id": "req-t13",
+          "data": {
+            "channel": {
+              "primary_channel": "b",
+              "llm_unreachable": false,
+              "llm_consecutive_failures": 1,
+              "threshold": 3,
+              "fallback_action": "use_a_direct",
+              "action_scope": "per_failure",
+              "fallback_hint": "主通道终点（LLM）不可达：可改走 A 直连 —— 经 OpenBase 分别单独调用 DPS / OpenMemory / OpenRAG（不经编排）",
+              "reason": "RuntimeError: OpenLLM 端点不可达"
+            }
+          }
+        },
+        "error_payload_without_hint": {
+          "code": 5001,
+          "message": "RAG 服务不可用",
+          "detail": "RAG 服务不可用",
+          "request_id": "req-t13b"
+        },
+        "probe_evidence": "`doc/test/evidence/cr149/llm_unreachable_probe.py`（6 例判定表 ＋ 结尾自检）",
+        "unit_evidence": "`tests/unit/test_channel_llm_unreachable.py`（19 例护栏）"
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T14",
+      "title": "双通道统一上报：三视角聚合 ＋ 单一结论、观测与决策分离（进程内可判）",
+      "status": "PASS",
+      "requires": [],
+      "detail": {
+        "baseline_report": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "channels": {
+            "a": {
+              "healthy": true,
+              "consecutive_failures": 0
+            },
+            "b": {
+              "healthy": true,
+              "consecutive_failures": 0,
+              "llm_unreachable": false,
+              "llm_consecutive_failures": 0
+            }
+          },
+          "components": {
+            "openrag": {
+              "channel": "b",
+              "status": "ok",
+              "healthy": true
+            }
+          },
+          "degraded_dimensions": [],
+          "fallback_action": "none",
+          "bypass_orchestration": false,
+          "routing_recommendation": "use_primary",
+          "reasons": [
+            "双通道无异常"
+          ]
+        },
+        "facts_report": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "channels": {
+            "a": {
+              "healthy": true,
+              "consecutive_failures": 0
+            },
+            "b": {
+              "healthy": true,
+              "consecutive_failures": 1,
+              "llm_unreachable": false,
+              "llm_consecutive_failures": 1
+            }
+          },
+          "components": {},
+          "degraded_dimensions": [],
+          "fallback_action": "none",
+          "bypass_orchestration": false,
+          "routing_recommendation": "use_primary",
+          "reasons": [
+            "双通道无异常"
+          ]
+        },
+        "degraded_report": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "channels": {
+            "a": {
+              "healthy": true,
+              "consecutive_failures": 0
+            },
+            "b": {
+              "healthy": false,
+              "consecutive_failures": 2,
+              "llm_unreachable": false,
+              "llm_consecutive_failures": 0
+            }
+          },
+          "components": {
+            "openrag": {
+              "channel": "b",
+              "status": "unavailable",
+              "healthy": false
+            }
+          },
+          "degraded_dimensions": [
+            "b.components",
+            "b.component.openrag"
+          ],
+          "fallback_action": "none",
+          "bypass_orchestration": false,
+          "routing_recommendation": "use_primary",
+          "reasons": [
+            "B 组件维度降级（**可用但劣化** ⇒ **仍走主通道**）"
+          ]
+        },
+        "a_side_report": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "channels": {
+            "a": {
+              "healthy": false,
+              "consecutive_failures": 3
+            },
+            "b": {
+              "healthy": true,
+              "consecutive_failures": 0,
+              "llm_unreachable": false,
+              "llm_consecutive_failures": 0
+            }
+          },
+          "components": {},
+          "degraded_dimensions": [
+            "a.components"
+          ],
+          "fallback_action": "none",
+          "bypass_orchestration": false,
+          "routing_recommendation": "use_primary",
+          "reasons": [
+            "A 侧有失败记录（B 主时不改变主通道）"
+          ]
+        },
+        "unreachable_report": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "channels": {
+            "a": {
+              "healthy": true,
+              "consecutive_failures": 0
+            },
+            "b": {
+              "healthy": false,
+              "consecutive_failures": 0,
+              "llm_unreachable": true,
+              "llm_consecutive_failures": 3
+            }
+          },
+          "components": {},
+          "degraded_dimensions": [
+            "b.llm"
+          ],
+          "fallback_action": "use_a_direct",
+          "bypass_orchestration": true,
+          "routing_recommendation": "use_a_direct",
+          "reasons": [
+            "最终 LLM 不可达（连续 3 次 ≥ 阈值 3）"
+          ]
+        },
+        "below_threshold_report": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "channels": {
+            "a": {
+              "healthy": true,
+              "consecutive_failures": 0
+            },
+            "b": {
+              "healthy": true,
+              "consecutive_failures": 0,
+              "llm_unreachable": false,
+              "llm_consecutive_failures": 1
+            }
+          },
+          "components": {},
+          "degraded_dimensions": [],
+          "fallback_action": "none",
+          "bypass_orchestration": false,
+          "routing_recommendation": "use_primary",
+          "reasons": [
+            "双通道无异常"
+          ]
+        },
+        "exhaustive_mismatch": [],
+        "probe_evidence": "`doc/test/evidence/cr149/channel_report_probe.py`（7 例判定表 ＋ 4 组合穷举 ＋ 结尾自检）",
+        "unit_evidence": "`tests/unit/test_channel_report.py`（16 例护栏）"
+      },
+      "reason": ""
+    },
+    {
+      "criterion": "T15",
+      "title": "A 直连三组件取数：三组件均可经 A 直连取到数据（进程内承载；真实服务联调留运行态）",
+      "status": "PASS",
+      "requires": [],
+      "detail": {
+        "components": {
+          "OpenMemory（记忆）": {
+            "endpoint_read": "POST /openmemory/v1/search",
+            "endpoint_seed": "POST /openmemory/v1/write",
+            "empty_total": 0,
+            "retrieved_total": 1,
+            "checks": {
+              "empty_state_honest": true,
+              "write_accepted": true,
+              "read_http_ok": true,
+              "data_retrieved_non_empty": true,
+              "content_matches": true,
+              "a_direct_header_present": true
+            },
+            "ok": true
+          },
+          "OpenRAG（知识库）": {
+            "endpoint_read": "POST /openrag/v1/search",
+            "endpoint_seed": "POST /openrag/v1/ingest",
+            "empty_total": 0,
+            "retrieved_total": 1,
+            "checks": {
+              "empty_state_honest": true,
+              "ingest_accepted": true,
+              "read_http_ok": true,
+              "data_retrieved_non_empty": true,
+              "rerank_params_accepted": true,
+              "score_above_threshold": true,
+              "a_direct_header_present": true
+            },
+            "ok": true
+          },
+          "DPS（画像）": {
+            "endpoint_read": "GET /profile/v1/get",
+            "endpoint_seed": "POST /profile/v1/update",
+            "empty_total": null,
+            "retrieved_total": 3,
+            "checks": {
+              "read_http_ok": true,
+              "data_retrieved_non_empty": true,
+              "version_present": true,
+              "update_accepted": true,
+              "write_read_closure": true,
+              "a_direct_header_present": true
+            },
+            "ok": true
+          },
+          "直连拓扑身份面（三系统）": {
+            "endpoint_read": "—",
+            "endpoint_seed": "—",
+            "empty_total": null,
+            "retrieved_total": 3,
+            "checks": {
+              "a_source_is_llm_proxy": true,
+              "b_source_is_orchestrator": true,
+              "topology_distinguishable": true,
+              "request_id_carried": true,
+              "ab_identity_equivalent_all": true
+            },
+            "ok": true
+          }
+        },
+        "carrier": "mock_services/{openmemory,openrag,profile}_stub（进程内 TestClient，零网络）",
+        "runtime_pending": "真实外部服务（生产 DPS / OpenMemory / OpenRAG）联调与真实契约路由（`OPENLLM_*_REAL=true`）仍属运行态复核项 —— 本判据不据此宣称生产已贯通",
+        "probe_evidence": "`doc/test/evidence/cr149/a_direct_component_probe.py`（4 例判定表 ＋ 结尾自检；本判据**复用同一 `build_cases()`** 防分叉）"
       },
       "reason": ""
     }

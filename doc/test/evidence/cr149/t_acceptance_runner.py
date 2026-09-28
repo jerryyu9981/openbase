@@ -288,6 +288,26 @@ def check_t2() -> Verdict:
 
 # ---------------------------------------------------------------- T3 重排与阈值
 
+def _run_eval_set() -> dict[str, Any]:
+    """调用同目录的评测集执行器（`eval_set_runner.py`；供 T3 段③ 使用）
+
+    以**文件位置**动态加载（不依赖 cwd / `sys.path`）—— 执行器属仓内证据脚本，
+    非应用模块。
+    """
+    import importlib.util
+
+    directory = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(directory, "eval_set_runner.py")
+    spec = importlib.util.spec_from_file_location("cr149_eval_set_runner", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载评测集执行器：{path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.evaluate(
+        module.load_eval_set(os.path.join(directory, module.EVAL_SET_NAME))
+    )
+
+
 def check_t3() -> Verdict:
     """T3：rerank / score_threshold 透传与低分过滤（**v1.18.1 起分两段**）
 
@@ -383,6 +403,32 @@ def check_t3() -> Verdict:
         if _float_or_none(global_level.get("score_threshold")) is None:
             failures.append("开关已开但阈值未生效（解析为 None）")
 
+    # ---- 段③ 评测集开 / 关聚合对照（检索侧口径；进程内可复跑） ----
+    #      v1.27.0（A5 / 题 9）：把「条目数下降但质量不降」从**运行态待办**推进为
+    #      **可复跑判据** —— 以 `cr149-eval-set.json` 的 `assert` 组做开 / 关对照。
+    #      **边界（不得混淆）**：本段覆盖**检索侧**聚合口径（相关项保留率 / 噪声剔除率），
+    #      **不覆盖** `used_ratio`（依赖 LLM 回答，仍属运行态 ⇒ `evaluation_pending`）。
+    eval_result: dict[str, Any] | None = None
+    try:
+        eval_result = _run_eval_set()
+    except Exception as exc:  # noqa: BLE001 - 执行器缺失/异常须落为判据失败，不静默
+        failures.append(f"评测集执行器调用失败：{exc}")
+    if eval_result is not None:
+        if eval_result["verdict"] != "PASS":
+            failures.append(f"评测集开/关对照未达标：{eval_result['failures']}")
+        _on = eval_result["rerank_on"]["aggregate"]
+        _off = eval_result["rerank_off"]["aggregate"]
+        if not _on["items"] < _off["items"]:
+            failures.append(f"评测集：开态条目数未下降（{_on['items']} vs {_off['items']}）")
+        if _on["relevant_recall"] < _off["relevant_recall"]:
+            failures.append(
+                f"评测集：相关项保留率下降（{_on['relevant_recall']} vs {_off['relevant_recall']}）"
+            )
+        if not _on["noise_rejection"] > _off["noise_rejection"]:
+            failures.append(
+                f"评测集：噪声剔除率未上升（{_on['noise_rejection']} vs {_off['noise_rejection']}）"
+            )
+
     detail: dict[str, Any] = {
         "item_level_params": item_level,
         "global_fallback_params": global_level,
@@ -392,13 +438,18 @@ def check_t3() -> Verdict:
         "items_after": len(filtered),
         "filtered_scores": scores,
         "effective_segment": effective_detail,
+        "evaluation_set": eval_result,
         "evaluation_pending": (
-            "**T3 原文第三条子句「条目数下降但 `used_ratio` 不降」不在本判据内**："
+            "**仍属运行态的只有 `used_ratio` 部分** —— T3 原文第三条子句中的 "
             "`used_ratio` 是**归因 A** 的指标（`attribution_a()`：回答引用了多少条注入片段），"
             "**取值依赖 LLM 回答内容**，其自身 docstring 明确「只能纵向对比、不得作绝对值"
-            "解读」⇒ **不能**用构造回答在进程内做成确定性判据；须在**评测集**上做"
-            "「rerank 开 / 关」对照（聚合比较）—— 属 §6 **第三批**「评测集与验收判据扩展」。"
-            "**本判据如实不覆盖该子句**，而非以近似断言冒充覆盖。"
+            "解读」⇒ **不能**用构造回答在进程内做成确定性判据。"
+            "**v1.27.0（A5 / 题 9）已收窄该待办**：评测集与执行器**已就位**"
+            "（`cr149-eval-set.json` ＋ `eval_set_runner.py`），其**检索侧**聚合对照已由"
+            "**本判据段③**成为可复跑判据（条目数下降 / 相关项保留率不降 / 噪声剔除率上升）；"
+            "**唯一缺口＝运行态数据**（真实检索端点 ＋ LLM 回答），执行器已在其 "
+            "`runtime_pending` 中逐项声明所需输入。"
+            "**本判据如实不覆盖 `used_ratio`**，而非以近似断言冒充覆盖。"
         ),
         "runtime_pending": (
             "真实检索侧重排质量（服务端 rerank 排序效果）须在有 OpenRAG 数据面的"
@@ -476,45 +527,40 @@ def _t4_identity():
     )
 
 
-async def _t4_sync_trace(exc: Exception) -> dict[str, Any]:
-    """同步路径：handler 落 shared_state → 经单一落痕函数并入轨迹"""
-    from unittest.mock import AsyncMock, patch
+async def _t4_sync_trace(exc: Exception) -> tuple[dict[str, Any], bool]:
+    """同步路径：handler **如实上抛**（不再回退）→ 经单一落痕函数并入轨迹
+
+    **W3 / Q11（v1.28.0）**：内置 RAG 自建数据面已废弃 ⇒ 不再注入回退桩、不再覆盖回退开关；
+    handler 失败**如实上抛**（由组件层如实降级）。本函数返回 `(轨迹, 是否上抛)`。
+    """
+    from unittest.mock import patch
 
     import app.api.openllm_gateway as gateway
 
     adapter = _T4FailingRagAdapter(exc)
-    with _temporary_settings(OPENRAG_FALLBACK_BUILTIN=True):
-        with patch.object(gateway, "_get_component_adapters", return_value=(None, adapter)), \
-                patch.object(
-                    gateway,
-                    "_builtin_rag_search",
-                    AsyncMock(return_value={"results": []}),
-                ):
-            handlers, _errors, shared = gateway._build_component_handlers(
-                db=None,
-                identity=_t4_identity(),
-                request_id="req-t4",
-                query="q",
-                timeline=[],
-            )
+    raised = False
+    with patch.object(gateway, "_get_component_adapters", return_value=(None, adapter)):
+        handlers, _errors, shared = gateway._build_component_handlers(
+            db=None,
+            identity=_t4_identity(),
+            request_id="req-t4",
+            query="q",
+            timeline=[],
+        )
+        try:
             await handlers["rag"]("rag", {"kb_id": "kb"})
-    return gateway._merge_rag_trace(
-        {},
-        rag_source=shared.get("rag_source"),
-        builtin_fallback_reason=shared.get("builtin_fallback_reason"),
-    )
+        except Exception:  # noqa: BLE001 - 新契约：不再回退 ⇒ 应如实上抛
+            raised = True
+    return gateway._merge_rag_trace({}, rag_source=shared.get("rag_source")), raised
 
 
-async def _t4_stream_trace(exc: Exception) -> dict[str, Any]:
-    """流式路径：接管发生在共用组件步骤 → 同样须带归因"""
+async def _t4_stream_trace(exc: Exception) -> tuple[dict[str, Any], Any]:
+    """流式路径：共用组件步骤**如实降级**（`degraded` ＋ `errors` 带原因、`executed` 无伪造条目）"""
     import app.api.openllm_gateway as gateway
     from app.edgerouter.orchestration.component_pipeline import run_components
 
     async def _rag_handler(_name: str, _params: dict) -> dict:
         raise exc
-
-    async def _rag_fallback(_params: dict) -> dict:
-        return {"results": []}
 
     result = await run_components(
         pipeline=[{"component": "rag", "params": {"kb_id": "kb"}}],
@@ -522,81 +568,251 @@ async def _t4_stream_trace(exc: Exception) -> dict[str, Any]:
         handlers={"rag": _rag_handler},
         assembler=None,
         enable_parallel=False,
-        rag_fallback=_rag_fallback,
-        rag_fallback_enabled=True,
         entry_key="component",
         timeline=[],
     )
-    return gateway._merge_rag_trace(
-        {},
-        rag_source=result.rag_source,
-        builtin_fallback_reason=result.builtin_fallback_reason,
-    )
+    return gateway._merge_rag_trace({}, rag_source=result.rag_source), result
+
+
+class _T4FakeAuditRecorder:
+    """T4 替身审计服务（记录入参；可选模拟落库失败）—— 不触真实审计库"""
+
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.records: list[Any] = []
+
+    async def record_operation(self, record: Any) -> Any:
+        self.records.append(record)
+        if self.fail:
+            raise RuntimeError("模拟落库失败")
+        return record
+
+
+async def _t4_channel_audit() -> dict[str, Any]:
+    """采集 B→A 接管**审计落库**的判定证据（A2 / 题 4；进程内可判）
+
+    **关键**：开启态**经真实接管路径**（`trigger_failover_to_a`）触发，故本段同时证明
+    **接线成立**（而非只证明「函数本身可用」）。
+    """
+    from app.identity import channel_audit
+    from app.identity.channel import get_channel_state_manager, reset_channel_state_manager
+
+    # ① 门控关 ⇒ 不落库（逐字回退「仅日志」）
+    reset_channel_state_manager()
+    disabled_recorder = _T4FakeAuditRecorder()
+    channel_audit.set_audit_service_factory(lambda: disabled_recorder)
+    with _temporary_settings(CHANNEL_AUDIT_ENABLED=False):
+        disabled_status = channel_audit.emit_failover_audit(
+            source="manual", reason="演练", actor="ops", primary_after="a"
+        )
+    await asyncio.sleep(0.05)
+    disabled_records = len(disabled_recorder.records)
+
+    # ② 门控开 ⇒ **经真实接管路径**落库 1 条，字段完整
+    reset_channel_state_manager()
+    enabled_recorder = _T4FakeAuditRecorder()
+    channel_audit.set_audit_service_factory(lambda: enabled_recorder)
+    with _temporary_settings(CHANNEL_AUDIT_ENABLED=True):
+        manager = get_channel_state_manager()
+        takeover_ok = manager.trigger_failover_to_a(
+            source="manual", reason="演练", actor="ops"
+        )
+        primary_after = manager.primary_channel
+    await asyncio.sleep(0.05)
+    enabled_records = len(enabled_recorder.records)
+    record = enabled_recorder.records[0] if enabled_recorder.records else None
+    missing_fields: list[str] = [] if record is not None else ["record"]
+    if record is not None:
+        for field in ("action", "operator_name", "target_type", "target_id", "detail"):
+            if not getattr(record, field, None):
+                missing_fields.append(field)
+    enabled_status = "scheduled" if record is not None else "missing"
+
+    # ③ 无运行循环（同步上下文）⇒ no_loop 且不抛 —— 用工作线程构造「无循环」环境
+    with _temporary_settings(CHANNEL_AUDIT_ENABLED=True):
+        no_loop_status = await asyncio.to_thread(
+            channel_audit.emit_failover_audit,
+            source="manual",
+            reason="演练",
+            actor="ops",
+            primary_after="a",
+        )
+
+    # ④ 落库异常 ⇒ fail-open（接管仍成功且通道已切）
+    reset_channel_state_manager()
+    failing_recorder = _T4FakeAuditRecorder(fail=True)
+    channel_audit.set_audit_service_factory(lambda: failing_recorder)
+    with _temporary_settings(CHANNEL_AUDIT_ENABLED=True):
+        failing_manager = get_channel_state_manager()
+        fail_open_ok = failing_manager.trigger_failover_to_a(source="manual", reason="演练")
+        fail_open_primary = failing_manager.primary_channel
+    await asyncio.sleep(0.05)
+    fail_open_ok = bool(fail_open_ok and fail_open_primary == "a")
+
+    # ⑤ 重复接管 ⇒ 不重复落库（幂等）
+    reset_channel_state_manager()
+    idempotent_recorder = _T4FakeAuditRecorder()
+    channel_audit.set_audit_service_factory(lambda: idempotent_recorder)
+    with _temporary_settings(CHANNEL_AUDIT_ENABLED=True):
+        idempotent_manager = get_channel_state_manager()
+        first = idempotent_manager.trigger_failover_to_a(source="manual", reason="首次")
+        second = idempotent_manager.trigger_failover_to_a(source="manual", reason="重复")
+    await asyncio.sleep(0.05)
+    idempotent_records = len(idempotent_recorder.records)
+
+    channel_audit.reset_audit_service_factory()
+    reset_channel_state_manager()
+    return {
+        "disabled_status": disabled_status,
+        "disabled_records": disabled_records,
+        "enabled_status": enabled_status,
+        "enabled_records": enabled_records,
+        "takeover_ok_via_real_path": takeover_ok,
+        "primary_after": primary_after,
+        "record_action": record.action if record is not None else None,
+        "record_operator": record.operator_name if record is not None else None,
+        "record_target": (
+            f"{record.target_type}:{record.target_id}" if record is not None else None
+        ),
+        "record_detail": dict(record.detail) if record is not None else None,
+        "record_missing_fields": missing_fields,
+        "no_loop_status": no_loop_status,
+        "fail_open_ok": fail_open_ok,
+        "idempotent_first": first,
+        "idempotent_second": second,
+        "idempotent_records": idempotent_records,
+        "provisional_note": channel_audit.ACTION_PROVISIONAL_NOTE,
+    }
 
 
 async def check_t4() -> Verdict:
-    """T4：组件故障后通道裁决与内置 RAG 接管有轨迹（轨迹部分：进程内可判）
+    """T4：组件故障后通道裁决有轨迹 —— **失败如实降级且可观测**（轨迹部分：进程内可判）
 
-    **本执行器判定**（进程内，不依赖运行态故障注入）：
+    **W3 / Q11（v1.28.0）判据重做**（依《收口方案》v1.5.0 §2.5「连带影响」）：原契约以
+    「内置 RAG 接管」为证据（`rag_source=builtin` ＋ `builtin_fallback_reason`）——
+    该**自建数据面已按 Q11 裁定整体废弃**（两通道均只调用同一批三基础设施、无自建数据面）
+    ⇒ 旧证据**不再成立**，契约重做为「**如实降级且可观测**」：
 
-      1. 同步路径 handler：「外部检索失败」→ ``rag_source=builtin`` **且带归因**；
-      2. 流式路径（共用组件步骤）：同样落 ``rag_source=builtin`` **且带归因**；
-      3. 两路径经**同一落痕函数**并入 ``routing_trace.components`` → 字段逐键一致。
+      1. 同步路径 handler：「外部检索失败」→ **如实上抛**（不再回退本地库）；
+      2. 流式路径（共用组件步骤）：**如实降级** —— `degraded` 含 `rag`、`errors` 带**原因**、
+         `rag_source` 保持 `skipped`、**`executed` 不含伪造条目**；
+      3. 两路径经**同一落痕函数**并入 `routing_trace.components` → **字段逐键一致**。
 
-    端点级（HTTP）故障注入另由单元护栏覆盖 4 例（同步 / 流式端点 200、无 error 事件、
-    轨迹带来源与归因、装配缺失不回退），见 ``detail.endpoint_level_evidence``。
+    端点级（HTTP）故障注入另由单元护栏覆盖（同步端点 200 且轨迹 `skipped` ＋ 记降级、
+    **无接管归因字段**、装配缺失同样降级），见 ``detail.endpoint_level_evidence``。
 
-    **仍需运行态**：**真实**停 OpenRAG / 改不可达地址的故障注入、端到端轨迹**实际落库**读取；
-    以及 ``health.components.builtin_rag.has_base``（接管是否有底座）。
+      4. **B→A 接管独立审计落库**（**A2 / 题 4 补入**）：门控关 ⇒ 不落库（逐字回退「仅日志」）；
+         开 ⇒ **经真实接管路径**落库且字段完整（动作码 / actor / 目标 / 归因 / 时间）；
+         无运行循环 ⇒ `no_loop` 且不抛；落库异常 ⇒ **fail-open**（接管仍成功）；重复接管 ⇒ 不重复落库。
+
+    **仍需运行态**：**真实**停 OpenRAG / 改不可达地址的故障注入、端到端轨迹**实际落库**读取。
+    （**已移除**：原「`health.components.builtin_rag.has_base`（接管是否有底座）」一项 ——
+    该探针随 Q11 废弃一并删除。）
     """
-    title = "备通道：组件故障后裁决与内置 RAG 接管有轨迹（轨迹=进程内判；无 5xx=运行态）"
-    from app.api.openllm_gateway import _merge_rag_trace, _probe_builtin_rag
+    title = (
+        "备通道：组件故障后**如实降级且可观测**（轨迹 ＋ B→A 接管审计落库=进程内判；无 5xx=运行态）"
+    )
+    from app.api.openllm_gateway import _merge_rag_trace
 
     fault = RuntimeError("OpenRAG 不可达: connection refused")
-    sync_trace = await _t4_sync_trace(fault)
-    stream_trace = await _t4_stream_trace(fault)
-    builtin = await _probe_builtin_rag(None)
+    sync_trace, sync_raised = await _t4_sync_trace(fault)
+    stream_trace, stream_result = await _t4_stream_trace(fault)
 
     failures: list[str] = []
-    if sync_trace.get("rag_source") != "builtin":
-        failures.append(f"同步路径未落 rag_source=builtin：{sync_trace}")
-    if stream_trace.get("rag_source") != "builtin":
-        failures.append(f"流式路径未落 rag_source=builtin：{stream_trace}")
-    if not sync_trace.get("builtin_fallback_reason"):
-        failures.append("同步路径缺接管归因")
-    if not stream_trace.get("builtin_fallback_reason"):
-        failures.append("流式路径缺接管归因（轨迹不完整）")
-    if sync_trace.get("builtin_fallback_reason") != stream_trace.get(
-        "builtin_fallback_reason"
-    ):
-        failures.append(f"两路径归因不一致：{sync_trace} vs {stream_trace}")
-    if sync_trace["rag_source"] != stream_trace["rag_source"]:
-        failures.append(f"两路径来源不一致：{sync_trace} vs {stream_trace}")
+    if not sync_raised:
+        failures.append("同步路径 handler 未如实上抛（新契约下**不应有**回退吞异常）")
+    if sync_trace.get("rag_source") != "skipped":
+        failures.append(f"同步路径失败应如实保持 skipped：{sync_trace}")
+    if stream_trace.get("rag_source") != "skipped":
+        failures.append(f"流式路径失败应如实保持 skipped：{stream_trace}")
+    if sync_trace != stream_trace:
+        failures.append(f"两路径轨迹不一致（须同源）：{sync_trace} vs {stream_trace}")
+    if "builtin_fallback_reason" in stream_trace:
+        failures.append("接管归因字段**不得复活**（Q11 已裁定废弃）")
+    if "rag" not in (getattr(stream_result, "degraded", None) or []):
+        failures.append(f"流式路径未如实记降级：{getattr(stream_result, 'degraded', None)}")
+    if "rag" in (getattr(stream_result, "executed", None) or {}):
+        failures.append("失败时**不得**注入伪造的 rag 条目")
+    stream_reasons = [
+        item
+        for item in (getattr(stream_result, "errors", None) or [])
+        if item.get("component") == "rag"
+    ]
+    if not stream_reasons or "connection refused" not in stream_reasons[0].get("error", ""):
+        failures.append(f"流式路径失败归因缺失：{getattr(stream_result, 'errors', None)}")
     merged = _merge_rag_trace({})
     if merged.get("rag_source") != "skipped" or "builtin_fallback_reason" in merged:
         failures.append(f"未执行检索时应为 skipped 且不落归因：{merged}")
+
+    # ---- A2 / 题 4：B→A 接管**独立审计落库**（进程内可判） ----
+    #     动因：接管此前仅 WARNING 日志 ＋ `routing_trace.components`，`AuditService`
+    #     有能力但**零调用点** ⇒ 无法按审计口径统计接管次数 / 时长分布。契约：门控关 ⇒
+    #     不落库（逐字回退仅日志）；开 ⇒ **经真实接管路径**落库且字段完整；无运行循环 ⇒
+    #     `no_loop` 且不抛；落库异常 ⇒ fail-open；重复接管 ⇒ 不重复落库。
+    audit_evidence = await _t4_channel_audit()
+    if audit_evidence["disabled_status"] != "disabled":
+        failures.append(f"审计门控关时应为 disabled：{audit_evidence['disabled_status']}")
+    if audit_evidence["disabled_records"] != 0:
+        failures.append("审计门控关时不得落库（须逐字回退「仅日志」）")
+    if audit_evidence["takeover_ok_via_real_path"] is not True:
+        failures.append("门控开时真实接管路径未成功（接线未生效？）")
+    if audit_evidence["enabled_status"] != "scheduled":
+        failures.append(f"审计门控开时应投递：{audit_evidence['enabled_status']}")
+    if audit_evidence["enabled_records"] != 1:
+        failures.append(
+            f"审计门控开时应落库 1 条：{audit_evidence['enabled_records']}"
+        )
+    if audit_evidence["record_action"] != "channel_failover_b_to_a":
+        failures.append(f"审计动作码不符：{audit_evidence['record_action']}")
+    if audit_evidence["record_missing_fields"]:
+        failures.append(f"审计记录缺字段：{audit_evidence['record_missing_fields']}")
+    if audit_evidence["no_loop_status"] != "no_loop":
+        failures.append(f"无运行循环应为 no_loop：{audit_evidence['no_loop_status']}")
+    if audit_evidence["fail_open_ok"] is not True:
+        failures.append("落库异常影响了接管主流程（fail-open 被破坏）")
+    if audit_evidence["idempotent_records"] != 1:
+        failures.append(
+            f"重复接管重复落库：{audit_evidence['idempotent_records']} 条"
+        )
 
     detail: dict[str, Any] = {
         "fault_injected": f"{type(fault).__name__}: {fault}",
         "sync_trace_components": sync_trace,
         "stream_trace_components": stream_trace,
         "trace_contract": "FAIL" if failures else "PASS",
-        "builtin_rag": builtin,
+        "honest_degradation": {
+            "sync_raised": sync_raised,
+            "sync_trace": sync_trace,
+            "stream_trace": stream_trace,
+            "stream_degraded": getattr(stream_result, "degraded", None),
+            "stream_errors": getattr(stream_result, "errors", None),
+            "stream_executed_keys": sorted(getattr(stream_result, "executed", None) or {}),
+        },
+        "channel_audit": audit_evidence,
+        "channel_audit_contract": (
+            "**A2 / 题 4**：B→A 接管**独立审计落库**已接线（`app/identity/channel_audit.py`，"
+            "单一落痕点覆盖人工/自动两条触发路径）；`emit_failover_audit` **永不抛出**"
+            "（fail-open 到「仅日志」）、有运行循环时后台写入（不阻塞事件循环）、"
+            "无循环时记 WARN 并放弃。**门控 `CHANNEL_AUDIT_ENABLED` 出厂默认 False** ⇒ "
+            "关闭即逐字回退现行行为。**审计动作码 `channel_failover_b_to_a` 属暂定**"
+            "（§10 项 6 建议单独立项审批）⇒ 未扩展 `AuditAction` 枚举、且未审批前不默认写审计库。"
+        ),
         "runtime_pending": [
             "真实停 OpenRAG / 改不可达地址的故障注入（本执行器不改外部服务状态）",
             "端到端轨迹**实际落库**读取（本执行器只判到「落库调用入参」层）",
         ],
         "endpoint_level_evidence": (
             "端点级（HTTP，进程内 TestClient）故障注入已由 "
-            "`tests/unit/test_rag_builtin_fallback_trace.py::TestEndpointLevelFaultInjection` "
-            "覆盖 4 例：同步 POST /openllm/v1/chat 返回 200 且轨迹带 rag_source=builtin 与归因；"
-            "开关关时 200 且记 degraded/rag_source=skipped；装配缺失时不回退；"
-            "流式 POST /openllm/v1/chat/stream 返回 200、无 error 事件、**落库轨迹入参**同样带来源与归因。"
-            "该层证明「组件故障时不返回 5xx 且轨迹可复盘」，**不替代真实停服 E2E**"
+            "`tests/unit/test_rag_honest_degradation_trace.py::TestEndpointLevelFaultInjection` "
+            "覆盖 2 例：同步 POST /openllm/v1/chat 返回 **200** 且轨迹 `rag_source=skipped`、"
+            "**记 `degraded`（含 rag）**、**无接管归因字段**；装配缺失同样 200 且降级。"
+            "该层证明「组件故障时**不返回 5xx** 且**如实降级可复盘**」，**不替代真实停服 E2E**"
         ),
         "historical_e2e_evidence": (
-            "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上"
-            "验过 rag_source=builtin / degraded=[] / 主流程 200；须在**当前提交**上复跑确认"
+            "CR-148-013 TT-022/TT-023（2026-09-22，mock 桩故障注入）曾在旧提交上验过"
+            "`rag_source=builtin` / `degraded=[]` / 主流程 200 —— **该证据口径已随 Q11 废弃而失效**"
+            "（内置 RAG 自建数据面不存在）⇒ 若需运行态回归，须按**新契约**重定义期望"
+            "（`rag_source=skipped` ＋ `degraded` 含 rag ＋ 端到端 200）后复跑"
         ),
     }
     if failures:
@@ -613,16 +829,17 @@ async def check_t4() -> Verdict:
         status=STATUS_BLOCKED,
         requires=[
             "运行态服务（真实停服/改址注入 + 轨迹实际落库读取）",
-            "内置 RAG 有底座（has_base=true）→ 判「接管非空」",
         ],
         detail=detail,
         reason=(
-            "轨迹部分已在进程内验证通过（两路径 rag_source=builtin 且归因一致、"
-            "单一落痕实现）；且端点级（HTTP）故障注入 4 例通过（同步/流式端点均 200、"
-            "无 error 事件、轨迹带来源与归因、装配缺失不回退）⇒「无 5xx」已在**进程内**覆盖；"
-            "剩余**真实停服注入**与**轨迹实际落库读取**需运行态。"
-            f"内置 RAG 底座：has_base={builtin.get('has_base')}"
-            "（false 时接管必然注入为空，须先补底座或按 §4.1 声明生效条件）"
+            "轨迹部分已在进程内验证通过（**失败如实降级且可观测**：同步路径如实上抛、"
+            "流式路径落 `degraded` / `errors` 带原因、`rag_source` 保持 `skipped`、"
+            "`executed` 无伪造条目、两路径**逐键一致**、单一落痕实现）；"
+            "且端点级（HTTP）故障注入 2 例通过（端点均 200、如实降级、**无接管归因字段**）"
+            "⇒「无 5xx」已在**进程内**覆盖；剩余**真实停服注入**与**轨迹实际落库读取**需运行态。"
+            "**判据重做说明**：原契约以「内置 RAG 接管」（`rag_source=builtin` ＋ `builtin_fallback_reason`）"
+            "为证据 —— 该自建数据面已按 **Q11 裁定整体废弃**（两通道均只调用同一批三基础设施、"
+            "无自建数据面）⇒ 旧证据失效，故本次按「**如实降级**」重定义契约。"
         ),
     )
 
@@ -936,6 +1153,13 @@ def check_t6() -> Verdict:
             "探针 `doc/test/evidence/cr149/refine_placement_probe.py`（14 例 ＋ 结尾自检）"
         ),
         "model_tier": "SHELVED（v1.26.0 方案 B：2B/4B 与 ≤1B 全部不达 §5.6 门槛，生成式精炼整体搁置）",
+        "model_tier_quality_framework": (
+            "**A5（题 9）第③子项「T6 模型档质量对比判据**框架**」据 v1.26.0 方案 B 裁定"
+            " ⇒ 不建（superseded）**：模型档已**整体搁置** ⇒ 该框架**无消费方**；"
+            "若未来解除搁置（出现达标模型 ＋ 合法推理位置），须**重新立判据**，"
+            "而非复用空壳框架。**如实登记为「明确保留理由（不建）」**，"
+            "不以空壳框架冒充已交付。"
+        ),
         "runtime_pending": [
             "生成式精炼已裁定整体搁置（v1.26.0 方案 B）—— 无达标模型（§5.4 复测：精度 < 0.90、"
             "P95 压缩 > 异步档 30s 预算，最慢 134.6s），不再列为第三批交付目标，无运行态遗留项",
@@ -1287,7 +1511,11 @@ def check_t10() -> Verdict:
       4. **权重排序**（v1.14.0 补入，对方案 §3.2 第三项 / §3.3 memory·rag 行）：
          rag 按 `score` 降序、memory 按**时效衰减**降序（时间戳缺失视为新鲜，fail-open）；
          排序只改**呈现顺序**，引用编号仍取**原始下标**（与归因 A 对齐）；
-         开关关闭 / 无排序依据 ⇒ **保持原序**。
+         开关关闭 / 无排序依据 ⇒ **保持原序**；
+      5. **画像字段级优先级**（A1 / 题 8，本版补入，对方案 §3.3 profile 行）：
+         在「维度级行」之上再细分到**字段** —— 未列入优先级表的字段**先丢**、
+         列入者**声明越靠后越先丢**、保留项**保序**、字段全丢的段头一并移除
+         （不留悬挂标签）；`used ≤ quota` 不破；**开关关闭 或 表为空 ⇒ 逐字回退**末位淘汰。
     """
     title = "组装规则档：噪声剥离 / 相邻同义合并 / 稳定引用编号（均进程内可判）"
     from app.edgerouter.orchestration.assembler import PromptAssembler
@@ -1517,6 +1745,69 @@ def check_t10() -> Verdict:
     if profile_comp.budget["profile"]["used"] > profile_comp.budget["profile"]["quota"]:
         failures.append("画像维度裁剪后 used > quota")
 
+    # ⑤' 画像**字段级**优先级（A1 / 题 8，本版补入本判据）
+    #     动因：维度级行只把裁剪最小单位降到「维度」，同一 section **内**仍按「后出现先丢」
+    #     ⇒ 字段之间无重要性区分。夹具刻意把低优先字段排在**前**：末位淘汰会保留它们，
+    #     字段级优先级则保留高优先字段 ⇒ 两个开关态**可判别**（否则本判据形同虚设）。
+    _field_profile = _format_profile_ctx(
+        {
+            "person": {
+                "remark": "无",
+                "nickname": "小张",
+                "name": "张三",
+                "occupation": "工程师",
+            },
+            "business": {"industry": "互联网", "size": "200"},
+        }
+    )
+
+    def _field_quota_policy(quota: int, **overrides: Any) -> BudgetPolicy:
+        """把 profile 段配额**精确设为 `quota`**（其余段 0 = 不限）"""
+        return _policy(
+            window_tokens=quota,
+            quota_ratios={
+                "system": 0.0,
+                "profile": 1.0,
+                "memory": 0.0,
+                "rag": 0.0,
+                "history": 0.0,
+            },
+            **overrides,
+        )
+
+    _fp_on_prompt, _fp_on_comp = build_prompt(
+        query="问",
+        profile_ctx=_field_profile,
+        count_tokens=_chars,
+        budget=_field_quota_policy(
+            40,
+            profile_field_priority_enabled=True,
+            profile_field_priority=("name", "occupation"),
+        ),
+    )
+    _fp_off_prompt, _fp_off_comp = build_prompt(
+        query="问",
+        profile_ctx=_field_profile,
+        count_tokens=_chars,
+        budget=_field_quota_policy(
+            40,
+            profile_field_priority_enabled=False,
+            profile_field_priority=("name", "occupation"),
+        ),
+    )
+    if "name: 张三" not in _fp_on_prompt or "occupation: 工程师" not in _fp_on_prompt:
+        failures.append(f"字段级优先级未保留高优先字段：{_fp_on_prompt!r}")
+    if "remark" in _fp_on_prompt or "nickname" in _fp_on_prompt:
+        failures.append(f"字段级优先级未先丢未列入字段：{_fp_on_prompt!r}")
+    if "[企业画像]" in _fp_on_prompt:
+        failures.append(f"字段全丢的段头未移除（悬挂标签）：{_fp_on_prompt!r}")
+    if _fp_on_comp.budget["profile"]["used"] > _fp_on_comp.budget["profile"]["quota"]:
+        failures.append("字段级优先级裁剪后 used > quota")
+    if "remark: 无" not in _fp_off_prompt:
+        failures.append(f"开关关闭未逐字回退末位淘汰（低优先字段反被丢）：{_fp_off_prompt!r}")
+    if _fp_off_comp.budget["profile"]["used"] > _fp_off_comp.budget["profile"]["quota"]:
+        failures.append("关闭态裁剪后 used > quota")
+
     detail: dict[str, Any] = {
         "noise_stripped_text": stripped,
         "noise_verbatim_when_off": raw,
@@ -1544,11 +1835,24 @@ def check_t10() -> Verdict:
             "whitelist_no_match": profile_no_match,
             "over_quota_report": profile_comp.truncated.get("profile"),
         },
+        "profile_field_priority": {
+            "priority_table": ["name", "occupation"],
+            "enabled_at_quota_40": _fp_on_prompt,
+            "disabled_at_quota_40": _fp_off_prompt,
+            "over_quota_report": _fp_on_comp.truncated.get("profile"),
+            "config_keys": _settings_snapshot(
+                [
+                    "CONTEXT_PROFILE_FIELD_PRIORITY_ENABLED",
+                    "CONTEXT_PROFILE_FIELD_PRIORITY",
+                ]
+            ),
+        },
         "ref_numbers_switch_default": _settings_snapshot(["CONTEXT_REF_NUMBERS_ENABLED"]),
         "evidence": (
             "`tests/unit/test_assembly_refine_rule_tier.py`（27 例）＋ "
             "`tests/unit/test_context_rank_selection.py`（12 例）＋ "
-            "`tests/unit/test_profile_dimension_priority.py`（10 例）＋ 运行态探针 "
+            "`tests/unit/test_profile_dimension_priority.py`（29 例：维度级 9 ＋ "
+            "字段级 20）＋ 运行态探针 "
             "`doc/test/evidence/cr149/assembly_rule_tier_probe.py`"
         ),
     }
@@ -1860,6 +2164,368 @@ def check_t12() -> Verdict:
 
 # ---------------------------------------------------------------- 执行入口
 
+# ---------------------------------------------------------------- T13 LLM 不可达判定与告知
+
+def check_t13() -> Verdict:
+    """T13（**W1 / Q12，v1.29.0 新增**）：最终 LLM 不可达的**判定**与**对调用方的告知**
+
+    **判据原文（Q12 裁定）**：A 通道降级接管的**触发条件＝最终 LLM 不可达**，此时**由调用方
+    改走 A 直连**（经 OpenBase 分别单独调用 DPS / OpenMemory / OpenRAG，不经编排）
+    ⇒ OpenLLM 的职责是**判定** ＋ **明确告知**（**不静默降级**）。
+
+    **进程内可判的四条契约**：
+
+      1. **告警即时、状态判定按阈值**（两者**语义不同**不得混同）：单次 LLM 全部失败 ⇒
+         「失败时通知」（`action_scope="per_failure"`）**立即**给出 `use_a_direct`；
+         而**状态判定** `llm_unreachable` 仍 `False`，**连续达阈值**才为 `True`。
+      2. **健康口径并入终点**：`b_health()["healthy"]` 在不可达时为 `False`
+         —— 「**不可用**」与组件降级的「可用但劣化」有本质区别。
+      3. **不污染既有触发链**：终点**独立计数** ⇒ `evaluate_auto_failover()` 语义**不变**
+         （LLM 失败**不**触发 OpenLLM 侧 B→A 接管 —— 后者管主通道 designation、前者管
+         **Agent 读路径**，两机制分工不同）；`channel_status()` 暴露
+         `llm_unreachable` / `llm_consecutive_failures` / `fallback_action`（状态字段）。
+      4. **可机读告知**：带指示的错误响应**额外**给出 `data.channel`；**无指示时形态逐字不变**
+         （不给所有 5xx 都加该段，避免误导）。
+    """
+    title = "LLM 不可达：判定按阈值、告知即时可机读、不污染既有触发链（进程内可判）"
+    from app.api.openllm_gateway import GatewayError, _error_response
+    from app.identity.channel import (
+        FALLBACK_ACTION_NONE,
+        FALLBACK_ACTION_USE_A_DIRECT,
+        ChannelStateManager,
+        describe_llm_unreachable_hint,
+    )
+
+    def _manager(threshold: int = 3) -> Any:
+        return ChannelStateManager(
+            "b-primary",
+            consecutive_failure_threshold=threshold,
+            drill_window_seconds=300.0,
+            auto_failover_enabled=True,
+        )
+
+    failures: list[str] = []
+    reason = "RuntimeError: OpenLLM 端点不可达"
+
+    # ① 告警即时（通知）vs 判定按阈值（状态）
+    single = _manager()
+    single.record_b_llm_unavailable(reason=reason)
+    single_hint = single.llm_unreachable_hint(reason=reason)
+    if single_hint["fallback_action"] != FALLBACK_ACTION_USE_A_DIRECT:
+        failures.append("单次失败应**立即**给出 use_a_direct（调用方当次即需知道改走哪条路）")
+    if single_hint.get("action_scope") != "per_failure":
+        failures.append("通知须显式标注作用域 per_failure（与状态字段区分）")
+    if single_hint["llm_unreachable"] is not False:
+        failures.append("未达阈值不得宣告不可达（避免单次抖动）")
+    if single.channel_status()["fallback_action"] != FALLBACK_ACTION_NONE:
+        failures.append("未达阈值时**状态**动作应为 none（状态与通知语义不同）")
+
+    # ② 达阈值 ⇒ 判定 + 健康并入
+    reached = _manager()
+    for _ in range(3):
+        reached.record_b_llm_unavailable(reason=reason)
+    if not reached.llm_unreachable():
+        failures.append("连续达阈值应判 llm_unreachable=True")
+    if reached.b_health()["healthy"] is not False:
+        failures.append("LLM 不可达即 B **不可用** ⇒ b_health().healthy 须为 False")
+    if reached.channel_status()["fallback_action"] != FALLBACK_ACTION_USE_A_DIRECT:
+        failures.append("不可达时**状态**动作应为 use_a_direct")
+
+    # ③ 恢复 ⇒ 判定与状态动作复原
+    recovered = _manager()
+    for _ in range(3):
+        recovered.record_b_llm_unavailable(reason=reason)
+    recovered.record_b_llm_success()
+    if recovered.llm_unreachable() or (
+        recovered.channel_status()["fallback_action"] != FALLBACK_ACTION_NONE
+    ):
+        failures.append("终点恢复后判定与状态动作须复原")
+
+    # ④ 不污染既有触发链
+    polluted = _manager()
+    for _ in range(5):
+        polluted.record_b_llm_unavailable(reason=reason)
+    if polluted.b_health()["consecutive_failures"] != 0:
+        failures.append("终点失败**不得**并入组件连续失败计数（会改变既有触发语义）")
+    if polluted.evaluate_auto_failover() is not False:
+        failures.append("LLM 失败**不得**触发既有 B→A 自动接管（两机制分工不同）")
+    if polluted.primary_channel != "b":
+        failures.append("既有自动接管未触发时主通道应保持 b")
+
+    # ⑤ 可机读告知：带指示 ⇒ 有 data.channel；无指示 ⇒ 形态逐字不变
+    with_hint = GatewayError(5001, "模型服务暂时不可用")
+    with_hint.channel_hint = describe_llm_unreachable_hint(
+        primary_channel="b", consecutive=1, threshold=3, reason=reason
+    )
+    payload_with = json.loads(_error_response(with_hint, "req-t13").body)
+    if payload_with.get("data", {}).get("channel", {}).get("fallback_action") != (
+        FALLBACK_ACTION_USE_A_DIRECT
+    ):
+        failures.append(f"带指示的错误响应须携带 data.channel：{payload_with}")
+    payload_without = json.loads(
+        _error_response(GatewayError(5001, "RAG 服务不可用"), "req-t13b").body
+    )
+    if set(payload_without) != {"code", "message", "detail", "request_id"}:
+        failures.append(f"无指示的错误响应形态须**逐字不变**：{sorted(payload_without)}")
+
+    return Verdict(
+        criterion="T13",
+        title=title,
+        status=STATUS_FAIL if failures else STATUS_PASS,
+        detail={
+            "single_failure_notify_hint": single_hint,
+            "single_failure_state_action": single.channel_status()["fallback_action"],
+            "reached_health": reached.b_health(),
+            "reached_state_action": reached.channel_status()["fallback_action"],
+            "unpolluted_health": polluted.b_health(),
+            "auto_failover_on_llm_failures": polluted.evaluate_auto_failover(),
+            "channel_status_keys": sorted(reached.channel_status()),
+            "error_payload_with_hint": payload_with,
+            "error_payload_without_hint": payload_without,
+            "probe_evidence": (
+                "`doc/test/evidence/cr149/llm_unreachable_probe.py`（6 例判定表 ＋ 结尾自检）"
+            ),
+            "unit_evidence": "`tests/unit/test_channel_llm_unreachable.py`（19 例护栏）",
+        },
+        reason="；".join(failures),
+    )
+
+
+def check_t14() -> Verdict:
+    """T14（**W4 / v1.30.0 新增**）：双通道健康/降级**统一上报** —— 一份事实源 ＋ 单一结论
+
+    **判据（三条纪律，进程内可判）**：
+
+      1. **只聚合、不立新判据** —— `describe_channel_report()` 的全部字段可由
+         `ChannelStateManager` 事实（`channel_status` / `b_health` / `a_health` /
+         `primary_channel`）＋ 组件探测结果**逐项推出**；不引入任何新阈值/计数。
+      2. **单一决策规则** —— `bypass_orchestration` 当且仅当「**主通道已为 A**」**或**
+         「主通道为 B **且** 最终 LLM 不可达」；穷举（主通道 × 终点状态）恒等。
+      3. **观测与决策分离** —— 组件降级**如实列入** `degraded_dimensions`（不隐瞒劣化），
+         但**结论仍是走主通道**（不因噪声误切通道）；`fallback_action` 与
+         `channel_status()` **同源**（错误响应里的指示与 health 里的结论**永不冲突**）。
+    """
+    title = "双通道统一上报：三视角聚合 ＋ 单一结论、观测与决策分离（进程内可判）"
+    from app.identity.channel import (
+        CHANNEL_A,
+        CHANNEL_B,
+        ROUTING_USE_A_DIRECT,
+        ROUTING_USE_PRIMARY,
+        ChannelStateManager,
+        describe_channel_report,
+    )
+
+    def _manager(threshold: int = 3) -> Any:
+        return ChannelStateManager(
+            "b-primary",
+            consecutive_failure_threshold=threshold,
+            drill_window_seconds=300.0,
+            auto_failover_enabled=True,
+        )
+
+    failures: list[str] = []
+    reason = "RuntimeError: OpenLLM 端点不可达"
+
+    # ① 基线：三视角齐备 ＋ 单一结论
+    base = describe_channel_report(_manager(), components={"openrag": {"status": "ok", "channel": CHANNEL_B}})
+    if set(base["channels"]) != {CHANNEL_A, CHANNEL_B}:
+        failures.append(f"报告须含两条通道视角：{sorted(base['channels'])}")
+    if base["bypass_orchestration"] is not False or (
+        base["routing_recommendation"] != ROUTING_USE_PRIMARY
+    ):
+        failures.append("无异常时结论应为走主通道")
+    if base["degraded_dimensions"] != []:
+        failures.append(f"无异常时不得有降级维度：{base['degraded_dimensions']}")
+
+    # ② 只聚合：与事实源逐项相等（防暗增判据）
+    facts = _manager(threshold=2)
+    facts.record_b_component_failure("dps", reason="x")
+    facts.record_b_llm_unavailable(reason=reason)
+    report = describe_channel_report(facts)
+    status = facts.channel_status()
+    if report["fallback_action"] != status["fallback_action"]:
+        failures.append("fallback_action 须与 channel_status() 同源（不得复制判定逻辑）")
+    if report["channels"][CHANNEL_B]["consecutive_failures"] != (
+        facts.b_health()["consecutive_failures"]
+    ):
+        failures.append("B 组件连续失败须与 b_health() 一致")
+    if report["channels"][CHANNEL_B]["llm_consecutive_failures"] != (
+        facts.b_health()["llm_consecutive_failures"]
+    ):
+        failures.append("终点连续失败须与 b_health() 一致")
+    if report["channels"][CHANNEL_A]["healthy"] != facts.a_health()["healthy"]:
+        failures.append("A 侧健康须与 a_health() 一致")
+    if report["primary_channel"] != facts.primary_channel:
+        failures.append("主通道须与 manager 一致")
+
+    # ③ 观测与决策分离（**核心契约**）：组件降级如实列入但**不改变结论**
+    degraded = _manager(threshold=2)
+    for _ in range(2):
+        degraded.record_b_component_failure("rag", reason="x")
+    degraded_report = describe_channel_report(
+        degraded, components={"openrag": {"status": "unavailable", "channel": CHANNEL_B}}
+    )
+    if f"{CHANNEL_B}.components" not in degraded_report["degraded_dimensions"]:
+        failures.append("B 组件维度降级须如实列入 degraded_dimensions（不得隐瞒劣化）")
+    if f"{CHANNEL_B}.component.openrag" not in degraded_report["degraded_dimensions"]:
+        failures.append("组件级劣化须逐名列入 degraded_dimensions")
+    if degraded_report["bypass_orchestration"] is not False:
+        failures.append("组件降级＝**可用但劣化** ⇒ **不得**因组件噪声切走编排")
+
+    # ④ A 侧达阈值失败：列入证据，但 B 主时**不**改变决策
+    a_failed = _manager(threshold=3)
+    for _ in range(3):
+        a_failed.record_a_failure(reason="A 侧探活失败")
+    a_report = describe_channel_report(a_failed)
+    if f"{CHANNEL_A}.components" not in a_report["degraded_dimensions"]:
+        failures.append("A 侧达阈值失败须如实列入 degraded_dimensions")
+    if a_report["bypass_orchestration"] is not False:
+        failures.append("B 主时 A 断不改变主通道")
+
+    # ⑤ 终点不可达（达阈值）⇒ 改走 A 直连；未达阈值 ⇒ 不改走
+    unreachable = _manager(threshold=3)
+    for _ in range(3):
+        unreachable.record_b_llm_unavailable(reason=reason)
+    unreachable_report = describe_channel_report(unreachable)
+    if unreachable_report["bypass_orchestration"] is not True or (
+        unreachable_report["routing_recommendation"] != ROUTING_USE_A_DIRECT
+    ):
+        failures.append("最终 LLM 不可达 ⇒ 结论须为改走 A 直连（Q12 口径）")
+    if f"{CHANNEL_B}.llm" not in unreachable_report["degraded_dimensions"]:
+        failures.append("终点不可达须如实列入 degraded_dimensions")
+
+    below = _manager(threshold=3)
+    below.record_b_llm_unavailable(reason=reason)
+    below_report = describe_channel_report(below)
+    if below_report["bypass_orchestration"] is not False or (
+        below_report["degraded_dimensions"] != []
+    ):
+        failures.append("终点失败未达阈值 ⇒ 不得改走、不得列降级（状态判定按阈值）")
+
+    # ⑥ 穷举（主通道 × 终点状态）⇒ bypass 恒等于单一决策规则
+    exhaustive_mismatch: list[str] = []
+    for primary in (CHANNEL_B, CHANNEL_A):
+        for llm_failures in (0, 3):
+            manager = _manager(threshold=3)
+            if primary == CHANNEL_A:
+                manager.trigger_failover_to_a(source="manual", reason="演练", actor="ops")
+            for _ in range(llm_failures):
+                manager.record_b_llm_unavailable(reason=reason)
+            combo = describe_channel_report(manager)
+            expected = primary == CHANNEL_A or (primary == CHANNEL_B and llm_failures >= 3)
+            if combo["bypass_orchestration"] is not expected:
+                exhaustive_mismatch.append(f"primary={primary}/llm={llm_failures}")
+    if exhaustive_mismatch:
+        failures.append(f"穷举组合与单一决策规则不符：{exhaustive_mismatch}")
+
+    return Verdict(
+        criterion="T14",
+        title=title,
+        status=STATUS_FAIL if failures else STATUS_PASS,
+        detail={
+            "baseline_report": base,
+            "facts_report": report,
+            "degraded_report": degraded_report,
+            "a_side_report": a_report,
+            "unreachable_report": unreachable_report,
+            "below_threshold_report": below_report,
+            "exhaustive_mismatch": exhaustive_mismatch,
+            "probe_evidence": (
+                "`doc/test/evidence/cr149/channel_report_probe.py`（7 例判定表 ＋ 4 组合穷举 ＋ 结尾自检）"
+            ),
+            "unit_evidence": "`tests/unit/test_channel_report.py`（16 例护栏）",
+        },
+        reason="；".join(failures),
+    )
+
+
+def check_t15() -> Verdict:
+    """T15（**W2 / v1.31.0 新增**）：**A 直连三组件取数** —— 三组件均可经 A 直连**取到数据**
+
+    **判据（W2；《收口方案》v1.5.0 §1.1.4 题 14）**：A ＝ **直连拓扑**（**不经编排**，单独调用
+    三基础设施）⇒ 三组件（DPS 画像 / OpenMemory 记忆 / OpenRAG 知识库）经 A 直连**均确实取到
+    数据**（Q8 **内容口径**：「回落 / 回退后**必须确实能取到数据**」），而非「调用成功但为空」。
+
+    **四条子句**：
+
+      1. **取数非空** —— 种入后经 A 直连接读**确实取到数据**。
+      2. **空态如实** —— 未种入时**如实返回 0 条**（不以空充数、不伪造数据）。
+      3. **写读闭环** —— 「组件自身写入接口 → A 直连读取」闭环一致。
+      4. **直连拓扑身份面完整** —— A 直连来源＝`openbase-llm-proxy`（B 为 `openbase-orchestrator`，
+         **拓扑不同是设计允许的**），且与 B 通道**身份四头等价**（AC-T13-2）。
+
+    **承载与边界（如实登记，不伪 PASS）**：本判据由**同一份探针**驱动
+    （`a_direct_component_probe.build_cases()`，**避免判据与探针分叉**），本地以三组件
+    `mock_services/*_stub` **进程内**承载（`TestClient`，零网络）⇒ 证明「**A 直连取数链路结构
+    贯通且确实取到数据**」；**真实外部服务联调**（生产 DPS / OpenMemory / OpenRAG ＋
+    `OPENLLM_*_REAL=true`）仍属**运行态复核项**，在 `detail.runtime_pending` **显式列出**。
+    """
+    title = "A 直连三组件取数：三组件均可经 A 直连取到数据（进程内承载；真实服务联调留运行态）"
+    evidence_dir = os.path.dirname(os.path.abspath(__file__))
+    if evidence_dir not in sys.path:
+        sys.path.insert(0, evidence_dir)
+    try:
+        import a_direct_component_probe as probe  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        return Verdict(
+            criterion="T15",
+            title=title,
+            status=STATUS_BLOCKED,
+            detail={"blocked_reason": f"探针不可加载：{type(exc).__name__}: {exc}"},
+            reason="A 直连探针依赖（httpx/TestClient 或三组件 stub）不可用 ⇒ 属环境前置缺失",
+        )
+
+    try:
+        cases = probe.build_cases()
+    except Exception as exc:  # noqa: BLE001
+        return Verdict(
+            criterion="T15",
+            title=title,
+            status=STATUS_BLOCKED,
+            detail={"blocked_reason": f"探针执行失败：{type(exc).__name__}: {exc}"},
+            reason="A 直连取数不可在进程内执行（承载不可用）⇒ 属环境前置缺失",
+        )
+
+    failures: list[str] = []
+    by_component: dict[str, dict] = {}
+    for item in cases:
+        by_component[item["component"]] = {
+            "endpoint_read": item.get("endpoint_read"),
+            "endpoint_seed": item.get("endpoint_seed"),
+            "empty_total": item.get("empty_total"),
+            "retrieved_total": item.get("retrieved_total"),
+            "checks": item["checks"],
+            "ok": item["ok"],
+        }
+        bad = [name for name, ok in item["checks"].items() if not ok]
+        if bad:
+            failures.append(f"{item['component']} 子句不符：{bad}")
+
+    # 三组件**逐个**须齐备（缺一即不达标）
+    for required in ("OpenMemory（记忆）", "OpenRAG（知识库）", "DPS（画像）"):
+        if required not in by_component:
+            failures.append(f"缺 {required} 的 A 直连接读证据")
+
+    return Verdict(
+        criterion="T15",
+        title=title,
+        status=STATUS_FAIL if failures else STATUS_PASS,
+        detail={
+            "components": by_component,
+            "carrier": "mock_services/{openmemory,openrag,profile}_stub（进程内 TestClient，零网络）",
+            "runtime_pending": (
+                "真实外部服务（生产 DPS / OpenMemory / OpenRAG）联调与真实契约路由"
+                "（`OPENLLM_*_REAL=true`）仍属运行态复核项 —— 本判据不据此宣称生产已贯通"
+            ),
+            "probe_evidence": (
+                "`doc/test/evidence/cr149/a_direct_component_probe.py`"
+                "（4 例判定表 ＋ 结尾自检；本判据**复用同一 `build_cases()`** 防分叉）"
+            ),
+        },
+        reason="；".join(failures),
+    )
+
+
 SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
     ("T1", check_t1),
     ("T2", check_t2),
@@ -1868,6 +2534,9 @@ SYNC_CHECKS: list[tuple[str, Callable[[], Verdict]]] = [
     ("T9", check_t9),
     ("T10", check_t10),
     ("T12", check_t12),
+    ("T13", check_t13),
+    ("T14", check_t14),
+    ("T15", check_t15),
 ]
 
 ASYNC_CHECKS: list[tuple[str, Callable[[], Any]]] = [
@@ -1905,7 +2574,7 @@ def run_all() -> list[Verdict]:
                     reason=f"{type(exc).__name__}: {exc}",
                 )
             )
-    order = {f"T{index}": index for index in range(1, 13)}
+    order = {f"T{index}": index for index in range(1, 16)}
     verdicts.sort(key=lambda verdict: order.get(verdict.criterion, 99))
     return verdicts
 

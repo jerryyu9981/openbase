@@ -1,0 +1,109 @@
+{
+  "probe": "model_window_alignment",
+  "declared_qwen3_window": 131072,
+  "aligned_in_real_table": true,
+  "qwen3_family_key": "qwen3",
+  "before": {
+    "qwen3:0.6b": {
+      "model": "qwen3:0.6b",
+      "matched_key": null,
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_fallback",
+      "get_model_context_limit": 128000,
+      "encoding_name": "cl100k_base"
+    },
+    "qwen3:1.7b": {
+      "model": "qwen3:1.7b",
+      "matched_key": null,
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_fallback",
+      "get_model_context_limit": 128000,
+      "encoding_name": "cl100k_base"
+    },
+    "qwen3:8b": {
+      "model": "qwen3:8b",
+      "matched_key": null,
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_fallback",
+      "get_model_context_limit": 128000,
+      "encoding_name": "cl100k_base"
+    },
+    "qwen3:235b-a22b": {
+      "model": "qwen3:235b-a22b",
+      "matched_key": null,
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_fallback",
+      "get_model_context_limit": 128000,
+      "encoding_name": "cl100k_base"
+    },
+    "gpt-4o-2024-08-06": {
+      "model": "gpt-4o-2024-08-06",
+      "matched_key": "gpt-4o",
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_cap:gpt-4o",
+      "get_model_context_limit": 128000,
+      "encoding_name": "o200k_base"
+    },
+    "totally-unknown-model-x": {
+      "model": "totally-unknown-model-x",
+      "matched_key": null,
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_fallback",
+      "get_model_context_limit": 128000,
+      "encoding_name": "cl100k_base"
+    }
+  },
+  "after": {
+    "qwen3:0.6b": {
+      "model": "qwen3:0.6b",
+      "matched_key": "qwen3",
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_cap:qwen3",
+      "get_model_context_limit": 131072,
+      "encoding_name": "cl100k_base"
+    },
+    "qwen3:1.7b": {
+      "model": "qwen3:1.7b",
+      "matched_key": "qwen3",
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_cap:qwen3",
+      "get_model_context_limit": 131072,
+      "encoding_name": "cl100k_base"
+    },
+    "qwen3:8b": {
+      "model": "qwen3:8b",
+      "matched_key": "qwen3",
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_cap:qwen3",
+      "get_model_context_limit": 131072,
+      "encoding_name": "cl100k_base"
+    },
+    "qwen3:235b-a22b": {
+      "model": "qwen3:235b-a22b",
+      "matched_key": "qwen3",
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_cap:qwen3",
+      "get_model_context_limit": 131072,
+      "encoding_name": "cl100k_base"
+    },
+    "gpt-4o-2024-08-06": {
+      "model": "gpt-4o-2024-08-06",
+      "matched_key": "gpt-4o",
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_cap:gpt-4o",
+      "get_model_context_limit": 128000,
+      "encoding_name": "o200k_base"
+    },
+    "totally-unknown-model-x": {
+      "model": "totally-unknown-model-x",
+      "matched_key": null,
+      "effective_window_tokens": 8192,
+      "window_source": "deployment_fallback",
+      "get_model_context_limit": 128000,
+      "encoding_name": "cl100k_base"
+    }
+  },
+  "failures": [],
+  "verdict": "PASS",
+  "ruling_note": "**§9 问题 3 裁定结论（预算基准取有效窗口）不因补表而变** —— 两态的 `effective_window_tokens` 同为 8192（`min(声明 131072, 部署 8192)`）；**仅来源标识**由 `deployment_fallback` 变为 `deployment_cap:qwen3`，这是**可观测性改善**（如实记录，不得当作「行为变更」）。"
+}

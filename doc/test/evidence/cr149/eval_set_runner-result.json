@@ -1,0 +1,225 @@
+{
+  "eval_set": "cr149-eval-set",
+  "eval_set_version": "v1.0.0",
+  "score_threshold": 0.15,
+  "rerank_on": {
+    "aggregate": {
+      "items": 15,
+      "relevant_total": 8,
+      "relevant_kept": 8,
+      "noise_total": 14,
+      "noise_kept": 7,
+      "relevant_recall": 1.0,
+      "noise_rejection": 0.5
+    },
+    "per_sample": [
+      {
+        "id": "s1",
+        "items_before": 4,
+        "items_after": 3,
+        "kept_ids": [
+          "s1c1",
+          "s1c2",
+          "s1c3"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s2",
+        "items_before": 3,
+        "items_after": 2,
+        "kept_ids": [
+          "s2c1",
+          "s2c2"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s3",
+        "items_before": 3,
+        "items_after": 3,
+        "kept_ids": [
+          "s3c1",
+          "s3c2",
+          "s3c3"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s4",
+        "items_before": 5,
+        "items_after": 2,
+        "kept_ids": [
+          "s4c1",
+          "s4c2"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s5",
+        "items_before": 3,
+        "items_after": 2,
+        "kept_ids": [
+          "s5c1",
+          "s5c2"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s6",
+        "items_before": 2,
+        "items_after": 2,
+        "kept_ids": [
+          "s6c1",
+          "s6c2"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s7",
+        "items_before": 1,
+        "items_after": 1,
+        "kept_ids": [
+          "s7c1"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s8",
+        "items_before": 1,
+        "items_after": 0,
+        "kept_ids": [],
+        "dropped_relevant_ids": []
+      }
+    ]
+  },
+  "rerank_off": {
+    "aggregate": {
+      "items": 22,
+      "relevant_total": 8,
+      "relevant_kept": 8,
+      "noise_total": 14,
+      "noise_kept": 14,
+      "relevant_recall": 1.0,
+      "noise_rejection": 0.0
+    },
+    "per_sample": [
+      {
+        "id": "s1",
+        "items_before": 4,
+        "items_after": 4,
+        "kept_ids": [
+          "s1c1",
+          "s1c2",
+          "s1c3",
+          "s1c4"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s2",
+        "items_before": 3,
+        "items_after": 3,
+        "kept_ids": [
+          "s2c1",
+          "s2c2",
+          "s2c3"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s3",
+        "items_before": 3,
+        "items_after": 3,
+        "kept_ids": [
+          "s3c1",
+          "s3c2",
+          "s3c3"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s4",
+        "items_before": 5,
+        "items_after": 5,
+        "kept_ids": [
+          "s4c1",
+          "s4c2",
+          "s4c3",
+          "s4c4",
+          "s4c5"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s5",
+        "items_before": 3,
+        "items_after": 3,
+        "kept_ids": [
+          "s5c1",
+          "s5c2",
+          "s5c3"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s6",
+        "items_before": 2,
+        "items_after": 2,
+        "kept_ids": [
+          "s6c1",
+          "s6c2"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s7",
+        "items_before": 1,
+        "items_after": 1,
+        "kept_ids": [
+          "s7c1"
+        ],
+        "dropped_relevant_ids": []
+      },
+      {
+        "id": "s8",
+        "items_before": 1,
+        "items_after": 1,
+        "kept_ids": [
+          "s8c1"
+        ],
+        "dropped_relevant_ids": []
+      }
+    ]
+  },
+  "failures": [],
+  "verdict": "PASS",
+  "stress_observations": [
+    {
+      "sample": "s9",
+      "dropped_relevant_ids": [
+        "s9c2"
+      ],
+      "threshold": 0.15,
+      "note": "**固定阈值剔除了标注为相关、但分数低于阈值的条目** ⇒ 暴露固定阈值的适用边界；须评估「下调阈值」或「改用相对阈值（如 top-k 内分位数）」"
+    },
+    {
+      "sample": "s10",
+      "dropped_relevant_ids": [
+        "s10c2"
+      ],
+      "threshold": 0.15,
+      "note": "**固定阈值剔除了标注为相关、但分数低于阈值的条目** ⇒ 暴露固定阈值的适用边界；须评估「下调阈值」或「改用相对阈值（如 top-k 内分位数）」"
+    }
+  ],
+  "runtime_pending": {
+    "status": "pending_runtime",
+    "reason": "**真实检索侧聚合对照须运行态**：网关不本地过滤（`score_threshold` 下传检索服务）⇒ 本执行器的开/关过滤是**口径仿真**，不代表真实检索路径；且 `used_ratio`（归因 A：回答引用了多少条注入片段）**取值依赖 LLM 回答内容**。",
+    "required_inputs": [
+      "运行态检索端点（OpenRAG 数据面）＋ 真实 KB 数据",
+      "LLM 回答（用于计算归因 A 的 `used_ratio`）",
+      "同一批 query 在 rerank 开 / 关两态下的注入片段与回答"
+    ]
+  },
+  "coverage_note": "本执行器覆盖**检索侧聚合口径**；**不覆盖** `used_ratio`（依赖 LLM 回答，见 runtime_pending）—— 不以近似断言冒充覆盖。"
+}

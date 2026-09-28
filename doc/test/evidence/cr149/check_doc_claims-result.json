@@ -1,9 +1,93 @@
 {
   "probe": "check_doc_claims",
-  "design_doc": "OpenBase-上下文精装配与组件通道优化技术方案-v1.18.1.md",
+  "design_doc": "OpenBase-上下文精装配与组件通道优化技术方案-v1.28.0.md",
   "scanned_py_files": 523,
-  "skipped_as_absent_or_prefix": 50,
-  "checked_as_claimed_present": 214,
-  "missing": [],
-  "method_note": "区分「引用为存在」（须查到）与「引用为缺失/族前缀」（跳过）；首版未区分且不扫 tests/，曾误报 68 项；删除整行级跳过以免审计被宽泛标记吞掉"
+  "check1_symbol_existence": {
+    "skipped_as_absent_or_prefix": 74,
+    "checked_as_claimed_present": 328,
+    "missing": [
+      "OPENBASE_JWT_SECRET",
+      "REASON_MAX_CHARS",
+      "RagFallback",
+      "_fallback_reason",
+      "_rag_value_gate_probe",
+      "_run_auto_failover",
+      "check_t10",
+      "check_t9",
+      "expect_applied",
+      "has_base",
+      "historical_e2e_evidence",
+      "py_compile",
+      "rag_fallback",
+      "rag_fallback_enabled",
+      "runtime_pending",
+      "stream_trace_components",
+      "stress",
+      "sync_trace_components",
+      "trace_contract"
+    ]
+  },
+  "check2_config_keys": {
+    "settings_declared_keys": 160,
+    "missing_keys": [
+      {
+        "key": "OLLAMA_KEEP_ALIVE",
+        "known_absent": false
+      },
+      {
+        "key": "OPENBASE_JWT_SECRET",
+        "known_absent": false
+      },
+      {
+        "key": "OPENLLM_PROFILE_LLM_REFINE",
+        "known_absent": true
+      },
+      {
+        "key": "REASON_MAX_CHARS",
+        "known_absent": false
+      }
+    ],
+    "source_only_keys": [
+      {
+        "key": "DEFAULT_PROFILE_TARGETS",
+        "known_absent": false
+      },
+      {
+        "key": "DEFAULT_SYSTEM_PROMPT",
+        "known_absent": false
+      },
+      {
+        "key": "MODEL_CONTEXT_LIMITS",
+        "known_absent": true
+      },
+      {
+        "key": "OPENRAG_FALLBACK_BUILTIN",
+        "known_absent": false
+      },
+      {
+        "key": "OVER_QUOTA_RATIO",
+        "known_absent": true
+      },
+      {
+        "key": "PROFILE_FAILURE_COOLDOWN",
+        "known_absent": false
+      },
+      {
+        "key": "RAG_SOURCE_BUILTIN",
+        "known_absent": false
+      },
+      {
+        "key": "REFINE_TARGET_GPU_NODE",
+        "known_absent": false
+      }
+    ]
+  },
+  "check3_header_version": {
+    "header_version": "1.28.0",
+    "revision_versions": 34,
+    "latest_revision_version": "1.28.0",
+    "consistent": true,
+    "verdict": "ok"
+  },
+  "method_note": "区分「引用为存在」（须查到）与「引用为缺失/族前缀」（跳过）；首版未区分且不扫 tests/，曾误报 68 项；删除整行级跳过以免审计被宽泛标记吞掉。配置键检查口径：UPPER_SNAKE 且 ≥2 下划线（保守侧），**不套用缺席标记跳过**，改为标注 known_absent 以区分「已自述个案」与「新增漂移」；已知局限：source_only 桶无法区分「被使用」与「被负向断言为不存在」，须人工过目。文档头版本检查口径：与设计原文「末行」不同，改按**语义版本取最大**，因本仓修订历史最新在前、末行恒为最旧版本；且**只取表首列（版本列）**，因摘要列常引用他文档版本（首版整段取用致技术方案被误判 header_behind）。符号检查中，静态检查工具规则码（如 UP006/F401）按模式跳过（L3 实测误报）。适用对象：检查为「设计/方案/规划类文档」设计；对问题跟踪记录 / DevLog 一类「以记录缺失为职」的文档，检查一/二命中属预期噪声，应以检查三为主并逐条人工判定。修订历史章节取**所有含关键词标题的并集**（避免被交叉引用标题抢先命中，首版因此把 DevLog 误判 revision_section_absent）。"
 }

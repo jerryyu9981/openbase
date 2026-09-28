@@ -1,0 +1,105 @@
+{
+  "probe": "a_direct_component",
+  "ruling": "W2：**A 直连三组件取数** —— A ＝ 直连拓扑（不经编排，单独调用三基础设施）；三组件（DPS 画像 / OpenMemory 记忆 / OpenRAG 知识库）**种入后经 A 直连均确实取到数据**（Q8 内容口径）；未种入时**如实为空**（不伪造）；A 直连出站头（`X-Proxy-Source=llm-proxy`）与 B 通道**身份四头等价**",
+  "carrier": "mock_services/{openmemory,openrag,profile}_stub（进程内 TestClient，零网络）",
+  "runtime_pending": "真实外部服务（生产 DPS / OpenMemory / OpenRAG）联调与真实契约路由（`OPENLLM_*_REAL=true`）仍属**运行态复核项** —— 本探针不据此宣称生产已贯通",
+  "cases": [
+    {
+      "component": "OpenMemory（记忆）",
+      "target_system": "openmemory",
+      "endpoint_read": "POST /openmemory/v1/search",
+      "endpoint_seed": "POST /openmemory/v1/write",
+      "empty_total": 0,
+      "retrieved_total": 1,
+      "checks": {
+        "empty_state_honest": true,
+        "write_accepted": true,
+        "read_http_ok": true,
+        "data_retrieved_non_empty": true,
+        "content_matches": true,
+        "a_direct_header_present": true
+      },
+      "ok": true
+    },
+    {
+      "component": "OpenRAG（知识库）",
+      "target_system": "openrag",
+      "endpoint_read": "POST /openrag/v1/search",
+      "endpoint_seed": "POST /openrag/v1/ingest",
+      "empty_total": 0,
+      "retrieved_total": 1,
+      "checks": {
+        "empty_state_honest": true,
+        "ingest_accepted": true,
+        "read_http_ok": true,
+        "data_retrieved_non_empty": true,
+        "rerank_params_accepted": true,
+        "score_above_threshold": true,
+        "a_direct_header_present": true
+      },
+      "ok": true
+    },
+    {
+      "component": "DPS（画像）",
+      "target_system": "dps",
+      "endpoint_read": "GET /profile/v1/get",
+      "endpoint_seed": "POST /profile/v1/update",
+      "empty_total": null,
+      "retrieved_total": 3,
+      "checks": {
+        "read_http_ok": true,
+        "data_retrieved_non_empty": true,
+        "version_present": true,
+        "update_accepted": true,
+        "write_read_closure": true,
+        "a_direct_header_present": true
+      },
+      "ok": true
+    },
+    {
+      "component": "直连拓扑身份面（三系统）",
+      "target_system": "dps/openmemory/openrag",
+      "endpoint_read": "—",
+      "endpoint_seed": "—",
+      "empty_total": null,
+      "retrieved_total": 3,
+      "rows": [
+        {
+          "system": "dps",
+          "a_proxy_source": "openbase-llm-proxy",
+          "b_proxy_source": "openbase-orchestrator",
+          "a_request_id": "req-w2-adirect-0001",
+          "ab_identity_equivalent": true
+        },
+        {
+          "system": "openmemory",
+          "a_proxy_source": "openbase-llm-proxy",
+          "b_proxy_source": "openbase-orchestrator",
+          "a_request_id": "req-w2-adirect-0001",
+          "ab_identity_equivalent": true
+        },
+        {
+          "system": "openrag",
+          "a_proxy_source": "openbase-llm-proxy",
+          "b_proxy_source": "openbase-orchestrator",
+          "a_request_id": "req-w2-adirect-0001",
+          "ab_identity_equivalent": true
+        }
+      ],
+      "checks": {
+        "a_source_is_llm_proxy": true,
+        "b_source_is_orchestrator": true,
+        "topology_distinguishable": true,
+        "request_id_carried": true,
+        "ab_identity_equivalent_all": true
+      },
+      "ok": true
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "failed": 0,
+    "failed_cases": [],
+    "verdict": "PASS"
+  }
+}

@@ -1,0 +1,288 @@
+{
+  "probe": "channel_report",
+  "ruling": "W4：**双通道健康/降级统一上报** —— 一份事实源（通道 ＋ 终点 ＋ 组件）＋ 单一结论；`bypass_orchestration` 当且仅当「主通道已为 A」或「主通道为 B 且最终 LLM 不可达」；**组件降级如实列入 `degraded_dimensions` 但不改变结论**（观测与决策分离）；`fallback_action` 与 `channel_status()` **同源**（永不冲突）",
+  "cases": [
+    {
+      "case": "① 基线（B 主、无失败、组件全 ok）⇒ **走主通道**、无降级维度",
+      "threshold": 3,
+      "primary_channel": "b",
+      "channels": {
+        "a": {
+          "healthy": true,
+          "consecutive_failures": 0
+        },
+        "b": {
+          "healthy": true,
+          "consecutive_failures": 0,
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 0
+        }
+      },
+      "degraded_dimensions": [],
+      "bypass_orchestration": false,
+      "routing_recommendation": "use_primary",
+      "fallback_action": "none",
+      "reasons": [
+        "双通道无异常"
+      ],
+      "expect_bypass": false,
+      "checks": {
+        "fallback_action_same_source": true,
+        "b_consecutive_matches": true,
+        "llm_consecutive_matches": true,
+        "a_healthy_matches": true,
+        "primary_matches": true,
+        "bypass_matches_rule": true,
+        "recommendation_matches": true,
+        "degraded_matches": true,
+        "reason_present": true
+      },
+      "ok": true
+    },
+    {
+      "case": "② B 组件降级 ⇒ **如实列入证据**但**结论仍走主通道**（可用但劣化）",
+      "threshold": 2,
+      "primary_channel": "b",
+      "channels": {
+        "a": {
+          "healthy": true,
+          "consecutive_failures": 0
+        },
+        "b": {
+          "healthy": false,
+          "consecutive_failures": 2,
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 0
+        }
+      },
+      "degraded_dimensions": [
+        "b.components",
+        "b.component.openrag"
+      ],
+      "bypass_orchestration": false,
+      "routing_recommendation": "use_primary",
+      "fallback_action": "none",
+      "reasons": [
+        "B 组件维度降级（**可用但劣化** ⇒ **仍走主通道**）"
+      ],
+      "expect_bypass": false,
+      "checks": {
+        "fallback_action_same_source": true,
+        "b_consecutive_matches": true,
+        "llm_consecutive_matches": true,
+        "a_healthy_matches": true,
+        "primary_matches": true,
+        "bypass_matches_rule": true,
+        "recommendation_matches": true,
+        "degraded_matches": true,
+        "reason_present": true
+      },
+      "ok": true
+    },
+    {
+      "case": "③ A 侧达阈值失败 ⇒ 列入证据，但 **B 主时不改变主通道**",
+      "threshold": 3,
+      "primary_channel": "b",
+      "channels": {
+        "a": {
+          "healthy": false,
+          "consecutive_failures": 3
+        },
+        "b": {
+          "healthy": true,
+          "consecutive_failures": 0,
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 0
+        }
+      },
+      "degraded_dimensions": [
+        "a.components"
+      ],
+      "bypass_orchestration": false,
+      "routing_recommendation": "use_primary",
+      "fallback_action": "none",
+      "reasons": [
+        "A 侧有失败记录（B 主时不改变主通道）"
+      ],
+      "expect_bypass": false,
+      "checks": {
+        "fallback_action_same_source": true,
+        "b_consecutive_matches": true,
+        "llm_consecutive_matches": true,
+        "a_healthy_matches": true,
+        "primary_matches": true,
+        "bypass_matches_rule": true,
+        "recommendation_matches": true,
+        "degraded_matches": true,
+        "reason_present": true
+      },
+      "ok": true
+    },
+    {
+      "case": "④ 最终 LLM 不可达（达阈值）⇒ **改走 A 直连**（Q12 口径）",
+      "threshold": 3,
+      "primary_channel": "b",
+      "channels": {
+        "a": {
+          "healthy": true,
+          "consecutive_failures": 0
+        },
+        "b": {
+          "healthy": false,
+          "consecutive_failures": 0,
+          "llm_unreachable": true,
+          "llm_consecutive_failures": 3
+        }
+      },
+      "degraded_dimensions": [
+        "b.llm"
+      ],
+      "bypass_orchestration": true,
+      "routing_recommendation": "use_a_direct",
+      "fallback_action": "use_a_direct",
+      "reasons": [
+        "最终 LLM 不可达（连续 3 次 ≥ 阈值 3）"
+      ],
+      "expect_bypass": true,
+      "checks": {
+        "fallback_action_same_source": true,
+        "b_consecutive_matches": true,
+        "llm_consecutive_matches": true,
+        "a_healthy_matches": true,
+        "primary_matches": true,
+        "bypass_matches_rule": true,
+        "recommendation_matches": true,
+        "degraded_matches": true,
+        "reason_present": true
+      },
+      "ok": true
+    },
+    {
+      "case": "⑤ 终点失败未达阈值 ⇒ **不**改走、**不列降级**（状态判定按阈值）",
+      "threshold": 3,
+      "primary_channel": "b",
+      "channels": {
+        "a": {
+          "healthy": true,
+          "consecutive_failures": 0
+        },
+        "b": {
+          "healthy": true,
+          "consecutive_failures": 0,
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 1
+        }
+      },
+      "degraded_dimensions": [],
+      "bypass_orchestration": false,
+      "routing_recommendation": "use_primary",
+      "fallback_action": "none",
+      "reasons": [
+        "双通道无异常"
+      ],
+      "expect_bypass": false,
+      "checks": {
+        "fallback_action_same_source": true,
+        "b_consecutive_matches": true,
+        "llm_consecutive_matches": true,
+        "a_healthy_matches": true,
+        "primary_matches": true,
+        "bypass_matches_rule": true,
+        "recommendation_matches": true,
+        "degraded_matches": true,
+        "reason_present": true
+      },
+      "ok": true
+    },
+    {
+      "case": "⑥ 主通道已为 A（演练接管）⇒ **走 A 直连**",
+      "threshold": 1,
+      "primary_channel": "a",
+      "channels": {
+        "a": {
+          "healthy": true,
+          "consecutive_failures": 0
+        },
+        "b": {
+          "healthy": true,
+          "consecutive_failures": 0,
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 0
+        }
+      },
+      "degraded_dimensions": [],
+      "bypass_orchestration": true,
+      "routing_recommendation": "use_a_direct",
+      "fallback_action": "none",
+      "reasons": [
+        "主通道已是 A（直连拓扑）"
+      ],
+      "expect_bypass": true,
+      "checks": {
+        "fallback_action_same_source": true,
+        "b_consecutive_matches": true,
+        "llm_consecutive_matches": true,
+        "a_healthy_matches": true,
+        "primary_matches": true,
+        "bypass_matches_rule": true,
+        "recommendation_matches": true,
+        "degraded_matches": true,
+        "reason_present": true
+      },
+      "ok": true
+    },
+    {
+      "case": "⑦ 阈值 0（未配置）⇒ **不**宣告不可达（与 W1 阈值口径同源）；健康判据 `0<0` 使两通道均报不健康 ⇒ **如实列入证据**但**结论仍为主通道**",
+      "threshold": 0,
+      "primary_channel": "b",
+      "channels": {
+        "a": {
+          "healthy": false,
+          "consecutive_failures": 0
+        },
+        "b": {
+          "healthy": false,
+          "consecutive_failures": 0,
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 5
+        }
+      },
+      "degraded_dimensions": [
+        "b.components",
+        "a.components"
+      ],
+      "bypass_orchestration": false,
+      "routing_recommendation": "use_primary",
+      "fallback_action": "none",
+      "reasons": [
+        "B 组件维度降级（**可用但劣化** ⇒ **仍走主通道**）",
+        "A 侧有失败记录（B 主时不改变主通道）"
+      ],
+      "expect_bypass": false,
+      "checks": {
+        "fallback_action_same_source": true,
+        "b_consecutive_matches": true,
+        "llm_consecutive_matches": true,
+        "a_healthy_matches": true,
+        "primary_matches": true,
+        "bypass_matches_rule": true,
+        "recommendation_matches": true,
+        "degraded_matches": true,
+        "reason_present": true
+      },
+      "ok": true
+    }
+  ],
+  "exhaustive_bypass": {
+    "combinations": 4,
+    "mismatches": [],
+    "ok": true
+  },
+  "summary": {
+    "total": 7,
+    "failed": 0,
+    "failed_cases": [],
+    "exhaustive_ok": true,
+    "verdict": "PASS"
+  }
+}
