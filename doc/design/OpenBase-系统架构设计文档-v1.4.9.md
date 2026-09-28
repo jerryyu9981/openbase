@@ -5,9 +5,9 @@
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.9（上下文预算与回写质量，承接型小版本） |
 | 文档 | 系统架构设计文档 |
-| 文档版本 | v1.6.1 |
+| 文档版本 | v1.6.3 |
 | 状态 | [Review] |
-| 日期 | 2026-09-28 |
+| 日期 | 2026-09-29 |
 | 上游依据 | 《开发需求文档-v1.4.9》《需求追溯矩阵-v1.4.9》《验收标准清单-v1.4.9》；《需求评审记录-v1.4.9》v1.1.0（[Approved]）；《单版本规划文档-v1.4.9》v1.1.0 |
 
 
@@ -247,7 +247,8 @@ available = model_window − output_reserve − safety_margin
 **`dropped` 的落点与排序（冻结）**
 - **落点（两级，语义一致）**：
   - **段级**：`truncated.<段>.dropped` —— **仅当为该段提供了身份**时出现；
-  - **回执顶层**：`dropped` —— **恒有**（无身份或无丢弃 ⇒ `[]`），由段级明细按 **`QUOTA_SEGMENTS` 段序****展平**得到（元素自带 `source`，展平**无信息损失**），以满足 **AC-149-05 齐备率 100%**（API §2 `dropped` 必填）。
+  - **回执顶层**：`dropped` —— **恒有**（回执含计量组时；无身份或无丢弃 ⇒ `[]`），由段级明细按 **`QUOTA_SEGMENTS` 段序****展平**得到（元素自带 `source`，展平**无信息损失**），以满足 **AC-149-05 齐备率 100%**（API §2 `dropped` 必填）。
+    - **「恒有」的精确口径（与 §3.19 对齐，避免与 NFR-149-02／AC-149-09 冲突）**：恒有的**论域**是**预算生效的请求**（`composition.budget` 非空 ⇔ 回执含计量组）；**预算总开关关闭 ⇒ 本字段不出现**，回执与 v1.4.8 **逐字一致**。即 AC-149-05 的统计对象为预算生效请求，二者不矛盾。
 - 元素形态：`{"source": str, "id": str, "reason": <上表原因码>}`；**只落身份与原因，不落正文**（SEC-149-01 / AC-148-01-5）。
 - 段内排序：按**处置阶段先后**（段内去重 → 画像字段级 → 配额整条），阶段内按**段内呈现序**（原下标升序）⇒ 判据可复现、**不依赖字典序**、回执可读。
 
@@ -294,6 +295,18 @@ available = model_window − output_reserve − safety_margin
 | 观测 | 轨迹/回执可见**每组件通道**（`channels: {组件: {channel, failures, threshold, switched, source}}`）；与既有 `rag_source` 口径**不冲突**（不改其取值域） |
 | 与既有能力边界 | 不改 §4.2 组件决策（选哪些组件）；不改 W4 `describe_channel_report`（状态上报与建议）；不改四系统接口 |
 
+### 3.19 设计补充 F：预算安全余量的落地与裁剪前后 token 口径（Step 3 收尾，v1.6.2）
+
+> **动因（如实登记）**：Step 3 收尾审计发现两处**实现与设计不一致**：① §3.3 的 `safety_margin` 项**未落地**（实现为 `available = 窗口 − 输出预留`）；② API §2 的 6 个必填字段（`model_window`/`output_reserve`/`safety_margin`/`available_budget`/`prompt_tokens_before`/`prompt_tokens_after`）**未在回执出现** ⇒ AC-149-05 齐备率不达 100%。**已按本节口径补齐**（实现先行、本节为编期澄清 —— 该**顺序偏差**已登记在追溯矩阵）。
+
+| 项 | 冻结内容 |
+|----|----------|
+| 安全余量 | **独立配置项** `CONTEXT_SAFETY_MARGIN_TOKENS`（缺省 **256**），`BudgetPolicy.safety_margin_tokens`（**直接构造默认 0** ⇒ 既有夹具口径不变）；`available = 窗口 − 输出预留 − 安全余量`（下限 0） |
+| 预算四项观测 | 回执**恒有** `model_window`/`output_reserve`/`safety_margin`/`available_budget`，取自**配置口径**的预算策略（二次校验的临时收紧**不**覆盖本组，由其自身字段表达） |
+| 裁剪前后口径 | `prompt_tokens_before` / `prompt_tokens_after` ＝ **`system ＋ query ＋ 四类素材`**（**不含**模板段标记）⇒ 两者**同口径可比**、差值即裁剪效果；含标记的真实总长仍以 `prompt_total_tokens` 为准（**窗口校验用它**） |
+| 聚合标记 | `hard_truncated`（bool，恒有）＝ 任一素材段发生文本级截断；`degraded`（str，恒有，空 ⇒ 回执 `null`）＝ 任一素材段降级值（当前 `empty_guard`）。二者为**只读聚合观测**：**不替代**段级字段，**不**与 §3.17 的 `over_window` 合并 |
+| 逐字回退 | 预算总开关关闭 ⇒ 以上字段均不出现（回执不含计量组）⇒ 与 v1.4.8 逐字一致 |
+
 ## 4. 失败处理与降级总表
 
 | 场景 | 行为 | 可观测性 |
@@ -308,6 +321,8 @@ available = model_window − output_reserve − safety_margin
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.6.3 | 2026-09-29 | AA-OpenBase-Dev | **批次 7 收尾对齐（消除 §3.16 与 §3.19 的表述冲突）**：§3.16「回执顶层 `dropped` 恒有」补入**精确论域** —— 恒有**仅限预算生效的请求**（`composition.budget` 非空 ⇔ 回执含计量组）；**预算总开关关闭 ⇒ 该字段不出现**（与 v1.4.8 逐字一致）。此前 §3.16 的「恒有」与 §3.19 的「关闭即零新增字段」在字面上可被读作互斥，本次以**同一段内加限定**消除歧义（**判据口径不变**：AC-149-05 的统计对象为预算生效请求）。 |
+| v1.6.2 | 2026-09-28 | AA-OpenBase-Dev | **Step 3 收尾补齐（新增 §3.19 设计补充 F）**：① **安全余量落地** —— 新增配置项 `CONTEXT_SAFETY_MARGIN_TOKENS`（缺省 256）与 `BudgetPolicy.safety_margin_tokens`，`available = 窗口 − 输出预留 − 安全余量`（此前实现**漏掉余量项**，与 §3.3 不一致）；② **回执 6 个必填字段补齐**（`model_window`/`output_reserve`/`safety_margin`/`available_budget`/`prompt_tokens_before`/`prompt_tokens_after`，另补 Prompt 级聚合 `hard_truncated`/`degraded`）⇒ **AC-149-05 齐备率 100%**；③ 冻结**裁剪前后同口径**（`system ＋ query ＋ 素材`，不含模板段标记）与聚合标记的层级关系（不替代段级、不与 `over_window` 合并）。**如实登记该批为「实现先行、设计澄清在后」的顺序偏差**。 |
 | v1.6.1 | 2026-09-28 | AA-OpenBase-Dev | **批次 4 设计前置**：① §3.10 增「**定稿取值域**」—— `channel_failover_b_to_a`（通道级）**由暂定转定稿**，新增组件级 `channel_component_failover`（含 `component` 维度），并明确**不并入** `AuditAction` 枚举、门控默认关闭与 fail-open 不变（解 I-7）；② 新增 **§3.18 设计补充 E** 冻结逐组件通道「执行路由」的**落点语义**：本仓只做**裁决＋标签发布＋按组件回写**，**不在本仓切换出站拓扑**（避免伪造 A 拓扑身份破坏 K07 与 AB 等价契约），开关默认关闭、裁决器不可用回落整体偏好（解 I-6）。 |
 | v1.6.0 | 2026-09-28 | AA-OpenBase-Dev | **设计补充 D（新增 §3.17，解 I-5）**：冻结「仍超窗」的二次校验契约 —— 判定口径（最终 Prompt 总 token > 窗口，即 AC-149-12 的统计对象）、**校正至多一次**（溢出额度并入输出预留 ⇒ 收紧素材预算后重组装）、**判失败以回执标记表达且不新增对外错误码**（`over_window`/`over_window_tokens` 恒有）、关闭预算时逐字回退、以及与段级 `degraded` 的层级区分。 |
 | v1.5.0 | 2026-09-28 | AA-OpenBase-Dev | **设计补充 C（新增 §3.16）**：冻结 I-2 的**丢弃原因码取值域**（`dedup`／`profile_field`／`quota` 三码）与「**不进明细**的三种情形」（单条截断／相邻同义合并／无身份条目，各附理由 ⇒ 得可验证关系 `len(dropped) ≤ dropped_items`）；冻结**两级落点**（段级 `truncated.<段>.dropped` 条件性、回执顶层 `dropped` 恒有且由段级按 `QUOTA_SEGMENTS` 展平，满足 AC-149-05 齐备率）、元素形态与排序、与 I-1 回填的**最终状态**口径，以及「明细只读、口径冻结、逐字回退」三项不变量。补齐 §3.13 未定的契约取值域，使 I-2 可实施。 |

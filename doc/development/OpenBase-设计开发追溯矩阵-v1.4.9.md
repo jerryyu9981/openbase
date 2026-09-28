@@ -5,10 +5,10 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（编排与回写代码所在仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 设计开发追溯矩阵（Step 3 产出 2，TD-ID ↔ 设计项 ↔ 代码落点） |
-| 文档版本 | v1.4.0 |
+| 文档版本 | v1.9.1 |
 | 状态 | [Review]（Step 3 进行中） |
-| 日期 | 2026-09-28 |
-| 上游依据 | 设计基线 **v1.2.0**（[Approved]）；《需求设计追溯矩阵-v1.4.9》v1.2.0 |
+| 日期 | 2026-09-29 |
+| 上游依据 | 设计基线 **v1.2.0**（[Approved]）＋ 设计补充至 **v1.6.3**；《需求设计追溯矩阵-v1.4.9》v1.2.0 |
 | 代码仓 | `d:\Trae CN\myproject\Dev\OpenLLM\backend`（OpenBase 仓仅承载文档） |
 
 ## 1. TD-ID 追溯（设计项 → 代码落点 → 状态）
@@ -16,7 +16,7 @@
 | TD-ID | 设计项（DT） | 需求 | 代码落点（OpenLLM） | 判据 | Phase | 状态 |
 |-------|-------------|------|---------------------|:----:|:-----:|:----:|
 | **TD-14901** | DT-149-03（回执扩展）／I-3 显式标记 | FR-149-06 | `app/edgerouter/orchestration/prompt_pipeline.py`（`_trim_segment` 报告 ＋ 文档同步） | **AC-149-03/04** | P1 | ✅ **已完成（本批）** |
-| TD-14902 | DT-149-03（回执扩展）／I-2 逐条丢弃原因 | FR-149-06 | `prompt_pipeline.py`（`segment_items` 透传 ＋ `dropped` 明细 ＋ 单元三元组）＋ `context_metrics.py`（顶层 `dropped` 导出） | AC-149-05 | P1 | ✅ **已完成（批次 2 收尾）** |
+| TD-14902 | DT-149-03（回执扩展）／I-2 逐条丢弃原因 | FR-149-06 | `prompt_pipeline.py`（`segment_items` 透传 ＋ `dropped` 明细 ＋ 单元三元组）＋ `context_metrics.py`（顶层 `dropped` ＋ **预算四项 ＋ 裁剪前后 token ＋ 聚合标记导出**，批次 7 补齐） | AC-149-05 | P1 | ✅ **已完成（批次 2 收尾 ＋ 批次 7 齐备率补齐）** |
 | TD-14903 | DT-149-01／I-1 跨段配额竞争 | FR-149-03 | `prompt_pipeline.py`（预算池）＋ `BudgetPolicy` | AC-149-01/02 | P2 | ✅ **已完成（批次 2）** |
 | TD-14904 | DT-149-02／I-5 仍超窗显式失败标记 | FR-149-05 | `prompt_pipeline.py`（`_verify_window` 二次校验 ＋ 三标记）＋ `context_metrics.py`（标记导出） | **AC-149-12** | P2 | ✅ **已完成（批次 3）** |
 | TD-14905 | DT-149-15／I-6 取数层逐组件通道路由 | FR-149-09 | `component_pipeline.py`（逐组件裁决/标签/回写）＋ `channel.py`（逐组件状态）＋ `executor.py`/网关（轨迹落痕） | AC-149-13 | P5 | ✅ **已完成（批次 4）** |
@@ -161,6 +161,25 @@
 
 **判据映射（AC-149-16）**：新判据**各有样本且执行器可判**（7/7）；运行态段**如实标注未覆盖**（4 项）。
 
+## 3novies. 批次 7 收尾补漏（Step 3 完成度审计发现的两处实现—设计不一致，2026-09-28 续记）
+
+**审计方法**：按 AC-149-05／10／11 逐条索取**可执行证据**（而非以文档陈述为证）⇒ 发现两处差距。
+
+| # | 差距（**实现 vs 设计**） | 性质 | 证据 | 处置 |
+|:-:|--------------------------|------|------|------|
+| G1 | 预算公式**漏掉安全余量**：实现 `available = 窗口 − 输出预留`，设计 §3.3 为 `− **安全余量**`；且 `CONTEXT_SAFETY_MARGIN*` 配置键**不存在** | **实现—设计不一致**（Step 3 内应闭合） | 全仓无 `safety_margin` 读取点；`config.py` 无该键 | 新增 `CONTEXT_SAFETY_MARGIN_TOKENS`（缺省 256）＋ `BudgetPolicy.safety_margin_tokens`（直接构造默认 0，夹具口径不变）＋ `load_budget_policy` 接线；`available_tokens` 扣余量 |
+| G2 | 回执**缺 6 个必填字段**（`model_window`/`output_reserve`/`safety_margin`/`available_budget`/`prompt_tokens_before`/`prompt_tokens_after`）⇒ **AC-149-05 齐备率 ≠ 100%** | **实现—设计不一致** | 探针首轮实测缺字段；代码内无这些字段名 | `PromptComposition` 新增预算四项 ＋ 裁剪前后同口径 token ＋ Prompt 级聚合 `hard_truncated`/`degraded`；`to_record()` **恒有**导出 |
+| G3 | 取证探针首版把计量字段名（`prompt_total_tokens`）误判为敏感串 | **探针缺陷**（自纠） | 探针输出「回执出现敏感串：token」 | 口径更正为「**精确敏感键名** ＋ **凭据值形态**」双规则 |
+| G4 | **关闭总开关时回执仍新增扩展字段**（扩展字段组共 **12** 项：`dropped`／`over_window`×3／预算四项／裁剪前后 token×2／聚合标记×2）⇒ 破坏 **NFR-149-02／AC-149-09「关闭即逐字回退」** | **不变量破缺（高）** | 探针实测：关闭态回执字段集合含扩展字段（对照探针 `closed_path_keys`） | 扩展字段组改为**与计量组同门**（`budget` 非空才落）⇒ 关闭态**零新增字段**（探针 `leaked_extension_fields: []`）；齐备率 100% 的统计对象＝**预算生效的请求**（口径已写入 §3.19 与 §3.16） |
+| G5 | **I-1 开关未在 `Settings` 声明**（仅 `getattr` 读取）⇒ 本仓 `Settings` 为 `extra=forbid`，该键**无法经配置开启**＝**死开关/功能生产不可达** | **实现缺陷（高）** | 探针断言 `Settings.model_fields` 时 `KeyError` ⇒ 首次暴露 | `config.py` **显式声明** `CONTEXT_CROSS_SEGMENT_COMPETITION_ENABLED`（默认 False）；**并新增结构护栏**（扫描全 `app/` 的 `getattr(settings, "KEY"` 与声明集合比对，白名单为空）⇒ 该类缺陷**不可能再静默** |
+| G6 | 取证探针判据**「键在即齐备」过弱** ⇒ `{"model": null}` 亦判 PASS（不足以证明「齐备率 100%」） | **取证缺陷（中，自纠）** | 探针首轮 `observed.model = null` 却 PASS | 判定升为**「键在且取值非 null」**（仅 `degraded` 按设计允许 null）＋ 样本显式提供 `model`；**并去除 cwd 依赖**（backend 根自动定位，失败显式报错而非静默漏扫）⇒ 任意 cwd 下 **6/6 PASS** |
+
+**设计澄清（后补，如实登记顺序偏差）**：两处口径均回写架构 **§3.19（设计补充 F，v1.6.2）** —— 但本批为**实现先行、设计澄清在后**（非「先补设计再实施」），**该顺序偏差在此显式登记**，不掩盖。
+
+**续记（2026-09-29，批次 7 收尾一致性）**：① 架构升 **v1.6.3** —— §3.16「顶层 `dropped` **恒有**」补入**精确论域**（恒有**仅限预算生效的请求**；总开关关闭 ⇒ 该字段**不出现**，与 v1.4.8 逐字一致），消除其与 §3.19「关闭即零新增字段」的**字面冲突**；**判据口径不变**（AC-149-05 统计对象＝预算生效请求）。② 取证探针**去除 cwd 依赖**（backend 根按 `OPENLLM_BACKEND` → cwd → 同级 `OpenLLM/backend` 自动定位；定位失败**显式报错**而非静默漏扫）⇒ 任意 cwd 下 **六项全 PASS** 可复现（此前在非 backend 目录运行会因相对路径失配而**假失败**）。③ 本续记**不含实现改动**。
+
+**本批测试**：`test_context_receipt_fields.py` **先建（RED 8 failed / 1 passed）→ GREEN 12 passed**（含「关闭态零新增字段」与「开关声明默认」两组护栏）；相关面 17 文件 **247 passed**；新增判据探针 `v149_receipt_and_purity_probe.py` ⇒ **六项全 PASS**（AC-149-05／AC-149-09／AC-149-10／AC-149-11／AC-149-12 ＋ 结构护栏 `config_keys_declared`，`-result.json` 落盘）。
+
 ## 4. 版本控制记录
 
 | 项 | 约定 |
@@ -174,6 +193,7 @@
 | 本批提交 ⑤ | `feat(identity): 逐组件通道路由与审计动作码定稿（I-6＋I-7）` ＋ footer `TD-14905,14906 / DT-149-15,16 / RT-149-11,RT-149-12 / AC-149-13,14` |
 | 本批提交 ⑥ | `feat(writeback): 画像增量与频控预检接线（I-8）` ＋ footer `TD-14907 / DT-149-17 / RT-149-13 / AC-149-15` |
 | 本批提交 ⑦ | `test(evidence): v1.4.9 增量判据执行器与样本集（I-9）` ＋ footer `TD-14908 / DT-149-18 / RT-149-14 / AC-149-16`（OpenBase 仓）＋ `fix(orchestration): 频控预检函数自身 fail-open`（OpenLLM 仓） |
+| 本批提交 ⑧ | `fix(orchestration): 补齐预算安全余量与回执必填字段、显式声明竞争池开关（收尾补漏）` ＋ footer `TD-14902 / AC-149-05,09,10,11`（OpenLLM 提交 **`a9914e6`**） |
 | TDD 合规 | 测试先于生产代码提交（批次 1：`test_context_trim_markers.py` 先建并 RED，后实现 GREEN 5 passed；批次 2／I-1：`test_context_cross_segment_competition.py` **先建**，本批修复夹具与实现后 GREEN 5 passed，并**补 1 例反例护栏**；批次 2 收尾／I-2：`test_context_dropped_detail.py` **先建**并 **RED（10 failed / 1 passed）**，实现后 **GREEN 12 passed**） |
 | 备份 | 双远程（origin ＋ backup，非 `--mirror`） |
 
@@ -251,10 +271,24 @@
 | 附带回改 | `message_precheck` 升级为**函数自身 fail-open**（双层保险）⇒ 单测复跑 **13 passed** |
 | 全量回归 | `pytest tests/unit tests/integration` → **3748 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败** |
 
+**批次 7（收尾补漏：预算余量 ＋ 回执齐备率）验证**：
+
+| 项 | 结果 |
+|----|------|
+| **RED**（先建测试） | `test_context_receipt_fields.py` → **8 failed / 1 passed**（`safety_margin_tokens` 不存在、配置键不存在、回执缺 `hard_truncated` 等） |
+| **GREEN** | 同文件 → **12 passed**（含关闭态零新增字段、开关声明默认两组；与配置键离线护栏 4 例合跑 **16 passed**） |
+| 相关面回归 | 预算/裁剪/排序/画像/精炼/计量/配置键 17 文件 → **247 passed** |
+| **判据探针** | `v149_receipt_and_purity_probe.py` → **AC-149-05 PASS**（10 项必填**键在且取值非 null**，`available_budget` 与公式自洽）／**AC-149-09 PASS**（开关声明默认 False ＋ 关闭态**零新增字段**）／**AC-149-10 PASS**（新链路对 `manage_context`/`_prune_recent` **零命中**）／**AC-149-11 PASS**（无敏感键名/凭据形态/正文哨兵）／**AC-149-12 PASS**（16 组可容纳输入超窗率 0 ＋ 不可容纳显式标记）／**结构护栏 PASS**（全 `app/` 无「读取但未声明」的配置键） |
+| 静态检查 | `ruff check`（3 生产文件 ＋ 1 新测试）→ **All checks passed** |
+| 全量回归 | `pytest tests/unit tests/integration` → **3760 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败**（＝既有基线 3748 ＋ 本批 12 例） |
+| **收尾一致性复验（2026-09-29）** | 取证探针**任意 cwd** 下重跑 → **6/6 PASS**（`backend_root` 自动定位生效）；全量回归**重跑** → **21 failed / 3760 passed**，与基线 `cr149-t36-full.txt` 的 21 项**逐 node id 比对零差异**（`Compare-Object` 双向空）；取证脚本 `ruff check` → **All checks passed** |
+
 ## 6. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.9.1 | 2026-09-29 | AD-OpenLLM-Dev | **批次 7 收尾一致性续记 ＋ 新增 G6**：① 架构升 **v1.6.3**（§3.16 顶层 `dropped`「恒有」补入**精确论域＝预算生效请求**，消除与 §3.19 的**字面冲突**，**判据口径不变**）；② **新增 G6（取证缺陷，中，自纠）** —— 探针原判据「键在即齐备」**过弱**（`{"model": null}` 亦 PASS）⇒ 升为「键在且取值非 null」＋ 样本显式提供 `model`；③ 取证探针**去除 cwd 依赖**（backend 根自动定位，定位失败显式报错）⇒ 任意 cwd 下**六项全 PASS** 可复现；④ 文头版本/日期/上游依据同步（v1.9.0→**v1.9.1**、设计补充至 **v1.6.3**）。 |
+| v1.9.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3novies：**批次 7 收尾补漏** —— Step 3 完成度审计按 AC-149-05／10／11 索取**可执行证据**，发现并闭合两处**实现—设计不一致**：① 预算公式**漏安全余量**（补齐 `CONTEXT_SAFETY_MARGIN_TOKENS` 与 `BudgetPolicy.safety_margin_tokens`，`available = 窗口 − 预留 − 余量`）；② 回执**缺 6 个必填字段**（补齐预算四项 ＋ 裁剪前后同口径 token ＋ 聚合标记 ⇒ **AC-149-05 齐备率 100%**）；另自纠 1 处**探针缺陷**（把计量字段名误判为敏感串）。**如实登记「实现先行、设计澄清在后」的顺序偏差**（口径已回写架构 §3.19／v1.6.2）。新增判据探针 `v149_receipt_and_purity_probe.py` ⇒ **AC-149-05／10／11 全 PASS**；另**修正本文档头版本号滞后**（此前正文已至 v1.8.0、头仍 v1.4.0）。TD-14902 状态补注「批次 7 齐备率补齐」。 |
 | v1.8.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3octies：**批次 6（I-9 评测集与判据扩展）** 实施记录 —— 新增 `v149-increment-eval-set.json`（7 项离线用例 ＋ 4 项运行态 `not_covered`）与执行器 `v149_increment_runner.py`（结构校验／逐项执行／`-result.json`／失败非 0 退出码），实测 **7/7 通过、4 项运行态如实未覆盖**；附带把 `message_precheck` 升级为**函数自身 fail-open**（双层保险）。TD-14908 状态改为「已完成」⇒ **批次 1~6 全部落地，9 条 TD-ID 全部收口**，Step 3 进入收尾（静态质量检查／逻辑审查／DevLogReport／Stage3 审计）。 |
 | v1.7.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3septies：**批次 5（I-8 画像增量与频控预检接线）** 实施记录 —— 两条公开预检入口（`profile_delta_precheck`／`message_precheck`）接入回写回调（profile 路携带 `updates`；入队前消息级预检）、新增启动注入位接线并在 `main.py` lifespan 调用；**如实登记 3 项缺陷**：① `compute_message_hash` **不存在**（补齐）② `WritebackStore.exists_message` **不存在**＋表无内容哈希列（以**有界回看＋指纹比对**补齐，不改表结构）③ 增量**平铺**致画像契约键 `updates` 取不到（改为嵌套挂载）。同时登记两条边界（有界去重＋强幂等仍由队列唯一约束兜底；LLM 提炼生效受 D3）。TD-14907 状态改为「已完成」。 |
 | v1.6.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3sexies：**批次 4（I-6 逐组件通道路由 ＋ I-7 审计动作码定稿）** 实施记录 —— 逐组件独立状态/裁决/视图（与请求级计数**隔离**）、取数前裁决＋`_channel` 下发＋按组件回写、`channels` 随 `ExecuteResult` 上抛并在两路径轨迹落痕；动作码由暂定**转定稿**（移除暂定标注，新增组件级 `channel_component_failover` 与 `AUDIT_ACTION_CODES` 单一事实源），并在网关补**调用点**（同故障期去重）；边界＝**不**切换出站拓扑（保 K07/AB 等价契约）。TD-14905/14906 状态改为「已完成」。 |

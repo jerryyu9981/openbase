@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（编排与回写代码所在仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 静态质量检查记录（Step 3 产出 3） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.1 |
 | 状态 | [Review]（Step 3 收尾） |
-| 日期 | 2026-09-28 |
+| 日期 | 2026-09-29 |
 | 检查人 | AD-OpenLLM-Dev |
-| 检查对象 | 本版本 6 个批次全部生产代码与测试代码 |
+| 检查对象 | 本版本 7 个批次全部生产代码与测试代码 ＋ 取证脚本 |
 | 检查工具 | `ruff check`（lint）＋ `python -m compileall`／`py_compile`（语法） |
 | 环境 | Windows / Python 3.10；cwd = `OpenLLM/backend` |
 
@@ -36,6 +36,8 @@
 | 4 | I-6＋I-7 | `channel.py`、`channel_audit.py`、`component_pipeline.py`、`executor.py`、`core/config.py`、`openllm_gateway.py` / 3 个新测试 ＋ 1 个既有护栏更正 | All checks passed |
 | 5 | I-8 接线 | `evaluate.py`、`profile_refine_gate.py`、`writeback_queue.py`、`openllm_gateway.py`、`main.py` / `test_profile_delta_and_precheck_wiring.py` | All checks passed |
 | 6 | I-9 证据 | `evaluate.py`（fail-open 加固）/ — | All checks passed |
+| 7 | **收尾补漏** | `prompt_pipeline.py`（安全余量 ＋ 回执字段）、`context_metrics.py`、`core/config.py` / `test_context_receipt_fields.py` | All checks passed |
+| 7′ | **收尾一致性（续记）** | 取证脚本 `doc/test/evidence/cr149/v149_receipt_and_purity_probe.py`（backend 根自动定位 ＋ 齐备性判定加固）**无生产代码改动** | All checks passed |
 
 ## 3. 编期发现并修正的静态问题（如实登记）
 
@@ -64,4 +66,6 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.1.1 | 2026-09-29 | AD-OpenLLM-Dev | **批次 7 收尾一致性续记纳入检查范围**：新增第 7′ 行 —— 取证脚本 `v149_receipt_and_purity_probe.py`（backend 根自动定位 ＋ 齐备性判定加固）`ruff check` **All checks passed**；本批**无生产代码改动**；文头版本号/日期/检查对象的**滞后**一并更正（v1.0.0 → **v1.1.1**、6 批次 → **7 批次**）。结论不变。 |
+| v1.1.0 | 2026-09-28 | AD-OpenLLM-Dev | **收尾补漏批次纳入检查范围**：新增第 7 批（预算安全余量 ＋ 回执必填字段齐备率）改动面 lint `All checks passed`；本版本检查范围由「6 批次」扩为「**7 批次**」，结论不变（改动面 0 告警）。 |
 | v1.0.0 | 2026-09-28 | AD-OpenLLM-Dev | 初始创建：6 批次改动面 lint 0 告警、语法编译通过、5 类编期静态问题修正记录；**显式登记未做的检查**（类型检查/覆盖率/SAST）及其归属阶段。状态 [Review] |

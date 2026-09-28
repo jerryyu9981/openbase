@@ -1,0 +1,130 @@
+{
+  "AC-149-05": {
+    "required_fields": [
+      "model",
+      "model_window",
+      "output_reserve",
+      "safety_margin",
+      "available_budget",
+      "prompt_tokens_before",
+      "prompt_tokens_after",
+      "dropped",
+      "hard_truncated",
+      "degraded"
+    ],
+    "observed": {
+      "model": "probe-model",
+      "model_window": 1200,
+      "output_reserve": 200,
+      "safety_margin": 50,
+      "available_budget": 950,
+      "prompt_tokens_before": 513,
+      "prompt_tokens_after": 129,
+      "dropped": [
+        {
+          "source": "history",
+          "id": "h-0003",
+          "reason": "quota"
+        },
+        {
+          "source": "history",
+          "id": "h-0004",
+          "reason": "quota"
+        },
+        {
+          "source": "history",
+          "id": "h-0005",
+          "reason": "quota"
+        },
+        {
+          "source": "history",
+          "id": "h-0006",
+          "reason": "quota"
+        },
+        {
+          "source": "history",
+          "id": "h-0007",
+          "reason": "quota"
+        },
+        {
+          "source": "history",
+          "id": "h-0008",
+          "reason": "quota"
+        }
+      ],
+      "hard_truncated": false,
+      "degraded": null
+    },
+    "problems": [],
+    "passed": true
+  },
+  "AC-149-09": {
+    "switch_declared_defaults": {
+      "CONTEXT_BUDGET_ENABLED": false,
+      "CONTEXT_CROSS_SEGMENT_COMPETITION_ENABLED": false,
+      "COMPONENT_CHANNEL_ROUTING_ENABLED": false,
+      "WRITEBACK_DECISION_ENABLED": false,
+      "PROFILE_LLM_REFINE_ENABLED": false
+    },
+    "switch_effective_values": {
+      "CONTEXT_BUDGET_ENABLED": false,
+      "CONTEXT_CROSS_SEGMENT_COMPETITION_ENABLED": false,
+      "COMPONENT_CHANNEL_ROUTING_ENABLED": false,
+      "WRITEBACK_DECISION_ENABLED": false,
+      "PROFILE_LLM_REFINE_ENABLED": false
+    },
+    "closed_path_keys": [
+      "contexts_tokens",
+      "counted",
+      "created_at",
+      "memory",
+      "model",
+      "prompt_total_tokens",
+      "rag",
+      "request_id",
+      "segment_tokens",
+      "session_id"
+    ],
+    "leaked_extension_fields": [],
+    "problems": [],
+    "passed": true
+  },
+  "AC-149-10": {
+    "backend_root": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+    "scanned": [
+      "app/edgerouter/orchestration/prompt_pipeline.py",
+      "app/edgerouter/orchestration/context_metrics.py",
+      "app/edgerouter/orchestration/refine.py",
+      "app/edgerouter/orchestration/refine_placement.py"
+    ],
+    "legacy_symbols": [
+      "manage_context",
+      "_prune_recent"
+    ],
+    "legacy_allowed_files": [
+      "app/services/context_manager.py",
+      "app/api/context.py"
+    ],
+    "violations": [],
+    "passed": true
+  },
+  "AC-149-11": {
+    "checked_scope": "回执 JSON（含 dropped/预算四项/分项计量）",
+    "problems": [],
+    "passed": true
+  },
+  "AC-149-12": {
+    "swept_cases": 16,
+    "over_window_rate": 0.0,
+    "problems": [],
+    "passed": true
+  },
+  "structural:config_keys_declared": {
+    "backend_root": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+    "read_keys": 49,
+    "declared_keys": 167,
+    "whitelist": {},
+    "undeclared": {},
+    "passed": true
+  }
+}
