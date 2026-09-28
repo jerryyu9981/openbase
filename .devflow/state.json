@@ -1,7 +1,7 @@
 {
     "project":  "OpenBase",
     "devflowVersion":  "2.18.0",
-    "currentPhase":  "v1_4_9_step_1_requirements",
+    "currentPhase":  "v1_4_9_step_2_design",
     "completedPhases":  [
                             "step_0_planning",
                             "step_1_requirements",
@@ -82,7 +82,8 @@
                             "v1_4_8_step_5_operations",
                             "v1_4_8_released",
                             "v1_4_8_step_5_closed",
-                            "v1_4_9_step_0_planning"
+                            "v1_4_9_step_0_planning",
+                            "v1_4_9_step_1_requirements"
                         ],
     "currentDocuments":  {
                              "requirements_v1.4.8":  [
