@@ -37,6 +37,12 @@ DOC_ARTIFACTS: tuple[str, ...] = (
     r"doc\release\OpenBase-发布入场检查记录与发布计划-v1.4.9.md",
     r"doc\release\OpenBase-回滚方案与运维手册-v1.4.9.md",
     r"doc\release\OpenBase-发布复盘与问题跟踪记录-v1.4.9.md",
+    r"doc\release\OpenBase-部署执行与上线检查报告-v1.4.9.md",
+    r"doc\release\OpenBase-Release-Note-v1.4.9.md",
+    r"doc\release\OpenBase-Release-Note-All.md",
+    r"doc\release\OpenBase-运维审计报告-v1.4.9.md",
+    r"doc\audit\comprehensive\OpenBase-全流程闭环审计报告-v1.4.9.md",
+    r"doc\audit\review\OpenBase-阶段审计报告-Stage5-v1.4.9.md",
 )
 
 EVIDENCE_ARTIFACTS: tuple[str, ...] = (

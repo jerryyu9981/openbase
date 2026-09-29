@@ -1,0 +1,60 @@
+=== v1.4.9 Step 5 · 发布实例日志证据（Dev 环境，8041）===
+原始日志：release-8041.log（4176103 字节 / 27084 行）
+说明：**完整原始日志不入仓**（体积见上，含 SQLAlchemy echo 等高频输出），本文件保留关键段与卫生统计；原始日志留于本机临时目录。
+
+--- ① 启动关键段（结构化日志起始 head）---
+{"ts": "2026-09-29T06:19:23.495Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "IdentityGate \u
+8eab\u4efd\u88c1\u51b3\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
+{"ts": "2026-09-29T06:19:23.519Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u5ba1\u8ba1\u6
+5e5\u5fd7\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
+{"ts": "2026-09-29T06:19:23.548Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u901f\u7387\u9
+650\u5236\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
+{"ts": "2026-09-29T06:19:23.568Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u76d1\u63a7\u6
+307\u6807\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
+INFO:     Started server process [16860]
+INFO:     Waiting for application startup.
+{"ts": "2026-09-29T06:19:25.659Z", "level": "INFO", "service": "openllm", "logger": "app.middleware.rate_limit", "messa
+ge": "RateLimitMiddleware \u914d\u7f6e\u751f\u6548: enabled=True, global=1.0/s(burst=60), user=20.0/s(burst=200), route
+=50.0/s(burst=100)", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.663Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u6b63\u5728\u5
+42f\u52a8OpenLLM\u5e73\u53f0...", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.663Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u73af\u5883: d
+evelopment", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.664Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u8c03\u8bd5\u6
+a21\u5f0f: True", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.666Z", "level": "INFO", "service": "openllm", "logger": "app.core.otel", "message": "OpenTe
+lemetry Traces \u5df2\u7981\u7528", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.666Z", "level": "INFO", "service": "openllm", "logger": "app.core.otel", "message": "OpenTe
+lemetry Metrics \u5df2\u7981\u7528", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.669Z", "level": "INFO", "service": "openllm", "logger": "app.core.otel", "message": "OpenTe
+lemetry \u5df2\u5b8c\u5168\u7981\u7528", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.669Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "OpenTelemetry \
+u5df2\u7981\u7528", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.770Z", "level": "INFO", "service": "openllm", "logger": "app.edgerouter.orchestration.profi
+le_refine_gate", "message": "\u753b\u50cf LLM \u63d0\u70bc\u672a\u5c31\u7eea\uff08disabled\uff08\u95e8\u63a7\u5173\u95e
+d \u21d2 \u7eaf\u89c4\u5219\u8def\u5f84\uff0c\u4e0d\u6ce8\u5165\uff09\uff09\uff0c\u4fdd\u6301\u7eaf\u89c4\u5219\u8def\u
+5f84", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.770Z", "level": "INFO", "service": "openllm", "logger": "app.edgerouter.orchestration.profi
+le_refine_gate", "message": "\u753b\u50cf LLM \u63d0\u70bc\u6ce8\u5165\u4f4d\u672a\u5c31\u7eea\uff08\u95e8\u63a7\u5173\
+u95ed\u6216\u63d0\u70bc\u5668\u672a\u6ce8\u5165\uff09\u21d2 \u7eaf\u89c4\u5219\u8def\u5f84", "request_id": "-"}
+2026-09-29 14:19:25,970 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2026-09-29 14:19:25,970 INFO sqlalchemy.engine.Engine [raw sql] {}
+{"ts": "2026-09-29T06:19:25.970Z", "level": "INFO", "service": "openllm", "logger": "sqlalchemy.engine.Engine", "messag
+e": "select pg_catalog.version()", "request_id": "-"}
+{"ts": "2026-09-29T06:19:25.970Z", "level": "INFO", "service": "openllm", "logger": "sqlalchemy.engine.Engine", "messag
+e": "[raw sql] {}", "request_id": "-"}
+
+--- ② 启动完成标记 ---
+206\u949f / limit=200\uff09", "request_id": "-"}
+{"ts": "2026-09-29T06:19:35.487Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u56de\u5199\u6
+b7b\u4fe1 TTL \u6e05\u7406\u4efb\u52a1\u5df2\u542f\u52a8: \u95f4\u9694 3600.0s", "request_id": "-"}
+INFO:     Application startup complete.
+
+--- ③ 日志卫生统计 ---
+结构化 JSON 行：4394 / 总行 27084（其中含 level 字段者 4392 行）；非 JSON 行为 uvicorn 自带输出（`INFO: ...`）
+敏感模式命中计数：{'api_key[:=]': 2}
+
+--- ④ 命中行原文（值已掩码）---
+": "OpenMemory client \u5df2\u6ce8\u5165: <MASKED>=http://127.0.0.1:8020 timeout=30.0s api_key=\u672a\u914d\u7f6e contr
+": "OpenRAG client \u5df2\u6ce8\u5165: <MASKED>=http://127.0.0.1:8010 timeout=5.0s api_key=\u672a\u914d\u7f6e contract=
+结论：命中项为 **`api_key=未配置`**（应用如实打印「未配置」，**非密钥值**）⇒ 日志无真实凭据落痕。

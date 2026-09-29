@@ -1,0 +1,185 @@
+{
+  "version": "v1.4.9",
+  "step": "Step 5（5.2 环境 ／ 5.6 监控日志 ／ 5.7 性能安全 ／ 5.8 回滚演练）",
+  "snapshot": {
+    "openllm_head": "2f2543ec9a6aaedbd900f79e227dd06e90962bd6",
+    "openllm_head_subject": "chore+test: 补 .env.shared-infra.example 占位模板（撤跟踪配套）+ cost 护栏第 6 例",
+    "branch": "feature/s4-identity-channel-b",
+    "app_code_clean": true,
+    "tracking": "## feature/s4-identity-channel-b...origin/feature/s4-identity-channel-b [ahead 21]"
+  },
+  "started_at": "2026-09-29T14:20:41",
+  "env": {
+    "health_status": 200,
+    "status": "healthy",
+    "app_version": "2.14.3",
+    "components": {
+      "openmemory": {
+        "status": "ok",
+        "channel": "b"
+      },
+      "openrag": {
+        "status": "unavailable",
+        "channel": "b"
+      },
+      "dps": {
+        "status": "unavailable",
+        "channel": "b"
+      },
+      "ollama": {
+        "status": "unavailable",
+        "channel": "a"
+      }
+    },
+    "channel": {
+      "preference": "b-primary",
+      "primary_channel": "b",
+      "single_primary": true,
+      "state": "b-primary",
+      "healthy_b": true,
+      "llm_unreachable": false,
+      "llm_consecutive_failures": 0,
+      "fallback_action": "none",
+      "drill_window_seconds": 300.0,
+      "auto_failover_enabled": false
+    },
+    "auth_ok": true
+  },
+  "smoke": {
+    "chat_status": 200,
+    "request_id": "openllm-25bdfe14f1854c4db1a54c02",
+    "trace_status": 200,
+    "receipt_fields": [
+      "attribution_a",
+      "available_budget",
+      "budget",
+      "contexts_tokens",
+      "counted",
+      "created_at",
+      "degraded",
+      "dropped",
+      "hard_truncated",
+      "memory",
+      "model",
+      "model_window",
+      "output_reserve",
+      "over_window",
+      "over_window_recovered",
+      "over_window_tokens",
+      "prompt_tokens_after",
+      "prompt_tokens_before",
+      "prompt_total_tokens",
+      "rag",
+      "refine",
+      "refine_placement",
+      "refine_trigger",
+      "request_id",
+      "safety_margin",
+      "segment_tokens",
+      "session_id"
+    ],
+    "receipt_missing": [],
+    "receipt_formula_ok": true,
+    "writeback_receipts_status": 200,
+    "metrics_export_status": 200,
+    "unauth_status": 401
+  },
+  "observability": {
+    "health_exposes": [
+      "channel",
+      "channel_report",
+      "components",
+      "status",
+      "version"
+    ],
+    "components_visible": 4,
+    "metrics_visible": false,
+    "metrics_keys": [],
+    "trace_queryable": true,
+    "metrics_export_queryable": true,
+    "log_hygiene": {
+      "available": true,
+      "bytes": 248325,
+      "lines": 1867,
+      "structured_json_lines": 346,
+      "structured_ratio_pct": 18.53,
+      "sensitive_pattern_hits": {
+        "(?i)\\bapi[_-]?key\\b\\s*[:=]": 2
+      },
+      "level_counts": {
+        "INFO": 639,
+        "WARNING": 2
+      }
+    }
+  },
+  "performance": {
+    "health": {
+      "rounds": 30,
+      "p50_ms": 43.3,
+      "p99_ms": 2096.3,
+      "min_ms": 16.3,
+      "max_ms": 2096.3,
+      "status_codes": [
+        200
+      ]
+    },
+    "trace_read": {
+      "rounds": 20,
+      "p50_ms": 106.2,
+      "p99_ms": 803.3,
+      "min_ms": 36.5,
+      "max_ms": 803.3,
+      "status_codes": [
+        200
+      ]
+    },
+    "metrics_export": {
+      "rounds": 20,
+      "p50_ms": 206.3,
+      "p99_ms": 679.1,
+      "min_ms": 117.1,
+      "max_ms": 679.1,
+      "status_codes": [
+        200
+      ]
+    },
+    "chat_e2e_ms": "见 smoke.chat_status（含上游 LLM 往返，受 D3 条件约束，不做基线结论）",
+    "note": "本版目标环境为 Dev：无 SLA 承诺；上表用于**基线登记**与后续对比（非生产 SLO 判定）"
+  },
+  "security": {
+    "unauth_status": 401,
+    "invalid_token_status": 401,
+    "sensitive_key_hits": {
+      "(?i)\\bpassword\\b\\s*[:=]": 0,
+      "(?i)\\bapi[_-]?key\\b\\s*[:=]": 0,
+      "(?i)\\bsecret\\b\\s*[:=]": 0,
+      "sk-[A-Za-z0-9]{8,}": 0,
+      "(?i)authorization:\\s*bearer": 0,
+      "(?i)\\bjwt[_a-z]*\\b\\s*[:=]": 0
+    },
+    "tls": "N/A（Dev 本地 HTTP；TLS 由部署架构草案在 Test/Pro 环境要求）",
+    "cors_note": "未在业务响应中发现通配 CORS 头（如需强校验见《安全设计说明-v1.4.9》）"
+  },
+  "rollback_drill": {
+    "strategy": "配置回滚（首选路径）—— 关闭三开关并重启后验证关闭态逐字回退",
+    "closed_health_status": 200,
+    "closed_chat_status": 200,
+    "closed_receipt_fields": [
+      "attribution_a",
+      "contexts_tokens",
+      "counted",
+      "created_at",
+      "memory",
+      "model",
+      "prompt_total_tokens",
+      "rag",
+      "request_id",
+      "segment_tokens",
+      "session_id"
+    ],
+    "extension_leaked": [],
+    "verdict": "通过（扩展字段组零泄漏 ⇒ 等同回退到 v1.4.8 行为）",
+    "code_rollback_path": "git revert <本版提交> / git checkout v1.4.8（路径可用性由回滚方案 §2 核验）"
+  },
+  "finished_at": "2026-09-29T14:21:22"
+}

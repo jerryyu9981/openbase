@@ -15,11 +15,11 @@
 
 | 统计项 | 数量 |
 |--------|------|
-| 待偿还 | 23 |
+| 待偿还 | 25 |
 | 挂起中 | 1 |
 | 偿还中 | 0 |
 | 已偿还 | 10 |
-| **总计** | **34** |
+| **总计** | **36** |
 
 > 口径说明（v0.3.6）：本表历史版本存在「分项之和 ≠ 总计」（v0.3.5 时 5+1+0+7=13 ≠ 12），本次按分项实际值重算为 **18** 并修正总计；后续版本请以分项之和为准。
 >
@@ -46,7 +46,7 @@
 
 > 注：TD-新增-001（缓存消息实装）为 v1.0.0 开发审计标记的新增债务（DT-024 部分实现），不计入本版本还债计划数，纳入测试阶段评估与后续版本偿还。
 
-> 口径说明（v0.10.0）：**v1.4.9 Step 4／Step 5 风险归集（§1.7）** —— 新增 **TD-新增-029~TD-新增-032**（4 项**待偿还**：P1 敏感配置入库 ×1、P2 既有失败 ×1、P3 复杂度 ×1、P2 运行态取证依赖 ×1）＋ **TD-新增-033**（既有实现缺陷，**当场闭环**，计**已偿还**）＋ **TD-新增-034**（**P1 跨仓密钥面**，Step 5 入场门禁复核扩展发现，计**待偿还**）；待偿还 18→**23**、已偿还 9→**10**、总计 28→**34**，分项之和 23+1+0+10 = **34**，与总计一致。**TD-新增-029／034 为 P1，阻塞 Step 5 发布前置**。
+> 口径说明（v0.10.0）：**v1.4.9 Step 4／Step 5 风险归集（§1.7）** —— 新增 **TD-新增-029~TD-新增-032**（4 项**待偿还**：P1 敏感配置入库 ×1、P2 既有失败 ×1、P3 复杂度 ×1、P2 运行态取证依赖 ×1）＋ **TD-新增-033**（既有实现缺陷，**当场闭环**，计**已偿还**）＋ **TD-新增-034**（**P1 跨仓密钥面**）＋ **TD-新增-035／036**（**P3 可观测性与运行态硬化**，Step 5 上线检查发现）；待偿还 18→**25**、已偿还 9→**10**、总计 28→**36**，分项之和 25+1+0+10 = **36**，与总计一致。**P1 两项（029／034）已由「撤跟踪 ＋ 用户批准风险接受」决策化闭环（含残留登记）**。
 
 ## 1.1 偿还记录（v1.0.5）
 
@@ -139,14 +139,17 @@
 
 | 债务 ID | 分类 | 级别 | 归集版本 | 来源 | 内容 | 计划 |
 |---------|------|:----:|:--------:|------|------|------|
-| **TD-新增-029** | **安全 / 合规（配置入库）** | **P1** | **v1.4.9** | Step 4 合规测试（TT-v1.4.9-041 依赖与配置安全）＋ `.gitignore` 核对 ＋ **Step 5 入场门禁复核（暴露面精确定界）** | **敏感配置被版本控制跟踪**：OpenLLM 仓 `git ls-files` 含 **`.env.shared-infra`**（跟踪中），其中 10 行敏感项含**本机服务口令与内部凭据**（`POSTGRES_PASSWORD`／`REDIS_PASSWORD`／`MINIO_SECRET_KEY`／`NEO4J_PASSWORD`／`OPENRAG_API_KEY`／`OPENMEMORY_API_KEY`／`OPENMEMORY_JWT_SECRET`）。该文件自身注释即写明「**勿落 git**」，与 AGENTS.md §6 直接冲突；`.gitignore` 仅排除 `.env`（`backend/.env` 命中），**未排除**该文件。**暴露面精确定界（Step 5 实测）**：`git for-each-ref refs/remotes` 逐引用核对 ⇒ 该文件存在于 **4 组远端的全部相关分支**（`origin`／`jerry.yu`／`backup` 内网 `192.168.0.14` ＋ **`github`（`git@github.com:jerryyu9981/openllm.git`）**）；未登录访问该 GitHub 仓返回 **404 ⇒ 非公开可见**（私有或不存在），但**跟踪引用证明文件已在 GitHub 私有仓** ⇒ 凡有该仓读权限者均可取得凭据 | **Step 5 发布前置（阻塞项）**：① 撤出跟踪（`git rm --cached`）＋ `.gitignore` 增行；② 以 `.env.shared-infra.example`（占位值）替代；③ **轮换**已入库口令/密钥（**内网 3 远端 ＋ GitHub 私有仓均已含明文历史**）；④ 远端历史处置（`filter-repo` 重写 4 组远端，或明确「历史留存 ＋ 凭据已轮换」的净风险结论）。**本版本不据此判功能失败，但不得计入「已通过」，且为发布门禁阻塞项** |
+| **TD-新增-029** | **安全 / 合规（配置入库）** | **P1** | **v1.4.9** | Step 4 合规测试（TT-v1.4.9-041 依赖与配置安全）＋ `.gitignore` 核对 ＋ **Step 5 入场门禁复核（暴露面精确定界）** | **敏感配置被版本控制跟踪**：OpenLLM 仓 `git ls-files` 含 **`.env.shared-infra`**（跟踪中），其中 10 行敏感项含**本机服务口令与内部凭据**（`POSTGRES_PASSWORD`／`REDIS_PASSWORD`／`MINIO_SECRET_KEY`／`NEO4J_PASSWORD`／`OPENRAG_API_KEY`／`OPENMEMORY_API_KEY`／`OPENMEMORY_JWT_SECRET`）。该文件自身注释即写明「**勿落 git**」，与 AGENTS.md §6 直接冲突；`.gitignore` 仅排除 `.env`（`backend/.env` 命中），**未排除**该文件。**暴露面精确定界（Step 5 实测）**：`git for-each-ref refs/remotes` 逐引用核对 ⇒ 该文件存在于 **4 组远端的全部相关分支**（`origin`／`jerry.yu`／`backup` 内网 `192.168.0.14` ＋ **`github`（`git@github.com:jerryyu9981/openllm.git`）**）；未登录访问该 GitHub 仓返回 **404 ⇒ 非公开可见**（私有或不存在），但**跟踪引用证明文件已在 GitHub 私有仓** ⇒ 凡有该仓读权限者均可取得凭据 | **Step 5 发布前置 —— ✅ 已处置（2026-09-29，用户批准）**：① **撤出跟踪已完成**（OpenLLM `977eba6`）—— `.gitignore` 原 `!.env.shared-infra` **反向规则已移除**（该规则使敏感文件**故意入库**），并补记原因；本地文件**保留在磁盘**（不影响运行）；② 已入库 **`.env.shared-infra.example`**（53 键全占位，脚本零输出真值；OpenLLM `2f2543e`）；③ **残留风险经用户明确批准接受**：历史 blob 仍在 4 组远端，**密码不轮换**；④ **未完成项**：远端历史清理（`filter-repo`）**未执行**（用户选择接受）。**本项已由决策化闭环解除门禁阻塞，残留内容如实登记** |
 | TD-新增-030 | 测试债务（既有失败） | P2 | v1.4.9 | Step 4 全量回归（TT-v1.4.9-031）与基线 `cr149-t36-full.txt` 逐 node id 对比 | **21 项既有失败**跨版本存续（401 统一格式／模型路由接线／real-contract 默认值开关／流式收尾／`test_s4_t14_verify_env` 退出码等），**与 v1.4.9 改动面无交集**；本版判据为「**零新增失败**」（逐 node id 相同） | 不随本版修复（避免扩大范围）；下一版本按失败簇分批处置（先 401 统一格式与流式收尾两簇） |
 | TD-新增-031 | 可维护性（复杂度） | P3 | v1.4.9 | Step 3 门禁 3.4a 技术债务增长率（0 / 3 / 0） | 3 个函数达圈复杂度阈值上限：`run_components`(26)／`_build_writeback_callback`(16)／`generate`(16)，均为**接线型门控/fail-open 分支**所致 | 下版本重构候选：抽取「通道裁决」「预检接线」「轨迹落痕」辅助函数，目标 ≤15 |
 | TD-新增-032 | 数据/环境依赖（运行态取证） | P2 | v1.4.9 | Step 4 T2/T3b/UAT（TT-v1.4.9-018／047 受限） | **条目身份 ⇒ 裁剪明细的运行态取证依赖真实检索数据**：本机 `openrag` 组件 `unavailable`、`memory` 召回 0 条目 ⇒ 运行态 `dropped` 恒空，无法在真实请求上观测明细；本版仅以单元护栏（12 passed）证明贯通 | 具备真实检索数据的环境（或 Step 5 生产前置环境）补测；补测前该项**不得计入「已通过」** |
-| **TD-新增-033** | 实现缺陷（既有，**已偿还**） | P2 | v1.4.9 | **Step 4 T3a 服务间集成巡检**逐链路采集（`GET /api/v1/costs/optimization`） | **成本优化建议端点运行时 500**：`func.sum(func.case((cond, 1), else_=0))` —— `case` 是 SQLAlchemy **顶层构造**，`func.case(...)` 退化为通用函数并把 `else_` 当关键字参数传入 ⇒ `Function.__init__() got an unexpected keyword argument 'else_'`（该端点在 v1.4.9 之前即已存在，属**跨版本既有缺陷**） | ✅ **已在 v1.4.9 Step 4 内闭环**：改 `func.sum(case((cond, 1), else_=0))` ＋ 顶层导入；补 5 例护栏（RED 2 failed → GREEN 6 passed）；OpenLLM `b261010`；复测该路由转 **2xx** 且 T3a **代码类 5xx 归零** |
-| **TD-新增-034** | **安全 / 合规（跨仓密钥面）** | **P1** | **v1.4.9** | Step 5 入场门禁复核（**跨仓同类排查**：对 OpenLLM／OpenBase／OpenRAG／OpenMemory／DPS 五仓 `git ls-files` 按敏感命名模式扫描） | **同类问题跨仓存在**：**OpenRAG 仓**跟踪 ① `k8s/secrets.yaml`（含 `OPENRAG_LLM_API_KEY`（29 字符，实测非占位）／`DATABASE_PASSWORD`（30 字符）等；`tls.crt`／`tls.key` 与部分 API Key 为空占位）② `.env.shared-infra`（4 项口令）③ `.env.e2e`（`OPENRAG_MINIO_SECRET_KEY`）。**OpenMemory 仓**跟踪 `frontend/.env.development`／`.env.production`（前端变量，**待核是否含敏感值**）。OpenBase／DPS **未发现**该模式。另：OpenLLM 跟踪 `backend/.pylib/**` 内 `certifi/cacert.pem`／`grpc/.../roots.pem`（**第三方 CA 根证书，非密钥**，但**vendored 依赖入库**本身属仓库卫生问题） | **与 TD-新增-029 同批处置**：① 逐仓撤跟踪 ＋ `.gitignore` ＋ `.example` 模板；② 轮换 OpenRAG 侧已入库凭据；③ OpenMemory 前端 env 逐项定性（敏感 ⇒ 同法处置；非敏感 ⇒ 记录结论）；④ `backend/.pylib/` 是否继续入库单独裁定。**跨仓执行，需各仓负责人协同**；**不阻塞 v1.4.9 功能结论，但纳入发布前安全复核范围** |
+| **TD-新增-033** | 实现缺陷（既有，**已偿还**） | P2 | v1.4.9 | **Step 4 T3a 服务间集成巡检**逐链路采集（`GET /api/v1/costs/optimization`） | **成本优化建议端点运行时 500**：`func.sum(func.case((cond, 1), else_=0))` —— `case` 是 SQLAlchemy **顶层构造**，`func.case(...)` 退化为通用函数并把 `else_` 当关键字参数传入 ⇒ `Function.__init__() got an unexpected keyword argument 'else_'`（该端点在 v1.4.9 之前即已存在，属**跨版本既有缺陷**） | ✅ **已在 v1.4.9 Step 4 内闭环**：改 `func.sum(case((cond, 1), else_=0))` ＋ 顶层导入；补 **6 例**护栏（RED 2 failed → GREEN 5 → **6 passed**；第 6 例「桩 db 实跑主测」另笔提交 `2f2543e`）；OpenLLM `b261010`；复测该路由转 **2xx** 且 T3a **代码类 5xx 归零** |
+| **TD-新增-034** | **安全 / 合规（跨仓密钥面）** | **P1** | **v1.4.9** | Step 5 入场门禁复核（**跨仓同类排查**：对 OpenLLM／OpenBase／OpenRAG／OpenMemory／DPS 五仓 `git ls-files` 按敏感命名模式扫描） | **同类问题跨仓存在**：**OpenRAG 仓**跟踪 ① `k8s/secrets.yaml`（含 `OPENRAG_LLM_API_KEY`（29 字符，实测非占位）／`DATABASE_PASSWORD`（30 字符）等；`tls.crt`／`tls.key` 与部分 API Key 为空占位）② `.env.shared-infra`（4 项口令）③ `.env.e2e`（`OPENRAG_MINIO_SECRET_KEY`）。**OpenMemory 仓**跟踪 `frontend/.env.development`／`.env.production`（前端变量，**待核是否含敏感值**）。OpenBase／DPS **未发现**该模式。另：OpenLLM 跟踪 `backend/.pylib/**` 内 `certifi/cacert.pem`／`grpc/.../roots.pem`（**第三方 CA 根证书，非密钥**，但**vendored 依赖入库**本身属仓库卫生问题） | **Step 5 发布前置 —— ✅ 已处置（2026-09-29，用户批准）**：① **OpenRAG 三文件撤跟踪已完成**（`1f51195`：`.env.shared-infra`／`.env.e2e`／`k8s/secrets.yaml`）＋ `.gitignore` 补规则 ＋ 三份 `.example` 占位模板入库（`5a3f84b`）；② **OpenMemory 前端 env 经核为「非敏感」**（仅 `VITE_API_BASE_URL` 且值为空）⇒ **无需处置，结论已记录**（原「待核」项关闭）；③ `backend/.pylib/` 内 2 个 `.pem` 为**第三方 CA 根证书（非密钥）**，vendored 依赖入库属卫生问题，**本版不处置**；④ **残留风险经用户批准接受**（OpenRAG 侧历史 blob 与 v1.4.9 同口径：不轮换、不重写历史）。**门禁阻塞已解除** |
 
-> **归集说明（2026-09-29）**：本节 **5 项待偿还 ＋ 1 项已偿还**，均由 **v1.4.9 Step 4 测试与合规核对／Step 5 入场门禁复核**发现／确认。其中 **TD-新增-029（OpenLLM 配置入库）与 TD-新增-034（跨仓密钥面：OpenRAG／OpenMemory）为 P1（安全合规）**，依风险归集门禁必须归集，且**共同构成 Step 5 发布前置阻塞项**；TD-新增-030／032 为 P2、TD-新增-031 为 P3，均为**跨版本既有**或**环境依赖**类，**不影响本版功能结论**。TD-新增-033 为**当场闭环**项（护栏 ＋ 复测双证据）。
+| **TD-新增-035** | **可观测性 / 日志硬化** | **P3** | **v1.4.9** | **Step 5 上线检查**（5.6 监控日志检查 ＋ 5.7 性能基线） | 两项硬化建议：① **`DEBUG=true` 致 SQLAlchemy echo 淹没日志** —— 27,084 行中结构化 JSON 仅 4,394 行（16%），echo 输出含 **SQL 文本与绑定参数**（本次实测未见凭据，但扩大了日志敏感面与体积至 4.17 MB）；② **健康面未聚合指标**（`/health` 无 `metrics` 键），指标须由 `metrics/export` ＋ 结构化日志 ＋ `monitoring_metrics` 表三处分别取 | 下版本处理（非阻塞）：① 非 Dev 环境关闭 `DEBUG`／关闭 `sqlalchemy.engine` echo（已有运维手册条目，建议固化为环境模板默认）；② 评估在 `/health` 增加指标摘要（RED 三要素：Rate/Errors/Duration） |
+| **TD-新增-036** | **运行态硬化（首请求延迟）** | **P3** | **v1.4.9** | **Step 5 性能上线检查**（冷启动定位） | **首请求惰性初始化 ~2.1 s**（实测：60 轮抽样中唯一 ≥2 s 样本为第 1 个请求 2150 ms；热态 P50 37.5 ms）⇒ 若无预热，上线后首个用户请求会感知秒级延迟，且可能污染监控基线 | 运维侧已要求「上线/重启后预热一次」；下版本评估把重初始化前移到启动阶段（`lifespan` 预热） |
+
+> **归集说明（2026-09-29）**：本节 **7 项待偿还 ＋ 1 项已偿还**，均由 **v1.4.9 Step 4 测试与合规核对／Step 5 入场门禁复核**发现／确认。其中 **TD-新增-029（OpenLLM 配置入库）与 TD-新增-034（跨仓密钥面）为 P1（安全合规）**，依风险归集门禁必须归集；两项**已于 2026-09-29 由「撤跟踪 ＋ 用户批准风险接受」决策化闭环，门禁阻塞解除**（残留历史 blob 内容如实登记于本表与《发布复盘与问题跟踪记录-v1.4.9》）；TD-新增-030／032 为 P2、TD-新增-031 为 P3，均为**跨版本既有**或**环境依赖**类，**不影响本版功能结论**。TD-新增-033 为**当场闭环**项（护栏 6 例 ＋ 复测双证据）。
 
 ## 2. 债务明细
 
