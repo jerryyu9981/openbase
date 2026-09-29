@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（编排与回写代码所在仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 设计开发追溯矩阵（Step 3 产出 2，TD-ID ↔ 设计项 ↔ 代码落点） |
-| 文档版本 | v1.9.1 |
+| 文档版本 | v1.9.2 |
 | 状态 | [Review]（Step 3 进行中） |
 | 日期 | 2026-09-29 |
 | 上游依据 | 设计基线 **v1.2.0**（[Approved]）＋ 设计补充至 **v1.6.3**；《需求设计追溯矩阵-v1.4.9》v1.2.0 |
@@ -16,7 +16,7 @@
 | TD-ID | 设计项（DT） | 需求 | 代码落点（OpenLLM） | 判据 | Phase | 状态 |
 |-------|-------------|------|---------------------|:----:|:-----:|:----:|
 | **TD-14901** | DT-149-03（回执扩展）／I-3 显式标记 | FR-149-06 | `app/edgerouter/orchestration/prompt_pipeline.py`（`_trim_segment` 报告 ＋ 文档同步） | **AC-149-03/04** | P1 | ✅ **已完成（本批）** |
-| TD-14902 | DT-149-03（回执扩展）／I-2 逐条丢弃原因 | FR-149-06 | `prompt_pipeline.py`（`segment_items` 透传 ＋ `dropped` 明细 ＋ 单元三元组）＋ `context_metrics.py`（顶层 `dropped` ＋ **预算四项 ＋ 裁剪前后 token ＋ 聚合标记导出**，批次 7 补齐） | AC-149-05 | P1 | ✅ **已完成（批次 2 收尾 ＋ 批次 7 齐备率补齐）** |
+| TD-14902 | DT-149-03（回执扩展）／I-2 逐条丢弃原因 | FR-149-06 | `prompt_pipeline.py`（`segment_items` 透传 ＋ `dropped` 明细 ＋ 单元三元组）＋ `context_metrics.py`（顶层 `dropped` ＋ **预算四项 ＋ 裁剪前后 token ＋ 聚合标记导出**，批次 7 补齐）＋ **批次 8 生产落线：`assembler.py`（`format_context_with_items` 同源产出身份）／`component_pipeline.py`（落 `segment_items`）／`executor.py` 与 `api/openllm_gateway.py`（双路径同口径传入）** | AC-149-05 | P1 | ✅ **已完成（批次 2 收尾 ＋ 批次 7 齐备率补齐 ＋ 批次 8 生产落线）** |
 | TD-14903 | DT-149-01／I-1 跨段配额竞争 | FR-149-03 | `prompt_pipeline.py`（预算池）＋ `BudgetPolicy` | AC-149-01/02 | P2 | ✅ **已完成（批次 2）** |
 | TD-14904 | DT-149-02／I-5 仍超窗显式失败标记 | FR-149-05 | `prompt_pipeline.py`（`_verify_window` 二次校验 ＋ 三标记）＋ `context_metrics.py`（标记导出） | **AC-149-12** | P2 | ✅ **已完成（批次 3）** |
 | TD-14905 | DT-149-15／I-6 取数层逐组件通道路由 | FR-149-09 | `component_pipeline.py`（逐组件裁决/标签/回写）＋ `channel.py`（逐组件状态）＋ `executor.py`/网关（轨迹落痕） | AC-149-13 | P5 | ✅ **已完成（批次 4）** |
@@ -180,6 +180,20 @@
 
 **本批测试**：`test_context_receipt_fields.py` **先建（RED 8 failed / 1 passed）→ GREEN 12 passed**（含「关闭态零新增字段」与「开关声明默认」两组护栏）；相关面 17 文件 **247 passed**；新增判据探针 `v149_receipt_and_purity_probe.py` ⇒ **六项全 PASS**（AC-149-05／AC-149-09／AC-149-10／AC-149-11／AC-149-12 ＋ 结构护栏 `config_keys_declared`，`-result.json` 落盘）。
 
+## 3decies. 批次 8：I-2 生产落线 ＋ 三项门禁补齐（2026-09-29）
+
+**动因（真实缺陷 G7）**：设计 §3.13「**提供方**」要求「由**网关侧（取数层）**在组装 `segments` 时**并行提供**（条目身份）」，但生产四处调用点（`assembler` 渲染、`component_pipeline` 执行、`executor` 同步组装、流式端点组装）**均未传入** `segment_items` ⇒ 真实请求 `PromptComposition.dropped` **恒为 `[]`** —— 回执字段「被丢弃片段及原因」**有字段无内容**，I-2（P0 增量）在生产**价值不可得**。**暴露方式**：L3 冒烟实测剪切确实发生（`prompt_tokens_before=1611 → after=910`）而 `dropped=[]`。
+
+| # | 缺口 | 处置 |
+|:-:|------|------|
+| G7 | I-2 身份**无生产提供点** | `assembler.format_context_with_items`（文本与身份**同源同一 `_ordered_items` 排序** ⇒ 对齐由构造保证）＋ `ComponentRunResult.segment_items` ＋ 同步/流式**同口径**传入；上游字段名归一（`chunk_id`/`document_id`/`memory_id` → `id`）＋ 无标识 `{component}#{原下标}` 兜底；平铺 dict／字符串**不产出身份**（设计允许缺省） |
+| M1 | **3.4a 技术债务增长率**未做 | `ruff C901` ＋ `pylint duplicate-code`，**HEAD 与基线 `git worktree` 两侧比对** ⇒ **0 / 3 / 0**（3 个新跨阈函数逐项登记成因） |
+| M2 | **3.5 实际运行验证（L1/L2/L3）**未做 | 真实启动 8041 ＋ 6 例 L3 冒烟；证据 `doc/test/evidence/v149/` |
+| M3 | **3.9b 变更一致性自检**未做 | 文档版本一致性（32 份）＋ 命名/路径规范核对；登记 `validate-naming.ps1` **不存在** |
+| M4 | **3.10 开发审计移交材料**缺件 | 补出《开发审计移交材料-v1.4.9》v1.0.0 |
+
+**如实定性**：M1~M4 为**门禁材料缺失**（前两轮审计口径不足，非实现缺陷）；**G7 为真实实现缺陷**且已闭合。**残留边界**：`history`／`profile` 段本版未提供身份；**内存/知识库身份的运行态实测**受环境约束（`openrag` 不可用、`memory` 召回 0 条目）⇒ 移交 Step 4/5。
+
 ## 4. 版本控制记录
 
 | 项 | 约定 |
@@ -194,6 +208,7 @@
 | 本批提交 ⑥ | `feat(writeback): 画像增量与频控预检接线（I-8）` ＋ footer `TD-14907 / DT-149-17 / RT-149-13 / AC-149-15` |
 | 本批提交 ⑦ | `test(evidence): v1.4.9 增量判据执行器与样本集（I-9）` ＋ footer `TD-14908 / DT-149-18 / RT-149-14 / AC-149-16`（OpenBase 仓）＋ `fix(orchestration): 频控预检函数自身 fail-open`（OpenLLM 仓） |
 | 本批提交 ⑧ | `fix(orchestration): 补齐预算安全余量与回执必填字段、显式声明竞争池开关（收尾补漏）` ＋ footer `TD-14902 / AC-149-05,09,10,11`（OpenLLM 提交 **`a9914e6`**） |
+| **本批提交 ⑨** | `feat(orchestration): 条目身份自取数层贯通到裁剪明细（I-2 生产落线）` ＋ footer `TD-14902 / AC-149-05`（OpenLLM 提交 **`2f5364d`**） |
 | TDD 合规 | 测试先于生产代码提交（批次 1：`test_context_trim_markers.py` 先建并 RED，后实现 GREEN 5 passed；批次 2／I-1：`test_context_cross_segment_competition.py` **先建**，本批修复夹具与实现后 GREEN 5 passed，并**补 1 例反例护栏**；批次 2 收尾／I-2：`test_context_dropped_detail.py` **先建**并 **RED（10 failed / 1 passed）**，实现后 **GREEN 12 passed**） |
 | 备份 | 双远程（origin ＋ backup，非 `--mirror`） |
 
@@ -283,10 +298,24 @@
 | 全量回归 | `pytest tests/unit tests/integration` → **3760 passed / 21 failed**；与基线 **逐项一致 ⇒ 零新增失败**（＝既有基线 3748 ＋ 本批 12 例） |
 | **收尾一致性复验（2026-09-29）** | 取证探针**任意 cwd** 下重跑 → **6/6 PASS**（`backend_root` 自动定位生效）；增量执行器**任意 cwd** 下重跑 → **离线 7/7 通过**（运行态 4 项如实未覆盖）；全量回归**重跑** → **21 failed / 3760 passed**，与基线 `cr149-t36-full.txt` 的 21 项**逐 node id 比对零差异**（`Compare-Object` 双向空）；两个取证脚本 `ruff check` → **All checks passed** |
 
+**批次 8（I-2 生产落线）验证**：
+
+| 项 | 结果 |
+|----|------|
+| **RED**（先建测试） | `test_segment_items_production_wiring.py` → **10 failed / 1 passed**（`format_context_with_items` 不存在；`ComponentRunResult.segment_items` 不存在；真实裁剪未产出明细） |
+| **GREEN** | 同文件 → **11 passed**（同源同序对齐／呈现序随行／字段名归一／原下标兜底／平铺与字符串无身份／真实裁剪产出明细／关闭态无明细） |
+| 相关面回归 | 14 文件 → **208 passed** |
+| 静态检查 | `ruff check`（4 生产文件 ＋ 1 新测试）→ **All checks passed**（含 `B905` 修） |
+| **实际运行验证（3.5）** | L1 `compileall` exit 0 ＋ `import main` OK；L2 真实实例 `Application startup complete.` ＋ 健康 200（`cr149-instance-8041-20260929.log`）；L3 **6/6 PASS**（`cr149-l3-smoke-20260929.json`） |
+| **技术债务增长率（3.4a）** | `ruff C901` ＋ `pylint duplicate-code`，**HEAD 与基线 worktree 两侧比对** ⇒ 新增 TODO **0**／新增高复杂度函数 **3**（达上限，逐函数登记）／重复块增量 **0**（`cr149-debt-growth-20260929.txt`） |
+| **变更一致性自检（3.9b）** | **32 份文档版本全一致**；新增文件路径全落规范目录（`cr149-consistency-selfcheck-20260929.txt`） |
+| 全量回归 | `pytest tests/unit tests/integration` → **3760 passed / 21 failed**；与基线**逐 node id 一致 ⇒ 零新增失败** |
+
 ## 6. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.9.2 | 2026-09-29 | AD-OpenLLM-Dev | **批次 8 续记（I-2 生产落线）＋ 三项门禁补齐**：① 新增 **§3decies** —— 批次 8 实施记录（**G7**：I-2 条目身份在生产**无提供点** ⇒ `dropped` 恒空；已由组装器**同源**产出身份 ＋ 组件执行落 `segment_items` ＋ 双路径同口径传入 ＋ 上游字段名归一闭合）与 **M1~M4** 门禁/交付物补齐（3.4a／3.5／3.9b／3.10）；② TD-14902 落点补**批次 8 生产落线**四文件、状态补注；③ §4 增「本批提交 ⑨」（`2f5364d`）；④ §5 增「批次 8 验证」块（RED 10/1 → GREEN 11 passed；相关面 208；L1/L2/L3；债务 0/3/0；自检通过；全量 3760/21 逐 node id 一致）；⑤ 文头版本/上游依据同步（v1.9.1→**v1.9.2**）。 |
 | v1.9.1 | 2026-09-29 | AD-OpenLLM-Dev | **批次 7 收尾一致性续记 ＋ 新增 G6**：① 架构升 **v1.6.3**（§3.16 顶层 `dropped`「恒有」补入**精确论域＝预算生效请求**，消除与 §3.19 的**字面冲突**，**判据口径不变**）；② **新增 G6（取证缺陷，中，自纠）** —— 探针原判据「键在即齐备」**过弱**（`{"model": null}` 亦 PASS）⇒ 升为「键在且取值非 null」＋ 样本显式提供 `model`；③ 取证探针**去除 cwd 依赖**（backend 根自动定位，定位失败显式报错）⇒ 任意 cwd 下**六项全 PASS** 可复现；④ 文头版本/日期/上游依据同步（v1.9.0→**v1.9.1**、设计补充至 **v1.6.3**）。 |
 | v1.9.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3novies：**批次 7 收尾补漏** —— Step 3 完成度审计按 AC-149-05／10／11 索取**可执行证据**，发现并闭合两处**实现—设计不一致**：① 预算公式**漏安全余量**（补齐 `CONTEXT_SAFETY_MARGIN_TOKENS` 与 `BudgetPolicy.safety_margin_tokens`，`available = 窗口 − 预留 − 余量`）；② 回执**缺 6 个必填字段**（补齐预算四项 ＋ 裁剪前后同口径 token ＋ 聚合标记 ⇒ **AC-149-05 齐备率 100%**）；另自纠 1 处**探针缺陷**（把计量字段名误判为敏感串）。**如实登记「实现先行、设计澄清在后」的顺序偏差**（口径已回写架构 §3.19／v1.6.2）。新增判据探针 `v149_receipt_and_purity_probe.py` ⇒ **AC-149-05／10／11 全 PASS**；另**修正本文档头版本号滞后**（此前正文已至 v1.8.0、头仍 v1.4.0）。TD-14902 状态补注「批次 7 齐备率补齐」。 |
 | v1.8.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3octies：**批次 6（I-9 评测集与判据扩展）** 实施记录 —— 新增 `v149-increment-eval-set.json`（7 项离线用例 ＋ 4 项运行态 `not_covered`）与执行器 `v149_increment_runner.py`（结构校验／逐项执行／`-result.json`／失败非 0 退出码），实测 **7/7 通过、4 项运行态如实未覆盖**；附带把 `message_precheck` 升级为**函数自身 fail-open**（双层保险）。TD-14908 状态改为「已完成」⇒ **批次 1~6 全部落地，9 条 TD-ID 全部收口**，Step 3 进入收尾（静态质量检查／逻辑审查／DevLogReport／Stage3 审计）。 |

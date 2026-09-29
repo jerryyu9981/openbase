@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "version": "v1.4.9",
+    "stage": "Step 3 / 3.5 L3 冒烟",
+    "base_url": "http://127.0.0.1:8041",
+    "model": "auto",
+    "note": "L3 冒烟 6 例；样本量不足以替代 Step 5 的齐备率/超窗率正式统计",
+    "honest_scope": "本环境 memory/rag 检索条目数为 0（openrag unavailable）⇒ 运行时 dropped 为空属预期；history 段为无身份段且本样本只发生文本级硬截断 ⇒ 同样不入明细。条目身份贯通由 unit tests/unit/test_segment_items_production_wiring.py（11 passed）证明；「有身份即出明细」的运行态实测属 Step 4/5（需真实检索数据）。"
+  },
+  "S1_health": {
+    "status": 200,
+    "passed": true,
+    "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0,\"channel\":\"b\"},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2031,"
+  },
+  "samples": [
+    {
+      "label": "short",
+      "ok": true,
+      "status": 200,
+      "request_id": "openllm-7ffcbed216f04cc490f1cba7",
+      "session_id": "smoke-cr149-short-7fc9acb7",
+      "body_sentinel": "CR149SENTINELSHORT",
+      "expect_trim": false,
+      "channels": null
+    },
+    {
+      "label": "long",
+      "ok": true,
+      "status": 200,
+      "request_id": "openllm-5953827b27944fd581c086d3",
+      "session_id": "smoke-cr149-long-dc93e290",
+      "body_sentinel": "CR149SENTINELLONG",
+      "expect_trim": false,
+      "channels": null
+    },
+    {
+      "label": "huge",
+      "ok": true,
+      "status": 200,
+      "request_id": "openllm-36edba7904aa4e64bf5e7d11",
+      "session_id": "smoke-cr149-huge-18936381",
+      "body_sentinel": "CR149SENTINELHUGE",
+      "expect_trim": true,
+      "channels": null
+    }
+  ],
+  "per_sample_checks": [
+    {
+      "label": "short",
+      "ok": true,
+      "problems": [],
+      "passed": true,
+      "dropped_items": 0,
+      "model_window": 8192,
+      "prompt_tokens_before": 112,
+      "prompt_tokens_after": 112,
+      "over_window": false,
+      "degraded": null,
+      "hard_truncated": false
+    },
+    {
+      "label": "long",
+      "ok": true,
+      "problems": [],
+      "passed": true,
+      "dropped_items": 0,
+      "model_window": 8192,
+      "prompt_tokens_before": 1627,
+      "prompt_tokens_after": 1324,
+      "over_window": false,
+      "degraded": null,
+      "hard_truncated": false
+    },
+    {
+      "label": "huge",
+      "ok": true,
+      "problems": [],
+      "passed": true,
+      "dropped_items": 0,
+      "model_window": 8192,
+      "prompt_tokens_before": 1611,
+      "prompt_tokens_after": 910,
+      "over_window": false,
+      "degraded": null,
+      "hard_truncated": true
+    }
+  ],
+  "receipt_snapshot": {
+    "request_id": "openllm-36edba7904aa4e64bf5e7d11",
+    "session_id": "smoke-cr149-huge-18936381",
+    "model": "auto",
+    "created_at": "2026-09-29T00:02:51.132183+00:00",
+    "prompt_total_tokens": 921,
+    "segment_tokens": {
+      "system": 83,
+      "profile": 0,
+      "memory": 0,
+      "rag": 0,
+      "history": 797,
+      "query": 30
+    },
+    "contexts_tokens": 797,
+    "counted": true,
+    "budget": {
+      "system": {
+        "quota": 345,
+        "used": 83
+      },
+      "profile": {
+        "quota": 345,
+        "used": 0
+      },
+      "memory": {
+        "quota": 1935,
+        "used": 0
+      },
+      "rag": {
+        "quota": 2557,
+        "used": 0
+      },
+      "history": {
+        "quota": 1313,
+        "used": 797
+      }
+    },
+    "dropped": [],
+    "over_window": false,
+    "over_window_tokens": 0,
+    "over_window_recovered": false,
+    "model_window": 8192,
+    "output_reserve": 1024,
+    "safety_margin": 256,
+    "available_budget": 6912,
+    "prompt_tokens_before": 1611,
+    "prompt_tokens_after": 910,
+    "hard_truncated": true,
+    "degraded": null,
+    "truncated": {
+      "history": {
+        "dropped_items": 0,
+        "dropped_tokens": 0,
+        "truncated_items": 1,
+        "merged_items": 0,
+        "merged_tokens": 0,
+        "hard_truncated": true
+      }
+    },
+    "refine": {
+      "mode": "rule",
+      "model": "",
+      "in_tokens": 1498,
+      "out_tokens": 797,
+      "elapsed_ms": 0,
+      "fallback": false,
+      "compression": {}
+    },
+    "refine_trigger": {
+      "triggered": false,
+      "reasons": [],
+      "details": {
+        "memory": {
+          "tokens": 0,
+          "quota": 1935,
+          "ratio": 0.0,
+          "items": 0,
+          "dup_share": 0.0
+        },
+        "rag": {
+          "tokens": 0,
+          "quota": 2557,
+          "ratio": 0.0,
+          "items": 0,
+          "dup_share": 0.0
+        }
+      },
+      "unimplemented": [
+        "multi_source_conflict"
+      ]
+    },
+    "refine_placement": {
+      "channel": "online",
+      "triggered": false,
+      "target": "disabled",
+      "allowed": false,
+      "mode": "rule",
+      "placement": "",
+      "budget_ms": 0,
+      "model": "",
+      "capacity_risk": false,
+      "reason": "not_triggered",
+      "target_reason": ""
+    },
+    "memory": {
+      "component": "memory",
+      "items_count": 0,
+      "injected_items": 0,
+      "injected_tokens": 0,
+      "scores": [],
+      "items": []
+    },
+    "rag": {
+      "component": "rag",
+      "items_count": 0,
+      "injected_items": 0,
+      "injected_tokens": 0,
+      "scores": [],
+      "items": []
+    },
+    "attribution_a": {
+      "used": [],
+      "unused": [],
+      "used_ratio": 0.0,
+      "matched_terms": {}
+    }
+  },
+  "S5_existing_semantics": {
+    "passed": true,
+    "receipts_status": 200,
+    "note": "dropped 元素形态在逐样本检查内判定；回执端点 200 证明既有语义未回退"
+  },
+  "S6_hard_truncated_visible": {
+    "passed": true,
+    "observed": {
+      "short": false,
+      "long": false,
+      "huge": true
+    },
+    "note": "I-3 落线（AC-149-03/04）：硬截断标记在运行时可见（本环境长历史样本为 true）"
+  },
+  "passed": true
+}

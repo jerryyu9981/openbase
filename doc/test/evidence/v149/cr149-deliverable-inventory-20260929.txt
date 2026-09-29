@@ -1,0 +1,32 @@
+=== v1.4.9 Step 3 产出物存在性验证（3.10）===
+时间：2026-09-29T00:12:36.487982+00:00
+仓库：D:\Trae CN\myproject\Dev\OpenBase
+
+--- 文档产物 ---
+  OK       doc\design\OpenBase-系统架构设计文档-v1.4.9.md  (33764 B / 334 行)
+  OK       doc\design\OpenBase-API接口设计文档-v1.4.9.md  (5468 B / 84 行)
+  OK       doc\development\OpenBase-设计开发追溯矩阵-v1.4.9.md  (47925 B / 329 行)
+  OK       doc\development\OpenBase-DevLogReport-v1.4.9.md  (25424 B / 184 行)
+  OK       doc\development\OpenBase-静态质量检查记录-v1.4.9.md  (9148 B / 87 行)
+  OK       doc\development\OpenBase-代码逻辑审查记录-v1.4.9.md  (15982 B / 98 行)
+  OK       doc\development\OpenBase-开发审计移交材料-v1.4.9.md  (11963 B / 131 行)
+  OK       doc\audit\review\OpenBase-阶段审计报告-Stage3-v1.4.9.md  (21507 B / 168 行)
+
+--- 证据文件 ---
+  OK       doc\test\evidence\cr149\v149-increment-eval-set.json  (5265 B / 103 行)
+  OK       doc\test\evidence\cr149\v149_increment_runner.py  (16337 B / 358 行)
+  OK       doc\test\evidence\cr149\v149_increment_runner-result.json  (5034 B / 122 行)
+  OK       doc\test\evidence\cr149\v149_receipt_and_purity_probe.py  (17186 B / 390 行)
+  OK       doc\test\evidence\cr149\v149_receipt_and_purity_probe-result.json  (3311 B / 130 行)
+  OK       doc\test\evidence\v149\cr149-l1-compile-20260929.txt  (2439 B / 25 行)
+  OK       doc\test\evidence\v149\cr149-instance-8041-20260929.log  (19097 B / 99 行)
+  OK       doc\test\evidence\v149\cr149-l3-smoke-20260929.py  (15149 B / 346 行)
+  OK       doc\test\evidence\v149\cr149-l3-smoke-20260929.json  (6236 B / 231 行)
+  OK       doc\test\evidence\v149\cr149-debt-growth-20260929.txt  (14303 B / 359 行)
+  OK       doc\test\evidence\v149\cr149-consistency-selfcheck-20260929.txt  (4282 B / 67 行)
+  OK       doc\test\evidence\v149\cr149-deliverable-inventory-20260929.txt  (2070 B / 32 行)
+
+TOTAL FILES: 20
+EMPTY FILES: 0
+MISSING FILES: 0
+判定：**通过**（全部存在且非空）

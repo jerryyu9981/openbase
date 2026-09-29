@@ -1,0 +1,359 @@
+=== v1.4.9 Step 3 技术债务增长率检查（3.4a）===
+时间：2026-09-28T23:54:43.780182+00:00
+仓库：D:\Trae CN\myproject\Dev\OpenLLM
+基线（上一版本 v1.4.8 收口点）：d7742c706d1f5d9990753c9efe9b027e0e68239d
+当前 HEAD：2f5364d3e90b8cb61fcab65be7c749e17f3278b9
+
+--- 变更统计（d7742c7..HEAD）---
+backend/app/api/openllm_gateway.py                 | 116 ++++-
+ backend/app/core/config.py                         |  29 ++
+ backend/app/edgerouter/orchestration/assembler.py  |  91 +++-
+ .../edgerouter/orchestration/component_pipeline.py | 123 ++++-
+ .../edgerouter/orchestration/context_metrics.py    |  20 +
+ backend/app/edgerouter/orchestration/evaluate.py   |  38 ++
+ backend/app/edgerouter/orchestration/executor.py   |  19 +
+ .../orchestration/profile_refine_gate.py           |  20 +
+ .../edgerouter/orchestration/prompt_pipeline.py    | 519 ++++++++++++++++++---
+ backend/app/identity/channel.py                    |  77 +++
+ backend/app/identity/channel_audit.py              |  95 +++-
+ backend/app/services/writeback_queue.py            |  72 +++
+ backend/main.py                                    |  14 +
+ .../tests/unit/test_channel_audit_action_codes.py  | 193 ++++++++
+ backend/tests/unit/test_channel_failover_audit.py  |  15 +-
+ .../unit/test_component_channel_audit_wiring.py    | 137 ++++++
+ .../tests/unit/test_component_channel_routing.py   | 194 ++++++++
+ .../unit/test_context_cross_segment_competition.py | 128 +++++
+ backend/tests/unit/test_context_dropped_detail.py  | 201 ++++++++
+ .../unit/test_context_over_window_verifier.py      | 194 ++++++++
+ backend/tests/unit/test_context_receipt_fields.py  | 207 ++++++++
+ backend/tests/unit/test_context_trim_markers.py    |  98 ++++
+ .../unit/test_profile_delta_and_precheck_wiring.py | 215 +++++++++
+ .../unit/test_segment_items_production_wiring.py   | 191 ++++++++
+ ...351\227\255\347\216\257-DevLogReport-v1.0.0.md" |  10 +-
+ 25 files changed, 2927 insertions(+), 89 deletions(-)
+
+--- 本版本**生产**改动面（13 个 .py，来自 git diff）---
+  app/api/openllm_gateway.py
+  app/core/config.py
+  app/edgerouter/orchestration/assembler.py
+  app/edgerouter/orchestration/component_pipeline.py
+  app/edgerouter/orchestration/context_metrics.py
+  app/edgerouter/orchestration/evaluate.py
+  app/edgerouter/orchestration/executor.py
+  app/edgerouter/orchestration/profile_refine_gate.py
+  app/edgerouter/orchestration/prompt_pipeline.py
+  app/identity/channel.py
+  app/identity/channel_audit.py
+  app/services/writeback_queue.py
+  main.py
+
+=== 项 1：新增 TODO 数（阈值 ≤5）===
+口径：正则 'TODO|FIXME|XXX|HACK'（**大小写敏感**）在**新增行**（diff '+' 行，排除 '+++'）逐行匹配
+新增行总数：2927；命中行数：0
+命中明细：无
+结论：新增 TODO = **0**（阈值 ≤5 ⇒ 通过）
+
+--- 基线独立检出（git worktree，供「新增」判定）---
+HEAD is now at d7742c7 feat(v149): 统一前端（OpenBase openbase-ui）接口准备——装配模板可配置+严格校验+段标记同源派生、试装配预览、保真度对比（网关面5条+管理面5条）
+Preparing worktree (detached HEAD d7742c7)
+Updating files:   7% (409/5744)
+Updating files:   8% (460/5744)
+Updating files:   9% (517/5744)
+Updating files:  10% (575/5744)
+Updating files:  11% (632/5744)
+Updating files:  12% (690/5744)
+Updating files:  13% (747/5744)
+Updating files:  14% (805/5744)
+Updating files:  14% (842/5744)
+Updating files:  15% (862/5744)
+Updating files:  16% (920/5744)
+Updating files:  17% (977/5744)
+Updating files:  18% (1034/5744)
+Updating files:  19% (1092/5744)
+Updating files:  20% (1149/5744)
+Updating files:  21% (1207/5744)
+Updating files:  21% (1228/5744)
+Updating files:  22% (1264/5744)
+Updating files:  23% (1322/5744)
+Updating files:  24% (1379/5744)
+Updating files:  25% (1436/5744)
+Updating files:  26% (1494/5744)
+Updating files:  27% (1551/5744)
+Updating files:  28% (1609/5744)
+Updating files:  28% (1632/5744)
+Updating files:  29% (1666/5744)
+Updating files:  30% (1724/5744)
+Updating files:  30% (1766/5744)
+Updating files:  31% (1781/5744)
+Updating files:  32% (1839/5744)
+Updating files:  33% (1896/5744)
+Updating files:  34% (1953/5744)
+Updating files:  35% (2011/5744)
+Updating files:  36% (2068/5744)
+Updating files:  37% (2126/5744)
+Updating files:  38% (2183/5744)
+Updating files:  39% (2241/5744)
+Updating files:  39% (2250/5744)
+Updating files:  40% (2298/5744)
+Updating files:  41% (2356/5744)
+Updating files:  42% (2413/5744)
+Updating files:  43% (2470/5744)
+Updating files:  44% (2528/5744)
+Updating files:  45% (2585/5744)
+Updating files:  46% (2643/5744)
+Updating files:  47% (2700/5744)
+Updating files:  47% (2710/5744)
+Updating files:  48% (2758/5744)
+Updating files:  49% (2815/5744)
+Updating files:  50% (2872/5744)
+Updating files:  51% (2930/5744)
+Updating files:  52% (2987/5744)
+Updating files:  53% (3045/5744)
+Updating files:  54% (3102/5744)
+Updating files:  55% (3160/5744)
+Updating files:  56% (3217/5744)
+Updating files:  56% (3251/5744)
+Updating files:  57% (3275/5744)
+Updating files:  58% (3332/5744)
+Updating files:  59% (3389/5744)
+Updating files:  60% (3447/5744)
+Updating files:  61% (3504/5744)
+Updating files:  62% (3562/5744)
+Updating files:  63% (3619/5744)
+Updating files:  64% (3677/5744)
+Updating files:  64% (3723/5744)
+Updating files:  65% (3734/5744)
+Updating files:  66% (3792/5744)
+Updating files:  67% (3849/5744)
+Updating files:  68% (3906/5744)
+Updating files:  69% (3964/5744)
+Updating files:  70% (4021/5744)
+Updating files:  71% (4079/5744)
+Updating files:  72% (4136/5744)
+Updating files:  73% (4194/5744)
+Updating files:  73% (4202/5744)
+Updating files:  74% (4251/5744)
+Updating files:  75% (4308/5744)
+Updating files:  76% (4366/5744)
+Updating files:  77% (4423/5744)
+Updating files:  78% (4481/5744)
+Updating files:  79% (4538/5744)
+Updating files:  80% (4596/5744)
+Updating files:  81% (4653/5744)
+Updating files:  81% (4707/5744)
+Updating files:  82% (4711/5744)
+Updating files:  83% (4768/5744)
+Updating files:  84% (4825/5744)
+Updating files:  85% (4883/5744)
+Updating files:  86% (4940/5744)
+Updating files:  87% (4998/5744)
+Updating files:  88% (5055/5744)
+Updating files:  89% (5113/5744)
+Updating files:  89% (5158/5744)
+Updating files:  90% (5170/5744)
+Updating files:  91% (5228/5744)
+Updating files:  92% (5285/5744)
+Updating files:  93% (5342/5744)
+Updating files:  94% (5400/5744)
+Updating files:  95% (5457/5744)
+Updating files:  96% (5515/5744)
+Updating files:  97% (5572/5744)
+Updating files:  98% (5630/5744)
+Updating files:  99% (5687/5744)
+Updating files: 100% (5744/5744)
+Updating files: 100% (5744/5744), done.
+
+=== 项 2：新增高复杂度函数数（阈值 ≤3；单函数圈复杂度 ≤15）===
+工具：ruff `--select C901`（mccabe）`max-complexity=15`（**实测**）
+[HEAD] 超阈函数 = 8 个；[基线] 超阈函数 = 5 个
+[HEAD] 原始输出：
+C901 `_build_writeback_callback` is too complex (16 > 15)
+    --> app\api\openllm_gateway.py:1121:5
+     |
+1121 | def _build_writeback_callback(
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+1122 |     identity: "GatewayIdentity",
+1123 |     request_id: str,
+     |
+
+C901 `_stream_llm` is too complex (16 > 15)
+    --> app\api\openllm_gateway.py:2658:11
+     |
+2658 | async def _stream_llm(
+     |           ^^^^^^^^^^^
+2659 |     db: Session,
+2660 |     identity: GatewayIdentity,
+     |
+
+C901 `openllm_chat` is too complex (24 > 15)
+    --> app\api\openllm_gateway.py:3723:11
+     |
+3722 | @router.post("/chat")
+3723 | async def openllm_chat(
+     |           ^^^^^^^^^^^^
+3724 |     request: Request,
+3725 |     chat_req: OpenLLMChatRequest,
+     |
+
+C901 `openllm_chat_stream` is too complex (20 > 15)
+    --> app\api\openllm_gateway.py:4040:11
+     |
+4039 | @router.post("/chat/stream")
+4040 | async def openllm_chat_stream(
+     |           ^^^^^^^^^^^^^^^^^^^
+4041 |     request: Request,
+4042 |     chat_req: OpenLLMChatRequest,
+     |
+
+C901 `generate` is too complex (16 > 15)
+    --> app\api\openllm_gateway.py:4090:15
+     |
+4088 |     }
+4089 |
+4090 |     async def generate() -> AsyncGenerator[str, None]:
+     |               ^^^^^^^^
+4091 |         timeline = [{"step": "auth", "ms": 0}]
+4092 |         usage_holder: dict[str, Any] = {}
+     |
+
+C901 `run_components` is too complex (26 > 15)
+   --> app\edgerouter\orchestration\component_pipeline.py:170:11
+    |
+170 | async def run_components(
+    |           ^^^^^^^^^^^^^^
+171 |     *,
+172 |     pipeline: list[dict] | None,
+    |
+
+C901 `_trim_segment` is too complex (25 > 15)
+   --> app\edgerouter\orchestration\prompt_pipeline.py:588:5
+    |
+588 | def _trim_segment(
+    |     ^^^^^^^^^^^^^
+589 |     segment: str,
+590 |     text: str,
+    |
+
+C901 `lifespan` is too complex (21 > 15)
+  --> main.py:88:11
+   |
+87 | @asynccontextmanager
+88 | async def lifespan(app: FastAPI):
+   |           ^^^^^^^^
+89 |     """
+90 |     应用生命周期管理
+   |
+
+Found 8 errors.
+[基线] 原始输出：
+C901 `_stream_llm` is too complex (16 > 15)
+    --> app\api\openllm_gateway.py:2556:11
+     |
+2556 | async def _stream_llm(
+     |           ^^^^^^^^^^^
+2557 |     db: Session,
+2558 |     identity: GatewayIdentity,
+     |
+
+C901 `openllm_chat` is too complex (24 > 15)
+    --> app\api\openllm_gateway.py:3621:11
+     |
+3620 | @router.post("/chat")
+3621 | async def openllm_chat(
+     |           ^^^^^^^^^^^^
+3622 |     request: Request,
+3623 |     chat_req: OpenLLMChatRequest,
+     |
+
+C901 `openllm_chat_stream` is too complex (19 > 15)
+    --> app\api\openllm_gateway.py:3938:11
+     |
+3937 | @router.post("/chat/stream")
+3938 | async def openllm_chat_stream(
+     |           ^^^^^^^^^^^^^^^^^^^
+3939 |     request: Request,
+3940 |     chat_req: OpenLLMChatRequest,
+     |
+
+C901 `_trim_segment` is too complex (20 > 15)
+   --> app\edgerouter\orchestration\prompt_pipeline.py:497:5
+    |
+497 | def _trim_segment(
+    |     ^^^^^^^^^^^^^
+498 |     segment: str,
+499 |     text: str,
+    |
+
+C901 `lifespan` is too complex (19 > 15)
+  --> main.py:88:11
+   |
+87 | @asynccontextmanager
+88 | async def lifespan(app: FastAPI):
+   |           ^^^^^^^^
+89 |     """
+90 |     应用生命周期管理
+   |
+
+Found 5 errors.
+新增超阈函数（HEAD − 基线）= **3** 个：
+  app\api\openllm_gateway.py::_build_writeback_callback
+  app\api\openllm_gateway.py::generate
+  app\edgerouter\orchestration\component_pipeline.py::run_components
+结论：新增高复杂度函数 = **3**（阈值 ≤3 ⇒ 通过）
+
+=== 项 3：代码重复率增量（阈值 ≤2%）===
+工具：pylint `--enable=duplicate-code` `--min-similarity-lines=10`，扫描面 `app/` 全包（**实测**）
+[HEAD] R0801 重复块 = 22；[基线] R0801 重复块 = 22
+[HEAD] 重复块输出：
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+[基线] 重复块输出：
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+app\services\__init__.py:1:0: R0801: Similar lines in 2 files
+结论：R0801 增量 = **0**（HEAD 22 − 基线 22） ⇒ 阈值 ≤2% ⇒ 通过（重复块数未增加即**无增量**）
+
+--- 清理：移除基线 worktree ---
+（已移除）
+
+=== 结论 ===
+三项门禁：新增 TODO **0**（≤5）/ 新增高复杂度函数 **3**（≤3）/ 重复块增量 **0**（≤2%）—— **三项均为工具实测 ＋ 两侧比对**；**无 P0 级超阈值**（三项全超或任一超 2 倍均未发生）⇒ **无需申请豁免**。
