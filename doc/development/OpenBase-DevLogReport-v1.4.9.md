@@ -172,7 +172,7 @@
 | 层 | 判据 | 实测证据（含实际输出片段口径） | 结果 |
 |:--:|------|-------------------------------|:----:|
 | **L1 构建** | 构建/编译零错误、产物可导入 | `cr149-l1-compile-20260929.txt`：`python -m compileall -q app main.py` → `exit_code=0`；`python -c "import main"` → `import main OK; app.title= OpenLLM`； `exit_code=0` | ✅ |
-| **L2 启动** | 服务启动、健康检查通过 | `cr149-instance-8041-20260929.log`（19 KB）：`EdgeRouter 初始化完成`／`回写队列启动恢复完成: 0 条待重跑`／`Application startup complete.`／`Uvicorn running on http://127.0.0.1:8041`；`GET /openllm/v1/health` → **200**（`status=healthy`） | ✅ |
+| **L2 启动** | 服务启动、健康检查通过 | `cr149-instance-8041-20260929.txt`（577 行 / 约 178 KB；**原名 `.log` 被 `.gitignore` 排除 ⇒ 已改名 `.txt` 以便入仓留痕**）：`EdgeRouter 初始化完成`／`回写队列启动恢复完成: 0 条待重跑`／`Application startup complete.`／`Uvicorn running on http://127.0.0.1:8041`；`GET /openllm/v1/health` → **200**（`status=healthy`）；另含**组件级降级如实留痕**（`open_memory 不可用` 重试至上限的 ERROR 行，非静默） | ✅ |
 | **L3 冒烟** | 3~5 个核心用例全通过 | `cr149-l3-smoke-20260929.json`：**6 例全 PASS** —— S1 健康 200；S2 回执齐备（10 项必填**键在且取值非 null**，`available_budget = 窗口 − 预留 − 余量` 自洽）；S3 超窗率 0（`over_window=false` 且 `prompt_total_tokens ≤ model_window`）；S4 无敏感键名/凭据形态/**本轮正文哨兵**；S5 明细口径自洽（`len(dropped) ≤ Σ dropped_items`，元素仅 `source`/`id`/`reason`）＋ 既有回执端点 200；S6 硬截断标记可见（长历史样本 `hard_truncated=true`） | ✅ |
 
 **如实声明（不夸大）**：L3 为**冒烟**（样本量小），**不能替代** Step 5 的齐备率/超窗率**正式统计**；本环境 `memory`/`rag` 检索条目数为 **0**（`openrag` 组件 `unavailable`）⇒ 运行时 `dropped` 为空**属预期**（无条目即无整条丢弃；`history` 段为无身份段且仅发生文本级硬截断）——**条目身份贯通**由单元护栏（批次 8，11 passed）证明，**有身份即出明细**的运行态实测移交 Step 4/5。

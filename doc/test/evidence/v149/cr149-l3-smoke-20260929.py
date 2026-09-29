@@ -1,6 +1,8 @@
 """v1.4.9 Step 3 / 3.5 实际运行验证 —— **L3 冒烟**（真实实例，非夹具）
 
-用法（需先启动 8041 实例；见 `doc/test/evidence/v149/cr149-instance-8041-20260929.log`）::
+用法（需先启动 8041 实例；启动日志见
+`doc/test/evidence/v149/cr149-instance-8041-20260929.txt` —— **原名 `.log` 被 `.gitignore`
+排除，故改名 `.txt` 以便入仓留痕**）::
 
     python cr149-l3-smoke-20260929.py
 

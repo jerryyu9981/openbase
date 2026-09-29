@@ -47,16 +47,16 @@
 
 | # | 文件 | 变更 | 版本 |
 |:-:|------|------|:----:|
-| 1 | `doc/development/OpenBase-开发审计移交材料-v1.4.9.md` | **新建（本材料）** | v1.0.0 |
+| 1 | `doc/development/OpenBase-开发审计移交材料-v1.4.9.md` | **新建（本材料）** | v1.0.1 |
 | 2 | `doc/design/OpenBase-系统架构设计文档-v1.4.9.md` | 修改（§3.19 设计补充 F ＋ §3.16 论域澄清） | **v1.6.3** |
 | 3 | `doc/design/OpenBase-API接口设计文档-v1.4.9.md` | 修改（回执契约与实现对齐） | **v1.3.0** |
-| 4 | `doc/development/OpenBase-设计开发追溯矩阵-v1.4.9.md` | 修改（批次 1~8 记录；TD-14901~14909） | **v1.9.1** |
-| 5 | `doc/development/OpenBase-DevLogReport-v1.4.9.md` | 修改（逐批次实现／验证／债务／运行验证） | **v1.1.2** |
-| 6 | `doc/development/OpenBase-静态质量检查记录-v1.4.9.md` | 修改（7＋7′ 批次 ＋ 债务增长率） | **v1.1.2** |
-| 7 | `doc/development/OpenBase-代码逻辑审查记录-v1.4.9.md` | 修改（16 项发现／一致性核对） | **v1.3.0** |
-| 8 | `doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.9.md` | 修改（G1~G7 ＋ 门禁补 3.4a/3.5/3.9b） | **v1.3.0** |
+| 4 | `doc/development/OpenBase-设计开发追溯矩阵-v1.4.9.md` | 修改（批次 1~8 记录；TD-14901~14909） | **v1.9.3** |
+| 5 | `doc/development/OpenBase-DevLogReport-v1.4.9.md` | 修改（逐批次实现／验证／债务／运行验证／回归事故） | **v1.1.3** |
+| 6 | `doc/development/OpenBase-静态质量检查记录-v1.4.9.md` | 修改（7＋7′＋8 批次 ＋ 债务增长率） | **v1.1.2** |
+| 7 | `doc/development/OpenBase-代码逻辑审查记录-v1.4.9.md` | 修改（18 项发现／一致性核对） | **v1.3.1** |
+| 8 | `doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.9.md` | 修改（G1~G8 ＋ 门禁补 3.4a/3.5/3.9b） | **v1.3.1** |
 | 14~18 | `doc/test/evidence/cr149/`：`v149-increment-eval-set.json`／`v149_increment_runner.py`／`v149_increment_runner-result.json`／`v149_receipt_and_purity_probe.py`／`v149_receipt_and_purity_probe-result.json` | 新建（批次 6/7 证据） | — |
-| 19~25 | `doc/test/evidence/v149/`：`cr149-l1-compile-20260929.txt`／`cr149-instance-8041-20260929.log`／`cr149-l3-smoke-20260929.py`／`cr149-l3-smoke-20260929.json`／`cr149-debt-growth-20260929.txt`／`cr149-consistency-selfcheck-20260929.txt`／`cr149-deliverable-inventory-20260929.txt` | 新建（本批 3.4a／3.5／3.9b／3.10 证据） | — |
+| 19~25 | `doc/test/evidence/v149/`：`cr149-l1-compile-20260929.txt`／`cr149-instance-8041-20260929.txt`（**原名 `.log` 被 `.gitignore` 排除 ⇒ 改名 `.txt` 以便入仓留痕**）／`cr149-l3-smoke-20260929.py`／`cr149-l3-smoke-20260929.json`／`cr149-debt-growth-20260929.txt`／`cr149-consistency-selfcheck-20260929.txt`／`cr149-deliverable-inventory-20260929.txt` | 新建（本批 3.4a／3.5／3.9b／3.10 证据） | — |
 
 ### 2.3 既有文档状态流转
 
@@ -75,7 +75,7 @@
 | 入场确认（需求 ＋ 设计已批准） | 《Stage2 阶段审计报告-v1.4.9》v1.0.4（[Approved]） | ✅ |
 | 3.4a 语法与一致性检查 | 《静态质量检查记录-v1.4.9》v1.1.2 §1／§2（改动面 `ruff` 0 告警 ＋ `compileall` 通过） | ✅ |
 | **3.4a 技术债务增长率** | 《DevLogReport-v1.4.9》§7 ＋ `cr149-debt-growth-20260929.txt`（**工具实测 ＋ 两侧比对**）：新增 TODO **0**（≤5）／新增高复杂度函数 **3**（≤3，**达阈值上限**，已逐函数登记）／重复块增量 **0**（≤2%） | ✅（附注） |
-| **3.5 实际运行验证 L1/L2/L3** | `cr149-l1-compile-20260929.txt`（L1：`compileall` exit 0 ＋ `import main` OK）／`cr149-instance-8041-20260929.log`（L2：`Application startup complete.` ＋ `Uvicorn running on 127.0.0.1:8041`，健康检查 200）／`cr149-l3-smoke-20260929.json`（L3：**6 例全 PASS**） | ✅ |
+| **3.5 实际运行验证 L1/L2/L3** | `cr149-l1-compile-20260929.txt`（L1：`compileall` exit 0 ＋ `import main` OK）／`cr149-instance-8041-20260929.txt`（L2：`Application startup complete.` ＋ `Uvicorn running on 127.0.0.1:8041`，健康检查 200；**原名 `.log` 被 gitignore ⇒ 改名 `.txt` 入仓**）／`cr149-l3-smoke-20260929.json`（L3：**6 例全 PASS**） | ✅ |
 | 3.6 开发自测 | 相关面 14 文件 **208 passed**；全量 `pytest tests/unit tests/integration` → **3772 passed / 21 failed**（＝基线 3760 ＋ 本版新增 12 例；与基线**逐 node id 一致** ⇒ **零新增失败**） | ✅ |
 | 3.7a 代码逻辑审查 | 《代码逻辑审查记录-v1.4.9》v1.3.1（9 条 TD 全收口；10 项不变量有结构性论证 ＋ 反例护栏；**18 项**发现**均已闭合**） | ✅ |
 | **3.9b 变更一致性自检** | `cr149-consistency-selfcheck-20260929.txt`：① 命名合规（**如实登记**：本仓**无** `validate-naming.ps1` ⇒ 以规范核对等价执行）② 文件头 vs 修订历史版本 **33 份全一致** ③ 新增文件路径全落规范目录 ⇒ **通过** | ✅ |
@@ -128,5 +128,5 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
-| v1.0.1 | 2026-09-29 | AD-OpenLLM-Dev | **回归事故更正（如实登记）**：① §3 第 3.6 行**全量回归真值更正** —— **3772 passed / 21 failed**（＝基线 3760 ＋ 本版新增 12 例；21 项与基线**逐 node id 一致**），原记 3760 为**未含本版新测试**的旧值；② §3 第 3.7a 行审查记录版本 v1.3.0 → **v1.3.1**、发现项 17 → **18 项**（新增发现项 18：批次 8 首次全量回归新增 11 项失败 —— 既有测试桩组装器缺 `format_context_with_items` ⇒ 以**向后兼容退回**修复并补护栏）；③ 文头版本同步（v1.0.0 → **v1.0.1**）。**结论不变**：具备进入开发审计（未闭环 P0/P1 = 0）。 |
+| v1.0.1 | 2026-09-29 | AD-OpenLLM-Dev | **回归事故更正（如实登记）**：① §3 第 3.6 行**全量回归真值更正** —— **3772 passed / 21 failed**（＝基线 3760 ＋ 本版新增 12 例；21 项与基线**逐 node id 一致**），原记 3760 为**未含本版新测试**的旧值；② §3 第 3.7a 行审查记录版本 v1.3.0 → **v1.3.1**、发现项 17 → **18 项**（新增发现项 18：批次 8 首次全量回归新增 11 项失败 —— 既有测试桩组装器缺 `format_context_with_items` ⇒ 以**向后兼容退回**修复并补护栏）；③ **L2 启动日志证据改名入仓** —— 原名 `cr149-instance-8041-20260929.log` **被 `.gitignore` 排除**（无法留痕）⇒ 改名 **`.txt`**（内容为同一份原始日志，577 行），并把该「日志类证据不入仓」的坑**显式登记**；④ §2.2 各文档版本、§4 证据清单、文头版本（v1.0.0 → **v1.0.1**）同步。**结论不变**：具备进入开发审计（未闭环 P0/P1 = 0）。 |
 | v1.0.0 | 2026-09-29 | AD-OpenLLM-Dev | 初始创建（`coding-stage-execution` §3.10 开发审计移交）：Step 3 范围与结论、变更集清单（OpenLLM 13 生产 ＋ 11 测试＝2927 insertions/89 deletions、9 笔提交；OpenBase 6 份同步件 ＋ 11 份证据）、**10 项门禁证据摘要（含 3.4a 债务增长率 0/3/0、3.5 L1/L2/L3、3.9b 变更一致性自检）**、产出物存在性验证、风险 4 项与遗留/受限项 7 类如实登记（含「实现先行、澄清后补」顺序偏差与 2 项取证工具缺陷自纠）。状态 [Review] |

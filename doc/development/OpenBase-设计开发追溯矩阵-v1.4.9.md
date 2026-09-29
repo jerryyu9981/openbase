@@ -306,7 +306,7 @@
 | **GREEN** | 同文件 → **12 passed**（同源同序对齐／呈现序随行／字段名归一／原下标兜底／平铺与字符串无身份／真实裁剪产出明细／关闭态无明细／**桩组装器缺新接口退回纯文本**） |
 | 相关面回归 | 14 文件 → **208 passed** |
 | 静态检查 | `ruff check`（4 生产文件 ＋ 1 新测试）→ **All checks passed**（含 `B905` 修） |
-| **实际运行验证（3.5）** | L1 `compileall` exit 0 ＋ `import main` OK；L2 真实实例 `Application startup complete.` ＋ 健康 200（`cr149-instance-8041-20260929.log`）；L3 **6/6 PASS**（`cr149-l3-smoke-20260929.json`） |
+| **实际运行验证（3.5）** | L1 `compileall` exit 0 ＋ `import main` OK；L2 真实实例 `Application startup complete.` ＋ 健康 200（`cr149-instance-8041-20260929.txt`，577 行；**原名 `.log` 被 gitignore ⇒ 改名 `.txt` 入仓**）；L3 **6/6 PASS**（`cr149-l3-smoke-20260929.json`） |
 | **技术债务增长率（3.4a）** | `ruff C901` ＋ `pylint duplicate-code`，**HEAD 与基线 worktree 两侧比对** ⇒ 新增 TODO **0**／新增高复杂度函数 **3**（达上限，逐函数登记）／重复块增量 **0**（`cr149-debt-growth-20260929.txt`） |
 | **变更一致性自检（3.9b）** | **33 份文档版本全一致**；新增文件路径全落规范目录（`cr149-consistency-selfcheck-20260929.txt`） |
 | 全量回归 | `pytest tests/unit tests/integration` → **3772 passed / 21 failed**（＝基线 3760 ＋ 本批 **12** 例）；与基线**逐 node id 一致 ⇒ 零新增失败** |
