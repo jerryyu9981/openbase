@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像模板 新建／编辑 - OpenBase v1.4.10</title>
+<link rel="stylesheet" href="proto.css">
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="ob-menu-group">业务模块</div>
+      <a class="ob-menu-item" href="index.html"><span class="dot"></span>设计总览</a>
+      <a class="ob-menu-item" href="p01-templates.html"><span class="dot"></span>模板族管理</a>
+      <a class="ob-menu-item" href="p02-versions.html"><span class="dot"></span>版本对比与回滚</a>
+      <a class="ob-menu-item" href="p03-preflight.html"><span class="dot"></span>预检与影响面</a>
+      <a class="ob-menu-item" href="p04-packages.html"><span class="dot"></span>包导出／导入</a>
+      <a class="ob-menu-item" href="p05-lineage.html"><span class="dot"></span>标签血缘反查</a>
+      <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
+      <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
+      <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <a class="ob-menu-item is-active" href="p09-template-edit.html"><span class="dot"></span>画像模板新建／编辑</a>
+      <a class="ob-menu-item" href="p10-annotation-templates.html"><span class="dot"></span>标注模板管理</a>
+      <a class="ob-menu-item" href="p11-annotation-fields.html"><span class="dot"></span>标注字段与归属</a>
+      <a class="ob-menu-item" href="p12-tags.html"><span class="dot"></span>标签体系</a>
+      <div class="ob-menu-group">平台管理</div>
+      <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
+      <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">画像模板 新建／编辑</div><div class="ob-user">admin ▾</div></header>
+
+    <main class="ob-main">
+      <div class="ob-breadcrumb">DPS 模板化 <span class="sep">/</span> <a href="p01-templates.html">模板族管理</a> <span class="sep">/</span> 新建／编辑</div>
+      <div class="ob-page-head">
+        <div>
+          <h1 class="ob-page-title">画像模板 新建／编辑</h1>
+          <div class="ob-page-desc">RT-1410-23 · DT-1410-28 · 端点 #13（创建）／#14（更新）／#12（详情回填）</div>
+        </div>
+      </div>
+
+      <div class="el-alert el-alert--info">
+        <div class="el-alert__title">保存后版本自动递增（v1 → v2）并写入模板变更历史；code 创建后不可修改。</div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>基本信息</span><span class="sm muted">必填项标 *</span></div>
+        <div class="el-card__body">
+          <div class="el-form-item"><label>code *</label><span class="el-input" style="width:280px">cc-persona-v1</span><span class="sm muted">唯一标识；重复 → 409</span></div>
+          <div class="el-form-item"><label>name *</label><span class="el-input" style="width:280px">客服画像模板 v1</span></div>
+          <div class="el-form-item"><label>profile_type</label><span class="el-select" style="min-width:160px">persona ▾</span><span class="sm muted">默认 persona</span></div>
+          <div class="el-form-item"><label>subject_type</label><span class="el-select" style="min-width:160px">person ▾</span><span class="sm muted">默认 person</span></div>
+          <div class="el-form-item"><label>status</label><span class="el-select" style="min-width:160px">active ▾</span><span class="sm muted">active／inactive／draft</span></div>
+          <div class="el-form-item"><label>description</label><span class="el-input el-input--textarea" style="width:420px">本次新建用于客服场景…</span></div>
+        </div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>继承 extends</span><span class="sm muted">深度 ≤ 2 层</span></div>
+        <div class="el-card__body">
+          <div class="page-toolbar">
+            <span class="el-select" style="min-width:260px">cc-base（父模板） ▾</span>
+            <button class="el-button el-button--small">校验继承链</button>
+          </div>
+          <div class="el-alert el-alert--warning">
+            <div class="el-alert__title">约束：不得指向自身、不得成环、深度上限 2 层、父模板必须存在。候选已排除自身与成环项；最终以服务端 400 为准。</div>
+          </div>
+          <table class="el-table el-table--stripe mt-12">
+            <thead><tr><th style="width:240px">继承链</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><span class="el-tag">cc-persona-v1</span></td><td>当前模板（第 1 层）</td></tr>
+              <tr><td><span class="el-tag el-tag--info">cc-base · 已选父模板</span></td><td>第 2 层（其上无继承 ⇒ 合法）</td></tr>
+            </tbody>
+          </table>
+          <div class="sm muted mt-8">维度解析口径：父维度先入 → 子覆盖同名 → 追加新维度。</div>
+        </div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>配置块（JSON 原样编辑）</span><span class="sm muted">前端不解析内部结构</span></div>
+        <div class="el-card__body">
+          <div class="code-block">dimension_config: { "dimensions": [ { "code": "service", "weight": 0.4, "rules": [] } ] }</div>
+          <div class="code-block mt-8">attributes_schema: { }</div>
+          <div class="code-block mt-8">tag_bindings: [ ]&nbsp;&nbsp;<span class="muted">// 上游无结构与校验，原样保存</span></div>
+          <div class="code-block mt-8">evidence_policy: { }</div>
+          <div class="code-block mt-8">anomaly_rules: { }</div>
+          <div class="sm muted mt-8">维度权重须在 0~1；dimensions 不得为空数组（上游校验）。</div>
+        </div>
+      </div>
+
+      <div class="page-toolbar mt-16">
+        <button class="el-button el-button--primary">保存</button>
+        <button class="el-button">取消</button>
+        <span class="sm muted">保存中按钮置灰（表单提交态）</span>
+      </div>
+
+      <div class="ob-spec mt-16">
+        <div class="ob-spec__title">本页状态与易操作性说明（P-09）</div>
+        <ul>
+          <li><b>覆盖状态</b>：加载态（详情回填）／表单提交态（保存置灰）／成功态（版本递增提示）／错误态 400（字段级原因逐条）／409（code 已存在 → 提示改名）／权限态 403。</li>
+          <li><b>继承校验</b>：前端仅即时提示（排除自身与成环项、显示深度上限），不做业务判定，以服务端 400 为准（BR-1410-02）。</li>
+          <li><b>易操作性</b>：code 置顶且创建后置灰；配置块顺序固定；保存前统一校验并定位到首个错误字段。</li>
+          <li><b>禁则</b>：不假设 tag_bindings 结构；不构造身份头；不直连 DPS。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

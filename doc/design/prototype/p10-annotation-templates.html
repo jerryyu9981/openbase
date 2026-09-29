@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>标注模板管理 - OpenBase v1.4.10</title>
+<link rel="stylesheet" href="proto.css">
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="ob-menu-group">业务模块</div>
+      <a class="ob-menu-item" href="index.html"><span class="dot"></span>设计总览</a>
+      <a class="ob-menu-item" href="p01-templates.html"><span class="dot"></span>模板族管理</a>
+      <a class="ob-menu-item" href="p02-versions.html"><span class="dot"></span>版本对比与回滚</a>
+      <a class="ob-menu-item" href="p03-preflight.html"><span class="dot"></span>预检与影响面</a>
+      <a class="ob-menu-item" href="p04-packages.html"><span class="dot"></span>包导出／导入</a>
+      <a class="ob-menu-item" href="p05-lineage.html"><span class="dot"></span>标签血缘反查</a>
+      <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
+      <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
+      <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <a class="ob-menu-item" href="p09-template-edit.html"><span class="dot"></span>画像模板新建／编辑</a>
+      <a class="ob-menu-item is-active" href="p10-annotation-templates.html"><span class="dot"></span>标注模板管理</a>
+      <a class="ob-menu-item" href="p11-annotation-fields.html"><span class="dot"></span>标注字段与归属</a>
+      <a class="ob-menu-item" href="p12-tags.html"><span class="dot"></span>标签体系</a>
+      <div class="ob-menu-group">平台管理</div>
+      <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
+      <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">标注模板管理</div><div class="ob-user">admin ▾</div></header>
+
+    <main class="ob-main">
+      <div class="ob-breadcrumb">DPS 模板化 <span class="sep">/</span> 标注模板管理</div>
+      <div class="ob-page-head">
+        <div>
+          <h1 class="ob-page-title">标注模板管理</h1>
+          <div class="ob-page-desc">RT-1410-24 · DT-1410-29 · 端点 #17（列表）／#18（详情）／#19（创建）／#21（删除）</div>
+        </div>
+        <div class="page-toolbar mb-0">
+          <button class="el-button el-button--primary">新建标注模板</button>
+        </div>
+      </div>
+
+      <div class="page-toolbar">
+        <span class="el-input" style="width:220px;color:var(--ob-text-disabled)">按 template_code 过滤</span>
+        <span class="el-select" style="min-width:150px">scenario：全部 ▾</span>
+        <button class="el-button el-button--primary">查询</button>
+        <button class="el-button">重置</button>
+        <span class="sm muted">scenario 仅 4 类：intake／assess／check／general</span>
+      </div>
+
+      <div class="el-alert el-alert--error">
+        <div class="el-alert__title">删除被拒（409）：存在 12 条关联标注数据，禁止删除 cc-annot-intake。</div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>标注模板</span><span class="sm muted">共 5 条</span></div>
+        <div class="el-card__body">
+          <div class="ob-table-scroll">
+            <table class="el-table el-table--stripe">
+              <thead>
+                <tr><th style="width:190px">标注模板</th><th style="width:170px">归属画像模板</th><th style="width:110px">scenario</th><th style="width:90px">字段数</th><th style="width:80px">版本</th><th style="width:90px">状态</th><th style="width:250px">操作</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>cc-annot-intake</td>
+                  <td><a href="p01-templates.html">cc-persona-v1</a></td>
+                  <td><span class="el-tag">intake</span></td>
+                  <td>6</td>
+                  <td>v3</td>
+                  <td><span class="el-tag el-tag--success">active</span></td>
+                  <td>
+                    <button class="el-button el-button--link el-button--small">详情</button>
+                    <a class="el-button el-button--link el-button--small" href="p11-annotation-fields.html">字段与归属</a>
+                    <span class="el-button el-button--link el-button--small el-button--danger">删除</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>cc-annot-assess</td>
+                  <td><a href="p01-templates.html">cc-persona-v1</a></td>
+                  <td><span class="el-tag">assess</span></td>
+                  <td>4</td>
+                  <td>v2</td>
+                  <td><span class="el-tag el-tag--success">active</span></td>
+                  <td>
+                    <button class="el-button el-button--link el-button--small">详情</button>
+                    <a class="el-button el-button--link el-button--small" href="p11-annotation-fields.html">字段与归属</a>
+                    <span class="el-button el-button--link el-button--small el-button--danger">删除</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>cc-annot-check</td>
+                  <td><a href="p01-templates.html">cc-persona-v1</a></td>
+                  <td><span class="el-tag">check</span></td>
+                  <td>3</td>
+                  <td>v1</td>
+                  <td><span class="el-tag el-tag--info">inactive</span></td>
+                  <td>
+                    <button class="el-button el-button--link el-button--small">详情</button>
+                    <a class="el-button el-button--link el-button--small" href="p11-annotation-fields.html">字段与归属</a>
+                    <span class="el-button el-button--link el-button--small el-button--danger">删除</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>cc-annot-general</td>
+                  <td><a href="p01-templates.html">cc-persona-v1</a></td>
+                  <td><span class="el-tag">general</span></td>
+                  <td>5</td>
+                  <td>v1</td>
+                  <td><span class="el-tag el-tag--success">active</span></td>
+                  <td>
+                    <button class="el-button el-button--link el-button--small">详情</button>
+                    <a class="el-button el-button--link el-button--small" href="p11-annotation-fields.html">字段与归属</a>
+                    <span class="el-button el-button--link el-button--small el-button--danger">删除</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="el-pagination"><span class="pg is-active">1</span><span class="pg">2</span><span class="sm muted" style="margin-left:8px">共 5 条</span></div>
+        </div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>详情抽屉（点「详情」展开）</span><span class="sm muted">el-drawer</span></div>
+        <div class="el-card__body">
+          <table class="el-descriptions">
+            <tr><th>code</th><td>cc-annot-intake</td></tr>
+            <tr><th>name</th><td>准入标注模板</td></tr>
+            <tr><th>归属（强归属）</th><td>cc-persona-v1（active）— 不可置空；改挂见 <a href="p11-annotation-fields.html">字段与归属</a></td></tr>
+            <tr><th>scenario</th><td>intake</td></tr>
+            <tr><th>version</th><td>v3</td></tr>
+            <tr><th>status</th><td><span class="el-tag el-tag--success">active</span></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="ob-state-block mt-16">
+        <div class="sm muted">空态示例（无标注模板时）：el-empty「暂无标注模板」＋ 引导「新建标注模板」按钮；非报错样式。</div>
+      </div>
+
+      <div class="ob-spec mt-16">
+        <div class="ob-spec__title">本页状态与易操作性说明（P-10）</div>
+        <ul>
+          <li><b>覆盖状态</b>：加载态／空态（无模板）／成功态／删除被拒态（409 显示关联条数）／错误态 400／权限态 403。</li>
+          <li><b>删除语义</b>：被引用时上游 409 拒绝且消息含条数，页面必须**显示条数**并引导用户改挂或先处置标注数据。</li>
+          <li><b>易操作性</b>：归属画像模板以链接直达模板详情；「字段与归属」入口并列在行操作，避免二次查找。</li>
+          <li><b>禁则</b>：不提供「解除归属」（上游无此语义）；不做权限判定。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

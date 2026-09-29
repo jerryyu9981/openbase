@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>标注模板字段与归属 - OpenBase v1.4.10</title>
+<link rel="stylesheet" href="proto.css">
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="ob-menu-group">业务模块</div>
+      <a class="ob-menu-item" href="index.html"><span class="dot"></span>设计总览</a>
+      <a class="ob-menu-item" href="p01-templates.html"><span class="dot"></span>模板族管理</a>
+      <a class="ob-menu-item" href="p02-versions.html"><span class="dot"></span>版本对比与回滚</a>
+      <a class="ob-menu-item" href="p03-preflight.html"><span class="dot"></span>预检与影响面</a>
+      <a class="ob-menu-item" href="p04-packages.html"><span class="dot"></span>包导出／导入</a>
+      <a class="ob-menu-item" href="p05-lineage.html"><span class="dot"></span>标签血缘反查</a>
+      <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
+      <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
+      <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <a class="ob-menu-item" href="p09-template-edit.html"><span class="dot"></span>画像模板新建／编辑</a>
+      <a class="ob-menu-item" href="p10-annotation-templates.html"><span class="dot"></span>标注模板管理</a>
+      <a class="ob-menu-item is-active" href="p11-annotation-fields.html"><span class="dot"></span>标注字段与归属</a>
+      <a class="ob-menu-item" href="p12-tags.html"><span class="dot"></span>标签体系</a>
+      <div class="ob-menu-group">平台管理</div>
+      <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
+      <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">标注模板字段与归属</div><div class="ob-user">admin ▾</div></header>
+
+    <main class="ob-main">
+      <div class="ob-breadcrumb">DPS 模板化 <span class="sep">/</span> <a href="p10-annotation-templates.html">标注模板管理</a> <span class="sep">/</span> cc-annot-intake</div>
+      <div class="ob-page-head">
+        <div>
+          <h1 class="ob-page-title">标注模板字段与归属</h1>
+          <div class="ob-page-desc">RT-1410-24 · RT-1410-25 · DT-1410-30 · 端点 #18（详情）／#20（更新·改挂）／#12（归属候选）</div>
+        </div>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__header"><span>归属（强归属 · 不可置空）</span><span class="sm muted">端点 #20</span></div>
+        <div class="el-card__body">
+          <div class="el-form-item"><label>当前归属</label><span class="el-tag el-tag--success">cc-persona-v1</span><span class="sm muted">status=active</span></div>
+          <div class="el-form-item"><label>改挂为</label><span class="el-select" style="min-width:260px">cc-persona-v2（active） ▾</span>
+            <button class="el-button el-button--primary el-button--small">确认改挂</button></div>
+          <div class="el-alert el-alert--warning">
+            <div class="el-alert__title">改挂候选项仅列 active 的画像模板；改挂后新标注将按新归属校验。系统不提供「解除归属」——归属字段不可置空，只能改挂或删除本标注模板。</div>
+          </div>
+          <div class="sm muted mt-8">归属约束三处生效：①创建 ②改挂 ③标注提交（归属不匹配 → 400，消息含期望/实际 template_code）。</div>
+        </div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>字段体系 field_schema</span><span class="sm muted">5 类字段 · key 唯一</span></div>
+        <div class="el-card__body">
+          <div class="page-toolbar">
+            <button class="el-button el-button--small">新增字段</button>
+            <button class="el-button el-button--small">校验 schema</button>
+            <span class="sm muted">type 仅 string／enum／number／date／list</span>
+          </div>
+          <div class="ob-table-scroll">
+            <table class="el-table el-table--stripe">
+              <thead>
+                <tr><th style="width:150px">key</th><th style="width:110px">type</th><th style="width:90px">required</th><th style="width:230px">options（enum 必填）</th><th style="width:150px">range（number）</th><th style="width:160px">target_dimension</th><th style="width:80px">操作</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>channel</td><td><span class="el-tag">enum</span></td><td>是</td>
+                  <td>线上／门店／电话</td><td class="muted">—</td>
+                  <td><span class="el-tag el-tag--success">service</span></td>
+                  <td><button class="el-button el-button--link el-button--small el-button--danger">删除</button></td>
+                </tr>
+                <tr>
+                  <td>score</td><td><span class="el-tag">number</span></td><td>否</td>
+                  <td class="muted">—</td><td>0 ~ 100</td>
+                  <td><span class="el-tag el-tag--success">service</span></td>
+                  <td><button class="el-button el-button--link el-button--small el-button--danger">删除</button></td>
+                </tr>
+                <tr>
+                  <td>visit_date</td><td><span class="el-tag">date</span></td><td>否</td>
+                  <td class="muted">—</td><td class="muted">—</td><td class="muted">—（不参与标签联动）</td>
+                  <td><button class="el-button el-button--link el-button--small el-button--danger">删除</button></td>
+                </tr>
+                <tr>
+                  <td>tags</td><td><span class="el-tag">list</span></td><td>否</td>
+                  <td class="muted">—</td><td class="muted">—</td>
+                  <td><span class="el-tag el-tag--success">service</span></td>
+                  <td><button class="el-button el-button--link el-button--small el-button--danger">删除</button></td>
+                </tr>
+                <tr>
+                  <td>memo</td><td><span class="el-tag">string</span></td><td>否</td>
+                  <td class="muted">—</td><td class="muted">—</td><td class="muted">—（不参与标签联动）</td>
+                  <td><button class="el-button el-button--link el-button--small el-button--danger">删除</button></td>
+                </tr>
+                <tr style="background:#fef0f0">
+                  <td>channel2</td><td><span class="el-tag el-tag--danger">enum</span></td><td>否</td>
+                  <td><span class="el-tag el-tag--danger">未填 options</span></td><td class="muted">—</td><td class="muted">—</td>
+                  <td><button class="el-button el-button--link el-button--small el-button--danger">删除</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="el-alert el-alert--error mt-12">
+            <div class="el-alert__title">校验失败（400）：字段 channel2 为 enum 时必须提供 options；字段 key 重复：channel。保存按钮置灰直至修正。</div>
+          </div>
+          <div class="sm muted mt-8">联动口径：仅含 target_dimension 的字段参与标签联动，生成 tag_code = 「{dimension}:{key}」；评分 enum 逆序（首项 100／末项 0）、number 裁剪 0~100、其他默认 80；人工标注优先。</div>
+        </div>
+      </div>
+
+      <div class="page-toolbar mt-16">
+        <button class="el-button el-button--primary el-button--disabled">保存（校验未通过）</button>
+        <button class="el-button">取消</button>
+      </div>
+
+      <div class="ob-spec mt-16">
+        <div class="ob-spec__title">本页状态与易操作性说明（P-11）</div>
+        <ul>
+          <li><b>覆盖状态</b>：加载态／表单提交态／成功态（版本递增）／归属约束态（归属模板未 active → 400）／错误态 400（key 重复、enum 缺 options、未知字段、范围越界）／权限态 403。</li>
+          <li><b>归属</b>：无「解除归属」按钮；改挂候选项仅 active；改挂前明示后果。</li>
+          <li><b>易操作性</b>：enum 未填 options 时行内高亮并禁用保存；target_dimension 留空即以灰字标注「不参与标签联动」。</li>
+          <li><b>禁则</b>：不假设 tag_bindings／上游 JSON 结构；前端不判权限。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

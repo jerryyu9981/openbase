@@ -21,6 +21,10 @@
       <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
       <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
       <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <a class="ob-menu-item" href="p09-template-edit.html"><span class="dot"></span>画像模板新建／编辑</a>
+      <a class="ob-menu-item" href="p10-annotation-templates.html"><span class="dot"></span>标注模板管理</a>
+      <a class="ob-menu-item" href="p11-annotation-fields.html"><span class="dot"></span>标注字段与归属</a>
+      <a class="ob-menu-item" href="p12-tags.html"><span class="dot"></span>标签体系</a>
       <div class="ob-menu-group">平台管理</div>
       <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
       <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
@@ -38,7 +42,7 @@
       <div class="ob-page-head">
         <div>
           <h1 class="ob-page-title">v1.4.10 设计总览（DPS 模板化能力对接深化）</h1>
-          <div class="ob-page-desc">线框级原型 · 8 页面 × 8 状态 · 视觉与交互<b>对齐统一前端既有设计系统</b></div>
+          <div class="ob-page-desc">线框级原型 · 12 页面 × 11 状态 · 视觉与交互<b>对齐统一前端既有设计系统</b></div>
         </div>
         <div><span class="el-tag el-tag--success">设计基线待批准</span></div>
       </div>
@@ -51,7 +55,7 @@
       </div>
 
       <div class="el-card">
-        <div class="el-card__header"><span>页面导航（8 页）</span><span class="sm muted">点击进入各页线框</span></div>
+        <div class="el-card__header"><span>页面导航（12 页）</span><span class="sm muted">点击进入各页线框</span></div>
         <div class="el-card__body">
           <table class="el-table el-table--stripe">
             <thead>
@@ -66,13 +70,17 @@
               <tr><td><a href="p06-measures.html">P-06</a></td><td><a href="p06-measures.html">措施建议</a></td><td>只读列表；<b>原样呈现</b>（含 disclaimer）</td><td><span class="el-tag el-tag--success">只读</span></td><td>RT-07 · DT-10</td></tr>
               <tr><td><a href="p07-scoring.html">P-07</a></td><td><a href="p07-scoring.html">评分类型</a></td><td>只读列表；空态正常呈现</td><td><span class="el-tag el-tag--success">只读</span></td><td>RT-09 · DT-12</td></tr>
               <tr><td><a href="p08-annotation.html">P-08</a></td><td><a href="p08-annotation.html">AI 标注候选与复核</a></td><td>关闭态零写入；复核辅助走 <code>llm_proxy</code>；提交走 DPS review</td><td><span class="el-tag el-tag--warning">写</span></td><td>RT-08 · DT-11</td></tr>
+              <tr><td><a href="p09-template-edit.html">P-09</a></td><td><a href="p09-template-edit.html">画像模板新建／编辑</a></td><td>基本信息 ＋ <b><code>extends</code> 继承选择</b>（≤2 层／禁自环）＋ 配置块 JSON 原样编辑</td><td><span class="el-tag el-tag--warning">写</span></td><td>RT-23 · DT-28</td></tr>
+              <tr><td><a href="p10-annotation-templates.html">P-10</a></td><td><a href="p10-annotation-templates.html">标注模板管理</a></td><td>列表（过滤）＋ 详情抽屉 ＋ <b>删除（409 显示关联条数）</b></td><td><span class="el-tag el-tag--warning">写</span></td><td>RT-24 · DT-29</td></tr>
+              <tr><td><a href="p11-annotation-fields.html">P-11</a></td><td><a href="p11-annotation-fields.html">标注模板字段与归属</a></td><td><b><code>field_schema</code> 5 类字段编辑器</b> ＋ <b>归属改挂</b>（无解除入口）</td><td><span class="el-tag el-tag--warning">写</span></td><td>RT-24／25 · DT-30</td></tr>
+              <tr><td><a href="p12-tags.html">P-12</a></td><td><a href="p12-tags.html">标签体系查看</a></td><td>分类 → 标签值<b>两层</b>只读 ＋ 标签联动口径说明</td><td><span class="el-tag el-tag--success">只读</span></td><td>RT-26 · DT-31</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
       <div class="el-card">
-        <div class="el-card__header"><span>状态覆盖矩阵（8 态 × 8 页）</span></div>
+        <div class="el-card__header"><span>状态覆盖矩阵（8 态 × 12 页）＋ 新增 3 态</span><span class="sm muted">新增：幂等重复态／归属约束态／删除被拒态</span></div>
         <div class="el-card__body">
           <div class="ob-table-scroll">
             <table class="el-table el-table--stripe">
@@ -88,6 +96,10 @@
                 <tr><td>P-06 措施建议</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
                 <tr><td>P-07 评分类型</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
                 <tr><td>P-08 AI 标注候选与复核</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-09 画像模板新建／编辑</td><td><span class="el-tag el-tag--success">✓</span><span class="sm muted"> 字段级／extends</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span><span class="sm muted"> code 冲突</span></td><td class="muted">—</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-10 标注模板管理</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span><span class="sm muted"> 删除被拒（关联条数）</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-11 标注模板字段与归属</td><td><span class="el-tag el-tag--success">✓</span><span class="sm muted"> schema／归属</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-12 标签体系查看</td><td><span class="el-tag el-tag--success">✓</span><span class="sm muted"> action≠list</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
               </tbody>
             </table>
           </div>

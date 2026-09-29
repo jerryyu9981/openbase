@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>标签体系查看 - OpenBase v1.4.10</title>
+<link rel="stylesheet" href="proto.css">
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="ob-menu-group">业务模块</div>
+      <a class="ob-menu-item" href="index.html"><span class="dot"></span>设计总览</a>
+      <a class="ob-menu-item" href="p01-templates.html"><span class="dot"></span>模板族管理</a>
+      <a class="ob-menu-item" href="p02-versions.html"><span class="dot"></span>版本对比与回滚</a>
+      <a class="ob-menu-item" href="p03-preflight.html"><span class="dot"></span>预检与影响面</a>
+      <a class="ob-menu-item" href="p04-packages.html"><span class="dot"></span>包导出／导入</a>
+      <a class="ob-menu-item" href="p05-lineage.html"><span class="dot"></span>标签血缘反查</a>
+      <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
+      <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
+      <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <a class="ob-menu-item" href="p09-template-edit.html"><span class="dot"></span>画像模板新建／编辑</a>
+      <a class="ob-menu-item" href="p10-annotation-templates.html"><span class="dot"></span>标注模板管理</a>
+      <a class="ob-menu-item" href="p11-annotation-fields.html"><span class="dot"></span>标注字段与归属</a>
+      <a class="ob-menu-item is-active" href="p12-tags.html"><span class="dot"></span>标签体系</a>
+      <div class="ob-menu-group">平台管理</div>
+      <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
+      <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">标签体系查看</div><div class="ob-user">admin ▾</div></header>
+
+    <main class="ob-main">
+      <div class="ob-breadcrumb">DPS 模板化 <span class="sep">/</span> 标签体系查看</div>
+      <div class="ob-page-head">
+        <div>
+          <h1 class="ob-page-title">标签体系查看</h1>
+          <div class="ob-page-desc">RT-1410-26 · DT-1410-31 · 端点 #22（标签分类 CRUD·既有）／#21（标签管理 list）</div>
+        </div>
+      </div>
+
+      <div class="el-alert el-alert--info">
+        <div class="el-alert__title">本页为只读呈现：分类 → 标签值两层结构。分类的增删改沿用既有「标签分类」能力（/tags/categories），本页不复制编辑入口。</div>
+      </div>
+
+      <div class="el-alert el-alert--warning">
+        <div class="el-alert__title">子标签／标签层级：当前 DPS 实现不提供（tag_definition 建表语句无 parent_tag_code 列，仅模型声明）⇒ 本版不呈现、不做伪功能，已登记跨仓需求。</div>
+      </div>
+
+      <div class="ob-grid-2 mt-16">
+        <div class="el-card">
+          <div class="el-card__header"><span>标签分类 tag_category</span><span class="sm muted">共 4 条</span></div>
+          <div class="el-card__body">
+            <div class="ob-table-scroll">
+              <table class="el-table el-table--stripe">
+                <thead><tr><th style="width:170px">分类</th><th>说明</th><th style="width:70px">值数</th></tr></thead>
+                <tbody>
+                  <tr style="background:#eff6ff"><td><b>服务渠道</b></td><td>服务来源渠道</td><td>3</td></tr>
+                  <tr><td>客户价值</td><td>价值分层</td><td>3</td></tr>
+                  <tr><td>风险等级</td><td>风险分层</td><td>3</td></tr>
+                  <tr><td>互动频次</td><td>活跃度分层</td><td>3</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="sm muted mt-8">选中左侧分类 → 右侧展示其标签值（两层结构，无第三层）。</div>
+          </div>
+        </div>
+
+        <div class="el-card">
+          <div class="el-card__header"><span>标签值 tag_value</span><span class="sm muted">分类：服务渠道</span></div>
+          <div class="el-card__body">
+            <div class="ob-table-scroll">
+              <table class="el-table el-table--stripe">
+                <thead><tr><th style="width:140px">标签值</th><th style="width:90px">颜色</th><th style="width:80px">排序</th><th>元数据</th></tr></thead>
+                <tbody>
+                  <tr><td>线上</td><td><span class="el-tag">#2563eb</span></td><td>1</td><td class="muted">—</td></tr>
+                  <tr><td>门店</td><td><span class="el-tag">#16a34a</span></td><td>2</td><td class="muted">—</td></tr>
+                  <tr><td>电话</td><td><span class="el-tag">#f59e0b</span></td><td>3</td><td class="muted">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="sm muted mt-8">标签值归属于分类（category_id 外键）。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>标注字段 → 画像标签 联动口径</span><span class="sm muted">只读说明</span></div>
+        <div class="el-card__body">
+          <table class="el-table el-table--stripe">
+            <thead><tr><th style="width:190px">标注模板 · 字段</th><th style="width:150px">target_dimension</th><th style="width:230px">生成 tag_code</th><th>评分口径</th></tr></thead>
+            <tbody>
+              <tr><td>cc-annot-intake · channel</td><td>service</td><td><span class="el-tag">service:channel</span></td><td>enum 逆序线性：首项 100 → 末项 0</td></tr>
+              <tr><td>cc-annot-intake · score</td><td>service</td><td><span class="el-tag">service:score</span></td><td>number 裁剪至 0~100</td></tr>
+              <tr><td>cc-annot-intake · tags</td><td>service</td><td><span class="el-tag">service:tags</span></td><td>其他有值类型默认 80</td></tr>
+              <tr><td>cc-annot-intake · visit_date</td><td class="muted">—</td><td class="muted">不生成</td><td class="muted">未声明 target_dimension ⇒ 不参与联动</td></tr>
+            </tbody>
+          </table>
+          <div class="sm muted mt-8">人工标注优先（人工值覆盖自动计算结果）；联动落库为 profile_tag，并可经标签血缘反查（P-05）追溯来源。</div>
+        </div>
+      </div>
+
+      <div class="ob-state-block mt-16">
+        <div class="sm muted">空态示例（无分类时）：el-empty「暂无标签分类」；非报错样式。传 action 非 list → 400「不支持的操作」。</div>
+      </div>
+
+      <div class="ob-spec mt-16">
+        <div class="ob-spec__title">本页状态与易操作性说明（P-12）</div>
+        <ul>
+          <li><b>覆盖状态</b>：加载态／空态（无分类）／错误态 400（action ≠ list）／权限态 403。本页无写操作，故无表单提交态与成功态。</li>
+          <li><b>层级如实呈现</b>：仅「分类 → 标签值」两层；<b>不呈现子标签</b>（上游无该能力）。</li>
+          <li><b>易操作性</b>：左选右看（主从布局），联动口径卡直接给出 tag_code 生成规则，便于运维核对血缘反查结果。</li>
+          <li><b>禁则</b>：不编辑分类（沿用既有分类能力）；不假设上游未落库字段。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>
