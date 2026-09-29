@@ -50,6 +50,13 @@ GLOBAL_DOC_DIRS = (
     "doc/planning",
 )
 
+#: **跨版本汇总文档**（单文件，位于版本目录内但文件名不含版本号）：
+#: 如《Release Note 汇总（-All）》，其按版本列表逐行收录，版本以行为单位表达，
+#: 与 GLOBAL_DOC_DIRS 同类，命名判据同样不适用 ⇒ 显式豁免。
+GLOBAL_DOC_FILES = (
+    "doc/release/OpenBase-Release-Note-All.md",
+)
+
 
 def _git(repo: Path, *args: str) -> str:
     completed = subprocess.run(
@@ -86,7 +93,7 @@ def check_naming(repo: Path, entries: list[tuple[str, str]]) -> int:
     bad = 0
     for status, path in entries:
         name = Path(path).name
-        if any(path.startswith(directory) for directory in GLOBAL_DOC_DIRS):
+        if any(path.startswith(directory) for directory in GLOBAL_DOC_DIRS) or path in GLOBAL_DOC_FILES:
             print(f"  OK {status:<2} {path}  （跨版本全局文档：文件名不含版本号，命名判据豁免）")
             continue
         is_evidence = "/evidence/" in path

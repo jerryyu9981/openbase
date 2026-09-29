@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM** |
 | 版本号 | v1.4.9（上下文预算与回写质量） |
 | 文档 | 发布入场检查记录 ＋ 发布计划 |
-| 文档版本 | v1.0.3 |
-| 状态 | **[Released-Pending]（入场门禁已解除 → 进入 5.1~5.11 发布执行；部署目标 Dev）** |
+| 文档版本 | v1.0.4 |
+| 状态 | **[Released-Pending]（入场门禁已解除 → 已执行 5.1~5.11 发布；部署目标 Dev；远端推送已完成）** |
 | 日期 | 2026-09-29 |
 | 发布负责人 | DO-OpenBase-Dev（部署）／AU-OpenBase-Test（审计） |
-| 发布分支/提交 | OpenLLM `feature/s4-identity-channel-b` @ **`b261010`**；OpenBase `main` @ **`1293ae8`**（两仓**均未推送**） |
+| 发布分支/提交 | OpenLLM `feature/s4-identity-channel-b` @ **`b261010`**；OpenBase `main` @ **`1293ae8`**（**入场时快照**；发布后已完成推送：OpenBase `5f36f08..d605b01` ＋ tag `v1.4.8`/`v1.4.9`、OpenLLM `2f2543e`、OpenRAG `5a3f84b`，均以 `ls-remote` 复验一致） |
 | 上游依据 | 《测试报告-v1.4.9》v1.0.0；《测试回溯对比审计报告-v1.4.9》v1.0.0；《阶段审计报告-Stage4-v1.4.9》v1.0.0；《技术债务总表》v0.10.0 |
 
 ## 0. 结论摘要
@@ -117,15 +117,15 @@
 
 ## 4. 版本与制品确认
 
-| 项 | 现状 | 放行后需更新 |
+| 项 | 入场时现状 | 发布后实际（已执行） |
 |----|------|--------------|
-| 代码提交 | OpenLLM `b261010`（11 笔代码提交 ＋ 1 笔文档，**未推送**）；OpenBase `1293ae8` | 推送 origin ＋ backup（需用户授权） |
+| 代码提交 | OpenLLM `b261010`（11 笔代码提交 ＋ 1 笔文档）；OpenBase `1293ae8` | ✅ **已推送 origin ＋ backup**（2026-09-29 用户授权）：OpenBase `main` `5f36f08..d605b01`；OpenLLM `483d78f..2f2543e`；OpenRAG `5e81373..5a3f84b`（安全整备） |
 | 制品形态 | Python 源码（无独立二进制）；依赖锁定见 `pyproject.toml` | 构建证据复用 L1（`compileall` exit 0） |
-| Tag | **未创建** | `v1.4.9`（创建 ＋ 推送 origin/backup） |
-| `.devflow/project-config.json` | `project.version=1.4.8`、`lastRelease=v1.4.8` | 发布时置 `1.4.9` / `v1.4.9` |
-| `.devflow/state.json` | `currentPhase=v1_4_9_step_5_operations`；`devflowVersion=2.18.0` | `released` → `step_5_closed` |
+| Tag | **未创建** | ✅ **已创建并推送**：`v1.4.9`＝`7e36d042…643f4`、`v1.4.8`＝`aedb51a7…6e69f`，**本地／origin／backup 三方同 hash** |
+| `.devflow/project-config.json` | `project.version=1.4.8`、`lastRelease=v1.4.8` | ✅ 已置 `1.4.9` / `v1.4.9` |
+| `.devflow/state.json` | `currentPhase=v1_4_9_step_5_operations`；`devflowVersion=2.18.0` | ✅ 已置 `v1_4_9_step_5_closed`（`released` → `step_5_closed`） |
 | `devflow-plugin/devflow-config.json` | **不存在**（本仓无该插件目录） | **不适用**（按技能允许「不适用须说明原因」声明） |
-| Release Note | `OpenBase-Release-Note-v1.4.8.md` ＋ `-All.md` | 发布时新增 v1.4.9 单版 ＋ 汇总追加 |
+| Release Note | `OpenBase-Release-Note-v1.4.8.md` ＋ `-All.md` | ✅ 已新增 v1.4.9 单版（v1.0.1）＋ 汇总 `-All.md` 追加 v1.4.9 行 |
 
 ## 5. 产出物清单与状态（技能 19 项逐项落点）
 
@@ -174,6 +174,7 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.0.4 | 2026-09-29 | DO-OpenBase-Dev | **同步远端推送完成**：§4「版本与制品确认」由「放行后需更新」改为**已执行**（代码提交推 origin＋backup、tag `v1.4.8`/`v1.4.9` 三方同 hash、`project-config` 置 `1.4.9`、`state` 置 `v1_4_9_step_5_closed`、Release Note 已出）；头部「发布分支/提交」补注**入场快照 vs 发布后推送**。状态维持 **[Released-Pending]**（关闭全流程仍待人工批准）。 |
 | v1.0.3 | 2026-09-29 | DO-OpenBase-Dev | **门禁阻塞解除 → 准入发布执行**（用户书面授权：`授权撤跟踪，密码不换（记录风险接受），批准继续`）：① §0 结论摘要改为「阻塞已解除」并列出解除依据（撤跟踪已执行 OpenLLM `977eba6`／`2f2543e`、OpenRAG `1f51195`／`5a3f84b`；五仓敏感扫描复核；**残留经批准风险接受**）；② §1 门禁第 3 项由 ❌ 改 ✅（附残留登记），**入场判定改为「8 项全部通过 ⇒ 准入」**；③ §2.2 增加**A1~A6 执行结果表**（A1 路B 已决策／A2 已执行／A3、A4 不执行并说明／A5 已批准／A6 进行中）；④ §3 发布计划「人工门禁」改为**已批准**；⑤ 文头状态 `[Blocked]` → **[Released-Pending]**、版本 v1.0.2 → **v1.0.3**。 |
 | v1.0.2 | 2026-09-29 | DO-OpenBase-Dev | **新增 §2.3 暴露面精确定界与跨仓同类排查**：① 实测 `git remote -v` ＝ **4 组远端**（内网 origin／jerry.yu／backup ＋ **GitHub**），`git for-each-ref refs/remotes` 逐引用核对 ⇒ **14 个远端跟踪引用全部命中** `.env.shared-infra` ⇒ 凭据已进入全部远端；② 未登录访问 GitHub 仓返回 **404 ⇒ 非公开**（未确认公网泄漏）⇒ P1 定性维持、**缓解假设不成立**；③ **五仓同类排查**：**OpenRAG** 命中 `k8s/secrets.yaml`（非占位凭据）＋ `.env.shared-infra` ＋ `.env.e2e` ⇒ 新立 **`TD-新增-034`（P1 跨仓）**；OpenMemory 前端 env **待核**；OpenBase／DPS 未发现；④ 归集口径同步《技术债务总表》v0.10.0（待偿还 22 → **23**、总计 33 → **34**）。文头版本 v1.0.1 → **v1.0.2**。结论不变（**入场不通过（阻塞）**）。 |
 | v1.0.1 | 2026-09-29 | DO-OpenBase-Dev | **新增 §6 全阶段产出物盘点**（6 阶段逐目录 LS/Glob ＋ 脚本清点：Step 0~4 空输出率 **0%**、Step 5 部分产出并说明阻塞原因；**TOTAL 41 / EMPTY 0 / MISSING 0**）。文头版本 v1.0.0 → **v1.0.1**。结论不变（**入场不通过（阻塞）**）。 |
