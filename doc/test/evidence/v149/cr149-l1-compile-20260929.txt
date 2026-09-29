@@ -1,25 +1,9 @@
-﻿=== v1.4.9 L1 构建验证（语法/编译） 2026-09-29T07:19:57.0074127+08:00 ===
+﻿=== v1.4.9 L1 构建验证（语法/编译） 2026-09-29T08:40:15.1367009+08:00 ===
+HEAD=d4bff291081a49c8a6ba15ee794221368420bc13
 cwd=D:\Trae CN\myproject\Dev\OpenLLM\backend
 python=Python 3.10.11
 --- 1) python -m compileall -q app main.py ---
 exit_code=0 (0=零错误)
 --- 2) python -c 'import main' ---
-NVML初始化失败: Unknown Error
-D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:9: UserWarning: Field name "schema" in "StructuredGenerateRequest" shadows an attribute in parent "BaseModel"
-  class StructuredGenerateRequest(BaseModel):
-D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:32: UserWarning: Field name "schema" in "SchemaInfo" shadows an attribute in parent "BaseModel"
-  class SchemaInfo(BaseModel):
-D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:45: UserWarning: Field name "schema" in "SchemaDetailResponse" shadows an attribute in parent "BaseModel"
-  class SchemaDetailResponse(BaseModel):
-D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:55: UserWarning: Field name "schema" in "ValidateOutputRequest" shadows an attribute in parent "BaseModel"
-  class ValidateOutputRequest(BaseModel):
-D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:76: UserWarning: Field name "schema" in "CustomSchemaCreate" shadows an attribute in parent "BaseModel"
-  class CustomSchemaCreate(BaseModel):
-D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:84: UserWarning: Field name "schema" in "CustomSchemaResponse" shadows an attribute in parent "BaseModel"
-  class CustomSchemaResponse(BaseModel):
-{"ts": "2026-09-28T23:20:06.734Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "IdentityGate \u8eab\u4efd\u88c1\u51b3\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
-{"ts": "2026-09-28T23:20:06.734Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u5ba1\u8ba1\u65e5\u5fd7\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
-{"ts": "2026-09-28T23:20:06.735Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u901f\u7387\u9650\u5236\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
-{"ts": "2026-09-28T23:20:06.738Z", "level": "INFO", "service": "openllm", "logger": "main", "message": "\u76d1\u63a7\u6307\u6807\u4e2d\u95f4\u4ef6\u5df2\u6dfb\u52a0", "request_id": "-"}
 import main OK; app.title= OpenLLM
 exit_code=0
