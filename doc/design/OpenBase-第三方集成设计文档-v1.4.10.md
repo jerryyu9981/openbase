@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.2.0 |
+| 文档版本 | v1.3.0 |
 | 状态 | **[Review]（待设计评审）** |
 | 版本号 | **v1.4.10**（承接型小版本：DPS 模板化能力对接深化） |
 | 轨道 | 🔗 **第三方集成**（DT-27） |
@@ -139,8 +139,8 @@ openbase/dps_proxy  ──四头注入──▶  DPS /api/v2/portrait/*（10 端
 | 5 | DPS 侧 org／tenant 记录未预置 | **P1** | 联调前置（与 #1 同批） |
 | 6 | **DPS 侧标注模板 CRUD 权限点映射缺陷**（G6）：`SUBPATH_RESOURCE_MAP` 键为 `("portrait","annotations")`，实现路径为 `/portrait/annotation-templates` ⇒ 精确匹配不命中，**实际判定资源回落 `portrait`**，`annotation_template:create/update/delete` 对 CRUD 面**不可达** | **P1** | **登记跨仓需求 RT-1410-28 #1** 并派单 DPS 最小版本化补丁；**联调前实测确认**；本版代理层照契约声明 `annotation_template:*` 并原样透传上游裁决，**不臆造处置、不假设已修** |
 | 7 | **DPS 侧 `tag_definition.parent_tag_code` 未落库**（G7）⇒ 子标签／标签层级能力**不存在** | P2 | 需求 §7 **明确排除**；**登记跨仓需求 RT-1410-28 #2**；本版**不做伪功能** |
-| 8 | **（2026-09-30 实测新增）OpenLLM 运行时版本字符串被 `.env` 钉住**：`/health` 报 `2.14.3`，而本仓已按 **v2.14.4** 交付该仓改动（新字段 `sql_echo`／`uptime_seconds` 已生效） | P3 | **登记**（OpenLLM 侧收尾项，**不阻塞本仓**）；版本口径核对时须区分「代码已生效」与「版本字符串」 |
-| 9 | **（2026-09-30 实测新增）`DEFAULT_LLM_MODEL` 与 OpenLLM 模型注册表漂移**：`.env` 配 `qwen3:0.6b`，注册表实际仅 `gpt-4`／`deepseek-v4-flash` | **P2** | **本版 AI 复核辅助须显式传真实模型名**（**不得依赖默认模型**）；OpenLLM 侧同步 `.env`；Step 4 用例须选可用模型 |
+| 8 | **（2026-09-30 实测新增）OpenLLM 运行时版本字符串被 `.env` 钉住**：`/health` 报 `2.14.3`，而本仓已按 **v2.14.4** 交付该仓改动（新字段 `sql_echo`／`uptime_seconds` 已生效） | P3 | ✅ **已修复（2026-09-30，OpenLLM v2.14.5，派单 `OB-v1.4.10-LLM-CFG-01`）**：`.env` 同步 ＋ `.env.example` 加口径段 ＋ **启动期版本口径自检**（漂移即告警）；实测 `/health` 已返回 `2.14.5`。回执 `openllm-v2145-config-alignment-receipt-20260930.md` |
+| 9 | **（2026-09-30 实测新增）`DEFAULT_LLM_MODEL` 与 OpenLLM 模型注册表漂移**：`.env` 配 `qwen3:0.6b`，注册表实际仅 `gpt-4`／`deepseek-v4-flash` | **P2** | ✅ **已修复（同上 v2.14.5）**：`.env` 改 `deepseek-v4-flash` ＋ **启动期注册表一致性自检**（未注册即告警并列出可用样本）；实测启动日志「默认模型已注册: deepseek-v4-flash」。**残留**：`gpt-4` 上游 provider 不可用（F3）**不在该派单范围** ⇒ **Step 4 用例仍须选可用模型** |
 | 10 | **（2026-09-30 实测新增）本仓启动时 DB 初始化失败并降级内存**（`fallback: memory demo user seeded`） | **P2** | 链路验证不受影响（`llm_proxy` 不依赖本仓 DB）；**部署前置**：Step 3／4 前须核实共享库 schema／权限，否则请求侧功能降级 |
 
 ---
@@ -163,6 +163,7 @@ openbase/dps_proxy  ──四头注入──▶  DPS /api/v2/portrait/*（10 端
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.3.0** | 2026-09-30 | **AA-OpenBase-Dev** | **跨仓修复回执回填**：§8 风险 **#8（F1 版本口径漂移）／#9（F2 默认模型未注册）** 状态由「登记」改为 **✅ 已修复**（**OpenLLM v2.14.5**，派单 `OB-v1.4.10-LLM-CFG-01`，提交 `c67bbd5`，tag `25c28f3f` 三仓一致）；补实测判据（`/health` 返回 `2.14.5`；启动日志「默认模型已注册: deepseek-v4-flash」）；**明确残留**：`gpt-4` 上游 provider 不可用（F3）**不在该派单范围** ⇒ **Step 4 用例仍须选可用模型**。回执：`doc/test/evidence/v1410/openllm-v2145-config-alignment-receipt-20260930.md`。 |
 | **v1.2.0** | 2026-09-30 | **AA-OpenBase-Dev** | **两项实测回写（D-1410-03 遗留「待实测」清零）**：① **§8.1 跨仓项 #1 扩为 3 子项**（补 `annotation-templates` 键／**补 activate·deactivate 动作声明**／补或明确 `labels` 口径），「现状」列改为**已实测确认**并引证据 `E-G6-20260930`；**新增 #3**（`ENDPOINT_ACTION_OVERRIDES` 缺 activate／deactivate 声明 ⇒ 实测动作 `create`，与已修回滚端点 `TD-3027` 同类残留）；② **§8 集成风险新增 #8~#10**（OpenLLM 运行时版本字符串被 `.env` 钉住／`DEFAULT_LLM_MODEL` 与模型注册表漂移／本仓启动 DB 初始化降级），均来自 **`llm_proxy`→OpenLLM 链路实测**（`E-LLMPROXY-20260930`）；③ **链路实测结论：✅ 通过**（`/models` 200 返回 OpenLLM 真实注册表；`/chat` 200 完成真实推理）。 |
 | **v1.1.0** | 2026-09-29 | **AA-OpenBase-Dev** | **D-1410-03 回写（跨仓缺口 G6／G7 登记）**：① §8 集成风险新增 2 项（#6 标注模板 CRUD **权限点映射缺陷** ⇒ 实际判定资源回落 `portrait`；#7 `tag_definition.parent_tag_code` **未落库** ⇒ 子标签能力不存在）；② **新增 §8.1 DPS 侧跨仓需求登记**（2 项，含实现证据、影响面、建议归属与**处置纪律**：本版仅登记＋派单，DPS 交付前测试不得假设已修）；③ 依 §1 C1~C4 口径重申：两项均为**实现代码取证**结论，非文档推断。 |
 | v1.0.0 | 2026-09-29 | AA-OpenBase-Dev | 初始创建（v1.4.10 Step 2 §2.3c 产出）：**§1 契约核对口径 C1~C4（教训固化：文档＋实现双向取证）**；**§2 集成基线**（含实测 v2.11.1 与鉴权链双向验证）；**§3 集成拓扑 ＋ AI 复核路径设计**（候选生成走 DPS #9／复核辅助走 **`llm_proxy`→OpenLLM**／复核提交 **复用 DPS 既有端点**；**`llm_proxy` 现状核实：已是完整 OpenLLM 通道 ⇒ AD-3 后端零新增**）；**§4 双向取证结果 6 项 ＋ 文档缺口登记 DP-1410-01**（§4 漏登 409 ⇒ 可由 OpenBase 直接补）；**§5 身份与隔离 4 项**（含 `enforce_org_alias` 必须 False、P1 联调前置）；**§6 失败与降级矩阵 7 项**；**§7 版本兼容矩阵**；**§8 集成风险 5 项**（3 项 P1）。状态 [Review]。 |
