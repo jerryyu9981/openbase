@@ -2,87 +2,141 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>P-02 版本对比与回滚 - OpenBase v1.4.10</title>
-<style>
-:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212a;--line:#2a2f3a;--txt:#e6e8ee;--dim:#9aa3b2;--accent:#4f8cff;--warn:#d29922;--err:#f85149;--ok:#3fb950}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
-.wrap{max-width:1000px;margin:0 auto;padding:22px 18px 48px}
-a.back{color:var(--accent);text-decoration:none;font-size:13px}
-h1{font-size:19px;margin:10px 0 4px}.sub{color:var(--dim);font-size:12.5px;margin-bottom:16px}
-.bar{display:flex;gap:8px;align-items:center;margin:14px 0;flex-wrap:wrap}
-.inp,.sel,.btn{border:1px solid var(--line);background:var(--panel);color:var(--txt);border-radius:7px;padding:7px 11px;font-size:13px}
-.btn.p{background:#1f3f7a;border-color:#2c5cad}.btn.r{background:#4a1d1d;border-color:#7a2e2e;color:#ffb4b4}
-.pnl{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:14px 0}
-.pnl h3{margin:0 0 8px;font-size:13.5px;color:var(--dim);font-weight:600}
-.modal{border:1px solid #6b5418;background:#231c0c;border-radius:10px;padding:16px 18px;margin:16px 0}
-.modal .t{font-weight:600;margin-bottom:10px}
-.grp{border-left:3px solid var(--line);padding-left:10px;margin:8px 0}
-.grp.add{border-color:#2ea043}.grp.mod{border-color:#d29922}.grp.del{border-color:#f85149}
-.mono{font-family:Consolas,monospace;font-size:12.5px;color:#c9d1d9}
-code{background:#20252f;padding:1px 6px;border-radius:4px;font-size:12px}
-ul{margin:6px 0 0 18px;padding:0;color:var(--dim);font-size:13px}li{margin:4px 0}
-.k{color:var(--warn)}.e{color:var(--err)}.o{color:var(--ok)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.diff{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:8px}
-.diff > div{padding:10px 12px;border-right:1px solid var(--line)}.diff > div:last-child{border-right:none}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>版本对比与回滚 - OpenBase v1.4.10</title>
+<link rel="stylesheet" href="proto.css">
 </head>
-<body><div class="wrap">
-  <a class="back" href="index.html">← 返回设计总览</a>
-  <h1>P-02 版本对比与回滚</h1>
-  <div class="sub">RT-1410-03 · DT-1410-06 · 端点 #3（对比）/ #4（回滚）· 读＋<span class="k">写</span></div>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="ob-menu-group">业务模块</div>
+      <a class="ob-menu-item" href="index.html"><span class="dot"></span>设计总览</a>
+      <a class="ob-menu-item" href="p01-templates.html"><span class="dot"></span>模板族管理</a>
+      <a class="ob-menu-item is-active" href="p02-versions.html"><span class="dot"></span>版本对比与回滚</a>
+      <a class="ob-menu-item" href="p03-preflight.html"><span class="dot"></span>预检与影响面</a>
+      <a class="ob-menu-item" href="p04-packages.html"><span class="dot"></span>包导出／导入</a>
+      <a class="ob-menu-item" href="p05-lineage.html"><span class="dot"></span>标签血缘反查</a>
+      <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
+      <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
+      <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <div class="ob-menu-group">平台管理</div>
+      <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
+      <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
+    </nav>
+  </aside>
 
-  <div class="bar">
-    <span class="sel">模板族：cc-persona-v1 ▾</span>
-    <span class="sel">版本 A：v3 ▾</span><span style="color:var(--dim)">⇄</span><span class="sel">版本 B：v1 ▾</span>
-    <span class="btn p">对比</span>
-  </div>
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">版本对比与回滚</div><div class="ob-user">admin ▾</div></header>
 
-  <div class="diff">
-    <div><div class="sub">v3（当前）</div><div class="mono">dimension_weights: {…}</div></div>
-    <div><div class="sub">v1（目标）</div><div class="mono">dimension_weights: {…}</div></div>
-  </div>
-
-  <div class="pnl"><h3>差异（分组呈现）</h3>
-    <div class="grp add"><b>新增</b> <span class="mono">field: risk_level</span></div>
-    <div class="grp mod"><b>修改</b> <span class="mono">dimension_weights.attention: 0.30 → 0.25</span></div>
-    <div class="grp del"><b>删除</b> <span class="mono">field: legacy_flag</span></div>
-  </div>
-
-  <div class="pnl" style="border-color:#7a2e2e"><h3 style="color:#ffb4b4">执行回滚（写操作）</h3>
-    <ul>
-      <li>目标版本选择 ＋ 原因填写 → 触发<b>二次确认</b></li>
-      <li>回滚需权限 <code>portrait_template:update</code>；无权限 → <span class="e">403</span></li>
-      <li><b>禁止</b>提供绕过确认的一键直执行入口</li>
-    </ul>
-    <div style="margin-top:10px"><span class="btn r">回滚到 v1…</span></div>
-  </div>
-
-  <div class="modal">
-    <div class="t">确认回滚（<b>四要素</b>）</div>
-    <div class="grid2">
-      <div>① 目标版本：<b>v1</b>（当前 v3）</div>
-      <div>② 影响面摘要：受影响标注模板 <b>2</b>／标注 <b>12</b>／标签 <b>8</b>
-        <div style="margin-top:4px"><span class="btn" style="padding:2px 8px;font-size:12px">口径 ▾</span> <span class="sub">（basis 折叠，默认收起）</span></div>
+    <main class="ob-main">
+      <div class="ob-breadcrumb">DPS 模板化 <span class="sep">/</span> 模板族管理 <span class="sep">/</span> 版本对比与回滚</div>
+      <div class="ob-page-head">
+        <div>
+          <h1 class="ob-page-title">版本对比与回滚</h1>
+          <div class="ob-page-desc">RT-1410-03 · DT-1410-06 · 端点 #3（diff）／#4（rollback）</div>
+        </div>
       </div>
-      <div class="e">③ ⚠ 该操作不可撤销</div>
-      <div>④ <span class="btn">取消</span> <span class="btn r">确认回滚</span></div>
-    </div>
-    <div class="sub" style="margin-top:10px">说明：影响面摘要取自预检端点（#5/#7）；<code>tag_count = 0</code> 时 <b>强制展开</b>口径说明。</div>
-  </div>
 
-  <div class="grid2">
-    <div class="pnl"><h3>生效验证（回滚后）</h3>
-      <ul>
-        <li>自动重新拉取详情并与目标版本比对</li>
-        <li>提示「回滚已完成」＋ 生效验证结果（<span class="o">equivalence_check</span>）</li>
-      </ul>
-    </div>
-    <div class="pnl"><h3>本页覆盖状态</h3>
-      <ul>
-        <li><b>加载态</b>／<b>空态</b>（无版本）／<b>成功态</b>（含生效验证）</li>
-        <li><span class="k">403</span>（无写权限）／<span class="k">404</span>（目标版本不存在）／<b>5xx</b></li>
-      </ul>
-    </div>
+      <div class="page-toolbar">
+        <span class="el-select" style="min-width:190px">模板族：cc-persona-v1 ▾</span>
+        <span class="el-select" style="min-width:120px">版本 A：v3 ▾</span>
+        <span class="muted">⇄</span>
+        <span class="el-select" style="min-width:120px">版本 B：v1 ▾</span>
+        <button class="el-button el-button--primary">对比</button>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__header"><span>差异（分组呈现）</span><span class="sm muted">v3 → v1</span></div>
+        <div class="el-card__body">
+          <div class="ob-table-scroll">
+            <table class="el-table">
+              <thead><tr><th style="width:90px">类型</th><th>字段 / 维度</th><th style="width:120px">v3（当前）</th><th style="width:120px">v1（目标）</th></tr></thead>
+              <tbody>
+                <tr><td><span class="el-tag el-tag--success">新增</span></td><td><code>field: risk_level</code></td><td class="muted">—</td><td>risk_level</td></tr>
+                <tr><td><span class="el-tag el-tag--warning">修改</span></td><td><code>dimension_weights.attention</code></td><td>0.30</td><td>0.25</td></tr>
+                <tr><td><span class="el-tag el-tag--danger">删除</span></td><td><code>field: legacy_flag</code></td><td>legacy_flag</td><td class="muted">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__header">
+          <span>执行回滚（写操作 · 需 <code>portrait_template:update</code>）</span>
+          <span class="sm muted">二次确认后方可执行</span>
+        </div>
+        <div class="el-card__body">
+          <div class="el-form-item">
+            <label>目标版本</label>
+            <span class="el-select" style="min-width:120px">v1 ▾</span>
+          </div>
+          <div class="el-form-item">
+            <label>回滚原因</label>
+            <input class="el-input" style="flex:1" placeholder="如：误改维度权重" value="误改维度权重">
+          </div>
+          <div class="mt-12">
+            <button class="el-button" style="border-color:var(--ob-danger);color:var(--ob-danger)">回滚到 v1…</button>
+            <span class="sm muted" style="margin-left:8px">点击后弹出二次确认</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__header"><span>二次确认弹层（el-dialog · <b>四要素</b>）</span><span class="sm muted">示意，非真实弹窗</span></div>
+        <div class="el-card__body">
+          <div class="el-dialog" style="position:static;width:100%;max-width:none;box-shadow:var(--ob-shadow-md)">
+            <div class="el-dialog__header"><span>确认回滚</span><span class="muted">✕</span></div>
+            <div class="el-dialog__body">
+              <ol style="margin:0 0 0 18px;padding:0">
+                <li><b>目标版本：v1</b>（当前 v3）</li>
+                <li class="mt-8"><b>影响面摘要</b>：受影响标注模板 <b>2</b> ／ 标注 <b>12</b> ／ 标签 <b>0</b>
+                  <div class="ob-basis" data-open="true" style="margin-left:0">
+                    <span class="ob-basis__trigger"><span class="caret">▸</span>口径（basis）</span>
+                    <div class="ob-basis__content">
+                      <code>tag_count</code>：<code>tag_lineage.template_code = code</code> 的 distinct <code>tag_code</code> 数（谱系口径：<b>未联动过则为 0</b>）
+                      <div class="mt-8">※ <b>标签数为 0 → 强制展开</b>本说明，避免误判为缺陷。</div>
+                    </div>
+                  </div>
+                </li>
+                <li class="mt-8"><span style="color:var(--ob-danger)">⚠ 该操作不可撤销</span></li>
+                <li class="mt-8"><b>主按钮文案固定为「确认回滚」</b>（不得使用「确定」等模糊措辞）</li>
+              </ol>
+            </div>
+            <div class="el-dialog__footer">
+              <button class="el-button">取消</button>
+              <button class="el-button el-button--danger">确认回滚</button>
+            </div>
+          </div>
+          <div class="el-alert el-alert--warning mt-16">
+            <div><span class="el-alert__title">禁止项</span>：不得提供绕过确认的「一键直执行」入口；确认层须展示影响面摘要与不可撤销提示。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__header"><span>生效验证（回滚成功后自动执行）</span></div>
+        <div class="el-card__body">
+          <div class="el-alert el-alert--success">
+            <div><span class="el-alert__title">回滚已完成</span>：已重新拉取详情并与目标版本比对 ⇒ <code>equivalence_check = true</code>（等价性自检通过），当前版本 <b>v4</b>（回滚自 v3 → 内容等价 v1）。</div>
+          </div>
+          <div class="sm muted">※ 回滚属<b>版本递增</b>语义（不回退版本号），故呈现为「v4 内容等价 v1」。</div>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li><b>加载态</b>／<b>空态</b>（无版本可对比）／<b>成功态</b>（含生效验证结果）。</li>
+          <li><b>403</b>：无 <code>portrait_template:update</code> → 「当前账号无权执行该操作」（前端不判定）；<b>404</b>：目标版本不存在；<b>5xx</b>：不可用 ＋ 重试。</li>
+          <li><b>易操作性</b>：差异<b>按新增/修改/删除分组与配色</b>（沿用 el-tag 语义色），使回滚后果一眼可辨；二次确认弹层同时给出影响面摘要，避免"盲确认"。</li>
+          <li>版本选择器两端<b>不得相同</b>（相同则禁用主按钮并提示）。</li>
+        </ul>
+      </div>
+    </main>
   </div>
-</div></body></html>
+</div>
+</body>
+</html>

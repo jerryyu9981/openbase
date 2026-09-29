@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | **[Review]（待设计评审）** |
 | 版本号 | **v1.4.10**（承接型小版本） |
 | 作者 | UI-OpenBase-Dev ／ FA-OpenBase-Dev |
@@ -24,6 +24,24 @@
 | 状态总数 | **8 态**（加载／空／400／403／404／409／未启用／5xx／成功） |
 | 原型形态 | **线框级 HTML**（`file://` 可直接打开，相对路径互链） |
 | 视觉改动 | **无**（不改 tokens、不引入新组件库） |
+
+### 1.1 设计一致性对齐（**强制基准**）
+
+> 依用户要求：「原型设计必须保持和统一前端之前的设计风格一致，并在相关功能设计上，保持功能模块整体一致，并保持用户的易操作性」。
+
+| 对齐维度 | **真实基准来源** | 原型落实（`prototype/proto.css` ＋ 9 页面） |
+|----------|------------------|---------------------------------------------|
+| **颜色 / 圆角 / 阴影 / 字体 / 断点** | `openbase-ui/src/core/styles/tokens.css` 的 `--ob-*` 变量 | **逐项照搬**（`--ob-primary #2563eb`／`--ob-bg #f8fafc`／`--ob-surface #ffffff`／`--ob-radius-sm·md·lg`／`--ob-shadow-sm·md·lg`／`--ob-breakpoint-lg 1280px`·`md 768px`）—— **不自造任何色值** |
+| **组件视觉语言** | 项目组件库 **Element Plus** | 模拟 `el-card`／`el-table(stripe)`／`el-button(primary｜link｜danger)`／`el-tag`／`el-input`／`el-select`／`el-radio`／`el-dialog`／`el-drawer`／`el-alert`／`el-empty`／`el-descriptions`／`el-pagination`／`el-popconfirm` |
+| **布局框架** | `core/layouts/AppLayout.vue` | `el-aside 220px`（折叠 64px）＋ `el-header 56px` ＋ `el-main`；侧栏菜单按「**业务模块**／**平台管理**」两级分组（与既有 Layout 同构） |
+| **页面结构模式** | 既有 `modules/portrait/pages/DpsApiManageView.vue` 等 | `page-toolbar`（搜索 ＋ 主/次按钮）→ `el-card(header)` → `el-table stripe`（**操作列用 `link` 按钮**）→ 行内轻操作用 `el-popconfirm`（如「确认停用？」）→ 详情用 `el-drawer`、表单用 `el-dialog` |
+| **空态文案句式** | 既有 `empty-text="暂无端点"` 模式 | 同句式：`暂无模板族`／`暂无措施建议`／`暂无已注册的评分类型` |
+| **响应式** | tokens.css 三端断点 | `proto.css` §21 按 **≥1280／768–1279／<768** 同断点适配（移动端隐藏侧栏、表格横向滚动、触控目标 ≥44px 沿用 tokens 规则） |
+| **无障碍** | 既有设计系统 | 语义表格/表单、错误与字段关联、折叠控件 `aria-expanded`、`prefers-reduced-motion` |
+
+**模块归属与命名一致性**：本版 8 个页面**落点 `openbase-ui/src/modules/portrait/pages/`**（该模块既有 11 页，含 4 个 `Dps*View.vue` —— 与《权限限流API管理与监控归属裁定与收口方案》四项能力对应），**新增页面沿用 `Dps*View.vue` 命名风格**（如 `DpsTemplateListView.vue`／`DpsPackageView.vue`），**不新建模块、不改既有页面**。
+
+**易操作性（用户视角）**：① 行内轻操作不跳页、不弹全屏；② 危险操作（回滚/导入实做）二次确认并携带影响面摘要；③ 结果区左右对照（预检 vs 实做）；④ 能力未启用**页顶第一时间可见**；⑤ `basis` 默认收起避免技术文本干扰主指标。
 
 ---
 
@@ -130,4 +148,5 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.1.0** | 2026-09-29 | **UI-OpenBase-Dev** | **设计一致性对齐（依用户要求）**：新增 **§1.1 设计一致性对齐** —— 明确 7 个对齐维度的**真实基准来源**（`tokens.css` 的 `--ob-*` 变量／Element Plus 组件库／`AppLayout.vue` 布局／既有 `modules/portrait/pages/DpsApiManageView.vue` 页面模式／空态句式／三端断点／无障碍），并落实**模块归属与命名一致性**（8 页落点 `modules/portrait/pages/`，沿用 `Dps*View.vue` 命名）与**易操作性 5 条**。**原型全量重做**（`prototype/proto.css` ＋ 9 文件）：由初版自造深色视觉**改为**「照搬 token ＋ 浅色主题 ＋ Element Plus 视觉 ＋ 既有侧栏/顶栏布局」 |
 | v1.0.0 | 2026-09-29 | UI-OpenBase-Dev | 初始创建（Step 2 §2.5b 产出）：**设计总览**（8 页 × 8 态，线框原型，**不改设计系统**）；**8 页布局与交互要点**；**交互状态清单 8 态**（作为 E2E 断言基线）；**关键交互规范 4 组**（回滚二次确认四要素／`basis` 折叠含**强制展开场景**／导入模式**不得默认实做**／未启用与降级三分支）；**原型 IN/OUT 衔接**（**RT 8/8 ＋ DT 全覆盖映射**，OUT 至 Step 3／4 要求）；**无障碍 6 项**。状态 [Review]。 |

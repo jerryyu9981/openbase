@@ -1,0 +1,256 @@
+/* ============================================================================
+ * OpenBase 原型共享样式（v1.4.10 · DPS 模板化能力对接）
+ * ----------------------------------------------------------------------------
+ * 设计一致性铁律：
+ *   1) **token 逐项照搬** `openbase-ui/src/core/styles/tokens.css`（值不得自造）；
+ *   2) **视觉语言对齐 Element Plus**（项目组件库），模拟 el-card / el-table(stripe)
+ *      / el-button(primary|link|danger) / el-tag / el-input / el-dialog / el-drawer
+ *      / el-alert / el-empty / el-descriptions / el-pagination；
+ *   3) **布局对齐 AppLayout.vue**：el-aside(220px, 折叠 64px) + el-header(56px) + el-main；
+ *   4) 页面结构对齐既有 portrait 模块页面：`.page-toolbar` → `el-card(header)` →
+ *      `el-table stripe`（操作列用 link 按钮）→ 危险操作 `el-popconfirm` → 详情 `el-drawer`。
+ * ========================================================================== */
+
+/* ---------- 1. 设计系统 token（照搬 tokens.css，勿改值） ---------- */
+:root {
+  --ob-primary: #2563eb;
+  --ob-success: #16a34a;
+  --ob-warning: #d97706;
+  --ob-danger: #dc2626;
+  --ob-info: #64748b;
+  --ob-bg: #f8fafc;
+  --ob-surface: #ffffff;
+  --ob-border: #e2e8f0;
+  --ob-text: #0f172a;
+  --ob-text-secondary: #475569;
+  --ob-text-disabled: #94a3b8;
+  --ob-radius-sm: 4px;
+  --ob-radius-md: 8px;
+  --ob-radius-lg: 12px;
+  --ob-shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
+  --ob-shadow-md: 0 4px 12px rgba(15, 23, 42, .08);
+  --ob-shadow-lg: 0 8px 24px rgba(15, 23, 42, .12);
+  --ob-breakpoint-lg: 1280px;
+  --ob-breakpoint-md: 768px;
+  --ob-sidebar-width: 220px;
+  --ob-header-height: 56px;
+  /* Element Plus 语义色（与 token 对齐） */
+  --el-border-color-lighter: #ebeef5;
+  --el-fill-color-light: #f5f7fa;
+  --el-border-color: #dcdfe6;
+}
+
+/* ---------- 2. 基础 ---------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--ob-bg);
+  color: var(--ob-text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+code { background: var(--el-fill-color-light); padding: 1px 6px; border-radius: var(--ob-radius-sm); font-family: Consolas, Monaco, monospace; font-size: 12.5px; color: #c7254e; }
+a { color: var(--ob-primary); text-decoration: none; }
+
+/* ---------- 3. 布局（对齐 AppLayout.vue） ---------- */
+.ob-layout { display: flex; min-height: 100vh; }
+.ob-sidebar {
+  width: var(--ob-sidebar-width); flex: 0 0 var(--ob-sidebar-width);
+  background: var(--ob-surface); border-right: 1px solid var(--ob-border);
+  display: flex; flex-direction: column;
+}
+.ob-logo {
+  height: var(--ob-header-height); display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--ob-primary); letter-spacing: .5px;
+  border-bottom: 1px solid var(--ob-border); font-size: 15px;
+}
+.ob-menu { padding: 8px 0; flex: 1; }
+.ob-menu-group { padding: 12px 16px 6px; font-size: 12px; color: var(--ob-text-disabled); }
+.ob-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; height: 40px; font-size: 14px; color: var(--ob-text-secondary);
+  border-left: 3px solid transparent;
+}
+.ob-menu-item:hover { background: var(--el-fill-color-light); }
+.ob-menu-item.is-active { color: var(--ob-primary); background: #eff6ff; border-left-color: var(--ob-primary); font-weight: 600; }
+.ob-menu-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ob-text-disabled); }
+.ob-menu-item.is-active .dot { background: var(--ob-primary); }
+
+.ob-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ob-header {
+  height: var(--ob-header-height); flex: 0 0 var(--ob-header-height);
+  background: var(--ob-surface); border-bottom: 1px solid var(--ob-border);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+}
+.ob-header-title { font-size: 15px; font-weight: 600; }
+.ob-user { color: var(--ob-text-secondary); font-size: 13px; }
+.ob-main { padding: 20px; flex: 1; }
+
+/* ---------- 4. 面包屑与页头 ---------- */
+.ob-breadcrumb { font-size: 13px; color: var(--ob-text-secondary); margin-bottom: 14px; }
+.ob-breadcrumb .sep { margin: 0 6px; color: var(--ob-text-disabled); }
+.ob-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.ob-page-title { font-size: 18px; font-weight: 600; margin: 0; }
+.ob-page-desc { color: var(--ob-text-secondary); font-size: 12.5px; margin-top: 4px; }
+
+/* ---------- 5. 工具条（对齐既有 .page-toolbar） ---------- */
+.page-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.page-toolbar .grow { flex: 1; }
+
+/* ---------- 6. 卡片（模拟 el-card） ---------- */
+.el-card {
+  background: var(--ob-surface); border: 1px solid var(--ob-border);
+  border-radius: var(--ob-radius-md); box-shadow: var(--ob-shadow-sm);
+  margin-bottom: 16px; overflow: hidden;
+}
+.el-card__header {
+  padding: 14px 20px; border-bottom: 1px solid var(--el-border-color-lighter);
+  font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.el-card__body { padding: 18px 20px; }
+
+/* ---------- 7. 表格（模拟 el-table stripe） ---------- */
+.ob-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.el-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.el-table th {
+  background: var(--el-fill-color-light); color: var(--ob-text-secondary);
+  font-weight: 600; text-align: left; padding: 11px 12px;
+  border-bottom: 1px solid var(--el-border-color-lighter); white-space: nowrap;
+}
+.el-table td {
+  padding: 11px 12px; border-bottom: 1px solid var(--el-border-color-lighter);
+  color: var(--ob-text); vertical-align: middle;
+}
+.el-table--stripe tbody tr:nth-child(even) { background: #fafafa; }
+.el-table tbody tr:hover { background: #f5f7fa; }
+
+/* ---------- 8. 按钮（模拟 el-button） ---------- */
+.el-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  height: 32px; padding: 0 15px; border-radius: var(--ob-radius-sm);
+  border: 1px solid var(--el-border-color); background: var(--ob-surface);
+  color: #606266; font-size: 14px; cursor: pointer; white-space: nowrap;
+}
+.el-button:hover { color: var(--ob-primary); border-color: #c6e2ff; background: #ecf5ff; }
+.el-button--primary { background: var(--ob-primary); border-color: var(--ob-primary); color: #fff; }
+.el-button--primary:hover { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.el-button--danger { background: var(--ob-danger); border-color: var(--ob-danger); color: #fff; }
+.el-button--danger:hover { background: #b91c1c; color: #fff; }
+.el-button--link { border: none; background: transparent; color: var(--ob-primary); padding: 0 6px; height: auto; }
+.el-button--link:hover { background: transparent; color: #1d4ed8; }
+.el-button--link.el-button--danger { color: var(--ob-danger); }
+.el-button--small { height: 26px; padding: 0 10px; font-size: 12.5px; }
+.el-button--disabled { color: var(--ob-text-disabled); border-color: var(--ob-border); background: #fafafa; cursor: not-allowed; }
+
+/* ---------- 9. 表单控件（模拟 el-input / el-select） ---------- */
+.el-input, .el-select {
+  height: 32px; padding: 0 11px; border: 1px solid var(--el-border-color);
+  border-radius: var(--ob-radius-sm); background: var(--ob-surface); color: var(--ob-text);
+  font-size: 14px; display: inline-flex; align-items: center; min-width: 160px;
+}
+.el-input::placeholder { color: var(--ob-text-disabled); }
+.el-input--textarea { height: auto; padding: 8px 11px; width: 100%; font-family: inherit; }
+.el-form-item { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.el-form-item > label { width: 84px; flex: 0 0 84px; color: var(--ob-text-secondary); font-size: 13.5px; text-align: right; }
+.el-radio { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; }
+.el-checkbox-line { display: flex; gap: 18px; flex-wrap: wrap; }
+
+/* ---------- 10. 标签（模拟 el-tag） ---------- */
+.el-tag {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  border-radius: var(--ob-radius-sm); font-size: 12px; line-height: 1;
+  background: #ecf5ff; border: 1px solid #d9ecff; color: var(--ob-primary);
+}
+.el-tag--success { background: #f0f9eb; border-color: #e1f3d8; color: var(--ob-success); }
+.el-tag--warning { background: #fdf6ec; border-color: #faecd8; color: var(--ob-warning); }
+.el-tag--danger { background: #fef0f0; border-color: #fde2e2; color: var(--ob-danger); }
+.el-tag--info { background: #f4f4f5; border-color: #e9e9eb; color: var(--ob-text-secondary); }
+
+/* ---------- 11. 提示条（模拟 el-alert） ---------- */
+.el-alert {
+  display: flex; gap: 10px; padding: 10px 14px; border-radius: var(--ob-radius-sm);
+  font-size: 13.5px; margin-bottom: 14px; border: 1px solid;
+}
+.el-alert--info { background: #f4f8ff; border-color: #d9ecff; color: #1d4ed8; }
+.el-alert--warning { background: #fdf6ec; border-color: #faecd8; color: #a35b00; }
+.el-alert--error { background: #fef0f0; border-color: #fde2e2; color: #b91c1c; }
+.el-alert--success { background: #f0f9eb; border-color: #e1f3d8; color: #15803d; }
+.el-alert__title { font-weight: 600; }
+
+/* ---------- 12. 空态 / 加载 / 错误（模拟 el-empty / el-result） ---------- */
+.el-empty { padding: 34px 16px; text-align: center; color: var(--ob-text-disabled); }
+.el-empty__desc { margin-top: 6px; font-size: 13.5px; }
+.el-skeleton { display: inline-block; height: 12px; border-radius: var(--ob-radius-sm); background: linear-gradient(90deg, #eef2f7 25%, #f6f8fb 37%, #eef2f7 63%); }
+.ob-state-block { border: 1px dashed var(--ob-border); border-radius: var(--ob-radius-md); padding: 16px; background: #fcfdff; }
+
+/* ---------- 13. 统计块 ---------- */
+.ob-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.ob-metric { background: var(--ob-surface); border: 1px solid var(--ob-border); border-radius: var(--ob-radius-md); padding: 14px 16px; box-shadow: var(--ob-shadow-sm); }
+.ob-metric__num { font-size: 24px; font-weight: 700; color: var(--ob-text); }
+.ob-metric__label { color: var(--ob-text-secondary); font-size: 12.5px; margin-top: 2px; }
+
+/* ---------- 14. 弹窗 / 抽屉（模拟 el-dialog / el-drawer） ---------- */
+.el-dialog-mask { position: fixed; inset: 0; background: rgba(15, 23, 42, .45); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.el-dialog {
+  width: 560px; max-width: 92vw; background: var(--ob-surface); border-radius: var(--ob-radius-md);
+  box-shadow: var(--ob-shadow-lg); overflow: hidden;
+}
+.el-dialog__header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-lighter); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.el-dialog__body { padding: 18px 20px; }
+.el-dialog__footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-lighter); display: flex; justify-content: flex-end; gap: 10px; background: #fcfdff; }
+.el-drawer { width: 480px; max-width: 92vw; background: var(--ob-surface); border-left: 1px solid var(--ob-border); box-shadow: var(--ob-shadow-lg); height: 100%; }
+.el-drawer__header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-lighter); font-weight: 600; }
+.el-drawer__body { padding: 18px 20px; overflow-y: auto; }
+
+/* ---------- 15. 描述列表（模拟 el-descriptions） ---------- */
+.el-descriptions { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.el-descriptions th { width: 120px; background: var(--el-fill-color-light); color: var(--ob-text-secondary); font-weight: 500; text-align: left; padding: 8px 11px; border: 1px solid var(--el-border-color-lighter); }
+.el-descriptions td { padding: 8px 11px; border: 1px solid var(--el-border-color-lighter); }
+
+/* ---------- 16. 折叠/气泡（basis 口径，ADR-06） ---------- */
+.ob-basis { border: 1px dashed var(--el-border-color); border-radius: var(--ob-radius-sm); padding: 10px 12px; background: #fcfdff; margin-top: 12px; }
+.ob-basis__trigger { color: var(--ob-primary); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.ob-basis__trigger .caret { display: inline-block; transition: transform .15s; }
+.ob-basis__content { margin-top: 8px; color: var(--ob-text-secondary); font-size: 12.5px; }
+.ob-basis__content code { background: var(--el-fill-color-light); }
+.ob-basis[data-open="false"] .ob-basis__content { display: none; }
+.ob-basis[data-open="true"] .caret { transform: rotate(90deg); }
+
+/* ---------- 17. 分页（模拟 el-pagination） ---------- */
+.el-pagination { display: flex; align-items: center; gap: 6px; justify-content: flex-end; padding: 12px 4px 0; font-size: 13px; color: var(--ob-text-secondary); }
+.el-pagination .pg { min-width: 28px; height: 28px; border: 1px solid var(--el-border-color); border-radius: var(--ob-radius-sm); display: inline-flex; align-items: center; justify-content: center; background: var(--ob-surface); }
+.el-pagination .pg.is-active { background: var(--ob-primary); border-color: var(--ob-primary); color: #fff; }
+
+/* ---------- 18. 关系树（血缘）与代码块 ---------- */
+.ob-tree { font-family: Consolas, Monaco, monospace; font-size: 12.5px; line-height: 2; color: var(--ob-text-secondary); }
+.ob-tree .root { color: var(--ob-text); font-weight: 600; }
+.code-block { background: #f6f8fa; border: 1px solid var(--el-border-color-lighter); border-radius: var(--ob-radius-sm); padding: 10px 12px; font-family: Consolas, Monaco, monospace; font-size: 12.5px; color: var(--ob-text-secondary); overflow-x: auto; }
+
+/* ---------- 19. 工具类 ---------- */
+.mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; } .mt-16 { margin-top: 16px; }
+.mb-0 { margin-bottom: 0; } .muted { color: var(--ob-text-secondary); } .sm { font-size: 12.5px; }
+.ob-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ob-flex-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ob-divider { height: 1px; background: var(--el-border-color-lighter); margin: 14px 0; }
+
+/* ---------- 20. 状态标注块（原型专用：说明本页覆盖状态与规范） ---------- */
+.ob-spec {
+  background: #fcfdff; border: 1px solid var(--ob-border); border-left: 3px solid var(--ob-primary);
+  border-radius: var(--ob-radius-sm); padding: 12px 14px; margin-top: 16px; font-size: 13px; color: var(--ob-text-secondary);
+}
+.ob-spec__title { color: var(--ob-text); font-weight: 600; margin-bottom: 6px; }
+.ob-spec ul { margin: 6px 0 0 18px; padding: 0; }
+.ob-spec li { margin: 3px 0; }
+
+/* ---------- 21. 响应式（对齐 tokens.css 三端断点） ---------- */
+@media (max-width: 767px) {
+  .ob-hide-mobile { display: none !important; }
+  .ob-sidebar { display: none; }
+  .ob-main { padding: 12px; }
+  .ob-metrics, .ob-grid-2 { grid-template-columns: 1fr; }
+  .el-table { min-width: 720px; }
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+  .ob-hide-tablet { display: none !important; }
+}

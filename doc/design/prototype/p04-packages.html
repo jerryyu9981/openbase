@@ -2,92 +2,132 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>P-04 包导出／导入 - OpenBase v1.4.10</title>
-<style>
-:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212a;--line:#2a2f3a;--txt:#e6e8ee;--dim:#9aa3b2;--accent:#4f8cff;--warn:#d29922;--err:#f85149;--ok:#3fb950}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
-.wrap{max-width:1000px;margin:0 auto;padding:22px 18px 48px}
-a.back{color:var(--accent);text-decoration:none;font-size:13px}
-h1{font-size:19px;margin:10px 0 4px}.sub{color:var(--dim);font-size:12.5px;margin-bottom:14px}
-.tabs{display:flex;gap:8px;margin:14px 0}
-.tab{border:1px solid var(--line);background:var(--panel);border-radius:7px 7px 0 0;padding:8px 14px;font-size:13px}
-.tab.act{border-color:var(--accent);color:#cfe0ff;background:#101d33}
-.pnl{background:var(--panel);border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:14px}
-.pnl h3{margin:0 0 8px;font-size:13.5px;color:var(--dim);font-weight:600}
-.mode{display:flex;gap:16px;margin:10px 0;padding:10px 12px;border:1px dashed var(--line);border-radius:8px;background:var(--panel2)}
-.mode label{font-size:13px}
-.btn{border:1px solid var(--line);background:var(--panel);color:var(--txt);border-radius:7px;padding:7px 12px;font-size:13px}
-.btn.p{background:#1f3f7a;border-color:#2c5cad}
-.tagp{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid #4a3a10;color:var(--warn)}
-.tage{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid #173a1c;color:var(--ok)}
-code{background:#20252f;padding:1px 6px;border-radius:4px;font-size:12px}
-ul{margin:6px 0 0 18px;padding:0;color:var(--dim);font-size:13px}li{margin:4px 0}
-.k{color:var(--warn)}.e{color:var(--err)}.o{color:var(--ok)}
-.mono{font-family:Consolas,monospace;font-size:12.5px;color:#c9d1d9}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
-th,td{border:1px solid var(--line);padding:7px 10px;text-align:left}
-th{background:var(--panel2);color:var(--dim);font-weight:600;font-size:12.5px}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>包导出／导入 - OpenBase v1.4.10</title>
+<link rel="stylesheet" href="proto.css">
 </head>
-<body><div class="wrap">
-  <a class="back" href="index.html">← 返回设计总览</a>
-  <h1>P-04 模板包导出／导入</h1>
-  <div class="sub">RT-1410-05 · DT-1410-08 · 端点 #1（export）/ #2（import）· 导出读 ＋ 导入<span class="k">写</span></div>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="ob-menu-group">业务模块</div>
+      <a class="ob-menu-item" href="index.html"><span class="dot"></span>设计总览</a>
+      <a class="ob-menu-item" href="p01-templates.html"><span class="dot"></span>模板族管理</a>
+      <a class="ob-menu-item" href="p02-versions.html"><span class="dot"></span>版本对比与回滚</a>
+      <a class="ob-menu-item" href="p03-preflight.html"><span class="dot"></span>预检与影响面</a>
+      <a class="ob-menu-item is-active" href="p04-packages.html"><span class="dot"></span>包导出／导入</a>
+      <a class="ob-menu-item" href="p05-lineage.html"><span class="dot"></span>标签血缘反查</a>
+      <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
+      <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
+      <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <div class="ob-menu-group">平台管理</div>
+      <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
+      <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
+    </nav>
+  </aside>
 
-  <div class="tabs"><span class="tab">导出</span><span class="tab act">导入</span></div>
-  <div class="pnl">
-    <h3>导入文件</h3>
-    <div class="mono">已选择：template-package-20260928.json（format_version 1.0）</div>
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">包导出／导入</div><div class="ob-user">admin ▾</div></header>
 
-    <h3 style="margin-top:14px">导入模式（<b>必须显式选择</b>）</h3>
-    <div class="mode">
-      <label><input type="radio" name="mode" checked> <b>dry_run（预检，不写入）</b> — 默认</label>
-      <label><input type="radio" name="mode"> 实做（写入）</label>
-    </div>
-    <div class="sub">※ <b>不得默认实做</b>；两种模式必须在提交前明确选出。</div>
+    <main class="ob-main">
+      <div class="ob-breadcrumb">DPS 模板化 <span class="sep">/</span> 包导出／导入</div>
+      <div class="ob-page-head">
+        <div>
+          <h1 class="ob-page-title">模板包导出／导入</h1>
+          <div class="ob-page-desc">RT-1410-05 · DT-1410-08 · 端点 #1（export）／#2（import）· 需 <code>portrait_template:create</code></div>
+        </div>
+      </div>
 
-    <h3 style="margin-top:14px">冲突策略</h3>
-    <div class="mono">overwrite ｜ skip ｜ rename（未指定且存在冲突 → 后端 <span class="e">409</span>）</div>
+      <div class="el-card">
+        <div class="el-card__header">
+          <span>
+            <span class="el-tag el-tag--info">导出</span>
+            <span class="el-tag" style="margin-left:6px">导入</span>
+          </span>
+          <span class="sm muted">当前选中：导入</span>
+        </div>
+        <div class="el-card__body">
+          <div class="el-form-item">
+            <label>选择文件</label>
+            <input class="el-input" style="flex:1" value="template-package-20260928.json" readonly>
+            <button class="el-button el-button--small">浏览…</button>
+          </div>
+          <div class="sm muted" style="margin:-6px 0 12px 94px">format_version 1.0 ｜ 大小 128 KB ｜ package_hash <code>sha256:9f2c…</code></div>
 
-    <div style="margin-top:14px"><span class="btn p">执行</span></div>
+          <div class="el-form-item" style="align-items:flex-start">
+            <label style="padding-top:4px">导入模式</label>
+            <div>
+              <label class="el-radio"><input type="radio" name="mode" checked> <b>dry_run（预检，不写入）</b><span class="sm muted" style="margin-left:6px">— 默认</span></label><br>
+              <label class="el-radio mt-8"><input type="radio" name="mode"> 实做（写入）</label>
+              <div class="el-alert el-alert--warning mt-8" style="margin-bottom:0">
+                <div><span class="el-alert__title">不得默认实做</span>：两种模式必须在提交前由用户<b>显式选择</b>；切换为「实做」时应二次确认。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="el-form-item">
+            <label>冲突策略</label>
+            <span class="el-select" style="min-width:150px">skip ▾</span>
+            <span class="sm muted">overwrite ／ skip ／ rename（未指定且存在冲突 → 后端 <code>409</code>）</span>
+          </div>
+
+          <div class="mt-12"><button class="el-button el-button--primary">执行</button></div>
+        </div>
+      </div>
+
+      <div class="ob-grid-2">
+        <div class="el-card mb-0">
+          <div class="el-card__header"><span>结果 · dry_run</span><span class="el-tag el-tag--warning">预检</span></div>
+          <div class="el-card__body">
+            <table class="el-descriptions">
+              <tr><th>would_create</th><td>3</td></tr>
+              <tr><th>would_skip</th><td>1</td></tr>
+              <tr><th>would_conflict</th><td>1</td></tr>
+              <tr><th>errors</th><td class="muted">[]（无）</td></tr>
+            </table>
+            <div class="sm muted mt-8">预检结果<b>不改变库内状态</b>；可导出为预检报告。</div>
+          </div>
+        </div>
+
+        <div class="el-card mb-0">
+          <div class="el-card__header"><span>结果 · 实做</span><span class="el-tag el-tag--success">已执行</span></div>
+          <div class="el-card__body">
+            <table class="el-descriptions">
+              <tr><th>created</th><td>3</td></tr>
+              <tr><th>skipped</th><td>1</td></tr>
+              <tr><th>renamed</th><td class="muted">[]（无）</td></tr>
+              <tr><th>identical</th><td>true</td></tr>
+            </table>
+            <div class="sm muted mt-8">幂等：同 <code>package_hash</code> 重复导入计入 <b>skipped</b>（不重复创建）。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="el-card mt-16">
+        <div class="el-card__header"><span>失败项（逐条列出）</span><span class="el-tag el-tag--danger">1 项</span></div>
+        <div class="el-card__body">
+          <table class="el-table el-table--stripe">
+            <thead><tr><th style="width:70px">#</th><th style="width:220px">对象</th><th>原因</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><code>legacy-score-v2</code>（portrait_template）</td><td>目标库已存在同名且未指定冲突策略（<code>409</code>）</td></tr>
+            </tbody>
+          </table>
+          <div class="sm muted mt-8">※ 失败项<b>逐条列出</b>（不折叠、不合并为计数），便于按条重试。</div>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li><b>加载态</b>／<b>空态</b>／<b>成功态（预检与实做视觉可区分：标签 ＋ 配色）</b>；写操作含<b>表单提交态</b>（按钮 loading、期间禁重复提交）。</li>
+          <li><b>400</b>：<code>format_version</code> 不支持 → 「不支持 format_version=2.0（支持: 1.0）」；<b>409</b>：冲突未指定策略；<b>422</b>：包结构非法（白名单校验失败）；<b>403</b>／<b>5xx</b> 沿用统一呈现。</li>
+          <li><b>易操作性</b>：导出／导入以<b>页签</b>并列（同一功能族同页）；模式选择<b>默认落在最安全的 dry_run</b>；结果区左右对照，一眼区分「预检」与「已执行」。</li>
+          <li>前端<b>不改动包内容</b>（原样透传），结构校验以 DPS 白名单为准。</li>
+        </ul>
+      </div>
+    </main>
   </div>
-
-  <div class="grid2" style="margin-top:14px">
-    <div class="pnl"><h3>结果：dry_run <span class="tagp">预检</span></h3>
-      <table>
-        <tr><th>项</th><th>值</th></tr>
-        <tr><td>would_create</td><td>3</td></tr>
-        <tr><td>would_skip</td><td>1</td></tr>
-        <tr><td>would_conflict</td><td>1</td></tr>
-        <tr><td>errors</td><td>[]</td></tr>
-      </table>
-    </div>
-    <div class="pnl"><h3>结果：实做 <span class="tage">已执行</span></h3>
-      <table>
-        <tr><th>项</th><th>值</th></tr>
-        <tr><td>created</td><td>3</td></tr>
-        <tr><td>skipped</td><td>1</td></tr>
-        <tr><td>renamed</td><td>[]</td></tr>
-        <tr><td>identical</td><td>true</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="grid2">
-    <div class="pnl"><h3>失败项（逐条列出）</h3>
-      <ul>
-        <li>失败项必须**逐条**呈现（不折叠、不合并计数）</li>
-        <li>幂等：同 <code>package_hash</code> 重复导入 → 计入 skipped</li>
-      </ul>
-    </div>
-    <div class="pnl"><h3>本页覆盖状态</h3>
-      <ul>
-        <li><span class="k">400</span>：<code>format_version</code> 不支持</li>
-        <li><span class="k">409</span>：冲突且未指定策略</li>
-        <li><code>422</code>：包结构非法（白名单校验失败）</li>
-        <li><b>加载态／成功态（区分 dry_run 与实做）／5xx</b></li>
-      </ul>
-    </div>
-  </div>
-</div></body></html>
+</div>
+</body>
+</html>

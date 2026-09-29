@@ -119,6 +119,8 @@ openbase-ui/src/
 | 项 | 结论 |
 |----|------|
 | `tokens.css` / 设计系统 | **不改**（规划 §2.2 已排除视觉规范改动） |
+| **原型一致性（强制）** | 原型 `doc/design/prototype/` **逐项照搬** `tokens.css` 的 `--ob-*` 变量 ＋ 模拟 **Element Plus** 组件视觉 ＋ 对齐 `AppLayout.vue` 布局（侧栏 220／64px ＋ 顶栏 56px ＋ 内容区）；实现时**不得偏离**（详见 UI 设计文档 §1.1） |
+| **页面落点与命名** | 8 页落点 **`openbase-ui/src/modules/portrait/pages/`**，命名沿用既有 `Dps*View.vue` 风格（如 `DpsTemplateListView.vue`）；**不新建模块、不改既有页面** |
 | 组件复用 | 优先复用既有基础组件；不足时**新增业务组件**（不改基础组件语义） |
 | 无障碍 | 新增交互须满足 UIUX §6（键盘可达、`aria-expanded` 用于 `basis` 折叠、`prefers-reduced-motion`） |
 

@@ -3,132 +3,143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenBase DPS 模块 设计总览 - v1.4.10</title>
-<style>
-  :root{
-    --bg:#0f1115; --panel:#171a21; --panel2:#1d212a; --line:#2a2f3a;
-    --txt:#e6e8ee; --dim:#9aa3b2; --accent:#4f8cff; --ok:#3fb950; --warn:#d29922; --err:#f85149; --info:#58a6ff;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
-  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 56px}
-  h1{font-size:22px;margin:0 0 6px}
-  .sub{color:var(--dim);font-size:13px;margin-bottom:22px}
-  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--info);border-radius:6px;padding:12px 14px;margin:16px 0;color:var(--dim);font-size:13px}
-  h2{font-size:16px;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-  .card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-decoration:none;color:inherit;transition:.15s}
-  .card:hover{border-color:var(--accent);background:var(--panel2);transform:translateY(-1px)}
-  .card .t{font-weight:600;margin-bottom:6px}
-  .card .d{color:var(--dim);font-size:12.5px;min-height:36px}
-  .tags{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
-  .tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#222833;color:var(--dim);border:1px solid var(--line)}
-  .tag.rw{color:var(--warn);border-color:#4a3a10}
-  .tag.ro{color:var(--ok);border-color:#173a1c}
-  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
-  th,td{border:1px solid var(--line);padding:7px 9px;text-align:center}
-  th{background:var(--panel2);color:var(--dim);font-weight:600}
-  td:first-child,th:first-child{text-align:left}
-  .y{color:var(--ok)} .n{color:#4a5160}
-  ul{margin:8px 0 0 18px;padding:0;color:var(--dim);font-size:13px}
-  li{margin:5px 0}
-  code{background:#20252f;padding:1px 6px;border-radius:4px;font-size:12px;color:#c9d1d9}
-  .foot{margin-top:34px;color:#5b6473;font-size:12px;border-top:1px solid var(--line);padding-top:14px}
-</style>
+<title>DPS 模板化 · 设计总览 - OpenBase v1.4.10</title>
+<link rel="stylesheet" href="proto.css">
 </head>
 <body>
-<div class="wrap">
-  <h1>OpenBase · DPS 模块 设计总览</h1>
-  <div class="sub">v1.4.10 承接型小版本（DPS 模板化能力对接深化） · 线框级原型 · 8 页面 × 8 状态</div>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="ob-menu-group">业务模块</div>
+      <a class="ob-menu-item is-active" href="index.html"><span class="dot"></span>设计总览</a>
+      <a class="ob-menu-item" href="p01-templates.html"><span class="dot"></span>模板族管理</a>
+      <a class="ob-menu-item" href="p02-versions.html"><span class="dot"></span>版本对比与回滚</a>
+      <a class="ob-menu-item" href="p03-preflight.html"><span class="dot"></span>预检与影响面</a>
+      <a class="ob-menu-item" href="p04-packages.html"><span class="dot"></span>包导出／导入</a>
+      <a class="ob-menu-item" href="p05-lineage.html"><span class="dot"></span>标签血缘反查</a>
+      <a class="ob-menu-item" href="p06-measures.html"><span class="dot"></span>措施建议</a>
+      <a class="ob-menu-item" href="p07-scoring.html"><span class="dot"></span>评分类型</a>
+      <a class="ob-menu-item" href="p08-annotation.html"><span class="dot"></span>AI 标注与复核</a>
+      <div class="ob-menu-group">平台管理</div>
+      <span class="ob-menu-item"><span class="dot"></span>身份与权限</span>
+      <span class="ob-menu-item"><span class="dot"></span>可观测性</span>
+    </nav>
+  </aside>
 
-  <div class="note">
-    <b>声明</b>：本版<b>不修改</b>前端设计系统与 <code>tokens.css</code>（规划 §2.2 已排除视觉规范改动）。
-    本原型为<b>线框级</b>，仅表达页面结构、交互与状态，视觉样式一律复用现有 token。
-    <br><b>打开方式</b>：本页支持 <code>file://</code> 直接打开，各页面为相对路径互链。
+  <div class="ob-body">
+    <header class="ob-header">
+      <div class="ob-header-title">DPS 模板化 · 设计总览</div>
+      <div class="ob-user">admin ▾</div>
+    </header>
+
+    <main class="ob-main">
+      <div class="ob-breadcrumb">DPS 模板化 <span class="sep">/</span> 设计总览</div>
+      <div class="ob-page-head">
+        <div>
+          <h1 class="ob-page-title">v1.4.10 设计总览（DPS 模板化能力对接深化）</h1>
+          <div class="ob-page-desc">线框级原型 · 8 页面 × 8 状态 · 视觉与交互<b>对齐统一前端既有设计系统</b></div>
+        </div>
+        <div><span class="el-tag el-tag--success">设计基线待批准</span></div>
+      </div>
+
+      <div class="el-alert el-alert--info">
+        <div>
+          <div class="el-alert__title">设计一致性声明</div>
+          <div>本原型样式<b>逐项照搬</b> <code>core/styles/tokens.css</code> 的 <code>--ob-*</code> 变量，视觉语言对齐项目组件库 <b>Element Plus</b>，布局对齐 <code>AppLayout.vue</code>（侧栏 220px ＋ 顶栏 56px ＋ 内容区），页面结构对齐既有 <code>modules/portrait/pages/</code> 模式（<code>page-toolbar ＋ el-card ＋ el-table(stripe) ＋ 抽屉/弹窗</code>）。<b>不引入任何新视觉规范。</b></div>
+        </div>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__header"><span>页面导航（8 页）</span><span class="sm muted">点击进入各页线框</span></div>
+        <div class="el-card__body">
+          <table class="el-table el-table--stripe">
+            <thead>
+              <tr><th style="width:64px">页面</th><th>页面名称</th><th>核心交互</th><th style="width:120px">读写</th><th style="width:170px">追溯</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><a href="p01-templates.html">P-01</a></td><td><a href="p01-templates.html">模板族管理</a></td><td>列表（分页）＋ 详情抽屉 ＋ 启停确认</td><td><span class="el-tag">读</span> <span class="el-tag el-tag--warning">写</span></td><td>RT-02 · DT-05</td></tr>
+              <tr><td><a href="p02-versions.html">P-02</a></td><td><a href="p02-versions.html">版本对比与回滚</a></td><td>双版本差异 ＋ <b>回滚二次确认四要素</b> ＋ 生效验证</td><td><span class="el-tag">读</span> <span class="el-tag el-tag--warning">写</span></td><td>RT-03 · DT-06</td></tr>
+              <tr><td><a href="p03-preflight.html">P-03</a></td><td><a href="p03-preflight.html">预检与影响面</a></td><td>显式「预检（不写入）」＋ 影响面 ＋ <code>basis</code> 折叠</td><td><span class="el-tag el-tag--success">只读</span></td><td>RT-04 · DT-07</td></tr>
+              <tr><td><a href="p04-packages.html">P-04</a></td><td><a href="p04-packages.html">包导出／导入</a></td><td>导入模式单选（<b>不得默认实做</b>）＋ 结果可区分</td><td><span class="el-tag">导出</span> <span class="el-tag el-tag--warning">导入（写）</span></td><td>RT-05 · DT-08</td></tr>
+              <tr><td><a href="p05-lineage.html">P-05</a></td><td><a href="p05-lineage.html">标签血缘反查</a></td><td>三层维度 ＋ 影响面 ＋ 无谱系 404 文案</td><td><span class="el-tag el-tag--success">只读</span></td><td>RT-06 · DT-09</td></tr>
+              <tr><td><a href="p06-measures.html">P-06</a></td><td><a href="p06-measures.html">措施建议</a></td><td>只读列表；<b>原样呈现</b>（含 disclaimer）</td><td><span class="el-tag el-tag--success">只读</span></td><td>RT-07 · DT-10</td></tr>
+              <tr><td><a href="p07-scoring.html">P-07</a></td><td><a href="p07-scoring.html">评分类型</a></td><td>只读列表；空态正常呈现</td><td><span class="el-tag el-tag--success">只读</span></td><td>RT-09 · DT-12</td></tr>
+              <tr><td><a href="p08-annotation.html">P-08</a></td><td><a href="p08-annotation.html">AI 标注候选与复核</a></td><td>关闭态零写入；复核辅助走 <code>llm_proxy</code>；提交走 DPS review</td><td><span class="el-tag el-tag--warning">写</span></td><td>RT-08 · DT-11</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__header"><span>状态覆盖矩阵（8 态 × 8 页）</span></div>
+        <div class="el-card__body">
+          <div class="ob-table-scroll">
+            <table class="el-table el-table--stripe">
+              <thead>
+                <tr><th>页面</th><th>400</th><th>403</th><th>404</th><th>409</th><th>空态</th><th>未启用</th><th>5xx</th><th>加载</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>P-01 模板族管理</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-02 版本对比与回滚</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-03 预检与影响面</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-04 包导出／导入</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-05 标签血缘反查</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-06 措施建议</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-07 评分类型</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+                <tr><td>P-08 AI 标注候选与复核</td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td class="muted">—</td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td><td><span class="el-tag el-tag--success">✓</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-grid-2">
+        <div class="el-card mb-0">
+          <div class="el-card__header"><span>跨页关键交互（统一规范）</span></div>
+          <div class="el-card__body">
+            <ul style="margin:0 0 0 18px;padding:0" class="muted">
+              <li><b>回滚二次确认四要素</b>（P-02）：目标版本 ／ 影响面摘要（含 <code>basis</code>）／ 不可撤销提示 ／ 主按钮「确认回滚」——<b>禁止</b>一键直执行。</li>
+              <li><b><code>basis</code> 折叠</b>（P-03／P-05）：默认收起，点「口径」展开；<code>tag_count = 0</code> 时<b>强制展开</b>；<code>aria-expanded</code> 正确维护。</li>
+              <li><b>导入模式</b>（P-04）：单选，<b>默认 <code>dry_run</code></b>；预检与实做结果视觉可区分。</li>
+              <li><b>未启用与降级</b>（P-08）：403 未启用（非报错样式）／503 适配器不可用（<b>人工路径不受影响</b>）／409 未复核不得进入标签·画像路径。</li>
+              <li><b>不静默降级</b>（全部）：5xx 或上游不可用 → 明确提示 ＋ 重试入口。</li>
+              <li><b>前端不做权限判定</b>（全部）：仅呈现后端 403。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="el-card mb-0">
+          <div class="el-card__header"><span>追溯映射</span></div>
+          <div class="el-card__body">
+            <table class="el-table">
+              <thead><tr><th>页面</th><th>RT-ID</th><th>DT-ID</th><th>主要端点</th></tr></thead>
+              <tbody>
+                <tr><td>P-01</td><td>RT-1410-02</td><td>DT-1410-05</td><td>#1 #2 #3</td></tr>
+                <tr><td>P-02</td><td>RT-1410-03</td><td>DT-1410-06</td><td>#3 #4</td></tr>
+                <tr><td>P-03</td><td>RT-1410-04</td><td>DT-1410-07</td><td>#5 #7</td></tr>
+                <tr><td>P-04</td><td>RT-1410-05</td><td>DT-1410-08</td><td>#1 #2</td></tr>
+                <tr><td>P-05</td><td>RT-1410-06</td><td>DT-1410-09</td><td>#6 #7</td></tr>
+                <tr><td>P-06</td><td>RT-1410-07</td><td>DT-1410-10</td><td>#8</td></tr>
+                <tr><td>P-07</td><td>RT-1410-09</td><td>DT-1410-12</td><td>#10</td></tr>
+                <tr><td>P-08</td><td>RT-1410-08</td><td>DT-1410-11</td><td>#9 ＋ <code>llm_proxy/chat</code> ＋ DPS review</td></tr>
+              </tbody>
+            </table>
+            <div class="sm muted mt-8">端点编号对应《API 接口设计文档-v1.4.10》§1 的 10 条新增路由（#1~#10）。<b>页面↔端点映射覆盖率 100%</b>（DT-23／AC-18）。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">原型使用说明（审核人）</div>
+        <ul>
+          <li>本原型为<b>线框级</b>：表达页面结构、交互与状态，<b>样式复用现有 token 与 Element Plus</b>，可用于审核确认「功能与交互是否符合预期」。</li>
+          <li>各页面均可 <code>file://</code> 直接打开，左侧菜单为相对路径互链，<b>全部链接有效</b>。</li>
+          <li>页面底部「本页覆盖状态」块列出该页需实现的状态与规范要点，供 Step 3 实现对照与 Step 4 断言引用。</li>
+        </ul>
+      </div>
+    </main>
   </div>
-
-  <h2>1. 页面导航（8 页）</h2>
-  <div class="grid">
-    <a class="card" href="p01-templates.html">
-      <div class="t">P-01 模板族管理</div>
-      <div class="d">列表（分页）＋ 详情抽屉 ＋ 启停确认</div>
-      <div class="tags"><span class="tag ro">读</span><span class="tag rw">写：启停</span><span class="tag">DT-05</span><span class="tag">RT-02</span></div>
-    </a>
-    <a class="card" href="p02-versions.html">
-      <div class="t">P-02 版本对比与回滚</div>
-      <div class="d">双版本差异 ＋ <b>回滚二次确认四要素</b> ＋ 生效验证</div>
-      <div class="tags"><span class="tag ro">读</span><span class="tag rw">写：回滚</span><span class="tag">DT-06</span><span class="tag">RT-03</span></div>
-    </a>
-    <a class="card" href="p03-preflight.html">
-      <div class="t">P-03 预检与影响面</div>
-      <div class="d">显式「预检（不写入）」＋ 影响面三项 ＋ <code>basis</code> 折叠</div>
-      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-07</span><span class="tag">RT-04</span></div>
-    </a>
-    <a class="card" href="p04-packages.html">
-      <div class="t">P-04 包导出／导入</div>
-      <div class="d">导入模式单选（<b>不得默认实做</b>）＋ dry-run 与实做可区分</div>
-      <div class="tags"><span class="tag ro">导出</span><span class="tag rw">导入（写）</span><span class="tag">DT-08</span><span class="tag">RT-05</span></div>
-    </a>
-    <a class="card" href="p05-lineage.html">
-      <div class="t">P-05 标签血缘反查</div>
-      <div class="d">三层维度 ＋ 影响面 ＋ 无谱系 → 404 文案</div>
-      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-09</span><span class="tag">RT-06</span></div>
-    </a>
-    <a class="card" href="p06-measures.html">
-      <div class="t">P-06 措施建议</div>
-      <div class="d">只读列表；<b>原样呈现</b>（含 disclaimer）</div>
-      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-10</span><span class="tag">RT-07</span></div>
-    </a>
-    <a class="card" href="p07-scoring.html">
-      <div class="t">P-07 评分类型</div>
-      <div class="d">只读列表；空态正常呈现</div>
-      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-12</span><span class="tag">RT-09</span></div>
-    </a>
-    <a class="card" href="p08-annotation.html">
-      <div class="t">P-08 AI 标注候选与复核</div>
-      <div class="d">关闭态零写入；复核辅助走 <code>llm_proxy</code>；提交走 DPS review</div>
-      <div class="tags"><span class="tag rw">写</span><span class="tag">跨两上游</span><span class="tag">DT-11</span><span class="tag">RT-08</span></div>
-    </a>
-  </div>
-
-  <h2>2. 状态覆盖矩阵（8 态 × 8 页）</h2>
-  <table>
-    <tr><th>页面</th><th>400</th><th>403</th><th>404</th><th>409</th><th>空态</th><th>未启用</th><th>5xx</th><th>加载</th></tr>
-    <tr><td>P-01 模板族管理</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>P-02 版本对比与回滚</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>P-03 预检与影响面</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>P-04 包导出／导入</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>P-05 标签血缘反查</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>P-06 措施建议</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>P-07 评分类型</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
-    <tr><td>P-08 AI 标注候选与复核</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
-  </table>
-
-  <h2>3. 关键交互（跨页规范）</h2>
-  <ul>
-    <li><b>回滚二次确认四要素</b>（P-02）：目标版本 ／ 影响面摘要（含 <code>basis</code>）／ 不可撤销提示 ／ 主按钮「确认回滚」——<b>禁止</b>一键直执行入口。</li>
-    <li><b><code>basis</code> 折叠控件</b>（P-03／P-05）：默认收起，点「口径」展开；<code>tag_count = 0</code> 时<b>强制展开</b>；<code>aria-expanded</code> 正确维护；审计导出给完整原文。</li>
-    <li><b>导入模式</b>（P-04）：单选，<b>默认 <code>dry_run</code></b>；预检结果带「预检」标签、实做结果带「已执行」标签，视觉可区分。</li>
-    <li><b>未启用与降级</b>（P-08）：403 未启用（非报错样式）／503 适配器不可用（<b>人工路径不受影响</b>）／409 未复核不得进入标签·画像路径。</li>
-    <li><b>不静默降级</b>（全部）：5xx 或上游不可用 → 明确提示 ＋ 重试入口。</li>
-    <li><b>前端不做权限判定</b>（全部）：仅呈现后端 403。</li>
-  </ul>
-
-  <h2>4. 追溯映射</h2>
-  <table>
-    <tr><th>页面</th><th>RT-ID</th><th>DT-ID</th><th>主要端点</th></tr>
-    <tr><td>P-01</td><td>RT-1410-02</td><td>DT-1410-05</td><td>#1 #2 #3</td></tr>
-    <tr><td>P-02</td><td>RT-1410-03</td><td>DT-1410-06</td><td>#3 #4</td></tr>
-    <tr><td>P-03</td><td>RT-1410-04</td><td>DT-1410-07</td><td>#5 #7</td></tr>
-    <tr><td>P-04</td><td>RT-1410-05</td><td>DT-1410-08</td><td>#1 #2</td></tr>
-    <tr><td>P-05</td><td>RT-1410-06</td><td>DT-1410-09</td><td>#6 #7</td></tr>
-    <tr><td>P-06</td><td>RT-1410-07</td><td>DT-1410-10</td><td>#8</td></tr>
-    <tr><td>P-07</td><td>RT-1410-09</td><td>DT-1410-12</td><td>#10</td></tr>
-    <tr><td>P-08</td><td>RT-1410-08</td><td>DT-1410-11</td><td>DPS #9 ＋ llm_proxy/chat ＋ DPS review</td></tr>
-  </table>
-  <div class="note">端点编号对应《OpenBase-API接口设计文档-v1.4.10》§1 的 10 条新增路由（#1~#10）。<b>页面↔端点映射覆盖率 100%</b>（DT-23／AC-18）。</div>
-
-  <div class="foot">OpenBase v1.4.10 · 设计总览原型 · 生成于 2026-09-29 · 线框级（不含视觉规范）</div>
 </div>
 </body>
 </html>
