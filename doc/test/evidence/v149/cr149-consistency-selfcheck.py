@@ -36,7 +36,9 @@ ALLOWED_DIRS = (
     "doc/development",
     "doc/audit/review",
     "doc/audit/verification",
+    "doc/audit/comprehensive",
     "doc/requirements",
+    "doc/release",
     "doc/test",
     "doc/version/releases",
 )
