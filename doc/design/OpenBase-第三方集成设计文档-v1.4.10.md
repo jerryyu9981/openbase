@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | **[Review]（待设计评审）** |
 | 版本号 | **v1.4.10**（承接型小版本：DPS 模板化能力对接深化） |
 | 轨道 | 🔗 **第三方集成**（DT-27） |
@@ -137,6 +137,21 @@ openbase/dps_proxy  ──四头注入──▶  DPS /api/v2/portrait/*（10 端
 | 3 | **契约文档与实现不一致**（DP-1410-01） | P2 | 双向取证口径（§1 C1~C4）＋ 缺口登记与补登计划 |
 | 4 | `llm_proxy`→OpenLLM 链路未实测 | P2 | 联调时验证（§7） |
 | 5 | DPS 侧 org／tenant 记录未预置 | **P1** | 联调前置（与 #1 同批） |
+| 6 | **DPS 侧标注模板 CRUD 权限点映射缺陷**（G6）：`SUBPATH_RESOURCE_MAP` 键为 `("portrait","annotations")`，实现路径为 `/portrait/annotation-templates` ⇒ 精确匹配不命中，**实际判定资源回落 `portrait`**，`annotation_template:create/update/delete` 对 CRUD 面**不可达** | **P1** | **登记跨仓需求 RT-1410-28 #1** 并派单 DPS 最小版本化补丁；**联调前实测确认**；本版代理层照契约声明 `annotation_template:*` 并原样透传上游裁决，**不臆造处置、不假设已修** |
+| 7 | **DPS 侧 `tag_definition.parent_tag_code` 未落库**（G7）⇒ 子标签／标签层级能力**不存在** | P2 | 需求 §7 **明确排除**；**登记跨仓需求 RT-1410-28 #2**；本版**不做伪功能** |
+
+---
+
+## 8.1 DPS 侧跨仓需求登记（D-1410-03 / G6·G7）
+
+> **取证方式**：均为 **DPS 实现代码核对**结论（非文档推断），符合 §1 C1~C4。
+
+| # | 跨仓项 | 现状（实现证据） | 影响面 | 建议归属 |
+|:-:|--------|------------------|--------|----------|
+| 1 | `permission_middleware.SUBPATH_RESOURCE_MAP` **补键** `("portrait","annotation-templates") → "annotation_template"` | 现键仅有 `("portrait","annotations")`；`_resolve_resource_type` 用**精确元组匹配**（`parts[2], parts[3]`），`annotation-templates` 不命中 ⇒ 回落 `PATH_RESOURCE_MAP["portrait"]` ⇒ 判定资源为 `portrait` | 标注模板 CRUD 的 RBAC 面**语义错位**：仅持 `annotation_template:*` 者可能被拒，而持 `portrait:*` 者可通行；**本版 12 补代理端点中 #17~#20 的权限对齐判据受此影响** | DPS **最小版本化补丁**（口径修正） |
+| 2 | `tag_definition` **落 `parent_tag_code` 列** ＋ 层级读写端点 | 模型 `TagDefinition` 声明 `parent_tag_code`（"父标签编码"），但 `ddl/schema_core.py` 的建表语句**只有** `id/name/dimension/description/color` ⇒ **列不存在、无端点** | 子标签／标签层级能力**不可用** ⇒ FR-1410-17 **明确排除**；P-12 只呈现「分类→标签值」两层 | DPS **独立版本**（新能力） |
+
+> **处置纪律**：两项均**不在本版本仓交付范围**；本版仅**登记**（RT-1410-28）＋ **派单**（见《OpenBase-v1.4.10-跨仓改动规划与派单》）。**在 DPS 交付前，本版测试不得以「已修复」为前提编写断言**；联调须以**实测结果**为准（C1~C4）。
 
 ---
 
@@ -144,4 +159,5 @@ openbase/dps_proxy  ──四头注入──▶  DPS /api/v2/portrait/*（10 端
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.1.0** | 2026-09-29 | **AA-OpenBase-Dev** | **D-1410-03 回写（跨仓缺口 G6／G7 登记）**：① §8 集成风险新增 2 项（#6 标注模板 CRUD **权限点映射缺陷** ⇒ 实际判定资源回落 `portrait`；#7 `tag_definition.parent_tag_code` **未落库** ⇒ 子标签能力不存在）；② **新增 §8.1 DPS 侧跨仓需求登记**（2 项，含实现证据、影响面、建议归属与**处置纪律**：本版仅登记＋派单，DPS 交付前测试不得假设已修）；③ 依 §1 C1~C4 口径重申：两项均为**实现代码取证**结论，非文档推断。 |
 | v1.0.0 | 2026-09-29 | AA-OpenBase-Dev | 初始创建（v1.4.10 Step 2 §2.3c 产出）：**§1 契约核对口径 C1~C4（教训固化：文档＋实现双向取证）**；**§2 集成基线**（含实测 v2.11.1 与鉴权链双向验证）；**§3 集成拓扑 ＋ AI 复核路径设计**（候选生成走 DPS #9／复核辅助走 **`llm_proxy`→OpenLLM**／复核提交 **复用 DPS 既有端点**；**`llm_proxy` 现状核实：已是完整 OpenLLM 通道 ⇒ AD-3 后端零新增**）；**§4 双向取证结果 6 项 ＋ 文档缺口登记 DP-1410-01**（§4 漏登 409 ⇒ 可由 OpenBase 直接补）；**§5 身份与隔离 4 项**（含 `enforce_org_alias` 必须 False、P1 联调前置）；**§6 失败与降级矩阵 7 项**；**§7 版本兼容矩阵**；**§8 集成风险 5 项**（3 项 P1）。状态 [Review]。 |
