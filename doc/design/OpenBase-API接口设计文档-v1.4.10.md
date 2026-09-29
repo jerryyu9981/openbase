@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | **[Review]（待设计评审）** |
 | 版本号 | **v1.4.10**（承接型小版本：DPS 模板化能力对接深化） |
 | 作者 | AA-OpenBase-Dev |
@@ -89,7 +89,7 @@
 | 6 | 血缘反查 | `{tag_code}` | `tag_code／sources[]{annotation_id,template_code,source,adapter_id,created_at}` | **404 无谱系** |
 | 7 | 影响面 | `?template_code=` **或** `?annotation_template_code=` **或** `?tag_code=`（**三层**） | `tag_count／profile_count` ＋ `basis` | **400**（`?field_key=` **显式不支持**，D-6-6） |
 | 8 | 措施建议 | `?person_id=` | `suggestions[]{tag_code,measure_code,measure_text,source_tag}` ＋ **`disclaimer`** | 400／404 |
-| 9 | AI 候选生成 | `text`、`annotation_template` | `annotation{id,review_status:"pending"}`／`source:"ai_annotation"`／`adapter_id` | **403 AI 通道未启用**／**503 适配器不可用（降级非阻塞）** |
+| 9 | AI 候选生成 | `text`、`annotation_template` | `annotation{id,review_status:"pending"}`／`source:"ai_annotation"`／`adapter_id` | **403 AI 通道未启用**／**503 适配器不可用（降级非阻塞）**／**409 未复核候选进入标签·画像路径**（门禁 DT-009） |
 | 10 | 评分类型 | 分页参数 | 列表 | 400（未注册评分类型） |
 
 ### 3.3 预检与影响面口径（契约 §3.7，**D-6-6／D-6-8**）
@@ -155,4 +155,5 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.1.0** | 2026-09-29 | **AA-OpenBase-Dev** | **D-1410-01 自我纠正落笔（双向取证）**：§3.2 端点 #9 错误码**恢复 409**（「未复核候选进入标签·画像路径」，AI 复核门禁 DT-009 —— 经 DPS **实现代码** `routes_profiles.py:695,715` 核对确认），与 **403／503** 并存；**复核提交路径明确**为 DPS **既有端点** `POST /portrait/annotations/{annotation_id}/review`（非 10 新增端点）；**AI 复核辅助经 `llm_proxy`→OpenLLM**（A-1410-01）。§7 待办第 2 项（`llm_proxy` 核对）**已闭环**（核实为完整 OpenLLM 通道 ⇒ AD-3 后端零新增）。详见《OpenBase-第三方集成设计文档-v1.4.10》§1／§3.1／§4 |
 | v1.0.0 | 2026-09-29 | AA-OpenBase-Dev | 初始创建（v1.4.10 Step 2 §2.5a 产出）：**契约基线与职责声明**（不重复上游、不臆造）；**代理路径映射**（10 路由 ＋ **路由注册顺序强制约束**）；**统一约定 8 项**；**端点契约明细**（10 端点 × 权限动作映射〔**D4 已确认四方一致**〕／请求响应要点／错误码）；**预检与影响面口径**（三层维度、`field_key` 400、**`basis` 必返 ＋ A-1410-03 折叠呈现**、包预检同源一致性）；**身份与安全**（org 传值规则、**`enforce_org_alias` 必须 False**、**P1 联调前置**）；**前端调用契约**（`dps.ts` 扩展 ＋ **页面↔端点映射 100%**）；**契约对齐检查 6 项全通过**；**待办 3 项**。状态 [Review]。 |
