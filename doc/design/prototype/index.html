@@ -3,199 +3,132 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenBase 统一前端设计总览 - v1.4.6</title>
+<title>OpenBase DPS 模块 设计总览 - v1.4.10</title>
 <style>
-  :root{--primary:#2563EB;--bg:#F8FAFC;--surface:#fff;--border:#E2E8F0;--text:#0F172A;--sub:#475569;--ok:#16A34A;--warn:#D97706;--err:#DC2626;}
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:32px 16px}
-  .wrap{max-width:1100px;margin:0 auto}
-  header{background:linear-gradient(135deg,#1E3A8A,#2563EB);color:#fff;border-radius:16px;padding:32px;margin-bottom:24px}
-  header h1{font-size:28px;margin-bottom:8px}
-  header p{opacity:.9;font-size:14px}
-  .badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:4px 12px;font-size:12px;margin-top:8px}
-  h2{font-size:20px;margin:28px 0 12px;padding-left:12px;border-left:4px solid var(--primary)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;transition:box-shadow .2s}
-  .card:hover{box-shadow:0 4px 12px rgba(15,23,42,.08)}
-  .card h3{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
-  .tag{font-size:11px;border-radius:99px;padding:2px 8px;white-space:nowrap}
-  .t-p0{background:#FEE2E2;color:var(--err)}.t-p1{background:#FEF3C7;color:var(--warn)}
-  .card p{font-size:13px;color:var(--sub);line-height:1.6}
-  .state{margin-top:8px;font-size:12px;color:var(--sub)}
-  .state b{color:var(--text)}
-  details{margin-top:8px}
-  summary{cursor:pointer;font-size:12px;color:var(--primary)}
-  details ul{margin:8px 0 0 18px;font-size:12px;color:var(--sub);line-height:1.8}
-  footer{margin-top:32px;text-align:center;color:var(--sub);font-size:12px}
-  .note{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:16px;margin:16px 0;font-size:13px;line-height:1.8}
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212a; --line:#2a2f3a;
+    --txt:#e6e8ee; --dim:#9aa3b2; --accent:#4f8cff; --ok:#3fb950; --warn:#d29922; --err:#f85149; --info:#58a6ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 56px}
+  h1{font-size:22px;margin:0 0 6px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--info);border-radius:6px;padding:12px 14px;margin:16px 0;color:var(--dim);font-size:13px}
+  h2{font-size:16px;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-decoration:none;color:inherit;transition:.15s}
+  .card:hover{border-color:var(--accent);background:var(--panel2);transform:translateY(-1px)}
+  .card .t{font-weight:600;margin-bottom:6px}
+  .card .d{color:var(--dim);font-size:12.5px;min-height:36px}
+  .tags{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#222833;color:var(--dim);border:1px solid var(--line)}
+  .tag.rw{color:var(--warn);border-color:#4a3a10}
+  .tag.ro{color:var(--ok);border-color:#173a1c}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:center}
+  th{background:var(--panel2);color:var(--dim);font-weight:600}
+  td:first-child,th:first-child{text-align:left}
+  .y{color:var(--ok)} .n{color:#4a5160}
+  ul{margin:8px 0 0 18px;padding:0;color:var(--dim);font-size:13px}
+  li{margin:5px 0}
+  code{background:#20252f;padding:1px 6px;border-radius:4px;font-size:12px;color:#c9d1d9}
+  .foot{margin-top:34px;color:#5b6473;font-size:12px;border-top:1px solid var(--line);padding-top:14px}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
-  <h1>OpenBase 统一前端 · 设计总览</h1>
-  <p>版本 v1.4.6 · 四系统统一入口 · 动态模块架构 · 统一网关增强（服务发现/聚合编排）· <b>日志中心（三源统一检索）</b> · 响应式三端（≥1280 / 768-1280 / &lt;768）</p>
-  <span class="badge">Vue 3 + TypeScript + Vite + Element Plus + Pinia + ECharts</span>
-</header>
+  <h1>OpenBase · DPS 模块 设计总览</h1>
+  <div class="sub">v1.4.10 承接型小版本（DPS 模板化能力对接深化） · 线框级原型 · 8 页面 × 8 状态</div>
 
-<div class="note">
-  <b>使用说明：</b>本页为设计阶段原型总览首页（file:// 可直接打开）。页面按模块分组列出全部设计页面、优先级与核心交互；点击"交互要点"可展开设计细节。Step 3 实现对照本页与《前端架构设计文档 v1.2.0》《UI 设计文档 v1.2.0》执行；Step 4 E2E 断言以"交互状态清单"为基线。
-</div>
+  <div class="note">
+    <b>声明</b>：本版<b>不修改</b>前端设计系统与 <code>tokens.css</code>（规划 §2.2 已排除视觉规范改动）。
+    本原型为<b>线框级</b>，仅表达页面结构、交互与状态，视觉样式一律复用现有 token。
+    <br><b>打开方式</b>：本页支持 <code>file://</code> 直接打开，各页面为相对路径互链。
+  </div>
 
-<h2>一、公共底座（RT-202 / RT-204）</h2>
-<div class="grid">
-  <div class="card"><h3>登录 /auth/login <span class="tag t-p0">P0</span></h3><p>账号密码 + JWT 登录，表单校验，错误契约映射（AUTH-XXX）。</p><div class="state">状态：<b>加载 / 错误 / 提交 / 成功</b></div>
-    <details><summary>交互要点</summary><ul><li>登录成功 → 跳仪表盘；401 → 提示密码错误</li><li>响应式：表单居中全宽，无横向溢出</li></ul></details></div>
-  <div class="card"><h3>仪表盘 /dashboard <span class="tag t-p0">P0</span></h3><p>统一入口总览：今日/本月 Token、活跃模型数、模块快捷入口、最近活动。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>系统管理 /system/* <span class="tag t-p1">P1</span></h3><p>用户/角色/租户/配置/审计日志（公共能力上移底座，从四系统抽取权限树）。</p><div class="state">状态：<b>空态 / 加载 / 提交</b></div></div>
-</div>
+  <h2>1. 页面导航（8 页）</h2>
+  <div class="grid">
+    <a class="card" href="p01-templates.html">
+      <div class="t">P-01 模板族管理</div>
+      <div class="d">列表（分页）＋ 详情抽屉 ＋ 启停确认</div>
+      <div class="tags"><span class="tag ro">读</span><span class="tag rw">写：启停</span><span class="tag">DT-05</span><span class="tag">RT-02</span></div>
+    </a>
+    <a class="card" href="p02-versions.html">
+      <div class="t">P-02 版本对比与回滚</div>
+      <div class="d">双版本差异 ＋ <b>回滚二次确认四要素</b> ＋ 生效验证</div>
+      <div class="tags"><span class="tag ro">读</span><span class="tag rw">写：回滚</span><span class="tag">DT-06</span><span class="tag">RT-03</span></div>
+    </a>
+    <a class="card" href="p03-preflight.html">
+      <div class="t">P-03 预检与影响面</div>
+      <div class="d">显式「预检（不写入）」＋ 影响面三项 ＋ <code>basis</code> 折叠</div>
+      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-07</span><span class="tag">RT-04</span></div>
+    </a>
+    <a class="card" href="p04-packages.html">
+      <div class="t">P-04 包导出／导入</div>
+      <div class="d">导入模式单选（<b>不得默认实做</b>）＋ dry-run 与实做可区分</div>
+      <div class="tags"><span class="tag ro">导出</span><span class="tag rw">导入（写）</span><span class="tag">DT-08</span><span class="tag">RT-05</span></div>
+    </a>
+    <a class="card" href="p05-lineage.html">
+      <div class="t">P-05 标签血缘反查</div>
+      <div class="d">三层维度 ＋ 影响面 ＋ 无谱系 → 404 文案</div>
+      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-09</span><span class="tag">RT-06</span></div>
+    </a>
+    <a class="card" href="p06-measures.html">
+      <div class="t">P-06 措施建议</div>
+      <div class="d">只读列表；<b>原样呈现</b>（含 disclaimer）</div>
+      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-10</span><span class="tag">RT-07</span></div>
+    </a>
+    <a class="card" href="p07-scoring.html">
+      <div class="t">P-07 评分类型</div>
+      <div class="d">只读列表；空态正常呈现</div>
+      <div class="tags"><span class="tag ro">只读</span><span class="tag">DT-12</span><span class="tag">RT-09</span></div>
+    </a>
+    <a class="card" href="p08-annotation.html">
+      <div class="t">P-08 AI 标注候选与复核</div>
+      <div class="d">关闭态零写入；复核辅助走 <code>llm_proxy</code>；提交走 DPS review</div>
+      <div class="tags"><span class="tag rw">写</span><span class="tag">跨两上游</span><span class="tag">DT-11</span><span class="tag">RT-08</span></div>
+    </a>
+  </div>
 
-<h2>二、OpenLLM 特色模块（RT-205 · 板块重设计）</h2>
-<div class="note">板块按业务域重组：<b>模型中心 / AI 应用 / 对话监控 / 平台联动</b>（公共能力已上移底座；AI 应用为全新补建）。</div>
-<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍模型中心（大模型接入管理）</h3>
-<div class="grid">
-  <div class="card"><h3>模型列表 /openllm/models <span class="tag t-p0">P0</span></h3><p>Tab 分类（全部/本地/开源/商业）、搜索筛选、状态（在线/离线/部署中/异常）、新增编辑弹窗、删除确认。</p><div class="state">状态：<b>空态 / 加载 / 提交</b></div></div>
-  <div class="card"><h3>本地模型 /openllm/models/local <span class="tag t-p0">P0</span></h3><p>卡片网格、启动/停止/删除、Ollama 拉取、运行时长/GPU 占用。</p></div>
-  <div class="card"><h3>开源模型市场 /openllm/models/market <span class="tag t-p1">P1</span></h3><p>搜索/分类/参数量、模型卡片、一键部署。</p></div>
-  <div class="card"><h3>提供商管理 /openllm/providers <span class="tag t-p0">P0</span></h3><p>卡片（类型/状态/模型数/延迟 P50）、启禁用、详情抽屉（密钥脱敏/健康）。</p></div>
-  <div class="card"><h3>提供商注册向导 /openllm/providers/register <span class="tag t-p0">P0</span></h3><p>多步向导：类型→API 配置→测试连接→完成。</p></div>
-  <div class="card"><h3>API 密钥 /openllm/api-keys <span class="tag t-p1">P1</span></h3><p>CRUD/权限范围/过期时间。</p></div>
-  <div class="card"><h3>模型部署向导 /openllm/deploy <span class="tag t-p1">P1</span></h3><p>选模型→并发/超时/缓存→确认→部署日志流式输出。</p></div>
-  <div class="card"><h3>GPU 资源 /openllm/gpu <span class="tag t-p1">P1</span></h3><p>统计卡（总数/已分配/空闲/故障）、分配/释放、10s 轮询。</p></div>
-  <div class="card"><h3>EdgeRouter 适配器 /openllm/adapters <span class="tag t-p1">P1</span></h3><p>卡片网格、健康圆点、心跳、测试连接、注册/注销。</p></div>
-</div>
-<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍AI 应用（全新补建）</h3>
-<div class="grid">
-  <div class="card"><h3>应用管理 /openllm/apps <span class="tag t-p0">P0</span></h3><p>应用 CRUD、模型绑定/Prompt 编排/参数配置、发布/下架、版本管理。</p><div class="state">状态：<b>空态 / 提交</b></div></div>
-  <div class="card"><h3>应用详情 /openllm/apps/:id <span class="tag t-p0">P0</span></h3><p>配置编辑、版本列表、发布历史。</p></div>
-  <div class="card"><h3>调用记录 /openllm/apps/calls <span class="tag t-p1">P1</span></h3><p>分页/筛选/Token 与延迟统计。</p></div>
-  <div class="card"><h3>Playground /openllm/playground <span class="tag t-p0">P0</span></h3><p>模型对话调试（流式 SSE）、导出对话记录。</p></div>
-  <div class="card"><h3>Prompt 模板 /openllm/prompt-templates <span class="tag t-p1">P1</span></h3><p>模板 CRUD、标签/变量占位符、模型关联。</p></div>
-  <div class="card"><h3>Prompt 实验 /openllm/prompt-experiments <span class="tag t-p1">P1</span></h3><p>变体/流量分配/评估指标/胜出设置。</p></div>
-</div>
-<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍对话监控</h3>
-<div class="grid">
-  <div class="card"><h3>对话管理 /openllm/conversations <span class="tag t-p0">P0</span></h3><p>列表（搜索/筛选/分页/多选）、详情（Token 消耗）、JSON 导出、批量删除。</p></div>
-  <div class="card"><h3>监控仪表盘 /openllm/monitoring <span class="tag t-p0">P0</span></h3><p>指标卡（QPS/平均延迟/P50/P99）、趋势图、Provider 分布、时间范围、10s 轮询。</p></div>
-  <div class="card"><h3>链路追踪 /openllm/monitoring/traces <span class="tag t-p1">P1</span></h3><p>Trace 搜索、Span 瀑布图、详情 Tags/Logs。</p></div>
-  <div class="card"><h3>成本分析 /openllm/monitoring/costs <span class="tag t-p1">P1</span></h3><p>堆积柱状图、明细表、导出。</p></div>
-  <div class="card"><h3>预算管理 /openllm/monitoring/budgets <span class="tag t-p1">P1</span></h3><p>列表、告警阈值 80/90/100%。</p></div>
-  <div class="card"><h3>告警中心 /openllm/monitoring/alerts <span class="tag t-p1">P1</span></h3><p>级别、单条/批量确认。</p></div>
-</div>
-<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍平台联动（经动态模块挂载）</h3>
-<div class="grid">
-  <div class="card"><h3>路由策略 /openllm/routing/strategies <span class="tag t-p1">P1</span></h3><p>策略列表（语义/级联/权重/A-B）、优先级、启停。</p></div>
-  <div class="card"><h3>熔断器 /openllm/routing/circuit-breakers <span class="tag t-p1">P1</span></h3><p>环形状态卡（OPEN/HALF_OPEN/CLOSED）、失败阈值/超时、事件时间线、重置。</p></div>
-</div>
+  <h2>2. 状态覆盖矩阵（8 态 × 8 页）</h2>
+  <table>
+    <tr><th>页面</th><th>400</th><th>403</th><th>404</th><th>409</th><th>空态</th><th>未启用</th><th>5xx</th><th>加载</th></tr>
+    <tr><td>P-01 模板族管理</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>P-02 版本对比与回滚</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>P-03 预检与影响面</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>P-04 包导出／导入</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>P-05 标签血缘反查</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>P-06 措施建议</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>P-07 评分类型</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+    <tr><td>P-08 AI 标注候选与复核</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+  </table>
 
-<h2>三、知识库模块（RT-206 · OpenRAG 特色）</h2>
-<div class="grid">
-  <div class="card"><h3>知识库列表 /knowledge <span class="tag t-p1">P1</span></h3><p>卡片/表格视图切换、统计条、创建/编辑、删除确认（级联）。</p><div class="state">状态：<b>空态 / 加载</b></div></div>
-  <div class="card"><h3>知识库详情 /knowledge/:id <span class="tag t-p1">P1</span></h3><p>概览 hero（状态/文档数/嵌入数）、文档管理（上传/状态过滤/多选/重新索引）、分块预览、检索测试台（Agent 模式/来源追溯/评分）。</p></div>
-  <div class="card"><h3>文档状态机展示 <span class="tag t-p1">P1</span></h3><p>pending→parsing→chunking→embedding→indexing→completed/error，轮询进度。</p></div>
-</div>
+  <h2>3. 关键交互（跨页规范）</h2>
+  <ul>
+    <li><b>回滚二次确认四要素</b>（P-02）：目标版本 ／ 影响面摘要（含 <code>basis</code>）／ 不可撤销提示 ／ 主按钮「确认回滚」——<b>禁止</b>一键直执行入口。</li>
+    <li><b><code>basis</code> 折叠控件</b>（P-03／P-05）：默认收起，点「口径」展开；<code>tag_count = 0</code> 时<b>强制展开</b>；<code>aria-expanded</code> 正确维护；审计导出给完整原文。</li>
+    <li><b>导入模式</b>（P-04）：单选，<b>默认 <code>dry_run</code></b>；预检结果带「预检」标签、实做结果带「已执行」标签，视觉可区分。</li>
+    <li><b>未启用与降级</b>（P-08）：403 未启用（非报错样式）／503 适配器不可用（<b>人工路径不受影响</b>）／409 未复核不得进入标签·画像路径。</li>
+    <li><b>不静默降级</b>（全部）：5xx 或上游不可用 → 明确提示 ＋ 重试入口。</li>
+    <li><b>前端不做权限判定</b>（全部）：仅呈现后端 403。</li>
+  </ul>
 
-<h2>四、记忆模块（RT-207 · OpenMemory 特色）</h2>
-<div class="grid">
-  <div class="card"><h3>记忆列表 /memory <span class="tag t-p1">P1</span></h3><p>分页/排序/类型筛选、衰减权重列（≥0.80 绿/0.50~0.79 黄/&lt;0.50 红）、批量删除。</p></div>
-  <div class="card"><h3>记忆详情 /memory/:id <span class="tag t-p1">P1</span></h3><p>完整内容+元数据、关联记忆跳转、WaypointTimeline（create/access/update/recall）。</p></div>
-  <div class="card"><h3>记忆搜索 /memory/search <span class="tag t-p1">P1</span></h3><p>关键词+类型+时间范围、高亮、超时提示。</p></div>
-  <div class="card"><h3>会话管理 /memory/sessions <span class="tag t-p1">P1</span></h3><p>列表（用户/IP/过期/记忆条数）、终止/批量终止、30s 刷新。</p></div>
-  <div class="card"><h3>记忆图谱 /memory/graph <span class="tag t-p1">P1</span></h3><p>力导向图（实体/关系）、搜索过滤。</p></div>
-  <div class="card"><h3>衰减配置 /memory/decay <span class="tag t-p1">P1</span></h3><p>策略（adaptive/time_only/none）、衰减因子、半衰期（默认 30 天）。</p></div>
-  <div class="card"><h3>记忆写入 /memory/write <span class="tag t-p1">P1</span></h3><p>写入表单（memory_type）、多模态上传（图像/音频转录）。</p></div>
-</div>
+  <h2>4. 追溯映射</h2>
+  <table>
+    <tr><th>页面</th><th>RT-ID</th><th>DT-ID</th><th>主要端点</th></tr>
+    <tr><td>P-01</td><td>RT-1410-02</td><td>DT-1410-05</td><td>#1 #2 #3</td></tr>
+    <tr><td>P-02</td><td>RT-1410-03</td><td>DT-1410-06</td><td>#3 #4</td></tr>
+    <tr><td>P-03</td><td>RT-1410-04</td><td>DT-1410-07</td><td>#5 #7</td></tr>
+    <tr><td>P-04</td><td>RT-1410-05</td><td>DT-1410-08</td><td>#1 #2</td></tr>
+    <tr><td>P-05</td><td>RT-1410-06</td><td>DT-1410-09</td><td>#6 #7</td></tr>
+    <tr><td>P-06</td><td>RT-1410-07</td><td>DT-1410-10</td><td>#8</td></tr>
+    <tr><td>P-07</td><td>RT-1410-09</td><td>DT-1410-12</td><td>#10</td></tr>
+    <tr><td>P-08</td><td>RT-1410-08</td><td>DT-1410-11</td><td>DPS #9 ＋ llm_proxy/chat ＋ DPS review</td></tr>
+  </table>
+  <div class="note">端点编号对应《OpenBase-API接口设计文档-v1.4.10》§1 的 10 条新增路由（#1~#10）。<b>页面↔端点映射覆盖率 100%</b>（DT-23／AC-18）。</div>
 
-<h2>五、画像模块（RT-208 · DPS 特色）</h2>
-<div class="grid">
-  <div class="card"><h3>画像列表 /portrait <span class="tag t-p1">P1</span></h3><p>分页/搜索/排序、状态筛选与流转（active/inactive/archived）。</p></div>
-  <div class="card"><h3>画像详情 /portrait/:id <span class="tag t-p1">P1</span></h3><p>基本信息、标签维护（打标/移除）、数据源。</p></div>
-  <div class="card"><h3>画像搜索 /portrait/search <span class="tag t-p1">P1</span></h3><p>关键词+标签组合（AND/OR）、分数/时间范围、模糊搜索、自动补全。</p></div>
-  <div class="card"><h3>标签管理 /portrait/tags <span class="tag t-p1">P1</span></h3><p>分类 CRUD + 值 CRUD + 标签统计。</p></div>
-  <div class="card"><h3>分析报表 /portrait/reports <span class="tag t-p1">P1</span></h3><p>总览/维度分布/标签数量/趋势/组织分布/导出。</p></div>
-  <div class="card"><h3>批量任务 /portrait/batch <span class="tag t-p1">P1</span></h3><p>导入（上传→预检查→执行→状态/错误明细）、导出（筛选/字段/格式/加密）。</p></div>
-</div>
-
-<h2>三、v1.4.0 新增页面（26 项，P1 24 + P2 1 + 网关 2）</h2>
-<div class="note"><b>说明：</b>v1.4.0 为 P1 建议保留项全量补齐 + P2 保留 + 统一网关增强（VC-006）；生态工具链挂起（VC-007）。页面全部复用统一前端底座（布局/Design Token/公共组件），交互状态覆盖空态/加载/错误/成功/表单提交 5 类。Step 3 实现对照《前端架构设计文档 v1.4.0》《系统架构设计文档 v1.4.0》执行。</div>
-<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍OpenLLM 高级功能与系统管理（16 页，P1）</h3>
-<div class="grid">
-  <div class="card"><h3>开源模型市场 /openllm/market <span class="tag t-p1">P1</span></h3><p>分类/搜索/详情/一键下载部署（DT-14-01）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>下载管理 /openllm/downloads <span class="tag t-p1">P1</span></h3><p>任务队列/进度/暂停恢复/重试（DT-14-02）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>GPU 监控 /openllm/gpu <span class="tag t-p1">P1</span></h3><p>卡列表/利用率/显存/温度/趋势（DT-14-03）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>Prompt 模板 /openllm/prompt-templates <span class="tag t-p1">P1</span></h3><p>模板 CRUD/导入/启停/版本（DT-14-04）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>Prompt 实验 /openllm/prompt-experiments <span class="tag t-p1">P1</span></h3><p>实验/变体/流量分配/报表（DT-14-05）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>插件管理 /openllm/plugins <span class="tag t-p1">P1</span></h3><p>插件启停/内置工具查看（DT-14-06）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
-  <div class="card"><h3>工具调用监控 /openllm/tool-calls <span class="tag t-p1">P1</span></h3><p>调用链/取消/状态筛选（DT-14-07）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>A/B 测试 /openllm/ab-tests <span class="tag t-p1">P1</span></h3><p>实验列表/状态管理（DT-14-08）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>角色权限 /system/roles <span class="tag t-p1">P1</span></h3><p>角色 CRUD/权限清单/启停（DT-14-09）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>组织/团队/用户 /system/org <span class="tag t-p1">P1</span></h3><p>组织树/团队/用户 CRUD（DT-14-10）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>工作空间 /system/workspaces <span class="tag t-p1">P1</span></h3><p>CRUD/成员/Virtual Key 轮换（DT-14-11）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>配置管理 /system/config <span class="tag t-p1">P1</span></h3><p>配置编辑/热加载/导入导出（DT-14-12）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
-  <div class="card"><h3>审计日志 /system/audit <span class="tag t-p1">P1</span></h3><p>多维筛选/详情/异常报表（DT-14-13）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>EdgeRouter /system/edgerouter <span class="tag t-p1">P1</span></h3><p>组织/配额/适配器/审计（DT-14-14）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>文档中心 /system/docs <span class="tag t-p1">P1</span></h3><p>分组文档/阅读/搜索（DT-14-15）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>计费三页 /system/billing <span class="tag t-p1">P1</span></h3><p>概览/账单/配额告警（DT-14-16）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-</div>
-<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍OpenRAG / OpenMemory / DPS / P2（8 页，P1 7 + P2 1）</h3>
-<div class="grid">
-  <div class="card"><h3>RAG 管理概览+知识库后台 /openrag/admin <span class="tag t-p1">P1</span></h3><p>KPI/列表/后台删除（DT-14-17）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>RAG 控制台 /openrag/console <span class="tag t-p1">P1</span></h3><p>API 调试/接口文档/性能监控（DT-14-18）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
-  <div class="card"><h3>Memory 运维 /openmemory/ops <span class="tag t-p1">P1</span></h3><p>系统监控/API 测试/设置连接（DT-14-19）。</p><div class="state">状态：<b>空态 / 加载 / 成功</b></div></div>
-  <div class="card"><h3>DPS 限流管理 /dps/rate-limit <span class="tag t-p1">P1</span></h3><p>配额/规则/熔断状态（DT-14-20）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>DPS API 管理 /dps/api-manage <span class="tag t-p1">P1</span></h3><p>端点 CRUD/调试/版本/错误码/导出（DT-14-21）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>DPS 权限管理 /dps/permission <span class="tag t-p1">P1</span></h3><p>角色/权限矩阵/租户（DT-14-22）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交</b></div></div>
-  <div class="card"><h3>DPS 系统监控 /dps/monitor <span class="tag t-p1">P1</span></h3><p>依赖健康/QPS/内存 CPU/告警（DT-14-23）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>P2 辅助页 /p2/assist <span class="tag t-p1">P2</span></h3><p>对比推荐/内容库/报表趋势/排名（DT-14-24，按可用标准）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-</div>
-<h3 style="font-size:14px;color:var(--sub);margin:8px 0">▍统一网关管理（2 页，P1）</h3>
-<div class="grid">
-  <div class="card"><h3>网关服务列表 /gateway/services <span class="tag t-p1">P1</span></h3><p>实例/健康徽标/权重，30s 轮询刷新，注册/下线（DT-14-25，RT-425）。</p><div class="state">状态：<b>空态 / 加载 / 错误</b></div></div>
-  <div class="card"><h3>网关聚合测试 /gateway/aggregate <span class="tag t-p1">P1</span></h3><p>聚合步骤配置/发送/结果与错误展示；健康看板（DT-14-26，RT-426）。</p><div class="state">状态：<b>空态 / 加载 / 表单提交 / 成功</b></div></div>
-</div>
-
-<h2>三、v1.4.3 OpenLLM 对接 · 2 页真实化（FR-143-05/06，R-379）</h2>
-<div class="note">v1.4.3 为 OpenLLM 系统对接（1.4.x 逐个系统对接线第 1 站）：模型管理/对话管理 2 页 mock 替换为真实 API（走 OpenBase llm-proxy，前端零密钥接触）。设计依据《OpenBase-UI设计文档-v1.4.3》《OpenBase-API接口设计文档-v1.4.3》《OpenBase-第三方集成设计文档-v1.4.3》。</div>
-<div class="grid">
-  <div class="card"><h3>模型管理页 /openllm/models <span class="tag t-p1">P1</span></h3><p>GET /api/v1/llm-proxy/models 真实数据（名称/Provider/类型/能力/定价/状态）；详情走 models/{id}；写操作按 OpenLLM 能力适配（默认禁用，缺口登记任务书）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 成功</b></div>
-    <details><summary>交互要点</summary><ul><li>加载态：表格 loading + 搜索防抖</li><li>错误态：请求失败提示 + 重试</li><li>空态：el-empty「暂无数据」</li></ul></details></div>
-  <div class="card"><h3>对话管理页 /openllm/conversations <span class="tag t-p1">P1</span></h3><p>GET /api/v1/llm-proxy/conversations 真实会话数据；新建/归档/删除映射会话端点；聊天视图内嵌 SSE 流式对话（routing→chunk→done 增量渲染）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 流式</b></div>
-    <details><summary>交互要点</summary><ul><li>流式态：输入禁用 + 增量渲染 + 停止按钮</li><li>流中断：错误提示 + 重试</li><li>表单提交态：按钮 loading 禁用</li></ul></details></div>
-  <div class="card"><h3>llm-proxy API 契约（12 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/llm-proxy/models · chat · chat/stream(SSE) · health · conversations*（OpenBase JWT；内层注入 Bearer sk-openllm-）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · SSE 逐事件透传</b></div></div>
-</div>
-
-<h2>四、v1.4.4 OpenRAG 对接 · 2 页真实化（FR-144-05/06，R-380）</h2>
-<div class="note">v1.4.4 为 OpenRAG 系统对接（对接线第 2 站）：知识库管理/RAG 对话 2 页 mock 替换真实 API（走 OpenBase rag-proxy）。关键差异：OpenRAG 上游无认证 → OpenBase 为唯一认证入口。设计依据《OpenBase-UI设计文档-v1.4.4》《OpenBase-API接口设计文档-v1.4.4》《OpenBase-第三方集成设计文档-v1.4.4》。</div>
-<div class="grid">
-  <div class="card"><h3>知识库管理页 /openrag/knowledge <span class="tag t-p1">P1</span></h3><p>GET /api/v1/rag-proxy/collections 真实知识库列表；新建/详情/删除；文档上传（multipart → PENDING 轮询 → COMPLETED/FAILED 状态展示）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 轮询</b></div>
-    <details><summary>交互要点</summary><ul><li>加载态：表格 loading</li><li>轮询态：上传进度提示（2s 间隔）</li><li>错误态：解析失败提示 + 重试</li></ul></details></div>
-  <div class="card"><h3>RAG 对话页 /openrag/chat <span class="tag t-p1">P1</span></h3><p>知识库选择 → 提问 → POST /api/v1/rag-proxy/collections/{cid}/query/stream SSE 流式（start→token→done 增量渲染）+ 来源引用展示。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 流式</b></div>
-    <details><summary>交互要点</summary><ul><li>流式态：输入禁用 + 增量渲染 + 停止按钮</li><li>done 事件 → 来源引用折叠展示</li><li>error 事件 → 错误提示</li></ul></details></div>
-  <div class="card"><h3>rag-proxy API 契约（11 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/rag-proxy/collections* · documents* · query*（SSE）· health（OpenBase JWT；无上游认证注入；{detail} 归一化）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · SSE 逐事件透传</b></div></div>
-</div>
-
-<h2>五、v1.4.5 DPS 对接 · 2 页真实化（FR-145-04，R-381）</h2>
-<div class="note">v1.4.5 为 DPS 系统对接（对接线第 3 站）：画像列表/画像详情 2 页 mock 替换真实 API（走 OpenBase dps-proxy）。关键差异：DPS Header 身份认证（X-Org-ID/X-Tenant-ID/X-User-ID）→ OpenBase 唯一认证入口 + 身份头注入；无 SSE。设计依据《OpenBase-UI设计文档-v1.4.5》《OpenBase-API接口设计文档-v1.4.5》《OpenBase-第三方集成设计文档-v1.4.5》。</div>
-<div class="grid">
-  <div class="card"><h3>画像列表页 /dps/portraits <span class="tag t-p1">P1</span></h3><p>GET /api/v1/dps-proxy/portraits 真实画像列表（姓名/标签/风险等级/更新时间）；搜索/分页/详情跳转；KPI 卡（画像总数/标签数/风险预警）。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 成功</b></div>
-    <details><summary>交互要点</summary><ul><li>加载态：表格 loading</li><li>空态：暂无画像</li><li>错误态：el-alert + 重试按钮</li></ul></details></div>
-  <div class="card"><h3>画像详情页 /dps/portraits/{id} <span class="tag t-p1">P1</span></h3><p>GET /api/v1/dps-proxy/portraits/{person_id} 真实画像详情：六维雷达（基础/行为/偏好/风险/社交/设备）+ 标签区 + 风险等级色标。</p><div class="state">状态：<b>空态 / 加载 / 错误 / 成功</b></div>
-    <details><summary>交互要点</summary><ul><li>风险等级：低=success / 中=warning / 高=danger</li><li>标签：el-tag 展示</li><li>错误态：重试</li></ul></details></div>
-  <div class="card"><h3>dps-proxy API 契约（8 端点） <span class="tag t-p1">P1</span></h3><p>/api/v1/dps-proxy/portraits* · tags/categories · reports/overview · batch/tasks/{id} · audit/logs · health（OpenBase JWT；四头注入 X-User-ID/X-Tenant-ID/X-Org-ID/X-User-Role；{detail} 归一化；无 SSE）。</p><div class="state">契约：<b>统一 {code,message,data,timestamp} · 身份头注入</b></div></div>
-</div>
-
-<h2>六、v1.4.6 日志中心 + 信息架构重构 · 新增 2 页（R-382 / R-383 / R-384）</h2>
-<div class="note">v1.4.6 两批新增（VC-012 + VC-013 + VC-014）：①「<b>日志中心</b>」<b>四源</b>统一检索（L1 结构化日志 / 审计库 <code>audit_logs</code> / 测试记录 / <b>四仓日志 <code>repo_log</code></b>）+ 四维分类 + 关键字与多条件检索 + 时间窗与分页 + 测试三元组 + CSV/JSON 导出（含 <code>log.export</code> 留痕）；权限码 <code>log:read</code>（仅管理员，跨租户）；旧「审计日志」页 <code>/system/audit</code> <b>下线重定向</b>；②「<b>统一前端信息架构重构</b>」顶层三分 + 平台管理四域 + 系统性能力上收 + 全量旧路径重定向（含 <b>模块开关管理页</b>，权限码 <code>module:manage</code>）。设计依据：《OpenBase-UI设计文档-v1.4.6》v1.1.0《OpenBase-前端架构设计文档-v1.4.6》v1.1.0《OpenBase-API接口设计文档-v1.4.6》v1.1.0。</div>
-<div class="grid">
-  <div class="card"><h3>信息架构：三分 + 四域（IA 重构总览） <span class="tag t-p0">P0</span></h3><p>顶层三分（仪表盘 / 业务模块 / 平台管理）+ 平台管理四域二级分组（身份与权限 / 平台配置与密钥 / 可观测与审计 / 开发者资源）；四业务模块平行且<b>特色页零删减</b>；系统性能力统一上收。</p><div class="state">状态：<b>顶层三分 / 四域分组 / 上收与迁出标注 / 重定向映射表 / 特色页保留</b></div>
-    <details><summary>交互要点</summary><ul><li>平台管理区<b>不受任何单一模块启停影响</b>（AC-146-10-2）</li><li>权限码驱动菜单可见性；无权限项不渲染（空分组不显示）</li><li>旧路径<b>全量重定向、禁 404</b>；Step 3 施工前由脚本生成全量映射表</li></ul></details>
-    <p style="margin-top:10px"><a href="ia-overview.html" style="display:inline-block;background:#7C3AED;color:#fff;text-decoration:none;border-radius:8px;padding:7px 14px;font-size:13px">▶ 打开信息架构原型（ia-overview.html）</a></p></div>
-  <div class="card"><h3>日志中心 /platform/observability/logs <span class="tag t-p0">P0</span></h3><p>顶部检索栏（<b>四源</b>：L1 / 审计库 / 测试记录 / <b>四仓日志 repo_log</b>；关键字 / 时间窗 / 导出）+ 左侧分类导航（含计数）+ 主体表格（服务端分页）+ 详情抽屉（完整 LogEntry + 测试三元组 + 脱敏摘要）。</p><div class="state">状态：<b>加载 / 空态×2 / 错误 / 截断 / 导出成功 / 筛选提交 / 数据源切换</b></div>
-    <details><summary>交互要点</summary><ul><li>分类点选<b>即过滤</b>（无需提交按钮）；数据源切换保留关键字与时间窗、清空分类并显式提示</li><li><code>truncated=true</code> 时顶部黄色提示条要求收窄时间窗（禁止静默截断）</li><li>点击行打开详情抽屉；错误态显示 <code>request_id</code> 便于排障；空态区分"无数据"与"条件未命中"</li></ul></details>
-    <p style="margin-top:10px"><a href="logs.html" style="display:inline-block;background:var(--primary);color:#fff;text-decoration:none;border-radius:8px;padding:7px 14px;font-size:13px">▶ 打开日志中心原型（logs.html）</a> <a href="ia-overview.html" style="display:inline-block;background:#7C3AED;color:#fff;text-decoration:none;border-radius:8px;padding:7px 14px;font-size:13px;margin-left:8px">▶ 打开信息架构原型（ia-overview.html）</a></p></div>
-</div>
-
-<footer>OpenBase v1.4.6 设计总览（v1.4.0 基线 26 页 + v1.4.3 OpenLLM 2 页 + v1.4.4 OpenRAG 2 页 + v1.4.5 DPS 2 页 + <b>v1.4.6 日志中心 1 页 + 信息架构重构总览 1 页</b>）· 页面与交互状态以《OpenBase-UI设计文档-v1.4.6》v1.1.0《OpenBase-API接口设计文档-v1.4.6》v1.1.0《OpenBase-前端架构设计文档-v1.4.6》v1.1.0 为准；Step 4 E2E 断言以交互状态清单为基线</footer>
+  <div class="foot">OpenBase v1.4.10 · 设计总览原型 · 生成于 2026-09-29 · 线框级（不含视觉规范）</div>
 </div>
 </body>
 </html>

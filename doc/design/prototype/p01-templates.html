@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>P-01 模板族管理 - OpenBase v1.4.10</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212a;--line:#2a2f3a;--txt:#e6e8ee;--dim:#9aa3b2;--accent:#4f8cff;--warn:#d29922;--err:#f85149}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:22px 18px 48px}
+a.back{color:var(--accent);text-decoration:none;font-size:13px}
+h1{font-size:19px;margin:10px 0 4px}.sub{color:var(--dim);font-size:12.5px;margin-bottom:16px}
+.bar{display:flex;gap:8px;align-items:center;margin:14px 0}
+.inp,.sel,.btn{border:1px solid var(--line);background:var(--panel);color:var(--txt);border-radius:7px;padding:7px 11px;font-size:13px}
+.btn.p{background:#1f3f7a;border-color:#2c5cad}.btn.w{background:#3d2f10;border-color:#6b5418}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{border-bottom:1px solid var(--line);padding:9px 11px;text-align:left}
+th{background:var(--panel2);color:var(--dim);font-weight:600;font-size:12.5px}
+.sk{display:inline-block;height:10px;border-radius:4px;background:#242a35}
+.pill{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
+.pill.on{color:#3fb950;border-color:#173a1c}.pill.off{color:#8b949e}
+.pnl{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:14px 0}
+.pnl h3{margin:0 0 8px;font-size:13.5px;color:var(--dim);font-weight:600}
+.drawer{border:1px dashed var(--line);border-radius:8px;padding:12px 14px;background:var(--panel2);margin-top:12px}
+.k{color:var(--warn)}.e{color:var(--err)}
+code{background:#20252f;padding:1px 6px;border-radius:4px;font-size:12px}
+ul{margin:6px 0 0 18px;padding:0;color:var(--dim);font-size:13px}li{margin:4px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body><div class="wrap">
+  <a class="back" href="index.html">← 返回设计总览</a>
+  <h1>P-01 模板族管理</h1>
+  <div class="sub">RT-1410-02 · DT-1410-05 · 端点 #1 / #2 / #3 · 读＋写（启停）</div>
+
+  <div class="bar">
+    <span class="sel">状态：全部 ▾</span>
+    <span class="inp" style="min-width:220px;color:var(--dim)">搜索模板族名称…</span>
+    <span class="btn p">查询</span>
+    <span class="btn">重置</span>
+  </div>
+
+  <table>
+    <tr><th>模板族</th><th>状态</th><th>版本数</th><th>更新时间</th><th>操作</th></tr>
+    <tr><td>cc-persona-v1</td><td><span class="pill on">启用</span></td><td>3</td><td>2026-09-28</td><td><span class="btn">详情</span> <span class="btn w">停用</span></td></tr>
+    <tr><td>dps-correction-v1</td><td><span class="pill on">启用</span></td><td>1</td><td>2026-09-22</td><td><span class="btn">详情</span> <span class="btn w">停用</span></td></tr>
+    <tr><td><span class="sk" style="width:110px"></span></td><td><span class="sk" style="width:44px"></span></td><td><span class="sk" style="width:22px"></span></td><td><span class="sk" style="width:76px"></span></td><td><span class="sk" style="width:90px"></span></td></tr>
+  </table>
+  <div class="sub" style="margin-top:8px">分页：1 / N ｜ 每页 20</div>
+
+  <div class="drawer">
+    <b>详情抽屉（不跳页）</b><br>
+    <span class="sub">基本信息 ＋ 版本列表 ＋ 快捷入口：[<span style="color:var(--accent)">查看对比</span>] [<span style="color:var(--accent)">预检</span>]</span>
+  </div>
+
+  <div class="grid2">
+    <div class="pnl"><h3>启停确认（写操作）</h3>
+      <ul>
+        <li>点击「停用」→ <b>确认弹层</b>（含目标模板族与影响提示）</li>
+        <li>无权限 → 呈现后端 <span class="e">403</span>「当前账号无权执行该操作」</li>
+        <li><b>前端不做权限判定</b>（仅呈现）</li>
+      </ul>
+    </div>
+    <div class="pnl"><h3>本页覆盖状态</h3>
+      <ul>
+        <li><b>加载态</b>：表格骨架（如上方灰条）</li>
+        <li><b>空态</b>：「暂无模板族」（非报错）</li>
+        <li><span class="k">403</span> ／ <span class="k">404</span> ／ <b>5xx</b>（不可用 ＋ 重试）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pnl"><h3>交互要点</h3>
+    <ul>
+      <li>列表分页参数透传（<code>?page&amp;page_size</code>）；排序沿用契约</li>
+      <li>详情经抽屉呈现，避免路由跳转打断列表上下文</li>
+      <li>启停为写操作 → 弹层确认；成功后就地刷新该行状态</li>
+    </ul>
+  </div>
+</div></body></html>

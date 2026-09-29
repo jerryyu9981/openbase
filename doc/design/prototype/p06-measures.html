@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>P-06 措施建议 - OpenBase v1.4.10</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212a;--line:#2a2f3a;--txt:#e6e8ee;--dim:#9aa3b2;--accent:#4f8cff;--warn:#d29922;--err:#f85149}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:22px 18px 48px}
+a.back{color:var(--accent);text-decoration:none;font-size:13px}
+h1{font-size:19px;margin:10px 0 4px}.sub{color:var(--dim);font-size:12.5px;margin-bottom:14px}
+.bar{display:flex;gap:8px;align-items:center;margin:14px 0}
+.inp,.btn{border:1px solid var(--line);background:var(--panel);color:var(--txt);border-radius:7px;padding:7px 11px;font-size:13px}
+.btn.p{background:#1f3f7a;border-color:#2c5cad}
+.pnl{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:14px 0}
+.pnl h3{margin:0 0 8px;font-size:13.5px;color:var(--dim);font-weight:600}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0}
+.card .m{font-weight:600;margin-bottom:4px}
+.card .meta{color:var(--dim);font-size:12px;margin-top:6px}
+.pill{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
+.disc{border:1px solid #4a3a10;background:#231c0c;color:#e6d3a3;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:12px}
+code{background:#20252f;padding:1px 6px;border-radius:4px;font-size:12px}
+ul{margin:6px 0 0 18px;padding:0;color:var(--dim);font-size:13px}li{margin:4px 0}
+.k{color:var(--warn)}.e{color:var(--err)}.o{color:var(--ok)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body><div class="wrap">
+  <a class="back" href="index.html">← 返回设计总览</a>
+  <h1>P-06 措施建议（只读）</h1>
+  <div class="sub">RT-1410-07 · DT-1410-10 · 端点 #8（measures/suggest）· <b>只读，写操作计数必须 = 0</b></div>
+
+  <div class="bar">
+    <span class="inp" style="min-width:250px;color:var(--dim)">person_id：PERSON0000001</span>
+    <span class="btn p">查询建议</span>
+  </div>
+
+  <div class="pnl"><h3>建议列表（原样呈现）</h3>
+    <div class="card">
+      <div class="m">加强日常走访频次</div>
+      <div class="meta">标签：behavior:behavior ｜ 措施码：M-01 ｜ 来源标签：<span class="o">良好</span></div>
+    </div>
+    <div class="card">
+      <div class="m">补充基础信息核验</div>
+      <div class="meta">标签：profile:completeness ｜ 措施码：M-04 ｜ 来源标签：<span class="k">待完善</span></div>
+    </div>
+
+    <div class="disc">
+      <b>免责声明（后端原文，前端不得改写）</b><br>
+      「本建议基于标签映射生成，不表征风险水平，供工作参考」
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="pnl"><h3>硬约束</h3>
+      <ul>
+        <li><b>只读端点</b>：测试须断言<b>写操作计数 = 0</b></li>
+        <li>措施文本与免责声明 <b>原样透传</b>（不做富文本渲染、不做措辞修改）</li>
+        <li>措辞门禁：前端不得改写为"风险提示／预警"等强表述</li>
+      </ul>
+    </div>
+    <div class="pnl"><h3>本页覆盖状态</h3>
+      <ul>
+        <li><b>加载态</b>／<b>空态</b>（无建议，非报错）／<b>成功态</b></li>
+        <li><span class="k">403</span>／<span class="k">404</span>／<b>5xx</b>（不可用 ＋ 重试）</li>
+      </ul>
+    </div>
+  </div>
+</div></body></html>

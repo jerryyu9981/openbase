@@ -50,6 +50,10 @@ ALLOWED_DIRS = (
 GLOBAL_DOC_DIRS = (
     "doc/version/global",
     "doc/planning",
+    # v1.4.10：**设计原型目录**（`prototype/index.html` ＋ `pXX-*.html` 页面文件）——
+    # 其命名与互链规则由《设计阶段执行规范》定义（全栈项目强制产出、相对路径、file:// 可直开），
+    # **不适用文档命名判据**（DOC_NAME_OK 要求 `OpenBase-…-vX.Y.Z.md`）⇒ 显式豁免。
+    "doc/design/prototype",
 )
 
 #: **跨版本汇总文档**（单文件，位于版本目录内但文件名不含版本号）：

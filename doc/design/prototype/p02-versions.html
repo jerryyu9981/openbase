@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>P-02 版本对比与回滚 - OpenBase v1.4.10</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212a;--line:#2a2f3a;--txt:#e6e8ee;--dim:#9aa3b2;--accent:#4f8cff;--warn:#d29922;--err:#f85149;--ok:#3fb950}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:22px 18px 48px}
+a.back{color:var(--accent);text-decoration:none;font-size:13px}
+h1{font-size:19px;margin:10px 0 4px}.sub{color:var(--dim);font-size:12.5px;margin-bottom:16px}
+.bar{display:flex;gap:8px;align-items:center;margin:14px 0;flex-wrap:wrap}
+.inp,.sel,.btn{border:1px solid var(--line);background:var(--panel);color:var(--txt);border-radius:7px;padding:7px 11px;font-size:13px}
+.btn.p{background:#1f3f7a;border-color:#2c5cad}.btn.r{background:#4a1d1d;border-color:#7a2e2e;color:#ffb4b4}
+.pnl{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:14px 0}
+.pnl h3{margin:0 0 8px;font-size:13.5px;color:var(--dim);font-weight:600}
+.modal{border:1px solid #6b5418;background:#231c0c;border-radius:10px;padding:16px 18px;margin:16px 0}
+.modal .t{font-weight:600;margin-bottom:10px}
+.grp{border-left:3px solid var(--line);padding-left:10px;margin:8px 0}
+.grp.add{border-color:#2ea043}.grp.mod{border-color:#d29922}.grp.del{border-color:#f85149}
+.mono{font-family:Consolas,monospace;font-size:12.5px;color:#c9d1d9}
+code{background:#20252f;padding:1px 6px;border-radius:4px;font-size:12px}
+ul{margin:6px 0 0 18px;padding:0;color:var(--dim);font-size:13px}li{margin:4px 0}
+.k{color:var(--warn)}.e{color:var(--err)}.o{color:var(--ok)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.diff{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:8px}
+.diff > div{padding:10px 12px;border-right:1px solid var(--line)}.diff > div:last-child{border-right:none}
+</style>
+</head>
+<body><div class="wrap">
+  <a class="back" href="index.html">← 返回设计总览</a>
+  <h1>P-02 版本对比与回滚</h1>
+  <div class="sub">RT-1410-03 · DT-1410-06 · 端点 #3（对比）/ #4（回滚）· 读＋<span class="k">写</span></div>
+
+  <div class="bar">
+    <span class="sel">模板族：cc-persona-v1 ▾</span>
+    <span class="sel">版本 A：v3 ▾</span><span style="color:var(--dim)">⇄</span><span class="sel">版本 B：v1 ▾</span>
+    <span class="btn p">对比</span>
+  </div>
+
+  <div class="diff">
+    <div><div class="sub">v3（当前）</div><div class="mono">dimension_weights: {…}</div></div>
+    <div><div class="sub">v1（目标）</div><div class="mono">dimension_weights: {…}</div></div>
+  </div>
+
+  <div class="pnl"><h3>差异（分组呈现）</h3>
+    <div class="grp add"><b>新增</b> <span class="mono">field: risk_level</span></div>
+    <div class="grp mod"><b>修改</b> <span class="mono">dimension_weights.attention: 0.30 → 0.25</span></div>
+    <div class="grp del"><b>删除</b> <span class="mono">field: legacy_flag</span></div>
+  </div>
+
+  <div class="pnl" style="border-color:#7a2e2e"><h3 style="color:#ffb4b4">执行回滚（写操作）</h3>
+    <ul>
+      <li>目标版本选择 ＋ 原因填写 → 触发<b>二次确认</b></li>
+      <li>回滚需权限 <code>portrait_template:update</code>；无权限 → <span class="e">403</span></li>
+      <li><b>禁止</b>提供绕过确认的一键直执行入口</li>
+    </ul>
+    <div style="margin-top:10px"><span class="btn r">回滚到 v1…</span></div>
+  </div>
+
+  <div class="modal">
+    <div class="t">确认回滚（<b>四要素</b>）</div>
+    <div class="grid2">
+      <div>① 目标版本：<b>v1</b>（当前 v3）</div>
+      <div>② 影响面摘要：受影响标注模板 <b>2</b>／标注 <b>12</b>／标签 <b>8</b>
+        <div style="margin-top:4px"><span class="btn" style="padding:2px 8px;font-size:12px">口径 ▾</span> <span class="sub">（basis 折叠，默认收起）</span></div>
+      </div>
+      <div class="e">③ ⚠ 该操作不可撤销</div>
+      <div>④ <span class="btn">取消</span> <span class="btn r">确认回滚</span></div>
+    </div>
+    <div class="sub" style="margin-top:10px">说明：影响面摘要取自预检端点（#5/#7）；<code>tag_count = 0</code> 时 <b>强制展开</b>口径说明。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="pnl"><h3>生效验证（回滚后）</h3>
+      <ul>
+        <li>自动重新拉取详情并与目标版本比对</li>
+        <li>提示「回滚已完成」＋ 生效验证结果（<span class="o">equivalence_check</span>）</li>
+      </ul>
+    </div>
+    <div class="pnl"><h3>本页覆盖状态</h3>
+      <ul>
+        <li><b>加载态</b>／<b>空态</b>（无版本）／<b>成功态</b>（含生效验证）</li>
+        <li><span class="k">403</span>（无写权限）／<span class="k">404</span>（目标版本不存在）／<b>5xx</b></li>
+      </ul>
+    </div>
+  </div>
+</div></body></html>
