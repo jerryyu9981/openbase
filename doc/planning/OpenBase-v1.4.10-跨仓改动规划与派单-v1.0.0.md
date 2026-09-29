@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.3.0 |
+| 文档版本 | v1.4.0 |
 | 状态 | **[Review]（待人工批准）** |
 | 版本号 | **v1.4.10**（承接型小版本：DPS 模板化能力对接深化） |
 | 作者 | PM-OpenBase-Dev（规划）／AA-OpenBase-Dev（方案） |
@@ -103,7 +103,7 @@
 
 | 派单号 | 事项 | 现状（实现证据） | 交付物 | 建议版本化 | 优先级 | 阻塞本版？ |
 |:------:|------|------------------|--------|------------|:------:|:----------:|
-| **OB-v1.4.10-DSP-PERM-01** | **标注模板 CRUD 权限点映射修正**：`permission_middleware.SUBPATH_RESOURCE_MAP` 补键 `("portrait", "annotation-templates") → "annotation_template"` | 现键仅有 `("portrait","annotations")`；`_resolve_resource_type` 按 `(parts[2], parts[3])` **精确匹配**，`annotation-templates` 不命中 ⇒ 回落 `PATH_RESOURCE_MAP["portrait"]` ⇒ 判定资源为 `portrait`；`annotation_template:create/update/delete` 对 CRUD 面**不可达** | 补丁 ＋ **权限判定实测证据**（仅持 `annotation_template:*` 可通过 CRUD；仅持 `portrait:*` 被拒） | **DPS 最小版本化补丁**（口径修正，建议 patch 位） | **P1** | **不阻塞编码**；**阻塞「权限对齐判据」**（API 设计 §6 已将其判为「待实测」） |
+| **OB-v1.4.10-DSP-PERM-01** | **模板／标注面权限判定口径修正（3 子项）** —— ① `SUBPATH_RESOURCE_MAP` 补键 `("portrait", "annotation-templates") → "annotation_template"`；② `ENDPOINT_ACTION_OVERRIDES` 补声明 `("POST", "/activate") → update` 与 `("POST", "/deactivate") → update`；③ `SUBPATH_RESOURCE_MAP` 补键 `("portrait", "labels") → "annotation_template"`（**或**由 DPS 明确「`/labels` 归 `portrait:read`」为**有意口径**并写入契约 §7） | **已实测确认**（证据 `E-G6-20260930`，直接执行判定函数）：① 标注模板 CRUD 判定资源实测 **`portrait`**（`annotation_template:create/update/delete` **不可达**）；② 启停判定动作实测 **`create`**（**仅持 `create` 者可启停** —— 越权面，与已修回滚端点 `TD-3027` **同类残留**）；③ `/labels` 判定资源实测 **`portrait`** | 补丁 ＋ **判定实测证据**（仅持 `annotation_template:*` 可通过 CRUD；仅持 `update` 可通过启停；`/labels` 口径落契约） | **DPS 最小版本化补丁**（口径修正，建议 patch 位） | **P1** | **不阻塞编码**；**阻塞「权限对齐判据」**（API 设计 §6 已按实测改判为「一致 4／12」） |
 | **OB-v1.4.10-DSP-TAG-01** | **`tag_definition` 落 `parent_tag_code` 列 ＋ 层级读写端点** | 模型 `TagDefinition` 声明 `parent_tag_code`（"父标签编码"），但 `ddl/schema_core.py` 建表语句**只有** `id/name/dimension/description/color` ⇒ **列不存在、无端点** ⇒ 子标签能力**不可用** | 迁移（幂等）＋ 列 ＋ 层级端点 ＋ 用例 | **DPS 独立版本**（新能力） | P2 | **不阻塞**（本版需求 §7 已**明确排除**子标签） |
 
 > **处置纪律（强制）**：① 两项**均不在本仓交付范围**，本版**仅登记（RT-1410-28）＋ 派单**；② **DPS 交付前，本版测试不得以「已修复」为前提编写断言**；③ 联调须以**实测结果**为准（第三方集成设计文档 §1 C1~C4）；④ 交付后须**回填**本仓：API 设计 §6 权限对齐判据、「跨仓改动规划与派单 §6 回填动作清单」、技术债务总表相应条目关闭。
@@ -162,6 +162,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.4.0** | 2026-09-30 | **PM-OpenBase-Dev** | **依 2026-09-30 实测扩充派单范围**：**`OB-v1.4.10-DSP-PERM-01` 由 1 项扩为 3 子项**（① 补 `("portrait","annotation-templates")` 键；② **补 activate／deactivate 端点级动作声明 → update**；③ 补 `("portrait","labels")` 键**或**由 DPS 明确该口径为有意并写入契约 §7）；「现状」列改为**已实测确认**并引证据 `E-G6-20260930`（直接执行 DPS 判定函数）；交付物补**判定实测证据要求**。**说明**：子项②为**本次实测新发现（G8，P1 越权面）**，与 DPS 已修的回滚端点 `TD-3027` **同类残留**。 |
 | **v1.3.0** | 2026-09-29 | **PM-OpenBase-Dev** | **D-1410-03 新增 §3.1 DPS 侧改动派单 2 项**（原 §3 仅含「前置确认、非改动」）：**OB-v1.4.10-DSP-PERM-01**（标注模板 CRUD 权限点映射修正 —— `SUBPATH_RESOURCE_MAP` 补键；现状为精确匹配不命中 ⇒ 判定资源回落 `portrait`，`annotation_template:create/update/delete` 对 CRUD 面不可达；建议 DPS 最小版本化补丁；**P1**）；**OB-v1.4.10-DSP-TAG-01**（`tag_definition` 落 `parent_tag_code` 列 ＋ 层级端点 —— 现仅模型声明、建表无列 ⇒ 子标签能力不可用；建议 DPS 独立版本；P2）；附**处置纪律 4 条**（仅登记＋派单／测试不得假设已修／以实测为准／交付后回填三处）。 |
 | **v1.2.0** | 2026-09-29 | **PM-OpenBase-Dev** | **边界修正与前置关闭（D-1410-02，已经用户批准）**：① §3 **D3 改为「已验证并关闭」**（2026-09-29 实测 DPS 本机启动成功：`cd DPS\src; python -m uvicorn main:app`）＋ **D4 改为「已关闭」**（DPS 侧裁定四方一致）；② §3 **第 4 条「不自行改 DPS 仓」作废**，改为「**若确需 DPS 配合改动，OpenBase 可直接实施**」（依据用户澄清「OpenBase 本身就可以修改和启动 AI 基础组件任何一个系统，包括 DPS」）⇒ **DPS 侧条目由「需他方提供」升格为「可自行实施」**。**派单主体（OB-v1.4.10-DSP-LLM-01）与已执行结果不变** |
 | **v1.1.0** | 2026-09-29 | **PM-OpenBase-Dev / AA-OpenBase-Dev** | **OpenLLM 侧派单执行完成（跨仓改动落地）**：新增 **§2.3 执行结果** —— 提交 **`b28fb1b`** ＋ tag **`v2.14.4`**（`98fcc184`），**三远程一致**；改动 5 文件（**+166 −8**）含 `SQL_ECHO` 与 `DEBUG` 解耦、`/health` 指标摘要、`lifespan` 启动预热、护栏 10 例；验证 **10 passed ＋ 335 passed/3 failed（均属既有失败簇 ⇒ 零新增失败）**；`/health` RED 三要素**评估结论＝不重复实现**；**实测验收 3 项待办如实登记**（日志改善／首请求延迟／双仓联调）。配套回执：`doc/test/evidence/v1410/ob-v1410-dsp-llm-01-receipt-20260929.md`；同步回填 Backlog v1.2.0／Phase v1.2.0／债务总表 v0.13.0／规划文档 v2.2.0 |
