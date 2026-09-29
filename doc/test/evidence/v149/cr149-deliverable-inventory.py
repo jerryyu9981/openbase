@@ -36,6 +36,7 @@ DOC_ARTIFACTS: tuple[str, ...] = (
     # ── Step 5（部署与运维）产出（本批：入场门禁阻塞，仅产出不依赖发布事实的文档）──
     r"doc\release\OpenBase-发布入场检查记录与发布计划-v1.4.9.md",
     r"doc\release\OpenBase-回滚方案与运维手册-v1.4.9.md",
+    r"doc\release\OpenBase-发布复盘与问题跟踪记录-v1.4.9.md",
 )
 
 EVIDENCE_ARTIFACTS: tuple[str, ...] = (

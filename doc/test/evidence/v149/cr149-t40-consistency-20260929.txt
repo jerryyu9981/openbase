@@ -1,5 +1,5 @@
 === v1.4.9 Step 3 变更一致性自检（3.9b）===
-时间：2026-09-29T04:05:49.085587+00:00
+时间：2026-09-29T04:08:52.463784+00:00
 仓根：D:\Trae CN\myproject\Dev\OpenBase
 自检脚本：cr149-consistency-selfcheck.py（已入仓，命令可复现）
 
@@ -8,13 +8,11 @@
   · 技术文档：`OpenBase-<文档名>-v<X.Y.Z>.md`
   · 证据文件：小写 snake_case/kebab-case ＋ 受控扩展名（`.py/.json/.txt/.log`）
 
-  OK M  doc/test/evidence/v149/cr149-consistency-selfcheck.py
-  OK M  doc/test/evidence/v149/cr149-deliverable-inventory-20260929.txt
+  OK M  doc/release/OpenBase-发布入场检查记录与发布计划-v1.4.9.md
   OK M  doc/test/evidence/v149/cr149-deliverable-inventory.py
-  OK M  doc/test/evidence/v149/cr149-t40-consistency-20260929.txt
-  OK ?? doc/release/OpenBase-发布入场检查记录与发布计划-v1.4.9.md
-  OK ?? doc/release/OpenBase-回滚方案与运维手册-v1.4.9.md
-命名核对：6 个待提交/待跟踪文档文件，**不合规 0 个**
+  OK M  doc/version/global/OpenBase-技术债务总表.md  （跨版本全局文档：文件名不含版本号，命名判据豁免）
+  OK ?? doc/release/OpenBase-发布复盘与问题跟踪记录-v1.4.9.md
+命名核对：4 个待提交/待跟踪文档文件，**不合规 0 个**
 
 === ② 文件头版本号 vs 修订历史首行版本号 ===
   OK  doc/audit/assessment/OpenBase-需求评估报告-v1.4.9.md
@@ -43,6 +41,7 @@
   OK  doc/development/OpenBase-设计开发追溯矩阵-v1.4.9.md
   OK  doc/development/OpenBase-静态质量检查记录-v1.4.9.md
   OK  doc/release/OpenBase-发布入场检查记录与发布计划-v1.4.9.md
+  OK  doc/release/OpenBase-发布复盘与问题跟踪记录-v1.4.9.md
   OK  doc/release/OpenBase-回滚方案与运维手册-v1.4.9.md
   OK  doc/requirements/OpenBase-开发需求文档-v1.4.9.md
   OK  doc/requirements/OpenBase-需求与设计更正记录-v1.4.9.md
@@ -58,11 +57,11 @@
   OK  doc/version/releases/v1.4.9/OpenBase-单版本规划文档-v1.4.9.md
   OK  doc/version/releases/v1.4.9/OpenBase-本版本Backlog-v1.4.9.md
   OK  doc/version/releases/v1.4.9/OpenBase-版本规划评审记录-v1.4.9.md
-核对份数：41
+核对份数：42
 不一致明细：无（全部一致）
 
 === ③ 新建文件路径与命名规范匹配 ===
-本版本新增（未跟踪）文档文件：2 个
+本版本新增（未跟踪）文档文件：1 个
   全部落在规范目录内（doc/design、doc/development、doc/audit/review、doc/audit/verification、doc/requirements、doc/test、doc/version/releases）
 
 === 结论 ===

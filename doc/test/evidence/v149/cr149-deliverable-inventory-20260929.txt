@@ -1,5 +1,5 @@
 === v1.4.9 Step 3 产出物存在性验证（3.10）===
-时间：2026-09-29T04:05:49.664758+00:00
+时间：2026-09-29T04:08:53.047754+00:00
 仓库：D:\Trae CN\myproject\Dev\OpenBase
 清单脚本：cr149-deliverable-inventory.py（已入仓，命令可复现）
 
@@ -18,8 +18,9 @@
   OK       doc\test\OpenBase-测试报告-v1.4.9.md  (19.0 KB / 184 行)
   OK       doc\audit\verification\OpenBase-测试回溯对比审计报告-v1.4.9.md  (9.3 KB / 125 行)
   OK       doc\audit\review\OpenBase-阶段审计报告-Stage4-v1.4.9.md  (13.2 KB / 160 行)
-  OK       doc\release\OpenBase-发布入场检查记录与发布计划-v1.4.9.md  (15.2 KB / 138 行)
+  OK       doc\release\OpenBase-发布入场检查记录与发布计划-v1.4.9.md  (18.8 KB / 165 行)
   OK       doc\release\OpenBase-回滚方案与运维手册-v1.4.9.md  (8.8 KB / 77 行)
+  OK       doc\release\OpenBase-发布复盘与问题跟踪记录-v1.4.9.md  (6.6 KB / 71 行)
 
 --- 证据文件 ---
   OK       doc\test\evidence\cr149\v149-increment-eval-set.json  (5.1 KB / 103 行)
@@ -34,7 +35,7 @@
   OK       doc\test\evidence\v149\cr149-debt-growth-20260929.txt  (14.0 KB / 359 行)
   OK       doc\test\evidence\v149\cr149-consistency-selfcheck.py  (7.7 KB / 206 行)
   OK       doc\test\evidence\v149\cr149-consistency-selfcheck-20260929.txt  (4.4 KB / 76 行)
-  OK       doc\test\evidence\v149\cr149-deliverable-inventory.py  (6.3 KB / 134 行)
+  OK       doc\test\evidence\v149\cr149-deliverable-inventory.py  (6.3 KB / 135 行)
   OK       doc\test\evidence\v149\cr149-deliverable-inventory-20260929.txt  (3.9 KB / 54 行)
   OK       doc\test\evidence\v149\cr149-t40-env-evidence.py  (4.7 KB / 102 行)
   OK       doc\test\evidence\v149\cr149-t40-env-20260929.txt  (3.6 KB / 50 行)
@@ -46,9 +47,9 @@
   OK       doc\test\evidence\v149\cr149-t40-mock-20260929.txt  (1.7 KB / 29 行)
   OK       doc\test\evidence\v149\cr149-t40-regression-20260929.txt  (3.4 KB / 54 行)
   OK       doc\test\evidence\v149\cr149-t40-coverage-20260929.txt  (4.4 KB / 62 行)
-  OK       doc\test\evidence\v149\cr149-t40-consistency-20260929.txt  (4.0 KB / 69 行)
+  OK       doc\test\evidence\v149\cr149-t40-consistency-20260929.txt  (4.0 KB / 68 行)
 
-TOTAL FILES: 41
+TOTAL FILES: 42
 EMPTY FILES: 0
 MISSING FILES: 0
 判定：**通过**（全部存在且非空）
