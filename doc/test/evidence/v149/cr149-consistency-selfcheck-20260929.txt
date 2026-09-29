@@ -1,23 +1,26 @@
 === v1.4.9 Step 3 变更一致性自检（3.9b）===
-时间：2026-09-29T02:54:34.836455+00:00
+时间：2026-09-29T03:13:02.350513+00:00
+仓根：D:\Trae CN\myproject\Dev\OpenBase
+自检脚本：cr149-consistency-selfcheck.py（已入仓，命令可复现）
 
 === ① 命名合规 ===
-**如实登记**：本仓**不存在** `validate-naming.ps1`（全仓 `Get-ChildItem -Recurse` 无命中，`scripts/` 下亦无同名脚本）⇒ 以「**文件命名规范核对**」等价执行：
-  · 技术文档：`OpenBase-<文档名>-<版本号>.md`（全命中文 `-v1.4.9.md` 结尾）
-  · 证据文件：`cr149-<用途>-<YYYYMMDD>.{py,json,txt,log}`
+**如实登记**：本仓**不存在** `validate-naming.ps1` ⇒ 以「**文件命名规范核对**」等价执行：
+  · 技术文档：`OpenBase-<文档名>-v<X.Y.Z>.md`
+  · 证据文件：小写 snake_case/kebab-case ＋ 受控扩展名（`.py/.json/.txt/.log`）
 
   OK M  doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.9.md
   OK M  doc/development/OpenBase-DevLogReport-v1.4.9.md
+  OK M  doc/development/OpenBase-代码逻辑审查记录-v1.4.9.md
   OK M  doc/development/OpenBase-开发审计移交材料-v1.4.9.md
+  OK M  doc/development/OpenBase-测试移交说明-v1.4.9.md
   OK M  doc/development/OpenBase-设计开发追溯矩阵-v1.4.9.md
   OK M  doc/test/evidence/v149/cr149-consistency-selfcheck-20260929.txt
   OK M  doc/test/evidence/v149/cr149-deliverable-inventory-20260929.txt
-  OK ??  doc/development/OpenBase-测试移交说明-v1.4.9.md
-命名核对：7 个待提交/待跟踪文档文件，**不合规 0 个**
+  OK ?? doc/test/evidence/v149/cr149-consistency-selfcheck.py
+  OK ?? doc/test/evidence/v149/cr149-deliverable-inventory.py
+命名核对：10 个待提交/待跟踪文档文件，**不合规 0 个**
 
 === ② 文件头版本号 vs 修订历史首行版本号 ===
-核对范围：文件名含 `v1.4.9` 且同时具备「文档版本」表头与修订历史表全部文档
-核对份数：34
   OK  doc/audit/assessment/OpenBase-需求评估报告-v1.4.9.md
   OK  doc/audit/comprehensive/OpenBase-需求架构对比审计报告-v1.4.9.md
   OK  doc/audit/review/OpenBase-阶段审计报告-Stage0-v1.4.9.md
@@ -52,12 +55,12 @@
   OK  doc/version/releases/v1.4.9/OpenBase-单版本规划文档-v1.4.9.md
   OK  doc/version/releases/v1.4.9/OpenBase-本版本Backlog-v1.4.9.md
   OK  doc/version/releases/v1.4.9/OpenBase-版本规划评审记录-v1.4.9.md
+核对份数：34
 不一致明细：无（全部一致）
 
 === ③ 新建文件路径与命名规范匹配 ===
-本版本新增（未跟踪/新增）文档文件：1 个
-  全部落在规范目录内（doc/design、doc/development、doc/audit/review、doc/requirements、doc/test/evidence/v149）
+本版本新增（未跟踪）文档文件：2 个
+  全部落在规范目录内（doc/design、doc/development、doc/audit/review、doc/requirements、doc/test/evidence/v149、doc/test/evidence/cr149）
 
-=== 自检结论 ===
-① 命名合规：通过（脚本缺失已如实登记，以规范核对替代）；② 版本一致性：通过（34 份全一致）；③ 路径命名匹配：通过。
-总判定：**通过（可进入 3.10 开发审计移交）**
+=== 结论 ===
+不合规项合计：0
