@@ -1,0 +1,54 @@
+=== v1.4.9 Step 4 · 回归测试证据（TT-v1.4.9-031／032／033，门禁 4.6）===
+被测快照：OpenLLM HEAD = b261010（含 Step 4 修复 b261010 与 Step 4 新增测试）
+判据：**零新增失败** —— 本轮失败集合与既有基线**逐 node id 完全相同**
+      （本仓 21 项失败为**跨版本既有**，见技术债务总表 TD-新增-030）
+
+【命令（可复现，均在 <OpenLLM>/backend 执行）】
+  ① 全量回归（覆盖 TT-031）：
+     python -m pytest tests/unit tests/integration -q
+  ② 本轮新增/相关护栏点名（覆盖 TT-032）：
+     python -m pytest tests/unit/test_context_receipt_fields.py \
+       tests/unit/test_segment_items_production_wiring.py \
+       tests/unit/test_context_cross_segment_competition.py \
+       tests/unit/test_context_dropped_detail.py \
+       tests/unit/test_context_over_window_verifier.py \
+       tests/unit/test_component_channel_routing.py \
+       tests/unit/test_channel_audit_action_codes.py \
+       tests/unit/test_component_channel_audit_wiring.py \
+       tests/unit/test_profile_delta_and_precheck_wiring.py \
+       tests/unit/test_context_trim_markers.py \
+       tests/unit/test_cost_optimization_case_expr.py -q
+  ③ 上一版本（v1.4.8）硬判据复测（覆盖 TT-033）：
+     python -m pytest tests/unit/test_writeback_seq_persistence.py tests/unit/test_writeback_three_roads.py \
+       tests/unit/test_writeback_receipts.py tests/unit/test_writeback_degradation.py \
+       tests/unit/test_writeback_recovery_bounds.py tests/unit/test_writeback_channel_guard.py \
+       tests/unit/test_writeback_decision_gate.py tests/unit/test_writeback_dispatch_timeline_guard.py \
+       tests/unit/test_writeback_queue_observability.py -q
+  ④ 失败项逐 node id 对比：见 §差异（脚本 compare_failures.py；基线文件 cr149-t36-full.txt）
+
+【① 全量回归结果】
+  基线（cr149-t36-full.txt）：  ========== 21 failed, 3526 passed, 22 warnings in 286.13s ==========
+  本轮（cr149-t40-reg3.txt）：  ========== 21 failed, 3792 passed, 34 warnings in 326.99s ==========
+  （本轮通过数 3792 = 基线 3526 ＋ 本版新增 266 例，含 v1.4.9 十文件 103 例、Step 4 补测 21 例等）
+
+【④ 差异分析】
+  本轮 − 基线（新增失败）：0
+  基线 − 本轮（已消失失败）：0
+  判定：**零新增失败（逐 node id 完全相同）** ✅
+
+【② 本版护栏点名结果】
+  ======================= 103 passed, 9 warnings in 3.98s =======================
+
+【③ 上一版硬判据复测结果】
+  ======================= 84 passed, 9 warnings in 18.86s =======================
+  说明：v1.4.8 的「重启不丢写」「三路回写」「回写幂等／恢复边界／通道守卫／决策闸门」等
+        硬判据护栏全部通过 ⇒ **本版未回归破坏 v1.4.8 已交付能力**。
+
+【Step 4 期间新增护栏（同源登记）】
+  · tests/unit/test_cost_optimization_case_expr.py —— 6 例（成本优化端点 500 缺陷：可编译性／反例／
+    源码静态护栏／导入护栏／时间窗回归面／**桩 db 实跑主测**）
+  · tests/unit/test_evaluate_session_coverage.py —— 15 例（覆盖率门禁补测：evaluate_session 决策主链
+    ／rag 分级／配置回退；硬断言）
+
+【结论】
+  回归门禁：**通过**（零新增失败；上一版硬判据复测全绿）；21 项既有失败如实登记且**不计入通过**。

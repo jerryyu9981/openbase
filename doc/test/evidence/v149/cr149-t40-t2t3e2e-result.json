@@ -1,0 +1,2002 @@
+{
+  "version": "v1.4.9",
+  "step": "Step 4（4.0b 抽查 ／ 4.2 环境 ／ 4.3a T2 ／ 4.3b' T3a ／ 4.4b T3b ／ 4.5 E2E）",
+  "open_url": "http://127.0.0.1:8041",
+  "closed_url": "http://127.0.0.1:8042",
+  "started_at": "2026-09-29T11:31:57",
+  "cases": {
+    "TT-v1.4.9-006": {
+      "ok": true,
+      "status": 200,
+      "detail": "健康检查 200；逐组件 channel 见 health_body"
+    },
+    "TT-v1.4.9-009": {
+      "ok": true,
+      "status": 401,
+      "body_head": "{\"code\":1001,\"message\":\"未认证或 Token 失效\",\"detail\":\"未认证或 Token 失效\",\"request_id\":\"openllm-95c5a18de8db4949b1285d94\"}",
+      "detail": "未鉴权 ⇒ 401（不泄露内部信息）"
+    },
+    "TT-v1.4.9-007": {
+      "ok": true,
+      "status": 200,
+      "request_id": "openllm-93271175e5b646bda89e84c5",
+      "checks": {
+        "missing": [],
+        "nulls": [],
+        "formula_ok": true,
+        "over_window": false,
+        "dropped_len": 0,
+        "dropped_shape_ok": true,
+        "sensitive_hit": false
+      },
+      "receipt": {
+        "request_id": "openllm-93271175e5b646bda89e84c5",
+        "session_id": "t40-sync-long-e408469e",
+        "model": "auto",
+        "created_at": "2026-09-29T03:32:04.747805+00:00",
+        "prompt_total_tokens": 912,
+        "segment_tokens": {
+          "system": 83,
+          "profile": 0,
+          "memory": 0,
+          "rag": 0,
+          "history": 797,
+          "query": 21
+        },
+        "contexts_tokens": 797,
+        "counted": true,
+        "budget": {
+          "system": {
+            "quota": 345,
+            "used": 83
+          },
+          "profile": {
+            "quota": 345,
+            "used": 0
+          },
+          "memory": {
+            "quota": 1935,
+            "used": 0
+          },
+          "rag": {
+            "quota": 2557,
+            "used": 0
+          },
+          "history": {
+            "quota": 1313,
+            "used": 797
+          }
+        },
+        "dropped": [],
+        "over_window": false,
+        "over_window_tokens": 0,
+        "over_window_recovered": false,
+        "model_window": 8192,
+        "output_reserve": 1024,
+        "safety_margin": 256,
+        "available_budget": 6912,
+        "prompt_tokens_before": 1602,
+        "prompt_tokens_after": 901,
+        "hard_truncated": true,
+        "degraded": null,
+        "truncated": {
+          "history": {
+            "dropped_items": 0,
+            "dropped_tokens": 0,
+            "truncated_items": 1,
+            "merged_items": 0,
+            "merged_tokens": 0,
+            "hard_truncated": true
+          }
+        },
+        "refine": {
+          "mode": "rule",
+          "model": "",
+          "in_tokens": 1498,
+          "out_tokens": 797,
+          "elapsed_ms": 16,
+          "fallback": false,
+          "compression": {}
+        },
+        "refine_trigger": {
+          "triggered": false,
+          "reasons": [],
+          "details": {
+            "memory": {
+              "tokens": 0,
+              "quota": 1935,
+              "ratio": 0.0,
+              "items": 0,
+              "dup_share": 0.0
+            },
+            "rag": {
+              "tokens": 0,
+              "quota": 2557,
+              "ratio": 0.0,
+              "items": 0,
+              "dup_share": 0.0
+            }
+          },
+          "unimplemented": [
+            "multi_source_conflict"
+          ]
+        },
+        "refine_placement": {
+          "channel": "online",
+          "triggered": false,
+          "target": "disabled",
+          "allowed": false,
+          "mode": "rule",
+          "placement": "",
+          "budget_ms": 0,
+          "model": "",
+          "capacity_risk": false,
+          "reason": "not_triggered",
+          "target_reason": ""
+        },
+        "memory": {
+          "component": "memory",
+          "items_count": 0,
+          "injected_items": 0,
+          "injected_tokens": 0,
+          "scores": [],
+          "items": []
+        },
+        "rag": {
+          "component": "rag",
+          "items_count": 0,
+          "injected_items": 0,
+          "injected_tokens": 0,
+          "scores": [],
+          "items": []
+        },
+        "attribution_a": {
+          "used": [],
+          "unused": [],
+          "used_ratio": 0.0,
+          "matched_terms": {}
+        }
+      },
+      "detail": "同步对话 200；回执 10 必填字段键在且取值非 null；available_budget 与公式自洽"
+    },
+    "TT-v1.4.9-011": {
+      "ok": true,
+      "status": 200,
+      "detail": "trace 查询 200；context_metrics 存在；无敏感键名",
+      "sensitive_hit": false
+    },
+    "TT-v1.4.9-029": {
+      "ok": true,
+      "samples": [
+        {
+          "label": "short",
+          "checks": {
+            "missing": [],
+            "nulls": [],
+            "formula_ok": true,
+            "over_window": false,
+            "dropped_len": 0,
+            "dropped_shape_ok": true,
+            "sensitive_hit": false
+          }
+        },
+        {
+          "label": "long",
+          "checks": {
+            "missing": [],
+            "nulls": [],
+            "formula_ok": true,
+            "over_window": false,
+            "dropped_len": 0,
+            "dropped_shape_ok": true,
+            "sensitive_hit": false
+          }
+        }
+      ],
+      "detail": "齐备率 100%（2/2 样本）；可容纳输入 over_window 全为 false ⇒ 超窗率 0"
+    },
+    "TT-v1.4.9-004": {
+      "ok": true,
+      "dropped_len": 0,
+      "detail": "dropped 元素仅含 source/id/reason（元素数见 dropped_len；为 0 时形状判定恒真）"
+    },
+    "TT-v1.4.9-008": {
+      "ok": true,
+      "chunks": 4,
+      "request_id": "openllm-87af215dea9f4f8496ecbc72",
+      "checks": {
+        "missing": [],
+        "nulls": [],
+        "formula_ok": true,
+        "over_window": false,
+        "dropped_len": 0,
+        "dropped_shape_ok": true,
+        "sensitive_hit": false
+      },
+      "detail": "流式对话正常结束且落痕 context_metrics"
+    },
+    "TT-v1.4.9-027": {
+      "ok": true,
+      "sync_field_count": 28,
+      "stream_field_count": 28,
+      "only_in_sync": [],
+      "only_in_stream": [],
+      "detail": "同步/流式回执字段集合同口径（预算窗口与齐备性由 TT-007/008 分别验证）"
+    },
+    "TT-v1.4.9-010": {
+      "ok": true,
+      "samples": [
+        {
+          "label": "empty",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "label": "long",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "label": "special",
+          "status": 200,
+          "ok": true
+        },
+        {
+          "label": "numeric",
+          "status": 422,
+          "ok": true
+        }
+      ],
+      "detail": "空串/超长/特殊字符/非字符串均不 5xx（无注入）"
+    },
+    "TT-v1.4.9-012": {
+      "ok": true,
+      "status": 200,
+      "body_head": "{\"items\":[],\"total\":0,\"filters\":{\"session_id\":\"t40-sync-long-e408469e\",\"request_id\":null,\"target\":null,\"limit\":200}}",
+      "detail": "回写回执 200；不含令牌/密钥；含 accepted/duplicated/failed 状态面"
+    },
+    "TT-v1.4.9-013": {
+      "ok": true,
+      "status": 200,
+      "body_head": "{\"items\":[{\"request_id\":\"openllm-93271175e5b646bda89e84c5\",\"session_id\":\"t40-sync-long-e408469e\",\"model\":\"auto\",\"created_at\":\"2026-09-29T03:32:04.747805+00:00\",\"prompt_total_tokens\":912,\"segment_tokens\":{\"system\":83,\"profile\":0,\"memory\":0,\"rag\":0,\"history\":797,\"query\":21},\"contexts_tokens\":797,\"coun",
+      "detail": "计量导出 200；按会话过滤；limit 生效"
+    },
+    "TT-v1.4.9-014": {
+      "ok": true,
+      "status": 200,
+      "total": 0,
+      "items_len": 0,
+      "body_head": "{\"items\":[],\"total\":0,\"filters\":{\"session_id\":\"t40-sync-long-e408469e\",\"request_id\":null,\"target\":null,\"limit\":200}}",
+      "detail": "用户 B 查询用户 A 的会话 ⇒ 不可见（items=[] / total=0）"
+    },
+    "TT-v1.4.9-026": {
+      "ok": true,
+      "status": 200,
+      "detail": "空 pipeline 不 5xx；不可容纳输入的显式标记由 ac-149-12 夹具判据 ＋ 关闭态对照覆盖"
+    },
+    "TT-v1.4.9-025": {
+      "ok": true,
+      "create": {
+        "chat_status": 200,
+        "ok": true
+      },
+      "read": {
+        "trace_status": 200,
+        "ok": true
+      },
+      "update_note": "「U（关闭态回退）」需关闭开关实例 ⇒ 见 TT-v1.4.9-028/045",
+      "detail": "触发（C）→ 观测（R）两步在开放实例取证；回退（U）由关闭实例覆盖",
+      "update": {
+        "closed_status": 200,
+        "leaked": [],
+        "ok": true
+      }
+    },
+    "TT-v1.4.9-030": {
+      "ok": true,
+      "request_id": "openllm-93271175e5b646bda89e84c5",
+      "session_id": "t40-sync-long-e408469e",
+      "detail": "同一 request_id/session_id 在轨迹与回写回执两面均可对齐"
+    },
+    "TT-v1.4.9-024": {
+      "ok": true,
+      "total_routes": 367,
+      "get_routes": 197,
+      "probed": 181,
+      "excluded": [
+        "/api/v1/auth/api-keys",
+        "/api/v1/chat-stream/stream",
+        "/api/v1/chat/models",
+        "/api/v1/edge/adapters",
+        "/api/v1/edge/adapters/{name}",
+        "/api/v1/edge/audit/logs",
+        "/api/v1/edge/audit/logs/export",
+        "/api/v1/edge/audit/stats",
+        "/api/v1/edge/config",
+        "/api/v1/edge/health",
+        "/api/v1/edge/organizations",
+        "/api/v1/edge/organizations/{org_id}",
+        "/api/v1/edge/organizations/{org_id}/users",
+        "/api/v1/edge/quotas/{org_id}",
+        "/api/v1/edge/status",
+        "/api/v1/edge/usage/{org_id}"
+      ],
+      "exclude_reason": "有副作用／破坏性／需外部依赖（逐条登记，非静默跳过）",
+      "coverage_pct": 91.9,
+      "code_5xx": [],
+      "env_5xx": [
+        {
+          "route": "/api/v1/local-models",
+          "probed": "/api/v1/local-models",
+          "status": 503,
+          "elapsed_ms": 2148.6,
+          "class": "H",
+          "body_head": "{\"detail\":\"无法连接Ollama服务: All connection attempts failed\"}"
+        },
+        {
+          "route": "/api/v1/local-models/gpu/stats/all",
+          "probed": "/api/v1/local-models/gpu/stats/all",
+          "status": 503,
+          "elapsed_ms": 14.0,
+          "class": "H",
+          "body_head": "{\"detail\":\"GPU监控不可用，请检查NVIDIA驱动和pynvml安装\"}"
+        }
+      ],
+      "requestfailed": [],
+      "status_distribution": {
+        "2xx": 55,
+        "3xx": 8,
+        "4xx": 116,
+        "5xx": 2
+      },
+      "details": [
+        {
+          "route": "/",
+          "probed": "/",
+          "status": 200,
+          "elapsed_ms": 17.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/auth/{path}",
+          "probed": "/api/auth/probe-none",
+          "status": 301,
+          "elapsed_ms": 17.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/billing/{path}",
+          "probed": "/api/billing/probe-none",
+          "status": 301,
+          "elapsed_ms": 16.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/chat/{path}",
+          "probed": "/api/chat/probe-none",
+          "status": 301,
+          "elapsed_ms": 20.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/local-models/{path}",
+          "probed": "/api/local-models/probe-none",
+          "status": 301,
+          "elapsed_ms": 18.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/providers/{path}",
+          "probed": "/api/providers/probe-none",
+          "status": 301,
+          "elapsed_ms": 47.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/status",
+          "probed": "/api/status",
+          "status": 301,
+          "elapsed_ms": 17.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/tenants/{path}",
+          "probed": "/api/tenants/probe-none",
+          "status": 301,
+          "elapsed_ms": 120.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/users/{path}",
+          "probed": "/api/users/probe-none",
+          "status": 301,
+          "elapsed_ms": 16.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/alerts",
+          "probed": "/api/v1/alerts",
+          "status": 200,
+          "elapsed_ms": 183.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/alerts/rules",
+          "probed": "/api/v1/alerts/rules",
+          "status": 200,
+          "elapsed_ms": 393.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/audit-logs",
+          "probed": "/api/v1/audit-logs",
+          "status": 403,
+          "elapsed_ms": 112.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/audit-logs/actions",
+          "probed": "/api/v1/audit-logs/actions",
+          "status": 200,
+          "elapsed_ms": 93.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/audit-logs/export",
+          "probed": "/api/v1/audit-logs/export",
+          "status": 403,
+          "elapsed_ms": 161.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/audit-logs/reports",
+          "probed": "/api/v1/audit-logs/reports",
+          "status": 403,
+          "elapsed_ms": 33.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/audit-logs/stats/summary",
+          "probed": "/api/v1/audit-logs/stats/summary",
+          "status": 403,
+          "elapsed_ms": 133.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/auth/me",
+          "probed": "/api/v1/auth/me",
+          "status": 200,
+          "elapsed_ms": 129.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/bills",
+          "probed": "/api/v1/billing/bills",
+          "status": 200,
+          "elapsed_ms": 29.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/bills/{bill_id}",
+          "probed": "/api/v1/billing/bills/probe-none",
+          "status": 422,
+          "elapsed_ms": 164.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/plans",
+          "probed": "/api/v1/billing/plans",
+          "status": 200,
+          "elapsed_ms": 73.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/quotas",
+          "probed": "/api/v1/billing/quotas",
+          "status": 200,
+          "elapsed_ms": 133.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/usage/records",
+          "probed": "/api/v1/billing/usage/records",
+          "status": 200,
+          "elapsed_ms": 42.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/usage/statistics",
+          "probed": "/api/v1/billing/usage/statistics",
+          "status": 200,
+          "elapsed_ms": 255.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/v2/alerts",
+          "probed": "/api/v1/billing/v2/alerts",
+          "status": 200,
+          "elapsed_ms": 28.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/v2/bills",
+          "probed": "/api/v1/billing/v2/bills",
+          "status": 200,
+          "elapsed_ms": 93.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/billing/v2/cost-analysis",
+          "probed": "/api/v1/billing/v2/cost-analysis",
+          "status": 200,
+          "elapsed_ms": 221.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/budgets",
+          "probed": "/api/v1/budgets",
+          "status": 200,
+          "elapsed_ms": 171.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/budgets/{budget_id}/alerts",
+          "probed": "/api/v1/budgets/probe-none/alerts",
+          "status": 200,
+          "elapsed_ms": 51.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/budgets/{budget_id}/status",
+          "probed": "/api/v1/budgets/probe-none/status",
+          "status": 404,
+          "elapsed_ms": 134.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/capability-tags",
+          "probed": "/api/v1/capability-tags",
+          "status": 200,
+          "elapsed_ms": 113.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/config",
+          "probed": "/api/v1/config",
+          "status": 403,
+          "elapsed_ms": 83.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/config/export",
+          "probed": "/api/v1/config/export",
+          "status": 403,
+          "elapsed_ms": 104.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/config/history",
+          "probed": "/api/v1/config/history",
+          "status": 403,
+          "elapsed_ms": 28.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/config/{key}",
+          "probed": "/api/v1/config/probe-none",
+          "status": 403,
+          "elapsed_ms": 26.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/context/limits",
+          "probed": "/api/v1/context/limits",
+          "status": 200,
+          "elapsed_ms": 57.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/context/limits/{model}",
+          "probed": "/api/v1/context/limits/probe-none",
+          "status": 200,
+          "elapsed_ms": 67.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/context/supported-models",
+          "probed": "/api/v1/context/supported-models",
+          "status": 200,
+          "elapsed_ms": 232.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/conversations",
+          "probed": "/api/v1/conversations",
+          "status": 200,
+          "elapsed_ms": 45.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/conversations/stats",
+          "probed": "/api/v1/conversations/stats",
+          "status": 200,
+          "elapsed_ms": 120.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/conversations/{conversation_id}",
+          "probed": "/api/v1/conversations/probe-none",
+          "status": 422,
+          "elapsed_ms": 222.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/conversations/{conversation_id}/context-stats",
+          "probed": "/api/v1/conversations/probe-none/context-stats",
+          "status": 422,
+          "elapsed_ms": 24.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/conversations/{conversation_id}/messages",
+          "probed": "/api/v1/conversations/probe-none/messages",
+          "status": 422,
+          "elapsed_ms": 77.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/costs/analysis",
+          "probed": "/api/v1/costs/analysis",
+          "status": 200,
+          "elapsed_ms": 145.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/costs/optimization",
+          "probed": "/api/v1/costs/optimization",
+          "status": 200,
+          "elapsed_ms": 2699.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/health",
+          "probed": "/api/v1/health",
+          "status": 200,
+          "elapsed_ms": 94.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/health/{provider}",
+          "probed": "/api/v1/health/probe-none",
+          "status": 404,
+          "elapsed_ms": 160.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/knowledge-bases",
+          "probed": "/api/v1/knowledge-bases",
+          "status": 200,
+          "elapsed_ms": 407.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/knowledge-bases/{kb_id}",
+          "probed": "/api/v1/knowledge-bases/probe-none",
+          "status": 422,
+          "elapsed_ms": 225.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/knowledge-bases/{kb_id}/documents",
+          "probed": "/api/v1/knowledge-bases/probe-none/documents",
+          "status": 422,
+          "elapsed_ms": 27.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/knowledge-bases/{kb_id}/documents/{doc_id}",
+          "probed": "/api/v1/knowledge-bases/probe-none/documents/probe-none",
+          "status": 422,
+          "elapsed_ms": 394.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/knowledge-bases/{kb_id}/stats",
+          "probed": "/api/v1/knowledge-bases/probe-none/stats",
+          "status": 422,
+          "elapsed_ms": 53.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models",
+          "probed": "/api/v1/local-models",
+          "status": 503,
+          "elapsed_ms": 2148.6,
+          "class": "H",
+          "body_head": "{\"detail\":\"无法连接Ollama服务: All connection attempts failed\"}"
+        },
+        {
+          "route": "/api/v1/local-models/available",
+          "probed": "/api/v1/local-models/available",
+          "status": 200,
+          "elapsed_ms": 35.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu",
+          "probed": "/api/v1/local-models/gpu",
+          "status": 200,
+          "elapsed_ms": 14.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu-allocation/status",
+          "probed": "/api/v1/local-models/gpu-allocation/status",
+          "status": 200,
+          "elapsed_ms": 23.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu-info",
+          "probed": "/api/v1/local-models/gpu-info",
+          "status": 200,
+          "elapsed_ms": 2088.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu-schedules/all",
+          "probed": "/api/v1/local-models/gpu-schedules/all",
+          "status": 200,
+          "elapsed_ms": 21.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu/health",
+          "probed": "/api/v1/local-models/gpu/health",
+          "status": 200,
+          "elapsed_ms": 13.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu/stats/all",
+          "probed": "/api/v1/local-models/gpu/stats/all",
+          "status": 503,
+          "elapsed_ms": 14.0,
+          "class": "H",
+          "body_head": "{\"detail\":\"GPU监控不可用，请检查NVIDIA驱动和pynvml安装\"}"
+        },
+        {
+          "route": "/api/v1/local-models/gpu/{gpu_id}",
+          "probed": "/api/v1/local-models/gpu/probe-none",
+          "status": 422,
+          "elapsed_ms": 14.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu/{gpu_id}/availability",
+          "probed": "/api/v1/local-models/gpu/probe-none/availability",
+          "status": 422,
+          "elapsed_ms": 22.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu/{gpu_id}/history",
+          "probed": "/api/v1/local-models/gpu/probe-none/history",
+          "status": 422,
+          "elapsed_ms": 16.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu/{gpu_id}/processes",
+          "probed": "/api/v1/local-models/gpu/probe-none/processes",
+          "status": 422,
+          "elapsed_ms": 15.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/gpu/{gpu_id}/stats",
+          "probed": "/api/v1/local-models/gpu/probe-none/stats",
+          "status": 422,
+          "elapsed_ms": 16.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/status",
+          "probed": "/api/v1/local-models/status",
+          "status": 200,
+          "elapsed_ms": 2092.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/{model_name}",
+          "probed": "/api/v1/local-models/probe-none",
+          "status": 404,
+          "elapsed_ms": 2074.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/{model_name}/gpu-recommendation",
+          "probed": "/api/v1/local-models/probe-none/gpu-recommendation",
+          "status": 200,
+          "elapsed_ms": 22.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/local-models/{model_name}/gpu-schedule",
+          "probed": "/api/v1/local-models/probe-none/gpu-schedule",
+          "status": 200,
+          "elapsed_ms": 22.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/model-categories",
+          "probed": "/api/v1/model-categories",
+          "status": 200,
+          "elapsed_ms": 27.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/model-categories/tree",
+          "probed": "/api/v1/model-categories/tree",
+          "status": 200,
+          "elapsed_ms": 28.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/model-categories/{category_id}/models",
+          "probed": "/api/v1/model-categories/probe-none/models",
+          "status": 429,
+          "elapsed_ms": 3.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/models/by-tags",
+          "probed": "/api/v1/models/by-tags",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/models/compare",
+          "probed": "/api/v1/models/compare",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/models/favorite-folders",
+          "probed": "/api/v1/models/favorite-folders",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/models/favorites",
+          "probed": "/api/v1/models/favorites",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/alerts",
+          "probed": "/api/v1/monitoring/alerts",
+          "status": 200,
+          "elapsed_ms": 36.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/alerts/summary",
+          "probed": "/api/v1/monitoring/alerts/summary",
+          "status": 200,
+          "elapsed_ms": 45.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/costs",
+          "probed": "/api/v1/monitoring/costs",
+          "status": 200,
+          "elapsed_ms": 74.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/costs/optimization-suggestions",
+          "probed": "/api/v1/monitoring/costs/optimization-suggestions",
+          "status": 200,
+          "elapsed_ms": 167.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/dashboard",
+          "probed": "/api/v1/monitoring/dashboard",
+          "status": 200,
+          "elapsed_ms": 1526.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/metrics",
+          "probed": "/api/v1/monitoring/metrics",
+          "status": 200,
+          "elapsed_ms": 304.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/traces",
+          "probed": "/api/v1/monitoring/traces",
+          "status": 200,
+          "elapsed_ms": 466.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/traces/search",
+          "probed": "/api/v1/monitoring/traces/search",
+          "status": 422,
+          "elapsed_ms": 25.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/traces/statistics",
+          "probed": "/api/v1/monitoring/traces/statistics",
+          "status": 200,
+          "elapsed_ms": 576.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/traces/{trace_id}",
+          "probed": "/api/v1/monitoring/traces/probe-none",
+          "status": 404,
+          "elapsed_ms": 210.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/monitoring/traces/{trace_id}/spans",
+          "probed": "/api/v1/monitoring/traces/probe-none/spans",
+          "status": 404,
+          "elapsed_ms": 132.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models",
+          "probed": "/api/v1/open-models",
+          "status": 200,
+          "elapsed_ms": 109.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models/downloads",
+          "probed": "/api/v1/open-models/downloads",
+          "status": 200,
+          "elapsed_ms": 158.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models/popular",
+          "probed": "/api/v1/open-models/popular",
+          "status": 200,
+          "elapsed_ms": 71.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models/search",
+          "probed": "/api/v1/open-models/search",
+          "status": 422,
+          "elapsed_ms": 52.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models/{model_id}",
+          "probed": "/api/v1/open-models/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models/{model_id}/deploy-status",
+          "probed": "/api/v1/open-models/probe-none/deploy-status",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models/{model_id}/download-status",
+          "probed": "/api/v1/open-models/probe-none/download-status",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/open-models/{model_id}/logs",
+          "probed": "/api/v1/open-models/probe-none/logs",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/plugins",
+          "probed": "/api/v1/plugins",
+          "status": 429,
+          "elapsed_ms": 30.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/plugins/tools",
+          "probed": "/api/v1/plugins/tools",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/plugins/{plugin_id}",
+          "probed": "/api/v1/plugins/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/plugins/{plugin_id}/health",
+          "probed": "/api/v1/plugins/probe-none/health",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt-experiments",
+          "probed": "/api/v1/prompt-experiments",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt-experiments/{experiment_id}",
+          "probed": "/api/v1/prompt-experiments/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt-experiments/{experiment_id}/report",
+          "probed": "/api/v1/prompt-experiments/probe-none/report",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt-templates",
+          "probed": "/api/v1/prompt-templates",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt-templates/{template_id}",
+          "probed": "/api/v1/prompt-templates/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt-templates/{template_id}/export",
+          "probed": "/api/v1/prompt-templates/probe-none/export",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt-templates/{template_id}/versions",
+          "probed": "/api/v1/prompt-templates/probe-none/versions",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt/assembly/compare",
+          "probed": "/api/v1/prompt/assembly/compare",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt/assembly/compare/records",
+          "probed": "/api/v1/prompt/assembly/compare/records",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/prompt/assembly/template",
+          "probed": "/api/v1/prompt/assembly/template",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers",
+          "probed": "/api/v1/providers",
+          "status": 429,
+          "elapsed_ms": 2.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/all",
+          "probed": "/api/v1/providers/all",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/models/all",
+          "probed": "/api/v1/providers/models/all",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/models/{model_id}",
+          "probed": "/api/v1/providers/models/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/registration-guide",
+          "probed": "/api/v1/providers/registration-guide",
+          "status": 429,
+          "elapsed_ms": 50.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/registration/list",
+          "probed": "/api/v1/providers/registration/list",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/{provider_code}/registration",
+          "probed": "/api/v1/providers/probe-none/registration",
+          "status": 429,
+          "elapsed_ms": 2099.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/{provider_id}",
+          "probed": "/api/v1/providers/probe-none",
+          "status": 422,
+          "elapsed_ms": 120.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/providers/{provider_id}/models",
+          "probed": "/api/v1/providers/probe-none/models",
+          "status": 422,
+          "elapsed_ms": 22.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/rag/history",
+          "probed": "/api/v1/rag/history",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/roles",
+          "probed": "/api/v1/roles",
+          "status": 429,
+          "elapsed_ms": 211.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/roles/{role_id}",
+          "probed": "/api/v1/roles/probe-none",
+          "status": 422,
+          "elapsed_ms": 24.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/ab-tests",
+          "probed": "/api/v1/routing/ab-tests",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/ab-tests/{test_id}",
+          "probed": "/api/v1/routing/ab-tests/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/ab-tests/{test_id}/assign",
+          "probed": "/api/v1/routing/ab-tests/probe-none/assign",
+          "status": 429,
+          "elapsed_ms": 229.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/ab-tests/{test_id}/report",
+          "probed": "/api/v1/routing/ab-tests/probe-none/report",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/ab-tests/{test_id}/significance",
+          "probed": "/api/v1/routing/ab-tests/probe-none/significance",
+          "status": 429,
+          "elapsed_ms": 3.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/cascade",
+          "probed": "/api/v1/routing/cascade",
+          "status": 429,
+          "elapsed_ms": 2.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/cascade/{rule_id}",
+          "probed": "/api/v1/routing/cascade/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/cascade/{rule_id}/executions",
+          "probed": "/api/v1/routing/cascade/probe-none/executions",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/cascade/{rule_id}/executions/{execution_id}",
+          "probed": "/api/v1/routing/cascade/probe-none/executions/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/cascade/{rule_id}/stats",
+          "probed": "/api/v1/routing/cascade/probe-none/stats",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/circuit-breakers",
+          "probed": "/api/v1/routing/circuit-breakers",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/circuit-breakers/stats",
+          "probed": "/api/v1/routing/circuit-breakers/stats",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/circuit-breakers/{circuit_breaker_id}",
+          "probed": "/api/v1/routing/circuit-breakers/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/circuit-breakers/{circuit_breaker_id}/events",
+          "probed": "/api/v1/routing/circuit-breakers/probe-none/events",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/semantic",
+          "probed": "/api/v1/routing/semantic",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/semantic/cache/stats",
+          "probed": "/api/v1/routing/semantic/cache/stats",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/semantic/categories/list",
+          "probed": "/api/v1/routing/semantic/categories/list",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/routing/semantic/{route_id}",
+          "probed": "/api/v1/routing/semantic/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/status",
+          "probed": "/api/v1/status",
+          "status": 200,
+          "elapsed_ms": 1865.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/structured/schemas",
+          "probed": "/api/v1/structured/schemas",
+          "status": 200,
+          "elapsed_ms": 31.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/structured/schemas/{name}",
+          "probed": "/api/v1/structured/schemas/probe-none",
+          "status": 429,
+          "elapsed_ms": 201.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/templates",
+          "probed": "/api/v1/templates",
+          "status": 429,
+          "elapsed_ms": 2.7,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/templates/{template_id}",
+          "probed": "/api/v1/templates/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tenants",
+          "probed": "/api/v1/tenants",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tenants/{tenant_id}",
+          "probed": "/api/v1/tenants/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tenants/{tenant_id}/gpu-allocation",
+          "probed": "/api/v1/tenants/probe-none/gpu-allocation",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tenants/{tenant_id}/teams",
+          "probed": "/api/v1/tenants/probe-none/teams",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tenants/{tenant_id}/teams/{team_id}",
+          "probed": "/api/v1/tenants/probe-none/teams/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tenants/{tenant_id}/teams/{team_id}/members",
+          "probed": "/api/v1/tenants/probe-none/teams/probe-none/members",
+          "status": 429,
+          "elapsed_ms": 2.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tenants/{tenant_id}/usage",
+          "probed": "/api/v1/tenants/probe-none/usage",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tool-calls",
+          "probed": "/api/v1/tool-calls",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tool-calls/chains/{chain_id}",
+          "probed": "/api/v1/tool-calls/chains/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tool-calls/chains/{chain_id}/steps",
+          "probed": "/api/v1/tool-calls/chains/probe-none/steps",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/tool-calls/{tool_call_id}",
+          "probed": "/api/v1/tool-calls/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/usage/detail",
+          "probed": "/api/v1/usage/detail",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/usage/export",
+          "probed": "/api/v1/usage/export",
+          "status": 429,
+          "elapsed_ms": 2.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/usage/summary",
+          "probed": "/api/v1/usage/summary",
+          "status": 429,
+          "elapsed_ms": 3.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/usage/trends",
+          "probed": "/api/v1/usage/trends",
+          "status": 429,
+          "elapsed_ms": 254.0,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/users",
+          "probed": "/api/v1/users",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/users/{user_id}",
+          "probed": "/api/v1/users/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/virtual-keys",
+          "probed": "/api/v1/virtual-keys",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/virtual-keys/{key_id}",
+          "probed": "/api/v1/virtual-keys/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/virtual-keys/{key_id}/usage",
+          "probed": "/api/v1/virtual-keys/probe-none/usage",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/workspaces",
+          "probed": "/api/v1/workspaces",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/workspaces/{workspace_id}",
+          "probed": "/api/v1/workspaces/probe-none",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/workspaces/{workspace_id}/members",
+          "probed": "/api/v1/workspaces/probe-none/members",
+          "status": 429,
+          "elapsed_ms": 2.1,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/api/v1/workspaces/{workspace_id}/resources",
+          "probed": "/api/v1/workspaces/probe-none/resources",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/health",
+          "probed": "/health",
+          "status": 200,
+          "elapsed_ms": 48.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/metrics",
+          "probed": "/metrics",
+          "status": 200,
+          "elapsed_ms": 5.9,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/health",
+          "probed": "/openllm/v1/health",
+          "status": 200,
+          "elapsed_ms": 2080.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/models",
+          "probed": "/openllm/v1/models",
+          "status": 200,
+          "elapsed_ms": 64.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/prompt/assembly/compare",
+          "probed": "/openllm/v1/prompt/assembly/compare",
+          "status": 400,
+          "elapsed_ms": 26.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/prompt/assembly/compare/records",
+          "probed": "/openllm/v1/prompt/assembly/compare/records",
+          "status": 429,
+          "elapsed_ms": 2.3,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/prompt/assembly/template",
+          "probed": "/openllm/v1/prompt/assembly/template",
+          "status": 200,
+          "elapsed_ms": 20.8,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/rag/collections",
+          "probed": "/openllm/v1/rag/collections",
+          "status": 429,
+          "elapsed_ms": 1788.6,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/trace/fidelity/export",
+          "probed": "/openllm/v1/trace/fidelity/export",
+          "status": 200,
+          "elapsed_ms": 188.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/trace/metrics/export",
+          "probed": "/openllm/v1/trace/metrics/export",
+          "status": 429,
+          "elapsed_ms": 2.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/trace/{request_id}",
+          "probed": "/openllm/v1/trace/probe-none",
+          "status": 404,
+          "elapsed_ms": 143.2,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/writeback/dead-letter",
+          "probed": "/openllm/v1/writeback/dead-letter",
+          "status": 429,
+          "elapsed_ms": 2.5,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/writeback/receipts",
+          "probed": "/openllm/v1/writeback/receipts",
+          "status": 429,
+          "elapsed_ms": 2.4,
+          "class": "OK",
+          "body_head": ""
+        },
+        {
+          "route": "/openllm/v1/writeback/stats",
+          "probed": "/openllm/v1/writeback/stats",
+          "status": 429,
+          "elapsed_ms": 59.6,
+          "class": "OK",
+          "body_head": ""
+        }
+      ]
+    },
+    "TT-v1.4.9-028": {
+      "ok": true,
+      "closed_health": 200,
+      "closed_status": 200,
+      "leaked_extension_fields": [],
+      "closed_receipt": {
+        "request_id": "openllm-c4fe29cbe21a4eebb977c003",
+        "session_id": "t40-closed-long-e39550e9",
+        "model": "auto",
+        "created_at": "2026-09-29T03:32:48.515176+00:00",
+        "prompt_total_tokens": 1613,
+        "segment_tokens": {
+          "system": 83,
+          "profile": 0,
+          "memory": 0,
+          "rag": 0,
+          "history": 1498,
+          "query": 21
+        },
+        "contexts_tokens": 1498,
+        "counted": true,
+        "memory": {
+          "component": "memory",
+          "items_count": 0,
+          "injected_items": 0,
+          "injected_tokens": 0,
+          "scores": [],
+          "items": []
+        },
+        "rag": {
+          "component": "rag",
+          "items_count": 0,
+          "injected_items": 0,
+          "injected_tokens": 0,
+          "scores": [],
+          "items": []
+        },
+        "attribution_a": {
+          "used": [],
+          "unused": [],
+          "used_ratio": 0.0,
+          "matched_terms": {}
+        }
+      },
+      "open_receipt_field_count": 28,
+      "detail": "关闭 CONTEXT_BUDGET_ENABLED ⇒ 回执**零新增字段**（扩展字段组不出现）"
+    },
+    "TT-v1.4.9-045": {
+      "ok": true,
+      "closed_health": 200,
+      "closed_status": 200,
+      "leaked_extension_fields": [],
+      "closed_receipt": {
+        "request_id": "openllm-c4fe29cbe21a4eebb977c003",
+        "session_id": "t40-closed-long-e39550e9",
+        "model": "auto",
+        "created_at": "2026-09-29T03:32:48.515176+00:00",
+        "prompt_total_tokens": 1613,
+        "segment_tokens": {
+          "system": 83,
+          "profile": 0,
+          "memory": 0,
+          "rag": 0,
+          "history": 1498,
+          "query": 21
+        },
+        "contexts_tokens": 1498,
+        "counted": true,
+        "memory": {
+          "component": "memory",
+          "items_count": 0,
+          "injected_items": 0,
+          "injected_tokens": 0,
+          "scores": [],
+          "items": []
+        },
+        "rag": {
+          "component": "rag",
+          "items_count": 0,
+          "injected_items": 0,
+          "injected_tokens": 0,
+          "scores": [],
+          "items": []
+        },
+        "attribution_a": {
+          "used": [],
+          "unused": [],
+          "used_ratio": 0.0,
+          "matched_terms": {}
+        }
+      },
+      "open_receipt_field_count": 28,
+      "detail": "关闭 CONTEXT_BUDGET_ENABLED ⇒ 回执**零新增字段**（扩展字段组不出现）"
+    }
+  },
+  "env": {
+    "health_status": 200,
+    "health_body": {
+      "code": 0,
+      "message": "success",
+      "data": {
+        "status": "healthy",
+        "version": "2.14.3",
+        "components": {
+          "openmemory": {
+            "status": "ok",
+            "latency_ms": 0,
+            "channel": "b"
+          },
+          "openrag": {
+            "status": "unavailable",
+            "latency_ms": 2014,
+            "reason": "组件 open_rag 不可用: 请求超时: ",
+            "channel": "b"
+          },
+          "dps": {
+            "status": "unavailable",
+            "latency_ms": 2061,
+            "reason": "组件 dps 不可用: 服务不可用: All connection attempts failed",
+            "channel": "b"
+          },
+          "ollama": {
+            "status": "unavailable",
+            "latency_ms": 2014,
+            "reason": "",
+            "channel": "a"
+          }
+        },
+        "channel": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "state": "b-primary",
+          "healthy_b": true,
+          "llm_unreachable": false,
+          "llm_consecutive_failures": 0,
+          "fallback_action": "none",
+          "drill_window_seconds": 300.0,
+          "auto_failover_enabled": false
+        },
+        "channel_report": {
+          "preference": "b-primary",
+          "primary_channel": "b",
+          "single_primary": true,
+          "channels": {
+            "a": {
+              "healthy": true,
+              "consecutive_failures": 0
+            },
+            "b": {
+              "healthy": true,
+              "consecutive_failures": 0,
+              "llm_unreachable": false,
+              "llm_consecutive_failures": 0
+            }
+          },
+          "components": {
+            "openmemory": {
+              "channel": "b",
+              "status": "ok",
+              "healthy": true
+            },
+            "openrag": {
+              "channel": "b",
+              "status": "unavailable",
+              "healthy": false
+            },
+            "dps": {
+              "channel": "b",
+              "status": "unavailable",
+              "healthy": false
+            },
+            "ollama": {
+              "channel": "a",
+              "status": "unavailable",
+              "healthy": false
+            }
+          },
+          "degraded_dimensions": [
+            "b.component.openrag",
+            "b.component.dps"
+          ],
+          "fallback_action": "none",
+          "bypass_orchestration": false,
+          "routing_recommendation": "use_primary",
+          "reasons": [
+            "双通道无异常"
+          ]
+        }
+      }
+    }
+  },
+  "elapsed_s": 51.6,
+  "summary": {
+    "cases": 18,
+    "passed": 18,
+    "not_covered": 0,
+    "failed": 0
+  }
+}

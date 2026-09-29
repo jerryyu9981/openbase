@@ -1,0 +1,29 @@
+=== v1.4.9 Step 4 · Mock / 外部依赖用例证据（TT-v1.4.9-021）===
+口径：桩服务**独立启动**验证「可启动 ＋ 契约一致 ＋ 故障可见」；
+      本版 E2E 未以桩替换真实上游（真实组件降级已如实留痕，见环境证据）。
+
+--- openrag_stub @ http://127.0.0.1:8090 ---
+  GET /openapi.json → 200
+  路由表：['/__fault__/down', '/__fault__/latency', '/__fault__/recover', '/openrag/v1/collections', '/openrag/v1/ingest', '/openrag/v1/search']
+  正常态 /openrag/v1/collections → 200（契约可达）
+  注入故障 POST /__fault__/down → 200
+  故障态 /openrag/v1/collections → 503 | {"detail":"mock service down"}
+  故障**可见**（非静默）：是
+  恢复 POST /__fault__/recover → 200
+  恢复后 /openrag/v1/collections → 200
+
+--- openmemory_stub @ http://127.0.0.1:8091 ---
+  GET /openapi.json → 200
+  路由表：['/__fault__/down', '/__fault__/latency', '/__fault__/reset', '/__fault__/up', '/openmemory/v1/history/{user_id}', '/openmemory/v1/search', '/openmemory/v1/write']
+  正常态 /openmemory/v1/history/probe-none → 200（契约可达）
+  注入故障 POST /__fault__/down → 200
+  故障态 /openmemory/v1/history/probe-none → 503 | {"detail":"mock service down"}
+  故障**可见**（非静默）：是
+  恢复 POST /__fault__/up → 200
+  恢复后 /openmemory/v1/history/probe-none → 200
+
+--- 判定 ---
+**通过**：桩可启动、契约路由表与调用方一致、故障注入可见（非静默跳过）、恢复生效
+
+说明：桩服务的 `/health` 未定义（404）**不**计为缺陷 —— 桩的契约面为
+      `/openrag/v1/*`、`/openmemory/v1/*` 与 `/__fault__/*`，判据以实际路由表为准。

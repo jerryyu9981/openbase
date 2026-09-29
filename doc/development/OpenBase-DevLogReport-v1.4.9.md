@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（本版本全部代码改动落于该仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 开发记录报告（Step 3 产出 1） |
-| 文档版本 | v1.1.6 |
+| 文档版本 | v1.1.7 |
 | 状态 | [Review]（Step 3 收尾，待人工批准） |
 | 日期 | 2026-09-29 |
 | 作者 | AD-OpenLLM-Dev |
@@ -95,17 +95,40 @@
 ### 批次 8′／**门禁补齐**：3.4a 技术债务增长率 ＋ 3.5 实际运行验证 ＋ 3.9b 变更一致性自检
 **动因**：按 `coding-stage-execution` 门禁矩阵逐条核对，发现三项门禁**此前未做**（详见 §7／§8）⇒ 本轮一次性补齐（证据落 `doc/test/evidence/v149/`）。**如实登记**：此属**门禁材料缺失**（非实现缺陷），已更正前两轮审计的宽松之处。
 
+## 2b. Step 4 缺陷修复（测试阶段回退 Step 3 的闭环，本版第 11 笔代码提交）
+
+**动因**：Step 4 门禁 4.3b′（**T3a 服务间集成巡检**）逐链路采集命中 **B 类代码缺陷**：`GET /api/v1/costs/optimization` 运行时 **500** ——
+`{"detail":"生成优化建议失败: Function.__init__() got an unexpected keyword argument 'else_'"}`。该端点在 v1.4.9 之前即已存在，属**跨版本既有缺陷**（非本版改动面）。
+
+**根因**：`func.sum(func.case((CostRecord.status != "success", 1), else_=0))` —— `case` 是 SQLAlchemy **顶层构造**；
+`func.case(...)` 会退化为名为 `case` 的**通用函数**并把 `else_` 当关键字参数传入 ⇒ `Function.__init__` 抛 `TypeError`。
+（本项目 `func.case` 全仓仅此 1 处，已扫描确认无同类残留。）
+
+**处置**（遵循「P0/P1 缺陷回退 Step 3 修复 → 更新 DevLogReport → 重新执行相关测试」）：
+
+| 项 | 内容 |
+|----|------|
+| 代码修复 | `app/services/cost_service.py`：`func.sum(case((cond, 1), else_=0))` ＋ 从 sqlalchemy 顶层导入 `case`（仅 2 行） |
+| 护栏（TDD） | 新增 `tests/unit/test_cost_optimization_case_expr.py` **6 例**：① 顶层 `case(..., else_=0)` 可编译为 `CASE WHEN … ELSE … END`；② 反例固化（`func.case(else_=…)` 必抛 `TypeError`）；③ 源码静态护栏（不得再现 `func.case(`）；④ 导入护栏；⑤ 时间窗解析回归面；⑥ **桩 db 实跑主测**（整条聚合链路无异常返回） |
+| RED → GREEN | RED **2 failed**（静态护栏 ＋ 导入护栏）→ GREEN **6 passed** |
+| 回归复跑 | 全量 `pytest tests/unit tests/integration -q` → **3792 passed / 21 failed**，与基线**逐 node id 相同**（零新增失败） |
+| 提交 | OpenLLM **`b261010`**（本地提交，**未推送**） |
+| 复验 | 该路由 **2xx**；T3a **代码类 HTTP≥500 归零**；`requestfailed = 0` |
+| 范围控制 | **不改接口契约、不改时间窗解析**；不扩展至其他模块（既有 21 项失败**不随本版修复**） |
+
+**如实登记**：本项属**跨版本既有缺陷当场闭环**，与 v1.4.9 增量无关；已同步登记于《测试报告-v1.4.9》§6（DEF-149-T4-001）、《阶段审计报告-Stage4-v1.4.9》§6（V3）与《技术债务总表》（**TD-新增-033，已偿还**）。
+
 ## 3. 变更统计与影响文件
 
-**落点仓（OpenLLM）生产代码**（13 个文件；批次 7 收尾补漏改 `prompt_pipeline.py`／`context_metrics.py`／`core/config.py` 三个，**批次 8 增改 `assembler.py`／`component_pipeline.py`／`executor.py`／`api/openllm_gateway.py` 四个**）：
-`prompt_pipeline.py`、`context_metrics.py`、`assembler.py`、`channel.py`、`channel_audit.py`、`component_pipeline.py`、`executor.py`、`core/config.py`、`api/openllm_gateway.py`、`edgerouter/orchestration/evaluate.py`、`profile_refine_gate.py`、`services/writeback_queue.py`、`main.py`
+**落点仓（OpenLLM）生产代码**（**14 个文件** ＝ 批次 1~8 的 13 个 ＋ **Step 4 缺陷修复 1 个（`cost_service.py`，见 §2b）**；批次 7 收尾补漏改 `prompt_pipeline.py`／`context_metrics.py`／`core/config.py` 三个，**批次 8 增改 `assembler.py`／`component_pipeline.py`／`executor.py`／`api/openllm_gateway.py` 四个**）：
+`prompt_pipeline.py`、`context_metrics.py`、`assembler.py`、`channel.py`、`channel_audit.py`、`component_pipeline.py`、`executor.py`、`core/config.py`、`api/openllm_gateway.py`、`edgerouter/orchestration/evaluate.py`、`profile_refine_gate.py`、`services/writeback_queue.py`、`main.py`、**`services/cost_service.py`（Step 4）**
 
-**测试**（新建 **10** 个 ＋ 更正 1 个既有）：
-`test_context_trim_markers.py`、`test_context_cross_segment_competition.py`、`test_context_dropped_detail.py`、`test_context_over_window_verifier.py`、`test_component_channel_routing.py`、`test_channel_audit_action_codes.py`、`test_component_channel_audit_wiring.py`、`test_profile_delta_and_precheck_wiring.py`、`test_context_receipt_fields.py`、**`test_segment_items_production_wiring.py`**；`test_channel_failover_audit.py`（随定稿更正）
+**测试**（新建 **12** 个 ＋ 更正 1 个既有 ＝ **13 个**）：
+`test_context_trim_markers.py`、`test_context_cross_segment_competition.py`、`test_context_dropped_detail.py`、`test_context_over_window_verifier.py`、`test_component_channel_routing.py`、`test_channel_audit_action_codes.py`、`test_component_channel_audit_wiring.py`、`test_profile_delta_and_precheck_wiring.py`、`test_context_receipt_fields.py`、**`test_segment_items_production_wiring.py`**、**`test_cost_optimization_case_expr.py`（Step 4，6 例）**、**`test_evaluate_session_coverage.py`（Step 4 覆盖率补测，15 例）**；`test_channel_failover_audit.py`（随定稿更正）
 
-**文档仓（OpenBase）**：架构设计文档 v1.6.3、**API 接口设计文档 v1.3.0**、追溯矩阵 v1.9.5、静态质量检查记录 v1.1.2、代码逻辑审查记录 v1.3.2、本报告 v1.1.6、Stage3 审计报告 v1.3.3、**开发审计移交材料 v1.0.3**、**测试移交说明 v1.0.1**、证据（`doc/test/evidence/cr149/` 5 份 ＋ `doc/test/evidence/v149/` 9 份 ＝ **14 份**，含 **3.9b／3.10 的生成器脚本**）
+**文档仓（OpenBase）**：架构设计文档 v1.6.3、**API 接口设计文档 v1.3.0**、**需求追溯矩阵 v1.1.0**、追溯矩阵 v1.9.5、静态质量检查记录 v1.1.3、代码逻辑审查记录 v1.3.2、本报告 v1.1.7、Stage3 审计报告 v1.3.3、**Stage4 审计报告 v1.0.0**、**开发审计移交材料 v1.0.3**、**测试移交说明 v1.0.1**、**测试计划 v1.0.1／测试用例 v1.0.1／测试报告 v1.0.0／测试回溯对比审计报告 v1.0.0**、**技术债务总表 v0.10.0**、证据（`doc/test/evidence/cr149/` 5 份 ＋ `doc/test/evidence/v149/` **20 份** ＝ **25 份**，含 **3.9b／3.10 与 Step 4 的生成器脚本**）
 
-**提交（本版本 OpenLLM 侧 10 笔代码提交 ＋ 1 笔文档提交；OpenBase 侧 15 笔文档提交；均**未推送**）**：OpenLLM `2d1aa85`／`a1021c4`／`33c4009`／`9b36160`／`9782f48`／`1651e42`／`333188a`／`a9914e6`（收尾补漏）／`2f5364d`（批次 8 I-2 落线）／**`d4bff29`（批次 8 回归修复：向后兼容退回）**（＋ `7836848` DevLog 前置定位）；OpenBase `00b5df2`／`8dff346`／`ef9856e`／`81fee6f`／`a8f9cb2`／`c25b8c5`／`0bece03`／`fc670fa`／`4648fc7`／`2677a18`／`469d986`／`7b1a6d9`／`ac9ddb1`／`e8d01aa`／**本笔**（Step 3 全过程文档提交，`00b5df2` → 本笔）
+**提交（本版本 OpenLLM 侧 11 笔代码提交 ＋ 1 笔文档提交；OpenBase 侧 16 笔文档提交；均**未推送**）**：OpenLLM `2d1aa85`／`a1021c4`／`33c4009`／`9b36160`／`9782f48`／`1651e42`／`333188a`／`a9914e6`（收尾补漏）／`2f5364d`（批次 8 I-2 落线）／`d4bff29`（批次 8 回归修复：向后兼容退回）／**`b261010`（Step 4 缺陷修复：成本优化端点 500）**（＋ `7836848` DevLog 前置定位）；OpenBase `00b5df2`／`8dff346`／`ef9856e`／`81fee6f`／`a8f9cb2`／`c25b8c5`／`0bece03`／`fc670fa`／`4648fc7`／`2677a18`／`469d986`／`7b1a6d9`／`ac9ddb1`／`e8d01aa`／`715da6b`／**本笔**（Step 3~4 全过程文档提交，`00b5df2` → 本笔）
 
 ## 3b. 对外接口、数据与配置变更
 
@@ -251,6 +274,7 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.1.7 | 2026-09-29 | AD-OpenLLM-Dev | **Step 4 缺陷修复并入（§2b 新增）**：Step 4 T3a 服务间集成巡检命中 `GET /api/v1/costs/optimization` **运行时 500**（`func.case` 误用 ⇒ `Function.__init__() got an unexpected keyword argument 'else_'`，**跨版本既有缺陷**）⇒ 按「缺陷回退 Step 3 修复 → 更新本报告 → 重新执行相关测试」闭环：代码改 2 行 ＋ **6 例护栏**（RED 2 failed → GREEN 6 passed）＋ 全量回归复跑 **3792 passed / 21 failed**（逐 node id 与基线一致）＋ 该路由复测 2xx；提交 OpenLLM **`b261010`**。§3 同步：生产文件 13 → **14**、测试 10 → **12 新建（共 13 个）**、代码提交 10 → **11 笔**、OpenBase 文档提交 15 → **16 笔**、证据 14 → **25 份**、文档版本清单补齐 Step 4 全套（测试计划/用例/报告/回溯审计/Stage4 审计/需求追溯矩阵 v1.1.0/技术债务总表 v0.10.0）；文头版本 v1.1.6 → **v1.1.7**。 |
 | v1.1.6 | 2026-09-29 | AD-OpenLLM-Dev | **门禁证据可复现化 ＋ 文档口径对齐（无生产代码改动）**：① **3.9b／3.10 证据生成器入仓** —— 此前两项门禁**仅留结论**（`cr149-consistency-selfcheck-20260929.txt`／`cr149-deliverable-inventory-20260929.txt`），**生成命令不可复现**，与「以可复现命令为准」的审计口径不符 ⇒ 补入 `cr149-consistency-selfcheck.py`（命名/版本/路径三项自检，支持 `--out` 直出 UTF-8 无 BOM 证据）与 `cr149-deliverable-inventory.py`（交付物存在性清点，清单可维护）；重跑结果 **3.9b：34 份文档版本全一致／0 不合规**、**3.10：TOTAL 23 / EMPTY 0 / MISSING 0**（原 21，含两份生成器）；**并新增 §6c 的 G9（取证链缺陷，中，已闭合）** ⇒ 闭环问题 14 → **15 项**；② §3 证据与文档版本清单同步（`v149/` 7 → **9 份**、本报告 v1.1.6、移交材料 v1.0.3、Stage3 审计 v1.3.3、追溯矩阵 v1.9.5、测试移交说明 v1.0.1）；③ 文头版本同步（v1.1.5 → **v1.1.6**）。**结论不变**：未闭环 P0/P1 = 0，可进入 Step 4。 |
 | v1.1.5 | 2026-09-29 | AD-OpenLLM-Dev | **补齐 `project-document-management` 阶段 3 要求的 DevLogReport 强制章节（M6）**：① 新增 **§1b 开发入场检查**（8 项准入逐项实测：需求/设计已批准、移交说明齐备、追溯矩阵已建、环境可用、回归基线可对照、范围边界、前置缺陷）⇒ **准入通过**；② 新增 **§6c 修复与复审记录**（本版开发期闭环的 **14 项**问题：F-1~F-7 ＋ G1~G8，逐条「问题→定性→处置→复审证据」）；③ 文头版本同步（v1.1.4 → **v1.1.5**）。至此 DevLogReport 对**两份规范**（模板最小章节 ＋ 阶段内容要求）均**无缺章**。 |
 | v1.1.4 | 2026-09-29 | AD-OpenLLM-Dev | **补齐模板强制章节（3 项）**：① 新增 **§3b 对外接口、数据与配置变更**（对外 API **无变更**／数据库 **无变更**／**新增配置 3 项**及默认值，并附 G5「死开关」教训）；② 新增 **§6b 测试移交说明**（模板「必须」章节）并**独立输出**《OpenBase-测试移交说明-v1.4.9.md》v1.0.0；③ 文头版本同步（v1.1.3 → **v1.1.4**）。依据：`project-document-templates` 的 DevLogReport 最小章节结构核对发现上述缺章。 |

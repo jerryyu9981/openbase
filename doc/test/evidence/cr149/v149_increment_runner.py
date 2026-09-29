@@ -58,6 +58,10 @@ def _resolve_backend_root() -> str:
 _BACKEND_ROOT = _resolve_backend_root()
 sys.path.insert(0, _BACKEND_ROOT)
 
+#: **必须固定 cwd 到 backend 根**：`Settings` 的 `env_file=".env"` 为**相对路径**，在他仓根执行会把
+#: 他仓 `.env` 载入 `Settings`（`extra=forbid` ⇒ 校验失败）。固定 cwd 后脚本方真正与 cwd 无关。
+os.chdir(_BACKEND_ROOT)
+
 
 def _counter(text: str) -> int:
     return len(text or "")

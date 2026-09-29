@@ -18,8 +18,8 @@
       "output_reserve": 200,
       "safety_margin": 50,
       "available_budget": 950,
-      "prompt_tokens_before": 513,
-      "prompt_tokens_after": 129,
+      "prompt_tokens_before": 599,
+      "prompt_tokens_after": 215,
       "dropped": [
         {
           "source": "history",
@@ -67,10 +67,10 @@
       "PROFILE_LLM_REFINE_ENABLED": false
     },
     "switch_effective_values": {
-      "CONTEXT_BUDGET_ENABLED": false,
+      "CONTEXT_BUDGET_ENABLED": true,
       "CONTEXT_CROSS_SEGMENT_COMPETITION_ENABLED": false,
       "COMPONENT_CHANNEL_ROUTING_ENABLED": false,
-      "WRITEBACK_DECISION_ENABLED": false,
+      "WRITEBACK_DECISION_ENABLED": true,
       "PROFILE_LLM_REFINE_ENABLED": false
     },
     "closed_path_keys": [

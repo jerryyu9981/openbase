@@ -1,0 +1,62 @@
+=== v1.4.9 Step 4 · 覆盖率证据（TT-v1.4.9-034，门禁 4.6）===
+被测快照：OpenLLM HEAD = b261010（含 Step 4 修复）＋ Step 4 新增测试（成本护栏 6 例、evaluate 补测 15 例）
+实例：非必需（覆盖率以测试套件驱动，无需运行实例）
+
+【测量命令（可复现）】
+  # ① 全量套件 ＋ 覆盖率（作为 TT-v1.4.9-031 与本门禁的同一份运行）
+  cd <OpenLLM>/backend
+  python -m coverage run -m pytest tests/unit tests/integration -q
+  python -m coverage report -m --fail-under=0
+  # ② 改动行聚焦核对（cost_service.py 的本次改动行）
+  python -m coverage run -m pytest tests/unit/test_cost_optimization_case_expr.py -q
+  python -m coverage report -m --fail-under=0 --include='*cost_service.py'
+
+  ⚠ 工具口径说明（如实登记）：**不能用** `pytest --cov=<模块>` 或 `coverage run --source=<模块>`——
+  本机存在 `cryptography` 与 `jwt` 分处两个 site-packages 的环境事实，`--source` 的**模块预导入**
+  会触发 PyO3「may only be initialized once per interpreter process」⇒ 收集不到数据（ImportError）。
+  改用「先 `coverage run`（不带 --source）后 `coverage report`」即可正常测量。
+
+【① 全量套件运行结果】
+  ========== 21 failed, 3792 passed, 34 warnings in 326.99s (0:05:26) ==========
+  （与基线 cr149-t36-full.txt 逐 node id 完全相同 ⇒ 零新增失败，见回归证据）
+
+【② 改动文件行覆盖率（门禁：≥80%）】
+文件                                             Stmts  Miss  Cover
+---------------------------------------------------------------
+app\edgerouter\orchestration\prompt_pipeline.py    447    27    94%
+app\edgerouter\orchestration\context_metrics.py    180     6    97%
+app\edgerouter\orchestration\assembler.py          161    13    92%
+app\edgerouter\orchestration\component_pipeline.py 160    16    90%
+app\edgerouter\orchestration\executor.py           140     2    99%
+app\edgerouter\orchestration\evaluate.py           154     1    99%
+app\edgerouter\orchestration\profile_refine_gate.py 116    7    94%
+app\identity\channel.py                            284    15    95%
+app\identity\channel_audit.py                       59     7    88%
+app\core\config.py                                 182     3    98%
+app\api\openllm_gateway.py                        1566   242    85%
+app\services\writeback_queue.py                    355    21    94%
+---------------------------------------------------------------
+合格文件数：12 / 12（v1.4.9 生产改动面）**全部 ≥ 80%**
+
+【③ 第 13 个改动文件：app\services\cost_service.py（逐文件说明，非「达标」而是「改动行达标」）】
+模块级（全量套件口径）：  Stmts 277  Miss 190  Cover 31%
+模块级（聚焦口径）：      Stmts 277  Miss 179  Cover 35%
+  Missing（聚焦口径）：104, 132-182, 194-223, 245-261, 281-330, 334-367, 379-396,
+                       408-450, 486, 493-494, 523, 530, 559, 566, 591, 596-599,
+                       652-691, 714-732, 775-811
+**判定（改动行范围）**：本次改动仅 **2 行** —— ① 第 21 行 `from sqlalchemy import ... case`（模块导入即执行）；
+② 第 584 行 `func.sum(case((CostRecord.status != "success", 1), else_=0))`。
+**第 584 行不在上述 Missing 清单中 ⇒ 改动行已被执行覆盖（100%）**，由
+`tests/unit/test_cost_optimization_case_expr.py::test_get_optimization_suggestions_runs_without_type_error`
+以桩 db 实跑整条聚合链路保证；同时 5 例静态/反例护栏锁死回归。
+模块级 31% 为**既有低覆盖**（该模块大量未接线方法），**非本次改动引入**，且已随 TD-新增-033 登记。
+
+【④ 覆盖率门禁「低于 80% 阻塞」的处置闭环（如实记录）】
+  · 首测发现 `evaluate.py` 为 **69%**（未覆盖集中于 `evaluate_session` 决策主链与配置回退分支）
+    ⇒ 按门禁输出未覆盖清单 → **补测** `tests/unit/test_evaluate_session_coverage.py`（15 例，硬断言）
+    ⇒ **重测 99%**，门禁解除。
+  · `cost_service.py` 按【③】逐文件说明（改动行 100%），不作「不适用」处理而是**明确标注缺口边界**。
+
+【结论】
+  覆盖率门禁：**有条件通过** —— 12/12 生产改动文件 ≥80%；第 13 个文件为「既有低覆盖模块内改 2 行」，
+  改动行 100% 覆盖并附逐文件说明；低覆盖模块的补齐列入后续债务（TD-新增-033 已登记）。

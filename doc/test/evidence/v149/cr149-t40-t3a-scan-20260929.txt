@@ -1,0 +1,223 @@
+=== v1.4.9 Step 4 · T3a 服务间集成巡检 · 逐链路问题表（TT-v1.4.9-024）===
+实例：http://127.0.0.1:8041（生成时刻：2026-09-29T11:31:57）
+
+--- 覆盖口径 ---
+路由总数（全方法）：367
+GET 路由数：197
+实际探测：181（覆盖 91.9%）
+排除：16（理由：有副作用／破坏性／需外部依赖（逐条登记，非静默跳过））
+  - 排除 /api/v1/auth/api-keys
+  - 排除 /api/v1/chat-stream/stream
+  - 排除 /api/v1/chat/models
+  - 排除 /api/v1/edge/adapters
+  - 排除 /api/v1/edge/adapters/{name}
+  - 排除 /api/v1/edge/audit/logs
+  - 排除 /api/v1/edge/audit/logs/export
+  - 排除 /api/v1/edge/audit/stats
+  - 排除 /api/v1/edge/config
+  - 排除 /api/v1/edge/health
+  - 排除 /api/v1/edge/organizations
+  - 排除 /api/v1/edge/organizations/{org_id}
+  - 排除 /api/v1/edge/organizations/{org_id}/users
+  - 排除 /api/v1/edge/quotas/{org_id}
+  - 排除 /api/v1/edge/status
+  - 排除 /api/v1/edge/usage/{org_id}
+
+--- 状态码分布 ---
+  2xx: 55
+  3xx: 8
+  4xx: 116
+  5xx: 2
+
+--- 网络层门禁 ---
+代码类 HTTP≥500（B 类）：0
+环境类 HTTP≥500（H 类，登记环境遗留，不进缺陷闭环）：2
+  [H] /api/v1/local-models → 503 | {"detail":"无法连接Ollama服务: All connection attempts failed"}
+  [H] /api/v1/local-models/gpu/stats/all → 503 | {"detail":"GPU监控不可用，请检查NVIDIA驱动和pynvml安装"}
+requestfailed（网络失败）：0
+
+--- 逐链路明细（路由 / 状态码 / 耗时ms / 分类）---
+  200        17.1  OK            /
+  301        17.1  OK            /api/auth/{path}
+  301        16.0  OK            /api/billing/{path}
+  301        20.4  OK            /api/chat/{path}
+  301        18.4  OK            /api/local-models/{path}
+  301        47.5  OK            /api/providers/{path}
+  301        17.8  OK            /api/status
+  301       120.0  OK            /api/tenants/{path}
+  301        16.7  OK            /api/users/{path}
+  200       183.3  OK            /api/v1/alerts
+  200       393.6  OK            /api/v1/alerts/rules
+  403       112.4  OK            /api/v1/audit-logs
+  200        93.7  OK            /api/v1/audit-logs/actions
+  403       161.0  OK            /api/v1/audit-logs/export
+  403        33.8  OK            /api/v1/audit-logs/reports
+  403       133.7  OK            /api/v1/audit-logs/stats/summary
+  200       129.3  OK            /api/v1/auth/me
+  200        29.9  OK            /api/v1/billing/bills
+  422       164.0  OK            /api/v1/billing/bills/{bill_id}
+  200        73.4  OK            /api/v1/billing/plans
+  200       133.9  OK            /api/v1/billing/quotas
+  200        42.4  OK            /api/v1/billing/usage/records
+  200       255.1  OK            /api/v1/billing/usage/statistics
+  200        28.6  OK            /api/v1/billing/v2/alerts
+  200        93.3  OK            /api/v1/billing/v2/bills
+  200       221.5  OK            /api/v1/billing/v2/cost-analysis
+  200       171.3  OK            /api/v1/budgets
+  200        51.7  OK            /api/v1/budgets/{budget_id}/alerts
+  404       134.2  OK            /api/v1/budgets/{budget_id}/status
+  200       113.2  OK            /api/v1/capability-tags
+  403        83.5  OK            /api/v1/config
+  403       104.1  OK            /api/v1/config/export
+  403        28.3  OK            /api/v1/config/history
+  403        26.0  OK            /api/v1/config/{key}
+  200        57.2  OK            /api/v1/context/limits
+  200        67.8  OK            /api/v1/context/limits/{model}
+  200       232.5  OK            /api/v1/context/supported-models
+  200        45.6  OK            /api/v1/conversations
+  200       120.8  OK            /api/v1/conversations/stats
+  422       222.5  OK            /api/v1/conversations/{conversation_id}
+  422        24.9  OK            /api/v1/conversations/{conversation_id}/context-stats
+  422        77.4  OK            /api/v1/conversations/{conversation_id}/messages
+  200       145.1  OK            /api/v1/costs/analysis
+  200      2699.0  OK            /api/v1/costs/optimization
+  200        94.7  OK            /api/v1/health
+  404       160.9  OK            /api/v1/health/{provider}
+  200       407.6  OK            /api/v1/knowledge-bases
+  422       225.4  OK            /api/v1/knowledge-bases/{kb_id}
+  422        27.5  OK            /api/v1/knowledge-bases/{kb_id}/documents
+  422       394.1  OK            /api/v1/knowledge-bases/{kb_id}/documents/{doc_id}
+  422        53.1  OK            /api/v1/knowledge-bases/{kb_id}/stats
+  503      2148.6  H             /api/v1/local-models
+  200        35.8  OK            /api/v1/local-models/available
+  200        14.7  OK            /api/v1/local-models/gpu
+  200        23.1  OK            /api/v1/local-models/gpu-allocation/status
+  200      2088.5  OK            /api/v1/local-models/gpu-info
+  200        21.9  OK            /api/v1/local-models/gpu-schedules/all
+  200        13.8  OK            /api/v1/local-models/gpu/health
+  503        14.0  H             /api/v1/local-models/gpu/stats/all
+  422        14.9  OK            /api/v1/local-models/gpu/{gpu_id}
+  422        22.9  OK            /api/v1/local-models/gpu/{gpu_id}/availability
+  422        16.2  OK            /api/v1/local-models/gpu/{gpu_id}/history
+  422        15.9  OK            /api/v1/local-models/gpu/{gpu_id}/processes
+  422        16.5  OK            /api/v1/local-models/gpu/{gpu_id}/stats
+  200      2092.0  OK            /api/v1/local-models/status
+  404      2074.0  OK            /api/v1/local-models/{model_name}
+  200        22.8  OK            /api/v1/local-models/{model_name}/gpu-recommendation
+  200        22.5  OK            /api/v1/local-models/{model_name}/gpu-schedule
+  200        27.8  OK            /api/v1/model-categories
+  200        28.2  OK            /api/v1/model-categories/tree
+  429         3.0  OK            /api/v1/model-categories/{category_id}/models
+  429         2.3  OK            /api/v1/models/by-tags
+  429         2.4  OK            /api/v1/models/compare
+  429         2.3  OK            /api/v1/models/favorite-folders
+  429         2.1  OK            /api/v1/models/favorites
+  200        36.6  OK            /api/v1/monitoring/alerts
+  200        45.2  OK            /api/v1/monitoring/alerts/summary
+  200        74.1  OK            /api/v1/monitoring/costs
+  200       167.2  OK            /api/v1/monitoring/costs/optimization-suggestions
+  200      1526.5  OK            /api/v1/monitoring/dashboard
+  200       304.6  OK            /api/v1/monitoring/metrics
+  200       466.5  OK            /api/v1/monitoring/traces
+  422        25.4  OK            /api/v1/monitoring/traces/search
+  200       576.7  OK            /api/v1/monitoring/traces/statistics
+  404       210.7  OK            /api/v1/monitoring/traces/{trace_id}
+  404       132.7  OK            /api/v1/monitoring/traces/{trace_id}/spans
+  200       109.3  OK            /api/v1/open-models
+  200       158.6  OK            /api/v1/open-models/downloads
+  200        71.0  OK            /api/v1/open-models/popular
+  422        52.3  OK            /api/v1/open-models/search
+  429         2.4  OK            /api/v1/open-models/{model_id}
+  429         2.4  OK            /api/v1/open-models/{model_id}/deploy-status
+  429         2.1  OK            /api/v1/open-models/{model_id}/download-status
+  429         2.5  OK            /api/v1/open-models/{model_id}/logs
+  429        30.6  OK            /api/v1/plugins
+  429         2.3  OK            /api/v1/plugins/tools
+  429         2.0  OK            /api/v1/plugins/{plugin_id}
+  429         2.1  OK            /api/v1/plugins/{plugin_id}/health
+  429         2.1  OK            /api/v1/prompt-experiments
+  429         2.6  OK            /api/v1/prompt-experiments/{experiment_id}
+  429         2.3  OK            /api/v1/prompt-experiments/{experiment_id}/report
+  429         2.4  OK            /api/v1/prompt-templates
+  429         2.3  OK            /api/v1/prompt-templates/{template_id}
+  429         2.2  OK            /api/v1/prompt-templates/{template_id}/export
+  429         2.3  OK            /api/v1/prompt-templates/{template_id}/versions
+  429         2.2  OK            /api/v1/prompt/assembly/compare
+  429         2.5  OK            /api/v1/prompt/assembly/compare/records
+  429         2.3  OK            /api/v1/prompt/assembly/template
+  429         2.8  OK            /api/v1/providers
+  429         2.1  OK            /api/v1/providers/all
+  429         2.1  OK            /api/v1/providers/models/all
+  429         2.1  OK            /api/v1/providers/models/{model_id}
+  429        50.1  OK            /api/v1/providers/registration-guide
+  429         2.3  OK            /api/v1/providers/registration/list
+  429      2099.0  OK            /api/v1/providers/{provider_code}/registration
+  422       120.1  OK            /api/v1/providers/{provider_id}
+  422        22.2  OK            /api/v1/providers/{provider_id}/models
+  429         2.3  OK            /api/v1/rag/history
+  429       211.8  OK            /api/v1/roles
+  422        24.9  OK            /api/v1/roles/{role_id}
+  429         2.5  OK            /api/v1/routing/ab-tests
+  429         2.6  OK            /api/v1/routing/ab-tests/{test_id}
+  429       229.5  OK            /api/v1/routing/ab-tests/{test_id}/assign
+  429         2.5  OK            /api/v1/routing/ab-tests/{test_id}/report
+  429         3.4  OK            /api/v1/routing/ab-tests/{test_id}/significance
+  429         2.7  OK            /api/v1/routing/cascade
+  429         2.2  OK            /api/v1/routing/cascade/{rule_id}
+  429         2.2  OK            /api/v1/routing/cascade/{rule_id}/executions
+  429         2.2  OK            /api/v1/routing/cascade/{rule_id}/executions/{execution_id}
+  429         2.1  OK            /api/v1/routing/cascade/{rule_id}/stats
+  429         2.3  OK            /api/v1/routing/circuit-breakers
+  429         2.3  OK            /api/v1/routing/circuit-breakers/stats
+  429         2.6  OK            /api/v1/routing/circuit-breakers/{circuit_breaker_id}
+  429         2.1  OK            /api/v1/routing/circuit-breakers/{circuit_breaker_id}/events
+  429         2.1  OK            /api/v1/routing/semantic
+  429         2.4  OK            /api/v1/routing/semantic/cache/stats
+  429         2.2  OK            /api/v1/routing/semantic/categories/list
+  429         2.1  OK            /api/v1/routing/semantic/{route_id}
+  200      1865.4  OK            /api/v1/status
+  200        31.3  OK            /api/v1/structured/schemas
+  429       201.6  OK            /api/v1/structured/schemas/{name}
+  429         2.7  OK            /api/v1/templates
+  429         2.5  OK            /api/v1/templates/{template_id}
+  429         2.4  OK            /api/v1/tenants
+  429         2.3  OK            /api/v1/tenants/{tenant_id}
+  429         2.2  OK            /api/v1/tenants/{tenant_id}/gpu-allocation
+  429         2.5  OK            /api/v1/tenants/{tenant_id}/teams
+  429         2.4  OK            /api/v1/tenants/{tenant_id}/teams/{team_id}
+  429         2.8  OK            /api/v1/tenants/{tenant_id}/teams/{team_id}/members
+  429         2.5  OK            /api/v1/tenants/{tenant_id}/usage
+  429         2.2  OK            /api/v1/tool-calls
+  429         2.0  OK            /api/v1/tool-calls/chains/{chain_id}
+  429         2.1  OK            /api/v1/tool-calls/chains/{chain_id}/steps
+  429         2.5  OK            /api/v1/tool-calls/{tool_call_id}
+  429         2.3  OK            /api/v1/usage/detail
+  429         2.8  OK            /api/v1/usage/export
+  429         3.4  OK            /api/v1/usage/summary
+  429       254.0  OK            /api/v1/usage/trends
+  429         2.3  OK            /api/v1/users
+  429         2.3  OK            /api/v1/users/{user_id}
+  429         2.1  OK            /api/v1/virtual-keys
+  429         2.3  OK            /api/v1/virtual-keys/{key_id}
+  429         2.2  OK            /api/v1/virtual-keys/{key_id}/usage
+  429         2.3  OK            /api/v1/workspaces
+  429         2.4  OK            /api/v1/workspaces/{workspace_id}
+  429         2.1  OK            /api/v1/workspaces/{workspace_id}/members
+  429         2.2  OK            /api/v1/workspaces/{workspace_id}/resources
+  200        48.5  OK            /health
+  200         5.9  OK            /metrics
+  200      2080.3  OK            /openllm/v1/health
+  200        64.8  OK            /openllm/v1/models
+  400        26.5  OK            /openllm/v1/prompt/assembly/compare
+  429         2.3  OK            /openllm/v1/prompt/assembly/compare/records
+  200        20.8  OK            /openllm/v1/prompt/assembly/template
+  429      1788.6  OK            /openllm/v1/rag/collections
+  200       188.5  OK            /openllm/v1/trace/fidelity/export
+  429         2.2  OK            /openllm/v1/trace/metrics/export
+  404       143.2  OK            /openllm/v1/trace/{request_id}
+  429         2.5  OK            /openllm/v1/writeback/dead-letter
+  429         2.4  OK            /openllm/v1/writeback/receipts
+  429        59.6  OK            /openllm/v1/writeback/stats
+
+--- 判定 ---
+P0/P1 链路无阻塞性问题（代码类 5xx = 0、requestfailed = 0）

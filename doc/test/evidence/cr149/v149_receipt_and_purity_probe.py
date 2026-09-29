@@ -49,6 +49,11 @@ def _resolve_backend_root() -> str:
 _BACKEND_ROOT = _resolve_backend_root()
 sys.path.insert(0, _BACKEND_ROOT)
 
+#: **必须固定 cwd 到 backend 根**：`app.core.config` 的 `Settings` 用 `env_file=".env"`（**相对路径**），
+#: 若在 OpenBase 仓根等他处执行，会把**他仓的 `.env`** 载入 `Settings`；而 `Settings` 为
+#: `extra=forbid` ⇒ 直接校验失败（真实缺陷，Step 4 实测暴露）。固定 cwd 后脚本方**真正**与 cwd 无关。
+os.chdir(_BACKEND_ROOT)
+
 #: 新预算/裁剪链路模块（AC-149-10 的扫描面）—— 绝对路径，避免受 cwd 影响
 NEW_PIPELINE_MODULES = tuple(
     os.path.join(_BACKEND_ROOT, relative)

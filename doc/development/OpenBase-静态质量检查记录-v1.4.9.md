@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（编排与回写代码所在仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 静态质量检查记录（Step 3 产出 3） |
-| 文档版本 | v1.1.2 |
+| 文档版本 | v1.1.3 |
 | 状态 | [Review]（Step 3 收尾） |
 | 日期 | 2026-09-29 |
 | 检查人 | AD-OpenLLM-Dev |
@@ -40,6 +40,13 @@
 | 7′ | **收尾一致性（续记）** | 取证脚本 `doc/test/evidence/cr149/v149_receipt_and_purity_probe.py` 与 `v149_increment_runner.py`（backend 根自动定位 ＋ 齐备性判定加固）**无生产代码改动** | All checks passed |
 | **8** | **I-2 生产落线** | `assembler.py`（`format_context_with_items` ＋ 同源排序重构）、`component_pipeline.py`、`executor.py`、`api/openllm_gateway.py` / `test_segment_items_production_wiring.py`（含 1 处 `B905` 修） | All checks passed |
 | **8′** | **门禁补齐** | 证据脚本 `doc/test/evidence/v149/cr149-l3-smoke-20260929.py`（真实实例冒烟） | All checks passed |
+| **Step 4** | **缺陷修复（成本优化端点 500）** | `services/cost_service.py`（`func.case` → 顶层 `case()`，**改 2 行**）/ `test_cost_optimization_case_expr.py`（6 例）、`test_evaluate_session_coverage.py`（覆盖率补测 15 例） | 新增/改动**测试**文件：**All checks passed**；`cost_service.py`：**改动前后均为 60 项既有风格债（`UP007` 等），零新增**（同一规则集下两侧计数一致） |
+
+**Step 4 补充静态核对（如实登记）**：
+- `ruff check` 在**改动前后**对 `cost_service.py` 的报错数**均为 60**（全部为**既有**风格债，非本次引入）⇒ **零新增**；
+- 本次新增的两个测试文件 `ruff check` → **All checks passed**；
+- `ruff check --select C901`（`max-complexity=15`）对 `cost_service.py` → **All checks passed**（本次仅改表达式构造，未提升圈复杂度）；
+- 工具口径坑（**登记备查**）：`pytest --cov=<模块>`／`coverage run --source=<模块>` 在本机（`cryptography` 与 `jwt` 分处两个 site-packages）会在**模块预导入**阶段触发 PyO3 双重初始化 `ImportError` ⇒ 覆盖率须用「先 `coverage run`（不带 `--source`）后 `coverage report`」两步法（见 `cr149-t40-coverage-20260929.txt`）。
 
 ## 2b. 补充分组：技术债务增长率（3.4a，工具实测 ＋ 基线两侧比对）
 
@@ -81,6 +88,7 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.1.3 | 2026-09-29 | AD-OpenLLM-Dev | **Step 4 缺陷修复纳入检查范围 ＋ 工具口径坑登记**：新增「Step 4」行 —— `cost_service.py` 改 2 行（`func.case` → 顶层 `case()`）＋ 两个新测试文件；核对结论：测试文件 `ruff check` **All checks passed**，`cost_service.py` **改动前后同为 60 项既有风格债 ⇒ 零新增**，`C901` 通过；并登记**覆盖率工具口径坑**（`--source`/`pytest --cov=<模块>` 触发 PyO3 双重初始化 ImportError ⇒ 改用两步法）。文头版本 v1.1.2 → **v1.1.3**。结论不变（改动面零新增告警）。 |
 | v1.1.2 | 2026-09-29 | AD-OpenLLM-Dev | **批次 8（I-2 生产落线）＋ 3.4a 债务增长率纳入检查范围**：① §2 新增第 8／8′ 行（4 个生产文件 ＋ 1 新测试 ＋ 1 证据脚本，`ruff` 全 `All checks passed`）；② **新增 §2b 技术债务增长率**（`ruff C901` ＋ `pylint duplicate-code`，**HEAD 与基线 worktree 两侧比对** ⇒ **0 / 3 / 0**）并**如实说明**与 v1.4.7「未实测」口径的差异（本轮工具已实际运行）；③ §3 新增第 6 类（`B905`）；④ §4 移除已不适用的「复杂度/重复率未实测」标注；⑤ 文头版本/日期/检查对象同步（**v1.1.2**、7 批次 → **8 批次 ＋ 取证脚本**）。结论不变（改动面 0 告警）。 |
 | v1.1.1 | 2026-09-29 | AD-OpenLLM-Dev | **批次 7 收尾一致性续记纳入检查范围**：新增第 7′ 行 —— 取证脚本 `v149_receipt_and_purity_probe.py`（backend 根自动定位 ＋ 齐备性判定加固）`ruff check` **All checks passed**；本批**无生产代码改动**；文头版本号/日期/检查对象的**滞后**一并更正（v1.0.0 → **v1.1.1**、6 批次 → **7 批次**）。结论不变。 |
 | v1.1.0 | 2026-09-28 | AD-OpenLLM-Dev | **收尾补漏批次纳入检查范围**：新增第 7 批（预算安全余量 ＋ 回执必填字段齐备率）改动面 lint `All checks passed`；本版本检查范围由「6 批次」扩为「**7 批次**」，结论不变（改动面 0 告警）。 |

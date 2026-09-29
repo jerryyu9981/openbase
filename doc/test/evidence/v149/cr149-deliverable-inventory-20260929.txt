@@ -1,5 +1,5 @@
 === v1.4.9 Step 3 产出物存在性验证（3.10）===
-时间：2026-09-29T03:13:03.002319+00:00
+时间：2026-09-29T03:58:28.362456+00:00
 仓库：D:\Trae CN\myproject\Dev\OpenBase
 清单脚本：cr149-deliverable-inventory.py（已入仓，命令可复现）
 
@@ -7,30 +7,46 @@
   OK       doc\design\OpenBase-系统架构设计文档-v1.4.9.md  (33.0 KB / 334 行)
   OK       doc\design\OpenBase-API接口设计文档-v1.4.9.md  (5.3 KB / 84 行)
   OK       doc\development\OpenBase-设计开发追溯矩阵-v1.4.9.md  (50.3 KB / 336 行)
-  OK       doc\development\OpenBase-DevLogReport-v1.4.9.md  (39.4 KB / 261 行)
-  OK       doc\development\OpenBase-静态质量检查记录-v1.4.9.md  (8.9 KB / 87 行)
+  OK       doc\development\OpenBase-DevLogReport-v1.4.9.md  (43.3 KB / 285 行)
+  OK       doc\development\OpenBase-静态质量检查记录-v1.4.9.md  (10.8 KB / 95 行)
   OK       doc\development\OpenBase-代码逻辑审查记录-v1.4.9.md  (18.5 KB / 102 行)
   OK       doc\development\OpenBase-开发审计移交材料-v1.4.9.md  (15.3 KB / 135 行)
   OK       doc\development\OpenBase-测试移交说明-v1.4.9.md  (11.4 KB / 110 行)
   OK       doc\audit\review\OpenBase-阶段审计报告-Stage3-v1.4.9.md  (29.1 KB / 178 行)
+  OK       doc\test\OpenBase-测试计划-v1.4.9.md  (18.2 KB / 193 行)
+  OK       doc\test\OpenBase-测试用例-v1.4.9.md  (23.9 KB / 233 行)
+  OK       doc\test\OpenBase-测试报告-v1.4.9.md  (19.0 KB / 184 行)
+  OK       doc\audit\verification\OpenBase-测试回溯对比审计报告-v1.4.9.md  (9.3 KB / 125 行)
+  OK       doc\audit\review\OpenBase-阶段审计报告-Stage4-v1.4.9.md  (13.2 KB / 160 行)
 
 --- 证据文件 ---
   OK       doc\test\evidence\cr149\v149-increment-eval-set.json  (5.1 KB / 103 行)
-  OK       doc\test\evidence\cr149\v149_increment_runner.py  (16.0 KB / 358 行)
+  OK       doc\test\evidence\cr149\v149_increment_runner.py  (16.2 KB / 362 行)
   OK       doc\test\evidence\cr149\v149_increment_runner-result.json  (4.9 KB / 122 行)
-  OK       doc\test\evidence\cr149\v149_receipt_and_purity_probe.py  (16.8 KB / 390 行)
+  OK       doc\test\evidence\cr149\v149_receipt_and_purity_probe.py  (17.2 KB / 395 行)
   OK       doc\test\evidence\cr149\v149_receipt_and_purity_probe-result.json  (3.2 KB / 130 行)
   OK       doc\test\evidence\v149\cr149-l1-compile-20260929.txt  (0.4 KB / 9 行)
   OK       doc\test\evidence\v149\cr149-instance-8041-20260929.txt  (174.6 KB / 577 行)
   OK       doc\test\evidence\v149\cr149-l3-smoke-20260929.py  (14.9 KB / 348 行)
   OK       doc\test\evidence\v149\cr149-l3-smoke-20260929.json  (6.1 KB / 231 行)
   OK       doc\test\evidence\v149\cr149-debt-growth-20260929.txt  (14.0 KB / 359 行)
-  OK       doc\test\evidence\v149\cr149-consistency-selfcheck.py  (7.1 KB / 193 行)
-  OK       doc\test\evidence\v149\cr149-consistency-selfcheck-20260929.txt  (3.8 KB / 66 行)
-  OK       doc\test\evidence\v149\cr149-deliverable-inventory.py  (4.7 KB / 113 行)
+  OK       doc\test\evidence\v149\cr149-consistency-selfcheck.py  (7.7 KB / 204 行)
+  OK       doc\test\evidence\v149\cr149-consistency-selfcheck-20260929.txt  (4.4 KB / 76 行)
+  OK       doc\test\evidence\v149\cr149-deliverable-inventory.py  (6.0 KB / 131 行)
   OK       doc\test\evidence\v149\cr149-deliverable-inventory-20260929.txt  (2.4 KB / 36 行)
+  OK       doc\test\evidence\v149\cr149-t40-env-evidence.py  (4.7 KB / 102 行)
+  OK       doc\test\evidence\v149\cr149-t40-env-20260929.txt  (3.6 KB / 50 行)
+  OK       doc\test\evidence\v149\cr149-t40-t2t3e2e-20260929.py  (28.6 KB / 662 行)
+  OK       doc\test\evidence\v149\cr149-t40-t2t3e2e-result.json  (59.1 KB / 2002 行)
+  OK       doc\test\evidence\v149\cr149-t40-render-t3a.py  (3.2 KB / 73 行)
+  OK       doc\test\evidence\v149\cr149-t40-t3a-scan-20260929.txt  (13.1 KB / 223 行)
+  OK       doc\test\evidence\v149\cr149-t40-mock-probe.py  (3.3 KB / 80 行)
+  OK       doc\test\evidence\v149\cr149-t40-mock-20260929.txt  (1.7 KB / 29 行)
+  OK       doc\test\evidence\v149\cr149-t40-regression-20260929.txt  (3.4 KB / 54 行)
+  OK       doc\test\evidence\v149\cr149-t40-coverage-20260929.txt  (4.4 KB / 62 行)
+  OK       doc\test\evidence\v149\cr149-t40-consistency-20260929.txt  (4.4 KB / 76 行)
 
-TOTAL FILES: 23
+TOTAL FILES: 39
 EMPTY FILES: 0
 MISSING FILES: 0
 判定：**通过**（全部存在且非空）

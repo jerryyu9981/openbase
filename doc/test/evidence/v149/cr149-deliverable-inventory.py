@@ -27,6 +27,12 @@ DOC_ARTIFACTS: tuple[str, ...] = (
     r"doc\development\OpenBase-开发审计移交材料-v1.4.9.md",
     r"doc\development\OpenBase-测试移交说明-v1.4.9.md",
     r"doc\audit\review\OpenBase-阶段审计报告-Stage3-v1.4.9.md",
+    # ── Step 4（测试阶段）产出 ─────────────────────────────────────────────
+    r"doc\test\OpenBase-测试计划-v1.4.9.md",
+    r"doc\test\OpenBase-测试用例-v1.4.9.md",
+    r"doc\test\OpenBase-测试报告-v1.4.9.md",
+    r"doc\audit\verification\OpenBase-测试回溯对比审计报告-v1.4.9.md",
+    r"doc\audit\review\OpenBase-阶段审计报告-Stage4-v1.4.9.md",
 )
 
 EVIDENCE_ARTIFACTS: tuple[str, ...] = (
@@ -44,6 +50,18 @@ EVIDENCE_ARTIFACTS: tuple[str, ...] = (
     r"doc\test\evidence\v149\cr149-consistency-selfcheck-20260929.txt",
     r"doc\test\evidence\v149\cr149-deliverable-inventory.py",
     r"doc\test\evidence\v149\cr149-deliverable-inventory-20260929.txt",
+    # ── Step 4（测试阶段）证据 ─────────────────────────────────────────────
+    r"doc\test\evidence\v149\cr149-t40-env-evidence.py",
+    r"doc\test\evidence\v149\cr149-t40-env-20260929.txt",
+    r"doc\test\evidence\v149\cr149-t40-t2t3e2e-20260929.py",
+    r"doc\test\evidence\v149\cr149-t40-t2t3e2e-result.json",
+    r"doc\test\evidence\v149\cr149-t40-render-t3a.py",
+    r"doc\test\evidence\v149\cr149-t40-t3a-scan-20260929.txt",
+    r"doc\test\evidence\v149\cr149-t40-mock-probe.py",
+    r"doc\test\evidence\v149\cr149-t40-mock-20260929.txt",
+    r"doc\test\evidence\v149\cr149-t40-regression-20260929.txt",
+    r"doc\test\evidence\v149\cr149-t40-coverage-20260929.txt",
+    r"doc\test\evidence\v149\cr149-t40-consistency-20260929.txt",
 )
 
 

@@ -35,9 +35,17 @@ ALLOWED_DIRS = (
     "doc/design",
     "doc/development",
     "doc/audit/review",
+    "doc/audit/verification",
     "doc/requirements",
-    "doc/test/evidence/v149",
-    "doc/test/evidence/cr149",
+    "doc/test",
+    "doc/version/releases",
+)
+
+#: **跨版本全局文档**目录：其文件名**不含版本号**（如《技术债务总表》《候选需求池》《路线图》），
+#: 命名判据不适用（版本以文头「文档版本」字段表达），故显式豁免而非误判为「不合规」。
+GLOBAL_DOC_DIRS = (
+    "doc/version/global",
+    "doc/planning",
 )
 
 
@@ -76,6 +84,9 @@ def check_naming(repo: Path, entries: list[tuple[str, str]]) -> int:
     bad = 0
     for status, path in entries:
         name = Path(path).name
+        if any(path.startswith(directory) for directory in GLOBAL_DOC_DIRS):
+            print(f"  OK {status:<2} {path}  （跨版本全局文档：文件名不含版本号，命名判据豁免）")
+            continue
         is_evidence = "/evidence/" in path
         ok = EVIDENCE_NAME_OK.match(name) if is_evidence else DOC_NAME_OK.match(name)
         if not ok:
@@ -136,7 +147,7 @@ def check_paths(repo: Path, entries: list[tuple[str, str]]) -> int:
         for p in bad:
             print(f"  NG  {p}")
     else:
-        print("  全部落在规范目录内（doc/design、doc/development、doc/audit/review、doc/requirements、doc/test/evidence/v149、doc/test/evidence/cr149）")
+        print("  全部落在规范目录内（doc/design、doc/development、doc/audit/review、doc/audit/verification、doc/requirements、doc/test、doc/version/releases）")
     print()
     return len(bad)
 

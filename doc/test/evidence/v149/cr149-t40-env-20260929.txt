@@ -1,0 +1,50 @@
+=== v1.4.9 Step 4 · 4.2 环境验证证据 ===
+时间：2026-09-29T03:38:18.855738+00:00
+后端根：d:\Trae CN\myproject\Dev\OpenLLM\backend
+
+--- 待测快照（证明命中当前版本）---
+git HEAD（OpenLLM）：b2610104dcb8acac9da1fd6dce69be75c9fc175a
+分支：feature/s4-identity-channel-b（本地提交，**未推送**）
+生产代码（backend/app）工作区变更：（无 ⇒ 实例加载的即 HEAD 代码）
+v1.4.9 新增/改动测试与本次 Step 4 修复：见 git log --oneline -n 3
+  b261010 fix(cost): 成本优化建议 500 —— func.case 改顶层 case()（Step 4 T3a 巡检发现）
+  d4bff29 fix(orchestration): 条目身份改为可选增量（向后兼容退回），修复全量回归新增 11 项失败
+  2f5364d feat(orchestration): 条目身份自取数层贯通到裁剪明细（I-2 生产落线）
+
+--- 实例与逐组件 ---
+[开放（工作区 .env）] http://127.0.0.1:8041
+  GET /openllm/v1/health → 200
+  data.status = healthy / version = 2.14.3
+    组件 openmemory: status=ok channel=b latency_ms=0
+    组件 openrag: status=unavailable channel=b latency_ms=2014
+    组件 dps: status=unavailable channel=b latency_ms=2046
+    组件 ollama: status=unavailable channel=a latency_ms=2014
+  channel: {"preference": "b-primary", "primary_channel": "b", "single_primary": true, "state": "b-primary", "healthy_b": true, "llm_unreachable": false, "llm_consecutive_failures": 0, "fallback_action": "none", "drill_window_seconds": 300.0, "auto_failover_enabled": false}
+
+[关闭（三开关 = false）] http://127.0.0.1:8042
+  GET /openllm/v1/health → 200
+  data.status = healthy / version = 2.14.3
+    组件 openmemory: status=ok channel=b latency_ms=0
+    组件 openrag: status=unavailable channel=b latency_ms=2016
+    组件 dps: status=unavailable channel=b latency_ms=2047
+    组件 ollama: status=unavailable channel=a latency_ms=2016
+  channel: {"preference": "b-primary", "primary_channel": "b", "single_primary": true, "state": "b-primary", "healthy_b": true, "llm_unreachable": false, "llm_consecutive_failures": 0, "fallback_action": "none", "drill_window_seconds": 300.0, "auto_failover_enabled": false}
+
+--- 开关矩阵（实测）---
+  CONTEXT_BUDGET_ENABLED = (未在探测进程显式设置 ⇒ 取工作区 .env 值)
+  CONTEXT_CROSS_SEGMENT_COMPETITION_ENABLED = (未在探测进程显式设置 ⇒ 取工作区 .env 值)
+  COMPONENT_CHANNEL_ROUTING_ENABLED = (未在探测进程显式设置 ⇒ 取工作区 .env 值)
+  WRITEBACK_DECISION_ENABLED = (未在探测进程显式设置 ⇒ 取工作区 .env 值)
+  PROFILE_LLM_REFINE_ENABLED = (未在探测进程显式设置 ⇒ 取工作区 .env 值)
+  CONTEXT_SAFETY_MARGIN_TOKENS = (未在探测进程显式设置 ⇒ 取工作区 .env 值)
+  实例 8041：工作区 .env（CONTEXT_BUDGET_ENABLED=true）
+  实例 8042：显式 false ×3（预算 / 跨段竞争 / 逐组件通道路由）用于关闭态逐字回退对照
+
+--- 日志卫生说明 ---
+  · 工作区 .env 的 DEBUG=true ⇒ SQLAlchemy echo 打开，实例输出极长（单次启动 5 万行量级）。
+  · 故本证据只保留**关键启动/健康事实**，完整原始日志留在本机临时目录（不入仓）。
+  · 敏感值（令牌/密钥）**不落盘、不打印**；本文件不含任何密钥与请求正文。
+
+--- 组件可用性（环境，不计为缺陷）---
+  · openrag / dps / ollama 本次为 unavailable ⇒ 组件级降级属**设计内行为**（须如实留痕，不得静默）。
+  · 检索类组件不可用直接导致运行态 `dropped` 为空 ⇒ TT-v1.4.9-018/047 记为**受限**，不计入通过。
