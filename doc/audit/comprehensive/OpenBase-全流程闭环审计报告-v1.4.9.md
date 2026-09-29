@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM** |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 全流程闭环审计报告（Step 0~5 聚合） |
-| 文档版本 | v1.0.3 |
+| 文档版本 | v1.0.4 |
 | 状态 | [Review]（**建议关闭全流程**，待人工批准） |
 | 审计人 | AU-OpenBase-Test（聚合 `doc/audit/` 各阶段审计报告） |
 | 日期 | 2026-09-29 |
@@ -72,7 +72,7 @@
 | 8 | Tag 创建并推送 origin | `git tag -l v1.4.9` ／ `git ls-remote origin …` | 本地 `v1.4.9`；**已推送**（`7e36d042…643f4`） | ✅ |
 | 9 | Tag 推送 backup | `git ls-remote {backup} …` | **已推送**，与 origin **同 hash** | ✅ |
 | 10 | Tag 存在性 | `git tag -l v1.4.9` | `v1.4.9` | ✅ **复跑一致** |
-| 11 | 远程同步 | `git ls-remote --heads --tags origin` | 发布锚点一致：`v1.4.9`=`7e36d042`（解引用 `^{}`=**`7aecd60`**＝发布提交）、`v1.4.8^{}`=`5f36f08`；`main` 为**移动靶**（随发布后文档提交前移） | ✅ |
+| 11 | 远程同步（**三远程**） | `git ls-remote --heads --tags` × origin／backup／github | 发布锚点一致：`v1.4.9`=`7e36d042`（解引用 `^{}`=**`7aecd60`**＝发布提交）、`v1.4.8^{}`=`5f36f08`；`main` 为**移动靶**；**github 于 2026-09-29 豁免解除后补齐**（首次 `--force` 覆盖初始空仓，含 11 个历史 tag） | ✅ |
 | 12 | 备份同步 | `git ls-remote --heads --tags backup` | 与 origin **逐引用同 hash** | ✅ |
 | 13 | **版本号一致性** | 读 project-config／state／tag | `1.4.9`／`v1.4.9`／`v1_4_9_step_5_closed`／`v1.4.9` | ✅ **复跑一致** |
 | 14 | Release Note 生成 | `Test-Path …Release-Note-v1.4.9.md` | 存在 ＋ 汇总页已追加 | ✅ |
@@ -117,13 +117,14 @@
 
 **全流程闭环判定**：**v1.4.9 具备关闭条件** —— 建议：
 ① 人工批准本报告与 Stage5／运维审计报告；
-② ~~授权远端 tag 与提交推送~~ → **已执行（2026-09-29 用户授权，origin＋backup 双远端复验一致）**；如需外网 `github` 镜像归档，**另行单独授权**；
+② ~~授权远端 tag 与提交推送~~ → **已执行（2026-09-29 用户授权）**：三仓推送 **origin＋backup**，并以 `ls-remote` 复验一致；**同日经用户批准解除 github 豁免**（《版本发布策略总则》v0.6.0 §6.1）⇒ **github 镜像亦已补齐**（OpenBase 含 11 个历史 tag），三仓达成 **origin／backup／github 三远程一致**；
 ③ 将 §6 遗留项转入下版本排期（`TD-新增-030`／`032`／`035`／`036` 优先）。
 
 ## 8. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.0.4 | 2026-09-29 | AU-OpenBase-Test | **三远程标准达成**：§5 Checklist 第 11 项由「单远程」改为**三远程（origin／backup／github）**核对，并记录 github 于豁免解除后补齐（含 11 个历史 tag）；§7 建议② 更新为「github 镜像已补齐，三仓达成三远程一致」。状态 [Review]。 |
 | v1.0.3 | 2026-09-29 | AU-OpenBase-Test | **消除移动靶引用**：§5 Checklist 第 11 项中分支 HEAD 具体值改为**「移动靶」定性表述**，发布锚点一律以 **tag 解引用 `7aecd60`** 为准。状态 [Review]。 |
 | v1.0.2 | 2026-09-29 | AU-OpenBase-Test | **口径精确化**：§5 Checklist 第 11／12 项由「分支 HEAD 推送前后 hash」改为**逐引用核对**（`git ls-remote --heads --tags`），明确 tag **解引用锚点** `v1.4.9^{}`=`7aecd60`（发布提交）；避免把发布后文档收敛提交（`f76a1d2`）误当作发布锚点。状态 [Review]。 |
 | v1.0.1 | 2026-09-29 | AU-OpenBase-Test | **远端推送阻塞关闭（复验）**：经用户授权，三仓已推 origin＋backup（OpenBase `main` `5f36f08..d605b01` ＋ tag `v1.4.8`/`v1.4.9`；OpenLLM `2f2543e`；OpenRAG `5a3f84b`）；§1 结论表（Stage5／运维审计）与 §5 Checklist 第 8／9／11／12 项由 ⚠️/⛔ 改为**实测输出**、第 13 项口径同步 `v1_4_9_step_5_closed`；§6 遗留第 7 项改「**已关闭**」；§7 结论第 4 条与建议②同步；**外网 github 镜像未推（另行授权）**。状态 [Review]。 |

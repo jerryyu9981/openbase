@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM** |
 | 版本号 | v1.4.9（上下文预算与回写质量） |
 | 文档 | 运维审计报告（Step 5 产出） |
-| 文档版本 | v1.0.3 |
+| 文档版本 | v1.0.4 |
 | 状态 | [Review]（待人工批准关闭全流程） |
 | 审计人 | AU-OpenBase-Test（独立审计：**以可复现命令与产物为准**） |
 | 日期 | 2026-09-29 |
-| 审计对象 | 发布入场检查 **v1.0.4**／发布计划／部署执行与上线检查报告 **v1.0.1**／回滚方案与运维手册 v1.0.1／发布复盘与问题跟踪记录 **v1.0.3**／Release Note v1.4.9 **v1.0.1**／发布证据 6 份 |
+| 审计对象 | 发布入场检查 **v1.0.5**／发布计划／部署执行与上线检查报告 **v1.0.2**／回滚方案与运维手册 v1.0.1／发布复盘与问题跟踪记录 **v1.0.5**／Release Note v1.4.9 **v1.0.2**／发布证据 6 份 |
 | 上游依据 | 《阶段审计报告-Stage4-v1.4.9》v1.0.0；《测试回溯对比审计报告-v1.4.9》v1.0.0 |
 
 ## 1. 审计范围与方法
@@ -69,7 +69,8 @@
 |----|----------|----------|:----:|
 | `release.ps1` 执行完成 | `Test-Path devflow-plugin/release.ps1` | **不存在**（本仓未接入 devflow-plugin） | ⛔ **不适用**（声明） |
 | Git Tag 创建并推送 origin | `git tag -l v1.4.9`；`git ls-remote origin refs/tags/v1.4.9` | 本地 tag **存在**；2026-09-29 经用户授权推送输出 `* [new tag] v1.4.9 -> v1.4.9`；`ls-remote` 返回 `7e36d042af932f34fcd1f7b6bb196ac39cf643f4` | ✅ **已推送（与本地同 hash）** |
-| Git Tag 已推送 backup | `git ls-remote backup refs/tags/v1.4.9` | 同期推送输出 `* [new tag] v1.4.9 -> v1.4.9`；`ls-remote` 返回 `7e36d042…643f4` | ✅ **已推送（双远端一致）** |
+| Git Tag 已推送 backup | `git ls-remote backup refs/tags/v1.4.9` | 同期推送输出 `* [new tag] v1.4.9 -> v1.4.9`；`ls-remote` 返回 `7e36d042…643f4` | ✅ **已推送（内网双远端一致）** |
+| Git Tag 已推送 github（原为豁免项） | `git push https://jerryyu9981@github.com/jerryyu9981/openbase.git --tags`；`git ls-remote --tags` | 输出 `* [new tag] v1.4.9 -> v1.4.9` **等 11 个历史 tag**；`ls-remote` 返回 `7e36d042…643f4`（与本地一致） | ✅ **已推送（豁免解除后补齐，见 §6／§7）** |
 
 ### 3.3 发布后
 
@@ -77,7 +78,8 @@
 |----|----------|----------|:----:|
 | Tag 存在性验证 | `git tag -l v1.4.9` | 输出 `v1.4.9` | ✅ |
 | 远程仓库同步验证 | `git ls-remote --heads --tags origin` | `main`＝**移动靶**（随发布后文档收敛提交前移）；`v1.4.8`=`aedb51a7`（解引用 `^{}`=`5f36f08`）；`v1.4.9`=`7e36d042`（解引用 `^{}`=**`7aecd60`**＝发布提交） | ✅ **发布锚点远端与本地一致** |
-| 备份仓库同步验证 | `git ls-remote --heads --tags backup` | 与 origin **逐引用同 hash**（`main` ＋ 两 tag 及其解引用） | ✅ **双远端一致（Tag 同步验证通过）** |
+| 备份仓库同步验证 | `git ls-remote --heads --tags backup` | 与 origin **逐引用同 hash**（`main` ＋ 两 tag 及其解引用） | ✅ **内网双远端一致** |
+| github 镜像同步验证（豁免解除后） | `git ls-remote --heads --tags https://jerryyu9981@github.com/jerryyu9981/openbase.git` | `main`=`d38af45`；`v1.4.9`=`7e36d042`、`v1.4.8`=`aedb51a7`（**与内网两处同 hash**，共 11 个 tag） | ✅ **三远程一致（Tag 同步验证通过）** |
 | 版本号一致性验证 | 对比 project-config／state／tag | `project-config.version=1.4.9`；`lastRelease=v1.4.9`；`state.currentPhase=v1_4_9_step_5_closed`；tag `v1.4.9`（`state.devflowVersion=2.18.0` 为**框架版本轴**，不参与项目版本比对） | ✅（4 处一致） |
 | Release Note 已生成 | `Test-Path doc/release/OpenBase-Release-Note-v1.4.9.md` | 存在（＋ 汇总页已追加 v1.4.9 行） | ✅ |
 | Changelog 已更新 | `Select-String README.md -Pattern 'v1\.4\.[0-9]'` | README 无版本清单（**其版本载体为 `doc/release/OpenBase-Release-Note-All.md`**，已更新） | ✅（载体声明） |
@@ -105,7 +107,7 @@
 
 | # | 项 | 定性 | 处置 |
 |:-:|----|------|------|
-| 1 | **远端 tag／提交推送**（原标 ⛔ 阻塞） | **已关闭（用户授权）** | 原按用户常设「提交不推送」口径标 ⛔ 并请求授权；**2026-09-29 授权后已执行**：OpenBase `main` `5f36f08..d605b01` ＋ tag `v1.4.8`/`v1.4.9`、OpenLLM `feature/s4-identity-channel-b` → `2f2543e`、OpenRAG `release/v1.10.0` → `5a3f84b`，全部推至 **origin ＋ backup**，并以 `ls-remote` 复验 hash 一致；**外网 `github` 镜像未推（需单独授权）** |
+| 1 | **远端 tag／提交推送**（原标 ⛔ 阻塞） | **已关闭（用户授权）** | 原按用户常设「提交不推送」口径标 ⛔ 并请求授权；**2026-09-29 授权后已执行**：OpenBase `main` ＋ tag `v1.4.8`/`v1.4.9`、OpenLLM `feature/s4-identity-channel-b` → `2f2543e`、OpenRAG `release/v1.10.0` → `5a3f84b`，全部推至 **origin ＋ backup**，并以 `ls-remote` 复验 hash 一致；**同日经用户批准解除 github 豁免**（《版本发布策略总则》v0.6.0 §6.1）⇒ 三仓 **github 镜像亦已补齐**（OpenBase 用 `--force` 覆盖初始空仓并推 11 个历史 tag），形成 **origin／backup／github 三远程一致** |
 | 2 | CI/CD 与告警系统**未接入** | **不适用（声明）** | 质量门禁由本地命令集承担并留证；告警阈值建议已入运维手册 |
 | 3 | 用户指南/用户手册 HTML 产物缺失 | **不适用（声明）** | 本仓为框架源码仓，无终端用户手册产物（历史版本同） |
 | 4 | 数据运维说明 | **不适用（声明）** | 本版无 DB 迁移 |
@@ -119,18 +121,19 @@
 2. **上线验证 18/18 通过**，核心判据（关闭态逐字回退／回执齐备／超窗显式标记／链路健康）均取到真实实例证据。
 3. **回滚可执行且有演练证据**（配置回滚实测通过 ＋ 15 分钟验证门禁）。
 4. **安全与监控合规**：零凭据落痕；未鉴权/越权受控；结构化 JSON 日志；无阻塞安全问题。
-5. **版本与制品可追溯**：提交/快照/版本号四一致；tag `v1.4.8` / `v1.4.9` **已推送双远端并验证同 hash**；Release Note 与 Changelog 已出。
+5. **版本与制品可追溯**：提交/快照/版本号四一致；tag `v1.4.8` / `v1.4.9` **已推送 origin／backup／github 三远程并验证同 hash**；Release Note 与 Changelog 已出。
 6. **5.11b 证据审计通过**（3 项抽查 100% 复现）。
 7. **阻塞项 0 类**：原 1 类（远端推送未执行）**已随用户授权执行而关闭**；其余均为**不适用声明**或**已批准风险接受**。
 
 **运维审计判定**：**通过**（原「附 1 项待授权阻塞」已消除）—— 同意提交人工批准以**关闭 v1.4.9 全流程**。
 
-> **说明（外网镜像）**：`code-version-backup-management` §5.0 要求 tag 同步至「全部三个远程」；本仓（OpenBase）**仅配置 origin／backup 两个远端**（`github` 为空，见 `.devflow/project-config.json`）⇒ 「第三远端」**不适用**；落地仓 OpenLLM／OpenRAG 存在 `github` 外网镜像，**本次未推送（需用户单独授权）**，已在 §6 偏差第 1 项留痕，不影响内网双远端完整性。
+> **说明（三远程标准达成情况）**：`code-version-backup-management` §5.0 要求 tag 同步至「全部三个远程」。本仓于 v1.4.7 期（2026-09-20）曾**人工批准豁免 github 项**；**2026-09-29 经用户批准解除该豁免**并补配镜像（`.devflow/project-config.json` 的 `remote.github` 已落值），当日完成 `main` ＋ **11 个历史 tag** 推送（首次以 `--force` 覆盖 2026-08-25 建立的初始空仓 `7ba2fafe`，被覆盖内容仅为 README）。三仓（OpenBase／OpenLLM／OpenRAG）**github 镜像均已同步且与内网同 hash** ⇒ **§5.0 三远程要求已达成**；条款依据见《版本发布策略总则》**v0.6.0 §6.1**。
 
 ## 8. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.0.4 | 2026-09-29 | AU-OpenBase-Test | **三远程标准达成（github 豁免解除）**：§3.2 新增「Git Tag 已推送 github（原为豁免项）」、§3.3 新增「github 镜像同步验证」并改「双远端一致」为**内网双远端**；§6 偏差第 1 项补记三仓 github 补齐；§7「说明（外网镜像）」改写为「**三远程标准达成情况**」（依据《版本发布策略总则》v0.6.0 §6.1）；§7 结论第 5 条改三远程；§0 审计对象版本同步（发布入场检查 v1.0.5／部署执行 v1.0.2／发布复盘 v1.0.5／Release Note v1.0.2）。状态 [Review]。 |
 | v1.0.3 | 2026-09-29 | AU-OpenBase-Test | **消除移动靶引用**：§3.3「远程仓库同步验证」中分支 HEAD 具体值改为**「移动靶」定性表述**，发布锚点一律以 **tag 解引用 `7aecd60`** 为准。状态 [Review]。 |
 | v1.0.2 | 2026-09-29 | AU-OpenBase-Test | **口径精确化**：§3.3 同步验证由「main 推送前后 hash」改为**逐引用核对**（`git ls-remote --heads --tags`），明确 **tag 解引用锚点**（`v1.4.9^{}`=`7aecd60`＝发布提交、`v1.4.8^{}`=`5f36f08`），避免把**分支 HEAD**（`f76a1d2`，含发布后文档收敛提交）误当作发布锚点。状态 [Review]。 |
 | v1.0.1 | 2026-09-29 | AU-OpenBase-Test | **远端推送阻塞关闭（独立复验）**：经用户明确授权，三仓推送至 origin＋backup（OpenBase `main` `5f36f08..d605b01` ＋ tag `v1.4.8`/`v1.4.9`；OpenLLM `2f2543e`；OpenRAG `5a3f84b`）；§3.2／§3.3 由 ⚠️/⛔ 改为**实测输出**（**Tag 同步验证：本地／origin／backup 同 hash**）；§4 结论与 §6 偏差第 1 项改「**已关闭**」；§7 判定由「通过（附 1 项待授权阻塞）」改为「**通过**」＋新增 github 外网镜像不适用/未推说明；同步 `state.currentPhase` 口径。状态 [Review] |

@@ -5,8 +5,8 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM** |
 | 版本号 | v1.4.9（上下文预算与回写质量） |
 | 文档 | 部署执行报告 ＋ 上线检查报告 |
-| 文档版本 | v1.0.1 |
-| 状态 | [Released]（Dev 环境部署 ＋ 上线验证通过；tag `v1.4.9` 已推送 origin＋backup，双远端与本地同 hash） |
+| 文档版本 | v1.0.2 |
+| 状态 | [Released]（Dev 环境部署 ＋ 上线验证通过；tag `v1.4.9` 已推送 origin＋backup＋github 三远程，三处与本地同 hash） |
 | 部署日期 | 2026-09-29 |
 | 目标环境 | **Dev**（Test/Pro 未涉及） |
 | 发布负责人 | DO-OpenBase-Dev |
@@ -31,10 +31,10 @@
 
 | 项 | 值 |
 |----|-----|
-| 落点仓提交 | OpenLLM **`2f2543e`**（分支 `feature/s4-identity-channel-b`）—— **已推送 origin＋backup**（`483d78f..2f2543e` / `d7742c7..2f2543e`） |
+| 落点仓提交 | OpenLLM **`2f2543e`**（分支 `feature/s4-identity-channel-b`）—— **已推送 origin＋backup＋github 三远程**（`483d78f..2f2543e` / `d7742c7..2f2543e` / `d7742c7..2f2543e`×github） |
 | 应用代码面 | `git diff b261010..HEAD -- backend/app` **为空** ⇒ 发布相关运行代码即 `b261010` 快照（后两笔为撤跟踪/模板/测试） |
 | 文档仓提交 | OpenBase `ca268f7`（Step 5 入场文档）＋ 本次发布文档（见 §12） |
-| Tag | OpenBase **`v1.4.9`（annotated）** —— **已推送 origin＋backup**（`aedb51a7…6e69f`＝`v1.4.8`／`7e36d042…643f4`＝`v1.4.9`，三方一致）；OpenLLM 侧沿用其自身 `2.9.x` 序列，**本版不建 OpenLLM tag**（声明） |
+| Tag | OpenBase **`v1.4.9`（annotated）** —— **已推送 origin＋backup＋github 三远程**（`aedb51a7…6e69f`＝`v1.4.8`／`7e36d042…643f4`＝`v1.4.9`，三处一致；全部 11 个历史 tag 同步入 GitHub）；OpenLLM 侧沿用其自身 `2.9.x` 序列，**本版不建 OpenLLM tag**（声明） |
 | 制品形态 | Python 源码（无独立二进制）；构建/语法门禁复用 `python -m compileall -q app main.py` → exit 0 |
 | 版本号一致性 | `.devflow/project-config.json` → `version=1.4.9`／`lastRelease=v1.4.9`；`.devflow/state.json` → `currentPhase=v1_4_9_step_5_closed`；`devflow-plugin/devflow-config.json` **不存在 ⇒ 不适用** |
 
@@ -177,5 +177,6 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.0.2 | 2026-09-29 | DO-OpenBase-Dev | **三远程同步回填**：§1「落点仓提交／Tag」由「origin＋backup 双远端」改为 **origin＋backup＋github 三远程**（OpenLLM `2f2543e`；tag `v1.4.8`/`v1.4.9` 三处一致；11 个历史 tag 入 GitHub）；依据：用户授权解除 §6.1 github 豁免。状态 [Released] |
 | v1.0.1 | 2026-09-29 | DO-OpenBase-Dev | **同步远端推送**：头部状态与 §1「落点仓提交／Tag」由「未推送／待授权」改为**已推送 origin＋backup**（OpenLLM `483d78f..2f2543e`；tag `v1.4.8`/`v1.4.9` 三方同 hash）；§1 版本号一致性口径同步为 `state.currentPhase=v1_4_9_step_5_closed`。状态 [Released] |
 | v1.0.0 | 2026-09-29 | DO-OpenBase-Dev | 初始创建：发布版本与制品确认（OpenLLM `2f2543e`、本地 tag `v1.4.9`、版本号一致性）、**部署执行（Dev 直接部署，启动完成证据）**、环境与配置核验（健康 200／逐组件／无 DB 迁移）、缓存与消息运维（队列恢复 **0 条**）、**上线验证 18 用例（含 15 项关联 TT-ID）全部通过**、监控日志告警检查（**结构化 JSON 日志 ＋ 零凭据落痕**，2 项硬化建议）、性能基线（**热态 P50 37.5 ms**，冷启动 2.1 s 定位）、安全上线检查（401×2／越权隔离／响应与日志零敏感）、**回滚演练 5 项（配置回滚实测通过）**、运维移交与遗留项 6 项。**总判定：上线通过（Dev）**。状态 [Released] |

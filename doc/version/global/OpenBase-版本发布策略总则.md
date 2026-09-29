@@ -104,12 +104,14 @@
 
 | 项 | 约定 |
 |----|------|
-| 本项目远程 | **仅 `origin`（内网主仓库）+ `backup`（内网备份仓库）**；`.devflow/project-config.json` 的 `remote.github` 为**空串（未启用）** |
-| 与三远程标准的关系 | `code-version-backup-management` §5.0 定义 origin / backup / github 三远程标准化架构；**本项目经人工批准正式豁免 github 项**（依据：无外网镜像归档需求，且配置层未启用）。后续版本在此项上不再重复挂账（原 F1/R5 已闭合） |
-| 推送要求 | 每次发布 **`main` + tag 同推 `origin` 与 `backup`**，并以 `git ls-remote` 校验两处 `refs/heads/main` 与 `refs/tags/v{版本}` hash 一致 |
+| 本项目远程 | **`origin`（内网主仓库）+ `backup`（内网备份仓库）+ `github`（外网镜像仓库）三远程**；`.devflow/project-config.json` 的 `remote.github` ＝ `https://jerryyu9981@github.com/jerryyu9981/openbase.git` |
+| 与三远程标准的关系 | `code-version-backup-management` §5.0 定义 origin / backup / github 三远程标准化架构。**v1.4.7 期（2026-09-20）曾人工批准豁免 github 项；该豁免已于 2026-09-29 经用户批准解除 → 补配 github 镜像并按三远程标准执行**（不再适用「不再重复挂账」口径） |
+| 认证路径 | **`github` 使用 HTTPS + 凭据管理器**（`credential.helper=manager`）；本机 SSH key 未获 GitHub 认可（`Permission denied (publickey)`，`~/.ssh/config` 为空）⇒ 推送须以 HTTPS 形式执行，**不得**依赖 `git@github.com:` 形式 |
+| 推送要求 | 每次发布 **`main` + tag 同推 `origin`、`backup`、`github` 三远程**，并以 `git ls-remote` 校验三处 `refs/heads/main` 与 `refs/tags/v{版本}` hash 一致 |
 | 备份动作约束 | 采用**非破坏式** `git push <remote> main` + `git push <remote> <tag>`；**禁止对 `backup` 执行 `git push --mirror`**（该仓含 `refs/remotes/*`，mirror 语义会删除远端 ref） |
+| `github` 首次推送说明 | `jerryyu9981/openbase` 原为 2026-08-25 建立的**仅含 `README.md` 的初始空仓**（`7ba2fafe`，与本仓无共同历史）⇒ 首次推送以 `--force` 覆盖（2026-09-29 已执行，用户批准；被覆盖内容为空仓 README），并随推全部 11 个历史 tag |
 | 上线验证 | 发布/切流/回滚后统一使用 `python scripts/verify_release.py --base-url <实例> --expected-version <版本>`（退出码 0 = 可切流） |
-| 豁免复核时机 | 若后续产生外网镜像发布需求（开源/对外交付），须人工批准后补配 `github` 远程，并同步全部发布文档与该条款 |
+| 复核时机 | 若后续调整外网镜像策略（如改为公开发布、变更账号或改用 SSH），须人工批准后同步更新本条款与全部发布文档 |
 
 ## 7. 部署编排约束
 
@@ -164,6 +166,7 @@ OpenBase 内部采用成熟开源组件，按优先级分批集成：
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v0.6.0** | **2026-09-29** | **PM-OpenBase-Dev / DO-OpenBase-Dev** | **§6.1 免豁解除 → 三远程标准恢复执行（用户批准）**：① 本项目远程由「origin + backup 双远程（github 空配置）」改为 **origin + backup + github 三远程**，`remote.github` 落值 `https://jerryyu9981@github.com/jerryyu9981/openbase.git`；② 明确 **v1.4.7 期的 github 豁免（2026-09-20）已于本次解除**，不再适用「不再重复挂账」口径；③ 新增「认证路径」条款——github 走 **HTTPS + 凭据管理器**（本机 SSH key 未获 GitHub 认可，`Permission denied (publickey)`）；④ 推送要求改为 **main + tag 同推三远程**并三处 `ls-remote` 校验；⑤ 新增「github 首次推送说明」——原仓为 2026-08-25 建立的仅含 `README.md` 初始空仓（`7ba2fafe`，与本仓无共同历史），2026-09-29 经用户批准以 `--force` 覆盖并随推全部 11 个历史 tag；⑥ 「豁免复核时机」改为「外网镜像策略调整复核时机」。文档版本 v0.5.0 → **v0.6.0** |
 | **v0.5.0** | **2026-09-20** | **PM-OpenBase-Dev / DO-OpenBase-Ops** | **远程与备份约束条款落地（F1/R5 豁免，人工批准）**：新增 **§6.1 远程仓库与备份约束**——明确本项目仅 `origin` + `backup`（`remote.github` 空配置）、**正式豁免三远程标准中的 github 项**（附依据与复核时机）、发布须 `main` + tag 同推双远程并 `ls-remote` 校验、**禁止 `--mirror`** 推 backup（会删远端 ref）、上线验证统一用 `scripts/verify_release.py`；§6 追加本项目口径校正（覆盖率以 `AGENTS.md` 为准、变更日志载体为 Release-Note-All、不发行 PyPI/npm）；文档版本 v0.4.0 → **v0.5.0** |
 | v0.1.0 | 2026-08-24 | PM-OpenBase-Dev | 初始创建：发布节奏、灰度策略、回滚原则、兼容策略、CI/CD 流水线 |
 | v0.2.0 | 2026-08-25 | PM-OpenBase-Dev | 从 OpenLLM 方案 v1.4.5 抽取：新增 §2.3 灰度切换三阶段验证（Dev/Test/Pro，含回滚预案和回灌顺序）；新增 §7 部署编排约束（必启约束/共用独立双模式/服务发现动态模块）；新增 §8 组件化集成发布策略（P0/P1/P2 分批集成/三级复用/License 约束） |
