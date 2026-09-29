@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM** |
 | 版本号 | v1.4.9（上下文预算与回写质量） |
 | 文档 | 运维审计报告（Step 5 产出） |
-| 文档版本 | v1.0.1 |
+| 文档版本 | v1.0.2 |
 | 状态 | [Review]（待人工批准关闭全流程） |
 | 审计人 | AU-OpenBase-Test（独立审计：**以可复现命令与产物为准**） |
 | 日期 | 2026-09-29 |
-| 审计对象 | 发布入场检查 v1.0.3／发布计划／部署执行与上线检查报告 v1.0.0／回滚方案与运维手册 v1.0.1／发布复盘与问题跟踪记录 v1.0.1／Release Note v1.4.9／发布证据 6 份 |
+| 审计对象 | 发布入场检查 **v1.0.4**／发布计划／部署执行与上线检查报告 **v1.0.1**／回滚方案与运维手册 v1.0.1／发布复盘与问题跟踪记录 **v1.0.3**／Release Note v1.4.9 **v1.0.1**／发布证据 6 份 |
 | 上游依据 | 《阶段审计报告-Stage4-v1.4.9》v1.0.0；《测试回溯对比审计报告-v1.4.9》v1.0.0 |
 
 ## 1. 审计范围与方法
@@ -76,8 +76,8 @@
 | 项 | 验证命令 | 实测输出 | 结论 |
 |----|----------|----------|:----:|
 | Tag 存在性验证 | `git tag -l v1.4.9` | 输出 `v1.4.9` | ✅ |
-| 远程仓库同步验证 | `git ls-remote origin refs/tags/v1.4.8 refs/tags/v1.4.9`；`git ls-remote origin main` | `v1.4.8`=`aedb51a7de29eecedf4f437d5958d3a70886e69f`；`v1.4.9`=`7e36d042af932f34fcd1f7b6bb196ac39cf643f4`；`main` 推送前 `5f36f08` → 推送后 `d605b01`（`5f36f08..d605b01`） | ✅ **远端与本地一致** |
-| 备份仓库同步验证 | `git ls-remote backup refs/tags/v1.4.8 refs/tags/v1.4.9`；`git ls-remote backup main` | 与 origin **同 hash**（两 tag ＋ main 均一致） | ✅ **双远端一致（Tag 同步验证通过）** |
+| 远程仓库同步验证 | `git ls-remote --heads --tags origin` | `main`=`f76a1d2`；`v1.4.8`=`aedb51a7`（解引用 `^{}`=`5f36f08`）；`v1.4.9`=`7e36d042`（解引用 `^{}`=**`7aecd60`**＝发布提交） | ✅ **远端与本地一致** |
+| 备份仓库同步验证 | `git ls-remote --heads --tags backup` | 与 origin **逐引用同 hash**（`main` ＋ 两 tag 及其解引用） | ✅ **双远端一致（Tag 同步验证通过）** |
 | 版本号一致性验证 | 对比 project-config／state／tag | `project-config.version=1.4.9`；`lastRelease=v1.4.9`；`state.currentPhase=v1_4_9_step_5_closed`；tag `v1.4.9`（`state.devflowVersion=2.18.0` 为**框架版本轴**，不参与项目版本比对） | ✅（4 处一致） |
 | Release Note 已生成 | `Test-Path doc/release/OpenBase-Release-Note-v1.4.9.md` | 存在（＋ 汇总页已追加 v1.4.9 行） | ✅ |
 | Changelog 已更新 | `Select-String README.md -Pattern 'v1\.4\.[0-9]'` | README 无版本清单（**其版本载体为 `doc/release/OpenBase-Release-Note-All.md`**，已更新） | ✅（载体声明） |
@@ -131,5 +131,6 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.0.2 | 2026-09-29 | AU-OpenBase-Test | **口径精确化**：§3.3 同步验证由「main 推送前后 hash」改为**逐引用核对**（`git ls-remote --heads --tags`），明确 **tag 解引用锚点**（`v1.4.9^{}`=`7aecd60`＝发布提交、`v1.4.8^{}`=`5f36f08`），避免把**分支 HEAD**（`f76a1d2`，含发布后文档收敛提交）误当作发布锚点。状态 [Review]。 |
 | v1.0.1 | 2026-09-29 | AU-OpenBase-Test | **远端推送阻塞关闭（独立复验）**：经用户明确授权，三仓推送至 origin＋backup（OpenBase `main` `5f36f08..d605b01` ＋ tag `v1.4.8`/`v1.4.9`；OpenLLM `2f2543e`；OpenRAG `5a3f84b`）；§3.2／§3.3 由 ⚠️/⛔ 改为**实测输出**（**Tag 同步验证：本地／origin／backup 同 hash**）；§4 结论与 §6 偏差第 1 项改「**已关闭**」；§7 判定由「通过（附 1 项待授权阻塞）」改为「**通过**」＋新增 github 外网镜像不适用/未推说明；同步 `state.currentPhase` 口径。状态 [Review] |
 | v1.0.0 | 2026-09-29 | AU-OpenBase-Test | 初始创建：**部署运维矩阵 20 类合规核验**、**Release Checklist 逐项附实际命令与输出**（含 4 项 ⛔ 不适用/阻塞并说明）、**5.11b 发布后证据审计（抽查 3 项 100% 复现）**、产出物存在性验证（**48 / 0 / 0**）、偏差与遗留 7 项、结论「**通过（附 1 项待授权阻塞）**」。状态 [Review] |
