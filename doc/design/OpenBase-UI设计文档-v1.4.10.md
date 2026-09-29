@@ -8,8 +8,8 @@
 | 版本号 | **v1.4.10**（承接型小版本） |
 | 作者 | UI-OpenBase-Dev ／ FA-OpenBase-Dev |
 | 创建日期 | 2026-09-29 |
-| 上游依据 | 《OpenBase-UIUX需求说明-v1.4.10》v1.2.0；《OpenBase-前端架构设计文档-v1.4.10》v1.0.0；《OpenBase-API接口设计文档-v1.4.10》v1.1.0 |
-| 原型 | `doc/design/prototype/index.html`（设计总览 ＋ 8 页导航）＋ `p01~p08-*.html` |
+| 上游依据 | 《OpenBase-UIUX需求说明-v1.4.10》v1.2.0；《OpenBase-前端架构设计文档-v1.4.10》**v1.1.0**；《OpenBase-API接口设计文档-v1.4.10》v1.1.0 |
+| 原型 | `doc/design/prototype/index.html`（设计总览 ＋ 8 页导航）＋ `p01~p08-*.html` ＋ **`proto.css`（设计一致性强制基准载体）** |
 | 存放 | `doc/design/` |
 
 > **设计系统声明**：本版**不修改** `core/styles/tokens.css` 与既有设计系统（规划 §2.2 已排除视觉规范改动）。本文档**定义页面结构、交互与状态**，视觉样式**一律复用现有 token**。
