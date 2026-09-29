@@ -2,8 +2,12 @@
  * OpenLLM llm-proxy API 封装（v1.4.3 R-379）
  * 全部走 OpenBase /api/v1/llm-proxy/*，前端零密钥接触（OpenLLM 密钥由 OpenBase 持有）。
  * 对齐《OpenBase-API接口设计文档-v1.4.3》§1（12 端点）
+ *
+ * v1.4.8 D2 / R-396：请求体新增**可选** `session_id`（会话标识），由 `@/core/session`
+ * 统一注入（缺省取当前会话标识，显式传入优先），使编排侧会话轴与回写记账按会话对齐。
  */
 import { http } from '@/core/api/http'
+import { withSessionId } from '@/core/session'
 
 export interface LlmModel {
   id: string
@@ -98,8 +102,8 @@ export const llmApi = {
   },
 
   /** 对话（非流式，POST /api/v1/llm-proxy/chat） */
-  async sendChat(payload: { model: string; messages: ChatMessage[] }): Promise<{ choices: ChatChunk['choices'] }> {
-    const { data } = await http.post<{ code: number; data: { choices: ChatChunk['choices'] } }>('/llm-proxy/chat', { ...payload, stream: false })
+  async sendChat(payload: { model: string; messages: ChatMessage[]; session_id?: string }): Promise<{ choices: ChatChunk['choices'] }> {
+    const { data } = await http.post<{ code: number; data: { choices: ChatChunk['choices'] } }>('/llm-proxy/chat', { ...withSessionId(payload), stream: false })
     return data.data
   },
 
@@ -110,12 +114,12 @@ export const llmApi = {
    * fetch adapter 返回真实 ReadableStream 供 SSE 逐事件消费（TD-新增-011 偿还，v1.4.5）
    */
   async sendChatStream(
-    payload: { model: string; messages: ChatMessage[] },
+    payload: { model: string; messages: ChatMessage[]; session_id?: string },
     onEvent: (evt: SseEvent) => void,
   ): Promise<void> {
     const resp = await http.post<ReadableStream<Uint8Array>>(
       '/llm-proxy/chat/stream',
-      { ...payload, stream: true },
+      { ...withSessionId(payload), stream: true },
       { responseType: 'stream', timeout: 120000, adapter: 'fetch' },
     )
     if (resp.data && typeof resp.data.getReader === 'function') {
