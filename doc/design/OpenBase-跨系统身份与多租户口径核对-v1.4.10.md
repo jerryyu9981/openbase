@@ -114,7 +114,7 @@
 | # | 项 | 级别 | 说明 |
 |:-:|----|:----:|------|
 | 1 | **`org_value_map` 未配置** —— ✅ **已实证（2026-09-29）**：OpenBase `.env` 中 **6 个相关键全部缺失**（`DPS_ORG_MAP`／`DPS_TENANT_MAP`／`DPS_DEFAULT_ORG_ID`／`DPS_DEFAULT_TENANT_ID`／`ENFORCE_ORG_ALIAS`／`DPS_CODE_MAP`）⇒ 别名映射为**空表回落**，出站 `X-Org-ID` **= tenant 值** | **P1** | **联调前置**：由 OpenBase 侧配置 `dps_code_map`（或 `dps_org_map`／`dps_tenant_map`）给出 DPS 认可的**真实 org／tenant 值**，并预置 DPS `organization`／`tenant` 记录；**未配置则联调大概率 401／归属校验失败** |
-| 2 | 强模式门禁（不一致 → 403）与映射机制是否互斥 | P2 | 设计阶段需读 `inject.py` 强模式分支确认 |
+| 2 | 强模式门禁与映射机制**互斥** —— ✅ **已确认（2026-09-29 读码）**：`inject.py:198-208` 中 `enforce_org_alias=True` 时**要求 `X-Org-ID == X-Tenant-ID`**（错误 hint 明确写「configure dps_code_map with **dps_org_id == dps_tenant_id**」）⇒ 与「传真 org」**互斥** | **P2 → 已升为设计约束** | **本版须保持 `enforce_org_alias=False`**（代码默认 False，`.env` 未设 ⇒ 当前即兼容段）⇒ **映射传真 org 方可生效**；若误开强模式，DPS 联调会因 `org ≠ tenant` **直接 403**。且 DPS 侧 org／tenant 本就是**不同 code**（演示码 `dps-org-001` vs `dps-tenant-001`）⇒「org == tenant」方案在 DPS 侧不可行，**只能走映射传真** |
 | 3 | RAG／Memory 的 `enforce_org_alias` 默认关闭 ⇒ 别名不一致时**静默通过** | P2 | 与基准 B4「不得静默」有张力 ⇒ 登记候选需求（跨系统治理） |
 | 4 | DPS 内部 org 层次 vs 基准单维度 | P2 | 已按 §3.2 方案 B 处置（对外遵循基准），**不改造其内部模型** |
 
