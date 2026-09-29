@@ -1,5 +1,5 @@
 === v1.4.9 Step 3 变更一致性自检（3.9b）===
-时间：2026-09-29T00:12:35.727392+00:00
+时间：2026-09-29T00:37:04.947349+00:00
 
 === ① 命名合规 ===
 **如实登记**：本仓**不存在** `validate-naming.ps1`（全仓 `Get-ChildItem -Recurse` 无命中，`scripts/` 下亦无同名脚本）⇒ 以「**文件命名规范核对**」等价执行：
@@ -9,16 +9,12 @@
   OK M  doc/audit/review/OpenBase-阶段审计报告-Stage3-v1.4.9.md
   OK M  doc/development/OpenBase-DevLogReport-v1.4.9.md
   OK M  doc/development/OpenBase-代码逻辑审查记录-v1.4.9.md
+  OK M  doc/development/OpenBase-开发审计移交材料-v1.4.9.md
   OK M  doc/development/OpenBase-设计开发追溯矩阵-v1.4.9.md
   OK M  doc/development/OpenBase-静态质量检查记录-v1.4.9.md
-  OK ??  doc/development/OpenBase-开发审计移交材料-v1.4.9.md
-  OK ??  doc/test/evidence/v149/cr149-consistency-selfcheck-20260929.txt
-  OK ??  doc/test/evidence/v149/cr149-debt-growth-20260929.txt
-  OK ??  doc/test/evidence/v149/cr149-deliverable-inventory-20260929.txt
-  OK ??  doc/test/evidence/v149/cr149-l1-compile-20260929.txt
-  OK ??  doc/test/evidence/v149/cr149-l3-smoke-20260929.json
-  OK ??  doc/test/evidence/v149/cr149-l3-smoke-20260929.py
-命名核对：12 个待提交/待跟踪文档文件，**不合规 0 个**
+  OK M  doc/test/evidence/v149/cr149-debt-growth-20260929.txt
+  OK M  doc/test/evidence/v149/cr149-l3-smoke-20260929.json
+命名核对：8 个待提交/待跟踪文档文件，**不合规 0 个**
 
 === ② 文件头版本号 vs 修订历史首行版本号 ===
 核对范围：文件名含 `v1.4.9` 且同时具备「文档版本」表头与修订历史表全部文档
@@ -59,7 +55,7 @@
 不一致明细：无（全部一致）
 
 === ③ 新建文件路径与命名规范匹配 ===
-本版本新增（未跟踪/新增）文档文件：7 个
+本版本新增（未跟踪/新增）文档文件：0 个
   全部落在规范目录内（doc/design、doc/development、doc/audit/review、doc/requirements、doc/test/evidence/v149）
 
 === 自检结论 ===

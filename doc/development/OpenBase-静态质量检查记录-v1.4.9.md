@@ -45,7 +45,7 @@
 
 | 项 | 阈值 | 实测 | 方法（**工具实测**，非「变更面核定」） |
 |----|:----:|:----:|--------------------------------------|
-| 新增 TODO 数 | ≤5 | **0** | 正则 `(TODO\|FIXME\|XXX\|HACK)`（大小写敏感）在 `基线..HEAD` **新增行**逐行匹配（新增 2630 行，命中 0） |
+| 新增 TODO 数 | ≤5 | **0** | 正则 `(TODO\|FIXME\|XXX\|HACK)`（大小写敏感）在 `基线..HEAD` **新增行**逐行匹配（新增 2967 行，命中 0） |
 | 新增高复杂度函数数 | ≤3 | **3**（达上限） | `ruff --select C901`（`max-complexity=15`）在 **HEAD** 与**基线 `git worktree` 独立检出**两侧各跑一次，取差集（基线 5 个 → HEAD 8 个；新增＝`run_components` 26／`_build_writeback_callback` 16／`generate` 16） |
 | 代码重复率增量 | ≤2% | **0** | `pylint --enable=duplicate-code`（`min-similarity-lines=10`）扫描 `app/` 全包两侧比对：`R0801` **22 → 22** |
 

@@ -10,15 +10,15 @@
   "S1_health": {
     "status": 200,
     "passed": true,
-    "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0,\"channel\":\"b\"},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2031,"
+    "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.3\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0,\"channel\":\"b\"},\"openrag\":{\"status\":\"unavailable\",\"latency_ms\":2109,"
   },
   "samples": [
     {
       "label": "short",
       "ok": true,
       "status": 200,
-      "request_id": "openllm-7ffcbed216f04cc490f1cba7",
-      "session_id": "smoke-cr149-short-7fc9acb7",
+      "request_id": "openllm-d85cc6acd7534a489cd63b4e",
+      "session_id": "smoke-cr149-short-bafec998",
       "body_sentinel": "CR149SENTINELSHORT",
       "expect_trim": false,
       "channels": null
@@ -27,8 +27,8 @@
       "label": "long",
       "ok": true,
       "status": 200,
-      "request_id": "openllm-5953827b27944fd581c086d3",
-      "session_id": "smoke-cr149-long-dc93e290",
+      "request_id": "openllm-27820824b02c42b09467da0a",
+      "session_id": "smoke-cr149-long-1daab5ab",
       "body_sentinel": "CR149SENTINELLONG",
       "expect_trim": false,
       "channels": null
@@ -37,8 +37,8 @@
       "label": "huge",
       "ok": true,
       "status": 200,
-      "request_id": "openllm-36edba7904aa4e64bf5e7d11",
-      "session_id": "smoke-cr149-huge-18936381",
+      "request_id": "openllm-549fdbc1e7bc4316bea0214c",
+      "session_id": "smoke-cr149-huge-a1838f48",
       "body_sentinel": "CR149SENTINELHUGE",
       "expect_trim": true,
       "channels": null
@@ -86,10 +86,10 @@
     }
   ],
   "receipt_snapshot": {
-    "request_id": "openllm-36edba7904aa4e64bf5e7d11",
-    "session_id": "smoke-cr149-huge-18936381",
+    "request_id": "openllm-549fdbc1e7bc4316bea0214c",
+    "session_id": "smoke-cr149-huge-a1838f48",
     "model": "auto",
-    "created_at": "2026-09-29T00:02:51.132183+00:00",
+    "created_at": "2026-09-29T00:29:27.955642+00:00",
     "prompt_total_tokens": 921,
     "segment_tokens": {
       "system": 83,

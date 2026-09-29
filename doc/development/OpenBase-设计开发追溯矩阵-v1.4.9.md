@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（编排与回写代码所在仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 设计开发追溯矩阵（Step 3 产出 2，TD-ID ↔ 设计项 ↔ 代码落点） |
-| 文档版本 | v1.9.2 |
+| 文档版本 | v1.9.3 |
 | 状态 | [Review]（Step 3 进行中） |
 | 日期 | 2026-09-29 |
 | 上游依据 | 设计基线 **v1.2.0**（[Approved]）＋ 设计补充至 **v1.6.3**；《需求设计追溯矩阵-v1.4.9》v1.2.0 |
@@ -303,18 +303,20 @@
 | 项 | 结果 |
 |----|------|
 | **RED**（先建测试） | `test_segment_items_production_wiring.py` → **10 failed / 1 passed**（`format_context_with_items` 不存在；`ComponentRunResult.segment_items` 不存在；真实裁剪未产出明细） |
-| **GREEN** | 同文件 → **11 passed**（同源同序对齐／呈现序随行／字段名归一／原下标兜底／平铺与字符串无身份／真实裁剪产出明细／关闭态无明细） |
+| **GREEN** | 同文件 → **12 passed**（同源同序对齐／呈现序随行／字段名归一／原下标兜底／平铺与字符串无身份／真实裁剪产出明细／关闭态无明细／**桩组装器缺新接口退回纯文本**） |
 | 相关面回归 | 14 文件 → **208 passed** |
 | 静态检查 | `ruff check`（4 生产文件 ＋ 1 新测试）→ **All checks passed**（含 `B905` 修） |
 | **实际运行验证（3.5）** | L1 `compileall` exit 0 ＋ `import main` OK；L2 真实实例 `Application startup complete.` ＋ 健康 200（`cr149-instance-8041-20260929.log`）；L3 **6/6 PASS**（`cr149-l3-smoke-20260929.json`） |
 | **技术债务增长率（3.4a）** | `ruff C901` ＋ `pylint duplicate-code`，**HEAD 与基线 worktree 两侧比对** ⇒ 新增 TODO **0**／新增高复杂度函数 **3**（达上限，逐函数登记）／重复块增量 **0**（`cr149-debt-growth-20260929.txt`） |
-| **变更一致性自检（3.9b）** | **32 份文档版本全一致**；新增文件路径全落规范目录（`cr149-consistency-selfcheck-20260929.txt`） |
-| 全量回归 | `pytest tests/unit tests/integration` → **3760 passed / 21 failed**；与基线**逐 node id 一致 ⇒ 零新增失败** |
+| **变更一致性自检（3.9b）** | **33 份文档版本全一致**；新增文件路径全落规范目录（`cr149-consistency-selfcheck-20260929.txt`） |
+| 全量回归 | `pytest tests/unit tests/integration` → **3772 passed / 21 failed**（＝基线 3760 ＋ 本批 **12** 例）；与基线**逐 node id 一致 ⇒ 零新增失败** |
+| **回归事故与修复** | 首次全量回归曾**新增 11 项失败**（`test_component_dependency_scheduling` 6 ＋ `test_component_pipeline_shared` 5）：既有**测试桩组装器仅有 `format_context`**，本批改调 `format_context_with_items` ⇒ `AttributeError`。修复＝**向后兼容退回**（`_format_context_with_items`：优先富接口、缺则纯文本且**不产出身份**）＋ 补 1 例护栏（GREEN 11 → **12 passed**）；复测逐 node id 与基线一致 |
 
 ## 6. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.9.3 | 2026-09-29 | AD-OpenLLM-Dev | **批次 8 回归事故更正（如实登记）**：① §5 第 8 批块 —— **GREEN 11 → 12 passed**（补 1 例向后兼容护栏）、**全量回归真值 3760 → 3772 passed / 21 failed**（＝基线 3760 ＋ 本批 12 例；21 项逐 node id 与基线一致）；② 新增「**回归事故与修复**」行：首次全量回归曾新增 **11 项失败**（既有测试桩组装器仅有 `format_context`，本批改调 `format_context_with_items` ⇒ `AttributeError`）⇒ 以**向后兼容退回**（`_format_context_with_items`：优先富接口、缺则纯文本且不产出身份）修复；③ §3decies 与 3.9b 自检份数（32 → **33**）同步。 |
 | v1.9.2 | 2026-09-29 | AD-OpenLLM-Dev | **批次 8 续记（I-2 生产落线）＋ 三项门禁补齐**：① 新增 **§3decies** —— 批次 8 实施记录（**G7**：I-2 条目身份在生产**无提供点** ⇒ `dropped` 恒空；已由组装器**同源**产出身份 ＋ 组件执行落 `segment_items` ＋ 双路径同口径传入 ＋ 上游字段名归一闭合）与 **M1~M4** 门禁/交付物补齐（3.4a／3.5／3.9b／3.10）；② TD-14902 落点补**批次 8 生产落线**四文件、状态补注；③ §4 增「本批提交 ⑨」（`2f5364d`）；④ §5 增「批次 8 验证」块（RED 10/1 → GREEN 11 passed；相关面 208；L1/L2/L3；债务 0/3/0；自检通过；全量 3760/21 逐 node id 一致）；⑤ 文头版本/上游依据同步（v1.9.1→**v1.9.2**）。 |
 | v1.9.1 | 2026-09-29 | AD-OpenLLM-Dev | **批次 7 收尾一致性续记 ＋ 新增 G6**：① 架构升 **v1.6.3**（§3.16 顶层 `dropped`「恒有」补入**精确论域＝预算生效请求**，消除与 §3.19 的**字面冲突**，**判据口径不变**）；② **新增 G6（取证缺陷，中，自纠）** —— 探针原判据「键在即齐备」**过弱**（`{"model": null}` 亦 PASS）⇒ 升为「键在且取值非 null」＋ 样本显式提供 `model`；③ 取证探针**去除 cwd 依赖**（backend 根自动定位，定位失败显式报错）⇒ 任意 cwd 下**六项全 PASS** 可复现；④ 文头版本/日期/上游依据同步（v1.9.0→**v1.9.1**、设计补充至 **v1.6.3**）。 |
 | v1.9.0 | 2026-09-28 | AD-OpenLLM-Dev | 新增 §3novies：**批次 7 收尾补漏** —— Step 3 完成度审计按 AC-149-05／10／11 索取**可执行证据**，发现并闭合两处**实现—设计不一致**：① 预算公式**漏安全余量**（补齐 `CONTEXT_SAFETY_MARGIN_TOKENS` 与 `BudgetPolicy.safety_margin_tokens`，`available = 窗口 − 预留 − 余量`）；② 回执**缺 6 个必填字段**（补齐预算四项 ＋ 裁剪前后同口径 token ＋ 聚合标记 ⇒ **AC-149-05 齐备率 100%**）；另自纠 1 处**探针缺陷**（把计量字段名误判为敏感串）。**如实登记「实现先行、设计澄清在后」的顺序偏差**（口径已回写架构 §3.19／v1.6.2）。新增判据探针 `v149_receipt_and_purity_probe.py` ⇒ **AC-149-05／10／11 全 PASS**；另**修正本文档头版本号滞后**（此前正文已至 v1.8.0、头仍 v1.4.0）。TD-14902 状态补注「批次 7 齐备率补齐」。 |

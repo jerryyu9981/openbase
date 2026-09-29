@@ -1,14 +1,14 @@
 === v1.4.9 Step 3 技术债务增长率检查（3.4a）===
-时间：2026-09-28T23:54:43.780182+00:00
+时间：2026-09-29T00:33:08.029123+00:00
 仓库：D:\Trae CN\myproject\Dev\OpenLLM
 基线（上一版本 v1.4.8 收口点）：d7742c706d1f5d9990753c9efe9b027e0e68239d
-当前 HEAD：2f5364d3e90b8cb61fcab65be7c749e17f3278b9
+当前 HEAD：d4bff291081a49c8a6ba15ee794221368420bc13
 
 --- 变更统计（d7742c7..HEAD）---
 backend/app/api/openllm_gateway.py                 | 116 ++++-
  backend/app/core/config.py                         |  29 ++
  backend/app/edgerouter/orchestration/assembler.py  |  91 +++-
- .../edgerouter/orchestration/component_pipeline.py | 123 ++++-
+ .../edgerouter/orchestration/component_pipeline.py | 140 +++++-
  .../edgerouter/orchestration/context_metrics.py    |  20 +
  backend/app/edgerouter/orchestration/evaluate.py   |  38 ++
  backend/app/edgerouter/orchestration/executor.py   |  19 +
@@ -28,9 +28,9 @@ backend/app/api/openllm_gateway.py                 | 116 ++++-
  backend/tests/unit/test_context_receipt_fields.py  | 207 ++++++++
  backend/tests/unit/test_context_trim_markers.py    |  98 ++++
  .../unit/test_profile_delta_and_precheck_wiring.py | 215 +++++++++
- .../unit/test_segment_items_production_wiring.py   | 191 ++++++++
+ .../unit/test_segment_items_production_wiring.py   | 214 +++++++++
  ...351\227\255\347\216\257-DevLogReport-v1.0.0.md" |  10 +-
- 25 files changed, 2927 insertions(+), 89 deletions(-)
+ 25 files changed, 2967 insertions(+), 89 deletions(-)
 
 --- 本版本**生产**改动面（13 个 .py，来自 git diff）---
   app/api/openllm_gateway.py
@@ -49,14 +49,14 @@ backend/app/api/openllm_gateway.py                 | 116 ++++-
 
 === 项 1：新增 TODO 数（阈值 ≤5）===
 口径：正则 'TODO|FIXME|XXX|HACK'（**大小写敏感**）在**新增行**（diff '+' 行，排除 '+++'）逐行匹配
-新增行总数：2927；命中行数：0
+新增行总数：2967；命中行数：0
 命中明细：无
 结论：新增 TODO = **0**（阈值 ≤5 ⇒ 通过）
 
 --- 基线独立检出（git worktree，供「新增」判定）---
 HEAD is now at d7742c7 feat(v149): 统一前端（OpenBase openbase-ui）接口准备——装配模板可配置+严格校验+段标记同源派生、试装配预览、保真度对比（网关面5条+管理面5条）
 Preparing worktree (detached HEAD d7742c7)
-Updating files:   7% (409/5744)
+Updating files:   7% (411/5744)
 Updating files:   8% (460/5744)
 Updating files:   9% (517/5744)
 Updating files:  10% (575/5744)
@@ -64,16 +64,16 @@ Updating files:  11% (632/5744)
 Updating files:  12% (690/5744)
 Updating files:  13% (747/5744)
 Updating files:  14% (805/5744)
-Updating files:  14% (842/5744)
 Updating files:  15% (862/5744)
+Updating files:  15% (876/5744)
 Updating files:  16% (920/5744)
 Updating files:  17% (977/5744)
 Updating files:  18% (1034/5744)
 Updating files:  19% (1092/5744)
 Updating files:  20% (1149/5744)
 Updating files:  21% (1207/5744)
-Updating files:  21% (1228/5744)
 Updating files:  22% (1264/5744)
+Updating files:  22% (1275/5744)
 Updating files:  23% (1322/5744)
 Updating files:  24% (1379/5744)
 Updating files:  25% (1436/5744)
@@ -83,9 +83,9 @@ Updating files:  28% (1609/5744)
 Updating files:  28% (1632/5744)
 Updating files:  29% (1666/5744)
 Updating files:  30% (1724/5744)
-Updating files:  30% (1766/5744)
 Updating files:  31% (1781/5744)
 Updating files:  32% (1839/5744)
+Updating files:  32% (1882/5744)
 Updating files:  33% (1896/5744)
 Updating files:  34% (1953/5744)
 Updating files:  35% (2011/5744)
@@ -93,18 +93,18 @@ Updating files:  36% (2068/5744)
 Updating files:  37% (2126/5744)
 Updating files:  38% (2183/5744)
 Updating files:  39% (2241/5744)
-Updating files:  39% (2250/5744)
 Updating files:  40% (2298/5744)
 Updating files:  41% (2356/5744)
+Updating files:  41% (2393/5744)
 Updating files:  42% (2413/5744)
 Updating files:  43% (2470/5744)
 Updating files:  44% (2528/5744)
 Updating files:  45% (2585/5744)
 Updating files:  46% (2643/5744)
 Updating files:  47% (2700/5744)
-Updating files:  47% (2710/5744)
 Updating files:  48% (2758/5744)
 Updating files:  49% (2815/5744)
+Updating files:  49% (2856/5744)
 Updating files:  50% (2872/5744)
 Updating files:  51% (2930/5744)
 Updating files:  52% (2987/5744)
@@ -112,48 +112,48 @@ Updating files:  53% (3045/5744)
 Updating files:  54% (3102/5744)
 Updating files:  55% (3160/5744)
 Updating files:  56% (3217/5744)
-Updating files:  56% (3251/5744)
 Updating files:  57% (3275/5744)
 Updating files:  58% (3332/5744)
 Updating files:  59% (3389/5744)
+Updating files:  59% (3431/5744)
 Updating files:  60% (3447/5744)
 Updating files:  61% (3504/5744)
 Updating files:  62% (3562/5744)
 Updating files:  63% (3619/5744)
 Updating files:  64% (3677/5744)
-Updating files:  64% (3723/5744)
 Updating files:  65% (3734/5744)
 Updating files:  66% (3792/5744)
 Updating files:  67% (3849/5744)
+Updating files:  67% (3856/5744)
 Updating files:  68% (3906/5744)
 Updating files:  69% (3964/5744)
 Updating files:  70% (4021/5744)
 Updating files:  71% (4079/5744)
 Updating files:  72% (4136/5744)
 Updating files:  73% (4194/5744)
-Updating files:  73% (4202/5744)
 Updating files:  74% (4251/5744)
 Updating files:  75% (4308/5744)
+Updating files:  75% (4332/5744)
 Updating files:  76% (4366/5744)
 Updating files:  77% (4423/5744)
 Updating files:  78% (4481/5744)
 Updating files:  79% (4538/5744)
 Updating files:  80% (4596/5744)
 Updating files:  81% (4653/5744)
-Updating files:  81% (4707/5744)
 Updating files:  82% (4711/5744)
 Updating files:  83% (4768/5744)
 Updating files:  84% (4825/5744)
+Updating files:  84% (4867/5744)
 Updating files:  85% (4883/5744)
 Updating files:  86% (4940/5744)
 Updating files:  87% (4998/5744)
 Updating files:  88% (5055/5744)
 Updating files:  89% (5113/5744)
-Updating files:  89% (5158/5744)
 Updating files:  90% (5170/5744)
 Updating files:  91% (5228/5744)
 Updating files:  92% (5285/5744)
 Updating files:  93% (5342/5744)
+Updating files:  93% (5375/5744)
 Updating files:  94% (5400/5744)
 Updating files:  95% (5457/5744)
 Updating files:  96% (5515/5744)
@@ -217,12 +217,12 @@ C901 `generate` is too complex (16 > 15)
      |
 
 C901 `run_components` is too complex (26 > 15)
-   --> app\edgerouter\orchestration\component_pipeline.py:170:11
+   --> app\edgerouter\orchestration\component_pipeline.py:189:11
     |
-170 | async def run_components(
+189 | async def run_components(
     |           ^^^^^^^^^^^^^^
-171 |     *,
-172 |     pipeline: list[dict] | None,
+190 |     *,
+191 |     pipeline: list[dict] | None,
     |
 
 C901 `_trim_segment` is too complex (25 > 15)
