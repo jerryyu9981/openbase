@@ -39,8 +39,8 @@
 | 生产代码 | **13 个文件**（新增 **0** / 修改 **13**） | `prompt_pipeline.py`／`context_metrics.py`／`assembler.py`／`component_pipeline.py`／`executor.py`／`channel.py`／`channel_audit.py`／`evaluate.py`／`profile_refine_gate.py`／`core/config.py`／`api/openllm_gateway.py`／`services/writeback_queue.py`／`main.py` |
 | 测试代码 | **11 个文件**（新增 **10** / 修改 **1**） | 新增：`test_context_trim_markers`／`test_context_cross_segment_competition`／`test_context_dropped_detail`／`test_context_over_window_verifier`／`test_component_channel_routing`／`test_channel_audit_action_codes`／`test_component_channel_audit_wiring`／`test_profile_delta_and_precheck_wiring`／`test_context_receipt_fields`／`test_segment_items_production_wiring`；修改：`test_channel_failover_audit`（随动作码**定稿**更正） |
 | 删除文件 | **0** | — |
-| 代码行增量（`git diff --shortstat`，基线 `d7742c7`→`2f5364d`） | **25 files changed, 2927 insertions(+), 89 deletions(-)** | 工具实测，非估算 |
-| 提交 | **9 笔代码提交**（＋1 笔 OpenLLM 侧文档提交） | `2d1aa85`／`a1021c4`／`33c4009`／`9b36160`／`9782f48`／`1651e42`／`333188a`／`a9914e6`／`2f5364d` |
+| 代码行增量（`git diff --shortstat`，基线 `d7742c7`→`d4bff29`） | **25 files changed, 2967 insertions(+), 89 deletions(-)** | 工具实测，非估算 |
+| 提交 | **10 笔代码提交**（＋1 笔 OpenLLM 侧文档提交） | `2d1aa85`／`a1021c4`／`33c4009`／`9b36160`／`9782f48`／`1651e42`／`333188a`／`a9914e6`／`2f5364d`／**`d4bff29`（回归修复）** |
 | 推送状态 | **均未推送** | 按用户口径：推送需单独确认 |
 
 ### 2.2 文档产物（文档仓 **OpenBase**）
@@ -128,5 +128,5 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
-| v1.0.1 | 2026-09-29 | AD-OpenLLM-Dev | **回归事故更正（如实登记）**：① §3 第 3.6 行**全量回归真值更正** —— **3772 passed / 21 failed**（＝基线 3760 ＋ 本版新增 12 例；21 项与基线**逐 node id 一致**），原记 3760 为**未含本版新测试**的旧值；② §3 第 3.7a 行审查记录版本 v1.3.0 → **v1.3.1**、发现项 17 → **18 项**（新增发现项 18：批次 8 首次全量回归新增 11 项失败 —— 既有测试桩组装器缺 `format_context_with_items` ⇒ 以**向后兼容退回**修复并补护栏）；③ **L2 启动日志证据改名入仓** —— 原名 `cr149-instance-8041-20260929.log` **被 `.gitignore` 排除**（无法留痕）⇒ 改名 **`.txt`**（内容为同一份原始日志，577 行），并把该「日志类证据不入仓」的坑**显式登记**；④ §2.2 各文档版本、§4 证据清单、文头版本（v1.0.0 → **v1.0.1**）同步。**结论不变**：具备进入开发审计（未闭环 P0/P1 = 0）。 |
+| v1.0.1 | 2026-09-29 | AD-OpenLLM-Dev | **回归事故更正（如实登记）**：① §3 第 3.6 行**全量回归真值更正** —— **3772 passed / 21 failed**（＝基线 3760 ＋ 本版新增 12 例；21 项与基线**逐 node id 一致**），原记 3760 为**未含本版新测试**的旧值；② §3 第 3.7a 行审查记录版本 v1.3.0 → **v1.3.1**、发现项 17 → **18 项**（新增发现项 18：批次 8 首次全量回归新增 11 项失败 —— 既有测试桩组装器缺 `format_context_with_items` ⇒ 以**向后兼容退回**修复并补护栏）；③ **L2 启动日志证据改名入仓** —— 原名 `cr149-instance-8041-20260929.log` **被 `.gitignore` 排除**（无法留痕）⇒ 改名 **`.txt`**（内容为同一份原始日志，577 行），并把该「日志类证据不入仓」的坑**显式登记**；④ §2.2 各文档版本、§4 证据清单、文头版本（v1.0.0 → **v1.0.1**）同步；⑤ **§2.1 数字同步**：提交 9 → **10 笔**（含回归修复 `d4bff29`）、代码行增量 2927 → **2967 insertions(+)**（基线 `d7742c7`→**`d4bff29`**）。**结论不变**：具备进入开发审计（未闭环 P0/P1 = 0）。 |
 | v1.0.0 | 2026-09-29 | AD-OpenLLM-Dev | 初始创建（`coding-stage-execution` §3.10 开发审计移交）：Step 3 范围与结论、变更集清单（OpenLLM 13 生产 ＋ 11 测试＝2927 insertions/89 deletions、9 笔提交；OpenBase 6 份同步件 ＋ 11 份证据）、**10 项门禁证据摘要（含 3.4a 债务增长率 0/3/0、3.5 L1/L2/L3、3.9b 变更一致性自检）**、产出物存在性验证、风险 4 项与遗留/受限项 7 类如实登记（含「实现先行、澄清后补」顺序偏差与 2 项取证工具缺陷自纠）。状态 [Review] |
