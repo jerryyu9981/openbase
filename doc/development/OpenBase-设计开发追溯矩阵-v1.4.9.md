@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **OpenLLM**（编排与回写代码所在仓） |
 | 版本号 | **v1.4.9**（上下文预算与回写质量） |
 | 文档 | 设计开发追溯矩阵（Step 3 产出 2，TD-ID ↔ 设计项 ↔ 代码落点） |
-| 文档版本 | v1.9.3 |
+| 文档版本 | v1.9.4 |
 | 状态 | [Review]（Step 3 进行中） |
 | 日期 | 2026-09-29 |
 | 上游依据 | 设计基线 **v1.2.0**（[Approved]）＋ 设计补充至 **v1.6.3**；《需求设计追溯矩阵-v1.4.9》v1.2.0 |
@@ -42,7 +42,9 @@
 | 11 | `tests/unit/test_profile_delta_and_precheck_wiring.py` | **新建** | ✅（沿用仓内 `test_*` 约定） | ✅ 完成（批次 5） |
 | 12 | `evaluate.py`（两条公开预检）＋ `profile_refine_gate.py`（启动注入位）＋ `writeback_queue.py`（补齐 `compute_message_hash`/`exists_message`）＋ 网关回写回调 ＋ `main.py` lifespan | 修改 | ✅ | ✅ 完成（批次 5） |
 
-> **无新增/重命名/删除文件未落地项被隐藏**：已落地新建测试文件为 8 个（批次 1：`test_context_trim_markers.py`；批次 2：`test_context_cross_segment_competition.py`、`test_context_dropped_detail.py`；批次 3：`test_context_over_window_verifier.py`；批次 4：`test_component_channel_routing.py`、`test_channel_audit_action_codes.py`、`test_component_channel_audit_wiring.py`；批次 5：`test_profile_delta_and_precheck_wiring.py`），其余均为既有文件修改（含 1 项既有护栏随定稿更正），后续批次项已在上表逐项标注批次。
+> **无新增/重命名/删除文件未落地项被隐藏**：已落地新建测试文件为 **10 个**（批次 1：`test_context_trim_markers.py`；批次 2：`test_context_cross_segment_competition.py`、`test_context_dropped_detail.py`；批次 3：`test_context_over_window_verifier.py`；批次 4：`test_component_channel_routing.py`、`test_channel_audit_action_codes.py`、`test_component_channel_audit_wiring.py`；批次 5：`test_profile_delta_and_precheck_wiring.py`；**批次 7：`test_context_receipt_fields.py`；批次 8：`test_segment_items_production_wiring.py`**），其余均为既有文件修改（含 1 项既有护栏随定稿更正）；后续批次项已在上表逐项标注批次。
+>
+> **Step 3 文档交付物（非代码，对照 `coding-stage-execution` §3.10 与 `project-document-management` 阶段 3）**：`DevLogReport`／`设计开发追溯矩阵`／`静态质量检查记录`／`代码逻辑审查记录`／**`开发审计移交材料`**／**`测试移交说明`** —— 均已产出（后两项为独立文件，见 `doc/development/`）。
 
 ## 3. 本批实施记录（批次 1＝I-3）与推迟说明
 
@@ -309,7 +311,7 @@
 | 静态检查 | `ruff check`（4 生产文件 ＋ 1 新测试）→ **All checks passed**（含 `B905` 修） |
 | **实际运行验证（3.5）** | L1 `compileall` exit 0 ＋ `import main` OK；L2 真实实例 `Application startup complete.` ＋ 健康 200（`cr149-instance-8041-20260929.txt`，577 行；**原名 `.log` 被 gitignore ⇒ 改名 `.txt` 入仓**）；L3 **6/6 PASS**（`cr149-l3-smoke-20260929.json`） |
 | **技术债务增长率（3.4a）** | `ruff C901` ＋ `pylint duplicate-code`，**HEAD 与基线 worktree 两侧比对** ⇒ 新增 TODO **0**／新增高复杂度函数 **3**（达上限，逐函数登记）／重复块增量 **0**（`cr149-debt-growth-20260929.txt`） |
-| **变更一致性自检（3.9b）** | **33 份文档版本全一致**；新增文件路径全落规范目录（`cr149-consistency-selfcheck-20260929.txt`） |
+| **变更一致性自检（3.9b）** | **34 份文档版本全一致**；新增文件路径全落规范目录（`cr149-consistency-selfcheck-20260929.txt`） |
 | 全量回归 | `pytest tests/unit tests/integration` → **3772 passed / 21 failed**（＝基线 3760 ＋ 本批 **12** 例）；与基线**逐 node id 一致 ⇒ 零新增失败** |
 | **回归事故与修复** | 首次全量回归曾**新增 11 项失败**（`test_component_dependency_scheduling` 6 ＋ `test_component_pipeline_shared` 5）：既有**测试桩组装器仅有 `format_context`**，本批改调 `format_context_with_items` ⇒ `AttributeError`。修复＝**向后兼容退回**（`_format_context_with_items`：优先富接口、缺则纯文本且**不产出身份**）＋ 补 1 例护栏（GREEN 11 → **12 passed**）；复测逐 node id 与基线一致 |
 
@@ -317,6 +319,7 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.9.4 | 2026-09-29 | AD-OpenLLM-Dev | **Step 3 交付物口径补齐**：① §2 注 —— 新建测试文件 8 → **10 个**（补批次 7/8 两个），并新增「**Step 3 文档交付物**」清单行（DevLogReport／追溯矩阵／静态质量／逻辑审查／**开发审计移交材料**／**测试移交说明**，后两项为独立文件）；② §5 第 8 批块「变更一致性自检」份数 33 → **34**（新增《测试移交说明-v1.4.9》）；③ 文头版本同步（v1.9.3 → **v1.9.4**）。依据：`project-document-management` 阶段 3 产物与 `coding-stage-execution` §3.10 核对发现**测试移交说明缺件**（M5，跨版本历史缺口）。 |
 | v1.9.3 | 2026-09-29 | AD-OpenLLM-Dev | **批次 8 回归事故更正（如实登记）**：① §5 第 8 批块 —— **GREEN 11 → 12 passed**（补 1 例向后兼容护栏）、**全量回归真值 3760 → 3772 passed / 21 failed**（＝基线 3760 ＋ 本批 12 例；21 项逐 node id 与基线一致）；② 新增「**回归事故与修复**」行：首次全量回归曾新增 **11 项失败**（既有测试桩组装器仅有 `format_context`，本批改调 `format_context_with_items` ⇒ `AttributeError`）⇒ 以**向后兼容退回**（`_format_context_with_items`：优先富接口、缺则纯文本且不产出身份）修复；③ §3decies 与 3.9b 自检份数（32 → **33**）同步；④ §4 新增「本批提交 ⑩」（回归修复 `d4bff29`，Stage3 审计 G8）。 |
 | v1.9.2 | 2026-09-29 | AD-OpenLLM-Dev | **批次 8 续记（I-2 生产落线）＋ 三项门禁补齐**：① 新增 **§3decies** —— 批次 8 实施记录（**G7**：I-2 条目身份在生产**无提供点** ⇒ `dropped` 恒空；已由组装器**同源**产出身份 ＋ 组件执行落 `segment_items` ＋ 双路径同口径传入 ＋ 上游字段名归一闭合）与 **M1~M4** 门禁/交付物补齐（3.4a／3.5／3.9b／3.10）；② TD-14902 落点补**批次 8 生产落线**四文件、状态补注；③ §4 增「本批提交 ⑨」（`2f5364d`）；④ §5 增「批次 8 验证」块（RED 10/1 → GREEN 11 passed；相关面 208；L1/L2/L3；债务 0/3/0；自检通过；全量 3760/21 逐 node id 一致）；⑤ 文头版本/上游依据同步（v1.9.1→**v1.9.2**）。 |
 | v1.9.1 | 2026-09-29 | AD-OpenLLM-Dev | **批次 7 收尾一致性续记 ＋ 新增 G6**：① 架构升 **v1.6.3**（§3.16 顶层 `dropped`「恒有」补入**精确论域＝预算生效请求**，消除与 §3.19 的**字面冲突**，**判据口径不变**）；② **新增 G6（取证缺陷，中，自纠）** —— 探针原判据「键在即齐备」**过弱**（`{"model": null}` 亦 PASS）⇒ 升为「键在且取值非 null」＋ 样本显式提供 `model`；③ 取证探针**去除 cwd 依赖**（backend 根自动定位，定位失败显式报错）⇒ 任意 cwd 下**六项全 PASS** 可复现；④ 文头版本/日期/上游依据同步（v1.9.0→**v1.9.1**、设计补充至 **v1.6.3**）。 |
