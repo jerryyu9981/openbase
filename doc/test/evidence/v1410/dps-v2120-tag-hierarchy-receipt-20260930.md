@@ -3,9 +3,9 @@
 | 项目 | 内容 |
 |------|------|
 | 回执对象 | 跨仓派单 **`OB-v1.4.10-DSP-TAG-01`**（DPS 侧「标签体系层级化（子标签能力落地）＋ 模型-表结构一致性治理」） |
-| 回执版本 | **v1.2.0** |
+| 回执版本 | **v1.2.1** |
 | 状态 | **[Review]** |
-| 日期 | 2026-10-01（v1.2.0 更新；Step 3 事实时为 2026-09-30） |
+| 日期 | 2026-10-01（v1.2.1 更新；Step 3 事实时为 2026-09-30） |
 | 来源 | DPS 仓 `main @ 2aa6030`（**Step 4 定版位**，含 DF-2120-03 闭环；Step 3 为 `5f2641d`）（**三远程一致**：origin／backup／github） |
 | 交付阶段 | **Step 4 测试已完成**（Step 5 发布**未开始**；**仍未部署**） |
 | 编制人 | PM-OpenBase-Dev（跨仓台账） |
@@ -15,6 +15,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.2.1** | 2026-10-01 | PM-OpenBase-Dev | **Step 4 定版数字订正同步**：① 新增代码覆盖率 → **110/110 = 100%**（分母含 DF-2120-01/02/03 方言拆分与专属 schema 修复生产行）；② 全量回归 → **2 failed（H 类）/ 1734 passed / 3 skipped / 1 xfailed / 1 xpassed**（相对基线 5 项不劣化；3 skipped 含 G12 真实 PG 守护，默认 SQLite 环境跳过）；§1 行 8 数值更新。其余结论不变：未发布、未部署 ⇒ §3 限制与 §4 对本仓约束继续有效。 |
 | **v1.2.0** | 2026-10-01 | PM-OpenBase-Dev | **A2 PostgreSQL 实跑转通过回填（DF-2120-03）**：DPS 依共享基础设施 `.env.shared-infra`（192.168.0.151:5432/nuct）完成**真实 PG 实跑**，暴露并闭环 **DF-2120-03**（P1：`public.schema_migrations` 与 OpenBase 同名表冲突 → DPS 迁至专属 schema `platform.schema_migrations`）；新增 G12 真实 PG 守护用例（TC-079）；**新增用例定版 79 全绿**；交付位 `2f21fcb` → **`2aa6030`**；§1 补 Step 4 定版数值、§8 补 DF-2120-03、§8.1 交付位更新。**结论不变：未发布、未部署 ⇒ §3 限制与 §4 对本仓约束继续有效。** |
 | v1.1.0 | 2026-10-01 | PM-OpenBase-Dev | **Step 4 测试完成回填**：① 交付阶段 → **「Step 4 测试已完成（Step 5 未开始；仍未部署）」**；② §1 补 Step 4 定版数值（新增用例 **78** 全绿／**新增代码覆盖率 100%（96/96）**／全量回归 **1 failed（H 类）/ 1735 passed**／集成＋E2E **54 passed**）；③ 阶段审计补 **测试回溯对比审计（通过）**；④ **新增 §8 测试阶段缺陷闭环**（DPS 侧 2 项 P1 真实后端缺陷 DF-2120-01／DF-2120-02 均已闭环）与 **§8.1 交付位**（Step 3 `5f2641d`／**Step 4 `2f21fcb`**）。**结论不变：未发布、未部署 ⇒ §3 限制与 §4 对本仓约束继续有效。** |
 | v1.0.0 | 2026-09-30 | PM-OpenBase-Dev | 初始版本：DPS v2.12.0 Step 3 交付事实、交付内容与 G7 对应、限制（未发布／未部署／非持久／同毫秒 ID／≤2 层／形态差异）、对本仓影响、可复跑判据与结论 |
@@ -30,7 +31,7 @@
 | 5 | 基点比对 | `git stash` 撤下本次改动后同文件 **5 failed** ⇒ **相对基线不劣化**（2 ＜ 5） |
 | 6 | 静态检查 | 改动文件 `ruff` 新增代码 0 错误 |
 | 7 | 阶段审计 | 《DPS-阶段审计报告-Stage3-v2.12.0》⇒ **通过**（附 2 项 Step 4 条件）；**《DPS-测试回溯对比审计报告-v2.12.0》⇒ 通过**（遗留 P0／P1 = 0，允许进入 Step 5） |
-| 8 | **Step 4 定版数值（v1.2.0）** | **新增用例 79 全绿**（`test_v2_12_tag_hierarchy.py` 58 ＋ `test_v2_12_model_and_migration.py` 21，含 G12 真实 PG 守护 TC-079，**真实 PostgreSQL 环境实跑** 79 passed / 0 failed）；**新增代码覆盖率 100%（96/96）**；全量回归 **1 failed（H 类 openapi 833ms）/ 1735 passed / 2 skipped / 1 xfailed / 1 xpassed**（445.71 s，**少于基线 5 项**）；集成＋E2E **54 passed**；**A2 PostgreSQL 实跑通过**（共享基础设施 192.168.0.151:5432/nuct） |
+| 8 | **Step 4 定版数值（v1.2.1）** | **新增用例 79 全绿**（`test_v2_12_tag_hierarchy.py` 58 ＋ `test_v2_12_model_and_migration.py` 21，含 G12 真实 PG 守护 TC-079，**真实 PostgreSQL 环境实跑** 79 passed / 0 failed）；**新增代码覆盖率 100%（110/110）**（分母含 DF-2120-01/02/03 方言拆分与专属 schema 修复生产行）；全量回归 **2 failed（H 类）/ 1734 passed / 3 skipped / 1 xfailed / 1 xpassed**（427.35 s，失败 2 项均为 H 类绝对性能，**相对基线 5 项不劣化**；3 skipped 含 G12 真实 PG 守护，默认 SQLite 环境跳过）；集成＋E2E **54 passed**；**A2 PostgreSQL 实跑通过**（共享基础设施 192.168.0.151:5432/nuct） |
 
 ## 2. 交付内容（与本仓 G7 的对应关系）
 
@@ -40,7 +41,7 @@
 | 2 | 错误码 | `PARAM_TAG_PARENT_NOT_FOUND`／`_CROSS_CATEGORY`／`_SELF`／`PARAM_TAG_DEPTH_EXCEEDED`／`PARAM_TAG_PARENT_CYCLE`（400）；`PARAM_TAG_NOT_FOUND`（404，**跨租户同码不泄露存在性**） | 新增 |
 | 3 | 权限点 | **无需新增**：沿用 `tag:read`（查询）／`tag:create`（创建）／`tag:update`（改挂与解除）；**不改映射表、无端点级声明** | ✅ 与本仓 `E-G6-20260930` 的 G8 类风险反向一致 |
 | 4 | **孤儿模型清理（W2）** | 两处 `TagDefinition` 统一**废弃口径**（「未启用的历史声明」，不得用于新代码）；`tag_definition` 表定位明确；**引用面归 0**（用例自证） | ✅ 原派单「权限映射与孤儿模型清理」 |
-| 5 | `/db/migrate` 修复（W3） | 迁移记账表**全路径 schema 限定**（`public.schema_migrations`）⇒ 运行态非 500 | 附加（DPS 侧 TD-3041 残余 B） |
+| 5 | `/db/migrate` 修复（W3） | 迁移记账表**全路径 schema 限定**（PG：DPS 专属 **`platform.schema_migrations`**，与 OpenBase 同名表隔离〔DF-2120-03〕；SQLite：`schema_migrations`〔DF-2120-01〕）⇒ 运行态非 500，**A2 真实 PG 实跑通过** | 附加（DPS 侧 TD-3041 残余 B） |
 
 ## 3. **重要限制（消费前必读）**
 
