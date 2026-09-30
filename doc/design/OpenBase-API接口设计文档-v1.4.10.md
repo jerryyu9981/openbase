@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.3.0 |
-| 状态 | **[Review]（待设计评审）** —— 含 **2026-09-30 两项实测回写** |
+| 文档版本 | v1.4.0 |
+| 状态 | **[Review]（待设计评审）** —— 含 **2026-09-30 两项实测回写** ＋ **DPS v2.9.1 跨仓修复闭环回填** |
 | 版本号 | **v1.4.10**（承接型小版本：DPS 模板化能力对接深化） |
 | 作者 | AA-OpenBase-Dev |
 | 创建日期 | 2026-09-29 |
@@ -101,33 +101,35 @@
 | 9 | AI 候选生成 | `annotation_template:create` | POST→create |
 | 10 | 评分类型 | `portrait_template:read` | GET→read |
 
-**D-1410-03 补代理端点权限动作映射（12 路由，E-11~E-22）—— 含 2026-09-30 实测修正**
+**D-1410-03 补代理端点权限动作映射（12 路由，E-11~E-22）—— 含 2026-09-30 实测 ＋ 跨仓修复闭环**
 
 > **⚠ 本表已按实测回写**（证据：`doc/test/evidence/v1410/g6-permission-resolution-20260930.md`，`E-G6-20260930`）。**原 v1.2.0 表存在 3 类错误**（编号口径混用 ＋ 权限点臆断），已作废。
+>
+> **⚠ 2026-09-30 追加**：8 项不一致已由 **DPS v2.9.1 跨仓修复**闭环（交付回执：`doc/test/evidence/v1410/dps-v291-permission-caliber-fix-receipt-20260930.md`，`E-DPS-v291-20260930`；派单 `OB-v1.4.10-DSP-PERM-01`）。**下表保留「修复前」列作为对比基线，并列示修复后判定**。
 
-| #（§1.1 路由号） | 能力 | 设计声明权限点 | **实测判定（判定资源 ＋ 动作）** | 一致性 |
-|:-:|------|----------------|-----------------------------------|:------:|
-| 11 | 画像模板列表（E-11） | `portrait_template:read` | `portrait_template` + `read` | ✅ |
-| 12 | 画像模板详情（E-12） | `portrait_template:read` | `portrait_template` + `read` | ✅ |
-| 13 | 画像模板创建（E-13） | `portrait_template:create` | `portrait_template` + `create` | ✅ |
-| 14 | 画像模板更新（E-14） | `portrait_template:update` | `portrait_template` + `update` | ✅ |
-| 15 | 画像模板**激活**（E-15） | `portrait_template:update` | **`portrait_template` + `create`** | ⚠ **G8** |
-| 16 | 画像模板**停用**（E-15） | `portrait_template:update` | **`portrait_template` + `create`** | ⚠ **G8** |
-| 17 | 标注模板列表（E-16） | `annotation_template:read` | **`portrait` + `read`** | ⚠ **G6** |
-| 18 | 标注模板详情（E-17） | `annotation_template:read` | **`portrait` + `read`** | ⚠ **G6** |
-| 19 | 标注模板创建（E-18） | `annotation_template:create` | **`portrait` + `create`** | ⚠ **G6** |
-| 20 | 标注模板更新／改挂（E-19） | `annotation_template:update` | **`portrait` + `update`** | ⚠ **G6** |
-| 21 | 标注模板删除（E-20） | `annotation_template:delete` | **`portrait` + `delete`** | ⚠ **G6** |
-| 22 | 标签管理 `action=list`（E-21） | `annotation_template:read` | **`portrait` + `read`** | ⚠ **G9** |
-| — | 标签分类 CRUD（E-22） | 沿用既有 | 既有已代理，**本版不改** | ✅ |
+| #（§1.1 路由号） | 能力 | 设计声明权限点 | **实测判定（修复前，2026-09-30）** | **实测判定（修复后，DPS v2.9.1）** | 一致性 |
+|:-:|------|----------------|-----------------------------------|--------------------------------------|:------:|
+| 11 | 画像模板列表（E-11） | `portrait_template:read` | `portrait_template` + `read` | 同左（未变） | ✅ |
+| 12 | 画像模板详情（E-12） | `portrait_template:read` | `portrait_template` + `read` | 同左（未变） | ✅ |
+| 13 | 画像模板创建（E-13） | `portrait_template:create` | `portrait_template` + `create` | 同左（未变） | ✅ |
+| 14 | 画像模板更新（E-14） | `portrait_template:update` | `portrait_template` + `update` | 同左（未变） | ✅ |
+| 15 | 画像模板**激活**（E-15） | `portrait_template:update` | `portrait_template` + `create`（⚠ G8） | **`portrait_template` + `update`** | ✅ |
+| 16 | 画像模板**停用**（E-15） | `portrait_template:update` | `portrait_template` + `create`（⚠ G8） | **`portrait_template` + `update`** | ✅ |
+| 17 | 标注模板列表（E-16） | `annotation_template:read` | `portrait` + `read`（⚠ G6） | **`annotation_template` + `read`** | ✅ |
+| 18 | 标注模板详情（E-17） | `annotation_template:read` | `portrait` + `read`（⚠ G6） | **`annotation_template` + `read`** | ✅ |
+| 19 | 标注模板创建（E-18） | `annotation_template:create` | `portrait` + `create`（⚠ G6） | **`annotation_template` + `create`** | ✅ |
+| 20 | 标注模板更新／改挂（E-19） | `annotation_template:update` | `portrait` + `update`（⚠ G6） | **`annotation_template` + `update`** | ✅ |
+| 21 | 标注模板删除（E-20） | `annotation_template:delete` | `portrait` + `delete`（⚠ G6） | **`annotation_template` + `delete`** | ✅ |
+| 22 | 标签管理 `action=list`（E-21） | `annotation_template:read` | `portrait` + `read`（⚠ G9） | **`annotation_template` + `read`** | ✅ |
+| — | 标签分类 CRUD（E-22） | 沿用既有 | 既有已代理，**本版不改** | 同左 | ✅ |
 
 **实测一致项（核对通过）**：`templates` 读／创建／更新（#11~#14）✅；包导出 `template-packages/export`（#1）→ `portrait_template:create` ✅；版本对比（#3 面）→ `portrait_template:read` ✅；**回滚（#4 面）→ `portrait_template:update`（命中端点级声明，DPS 已修 `TD-3027`）** ✅；血缘（#6 面）→ `annotation_template:read` ✅。
 
-> **统计**：12 路由中 **一致 4 项 ／ 不一致 8 项**（分属 **G6 五项、G8 两项、G9 一项**）。**v1.2.0 §6 的「10/12 一致、2 项待实测」自评同样失真，已作废。**
+> **统计**：12 路由中 **一致 12 项 ／ 不一致 0 项**（修复前为 **一致 4 项 ／ 不一致 8 项**，分属 **G6 五项、G8 两项、G9 一项**，已由 DPS v2.9.1 全部闭环）。**v1.2.0 §6 的「10/12 一致、2 项待实测」自评失真，已作废。**
 
-> **⚠ 本仓代理层不做权限判定**（仅透传身份头，裁决权在 DPS）⇒ **本表用于「对齐判据与联调预期」，不改变运行逻辑**。差异处置见 §6.1 与《第三方集成设计文档》§8.1；**跨仓修复**见派单 `OB-v1.4.10-DSP-PERM-01`（已扩展为 3 子项）。
->
-> **联调预期（按实测）**：调用标注模板 CRUD 时，**须持 `portrait:*` 方可通行**；调用启停时，**须持 `portrait_template:create`**。**Step 3／4 用例与联调账号权限准备一律以此为准**。
+> **⚠ 本仓代理层不做权限判定**（仅透传身份头，裁决权在 DPS）⇒ **本表用于「对齐判据与联调预期」，不改变运行逻辑**。差异处置见 §6.1 与《第三方集成设计文档》§8.1；**跨仓修复**见派单 `OB-v1.4.10-DSP-PERM-01`（3 子项，**已交付**）。
+
+> **联调预期（按修复后实测）**：调用标注模板 CRUD **须持 `annotation_template:*`**（原「须持 `portrait:*`」的口径**已作废**）；调用模板启停**须持 `portrait_template:update`**（原「须持 `portrait_template:create`」**已作废**，该口径即本次修复的越权面）。**Step 3／4 用例与联调账号权限准备一律以此为准**。
 
 > **本仓不自行做权限判定**（BR-1410-02）：仅注入身份 ＋ 透传上游 `403`。
 
@@ -225,7 +227,7 @@
 |--------|:----:|
 | 后端 **22 端点** ↔ 前端 **12 页面**映射 | ✅ **100%（逐项可核，见 §5）** —— **原 v1.1.0 的「10 端点 ↔ 8 页面 100%」为失真自评，已作废**（见 §6.1） |
 | 新增 10 端点权限点与 DPS 契约 §2 逐项一致 | ✅ **10/10** |
-| **补代理 12 端点权限点与 DPS 实现口径（2026-09-30 实测）** | ❌ **一致 4／12；不一致 8**（G6 五项 ＋ G8 两项 ＋ G9 一项）—— 已按实测回写 §3.1；**原「10/12 一致、2 项待实测」自评作废** |
+| **补代理 12 端点权限点与 DPS 实现口径** | ✅ **一致 12／12；不一致 0** —— **2026-09-30 实测修复前为「一致 4／12；不一致 8」**（G6 五项 ＋ G8 两项 ＋ G9 一项），**已由 DPS v2.9.1 跨仓修复闭环**（回执 `E-DPS-v291-20260930`），§3.1 按「修复前／修复后」双列回写；**原「10/12 一致、2 项待实测」自评作废** |
 | **`llm_proxy` → OpenLLM 链路（2026-09-30 实测）** | ✅ **通过** —— `GET /api/v1/llm-proxy/models` **200 ＋ OpenLLM 真实注册表**；`POST /chat`（`deepseek-v4-flash`）**200 ＋ 真实推理**（含 usage／routing_trace）；匿名 **401**、裸身份头 **403** 防伪造生效（证据 `E-LLMPROXY-20260930`） |
 | 错误码与契约 §4 一致（含 D-1410-01 修订后） | ✅（新增端点）；**补代理端点错误码来自实现取证**（§3.4） |
 | 身份头与 `protocol_headers` 一致 | ✅（不新增头） |
@@ -242,10 +244,10 @@
 | **G3** | 代理前缀**臆造**（`/api/v1/proxy/dps/{path}`） | P1 | §1 前缀修正为 **`/api/v1/dps-proxy/{path}`**，并补「通用代理不承载本版新增端点」的通道边界声明 | ✅ **已闭环** |
 | **G4** | E-01~E-03 口径偏差**未登记** | P1 | 需求 §1.1 偏差登记 2 项；本文档 §1／§1.1 分列编号段 | ✅ **已闭环**（需求侧回写见开发需求 v2.3.0） |
 | **G5** | **模板本体语义整层缺失** | P0 | 新增 **§1.1（12 路由）＋ §3.1（权限）＋ §3.4（契约与枚举口径）**；页面 **P-09~P-12**（见 UI 设计文档） | ✅ **已闭环**（设计侧）；联调实测待 Step 3／4 |
-| **G6** | **DPS 侧**标注模板 CRUD 权限点映射缺陷（`SUBPATH_RESOURCE_MAP` 键 `annotations` ≠ 路径 `annotation-templates`） | P1 | **已实测确认**（`E-G6-20260930`）：判定资源实测为 **`portrait`**；本仓**按实测回写 §3.1**；**跨仓派单** `OB-v1.4.10-DSP-PERM-01`（子项①） | ⚠ **实测已完成；跨仓修复待办** |
-| **G8** | **DPS 侧**模板**启停**端点动作映射缺陷（`ENDPOINT_ACTION_OVERRIDES` 未含 activate／deactivate ⇒ 实测动作 = **`create`**） | **P1** | **本次实测新发现**：仅持 `portrait_template:create` 者可启停（**越权面**，与已修的回滚端点 `TD-3027` 同类残留）；**本仓按实测回写 §3.1**；**跨仓派单** `OB-v1.4.10-DSP-PERM-01`（子项②） | ⚠ **实测已完成；跨仓修复待办** |
-| **G9** | **DPS 侧** `/portrait/labels` 判定资源为 `portrait`（非 `annotation_template`） | P2 | **本次实测新发现**；**本仓按实测回写 §3.1**；**跨仓派单** `OB-v1.4.10-DSP-PERM-01`（子项③：或由 DPS 明确该口径为**有意**并写入契约） | ⚠ **实测已完成；跨仓待办** |
-| **G7** | **DPS 侧** `tag_definition.parent_tag_code` 未落库（子标签能力缺失） | P2 | **登记跨仓需求 RT-1410-28 #2**；本版**明确不做**（需求 §7 排除项） | ⏳ **跨仓待办**（未涉及本次实测） |
+| **G6** | **DPS 侧**标注模板 CRUD 权限点映射缺陷（`SUBPATH_RESOURCE_MAP` 键 `annotations` ≠ 路径 `annotation-templates`） | P1 | **已实测确认**（`E-G6-20260930`）：判定资源实测为 **`portrait`**；本仓**按实测回写 §3.1**；**跨仓派单** `OB-v1.4.10-DSP-PERM-01`（子项①）→ **DPS v2.9.1 已补键 `("portrait","annotation-templates")`，判定资源归位 `annotation_template`** | ✅ **已闭环**（回执 `E-DPS-v291-20260930`） |
+| **G8** | **DPS 侧**模板**启停**端点动作映射缺陷（`ENDPOINT_ACTION_OVERRIDES` 未含 activate／deactivate ⇒ 实测动作 = **`create`**） | **P1** | **本次实测新发现**：仅持 `portrait_template:create` 者可启停（**越权面**，与已修的回滚端点 `TD-3027` 同类残留）；**本仓按实测回写 §3.1**；**跨仓派单** `OB-v1.4.10-DSP-PERM-01`（子项②）→ **DPS v2.9.1 已补声明 `("POST","/activate")→update`／`("POST","/deactivate")→update`** | ✅ **已闭环**（回执 `E-DPS-v291-20260930`） |
+| **G9** | **DPS 侧** `/portrait/labels` 判定资源为 `portrait`（非 `annotation_template`） | P2 | **本次实测新发现**；**本仓按实测回写 §3.1**；**跨仓派单** `OB-v1.4.10-DSP-PERM-01`（子项③）→ **DPS v2.9.1 已补键 `("portrait","labels")→annotation_template`**（并自证读取面不收窄） | ✅ **已闭环**（回执 `E-DPS-v291-20260930`） |
+| **G7** | **DPS 侧** `tag_definition.parent_tag_code` 未落库（子标签能力缺失） | P2 | **登记跨仓需求 RT-1410-28 #2**；本版**明确不做**（需求 §7 排除项） | ⏳ **跨仓待办**（派单 `OB-v1.4.10-DSP-TAG-01`；未涉及本次实测与修复） |
 
 ---
 
@@ -256,8 +258,8 @@
 | 1 | `dps_org_map`／`dps_code_map` 配置 | **P1** | 联调前置（架构风险 #1） |
 | 2 | `llm_proxy` 现状核对（AI 复核通道） | P2 | **已闭环**（A-1410-01：核实为完整 OpenLLM 通道） |
 | 3 | 路由映射断言测试（**22 条**） | P0 | Step 3 交付（DT-04） |
-| 4 | **补代理 12 端点权限点实测** | **P1** | ✅ **已完成（2026-09-30）** —— 见证据 `E-G6-20260930`；**实测结论：一致 4／12，不一致 8（G6／G8／G9）**，已按实测回写 §3.1；**Step 3／4 用例与联调账号权限一律按实测结论准备**（标注模板 CRUD 须 `portrait:*`；启停须 `portrait_template:create`） |
-| 5 | **DPS 侧权限点映射补丁派单** | P1 | 跨仓（RT-1410-28 #1，**已扩展为 3 子项**：补 `annotation-templates` 键／补 activate·deactivate 声明／补或明确 `labels` 口径），见《跨仓改动规划与派单》§3.1 |
+| 4 | **补代理 12 端点权限点实测** | **P1** | ✅ **已完成（2026-09-30）** —— 见证据 `E-G6-20260930`；**实测结论（修复前）：一致 4／12，不一致 8（G6／G8／G9）**；**8 项已由 DPS v2.9.1 跨仓修复闭环（回执 `E-DPS-v291-20260930`）⇒ 当前一致 12／12**，已按「修复前／修复后」双列回写 §3.1；**Step 3／4 用例与联调账号权限一律按修复后结论准备**（标注模板 CRUD 须 `annotation_template:*`；启停须 `portrait_template:update`） |
+| 5 | **DPS 侧权限点映射补丁派单** | P1 | ✅ **已交付**（跨仓 RT-1410-28 #1，**3 子项**：补 `annotation-templates` 键／补 activate·deactivate 声明／补 `labels` 键）—— **DPS v2.9.1**（提交 `ff9fd9f` ＋ 发布收尾 `de106eb`，Tag `v2.9.1` 三远程一致）；见《跨仓改动规划与派单》§3.1／§3.2 与回执 `E-DPS-v291-20260930` |
 | 6 | **`parent_tag_code` 落库要求** | P2 | 跨仓（RT-1410-28 #2）；本版不做子标签 |
 | 7 | **`dps_proxy` 文件拆分预案** | P3 | Step 3 建议（ADR-01／TD-新增-039），**不得改对外路径** |
 
@@ -267,6 +269,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.4.0** | 2026-09-30 | **AA-OpenBase-Dev** | **DPS v2.9.1 跨仓修复闭环回填**（派单 `OB-v1.4.10-DSP-PERM-01` 三子项交付，回执 `E-DPS-v291-20260930` / 证据目录 `doc/test/evidence/v1410/dps-v291-permission-caliber-fix-receipt-20260930.md`）：① **§3.1** 表体改为「**修复前／修复后**」**双列**（保留实测基线，不抹去历史）+ **统计改判 一致 4／12 → 一致 12／12**；**联调预期作废并改写**（标注模板 CRUD 须 `annotation_template:*`；模板启停须 `portrait_template:update` —— 原「须 `portrait:*`／须 `create`」口径作废）；② **§6** 契约对齐检查该行 **❌ 4／12 → ✅ 12／12**；③ **§6.1** **G6／G8／G9 状态 → ✅ 已闭环**（附 DPS 侧具体落地：补 `("portrait","annotation-templates")` 键／补 activate·deactivate 动作声明／补 `("portrait","labels")` 键）；G7 仍跨仓待办并补派单号；④ **§7** #4 结论更新、#5 派单 **→ ✅ 已交付**（DPS v2.9.1，`ff9fd9f`＋`de106eb`，Tag 三远程一致）。 |
 | **v1.3.0** | 2026-09-30 | **AA-OpenBase-Dev** | **2026-09-30 两项实测回写（D-1410-03 遗留「待实测」全部清零）**：① **§3.1 补代理权限映射按实测全量重写** —— 实测（`E-G6-20260930`，直接执行 DPS 判定函数）结论 **一致 4／12、不一致 8**：**G6**（标注模板 CRUD 判定资源实测 `portrait`，非 `annotation_template`，涉 5 路由）／**G8（新发现，P1）**（模板**启停**判定动作实测为 **`create`** 而非 `update` ⇒ **仅持 `create` 者可启停**，与已修回滚端点 `TD-3027` 同类残留）／**G9（新发现）**（`/labels` 判定资源实测 `portrait`）；表体改用 **§1.1 路由号** 消除编号口径混用，并新增「实测判定」列与**联调预期**说明；**原 v1.2.0 的「10/12 一致、2 项待实测」自评作废**。② **§6 契约对齐检查**：补代理权限一致性改判 **❌ 4／12**；**新增 `llm_proxy`→OpenLLM 链路行（✅ 通过）**。③ **§6.1 缺陷登记**：**G6 状态更新为「实测已完成」**，**新增 G8／G9**。④ **§7 待办**：#4 权限点实测 → **✅ 已完成**；#5 派单扩展为 **3 子项**。证据：`doc/test/evidence/v1410/g6-permission-resolution-20260930.md`、`llm-proxy-openllm-link-20260930.md`。 |
 | **v1.2.0** | 2026-09-29 | **AA-OpenBase-Dev** | **D-1410-03 回写（范围扩大 10 → 22 端点）＋ G1~G4 缺陷闭环**：① **§1 前缀修正（G3）** —— 前端入口改为实测的 **`/api/v1/dps-proxy/{path}`**，并声明「通用代理 `/api/v1/proxy/{system}/{path}` 不承载本版新增端点」；② 新增 **§1.1 既有端点补代理路由 12 条**（#11~#22，E-11~E-22，含真实上游路径）；③ §1 路由顺序约束扩至 **22 条**并补列表路由（`/templates`、`/annotation-templates`、`/labels`）先于动态段；④ §3.1 新增 **补代理权限动作映射 12 项**（含**启停按 `update` 的端点级动作声明例外**）＋ **DPS 侧权限点口径异常（G6）**声明；⑤ 新增 **§3.4 补代理端点契约与枚举口径**（12 端点 × 请求／响应／错误码 ＋ `field_schema` 五类字段／`extends` ≤2 禁环／强归属三处校验／**无"解除归属"语义**／**子标签不存在**／`tag_bindings` 不假设结构），**全部来自 DPS 实现取证**；⑥ **§5 页面映射全量重写（G2）** —— P-01↔#11·12·15·16（原误写 `#3`），新增 P-09~P-12，**22 端点 ↔ 12 页面**；⑦ **§6 失真自评作废并逐项重核**，新增 **§6.1 缺陷闭环登记 G1~G7**（G1~G5 已闭环；G6／G7 跨仓待办）；⑧ §7 待办 3 → 7 项。状态 [Review]。 |
 | **v1.1.0** | 2026-09-29 | **AA-OpenBase-Dev** | **D-1410-01 自我纠正落笔（双向取证）**：§3.2 端点 #9 错误码**恢复 409**（「未复核候选进入标签·画像路径」，AI 复核门禁 DT-009 —— 经 DPS **实现代码** 核对确认），与 **403／503** 并存；**复核提交路径明确**为 DPS **既有端点** `POST /portrait/annotations/{annotation_id}/review`（非 10 新增端点）；**AI 复核辅助经 `llm_proxy`→OpenLLM**（A-1410-01）。§7 待办第 2 项（`llm_proxy` 核对）**已闭环**（核实为完整 OpenLLM 通道 ⇒ AD-3 后端零新增）。详见《OpenBase-第三方集成设计文档-v1.4.10》§1／§3.1／§4 |

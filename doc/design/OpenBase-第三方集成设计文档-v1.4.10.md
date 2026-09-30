@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.3.0 |
+| 文档版本 | v1.4.0 |
 | 状态 | **[Review]（待设计评审）** |
 | 版本号 | **v1.4.10**（承接型小版本：DPS 模板化能力对接深化） |
 | 轨道 | 🔗 **第三方集成**（DT-27） |
@@ -137,8 +137,10 @@ openbase/dps_proxy  ──四头注入──▶  DPS /api/v2/portrait/*（10 端
 | 3 | **契约文档与实现不一致**（DP-1410-01） | P2 | 双向取证口径（§1 C1~C4）＋ 缺口登记与补登计划 |
 | 4 | `llm_proxy`→OpenLLM 链路未实测 | P2 | 联调时验证（§7） |
 | 5 | DPS 侧 org／tenant 记录未预置 | **P1** | 联调前置（与 #1 同批） |
-| 6 | **DPS 侧标注模板 CRUD 权限点映射缺陷**（G6）：`SUBPATH_RESOURCE_MAP` 键为 `("portrait","annotations")`，实现路径为 `/portrait/annotation-templates` ⇒ 精确匹配不命中，**实际判定资源回落 `portrait`**，`annotation_template:create/update/delete` 对 CRUD 面**不可达** | **P1** | **登记跨仓需求 RT-1410-28 #1** 并派单 DPS 最小版本化补丁；**联调前实测确认**；本版代理层照契约声明 `annotation_template:*` 并原样透传上游裁决，**不臆造处置、不假设已修** |
-| 7 | **DPS 侧 `tag_definition.parent_tag_code` 未落库**（G7）⇒ 子标签／标签层级能力**不存在** | P2 | 需求 §7 **明确排除**；**登记跨仓需求 RT-1410-28 #2**；本版**不做伪功能** |
+| 6 | **DPS 侧标注模板 CRUD 权限点映射缺陷**（G6）：`SUBPATH_RESOURCE_MAP` 键为 `("portrait","annotations")`，实现路径为 `/portrait/annotation-templates` ⇒ 精确匹配不命中，**实际判定资源回落 `portrait`**，`annotation_template:create/update/delete` 对 CRUD 面**不可达** | **P1** | ✅ **已修复（2026-09-30，DPS v2.9.1，派单 `OB-v1.4.10-DSP-PERM-01` 子项①）**：补键 `("portrait","annotation-templates") → "annotation_template"`，判定资源**归位**；本版代理层仍照契约声明 `annotation_template:*` 并原样透传上游裁决（不臆造处置）。回执 `dps-v291-permission-caliber-fix-receipt-20260930.md` |
+| 7 | **DPS 侧 `tag_definition.parent_tag_code` 未落库**（G7）⇒ 子标签／标签层级能力**不存在** | P2 | 需求 §7 **明确排除**；**登记跨仓需求 RT-1410-28 #2**；**⏳ 仍待交付**（派单 `OB-v1.4.10-DSP-TAG-01`）；本版**不做伪功能** |
+| 11 | **（2026-09-30 实测新增，P1）DPS 侧模板启停端点动作判定缺陷**（G8）：`ENDPOINT_ACTION_OVERRIDES` 未含 activate／deactivate ⇒ 实测动作回落 **`create`** ⇒ **仅持 `portrait_template:create` 者可启停**（越权面，与已修回滚端点 `TD-3027` 同类残留） | **P1** | ✅ **已修复（同上 DPS v2.9.1，子项②）**：补两条显式声明 `("POST","/activate") → update`／`("POST","/deactivate") → update`，**审计侧动作标签同源**；附**影响面自证**（全仓该后缀仅画像模板启停 v2 端点及其 v1 别名） |
+| 12 | **（2026-09-30 实测新增）DPS 侧 `/portrait/labels` 判定资源为 `portrait`**（G9），与 API 设计标注域归属不一致 | P2 | ✅ **已修复（同上 DPS v2.9.1，子项③）**：补键 `("portrait","labels") → "annotation_template"`；并自证**读取面不收窄**（预设角色凡持 `portrait:read` 者均持 `annotation_template:read`） |
 | 8 | **（2026-09-30 实测新增）OpenLLM 运行时版本字符串被 `.env` 钉住**：`/health` 报 `2.14.3`，而本仓已按 **v2.14.4** 交付该仓改动（新字段 `sql_echo`／`uptime_seconds` 已生效） | P3 | ✅ **已修复（2026-09-30，OpenLLM v2.14.5，派单 `OB-v1.4.10-LLM-CFG-01`）**：`.env` 同步 ＋ `.env.example` 加口径段 ＋ **启动期版本口径自检**（漂移即告警）；实测 `/health` 已返回 `2.14.5`。回执 `openllm-v2145-config-alignment-receipt-20260930.md` |
 | 9 | **（2026-09-30 实测新增）`DEFAULT_LLM_MODEL` 与 OpenLLM 模型注册表漂移**：`.env` 配 `qwen3:0.6b`，注册表实际仅 `gpt-4`／`deepseek-v4-flash` | **P2** | ✅ **已修复（同上 v2.14.5）**：`.env` 改 `deepseek-v4-flash` ＋ **启动期注册表一致性自检**（未注册即告警并列出可用样本）；实测启动日志「默认模型已注册: deepseek-v4-flash」。**残留**：`gpt-4` 上游 provider 不可用（F3）**不在该派单范围** ⇒ **Step 4 用例仍须选可用模型** |
 | 10 | **（2026-09-30 实测新增）本仓启动时 DB 初始化失败并降级内存**（`fallback: memory demo user seeded`） | **P2** | 链路验证不受影响（`llm_proxy` 不依赖本仓 DB）；**部署前置**：Step 3／4 前须核实共享库 schema／权限，否则请求侧功能降级 |
@@ -151,11 +153,13 @@ openbase/dps_proxy  ──四头注入──▶  DPS /api/v2/portrait/*（10 端
 
 | # | 跨仓项 | 现状（实现证据） | 影响面 | 建议归属 |
 |:-:|--------|------------------|--------|----------|
-| 1 | **权限判定口径**：① 补键 `("portrait","annotation-templates") → "annotation_template"`；② **补 activate／deactivate 端点级动作声明 → `update`**；③ 补键 `("portrait","labels")`（或明确为有意口径并写入契约） | **已实测确认**（`E-G6-20260930`，直接执行判定函数）：① 标注模板 CRUD 判定资源实测 **`portrait`**；② 模板**启停**判定动作实测 **`create`**；③ `/labels` 判定资源实测 **`portrait`** | 本版 12 补代理端点中 **#15~#22 共 8 项**的权限对齐判据受此影响；**启停的 `create` 判定属越权面**（仅持 `create` 者可启停） | DPS **最小版本化补丁**（口径修正） |
-| 3 | **`ENDPOINT_ACTION_OVERRIDES` 补 activate／deactivate 声明** | 现表**仅含** `("POST","/rollback") → update`（`TD-3027` 已修回滚）；activate／deactivate **未声明** ⇒ 回落 `POST → create` | 与已修回滚端点**同类残留**；语义应为「对既有模板的状态更新」⇒ `update` | 同 #1（并入 `OB-v1.4.10-DSP-PERM-01` 子项②） |
-| 2 | `tag_definition` **落 `parent_tag_code` 列** ＋ 层级读写端点 | 模型 `TagDefinition` 声明 `parent_tag_code`（"父标签编码"），但 `ddl/schema_core.py` 的建表语句**只有** `id/name/dimension/description/color` ⇒ **列不存在、无端点** | 子标签／标签层级能力**不可用** ⇒ FR-1410-17 **明确排除**；P-12 只呈现「分类→标签值」两层 | DPS **独立版本**（新能力） |
+| 1 | **权限判定口径**：① 补键 `("portrait","annotation-templates") → "annotation_template"`；② **补 activate／deactivate 端点级动作声明 → `update`**；③ 补键 `("portrait","labels") → "annotation_template"` | **已实测确认**（`E-G6-20260930`，直接执行判定函数）：① 标注模板 CRUD 判定资源实测 **`portrait`**；② 模板**启停**判定动作实测 **`create`**；③ `/labels` 判定资源实测 **`portrait`** | 本版 12 补代理端点中 **#15~#22 共 8 项**的权限对齐判据受此影响；**启停的 `create` 判定属越权面**（仅持 `create` 者可启停） | DPS **最小版本化补丁**（口径修正）—— **✅ 已交付：DPS v2.9.1**（制品 `ff9fd9f`／发布收尾 `de106eb`；Tag `v2.9.1` 三仓一致；回执 `E-DPS-v291-20260930`）⇒ **判定资源归位 `annotation_template`、启停动作改判 `update`、`/labels` 归标注域；权限对齐判据 4／12 → 12／12** |
+| 3 | **`ENDPOINT_ACTION_OVERRIDES` 补 activate／deactivate 声明** | 现表**仅含** `("POST","/rollback") → update`（`TD-3027` 已修回滚）；activate／deactivate **未声明** ⇒ 回落 `POST → create` | 与已修回滚端点**同类残留**；语义应为「对既有模板的状态更新」⇒ `update` | **✅ 已交付**（并入 `OB-v1.4.10-DSP-PERM-01` 子项②，**DPS v2.9.1**）—— 已补两条显式声明，**审计侧动作标签同源**；并附**影响面自证**（全仓该后缀仅画像模板启停 v2 端点及其 v1 别名） |
+| 2 | `tag_definition` **落 `parent_tag_code` 列** ＋ 层级读写端点 | 模型 `TagDefinition` 声明 `parent_tag_code`（"父标签编码"），但 `ddl/schema_core.py` 的建表语句**只有** `id/name/dimension/description/color` ⇒ **列不存在、无端点** | 子标签／标签层级能力**不可用** ⇒ FR-1410-17 **明确排除**；P-12 只呈现「分类→标签值」两层 | DPS **独立版本**（新能力）—— **⏳ 仍待交付**（派单 `OB-v1.4.10-DSP-TAG-01`） |
 
-> **处置纪律**：两项均**不在本版本仓交付范围**；本版仅**登记**（RT-1410-28）＋ **派单**（见《OpenBase-v1.4.10-跨仓改动规划与派单》）。**在 DPS 交付前，本版测试不得以「已修复」为前提编写断言**；联调须以**实测结果**为准（C1~C4）。
+> **处置纪律**：跨仓项**均不在本版本仓交付范围**；本版仅**登记**（RT-1410-28）＋ **派单**（见《OpenBase-v1.4.10-跨仓改动规划与派单》）。**未交付项**（仅 `DSP-TAG-01` 子标签能力）的测试**不得以「已修复」为前提编写断言**；联调须以**实测结果**为准（C1~C4）。
+>
+> **⚠ 已交付项口径变更（2026-09-30，`DSP-PERM-01` ⇒ DPS v2.9.1）**：**权限面"未交付"约束解除** —— ① **权限对齐判据由「一致 4／12」转为「一致 12／12」**（见 API 设计 §3.1 修复后列）；② **联调账号与 Step 3／4 用例口径须按修复后结论准备**：标注模板 CRUD 须 `annotation_template:*`（原「须 `portrait:*`」**作废**）、模板启停须 `portrait_template:update`（原「须 `create`」**作废**）；③ 回执 `doc/test/evidence/v1410/dps-v291-permission-caliber-fix-receipt-20260930.md`。
 
 ---
 
@@ -163,6 +167,7 @@ openbase/dps_proxy  ──四头注入──▶  DPS /api/v2/portrait/*（10 端
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.4.0** | 2026-09-30 | **AA-OpenBase-Dev** | **DPS v2.9.1 跨仓修复回执回填**：§8.1 跨仓项 **#1（权限判定口径三子项）与 #3（`ENDPOINT_ACTION_OVERRIDES` 补 activate／deactivate 声明）状态 → ✅ 已交付**（**DPS v2.9.1**：制品 `ff9fd9f`／发布收尾 `de106eb`；Tag `v2.9.1` 三仓一致；派单 `OB-v1.4.10-DSP-PERM-01`）；**处置纪律更新**：未交付项收敛为仅 `DSP-TAG-01`（子标签能力），并新增**已交付项口径变更**段 —— **权限对齐判据 4／12 → 12／12**、**联调与 Step 3／4 用例口径须按修复后结论准备**（CRUD 须 `annotation_template:*`；启停须 `portrait_template:update`）。回执：`doc/test/evidence/v1410/dps-v291-permission-caliber-fix-receipt-20260930.md`。 |
 | **v1.3.0** | 2026-09-30 | **AA-OpenBase-Dev** | **跨仓修复回执回填**：§8 风险 **#8（F1 版本口径漂移）／#9（F2 默认模型未注册）** 状态由「登记」改为 **✅ 已修复**（**OpenLLM v2.14.5**，派单 `OB-v1.4.10-LLM-CFG-01`，提交 `c67bbd5`，tag `25c28f3f` 三仓一致）；补实测判据（`/health` 返回 `2.14.5`；启动日志「默认模型已注册: deepseek-v4-flash」）；**明确残留**：`gpt-4` 上游 provider 不可用（F3）**不在该派单范围** ⇒ **Step 4 用例仍须选可用模型**。回执：`doc/test/evidence/v1410/openllm-v2145-config-alignment-receipt-20260930.md`。 |
 | **v1.2.0** | 2026-09-30 | **AA-OpenBase-Dev** | **两项实测回写（D-1410-03 遗留「待实测」清零）**：① **§8.1 跨仓项 #1 扩为 3 子项**（补 `annotation-templates` 键／**补 activate·deactivate 动作声明**／补或明确 `labels` 口径），「现状」列改为**已实测确认**并引证据 `E-G6-20260930`；**新增 #3**（`ENDPOINT_ACTION_OVERRIDES` 缺 activate／deactivate 声明 ⇒ 实测动作 `create`，与已修回滚端点 `TD-3027` 同类残留）；② **§8 集成风险新增 #8~#10**（OpenLLM 运行时版本字符串被 `.env` 钉住／`DEFAULT_LLM_MODEL` 与模型注册表漂移／本仓启动 DB 初始化降级），均来自 **`llm_proxy`→OpenLLM 链路实测**（`E-LLMPROXY-20260930`）；③ **链路实测结论：✅ 通过**（`/models` 200 返回 OpenLLM 真实注册表；`/chat` 200 完成真实推理）。 |
 | **v1.1.0** | 2026-09-29 | **AA-OpenBase-Dev** | **D-1410-03 回写（跨仓缺口 G6／G7 登记）**：① §8 集成风险新增 2 项（#6 标注模板 CRUD **权限点映射缺陷** ⇒ 实际判定资源回落 `portrait`；#7 `tag_definition.parent_tag_code` **未落库** ⇒ 子标签能力不存在）；② **新增 §8.1 DPS 侧跨仓需求登记**（2 项，含实现证据、影响面、建议归属与**处置纪律**：本版仅登记＋派单，DPS 交付前测试不得假设已修）；③ 依 §1 C1~C4 口径重申：两项均为**实现代码取证**结论，非文档推断。 |
