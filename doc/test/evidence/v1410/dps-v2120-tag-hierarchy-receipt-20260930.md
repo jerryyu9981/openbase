@@ -3,10 +3,10 @@
 | 项目 | 内容 |
 |------|------|
 | 回执对象 | 跨仓派单 **`OB-v1.4.10-DSP-TAG-01`**（DPS 侧「标签体系层级化（子标签能力落地）＋ 模型-表结构一致性治理」） |
-| 回执版本 | **v1.1.0** |
+| 回执版本 | **v1.2.0** |
 | 状态 | **[Review]** |
-| 日期 | 2026-10-01（v1.1.0 更新；Step 3 事实时为 2026-09-30） |
-| 来源 | DPS 仓 `main @ 2f21fcb`（**Step 4 交付位**；Step 3 为 `5f2641d`）（**三远程一致**：origin／backup／github） |
+| 日期 | 2026-10-01（v1.2.0 更新；Step 3 事实时为 2026-09-30） |
+| 来源 | DPS 仓 `main @ 2aa6030`（**Step 4 定版位**，含 DF-2120-03 闭环；Step 3 为 `5f2641d`）（**三远程一致**：origin／backup／github） |
 | 交付阶段 | **Step 4 测试已完成**（Step 5 发布**未开始**；**仍未部署**） |
 | 编制人 | PM-OpenBase-Dev（跨仓台账） |
 | 存放 | `doc/test/evidence/v1410/` |
@@ -15,7 +15,8 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
-| **v1.1.0** | 2026-10-01 | PM-OpenBase-Dev | **Step 4 测试完成回填**：① 交付阶段 → **「Step 4 测试已完成（Step 5 未开始；仍未部署）」**；② §1 补 Step 4 定版数值（新增用例 **78** 全绿／**新增代码覆盖率 100%（96/96）**／全量回归 **1 failed（H 类）/ 1735 passed**／集成＋E2E **54 passed**）；③ 阶段审计补 **测试回溯对比审计（通过）**；④ **新增 §8 测试阶段缺陷闭环**（DPS 侧 2 项 P1 真实后端缺陷 DF-2120-01／DF-2120-02 均已闭环）与 **§8.1 交付位**（Step 3 `5f2641d`／**Step 4 `2f21fcb`**）。**结论不变：未发布、未部署 ⇒ §3 限制与 §4 对本仓约束继续有效。** |
+| **v1.2.0** | 2026-10-01 | PM-OpenBase-Dev | **A2 PostgreSQL 实跑转通过回填（DF-2120-03）**：DPS 依共享基础设施 `.env.shared-infra`（192.168.0.151:5432/nuct）完成**真实 PG 实跑**，暴露并闭环 **DF-2120-03**（P1：`public.schema_migrations` 与 OpenBase 同名表冲突 → DPS 迁至专属 schema `platform.schema_migrations`）；新增 G12 真实 PG 守护用例（TC-079）；**新增用例定版 79 全绿**；交付位 `2f21fcb` → **`2aa6030`**；§1 补 Step 4 定版数值、§8 补 DF-2120-03、§8.1 交付位更新。**结论不变：未发布、未部署 ⇒ §3 限制与 §4 对本仓约束继续有效。** |
+| v1.1.0 | 2026-10-01 | PM-OpenBase-Dev | **Step 4 测试完成回填**：① 交付阶段 → **「Step 4 测试已完成（Step 5 未开始；仍未部署）」**；② §1 补 Step 4 定版数值（新增用例 **78** 全绿／**新增代码覆盖率 100%（96/96）**／全量回归 **1 failed（H 类）/ 1735 passed**／集成＋E2E **54 passed**）；③ 阶段审计补 **测试回溯对比审计（通过）**；④ **新增 §8 测试阶段缺陷闭环**（DPS 侧 2 项 P1 真实后端缺陷 DF-2120-01／DF-2120-02 均已闭环）与 **§8.1 交付位**（Step 3 `5f2641d`／**Step 4 `2f21fcb`**）。**结论不变：未发布、未部署 ⇒ §3 限制与 §4 对本仓约束继续有效。** |
 | v1.0.0 | 2026-09-30 | PM-OpenBase-Dev | 初始版本：DPS v2.12.0 Step 3 交付事实、交付内容与 G7 对应、限制（未发布／未部署／非持久／同毫秒 ID／≤2 层／形态差异）、对本仓影响、可复跑判据与结论 |
 
 ## 1. 交付事实（可复跑）
@@ -29,6 +30,7 @@
 | 5 | 基点比对 | `git stash` 撤下本次改动后同文件 **5 failed** ⇒ **相对基线不劣化**（2 ＜ 5） |
 | 6 | 静态检查 | 改动文件 `ruff` 新增代码 0 错误 |
 | 7 | 阶段审计 | 《DPS-阶段审计报告-Stage3-v2.12.0》⇒ **通过**（附 2 项 Step 4 条件）；**《DPS-测试回溯对比审计报告-v2.12.0》⇒ 通过**（遗留 P0／P1 = 0，允许进入 Step 5） |
+| 8 | **Step 4 定版数值（v1.2.0）** | **新增用例 79 全绿**（`test_v2_12_tag_hierarchy.py` 58 ＋ `test_v2_12_model_and_migration.py` 21，含 G12 真实 PG 守护 TC-079，**真实 PostgreSQL 环境实跑** 79 passed / 0 failed）；**新增代码覆盖率 100%（96/96）**；全量回归 **1 failed（H 类 openapi 833ms）/ 1735 passed / 2 skipped / 1 xfailed / 1 xpassed**（445.71 s，**少于基线 5 项**）；集成＋E2E **54 passed**；**A2 PostgreSQL 实跑通过**（共享基础设施 192.168.0.151:5432/nuct） |
 
 ## 2. 交付内容（与本仓 G7 的对应关系）
 
@@ -67,8 +69,8 @@
 
 | # | 目的 | 命令（工作目录 `DPS/src`） | 期望 |
 |:-:|------|---------------------------|------|
-| 1 | 层级能力 ＋ 反例 | `python -m pytest tests/test_v2_12_tag_hierarchy.py -q` | 56 passed |
-| 2 | 孤儿模型 ＋ `/db/migrate` | `python -m pytest tests/test_v2_12_model_and_migration.py -q` | 17 passed |
+| 1 | 层级能力 ＋ 反例 | `python -m pytest tests/test_v2_12_tag_hierarchy.py -q` | 58 passed |
+| 2 | 孤儿模型 ＋ `/db/migrate`（真实 PG） | `$env:DATABASE_URL='postgresql://nuct:***@192.168.0.151:5432/nuct'; $env:SQLITE_FALLBACK='false'; python -m pytest tests/test_v2_12_model_and_migration.py -q` | 21 passed（含 G12 真实 PG 全路径 TC-079） |
 | 3 | 全量回归 | `python -m pytest tests -q` | 仅 H 类绝对性能用例失败（**不多于基线**） |
 | 4 | 端点清单核验 | `python -c "from main import app; print([p for p in app.openapi()['paths'] if p.startswith('/api/v2/tags')])"` | 含 `/api/v2/tags/hierarchy`、`/api/v2/tags/values/{value_id}/parent`、`.../children` |
 
@@ -85,7 +87,7 @@
 
 | # | 项 | 承接 |
 |:-:|----|:----:|
-| 1 | DPS Step 4 测试（含 H 类性能绝对数值、`/db/migrate` PostgreSQL 实跑） | DPS 侧 |
+| 1 | DPS Step 4 测试（含 H 类性能绝对数值、`/db/migrate` PostgreSQL 实跑） | DPS 侧 **已完成**（A2 真实 PG 实跑通过，DF-2120-03 闭环；H 类判据＝相对基线不劣化） |
 | 2 | DPS Step 5 发布（版本号三处统一至 `2.12.0`） | DPS 侧 |
 | 3 | 部署后本仓消费立项（如需） | OpenBase 后续版本 |
 | 4 | `TD-新增-042` 关闭时点 | DPS 发布**并部署**后 |
@@ -96,15 +98,16 @@
 |:----:|:----:|------|--------------|
 | **DF-2120-01** | P1 | `public.schema_migrations` 在 **SQLite** 下报 `unknown database public` ⇒ 迁移全路径在 SQLite 后端失效 | **不得**仅以替身用例取证；同类「方言差异」修复须附**真实后端**用例 |
 | **DF-2120-02** | P1 | `rollback()` 先执行 `down_sql`（DROP 记账表）再 `DELETE` ⇒ 真实后端必失败 | 同左；语句顺序类缺陷在替身下**恒不暴露** |
+| **DF-2120-03** | P1 | `public.schema_migrations` 在 **PostgreSQL 共享库**（192.168.0.151/nuct）中与 **OpenBase 系统既有同名表**（列集合完全不同）冲突 ⇒ `CREATE TABLE IF NOT EXISTS` 因表已存在而跳过，后续引用 `applied_at` 列直接 `UndefinedColumnError`，迁移全路径在真实环境必然失败 | **同前**；且印证本仓与 DPS 共享同一 PG 基础设施 ⇒ **跨系统表名隔离**（专属 schema）是共享库共处的基本要求 |
 
-> 两项缺陷均由 DPS 侧 **Step 4 新增「真实 SQLite 后端」用例**发现并闭环（《DPS-测试报告-v2.12.0》§5）。
+> 三项缺陷均由 DPS 侧 **Step 4 新增「真实后端」用例**（真实 SQLite／真实 PostgreSQL）发现并闭环（《DPS-测试报告-v2.12.0》§5／§6.2）。
 > **对本仓消费的直接影响：无**（本仓 v1.4.10 未接入该能力）；但**结论是**：若本仓后续消费该能力，联调须在**真实后端**上进行。
 > **附带记录（不影响本仓）**：DPS 侧 Step 4 期间发现环境限制 —— `coverage run --source=<点分模块>` 在本机会触发 `cryptography` PyO3 双初始化而收集中断（改用不加 `--source` 的等口径跑法规避），已如实登记于其测试报告 §8 注记。
 
-### 8.1 交付位（v1.1.0 更新）
+### 8.1 交付位（v1.2.0 更新）
 
 | 阶段 | 提交 | 状态 |
 |------|------|------|
 | Step 3 开发 | `5f2641d` | ✅ 已人工批准（2026-10-01，裁定 D4） |
-| **Step 4 测试** | **`2f21fcb`** | ✅ **已完成**（回溯审计通过；待人工批准） |
+| **Step 4 测试** | **`2aa6030`** | ✅ **已完成**（回溯审计通过；**A2 真实 PG 实跑通过**，DF-2120-03 闭环；待人工批准） |
 | Step 5 发布 | — | ⏳ 未开始（**版本号待三处统一至 `2.12.0`**） |
