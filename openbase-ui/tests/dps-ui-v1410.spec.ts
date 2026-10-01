@@ -193,6 +193,10 @@ describe('DPS 12 条路由注册', () => {
 
 describe('DPS 页面关键状态呈现', () => {
   it('P-01 模板族列表：真实 API 渲染 + 空态', async () => {
+    // P-01 为**整页重挂载**用例（同一 `DpsTemplateListView` 挂载两次，el-table + 空态），
+    // 实测单条 4~8s；`v8` 覆盖率插桩后放大约 4.7 倍，默认 5s 用例超时在并行下会随机击杀
+    // 本用例（Step 4 证据：`dps-ui-v1410` P-01 `Test timed out in 5000ms`）。
+    // 按用例显式声明 15000ms 预算（与本仓既有多条整壳挂载用例同口径），未放宽全局 `testTimeout`。
     vi.spyOn(dpsApi, 'listTemplates').mockResolvedValue({ items: [{ code: 'cc-v1', status: 'active', version: 3 }], total: 1 })
     const wrapper = await mountPage(DpsTemplateListView)
     expect(wrapper.find('[data-test="template-table"]').exists()).toBe(true)
@@ -202,7 +206,7 @@ describe('DPS 页面关键状态呈现', () => {
     vi.spyOn(dpsApi, 'listTemplates').mockResolvedValue({ items: [], total: 0 })
     const emptyWrapper = await mountPage(DpsTemplateListView)
     expect(emptyWrapper.find('[data-test="template-empty"]').exists()).toBe(true)
-  })
+  }, 15000)
 
   it('P-06 措施建议：原样呈现 disclaimer，空态为正常结果', async () => {
     vi.spyOn(dpsApi, 'suggestMeasures').mockResolvedValue({

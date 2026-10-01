@@ -1,0 +1,41 @@
+OpenBase v1.4.10 - Step4 缺陷闭环取证：dps_proxy 覆盖率 100%
+========================================================================
+取证日期   : 2026-10-01
+取证角色   : TE-OpenBase-Test（测试角色独立复跑）
+关联缺陷   : DEF-1410-T4-05（原登记 OBS-1410-T4-05，503 显式降级分支等覆盖缺口）
+关联文档   : doc/test/OpenBase-测试报告-v1.4.10.md v1.1.0 §6/§7
+环境        : Windows / Python 3.10.11 / pytest 9.1.1
+工作目录    : openbase 本仓根目录
+
+命令
+------------------------------------------------------------------------
+python -m pytest tests/test_dps_proxy.py tests/test_dps_proxy_routes_v1410.py `
+    tests/test_dps_proxy_v1410_contract.py `
+    --cov=openbase.modules.dps_proxy --cov-report=term-missing -q
+
+结果（stdout 摘录）
+------------------------------------------------------------------------
+........................................................................ [ 67%]
+...................................                                      [100%]
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.10.11-final-0 _______________
+
+Name                                     Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------
+openbase\modules\dps_proxy\__init__.py     256      0   100%
+----------------------------------------------------------------------
+TOTAL                                      256      0   100%
+
+结论
+------------------------------------------------------------------------
+- 用例：107 passed / 0 failed（dps_proxy 三份测试文件全集）。
+- 覆盖率：openbase.modules.dps_proxy 256 stmts / 0 miss = 100%（阈值 >=90%，判定达标）。
+- 对比基线 pytest-coverage-dps_proxy-20261001.txt：93%（256 stmts / 18 miss）。
+  未覆盖行（84/87-88、141-142、164-175、306-312、439-440/456-457/472-473）
+  已由 tests/test_dps_proxy_v1410_contract.py 新增分支回归用例覆盖：
+    * 503 显式降级（连续失败达 dps_degrade_threshold → 503 + X-DPS-Upstream-Degraded）；
+    * 降级计数在成功转发后归零；
+    * 上游 {detail} 为 dict / list 的 code/message 归一化；
+    * 非 JSON 响应体 raw 兜底；
+    * 值映射 JSON 解析空值/非法值回落。
+- 判定：DEF-1410-T4-05 覆盖缺口闭环（CLOSED）。

@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 import httpx
 import pytest
@@ -489,3 +490,216 @@ def test_v1410_existing_portrait_route_still_maps(client: TestClient) -> None:
 def test_v1410_module_version_declared() -> None:
     """模块版本常量存在（留痕可核）."""
     assert isinstance(dps_proxy_module.__version__, str)
+
+
+# ---------------------------------------------------------------------------
+# 11. dps_proxy 未覆盖分支回归（v1.4.10 Step 4 缺陷修复）
+#
+# 目标分支（openbase/modules/dps_proxy/__init__.py）：
+#   - 503 显式降级（连续转发失败达 dps_degrade_threshold，约 300-325 行）；
+#   - 错误体 {detail} 为 dict / list 的归一化提取（约 158-175 行）；
+#   - 非 JSON / 非 dict 响应体的 raw 兜底（约 139-142、157 行）；
+#   - 值映射 JSON 解析空值／非法值回落（约 81-89 行）。
+# ---------------------------------------------------------------------------
+
+
+class _NonJsonResponse(FakeResponse):
+    """上游返回无法解析为 JSON 的响应体（触发 raw 截断兜底）."""
+
+    def __init__(self, status_code: int, raw_text: str) -> None:
+        self.status_code = status_code
+        self._payload: dict = {}
+        self.text = raw_text
+
+    def json(self) -> dict:
+        raise ValueError("response body is not JSON")
+
+
+def test_v1410_upstream_degrade_threshold_returns_503(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """连续失败达阈值 → 503 显式降级（X-DPS-Upstream-Degraded + data.degraded）.
+
+    覆盖 ``_forward`` 异常分支中的 503 显式降级路径：预置连续失败计数为
+    ``threshold - 1``，本次转发再失败一次即达阈值 → 返回 503（而非既有 502），
+    响应头置 ``X-DPS-Upstream-Degraded: true`` 并以 ERROR 记录降级日志。
+    """
+    token = _token_with_identity()
+    threshold = max(1, dps_proxy_module.get_settings().dps_degrade_threshold)
+    monkeypatch.setattr(dps_proxy_module, "_dps_consecutive_failures", threshold - 1)
+    client.fake.fail_with = httpx.ConnectError("connection refused")  # type: ignore[attr-defined]
+    with caplog.at_level(logging.ERROR, logger="openbase.dps_proxy"):
+        resp = client.get(
+            f"{PREFIX}/templates", headers={"Authorization": f"Bearer {token}"}
+        )
+    assert resp.status_code == 503, resp.text
+    body = resp.json()
+    assert body["code"] == 503
+    assert body["data"]["degraded"] is True
+    assert body["data"]["consecutive_failures"] == threshold
+    assert resp.headers.get("X-DPS-Upstream-Degraded") == "true"
+    assert any(
+        "degraded" in record.getMessage() for record in caplog.records
+    ), "达阈值应记录 ERROR 降级日志"
+
+
+def test_v1410_degrade_counter_resets_after_recovery(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """阈值内失败 → 502 且计数 +1；上游随后成功 → 计数归零（fail-open 复原）."""
+    token = _token_with_identity()
+    monkeypatch.setattr(dps_proxy_module, "_dps_consecutive_failures", 0)
+    client.fake.fail_with = httpx.ConnectError("connection refused")  # type: ignore[attr-defined]
+    failing = client.get(
+        f"{PREFIX}/templates", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert failing.status_code == 502, failing.text
+    assert dps_proxy_module._dps_consecutive_failures == 1
+
+    client.fake.fail_with = None  # type: ignore[attr-defined]
+    client.fake.set_responses([_ok_response()])  # type: ignore[attr-defined]
+    recovered = client.get(
+        f"{PREFIX}/templates", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert recovered.status_code == 200, recovered.text
+    assert dps_proxy_module._dps_consecutive_failures == 0
+
+
+def test_v1410_422_dict_detail_normalization(client: TestClient) -> None:
+    """上游 422 {detail:{code,message}} → 从 detail 提取 code/message（dict 分支）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(422, {"detail": {"code": "BIZ_4220", "message": "字段校验失败"}}),
+    ])
+    resp = client.get(
+        f"{PREFIX}/templates/tpl-1", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 422, resp.text
+    body = resp.json()
+    assert body["code"] == "BIZ_4220"
+    assert body["message"] == "字段校验失败"
+
+
+def test_v1410_422_dict_detail_error_alias_and_message_fallback(client: TestClient) -> None:
+    """上游 422 {message, detail:{error}} → code 取 detail.error，message 保留顶层值."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(422, {"message": "请求体校验失败", "detail": {"error": "PARAM_INVALID"}}),
+    ])
+    resp = client.post(
+        f"{PREFIX}/templates",
+        json={"code": "tpl-1"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 422, resp.text
+    body = resp.json()
+    assert body["code"] == "PARAM_INVALID"
+    assert body["message"] == "请求体校验失败"
+
+
+def test_v1410_422_list_detail_normalization(client: TestClient) -> None:
+    """上游 422 {detail:[{msg},...]} → message 合并各 msg（list 分支）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            422,
+            {
+                "detail": [
+                    {"loc": ["body", "code"], "msg": "field required"},
+                    {"loc": ["body", "name"], "msg": "字符串过短"},
+                ]
+            },
+        ),
+    ])
+    resp = client.post(
+        f"{PREFIX}/templates",
+        json={"code": "tpl-1"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 422, resp.text
+    body = resp.json()
+    assert body["code"] == 422  # 无顶层 code → 兜底 HTTP 状态码
+    assert body["message"] == "field required; 字符串过短"
+
+
+def test_v1410_422_list_detail_without_msg_uses_fallback(client: TestClient) -> None:
+    """上游 422 {detail:[...]} 无有效 msg → message 兜底 'upstream error'（list 空集分支）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(422, {"detail": [{"loc": ["body"]}, "not-a-dict"]}),
+    ])
+    resp = client.post(
+        f"{PREFIX}/templates",
+        json={"code": "tpl-1"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 422, resp.text
+    body = resp.json()
+    assert body["code"] == 422
+    assert body["message"] == "upstream error"
+
+
+def test_v1410_error_non_json_body_raw_fallback(client: TestClient) -> None:
+    """上游非 2xx 且响应体非 JSON → raw 截断兜底，code=HTTP 状态码."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        _NonJsonResponse(500, "<html>bad gateway</html>"),
+    ])
+    resp = client.get(
+        f"{PREFIX}/templates", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 500, resp.text
+    body = resp.json()
+    assert body["code"] == 500
+    assert body["message"] == "upstream error"
+
+
+def test_v1410_error_non_dict_json_payload_falls_back(client: TestClient) -> None:
+    """上游非 2xx 且 JSON 体为数组（非 dict）→ code=HTTP 状态码，message 兜底."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[arg-type, attr-defined]
+        FakeResponse(502, ["unexpected"]),
+    ])
+    resp = client.get(
+        f"{PREFIX}/templates", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 502, resp.text
+    body = resp.json()
+    assert body["code"] == 502
+    assert body["message"] == "upstream error"
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "upstream_path", "body"),
+    [
+        ("POST", "/tags/categories", "/api/v2/tags/categories", {"name": "消费"}),
+        ("PUT", "/tags/categories/c1", "/api/v2/tags/categories/c1", {"name": "消费v2"}),
+        ("DELETE", "/tags/categories/c1", "/api/v2/tags/categories/c1", None),
+    ],
+    ids=["tags-category-create", "tags-category-update", "tags-category-delete"],
+)
+def test_v1410_existing_tag_category_write_routes_forward(
+    client: TestClient, method: str, path: str, upstream_path: str, body: dict | None
+) -> None:
+    """既有标签分类写路由（POST／PUT／DELETE）转发保真（回归，v1.4.10 行为不变）."""
+    token = _token_with_identity()
+    client.fake.set_responses([_ok_response()])  # type: ignore[attr-defined]
+    resp = client.request(
+        method,
+        f"{PREFIX}{path}",
+        json=body if body is not None else None,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == method
+    assert call["url"] == f"{UPSTREAM_BASE}{upstream_path}"
+    assert call["json"] == body
+
+
+def test_v1410_parse_map_json_empty_and_invalid_returns_empty_table() -> None:
+    """dps 值映射 JSON：空串／非法 JSON／非 dict 均回落空表（不抛错），合法 dict 原样返回."""
+    assert dps_proxy_module._parse_map_json("") == {}
+    assert dps_proxy_module._parse_map_json("{not-json}") == {}
+    assert dps_proxy_module._parse_map_json("[1, 2, 3]") == {}
+    assert dps_proxy_module._parse_map_json('{"a": "b"}') == {"a": "b"}

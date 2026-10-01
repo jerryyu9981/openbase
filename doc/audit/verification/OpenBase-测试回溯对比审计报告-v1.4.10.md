@@ -5,12 +5,12 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.10**（承接型小版本「DPS 模板化能力对接深化」） |
 | 文档 | 测试回溯对比审计报告（Step 4 产出 5，`doc/audit/verification/`） |
-| 文档版本 | v1.0.0 |
-| 状态 | [Review]（待人工批准） |
+| 文档版本 | v1.1.0 |
+| 状态 | [Review]（待人工批准；v1.1.0 为缺陷闭环回填） |
 | 审计人 | AU-OpenBase-Test（测试回溯口径：**按 RT-ID／TD-ID 逐项核对，不以汇总结论替代逐项核对**） |
 | 日期 | 2026-10-01 |
 | 存放 | `doc/audit/verification/` |
-| 上游依据 | 《测试报告-v1.4.10》v1.0.0；《测试用例-v1.4.10》v1.0.0；《测试覆盖矩阵-v1.4.10》v1.0.0；《需求追溯矩阵-v1.4.10》v3.3.0；《需求设计追溯矩阵-v1.4.10》v1.2.0；《设计开发追溯矩阵-v1.4.10》v1.0.0 |
+| 上游依据 | 《测试报告-v1.4.10》**v1.1.0**；《测试用例-v1.4.10》v1.0.0；《测试覆盖矩阵-v1.4.10》v1.0.0；《需求追溯矩阵-v1.4.10》v3.3.0；《需求设计追溯矩阵-v1.4.10》v1.2.0；《设计开发追溯矩阵-v1.4.10》v1.0.0 |
 
 ## 1. 审计范围与方法
 
@@ -45,7 +45,7 @@
 | RT-1410-16 | P0 | 002、029、035 | ✅ |
 | RT-1410-17 | P0 | 012、036 | ✅ |
 | RT-1410-18 | P0 | 011、034 | ✅ |
-| RT-1410-19 | P1 | 003、007、008、009 | ✅（009 附覆盖缺口） |
+| RT-1410-19 | P1 | 003、007、008、009 | ✅（009 覆盖缺口已闭环） |
 | RT-1410-20 | P0 | 013、016、022、037 | ✅ |
 | RT-1410-21 | P3 | —（观察项） | — 观察 |
 | RT-1410-22 | P0 | 024、026 | ✅ |
@@ -133,9 +133,12 @@
 
 | 项 | 结果 |
 |----|------|
-| 主证据存在且非空 | ✅ `pytest-full-20261001.txt`（全量回归）、`junit-dps-proxy-coverage-20261001.xml`（权威计数）、`pytest-coverage-dps_proxy-20261001.txt`（93%）、`dps-proxy-integration-20261001-103215.json`（真实上游）、`step4-vitest-coverage-final-20261001.json`（前端覆盖率）、`step4-playwright-e2e-results-20261001.json`（E2E 9/9）、`step4-t3a-page-scan-20261001.json`（122 页）、`step4-soft-assert-scan-20261001.txt`（软断言 0）、`pylint-duplicate-code-20261001.txt`（重复率） |
-| 结论与证据一致 | ✅ 抽检：T3a `代码类 5xx = 0`（与报告一致）；E2E `expected=9 / unexpected=0 / flaky=0`（与报告一致）；覆盖率 lines 97.84／branch 90.93／funcs 89.40（与报告一致） |
+| 主证据存在且非空 | ✅ `pytest-full-20261001.txt`（全量回归）、`junit-dps-proxy-coverage-20261001.xml`（权威计数）、`pytest-coverage-dps_proxy-20261001.txt`（93% 基线）、**`pytest-coverage-dps_proxy-20261001-closure.txt`（100% 闭环）**、`dps-proxy-integration-20261001-103215.json`（真实上游）、`step4-vitest-coverage-final-20261001.json`（前端覆盖率 239/239）、`step4-playwright-e2e-results-20261001.json`（E2E 9/9）、`step4-t3a-page-scan-20261001.json`（122 页）、`step4-soft-assert-scan-20261001.txt`（软断言 0）、`pylint-duplicate-code-20261001.txt`（重复率） |
+| 结论与证据一致 | ✅ 抽检：T3a `代码类 5xx = 0`（与报告一致）；E2E `expected=9 / unexpected=0 / flaky=0`（与报告一致）；前端覆盖率 lines 97.84／branch 90.93／funcs 89.40（与报告一致）；后端 `dps_proxy` **100%（256/256，0 miss）**（与报告 v1.1.0 一致） |
 | DEF-1410-T4-01 闭环核实 | ✅ 全量失败清单**已不含** `test_s6_t1_2_target_directory_reference_is_whitelisted`（`llm_proxy` 注释改写生效） |
+| **DEF-1410-T4-02／03 上游闭环核实（v1.1.0 新增）** | ✅ DPS 侧修复已核实：① 影响面 SQL `CAST(a.template_id AS TEXT) = CAST(t.id AS TEXT)` 消解 PG `operator does not exist: text = uuid`（`engines/template_preflight.py`）；② `api_template_preflight`／`api_diff_portrait_template` **资源存在性优先** ⇒ 未知 code 稳定 **404**（`rest_api/routes/routes_profiles.py`）；DPS 回归用例 `test_template_preflight_v2_11.py::test_route_unknown_code_404`、`test_v2_11_api_contract_http.py::test_nonexistent_template_404`（preflight）／`test_nonexistent_template_with_only_target_version_404`（diff）覆盖；根因见 DPS《问题跟踪记录-v2.12.0》§5 |
+| **DEF-1410-T4-05 覆盖率闭环核实（v1.1.0 新增）** | ✅ 独立复跑 `pytest tests/test_dps_proxy.py tests/test_dps_proxy_routes_v1410.py tests/test_dps_proxy_v1410_contract.py --cov=openbase.modules.dps_proxy --cov-report=term-missing -q` → **107 passed；256 stmts / 0 miss / 100%**（证据 `pytest-coverage-dps_proxy-20261001-closure.txt`） |
+| **FL-FE-1410-01 闭环核实（v1.1.0 新增）** | ✅ `openbase-ui/tests/dps-ui-v1410.spec.ts` P-01 显式声明 `15000ms` 用例预算（未放宽全局 `testTimeout`）；前端全量 **239/239 通过**（证据 `step4-vitest-coverage-final-20261001.json`） |
 | 环境类失败核实 | ✅ 4 例失败 header 均为 `test_tenant_crud_flow`／`test_tenant_quota_readwrite`／`test_user_crud_flow`／`test_new_user_can_login`；**隔离复跑 10/10 通过**（`tests/test_tenant_admin.py tests/test_users_admin.py`） |
 | 产出物清点 | ✅ 见 §6（文件系统清点，非人工承诺） |
 | 独立复核（4.0b） | ✅ 抽查 **100% 复现一致**（后端 75 passed／L1-L3 PASS／前端专项通过） |
@@ -155,12 +158,13 @@
 1. **需求测试覆盖 100%**：RT-1410-01~28 **逐条核对**，P0/P1（22 条）全部有 TT-ID 覆盖。
 2. **设计与测试对齐**：TD-1410-01~35 **逐条核对**，实现落点类全部有执行证据；跨仓/部署项如实登记。
 3. **层间追溯**：6 个契约点 **全部四层闭环**；**P0/P1 层间覆盖 100%**。
-4. **证据链成立**：主证据齐备且与结论一致；DEF-1410-T4-01 闭环与环境类失败隔离复跑**均已核实**；4.0b 独立复核 100% 复现。
-5. **未闭环项如实登记**：**代码类无未闭环 P0/P1**；条件 1 项（性能）、覆盖缺口 1 项（503 降级分支）、环境类 4 例（复跑通过）、跨仓 3 项。
-6. **回溯判定**：**同意进入 Step 5（部署与运维）**，前置条件为：人工批准本报告 ＋ 受限/条件/覆盖缺口项**不得计入「已通过」** ＋ Step 5 首项处置「部署前置（`dps_org_map`／`dps_code_map`／DB 初始化）」。
+4. **证据链成立**：主证据齐备且与结论一致；DEF-1410-T4-01 闭环、**DEF-1410-T4-02／03（DPS 上游修复）闭环**、**DEF-1410-T4-05（dps_proxy 覆盖率 100%）闭环**、**FL-FE-1410-01（前端 239/239）闭环**与环境类失败隔离复跑**均已核实**；4.0b 独立复核 100% 复现。
+5. **未闭环项如实登记**：**代码类无未闭环 P0/P1**；条件 1 项（性能）、环境类 4 例（复跑通过）、跨仓 3 项；**覆盖缺口 0 项**（503 降级分支已闭环，`dps_proxy` 覆盖率 **100%**）。
+6. **回溯判定**：**同意进入 Step 5（部署与运维）**，前置条件为：人工批准本报告 ＋ 受限/条件项**不得计入「已通过」** ＋ Step 5 首项处置「部署前置（`dps_org_map`／`dps_code_map`／DB 初始化）」。
 
 ## 8. 修订历史
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
 | v1.0.0 | 2026-10-01 | AU-OpenBase-Test | 初始创建：RT→TT **28/28** 逐项核对（P0/P1 22 条 100%）、AC-1410-01~23 逐条核对、TD→TT **35/35** 逐项核对、**T1→T2→T3→T4 层间追溯矩阵**（6/6 闭环）、证据真实性与产出物存在性核对（含 **DEF-1410-T4-01 闭环核实**与**环境类失败隔离复跑核实**）、v1.4.9 失败/跳过项**跨仓适用性裁定**、结论「同意进入 Step 5（附前置条件）」。状态 [Review]。 |
+| v1.1.0 | 2026-10-01 | AU-OpenBase-Test | **缺陷闭环回填**：① §2 RT-1410-19 覆盖缺口标注更新为**已闭环**；② §5 主证据新增 `pytest-coverage-dps_proxy-20261001-closure.txt`（**100%**），并新增 **DEF-1410-T4-02／03 上游闭环核实**、**DEF-1410-T4-05 覆盖率闭环核实（独立复跑 107 passed／256 stmts／0 miss／100%）**、**FL-FE-1410-01 闭环核实（前端 239/239）** 三行；③ §7 审计结论第 4／5／6 条同步（**覆盖缺口 0 项**，条件项约束口径由「受限/条件/覆盖缺口」收敛为「受限/条件」）；④ 上游依据同步《测试报告》v1.1.0。**代码类未闭环缺陷 = 0**。状态 [Review]。 |
