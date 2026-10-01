@@ -1,0 +1,20 @@
+﻿[PASS] 门禁      GET    /api/v1/dps-proxy/templates                             -> 401
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/health                                -> 200
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/portraits?page=1&page_size=20         -> 200
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/portraits/61                          -> 200
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/tags/categories                       -> 200
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/reports/overview                      -> 200
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/audit/logs?page=1&page_size=5         -> 200
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/batch/tasks/nonexistent-task          -> 200
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/templates                             -> 200
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/templates/nonexistent/diff?target_version=1 -> 422
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/templates/nonexistent/preflight       -> 500
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/lineage/impact?template_code=nonexistent -> 200
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/lineage/tags/nonexistent              -> 404
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/measures/suggest?person_id=61         -> 502
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/scoring-types?page=1&page_size=20     -> 502
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/annotation-templates                  -> 200
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/labels?action=list                    -> 200
+
+JSON: D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\v1410\dps-proxy-integration-20261001-103215.json
+TXT : D:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\v1410\dps-proxy-integration-20261001-103215.txt

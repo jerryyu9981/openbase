@@ -1,0 +1,146 @@
+﻿200  dps-v1410  /dps/templates
+200  dps-v1410  /dps/templates/new
+200  dps-v1410  /dps/templates/cc-v1/edit
+200  dps-v1410  /dps/templates/cc-v1/versions
+200  dps-v1410  /dps/templates/cc-v1/preflight
+200  dps-v1410  /dps/template-packages
+200  dps-v1410  /dps/lineage
+200  dps-v1410  /dps/measures
+200  dps-v1410  /dps/scoring-types
+200  dps-v1410  /dps/annotation-adapters
+200  dps-v1410  /dps/annotation-templates
+200  dps-v1410  /dps/annotation-templates/cc-annot/fields
+200  dps-v1410  /dps/tags
+200  static     /dashboard
+200  static     /personal/settings
+200  static     /forbidden
+200  static     /auth/login
+200  platform   /platform/identity/tenants
+200  platform   /platform/identity/roles
+200  platform   /platform/identity/org
+200  platform   /platform/identity/workspaces
+200  platform   /platform/identity/auth-ext
+200  platform   /platform/identity/users
+200  platform   /platform/identity/memory-admin
+200  platform   /platform/config/general
+200  platform   /platform/config/modules
+200  platform   /platform/config/api-keys
+200  platform   /platform/observability/logs
+200  platform   /platform/observability/test-records
+200  platform   /platform/observability/monitoring
+200  platform   /platform/observability/monitoring/costs
+200  platform   /platform/observability/monitoring/alerts
+200  platform   /platform/observability/monitoring/traces
+200  platform   /platform/observability/monitoring/budgets
+200  platform   /platform/observability/gpu
+200  platform   /platform/observability/usage
+200  platform   /platform/observability/billing
+200  platform   /platform/observability/service-discovery
+200  platform   /platform/observability/gateway-test
+200  platform   /platform/observability/app-calls
+200  platform   /platform/developers/docs
+200  platform   /platform/developers/edgerouter
+200  platform   /platform/developers/plugins
+200  modules    /openllm/models
+200  modules    /openllm/models/local
+200  modules    /openllm/models/categories
+200  modules    /openllm/models/comparison
+200  modules    /openllm/models/market
+200  modules    /openllm/downloads
+200  modules    /openllm/providers
+200  modules    /openllm/providers/register
+200  modules    /openllm/favorites
+200  modules    /openllm/deploy
+200  modules    /openllm/apps
+200  modules    /openllm/apps/new
+200  modules    /openllm/apps/1
+200  modules    /openllm/playground
+200  modules    /openllm/prompt-templates
+200  modules    /openllm/prompt-experiments
+200  modules    /openllm/tool-calls
+200  modules    /openllm/ab-tests
+200  modules    /openllm/conversations
+200  modules    /openllm/routing/strategies
+200  modules    /openllm/routing/circuit-breakers
+200  modules    /openllm/recommend
+200  modules    /openllm/reports-trend
+200  modules    /knowledge/list
+200  modules    /knowledge/chat
+200  modules    /knowledge/admin
+200  modules    /knowledge/console
+200  modules    /knowledge/kb-1
+200  modules    /memory/list
+200  modules    /memory/search
+200  modules    /memory/sessions
+200  modules    /memory/graph
+200  modules    /memory/decay
+200  modules    /memory/write
+200  modules    /memory/1
+200  modules    /portrait/overview
+200  modules    /portrait/list
+200  modules    /portrait/search
+200  modules    /portrait/tags
+200  modules    /portrait/rules
+200  modules    /portrait/reports
+200  modules    /portrait/rate-limit
+200  modules    /portrait/api-manage
+200  modules    /portrait/permissions
+200  modules    /portrait/monitor
+200  modules    /portrait/batch
+200  modules    /portrait/dps-tenant-001_admin1_001
+200  legacy     /system/logs
+200  legacy     /system/audit
+200  legacy     /system/tenants
+200  legacy     /system/roles
+200  legacy     /system/org
+200  legacy     /system/workspaces
+200  legacy     /system/config
+200  legacy     /system/billing
+200  legacy     /system/test-records
+200  legacy     /system/docs
+200  legacy     /system/edgerouter
+200  legacy     /openllm/settings
+200  legacy     /openllm/api-keys
+200  legacy     /openllm/usage
+200  legacy     /openllm/monitoring
+200  legacy     /openllm/monitoring/costs
+200  legacy     /openllm/monitoring/budgets
+200  legacy     /openllm/monitoring/alerts
+200  legacy     /openllm/monitoring/traces
+200  legacy     /openllm/gpu
+200  legacy     /openllm/plugins
+200  legacy     /openllm/auth-ext
+200  legacy     /openllm/adapters
+200  legacy     /openllm/apps/calls
+200  legacy     /memory/admin
+200  legacy     /memory/api-gateway
+200  legacy     /memory/monitor
+200  legacy     /portrait/dps-monitor
+200  legacy     /knowledge/settings
+200  legacy     /knowledge/users
+200  legacy     /gateway/services
+200  legacy     /gateway/aggregate
+
+=== OpenBase v1.4.10 · Step 4 · T3a 全页面巡检（前端轨道）===
+实例：http://127.0.0.1:5173（token 注入：true）
+生成：2026-10-01T11:05:46.451Z → 2026-10-01T11:16:37.394Z
+
+--- 覆盖口径 ---
+扫描页数：122（其中 /dps/* 新增：13）
+
+--- 网络层门禁 ---
+HTTP>=500 合计：15
+  代码类（B 类）：4
+  环境类（H 类：上游/代理/GPU/Ollama 不可达）：11
+requestfailed：0
+console.error：36
+pageerror：0
+
+--- HTTP>=500 明细（按页）---
+  [B] /platform/identity/tenants → http://127.0.0.1:5173/api/v1/tenants → 500
+  [B] /platform/identity/org → http://127.0.0.1:5173/api/v1/users → 500
+  [H] /openllm/models → http://127.0.0.1:5173/api/v1/llm-proxy/models → 502
+  [H] /openllm/playground → http://127.0.0.1:5173/api/v1/llm-proxy/models → 502
+
+JSON: d:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\v1410\step4-t3a-page-scan-20261001.json
+TXT : d:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\v1410\step4-t3a-page-scan-20261001.txt

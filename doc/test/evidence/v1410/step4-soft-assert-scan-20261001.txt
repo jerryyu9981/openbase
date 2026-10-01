@@ -1,0 +1,37 @@
+=== OpenBase v1.4.10 · Step 4 · 软断言（soft assertion）静态计数 ===
+生成：2026-10-01T11:22Z  角色：AT-OpenBase-Test（前端轨道）
+
+计数口径（沿用项目既有定义，见 doc/test/OpenBase-测试用例-v1.4.8.md §"禁止模式/软断言清零"）：
+  - 前端禁止模式：`if ... is_visible ... else ... assert`（UI 可见性分支软断言）
+  - 前端另计：`expect.soft(`（Playwright 软断言 API）
+  - 后端等价禁止模式：`else: pass` / `except ...: pass` / `assert True`
+
+--- 命令与结果（ripgrep）---
+
+[1] 前端禁止模式（openbase-ui/tests）
+  模式：`if.*is_visible.*else.*assert|if.*isVisible.*else.*assert`
+  命中：0
+[2] 前端可见性分支（openbase-ui/tests）
+  模式：`isVisible\(\).*else|else.*isVisible\(\)`
+  命中：0
+[3] 前端 Playwright 软断言 API（openbase-ui/tests）
+  模式：`expect\.soft|\.soft\b`
+  命中：0
+[4] 后端等价禁止模式（tests/）
+  模式：`except[^:]*:\s*pass\s*$|else:\s*pass\s*$|assert\s+True\b`
+  命中：3（逐条见下，均为非软断言用途）
+
+--- 后端 3 处命中逐条裁定（非软断言，不构成隐藏失败）---
+  1) tests/test_identity_t3.py:765
+     `assert True  # 到达此处即证明异常被吞、未向调用方抛出`
+     用途：验证「缓存失效异常被内部吞掉、不向调用方抛出」的行为契约；`assert True` 为
+     "reached" 语义断言（若执行路径未到达，则前面的调用会抛错使测试失败），非软断言。
+  2) tests/test_oidc_keycloak.py:48-49
+     `except KeyError:` / `    pass`
+     用途：测试夹具中重置 settings 单例的清理逻辑（键不存在时的无害兜底），与断言无关。
+  3) tests/test_oidc_gateway.py:158-159
+     同上（settings 单例清理），与断言无关。
+
+--- 判定 ---
+  前端软断言数量：**0**（[1][2][3] 均为 0 命中，Step 4 前端轨道通过 "软断言清零"）
+  后端等价模式：3 命中，经逐条复核均为非软断言用途（行为契约 assert True ×1、夹具清理 except/pass ×2）

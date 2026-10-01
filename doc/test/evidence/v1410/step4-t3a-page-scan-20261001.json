@@ -1,0 +1,1802 @@
+{
+  "doc": "OB-TEST-EVIDENCE-T3A-PAGE-SCAN-v1.4.10",
+  "started_at": "2026-10-01T11:05:46.451Z",
+  "completed_at": "2026-10-01T11:16:37.394Z",
+  "base_url": "http://127.0.0.1:5173",
+  "token_injected": true,
+  "totals": {
+    "pages_scanned": 122,
+    "dps_pages": 13,
+    "http_5xx_total": 15,
+    "http_5xx_code_class": 0,
+    "http_5xx_env_class": 15,
+    "requestfailed_total": 0,
+    "console_error_total": 36,
+    "pageerror_total": 0
+  },
+  "http_5xx": [
+    {
+      "route": "/platform/identity/tenants",
+      "url": "http://127.0.0.1:5173/api/v1/tenants",
+      "status": 500
+    },
+    {
+      "route": "/platform/identity/org",
+      "url": "http://127.0.0.1:5173/api/v1/users",
+      "status": 500
+    },
+    {
+      "route": "/openllm/models",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+      "status": 502
+    },
+    {
+      "route": "/openllm/playground",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+      "status": 502
+    },
+    {
+      "route": "/openllm/conversations",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/conversations?skip=0&limit=100",
+      "status": 502
+    },
+    {
+      "route": "/openllm/conversations",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+      "status": 502
+    },
+    {
+      "route": "/knowledge/list",
+      "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+      "status": 502
+    },
+    {
+      "route": "/knowledge/chat",
+      "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+      "status": 502
+    },
+    {
+      "route": "/knowledge/admin",
+      "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=20",
+      "status": 502
+    },
+    {
+      "route": "/memory/list",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories?page=1&page_size=10",
+      "status": 502
+    },
+    {
+      "route": "/memory/sessions",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/sessions",
+      "status": 502
+    },
+    {
+      "route": "/memory/decay",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/decay/config",
+      "status": 502
+    },
+    {
+      "route": "/memory/1",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories/1",
+      "status": 502
+    },
+    {
+      "route": "/system/tenants",
+      "url": "http://127.0.0.1:5173/api/v1/tenants",
+      "status": 500
+    },
+    {
+      "route": "/system/org",
+      "url": "http://127.0.0.1:5173/api/v1/users",
+      "status": 500
+    }
+  ],
+  "http_5xx_code_class": [],
+  "http_5xx_env_class": [
+    {
+      "route": "/platform/identity/tenants",
+      "url": "http://127.0.0.1:5173/api/v1/tenants",
+      "status": 500
+    },
+    {
+      "route": "/platform/identity/org",
+      "url": "http://127.0.0.1:5173/api/v1/users",
+      "status": 500
+    },
+    {
+      "route": "/openllm/models",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+      "status": 502
+    },
+    {
+      "route": "/openllm/playground",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+      "status": 502
+    },
+    {
+      "route": "/openllm/conversations",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/conversations?skip=0&limit=100",
+      "status": 502
+    },
+    {
+      "route": "/openllm/conversations",
+      "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+      "status": 502
+    },
+    {
+      "route": "/knowledge/list",
+      "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+      "status": 502
+    },
+    {
+      "route": "/knowledge/chat",
+      "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+      "status": 502
+    },
+    {
+      "route": "/knowledge/admin",
+      "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=20",
+      "status": 502
+    },
+    {
+      "route": "/memory/list",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories?page=1&page_size=10",
+      "status": 502
+    },
+    {
+      "route": "/memory/sessions",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/sessions",
+      "status": 502
+    },
+    {
+      "route": "/memory/decay",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/decay/config",
+      "status": 502
+    },
+    {
+      "route": "/memory/1",
+      "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories/1",
+      "status": 502
+    },
+    {
+      "route": "/system/tenants",
+      "url": "http://127.0.0.1:5173/api/v1/tenants",
+      "status": 500
+    },
+    {
+      "route": "/system/org",
+      "url": "http://127.0.0.1:5173/api/v1/users",
+      "status": 500
+    }
+  ],
+  "requestfailed": [],
+  "console_errors": [
+    {
+      "route": "/dps/scoring-types",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/dps/annotation-templates",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/dps/annotation-templates/cc-annot/fields",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/dps/tags",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/dps/tags",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/platform/identity/tenants",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "route": "/platform/identity/org",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "route": "/platform/observability/service-discovery",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "route": "/openllm/models",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/openllm/playground",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/openllm/conversations",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/openllm/conversations",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/knowledge/list",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/knowledge/chat",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/knowledge/admin",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/memory/list",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/memory/sessions",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/memory/decay",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/memory/1",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "route": "/portrait/overview",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/overview",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/list",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/list",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/list",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/tags",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/reports",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/reports",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/reports",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/batch",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/batch",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/batch",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/portrait/dps-tenant-001_admin1_001",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "route": "/system/tenants",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "route": "/system/org",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "route": "/memory/api-gateway",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "route": "/gateway/services",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    }
+  ],
+  "page_errors": [],
+  "pages": [
+    {
+      "group": "dps-v1410",
+      "route": "/dps/templates",
+      "status": 200,
+      "elapsed_ms": 6584,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/templates/new",
+      "status": 200,
+      "elapsed_ms": 6848,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/templates/cc-v1/edit",
+      "status": 200,
+      "elapsed_ms": 6499,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/templates/cc-v1/versions",
+      "status": 200,
+      "elapsed_ms": 7070,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/templates/cc-v1/preflight",
+      "status": 200,
+      "elapsed_ms": 7174,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/template-packages",
+      "status": 200,
+      "elapsed_ms": 8107,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/lineage",
+      "status": 200,
+      "elapsed_ms": 6603,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/measures",
+      "status": 200,
+      "elapsed_ms": 7153,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/scoring-types",
+      "status": 200,
+      "elapsed_ms": 7263,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/annotation-adapters",
+      "status": 200,
+      "elapsed_ms": 5223,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/annotation-templates",
+      "status": 200,
+      "elapsed_ms": 7108,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/annotation-templates/cc-annot/fields",
+      "status": 200,
+      "elapsed_ms": 6312,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "dps-v1410",
+      "route": "/dps/tags",
+      "status": 200,
+      "elapsed_ms": 7112,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "static",
+      "route": "/dashboard",
+      "status": 200,
+      "elapsed_ms": 4649,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "static",
+      "route": "/personal/settings",
+      "status": 200,
+      "elapsed_ms": 5611,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "static",
+      "route": "/forbidden",
+      "status": 200,
+      "elapsed_ms": 5240,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "static",
+      "route": "/auth/login",
+      "status": 200,
+      "elapsed_ms": 4573,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/identity/tenants",
+      "status": 200,
+      "elapsed_ms": 7034,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/tenants",
+          "status": 500
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/identity/roles",
+      "status": 200,
+      "elapsed_ms": 4551,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/identity/org",
+      "status": 200,
+      "elapsed_ms": 6885,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/users",
+          "status": 500
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/identity/workspaces",
+      "status": 200,
+      "elapsed_ms": 4852,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/identity/auth-ext",
+      "status": 200,
+      "elapsed_ms": 4580,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/identity/users",
+      "status": 200,
+      "elapsed_ms": 5227,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/identity/memory-admin",
+      "status": 200,
+      "elapsed_ms": 7080,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/config/general",
+      "status": 200,
+      "elapsed_ms": 5520,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/config/modules",
+      "status": 200,
+      "elapsed_ms": 7153,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/config/api-keys",
+      "status": 200,
+      "elapsed_ms": 4583,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/logs",
+      "status": 200,
+      "elapsed_ms": 5679,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/test-records",
+      "status": 200,
+      "elapsed_ms": 5230,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/monitoring",
+      "status": 200,
+      "elapsed_ms": 6859,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/monitoring/costs",
+      "status": 200,
+      "elapsed_ms": 6057,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/monitoring/alerts",
+      "status": 200,
+      "elapsed_ms": 5833,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/monitoring/traces",
+      "status": 200,
+      "elapsed_ms": 6132,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/monitoring/budgets",
+      "status": 200,
+      "elapsed_ms": 6667,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/gpu",
+      "status": 200,
+      "elapsed_ms": 5931,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/usage",
+      "status": 200,
+      "elapsed_ms": 6989,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/billing",
+      "status": 200,
+      "elapsed_ms": 4989,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/service-discovery",
+      "status": 200,
+      "elapsed_ms": 7065,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/gateway-test",
+      "status": 200,
+      "elapsed_ms": 4844,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/observability/app-calls",
+      "status": 200,
+      "elapsed_ms": 4271,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/developers/docs",
+      "status": 200,
+      "elapsed_ms": 3811,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/developers/edgerouter",
+      "status": 200,
+      "elapsed_ms": 4762,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "platform",
+      "route": "/platform/developers/plugins",
+      "status": 200,
+      "elapsed_ms": 3901,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/models",
+      "status": 200,
+      "elapsed_ms": 7108,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/models/local",
+      "status": 200,
+      "elapsed_ms": 4968,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/models/categories",
+      "status": 200,
+      "elapsed_ms": 4548,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/models/comparison",
+      "status": 200,
+      "elapsed_ms": 4534,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/models/market",
+      "status": 200,
+      "elapsed_ms": 5339,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/downloads",
+      "status": 200,
+      "elapsed_ms": 3949,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/providers",
+      "status": 200,
+      "elapsed_ms": 3697,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/providers/register",
+      "status": 200,
+      "elapsed_ms": 5008,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/favorites",
+      "status": 200,
+      "elapsed_ms": 4025,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/deploy",
+      "status": 200,
+      "elapsed_ms": 4732,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/apps",
+      "status": 200,
+      "elapsed_ms": 6019,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/apps/new",
+      "status": 200,
+      "elapsed_ms": 4000,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/apps/1",
+      "status": 200,
+      "elapsed_ms": 4604,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/playground",
+      "status": 200,
+      "elapsed_ms": 6817,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/prompt-templates",
+      "status": 200,
+      "elapsed_ms": 4008,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/prompt-experiments",
+      "status": 200,
+      "elapsed_ms": 3874,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/tool-calls",
+      "status": 200,
+      "elapsed_ms": 3842,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/ab-tests",
+      "status": 200,
+      "elapsed_ms": 3915,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/conversations",
+      "status": 200,
+      "elapsed_ms": 7033,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/llm-proxy/conversations?skip=0&limit=100",
+          "status": 502
+        },
+        {
+          "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/routing/strategies",
+      "status": 200,
+      "elapsed_ms": 4731,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/routing/circuit-breakers",
+      "status": 200,
+      "elapsed_ms": 3936,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/recommend",
+      "status": 200,
+      "elapsed_ms": 3828,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/openllm/reports-trend",
+      "status": 200,
+      "elapsed_ms": 3799,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/knowledge/list",
+      "status": 200,
+      "elapsed_ms": 6674,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/knowledge/chat",
+      "status": 200,
+      "elapsed_ms": 7007,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/knowledge/admin",
+      "status": 200,
+      "elapsed_ms": 7012,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=20",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/knowledge/console",
+      "status": 200,
+      "elapsed_ms": 4962,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/knowledge/kb-1",
+      "status": 200,
+      "elapsed_ms": 3682,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/memory/list",
+      "status": 200,
+      "elapsed_ms": 7001,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories?page=1&page_size=10",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/memory/search",
+      "status": 200,
+      "elapsed_ms": 4232,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/memory/sessions",
+      "status": 200,
+      "elapsed_ms": 6641,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/memory-proxy/sessions",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/memory/graph",
+      "status": 200,
+      "elapsed_ms": 3857,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/memory/decay",
+      "status": 200,
+      "elapsed_ms": 6757,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/memory-proxy/decay/config",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/memory/write",
+      "status": 200,
+      "elapsed_ms": 3832,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/memory/1",
+      "status": 200,
+      "elapsed_ms": 6686,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories/1",
+          "status": 502
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/overview",
+      "status": 200,
+      "elapsed_ms": 5612,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/list",
+      "status": 200,
+      "elapsed_ms": 4981,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/search",
+      "status": 200,
+      "elapsed_ms": 3974,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/tags",
+      "status": 200,
+      "elapsed_ms": 5083,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/rules",
+      "status": 200,
+      "elapsed_ms": 3997,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/reports",
+      "status": 200,
+      "elapsed_ms": 5054,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/rate-limit",
+      "status": 200,
+      "elapsed_ms": 3804,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/api-manage",
+      "status": 200,
+      "elapsed_ms": 4021,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/permissions",
+      "status": 200,
+      "elapsed_ms": 3757,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/monitor",
+      "status": 200,
+      "elapsed_ms": 3954,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/batch",
+      "status": 200,
+      "elapsed_ms": 4914,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "modules",
+      "route": "/portrait/dps-tenant-001_admin1_001",
+      "status": 200,
+      "elapsed_ms": 4841,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/logs",
+      "status": 200,
+      "elapsed_ms": 4924,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/audit",
+      "status": 200,
+      "elapsed_ms": 4298,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/tenants",
+      "status": 200,
+      "elapsed_ms": 5598,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/tenants",
+          "status": 500
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/roles",
+      "status": 200,
+      "elapsed_ms": 3763,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/org",
+      "status": 200,
+      "elapsed_ms": 5459,
+      "goto_error": null,
+      "http_5xx": [
+        {
+          "url": "http://127.0.0.1:5173/api/v1/users",
+          "status": 500
+        }
+      ],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/workspaces",
+      "status": 200,
+      "elapsed_ms": 3686,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/config",
+      "status": 200,
+      "elapsed_ms": 3728,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/billing",
+      "status": 200,
+      "elapsed_ms": 3501,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/test-records",
+      "status": 200,
+      "elapsed_ms": 3617,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/docs",
+      "status": 200,
+      "elapsed_ms": 3565,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/system/edgerouter",
+      "status": 200,
+      "elapsed_ms": 4560,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/settings",
+      "status": 200,
+      "elapsed_ms": 3622,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/api-keys",
+      "status": 200,
+      "elapsed_ms": 3715,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/usage",
+      "status": 200,
+      "elapsed_ms": 3805,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/monitoring",
+      "status": 200,
+      "elapsed_ms": 4579,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/monitoring/costs",
+      "status": 200,
+      "elapsed_ms": 4638,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/monitoring/budgets",
+      "status": 200,
+      "elapsed_ms": 5409,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/monitoring/alerts",
+      "status": 200,
+      "elapsed_ms": 6353,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/monitoring/traces",
+      "status": 200,
+      "elapsed_ms": 5531,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/gpu",
+      "status": 200,
+      "elapsed_ms": 7138,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/plugins",
+      "status": 200,
+      "elapsed_ms": 6597,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/auth-ext",
+      "status": 200,
+      "elapsed_ms": 5065,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/adapters",
+      "status": 200,
+      "elapsed_ms": 6276,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/openllm/apps/calls",
+      "status": 200,
+      "elapsed_ms": 4247,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/memory/admin",
+      "status": 200,
+      "elapsed_ms": 7016,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/memory/api-gateway",
+      "status": 200,
+      "elapsed_ms": 5684,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/memory/monitor",
+      "status": 200,
+      "elapsed_ms": 4160,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/portrait/dps-monitor",
+      "status": 200,
+      "elapsed_ms": 4342,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/knowledge/settings",
+      "status": 200,
+      "elapsed_ms": 4311,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/knowledge/users",
+      "status": 200,
+      "elapsed_ms": 6520,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/gateway/services",
+      "status": 200,
+      "elapsed_ms": 7075,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ],
+      "page_errors": []
+    },
+    {
+      "group": "legacy",
+      "route": "/gateway/aggregate",
+      "status": 200,
+      "elapsed_ms": 6703,
+      "goto_error": null,
+      "http_5xx": [],
+      "requestfailed": [],
+      "console_errors": [],
+      "page_errors": []
+    }
+  ],
+  "classification_recomputed_at": "2026-10-01T11:21:41.631Z"
+}

@@ -1,0 +1,12 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.8 [39m[90mD:/Trae CN/myproject/Dev/OpenBase/openbase-ui[39m
+
+ [32m✓[39m tests/dps-ui-v1410.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 2114[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-01 模板族列表：真实 API 渲染 + 空态 [33m1170[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-12 标签体系：分类 → 标签值两层只读呈现 [33m321[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 18:23:44
+[2m   Duration [22m 71.97s[2m (transform 4.50s, setup 0ms, collect 22.64s, tests 2.11s, environment 42.07s, prepare 2.25s)[22m
+

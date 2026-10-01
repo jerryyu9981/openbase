@@ -1,0 +1,191 @@
+﻿
+> openbase-ui@1.3.0 test:coverage
+> vitest run --coverage
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.8 [39m[90mD:/Trae CN/myproject/Dev/OpenBase/openbase-ui[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m tests/http.spec.ts [2m([22m[2m23 tests[22m[2m)[22m[90m 60[2mms[22m[39m
+ [32m✓[39m tests/api-dps-v1410.spec.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 57[2mms[22m[39m
+ [32m✓[39m tests/api-v146-clients.spec.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 1826[2mms[22m[39m
+   [33m[2m✓[22m[39m DEF-FE-146-001: 模块开关页「修改详情」抽屉端到端回归[2m > [22m切换成功后抽屉「模块/新状态/生效方式/请求号」四项均非空（修复前四项全空） [33m1063[2mms[22m[39m
+   [33m[2m✓[22m[39m DEF-FE-146-001: 模块开关页「修改详情」抽屉端到端回归[2m > [22m切换失败：抽屉不弹出、不改写表格状态；以服务端为准重载列表 [33m718[2mms[22m[39m
+node.exe : [90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry
+ 已初始化但未装载时，深链 /portrait/list 仍命中 portrait 模块
+At C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\node\npm.ps1:16 char:5
++     & "$basedir/node$exe"  "$basedir/node_modules/npm/bin/npm-cli.js" ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...仍命中 portrait 模块:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /memory/sessions 仍命中 memory 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/memory/sessions"
+[Vue Router warn]: No match found for location with path "/memory/sessions"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /knowledge/chat 仍命中 knowledge 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/chat"
+[Vue Router warn]: No match found for location with path "/knowledge/chat"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /openllm/conversations 仍命中 openllm 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m模块子页时顶层导航高亮回退
+到 route_prefix
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m三层菜单：顶层 + 权限过
+滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪）
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-4: 装载幂等与告警清零 / 空态兜底[2m > [22m[2mModuleLayout 在 navIt
+ems 存在时渲染二级导航分组
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+ [32m✓[39m tests/router-nav.spec.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 8409[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22mregistry 已初始化但未装载时，深链 /portrait/list 仍命中 portrait 模块 [33m1944[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m禁用模块与无权模块不进注册表、路由不可达 [33m874[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m模块子页时顶层导航高亮回退到 route_prefix [33m1555[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m三层菜单：顶层 + 权限过滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪） [33m944[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m模块图标按 ModuleInfo.icon 映射，未命中回退 ChatDotRound [33m1528[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-4: 装载幂等与告警清零 / 空态兜底[2m > [22mModuleLayout 在 navItems 存在时渲染二级导航分组 [33m1343[2mms[22m[39m
+ [32m✓[39m tests/isolation-presentation.spec.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 13158[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m200 且空数据 → 空态（他域不可见，非错误态） [33m1634[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m404 → 「资源不存在」空态（非错误态） [33m340[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m5xx → 错误条 + 重试，且不泄漏堆栈/原始 JSON [33m689[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m5xx 后点击重试恢复数据 [33m875[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m画像详情 404 / 403 / 5xx 三分支呈现 [33m582[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m200 且空数据 → 空态（隔离生效） [33m1639[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m403 → 页面级 403；5xx → 错误条 + 重试 [33m2151[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m会话终止（写操作）失败 → 统一错误条呈现（批 2 遗留补齐，不静默、不白屏） [33m426[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m停用/吊销主体数据面 403（AUTH_ 前缀）→ 页面级提示，非空态、非白屏 [33m530[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-3: 知识关键页跨域呈现[2m > [22m200 且空数据 → 空态；403 → 页面级 403；5xx → 错误条 + 重试 [33m630[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-3: 知识关键页跨域呈现[2m > [22mRAG 对话流式失败 → 错误条 + 重试，保留已产出内容（不断流成白屏） [33m828[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-3: 对话关键页（OpenLLM 会话）呈现[2m > [22m200 且空数据 → 空态 [33m599[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-3: 对话关键页（OpenLLM 会话）呈现[2m > [22m403 → 页面级 403；5xx → 错误条 + 重试 [33m834[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-4: 渲染异常兜底（防白屏）[2m > [22m子页面渲染异常时 AppLayout 渲染兜底提示，不白屏 [33m1075[2mms[22m[39m
+ [32m✓[39m tests/api-logs.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+ [32m✓[39m tests/auth-redirect.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 1141[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T4-1: 登录成功按 safeRedirect 回跳[2m > [22m合法站内 redirect → 回跳目标页 [33m406[2mms[22m[39m
+ [32m✓[39m tests/api-clients.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 60[2mms[22m[39m
+ [32m✓[39m tests/dps-ui-v1410.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 4078[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-01 模板族列表：真实 API 渲染 + 空态 [33m1875[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-06 措施建议：原样呈现 disclaimer，空态为正常结果 [33m383[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-08 AI 标注：403 未启用 → 信息态（非报错）且不发起写请求 [33m316[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-12 标签体系：分类 → 标签值两层只读呈现 [33m976[2mms[22m[39m
+ [32m✓[39m tests/l3-2-smoke.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 5374[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T5-1: 静态旁路检查（子系统中不直连）[2m > [22m端口字面量仅存在于白名单（显示文案 / mock 数据），白名单外 = 0 [33m4955[2mms[22m[39m
+ [32m✓[39m tests/api-testing.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+ [32m✓[39m tests/platform-ia.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 1191[2mms[22m[39m
+   [33m[2m✓[22m[39m §3.2 ③: 平台权限门禁（meta.permission ↔ 守卫同源）[2m > [22m含通配权限时平台受限页可达 [33m416[2mms[22m[39m
+   [33m[2m✓[22m[39m AC-146-10-2: 平台四域为静态路由，不受单一模块启停影响[2m > [22m全部模块停用后平台锚点路由仍可解析（禁 404） [33m351[2mms[22m[39m
+ [32m✓[39m tests/api-modules.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+ [32m✓[39m tests/nav-consistency.spec.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+[90mstderr[2m | tests/core-extra.spec.ts[2m > [22m[2mrouter guards[2m > [22m[2m模块路由权限不足跳转仪表盘
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait"
+[Vue Router warn]: No match found for location with path "/portrait"
+
+[90mstderr[2m | tests/core-extra.spec.ts[2m > [22m[2mrouter guards[2m > [22m[2m通配权限可加载模块路由
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/models"
+
+ [32m✓[39m tests/core-extra.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 153[2mms[22m[39m
+ [32m✓[39m tests/portrait-list-error.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 505[2mms[22m[39m
+ [32m✓[39m tests/gateway-api.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 50[2mms[22m[39m
+ [32m✓[39m tests/module-pages.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 3312[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m点击新增模型提示写操作待完善（M2，对话框不弹出） [33m1817[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m列表加载真实 API 数据（非 mock） [33m511[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-007: 对话导出 JSON[2m > [22m点击导出触发下载并提示成功 [33m805[2mms[22m[39m
+[90mstderr[2m | tests/module-pages.spec.ts
+[22m[39mError: Not implemented: navigation (except hash changes)
+    at module.exports (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\browser\not-implement
+ed.js:9:17)
+    at navigateFetch (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navigati
+on.js:77:3)
+    at exports.navigate (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navig
+ation.js:55:3)
+    at Timeout._onTimeout (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\nodes\HTML
+HyperlinkElementUtils-impl.js:81:7)
+    at listOnTimeout (node:internal/timers:588:17)
+    at processTimers (node:internal/timers:523:7) [90mundefined[39m
+
+[90mstderr[2m | tests/module-pages.spec.ts
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:530:35)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:518:28)
+    at emitErrorEvent (node:_http_client:104:11)
+    at Socket.socketErrorListener (node:_http_client:518:5)
+    at Socket.emit (node:events:518:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+Error: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:530:35)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:518:28)
+    at emitErrorEvent (node:_http_client:104:11)
+    at Socket.socketErrorListener (node:_http_client:518:5)
+    at Socket.emit (node:events:518:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+ [32m✓[39m tests/session-id.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/core.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 64[2mms[22m[39m
+ [32m✓[39m tests/oidc-auth.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m21 passed[39m[22m[90m (21)[39m
+[2m      Tests [22m [1m[32m239 passed[39m[22m[90m (239)[39m
+[2m   Start at [22m 18:25:17
+[2m   Duration [22m 130.89s[2m (transform 17.02s, setup 0ms, collect 184.88s, tests 39.57s, environment 324.61s, prepare 23.26s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   97.84 |    90.93 |    89.4 |   97.84 |                   
+ api               |   98.94 |    92.02 |   99.07 |   98.94 |                   
+  auth.ts          |     100 |      100 |     100 |     100 |                   
+  dps.ts           |     100 |      100 |     100 |     100 |                   
+  error.ts         |   97.77 |    85.07 |     100 |   97.77 | 83-84             
+  gateway.ts       |   90.62 |      100 |   85.71 |   90.62 | 48-50             
+  http.ts          |     100 |    89.39 |     100 |     100 | ...,68,94,106,179 
+  llm.ts           |   96.73 |       88 |     100 |   96.73 | 126-128           
+  logs.ts          |     100 |    95.23 |     100 |     100 | 114               
+  modules.ts       |     100 |      100 |     100 |     100 |                   
+  rag.ts           |     100 |      100 |     100 |     100 |                   
+  redirect.ts      |     100 |     90.9 |     100 |     100 | 44-46,70          
+  testing.ts       |     100 |      100 |     100 |     100 |                   
+ router            |   94.28 |    85.48 |      50 |   94.28 |                   
+  index.ts         |   92.48 |       85 |   48.14 |   92.48 | ...53-155,229-230 
+  ...yRedirects.ts |     100 |      100 |     100 |     100 |                   
+ stores            |   95.65 |    91.17 |   93.33 |   95.65 |                   
+  auth.ts          |   90.69 |    88.23 |   85.71 |   90.69 | 19-22             
+  ...leRegistry.ts |     100 |     92.3 |     100 |     100 | 22                
+  ui.ts            |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------

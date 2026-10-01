@@ -1,0 +1,195 @@
+=== OpenBase v1.4.10 · Step 4 · T3a 全页面巡检（前端轨道）===
+实例：http://127.0.0.1:5173（token 注入：true）
+生成：2026-10-01T11:05:46.451Z → 2026-10-01T11:16:37.394Z
+分类口径重算（render-only）：2026-10-01T11:21:41.629Z
+
+--- 覆盖口径 ---
+扫描页数：122（其中 /dps/* 新增：13；P-09 双路径合计 13 条 route record）
+
+--- 网络层门禁 ---
+HTTP>=500 合计：15
+  代码类（B 类）：0
+  环境类（H 类：上游/代理/GPU/Ollama 不可达；DB 不可用）：15
+requestfailed：0
+console.error：36
+pageerror：0
+
+--- HTTP>=500 明细（按页）---
+  [H] /platform/identity/tenants → http://127.0.0.1:5173/api/v1/tenants → 500
+  [H] /platform/identity/org → http://127.0.0.1:5173/api/v1/users → 500
+  [H] /openllm/models → http://127.0.0.1:5173/api/v1/llm-proxy/models → 502
+  [H] /openllm/playground → http://127.0.0.1:5173/api/v1/llm-proxy/models → 502
+  [H] /openllm/conversations → http://127.0.0.1:5173/api/v1/llm-proxy/conversations?skip=0&limit=100 → 502
+  [H] /openllm/conversations → http://127.0.0.1:5173/api/v1/llm-proxy/models → 502
+  [H] /knowledge/list → http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100 → 502
+  [H] /knowledge/chat → http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100 → 502
+  [H] /knowledge/admin → http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=20 → 502
+  [H] /memory/list → http://127.0.0.1:5173/api/v1/memory-proxy/memories?page=1&page_size=10 → 502
+  [H] /memory/sessions → http://127.0.0.1:5173/api/v1/memory-proxy/sessions → 502
+  [H] /memory/decay → http://127.0.0.1:5173/api/v1/memory-proxy/decay/config → 502
+  [H] /memory/1 → http://127.0.0.1:5173/api/v1/memory-proxy/memories/1 → 502
+  [H] /system/tenants → http://127.0.0.1:5173/api/v1/tenants → 500
+  [H] /system/org → http://127.0.0.1:5173/api/v1/users → 500
+
+--- requestfailed 明细 ---
+
+--- console.error 明细（按页计数）---
+  1  /dps/scoring-types
+  1  /dps/annotation-templates
+  1  /dps/annotation-templates/cc-annot/fields
+  2  /dps/tags
+  1  /platform/identity/tenants
+  1  /platform/identity/org
+  1  /platform/observability/service-discovery
+  1  /openllm/models
+  1  /openllm/playground
+  2  /openllm/conversations
+  1  /knowledge/list
+  1  /knowledge/chat
+  1  /knowledge/admin
+  1  /memory/list
+  1  /memory/sessions
+  1  /memory/decay
+  1  /memory/1
+  2  /portrait/overview
+  3  /portrait/list
+  1  /portrait/tags
+  3  /portrait/reports
+  3  /portrait/batch
+  1  /portrait/dps-tenant-001_admin1_001
+  1  /system/tenants
+  1  /system/org
+  1  /memory/api-gateway
+  1  /gateway/services
+
+--- pageerror 明细 ---
+
+--- 逐页状态 ---
+    200    6584ms  /dps/templates
+    200    6848ms  /dps/templates/new
+    200    6499ms  /dps/templates/cc-v1/edit
+    200    7070ms  /dps/templates/cc-v1/versions
+    200    7174ms  /dps/templates/cc-v1/preflight
+    200    8107ms  /dps/template-packages
+    200    6603ms  /dps/lineage
+    200    7153ms  /dps/measures
+  ! 200    7263ms  /dps/scoring-types
+    200    5223ms  /dps/annotation-adapters
+  ! 200    7108ms  /dps/annotation-templates
+  ! 200    6312ms  /dps/annotation-templates/cc-annot/fields
+  ! 200    7112ms  /dps/tags
+    200    4649ms  /dashboard
+    200    5611ms  /personal/settings
+    200    5240ms  /forbidden
+    200    4573ms  /auth/login
+  ! 200    7034ms  /platform/identity/tenants
+    200    4551ms  /platform/identity/roles
+  ! 200    6885ms  /platform/identity/org
+    200    4852ms  /platform/identity/workspaces
+    200    4580ms  /platform/identity/auth-ext
+    200    5227ms  /platform/identity/users
+    200    7080ms  /platform/identity/memory-admin
+    200    5520ms  /platform/config/general
+    200    7153ms  /platform/config/modules
+    200    4583ms  /platform/config/api-keys
+    200    5679ms  /platform/observability/logs
+    200    5230ms  /platform/observability/test-records
+    200    6859ms  /platform/observability/monitoring
+    200    6057ms  /platform/observability/monitoring/costs
+    200    5833ms  /platform/observability/monitoring/alerts
+    200    6132ms  /platform/observability/monitoring/traces
+    200    6667ms  /platform/observability/monitoring/budgets
+    200    5931ms  /platform/observability/gpu
+    200    6989ms  /platform/observability/usage
+    200    4989ms  /platform/observability/billing
+  ! 200    7065ms  /platform/observability/service-discovery
+    200    4844ms  /platform/observability/gateway-test
+    200    4271ms  /platform/observability/app-calls
+    200    3811ms  /platform/developers/docs
+    200    4762ms  /platform/developers/edgerouter
+    200    3901ms  /platform/developers/plugins
+  ! 200    7108ms  /openllm/models
+    200    4968ms  /openllm/models/local
+    200    4548ms  /openllm/models/categories
+    200    4534ms  /openllm/models/comparison
+    200    5339ms  /openllm/models/market
+    200    3949ms  /openllm/downloads
+    200    3697ms  /openllm/providers
+    200    5008ms  /openllm/providers/register
+    200    4025ms  /openllm/favorites
+    200    4732ms  /openllm/deploy
+    200    6019ms  /openllm/apps
+    200    4000ms  /openllm/apps/new
+    200    4604ms  /openllm/apps/1
+  ! 200    6817ms  /openllm/playground
+    200    4008ms  /openllm/prompt-templates
+    200    3874ms  /openllm/prompt-experiments
+    200    3842ms  /openllm/tool-calls
+    200    3915ms  /openllm/ab-tests
+  ! 200    7033ms  /openllm/conversations
+    200    4731ms  /openllm/routing/strategies
+    200    3936ms  /openllm/routing/circuit-breakers
+    200    3828ms  /openllm/recommend
+    200    3799ms  /openllm/reports-trend
+  ! 200    6674ms  /knowledge/list
+  ! 200    7007ms  /knowledge/chat
+  ! 200    7012ms  /knowledge/admin
+    200    4962ms  /knowledge/console
+    200    3682ms  /knowledge/kb-1
+  ! 200    7001ms  /memory/list
+    200    4232ms  /memory/search
+  ! 200    6641ms  /memory/sessions
+    200    3857ms  /memory/graph
+  ! 200    6757ms  /memory/decay
+    200    3832ms  /memory/write
+  ! 200    6686ms  /memory/1
+  ! 200    5612ms  /portrait/overview
+  ! 200    4981ms  /portrait/list
+    200    3974ms  /portrait/search
+  ! 200    5083ms  /portrait/tags
+    200    3997ms  /portrait/rules
+  ! 200    5054ms  /portrait/reports
+    200    3804ms  /portrait/rate-limit
+    200    4021ms  /portrait/api-manage
+    200    3757ms  /portrait/permissions
+    200    3954ms  /portrait/monitor
+  ! 200    4914ms  /portrait/batch
+  ! 200    4841ms  /portrait/dps-tenant-001_admin1_001
+    200    4924ms  /system/logs
+    200    4298ms  /system/audit
+  ! 200    5598ms  /system/tenants
+    200    3763ms  /system/roles
+  ! 200    5459ms  /system/org
+    200    3686ms  /system/workspaces
+    200    3728ms  /system/config
+    200    3501ms  /system/billing
+    200    3617ms  /system/test-records
+    200    3565ms  /system/docs
+    200    4560ms  /system/edgerouter
+    200    3622ms  /openllm/settings
+    200    3715ms  /openllm/api-keys
+    200    3805ms  /openllm/usage
+    200    4579ms  /openllm/monitoring
+    200    4638ms  /openllm/monitoring/costs
+    200    5409ms  /openllm/monitoring/budgets
+    200    6353ms  /openllm/monitoring/alerts
+    200    5531ms  /openllm/monitoring/traces
+    200    7138ms  /openllm/gpu
+    200    6597ms  /openllm/plugins
+    200    5065ms  /openllm/auth-ext
+    200    6276ms  /openllm/adapters
+    200    4247ms  /openllm/apps/calls
+    200    7016ms  /memory/admin
+  ! 200    5684ms  /memory/api-gateway
+    200    4160ms  /memory/monitor
+    200    4342ms  /portrait/dps-monitor
+    200    4311ms  /knowledge/settings
+    200    6520ms  /knowledge/users
+  ! 200    7075ms  /gateway/services
+    200    6703ms  /gateway/aggregate
+
+--- /dps/* 新增页标记数：4/13（均为上游 401 网络镜像，属环境类）---
+
+--- 判定 ---
+PASS（排除已登记环境类）：代码类 5xx = 0、requestfailed = 0、pageerror = 0
+
