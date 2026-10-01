@@ -8,12 +8,51 @@ import { personalRoutes } from '@/pages/personal/routes'
 import { legacyRedirectRoutes } from '@/core/router/legacyRedirects'
 
 /**
- * 平台管理四域 + 个人 路由（v1.4.6 IA 重构，ADR-146-08）作为 `/` AppLayout 子路由。
- * 与业务模块路由平行；不受单一模块启停影响（AC-146-10-2）。
+ * DPS 模板化 12 页路由（v1.4.10 §2；页面落点 `modules/portrait/pages/Dps*View.vue`）。
+ *
+ * 页面↔端点映射 100%（22 端点 ↔ 12 页面，TD-1410-23／AC-18）：
+ *  - P-01 模板族管理 ↔ #11 #12 #15 #16
+ *  - P-02 版本对比与回滚 ↔ #3 #4
+ *  - P-03 预检与影响面 ↔ #5 #7
+ *  - P-04 包导出／导入 ↔ #1 #2
+ *  - P-05 血缘反查与影响面 ↔ #6 #7
+ *  - P-06 措施建议 ↔ #8
+ *  - P-07 评分类型 ↔ #10
+ *  - P-08 AI 标注候选与复核 ↔ #9（＋ llm_proxy／chat ＋ DPS review）
+ *  - P-09 画像模板新建／编辑 ↔ #12 #13 #14（`new` 与 `:code/edit` 同页两路径）
+ *  - P-10 标注模板管理 ↔ #17 #18 #19 #21
+ *  - P-11 标注模板字段与归属 ↔ #12 #18 #20
+ *  - P-12 标签体系查看 ↔ #21 #22
+ *
+ * 路由顺序：静态段（/dps/templates/new、/dps/template-packages、/dps/lineage…）先于同名动态段，
+ * 避免被 `:code` 吞并（沿用既有模块内静态先于动态的注册口径）。
+ */
+const dpsRoutes: RouteRecordRaw[] = [
+  { path: 'dps/templates', name: 'dps-template-list', component: () => import('@/modules/portrait/pages/DpsTemplateListView.vue'), meta: { title: '模板族管理' } },
+  // P-09：新建与编辑同页；`new` 与 `:code/edit` 为两条路径（同一页面组件）
+  { path: 'dps/templates/new', name: 'dps-template-new', component: () => import('@/modules/portrait/pages/DpsTemplateEditView.vue'), meta: { title: '画像模板新建' } },
+  { path: 'dps/templates/:code/edit', name: 'dps-template-edit', component: () => import('@/modules/portrait/pages/DpsTemplateEditView.vue'), meta: { title: '画像模板编辑' } },
+  { path: 'dps/templates/:code/versions', name: 'dps-template-versions', component: () => import('@/modules/portrait/pages/DpsTemplateVersionView.vue'), meta: { title: '版本对比与回滚' } },
+  { path: 'dps/templates/:code/preflight', name: 'dps-template-preflight', component: () => import('@/modules/portrait/pages/DpsTemplatePreflightView.vue'), meta: { title: '预检与影响面' } },
+  { path: 'dps/template-packages', name: 'dps-template-packages', component: () => import('@/modules/portrait/pages/DpsTemplatePackageView.vue'), meta: { title: '模板包导出／导入' } },
+  { path: 'dps/lineage', name: 'dps-lineage', component: () => import('@/modules/portrait/pages/DpsLineageView.vue'), meta: { title: '标签血缘反查' } },
+  { path: 'dps/measures', name: 'dps-measures', component: () => import('@/modules/portrait/pages/DpsMeasureView.vue'), meta: { title: '措施建议' } },
+  { path: 'dps/scoring-types', name: 'dps-scoring-types', component: () => import('@/modules/portrait/pages/DpsScoringTypeView.vue'), meta: { title: '评分类型' } },
+  { path: 'dps/annotation-adapters', name: 'dps-annotation-adapters', component: () => import('@/modules/portrait/pages/DpsAnnotationAdapterView.vue'), meta: { title: 'AI 标注候选与复核' } },
+  { path: 'dps/annotation-templates', name: 'dps-annotation-templates', component: () => import('@/modules/portrait/pages/DpsAnnotationTemplateView.vue'), meta: { title: '标注模板管理' } },
+  { path: 'dps/annotation-templates/:code/fields', name: 'dps-annotation-fields', component: () => import('@/modules/portrait/pages/DpsAnnotationFieldView.vue'), meta: { title: '标注模板字段与归属' } },
+  { path: 'dps/tags', name: 'dps-tags', component: () => import('@/modules/portrait/pages/DpsTagSystemView.vue'), meta: { title: '标签体系查看' } },
+]
+
+/**
+ * 平台管理四域 + 个人 + DPS 模板化 路由（v1.4.6 IA 重构，ADR-146-08；v1.4.10 追加 DPS 路由）
+ * 作为 `/` AppLayout 子路由。与业务模块路由平行；不受单一模块启停影响（AC-146-10-2）。
+ * DPS 路由：设计 §2 的 **12 条**（P-09 由 `new`／`:code/edit` **两条路径**承载，同一页面组件）。
  * 旧 `/system/**` 已迁出，交由 legacyRedirectRoutes 顶层承接（禁 404）。
  */
 const appChildren: RouteRecordRaw[] = [
   { path: 'dashboard', name: 'dashboard', component: () => import('@/pages/Dashboard.vue'), meta: { title: '仪表盘', icon: 'Odometer' } },
+  ...dpsRoutes,
   ...platformRoutes,
   ...personalRoutes,
 ]

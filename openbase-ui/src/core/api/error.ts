@@ -19,6 +19,8 @@ export type ApiErrorKind =
   | 'not-found'
   | 'invalid-param'
   | 'business'
+  /** 409：冲突／状态门禁（v1.4.10 新增，如 code 冲突、存在关联标注数据、未复核候选进入下游） */
+  | 'conflict'
   | 'server-error'
   | 'network'
   | 'canceled'
@@ -66,7 +68,7 @@ function messageOf(error: unknown): string {
 /**
  * 按 §5.1 / §5.2 判定表解析 `kind`。
  * 优先级：401 → unauthorized；`PERM_` 前缀 / 403 → forbidden；
- * 404 → not-found；5xx / `SYS_`|`STORAGE_` → server-error；400/422 → 参数/业务。
+ * 404 → not-found；409 → conflict（v1.4.10）；5xx / `SYS_`|`STORAGE_` → server-error；400/422 → 参数/业务。
  */
 export function resolveErrorKind(status?: number, codePrefix: ErrorCodePrefix = ''): ApiErrorKind {
   if (status === 401) return 'unauthorized'
@@ -74,6 +76,7 @@ export function resolveErrorKind(status?: number, codePrefix: ErrorCodePrefix = 
   if (status === 403) return 'forbidden'
   if (codePrefix === 'AUTH_') return 'forbidden'
   if (status === 404) return 'not-found'
+  if (status === 409) return 'conflict'
   if (typeof status === 'number' && status >= 500) return 'server-error'
   if (codePrefix === 'SYS_' || codePrefix === 'STORAGE_') return 'server-error'
   if (status === 400 || status === 422) return codePrefix === 'PARAM_' ? 'invalid-param' : 'business'
@@ -112,6 +115,7 @@ const KIND_TITLES: Record<ApiErrorKind, string> = {
   'not-found': '资源不存在或已被移除',
   'invalid-param': '请求参数有误',
   business: '操作未完成',
+  conflict: '操作被拒绝',
   'server-error': '加载失败，请稍后重试',
   network: '网络异常，请检查网络后重试',
   canceled: '请求已取消',
@@ -131,4 +135,38 @@ export function describeError(error: unknown): ErrorPresentation {
     retryable: RETRYABLE_KINDS.includes(classified.kind),
     pageLevel: classified.kind === 'forbidden' || classified.kind === 'unauthorized',
   }
+}
+
+/**
+ * DPS 模板化专项错误语义（《前端架构设计文档-v1.4.10》§4 错误码呈现分工表）。
+ *
+ * 与通用 `describeError` 并存：`kind` 分类口径不变（保持既有 S6 隔离呈现契约），
+ * 仅按**状态码**追加可呈现的语义提示，覆盖 400／403／404／409／422／503 与 5xx 兜底。
+ */
+export const DPS_ERROR_HINTS: Record<number, string> = {
+  400: '请求内容不符合校验规则（含字段级原因：字段键不受支持／归属模板未激活／extends 深度超限等）',
+  403: '无权限执行该操作，或该能力当前未启用',
+  404: '未找到对应资源（模板／版本／血缘谱系不存在）',
+  409: '操作被拒绝：存在冲突或未复核候选，不得进入标签／画像路径',
+  422: '包结构非法（白名单校验未通过）',
+  503: 'AI 适配器暂不可用，人工路径不受影响',
+}
+
+/** 按状态码取 DPS 专项提示（未命中返回空串；5xx 走统一兜底文案） */
+export function dpsErrorHint(status?: number): string {
+  if (typeof status !== 'number') return ''
+  if (DPS_ERROR_HINTS[status]) return DPS_ERROR_HINTS[status]
+  if (status >= 500) return '服务暂不可用，请稍后重试（不静默降级）'
+  return ''
+}
+
+/** DPS 页面呈现语义（在通用归一模型上追加 `hint`） */
+export interface DpsErrorPresentation extends ErrorPresentation {
+  hint: string
+}
+
+/** 生成 DPS 页面呈现语义（通用归一 ＋ 状态码专项提示） */
+export function describeDpsError(error: unknown): DpsErrorPresentation {
+  const classified = classifyError(error)
+  return { ...describeError(error), hint: dpsErrorHint(classified.status) }
 }

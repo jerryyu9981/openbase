@@ -1,0 +1,33 @@
+﻿[L1] 构建验证
+  compileall exit_code=0
+  import openbase OK; __version__=1.0.0
+[L2] 启动验证
+  app assembled: title='OpenBase'
+  dps-proxy 路由对象总数=34; v1.4.10 新增路由对象=22
+python : C:\Users\jerry\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\python\Lib\site-packages\fastapi\ope
+napi\utils.py:252: UserWarning: Duplicate Operation ID proxy_api_v1_proxy__system___path__get for function proxy at D:\
+Trae CN\myproject\Dev\OpenBase\openbase\modules\proxy\__init__.py
+At line:15 char:4135
++ ... pgrep\bin'; python doc/test/evidence/v1410/v1410_l1l2l3_smoke.py > do ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\jerry\...oxy\__init__.py:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  warnings.warn(message, stacklevel=1)
+  TestClient started; GET /openapi.json -> 200
+[L3] 冒烟验证（5 例）
+principal verify db read failed; degrade pass-through
+principal verify db read failed; degrade pass-through
+principal verify db read failed; degrade pass-through
+principal verify db read failed; degrade pass-through
+principal verify db read failed; degrade pass-through
+principal verify db read failed; degrade pass-through
+  [PASS] S1 认证门禁 401 :: status=401, code=AUTH_401
+  [PASS] S2 端点契约透传 200 :: status=200, body_code=0, upstream=http://127.0.0.1:8000/api/v2/portrait/templates, X-Proxy-Source='openbase-dps-proxy'
+  [PASS] S3 错误语义保真 404/409 :: 404->404, 409->409
+  [PASS] S4 路由顺序（静态先于动态） :: impact<templates-tag; list<detail
+  [PASS] S5 既有 12 路由不变 :: checked=12
+
+L1 构建: PASS
+L2 启动: PASS
+L3 冒烟: PASS

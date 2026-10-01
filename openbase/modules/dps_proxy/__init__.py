@@ -16,6 +16,16 @@ OpenBase 为唯一认证入口：
   body.code（非 0）> body.detail（str/dict/list）> HTTP 状态码
   （覆盖 DPS 网关 {code,message,data} 与 FastAPI {detail} 双格式）。
 - 无 SSE 端点（DPS 无 HTTP 流式能力）。
+
+v1.4.10 Step 3 P1（模板化能力对接深化，契约《OpenBase-API接口设计文档-v1.4.10》
+§1／§1.1／§3.1／§3.2／§3.4）：在**保持既有 12 条路由行为与对外路径不变**的前提下，
+新增 **22 条路由**（10 新增端点 #1~#10 ＋ 12 条补代理端点 #11~#22）：
+
+- 本仓路由 ``/api/v1/dps-proxy/{path}`` → 上游 ``{dps_upstream_base}/api/v2/portrait/{path}``；
+- **路由注册顺序（DT-04 强制）**：静态段／列表路由先于同名动态段；
+- 分页／幂等（``package_hash``）／时间格式／**错误体（4xx／5xx）语义保真透传**，
+  不在本仓做权限判定（BR-1410-02：仅注入身份 ＋ 透传上游 403）；
+- 身份头沿用 :func:`_build_identity_headers`（四头 ＋ ``X-Proxy-Source``／``X-Request-Id``）。
 """
 from __future__ import annotations
 
@@ -520,3 +530,501 @@ async def dps_health(
     """DPS 上游健康透传（GET /health/liveness，DPS 白名单免鉴权）."""
     headers = _build_identity_headers(_user, request)
     return await _forward("GET", "/health/liveness", headers=headers, request=request)
+
+
+# ---------------------------------------------------------------------------
+# v1.4.10 Step 3 P1：模板化能力对接（10 新增端点 #1~#10 ＋ 12 补代理端点 #11~#22）
+#
+# 契约事实源：《OpenBase-API接口设计文档-v1.4.10》§1（路径映射）／§1.1（补代理）／
+# §3.1（权限动作映射，仅文档对齐，本仓不做权限判定）／§3.2（新增端点契约）／
+# §3.4（补代理端点契约）。
+#
+# 统一约定（契约 §1）：
+# - 本仓路由 ``/api/v1/dps-proxy/{path}`` → 上游 ``{dps_upstream_base}/api/v2/portrait/{path}``；
+# - 分页／幂等／时间格式／错误体（4xx／5xx）语义**保真透传**；
+# - 查询参数**原样透传**，不在本仓做参数裁剪或语义改写；
+# - 身份头沿用 :func:`_build_identity_headers`（唯一装配点），裁决权在上游。
+#
+# 路由注册顺序（DT-04 强制，源文件物理顺序即注册顺序）：
+#   1) 静态段：/template-packages/*、/lineage/*、/measures/*、/scoring-types；
+#   2) 列表路由：/templates、/annotation-templates、/labels（无 path 参数）；
+#   3) 动态段：/templates/{code}/*、/annotation-templates/{code}。
+# ---------------------------------------------------------------------------
+
+# 上游画像模板域前缀（契约 §1：{DPS_BASE_URL}/api/v2/portrait/{path}）
+DPS_PORTRAIT_UPSTREAM_PREFIX = "/api/v2/portrait"
+
+
+def _portrait_upstream_path(suffix: str) -> str:
+    """拼接上游画像模板域路径（``suffix`` 以 ``/`` 起始）."""
+    return f"{DPS_PORTRAIT_UPSTREAM_PREFIX}{suffix}"
+
+
+def _forward_query_params(request: Request) -> dict[str, Any]:
+    """透传入站查询参数至上游（保真，不在本仓做语义裁剪）."""
+    return dict(request.query_params)
+
+
+# ---- 静态段 1：模板包（#1 导出 / #2 导入）--------------------------------
+
+
+@router.post("/template-packages/export")
+async def dps_template_package_export(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板包导出（#1，POST；权限动作 portrait_template:create，契约 §3.1）.
+
+    请求体 scope{type,codes[]}／include_annotation_templates 原样透传；
+    上游 400（依赖缺失）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path("/template-packages/export"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/template-packages/import")
+async def dps_template_package_import(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板包导入（#2，POST；权限动作 portrait_template:create，契约 §3.1）.
+
+    请求体 package{}／conflict_policy／dry_run 原样透传；上游 409／400／422
+    语义保真（不本仓去重，幂等由上游 package_hash 裁决）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path("/template-packages/import"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 静态段 2：血缘（#7 影响面，静态）先于 #6 标签血缘反查（动态）--------
+
+
+@router.get("/lineage/impact")
+async def dps_lineage_impact(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """影响面（#7，GET；权限动作 annotation_template:read，契约 §3.1）.
+
+    查询参数三层：?template_code=｜?annotation_template_code=｜?tag_code=
+    （``?field_key=`` 显式不支持，本仓不拦截，透传上游 400 语义）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/lineage/impact"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/lineage/tags/{tag_code}")
+async def dps_lineage_tag_sources(
+    tag_code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标签血缘反查（#6，GET；权限动作 annotation_template:read，契约 §3.1）.
+
+    上游 404（无谱系）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/lineage/tags/{tag_code}"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 静态段 3：措施建议（#8）---------------------------------------------
+
+
+@router.get("/measures/suggest")
+async def dps_measures_suggest(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """措施建议（#8，GET；权限动作 portrait_template:read，契约 §3.1）.
+
+    查询参数 ?person_id= 透传；响应含 disclaimer，本仓原样透传。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/measures/suggest"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 静态段 4：评分类型（#10）--------------------------------------------
+
+
+@router.get("/scoring-types")
+async def dps_scoring_types(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """评分类型列表（#10，GET；权限动作 portrait_template:read，契约 §3.1）.
+
+    分页参数透传；上游 400（未注册评分类型）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/scoring-types"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 列表路由：画像模板（#11 列表 / #13 创建）先于动态段 /templates/{code} -
+
+
+@router.get("/templates")
+async def dps_templates_list(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板列表（#11，GET E-11；权限动作 portrait_template:read）.
+
+    查询参数 ?status=&profile_type=&subject_type=（均可选）原样透传。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/templates"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/templates")
+async def dps_template_create(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板创建（#13，POST E-13；权限动作 portrait_template:create）.
+
+    请求体原样透传；上游 400（字段级校验）／409（code 冲突）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path("/templates"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 列表路由：标注模板（#17 列表 / #19 创建）先于同名动态段 --------------
+
+
+@router.get("/annotation-templates")
+async def dps_annotation_templates_list(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注模板列表（#17，GET E-16；权限动作 annotation_template:read）.
+
+    查询参数 ?template_code=&scenario=（均可选）原样透传。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/annotation-templates"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/annotation-templates")
+async def dps_annotation_template_create(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注模板创建（#19，POST E-18；权限动作 annotation_template:create）.
+
+    请求体透传；强归属校验（归属画像模板存在且 active）由上游裁决；
+    上游 409（code 已存在）／400（其余校验）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path("/annotation-templates"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 列表路由：标签管理（#22）先于同名动态段 ------------------------------
+
+
+@router.get("/labels")
+async def dps_labels_list(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标签列表（#22，GET E-21；权限动作 annotation_template:read）.
+
+    查询参数 ?action=list 透传；上游 400（action ≠ list）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/labels"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 动态段：画像模板版本操作（#3 对比 / #4 回滚 / #5 预检）--------------
+
+
+@router.get("/templates/{code}/diff")
+async def dps_template_diff(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板版本对比（#3，GET；权限动作 portrait_template:read）.
+
+    上游 404（模板／版本不存在）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/templates/{code}/diff"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/templates/{code}/rollback")
+async def dps_template_rollback(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板版本回滚（#4，POST；权限动作 portrait_template:update，契约 §3.1）.
+
+    请求体 target_version／reason 透传；上游 404（目标版本不存在）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/templates/{code}/rollback"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/templates/{code}/preflight")
+async def dps_template_preflight(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板预检（#5，GET；权限动作 portrait_template:read）.
+
+    dry-run 语义（不写入）由上游裁决；响应含影响面三项 ＋ ``basis``，本仓透传。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/templates/{code}/preflight"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 动态段：画像模板详情／更新／启停（#12 / #14 / #15 / #16）-------------
+
+
+@router.get("/templates/{code}")
+async def dps_template_detail(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板详情（#12，GET E-12；权限动作 portrait_template:read）.
+
+    上游 404（不存在）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/templates/{code}"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.put("/templates/{code}")
+async def dps_template_update(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板更新（#14，PUT E-14；权限动作 portrait_template:update）.
+
+    请求体待变更字段透传；``version`` 递增与 history 留痕由上游裁决；
+    上游 404／400（含 extends 自指／成环／深度 >2／父模板不存在）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "PUT", _portrait_upstream_path(f"/templates/{code}"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/templates/{code}/activate")
+async def dps_template_activate(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板激活（#15，POST E-15；权限动作 portrait_template:update，契约 §3.1）.
+
+    无请求体；幂等由上游保证；上游 404 语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/templates/{code}/activate"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/templates/{code}/deactivate")
+async def dps_template_deactivate(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像模板停用（#16，POST E-15；权限动作 portrait_template:update，契约 §3.1）.
+
+    无请求体；幂等由上游保证；上游 404 语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/templates/{code}/deactivate"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 动态段：标注模板详情／更新（改挂）／删除（#18 / #20 / #21）-----------
+
+
+@router.get("/annotation-templates/{code}")
+async def dps_annotation_template_detail(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注模板详情（#18，GET E-17；权限动作 annotation_template:read）.
+
+    上游 404 语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/annotation-templates/{code}"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.put("/annotation-templates/{code}")
+async def dps_annotation_template_update(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注模板更新／改挂（#20，PUT E-19；权限动作 annotation_template:update）.
+
+    请求体含 ``template_code`` 即改挂；强归属校验与 ``version`` 递增由上游裁决；
+    上游 404／400（新归属不存在或未 active、scenario 非法、field_schema 非法）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "PUT", _portrait_upstream_path(f"/annotation-templates/{code}"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.delete("/annotation-templates/{code}")
+async def dps_annotation_template_delete(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注模板删除（#21，DELETE E-20；权限动作 annotation_template:delete）.
+
+    上游 404／409（存在关联标注数据）语义保真（含消息条数）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "DELETE", _portrait_upstream_path(f"/annotation-templates/{code}"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- 动态段 5：AI 标注候选生成（#9）--------------------------------------
+
+
+@router.post("/annotation-adapters/{adapter_id}/generate")
+async def dps_annotation_adapter_generate(
+    adapter_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """AI 标注候选生成（#9，POST；权限动作 annotation_template:create，契约 §3.1）.
+
+    请求体 text／annotation_template 透传；上游 403（AI 通道未启用）／503
+    （适配器不可用，降级非阻塞）／409（未复核候选进入标签·画像路径，门禁 DT-009）
+    语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/annotation-adapters/{adapter_id}/generate"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
