@@ -1,0 +1,6 @@
+{
+  "rows": [
+    "[404] model=qwen2.5:0.5b 1259ms -> {\"code\":2001,\"message\":\"模型 'qwen2.5:0.5b' 不存在\",\"data\":null,\"timestamp\":\"2026-10-02T08:11:40.497751+00:00\"}",
+    "[200] model=deepseek-v4-flash 1540ms -> {\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-3bb61c260cb244e88bf6589d\",\"mode\":\"openai\",\"pipeline\":[\"llm\"],\"content\":\"连通\",\"model\":\"deepseek-v4-flash\",\"usage\":{\"prompt_tokens\":87,\"completion_tokens\":48,\"total_tokens\":135},\"routing_trace\":{\"components\":{\"need_memory\":false,\"need_rag\":fal"
+  ]
+}

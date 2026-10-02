@@ -1,0 +1,89 @@
+{
+  "base": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "label": "OpenBase 存活",
+      "path": "/health",
+      "status": 200,
+      "body": "{\"status\":\"ok\"}"
+    },
+    {
+      "label": "契约面",
+      "path": "/openapi.json",
+      "status": 200,
+      "body": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"OpenBase\",\"version\":\"1.0.0\"},\"paths\":{\"/api/v1/auth/login\":{\"post\":{\"tags\":[\"auth\"],\"summary\":\"Login\",\"description\":\"账号密码登录（"
+    },
+    {
+      "label": "LLM 代理健康",
+      "path": "/api/v1/llm-proxy/health",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.14.5\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0,\"channel\":\"b\"},\"openrag\":{\""
+    },
+    {
+      "label": "LLM 模型列表",
+      "path": "/api/v1/llm-proxy/models",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"models\":[{\"id\":\"gpt-4\",\"object\":\"model\",\"created\":1785570622,\"owned_by\":\"DeepSeek2\"},{\"id\":\"deepseek-v4-flash\",\"object\":\""
+    },
+    {
+      "label": "RAG 代理健康",
+      "path": "/api/v1/rag-proxy/health",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"1.9.1\",\"uptime\":133.1,\"components\":{\"database\":{\"status\":\"up\",\"response_time_ms\":0.0,\"versio"
+    },
+    {
+      "label": "Memory 代理健康",
+      "path": "/api/v1/memory-proxy/health",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}},\"timest"
+    },
+    {
+      "label": "DPS 代理健康",
+      "path": "/api/v1/dps-proxy/health",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.12.1\",\"timestamp\":\"2026-10-02T08:04:52Z\",\"uptime_seconds\":141,\"check_type\":\"liveness\",\"che"
+    },
+    {
+      "label": "DPS 画像列表",
+      "path": "/api/v1/dps-proxy/portraits?page=1&page_size=3",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":17,\"page\":1,\"page_size\":3,\"total_pages\":6,\"items\":[{\"id\":\"2b07d322-af88-4cbc-a388-e2a132a193eb\",\"person_id\":\"61\",\""
+    },
+    {
+      "label": "DPS 模板列表",
+      "path": "/api/v1/dps-proxy/templates?page=1&page_size=3",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0},\"timestamp\":\"2026-10-02T08:04:52.422595+00:00\"}"
+    },
+    {
+      "label": "网关健康",
+      "path": "/api/v1/gateway/health",
+      "status": 200,
+      "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"systems\":[{\"system\":\"openllm\",\"healthy\":true,\"instance_count\":1,\"health_rate\":1.0},{\"system\":\"openrag\",\"healthy\":true,\"in"
+    },
+    {
+      "label": "OpenRAG 直连 /health",
+      "path": "/health",
+      "status": 404,
+      "body": "{\"code\":\"NOTFOUND-4040\",\"message\":\"Not Found\",\"data\":null,\"trace_id\":\"73bb9d905a3848a8b1f211257736e373\",\"timestamp\":\"202"
+    },
+    {
+      "label": "OpenRAG 直连 /healthz",
+      "path": "/healthz",
+      "status": 404,
+      "body": "{\"code\":\"NOTFOUND-4040\",\"message\":\"Not Found\",\"data\":null,\"trace_id\":\"74e676e468424222b2a88e9083029f3e\",\"timestamp\":\"202"
+    },
+    {
+      "label": "OpenRAG 直连 /api/v1/health",
+      "path": "/api/v1/health",
+      "status": 401,
+      "body": "{\"code\": \"AUTH-4010\", \"message\": \"missing api key\", \"data\": null, \"trace_id\": \"3de017cd43c14ed99d9b019b213602cb\", \"times"
+    },
+    {
+      "label": "OpenRAG 直连 /api/health",
+      "path": "/api/health",
+      "status": 401,
+      "body": "{\"code\": \"AUTH-4010\", \"message\": \"missing api key\", \"data\": null, \"trace_id\": \"816f6505445940adb7505b2ea841d275\", \"times"
+    }
+  ]
+}

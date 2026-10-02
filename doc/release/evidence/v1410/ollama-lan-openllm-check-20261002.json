@@ -1,0 +1,6 @@
+{
+  "rows": [
+    "[200] Authorization Bearer -> [{\"name\":\"qwen3.5:4b-q4_K_M\",\"model\":\"qwen3.5:4b-q4_K_M\",\"modified_at\":\"2026-09-28T02:52:45.8571237+08:00\",\"size\":3389983735,\"digest\":\"2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd\",\"details\":{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"qwen35\",\"families\":[\"qwen35\"],\"parameter_siz",
+    "[404] OpenBase→OpenLLM→LAN Ollama chat -> {\"code\":\"404\",\"message\":\"Not Found\",\"detail\":null,\"request_id\":\"req-16fb39c0a138\"}"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "rows": [
+    "[200] LAN Ollama /api/tags -> ['qwen3.5:4b-q4_K_M', 'qwen3.5:2b-q4_K_M', 'llama3.2:1b', 'qwen2.5:0.5b']",
+    "[200] LAN Ollama 推理 qwen2.5:0.5b 5955ms -> '通连'",
+    "[401] OpenLLM /api/v1/local-models -> {\"detail\":\"无法验证凭据\"}",
+    "[200] OpenBase llm-proxy /models -> ['gpt-4', 'deepseek-v4-flash']",
+    "[200] rag-proxy -> {\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"1.9.1\",\"uptime\":75.4,\"components\":{\"database\":{\"status\":\"up\",\"response_time_ms\":0.",
+    "[200] memory-proxy -> {\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"",
+    "[200] dps-proxy -> {\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.12.1\",\"timestamp\":\"2026-10-02T08:10:51Z\",\"uptime_seconds\":89,\"check_type\":\"liven",
+    "[200] gateway -> {\"code\":0,\"message\":\"success\",\"data\":{\"systems\":[{\"system\":\"openllm\",\"healthy\":true,\"instance_count\":1,\"health_rate\":1.0},{\"system\":\"openrag\",\"healthy"
+  ]
+}
