@@ -1,0 +1,47 @@
+{
+  "probe": "openbase-v1.4.10-ollama-gateway-alignment-db-truth",
+  "executed_at": "2026-10-02T16:30:00+08:00",
+  "source": "直查 public.llm_providers / public.llm_models（权威，绕过 API 缓存）",
+  "requirement": "用户指令：Ollama 删除 Local，以局域网为准，核对注册为网关模型",
+  "providers_ollama": [
+    {
+      "provider_name": "Ollama Local",
+      "provider_code": "ollama",
+      "api_base_url": "http://localhost:11434/v1",
+      "status_before": "active",
+      "status_after": "inactive",
+      "note": "DELETE API 返回 200「提供商已删除」，语义为软删除（状态置 inactive），数据行保留"
+    },
+    {
+      "provider_name": "Ollama LAN",
+      "provider_code": "ollama-lan",
+      "api_base_url": "http://192.168.0.4:11434/v1",
+      "status_after": "active",
+      "note": "基址已于本次修正（原为 127.0.0.1）；当前唯一 active 的 Ollama provider"
+    }
+  ],
+  "gateway_models_ollama_lan": [
+    {"model_name": "qwen2.5:0.5b", "status": "active", "source": "原有，本次激活"},
+    {"model_name": "llama3.2:1b", "status": "active", "source": "原有 2 条重复，保留 1 条并激活；重复项停用"},
+    {"model_name": "qwen3.5:2b-q4_K_M", "status": "active", "source": "本次新增并激活"},
+    {"model_name": "qwen3.5:4b-q4_K_M", "status": "active", "source": "本次新增并激活"}
+  ],
+  "ollama_local_leftovers": {
+    "provider_status": "inactive",
+    "models": ["qwen3:0.6b ×6（均 inactive；该模型在局域网 Ollama 上已不存在）"]
+  },
+  "hard_delete_impact": {
+    "semantic_routes.provider_id": 0,
+    "usage_records.provider_id": 38,
+    "semantic_route_cache.matched_provider_id": 0,
+    "llm_models.provider_id": 6,
+    "delete_rule": "NO ACTION（存在引用时物理删除会失败）",
+    "conclusion": "物理删除需先处理 38 条使用历史（usage_records），属不可逆且影响共享库历史数据 → 待用户裁定；当前保持停用态"
+  },
+  "functional_verification": [
+    {"check": "LAN Ollama /api/tags", "status": 200, "detail": "qwen3.5:4b-q4_K_M / qwen3.5:2b-q4_K_M / llama3.2:1b / qwen2.5:0.5b"},
+    {"check": "OpenLLM /api/v1/local-models", "status": 200, "detail": "返回局域网 4 模型（证明读取局域网实例）"},
+    {"check": "OpenBase→OpenLLM chat model=qwen2.5:0.5b", "status": 200, "detail": "content=连通，1171ms"},
+    {"check": "OpenBase→OpenLLM chat model=qwen3.5:2b-q4_K_M", "status": 200, "detail": "24820ms；completion_tokens=16 但 content 为空（推理型模型，内容或在 reasoning 字段，观察项）"}
+  ]
+}

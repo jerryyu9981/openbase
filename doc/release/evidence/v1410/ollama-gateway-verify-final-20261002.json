@@ -1,0 +1,12 @@
+{
+  "rows": [
+    "[try 1] ollama providers -> [('Ollama LAN', 'ollama-lan', 'active'), ('Ollama Local', 'ollama', 'inactive')]",
+    "[try 2] ollama providers -> [('Ollama LAN', 'ollama-lan', 'active'), ('Ollama Local', 'ollama', 'inactive')]",
+    "[try 3] ollama providers -> [('Ollama LAN', 'ollama-lan', 'active'), ('Ollama Local', 'ollama', 'inactive')]",
+    "Ollama LAN models: llama3.2:1b(inactive); qwen2.5:0.5b(active); llama3.2:1b(active); qwen3.5:4b-q4_K_M(active); qwen3.5:2b-q4_K_M(active)",
+    "gateway models total = 15",
+    "models under Ollama Local = 6",
+    "[200] chat qwen2.5:0.5b 1171ms -> {\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-079c2bb6940c4fc19e071e48\",\"mode\":\"openai\",\"pipeline\":[\"llm\"],\"content\":\"连通\",\"model\":\"qwen2.5:0.5b\",\"usage\":{\"prompt_tokens\":91,\"completion_tokens\":3,\"total_toke",
+    "[200] chat qwen3.5:2b-q4_K_M 24820ms -> {\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-63f2363a0783419793fe2cf1\",\"mode\":\"openai\",\"pipeline\":[\"llm\"],\"content\":\"\",\"model\":\"qwen3.5:2b-q4_K_M\",\"usage\":{\"prompt_tokens\":66,\"completion_tokens\":16,\"total_"
+  ]
+}

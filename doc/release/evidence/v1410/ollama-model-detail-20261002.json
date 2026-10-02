@@ -1,0 +1,78 @@
+{
+  "Ollama Local (ollama)": [
+    {
+      "id": "04e33ef7-f50c-4212-978f-ef31e001dc0c",
+      "model_name": "qwen3:0.6b",
+      "model_code": "qwen3:0.6b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "a90a3c17-2822-4418-b985-6cf9b2429e5f"
+    },
+    {
+      "id": "528ef035-0a1d-42dc-8e32-1de07a5b757d",
+      "model_name": "qwen3:0.6b",
+      "model_code": "qwen3:0.6b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "a90a3c17-2822-4418-b985-6cf9b2429e5f"
+    },
+    {
+      "id": "b814a076-03ba-4d77-9687-94e9919a3eea",
+      "model_name": "qwen3:0.6b",
+      "model_code": "qwen3:0.6b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "a90a3c17-2822-4418-b985-6cf9b2429e5f"
+    },
+    {
+      "id": "652f56ee-90b4-4109-b9fb-74e246e2149b",
+      "model_name": "qwen3:0.6b",
+      "model_code": "qwen3:0.6b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "a90a3c17-2822-4418-b985-6cf9b2429e5f"
+    },
+    {
+      "id": "110f9555-94fd-44d6-a0c2-6dc195d764a6",
+      "model_name": "qwen3:0.6b",
+      "model_code": "qwen3:0.6b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "a90a3c17-2822-4418-b985-6cf9b2429e5f"
+    },
+    {
+      "id": "bab92b2a-65c6-4fe1-b2a8-3cdb218e20a2",
+      "model_name": "qwen3:0.6b",
+      "model_code": "qwen3:0.6b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "a90a3c17-2822-4418-b985-6cf9b2429e5f"
+    }
+  ],
+  "Ollama LAN (ollama-lan)": [
+    {
+      "id": "cad68486-3f1d-42ee-a229-e7daa32c2b3d",
+      "model_name": "qwen2.5:0.5b",
+      "model_code": "qwen2.5:0.5b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "e2a47638-213d-4f4c-aeed-5cb65b08a80a"
+    },
+    {
+      "id": "5c8e875e-1616-4c45-99e6-8a1f55a51513",
+      "model_name": "llama3.2:1b",
+      "model_code": "llama3.2:1b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "e2a47638-213d-4f4c-aeed-5cb65b08a80a"
+    },
+    {
+      "id": "88b98f38-9e14-4d14-a73f-0964f3570caa",
+      "model_name": "llama3.2:1b",
+      "model_code": "llama3.2:1b",
+      "model_type": "chat",
+      "status": "inactive",
+      "provider_id": "e2a47638-213d-4f4c-aeed-5cb65b08a80a"
+    }
+  ]
+}
