@@ -1,0 +1,184 @@
+{
+  "generated_at": "2026-10-02T05:00:45.424589+00:00",
+  "started_at": "2026-10-02T04:59:24.499391+00:00",
+  "openbase_base": "http://127.0.0.1:8000",
+  "dps_upstream": "http://127.0.0.1:8030",
+  "token_identity": {
+    "sub": "1",
+    "tenant_id": "tenant-1",
+    "org_id": "tenant-1",
+    "role": "super_admin"
+  },
+  "results": [
+    {
+      "group": "门禁",
+      "case": "无 token 访问新增端点",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates",
+      "upstream": "/api/v2/portrait/templates",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-0112b369aa75\"}",
+      "verdict": "PASS"
+    },
+    {
+      "group": "既有12",
+      "case": "上游健康透传",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/health",
+      "upstream": "/health/liveness",
+      "status": 404,
+      "snippet": "{\"code\":\"404\",\"message\":\"Not Found\",\"data\":null,\"timestamp\":\"2026-10-02T04:59:37.271795+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "画像列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits?page=1&page_size=20",
+      "upstream": "/api/v2/portrait/list",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:59:46.320133+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "画像详情",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits/61",
+      "upstream": "/api/v2/portrait/61",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:59:47.080401+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "标签分类列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/tags/categories",
+      "upstream": "/api/v2/tags/categories",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:59:48.657517+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "报表概览",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/reports/overview",
+      "upstream": "/api/v2/reports/overview",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:59:56.661172+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "审计日志",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/audit/logs?page=1&page_size=5",
+      "upstream": "/api/v2/audit/logs",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:59:59.599370+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "批量任务状态",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/batch/tasks/nonexistent-task",
+      "upstream": "/api/v2/batch/import/nonexistent-task/status",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:00.539396+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "画像模板列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates",
+      "upstream": "/api/v2/portrait/templates",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:01.721007+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "模板版本对比",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates/nonexistent/diff?target_version=1",
+      "upstream": "/api/v2/portrait/templates/nonexistent/diff",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:07.776091+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "模板预检",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates/nonexistent/preflight",
+      "upstream": "/api/v2/portrait/templates/nonexistent/preflight",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:09.895292+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "影响面",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/lineage/impact?template_code=nonexistent",
+      "upstream": "/api/v2/portrait/lineage/impact",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:13.705605+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "标签血缘反查",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/lineage/tags/nonexistent",
+      "upstream": "/api/v2/portrait/lineage/tags/nonexistent",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:19.287698+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "措施建议",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/measures/suggest?person_id=61",
+      "upstream": "/api/v2/portrait/measures/suggest",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:27.396435+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "评分类型",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/scoring-types?page=1&page_size=20",
+      "upstream": "/api/v2/portrait/scoring-types",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:33.030715+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "标注模板列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/annotation-templates",
+      "upstream": "/api/v2/portrait/annotation-templates",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:38.499342+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "标签列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/labels?action=list",
+      "upstream": "/api/v2/portrait/labels",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:00:45.391268+00:00\"}",
+      "verdict": "OBSERVED"
+    }
+  ]
+}

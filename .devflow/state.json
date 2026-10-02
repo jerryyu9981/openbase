@@ -1,7 +1,7 @@
 {
   "project": "OpenBase",
   "devflowVersion": "2.18.0",
-  "currentPhase": "v1_4_10_step_5_operations",
+  "currentPhase": "v1_4_10_step_5_closed",
   "completedPhases": [
     "step_0_planning",
     "step_1_requirements",
@@ -95,7 +95,10 @@
     "v1_4_10_step_2_design",
     "v1_4_10_step_3_coding",
     "v1_4_10_step_4_testing",
-    "v1_4_10_step_4_approval"
+    "v1_4_10_step_4_approval",
+    "v1_4_10_step_5_operations",
+    "v1_4_10_released",
+    "v1_4_10_step_5_closed"
   ],
   "currentDocuments": {
     "requirements_v1.4.8": [
@@ -2175,6 +2178,31 @@
       "versionBump": "《项目文档管理规范》§9「人工批准 → 主版本递增」：测试报告 v1.2.0→v2.0.0；测试回溯对比审计报告 v1.1.0→v2.0.0；Stage4 阶段审计报告 v1.1.0→v2.0.0",
       "gate": "Step 4 审计门禁（AU）＝通过；Step 4 审批门禁（用户）＝已批准 ⇒ 允许进入 Step 5 部署与运维",
       "carryOver": "受限/条件项（性能 RT-1410-14、真实 S3 跳过、跨仓 3 项、环境类 4 例）不计入通过，随 Step 5 处置"
+    },
+    "v1_4_10_step_5": {
+      "status": "closed",
+      "date": "2026-10-02",
+      "operator": "DO-OpenBase-Dev / OE-OpenBase-Dev",
+      "auditor": "AU-OpenBase-Dev",
+      "released": true,
+      "environment": "Dev",
+      "releaseCommit": "c2c06b1",
+      "tag": "v1.4.10",
+      "rollbackTarget": "v1.4.9（ca268f73）",
+      "verification": "上线验证 11/11；回滚路径核验 5/5；/health P50 12.4ms P95 90.4ms；401 fail-closed；零凭据",
+      "documents": {
+        "entryAndPlan": "doc/release/OpenBase-发布入场检查记录与发布计划-v1.4.10.md",
+        "deployAndOnlineCheck": "doc/release/OpenBase-部署执行与上线检查报告-v1.4.10.md",
+        "rollbackAndOps": "doc/release/OpenBase-回滚方案与运维手册-v1.4.10.md",
+        "postmortemAndIssues": "doc/release/OpenBase-发布复盘与问题跟踪记录-v1.4.10.md",
+        "opsAudit": "doc/release/OpenBase-运维审计报告-v1.4.10.md",
+        "releaseNote": "doc/release/OpenBase-Release-Note-v1.4.10.md",
+        "stageReport": "doc/audit/review/OpenBase-阶段审计报告-Stage5-v1.4.10.md",
+        "fullCycleAudit": "doc/audit/comprehensive/OpenBase-全流程闭环审计报告-v1.4.10.md"
+      },
+      "crossRepo": "DPS v2.12.1 正式发布（Dev 范围，零 DB 变更），/health/liveness 实测 version=2.12.1；本仓为透传方、改动面=0",
+      "limitations": "①性能压载条件未做；②本轮 Step 5 真实上游联调受共享 PG 中断阻断（DPS SQLite 空库 ⇒ 403 组织不存在），Step 4 已成立解；③真实 S3 4 例跳过",
+      "gate": "Step 5 运维审计（AU）＝通过；全流程闭环审计＝通过 ⇒ 本版开发周期闭环"
     }
   },
   "versionCheck": {

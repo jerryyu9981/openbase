@@ -1,0 +1,132 @@
+{
+  "probe": "openbase-v1.4.10-step5-online-verification",
+  "executed_at": "2026-10-02T12:43:20.030073+08:00",
+  "target": {
+    "base": "http://127.0.0.1:8000",
+    "env": "dev"
+  },
+  "checks": [
+    {
+      "probe": "GET /health",
+      "url": "http://127.0.0.1:8000/health",
+      "status": 200,
+      "elapsed_ms": 1537.2,
+      "body_head": "{\"status\":\"ok\"}",
+      "body_len": 15,
+      "sensitive_markers": []
+    },
+    {
+      "probe": "GET /api/v1/dps-proxy/health",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/health",
+      "status": 401,
+      "elapsed_ms": 715.95,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-fcf52dfa520b\"}",
+      "body_len": 98,
+      "sensitive_markers": [
+        "token",
+        "bearer"
+      ]
+    },
+    {
+      "probe": "GET /api/v1/dps-proxy/templates （无令牌）",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/templates",
+      "status": 401,
+      "elapsed_ms": 56.57,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-0592f08bea89\"}",
+      "body_len": 98,
+      "sensitive_markers": [
+        "token",
+        "bearer"
+      ]
+    },
+    {
+      "probe": "GET /api/v1/dps-proxy/templates （坏令牌）",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/templates",
+      "status": 401,
+      "elapsed_ms": 222.11,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"invalid or expired token\",\"detail\":null,\"request_id\":\"req-cb7ee55fdb94\"}",
+      "body_len": 102,
+      "sensitive_markers": [
+        "token"
+      ]
+    },
+    {
+      "probe": "GET /api/v1/dps-proxy/templates/__no_such_code__/preflight",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/templates/__no_such_code__/preflight",
+      "status": 401,
+      "elapsed_ms": 3.67,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-6c9dc19d570b\"}",
+      "body_len": 98,
+      "sensitive_markers": [
+        "token",
+        "bearer"
+      ]
+    },
+    {
+      "probe": "GET /api/v1/gateway/health",
+      "url": "http://127.0.0.1:8000/api/v1/gateway/health",
+      "status": 401,
+      "elapsed_ms": 11.58,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-d79a06aec8f0\"}",
+      "body_len": 98,
+      "sensitive_markers": [
+        "token",
+        "bearer"
+      ]
+    },
+    {
+      "probe": "GET /api/v1/llm-proxy/health",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/health",
+      "status": 401,
+      "elapsed_ms": 4.48,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-bd2213290ea9\"}",
+      "body_len": 98,
+      "sensitive_markers": [
+        "token",
+        "bearer"
+      ]
+    }
+  ],
+  "openapi": {
+    "title": "OpenBase",
+    "version": "1.0.0",
+    "total_paths": 144,
+    "dps_proxy_paths": [
+      "/api/v1/dps-proxy/annotation-adapters/{adapter_id}/generate",
+      "/api/v1/dps-proxy/annotation-templates",
+      "/api/v1/dps-proxy/annotation-templates/{code}",
+      "/api/v1/dps-proxy/audit/logs",
+      "/api/v1/dps-proxy/batch/tasks/{task_id}",
+      "/api/v1/dps-proxy/health",
+      "/api/v1/dps-proxy/labels",
+      "/api/v1/dps-proxy/lineage/impact",
+      "/api/v1/dps-proxy/lineage/tags/{tag_code}",
+      "/api/v1/dps-proxy/measures/suggest",
+      "/api/v1/dps-proxy/portraits",
+      "/api/v1/dps-proxy/portraits/calculate",
+      "/api/v1/dps-proxy/portraits/{person_id}",
+      "/api/v1/dps-proxy/reports/overview",
+      "/api/v1/dps-proxy/scoring-types",
+      "/api/v1/dps-proxy/tags/categories",
+      "/api/v1/dps-proxy/tags/categories/{category_id}",
+      "/api/v1/dps-proxy/template-packages/export",
+      "/api/v1/dps-proxy/template-packages/import",
+      "/api/v1/dps-proxy/templates",
+      "/api/v1/dps-proxy/templates/{code}",
+      "/api/v1/dps-proxy/templates/{code}/activate",
+      "/api/v1/dps-proxy/templates/{code}/deactivate",
+      "/api/v1/dps-proxy/templates/{code}/diff",
+      "/api/v1/dps-proxy/templates/{code}/preflight",
+      "/api/v1/dps-proxy/templates/{code}/rollback"
+    ],
+    "dps_proxy_count": 26
+  },
+  "upstreams": {
+    "dps_8030_tcp_reachable": false,
+    "dps_health": {
+      "status": null,
+      "elapsed_ms": 2037.81,
+      "error": "URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>"
+    }
+  }
+}

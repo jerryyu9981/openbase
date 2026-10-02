@@ -1,0 +1,20 @@
+# OpenBase dps-proxy 真实上游集成检查  2026-10-02T05:00:45.424589+00:00
+# OpenBase=http://127.0.0.1:8000  DPS=127.0.0.1:8030  sub=1 tenant=tenant-1 role=super_admin
+
+[PASS] 门禁      GET    /api/v1/dps-proxy/templates                             -> 401  {"code":"AUTH_401","message":"missing bearer token","detail":null,"request_id":"req-0112b369aa75"}
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/health                                -> 404  {"code":"404","message":"Not Found","data":null,"timestamp":"2026-10-02T04:59:37.271795+00:00"}
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/portraits?page=1&page_size=20         -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T04:59:46.320133+00:00"}
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/portraits/61                          -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T04:59:47.080401+00:00"}
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/tags/categories                       -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T04:59:48.657517+00:00"}
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/reports/overview                      -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T04:59:56.661172+00:00"}
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/audit/logs?page=1&page_size=5         -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T04:59:59.599370+00:00"}
+[OBSERVED] 既有12    GET    /api/v1/dps-proxy/batch/tasks/nonexistent-task          -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:00.539396+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/templates                             -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:01.721007+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/templates/nonexistent/diff?target_version=1 -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:07.776091+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/templates/nonexistent/preflight       -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:09.895292+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/lineage/impact?template_code=nonexistent -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:13.705605+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/lineage/tags/nonexistent              -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:19.287698+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/measures/suggest?person_id=61         -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:27.396435+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/scoring-types?page=1&page_size=20     -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:33.030715+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/annotation-templates                  -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:38.499342+00:00"}
+[OBSERVED] v1.4.10 GET    /api/v1/dps-proxy/labels?action=list                    -> 401  {"code":"AUTH_401","message":"missing bearer token","data":null,"timestamp":"2026-10-02T05:00:45.391268+00:00"}

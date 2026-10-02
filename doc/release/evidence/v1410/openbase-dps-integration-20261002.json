@@ -1,0 +1,56 @@
+{
+  "probe": "openbase-v1.4.10-step5-dps-integration",
+  "executed_at": "2026-10-02T12:57:24.005031+08:00",
+  "upstream": {
+    "dps_base": "http://127.0.0.1:8030",
+    "dps_version_expected": "2.12.1"
+  },
+  "steps": [
+    {
+      "step": "OpenBase 登录（admin）",
+      "status": 200,
+      "token_obtained": true,
+      "body_head": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJhZG1pbiIsImlhdCI6MTc5MDkxNzA0NywiZXhwIjoxNzkwOTI0MjQ3LCJ0eXBlIjoiYWNjZXNzIiwic3ViX3R5cGUiOiJ1c2VyIiwidHZuIjowLCJvcm"
+    },
+    {
+      "probe": "dps-proxy 健康面（经代理）",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/health",
+      "status": 404,
+      "body_head": "{\"code\":\"404\",\"message\":\"Not Found\",\"data\":null,\"timestamp\":\"2026-10-02T04:57:37.535447+00:00\"}",
+      "code": "404",
+      "message": "Not Found"
+    },
+    {
+      "probe": "契约：模板列表（经代理）",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/templates?page=1&page_size=5",
+      "status": 401,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:57:39.674089+00:00\"}",
+      "code": "AUTH_401",
+      "message": "missing bearer token"
+    },
+    {
+      "probe": "契约：未知 code preflight（DEF-1410-T4-02）",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/templates/__no_such_code__/preflight",
+      "status": 401,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:57:42.370863+00:00\"}",
+      "code": "AUTH_401",
+      "message": "missing bearer token"
+    },
+    {
+      "probe": "契约：未知 code diff（DEF-1410-T4-03）",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/templates/__no_such_code__/diff?from=1&to=2",
+      "status": 401,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:57:45.127103+00:00\"}",
+      "code": "AUTH_401",
+      "message": "missing bearer token"
+    },
+    {
+      "probe": "契约：画像列表（经代理）",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits?page=1&page_size=5",
+      "status": 401,
+      "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T04:57:47.925170+00:00\"}",
+      "code": "AUTH_401",
+      "message": "missing bearer token"
+    }
+  ]
+}

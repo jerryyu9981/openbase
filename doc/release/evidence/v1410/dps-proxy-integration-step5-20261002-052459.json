@@ -1,0 +1,88 @@
+{
+  "probe": "openbase-v1.4.10-step5-dps-integration",
+  "generated_at": "2026-10-02T13:23:34.310052+08:00",
+  "openbase_base": "http://127.0.0.1:8000",
+  "dps_base": "http://127.0.0.1:8030",
+  "token_identity": {
+    "sub": "1",
+    "tenant_id": "tenant-1",
+    "org_id": "tenant-1",
+    "role": "super_admin",
+    "secret_source": "openbase.settings（本仓签发）"
+  },
+  "dps_upstream": {
+    "liveness": {
+      "url": "http://127.0.0.1:8030/health/liveness",
+      "status": 200,
+      "body": "{\"status\":\"healthy\",\"version\":\"2.12.1\",\"timestamp\":\"2026-10-02T05:23:57Z\",\"uptime_seconds\":881,\"check_type\":\"liveness\",\"checks\":{\"process\":{\"status\":\"healthy\",\"response_time_ms\":0,\"pid\":36824}}}"
+    },
+    "readiness": {
+      "url": "http://127.0.0.1:8030/health/readiness",
+      "status": 200,
+      "body": "{\"status\":\"degraded\",\"version\":\"2.12.1\",\"timestamp\":\"2026-10-02T05:23:58Z\",\"uptime_seconds\":883,\"check_type\":\"readiness\",\"checks\":{\"database\":{\"status\":\"healthy\",\"response_time_ms\":1,\"backend\":\"sqlite\"},\"redis\":{\"status\":\"degraded\",\"response_time_ms\":0,\"reason\":\"redis not connected\"}}}"
+    }
+  },
+  "results": [
+    {
+      "group": "门禁",
+      "case": "无令牌访问新增端点",
+      "path": "/api/v1/dps-proxy/templates",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-6b140a7e6839\"}"
+    },
+    {
+      "group": "dps-proxy 健康面",
+      "case": "dps-proxy 健康面",
+      "path": "/api/v1/dps-proxy/health",
+      "status": 404,
+      "snippet": "{\"code\":\"404\",\"message\":\"Not Found\",\"data\":null,\"timestamp\":\"2026-10-02T05:24:06.477822+00:00\"}"
+    },
+    {
+      "group": "模板列表",
+      "case": "模板列表",
+      "path": "/api/v1/dps-proxy/templates?page=1&page_size=5",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:24:19.477678+00:00\"}"
+    },
+    {
+      "group": "未知 code preflight（DEF-1410-T4-02）",
+      "case": "未知 code preflight（DEF-1410-T4-02）",
+      "path": "/api/v1/dps-proxy/templates/__no_such_code__/preflight",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:24:22.412202+00:00\"}"
+    },
+    {
+      "group": "未知 code diff（DEF-1410-T4-03）",
+      "case": "未知 code diff（DEF-1410-T4-03）",
+      "path": "/api/v1/dps-proxy/templates/__no_such_code__/diff?from=1&to=2",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:24:30.214843+00:00\"}"
+    },
+    {
+      "group": "画像列表",
+      "case": "画像列表",
+      "path": "/api/v1/dps-proxy/portraits?page=1&page_size=5",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:24:40.495736+00:00\"}"
+    },
+    {
+      "group": "标签分类",
+      "case": "标签分类",
+      "path": "/api/v1/dps-proxy/tags/categories",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:24:46.444881+00:00\"}"
+    },
+    {
+      "group": "报表概览",
+      "case": "报表概览",
+      "path": "/api/v1/dps-proxy/reports/overview",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"data\":null,\"timestamp\":\"2026-10-02T05:24:56.356014+00:00\"}"
+    }
+  ],
+  "direct_dps_probe": {
+    "path": "/api/v2/portrait/list",
+    "status": 403,
+    "snippet": "{\"code\":403,\"message\":\"组织不存在\",\"data\":null}"
+  }
+}
