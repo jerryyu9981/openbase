@@ -1,0 +1,184 @@
+{
+  "generated_at": "2026-10-02T07:57:29.354436+00:00",
+  "started_at": "2026-10-02T07:57:24.557748+00:00",
+  "openbase_base": "http://127.0.0.1:8000",
+  "dps_upstream": "http://127.0.0.1:8030",
+  "token_identity": {
+    "sub": "1",
+    "tenant_id": "tenant-1",
+    "org_id": "tenant-1",
+    "role": "super_admin"
+  },
+  "results": [
+    {
+      "group": "门禁",
+      "case": "无 token 访问新增端点",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates",
+      "upstream": "/api/v2/portrait/templates",
+      "status": 401,
+      "snippet": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-0d8fee981a8b\"}",
+      "verdict": "PASS"
+    },
+    {
+      "group": "既有12",
+      "case": "上游健康透传",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/health",
+      "upstream": "/health/liveness",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.12.1\",\"timestamp\":\"2026-10-02T07:57:27Z\",\"uptime_seconds\":81,\"check_type\":\"liveness\",\"checks\":{\"process\":{\"status\":\"healthy\",\"response_time_ms\":0,\"pid\":31992}}},\"timestamp\":\"2026-10-02T07:57:27.546398+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "画像列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits?page=1&page_size=20",
+      "upstream": "/api/v2/portrait/list",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":17,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"2b07d322-af88-4cbc-a388-e2a132a193eb\",\"person_id\":\"61\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id\":\"20000000-0000-0000-0000-000000000001\",\"name\":\"联调主体\",\"basic_score\":72.5,\"behavioral_score\":68.0,\"psychological_score\":60.0,\"social_score\":70.0,\"correction_score\":55.0,\"risk_score\":",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "画像详情",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits/61",
+      "upstream": "/api/v2/portrait/61",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"id\":\"2b07d322-af88-4cbc-a388-e2a132a193eb\",\"person_id\":\"61\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id\":\"20000000-0000-0000-0000-000000000001\",\"name\":\"联调主体\",\"basic_score\":72.5,\"behavioral_score\":68.0,\"psychological_score\":60.0,\"social_score\":70.0,\"correction_score\":55.0,\"risk_score\":78.0,\"overall_score\":36.6,\"attributes_json\":\"{\\\"seed\\\": \\\"age",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "标签分类列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/tags/categories",
+      "upstream": "/api/v2/tags/categories",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":20},\"timestamp\":\"2026-10-02T07:57:27.906355+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "报表概览",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/reports/overview",
+      "upstream": "/api/v2/reports/overview",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"total_profiles\":0,\"today_new\":0,\"active_profiles\":0,\"inactive_profiles\":0,\"avg_overall_score\":0.0,\"high_risk_count\":0,\"medium_risk_count\":0,\"low_risk_count\":0,\"risk_distribution\":[{\"name\":\"高风险\",\"value\":0},{\"name\":\"中风险\",\"value\":0},{\"name\":\"低风险\",\"value\":0}],\"trend\":[{\"date\":\"2026-09-03\",\"count\":0},{\"date\":\"2026-09-04\",\"count\":0},{\"date\":\"2026-09-05\",\"count\":0},",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "审计日志",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/audit/logs?page=1&page_size=5",
+      "upstream": "/api/v2/audit/logs",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":14876,\"timestamp\":\"2026-10-02T07:57:27.503422+00:00\",\"user_id\":\"1\",\"action\":\"READ\",\"resource_type\":\"unknown\",\"resource_id\":\"\",\"result\":\"SUCCESS\",\"detail\":\"GET /health/liveness -> 200 (0.134s) | identity={\\\"principal\\\": {\\\"subject_id\\\": \\\"1\\\", \\\"subject_type\\\": \\\"user\\\", \\\"tenant_code\\\": \\\"dps-tenant-001\\\", \\\"org_code\\\": \\\"dps-org-001\\\", \\\"role\\\"",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "既有12",
+      "case": "批量任务状态",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/batch/tasks/nonexistent-task",
+      "upstream": "/api/v2/batch/import/nonexistent-task/status",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":null,\"timestamp\":\"2026-10-02T07:57:28.188548+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "画像模板列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates",
+      "upstream": "/api/v2/portrait/templates",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0},\"timestamp\":\"2026-10-02T07:57:28.278861+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "模板版本对比",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates/nonexistent/diff?target_version=1",
+      "upstream": "/api/v2/portrait/templates/nonexistent/diff",
+      "status": 404,
+      "snippet": "{\"code\":\"NOT_FOUND\",\"message\":\"模板不存在: nonexistent\",\"data\":null,\"timestamp\":\"2026-10-02T07:57:28.406146+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "模板预检",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/templates/nonexistent/preflight",
+      "upstream": "/api/v2/portrait/templates/nonexistent/preflight",
+      "status": 404,
+      "snippet": "{\"code\":\"NOT_FOUND\",\"message\":\"模板不存在: nonexistent\",\"data\":null,\"timestamp\":\"2026-10-02T07:57:28.528304+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "影响面",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/lineage/impact?template_code=nonexistent",
+      "upstream": "/api/v2/portrait/lineage/impact",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"template_code\":\"nonexistent\",\"annotation_template_code\":null,\"tag_code\":null,\"tag_count\":0,\"profile_count\":0},\"timestamp\":\"2026-10-02T07:57:28.692170+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "标签血缘反查",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/lineage/tags/nonexistent",
+      "upstream": "/api/v2/portrait/lineage/tags/nonexistent",
+      "status": 404,
+      "snippet": "{\"code\":\"NOT_FOUND\",\"message\":\"无谱系记录：tag_code=nonexistent\",\"data\":null,\"timestamp\":\"2026-10-02T07:57:28.778686+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "措施建议",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/measures/suggest?person_id=61",
+      "upstream": "/api/v2/portrait/measures/suggest",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"person_id\":\"61\",\"suggestions\":[],\"disclaimer\":\"本建议基于标签映射生成，不表征风险水平，供工作参考\"},\"timestamp\":\"2026-10-02T07:57:29.082642+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "评分类型",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/scoring-types?page=1&page_size=20",
+      "upstream": "/api/v2/portrait/scoring-types",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"registered_types\":[\"boolean_flag\",\"enum_score\",\"grade_map_score\",\"interval_score\",\"legacy_map\",\"ratio_target_score\"],\"registry\":[]},\"timestamp\":\"2026-10-02T07:57:29.151672+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "标注模板列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/annotation-templates",
+      "upstream": "/api/v2/portrait/annotation-templates",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0},\"timestamp\":\"2026-10-02T07:57:29.273684+00:00\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "group": "v1.4.10",
+      "case": "标签列表",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/labels?action=list",
+      "upstream": "/api/v2/portrait/labels",
+      "status": 200,
+      "snippet": "{\"code\":0,\"message\":\"success\",\"data\":[],\"timestamp\":\"2026-10-02T07:57:29.351108+00:00\"}",
+      "verdict": "OBSERVED"
+    }
+  ]
+}
