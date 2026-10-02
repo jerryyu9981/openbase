@@ -7,8 +7,8 @@
 | 发布环境 | **Dev**（Test/Pro 未涉及） |
 | 发布日期 | 2026-10-02 |
 | 落点仓 | **本仓 OpenBase**（`openbase` 后端 ＋ `openbase-ui` 前端） |
-| 发布提交 | 本仓 `main` @ **`c2c06b1`** —— **已推送 origin＋backup＋github 三远程** |
-| Tag | **`v1.4.10`（annotated）** —— 已推送 origin＋backup＋github 三远程，**四处与本地同 hash** |
+| 发布提交 | 应用代码快照 本仓 `main` @ **`c2c06b1`**；发布文档收口 **`2c45a32`** —— **已推送 origin＋backup＋github 三远程** |
+| Tag | **`v1.4.10`（annotated，指向 `2c45a32`）** —— 已推送 origin＋backup＋github 三远程，**四处同对象 `1f383c85d2aa1c959b793fb2831b2ce27587fabd`**；**应用代码面与快照 `c2c06b1` 逐字一致** |
 | 上游依赖 | **DPS v2.12.1 @ 127.0.0.1:8030**（`/health/liveness` 报 **2.12.1**，本轮实测） |
 | 状态 | **已发布（Dev 环境发布闭环）**；Test/Pro 与受限项见 §6 |
 

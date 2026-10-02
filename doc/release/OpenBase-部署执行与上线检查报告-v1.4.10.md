@@ -32,8 +32,9 @@
 
 | 项 | 值 |
 |----|-----|
-| 提交 | 本仓 `main` @ **`c2c06b1`**（工作区洁净，`git status --short` 无输出） |
+| 提交 | 本仓 `main` @ **`c2c06b1`**（**应用代码快照**，工作区洁净）→ 发布文档收口 **`2c45a32`**（＝tag 指向） |
 | 回退目标 | `v1.4.9` = **`ca268f731b33ea04e30a5b7e6a7af2ca4cfbe686`** |
+| Tag | **`v1.4.10`（annotated）** —— 三远程同对象 **`1f383c85d2aa1c959b793fb2831b2ce27587fabd`**；**应用代码面与 `c2c06b1` 逐字一致**（diff 为空） |
 | 变更面 | `git diff --stat v1.4.9..HEAD -- openbase openbase-ui` → **24 files changed, 3859 insertions(+), 11 deletions(-)**（`dps_proxy/__init__.py` +508／`llm_proxy/__init__.py` +2−1／前端 DPS 页面·数据层·路由／测试） |
 | 制品形态 | 后端：Python 源码（语法门禁 `python -m compileall`）；前端：静态制品 `openbase-ui/dist` |
 | 前端构建 | `npm run build`（`vue-tsc --noEmit && vite build`）→ **✓ built in 4m 22s**；`dist/index.html` 475 B（2026-10-02 13:36:01）；证据 `doc/release/evidence/v1410/openbase-ui-build-20261002.txt` |

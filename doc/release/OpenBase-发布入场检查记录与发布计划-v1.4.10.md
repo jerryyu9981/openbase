@@ -39,10 +39,10 @@
 
 | 项 | 入场时现状 | 发布后实际 |
 |----|-----------|-----------|
-| 代码提交 | 本仓 `main` @ `c2c06b1`（工作区洁净） | ✅ 已推送 origin ＋ backup ＋ github 三远程 |
-| 变更面 | 后端 1 文件（`openbase/modules/dps_proxy/__init__.py` **+508**）；前端 3 文件（`src/api/dps.ts` +398／`src/utils/error.ts` +40／`src/router/index.ts` +43）＋ 12 个 `Dps*View.vue` ＋ 2 组合式函数；测试 4 新文件（后端 2 ＋ 前端 2） | 与 Step 3 交付面一致（`git diff --stat`：**4 files changed, 983 insertions(+), 6 deletions(-)** ＋ 18 新增文件） |
+| 代码提交 | 本仓 `main` @ **`c2c06b1`**（**应用代码快照**；工作区洁净）→ 发布文档收口 @ **`2c45a32`** | ✅ 已推送 origin ＋ backup ＋ github 三远程 |
+| 变更面 | 后端 1 文件（`openbase/modules/dps_proxy/__init__.py` **+508**）；前端 3 文件（`src/api/dps.ts` +398／`src/utils/error.ts` +40／`src/router/index.ts` +43）＋ 12 个 `Dps*View.vue` ＋ 2 组合式函数；测试 4 新文件（后端 2 ＋ 前端 2） | 与 Step 3 交付面一致（`git diff --stat v1.4.9..HEAD`：**24 files changed, 3859 insertions(+), 11 deletions(-)**） |
 | 制品形态 | Python 源码（无独立二进制）＋ 前端静态制品 `openbase-ui/dist` | 构建证据：`python -m compileall`（语法门禁）＋ `npm run build`（见《部署执行与上线检查报告-v1.4.10》§2，取证 `doc/release/evidence/v1410/openbase-ui-build-20261002.txt`） |
-| Tag | **未创建** | ✅ **已创建并推送三远程**：`v1.4.10`（annotated，本地／origin／backup／github **四处同 hash**） |
+| Tag | **未创建** | ✅ **已创建并推送三远程**：`v1.4.10`（annotated，**指向 `2c45a32`**）—— 本地／origin／backup／github **四处同对象 `1f383c85d2aa1c959b793fb2831b2ce27587fabd`**；**应用代码面与快照 `c2c06b1` 逐字一致**（`git diff --stat c2c06b1 v1.4.10 -- openbase openbase-ui` 为空） |
 | `.devflow/project-config.json` | `project.version=1.4.9`、`lastRelease=v1.4.9` | ✅ 已置 `1.4.10` / `v1.4.10` |
 | `.devflow/state.json` | `currentPhase=v1_4_10_step_5_operations`；`devflowVersion=2.18.0` | ✅ 已置 `v1_4_10_step_5_closed`（`released` → `step_5_closed`） |
 | `devflow-plugin/devflow-config.json` | **不存在**（本仓无该插件目录） | **不适用**（按技能「不适用须说明原因」声明；`devflow-plugin/release.ps1` 同） |
