@@ -94,7 +94,8 @@
     "v1_4_10_step_1_requirements",
     "v1_4_10_step_2_design",
     "v1_4_10_step_3_coding",
-    "v1_4_10_step_4_testing"
+    "v1_4_10_step_4_testing",
+    "v1_4_10_step_4_approval"
   ],
   "currentDocuments": {
     "requirements_v1.4.8": [
@@ -2159,6 +2160,21 @@
       "report": "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.10.md",
       "traceback_audit": "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.10.md",
       "counts": "收集 1109 / 通过 1101 / 环境类失败 4 / 跳过 4（代码类失败 0）"
+    },
+    "v1_4_10_step_4_approval": {
+      "status": "approved_by_user",
+      "date": "2026-10-02",
+      "approver": "用户（人工门禁）",
+      "scope": "Step 4 测试报告人工批准 ＋ 追认 Step 3 → Step 4 门禁「目标授权代签」",
+      "criteria": "代码类失败 0；P0 阻塞项无；代码类未闭环 P0/P1 = 0；dps_proxy 覆盖率 100%（256/256）；E2E 9/9；T3a 122 页代码类 5xx=0；软断言 0；RT 28/28（P0/P1 100%）／TD 35/35；回溯审计 6 契约点四层闭环",
+      "documents": {
+        "testReport": "doc/test/OpenBase-测试报告-v1.4.10.md（v2.0.0，[Approved]）",
+        "tracebackAudit": "doc/audit/verification/OpenBase-测试回溯对比审计报告-v1.4.10.md（v2.0.0，[Approved]）",
+        "stageReport": "doc/audit/review/OpenBase-阶段审计报告-Stage4-v1.4.10.md（v2.0.0，[Approved]）"
+      },
+      "versionBump": "《项目文档管理规范》§9「人工批准 → 主版本递增」：测试报告 v1.2.0→v2.0.0；测试回溯对比审计报告 v1.1.0→v2.0.0；Stage4 阶段审计报告 v1.1.0→v2.0.0",
+      "gate": "Step 4 审计门禁（AU）＝通过；Step 4 审批门禁（用户）＝已批准 ⇒ 允许进入 Step 5 部署与运维",
+      "carryOver": "受限/条件项（性能 RT-1410-14、真实 S3 跳过、跨仓 3 项、环境类 4 例）不计入通过，随 Step 5 处置"
     }
   },
   "versionCheck": {
