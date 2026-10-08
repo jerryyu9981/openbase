@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "title": "R-387 出站头矩阵实测（rag-proxy → OpenRAG）",
+  "generated_at": "2026-10-08T10:36:00+08:00",
+  "operator": "AT-OpenBase-Dev / AU-OpenBase-Dev",
+  "purpose": "定位 DEF-BE-1410-001（OpenRAG 写类端点经网关恒 403）的根因，并为 R-387 租户码对齐收口给出可判定依据",
+  "target": {
+    "upstream": "http://127.0.0.1:8010",
+    "path": "/api/v1/collections",
+    "auth": "X-API-Key（OpenRAG service_api_key 同源）"
+  },
+  "upstream_contract_facts": {
+    "reserved_tenant_codes": ["default", "openrag-local"],
+    "reserved_code_error": {
+      "status": 400,
+      "code": "BIZ_RESERVED_TENANT_CODE_COLLISION",
+      "message": "reserved tenant code is not allowed on trusted inbound",
+      "rg_error_code": "BIZ-4091"
+    },
+    "anonymous_write_error": {
+      "status": 403,
+      "code": "PERM_SERVICE_KEY_WRITE_DENIED",
+      "message": "service key anonymous write denied under M2"
+    },
+    "existing_collections_tenant_code": "default",
+    "existing_collections_count": 12,
+    "existing_collections_note": "存量 12 个知识库均为 smoke 制品（smoke_v*_kb_* / 空库），tenant_code 全为保留码 default"
+  },
+  "matrix": [
+    {
+      "variant": "V0",
+      "desc": "仅服务密钥 + 来源（= v1.4.7 方案 B 出站形态）",
+      "request_headers": ["X-API-Key", "X-Proxy-Source"],
+      "read": { "status": 200, "visible_items": 12 },
+      "write": { "status": 403, "code": "PERM_SERVICE_KEY_WRITE_DENIED", "authorized": false },
+      "conclusion": "读通、写断（匿名服务密钥写被 M2 拒）"
+    },
+    {
+      "variant": "V1",
+      "desc": "受信入站 + 用户/角色，**无租户头**（= 开关置 true 时平台管理员 admin 的真实出站形态）",
+      "request_headers": ["X-API-Key", "X-Proxy-Source", "X-User-ID", "X-User-Role"],
+      "read": { "status": 400, "visible_items": null },
+      "write": { "status": 400, "code": "BIZ_RESERVED_TENANT_CODE_COLLISION", "authorized": false },
+      "conclusion": "省略 X-Tenant-ID 时上游按保留码 default 处理 → 读、写皆 400（此即「仅恢复注入」不足的证明）"
+    },
+    {
+      "variant": "V2",
+      "desc": "受信入站 + 非保留码 tenant-1（OpenBase tenants.code 已登记值）",
+      "request_headers": ["X-API-Key", "X-Proxy-Source", "X-User-ID", "X-User-Role", "X-Tenant-ID", "X-Org-ID"],
+      "tenant_code": "tenant-1",
+      "read": { "status": 200, "visible_items": 2 },
+      "write": { "status": 200, "authorized": true, "created_id": "fc35fbca-59f1-4173-b22e-44d04e743ddf" },
+      "conclusion": "读、写**同时 200**，为唯一自洽形态 —— R-387 收口判据"
+    },
+    {
+      "variant": "V3",
+      "desc": "受信入站 + 保留码 default（对照组）",
+      "request_headers": ["X-API-Key", "X-Proxy-Source", "X-User-ID", "X-User-Role", "X-Tenant-ID", "X-Org-ID"],
+      "tenant_code": "default",
+      "read": { "status": 400, "visible_items": null },
+      "write": { "status": 400, "code": "BIZ_RESERVED_TENANT_CODE_COLLISION", "authorized": false },
+      "conclusion": "保留码在受信入站恒被拒（对照组，锁定保留码契约）"
+    }
+  ],
+  "root_cause": {
+    "statement": "DEF-BE-1410-001 的根因不是「注入身份头」，而是**出站租户码落在 OpenRAG 保留码上或缺省**",
+    "evidence_chain": [
+      "openbase/modules/rag_proxy/__init__.py::_build_upstream_headers 在 rag_inject_identity_headers=False 时传 effective_user=None → 出站零身份头 → 上游判匿名写 → 403",
+      "openbase/modules/protocol_headers/inject.py:178 tenant_value = identity.effective_tenant_code or default_tenant；缺省时整段 if tenant_value: 不执行 → 省略 X-Tenant-ID",
+      "平台管理员 admin 的 JWT 无 tenant_id/tenant_code 声明（实测 /api/v1/auth/me → tenant_id=null）→ 命中上一条缺省分支 → 上游按保留码 default → 400",
+      "受信入站 + 非保留码（tenant-1）→ 读、写同时 200（V2）"
+    ]
+  },
+  "isolation": {
+    "prefix": "__ob_r387_",
+    "cleanup_actions": [
+      { "collection_id": "fc35fbca-59f1-4173-b22e-44d04e743ddf", "name": "__ob_r387_V2__", "delete_status": 200 }
+    ],
+    "residue_scan_views": ["无身份头", "tenant-1", "tenant-2", "openbase"],
+    "residue_total": 0,
+    "verdict": "零残留"
+  },
+  "consequences": [
+    "收口后读视图由 default 桶（12 个 smoke 制品）切换为 tenant-1 桶（2 项）——存量 default 桶数据在受信入站下**不可达**（保留码禁止入站），本次**不迁移、不删除**，登记为显式后果且可经回滚开关还原",
+    "OpenRAG 保留码防护语义**未改动、未放宽**（本次仅调整本仓出站租户码）"
+  ],
+  "related_documents": [
+    "OpenBase-R2-RAG写路径M2写拒绝收口立项方案-v1.0.0.md",
+    "doc/test/evidence/manual/t4-link-chain-verify-20261008.json",
+    "doc/test/evidence/manual/t4-write-chain-isolated-20261008.json",
+    "doc/test/evidence/v147/def005-multiprobe-20260920.json"
+  ]
+}

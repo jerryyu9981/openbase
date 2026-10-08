@@ -61,7 +61,7 @@ def test_capture_is_permanently_off_in_production(monkeypatch: pytest.MonkeyPatc
     """红线 4：生产永久关闭——即使显式置 1 也不生效. """
     monkeypatch.setenv("OPENBASE_CAPTURE_RESPONSE", "1")
     monkeypatch.setenv("OPENBASE_CAPTURE_UPSTREAM", "1")
-    settings = Settings(env="production", jwt_secret="x" * 40)
+    settings = Settings(env="production", jwt_secret="x" * 40, enforce_token_version=True)
     assert settings.capture_response is True
     assert settings.capture_response_enabled is False
     assert settings.capture_upstream_enabled is False

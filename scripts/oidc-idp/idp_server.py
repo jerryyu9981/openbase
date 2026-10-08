@@ -4,8 +4,8 @@
 协议：OIDC Authorization Code Flow + PKCE 可选；ID Token RS256（JWKS 公钥验证）
 
 演示用户（明文密码仅限本地开发）：
-    oidc-admin / oidc-pass-2026   roles=[org_admin]  tenant_id=default
-    oidc-user  / user-pass-2026   roles=[user]       tenant_id=default
+    oidc-admin / oidc-pass-2026   roles=[org_admin]  tenant_id=tenant-1
+    oidc-user  / user-pass-2026   roles=[user]       tenant_id=tenant-1
 
 内置 client：
     client_id=openbase-gw
@@ -70,6 +70,13 @@ REDIRECT_URIS = [
 ]
 
 # 演示用户池（本地开发用途）
+#
+# C1-a 终态（2026-10-08）：演示用户的租户码统一为**非保留码** `tenant-1`
+# （原为 `default` —— 对 OpenRAG 是禁用保留码、且与 OpenMemory 已登记组织码口径分裂）。
+# 该码必须同时满足：① 非各目标保留码；② 已被各目标登记（OpenMemory 组织策略、
+# DPS `dps_code_map`、OpenRAG 非保留码）。单点常量，避免两处漂移。
+DEMO_TENANT_ID = "tenant-1"
+
 USERS: dict[str, dict[str, Any]] = {
     "oidc-admin": {
         "password": "oidc-pass-2026",
@@ -77,7 +84,7 @@ USERS: dict[str, dict[str, Any]] = {
         "preferred_username": "oidc-admin",
         "email": "oidc-admin@openbase.local",
         "roles": ["org_admin"],
-        "tenant_id": "default",
+        "tenant_id": DEMO_TENANT_ID,
     },
     "oidc-user": {
         "password": "user-pass-2026",
@@ -85,7 +92,7 @@ USERS: dict[str, dict[str, Any]] = {
         "preferred_username": "oidc-user",
         "email": "oidc-user@openbase.local",
         "roles": ["user"],
-        "tenant_id": "default",
+        "tenant_id": DEMO_TENANT_ID,
     },
 }
 

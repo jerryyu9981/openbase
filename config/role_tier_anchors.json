@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "artifact": "role_tier_anchors",
+  "purpose": "A 批 A3：统一角色档位锚点表——OpenBase 角色码 → 语义档位（readonly < readwrite < manage），供四套自研后端系统消费，避免各仓自行解释角色码",
+  "source_of_truth": "openbase.core.db.init（roles 种子）与 openbase.modules.protocol_headers.constants.ALLOWED_OPENBASE_ROLE_CODES",
+  "tiers": {
+    "order": { "readonly": 1, "readwrite": 2, "manage": 3 },
+    "meaning": {
+      "readonly": "只读：允许读类方法（GET/HEAD/OPTIONS）",
+      "readwrite": "读写：在读类基础上允许写类方法（POST/PUT/PATCH/DELETE）",
+      "manage": "管理：读写 + 管理类操作（角色/权限/生命周期/豁免）"
+    }
+  },
+  "anchors": {
+    "admin": "manage",
+    "org_admin": "readwrite",
+    "user": "readonly",
+    "org_member": "readonly",
+    "viewer": "readonly"
+  },
+  "unknown_code_policy": "fail-closed（未映射角色码 → 403 ROLE_UNMAPPED；不得静默降级为 readonly）",
+  "consumers": {
+    "rag": {
+      "module": "OpenRAG src/openrag/identity/role_map.py",
+      "current_tiers": { "readonly": 1, "readwrite": 2, "manage": 3 },
+      "note": "档位语义已同构；写类方法要求 readwrite，需对齐角色码集合"
+    },
+    "memory": {
+      "module": "OpenMemory src/openmemory/identity/role_map.py",
+      "current_tiers": { "READ": 1, "READWRITE": 2, "MANAGE": 3 },
+      "note": "枚举名大小写不同但语义一致；WRITE_MIN_TIER=READWRITE"
+    },
+    "dps": {
+      "module": "DPS src/identity/role_map.py",
+      "current_tiers": { "readonly": 1, "readwrite": 2, "manage": 3 },
+      "note": "档位语义一致；另有 ROLE_TO_ANCHOR / LOCAL_ROLE_TO_ANCHOR 两处映射需与本表对账"
+    },
+    "llm": {
+      "module": "OpenLLM backend/app/identity/role_map.py",
+      "current_tiers": { "read": 1, "readwrite": 2, "manage": 3 },
+      "note": "档位已定义但 require_write_access_from_state 无调用点（B1 待接线）；四入码集合需与本表对齐"
+    }
+  },
+  "known_gaps": [
+    "角色码集合不一致：OpenBase 种子含 user，而 ALLOWED_OPENBASE_ROLE_CODES 含 org_member（两者需并集后统一）",
+    "OpenLLM 档位守卫未接线（见 B1 派单）",
+    "DPS 存在两套本地角色→档位映射（ROLE_TO_ANCHOR / LOCAL_ROLE_TO_ANCHOR），需合并对账"
+  ]
+}

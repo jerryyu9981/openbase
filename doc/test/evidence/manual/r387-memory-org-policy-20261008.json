@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "title": "OpenMemory 组织策略（可接受租户码空间）实测",
+  "generated_at": "2026-10-08T12:07:00+08:00",
+  "operator": "AT-OpenBase-Dev / AU-OpenBase-Dev",
+  "purpose": "判定「统一码空间收口」是否可将 memory 目标一并切换到 OpenBase 非保留码（tenant-1）",
+  "target": {
+    "upstream": "http://127.0.0.1:8020",
+    "auth": "双层：X-API-Key（服务密钥） + Authorization: Bearer <OpenBase 用户 JWT>",
+    "paths": {
+      "recall": "POST /api/v1/recall（memory-proxy 的 GET /memories 适配目标）",
+      "remember": "POST /api/v1/remember"
+    },
+    "note": "OpenMemory v6.8.0 无原生持久化列表端点，记忆列表由 memory-proxy 以 recall 适配"
+  },
+  "measurements": [
+    {
+      "case": "受信入站无租户头",
+      "request": { "method": "POST", "path": "/api/v1/recall", "tenant_header": null },
+      "status": 200,
+      "conclusion": "无租户头 → 放行"
+    },
+    {
+      "case": "受信入站 + X-Tenant-ID: default",
+      "request": { "method": "POST", "path": "/api/v1/recall", "tenant_header": "default" },
+      "status": 200,
+      "conclusion": "`default` 为**已登记组织码** → 放行"
+    },
+    {
+      "case": "受信入站 + X-Tenant-ID: tenant-1",
+      "request": { "method": "POST", "path": "/api/v1/recall", "tenant_header": "tenant-1" },
+      "status": 403,
+      "body": { "detail": "Forbidden", "reason": "组织 'tenant-1' 不存在或未配置策略，按 fail-closed 拒绝访问" },
+      "conclusion": "**未登记** → fail-closed 403"
+    },
+    {
+      "case": "受信入站 + X-Tenant-ID: tenant-2",
+      "request": { "method": "POST", "path": "/api/v1/recall", "tenant_header": "tenant-2" },
+      "status": 403,
+      "body": { "detail": "Forbidden", "reason": "组织 'tenant-2' 不存在或未配置策略，按 fail-closed 拒绝访问" },
+      "conclusion": "**未登记** → fail-closed 403"
+    }
+  ],
+  "verdict": {
+    "openmemory_accepts": ["default", "(无租户头)"],
+    "openmemory_rejects": ["tenant-1", "tenant-2"],
+    "statement": "OpenMemory 当前仅登记组织码 `default`；OpenBase `tenants.code`（tenant-1/tenant-2）在其上**未登记**",
+    "consequence_for_unification": "把 memory 目标兜底码从 `default` 切换为 `tenant-1` 会**立即造成记忆链路 403**；故 memory 目标的全量统一以**上游组织登记**为前置（跨仓），本仓仅完成「按目标登记 + 可一处切换」的准备"
+  },
+  "isolation": {
+    "note": "本轮探针为只读 recall 调用 + 受策略拒绝的写调用；**未写入任何数据**，无需清理",
+    "write_probe": "以 tenant=default 尝试写入被角色 tier 拒绝（我的探针用 viewer 角色）；未落库",
+    "residue": 0
+  },
+  "related_documents": [
+    "OpenBase-R387-跨域租户码对齐设计与收口实施记录-v1.0.0.md",
+    "doc/test/evidence/manual/r387-outbound-header-matrix-20261008.json",
+    "doc/test/evidence/manual/r387-acceptance-20261008.json"
+  ]
+}

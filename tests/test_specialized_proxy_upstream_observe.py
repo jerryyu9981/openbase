@@ -330,6 +330,8 @@ def test_capture_is_permanently_off_in_production(monkeypatch: pytest.MonkeyPatc
 
     monkeypatch.setenv("OPENBASE_CAPTURE_UPSTREAM", "1")
     monkeypatch.setenv("OPENBASE_ENV", "production")
+    # B4 生产门禁：production 必须启用吊销强校验，否则 Settings 构造即拒绝启动
+    monkeypatch.setenv("OPENBASE_ENFORCE_TOKEN_VERSION", "1")
     sys.modules["openbase.settings"]._settings = None
 
     _FakeAsyncClient.response = _FakeUpstreamResponse(200, {"message": f"联系人 {SENSITIVE_PHONE}"})

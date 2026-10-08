@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "artifact": "error_code_map",
+  "purpose": "A 批 A4：统一错误码映射表——各目标域字面量码 ↔ 统一语义码 ↔ 归因层；不改上游行为（不要求改名），供跨系统排障与日志归因（对接 R-384 归因矩阵）使用",
+  "unified_code_source": "openbase.core.errors.codes.ErrorCode（OpenBase 为语义码基准）",
+  "layers": ["gateway", "upstream", "network"],
+  "map": [
+    {
+      "unified": "PERM_SERVICE_KEY_WRITE_DENIED",
+      "layer": "gateway",
+      "http": 403,
+      "meaning": "未绑定服务账号的匿名服务密钥业务写被拒（写需已绑主体）",
+      "targets": {
+        "openbase": "PERM_SERVICE_KEY_WRITE_DENIED",
+        "openrag": "PERM-4035",
+        "openmemory": "E500103",
+        "dps": "PERM_SERVICE_KEY_WRITE_DENIED",
+        "openllm": null
+      }
+    },
+    {
+      "unified": "PERM_UNTRUSTED_IDENTITY_HEADER",
+      "layer": "gateway",
+      "http": 403,
+      "meaning": "非受信来源携带身份头（强校验期）",
+      "targets": {
+        "openbase": "PERM_UNTRUSTED_IDENTITY_HEADER",
+        "openrag": "PERM-4032",
+        "openmemory": "E500100",
+        "dps": "PERM_UNTRUSTED_IDENTITY_HEADER",
+        "openllm": null
+      }
+    },
+    {
+      "unified": "PARAM_HEADER_FORMAT_INVALID",
+      "layer": "gateway",
+      "http": 400,
+      "meaning": "身份头格式非法（CR/LF、超长、控制字符）",
+      "targets": {
+        "openbase": "PARAM_HEADER_FORMAT_INVALID",
+        "openrag": "PARAM-4002",
+        "openmemory": "E500101",
+        "dps": "PARAM_HEADER_FORMAT_INVALID",
+        "openllm": null
+      }
+    },
+    {
+      "unified": "ROLE_UNMAPPED",
+      "layer": "gateway",
+      "http": 403,
+      "meaning": "角色码未映射（fail-closed）",
+      "targets": {
+        "openbase": "PERM_FORBIDDEN",
+        "openrag": "PERM-4033",
+        "openmemory": "E500104",
+        "dps": "ROLE_UNMAPPED",
+        "openllm": "ROLE_UNMAPPED"
+      }
+    },
+    {
+      "unified": "PERM_FORBIDDEN",
+      "layer": "gateway",
+      "http": 403,
+      "meaning": "权限不足（含档位不足、数据面阻断）",
+      "targets": {
+        "openbase": "PERM_FORBIDDEN",
+        "openrag": "PERM-4034",
+        "openmemory": "E500106/E500107",
+        "dps": "PERM_FORBIDDEN",
+        "openllm": null
+      }
+    },
+    {
+      "unified": "BIZ_RESERVED_TENANT_CODE_COLLISION",
+      "layer": "gateway",
+      "http": 400,
+      "meaning": "受信入站携带该目标的保留租户码",
+      "targets": {
+        "openbase": "BIZ_TENANT_NOT_FOUND",
+        "openrag": "BIZ-4091",
+        "openmemory": null,
+        "dps": "BIZ_RESERVED_TENANT_CODE",
+        "openllm": "PARAM_TENANT_CODE_RESERVED"
+      }
+    },
+    {
+      "unified": "BIZ_ORG_ALIAS_MISMATCH",
+      "layer": "gateway",
+      "http": 403,
+      "meaning": "X-Org-ID 与 X-Tenant-ID 不一致（别名强模式）",
+      "targets": {
+        "openbase": "BIZ_ORG_ALIAS_MISMATCH",
+        "openrag": null,
+        "openmemory": "E500102",
+        "dps": null,
+        "openllm": null
+      }
+    },
+    {
+      "unified": "AUTH_PRINCIPAL_DISABLED",
+      "layer": "gateway",
+      "http": 401,
+      "meaning": "主体已停用/吊销（生命周期状态非 active）",
+      "targets": {
+        "openbase": "AUTH_PRINCIPAL_DISABLED",
+        "openrag": "AUTH-4012",
+        "openmemory": "E500105",
+        "dps": null,
+        "openllm": null
+      }
+    },
+    {
+      "unified": "AUTH_TENANT_ID_MISSING",
+      "layer": "gateway",
+      "http": 401,
+      "meaning": "受信入站缺少租户标识（强制段；观察段仅标注）",
+      "targets": {
+        "openbase": null,
+        "openrag": "AUTH-4013",
+        "openmemory": null,
+        "dps": null,
+        "openllm": "PARAM_TENANT_IDENTITY_MISSING"
+      }
+    },
+    {
+      "unified": "BIZ_TENANT_NOT_FOUND",
+      "layer": "gateway",
+      "http": 403,
+      "meaning": "租户/组织未登记或不存在（fail-closed）",
+      "targets": {
+        "openbase": "BIZ_TENANT_NOT_FOUND",
+        "openrag": "BIZ-4092",
+        "openmemory": "E500102",
+        "dps": null,
+        "openllm": null
+      }
+    },
+    {
+      "unified": "AUTH_API_KEY_INVALID",
+      "layer": "upstream",
+      "http": 401,
+      "meaning": "上游服务密钥缺失或非法",
+      "targets": {
+        "openbase": "AUTH_API_KEY_INVALID",
+        "openrag": "AUTH-4010",
+        "openmemory": "AUTHENTICATION_ERROR",
+        "dps": null,
+        "openllm": null
+      }
+    },
+    {
+      "unified": "AUTH_429",
+      "layer": "upstream",
+      "http": 429,
+      "meaning": "限流",
+      "targets": {
+        "openbase": "AUTH_429",
+        "openrag": "RATE-4290",
+        "openmemory": "RATE_LIMIT_ERROR",
+        "dps": null,
+        "openllm": null
+      }
+    },
+    {
+      "unified": "SYS_UPSTREAM_ERROR",
+      "layer": "network",
+      "http": 502,
+      "meaning": "上游不可达 / 转发失败",
+      "targets": {
+        "openbase": "SYS_UPSTREAM_ERROR",
+        "openrag": "DB-5001",
+        "openmemory": "E999999",
+        "dps": null,
+        "openllm": null
+      }
+    }
+  ],
+  "attribution_rules": [
+    "网关自身拒绝（受信/权限/参数）→ layer=gateway，以网关码为准",
+    "上游 4xx/5xx 优先于网关 5xx → layer=upstream（保留上游码原文于日志字段 upstream_error_code）",
+    "连接失败/超时 → layer=network",
+    "同一 unified 码在不同层出现时，以最先拒绝的一跳为准（网关码优先）"
+  ],
+  "notes": [
+    "本表为**映射**，不要求上游改码（避免跨仓破坏性变更）；上游字面量变更时须同步本表（由 D 批门禁脚本校验）",
+    "null 表示该目标未观测到对应码（不代表永不出现）；观测到新码时须补登记"
+  ]
+}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import Depends, Request
 from fastapi.responses import JSONResponse
@@ -55,6 +55,27 @@ def _mark_identity_headers_ignored(request: Request) -> None:
         state.identity_headers_ignored = True
     except Exception:  # noqa: BLE001 - 标注尽力而为
         pass
+
+
+def _annotate_degraded_verify(request: Request, verification_module: Any) -> None:
+    """把「DB 降级放行」留痕标注到 request.state（B4 审计标注通道）.
+
+    verify_principal 无 Request 句柄，故经 ContextVar 承载留痕；此处读取并清除后
+    标注到 request.state，供审计中间件/排查读取（尽力而为，不阻断认证）。环境门控
+    （2026-10-09）后，本通道同时承载显式白名单放行与非生产/策略兼容放行（reason 区分），
+    确保任何非静默放行均可被审计追溯。
+    """
+    try:
+        trace = verification_module.consume_degraded_verify_trace()
+    except Exception:  # noqa: BLE001 - 留痕读取失败不阻断认证
+        logger.debug("degraded verify trace read skipped", exc_info=True)
+        return
+    if trace is None:
+        return
+    try:
+        request.state.principal_db_degraded_verify = trace
+    except Exception:  # noqa: BLE001 - 标注尽力而为
+        logger.debug("degraded verify annotation skipped", exc_info=True)
 
 
 def _attach_audit_identity(request: Request, user_ctx: dict) -> None:
@@ -148,8 +169,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
     ) -> None:
         """以请求级短会话执行共享主体验证（主体验证器共用，避免依赖层双读）.
 
-        OIDC 直签/外域主体（sub 非数字）与 DB 不可达由 verify_principal 内部放行；
-        仅需开 DB 会话的数值型本地主体场景才真正建立会话（降级直签场景零 DB 开销）。
+        OIDC 直签/外域主体（sub 非数字）由本方法提前返回；DB 不可达的裁定由
+        verify_principal 内部完成（生产默认 fail-closed 拒绝；非生产兼容放行；
+        显式白名单则放行并留痕）。
         """
         subject_text = str(payload.get("sub") or "")
         if not subject_text.isdigit():
@@ -157,9 +179,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         from openbase.core.db.session import get_session_factory
         from openbase.modules.identity import verification as principal_verification
 
+        request_id = getattr(request.state, "request_id", None)
         session_factory = get_session_factory()
         async with session_factory() as session:
-            snapshot = await principal_verification.verify_principal(session, payload)
+            snapshot = await principal_verification.verify_principal(
+                session, payload, request_id=request_id
+            )
+        _annotate_degraded_verify(request, principal_verification)
         if snapshot is not None:
             request.state.verified_principal = snapshot
 
@@ -303,7 +329,10 @@ async def get_current_user(
     # 消灭「仅验签不验状态」路径：仅验签通过的 JWT 不再直接进入端点（草案 §5.1/§11 T3-6）。
     from openbase.modules.identity import verification as principal_verification
 
-    await principal_verification.verify_principal(session, payload)
+    await principal_verification.verify_principal(
+        session, payload, request_id=getattr(request.state, "request_id", None)
+    )
+    _annotate_degraded_verify(request, principal_verification)
 
     # 用户信息以 payload 中精简字段返回，详细查询由 auth 模块服务提供
     # permissions 透传（含 "*" 通配），供 require_permission 直接校验

@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-08T10:29:45.339348",
+  "gateway": "http://127.0.0.1:8000",
+  "operator": "admin",
+  "isolation_prefix": "__ob_wv_20261008102945__",
+  "isolation_user": "__ob_wv_user_20261008102945__",
+  "total": 14,
+  "passed": 12,
+  "failed": 1,
+  "other": 1,
+  "steps": [
+    {
+      "step": "W1.1",
+      "module": "OpenRAG",
+      "action": "建知识库",
+      "method": "POST",
+      "path": "/api/v1/rag-proxy/collections",
+      "status": 403,
+      "verdict": "FAIL",
+      "note": "code=PERM_SERVICE_KEY_WRITE_DENIED message=service key anonymous write denied under M2",
+      "ms": 60
+    },
+    {
+      "step": "W1.2",
+      "module": "OpenRAG",
+      "action": "删知识库",
+      "method": "-",
+      "path": "-",
+      "status": null,
+      "verdict": "SKIP",
+      "note": "建库未成功，无残留",
+      "ms": 0
+    },
+    {
+      "step": "W2.1",
+      "module": "OpenMemory",
+      "action": "写记忆",
+      "method": "POST",
+      "path": "/api/v1/memory-proxy/remember",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "code=0 data.keys=[memory_id,status,message,memory,created_at]",
+      "ms": 130
+    },
+    {
+      "step": "W2.2",
+      "module": "OpenMemory",
+      "action": "忘记忆",
+      "method": "POST",
+      "path": "/api/v1/memory-proxy/forget",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "code=0 data.keys=[memory_ids,status,mode,message,forgotten_count,residuals]",
+      "ms": 107
+    },
+    {
+      "step": "W2.3",
+      "module": "OpenMemory",
+      "action": "删除回读",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/memories/{id}",
+      "status": 404,
+      "verdict": "PASS",
+      "note": "已删除（404）",
+      "ms": 53
+    },
+    {
+      "step": "W3.1",
+      "module": "DPS",
+      "action": "建标签分类",
+      "method": "POST",
+      "path": "/api/v1/dps-proxy/tags/categories",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "code=0 data.keys=[id,name,description,org_id,tenant_id,created_at]",
+      "ms": 81
+    },
+    {
+      "step": "W3.2",
+      "module": "DPS",
+      "action": "删标签分类",
+      "method": "DELETE",
+      "path": "/api/v1/dps-proxy/tags/categories/{id}",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "code=0 data.keys=[deleted]",
+      "ms": 64
+    },
+    {
+      "step": "W4.1",
+      "module": "OpenLLM",
+      "action": "建会话",
+      "method": "POST",
+      "path": "/api/v1/llm-proxy/conversations",
+      "status": 201,
+      "verdict": "PASS",
+      "note": "code=0 data.keys=[id,tenant_id,user_id,title,model_name,status,template_id,metadata]",
+      "ms": 84
+    },
+    {
+      "step": "W4.2",
+      "module": "OpenLLM",
+      "action": "删会话",
+      "method": "DELETE",
+      "path": "/api/v1/llm-proxy/conversations/{id}",
+      "status": 204,
+      "verdict": "PASS",
+      "note": "",
+      "ms": 67
+    },
+    {
+      "step": "W4.3",
+      "module": "OpenLLM",
+      "action": "删除回读",
+      "method": "GET",
+      "path": "/api/v1/llm-proxy/conversations",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "已删除（列表中不再包含）",
+      "ms": 82
+    },
+    {
+      "step": "W5.1",
+      "module": "DPS",
+      "action": "画像计算(零写入)",
+      "method": "POST",
+      "path": "/api/v1/dps-proxy/portraits/calculate",
+      "status": 404,
+      "verdict": "PASS",
+      "note": "写链路已抵达上游并完成判定（404，无落库）",
+      "ms": 87
+    },
+    {
+      "step": "W6.1",
+      "module": "OpenRAG",
+      "action": "残留扫描",
+      "method": "GET",
+      "path": "/api/v1/rag-proxy/collections",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "零残留",
+      "ms": 44
+    },
+    {
+      "step": "W6.2",
+      "module": "DPS",
+      "action": "残留扫描",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/tags/categories",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "零残留",
+      "ms": 78
+    },
+    {
+      "step": "W6.3",
+      "module": "OpenLLM",
+      "action": "残留扫描",
+      "method": "GET",
+      "path": "/api/v1/llm-proxy/conversations",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "零残留",
+      "ms": 68
+    }
+  ]
+}

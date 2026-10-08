@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from openbase.modules.protocol_headers.constants import (
     PROXY_SOURCE_MEMORY,
     PROXY_SOURCE_RAG,
 )
+from openbase.settings import RAG_RESERVED_TENANT_CODES
 
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
@@ -82,20 +84,46 @@ def test_openmemory_declares_trusted_proxy_source() -> None:
     assert PROXY_SOURCE_MEMORY in block, f"openmemory 白名单缺少网关来源 {PROXY_SOURCE_MEMORY}"
 
 
-def test_openbase_declares_rag_identity_injection_policy() -> None:
-    """OpenBase（网关）须**显式声明** rag-proxy 身份注入策略关闭（DEF-BE-147-005 联调口径）.
+def test_openbase_declares_rag_tenant_alignment_policy() -> None:
+    """OpenBase（网关）须**显式声明** rag-proxy 出站租户码对齐口径（R-387 收口）。
 
-    OpenRAG 受信入站（M2）对保留租户码（`default`/`openrag-local`）返回 400
-    `BIZ_RESERVED_TENANT_CODE_COLLISION`；改用非保留租户码虽 200，却因租户隔离使既有
-    知识库不可见（`items=[]`）——两方案实测见
-    `doc/test/evidence/v147/def005-multiprobe-20260920.json`。故联调按方案 B 关闭注入。
+    演进：DEF-BE-147-005（v1.4.7）曾以「不注入身份头」（
+    `OPENBASE_RAG_INJECT_IDENTITY_HEADERS='false'`）规避 OpenRAG 保留租户码的 400，
+    但其连带后果为**全部写类端点恒 403**（`PERM_SERVICE_KEY_WRITE_DENIED`，
+    见 DEF-BE-1410-001）。出站头矩阵实测（`doc/test/evidence/manual/`）证明根因是
+    **租户码落在 OpenRAG 保留码（`default`/`openrag-local`）上或缺省**，而非「注入」本身；
+    受信入站 + 非保留码（如 `tenant-1`）时读、写**同时 200**。
 
-    本用例为护栏：口径变更必须同步修改编排器与本文档说明，防止被无意改回 true
-    （即「不得静默降级/静默恢复」）。
+    R-387 收口＝恢复身份头注入 + 出站租户码恒对齐为非保留码。本用例为护栏：
+    ① 编排器**不得**再声明注入关闭；② 须显式声明非保留兜底租户码。
+    口径再次变更时必须同步修改编排器与本说明（不得静默漂移）。
     """
     block = _service_block("openbase")
 
-    assert re.search(r"OPENBASE_RAG_INJECT_IDENTITY_HEADERS\s*=\s*'false'", block), (
-        "openbase 未显式声明 OPENBASE_RAG_INJECT_IDENTITY_HEADERS='false'"
-        "（DEF-BE-147-005 联调口径：rag-proxy 不注入身份头）"
+    # 判据锚定「环境变量**赋值行**」：注释中提及该键名（如说明为何不再声明）不算违规。
+    assert not re.search(
+        r"^[ \t]*OPENBASE_RAG_INJECT_IDENTITY_HEADERS\s*=\s*'false'", block, re.MULTILINE
+    ), (
+        "openbase 仍声明 OPENBASE_RAG_INJECT_IDENTITY_HEADERS='false'"
+        "（DEF-BE-1410-001 已证明该口径使全部写类端点 403）"
     )
+
+    match = re.search(
+        r"^[ \t]*OPENBASE_PROXY_CODE_MAP\s*=\s*'([^']+)'", block, re.MULTILINE
+    )
+    assert match, (
+        "openbase 未显式声明 OPENBASE_PROXY_CODE_MAP"
+        "（A 批 A1/A2：出站租户码空间统一登记入口）"
+    )
+    code_map = json.loads(match.group(1))
+    targets = code_map.get("targets") or {}
+    assert targets, "OPENBASE_PROXY_CODE_MAP 未声明任何目标码空间"
+    for target, entry in targets.items():
+        code = entry.get("default_tenant_code")
+        if code is None:
+            continue
+        assert code, f"目标 {target} 的 default_tenant_code 不得为空"
+        assert code not in RAG_RESERVED_TENANT_CODES or target != "rag", (
+            f"目标 rag 的 default_tenant_code {code!r} 命中 OpenRAG 保留码"
+            f"{sorted(RAG_RESERVED_TENANT_CODES)}，受信入站将返回 400"
+        )

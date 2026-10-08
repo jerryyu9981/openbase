@@ -195,6 +195,16 @@ $services = @(
         Env     = @{
             PYTHONDONTWRITEBYTECODE = '1'
             OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES = '["openbase-memory-proxy"]'
+            # C1-a（2026-10-08，跨仓修复）：**登记 OpenBase 租户码空间为已配置组织**。
+            # 背景（实测）：OpenMemory 的 RBAC 组织策略 fail-closed——未登记组织一律
+            # 403「组织 'X' 不存在或未配置策略」（PermissionMatrix.check_permission）。
+            # 其 .env 仅登记了 `default`，故 X-Tenant-ID=tenant-1 / tenant-2 → 403，
+            # 这直接阻塞 OpenBase 侧「统一码空间终态」（memory 目标无法切换到非保留码）。
+            # 登记口径：与 .env 既有条目一致（default_role=user —— 该角色含
+            # `*/remember` POST 等写权限，无需额外用户绑定即可读写），并按
+            # OPENBASE_PROXY_CODE_MAP 的 memory 目标码空间（tenant-1/tenant-2）逐项登记。
+            # 显式声明（非静默）：进程环境变量优先于 .env，故此声明即本联调环境的登记事实。
+            OPENMEMORY_RBAC__ORG_POLICIES = '{"default":{"enabled":true,"default_role":"user"},"tenant-1":{"enabled":true,"default_role":"user"},"tenant-2":{"enabled":true,"default_role":"user"}}'
         }
         Health  = @('http://127.0.0.1:8020/health')
         Depends = @()
@@ -274,14 +284,20 @@ $services = @(
             OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030'
             OPENBASE_DPS_ORG_MAP = '{"org-1":"dps-org-001","tenant-1":"dps-org-001"}'
             OPENBASE_DPS_TENANT_MAP = '{"org-1":"dps-tenant-001","tenant-1":"dps-tenant-001"}'
-            # DEF-BE-147-005（v1.4.7）：rag-proxy **不注入身份头**（仅 X-API-Key +
-            # X-Proxy-Source + X-Request-Id）。原因：OpenRAG 受信入站（M2）对保留租户码
-            # （default/openrag-local）返回 400 BIZ_RESERVED_TENANT_CODE_COLLISION；改用
-            # 非保留租户码则因租户隔离使既有知识库不可见（items=[]，200 但空数据）——
-            # 两方案实测见 doc/test/evidence/v147/def005-multiprobe-20260920.json。
-            # 此处为**显式声明**的联调口径（非静默降级）；「租户码语义对齐」另行登记为
-            # 跨仓/设计议题，设计确认后可回到注入模式（置 true 即可，护栏用例会同步失败提醒）。
-            OPENBASE_RAG_INJECT_IDENTITY_HEADERS = 'false'
+            # R-387 收口 + A 批 A1/A2：恢复 rag-proxy 身份头注入，并以**统一码空间登记入口**
+            # 显式声明各目标出站租户码（非静默；settings 启动即校验，非法即拒绝启动）。
+            # 根因（出站头矩阵实测，doc/test/evidence/manual/）：
+            #   ① 仅服务密钥、不注入身份头（v1.4.7 方案 B）→ OpenRAG M2 视作匿名服务密钥写
+            #      → 全部写类端点 403 PERM_SERVICE_KEY_WRITE_DENIED（读通写断）；
+            #   ② 受信入站但**省略** X-Tenant-ID（主体无租户声明的真实形态）→ 上游按保留码
+            #      default 处理 → 读、写皆 400；
+            #   ③ 受信入站 + 非保留码（tenant-1）→ 读 200 且写 200（唯一自洽形态）。
+            # 故不再声明 OPENBASE_RAG_INJECT_IDENTITY_HEADERS='false'（该开关保留为应急回滚杠杆）。
+            # 各目标码空间（保留码/兜底码）：**统一码空间终态**（C1-a 闭环后，2026-10-08）——
+            # rag 与 memory 兜底码同为非保留码 `tenant-1`，身份空间不再出现保留码 `default`。
+            # memory 兜底须为上游已登记组织码：已由本服务块的
+            # OPENMEMORY_RBAC__ORG_POLICIES 登记 tenant-1/tenant-2（见上方 C1-a 注释）。
+            OPENBASE_PROXY_CODE_MAP = '{"schema_version":1,"source_of_truth":"openbase.tenants.code","targets":{"rag":{"reserved_codes":["default","openrag-local"],"default_tenant_code":"tenant-1"},"memory":{"reserved_codes":[],"default_tenant_code":"tenant-1"}}}'
         }
         Health  = @('http://127.0.0.1:8000/openapi.json')
         Depends = @('openllm', 'openrag', 'openmemory', 'dps')

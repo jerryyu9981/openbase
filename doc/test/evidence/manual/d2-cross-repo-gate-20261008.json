@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "title": "跨系统授权一致性门禁（D2）",
+  "results": [
+    {
+      "check": "matrix.completeness",
+      "status": "PASS",
+      "detail": "17 格齐备，覆盖 6 系统 / 8 不变式"
+    },
+    {
+      "check": "anchors.openllm",
+      "status": "WARN",
+      "detail": "role_map.py 未解析出「角色→档位」字面映射（需人工核对或改用该仓自有用例）"
+    },
+    {
+      "check": "anchors.openrag",
+      "status": "WARN",
+      "detail": "role_map.py 未解析出「角色→档位」字面映射（需人工核对或改用该仓自有用例）"
+    },
+    {
+      "check": "anchors.openmemory",
+      "status": "PASS",
+      "detail": "role_map.py 解析 4 组映射，命中锚点角色 ['admin', 'org_admin', 'org_member', 'viewer']，无矛盾"
+    },
+    {
+      "check": "anchors.dps",
+      "status": "WARN",
+      "detail": "role_map.py 未解析出「角色→档位」字面映射（需人工核对或改用该仓自有用例）"
+    },
+    {
+      "check": "error_codes.consistency",
+      "status": "PASS",
+      "detail": "44 条目标字面量全部在该仓源码中命中"
+    },
+    {
+      "check": "code_space.rag_registry",
+      "status": "WARN",
+      "detail": "未能从 OpenRAG settings 解析注册表默认清单，需人工核对"
+    },
+    {
+      "check": "code_space.registration",
+      "status": "PASS",
+      "detail": "各目标兜底码均非自身保留码，且 memory/rag 已由目标侧登记（memory='tenant-1'）"
+    },
+    {
+      "check": "reserved.not_relaxed",
+      "status": "PASS",
+      "detail": "OpenBase/OpenRAG/DPS 仍显式声明保留码集合"
+    }
+  ]
+}

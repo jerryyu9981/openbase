@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.modules.protocol_headers import TARGET_SYSTEM_RAG, build_outbound_headers
+from openbase.modules.protocol_headers.code_space import get_target_code_space
 from openbase.modules.proxy.upstream_observe import (
     UPSTREAM_SYSTEM_OPENRAG,
     content_type_of,
@@ -90,6 +91,38 @@ def _upstream_config() -> tuple[str, float, float, str]:
     )
 
 
+def _rag_tenant_alignment() -> tuple[str, dict[str, str]]:
+    """R-387：出站租户码对齐（保留码/缺省 → 非保留兜底码）.
+
+    登记来源已统一为 `protocol_headers.code_space`（A 批 A1/A2）：保留码集合与兜底码
+    由**单一登记入口**给出（内置基线 + `OPENBASE_PROXY_CODE_MAP` 覆盖），本函数不再
+    直接读散落字段。
+
+    OpenRAG 受信入站（M2）对**保留租户码**返回 400 ``BIZ_RESERVED_TENANT_CODE_COLLISION``，
+    且主体无租户声明时省略 ``X-Tenant-ID`` 亦被按保留码处理；而**不注入**身份头又会使
+    写类端点恒 403 ``PERM_SERVICE_KEY_WRITE_DENIED``（DEF-BE-1410-001）。
+    故出站租户码必须**恒为非保留值**。
+
+    Returns:
+        (fallback_tenant, reserved_tenant_map)：兜底码与「保留码 → 兜底码」映射。
+
+    Raises:
+        BaseError: 登记表非法或 rag 目标未登记兜底码（配置面已 fail-fast，此处为
+            运行期二次防线）。
+    """
+    space = get_target_code_space(TARGET_SYSTEM_RAG)
+    if not space.has_default:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "rag 目标未登记出站兜底租户码（受信入站缺少 X-Tenant-ID 会被上游按保留码拒绝）",
+            detail={
+                "reserved_codes": sorted(space.reserved_codes),
+                "hint": "declare targets.rag.default_tenant_code in OPENBASE_PROXY_CODE_MAP",
+            },
+        )
+    return str(space.default_tenant_code), space.reserved_map()
+
+
 def _build_upstream_headers(
     request: Request | None, user: dict | None
 ) -> dict[str, str]:
@@ -104,8 +137,14 @@ def _build_upstream_headers(
     取值只来自统一主体上下文（``build_outbound_headers`` 唯一装配点）。
 
     DEF-BE-147-005（v1.4.7）：``settings.rag_inject_identity_headers=False`` 时
-    **不注入四头**（仍经同一装配点产出 X-Proxy-Source + X-Request-Id，保持串联契约）。
-    原因见 settings 同名字段注释与 `doc/test/evidence/v147/def005-multiprobe-20260920.json`。
+    **不注入四头**（仍经同一装配点产出 X-Proxy-Source + X-Request-Id，保持串联契约）；
+    该开关现为**应急回滚杠杆**（默认 True），联调环境不再关闭它。
+
+    R-387 收口（2026-10-08，DEF-BE-1410-001）：注入时租户码恒对齐为**非保留码**——
+    主体 tenant_code 非保留则原样透传，命中保留码（default/openrag-local）或无声明时
+    归一/兜底为该目标登记的兜底码（见 `protocol_headers/code_space.py`）。既避开上游 400 保留码碰撞，
+    又使受信入站的写类端点获授权（不再 403）。矩阵实测见
+    `doc/test/evidence/manual/r387-outbound-header-matrix-20261008.json`。
     """
     _, _, _, rag_api_key = _upstream_config()
     headers: dict[str, str] = {
@@ -116,12 +155,18 @@ def _build_upstream_headers(
         headers["X-API-Key"] = rag_api_key
     settings = get_settings()
     effective_user = user if settings.rag_inject_identity_headers else None
+    fallback_tenant, reserved_tenant_map = _rag_tenant_alignment()
     return build_outbound_headers(
         request,
         effective_user,
         target_system=TARGET_SYSTEM_RAG,
         extra_headers=headers,
         enforce_org_alias=settings.enforce_org_alias,
+        # R-387：主体无租户声明时的兜底码（非保留）。
+        default_tenant=fallback_tenant,
+        # R-387：主体租户码恰为 OpenRAG 保留码时归一到兜底码（读、写同一租户桶）。
+        tenant_value_map=reserved_tenant_map,
+        org_value_map=reserved_tenant_map,
     )
 
 

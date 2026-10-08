@@ -109,9 +109,10 @@ def test_memory_proxy_remember_success_unified_response(client: TestClient) -> N
     assert headers["X-API-Key"] == "openbase-gw-key-20260830"
     assert headers["Authorization"].startswith("Bearer ")
     # P2-1 T7（OB-8 别名收敛）：org 取 tenant 同源别名（openbase-default 默认链退役）
-    assert headers["X-Org-ID"] == "default"
+    assert headers["X-Org-ID"] == "tenant-1"
     assert headers["X-User-ID"] == "1"
-    assert headers["X-Tenant-ID"] == "default"  # JWT 无 tenant_id 时缺省 default
+    # C1-a 终态（2026-10-08）：JWT 无 tenant_id → 取登记兜底码（原 default，现 tenant-1）
+    assert headers["X-Tenant-ID"] == "tenant-1"
     assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v1/remember")
 
 

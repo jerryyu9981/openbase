@@ -558,9 +558,9 @@ def test_t3_6_verify_principal_must_be_called_by_middleware_and_dependency(
     original = principal_verification.verify_principal
     calls = {"count": 0}
 
-    async def _counting(session, payload):
+    async def _counting(session, payload, **kwargs):
         calls["count"] += 1
-        return await original(session, payload)
+        return await original(session, payload, **kwargs)
 
     monkeypatch.setattr(principal_verification, "verify_principal", _counting)
 
@@ -671,9 +671,10 @@ def test_t3_7_state_change_invalidates_principal_cache_key(
     assert blocked.json()["code"] == ErrorCode.AUTH_PRINCIPAL_DISABLED.value
 
 
-# ---- 补充：共享主体验证器单元语义（fail-open 降级路径与缓存分支，T3 兼容钉死） ----
-# 这些降级路径保证：存量 v0 / OIDC 直签 / DB 不可达 / 行缺失（内存降级用户）在过渡窗口
-# 不被误杀（草案 §6.2/§12.1 风险 1）；deactivated 等「保留行 + 非 active」仍即时拦截。
+# ---- 补充：共享主体验证器单元语义（降级/缓存分支，T3 兼容钉死） ----
+# 存量 v0 / OIDC 直签 / 行缺失（无墓碑）在过渡窗口不被误杀（草案 §6.2/§12.1 风险 1）；
+# deactivated 等「保留行 + 非 active」仍即时拦截；**DB 不可达自 B4 起为 fail-closed 拒绝**
+# （2026-10-08，人工裁定选项 A，见 tests/test_b4_security_hardening.py）。
 
 
 class _RaisingSession:
@@ -708,15 +709,31 @@ def test_verify_principal_oidc_direct_string_sub_passthrough() -> None:
     assert result is None
 
 
-def test_verify_principal_db_unreachable_failopen() -> None:
-    """DB 读不可达 → WARN 降级放行（与 login 内存降级语义一致，不误杀存量会话）."""
+def test_verify_principal_db_unreachable_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DB 读不可达 + 显式 policy=reject → fail-closed 拒绝（503 SYS_SOURCE_UNAVAILABLE）.
+
+    环境门控（2026-10-09 修复）：非生产默认「兼容放行」，故本用例**显式钉死**
+    ``principal_db_degraded_policy=reject``（生产默认亦为 reject），继续测到安全语义。
+    """
+    import importlib
+
     from openbase.modules.identity import verification as verifier
 
-    session = _RaisingSession()
-    result = asyncio.run(
-        verifier.verify_principal(session, {"sub": "42", "tvn": 0})
+    # 注意：`openbase/__init__.py` 以 `settings = get_settings()` 暴露实例，令
+    # `import openbase.settings as m` 绑定到该实例（属性遮蔽）；须用 importlib 取模块。
+    monkeypatch.setattr(
+        importlib.import_module("openbase.settings"),
+        "_settings",
+        Settings(principal_db_degraded_policy="reject"),
     )
-    assert result is None
+
+    session = _RaisingSession()
+    with pytest.raises(BaseError) as exc_info:
+        asyncio.run(
+            verifier.verify_principal(session, {"sub": "42", "tvn": 0})
+        )
+    assert exc_info.value.code == ErrorCode.SYS_SOURCE_UNAVAILABLE
+    assert exc_info.value.status_code == 503
     assert session.rolled_back is True
 
 

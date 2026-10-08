@@ -152,10 +152,12 @@ def test_t7_2_memory_org_alias_same_source(
     assert headers[HEADER_TENANT_ID] == "acme"
     assert headers[HEADER_ORG_ID] == headers[HEADER_TENANT_ID] == "acme"
     # 硬编码默认 org 链（openbase-default）不再参与隔离键：tenant 缺省时 org==tenant 缺省
+    # C1 终态（2026-10-08）：memory 兜底码由保留码 `default` 切换为统一非保留码 `tenant-1`
+    # （登记入口 `protocol_headers/code_space.py`；前提 C1-a 已登记 OpenMemory 组织码）
     headers_default = memory_proxy_module._build_upstream_headers(
         _req(), _user_ctx(tenant_code="", org_id="openbase-default")
     )
-    assert headers_default[HEADER_TENANT_ID] == "default"
+    assert headers_default[HEADER_TENANT_ID] == "tenant-1"
     assert headers_default[HEADER_ORG_ID] == headers_default[HEADER_TENANT_ID]
 
 

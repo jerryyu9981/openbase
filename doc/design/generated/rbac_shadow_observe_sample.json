@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "tool": "rbac_shadow_observe.py",
+  "generated_at": "2026-10-08T15:31:04+00:00",
+  "model": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\config\\rbac_permission_model.json",
+  "log": "tests\\fixtures\\rbac_shadow_sample.jsonl",
+  "totals": {
+    "would_deny": 7,
+    "groups": 5
+  },
+  "skipped_lines": 1,
+  "digestion": {
+    "digestion_rate": 0.7143,
+    "classified_events": 5,
+    "unclassified_events": 2,
+    "model_allows_events": 2,
+    "model_denies_events": 3
+  },
+  "unclassified_roles": {
+    "unknown_role": 1,
+    "<unknown>": 1
+  },
+  "groups": [
+    {
+      "endpoint": "/api/v1/knowledge-bases",
+      "role": "user",
+      "permission": "knowledge_base:write",
+      "count": 2,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-4",
+        "req-5"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/users",
+      "role": "org_admin",
+      "permission": "user:write",
+      "count": 2,
+      "role_known": true,
+      "model_allows": true,
+      "permission_known": true,
+      "samples": [
+        "req-1",
+        "req-2"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/users",
+      "role": "unknown_role",
+      "permission": "user:write",
+      "count": 1,
+      "role_known": false,
+      "model_allows": null,
+      "permission_known": true,
+      "samples": [
+        "req-6"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/users",
+      "role": "viewer",
+      "permission": "user:write",
+      "count": 1,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-3"
+      ]
+    },
+    {
+      "endpoint": "<unknown>",
+      "role": "<unknown>",
+      "permission": "<unknown>",
+      "count": 1,
+      "role_known": false,
+      "model_allows": null,
+      "permission_known": false,
+      "samples": [
+        "req-8"
+      ]
+    }
+  ]
+}

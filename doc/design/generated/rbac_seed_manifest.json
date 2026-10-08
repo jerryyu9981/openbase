@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "artifact": "rbac_seed_manifest",
+  "tool": "rbac_permission_seed.py",
+  "target_system": "openllm",
+  "model_artifact": "rbac_permission_model",
+  "source_model": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\config\\rbac_permission_model.json",
+  "generated_at": "2026-10-08T15:31:04+00:00",
+  "mode": "dry-run",
+  "applied": false,
+  "dialect": "postgresql",
+  "schema": "openbase",
+  "note": "声明式种子清单：由目标仓（OpenLLM）在其受控流程内执行 rbac_seed.sql；本脚本不连库、不写库（默认 dry-run）。",
+  "roles": [
+    {
+      "code": "admin",
+      "name": "系统管理员",
+      "description": "内置管理员角色（持 * 通配）",
+      "is_system": true
+    },
+    {
+      "code": "org_admin",
+      "name": "组织管理员",
+      "description": "组织级管理角色（不含角色/权限管理，裁定 D2）",
+      "is_system": true
+    },
+    {
+      "code": "org_member",
+      "name": "组织成员",
+      "description": "组织成员角色（只读，裁定 D1）",
+      "is_system": true
+    },
+    {
+      "code": "user",
+      "name": "普通用户",
+      "description": "标准业务用户角色（只读，裁定 D1）",
+      "is_system": true
+    },
+    {
+      "code": "viewer",
+      "name": "只读用户",
+      "description": "只读访问角色（裁定 D1）",
+      "is_system": true
+    }
+  ],
+  "permissions": [
+    {
+      "code": "*",
+      "name": "全部权限",
+      "module": "system",
+      "type": 3
+    },
+    {
+      "code": "app:read",
+      "name": "apps·read",
+      "module": "apps",
+      "type": 1
+    },
+    {
+      "code": "app:write",
+      "name": "apps·write",
+      "module": "apps",
+      "type": 1
+    },
+    {
+      "code": "app:delete",
+      "name": "apps·delete",
+      "module": "apps",
+      "type": 1
+    },
+    {
+      "code": "billing:read",
+      "name": "billing·read",
+      "module": "billing",
+      "type": 1
+    },
+    {
+      "code": "billing:write",
+      "name": "billing·write",
+      "module": "billing",
+      "type": 1
+    },
+    {
+      "code": "conversation:read",
+      "name": "conversations·read",
+      "module": "conversations",
+      "type": 1
+    },
+    {
+      "code": "conversation:write",
+      "name": "conversations·write",
+      "module": "conversations",
+      "type": 1
+    },
+    {
+      "code": "knowledge_base:read",
+      "name": "knowledge_bases·read",
+      "module": "knowledge_bases",
+      "type": 1
+    },
+    {
+      "code": "knowledge_base:write",
+      "name": "knowledge_bases·write",
+      "module": "knowledge_bases",
+      "type": 1
+    },
+    {
+      "code": "knowledge_base:delete",
+      "name": "knowledge_bases·delete",
+      "module": "knowledge_bases",
+      "type": 1
+    },
+    {
+      "code": "model:read",
+      "name": "models·read",
+      "module": "models",
+      "type": 1
+    },
+    {
+      "code": "model:write",
+      "name": "models·write",
+      "module": "models",
+      "type": 1
+    },
+    {
+      "code": "model:delete",
+      "name": "models·delete",
+      "module": "models",
+      "type": 1
+    },
+    {
+      "code": "provider:read",
+      "name": "providers·read",
+      "module": "providers",
+      "type": 1
+    },
+    {
+      "code": "provider:write",
+      "name": "providers·write",
+      "module": "providers",
+      "type": 1
+    },
+    {
+      "code": "provider:delete",
+      "name": "providers·delete",
+      "module": "providers",
+      "type": 1
+    },
+    {
+      "code": "role:read",
+      "name": "roles·read",
+      "module": "roles",
+      "type": 1
+    },
+    {
+      "code": "role:write",
+      "name": "roles·write",
+      "module": "roles",
+      "type": 1
+    },
+    {
+      "code": "role:delete",
+      "name": "roles·delete",
+      "module": "roles",
+      "type": 1
+    },
+    {
+      "code": "role:admin",
+      "name": "roles·admin",
+      "module": "roles",
+      "type": 1
+    },
+    {
+      "code": "tenant:read",
+      "name": "tenants·read",
+      "module": "tenants",
+      "type": 1
+    },
+    {
+      "code": "tenant:write",
+      "name": "tenants·write",
+      "module": "tenants",
+      "type": 1
+    },
+    {
+      "code": "usage:read",
+      "name": "usage·read",
+      "module": "usage",
+      "type": 1
+    },
+    {
+      "code": "user:read",
+      "name": "users·read",
+      "module": "users",
+      "type": 1
+    },
+    {
+      "code": "user:write",
+      "name": "users·write",
+      "module": "users",
+      "type": 1
+    },
+    {
+      "code": "user:delete",
+      "name": "users·delete",
+      "module": "users",
+      "type": 1
+    }
+  ],
+  "role_permissions": [
+    {
+      "role_code": "admin",
+      "permission_code": "*"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "app:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "billing:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "conversation:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "conversation:write"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "knowledge_base:delete"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "knowledge_base:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "knowledge_base:write"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "model:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "provider:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "usage:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "user:read"
+    },
+    {
+      "role_code": "org_admin",
+      "permission_code": "user:write"
+    },
+    {
+      "role_code": "org_member",
+      "permission_code": "app:read"
+    },
+    {
+      "role_code": "org_member",
+      "permission_code": "conversation:read"
+    },
+    {
+      "role_code": "org_member",
+      "permission_code": "knowledge_base:read"
+    },
+    {
+      "role_code": "org_member",
+      "permission_code": "model:read"
+    },
+    {
+      "role_code": "org_member",
+      "permission_code": "provider:read"
+    },
+    {
+      "role_code": "org_member",
+      "permission_code": "usage:read"
+    },
+    {
+      "role_code": "org_member",
+      "permission_code": "user:read"
+    },
+    {
+      "role_code": "user",
+      "permission_code": "app:read"
+    },
+    {
+      "role_code": "user",
+      "permission_code": "conversation:read"
+    },
+    {
+      "role_code": "user",
+      "permission_code": "knowledge_base:read"
+    },
+    {
+      "role_code": "user",
+      "permission_code": "model:read"
+    },
+    {
+      "role_code": "user",
+      "permission_code": "provider:read"
+    },
+    {
+      "role_code": "user",
+      "permission_code": "usage:read"
+    },
+    {
+      "role_code": "user",
+      "permission_code": "user:read"
+    },
+    {
+      "role_code": "viewer",
+      "permission_code": "app:read"
+    },
+    {
+      "role_code": "viewer",
+      "permission_code": "conversation:read"
+    },
+    {
+      "role_code": "viewer",
+      "permission_code": "knowledge_base:read"
+    },
+    {
+      "role_code": "viewer",
+      "permission_code": "model:read"
+    },
+    {
+      "role_code": "viewer",
+      "permission_code": "provider:read"
+    },
+    {
+      "role_code": "viewer",
+      "permission_code": "usage:read"
+    },
+    {
+      "role_code": "viewer",
+      "permission_code": "user:read"
+    }
+  ],
+  "user_role": [],
+  "user_role_note": "用户→角色绑定为环境相关（依赖目标仓既有 users 行）：本脚本仅产出声明式清单，默认不含绑定；如需绑定，由目标仓按环境补充（如内置 admin 用户 → admin 角色）。"
+}

@@ -131,7 +131,11 @@ def test_t1_8_memory_proxy_adds_role_and_source() -> None:
 
 
 def test_t1_8_memory_proxy_default_domain_fallback() -> None:
-    """memory-proxy 缺省域显式兜底：X-Tenant-ID=default / X-Org-ID=default（T7 别名）."""
+    """memory-proxy 缺省域兜底：X-Tenant-ID=tenant-1 / X-Org-ID=tenant-1（T7 别名）.
+
+    C1 终态（2026-10-08）：兜底码由保留码 `default` 切换为**统一非保留码** `tenant-1`
+    （目标登记入口 `protocol_headers/code_space.py`；前提 C1-a 已登记 OpenMemory 组织码）。
+    """
     ctx = {
         "id": "1",
         "subject_type": "user",
@@ -141,9 +145,9 @@ def test_t1_8_memory_proxy_default_domain_fallback() -> None:
         "delegated": None,
     }
     headers = memory_proxy_module._build_upstream_headers(_req(), ctx)
-    assert headers[HEADER_TENANT_ID] == "default"
+    assert headers[HEADER_TENANT_ID] == "tenant-1"
     # P2-1 T7（OB-8）：org==tenant 同源别名（openbase-default 默认链退役）
-    assert headers[HEADER_ORG_ID] == "default"
+    assert headers[HEADER_ORG_ID] == "tenant-1"
     assert headers[HEADER_USER_ROLE] == "viewer"
 
 

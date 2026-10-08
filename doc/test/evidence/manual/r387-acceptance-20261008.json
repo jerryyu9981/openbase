@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "title": "R-387 收口验收（经网关端到端）",
+  "generated_at": "2026-10-08T11:09:40.995261",
+  "gateway": "http://127.0.0.1:8000",
+  "operator": "admin",
+  "isolation_prefix": "__ob_r387_accept_20261008110940__",
+  "total": 5,
+  "passed": 5,
+  "failed": 0,
+  "other": 0,
+  "steps": [
+    {
+      "step": "A1",
+      "action": "读：知识库列表",
+      "method": "GET",
+      "path": "/api/v1/rag-proxy/collections",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "可见 2 项，tenant_code=['tenant-1']",
+      "ms": 1044
+    },
+    {
+      "step": "A2",
+      "action": "写：建知识库",
+      "method": "POST",
+      "path": "/api/v1/rag-proxy/collections",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "id=665ad246-7b8b-48ad-b993-fabb6723d16d tenant_code=tenant-1",
+      "ms": 1402
+    },
+    {
+      "step": "A3",
+      "action": "检索：query/retrieve",
+      "method": "POST",
+      "path": "/api/v1/rag-proxy/collections/{id}/query/retrieve",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "code=0 data.keys=[items,total]",
+      "ms": 257
+    },
+    {
+      "step": "A4",
+      "action": "清理：删知识库",
+      "method": "DELETE",
+      "path": "/api/v1/rag-proxy/collections/{id}",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "code=0",
+      "ms": 163
+    },
+    {
+      "step": "A5",
+      "action": "清理回读",
+      "method": "GET",
+      "path": "/api/v1/rag-proxy/collections",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "列表中已不含探针",
+      "ms": 55
+    }
+  ]
+}

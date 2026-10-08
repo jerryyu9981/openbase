@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "title": "C1 收口验收（跨仓修复 C1-a + 统一码空间终态）",
+  "generated_at": "2026-10-08T15:26:23.610752",
+  "gateway": "http://127.0.0.1:8000",
+  "openmemory": "http://127.0.0.1:8020",
+  "isolation_prefix": "__ob_c1_probe_20261008152623__",
+  "total": 12,
+  "passed": 12,
+  "failed": 0,
+  "other": 0,
+  "steps": [
+    {
+      "step": "A1",
+      "action": "OpenMemory 登记码放行",
+      "endpoint": "POST /api/v1/recall (tenant-1)",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "修复前为 403（组织未登记）",
+      "ms": 41
+    },
+    {
+      "step": "A2",
+      "action": "OpenMemory 未登记码仍拒",
+      "endpoint": "POST /api/v1/recall (未登记码)",
+      "status": 403,
+      "verdict": "PASS",
+      "note": "reason=组织 '__ob_unregistered_org__' 不存在或未配置策略，按 fail-closed 拒绝访问",
+      "ms": 60
+    },
+    {
+      "step": "A3",
+      "action": "OpenMemory 写记忆(tenant-1)",
+      "endpoint": "POST /api/v1/remember",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "code=None",
+      "ms": 327
+    },
+    {
+      "step": "A4",
+      "action": "网关记忆读",
+      "endpoint": "GET /api/v1/memory-proxy/memories",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "total=5",
+      "ms": 2421
+    },
+    {
+      "step": "A5",
+      "action": "网关记忆写",
+      "endpoint": "POST /api/v1/memory-proxy/remember",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "memory_id=cd7648cd-85bc-4674-9ac9-dc1f2dbd98b1",
+      "ms": 306
+    },
+    {
+      "step": "A6",
+      "action": "网关记忆删(清理)",
+      "endpoint": "POST /api/v1/memory-proxy/forget",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "data.keys=[memory_ids,status,mode,message,forgotten_count,residuals]",
+      "ms": 173
+    },
+    {
+      "step": "A8",
+      "action": "RAG 读不回归",
+      "endpoint": "GET /api/v1/rag-proxy/collections",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "可见 2 项",
+      "ms": 211
+    },
+    {
+      "step": "B1",
+      "action": "settings.oidc_default_tenant 非保留",
+      "endpoint": "静态断言",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "实际='tenant-1' 期望='tenant-1'",
+      "ms": 0
+    },
+    {
+      "step": "B2",
+      "action": "memory 兜底码（内置基线）",
+      "endpoint": "静态断言",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "实际='tenant-1' 期望='tenant-1'",
+      "ms": 0
+    },
+    {
+      "step": "B3",
+      "action": "rag 兜底码（内置基线）",
+      "endpoint": "静态断言",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "实际='tenant-1' 期望='tenant-1'",
+      "ms": 0
+    },
+    {
+      "step": "B4",
+      "action": "IdP 演示池非保留码",
+      "endpoint": "静态断言",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "DEMO_TENANT_ID=tenant-1 且无残留 default",
+      "ms": 0
+    },
+    {
+      "step": "B5",
+      "action": "编排器已登记 memory 组织",
+      "endpoint": "静态断言",
+      "status": 200,
+      "verdict": "PASS",
+      "note": "OPENMEMORY_RBAC__ORG_POLICIES 含 tenant-1",
+      "ms": 0
+    }
+  ]
+}

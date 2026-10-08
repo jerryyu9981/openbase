@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "artifact": "rbac_permission_model",
+  "purpose": "B1 权限模型定稿（人工裁定，2026-10-08）——作为 OpenLLM 权限矩阵播种、影子期观测口径与生产门禁的**唯一输入**",
+  "target_system": "openllm",
+  "source_of_truth": {
+    "tier_anchors": "config/role_tier_anchors.json",
+    "permission_code_style": "module:action（与 OpenBase 权限码体系统一）",
+    "decision_source": "人工裁定（用户确认，2026-10-08）—— 四项全部采纳推荐项"
+  },
+  "decisions": [
+    {
+      "id": "D1", "question": "普通用户（user/org_member/viewer）写权限边界",
+      "ruling": "只读（保持 B1 当前基线）",
+      "consequence": "普通用户仅可读；一切写操作需 org_admin 及以上。影子期观测目标是确认存量写调用方是否均可归入 org_admin/admin"
+    },
+    {
+      "id": "D2", "question": "org_admin 是否可管理角色与权限本身",
+      "ruling": "不含——角色与权限管理（role:admin）仅平台 admin",
+      "consequence": "org_admin 不得持有 role:admin；避免组织管理员自我提权"
+    },
+    {
+      "id": "D3", "question": "权限码粒度",
+      "ruling": "模块级 module:action",
+      "consequence": "本版本内须把受保护端点覆盖率做到 100%；实例级（:own）留待下一版本演进"
+    },
+    {
+      "id": "D4", "question": "强制段开启方式",
+      "ruling": "按模块灰度",
+      "consequence": "按 rollout.order 逐模块开启 RBAC_PERMISSION_ENFORCE；每模块独立灰度与回滚"
+    }
+  ],
+  "role_to_permissions": {
+    "admin": ["*"],
+    "org_admin": [
+      "user:read", "user:write",
+      "knowledge_base:read", "knowledge_base:write", "knowledge_base:delete",
+      "conversation:read", "conversation:write",
+      "model:read", "provider:read", "app:read", "usage:read", "billing:read"
+    ],
+    "user": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"],
+    "org_member": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"],
+    "viewer": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"]
+  },
+  "forbidden_grants": [
+    { "code": "role:admin", "reason": "仅平台 admin 可持有（裁定 D2）" },
+    { "code": "role:write", "reason": "角色定义变更仅平台 admin（裁定 D2）" },
+    { "code": "role:delete", "reason": "同上" }
+  ],
+  "modules": {
+    "users": { "codes": ["user:read", "user:write", "user:delete"], "wired": true },
+    "roles": { "codes": ["role:read", "role:write", "role:delete", "role:admin"], "wired": true },
+    "knowledge_bases": { "codes": ["knowledge_base:read", "knowledge_base:write", "knowledge_base:delete"], "wired": true },
+    "conversations": { "codes": ["conversation:read", "conversation:write"], "wired": true },
+    "models": { "codes": ["model:read", "model:write", "model:delete"], "wired": false },
+    "providers": { "codes": ["provider:read", "provider:write", "provider:delete"], "wired": false },
+    "apps": { "codes": ["app:read", "app:write", "app:delete"], "wired": false },
+    "tenants": { "codes": ["tenant:read", "tenant:write"], "wired": false },
+    "billing": { "codes": ["billing:read", "billing:write"], "wired": false },
+    "usage": { "codes": ["usage:read"], "wired": false }
+  },
+  "rollout": {
+    "phase_1_shadow": {
+      "switch": "RBAC_PERMISSION_SHADOW=true",
+      "enforce": "RBAC_PERMISSION_ENFORCE=false",
+      "observation": "聚合 rbac_decision=would_deny 日志为清单，逐条消化（补权限码或补角色绑定）",
+      "exit_gate": "消化率 100% 且无未归类调用方"
+    },
+    "phase_2_module_gray": {
+      "order": ["users", "roles", "knowledge_bases", "conversations"],
+      "note": "已接线模块先行；每模块独立开启强制并复跑该模块端点级正负用例",
+      "per_module_exit_gate": "该模块正负用例全绿 + 无新增 would_deny"
+    },
+    "phase_3_coverage": {
+      "note": "把 wired=false 的模块接线至 100% 受保护端点后，按同一灰度口径推进",
+      "target": "受保护端点覆盖率 100%（当前 15 端点）"
+    },
+    "phase_4_retire_compat": {
+      "note": "退役 is_admin() 兼容绕行层（过渡件），设定退役条件与版本",
+      "gate": "全部模块进入强制段且稳定运行一个业务周期"
+    }
+  },
+  "production_gates": [
+    "生产环境须强制 RBAC_PERMISSION_ENFORCE=true，否则拒绝启动（照 observability/OpenMemory 的启动校验范式）",
+    "角色码集合须先统一（OpenBase 种子 user 与出站白名单 org_member 取并集），否则 ROLE_UNMAPPED 会误伤真实用户",
+    "权限变更（roles/permissions/user_roles 写操作）须有审计日志；双人复核见裁定 D2 备选（本轮未采纳）",
+    "该仓既有 22 项基线失败须先清理，否则新增失败无法辨认",
+    "强制段须可按模块回退至影子期（回滚不影响数据）"
+  ],
+  "seed_requirements": {
+    "idempotent": true,
+    "note": "以本文件 role_to_permissions 为输入播种 roles/permissions/role_permissions 与用户角色绑定；须幂等（重复执行结果一致），并输出播种前后差异报告",
+    "not_seeded_yet": true
+  }
+}

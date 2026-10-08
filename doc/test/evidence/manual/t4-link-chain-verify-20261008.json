@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-08T10:09:24.059574",
+  "gateway": "http://127.0.0.1:8000",
+  "frontend": "http://localhost:5173",
+  "operator": "admin",
+  "total": 32,
+  "passed": 31,
+  "failed": 1,
+  "skipped": 0,
+  "results": [
+    {
+      "module": "认证",
+      "page": "/auth/login 登录页",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "keys=[access_token,token_type,expires_in,refresh_token,refresh_expires_in]",
+      "ms": 588
+    },
+    {
+      "module": "认证",
+      "page": "全局守卫 /auth/me",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "keys=[id,username,tenant_id,permissions]",
+      "ms": 48
+    },
+    {
+      "module": "平台",
+      "page": "门户模块注册表（模块装载）",
+      "method": "GET",
+      "path": "/api/v1/modules",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[items,total]",
+      "ms": 40
+    },
+    {
+      "module": "平台",
+      "page": "/platform/identity/users 用户管理",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "list(len=52)",
+      "ms": 420
+    },
+    {
+      "module": "平台",
+      "page": "/platform/identity/tenants 租户管理",
+      "method": "GET",
+      "path": "/api/v1/tenants",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "list(len=5)",
+      "ms": 38
+    },
+    {
+      "module": "平台",
+      "page": "/platform/identity/org 组织架构",
+      "method": "GET",
+      "path": "/api/v1/org/departments",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "list(len=2)",
+      "ms": 40
+    },
+    {
+      "module": "平台",
+      "page": "/platform/identity/org 部门树",
+      "method": "GET",
+      "path": "/api/v1/org/departments/tree",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "list(len=2)",
+      "ms": 25
+    },
+    {
+      "module": "平台",
+      "page": "/platform/config 配置中心",
+      "method": "GET",
+      "path": "/api/v1/configs",
+      "verdict": "PASS",
+      "actual": 405,
+      "summary": "code=405 message=Method Not Allowed",
+      "ms": 25
+    },
+    {
+      "module": "平台",
+      "page": "/platform/observability/* 运行状态",
+      "method": "GET",
+      "path": "/observability/status",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "keys=[otel_enabled,langfuse_configured,business_metrics]",
+      "ms": 18
+    },
+    {
+      "module": "OpenLLM",
+      "page": "模型管理 Models.vue",
+      "method": "GET",
+      "path": "/api/v1/llm-proxy/models",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[models]",
+      "ms": 387
+    },
+    {
+      "module": "OpenLLM",
+      "page": "会话管理 Conversations.vue",
+      "method": "GET",
+      "path": "/api/v1/llm-proxy/conversations",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data=list(len=18)",
+      "ms": 476
+    },
+    {
+      "module": "OpenLLM",
+      "page": "上游健康",
+      "method": "GET",
+      "path": "/api/v1/llm-proxy/health",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[status,version,components,channel,channel_report]",
+      "ms": 437
+    },
+    {
+      "module": "OpenRAG",
+      "page": "知识库列表 KnowledgeList.vue",
+      "method": "GET",
+      "path": "/api/v1/rag-proxy/collections",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[items,total,page,page_size,total_pages]",
+      "ms": 121
+    },
+    {
+      "module": "OpenRAG",
+      "page": "上游健康",
+      "method": "GET",
+      "path": "/api/v1/rag-proxy/health",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[status,version,uptime,components,timestamp]",
+      "ms": 291
+    },
+    {
+      "module": "OpenMemory",
+      "page": "记忆列表 MemoryList.vue",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/memories",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[items,total,page,page_size]",
+      "ms": 1404
+    },
+    {
+      "module": "OpenMemory",
+      "page": "会话管理 MemorySessions.vue",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/sessions",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data=list(len=0)",
+      "ms": 134
+    },
+    {
+      "module": "OpenMemory",
+      "page": "衰减配置 MemoryDecay.vue",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/decay/config",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[tenant_id,strategy,time_decay_factor,half_life_days,emotion_weight,frequency_weight,recency_weight,similarity_weight]",
+      "ms": 167
+    },
+    {
+      "module": "OpenMemory",
+      "page": "上游健康",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/health",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[status,dependencies]",
+      "ms": 81
+    },
+    {
+      "module": "DPS",
+      "page": "画像列表 PortraitList.vue",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[total,page,page_size,total_pages,items]",
+      "ms": 667
+    },
+    {
+      "module": "DPS",
+      "page": "标签体系 Tags.vue",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/tags/categories",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[items,total,page,page_size]",
+      "ms": 322
+    },
+    {
+      "module": "DPS",
+      "page": "报表概览 Overview.vue",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/reports/overview",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[total_profiles,today_new,active_profiles,inactive_profiles,avg_overall_score,high_risk_count,medium_risk_count,low_risk_count]",
+      "ms": 335
+    },
+    {
+      "module": "DPS",
+      "page": "上游健康",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/health",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[status,version,timestamp,uptime_seconds,check_type,checks]",
+      "ms": 322
+    },
+    {
+      "module": "网关",
+      "page": "服务发现 GatewayServicesView.vue",
+      "method": "GET",
+      "path": "/api/v1/services",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[systems]",
+      "ms": 99
+    },
+    {
+      "module": "网关",
+      "page": "网关健康 /gateway/health",
+      "method": "GET",
+      "path": "/api/v1/gateway/health",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[systems]",
+      "ms": 79
+    },
+    {
+      "module": "网关",
+      "page": "四系统连通性 /gateway/ping",
+      "method": "GET",
+      "path": "/api/v1/gateway/ping",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[results]",
+      "ms": 1035
+    },
+    {
+      "module": "OpenLLM",
+      "page": "Playground.vue 对话推理",
+      "method": "POST",
+      "path": "/api/v1/llm-proxy/chat",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "model=qwen2.5:0.5b 命中可用链路；其余候选：无",
+      "ms": 11148,
+      "attempts": [
+        {
+          "model": "qwen2.5:0.5b",
+          "status": 200,
+          "ok": true,
+          "detail": "code=0"
+        }
+      ]
+    },
+    {
+      "module": "OpenRAG",
+      "page": "KnowledgeDetail 检索",
+      "method": "POST",
+      "path": "/api/v1/rag-proxy/collections/976cdafa-8925-451d-b8a5-c23fea2b36c2/query/retrieve",
+      "verdict": "FAIL",
+      "actual": 403,
+      "summary": "collection=976cdafa-8925-451d-b8a5-c23fea2b36c2 code=PERM_SERVICE_KEY_WRITE_DENIED message=service key anonymous write denied under M2",
+      "ms": 312
+    },
+    {
+      "module": "OpenLLM",
+      "page": "vite proxy 抽样",
+      "method": "GET",
+      "path": "/api/v1/llm-proxy/models",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[models]",
+      "ms": 569
+    },
+    {
+      "module": "OpenRAG",
+      "page": "vite proxy 抽样",
+      "method": "GET",
+      "path": "/api/v1/rag-proxy/collections",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[items,total,page,page_size,total_pages]",
+      "ms": 220
+    },
+    {
+      "module": "OpenMemory",
+      "page": "vite proxy 抽样",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/memories",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[items,total,page,page_size]",
+      "ms": 466
+    },
+    {
+      "module": "DPS",
+      "page": "vite proxy 抽样",
+      "method": "GET",
+      "path": "/api/v1/dps-proxy/portraits",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[total,page,page_size,total_pages,items]",
+      "ms": 651
+    },
+    {
+      "module": "网关",
+      "page": "vite proxy 抽样",
+      "method": "GET",
+      "path": "/api/v1/services",
+      "verdict": "PASS",
+      "actual": 200,
+      "summary": "code=0 data.keys=[systems]",
+      "ms": 82
+    }
+  ]
+}

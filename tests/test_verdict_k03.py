@@ -1,7 +1,7 @@
 """P2-1 T2 RED 断言：K03 信任链裁定 D-V1~D-V7 编码（§5.1/§5.2）.
 
 对齐草案 §10 T2：
-- T2-1  V-1：DB 不可达 + 无委托 → 放行 + WARN 计数（db_degraded）；DB 恢复后强校验
+- T2-1  V-1：DB 不可达 + 无委托 → **拒绝（fail-closed，B4 收紧）** + WARN 计数；DB 恢复后强校验
 - T2-2  V-2：行缺失无墓碑 + 无委托 → 放行；行缺失 + on_behalf_of → 403
 - T2-3  V-3：委托请求 + DB 不可达 → 403 PERM_DELEGATION_VERIFY_UNAVAILABLE
 - T2-4  V-4：Redis 停 → verify 直读 DB 判定（suspend 主体仍 401）
@@ -131,6 +131,9 @@ def _reset_metrics(monkeypatch: pytest.MonkeyPatch) -> None:
         "_VERDICT_METRICS",
         {
             "db_degraded": 0,
+            "db_degraded_allowlisted": 0,
+            "db_degraded_policy_allow": 0,
+            "db_degraded_denied": 0,
             "row_missing": 0,
             "delegation_denied_db": 0,
             "delegation_denied_row_missing": 0,
@@ -150,14 +153,23 @@ def _apply_settings(monkeypatch: pytest.MonkeyPatch, **overrides: Any) -> Settin
 # ---------------------------------------------------------------------------
 
 
-def test_t2_1_db_down_without_delegation_fail_open() -> None:
-    """DB 读不可达 + 无 on_behalf_of → 放行（None）+ db_degraded 计数 +1."""
-    result = asyncio.run(
-        verification_module.verify_principal(_DownGetSession(), _payload())
-    )
-    assert result is None
+def test_t2_1_db_down_without_delegation_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DB 读不可达 + 无 on_behalf_of + 未命中白名单 → 拒绝（503）+ db_degraded_denied.
+
+    B4 安全收紧（2026-10-08，人工裁定选项 A）：原 fail-open 放行改为 fail-closed 拒绝。
+    环境门控（2026-10-09）：非生产默认「兼容放行」，故本用例**显式钉死**
+    ``principal_db_degraded_policy=reject``（生产默认亦为 reject），确保拒绝语义仍被测到。
+    """
+    _apply_settings(monkeypatch, principal_db_degraded_policy="reject")
+    with pytest.raises(BaseError) as exc_info:
+        asyncio.run(
+            verification_module.verify_principal(_DownGetSession(), _payload())
+        )
+    assert exc_info.value.code == ErrorCode.SYS_SOURCE_UNAVAILABLE
+    assert exc_info.value.status_code == 503
     metrics = verification_module.get_verdict_metrics()
     assert metrics["db_degraded"] == 1
+    assert metrics["db_degraded_denied"] == 1
 
 
 def test_t2_1_db_recovered_enforces_again() -> None:
@@ -203,8 +215,12 @@ def test_t2_2_row_missing_with_delegation_rejected() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_t2_3_delegation_with_db_down_403() -> None:
-    """委托请求 + DB 不可达 → 403（fail-closed）；普通请求不受影响."""
+def test_t2_3_delegation_with_db_down_403(monkeypatch: pytest.MonkeyPatch) -> None:
+    """委托请求 + DB 不可达 → 403（fail-closed）；普通请求（显式 policy=reject）亦拒.
+
+    环境门控（2026-10-09）：对照的普通请求须**显式钉死** ``policy=reject`` 方为拒绝。
+    """
+    _apply_settings(monkeypatch, principal_db_degraded_policy="reject")
     with pytest.raises(BaseError) as exc_info:
         asyncio.run(
             verification_module.verify_principal(
@@ -215,11 +231,12 @@ def test_t2_3_delegation_with_db_down_403() -> None:
     assert exc_info.value.status_code == 403
     metrics = verification_module.get_verdict_metrics()
     assert metrics["delegation_denied_db"] == 1
-    # 对照：同 DB 故障下普通请求（无委托）仍放行
-    result = asyncio.run(
-        verification_module.verify_principal(_DownGetSession(), _payload())
-    )
-    assert result is None
+    # 对照：同 DB 故障下普通请求（无委托、未命中白名单、policy=reject）→ 亦 fail-closed 拒绝
+    with pytest.raises(BaseError) as plain_exc:
+        asyncio.run(
+            verification_module.verify_principal(_DownGetSession(), _payload())
+        )
+    assert plain_exc.value.code == ErrorCode.SYS_SOURCE_UNAVAILABLE
 
 
 # ---------------------------------------------------------------------------
@@ -416,6 +433,8 @@ def test_t2_9_verdict_metrics_queryable() -> None:
     metrics = verification_module.get_verdict_metrics()
     for metric_key in (
         "db_degraded",
+        "db_degraded_allowlisted",
+        "db_degraded_denied",
         "row_missing",
         "delegation_denied_db",
         "delegation_denied_row_missing",

@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "artifact": "auth_consistency_matrix",
+  "purpose": "D 批 D1：跨系统授权一致性矩阵——端点 × 主体类型 × 档位 × 租户 → 期望状态码。作为回归基线与 D2 门禁的完整性判据（每格必须有明确期望值，禁止「未定义」）",
+  "scope": {
+    "systems": ["openbase", "openrag", "openmemory", "dps", "openllm"],
+    "subject_types": ["user", "agent", "service", "guest"],
+    "tiers": ["readonly", "readwrite", "manage"],
+    "tenant_axes": ["registered", "unregistered", "reserved", "missing"]
+  },
+  "invariants": [
+    "I1 写类方法（POST/PUT/PATCH/DELETE）要求档位 ≥ readwrite 或已绑定主体；未满足即拒",
+    "I2 未映射角色码 fail-closed（ROLE_UNMAPPED），禁止静默降级",
+    "I3 保留租户码在受信入站一律拒绝（400），不得放宽",
+    "I4 未登记/不存在租户在强制段拒绝（403），观察段仅标注",
+    "I5 受信入站缺租户标识在强制段拒绝（401），不得回落保留码",
+    "I6 非受信来源携带身份头在强校验期拒绝（403）",
+    "I7 任一目标兜底码不得为该目标保留码",
+    "I8 统一响应体 {code,message,detail,request_id}（各目标域可附带自身码原文）"
+  ],
+  "cells": [
+    {
+      "id": "M-01", "system": "openrag", "endpoint": "GET /api/v1/collections",
+      "subject": "user", "tier": "readonly", "tenant": "registered",
+      "expected": 200, "covers": ["I8"],
+      "evidence": "runtime-verified: doc/test/evidence/manual/c1-acceptance-20261008.json (A8); r387-outbound-header-matrix-20261008.json (V2)"
+    },
+    {
+      "id": "M-02", "system": "openrag", "endpoint": "POST /api/v1/collections",
+      "subject": "user", "tier": "readwrite", "tenant": "registered",
+      "expected": 200, "covers": ["I1"],
+      "evidence": "runtime-verified: r387-outbound-header-matrix-20261008.json (V2 建库成功)"
+    },
+    {
+      "id": "M-03", "system": "openrag", "endpoint": "POST /api/v1/collections",
+      "subject": "service", "tier": "readonly", "tenant": "registered",
+      "expected": 403, "covers": ["I1"],
+      "error_code": "PERM_SERVICE_KEY_WRITE_DENIED",
+      "evidence": "runtime-verified: r387-outbound-header-matrix-20261008.json (V0 匿名服务密钥写 403)"
+    },
+    {
+      "id": "M-04", "system": "openrag", "endpoint": "POST /api/v1/collections",
+      "subject": "user", "tier": "readonly", "tenant": "registered",
+      "expected": 403, "covers": ["I1", "I2"],
+      "evidence": "static-verified: OpenRAG identity/role_map.py + role_gate.py（写需 readwrite）"
+    },
+    {
+      "id": "M-05", "system": "openrag", "endpoint": "GET /api/v1/collections",
+      "subject": "user", "tier": "readonly", "tenant": "reserved",
+      "expected": 400, "covers": ["I3"],
+      "error_code": "BIZ_RESERVED_TENANT_CODE_COLLISION",
+      "evidence": "runtime-verified: r387-outbound-header-matrix-20261008.json (V3 保留码 400)"
+    },
+    {
+      "id": "M-06", "system": "openrag", "endpoint": "GET /api/v1/collections",
+      "subject": "user", "tier": "readonly", "tenant": "unregistered",
+      "expected": 403, "covers": ["I4"],
+      "error_code": "BIZ_TENANT_NOT_FOUND",
+      "evidence": "test-verified: OpenRAG tests/unit/test_c1b_tenant_registry.py（强制段 403 BIZ-4092）"
+    },
+    {
+      "id": "M-07", "system": "openrag", "endpoint": "GET /api/v1/collections",
+      "subject": "user", "tier": "readonly", "tenant": "missing",
+      "expected": 401, "covers": ["I5"],
+      "error_code": "AUTH_TENANT_ID_MISSING",
+      "evidence": "test-verified: OpenRAG tests/unit/test_c1b_tenant_registry.py（强制段 401 AUTH-4013）"
+    },
+    {
+      "id": "M-08", "system": "openmemory", "endpoint": "POST /api/v1/recall",
+      "subject": "user", "tier": "readonly", "tenant": "registered",
+      "expected": 200, "covers": ["I8"],
+      "evidence": "runtime-verified: c1-acceptance-20261008.json (A1)"
+    },
+    {
+      "id": "M-09", "system": "openmemory", "endpoint": "POST /api/v1/remember",
+      "subject": "user", "tier": "readwrite", "tenant": "registered",
+      "expected": 200, "covers": ["I1"],
+      "evidence": "runtime-verified: c1-acceptance-20261008.json (A3/A5)"
+    },
+    {
+      "id": "M-10", "system": "openmemory", "endpoint": "POST /api/v1/recall",
+      "subject": "user", "tier": "readonly", "tenant": "unregistered",
+      "expected": 403, "covers": ["I4"],
+      "error_code": "PERM_FORBIDDEN(组织不存在或未配置策略)",
+      "evidence": "runtime-verified: c1-acceptance-20261008.json (A2 未登记码仍 403)"
+    },
+    {
+      "id": "M-11", "system": "dps", "endpoint": "GET /api/v1/portraits",
+      "subject": "user", "tier": "readonly", "tenant": "registered",
+      "expected": 200, "covers": ["I8"],
+      "evidence": "runtime-verified: doc/test/evidence/manual/t4-link-chain-verify-20261008.json"
+    },
+    {
+      "id": "M-12", "system": "dps", "endpoint": "any",
+      "subject": "user", "tier": "readonly", "tenant": "missing",
+      "expected": 401, "covers": ["I5"],
+      "evidence": "static-verified: DPS middleware/tenant_middleware.py:114-122（缺组织/租户标识 401）"
+    },
+    {
+      "id": "M-13", "system": "openllm", "endpoint": "GET /api/v1/users",
+      "subject": "user", "tier": "readonly", "tenant": "registered",
+      "expected": 200, "covers": ["I8"],
+      "evidence": "test-verified: OpenLLM tests/unit/test_b1_rbac_wiring.py（具备 user:read → 200）"
+    },
+    {
+      "id": "M-14", "system": "openllm", "endpoint": "DELETE /api/v1/users/{id}",
+      "subject": "user", "tier": "readonly", "tenant": "registered",
+      "expected": 403, "covers": ["I1", "I2"],
+      "evidence": "test-verified: OpenLLM tests/unit/test_b1_rbac_wiring.py（readonly 写 403 / 缺码 403）"
+    },
+    {
+      "id": "M-15", "system": "openllm", "endpoint": "any",
+      "subject": "user", "tier": "readonly", "tenant": "missing",
+      "expected": 400, "covers": ["I5"],
+      "error_code": "PARAM_TENANT_IDENTITY_MISSING",
+      "evidence": "test-verified: OpenLLM tests/unit/test_c1c_tenant_scope_closeout.py（强制段 400 ll_code 4004）"
+    },
+    {
+      "id": "M-16", "system": "openbase", "endpoint": "any (受信入站)",
+      "subject": "user", "tier": "readonly", "tenant": "reserved(伪造头)",
+      "expected": 403, "covers": ["I6"],
+      "error_code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+      "evidence": "static-verified: OpenBase .env OPENBASE_ENFORCE_INBOUND_IDENTITY_HEADERS=true + core/deps/auth.py:197-219"
+    },
+    {
+      "id": "M-17", "system": "*", "endpoint": "任一目标出站",
+      "subject": "any", "tier": "any", "tenant": "fallback",
+      "expected": "非保留码", "covers": ["I7"],
+      "evidence": "runtime-verified: c1-acceptance-20261008.json (B1~B3 静态断言) + r387 矩阵（rag=tenant-1、memory=tenant-1）"
+    }
+  ],
+  "notes": [
+    "evidence 取值：runtime-verified（本次会话运行时实测）/ test-verified（对应仓的自动化用例）/ static-verified（代码与配置静态核对）",
+    "D 批门禁（scripts/cross_repo_auth_gate.py）校验本矩阵的**结构完整性**：覆盖 5 系统、9 不变式至少各被 1 格覆盖、每格有 expected 与 evidence",
+    "运行时逐格复测属 D3（负向用例集）范围，本次未全量执行"
+  ]
+}

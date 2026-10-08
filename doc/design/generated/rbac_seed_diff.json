@@ -1,0 +1,34 @@
+{
+  "roles": {
+    "added": [],
+    "removed": [],
+    "changed": [],
+    "added_count": 0,
+    "removed_count": 0,
+    "changed_count": 0
+  },
+  "permissions": {
+    "added": [],
+    "removed": [],
+    "changed": [],
+    "added_count": 0,
+    "removed_count": 0,
+    "changed_count": 0
+  },
+  "role_permissions": {
+    "added": [],
+    "removed": [],
+    "changed": [],
+    "added_count": 0,
+    "removed_count": 0,
+    "changed_count": 0
+  },
+  "user_role": {
+    "added": [],
+    "removed": [],
+    "changed": [],
+    "added_count": 0,
+    "removed_count": 0,
+    "changed_count": 0
+  }
+}

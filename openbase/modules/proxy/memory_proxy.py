@@ -23,6 +23,7 @@ from fastapi.responses import JSONResponse
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.modules.protocol_headers import TARGET_SYSTEM_MEMORY, build_outbound_headers
+from openbase.modules.protocol_headers.code_space import get_target_code_space
 from openbase.modules.proxy.upstream_observe import (
     UPSTREAM_SYSTEM_OPENMEMORY,
     content_type_of,
@@ -88,8 +89,13 @@ def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, st
       无原 JWT，不再构造伪 JWT 透传，D-OB6-3）
     - X-Org-ID / X-User-ID / X-Tenant-ID / X-User-Role / X-Proxy-Source / X-Request-Id：
       取值只来自统一主体上下文；OB-8/T7 别名收敛后 X-Org-ID == X-Tenant-ID
-      （org 不再读独立 org_id/openbase-default 默认链参与隔离键；tenant 缺省仅
-      "default" 显式兜底）。
+      （org 不再读独立 org_id/openbase-default 默认链参与隔离键）。
+    - 租户兜底（A 批 A1/A2 统一登记入口 `protocol_headers/code_space.py`）：主体无租户
+      声明时使用该目标登记的兜底码（memory=``tenant-1``；原为写死字面量 ``"default"``）。
+      该值受**上游组织登记**约束：OpenMemory 按组织策略 fail-closed，仅接受已登记组织码。
+      修复前其仅登记 ``default``（``tenant-1`` 实测 403「组织不存在或未配置策略」）；
+      **已由 C1-a 跨仓修复**（编排器显式登记 ``OPENMEMORY_RBAC__ORG_POLICIES`` 含
+      ``tenant-1``/``tenant-2``），故兜底码随统一码空间终态切换为 ``tenant-1``。
     """
     api_key, _, _ = _upstream_config()
     headers: dict[str, str] = {
@@ -102,13 +108,16 @@ def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, st
         if token:
             headers["Authorization"] = f"Bearer {token}"
     settings = get_settings()
+    space = get_target_code_space(TARGET_SYSTEM_MEMORY)
     return build_outbound_headers(
         request,
         user,
         target_system=TARGET_SYSTEM_MEMORY,
         extra_headers=headers,
-        default_tenant="default",
+        default_tenant=space.default_tenant_code,
         default_role="viewer",
+        tenant_value_map=space.reserved_map() or None,
+        org_value_map=space.reserved_map() or None,
         enforce_org_alias=settings.enforce_org_alias,
     )
 

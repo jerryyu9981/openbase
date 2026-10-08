@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 
@@ -21,6 +22,134 @@ logger = logging.getLogger("openbase.settings")
 
 # 已知弱 JWT 密钥（占位/演示值；生产模式一律拒绝）
 WEAK_JWT_SECRETS = frozenset({"", "change-me-in-production", "test-jwt-secret-for-v680"})
+
+# 各下游目标的**保留租户码**集合（R-387 统一码空间收口：按目标登记，单一事实源）。
+# 只有声明了「保留码」语义的下游才非空；未声明者为空集（该目标接受任何非空码）。
+# - rag：OpenRAG 受信入站对保留码返回 400 `BIZ_RESERVED_TENANT_CODE_COLLISION`
+#   （出处：doc/test/evidence/v147/def005-multiprobe-20260920.json 的 detail.reserved_codes）。
+# - memory：OpenMemory 按**组织策略** fail-closed，仅接受其**已登记组织码**。
+#   实测（2026-10-08 修复前）：仅登记 `default`，`tenant-1`/`tenant-2` → 403
+#   「组织不存在或未配置策略」。**已由 C1-a 跨仓修复**（编排器显式登记
+#   `OPENMEMORY_RBAC__ORG_POLICIES`），故兜底码已切换为 `tenant-1`（统一空间终态）。
+#   依据：doc/test/evidence/manual/r387-memory-org-policy-20261008.json（修复前证据）。
+# - llm / dps：未声明保留码语义；DPS 另有登记式映射 `dps_code_map`（目标空间码值）。
+OUTBOUND_RESERVED_TENANT_CODES_BY_TARGET: dict[str, frozenset[str]] = {
+    "rag": frozenset({"default", "openrag-local"}),
+    "memory": frozenset(),
+    "llm": frozenset(),
+    "dps": frozenset(),
+}
+
+# RAG 保留码别名（既有引用点兼容；指向登记表，避免两处漂移）
+RAG_RESERVED_TENANT_CODES: frozenset[str] = OUTBOUND_RESERVED_TENANT_CODES_BY_TARGET["rag"]
+
+# 各目标出站租户码的**内置登记基线**（A 批 A1/A2：码空间登记的唯一入口）。
+# 语义：键存在 = 该目标有兜底码（须非空且非保留码）；键缺席 = 该目标不进兜底
+# （主体无租户声明时省略 X-Tenant-ID，保持既有语义，如 llm/dps）。
+# 覆盖方式：`OPENBASE_PROXY_CODE_MAP`（JSON，见 parse_proxy_code_map）。
+BUILTIN_DEFAULT_TENANT_CODE_BY_TARGET: dict[str, str] = {
+    "rag": "tenant-1",
+    "memory": "tenant-1",
+}
+
+
+def parse_proxy_code_map(raw: str | None) -> dict[str, dict[str, object]]:
+    """解析 `OPENBASE_PROXY_CODE_MAP` 覆盖表（纯函数，供校验与运行期共用）.
+
+    Schema:
+        {"schema_version": 1,
+         "source_of_truth": "openbase.tenants.code",
+         "targets": {"<target>": {"reserved_codes": [...], "default_tenant_code": "..."}}}
+
+    语义：`targets.<t>` 的字段**按字段覆盖**内置登记基线；`default_tenant_code` 显式出现
+    即表示该目标进兜底（须非空且非保留码）。
+
+    Args:
+        raw: JSON 字符串；空/非法 → 返回空覆盖表（由调用方按 fail-closed 决定是否报错）。
+
+    Returns:
+        {target: {"reserved_codes"?: frozenset[str], "default_tenant_code"?: str}}
+
+    Raises:
+        ValueError: JSON 非法、结构不符或字段类型错误（fail-fast，禁静默降级）。
+    """
+    text = (raw or "").strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"OPENBASE_PROXY_CODE_MAP 不是合法 JSON：{exc}") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("OPENBASE_PROXY_CODE_MAP 顶层必须是对象")
+    targets = parsed.get("targets", {})
+    if not isinstance(targets, dict):
+        raise ValueError("OPENBASE_PROXY_CODE_MAP.targets 必须是对象")
+    result: dict[str, dict[str, object]] = {}
+    for target, entry in targets.items():
+        if not isinstance(entry, dict):
+            raise ValueError(f"OPENBASE_PROXY_CODE_MAP.targets.{target} 必须是对象")
+        normalized: dict[str, object] = {}
+        if "reserved_codes" in entry:
+            reserved = entry["reserved_codes"]
+            if not isinstance(reserved, list) or not all(isinstance(c, str) for c in reserved):
+                raise ValueError(
+                    f"OPENBASE_PROXY_CODE_MAP.targets.{target}.reserved_codes 必须是字符串数组"
+                )
+            normalized["reserved_codes"] = frozenset(reserved)
+        if "default_tenant_code" in entry:
+            code = entry["default_tenant_code"]
+            if not isinstance(code, str):
+                raise ValueError(
+                    f"OPENBASE_PROXY_CODE_MAP.targets.{target}.default_tenant_code 必须是字符串"
+                )
+            normalized["default_tenant_code"] = code
+        result[str(target)] = normalized
+    return result
+
+
+def resolve_target_code_space(raw: str | None) -> dict[str, dict[str, object]]:
+    """按内置基线 + 覆盖表解析各目标码空间（纯函数）.
+
+    Returns:
+        {target: {"reserved_codes": frozenset[str], "default_tenant_code": str | None}}
+    """
+    overrides = parse_proxy_code_map(raw)
+    resolved: dict[str, dict[str, object]] = {}
+    for target, reserved in OUTBOUND_RESERVED_TENANT_CODES_BY_TARGET.items():
+        resolved[target] = {
+            "reserved_codes": reserved,
+            "default_tenant_code": BUILTIN_DEFAULT_TENANT_CODE_BY_TARGET.get(target),
+        }
+    for target, override in overrides.items():
+        entry = resolved.setdefault(
+            target, {"reserved_codes": frozenset(), "default_tenant_code": None}
+        )
+        entry.update(override)
+    return resolved
+
+
+def validate_target_code_space(resolved: dict[str, dict[str, object]]) -> None:
+    """校验解析后的码空间登记（fail-fast）；供 Settings 校验与运行期二次防线共用.
+
+    Raises:
+        ValueError: 兜底码出现但为空，或命中该目标保留码。
+    """
+    for target, entry in resolved.items():
+        code = entry.get("default_tenant_code")
+        if code is None:
+            continue  # 该目标不设兜底（既有语义）
+        text = str(code).strip()
+        if not text:
+            raise ValueError(
+                f"目标 {target} 的 default_tenant_code 不得为空（出现即表示进兜底）"
+            )
+        reserved = entry.get("reserved_codes") or frozenset()
+        if text in reserved:
+            raise ValueError(
+                f"目标 {target} 的 default_tenant_code {text!r} 命中其保留码 "
+                f"{sorted(reserved)}；请改用该目标可接受的码值"
+            )
 
 # 已注册的可用模块（模块包目录中存在即注册）
 AVAILABLE_MODULES: tuple[str, ...] = (
@@ -116,7 +245,25 @@ class Settings(BaseSettings):
     # U1 T3（K04，方案 a token 版本号）：token 版本强校验开关（两段式发布第二段，
     # 设计草案 §5.1/§12.1 风险 1/§6.2）。默认 False：版本强校验关闭，存量 v0 / 落后
     # tvn 过渡窗口不误杀；每请求主体状态校验不依赖本开关（默认即生效）。第二段置 True。
+    #
+    # B4 安全收紧（2026-10-08，人工裁定选项 A：fail-closed + 显式白名单）：
+    # **production 环境必须为 True**，否则拒绝启动（照弱 JWT 密钥启动拒绝风格，
+    # 见 `_validate_production_token_version_enforcement`）；非生产可配置，默认维持 False。
     enforce_token_version: bool = False
+    # B4 主体验证 DB 降级**显式白名单**（默认空 = 不放行任何主体）。
+    # 语义：DB 不可达（无法证明主体状态）时默认**拒绝**（503 SYS_SOURCE_UNAVAILABLE）；
+    # 仅本名单内**显式列名**的本地主体（users.id 的十进制字符串，逗号分隔）可在此情形
+    # 放行（窄口径应急通道）；命中必留痕（结构化日志 + 审计标注）。
+    # 取值约束（fail-closed）：仅接受十进制主体 id；含通配/前缀/非数字项一律**不作为命中**
+    # （视同未列名 → 拒绝），并在解析时 WARN 提示。
+    principal_db_degraded_allowlist: str = ""
+    # B4 环境门控（2026-10-09 修复）：主体验证「DB 不可达」降级策略**显式覆盖**。
+    # 取值：""（默认 = 按环境推导）| "reject"（fail-closed 拒绝 503）| "allow"（兼容放行）。
+    # 推导规则（本字段为空时）：env == "production" → reject（安全口径不变）；
+    # 其余（development/test 等）→ allow（兼容沙箱，**必 WARN + 留痕**，不得静默）。
+    # 约束（fail-fast）：production 下**不得**为 "allow"（避免误配回退 fail-open），
+    # 否则拒绝启动（见 `_validate_principal_db_degraded_policy`）。
+    principal_db_degraded_policy: str = ""
     # bcrypt 成本因子（默认 12 ≈ 400-600ms；并发敏感场景可调低至 10 ≈ 200ms）
     bcrypt_rounds: int = 12
     # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）
@@ -130,7 +277,12 @@ class Settings(BaseSettings):
     oidc_redirect_uri: str = ""  # 如 http://<host>:8000/api/v1/auth/oidc/callback
     oidc_scopes: str = "openid profile email"  # 空格分隔
     oidc_claim_role: str = "roles"  # IdP ID Token 中角色 claim 名
-    oidc_default_tenant: str = "default"  # 未映射租户时的默认值
+    # C1-a 终态（2026-10-08）：未映射租户的默认码统一为 **非保留码** `tenant-1`
+    # （与 `BUILTIN_DEFAULT_TENANT_CODE_BY_TARGET` 及各目标可接受码空间一致）。
+    # 原为保留码 `default`：对 OpenRAG 是禁用保留码（受信入站 400），且与 memory 目标的
+    # 已登记组织码不一致，导致身份空间与目标空间口径分裂。切换前提（OpenMemory 已登记
+    # `tenant-1`）已由 C1-a 跨仓修复满足。
+    oidc_default_tenant: str = "tenant-1"  # 未映射租户时的默认值
     oidc_profile: str = "generic"  # claims 适配 profile：generic（平铺 roles）| keycloak（realm_access/resource_access 嵌套聚合）
     oidc_keycloak_client_roles: bool = True  # keycloak：聚合 resource_access.<client_id>.roles（False 仅 realm 角色）
     oidc_frontend_redirect: str = "/auth/oidc/callback"  # 浏览器授权成功后 302 前端回调路由（同源，fragment 携带令牌）
@@ -184,15 +336,25 @@ class Settings(BaseSettings):
     # 任务书 M1：OpenRAG 服务级 API Key（X-API-Key，与 OPENRAG_API_SERVICE_API_KEY 同密钥），
     # rag-proxy 转发时注入；空则不注入（向后兼容）
     rag_api_key: str = "openbase-rag-gw-key-20260901"
-    # DEF-BE-147-005（v1.4.7）rag-proxy 身份头注入策略显式开关：
+    # DEF-BE-147-005（v1.4.7）引入的 rag-proxy 身份头注入策略开关。
     #   True （默认）＝维持 P2-1 四维身份透传（注入四头 + 来源 + 请求 id）；
     #   False       ＝**不注入身份头**，仅 `X-API-Key` + `X-Proxy-Source` + `X-Request-Id`。
-    # 背景：OpenRAG 受信入站（M2）对「保留租户码」（default/openrag-local）返回 400
-    # BIZ_RESERVED_TENANT_CODE_COLLISION；改用非保留租户码（方案 A）虽 200 却因租户隔离
-    # 使既有知识库不可见（items=[]，实测证据见 doc/test/evidence/v147/def005-multiprobe-20260920.json）。
-    # 故联调环境按方案 B 关闭身份注入，并由编排器**显式声明**（不静默降级）；
-    # 「租户码语义对齐」另行登记为跨仓/设计议题。
+    # R-387 收口（2026-10-08）后本开关**仅为应急回滚杠杆**，默认 True 不再被联调环境关闭：
+    # 出站头矩阵实测证明根因是**租户码落在 OpenRAG 保留码上或缺省**（而非「注入」本身）——
+    # 受信入站 + 非保留码时读、写同时 200（见下方 `proxy_code_map` 登记入口）。
     rag_inject_identity_headers: bool = True
+
+    # ---- A 批 A1/A2：出站租户码空间**统一登记入口**（替代原散落的 rag_/memory_ 兜底码字段） ----
+    # 内置登记基线见模块常量 `OUTBOUND_RESERVED_TENANT_CODES_BY_TARGET` 与
+    # `BUILTIN_DEFAULT_TENANT_CODE_BY_TARGET`（rag=tenant-1、memory=default）；
+    # 本字段用于**覆盖**：
+    #   {"schema_version": 1, "source_of_truth": "openbase.tenants.code",
+    #    "targets": {"<target>": {"reserved_codes": [...], "default_tenant_code": "..."}}}
+    # 约束（启动即校验，fail-fast）：非合法 JSON/结构不符 → 拒绝启动；`default_tenant_code`
+    # 出现即须非空且**不得命中该目标保留码**。
+    # 背景见《OpenBase-R387-跨域租户码对齐设计与收口实施记录》§11 与
+    # 《OpenBase-自研系统多租户与授权集成总体完善方案》§4.2 L3 码空间登记层。
+    proxy_code_map: str = ""
 
     # ---- DPS 对接（v1.4.5 R-381，JWT 门禁 + 身份头注入转发） ----
     # P0-3 端口对齐（评审 Q5）：默认对齐 DPS 源码 api_port=8000（DPS src/config.py
@@ -268,6 +430,65 @@ class Settings(BaseSettings):
             )
         return self
 
+    @model_validator(mode="after")
+    def _validate_production_token_version_enforcement(self) -> Settings:
+        """生产门禁（B4 安全收紧）：production 下强制启用 token 吊销强校验.
+
+        语义（人工裁定选项 A）：生产环境 `enforce_token_version` 必须为 True，
+        否则**拒绝启动**（照 `_validate_jwt_secret` 弱密钥启动拒绝风格，fail-fast）。
+        理由：token 版本（`users.token_version` 递增）是撤销存量令牌的即时手段；
+        生产若处于默认关，吊销将静默不生效 —— 属必须前置于启动的门禁缺陷。
+
+        Raises:
+            ValueError: env == "production" 且未启用 enforce_token_version。
+        """
+        if self.env == "production" and not self.enforce_token_version:
+            raise ValueError(
+                "生产环境必须启用 OPENBASE_ENFORCE_TOKEN_VERSION=true（token 吊销强校验），"
+                "否则拒绝启动（fail-closed）；非生产环境可维持默认关闭"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_principal_db_degraded_policy(self) -> Settings:
+        """主体验证 DB 降级策略校验（B4 环境门控，2026-10-09 修复）.
+
+        语义：`principal_db_degraded_policy` 取值仅支持 ""（按环境推导）/ "reject" / "allow"；
+        非法取值 → 拒绝启动（fail-fast，禁静默降级）。生产环境**不得**设为 "allow"——该配置会
+        使 DB 不可达时回退 fail-open，属必须前置于启动的安全门禁缺陷（照
+        `_validate_production_token_version_enforcement` 风格）。
+
+        Raises:
+            ValueError: 取值非法，或 env == "production" 且 policy == "allow"。
+        """
+        policy = (self.principal_db_degraded_policy or "").strip().lower()
+        if policy not in ("", "reject", "allow"):
+            raise ValueError(
+                "OPENBASE_PRINCIPAL_DB_DEGRADED_POLICY 取值非法（仅支持 reject/allow/留空）："
+                f"{self.principal_db_degraded_policy!r}"
+            )
+        if self.env == "production" and policy == "allow":
+            raise ValueError(
+                "生产环境不得将 OPENBASE_PRINCIPAL_DB_DEGRADED_POLICY 设为 allow"
+                "（会使 DB 不可达时回退 fail-open）；生产须为 reject 或留空（按环境推导为 reject）"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_outbound_tenant_alignment(self) -> Settings:
+        """出站租户码空间登记校验（fail-fast，A 批 A1/A2）.
+
+        校验 `proxy_code_map` 覆盖表（结构 + 兜底码合法性），并把内置登记基线一并纳入
+        校验；任一目标的兜底码为空或命中**该目标**保留码 → 拒绝启动，避免退化为
+        「调用期才 400/403」的隐性故障。
+
+        Raises:
+            ValueError: 覆盖表非法，或某目标兜底码为空/命中该目标保留码。
+        """
+        resolved = resolve_target_code_space(self.proxy_code_map)
+        validate_target_code_space(resolved)
+        return self
+
     def enable_module(self, name: str) -> None:
         """启用模块.
 
@@ -327,6 +548,57 @@ class Settings(BaseSettings):
     def trusted_proxy_sources_list(self) -> list[str]:
         """受信来源白名单解析（逗号分隔 → 去空列表）."""
         return [item.strip() for item in (self.trusted_proxy_sources or "").split(",") if item.strip()]
+
+    @property
+    def principal_db_degraded_allowlist_set(self) -> frozenset[str]:
+        """主体验证 DB 降级放行白名单解析（逗号分隔 → 仅十进制主体 id 集合）.
+
+        取值约束（fail-closed，B4 安全收紧）：仅接受十进制主体 id（`users.id` 的字符串
+        形态）；**禁止通配/前缀模糊匹配** —— 非数字/超范围项一律**丢弃**（不入集合），
+        从而在该情形**不作为命中**（等价于拒绝）。非法项存在时记 WARN（便于运维定位）。
+        """
+        allowed: set[str] = set()
+        rejected: list[str] = []
+        for item in (self.principal_db_degraded_allowlist or "").split(","):
+            token = item.strip()
+            if not token:
+                continue
+            if token.isdigit():
+                allowed.add(token)
+            else:
+                rejected.append(token)
+        if rejected:
+            logger.warning(
+                "principal_db_degraded_allowlist 含非法项（非十进制主体 id，已忽略=fail-closed）",
+                extra={"rejected": rejected},
+            )
+        return frozenset(allowed)
+
+    @property
+    def principal_db_degraded_policy_source(self) -> str:
+        """DB 降级策略来源（显式 policy 优先；为空按环境推导）.
+
+        Returns:
+            "explicit_reject" | "explicit_allow" | "env_production" | "env_nonproduction"。
+        """
+        policy = (self.principal_db_degraded_policy or "").strip().lower()
+        if policy == "reject":
+            return "explicit_reject"
+        if policy == "allow":
+            return "explicit_allow"
+        return "env_production" if self.env == "production" else "env_nonproduction"
+
+    @property
+    def principal_db_degraded_reject(self) -> bool:
+        """主体验证「DB 不可达」的有效裁定：True = fail-closed 拒绝，False = 兼容放行.
+
+        显式 ``principal_db_degraded_policy`` 优先；为空时按环境推导（production → 拒绝，
+        其余 → 放行）。放行路径仍须 WARN + 留痕（由 verification 模块保证，不得静默）。
+        """
+        return self.principal_db_degraded_policy_source in (
+            "explicit_reject",
+            "env_production",
+        )
 
     def parse_k03_bypass_whitelist(self) -> list[dict]:
         """K03 过渡豁免白名单解析（JSON 数组；非法/空 → 空表）.
