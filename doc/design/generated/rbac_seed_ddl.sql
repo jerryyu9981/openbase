@@ -1,0 +1,11 @@
+-- rbac_seed_ddl — 由 rbac_permission_seed.py 生成（前置结构变更；独立于数据播种执行）
+-- 目标系统（逻辑）：openllm；目标库：nuct；schema：public
+-- 用途：为 public.role_permissions 的幂等冲突键 (role_id, permission_id) 建唯一索引（rbac_seed.sql 的 ON CONFLICT 依赖之）。
+-- 执行责任：**由共享基础设施（局域网唯一共享库）的受控结构变更流程（迁移 / DBA）执行**；本脚本不连库、不写库。
+-- 执行前置（缺一不可）：
+--   1) 只读预检重复行必须为 0（非 0 须先由目标仓消重）：
+--      SELECT role_id, permission_id, COUNT(*) FROM "public"."role_permissions"
+--      GROUP BY role_id, permission_id HAVING COUNT(*) > 1;
+--   2) 执行账号须具备 CREATE INDEX 权限（否则由其 DBA 代执行本条）。
+-- 回滚：DROP INDEX IF EXISTS "uq_role_permissions_role_permission";
+CREATE UNIQUE INDEX IF NOT EXISTS uq_role_permissions_role_permission ON "public"."role_permissions" ("role_id", "permission_id");

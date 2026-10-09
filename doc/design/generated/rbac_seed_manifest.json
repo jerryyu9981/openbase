@@ -1,350 +1,501 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "artifact": "rbac_seed_manifest",
   "tool": "rbac_permission_seed.py",
   "target_system": "openllm",
+  "target_database": "nuct",
+  "target_schema": "public",
+  "target_key_type": "uuid",
+  "target_tables": [
+    "roles",
+    "permissions",
+    "role_permissions",
+    "user_roles"
+  ],
+  "target_reference_tables": [
+    "users"
+  ],
+  "role_permission_conflict_key": [
+    "role_id",
+    "permission_id"
+  ],
   "model_artifact": "rbac_permission_model",
   "source_model": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\config\\rbac_permission_model.json",
-  "generated_at": "2026-10-08T15:31:04+00:00",
+  "generated_at": "2026-10-09T09:34:52+00:00",
   "mode": "dry-run",
   "applied": false,
   "dialect": "postgresql",
-  "schema": "openbase",
-  "note": "声明式种子清单：由目标仓（OpenLLM）在其受控流程内执行 rbac_seed.sql；本脚本不连库、不写库（默认 dry-run）。",
+  "schema": "public",
+  "note": "声明式种子清单：字段对齐目标系统（OpenLLM）自身表结构。执行分两步——先由共享基础设施（局域网唯一共享库）的受控流程执行前置结构变更 rbac_seed_ddl.sql，再由目标仓执行纯 DML rbac_seed.sql；本脚本不连库、不写库（默认 dry-run）。",
   "roles": [
     {
+      "id": "d5b5ccda-ba5b-50f1-846b-ac66cf1710c5",
       "code": "admin",
       "name": "系统管理员",
       "description": "内置管理员角色（持 * 通配）",
+      "role_type": "platform",
+      "level": 100,
+      "scope": "platform",
       "is_system": true
     },
     {
+      "id": "ee03fd8a-3de3-5652-8d25-d88c07916c8b",
       "code": "org_admin",
       "name": "组织管理员",
       "description": "组织级管理角色（不含角色/权限管理，裁定 D2）",
+      "role_type": "org",
+      "level": 50,
+      "scope": "org",
       "is_system": true
     },
     {
+      "id": "0d7ea04e-e7b9-5c97-b91f-b96caa6a8fa9",
       "code": "org_member",
       "name": "组织成员",
       "description": "组织成员角色（只读，裁定 D1）",
+      "role_type": "org",
+      "level": 10,
+      "scope": "org",
       "is_system": true
     },
     {
+      "id": "2404ded3-9f72-54b0-a139-1646ac69285a",
       "code": "user",
       "name": "普通用户",
       "description": "标准业务用户角色（只读，裁定 D1）",
+      "role_type": "org",
+      "level": 10,
+      "scope": "org",
       "is_system": true
     },
     {
+      "id": "6a1e164b-ec44-570a-a54b-917e959befa1",
       "code": "viewer",
       "name": "只读用户",
       "description": "只读访问角色（裁定 D1）",
+      "role_type": "org",
+      "level": 5,
+      "scope": "org",
       "is_system": true
     }
   ],
   "permissions": [
     {
+      "id": "729acb25-77ed-5f89-8882-c9c088803ad7",
       "code": "*",
       "name": "全部权限",
-      "module": "system",
-      "type": 3
+      "resource_type": "*",
+      "action": "*",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "7a0b4df5-ab2a-5b6d-b702-cc3756690021",
       "code": "app:read",
-      "name": "apps·read",
-      "module": "apps",
-      "type": 1
+      "name": "app·read",
+      "resource_type": "app",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "10648dda-034c-585a-9820-51b64415cdcc",
       "code": "app:write",
-      "name": "apps·write",
-      "module": "apps",
-      "type": 1
+      "name": "app·write",
+      "resource_type": "app",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "db973204-4450-5e1b-8bee-fd4420abe7ef",
       "code": "app:delete",
-      "name": "apps·delete",
-      "module": "apps",
-      "type": 1
+      "name": "app·delete",
+      "resource_type": "app",
+      "action": "delete",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "bce62040-ee00-5edc-86df-1054828170a2",
       "code": "billing:read",
       "name": "billing·read",
-      "module": "billing",
-      "type": 1
+      "resource_type": "billing",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "e02b75e9-8490-5924-b895-b34c9177bf57",
       "code": "billing:write",
       "name": "billing·write",
-      "module": "billing",
-      "type": 1
+      "resource_type": "billing",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "4b682f7e-9d76-59a9-a438-c9610b0ba73b",
       "code": "conversation:read",
-      "name": "conversations·read",
-      "module": "conversations",
-      "type": 1
+      "name": "conversation·read",
+      "resource_type": "conversation",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "7b63ae06-1daa-512b-983a-0ed6ac1d9b9c",
       "code": "conversation:write",
-      "name": "conversations·write",
-      "module": "conversations",
-      "type": 1
+      "name": "conversation·write",
+      "resource_type": "conversation",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "50d2924a-a506-5784-945f-5dfe22c07d2f",
       "code": "knowledge_base:read",
-      "name": "knowledge_bases·read",
-      "module": "knowledge_bases",
-      "type": 1
+      "name": "knowledge_base·read",
+      "resource_type": "knowledge_base",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "92c14736-a21d-54b4-899b-474d32b1f554",
       "code": "knowledge_base:write",
-      "name": "knowledge_bases·write",
-      "module": "knowledge_bases",
-      "type": 1
+      "name": "knowledge_base·write",
+      "resource_type": "knowledge_base",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "636b829c-7bae-5f68-947f-3feafed0109f",
       "code": "knowledge_base:delete",
-      "name": "knowledge_bases·delete",
-      "module": "knowledge_bases",
-      "type": 1
+      "name": "knowledge_base·delete",
+      "resource_type": "knowledge_base",
+      "action": "delete",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "5769f06f-afe0-5eda-aa4e-fb49b49aae53",
       "code": "model:read",
-      "name": "models·read",
-      "module": "models",
-      "type": 1
+      "name": "model·read",
+      "resource_type": "model",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "cb26cff2-475c-5b1c-ad13-8cc1b6cbc008",
       "code": "model:write",
-      "name": "models·write",
-      "module": "models",
-      "type": 1
+      "name": "model·write",
+      "resource_type": "model",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "e1214b77-91cf-591b-bbf4-86c6db63c82b",
       "code": "model:delete",
-      "name": "models·delete",
-      "module": "models",
-      "type": 1
+      "name": "model·delete",
+      "resource_type": "model",
+      "action": "delete",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "1bb3552b-4e91-5e2f-991c-602dabdf64b7",
       "code": "provider:read",
-      "name": "providers·read",
-      "module": "providers",
-      "type": 1
+      "name": "provider·read",
+      "resource_type": "provider",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "1d4c6032-1d8f-53a1-874e-a9240da68439",
       "code": "provider:write",
-      "name": "providers·write",
-      "module": "providers",
-      "type": 1
+      "name": "provider·write",
+      "resource_type": "provider",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "f49d943d-cee8-520b-9161-55dc2a64ef9d",
       "code": "provider:delete",
-      "name": "providers·delete",
-      "module": "providers",
-      "type": 1
+      "name": "provider·delete",
+      "resource_type": "provider",
+      "action": "delete",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "d6281657-79ab-50a2-92d6-53fe9cfd279d",
       "code": "role:read",
-      "name": "roles·read",
-      "module": "roles",
-      "type": 1
+      "name": "role·read",
+      "resource_type": "role",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "0b220a8f-3e0a-5fce-a7e9-15ff7061b8ad",
       "code": "role:write",
-      "name": "roles·write",
-      "module": "roles",
-      "type": 1
+      "name": "role·write",
+      "resource_type": "role",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "c0d08eb8-bd06-5732-a32f-0cbe70e7cf89",
       "code": "role:delete",
-      "name": "roles·delete",
-      "module": "roles",
-      "type": 1
+      "name": "role·delete",
+      "resource_type": "role",
+      "action": "delete",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "fe9d92de-366a-5ff1-b019-8dc99fdc6cec",
       "code": "role:admin",
-      "name": "roles·admin",
-      "module": "roles",
-      "type": 1
+      "name": "role·admin",
+      "resource_type": "role",
+      "action": "admin",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "f985f379-d35e-542e-81fa-0f33bea09d7e",
       "code": "tenant:read",
-      "name": "tenants·read",
-      "module": "tenants",
-      "type": 1
+      "name": "tenant·read",
+      "resource_type": "tenant",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "63094a31-fc2e-5023-b2c1-cb1015883ee7",
       "code": "tenant:write",
-      "name": "tenants·write",
-      "module": "tenants",
-      "type": 1
+      "name": "tenant·write",
+      "resource_type": "tenant",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "147edca2-7b32-5b7a-9ffb-aa722554f9e7",
       "code": "usage:read",
       "name": "usage·read",
-      "module": "usage",
-      "type": 1
+      "resource_type": "usage",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "e1648039-1f2f-5934-9179-e8fbd26aab25",
       "code": "user:read",
-      "name": "users·read",
-      "module": "users",
-      "type": 1
+      "name": "user·read",
+      "resource_type": "user",
+      "action": "read",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "07ba24b0-466d-5d57-893f-fa5212cb6db7",
       "code": "user:write",
-      "name": "users·write",
-      "module": "users",
-      "type": 1
+      "name": "user·write",
+      "resource_type": "user",
+      "action": "write",
+      "scope": "platform",
+      "is_system": true
     },
     {
+      "id": "83b58be6-78a3-5ab7-9001-ee6c0f7bea08",
       "code": "user:delete",
-      "name": "users·delete",
-      "module": "users",
-      "type": 1
+      "name": "user·delete",
+      "resource_type": "user",
+      "action": "delete",
+      "scope": "platform",
+      "is_system": true
     }
   ],
   "role_permissions": [
     {
+      "id": "f62525c9-330b-5091-b61a-242e9d58d377",
       "role_code": "admin",
       "permission_code": "*"
     },
     {
+      "id": "e61d0f77-c5b9-5e67-8185-6b7d3ce79fbf",
       "role_code": "org_admin",
       "permission_code": "app:read"
     },
     {
+      "id": "2a761d11-e4ab-588f-9851-26fae592ba10",
       "role_code": "org_admin",
       "permission_code": "billing:read"
     },
     {
+      "id": "44caccae-ce61-5288-9251-d2c448b833c6",
       "role_code": "org_admin",
       "permission_code": "conversation:read"
     },
     {
+      "id": "a4bae3a4-2542-5377-923f-2b3f7674d6b3",
       "role_code": "org_admin",
       "permission_code": "conversation:write"
     },
     {
+      "id": "adfb76fe-9f23-5e19-81e0-9815d1d95dcd",
       "role_code": "org_admin",
       "permission_code": "knowledge_base:delete"
     },
     {
+      "id": "18f6c26d-69a1-58b5-8443-2f90ffdb3f16",
       "role_code": "org_admin",
       "permission_code": "knowledge_base:read"
     },
     {
+      "id": "ea8f69db-c7c7-5205-b7e2-13fe11c824fd",
       "role_code": "org_admin",
       "permission_code": "knowledge_base:write"
     },
     {
+      "id": "4a03e42d-5e29-5aa4-bec9-473b77a12fcd",
       "role_code": "org_admin",
       "permission_code": "model:read"
     },
     {
+      "id": "5b5d102c-ee40-5df7-9ac4-e410f81c39d9",
       "role_code": "org_admin",
       "permission_code": "provider:read"
     },
     {
+      "id": "b3a25b5d-498f-579a-8c66-12efed04a3b8",
       "role_code": "org_admin",
       "permission_code": "usage:read"
     },
     {
+      "id": "7d95b99c-173c-5c32-8404-01782d74a07e",
       "role_code": "org_admin",
       "permission_code": "user:read"
     },
     {
+      "id": "ff03680e-0299-5ef4-b214-313b422201ea",
       "role_code": "org_admin",
       "permission_code": "user:write"
     },
     {
+      "id": "b84448ab-1ac9-556c-a29d-8ea98ff49748",
       "role_code": "org_member",
       "permission_code": "app:read"
     },
     {
+      "id": "21b61851-3722-526c-b39e-18a2d8a498f7",
       "role_code": "org_member",
       "permission_code": "conversation:read"
     },
     {
+      "id": "1947558f-46c4-5e2f-9675-67c0ae741429",
       "role_code": "org_member",
       "permission_code": "knowledge_base:read"
     },
     {
+      "id": "f7e7a8b6-4b12-5468-81b5-be30c9da5256",
       "role_code": "org_member",
       "permission_code": "model:read"
     },
     {
+      "id": "b32e5b48-8077-5265-bded-b52b2300f267",
       "role_code": "org_member",
       "permission_code": "provider:read"
     },
     {
+      "id": "e464a439-547a-5675-afda-5f06588724bc",
       "role_code": "org_member",
       "permission_code": "usage:read"
     },
     {
+      "id": "4da52dc8-c07b-5394-ae0c-57844501d49e",
       "role_code": "org_member",
       "permission_code": "user:read"
     },
     {
+      "id": "f48c5705-6783-505d-98ed-a77633537c23",
       "role_code": "user",
       "permission_code": "app:read"
     },
     {
+      "id": "9d947032-4d7e-5d60-9a03-1cfcc732bf99",
       "role_code": "user",
       "permission_code": "conversation:read"
     },
     {
+      "id": "0f1dfb6b-e1ae-5942-bcfa-515652868026",
       "role_code": "user",
       "permission_code": "knowledge_base:read"
     },
     {
+      "id": "94eb94c7-3107-55d5-92cc-4ce72f6f7a27",
       "role_code": "user",
       "permission_code": "model:read"
     },
     {
+      "id": "28a579c4-6df7-5943-930e-bf743bb0dda9",
       "role_code": "user",
       "permission_code": "provider:read"
     },
     {
+      "id": "01f2be9a-8e36-5fd7-9c07-d2e92cec722a",
       "role_code": "user",
       "permission_code": "usage:read"
     },
     {
+      "id": "dba9d934-dc6f-5c8e-99ed-074bf1dcb10c",
       "role_code": "user",
       "permission_code": "user:read"
     },
     {
+      "id": "052d45eb-84ef-544d-951d-bb63c181823e",
       "role_code": "viewer",
       "permission_code": "app:read"
     },
     {
+      "id": "8786e95f-50b0-5e3e-9dd0-b221433c8ba5",
       "role_code": "viewer",
       "permission_code": "conversation:read"
     },
     {
+      "id": "f71f5776-8475-508e-a139-32e74245bd9e",
       "role_code": "viewer",
       "permission_code": "knowledge_base:read"
     },
     {
+      "id": "58bc6b07-4e9e-5c61-a846-d5f00cb1b398",
       "role_code": "viewer",
       "permission_code": "model:read"
     },
     {
+      "id": "495fb5ff-d2fb-5000-b3d2-44984cb4424a",
       "role_code": "viewer",
       "permission_code": "provider:read"
     },
     {
+      "id": "368bab94-fac1-5c5d-a866-797a25a5895f",
       "role_code": "viewer",
       "permission_code": "usage:read"
     },
     {
+      "id": "5625852c-e703-58d8-a52b-ed80f74d7097",
       "role_code": "viewer",
       "permission_code": "user:read"
     }
   ],
   "user_role": [],
-  "user_role_note": "用户→角色绑定为环境相关（依赖目标仓既有 users 行）：本脚本仅产出声明式清单，默认不含绑定；如需绑定，由目标仓按环境补充（如内置 admin 用户 → admin 角色）。"
+  "user_role_note": "用户→角色绑定为环境相关（依赖目标库既有 users 行）：本脚本仅产出声明式清单，默认不含绑定；如需绑定，由目标仓按环境补充（如内置 admin 用户 → admin 角色）。"
 }

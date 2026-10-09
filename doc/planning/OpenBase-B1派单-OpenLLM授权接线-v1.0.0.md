@@ -6,11 +6,11 @@
 | 来源批次 | B1（授权接线补欠账，源自《OpenBase-自研系统多租户与授权集成总体完善方案》§6） |
 | 文档编号 | OB-DISPATCH-B1-v1.0.0 |
 | 文档版本 | v1.0.0 |
-| 状态 | **[Approved] 已分发 · 已闭环**（2026-10-08 实施完成并回执；见 §6.2） |
+| 状态 | **[Approved] 已分发 · 已回执**（2026-10-08 接线收口；2026-10-09 播种制品交付，见 §6.2/§6.3） |
 | 作者 | PM-OpenBase-Dev |
 | 创建日期 | 2026-10-08 |
 | 存放 | doc/planning/ |
-| 分发状态 | **已分发**（2026-10-08）→ 待回执 |
+| 分发状态 | **已分发**（2026-10-08）→ **已回执**（2026-10-08 接线收口见 §6.2；2026-10-09 播种制品交付见 §6.3） |
 | 上游依据 | 《OpenBase-B1-OpenLLM授权接线收口立项方案-v1.0.0》；《OpenBase-自研系统多租户与授权集成总体完善方案-v1.0.0》§2.4/§5/§6 |
 | 证据 | 逐行只读取证结论（见立项方案 §3 的 `文件:行号` 清单） |
 
@@ -18,6 +18,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.0.3** | **2026-10-09** | **PM/AT-OpenBase-Dev** | **播种制品跨仓交付回执**：依人工指令「立即跨仓执行」，将 B1 配套播种制品（`rbac_seed_ddl.sql` 前置结构变更 / `rbac_seed.sql` 纯 DML / `rbac_seed_manifest.json`）**照抄落位** OpenLLM `backend/scripts/rbac_seed/`，目标仓成为执行责任方；同批交付 D2 裁定 A 接线侧复核结论（`has_permission_code` 已支持 `*` 通配、G3 优先于 G1）与 3 例通配护栏用例；OpenLLM commit **`9feeec8`**（version.json → 2.16.0），三远程 origin/backup/github 哈希一致；该仓 3 例用例**未在本机执行**（环境不可用）已登记遗留。详见 §6.3 |
 | **v1.0.2** | **2026-10-08** | **PM/AT-OpenBase-Dev** | **实施回执**：依人工指令「直接跨仓修复」由本仓代为实施并复核——新增 `app/identity/rbac_guard.py`（`require_permission` + 写类档位守卫 + 两段开关）、15 端点接入权限码判定、EdgeRouter 配置式 RBAC 显式 deprecated；档位锚点对齐 `role_tier_anchors.json`；TDD 13 例、本仓独立复核 33 passed、仓内 unit 3679 passed/22 failed（均为既有基线）；状态 → **已闭环**。未重启服务、未推送 |
 | **v1.0.1** | **2026-10-08** | **PM-OpenBase-Dev** | **状态回写：正式分发**。依据 DevFlow 纪律（派单交付后直接推进本仓回填）：人工批准分发；状态 `[Draft] 待分发` → `[Approved] 已分发`；补 §6 分发记录与回执登记模板 |
 | v1.0.0 | 2026-10-08 | PM-OpenBase-Dev | 初始创建（待分发）：登记 OpenLLM 授权接线的 P0/P1/P2 缺陷清单、交付要求、验收标准与回执要求 |
@@ -96,4 +97,23 @@
 | 两段开关 | `RBAC_PERMISSION_SHADOW`（默认 **True**，只审计不拒绝，日志 `rbac_decision=would_deny`）、`RBAC_PERMISSION_ENFORCE`（默认 **False**） |
 | 回归 | 该仓 `pytest tests/unit -q`：**3679 passed / 22 failed**；22 项失败与仓内既有基线日志（`cr149-*`）逐字一致，**不含本轮改动模块** |
 | 已知风险 | ① 角色→权限映射为**推荐基线、未写库**——强制期开启前须播种 DB 权限矩阵或经 JWT `permissions` 下发，否则非管理员会被拒；② 仅覆盖 15 个端点（providers/tenants/billing 未纳入）；③ 未收录角色码走 fail-closed `ROLE_UNMAPPED`，需与 OpenBase 码集并集确认 |
-| 三远程推送 | **未推送**（待统一授权） |
+| 三远程推送 | **已推送**（`081c5d5`；origin/backup/github 三项哈希一致，见《总体完善方案》v1.9.0） |
+
+### 6.3 播种制品交付回执（**已回执**，2026-10-09）
+
+| 回执字段 | 值 |
+|---------|-----|
+| 交付批次 | B1 配套（权限播种受控执行前置制品） |
+| 交付依据 | 人工指令「立即跨仓执行」；上游《OpenBase-B1-播种SQL评审与执行预检说明-v1.1.0》（[Approved]，D1 拆两步 / D2 取 A） |
+| 目标仓 commit | **`9feeec8`**（`feat(rbac): B1 播种制品跨仓交付与执行口径登记 + D2-A 通配复核（v2.16.0）`，Refs: OB-DISPATCH-B1） |
+| 随单交付物 | `rbac_seed_ddl.sql`（前置结构变更，独立交付）、`rbac_seed.sql`（纯 DML 幂等播种）、`rbac_seed_manifest.json`（计数与 id 集合）→ 落位 OpenLLM `backend/scripts/rbac_seed/` |
+| 交付形态 | **照抄落位**（逐字节复制，本仓不转写、不改写），使 OpenLLM 成为**执行责任方**；制品头部内嵌目标档案声明与落点断言 |
+| 目标落点口径 | 局域网共享基础设施**唯一数据库** `192.168.0.151:5432/nuct` 的 `public` schema（四系统同实例按 schema 区分）；**非**本仓本地库、**非** `openbase` schema |
+| 执行口径 | **结构先行、数据后行**：①只读预检重复行为 0 → ②执行 `rbac_seed_ddl.sql`（须 `CREATE INDEX` 权限）→ ③执行 `rbac_seed.sql` → ④计数核验 + 重跑 diff=0；回滚按 manifest 的 uuid5 id 精确 `DELETE` / `DROP INDEX` |
+| D2 裁定 A 复核（接线侧） | **已实现**：`app/identity/rbac_guard.py:137-139 has_permission_code()` 支持 `*` 通配；G3 档位守卫**优先于** G1（`rbac_guard.py:246-253`），`*` **不参与**档位校验（readonly 持 `*` 写仍 403 `PERM_FORBIDDEN`） |
+| 新增护栏用例 | `tests/unit/test_b1_rbac_wiring.py::TestWildcardPermissionSemantics`（3 例：纯函数通配 / DB `*` 放行写类 / `*` 不越权档位守卫） |
+| 验证状态 | **未在本机执行**（该仓运行环境不可用：venv 基础解释器为 pgAdmin 内置 Python，`psycopg2` 扩展 DLL 缺失；`ruff` 未安装）；仅 **AST 语法校验通过**（文件含 4 个测试类）。已在 `DevLogReport §13.3` 登记为遗留 |
+| 设计文档同步 | OpenLLM `doc/development/OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md` 升 **v1.1.0 [Approved]**，新增 **§13 播种制品接收与执行口径** |
+| 版本 | OpenLLM `version.json` → **2.16.0** |
+| 三远程推送 | **已推送** `9feeec8`；`ls-remote` 复核 origin/backup/github **三项哈希与本地一致** |
+| 遗留 | ①该仓须在可用环境执行 `pytest tests/unit/test_b1_rbac_wiring.py -q -p no:cacheprovider` 确认 **16 例全绿**（原 13 + 新增 3）；②播种制品须由共享库受控变更流程执行，**尚未执行**；③`RBAC_PERMISSION_ENFORCE` 须待 ①②完成后开启 |
