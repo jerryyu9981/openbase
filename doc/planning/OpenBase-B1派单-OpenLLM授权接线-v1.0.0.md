@@ -18,6 +18,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.0.4** | **2026-10-09** | **PM/AT-OpenBase-Dev** | **执行闭环回执**：① **测试环境修复并执行**——启用 OpenLLM 既有机制 `OPENLLM_TEST_EXTRAS`（`backend/extras/.venv/Lib/site-packages`，cp313 `psycopg2-binary`）后，`test_b1_rbac_wiring.py` 实测 **16 passed**（D2-A 验收闭环）；② **播种制品已在共享库执行完成**——`192.168.0.151:5432/nuct` 按「结构先行、数据后行」执行：预检（四表存在/计数 0/重复行 0/缺唯一索引/具 `CREATE` 权限）→ DDL（建 `uq_role_permissions_role_permission`）→ DML（roles=5/permissions=27/role_permissions=34/user_roles=0）→ **幂等复跑新增 0 行**（跳过 66）；③ 附带发现：`roles.code`/`permissions.code` 唯一性由**索引型唯一约束**承载（`pg_constraint` 不含，勿误判）；④ OpenLLM commit **`1075e37`**（v2.16.1）、DevLogReport 升 **v1.1.1**，三远程一致；⑤ `RBAC_PERMISSION_ENFORCE` 前置已具备但**本批未开启、未重启服务**。详见 §6.3 |
 | **v1.0.3** | **2026-10-09** | **PM/AT-OpenBase-Dev** | **播种制品跨仓交付回执**：依人工指令「立即跨仓执行」，将 B1 配套播种制品（`rbac_seed_ddl.sql` 前置结构变更 / `rbac_seed.sql` 纯 DML / `rbac_seed_manifest.json`）**照抄落位** OpenLLM `backend/scripts/rbac_seed/`，目标仓成为执行责任方；同批交付 D2 裁定 A 接线侧复核结论（`has_permission_code` 已支持 `*` 通配、G3 优先于 G1）与 3 例通配护栏用例；OpenLLM commit **`9feeec8`**（version.json → 2.16.0），三远程 origin/backup/github 哈希一致；该仓 3 例用例**未在本机执行**（环境不可用）已登记遗留。详见 §6.3 |
 | **v1.0.2** | **2026-10-08** | **PM/AT-OpenBase-Dev** | **实施回执**：依人工指令「直接跨仓修复」由本仓代为实施并复核——新增 `app/identity/rbac_guard.py`（`require_permission` + 写类档位守卫 + 两段开关）、15 端点接入权限码判定、EdgeRouter 配置式 RBAC 显式 deprecated；档位锚点对齐 `role_tier_anchors.json`；TDD 13 例、本仓独立复核 33 passed、仓内 unit 3679 passed/22 failed（均为既有基线）；状态 → **已闭环**。未重启服务、未推送 |
 | **v1.0.1** | **2026-10-08** | **PM-OpenBase-Dev** | **状态回写：正式分发**。依据 DevFlow 纪律（派单交付后直接推进本仓回填）：人工批准分发；状态 `[Draft] 待分发` → `[Approved] 已分发`；补 §6 分发记录与回执登记模板 |
@@ -109,11 +110,12 @@
 | 随单交付物 | `rbac_seed_ddl.sql`（前置结构变更，独立交付）、`rbac_seed.sql`（纯 DML 幂等播种）、`rbac_seed_manifest.json`（计数与 id 集合）→ 落位 OpenLLM `backend/scripts/rbac_seed/` |
 | 交付形态 | **照抄落位**（逐字节复制，本仓不转写、不改写），使 OpenLLM 成为**执行责任方**；制品头部内嵌目标档案声明与落点断言 |
 | 目标落点口径 | 局域网共享基础设施**唯一数据库** `192.168.0.151:5432/nuct` 的 `public` schema（四系统同实例按 schema 区分）；**非**本仓本地库、**非** `openbase` schema |
-| 执行口径 | **结构先行、数据后行**：①只读预检重复行为 0 → ②执行 `rbac_seed_ddl.sql`（须 `CREATE INDEX` 权限）→ ③执行 `rbac_seed.sql` → ④计数核验 + 重跑 diff=0；回滚按 manifest 的 uuid5 id 精确 `DELETE` / `DROP INDEX` |
+| 执行口径 | **结构先行、数据后行**：①只读预检重复行为 0 → ②执行 `rbac_seed_ddl.sql`（须 `CREATE INDEX` 权限）→ ③执行 `rbac_seed.sql` → ④计数核验 + 重跑 diff=0；回滚按 manifest 的 uuid5 id 精确 `DELETE` / `DROP INDEX`。**（已执行，2026-10-09）** 预检：四表存在、计数均 0、重复行 0、缺该唯一索引、账号具 `public` 的 `CREATE` 权限 → 执行 DDL（`uq_role_permissions_role_permission` 已建）→ 执行 DML（**roles=5 / permissions=27 / role_permissions=34 / user_roles=0**，与 manifest 一致）→ **幂等复跑新增 0 行**（跳过 66） |
 | D2 裁定 A 复核（接线侧） | **已实现**：`app/identity/rbac_guard.py:137-139 has_permission_code()` 支持 `*` 通配；G3 档位守卫**优先于** G1（`rbac_guard.py:246-253`），`*` **不参与**档位校验（readonly 持 `*` 写仍 403 `PERM_FORBIDDEN`） |
 | 新增护栏用例 | `tests/unit/test_b1_rbac_wiring.py::TestWildcardPermissionSemantics`（3 例：纯函数通配 / DB `*` 放行写类 / `*` 不越权档位守卫） |
-| 验证状态 | **未在本机执行**（该仓运行环境不可用：venv 基础解释器为 pgAdmin 内置 Python，`psycopg2` 扩展 DLL 缺失；`ruff` 未安装）；仅 **AST 语法校验通过**（文件含 4 个测试类）。已在 `DevLogReport §13.3` 登记为遗留 |
-| 设计文档同步 | OpenLLM `doc/development/OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md` 升 **v1.1.0 [Approved]**，新增 **§13 播种制品接收与执行口径** |
-| 版本 | OpenLLM `version.json` → **2.16.0** |
-| 三远程推送 | **已推送** `9feeec8`；`ls-remote` 复核 origin/backup/github **三项哈希与本地一致** |
-| 遗留 | ①该仓须在可用环境执行 `pytest tests/unit/test_b1_rbac_wiring.py -q -p no:cacheprovider` 确认 **16 例全绿**（原 13 + 新增 3）；②播种制品须由共享库受控变更流程执行，**尚未执行**；③`RBAC_PERMISSION_ENFORCE` 须待 ①②完成后开启 |
+| 验证状态 | **已执行（2026-10-09）**：经启用该仓既有机制 `OPENLLM_TEST_EXTRAS`（`backend/extras/.venv/Lib/site-packages`，cp313 `psycopg2-binary`）修复测试环境后，`pytest tests/unit/test_b1_rbac_wiring.py -q -p no:cacheprovider` → **16 passed**（原 13 + 新增 3），**D2-A 验收闭环**。备注：`ruff` 本机未安装，本批未出具其结论 |
+| 设计文档同步 | OpenLLM `doc/development/OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md` 升 **v1.1.1 [Approved]**，含 **§13 播种制品接收与执行口径**（§13.2 执行记录 / §13.3 用例执行记录 / §13.4 强制期前置已具备） |
+| 版本 | OpenLLM `version.json` → **2.16.1** |
+| 三远程推送 | **已推送** `1075e37`（本回执批次，含 `9feeec8` 交付批次）；`ls-remote` 复核 origin/backup/github **三项哈希与本地一致** |
+| 附带发现 | `roles.code` / `permissions.code` 的唯一性由**索引型唯一约束**（`ix_roles_code` / `ix_permissions_code`）承载而**非**表级约束——`pg_constraint` 查询不含索引型唯一约束，勿误判为缺失；故 `ON CONFLICT (code)` 前提成立 |
+| 遗留 | ①**已闭环**：测试 16 passed；②**已闭环**：播种制品已在共享库执行完成；③`RBAC_PERMISSION_ENFORCE` 前置**已具备**，**本批未开启、未重启服务**（按模块灰度 `users → roles → knowledge_bases → conversations` 另行推进）；④`ruff` 未安装，OpenLLM 侧未出具静态检查结论 |
