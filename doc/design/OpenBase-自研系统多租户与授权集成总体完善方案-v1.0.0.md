@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-v1.0.0 |
-| 文档版本 | **v1.9.10**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.9.12**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（§7 待裁定项已由人工裁定并回填；A 批已落地；B1/C1 已按 DevFlow 纪律正式分发；B1 配套播种制品已跨仓交付 OpenLLM **并已在共享库执行完成**；强制期**模块级灰度机制已就位**；**C4 生产门禁 / C5 过渡期退出**已在 OpenLLM 落地；待各仓回执后进入 D 批门禁） |
 | 作者 | AA-OpenBase-Dev（架构视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
 | 创建日期 | 2026-10-08 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.9.12** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **未决项 9 方案 B 裁定 + 收敛设计说明产出；C1-d/C2 代码就绪（未提交）**：① **未决项 9**——取证确认 OpenMemory 组织状态漂移为**三源**（`organization_routes.py:44` 与 `org_routes.py:78` 两个同名独立 `_org_registry` + `permission.py:46 _org_policies`），且 RBAC 判定**只读后者**、前两者不回写 → 新建组织在授权层无策略；依人工裁定 **B（DB 为唯一事实源）** 产出《OpenMemory-组织事实源收敛设计说明-v1.0.0》[Draft]（内存降级为可失效缓存、Cache-Aside 读 / 先库后缓存写、P0~P4 迁移与回滚、AC1~AC6 验收含反例自证、D1~D4 待裁定），属 OpenMemory 版本规划窗口落地；② **C1-d / C2 码值规范化**（未决项 6）代码与用例已就绪（`openbase/core/code_normalize.py` + `tests/test_code_normalize.py`，隔离验证 **11/11 PASS**），**按人工指示保留工作树未提交**；③ 门禁复跑 0 FAIL 不变
 | **v1.9.10** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **C3 第三阶段（启动）：OpenLLM 豁免专属审计（R4）落地**：`app/identity/identity_context.py::_is_exempt_proxy_source` 命中豁免时输出结构化留痕（`audit_action=identity.exempt` + `exemption_proxy_source`/`exemption_ticket`/`exemption_approver`/`exemption_expires_at`），**修复契约 R4「必须留痕」违反项**；判定语义未变（仍要求 proxy_source+ticket+approver+未到期），仅补留痕；新增 `tests/unit/test_c3_exemption_audit.py`（2 例），连同既有豁免用例复跑 **27 passed**；OpenLLM commit **`5a9a29a`**（`version.json`→**2.16.4**）、DevLogReport 升 **v1.1.4** 新增 §16，三远程一致。**剩余（第三阶段待办）**：OpenMemory 豁免注册表 DB 落点、三仓字段命名归一——均在各自版本规划窗口执行，避免跨仓破坏性变更
 | **v1.9.9** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **C3 第二阶段：OpenBase k03 死字段修复 + R1 影子期**：① **R2 落地（真缺陷修复）**——`openbase/modules/proxy/__init__.py` 新增 `_k03_exemption_active()`，`_k03_bypass_matches()` 先判 `expires_at`：**到期即不生效**（fail-closed），非法格式与已过期一律不匹配；此前该字段「声明但未生效」使豁免条目**永不失效**，现修复；② **R1 影子期**——`openbase/settings.py::parse_k03_bypass_whitelist` 对缺 `ticket`/`approver`/`expires_at` 的条目 WARN + 留痕，**不改变放行行为**（退出条件：影子期无依赖方后转强制段）；③ 用例 `tests/test_c3_exemptions.py`（6 例）；④ **本机无法执行 pytest**（Py3.13 + 旧 SQLAlchemy 阻断包导入），改以**源码抽取隔离执行**验证 R2 4/4、**直接构造 `Settings`** 验证 R1 2/2，均 PASS；契约制品 `config/identity_exemptions.json` 的 stage_2 状态回填为「已落地」
 | **v1.9.8** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **C3 豁免治理统一（第一阶段：契约与登记）（收口未决项 7）**：产出 `config/identity_exemptions.json` 作为豁免治理**单一事实源**——统一必填字段（`target`/`ticket`/`approver`/`expires_at`）+ 规则 **R1~R5** + 三实现（OpenBase k03 / OpenMemory 行控豁免 / OpenLLM 入站头豁免）字段映射与差距清单；主模板取 OpenMemory（三态审计 + 到期清零）。**查出真缺陷**：OpenBase k03 的 `expires_at` **声明未生效（死字段）**、无 `ticket`/`approver`；OpenLLM 豁免**无专属审计**；OpenMemory 注册表内存实现且 `src` 无实例化点。第二阶段（OpenBase 收紧）与第三阶段（各仓对齐）已登记退出条件，待批
