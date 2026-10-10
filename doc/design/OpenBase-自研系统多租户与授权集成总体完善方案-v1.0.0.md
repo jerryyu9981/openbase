@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-v1.0.0 |
-| 文档版本 | **v1.9.7**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.9.8**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（§7 待裁定项已由人工裁定并回填；A 批已落地；B1/C1 已按 DevFlow 纪律正式分发；B1 配套播种制品已跨仓交付 OpenLLM **并已在共享库执行完成**；强制期**模块级灰度机制已就位**；**C4 生产门禁 / C5 过渡期退出**已在 OpenLLM 落地；待各仓回执后进入 D 批门禁） |
 | 作者 | AA-OpenBase-Dev（架构视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
 | 创建日期 | 2026-10-08 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.9.8** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **C3 豁免治理统一（第一阶段：契约与登记）（收口未决项 7）**：产出 `config/identity_exemptions.json` 作为豁免治理**单一事实源**——统一必填字段（`target`/`ticket`/`approver`/`expires_at`）+ 规则 **R1~R5** + 三实现（OpenBase k03 / OpenMemory 行控豁免 / OpenLLM 入站头豁免）字段映射与差距清单；主模板取 OpenMemory（三态审计 + 到期清零）。**查出真缺陷**：OpenBase k03 的 `expires_at` **声明未生效（死字段）**、无 `ticket`/`approver`；OpenLLM 豁免**无专属审计**；OpenMemory 注册表内存实现且 `src` 无实例化点。第二阶段（OpenBase 收紧）与第三阶段（各仓对齐）已登记退出条件，待批
 | **v1.9.7** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **B3 四仓档位锚点落地 + D3 门禁覆盖加固（收口未决项 2/3）**：① **修复真缺陷**——OpenRAG `c3a5b85`、OpenMemory `c73b5bb` 的角色→档位映射原仅收四码、**缺 A3 并集内的 `user`**，会把 OpenBase 合法透传码 fail-closed 403 `ROLE_UNMAPPED` 误拒；两仓补 `user→readonly`（RAG 同步扩 `OPENBASE_ROLE_CODES`、OM 扩 `KNOWN_OPENBASE_ROLES`）并更新契约用例与端点级读写矩阵参数；② 四仓锚点**全覆盖**（OpenLLM/DPS 经**直接导入模块断言**证实一致，无需改动）；③ D3 门禁加固——`scripts/cross_repo_auth_gate.py` 新增「**锚点覆盖**」检查（原仅查"不矛盾"）且提取器支持常量式映射，复跑 **8 PASS / 1 WARN / 0 FAIL**；④ 测试可执行性：RAG/OM **本机无法执行**（RAG `.venv2` 基础解释器缺失、共享解释器缺 `structlog`；OM 命中 Py3.13+旧 SQLAlchemy 不兼容），故以**模块级直接断言**取证并登记遗留
 | **v1.9.6** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **C4 生产门禁 + C5 过渡期退出落地（OpenLLM，收口未决项 4/5）**：`get_settings()` 新增生产门禁——`ENV=production` 且 `ENFORCE_INBOUND_IDENTITY_HEADERS=false` 即**拒绝**（照搬本仓既有 `SECRET_KEY` 门禁形态与 OpenMemory `validate_*_policy` 口径），该门禁兼作过渡期「忽略+标注+WARN」的**机械截止手段**（规避过渡态永久停留）；新增 `tests/unit/test_c4_production_enforce_gate.py`（3 例），连同 B1 用例复跑 **23 passed**；OpenLLM commit **`daea828`**（`version.json`→**2.16.3**）、DevLogReport 升 **v1.1.3** 新增 §15。**未覆盖**：其余三仓同类门禁属各自批次（OpenMemory 已有 `validate_*_policy`，需**口径对齐**；OpenRAG/DPS 待排期）
 | **v1.9.5** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **强制期「按模块灰度」机制就位（收口未决项 1）**：OpenLLM 新增 `RBAC_PERMISSION_ENFORCE_MODULES` 灰度白名单（默认空=全部模块；非空=仅列出的 module 强制，其余走影子期）+ `enforced_modules()`/`module_of()`/`is_module_enforced()`，落点 `app/core/config.py`、`app/identity/rbac_guard.py`；新增 4 例护栏用例，`test_b1_rbac_wiring.py` 实测 **20 passed**（16+4）；OpenLLM commit **`6f06198`**（`version.json`→**2.16.2**）、DevLogReport 升 **v1.1.2** 新增 §14（含**单模块可独立回滚**口径）。**仍未执行**：`RBAC_PERMISSION_ENFORCE` 实际翻转——本机**无运行中的 OpenLLM 服务、无影子期 `would_deny` 日志**，出口门禁（消化率 100% 且无未归类调用方）无法判定，登记为遗留。
@@ -359,6 +360,7 @@ A（契约与登记，本仓）
 | B4 | OpenBase `token_version` 吊销强制 + 主体验证 fail-open 收紧 | 本仓独立批次（可与 D 批合并） |
 | C2/C3/C4/C5 | 码值规范化统一 / 豁免治理合并 / 生产门禁统一 / 过渡期退出计划 | 随 C 批推进（C4/C5 已写入协议头规范 v1.1） |
 | **C4/C5** | 生产门禁统一（生产必须 enforce/fail-closed 写成启动校验）+ 过渡期退出计划（设退出条件与版本） | ✅ **OpenLLM 已落地（2026-10-09，`daea828`/v2.16.3）**：`app/core/config.py::get_settings()` 生产门禁（`ENV=production` 且 `ENFORCE_INBOUND_IDENTITY_HEADERS=false` → `ValueError` 拒绝），兼作过渡期机械截止；3 例用例，复跑 **23 passed**。**其余仓未落地**（OpenMemory 需口径对齐；OpenRAG/DPS 待各自批次） |
+| **C3** | 豁免治理统一（票据 + 审批人 + 有效期，以 OpenMemory 行控豁免为模板，与 OpenBase `k03_bypass_whitelist` 合并为一种机制） | 🟡 **第一阶段（契约与登记）已完成（2026-10-09）**：产出 `config/identity_exemptions.json`——统一必填字段（`target`/`ticket`/`approver`/`expires_at`）+ 生效规则 **R1~R5**（拒绝非法豁免 / 到期即失效 / 匿名不豁免 / 必须留痕 / 过渡期须有截止）+ 三实现字段映射与差距清单。**查出的真缺陷**：① **OpenBase `k03_bypass_whitelist` 的 `expires_at` 是声明未生效的死字段**（匹配器无任何时间比较，条目永不失效，违反 R2）；② OpenBase 无 `ticket`/`approver`（违反 R1）；③ OpenLLM 入站头豁免**无专属审计**（违反 R4）；④ OpenMemory 豁免注册表为内存实现且 `src` 内无实例化点。**第二阶段（OpenBase 收紧：R2 落地 + R1 影子期）与第三阶段（各仓对齐）待批** |
 | D1~D3 | 跨系统授权一致性矩阵 + 自动化门禁脚本 + 负向用例集 | B/C 批复回执后收口 |
 
 ### 9.4 A 批交付清单（本仓，已完成）
@@ -406,6 +408,7 @@ A（契约与登记，本仓）
 | **B1 播种落点（已探明，2026-10-09）** | 共享 PG `192.168.0.151:5432/nuct` 只读探查结果 | **目标 = `nuct` 库的 `public` schema**（非 OpenLLM 仓内 `.env` 所写 `localhost:5432/openllm`）。表结构：`roles(code, name, role_type, level, scope, organization_id…)`、`permissions(code, resource_type, action, scope…)`（**四字段并存**）、`role_permissions(role_id uuid, permission_id uuid, constraints jsonb, is_active)`、`user_roles(user_id uuid, role_id uuid, organization_id uuid, team_id uuid, expires_at, is_active)`。**关联表主键为 uuid**，而 `openbase.roles` 为 bigint——故原 SQL 不仅 schema 名错，**整套键类型与列模型亦不对**，须重写生成器（换数据模型来源）并**加生成期目标校验**（断言目标 schema/表与"目标系统"声明一致，将此类错误变为生成期硬失败）。另注：`nuct` 内另有 `openbase`（OpenBase 自有）与 `platform`（第三方系统）两个 schema，三者权限模型互不相同 |
 | **B4** | OpenBase 安全收紧：主体验证 DB 不可达**按环境门控**（生产 fail-closed 503 + 显式白名单；非生产兼容 allow+WARN+留痕，可 `principal_db_degraded_policy` 显式覆盖，生产误配 `allow` 拒绝启动）+ `token_version` 吊销**生产强制** | ✅ **已修复并闭环**：门控落地后全量 **1176 passed / 5 failed / 4 skipped**（5 项为既有 pg 抖动与 1 项本批遗漏，后者已修）；复核 73 passed、`ruff` 全绿。**遗留**：`row_missing` 仍 fail-open（未收紧，另批） |
 | **C4/C5** | 生产门禁统一（生产必须 enforce/fail-closed 写成启动校验）+ 过渡期退出计划（设退出条件与版本） | ✅ **OpenLLM 已落地（2026-10-09，`daea828`/v2.16.3）**：`app/core/config.py::get_settings()` 生产门禁（`ENV=production` 且 `ENFORCE_INBOUND_IDENTITY_HEADERS=false` → `ValueError` 拒绝），兼作过渡期机械截止；3 例用例，复跑 **23 passed**。**其余仓未落地**（OpenMemory 需口径对齐；OpenRAG/DPS 待各自批次） |
+| **C3** | 豁免治理统一（票据 + 审批人 + 有效期，以 OpenMemory 行控豁免为模板，与 OpenBase `k03_bypass_whitelist` 合并为一种机制） | 🟡 **第一阶段（契约与登记）已完成（2026-10-09）**：产出 `config/identity_exemptions.json`——统一必填字段（`target`/`ticket`/`approver`/`expires_at`）+ 生效规则 **R1~R5**（拒绝非法豁免 / 到期即失效 / 匿名不豁免 / 必须留痕 / 过渡期须有截止）+ 三实现字段映射与差距清单。**查出的真缺陷**：① **OpenBase `k03_bypass_whitelist` 的 `expires_at` 是声明未生效的死字段**（匹配器无任何时间比较，条目永不失效，违反 R2）；② OpenBase 无 `ticket`/`approver`（违反 R1）；③ OpenLLM 入站头豁免**无专属审计**（违反 R4）；④ OpenMemory 豁免注册表为内存实现且 `src` 内无实例化点。**第二阶段（OpenBase 收紧：R2 落地 + R1 影子期）与第三阶段（各仓对齐）待批** |
 | D1~D3 | 跨系统授权一致性矩阵 + 自动化门禁脚本 + 负向用例集 | **D1/D2 已完成**（`config/auth_consistency_matrix.json` 17 格 × 6 系统 × 8 不变式；`scripts/cross_repo_auth_gate.py` 9 项检查 **0 FAIL**，已纳入回归 `tests/test_cross_repo_auth_gate.py`）；**D3（运行时负向用例集全量复测）未启动** |
 
 **三仓实施共性（风险控制口径）**：三项均采用**观察段默认 + 强制段开关**的两段推进，默认**不改变现场可用性**；均**未重启服务**，故现场走查不受影响；均以「改动前基线 vs 改动后」逐项对比证明**失败数零增长**。

@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "artifact": "identity_exemptions",
+  "purpose": "C 批 C3：把「豁免治理」统一为一个通用机制的单一事实源——统一字段契约、生效/过期语义、审计要求与分阶段强制路径，供各系统的豁免实现（OpenBase k03 绕过白名单 / OpenMemory 行控豁免 / OpenLLM 入站头豁免）对账消费",
+  "source_of_truth": "本文件为豁免治理的契约登记；各系统实现仍为运行时事实源，但字段语义与生效规则须与本文件一致",
+  "unified_model": {
+    "record_required_fields": ["target", "ticket", "approver", "expires_at"],
+    "record_optional_fields": ["id", "method", "reason", "note"],
+    "semantics": {
+      "target": "豁免对象标识（形态随系统：入站来源标识 / 端点模式 / 系统+路径模式）",
+      "ticket": "工单/审批单号——**必填**（豁免必须有可追溯的审批凭据）",
+      "approver": "审批人——**必填**（豁免必须有责任人）",
+      "expires_at": "到期时间（ISO8601，UTC）——**必填且必须为未来**；到期即自动失效（零人工干预）",
+      "reason": "豁免原因（与 note 同语义，命名归一为 reason）",
+      "method": "可选：限定 HTTP 方法（缺省 = 不限）",
+      "id": "可选：稳定标识，用于审计与精确撤销"
+    },
+    "rules": [
+      "R1 拒绝非法豁免：ticket/approver/expires_at 任一缺失或空白 → 该条不生效（fail-closed，不得静默放行）",
+      "R2 到期即失效：expires_at <= now → 该条不生效；不得依赖人工清理",
+      "R3 匿名不豁免：无主体的请求即便命中豁免也拒绝（服务账号/匿名写另经 PERM_SERVICE_KEY_WRITE_DENIED 判定）",
+      "R4 必须留痕：豁免命中放行与拒绝均须落审计（含 id/target/ticket/approver/reason 与判定结果）",
+      "R5 过渡期必须有截止：任何「缺失必填字段仍放行」的兼容分支须显式登记退出条件与版本"
+    ]
+  },
+  "consumers": {
+    "openbase_k03": {
+      "name": "OpenBase K03 绕过白名单（服务 Key 写豁免）",
+      "declared_fields": ["id", "system", "method", "path_pattern", "reason", "owner", "audit", "expires_at"],
+      "evidence": "openbase/settings.py:392-394（字段声明）；openbase/settings.py:603-627（解析，仅结构级）；openbase/modules/proxy/__init__.py:129-145（匹配）；openbase/modules/proxy/__init__.py:163-186（审计 action=proxy.bypass_write）",
+      "gaps": [
+        "expires_at 为**声明但未生效**的死字段：匹配函数无任何时间比较，条目永不自动失效 → 违反 R2",
+        "无 ticket / approver：违反 R1（以 owner 代替且未校验）",
+        "解析仅结构级（JSON 数组 + dict 过滤），无字段级校验"
+      ],
+      "strengths": ["唯一具备专属豁免审计动作（proxy.bypass_write）与明细 detail"]
+    },
+    "openmemory_row_scope": {
+      "name": "OpenMemory 行控豁免",
+      "declared_fields": ["exemption_id", "endpoint_pattern", "method", "reason", "ticket", "approver", "expires_at", "created_at"],
+      "evidence": "src/openmemory/identity/scope_exemption.py:49-60（数据结构）；:125-162（register 强校验，缺 ticket/approver/未到期 expires_at 即拒）；:66-71 + :182（过期判定）；:191-201（prune_expired）；:28-30（审计 action=scope.exempt / .denied / .denied_anonymous）",
+      "gaps": ["注册表为内存实现（DB 落点另批）；src 内未找到实例化点（仅测试实例化）"],
+      "strengths": ["三者中唯一**同时**强制 ticket+approver+未到期并具备到期清零与三态审计动作 —— **统一模型的主模板**"]
+    },
+    "openllm_inbound_headers": {
+      "name": "OpenLLM 入站身份头豁免清单",
+      "declared_fields": ["proxy_source", "ticket", "approver", "expires_at", "note"],
+      "evidence": "backend/app/core/config.py:96-99（字段声明）；backend/app/identity/exemptions.py:49-60（逐条强校验）；:98-103（exemption_is_active）；:106-124（load_active_exemptions 过滤到期）；消费点 identity_context.py:261-275、307",
+      "gaps": ["未找到该豁免专有的审计动作（仅等同受信来源，无 scope.exempt 式留痕）→ 违反 R4"],
+      "strengths": ["字段集与统一模型最接近（仅命名差异：proxy_source≈target、note≈reason）"]
+    }
+  },
+  "field_mapping": {
+    "target": { "openbase_k03": "system + path_pattern", "openmemory_row_scope": "endpoint_pattern", "openllm_inbound_headers": "proxy_source" },
+    "ticket": { "openbase_k03": "（缺失）", "openmemory_row_scope": "ticket", "openllm_inbound_headers": "ticket" },
+    "approver": { "openbase_k03": "（缺失，仅 owner 且不校验）", "openmemory_row_scope": "approver", "openllm_inbound_headers": "approver" },
+    "expires_at": { "openbase_k03": "expires_at（声明未生效）", "openmemory_row_scope": "expires_at", "openllm_inbound_headers": "expires_at" },
+    "reason": { "openbase_k03": "reason", "openmemory_row_scope": "reason", "openllm_inbound_headers": "note" },
+    "method": { "openbase_k03": "method", "openmemory_row_scope": "method", "openllm_inbound_headers": "（不适用）" }
+  },
+  "facts": {
+    "strict_named_intersection": ["expires_at"],
+    "semantic_intersection": ["expires_at", "reason/note", "target（形态各异）"],
+    "note": "三者的「豁免对象标识」字段命名与匹配逻辑均各自独有；唯一完全同名且语义一致的公共字段是 expires_at"
+  },
+  "rollout": {
+    "stage_1_contract_and_registration": {
+      "status": "本次已产出（2026-10-09）",
+      "content": "统一契约登记（本文件）：必填字段、生效/过期语义 R1~R5、字段映射表、三实现差距清单"
+    },
+    "stage_2_openbase_tightening": {
+      "status": "待批（下一批次）",
+      "content": [
+        "R2 落地：k03 匹配器补 expires_at 判定（到期即不生效，fail-closed）",
+        "R1 影子期：k03 解析对缺失 ticket/approver 的条目输出 WARN 并留痕（不改变放行行为）"
+      ],
+      "exit_condition": "影子期无「缺失 ticket/approver 但实际依赖豁免」的调用方后，开启强制段：缺失即不生效（fail-closed）"
+    },
+    "stage_3_consumer_alignment": {
+      "status": "待批（各仓批次）",
+      "content": [
+        "OpenLLM 补豁免专属审计（R4：命中放行/拒绝均留痕）",
+        "OpenMemory 豁免注册表 DB 落点（另批，S2-T6/T7）",
+        "三仓字段命名归一（target/reason）——**仅在各自版本规划窗口执行**，避免跨仓破坏性变更"
+      ]
+    }
+  },
+  "known_gaps": [
+    "OpenBase k03 的 expires_at 未生效（R2 违反，最高优先级）",
+    "OpenBase k03 无 ticket/approver（R1 违反）",
+    "OpenLLM 入站头豁免无专属审计（R4 违反）",
+    "OpenMemory 豁免注册表为内存实现且 src 内无实例化点（治理链未接通）"
+  ]
+}
