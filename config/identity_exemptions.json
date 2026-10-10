@@ -69,12 +69,17 @@
       "content": "统一契约登记（本文件）：必填字段、生效/过期语义 R1~R5、字段映射表、三实现差距清单"
     },
     "stage_2_openbase_tightening": {
-      "status": "待批（下一批次）",
+      "status": "已落地（2026-10-09）",
       "content": [
         "R2 落地：k03 匹配器补 expires_at 判定（到期即不生效，fail-closed）",
         "R1 影子期：k03 解析对缺失 ticket/approver 的条目输出 WARN 并留痕（不改变放行行为）"
       ],
-      "exit_condition": "影子期无「缺失 ticket/approver 但实际依赖豁免」的调用方后，开启强制段：缺失即不生效（fail-closed）"
+      "exit_condition": "影子期无「缺失 ticket/approver 但实际依赖豁免」的调用方后，开启强制段：缺失即不生效（fail-closed）",
+      "implemented": [
+        "R2：openbase/modules/proxy/__init__.py 新增 _k03_exemption_active()，_k03_bypass_matches() 先判到期（非法格式 fail-closed 视为过期）——死字段已修复",
+        "R1 影子期：openbase/settings.py::parse_k03_bypass_whitelist 对缺 ticket/approver/expires_at 的条目输出 WARN + 留痕（不改变放行行为）",
+        "用例：tests/test_c3_exemptions.py（6 例，本机因 Py3.13+旧 SQLAlchemy 阻断包导入而未执行；已以「源码抽取隔离执行 + 直接构造 Settings」验证 R2 4/4、R1 2/2）"
+      ]
     },
     "stage_3_consumer_alignment": {
       "status": "待批（各仓批次）",

@@ -126,8 +126,35 @@ def _resolve_service_account_subject(identity: dict) -> dict | None:
     return None
 
 
+def _k03_exemption_active(entry: dict) -> bool:
+    """C3 第二阶段 R2：到期即失效（修复 `expires_at` 此前「声明但未生效」的死字段）。
+
+    - 无 `expires_at` → 影子期仍生效（R1 过渡段；解析期已 WARN 留痕）；
+    - 非法格式 → fail-closed 视为已过期；
+    - 契约见 `config/identity_exemptions.json`（R2）。
+    """
+    from datetime import datetime, timezone
+
+    raw = entry.get("expires_at")
+    if raw in (None, ""):
+        return True
+    try:
+        expires = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        logger.warning("k03 bypass exemption invalid expires_at; treated as expired")
+        return False
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    return expires > datetime.now(timezone.utc)
+
+
 def _k03_bypass_matches(entry: dict, *, system: str, method: str, path: str) -> bool:
-    """K03 过渡豁免白名单条目匹配（system+method+path_pattern 三者命中）."""
+    """K03 过渡豁免白名单条目匹配（system+method+path_pattern 三者命中）.
+
+    C3 第二阶段（R2）：先判到期，**到期即不生效**（fail-closed）。
+    """
+    if not _k03_exemption_active(entry):
+        return False
     if entry.get("system") not in (None, "*", system):
         return False
     if entry.get("method") not in (None, "*", method):

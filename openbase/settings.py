@@ -624,7 +624,23 @@ class Settings(BaseSettings):
                 "k03_bypass_whitelist must be a JSON array; treated as empty (fail-closed)"
             )
             return []
-        return [item for item in data if isinstance(item, dict)]
+        entries = [item for item in data if isinstance(item, dict)]
+        # C3 影子期（R1 过渡段，2026-10-09）：登记缺统一契约必填字段的条目，**不改变放行行为**。
+        # 契约见 `config/identity_exemptions.json`（必填 target/ticket/approver/expires_at）；
+        # 退出条件：影子期无「缺失 ticket/approver 但实际依赖豁免」的调用方 → 开启强制段（fail-closed）。
+        for entry in entries:
+            missing = [
+                field
+                for field in ("ticket", "approver", "expires_at")
+                if not str(entry.get(field) or "").strip()
+            ]
+            if missing:
+                logger.warning(
+                    "k03 bypass exemption missing unified-contract fields "
+                    "(shadow phase, still effective)",
+                    extra={"exemption_id": entry.get("id"), "missing_fields": missing},
+                )
+        return entries
 
     def parse_service_account_subject_map(self) -> list[dict]:
         """ob_k_ 服务账号主体映射解析（JSON 数组；非法/空 → 空表）.
@@ -649,7 +665,23 @@ class Settings(BaseSettings):
                 "service_account_subject_map must be a JSON array; treated as empty"
             )
             return []
-        return [item for item in data if isinstance(item, dict)]
+        entries = [item for item in data if isinstance(item, dict)]
+        # C3 影子期（R1 过渡段，2026-10-09）：登记缺统一契约必填字段的条目，**不改变放行行为**。
+        # 契约见 `config/identity_exemptions.json`（必填 target/ticket/approver/expires_at）；
+        # 退出条件：影子期无「缺失 ticket/approver 但实际依赖豁免」的调用方 → 开启强制段（fail-closed）。
+        for entry in entries:
+            missing = [
+                field
+                for field in ("ticket", "approver", "expires_at")
+                if not str(entry.get(field) or "").strip()
+            ]
+            if missing:
+                logger.warning(
+                    "k03 bypass exemption missing unified-contract fields "
+                    "(shadow phase, still effective)",
+                    extra={"exemption_id": entry.get("id"), "missing_fields": missing},
+                )
+        return entries
 
     # ---- OB-8 dps code→UUID 登记式基线（§7.2，批次 3/T7）----
 
