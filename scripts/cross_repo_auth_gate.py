@@ -44,6 +44,16 @@ TIER_ALIASES = {
     "readwrite": "readwrite",
     "read_write": "readwrite",
     "manage": "manage",
+    # DPS 以 `ANCHOR_*` 常量书写档位：补别名使静态门禁可解析（否则整表退化为 WARN）
+    "anchor_manage": "manage",
+    "anchor_readwrite": "readwrite",
+    "anchor_readonly": "readonly",
+    "tier_readonly": "readonly",
+    "tier_readwrite": "readwrite",
+    "tier_manage": "manage",
+    "role_tier_manage": "manage",
+    "role_tier_readwrite": "readwrite",
+    "role_tier_readonly": "readonly",
 }
 MATRIX_PATH = REPO_ROOT / "config" / "auth_consistency_matrix.json"
 ANCHORS_PATH = REPO_ROOT / "config" / "role_tier_anchors.json"
@@ -92,12 +102,15 @@ def _extract_role_tier_pairs(text: str) -> dict[str, str]:
     （取「.」或「:」后最后一段作为档位名再归一）。
     """
     pairs: dict[str, str] = {}
-    pattern = r'["\']([A-Za-z_]+)["\']\s*:\s*["\']?([A-Za-z_][A-Za-z_.:]*)["\']?'
-    for role, raw_tier in re.findall(pattern, text):
+    # 键兼容「引号字面量」与「常量符号」两种写法（后者如 `ROLE_VIEWER: TIER_READONLY`，
+    # 2026-10-09 硬化：否则 RAG/LLM 的常量式映射无法解析，覆盖门禁退化为 WARN）。
+    pattern = r'(["\']?)([A-Za-z_]\w*)\1\s*:\s*["\']?([A-Za-z_][A-Za-z_.:]*)["\']?'
+    for _quote, raw_role, raw_tier in re.findall(pattern, text):
+        role = re.sub(r"^role_", "", raw_role.strip().lower())
         tail = re.split(r"[.:]", raw_tier.strip())[-1]
         tier = _norm_tier(tail)
-        if tier and role.strip().lower() not in {"readonly", "readwrite", "manage", "read"}:
-            pairs.setdefault(role.strip().lower(), tier)
+        if tier and role not in {"readonly", "readwrite", "manage", "read", "tier", "anchor"}:
+            pairs.setdefault(role, tier)
     return pairs
 
 
@@ -168,11 +181,21 @@ def check_tier_anchors(report: Report) -> None:
         if conflicts:
             report.add(f"anchors.{name}", "FAIL", f"档位与锚点表矛盾：{conflicts}")
         elif pairs:
+            # 覆盖门禁（2026-10-09 补）：不仅「不矛盾」，还须**覆盖全部锚点角色**——
+            # 漏收合法码会让其在本仓 fail-closed 403 ROLE_UNMAPPED（误拒），
+            # 例：A3 并集含 `user`，RAG/OM 曾仅收四码 → 本项应 FAIL。
+            missing = sorted(set(anchors) - set(pairs))
             matched = sorted(set(pairs) & set(anchors))
-            report.add(
-                f"anchors.{name}", "PASS",
-                f"{path.name} 解析 {len(pairs)} 组映射，命中锚点角色 {matched}，无矛盾",
-            )
+            if missing:
+                report.add(
+                    f"anchors.{name}", "FAIL",
+                    f"{path.name} 未覆盖锚点角色 {missing}（该码将被本仓 fail-closed 误拒 ROLE_UNMAPPED）",
+                )
+            else:
+                report.add(
+                    f"anchors.{name}", "PASS",
+                    f"{path.name} 解析 {len(pairs)} 组映射，锚点角色**全覆盖** {matched}，无矛盾",
+                )
         else:
             report.add(
                 f"anchors.{name}", "WARN",
