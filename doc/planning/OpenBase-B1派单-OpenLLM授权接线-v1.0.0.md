@@ -18,6 +18,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.0.5** | **2026-10-09** | **PM/AT-OpenBase-Dev** | **强制期灰度机制回执（收口未决项 1）**：OpenLLM 新增 **`RBAC_PERMISSION_ENFORCE_MODULES`** 灰度白名单（默认空=全部模块；非空=仅列出的 module 强制，其余走影子期）+ `enforced_modules()` / `module_of()` / `is_module_enforced()`；`app/core/config.py`、`app/identity/rbac_guard.py` 落点；新增 `TestEnforceModuleGrayscale` **4 例**，`test_b1_rbac_wiring.py` 实测 **20 passed**；commit **`6f06198`**（v2.16.2），三远程一致；DevLogReport 升 **v1.1.2** 新增 §14。**遗留**：实际翻转未执行（无运行服务与影子期观测数据）。详见 §6.3 |
 | **v1.0.4** | **2026-10-09** | **PM/AT-OpenBase-Dev** | **执行闭环回执**：① **测试环境修复并执行**——启用 OpenLLM 既有机制 `OPENLLM_TEST_EXTRAS`（`backend/extras/.venv/Lib/site-packages`，cp313 `psycopg2-binary`）后，`test_b1_rbac_wiring.py` 实测 **16 passed**（D2-A 验收闭环）；② **播种制品已在共享库执行完成**——`192.168.0.151:5432/nuct` 按「结构先行、数据后行」执行：预检（四表存在/计数 0/重复行 0/缺唯一索引/具 `CREATE` 权限）→ DDL（建 `uq_role_permissions_role_permission`）→ DML（roles=5/permissions=27/role_permissions=34/user_roles=0）→ **幂等复跑新增 0 行**（跳过 66）；③ 附带发现：`roles.code`/`permissions.code` 唯一性由**索引型唯一约束**承载（`pg_constraint` 不含，勿误判）；④ OpenLLM commit **`1075e37`**（v2.16.1）、DevLogReport 升 **v1.1.1**，三远程一致；⑤ `RBAC_PERMISSION_ENFORCE` 前置已具备但**本批未开启、未重启服务**。详见 §6.3 |
 | **v1.0.3** | **2026-10-09** | **PM/AT-OpenBase-Dev** | **播种制品跨仓交付回执**：依人工指令「立即跨仓执行」，将 B1 配套播种制品（`rbac_seed_ddl.sql` 前置结构变更 / `rbac_seed.sql` 纯 DML / `rbac_seed_manifest.json`）**照抄落位** OpenLLM `backend/scripts/rbac_seed/`，目标仓成为执行责任方；同批交付 D2 裁定 A 接线侧复核结论（`has_permission_code` 已支持 `*` 通配、G3 优先于 G1）与 3 例通配护栏用例；OpenLLM commit **`9feeec8`**（version.json → 2.16.0），三远程 origin/backup/github 哈希一致；该仓 3 例用例**未在本机执行**（环境不可用）已登记遗留。详见 §6.3 |
 | **v1.0.2** | **2026-10-08** | **PM/AT-OpenBase-Dev** | **实施回执**：依人工指令「直接跨仓修复」由本仓代为实施并复核——新增 `app/identity/rbac_guard.py`（`require_permission` + 写类档位守卫 + 两段开关）、15 端点接入权限码判定、EdgeRouter 配置式 RBAC 显式 deprecated；档位锚点对齐 `role_tier_anchors.json`；TDD 13 例、本仓独立复核 33 passed、仓内 unit 3679 passed/22 failed（均为既有基线）；状态 → **已闭环**。未重启服务、未推送 |
@@ -115,7 +116,7 @@
 | 新增护栏用例 | `tests/unit/test_b1_rbac_wiring.py::TestWildcardPermissionSemantics`（3 例：纯函数通配 / DB `*` 放行写类 / `*` 不越权档位守卫） |
 | 验证状态 | **已执行（2026-10-09）**：经启用该仓既有机制 `OPENLLM_TEST_EXTRAS`（`backend/extras/.venv/Lib/site-packages`，cp313 `psycopg2-binary`）修复测试环境后，`pytest tests/unit/test_b1_rbac_wiring.py -q -p no:cacheprovider` → **16 passed**（原 13 + 新增 3），**D2-A 验收闭环**。备注：`ruff` 本机未安装，本批未出具其结论 |
 | 设计文档同步 | OpenLLM `doc/development/OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md` 升 **v1.1.1 [Approved]**，含 **§13 播种制品接收与执行口径**（§13.2 执行记录 / §13.3 用例执行记录 / §13.4 强制期前置已具备） |
-| 版本 | OpenLLM `version.json` → **2.16.1** |
-| 三远程推送 | **已推送** `1075e37`（本回执批次，含 `9feeec8` 交付批次）；`ls-remote` 复核 origin/backup/github **三项哈希与本地一致** |
+| 版本 | OpenLLM `version.json` → **2.16.2** |
+| 三远程推送 | **已推送** `6f06198`（本回执批次，含 `9feeec8` 交付批次与 `1075e37`）；`ls-remote` 复核 origin/backup/github **三项哈希与本地一致** |
 | 附带发现 | `roles.code` / `permissions.code` 的唯一性由**索引型唯一约束**（`ix_roles_code` / `ix_permissions_code`）承载而**非**表级约束——`pg_constraint` 查询不含索引型唯一约束，勿误判为缺失；故 `ON CONFLICT (code)` 前提成立 |
-| 遗留 | ①**已闭环**：测试 16 passed；②**已闭环**：播种制品已在共享库执行完成；③`RBAC_PERMISSION_ENFORCE` 前置**已具备**，**本批未开启、未重启服务**（按模块灰度 `users → roles → knowledge_bases → conversations` 另行推进）；④`ruff` 未安装，OpenLLM 侧未出具静态检查结论 |
+| 遗留 | ①**已闭环**：测试 **20 passed**（16+新增 4）；②**已闭环**：播种制品已在共享库执行完成；③**灰度机制已就位**：`RBAC_PERMISSION_ENFORCE_MODULES`（默认空=全部模块；非空=仅列出的 module 强制）→ 可按 `user → role → knowledge_base → conversation` 逐模块开强制、**单模块独立回滚**；**实际翻转仍未执行**（本机无运行服务与影子期 `would_deny` 日志，出口门禁无法判定）；④`ruff` 未安装，OpenLLM 侧未出具静态检查结论 |
