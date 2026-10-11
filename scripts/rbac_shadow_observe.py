@@ -61,6 +61,19 @@ EXIT_OK = 0
 EXIT_FAIL = 1
 
 _DECISION_IN_TEXT = re.compile(r"rbac_decision\s*=\s*([A-Za-z_\-]+)")
+# 容错：OpenLLM rbac_guard 的 message 文本形态为
+#   "RBAC shadow would-deny: method=GET path=/api/v1/users ... role=member permission=user:read"
+# （extra 的 rbac_* 字段被 JsonLineFormatter 白名单过滤，仅 message 可解析；见 OpenLLM
+#   app/core/r384_logging.py::_OPTIONAL_KEYS）。故识别 would-deny/would_deny 词形即判 would_deny。
+_WOULD_DENY_IN_TEXT = re.compile(r"\bwould[\s_-]?deny\b", re.IGNORECASE)
+# message 内嵌字段提取（形如 "method=GET path=/x role=r permission=p"）
+_FIELD_IN_TEXT = {
+    "method": re.compile(r"\bmethod=(\w+)"),
+    "endpoint": re.compile(r"\bpath=(\S+)"),
+    "role": re.compile(r"\brole=(\S+)"),
+    "permission": re.compile(r"\bpermission=(\S+)"),
+    "code_text": re.compile(r"\bcode_text=(\S+)"),
+}
 
 _DECISION_ALIASES = ("rbac_decision", "decision", "rbac_result", "permission_decision")
 _ENDPOINT_ALIASES = ("endpoint", "path", "route", "url", "request_path")
@@ -123,7 +136,20 @@ def _extract_decision(record: dict[str, Any]) -> str | None:
                 if match:
                     decision = _normalize_decision(match.group(1))
                     break
+                if _WOULD_DENY_IN_TEXT.search(candidate):
+                    decision = WOULD_DENY
+                    break
     return decision
+
+
+def _field_from_message(record: dict[str, Any], key: str) -> str | None:
+    """从 message 文本提取 method/path/role/permission 等字段（容错解析）. """
+    for candidate in (record.get("message"), record.get("msg")):
+        if isinstance(candidate, str):
+            match = _FIELD_IN_TEXT[key].search(candidate)
+            if match:
+                return match.group(1)
+    return None
 
 
 def parse_record(record: Any) -> dict[str, Any] | None:
@@ -139,6 +165,16 @@ def parse_record(record: Any) -> dict[str, Any] | None:
     subject = _lookup(record, _SUBJECT_ALIASES)
     permission = _lookup(record, _PERMISSION_ALIASES)
     request_id = _lookup(record, _REQUEST_ID_ALIASES)
+
+    # 字段缺失时回退 message 文本解析（OpenLLM JsonLineFormatter 白名单丢弃 extra）
+    if method is None:
+        method = _field_from_message(record, "method")
+    if endpoint is None:
+        endpoint = _field_from_message(record, "endpoint")
+    if role is None:
+        role = _field_from_message(record, "role")
+    if permission is None:
+        permission = _field_from_message(record, "permission")
 
     return {
         "endpoint": str(endpoint) if endpoint is not None else UNKNOWN,

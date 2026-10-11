@@ -4,8 +4,8 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-v1.0.0 |
-| 文档版本 | **v1.9.14**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
-| 状态 | **[Review]**（§7 待裁定项已由人工裁定并回填；A 批已落地；B1/C1 已按 DevFlow 纪律正式分发；B1 配套播种制品已跨仓交付 OpenLLM **并已在共享库执行完成**；强制期**模块级灰度机制已就位**；**C4 生产门禁 / C5 过渡期退出**已在 OpenLLM 落地；待各仓回执后进入 D 批门禁） |
+| 文档版本 | **v1.9.15**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 状态 | **[Review]**（§7 待裁定项已由人工裁定并回填；A 批已落地；B1/C1 已按 DevFlow 纪律正式分发；B1 配套播种制品已跨仓交付 OpenLLM **并已在共享库执行完成**；强制期**模块级灰度机制已就位**；**C4 生产门禁 / C5 过渡期退出**已在 OpenLLM 落地；**Py3.13+旧 SQLAlchemy 测试阻断已解除（依赖约束升级入库）**；待各仓回执后进入 D 批门禁） |
 | 作者 | AA-OpenBase-Dev（架构视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
 | 创建日期 | 2026-10-08 |
 | 存放 | doc/design/ |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.9.15** | **2026-10-11** | AA/AT/PM-OpenBase-Dev | **B1 依赖约束升级入库（解除 Py3.13 测试阻断）+ 影子观测容错解析**：① `pyproject.toml`——`sqlalchemy[asyncio]>=2.0.31,<2.2`（下限 2.0.31＝首个官方支持 Py3.13 的版本，实测 2.1.4 通过）+ `bcrypt>=4.0,<5`（根因：passlib 1.7.4 与 bcrypt≥5 的 >72 字节探测向量行为不兼容），均附根因注释；② `scripts/rbac_shadow_observe.py` +36 行**容错解析**——OpenLLM `JsonLineFormatter` 白名单丢弃 extra 字段时，回退 message 文本提取（`would-deny` 词形判定 + `method=/path=/role=/permission=` 字段正则），修复影子期观测数据漏采；③ 3 处 W292 修复（`code_normalize.py`/`test_c3_exemptions.py`/`test_code_normalize.py` 文件末尾缺换行），`ruff` **0 错误**；④ **全量回归终跑恢复**（经 `doc/tmp/pyrun.py` 桥接运行器 + `.venv` 依赖注入）：**1185 passed / 4 failed / 10 errors / 4 skipped**——4 failed 与 10 errors 同根因为 42 分钟持续负载下 PG 连接瞬态（"connection was closed in the middle of operation"），两文件隔离复跑全绿（42/10 passed）；4 skipped 为 `test_storage_s3_real.py`（需 `OPENBASE_TEST_REAL_INFRA=1`，另批复测）；此前 22 个桥接失败（A 类 12 例 s7 gate 干跑 + B 类 10 例）已修复转绿 |
 | **v1.9.14** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **C1-d / C2 码值规范化正式入库（收口未决项 6）**：`openbase/core/code_normalize.py`（零依赖纯函数：`is_uuid_like`/`pick_lookup_column`/`canonical_uuid`/`normalize_code_or_id(value, resolver)`，resolver 注入故不绑定数据源）+ `tests/test_code_normalize.py`（10 例）一并提交；§10.3 补 C1-d/C2 行。本机以按文件路径加载模块方式验证 **11/11 PASS**（pytest 受 Py3.13+旧 SQLAlchemy 阻断）
 | **v1.9.13** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **C4 生产门禁 / C5 过渡期退出四仓覆盖完成（收口未决项 4/5）**：① **OpenRAG** `a9f0376`——新增 `validate_identity_trust_policy()`（紧邻既有 `validate_row_scope_policy`）并在 `main.py::create_app` 启动调用（3 例）；② **OpenMemory**——经查**该门禁早已落地**（`utils/config.py::validate_identity_trust_policy` :465-489，启动调用 `api/server.py:555`），**无需改动**并作为参照范本；③ **DPS** `00e4820`——依人工裁定**口径 A** 新增 `env`（`DPS_ENV`，默认 `development`）+ `is_production` + `validate_identity_trust_policy()` **方法**（`Settings` 为 dataclass 单例，落为方法以免新增加载期导入），在 `rest_api/app.py` 启动路径调用（3 例）。**验证**：三仓本机均无可用测试环境（OpenRAG `.venv2` 基础解释器缺失/缺 `structlog`；DPS 无 venv），统一改以 **AST 抽取隔离执行 + 调用点源码守卫** → OpenRAG **3/3**、DPS **4/4** 全 PASS；OpenRAG/DPS 三远程一致
 | **v1.9.12** | **2026-10-09** | AA/AT/PM-OpenBase-Dev | **未决项 9 方案 B 裁定 + 收敛设计说明产出；C1-d/C2 代码就绪（未提交）**：① **未决项 9**——取证确认 OpenMemory 组织状态漂移为**三源**（`organization_routes.py:44` 与 `org_routes.py:78` 两个同名独立 `_org_registry` + `permission.py:46 _org_policies`），且 RBAC 判定**只读后者**、前两者不回写 → 新建组织在授权层无策略；依人工裁定 **B（DB 为唯一事实源）** 产出《OpenMemory-组织事实源收敛设计说明-v1.0.0》[Draft]（内存降级为可失效缓存、Cache-Aside 读 / 先库后缓存写、P0~P4 迁移与回滚、AC1~AC6 验收含反例自证、D1~D4 待裁定），属 OpenMemory 版本规划窗口落地；② **C1-d / C2 码值规范化**（未决项 6）代码与用例已就绪（`openbase/core/code_normalize.py` + `tests/test_code_normalize.py`，隔离验证 **11/11 PASS**），**按人工指示保留工作树未提交**；③ 门禁复跑 0 FAIL 不变
