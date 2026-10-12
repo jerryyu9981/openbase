@@ -28,6 +28,11 @@
       "id": "D4", "question": "强制段开启方式",
       "ruling": "按模块灰度",
       "consequence": "按 rollout.order 逐模块开启 RBAC_PERMISSION_ENFORCE；每模块独立灰度与回滚"
+    },
+    {
+      "id": "D5", "question": "出站角色码空间（constants.ALLOWED_OPENBASE_ROLE_CODES 四码 vs roles 种子含 user）",
+      "ruling": "采纳五码并集 {admin, org_admin, org_member, viewer, user}",
+      "consequence": "ALLOWED_OPENBASE_ROLE_CODES 补入 user（2026-10-12 已落地）；与 roles 种子、OpenRAG/OpenMemory/DPS 已收五入码对齐；user 与 org_member 同档 readonly 无语义冲突；关闭生产门禁#2 的 ROLE_UNMAPPED 误伤面"
     }
   ],
   "role_to_permissions": {
@@ -99,7 +104,10 @@
   ],
   "seed_requirements": {
     "idempotent": true,
-    "note": "以本文件 role_to_permissions 为输入播种 roles/permissions/role_permissions 与用户角色绑定；须幂等（重复执行结果一致），并输出播种前后差异报告",
-    "not_seeded_yet": true
+    "note": "以本文件 role_to_permissions 为输入播种 roles/permissions/role_permissions 与用户角色绑定；INSERT ... ON CONFLICT DO NOTHING（幂等）。",
+    "applied": true,
+    "applied_at": "2026-10-09（共享库 192.168.0.151:5432/nuct 受控流程执行，见 OpenLLM DevLogReport §13.2）",
+    "verified_at": "2026-10-12（幂等复跑 diff=0；roles=5 / permissions=27 / role_permissions=34 / user_roles=15）",
+    "binding_note": "user_roles 绑定为环境补充（现 15 行，均归 org_member/admin）；影子期 model_allows×2（user:read/knowledge_base:read）成因＝观测时点 shadow_u1 尚无 user_roles 绑定，非矩阵缺失"
   }
 }

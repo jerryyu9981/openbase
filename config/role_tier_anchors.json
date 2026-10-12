@@ -18,6 +18,11 @@
     "org_member": "readonly",
     "viewer": "readonly"
   },
+  "canonical_role_codes": {
+    "set": ["admin", "org_admin", "org_member", "user", "viewer"],
+    "ruling": "2026-10-12 裁定（台账 v1.10.0）：出站码空间采纳五码并集——ALLOWED_OPENBASE_ROLE_CODES 补入 user，与 roles 种子及 OpenRAG/OpenMemory/DPS 已收五入码对齐；user 与 org_member 同档 readonly",
+    "previously": "白名单四码 {admin, org_admin, org_member, viewer} 不含 user（与种子矛盾，known_gaps 原登记）"
+  },
   "local_role_aliases": {
     "member": {
       "canonical": "org_member",
@@ -51,7 +56,6 @@
     }
   },
   "known_gaps": [
-    "角色码集合不一致：OpenBase 种子含 user，而 ALLOWED_OPENBASE_ROLE_CODES 含 org_member（两者需并集后统一）",
     "OpenLLM 档位守卫 B1 已接线闭环（2026-10-09，15 端点 + 模块级灰度）；强制期翻转按 users→roles→knowledge_bases→conversations 灰度推进",
     "DPS 存在两套本地角色→档位映射（ROLE_TO_ANCHOR / LOCAL_ROLE_TO_ANCHOR），需合并对账"
   ]

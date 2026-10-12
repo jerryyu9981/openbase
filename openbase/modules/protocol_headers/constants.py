@@ -71,9 +71,11 @@ IDENTITY_HEADER_LENGTH_LIMITS: dict[str, int] = {
 }
 
 # 规范值域（§3.1）：禁止空串/控制字符；简单字符集校验（头值不出现 CR/LF）
-# 角色码为 OpenBase 现役粗粒度集（最小集 §6.3；互译目标码见 role_map）
+# 角色码为 OpenBase 现役粗粒度集（最小集 §6.3；互译目标码见 role_map）。
+# 2026-10-12 裁定（台账 v1.10.0）：采纳五码并集——补入 user，与 roles 种子及
+# OpenRAG/OpenMemory/DPS 已收五入码对齐（user 与 org_member 同档 readonly）。
 ALLOWED_OPENBASE_ROLE_CODES: frozenset[str] = frozenset(
-    {"admin", "org_admin", "org_member", "viewer"}
+    {"admin", "org_admin", "org_member", "user", "viewer"}
 )
 
 # 非法头值字符（防头注入：任何出现在头值中的 CR/LF 即非法）
