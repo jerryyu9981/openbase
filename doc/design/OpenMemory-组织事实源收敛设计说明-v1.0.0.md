@@ -4,19 +4,20 @@
 |------|------|
 | 项目名称 | OpenMemory（组织与多租户治理域） |
 | 文档编号 | OM-DESIGN-ORGSOT-v1.0.0 |
-| 文档版本 | **v1.0.0** |
-| 状态 | **[Draft]**（待 OpenMemory 评审；属其版本规划窗口落地，本批不直接改代码） |
+| 文档版本 | **v1.0.1**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 状态 | **[Review]**（D1~D4 已由人工裁定并回填；P0 结构已按裁定落地（2026-10-12）；P1+ 留 OpenMemory 版本窗口） |
 | 作者 | AA-OpenBase-Dev（架构视图）/ AT-OpenBase-Dev（审计视图） |
 | 创建日期 | 2026-10-09 |
 | 存放 | doc/design/ |
 | 上游依据 | 《OpenBase-自研系统多租户与授权集成总体完善方案-v1.0.0》§10.3 未决项 9；《OpenBase-五系统多租户与授权集成总览与续接指南-v1.0.0》§7.1 未决项 9 |
-| 方法 | 逐行**只读**代码取证（每条结论附 `文件:行号`）；不含任何运行时写操作 |
-| 范围边界 | 本文件为**设计与方案**，需 OpenMemory 评审与排期后执行；不替代其 Step 2 正式设计评审 |
+| 方法 | 逐行**只读**代码取证（每条结论附 `文件:行号`）；P0 落地经桥接测试验证（OpenBase venv + dep_patch sqlalchemy 2.1.4） |
+| 范围边界 | 本文件为**设计与方案**，需 OpenMemory 评审与排期后执行；P0 已落地，P1~P4 留版本窗口 |
 
 ## 修订历史
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| **v1.0.1** | **2026-10-12** | AA/AT-OpenBase-Dev | **D1~D4 人工裁定回填 + P0 结构落地**：① 裁定（用户批准采纳建议值）——D1 同表 JSONB / D2 先不设白名单（影子期数据说话）/ D3 进程内缓存 + TTL≤60s / D4 default 兜底两个版本内退役；② **P0 落地**——`db_models.py::OrganizationTable` 新增 `policy` 列（`JSONB().with_variant(JSON, "sqlite")` 跨方言，与 `OrganizationRolePolicy` 字段语义对齐）；新增 alembic **`v706_organization_policy`** 幂等迁移（down=`v705_scope_exemption`，inspector 判列）；TDD **5 例全绿**（RED 实证：`AttributeError: policy` + v706 `FileNotFoundError`；GREEN 后结构/变体/revision 链/roundtrip 全绿），回归 27 passed（含 T1 豁免 7 例 + ORM 结构 15 例），ruff 0 错误；③ 现状再取证对齐：`organizations` 表**已存在**（`slug` UNIQUE 即对外码形态，`status` 大写 `ACTIVE/SUSPENDED/DELETED`，`metadata_` JSONB）——§4.1 假设的 `code`/小写 status 以实际为准修正；④ 遗留：P1 影子读比对 / P2 切换读 / P3 切换写 / P4 退役 default 兜底留 OpenMemory 版本窗口（P1 前须全量检索 `_org_registry` 使用点：organization_routes 5 处 + org_routes 5 处 + member_routes:70-72 1 处） |
 | v1.0.0 | 2026-10-09 | AA/AT-OpenBase-Dev | 初始版本：取证「组织状态三源漂移」根因，给出**以 DB 为唯一事实源**（方案 B）的收敛设计、数据模型、迁移与过渡方案、验收标准与未决项 |
 
 ---
