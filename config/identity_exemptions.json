@@ -39,7 +39,7 @@
       "name": "OpenMemory 行控豁免",
       "declared_fields": ["exemption_id", "endpoint_pattern", "method", "reason", "ticket", "approver", "expires_at", "created_at"],
       "evidence": "src/openmemory/identity/scope_exemption.py:49-60（数据结构）；:125-162（register 强校验，缺 ticket/approver/未到期 expires_at 即拒）；:66-71 + :182（过期判定）；:191-201（prune_expired）；:28-30（审计 action=scope.exempt / .denied / .denied_anonymous）",
-      "gaps": ["注册表为内存实现（DB 落点另批）；src 内未找到实例化点（仅测试实例化）"],
+      "gaps": ["src 内未找到注册表实例化点（仅测试实例化；装配函数 build_scope_exemption_registry 已就绪，未接入 server.py 启动点，属 S2-T3 本体接线留版本窗口）"],
       "strengths": ["三者中唯一**同时**强制 ticket+approver+未到期并具备到期清零与三态审计动作 —— **统一模型的主模板**"]
     },
     "openllm_inbound_headers": {
@@ -82,10 +82,10 @@
       ]
     },
     "stage_3_consumer_alignment": {
-      "status": "待批（各仓批次）",
+      "status": "剩余-a 已落地（2026-10-12）；剩余-b 待各仓版本窗口",
       "content": [
-        "OpenLLM 补豁免专属审计（R4：命中放行/拒绝均留痕）",
-        "OpenMemory 豁免注册表 DB 落点（另批，S2-T6/T7）",
+        "OpenLLM 补豁免专属审计（R4：命中放行/拒绝均留痕）——已落地（2026-10-09，5a9a29a/v2.16.4）",
+        "OpenMemory 豁免注册表 DB 落点（另批，S2-T6/T7）——已落地（2026-10-12）：ScopeExemptionTable ORM + scope_exemption_list/upsert 双后端 + alembic v705_scope_exemption 幂等迁移 + ScopeExemptionRegistry.from_rows + build_scope_exemption_registry（JSON 种子 + DB 行双落点合并、DB 为准）；TDD 7 例全绿（tests/unit/test_s2_t3_scope_exemption_db.py）；装配接线留版本窗口",
         "三仓字段命名归一（target/reason）——**仅在各自版本规划窗口执行**，避免跨仓破坏性变更"
       ]
     }
@@ -94,6 +94,6 @@
     "OpenBase k03 的 expires_at 未生效（R2 违反，最高优先级）",
     "OpenBase k03 无 ticket/approver（R1 违反）",
     "OpenLLM 入站头豁免无专属审计（R4 违反）",
-    "OpenMemory 豁免注册表为内存实现且 src 内无实例化点（治理链未接通）"
+    "OpenMemory 豁免注册表 DB 落点已落地（2026-10-12）；治理链 src 内实例化点接线仍遗留（装配函数已就绪，未接入 server.py 启动点，属 S2-T3 本体留版本窗口）"
   ]
 }
