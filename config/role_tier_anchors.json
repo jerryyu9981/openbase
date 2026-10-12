@@ -18,6 +18,15 @@
     "org_member": "readonly",
     "viewer": "readonly"
   },
+  "local_role_aliases": {
+    "member": {
+      "canonical": "org_member",
+      "tier": "readonly",
+      "source": "OpenLLM backend/app/identity/role_map.py::LOCAL_TO_OPENBASE_ROLE（\"member\"→\"org_member\"，普通成员→只读档）",
+      "recorded": "2026-10-12（台账 v1.9.18）",
+      "reason": "OpenLLM 本地 users.role 取值域角色码（非 OpenBase 出站码）；独立于 anchors 主表登记，避免 B3 四仓锚点一致性门禁把本地别名误当出站码要求其余三仓对齐"
+    }
+  },
   "unknown_code_policy": "fail-closed（未映射角色码 → 403 ROLE_UNMAPPED；不得静默降级为 readonly）",
   "consumers": {
     "rag": {
@@ -37,13 +46,13 @@
     },
     "llm": {
       "module": "OpenLLM backend/app/identity/role_map.py",
-      "current_tiers": { "read": 1, "readwrite": 2, "manage": 3 },
-      "note": "档位已定义但 require_write_access_from_state 无调用点（B1 待接线）；四入码集合需与本表对齐"
+      "current_tiers": { "readonly": 1, "readwrite": 2, "manage": 3 },
+      "note": "B1 已接线闭环（rbac_guard.py，15 端点；v2.16.x）；本地角色经 LOCAL_TO_OPENBASE_ROLE 归一（member→org_member），见 local_role_aliases"
     }
   },
   "known_gaps": [
     "角色码集合不一致：OpenBase 种子含 user，而 ALLOWED_OPENBASE_ROLE_CODES 含 org_member（两者需并集后统一）",
-    "OpenLLM 档位守卫未接线（见 B1 派单）",
+    "OpenLLM 档位守卫 B1 已接线闭环（2026-10-09，15 端点 + 模块级灰度）；强制期翻转按 users→roles→knowledge_bases→conversations 灰度推进",
     "DPS 存在两套本地角色→档位映射（ROLE_TO_ANCHOR / LOCAL_ROLE_TO_ANCHOR），需合并对账"
   ]
 }

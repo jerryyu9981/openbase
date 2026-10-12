@@ -18,6 +18,7 @@ from openbase.modules.protocol_headers.constants import ALLOWED_OPENBASE_ROLE_CO
 ROOT = Path(__file__).resolve().parents[1]
 ROLE_ANCHORS = ROOT / "config" / "role_tier_anchors.json"
 ERROR_CODE_MAP = ROOT / "config" / "error_code_map.json"
+RBAC_MODEL = ROOT / "config" / "rbac_permission_model.json"
 
 # OpenBase 角色种子码（openbase/core/db/init.py）——与 ALLOWED_OPENBASE_ROLE_CODES 取并集
 SEEDED_ROLE_CODES = {"admin", "org_admin", "user", "viewer"}
@@ -69,6 +70,45 @@ def test_role_tier_anchors_admin_is_manage() -> None:
     doc = _load(ROLE_ANCHORS)
 
     assert doc["anchors"]["admin"] == "manage"
+
+
+def test_openllm_local_alias_member_registered_but_not_in_main_anchors() -> None:
+    """OpenLLM 本地角色别名 member 须登记为 org_member 只读档（v1.9.18 影子观测消化）.
+
+    来源：OpenLLM ``backend/app/identity/role_map.py::LOCAL_TO_OPENBASE_ROLE``
+    （``member→org_member``，普通成员只读档）。别名登记在独立 ``local_role_aliases``
+    段；**不得进入 anchors 主表**——主表是 OpenBase 出站码单一事实源，加入本地别名
+    会使 B3 四仓锚点一致性门禁误判其余三仓缺码。
+    """
+    doc = _load(ROLE_ANCHORS)
+
+    assert "member" not in doc["anchors"], "本地别名不得进入 anchors 主表"
+    aliases = doc.get("local_role_aliases") or {}
+    entry = aliases.get("member")
+    assert isinstance(entry, dict), "缺少 member 本地别名登记（local_role_aliases.member）"
+    assert entry["canonical"] == "org_member"
+    assert entry["tier"] == "readonly" == doc["anchors"]["org_member"]
+    assert entry.get("source"), "须标明别名来源（仓/文件/符号）"
+
+
+def test_rbac_model_registers_member_as_readonly_alias() -> None:
+    """B1 权限模型须把 member 登记为只读档（与 org_member 同集），并标明别名来源.
+
+    影子期观测以 ``role_to_permissions`` 归类调用方；member 不登记则 14 条实测
+    would-deny 中 7 组落入 unclassified（消化率 50%）。member 为只读别名，
+    权限集须与 org_member 完全一致且不含任何写码（D1 裁定护栏）。
+    """
+    doc = _load(RBAC_MODEL)
+    grants = doc["role_to_permissions"]
+
+    assert "member" in grants, "role_to_permissions 缺少 member 只读别名"
+    assert grants["member"] == grants["org_member"]
+    assert not any(code.endswith(":write") or code.endswith(":delete") for code in grants["member"])
+
+    alias = (doc.get("role_aliases") or {}).get("member")
+    assert isinstance(alias, dict), "缺少 role_aliases.member 元数据"
+    assert alias["canonical"] == "org_member"
+    assert alias.get("source"), "须标明别名来源（仓/文件/符号）"
 
 
 # ---------------------------------------------------------------------------

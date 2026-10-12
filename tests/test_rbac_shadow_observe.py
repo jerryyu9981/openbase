@@ -244,3 +244,49 @@ def test_builtin_fixture_is_consumable() -> None:
     report = module.observe(FIXTURE, MODEL_PATH)
     assert report["totals"]["would_deny"] > 0
     assert report["digestion"]["digestion_rate"] > 0
+
+
+# ---------------------------------------------------------------------------
+# ⑥ OpenLLM 本地别名 member（2026-10-12 实测 14 条 would-deny 中 7 组未归类）
+# ---------------------------------------------------------------------------
+
+
+def test_member_local_alias_fully_digested_with_real_model(tmp_path: Path) -> None:
+    """member 经真实权限模型须 100% 消化：读码本应允许、写/角色码本应拒绝。
+
+    对齐实测七组（``logs/openllm/openllm-20261011-231025.err.jsonl``）：
+    member×users/roles/knowledge-bases 读写 + conversations 写。
+    """
+    module = _load_script()
+    seven_groups = [
+        ("/api/v1/users", "user:read"),
+        ("/api/v1/users", "user:write"),
+        ("/api/v1/roles", "role:read"),
+        ("/api/v1/roles", "role:write"),
+        ("/api/v1/knowledge-bases", "knowledge_base:read"),
+        ("/api/v1/knowledge-bases", "knowledge_base:write"),
+        ("/api/v1/conversations", "conversation:write"),
+    ]
+    log_path = tmp_path / "member-shadow.jsonl"
+    lines = [
+        _would_deny(
+            request_id=f"req-member-{idx}",
+            endpoint=endpoint,
+            role="member",
+            permission=permission,
+            method="GET" if permission.endswith(":read") else "POST",
+        )
+        for idx, (endpoint, permission) in enumerate(seven_groups, start=1)
+    ]
+    log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    report = module.observe(log_path, MODEL_PATH)
+    digestion = report["digestion"]
+
+    assert digestion["classified_events"] == 7
+    assert digestion["unclassified_events"] == 0
+    assert report["unclassified_roles"] == {}
+    assert digestion["digestion_rate"] == 1.0
+    # member 只读档：user:read / knowledge_base:read 本应允许（2），其余 5 本应拒绝
+    assert digestion["model_allows_events"] == 2
+    assert digestion["model_denies_events"] == 5

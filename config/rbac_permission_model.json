@@ -40,7 +40,17 @@
     ],
     "user": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"],
     "org_member": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"],
-    "viewer": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"]
+    "viewer": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"],
+    "member": ["user:read", "knowledge_base:read", "conversation:read", "model:read", "provider:read", "app:read", "usage:read"]
+  },
+  "role_aliases": {
+    "member": {
+      "canonical": "org_member",
+      "tier": "readonly",
+      "source": "OpenLLM backend/app/identity/role_map.py::LOCAL_TO_OPENBASE_ROLE（\"member\"→\"org_member\"，普通成员→只读档）",
+      "recorded": "2026-10-12（台账 v1.9.18）",
+      "reason": "OpenLLM 本地 users.role 取值域角色码（非 OpenBase 出站码）；B1 影子期实测 14 条 would-deny 中 member 占 7 组，未登记则观测消化率仅 50%。权限集与 org_member 逐字一致（D1 只读裁定）"
+    }
   },
   "forbidden_grants": [
     { "code": "role:admin", "reason": "仅平台 admin 可持有（裁定 D2）" },
