@@ -1,6 +1,13 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "artifact": "identity_exemptions",
+  "revisions": [
+    {
+      "version": 2,
+      "date": "2026-10-12",
+      "change": "C3 剩余-b：① 补登 openrag_row_scope 消费者（S3-T3：ExemptionRegistry + scope_exemption 表；DB 表缺 ticket 列、运行时未接线）；② 登记三仓字段命名归一（target/reason）执行方案与各仓版本窗口（见 normalization_plan）；③ field_mapping / facts / stage_3 / known_gaps 同步"
+    }
+  ],
   "purpose": "C 批 C3：把「豁免治理」统一为一个通用机制的单一事实源——统一字段契约、生效/过期语义、审计要求与分阶段强制路径，供各系统的豁免实现（OpenBase k03 绕过白名单 / OpenMemory 行控豁免 / OpenLLM 入站头豁免）对账消费",
   "source_of_truth": "本文件为豁免治理的契约登记；各系统实现仍为运行时事实源，但字段语义与生效规则须与本文件一致",
   "unified_model": {
@@ -48,20 +55,55 @@
       "evidence": "backend/app/core/config.py:96-99（字段声明）；backend/app/identity/exemptions.py:49-60（逐条强校验）；:98-103（exemption_is_active）；:106-124（load_active_exemptions 过滤到期）；消费点 identity_context.py:261-275、307",
       "gaps": ["未找到该豁免专有的审计动作（仅等同受信来源，无 scope.exempt 式留痕）→ 违反 R4"],
       "strengths": ["字段集与统一模型最接近（仅命名差异：proxy_source≈target、note≈reason）"]
+    },
+    "openrag_row_scope": {
+      "name": "OpenRAG 行控豁免（S3-T3）",
+      "declared_fields": ["exemption_id", "endpoint_pattern", "method", "reason", "ticket", "approver", "expires_at"],
+      "evidence": "src/openrag/identity/scope_exemption.py:20-30（登记模型，代码级支持 ticket/approver/expires_at）；:42-71（ExemptionRegistry._match，pattern 匹配用 re.search，与 OM 的 fnmatch 不同）；:73-117（assess：ticket/approver 缺失拒绝、expired 拒绝、匿名+豁免拒绝）；DB 落点 src/openrag/storage/migrations.py:601-650（scope_exemption 表：id/pattern/reason/approver/expires_at/created_at/status——**无 ticket 列**）；读环境 OPENRAG_SCOPE_EXEMPTIONS（from_env，:132-146）",
+      "gaps": [
+        "DB 表缺 ticket 列（代码模型有 ticket，落库丢失审批凭据）→ 违反 R1（仅 approver 落库）",
+        "代码字段 endpoint_pattern 与 DB 列 pattern 命名不一致；DB 无 created_at 之外的对账字段",
+        "运行时未接线：main.py 仅做 row_scope.enforce 门禁（:89-90），未见 ExemptionRegistry 实例化/消费点（与 OpenMemory 治理链接线同态，留版本窗口）"
+      ],
+      "strengths": ["代码模型与统一模型几乎同构（endpoint_pattern≈target、reason 同名、ticket+approver+expires_at 三必填强校验、匿名+豁免拒绝）——字段归一改动面最小"]
     }
   },
   "field_mapping": {
-    "target": { "openbase_k03": "system + path_pattern", "openmemory_row_scope": "endpoint_pattern", "openllm_inbound_headers": "proxy_source" },
-    "ticket": { "openbase_k03": "（缺失）", "openmemory_row_scope": "ticket", "openllm_inbound_headers": "ticket" },
-    "approver": { "openbase_k03": "（缺失，仅 owner 且不校验）", "openmemory_row_scope": "approver", "openllm_inbound_headers": "approver" },
-    "expires_at": { "openbase_k03": "expires_at（声明未生效）", "openmemory_row_scope": "expires_at", "openllm_inbound_headers": "expires_at" },
-    "reason": { "openbase_k03": "reason", "openmemory_row_scope": "reason", "openllm_inbound_headers": "note" },
-    "method": { "openbase_k03": "method", "openmemory_row_scope": "method", "openllm_inbound_headers": "（不适用）" }
+    "target": { "openbase_k03": "system + path_pattern", "openmemory_row_scope": "endpoint_pattern", "openllm_inbound_headers": "proxy_source", "openrag_row_scope": "endpoint_pattern（DB 列 pattern）" },
+    "ticket": { "openbase_k03": "（缺失）", "openmemory_row_scope": "ticket", "openllm_inbound_headers": "ticket", "openrag_row_scope": "ticket（代码）/（DB 缺列）" },
+    "approver": { "openbase_k03": "（缺失，仅 owner 且不校验）", "openmemory_row_scope": "approver", "openllm_inbound_headers": "approver", "openrag_row_scope": "approver" },
+    "expires_at": { "openbase_k03": "expires_at（声明未生效）", "openmemory_row_scope": "expires_at", "openllm_inbound_headers": "expires_at", "openrag_row_scope": "expires_at" },
+    "reason": { "openbase_k03": "reason", "openmemory_row_scope": "reason", "openllm_inbound_headers": "note", "openrag_row_scope": "reason" },
+    "method": { "openbase_k03": "method", "openmemory_row_scope": "method", "openllm_inbound_headers": "（不适用）", "openrag_row_scope": "method" }
   },
   "facts": {
     "strict_named_intersection": ["expires_at"],
-    "semantic_intersection": ["expires_at", "reason/note", "target（形态各异）"],
-    "note": "三者的「豁免对象标识」字段命名与匹配逻辑均各自独有；唯一完全同名且语义一致的公共字段是 expires_at"
+    "semantic_intersection": ["expires_at", "reason（note 除外）", "target（形态各异）"],
+    "note": "四者的「豁免对象标识」字段命名与匹配逻辑均各自独有（k03=system+path_pattern、OM/RG=endpoint_pattern、LLM=proxy_source）；唯一完全同名且语义一致的公共字段是 expires_at；reason 语义在 LLM 为 note、其余三者为 reason"
+  },
+  "normalization_plan": {
+    "goal": "C3 剩余-b：三仓字段命名归一（target/reason）——统一各仓豁免实现的「豁免对象标识」与「豁免原因」字段名，消除语义同义多名的对账负担；仅在各自版本规划窗口执行，避免跨仓破坏性变更",
+    "target_canonical_name": "target",
+    "reason_canonical_name": "reason",
+    "per_consumer_steps": {
+      "openbase_k03": {
+        "target": "system + path_pattern 为复合形态，保持现状；契约侧维持映射",
+        "reason": "reason（已一致）"
+      },
+      "openmemory_row_scope": {
+        "target": "endpoint_pattern → target（代码 + DB 列，随 OpenMemory 版本窗口）",
+        "reason": "reason（已一致）"
+      },
+      "openrag_row_scope": {
+        "target": "endpoint_pattern / DB pattern → target（代码 + DB 列，随 OpenRAG 版本窗口）",
+        "reason": "reason（已一致）"
+      },
+      "openllm_inbound_headers": {
+        "target": "proxy_source → target（随 OpenLLM 版本窗口）",
+        "reason": "note → reason（随 OpenLLM 版本窗口）"
+      }
+    },
+    "execution_order": "各仓版本窗口内顺序执行（OpenLLM/OpenMemory/OpenRAG 各自排期）；改名须同步更新配置样例、测试与审计日志字段，保持对外行为不变（rename-only）"
   },
   "rollout": {
     "stage_1_contract_and_registration": {
@@ -82,18 +124,21 @@
       ]
     },
     "stage_3_consumer_alignment": {
-      "status": "剩余-a 已落地（2026-10-12）；剩余-b 待各仓版本窗口",
+      "status": "剩余-a 已落地（2026-10-12）；剩余-b 契约更新已落地（2026-10-12，归一执行随各仓版本窗口）",
       "content": [
         "OpenLLM 补豁免专属审计（R4：命中放行/拒绝均留痕）——已落地（2026-10-09，5a9a29a/v2.16.4）",
         "OpenMemory 豁免注册表 DB 落点（另批，S2-T6/T7）——已落地（2026-10-12）：ScopeExemptionTable ORM + scope_exemption_list/upsert 双后端 + alembic v705_scope_exemption 幂等迁移 + ScopeExemptionRegistry.from_rows + build_scope_exemption_registry（JSON 种子 + DB 行双落点合并、DB 为准）；TDD 7 例全绿（tests/unit/test_s2_t3_scope_exemption_db.py）；装配接线留版本窗口",
-        "三仓字段命名归一（target/reason）——**仅在各自版本规划窗口执行**，避免跨仓破坏性变更"
+        "三仓字段命名归一（target/reason）——**契约登记已落地（2026-10-12，schema_version 2）**：补登 openrag_row_scope 消费者（S3-T3：代码模型与统一模型几乎同构、DB 表缺 ticket 列、运行时未接线）+ normalization_plan 段（各仓版本窗口执行 rename-only：OM/RG endpoint_pattern→target、LLM proxy_source→target + note→reason、k03 复合形态保持）",
+        "OpenRAG S3-T3 豁免实现补登契约（2026-10-12）：此前契约 consumers 仅 3 家、OpenRAG 实现存在但未登记——已补登并同步 field_mapping/facts"
       ]
     }
   },
   "known_gaps": [
-    "OpenBase k03 的 expires_at 未生效（R2 违反，最高优先级）",
-    "OpenBase k03 无 ticket/approver（R1 违反）",
-    "OpenLLM 入站头豁免无专属审计（R4 违反）",
-    "OpenMemory 豁免注册表 DB 落点已落地（2026-10-12）；治理链 src 内实例化点接线仍遗留（装配函数已就绪，未接入 server.py 启动点，属 S2-T3 本体留版本窗口）"
+    "OpenBase k03 的 expires_at 未生效（R2 违反，最高优先级）——已修复（2026-10-09，_k03_exemption_active）",
+    "OpenBase k03 无 ticket/approver（R1 违反）——影子期 WARN 已落地（2026-10-09），强制段待退出条件达成",
+    "OpenLLM 入站头豁免无专属审计（R4 违反）——已修复（2026-10-09，5a9a29a）",
+    "OpenMemory 豁免注册表 DB 落点已落地（2026-10-12）；治理链 src 内实例化点接线仍遗留（装配函数已就绪，未接入 server.py 启动点，属 S2-T3 本体留版本窗口）",
+    "OpenRAG scope_exemption 表缺 ticket 列（2026-10-12 登记，违反 R1）；DB 列 pattern 与代码字段 endpoint_pattern 命名不一致；运行时未接线（main.py 无 ExemptionRegistry 消费点）——留 OpenRAG 版本窗口",
+    "三仓字段命名归一（target/reason）契约已登记（2026-10-12，normalization_plan）；实际 rename 随各仓版本窗口执行"
   ]
 }
