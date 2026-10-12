@@ -264,6 +264,21 @@ class Settings(BaseSettings):
     # 约束（fail-fast）：production 下**不得**为 "allow"（避免误配回退 fail-open），
     # 否则拒绝启动（见 `_validate_principal_db_degraded_policy`）。
     principal_db_degraded_policy: str = ""
+    # B4 遗留收紧（2026-10-12）：主体验证「主体行缺失（无墓碑）」**显式白名单**（默认空 =
+    # 不放行任何主体）。语义：token 引用十进制主体 id 但 users 表无对应行且无 purge 墓碑
+    # （OIDC 直签/降级内存用户形态）时，无法证明主体存在；默认按环境裁定——
+    # 生产 fail-closed 拒绝（401 AUTH_PRINCIPAL_DISABLED），非生产兼容放行（必 WARN + 留痕）。
+    # 仅本名单内**显式列名**的本地主体（users.id 的十进制字符串，逗号分隔）可在此情形放行
+    # （窄口径应急通道）；命中必留痕。取值约束（fail-closed）：仅接受十进制主体 id；
+    # 含通配/前缀/非数字项一律**不作为命中**（视同未列名 → 拒绝），解析时 WARN 提示。
+    principal_row_missing_allowlist: str = ""
+    # B4 遗留收紧（2026-10-12）：主体验证「行缺失」降级策略**显式覆盖**（对齐
+    # `principal_db_degraded_policy` 口径）。取值：""（默认 = 按环境推导）| "reject" |
+    # "allow"。推导规则（本字段为空时）：env == "production" → reject（安全口径不变）；
+    # 其余（development/test 等）→ allow（兼容沙箱，**必 WARN + 留痕**，不得静默）。
+    # 约束（fail-fast）：production 下**不得**为 "allow"（避免误配回退 fail-open），
+    # 否则拒绝启动（见 `_validate_principal_row_missing_policy`）。
+    principal_row_missing_policy: str = ""
     # bcrypt 成本因子（默认 12 ≈ 400-600ms；并发敏感场景可调低至 10 ≈ 200ms）
     bcrypt_rounds: int = 12
     # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）
@@ -475,6 +490,31 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _validate_principal_row_missing_policy(self) -> Settings:
+        """主体验证「行缺失」降级策略校验（B4 遗留收紧，2026-10-12）.
+
+        语义：`principal_row_missing_policy` 取值仅支持 ""（按环境推导）/ "reject" / "allow"；
+        非法取值 → 拒绝启动（fail-fast，禁静默降级）。生产环境**不得**设为 "allow"——该配置
+        会使行缺失 token 回退 fail-open，属必须前置于启动的安全门禁缺陷（照
+        `_validate_principal_db_degraded_policy` 风格）。
+
+        Raises:
+            ValueError: 取值非法，或 env == "production" 且 policy == "allow"。
+        """
+        policy = (self.principal_row_missing_policy or "").strip().lower()
+        if policy not in ("", "reject", "allow"):
+            raise ValueError(
+                "OPENBASE_PRINCIPAL_ROW_MISSING_POLICY 取值非法（仅支持 reject/allow/留空）："
+                f"{self.principal_row_missing_policy!r}"
+            )
+        if self.env == "production" and policy == "allow":
+            raise ValueError(
+                "生产环境不得将 OPENBASE_PRINCIPAL_ROW_MISSING_POLICY 设为 allow"
+                "（会使行缺失 token 回退 fail-open）；生产须为 reject 或留空（按环境推导为 reject）"
+            )
+        return self
+
+    @model_validator(mode="after")
     def _validate_outbound_tenant_alignment(self) -> Settings:
         """出站租户码空间登记校验（fail-fast，A 批 A1/A2）.
 
@@ -596,6 +636,57 @@ class Settings(BaseSettings):
         其余 → 放行）。放行路径仍须 WARN + 留痕（由 verification 模块保证，不得静默）。
         """
         return self.principal_db_degraded_policy_source in (
+            "explicit_reject",
+            "env_production",
+        )
+
+    @property
+    def principal_row_missing_allowlist_set(self) -> frozenset[str]:
+        """主体验证「行缺失」放行白名单解析（逗号分隔 → 仅十进制主体 id 集合）.
+
+        取值约束（fail-closed，B4 遗留收紧）：仅接受十进制主体 id（`users.id` 的字符串
+        形态）；**禁止通配/前缀模糊匹配** —— 非数字/超范围项一律**丢弃**（不入集合），
+        从而在该情形**不作为命中**（等价于拒绝）。非法项存在时记 WARN（便于运维定位）。
+        """
+        allowed: set[str] = set()
+        rejected: list[str] = []
+        for item in (self.principal_row_missing_allowlist or "").split(","):
+            token = item.strip()
+            if not token:
+                continue
+            if token.isdigit():
+                allowed.add(token)
+            else:
+                rejected.append(token)
+        if rejected:
+            logger.warning(
+                "principal_row_missing_allowlist 含非法项（非十进制主体 id，已忽略=fail-closed）",
+                extra={"rejected": rejected},
+            )
+        return frozenset(allowed)
+
+    @property
+    def principal_row_missing_policy_source(self) -> str:
+        """行缺失策略来源（显式 policy 优先；为空按环境推导）.
+
+        Returns:
+            "explicit_reject" | "explicit_allow" | "env_production" | "env_nonproduction"。
+        """
+        policy = (self.principal_row_missing_policy or "").strip().lower()
+        if policy == "reject":
+            return "explicit_reject"
+        if policy == "allow":
+            return "explicit_allow"
+        return "env_production" if self.env == "production" else "env_nonproduction"
+
+    @property
+    def principal_row_missing_reject(self) -> bool:
+        """主体验证「行缺失」的有效裁定：True = fail-closed 拒绝，False = 兼容放行.
+
+        显式 ``principal_row_missing_policy`` 优先；为空时按环境推导（production → 拒绝，
+        其余 → 放行）。放行路径仍须 WARN + 留痕（由 verification 模块保证，不得静默）。
+        """
+        return self.principal_row_missing_policy_source in (
             "explicit_reject",
             "env_production",
         )

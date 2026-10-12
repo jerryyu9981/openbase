@@ -19,10 +19,14 @@
     优先于白名单/策略判定）；
 - 主体行不存在：以 ``purge_records`` 墓碑区分「曾存在后被 purge」→ 401 拒绝（T6
   purge 收口：purged 主体存量 token 一律拒），「无本地行（OIDC 直签/降级内存用户）」→
-  保持 T3 遗留 fail-open 放行（deactivated 保留行，suspend/restore/deactivate 均
-  即时命中新状态）；**行缺失 + on_behalf_of → 403**（D-V2：委托目标存在性不可证即拒）；
+  按环境门控（**B4 遗留收紧，2026-10-12，对齐 ``principal_db_degraded`` 口径**）：
+  **生产 fail-closed 401 ``AUTH_PRINCIPAL_DISABLED``** / **非生产兼容放行但必 WARN +
+  留痕**（显式 ``principal_row_missing_policy`` 可覆盖，生产误配 ``allow`` 拒绝启动；
+  ``principal_row_missing_allowlist`` 内主体一律放行且留痕）；
+  **行缺失 + on_behalf_of → 403**（D-V2：委托目标存在性不可证即拒）；
 - WARN 指标（§5.1 D-V1/T2-1）：``principal.verify.db_degraded``/``row_missing`` 计数，
-  供 verify-env 报告对账（批次 2/T9 消费）；
+  供 verify-env 报告对账（批次 2/T9 消费）；``row_missing`` 与 ``db_degraded`` 同构拆
+  分为白名单/策略放行/fail-closed 拒绝三类（不变式：总数 = 三类之和）；
 - 性能（风险 2）：进程经 Redis 短缓存 ``principal:{id}``（TTL ≤60s）避免每请求 DB 读，
   状态/版本变更由写路径失效该键（tvn+1 清键，与 lifecycle T2 清键收敛到本模块）。
   **D-V4**：缓存仅是加速，非信任源——Redis 不可达 = 未命中直读 DB（静默降级）。
@@ -61,12 +65,19 @@ PRINCIPAL_CACHE_PREFIX = "principal:"
 # 并拆出 `db_degraded_allowlisted`（显式白名单放行）/`db_degraded_policy_allow`
 # （环境/显式策略放行，2026-10-09 环境门控）/`db_degraded_denied`（fail-closed 拒绝）。
 # 不变式：db_degraded == db_degraded_allowlisted + db_degraded_policy_allow + db_degraded_denied。
+# B4 遗留收紧（2026-10-12）：`row_missing` 同构拆分为 `row_missing_allowlisted`（显式
+# 白名单放行）/`row_missing_policy_allow`（环境/显式策略放行）/`row_missing_denied`
+# （fail-closed 拒绝，401 AUTH_PRINCIPAL_DISABLED）。
+# 不变式：row_missing == row_missing_allowlisted + row_missing_policy_allow + row_missing_denied。
 _VERDICT_METRICS: dict[str, int] = {
     "db_degraded": 0,
     "db_degraded_allowlisted": 0,
     "db_degraded_policy_allow": 0,
     "db_degraded_denied": 0,
     "row_missing": 0,
+    "row_missing_allowlisted": 0,
+    "row_missing_policy_allow": 0,
+    "row_missing_denied": 0,
     "delegation_denied_db": 0,
     "delegation_denied_row_missing": 0,
 }
@@ -100,6 +111,13 @@ def _db_degraded_allowlisted(subject_text: str) -> bool:
     return subject_text in get_settings().principal_db_degraded_allowlist_set
 
 
+def _row_missing_allowlisted(subject_text: str) -> bool:
+    """主体是否命中「行缺失显式白名单」（精确十进制 id 匹配，fail-closed）."""
+    from openbase.settings import get_settings
+
+    return subject_text in get_settings().principal_row_missing_allowlist_set
+
+
 def _record_degraded_verify_trace(
     subject: str, request_id: str | None, reason: str
 ) -> None:
@@ -110,7 +128,10 @@ def _record_degraded_verify_trace(
         request_id: 请求关联 id。
         reason: "db_unavailable_allowlisted"（显式白名单放行）/
             "db_unavailable_policy_allow"（显式 policy=allow）/
-            "db_unavailable_env_allow"（非生产环境推导放行）。
+            "db_unavailable_env_allow"（非生产环境推导放行）/
+            "row_missing_allowlisted"（行缺失显式白名单放行）/
+            "row_missing_policy_allow"（行缺失显式 policy=allow）/
+            "row_missing_env_allow"（行缺失非生产环境推导放行）。
     """
     _DEGRADED_VERIFY_TRACE.set(
         {
@@ -285,12 +306,15 @@ async def verify_principal(
         - DB 降级且主体命中**显式白名单**（``principal_db_degraded_allowlist``，必留痕）；
         - DB 降级且有效策略为 allow（非生产默认 / 显式 ``principal_db_degraded_policy=allow``，
           必 WARN + 留痕）；
-        - 主体行不存在且无墓碑（purged/降级内存用户，WARN 告警后放行，T6 purge 收口）。
+        - 主体行不存在且无墓碑（purged/降级内存用户）：按环境门控——**非生产**兼容放行
+          （WARN + 留痕）；**生产/显式 reject** 抛 ``AUTH_PRINCIPAL_DISABLED``（B4 遗留收紧）；
+          命中 ``principal_row_missing_allowlist`` 白名单一律放行且留痕（T6 purge 收口）。
         注意：返回 None 不代表校验通过，仅表示「无法确认状态」。
 
     Raises:
         BaseError: AUTH_TOKEN_INVALID（缺 sub）；AUTH_PRINCIPAL_DISABLED
-            （主体非 active / 已 purge）；AUTH_TOKEN_STALE（enforce 开启且 claim tvn 落后）；
+            （主体非 active / 已 purge / 行缺失且生产 fail-closed）；
+            AUTH_TOKEN_STALE（enforce 开启且 claim tvn 落后）；
             SYS_SOURCE_UNAVAILABLE（DB 不可达且有效策略为 reject/生产，fail-closed）；
             PERM_DELEGATION_VERIFY_UNAVAILABLE（DB 不可达/行缺失且带委托）。
     """
@@ -402,7 +426,9 @@ async def verify_principal(
         # - 携带 on_behalf_of → 403（委托目标存在性不可证即拒，fail-closed）；
         # - 无委托：区分「曾存在后被 purge」与「无本地行（OIDC 直签/降级内存用户）」：
         #   purge_records 墓碑命中（T6 收口）→ 401 AUTH_PRINCIPAL_DISABLED；
-        #   无墓碑 → T3 遗留 fail-open 过渡窗口保持（WARN 计数）。
+        #   B4 遗留收紧（2026-10-12，对齐 principal_db_degraded 口径）：无墓碑 → 按环境
+        #   门控——显式白名单放行（优先于 reject）/ 生产或显式 reject fail-closed 拒绝
+        #   （401）/ 非生产或显式 allow 兼容放行（**必 WARN + 留痕**，不再无条件 fail-open）。
         if _payload_has_delegation(payload):
             _metric_increment("delegation_denied_row_missing")
             raise BaseError(
@@ -419,10 +445,66 @@ async def verify_principal(
                 "principal has been purged",
                 detail={"status_state": STATUS_STATE_PURGED, "subject_id": int(subject_text)},
             )
+        if _row_missing_allowlisted(subject_text):
+            # 显式白名单命中：放行 + 留痕（结构化日志 + 审计标注）；优先于 reject（应急通道）。
+            _metric_increment("row_missing")
+            _metric_increment("row_missing_allowlisted")
+            _record_degraded_verify_trace(
+                subject_text, request_id, "row_missing_allowlisted"
+            )
+            logger.warning(
+                "principal row missing; allowlisted pass-through",
+                extra={
+                    "subject": subject_text,
+                    "reason": "row_missing_allowlisted",
+                    "request_id": request_id,
+                    "decision": "allow",
+                    "allowlist": True,
+                },
+            )
+            return None
+
+        from openbase.settings import get_settings
+
+        settings = get_settings()
+        if settings.principal_row_missing_reject:
+            _metric_increment("row_missing")
+            _metric_increment("row_missing_denied")
+            logger.error(
+                "principal row missing; denied (fail-closed)",
+                extra={
+                    "subject": subject_text,
+                    "reason": "row_missing",
+                    "request_id": request_id,
+                    "decision": "deny",
+                    "policy_source": settings.principal_row_missing_policy_source,
+                },
+            )
+            raise BaseError(
+                ErrorCode.AUTH_PRINCIPAL_DISABLED,
+                "principal verification failed: principal row missing",
+                detail={"subject": subject_text, "reason": "row_missing"},
+            )
+        # 非生产（或显式 policy=allow）兼容放行：**仍 WARN + 留痕**（不得静默）。
         _metric_increment("row_missing")
+        _metric_increment("row_missing_policy_allow")
+        policy_source = settings.principal_row_missing_policy_source
+        reason = (
+            "row_missing_policy_allow"
+            if policy_source == "explicit_allow"
+            else "row_missing_env_allow"
+        )
+        _record_degraded_verify_trace(subject_text, request_id, reason)
         logger.warning(
-            "principal row missing; unverifiable token pass-through",
-            extra={"subject": subject_text},
+            "principal row missing; environment/policy allow pass-through",
+            extra={
+                "subject": subject_text,
+                "reason": reason,
+                "request_id": request_id,
+                "decision": "allow",
+                "policy_source": policy_source,
+                "env": settings.env,
+            },
         )
         return None
 

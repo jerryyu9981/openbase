@@ -112,6 +112,9 @@ def _reset_metrics(monkeypatch: pytest.MonkeyPatch) -> None:
             "db_degraded_policy_allow": 0,
             "db_degraded_denied": 0,
             "row_missing": 0,
+            "row_missing_allowlisted": 0,
+            "row_missing_policy_allow": 0,
+            "row_missing_denied": 0,
             "delegation_denied_db": 0,
             "delegation_denied_row_missing": 0,
         },
@@ -248,15 +251,31 @@ def test_b4_3_db_healthy_suspended_401(monkeypatch: pytest.MonkeyPatch) -> None:
     assert exc_info.value.status_code == 401
 
 
-def test_b4_3_db_healthy_row_missing_still_failopen(monkeypatch: pytest.MonkeyPatch) -> None:
-    """行缺失 + 无墓碑 + 无委托 → 保持既有 fail-open（DB 正常，不在本次收紧范围）."""
+def test_b4_3_db_healthy_row_missing_env_gated_allow(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """DB 正常 + 行缺失无墓碑 → 非生产按环境推导兼容放行（WARN + 留痕，不再无条件 fail-open）."""
     _apply_settings(monkeypatch)
-    result = asyncio.run(
-        verification_module.verify_principal(_HealthySession(None), {"sub": "42", "tvn": 0})
-    )
+
+    async def _run() -> tuple[Any, dict[str, Any] | None]:
+        result = await verification_module.verify_principal(
+            _HealthySession(None), {"sub": "42", "tvn": 0}, request_id="req-b4-3"
+        )
+        return result, verification_module.consume_degraded_verify_trace()
+
+    with caplog.at_level(logging.WARNING, logger="openbase.identity.verification"):
+        result, trace = asyncio.run(_run())
     assert result is None
-    assert verification_module.get_verdict_metrics()["db_degraded"] == 0
-    assert verification_module.get_verdict_metrics()["row_missing"] == 1
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["db_degraded"] == 0
+    assert metrics["row_missing"] == 1
+    assert metrics["row_missing_policy_allow"] == 1
+    assert metrics["row_missing_denied"] == 0
+    assert trace == {
+        "subject": "42",
+        "reason": "row_missing_env_allow",
+        "request_id": "req-b4-3",
+    }
 
 
 def test_b4_3_db_down_with_delegation_still_403(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -439,3 +458,184 @@ def test_b4_12_invalid_policy_value_rejected_at_startup() -> None:
     with pytest.raises(ValidationError) as exc_info:
         Settings(principal_db_degraded_policy="maybe")
     assert "PRINCIPAL_DB_DEGRADED_POLICY" in str(exc_info.value)
+
+
+# ---------------------------------------------------------------------------
+# ⑧ B4 遗留收紧（2026-10-12）：行缺失（无墓碑）环境门控，对齐 DB 降级口径
+# ---------------------------------------------------------------------------
+
+
+def test_b4_13_row_missing_development_default_allows_with_trace(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """非生产（development）默认：行缺失 + 无墓碑 + 未命中白名单 → 兼容放行 + WARN + 留痕.
+
+    安全语义不变项：**不得静默** —— 结构化 WARN 日志（reason=row_missing_env_allow）
+    + 审计 ContextVar 留痕 + 指标 ``row_missing_policy_allow`` 计数必须齐全。
+    """
+    settings = _apply_settings(monkeypatch, env="development")
+    assert settings.env != "production"
+
+    async def _run() -> tuple[Any, dict[str, Any] | None]:
+        result = await verification_module.verify_principal(
+            _HealthySession(None), {"sub": "42", "tvn": 0}, request_id="req-b4-13"
+        )
+        return result, verification_module.consume_degraded_verify_trace()
+
+    with caplog.at_level(logging.WARNING, logger="openbase.identity.verification"):
+        result, trace = asyncio.run(_run())
+    assert result is None
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["row_missing"] == 1
+    assert metrics["row_missing_policy_allow"] == 1
+    assert metrics["row_missing_denied"] == 0
+    assert metrics["db_degraded"] == 0
+
+    records = [
+        record
+        for record in caplog.records
+        if "environment/policy allow pass-through" in record.getMessage()
+        and record.reason == "row_missing_env_allow"
+    ]
+    assert records, "非生产行缺失兼容放行必须产生结构化 WARN 留痕（不得静默）"
+    assert records[0].subject == "42"
+    assert records[0].decision == "allow"
+    assert records[0].policy_source == "env_nonproduction"
+
+    assert trace == {
+        "subject": "42",
+        "reason": "row_missing_env_allow",
+        "request_id": "req-b4-13",
+    }
+
+
+def test_b4_14_row_missing_explicit_policy_allow_non_production(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """非生产 + 显式 policy=allow → 放行 + 留痕（reason=row_missing_policy_allow）."""
+    _apply_settings(monkeypatch, principal_row_missing_policy="allow")
+
+    async def _run() -> tuple[Any, dict[str, Any] | None]:
+        result = await verification_module.verify_principal(
+            _HealthySession(None), {"sub": "42"}, request_id="req-b4-14"
+        )
+        return result, verification_module.consume_degraded_verify_trace()
+
+    with caplog.at_level(logging.WARNING, logger="openbase.identity.verification"):
+        result, trace = asyncio.run(_run())
+    assert result is None
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["row_missing"] == 1
+    assert metrics["row_missing_policy_allow"] == 1
+    assert trace == {
+        "subject": "42",
+        "reason": "row_missing_policy_allow",
+        "request_id": "req-b4-14",
+    }
+
+
+def test_b4_15_row_missing_production_default_rejects(monkeypatch: pytest.MonkeyPatch) -> None:
+    """生产（env=production，policy 默认空）→ 行缺失 fail-closed：401 AUTH_PRINCIPAL_DISABLED."""
+    _apply_settings(monkeypatch, env="production", enforce_token_version=True)
+    with pytest.raises(BaseError) as exc_info:
+        asyncio.run(
+            verification_module.verify_principal(_HealthySession(None), {"sub": "42", "tvn": 0})
+        )
+    assert exc_info.value.code == ErrorCode.AUTH_PRINCIPAL_DISABLED
+    assert exc_info.value.status_code == 401
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["row_missing"] == 1
+    assert metrics["row_missing_denied"] == 1
+    assert metrics["row_missing_policy_allow"] == 0
+
+
+def test_b4_16_row_missing_explicit_reject_in_development(monkeypatch: pytest.MonkeyPatch) -> None:
+    """非生产 + 显式 policy=reject → 同样 fail-closed 拒绝（显式覆盖优先于环境推导）."""
+    _apply_settings(monkeypatch, principal_row_missing_policy="reject")
+    with pytest.raises(BaseError) as exc_info:
+        asyncio.run(
+            verification_module.verify_principal(_HealthySession(None), {"sub": "42", "tvn": 0})
+        )
+    assert exc_info.value.code == ErrorCode.AUTH_PRINCIPAL_DISABLED
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["row_missing_denied"] == 1
+
+
+def test_b4_17_row_missing_production_allowlist_still_overrides_reject(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """生产 + 行缺失显式白名单 → 仍放行（应急通道，优先于生产 reject）."""
+    _apply_settings(
+        monkeypatch,
+        env="production",
+        enforce_token_version=True,
+        principal_row_missing_allowlist="42",
+    )
+    result = asyncio.run(
+        verification_module.verify_principal(_HealthySession(None), {"sub": "42", "tvn": 0})
+    )
+    assert result is None
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["row_missing"] == 1
+    assert metrics["row_missing_allowlisted"] == 1
+    assert metrics["row_missing_denied"] == 0
+
+
+def test_b4_18_row_missing_malformed_allowlist_not_matched(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """行缺失白名单含通配/非数字项 → 不作为命中（fail-closed，生产仍拒绝）."""
+    _apply_settings(
+        monkeypatch,
+        env="production",
+        enforce_token_version=True,
+        principal_row_missing_allowlist="42*",
+    )
+    with pytest.raises(BaseError) as exc_info:
+        asyncio.run(
+            verification_module.verify_principal(_HealthySession(None), {"sub": "42", "tvn": 0})
+        )
+    assert exc_info.value.code == ErrorCode.AUTH_PRINCIPAL_DISABLED
+
+
+def test_b4_19_row_missing_allowlist_parsing_only_decimal_ids() -> None:
+    """行缺失白名单解析仅收十进制主体 id；非数字项忽略（fail-closed 语义）."""
+    settings = Settings(
+        jwt_secret=_SECRET, principal_row_missing_allowlist="1,abc,42,*,zz"
+    )
+    assert settings.principal_row_missing_allowlist_set == frozenset({"1", "42"})
+
+
+def test_b4_20_production_row_missing_policy_allow_rejected_at_startup() -> None:
+    """生产 + row_missing policy=allow → Settings 构造（启动）fail-fast 拒绝."""
+    strong = "b4-" + "x" * 40
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(
+            env="production",
+            jwt_secret=strong,
+            enforce_token_version=True,
+            principal_row_missing_policy="allow",
+        )
+    assert "PRINCIPAL_ROW_MISSING_POLICY" in str(exc_info.value)
+
+
+def test_b4_21_invalid_row_missing_policy_rejected_at_startup() -> None:
+    """row_missing policy 取值非法 → 启动 fail-fast 拒绝."""
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(principal_row_missing_policy="maybe")
+    assert "PRINCIPAL_ROW_MISSING_POLICY" in str(exc_info.value)
+
+
+def test_b4_22_row_missing_policy_source_and_reject_derivation() -> None:
+    """策略来源推导：production → env_production/reject；非生产 → env_nonproduction/allow."""
+    dev = Settings(jwt_secret=_SECRET)
+    assert dev.principal_row_missing_policy_source == "env_nonproduction"
+    assert dev.principal_row_missing_reject is False
+
+    prod = Settings(jwt_secret=_SECRET, env="production", enforce_token_version=True)
+    assert prod.principal_row_missing_policy_source == "env_production"
+    assert prod.principal_row_missing_reject is True
+
+    explicit = Settings(jwt_secret=_SECRET, principal_row_missing_policy="reject")
+    assert explicit.principal_row_missing_policy_source == "explicit_reject"
+    assert explicit.principal_row_missing_reject is True

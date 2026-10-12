@@ -135,6 +135,9 @@ def _reset_metrics(monkeypatch: pytest.MonkeyPatch) -> None:
             "db_degraded_policy_allow": 0,
             "db_degraded_denied": 0,
             "row_missing": 0,
+            "row_missing_allowlisted": 0,
+            "row_missing_policy_allow": 0,
+            "row_missing_denied": 0,
             "delegation_denied_db": 0,
             "delegation_denied_row_missing": 0,
         },
@@ -186,14 +189,23 @@ def test_t2_1_db_recovered_enforces_again() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_t2_2_row_missing_without_delegation_fail_open() -> None:
-    """行缺失 + 无墓碑 + 无委托 → WARN 放行（row_missing 计数）."""
+def test_t2_2_row_missing_without_delegation_env_gated_allow(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """行缺失 + 无墓碑 + 无委托 → 非生产按环境推导兼容放行（row_missing + policy_allow 计数）.
+
+    B4 遗留收紧（2026-10-12）：不再无条件 fail-open；非生产默认 allow（必留痕），
+    生产 fail-closed（AUTH_PRINCIPAL_DISABLED，见 test_b4_15）。
+    """
+    _apply_settings(monkeypatch, env="development")
     result = asyncio.run(
         verification_module.verify_principal(_RowMissingSession(), _payload())
     )
     assert result is None
     metrics = verification_module.get_verdict_metrics()
     assert metrics["row_missing"] == 1
+    assert metrics["row_missing_policy_allow"] == 1
+    assert metrics["row_missing_denied"] == 0
 
 
 def test_t2_2_row_missing_with_delegation_rejected() -> None:
