@@ -1,0 +1,11 @@
+﻿[rbac_shadow_observe.py] log=logs\openllm\openllm-20261011.err.jsonl would_deny=38 groups=10 digestion_rate=100.00% unclassified=0 skipped_lines=1764
+  /api/v1/conversations | member | conversation:write × 4 (model_allows=False, samples=req-7e3d340e273a,req-904b23962d53,req-a6ef7ae599e6)
+  /api/v1/knowledge-bases | member | knowledge_base:write × 4 (model_allows=False, samples=req-c246a659ac05,req-8526a3c565f8,req-df68ff640f7e)
+  /api/v1/knowledge-bases/00000000-0000-0000-0000-000000000001 | member | knowledge_base:delete × 4 (model_allows=False, samples=req-20e142de2eae,req-baad33ee11d3,req-466d191999f3)
+  /api/v1/roles | member | role:read × 4 (model_allows=False, samples=req-2f99e734c47f,req-89176d768db9,req-1542669ca3e5)
+  /api/v1/roles | member | role:write × 4 (model_allows=False, samples=req-7ae732a69334,req-cdccc32e6030,req-e4c21f2548ee)
+  /api/v1/roles/00000000-0000-0000-0000-000000000001 | member | role:delete × 4 (model_allows=False, samples=req-3c44328ecb88,req-e5b9cd81562d,req-8181fbcac0e1)
+  /api/v1/roles/00000000-0000-0000-0000-000000000001/permissions | member | role:admin × 4 (model_allows=False, samples=req-83dae95bf625,req-933d05cf627d,req-bae43f1bedcf)
+  /api/v1/users | member | user:read × 1 (model_allows=True, samples=req-cc6fb6942fa3)
+  /api/v1/users | member | user:write × 5 (model_allows=False, samples=req-e565d27f8127,req-5424af368a24,req-f6af5ee8b268)
+  /api/v1/users/00000000-0000-0000-0000-000000000001 | member | user:delete × 4 (model_allows=False, samples=req-be9cdb904c17,req-748a2ae02769,req-1e260dedca59)

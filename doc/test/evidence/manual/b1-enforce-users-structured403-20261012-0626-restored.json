@@ -1,0 +1,96 @@
+[
+  {
+    "label": "unbound",
+    "role_header": "member",
+    "method": "GET",
+    "path": "/api/v1/users",
+    "status": 403,
+    "body": {
+      "code": 4034,
+      "code_text": "PERM_FORBIDDEN",
+      "message": "missing permission: user:read",
+      "detail": {
+        "permission": "user:read",
+        "role_code": "member",
+        "mode": "enforce",
+        "ll_code": 4034
+      },
+      "request_id": "req-1eba722a4f05"
+    }
+  },
+  {
+    "label": "unbound",
+    "role_header": "member",
+    "method": "POST",
+    "path": "/api/v1/users",
+    "status": 403,
+    "body": {
+      "code": 4033,
+      "code_text": "ROLE_UNMAPPED",
+      "message": "角色码未映射/未知，本地解释 fail-closed: 'member'",
+      "detail": {
+        "role_code": "member",
+        "fail_closed": true,
+        "known_roles": [
+          "admin",
+          "org_admin",
+          "org_member",
+          "user",
+          "viewer"
+        ],
+        "note": "S4-T12：未知角色码 0 静默降级",
+        "ll_code": 4033
+      },
+      "request_id": "req-441d15268505"
+    }
+  },
+  {
+    "label": "bound-member",
+    "role_header": "member",
+    "method": "POST",
+    "path": "/api/v1/users",
+    "status": 403,
+    "body": {
+      "code": 4033,
+      "code_text": "ROLE_UNMAPPED",
+      "message": "角色码未映射/未知，本地解释 fail-closed: 'member'",
+      "detail": {
+        "role_code": "member",
+        "fail_closed": true,
+        "known_roles": [
+          "admin",
+          "org_admin",
+          "org_member",
+          "user",
+          "viewer"
+        ],
+        "note": "S4-T12：未知角色码 0 静默降级",
+        "ll_code": 4033
+      },
+      "request_id": "req-ea985c342700"
+    }
+  },
+  {
+    "label": "bound-user",
+    "role_header": "user",
+    "method": "DELETE",
+    "path": "/api/v1/users/00000000-0000-0000-0000-000000000001",
+    "status": 403,
+    "body": {
+      "code": 4034,
+      "code_text": "PERM_FORBIDDEN",
+      "message": "角色档位不足，禁止写路径: role_code='user' tier='readonly'",
+      "detail": {
+        "role_code": "user",
+        "tier": "readonly",
+        "required_tier": [
+          "manage",
+          "readwrite"
+        ],
+        "context": "DELETE /api/v1/users/00000000-0000-0000-0000-000000000001",
+        "ll_code": 4034
+      },
+      "request_id": "req-a41e5a83b3aa"
+    }
+  }
+]

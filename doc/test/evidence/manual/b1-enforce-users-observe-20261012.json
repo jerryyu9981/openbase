@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "tool": "rbac_shadow_observe.py",
+  "generated_at": "2026-10-11T22:24:32+00:00",
+  "model": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\config\\rbac_permission_model.json",
+  "log": "d:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\tmp\\b1-enforce-woulddeny-0617.clean.log",
+  "totals": {
+    "would_deny": 38,
+    "groups": 10
+  },
+  "skipped_lines": 0,
+  "digestion": {
+    "digestion_rate": 1.0,
+    "classified_events": 38,
+    "unclassified_events": 0,
+    "model_allows_events": 1,
+    "model_denies_events": 37
+  },
+  "unclassified_roles": {},
+  "groups": [
+    {
+      "endpoint": "/api/v1/conversations",
+      "role": "member",
+      "permission": "conversation:write",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-7b07b73954c3",
+        "req-fc2736e4709e",
+        "req-f55ceeb1eaa0"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/knowledge-bases",
+      "role": "member",
+      "permission": "knowledge_base:write",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-874e2b8e06de",
+        "req-f04ab1003c15",
+        "req-df91710916d0"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/knowledge-bases/00000000-0000-0000-0000-000000000001",
+      "role": "member",
+      "permission": "knowledge_base:delete",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-0eb9cddfac24",
+        "req-87519756e3bb",
+        "req-e2abd4535cdd"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/roles",
+      "role": "member",
+      "permission": "role:read",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-011a6b7ef551",
+        "req-7e9bb86fee0a",
+        "req-693816e50fbe"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/roles",
+      "role": "member",
+      "permission": "role:write",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-bbcad4c25634",
+        "req-17037fb6a6b0",
+        "req-c07df2683e67"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/roles/00000000-0000-0000-0000-000000000001",
+      "role": "member",
+      "permission": "role:delete",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-1f2914b090f5",
+        "req-a51d37d9fd1e",
+        "req-0d9840f972c8"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/roles/00000000-0000-0000-0000-000000000001/permissions",
+      "role": "member",
+      "permission": "role:admin",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-fd7c33ac4bbe",
+        "req-873da2be9505",
+        "req-637098b56240"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/users",
+      "role": "member",
+      "permission": "user:read",
+      "count": 1,
+      "role_known": true,
+      "model_allows": true,
+      "permission_known": true,
+      "samples": [
+        "req-4b94f7327158"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/users",
+      "role": "member",
+      "permission": "user:write",
+      "count": 5,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-61c499fa58a1",
+        "req-159e83434e87",
+        "req-6cbffebb9658"
+      ]
+    },
+    {
+      "endpoint": "/api/v1/users/00000000-0000-0000-0000-000000000001",
+      "role": "member",
+      "permission": "user:delete",
+      "count": 4,
+      "role_known": true,
+      "model_allows": false,
+      "permission_known": true,
+      "samples": [
+        "req-ae8e6894ebad",
+        "req-3e44e497c4c7",
+        "req-d7f645ae123a"
+      ]
+    }
+  ]
+}
