@@ -3,6 +3,11 @@
   "artifact": "identity_exemptions",
   "revisions": [
     {
+      "version": 7,
+      "date": "2026-10-13",
+      "change": "C3 残余收尾（OpenRAG）DB 行读取器落地：存储层 `scope_exemption_list`（PG/SQLite 同构，读 `status='active'` 行）+ 注册表 `merge_entries`（env 种子 + DB 行双落点，**DB 为准**）+ `main.py::lifespan` 装配；新增 4 例、相关回归 55 passed、ruff 0。**OpenRAG 治理链：装配 + 消费 + DB 行读取器 均完成**"
+    },
+    {
       "version": 6,
       "date": "2026-10-13",
       "change": "C3 残余（OpenRAG）运行时接线落地（人工授权）：① `ScopeExemptionMiddleware`（`api/middleware/scope_exemption.py`）→ 请求级令牌（`identity/context.py` contextvar）→ 存储层 `_scope_tenant` 放宽（PG/SQLite）；② `main.py` 装载 `ExemptionRegistry.from_env()`（`OPENRAG_SCOPE_EXEMPTIONS`）并装配中间件；③ 约束：目标面显式登记（target 正则 + method）、到期校验、命中/拒绝审计、匿名不豁免。相关回归 51 passed、ruff 0。**OpenRAG 治理链装配 + 消费均已完成**（DB 行读取器仍待版本窗口）"
@@ -83,7 +88,8 @@
       "gaps": [
         "DB 表补 `ticket` 列**已落地（2026-10-13）**：SQLite/PG DDL + 幂等 ADD COLUMN 迁移（R1 合规）",
         "字段命名归一**已完成**（2026-10-13 核实 `b73d835`/v1.7.1）：代码 `target` + DB 列 `target`",
-        "运行时接线**已落地（2026-10-13，人工授权）**：`main.py` 装载 `ExemptionRegistry.from_env()` + 装配 `ScopeExemptionMiddleware`（请求级令牌 → 存储层 `_scope_tenant` 放宽）；约束含目标面显式登记 / 到期校验 / 命中拒绝审计 / 匿名不豁免；DB 行读取器仍待版本窗口"
+        "运行时接线**已落地（2026-10-13，人工授权）**：`main.py` 装载 `ExemptionRegistry.from_env()` + 装配 `ScopeExemptionMiddleware`（请求级令牌 → 存储层 `_scope_tenant` 放宽）；约束含目标面显式登记 / 到期校验 / 命中拒绝审计 / 匿名不豁免",
+        "**DB 行读取器已落地（2026-10-13，v1.8.6）**：存储层 `scope_exemption_list`（PG/SQLite 同构读 active 行）+ 注册表 `merge_entries`（env 种子 + DB 行双落点、**DB 为准**）+ lifespan 装配——治理链**装配 + 消费 + DB 行读取** 均完成"
       ],
       "strengths": ["代码模型与统一模型几乎同构（endpoint_pattern≈target、reason 同名、ticket+approver+expires_at 三必填强校验、匿名+豁免拒绝）——字段归一改动面最小"]
     }
@@ -159,7 +165,7 @@
     "OpenBase k03 无 ticket/approver（R1 违反）——影子期 WARN 已落地（2026-10-09），强制段待退出条件达成",
     "OpenLLM 入站头豁免无专属审计（R4 违反）——已修复（2026-10-09，5a9a29a）",
     "OpenMemory 豁免治理链**装配 + 消费**均已完成（2026-10-13）：装配 = `server.py` lifespan 实例化 `app.state.scope_exemption_registry`（`6ecc420`/v7.1.1）；消费 = `controllers.py::_apply_row_scope_grant` 于 `_memory_scope` 消费 `evaluate_row_scope_grant`（`3f1fa5f`/v7.1.3）",
-    "OpenRAG scope_exemption：`ticket` 列已补（R1）、字段命名归一已完成（`target`）、**运行时接线已落地（2026-10-13 人工授权）**——治理链**装配 + 消费**均完成（`ScopeExemptionMiddleware` → 请求级令牌 → 存储层 `_scope_tenant` 放宽）；DB 行读取器仍待版本窗口",
+    "OpenRAG scope_exemption：`ticket` 列已补（R1）、字段命名归一已完成（`target`）、**运行时接线已落地（2026-10-13 人工授权）**、**DB 行读取器已落地（v1.8.6）**——治理链**装配 + 消费 + DB 行读取** 均完成",
     "三仓字段命名归一（target/reason）**已执行完成（2026-10-13 核实）**——OpenMemory `4e70d84`/v7.1.2（含 alembic `v707_scope_exemption_target_rename`）、OpenRAG `b73d835`/v1.7.1、OpenLLM `083744b`/v2.16.5"
   ]
 }
