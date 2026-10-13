@@ -1,0 +1,314 @@
+{
+  "evidence_id": "frontend-walkthrough-20261014",
+  "generated_at": "2026-10-13T18:18:06.671Z",
+  "tool": "Playwright 1.63.0（路线 C，复用 openbase-ui/node_modules）",
+  "base": "http://localhost:5173",
+  "login": {
+    "entryUrl": "http://localhost:5173/auth/login?redirect=/dashboard",
+    "afterLoginUrl": "http://localhost:5173/dashboard",
+    "success": true,
+    "user": "admin"
+  },
+  "navItemCount": 29,
+  "totals": {
+    "routes": 27,
+    "renderNormal": 27,
+    "renderBlank": 0,
+    "routesWithConsoleError": 0,
+    "routesWithHttpBad": 0
+  },
+  "routes": [
+    {
+      "title": "租户管理",
+      "path": "/platform/identity/tenants",
+      "renderState": "normal",
+      "bodyLen": 392,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_identity_tenants.png"
+    },
+    {
+      "title": "角色与权限",
+      "path": "/platform/identity/roles",
+      "renderState": "normal",
+      "bodyLen": 292,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_identity_roles.png"
+    },
+    {
+      "title": "组织/团队/用户",
+      "path": "/platform/identity/org",
+      "renderState": "normal",
+      "bodyLen": 3739,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_identity_org.png"
+    },
+    {
+      "title": "工作空间",
+      "path": "/platform/identity/workspaces",
+      "renderState": "normal",
+      "bodyLen": 272,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_identity_workspaces.png"
+    },
+    {
+      "title": "注册/找回密码",
+      "path": "/platform/identity/auth-ext",
+      "renderState": "normal",
+      "bodyLen": 187,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_identity_auth-ext.png"
+    },
+    {
+      "title": "用户管理",
+      "path": "/platform/identity/users",
+      "renderState": "normal",
+      "bodyLen": 435,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_identity_users.png"
+    },
+    {
+      "title": "记忆管理席位",
+      "path": "/platform/identity/memory-admin",
+      "renderState": "normal",
+      "bodyLen": 448,
+      "tables": 15,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_identity_memory-admin.png"
+    },
+    {
+      "title": "全局配置",
+      "path": "/platform/config/general",
+      "renderState": "normal",
+      "bodyLen": 618,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_config_general.png"
+    },
+    {
+      "title": "模块开关",
+      "path": "/platform/config/modules",
+      "renderState": "normal",
+      "bodyLen": 473,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_config_modules.png"
+    },
+    {
+      "title": "API 密钥",
+      "path": "/platform/config/api-keys",
+      "renderState": "normal",
+      "bodyLen": 307,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_config_api-keys.png"
+    },
+    {
+      "title": "日志中心",
+      "path": "/platform/observability/logs",
+      "renderState": "normal",
+      "bodyLen": 2330,
+      "tables": 5,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_logs.png"
+    },
+    {
+      "title": "测试记录",
+      "path": "/platform/observability/test-records",
+      "renderState": "normal",
+      "bodyLen": 167,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_test-records.png"
+    },
+    {
+      "title": "统一监控",
+      "path": "/platform/observability/monitoring",
+      "renderState": "normal",
+      "bodyLen": 363,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_monitoring.png"
+    },
+    {
+      "title": "成本分析",
+      "path": "/platform/observability/monitoring/costs",
+      "renderState": "normal",
+      "bodyLen": 574,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_monitoring_costs.png"
+    },
+    {
+      "title": "告警中心",
+      "path": "/platform/observability/monitoring/alerts",
+      "renderState": "normal",
+      "bodyLen": 408,
+      "tables": 6,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_monitoring_alerts.png"
+    },
+    {
+      "title": "链路追踪",
+      "path": "/platform/observability/monitoring/traces",
+      "renderState": "normal",
+      "bodyLen": 194,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_monitoring_traces.png"
+    },
+    {
+      "title": "预算管理",
+      "path": "/platform/observability/monitoring/budgets",
+      "renderState": "normal",
+      "bodyLen": 194,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_monitoring_budgets.png"
+    },
+    {
+      "title": "GPU 资源",
+      "path": "/platform/observability/gpu",
+      "renderState": "normal",
+      "bodyLen": 441,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_gpu.png"
+    },
+    {
+      "title": "用量统计",
+      "path": "/platform/observability/usage",
+      "renderState": "normal",
+      "bodyLen": 898,
+      "tables": 5,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_usage.png"
+    },
+    {
+      "title": "计费",
+      "path": "/platform/observability/billing",
+      "renderState": "normal",
+      "bodyLen": 521,
+      "tables": 6,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_billing.png"
+    },
+    {
+      "title": "服务发现与编排",
+      "path": "/platform/observability/service-discovery",
+      "renderState": "normal",
+      "bodyLen": 561,
+      "tables": 12,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_service-discovery.png"
+    },
+    {
+      "title": "聚合网关测试",
+      "path": "/platform/observability/gateway-test",
+      "renderState": "normal",
+      "bodyLen": 272,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_gateway-test.png"
+    },
+    {
+      "title": "应用调用记录",
+      "path": "/platform/observability/app-calls",
+      "renderState": "normal",
+      "bodyLen": 145,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_observability_app-calls.png"
+    },
+    {
+      "title": "文档中心",
+      "path": "/platform/developers/docs",
+      "renderState": "normal",
+      "bodyLen": 219,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_developers_docs.png"
+    },
+    {
+      "title": "EdgeRouter 与适配器",
+      "path": "/platform/developers/edgerouter",
+      "renderState": "normal",
+      "bodyLen": 252,
+      "tables": 12,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_developers_edgerouter.png"
+    },
+    {
+      "title": "插件管理",
+      "path": "/platform/developers/plugins",
+      "renderState": "normal",
+      "bodyLen": 337,
+      "tables": 3,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "platform_developers_plugins.png"
+    },
+    {
+      "title": "个人设置",
+      "path": "/personal/settings",
+      "renderState": "normal",
+      "bodyLen": 167,
+      "tables": 0,
+      "consoleErrorCount": 0,
+      "httpBad": [],
+      "screenshot": "personal_settings.png"
+    }
+  ],
+  "interactions": [
+    {
+      "name": "打开「创建租户」弹窗后取消（不提交）",
+      "dialogVisibleBefore": 0,
+      "dialogVisibleAfterOpen": 2,
+      "cancelButtonCount": 1,
+      "dialogVisibleAfterClose": 0,
+      "result": "pass"
+    },
+    {
+      "name": "日志中心切换筛选/Tab",
+      "tabCount": 4,
+      "switchedTo": "审计库",
+      "result": "pass"
+    }
+  ],
+  "screenshots_dir": "doc/tmp/pw/shots（29 张：00_after_login + 27 路由 + 2 交互）",
+  "notes": [
+    "全程只读：未提交任何业务表单、未执行写操作。",
+    "0 控制台报错、0 条 4xx/5xx 请求。",
+    "数据面：租户/组织/日志/用量/计费/服务发现等页均渲染出真实表格数据。"
+  ]
+}

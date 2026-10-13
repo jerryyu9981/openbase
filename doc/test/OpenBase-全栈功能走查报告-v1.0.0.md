@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-WALKTHROUGH-v1.0.0 |
-| 版本 | v1.0.0 |
-| 状态 | [Draft]（**部分完成**：后端全量走查完成；前端视觉/控制台逐页走查因浏览器工具不可用**未完成**） |
+| 版本 | v1.1.0 |
+| 状态 | [Final]（**全部完成**：后端 API + 前端逐页视觉/交互/控制台走查均执行完毕） |
 | 日期 | 2026-10-13 |
 | 走查人 | AA/AT-OpenBase-Dev |
 | 环境 | Dev（本机），7 服务全栈 |
@@ -62,36 +62,74 @@
 
 **结论**：OpenBase 中枢 + 四 proxy（rag/memory/dps/llm）端到端**连通正常**；非 200 项均为**探针方法/参数不符**，非服务缺陷。
 
-## 3. 前端走查（**未完成 — 工具阻断**）
+## 3. 前端逐页走查（完成 — 路线 C：Playwright）
 
-- **路由清单**（从 `openbase-ui/src/pages/{platform,personal}/routes.ts` 提取）：平台管理四域 + 个人设置，共 **27 条业务路由**：
-  - 身份与权限域（7）：`/platform/identity/{tenants,roles,org,workspaces,auth-ext,users,memory-admin}`
-  - 平台配置与密钥域（3）：`/platform/config/{general,modules,api-keys}`（`modules` 需 `module:manage`）
-  - 可观测与审计域（13）：`/platform/observability/{logs,test-records,monitoring,monitoring/costs,monitoring/alerts,monitoring/traces,monitoring/budgets,gpu,usage,billing,service-discovery,gateway-test,app-calls}`（`logs` 需 `log:read`、`test-records` 需 `test:record`）
-  - 开发者资源域（3）：`/platform/developers/{docs,edgerouter,plugins}`
-  - 个人（1）：`/personal/settings`
-- **HTTP 级验证**：`http://localhost:5173/` → **200**（SPA 入口可服务）。
-- **视觉/控制台逐页走查：未完成**。原因：浏览器自动化在本环境**不可用**——
-  - 浏览器子代理 3 次调用均**空返回**；
-  - 直连 Exec 驱动 `browser_navigate` / `browser_tabs` 均 **62s IDE Command timeout**（桥不可达）。
+**执行方式**：浏览器内置工具不可用（子代理空返回 + 桥 60s 超时）→ 改用**路线 C**——复用项目已安装的 **Playwright 1.63.0**（`openbase-ui/node_modules`，浏览器用 `%LOCALAPPDATA%\ms-playwright` 缓存 chromium）驱动 headless Chromium 逐页走查。
+
+- **登录**：`/auth/login` → 填 `用户名/密码`（`admin`/`admin123`）→ 点击登录 → 跳转 `/dashboard` ✅
+- **导航清单**：登录后侧边栏 **29 项**
+- **28 张截图**：`doc/tmp/pw/shots/`（登录后 1 + 业务路由 27）
+- **证据 JSON**：`doc/test/evidence/manual/frontend-walkthrough-20261014.json`
+
+**逐页走查结果（27 业务路由全部 `normal` 渲染）**：
+
+| 域 | 页面 | 路径 | 渲染 | 控制台报错 | 失败请求 |
+|---|---|---|---:|---:|---:|
+| 身份与权限 | 租户管理 | `/platform/identity/tenants` | normal（3 表） | 0 | 0 |
+| 身份与权限 | 角色与权限 | `/platform/identity/roles` | normal（3 表） | 0 | 0 |
+| 身份与权限 | 组织/团队/用户 | `/platform/identity/org` | normal（3 表，3.7KB） | 0 | 0 |
+| 身份与权限 | 工作空间 | `/platform/identity/workspaces` | normal | 0 | 0 |
+| 身份与权限 | 注册/找回密码 | `/platform/identity/auth-ext` | normal | 0 | 0 |
+| 身份与权限 | 用户管理 | `/platform/identity/users` | normal（3 表） | 0 | 0 |
+| 身份与权限 | 记忆管理席位 | `/platform/identity/memory-admin` | normal（15 表） | 0 | 0 |
+| 平台配置 | 全局配置 | `/platform/config/general` | normal | 0 | 0 |
+| 平台配置 | 模块开关 | `/platform/config/modules` | normal | 0 | 0 |
+| 平台配置 | API 密钥 | `/platform/config/api-keys` | normal | 0 | 0 |
+| 可观测与审计 | 日志中心 | `/platform/observability/logs` | normal（5 表，2.3KB） | 0 | 0 |
+| 可观测与审计 | 测试记录 | `/platform/observability/test-records` | normal | 0 | 0 |
+| 可观测与审计 | 统一监控 | `/platform/observability/monitoring` | normal | 0 | 0 |
+| 可观测与审计 | 成本分析 | `/platform/observability/monitoring/costs` | normal | 0 | 0 |
+| 可观测与审计 | 告警中心 | `/platform/observability/monitoring/alerts` | normal（6 表） | 0 | 0 |
+| 可观测与审计 | 链路追踪 | `/platform/observability/monitoring/traces` | normal | 0 | 0 |
+| 可观测与审计 | 预算管理 | `/platform/observability/monitoring/budgets` | normal | 0 | 0 |
+| 可观测与审计 | GPU 资源 | `/platform/observability/gpu` | normal | 0 | 0 |
+| 可观测与审计 | 用量统计 | `/platform/observability/usage` | normal（5 表） | 0 | 0 |
+| 可观测与审计 | 计费 | `/platform/observability/billing` | normal（6 表） | 0 | 0 |
+| 可观测与审计 | 服务发现与编排 | `/platform/observability/service-discovery` | normal（12 表） | 0 | 0 |
+| 可观测与审计 | 聚合网关测试 | `/platform/observability/gateway-test` | normal | 0 | 0 |
+| 可观测与审计 | 应用调用记录 | `/platform/observability/app-calls` | normal（占位说明页） | 0 | 0 |
+| 开发者资源 | 文档中心 | `/platform/developers/docs` | normal | 0 | 0 |
+| 开发者资源 | EdgeRouter 与适配器 | `/platform/developers/edgerouter` | normal（12 表） | 0 | 0 |
+| 开发者资源 | 插件管理 | `/platform/developers/plugins` | normal（3 表） | 0 | 0 |
+| 个人 | 个人设置 | `/personal/settings` | normal | 0 | 0 |
+
+**汇总**：27/27 正常渲染、**0 空白**、**0 控制台报错**、**0 条 4xx/5xx 请求**。
+
+**交互验证（只读，未提交业务表单）**：
+| 交互 | 结果 |
+|---|---|
+| 打开「创建租户」弹窗 → 取消 | ✅ 弹窗打开（可见弹窗 0→2）→ 点「取消」→ 关闭（可见弹窗→0） |
+| 日志中心切换筛选/Tab | ✅ 4 个 Tab，切换至「审计库」成功 |
 
 ## 4. 问题清单
 
-| 严重度 | 问题 | 位置 | 建议 |
+| 严重度 | 问题 | 位置 | 处置 |
 |:---:|---|---|---|
-| **主要** | 前端**逐页视觉与控制台走查缺失**（无法完成"全面走查"的前端部分） | 工具/环境 | 待浏览器工具恢复后补做；或以人工方式走查并回填本报告 |
-| 次要 | 编排器 OpenBase 检查项 `健康端点(401=门禁)` 使用路径 `/api/v1/health`，该路径**非真实端点**（真实为 `/health`）；因鉴权门禁对未知 `/api` 路径恒返 401，该断言成为**弱断言**（假阳性通过） | `scripts/service-orchestrator.ps1`（openbase Checks） | 改用真实健康路径 `/health`（期望 200）以增强断言有效性 |
-| 提示 | 前端进程在编排器 `Start-Process` 方式下会被会话回收 | 编排器 frontend 启动方式 | 前端改用 WMI 脱离会话启动（本次已手工规避） |
+| **主要** | 前端**逐页视觉与控制台走查**（内置浏览器工具不可用） | 工具/环境 | ✅ **已闭环（路线 C）**：改用 Playwright 驱动，27/27 页正常、0 报错、0 失败请求 + 2 项交互验证（见 §3、§6） |
+| 次要 | 编排器 OpenBase 检查项 `健康端点(401=门禁)` 使用路径 `/api/v1/health`，该路径**非真实端点**（真实为 `/health`）；构成弱断言 | `scripts/service-orchestrator.ps1` | ✅ **已修复+重测**：改用 `/health`（期望 200），`checkall -Only openbase` → 4 PASS（见 §6） |
+| 提示 | 前端进程在编排器 `Start-Process` 方式下会被会话回收 | 编排器 frontend 启动方式 | ✅ **已修复+重测**：新增 `Detach`（WMI 脱离会话），重测命令返回后 `5173` 仍存活（见 §6） |
 
 ## 5. 结论与后续
 
 - **后端**：全栈拉起成功、7 服务健康、中枢与四 proxy 端到端可用、鉴权门禁生效 → **后端走查达标**。
-- **前端**：仅完成**路由清单 + 入口 HTTP 验证**；**视觉/交互/控制台未走查**，故**本次"全面走查"未完全闭环**。
-- **后续**：① 恢复浏览器工具后补做前端逐页走查（27 路由）；② 修正编排器弱断言（次要问题）；③ 前端启动方式改为脱离会话。
+- **前端**：登录成功 → 27 业务路由**逐页渲染正常**、0 控制台报错、0 失败请求，2 项只读交互验证通过 → **前端走查达标**。
+- **编排器**：弱断言（健康端点）与前端会话回收两项已修复并重测通过。
+- **结论**：本次「全栈全面走查」**已闭环**。
+- **后续（可选）**：① 内置浏览器工具仍需修复（重载 IDE 窗口 / 或采用外部 Chrome 扩展插件）以便后续自动化复用；② 新增模块时同步扩充本走查路由清单。
 
 ---
 
-## 6. 问题清单修复与重测记录（v1.0.0 追加）
+## 6. 问题清单修复与重测记录（v1.0.0 追加；v1.1.0 更新）
 
 依人工指令「按照走查问题清单进行逐项修复或者重测」，逐项处置如下：
 
@@ -99,7 +137,7 @@
 |---|:---:|---|---|
 | 编排器 OpenBase 检查项弱断言（`/api/v1/health` 非真实端点） | 次要 | ✅ **已修复**：`scripts/service-orchestrator.ps1` openbase `Checks` 改用真实健康端点 `GET /health`（期望 200） | 修复前取证：`/health → 200 {"status":"ok"}`；`/api/v1/health → 401`（仅鉴权门禁拦截未知路径）。**重测**：`checkall -Only openbase` → **4 PASS / 0 FAIL**（含 `[PASS] 健康检查（GET /health → 200）`） |
 | 前端进程被会话回收（`Start-Process` 方式） | 提示 | ✅ **已修复**：编排器新增 `Detach` 能力 + `Start-DetachedProcess`（WMI `Win32_Process.Create` + `-EncodedCommand` 脱离会话）；frontend 服务声明 `Detach = $true` | **重测**：杀掉前端 → `start -Only frontend` → 日志 `frontend 已脱离会话启动（WMI，PID 6532）`、健康通过（14s）；**命令返回后**新命令复核 `5173 STILL UP pid=24720`、`localhost:5173/ → 200` → **脱离生效** |
-| 前端逐页视觉/控制台走查缺失 | 主要 | ⏳ **重测未成（工具阻断）**：浏览器桥仍不可用——子代理 4 次空返回、直连 Exec `browser_tabs`/`browser_navigate` 均 **60–62s IDE Command timeout** | 无（待工具恢复后补做） |
+| 前端逐页视觉/控制台走查缺失 | 主要 | ✅ **已闭环（路线 C：Playwright）**：内置浏览器桥不可用（子代理 4 次空返回 + 直连 Exec 60–62s 超时）→ 复用 `openbase-ui/node_modules` 的 **Playwright 1.63.0** + 缓存 Chromium 驱动走查 | 登录成功；**27/27 路由 `normal` 渲染**；**0 控制台报错**；**0 条 4xx/5xx**；2 项只读交互通过（弹窗开→取消→关；日志 Tab 切换）；截图 28 张 `doc/tmp/pw/shots/`；证据 `doc/test/evidence/manual/frontend-walkthrough-20261014.json` |
 
 **回归**：修复未改动其它 6 服务的启动路径（`Detach` 分支仅在 `$Svc.Detach` 为真时生效）；`-Action status` 语法/执行正常；`checkall -Only openbase` 4/4 通过。
 
