@@ -1,0 +1,163 @@
+{
+  "mode": "landed",
+  "base": "http://127.0.0.1:8002",
+  "distribution": {
+    "404": 4,
+    "200": 4,
+    "403": 5,
+    "422": 1,
+    "500": 1
+  },
+  "cases": [
+    {
+      "case_id": "read.documents.viewer",
+      "role": "viewer",
+      "method": "GET",
+      "path": "/api/v1/documents",
+      "required_permission": "document:read",
+      "status": 404,
+      "body_code": "NOTFOUND-4040",
+      "detail_excerpt": "Not Found"
+    },
+    {
+      "case_id": "read.collections.viewer",
+      "role": "viewer",
+      "method": "GET",
+      "path": "/api/v1/collections",
+      "required_permission": "knowledge_base:read",
+      "status": 200,
+      "body_code": "",
+      "detail_excerpt": "success"
+    },
+    {
+      "case_id": "read.users.viewer",
+      "role": "viewer",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "required_permission": "user:read",
+      "status": 404,
+      "body_code": "NOTFOUND-4040",
+      "detail_excerpt": "Not Found"
+    },
+    {
+      "case_id": "read.harness_status.viewer",
+      "role": "viewer",
+      "method": "GET",
+      "path": "/api/v1/harness/status",
+      "required_permission": "harness:read",
+      "status": 200,
+      "body_code": "",
+      "detail_excerpt": ""
+    },
+    {
+      "case_id": "read.eval.viewer",
+      "role": "viewer",
+      "method": "GET",
+      "path": "/api/v1/eval/results/x",
+      "required_permission": "evaluation:read",
+      "status": 200,
+      "body_code": "",
+      "detail_excerpt": "未找到该评估的结果"
+    },
+    {
+      "case_id": "bypass.system_health",
+      "role": "viewer",
+      "method": "GET",
+      "path": "/api/v1/system/health",
+      "required_permission": "-",
+      "status": 200,
+      "body_code": "",
+      "detail_excerpt": ""
+    },
+    {
+      "case_id": "write.documents.viewer",
+      "role": "viewer",
+      "method": "POST",
+      "path": "/api/v1/documents",
+      "required_permission": "document:write",
+      "status": 403,
+      "body_code": "PERM_FORBIDDEN",
+      "detail_excerpt": "{\"role_code\": \"viewer\", \"tier\": \"readonly\", \"required_tier\": \"readwrite\", \"method\": \"POST\", \"path\": \"/api/v1/documents\", \"reason\": \"tier_insufficient\", \"rg_erro"
+    },
+    {
+      "case_id": "write.collections.viewer",
+      "role": "viewer",
+      "method": "POST",
+      "path": "/api/v1/collections",
+      "required_permission": "knowledge_base:write",
+      "status": 403,
+      "body_code": "PERM_FORBIDDEN",
+      "detail_excerpt": "{\"role_code\": \"viewer\", \"tier\": \"readonly\", \"required_tier\": \"readwrite\", \"method\": \"POST\", \"path\": \"/api/v1/collections\", \"reason\": \"tier_insufficient\", \"rg_er"
+    },
+    {
+      "case_id": "write.documents.org_admin",
+      "role": "org_admin",
+      "method": "POST",
+      "path": "/api/v1/documents",
+      "required_permission": "document:write",
+      "status": 404,
+      "body_code": "NOTFOUND-4040",
+      "detail_excerpt": "Not Found"
+    },
+    {
+      "case_id": "write.datasets.org_admin",
+      "role": "org_admin",
+      "method": "POST",
+      "path": "/api/v1/datasets",
+      "required_permission": "dataset:write",
+      "status": 422,
+      "body_code": "VALID-4220",
+      "detail_excerpt": "body.name: Field required"
+    },
+    {
+      "case_id": "unmapped.ping",
+      "role": "viewer",
+      "method": "GET",
+      "path": "/api/v1/__none__/x",
+      "required_permission": "-",
+      "status": 404,
+      "body_code": "NOTFOUND-4040",
+      "detail_excerpt": "Not Found"
+    },
+    {
+      "case_id": "delete.datasets.org_admin",
+      "role": "org_admin",
+      "method": "DELETE",
+      "path": "/api/v1/datasets/x",
+      "required_permission": "dataset:delete",
+      "status": 403,
+      "body_code": "PERM_FORBIDDEN",
+      "detail_excerpt": "{\"permission_code\": \"dataset:delete\", \"role_code\": \"org_admin\", \"reason\": \"permission_code_missing\", \"method\": \"DELETE\", \"path\": \"/api/v1/datasets/x\", \"rg_error"
+    },
+    {
+      "case_id": "delete.eval.org_admin",
+      "role": "org_admin",
+      "method": "DELETE",
+      "path": "/api/v1/eval/ab-test/x",
+      "required_permission": "evaluation:delete",
+      "status": 403,
+      "body_code": "PERM_FORBIDDEN",
+      "detail_excerpt": "{\"permission_code\": \"evaluation:delete\", \"role_code\": \"org_admin\", \"reason\": \"permission_code_missing\", \"method\": \"DELETE\", \"path\": \"/api/v1/eval/ab-test/x\", \"r"
+    },
+    {
+      "case_id": "delete.collections.org_admin",
+      "role": "org_admin",
+      "method": "DELETE",
+      "path": "/api/v1/collections/x",
+      "required_permission": "knowledge_base:delete",
+      "status": 403,
+      "body_code": "PERM_FORBIDDEN",
+      "detail_excerpt": "{\"permission_code\": \"knowledge_base:delete\", \"role_code\": \"org_admin\", \"reason\": \"permission_code_missing\", \"method\": \"DELETE\", \"path\": \"/api/v1/collections/x\","
+    },
+    {
+      "case_id": "delete.collections.admin",
+      "role": "admin",
+      "method": "DELETE",
+      "path": "/api/v1/collections/x",
+      "required_permission": "knowledge_base:delete",
+      "status": 500,
+      "body_code": "INTERNAL-5000",
+      "detail_excerpt": "删除知识库失败: badly formed hexadecimal UUID string"
+    }
+  ]
+}
