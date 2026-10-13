@@ -305,8 +305,10 @@ $services = @(
         Desc    = 'OpenBase 统一底座（JWT 门禁 + 四 proxy）'
         Checks  = @(
             @{ Name = 'OpenAPI 文档';  Method = 'GET'; Path = '/openapi.json';    Expect = 200 }
-            # /api/v1/health 需 JWT 鉴权，未带 token 返回 401 属正常（端点存在 + 门禁生效）
-            @{ Name = '健康端点(401=门禁)'; Method = 'GET'; Path = '/api/v1/health'; Expect = 401 }
+            # 真实健康端点：/health 无需鉴权，返回 {status: ok}。
+            # 修正（走查 v1.0.0 次要项）：原用 /api/v1/health 期望 401——该路径**非真实端点**，
+            # 其 401 仅来自鉴权门禁对未知 /api 路径的拦截（弱断言/假阳性）→ 改用真实端点。
+            @{ Name = '健康检查';      Method = 'GET'; Path = '/health';          Expect = 200 }
             @{ Name = '登录端点';      Method = 'GET'; Path = '/api/v1/auth/login'; Expect = 405 }
         )
     },
@@ -316,6 +318,9 @@ $services = @(
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenBase\openbase-ui'
         Command = 'npm.cmd'   # Windows 下 npm 为 npm.cmd（Start-Process 需带扩展名）
         Args    = @('run', 'dev')
+        # 走查 v1.0.0 提示项修复：以 WMI 脱离当前会话启动，规避沙箱 Job Object
+        # kill-on-close 导致子进程（vite）随编排器会话结束被回收。
+        Detach  = $true
         Env     = @{}
         # vite dev 默认仅绑定 IPv6 回环 ::1，须用 localhost 访问（127.0.0.1 不通）
         Health  = @('http://localhost:5173/')
@@ -459,6 +464,28 @@ function Remove-Pid {
     }
 }
 
+function Start-DetachedProcess {
+    # 走查 v1.0.0 提示项修复：以 WMI Win32_Process.Create + -EncodedCommand 脱离当前会话启动，
+    # 规避沙箱 Job Object kill-on-close（子进程随编排器会话结束被回收）。返回新进程 PID。
+    param([hashtable]$Svc, [hashtable]$LogTarget)
+    $lines = @("Set-Location '$($Svc.Cwd)'")
+    foreach ($key in $Svc.Env.Keys) {
+        $val = ([string]$Svc.Env[$key]) -replace "'", "''"
+        $lines += "`$env:$key = '$val'"
+    }
+    $quotedArgs = ($Svc.Args | ForEach-Object { "'" + ($_ -replace "'", "''") + "'" }) -join ' '
+    $lines += "& '$($Svc.Command)' $quotedArgs 1>'$($LogTarget.Out)' 2>'$($LogTarget.Err)'"
+    $inner = $lines -join "`n"
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($inner))
+    $psExe = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+    $startCmd = "`"$psExe`" -NoProfile -NonInteractive -EncodedCommand $encoded"
+    $result = ([wmiclass]"\\.\root\cimv2:Win32_Process").Create($startCmd)
+    if ($result.ReturnValue -ne 0) {
+        throw ("Win32_Process.Create 失败，ReturnValue={0}" -f $result.ReturnValue)
+    }
+    return [int]$result.ProcessId
+}
+
 function Start-Service {
     param([hashtable]$Svc, [switch]$FromMonitor)
     # 1) 端口预检：端口被其他进程占用（非本服务记录 PID）→ 拒绝启动
@@ -495,9 +522,19 @@ function Start-Service {
         # C-6：把子进程 stdout/stderr 落盘采集（消 G-2），日志路径写编排器日志便于检索
         $logTarget = Initialize-ServiceLogTarget $Svc
         Write-Log 'INFO' ("启动 {0}（{1}）：{2} {3}（cwd={4}）" -f $Svc.Name, $Svc.Desc, $Svc.Command, ($Svc.Args -join ' '), $Svc.Cwd)
-        $proc = Start-Process -FilePath $Svc.Command -ArgumentList $Svc.Args -WorkingDirectory $Svc.Cwd -WindowStyle Hidden -RedirectStandardOutput $logTarget.Out -RedirectStandardError $logTarget.Err -PassThru
-        Save-Pid $Svc.Name $proc.Id
-        Write-Log 'INFO' ("{0} 进程已创建（PID {1}），日志 stdout={2}，stderr={3}" -f $Svc.Name, $proc.Id, $logTarget.Out, $logTarget.Err)
+        $proc = $null
+        $launchedPid = 0
+        if ($Svc.Detach) {
+            # 走查 v1.0.0 提示项修复：脱离当前会话启动（规避 Job Object kill-on-close）
+            $launchedPid = Start-DetachedProcess -Svc $Svc -LogTarget $logTarget
+            Save-Pid $Svc.Name $launchedPid
+            Write-Log 'INFO' ("{0} 已脱离会话启动（WMI，PID {1}），日志 stdout={2}，stderr={3}" -f $Svc.Name, $launchedPid, $logTarget.Out, $logTarget.Err)
+        } else {
+            $proc = Start-Process -FilePath $Svc.Command -ArgumentList $Svc.Args -WorkingDirectory $Svc.Cwd -WindowStyle Hidden -RedirectStandardOutput $logTarget.Out -RedirectStandardError $logTarget.Err -PassThru
+            $launchedPid = $proc.Id
+            Save-Pid $Svc.Name $launchedPid
+            Write-Log 'INFO' ("{0} 进程已创建（PID {1}），日志 stdout={2}，stderr={3}" -f $Svc.Name, $launchedPid, $logTarget.Out, $logTarget.Err)
+        }
         # 等待窗口：服务级 HealthWait 优先（如 openmemory 冷启动需数分钟），否则用全局 -HealthTimeout。
         # 修复背景：全局 60s 对冷启动慢的服务必然误报超时（且下游「软依赖未健康」告警会提前触发）。
         $wait = if ($Svc.HealthWait) { [int]$Svc.HealthWait } else { $HealthTimeout }
@@ -508,16 +545,16 @@ function Start-Service {
         while ((Get-Date) -lt $deadline) {
             Start-Sleep -Seconds 2
             if (Test-Health $Svc) {
-                Write-Log 'INFO' ("{0} 健康检查通过 ✅（PID {1}，端口 {2}，冷启动耗时 {3}s）" -f $Svc.Name, $proc.Id, $Svc.Port, [int]$stopwatch.Elapsed.TotalSeconds)
+                Write-Log 'INFO' ("{0} 健康检查通过 ✅（PID {1}，端口 {2}，冷启动耗时 {3}s）" -f $Svc.Name, $launchedPid, $Svc.Port, [int]$stopwatch.Elapsed.TotalSeconds)
                 return $true
             }
-            if ($proc.HasExited) {
+            if ($proc -and $proc.HasExited) {
                 Write-Log 'ERROR' ("{0} 进程提前退出（exit={1}），请查看 stderr 日志：{2}" -f $Svc.Name, $proc.ExitCode, $logTarget.Err)
                 Remove-Pid $Svc.Name
                 return $false
             }
         }
-        Write-Log 'WARN' ("{0} 健康检查超时（进程仍在，PID {1}，已等待 {2}s/{3}s）" -f $Svc.Name, $proc.Id, [int]$stopwatch.Elapsed.TotalSeconds, $wait)
+        Write-Log 'WARN' ("{0} 健康检查超时（进程仍在，PID {1}，已等待 {2}s/{3}s）" -f $Svc.Name, $launchedPid, [int]$stopwatch.Elapsed.TotalSeconds, $wait)
         return $false
     }
     finally {

@@ -88,3 +88,18 @@
 - **后端**：全栈拉起成功、7 服务健康、中枢与四 proxy 端到端可用、鉴权门禁生效 → **后端走查达标**。
 - **前端**：仅完成**路由清单 + 入口 HTTP 验证**；**视觉/交互/控制台未走查**，故**本次"全面走查"未完全闭环**。
 - **后续**：① 恢复浏览器工具后补做前端逐页走查（27 路由）；② 修正编排器弱断言（次要问题）；③ 前端启动方式改为脱离会话。
+
+---
+
+## 6. 问题清单修复与重测记录（v1.0.0 追加）
+
+依人工指令「按照走查问题清单进行逐项修复或者重测」，逐项处置如下：
+
+| 项 | 严重度 | 处置 | 证据 |
+|---|:---:|---|---|
+| 编排器 OpenBase 检查项弱断言（`/api/v1/health` 非真实端点） | 次要 | ✅ **已修复**：`scripts/service-orchestrator.ps1` openbase `Checks` 改用真实健康端点 `GET /health`（期望 200） | 修复前取证：`/health → 200 {"status":"ok"}`；`/api/v1/health → 401`（仅鉴权门禁拦截未知路径）。**重测**：`checkall -Only openbase` → **4 PASS / 0 FAIL**（含 `[PASS] 健康检查（GET /health → 200）`） |
+| 前端进程被会话回收（`Start-Process` 方式） | 提示 | ✅ **已修复**：编排器新增 `Detach` 能力 + `Start-DetachedProcess`（WMI `Win32_Process.Create` + `-EncodedCommand` 脱离会话）；frontend 服务声明 `Detach = $true` | **重测**：杀掉前端 → `start -Only frontend` → 日志 `frontend 已脱离会话启动（WMI，PID 6532）`、健康通过（14s）；**命令返回后**新命令复核 `5173 STILL UP pid=24720`、`localhost:5173/ → 200` → **脱离生效** |
+| 前端逐页视觉/控制台走查缺失 | 主要 | ⏳ **重测未成（工具阻断）**：浏览器桥仍不可用——子代理 4 次空返回、直连 Exec `browser_tabs`/`browser_navigate` 均 **60–62s IDE Command timeout** | 无（待工具恢复后补做） |
+
+**回归**：修复未改动其它 6 服务的启动路径（`Detach` 分支仅在 `$Svc.Detach` 为真时生效）；`-Action status` 语法/执行正常；`checkall -Only openbase` 4/4 通过。
+
