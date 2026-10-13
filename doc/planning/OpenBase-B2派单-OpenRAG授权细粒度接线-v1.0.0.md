@@ -6,11 +6,11 @@
 | 来源批次 | B2（授权接线补欠账，源自《OpenBase-自研系统多租户与授权集成总体完善方案》§6） |
 | 文档编号 | OB-DISPATCH-B2-v1.0.0 |
 | 文档版本 | v1.0.0 |
-| 状态 | **[Approved] 已分发**（2026-10-12，人工指令「先派单 B2」） |
+| 状态 | **[Approved] 已分发 · 已回执**（2026-10-12 分发；2026-10-12 回执，见 §6.2） |
 | 作者 | PM-OpenBase-Dev |
 | 创建日期 | 2026-10-12 |
 | 存放 | doc/planning/ |
-| 分发状态 | **已分发**（2026-10-12）→ 待回执 |
+| 分发状态 | **已分发**（2026-10-12）→ **已回执**（2026-10-12，见 §6.2） |
 | 上游依据 | 《OpenBase-自研系统多租户与授权集成总体完善方案-v1.0.0》§2.4/§5/§6；A 批制品（`config/role_tier_anchors.json`、`config/error_code_map.json`、`config/auth_consistency_matrix.json`） |
 | 证据 | 本轮逐行只读取证（见 §7 `文件:行号` 清单） |
 
@@ -18,6 +18,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.1 | 2026-10-12 | PM/AT-OpenBase-Dev | **实施回执**：依人工指令「直接跨仓实施 B2」由本仓代为实施并复核——OpenRAG `src/openrag/identity/permission_codes.py` 新增（G1 权限码判定）+ `role_gate.py` 在 G3 后接 G1（两段开关）+ `settings.py` 两开关 + 弃用件四处复核（两处补标记）+ 锚点制品照抄落位；验证 **42/42 PASS**（本机环境 `jieba` 阻断 → 按台账口径模块直接加载 + AST 断言）；commit **`d718f33`**（v1.8.0），origin/backup 齐平、**github 网络不可达待补推**；状态 → **已回执**。详见 §6.2 |
 | v1.0.0 | 2026-10-12 | PM-OpenBase-Dev | 初始创建并正式分发：**依本轮实证重新界定 B2 范围**——OpenRAG 已装配 `RoleGateMiddleware` 档位守卫（G3 已闭环）且 `RBACEngine` 已显式弃用，故 B2 收敛为「**权限码级判定（G1）在 RoleGate 体系内补齐 + 锚点/契约对齐 + 弃用件登记复核**」，并登记台账 §5.1 原表述（「RBACEngine 未接线」）之偏差修正 |
 
 ---
@@ -90,11 +91,24 @@
 | 本仓回填 | 《OpenBase-自研系统多租户与授权集成总体完善方案》§5.1 OpenRAG 行已回填「B2 已分发」 |
 | 待回执 | OpenRAG 仓按 §5 回执字段登记 |
 
-### 6.2 回执登记（待回执）
+### 6.2 回执登记（**已回执**，2026-10-12）
 
 | 回执字段 | 值 |
 |---------|-----|
-| 状态 | **待回执** |
+| 实施方式 | 人工指令「直接跨仓实施 B2」→ 由本仓代为实施（沿用 B1 口径），并独立复核验证 |
+| 目标仓 commit | **`d718f33`**（`feat(rbac): B2 授权细粒度接线（G1 权限码判定，RoleGate 体系内扩展）（v1.8.0）`，Refs: OB-DISPATCH-B2；分支 `release/v1.10.0`） |
+| 改动文件清单 | **新增** `src/openrag/identity/permission_codes.py`、`config/role_tier_anchors.json`（制品照抄落位）、`tests/unit/test_b2_permission_codes.py`（14 例）、`doc/development/OpenRAG-B2-授权细粒度接线-DevLogReport-v1.0.0.md`；**修改** `src/openrag/api/middleware/role_gate.py`、`src/openrag/config/settings.py`、`src/openrag/security/middleware.py`（弃用标记）、`src/openrag/router/rbac_adapter.py`（弃用标记）、`version.json` |
+| 权限码清单与角色映射 | 权限码 `module:action`（14 module：document / knowledge_base / conversation / user / organization / evaluation / dataset / connector / plugin / governance / config / tenant 等）；action 由方法映射（GET/HEAD→read；POST/PUT/PATCH→write；DELETE→delete）。角色映射由档位推导：`readonly`={`*:read`}、`readwrite`={`*:read`,`*:write`}、`manage`={`*:read`,`*:write`,`*:delete`,`*:admin`}；**无 `*` 通配**；未映射码 → 空集（fail-closed） |
+| 端点覆盖 | RoleGate 覆盖的 **M2 受信主体**全路径（M1 独立模式恒跳过）；路径无已知资源段 → 不判 G1（交既有 G3） |
+| 判定顺序 | **G3 档位守卫优先 → G1 权限码判定**（与 B1/OpenLLM 口径一致） |
+| 两段推进开关 | `OPENRAG_IDENTITY_RBAC_PERMISSION_SHADOW`（默认 **True**，只审计不拒绝，日志 `rbac_decision=would_deny`）、`OPENRAG_IDENTITY_RBAC_PERMISSION_ENFORCE`（默认 **False**，命中即 403 `PERM_FORBIDDEN`）；有效模式 enforce > shadow > off |
+| 弃用件复核 | ① `security/rbac_engine.py::RBACEngine` **保留弃用**（既有 `DEPRECATED=True` + `REPLACEMENT_PATH`），B2 **未复活**；② `security/models.py` 保留既有弃用标注；③ `security/middleware.py::require_permission` **B2 补标记**（原无标记且无调用点）；④ `router/rbac_adapter.py::RBACPermissionChecker` **B2 补标记** + 类级 `__deprecated__` |
+| 锚点一致性 | `ROLE_TIER_ANCHORS` 与制品 `config/role_tier_anchors.json · anchors` **逐项一致**（admin=manage / org_admin=readwrite / user·org_member·viewer=readonly）+ 规范码集合一致（验证脚本断言通过） |
+| 验证证据 | 本机以 TRAE Python 导入 `openrag` 包被 `jieba`（`preprocessing/analyzer.py`）**语法级阻断**，无法执行仓内 pytest（与台账 v1.16.4 记录一致）→ 按**台账既有口径**执行 `doc/tmp/b2_verify.py`（模块按路径直接加载 + 源码/AST 断言）：**42/42 PASS**；仓内 `tests/unit/test_b2_permission_codes.py`（14 例）已入仓供 CI 执行 |
+| 回归 | 未改动 `identity/role_map.py` 档位逻辑（G3 行为零变化）；`ruff` 本机未安装（未出具结论）；仓内 pytest 待具备完整环境的流水线补出 |
+| 三远程推送 | origin / backup **已推送一致**（`b73d835..d718f33`，`ls-remote` 同哈希）；**github 网络不可达**（`Failed to connect to github.com:443` / `Connection was reset`，重试 2 次失败）→ **登记 github-backfill 待补推** |
+| 版本 | OpenRAG `version.json` **1.7.1 → 1.8.0** |
+| 已知风险 | ① 强制期未开启（默认影子期），现场可用性零变化；翻转需运行服务 + 影子观测窗口；② 路径资源段映射为首版登记集（14 module），未登记资源段不判 G1；③ M1 独立模式下 G1 不生效（沿用既有语义） |
 
 ## §7 证据清单（本轮只读取证，2026-10-12）
 
