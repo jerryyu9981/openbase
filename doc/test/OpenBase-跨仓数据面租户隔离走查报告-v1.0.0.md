@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | **v1.2.0**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 待裁定项裁定建议） |
-| 状态 | **[Review]**（待人工裁定 §6 四项建议） |
+| 文档版本 | **v1.3.0**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 裁定建议 → v1.3.0 裁定落地） |
+| 状态 | **[Final]** |
 | 走查编号 | OB-CROSSREPO-TENANT-ISOLATION-v1.0.0 |
 | 作者 | AT-OpenBase-Dev（API 测试视图）/ SE-OpenBase-Dev（安全视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
 | 创建日期 | 2026-10-14 |
@@ -218,6 +218,23 @@
 | C 版本号 | **走修订号** | — | 测试改版本无关口径 + 各仓版本 bump + 单一源收敛 | 小-中 |
 | D D16 | **列表过滤 + 契约化** | 否 | 列表端点接白名单 + settings 契约文档化/校验 | 小 |
 
+### 6.6 裁定落地状态（v1.3.0）
+
+> 依人工指令「按照建议推进」，按仓落地 §6 四项建议（**代码默认值一律未翻转**）。
+
+| 仓 | 分支 / 提交 | 落地项 | 关键改动 | 验证 |
+|----|------------|-------|---------|------|
+| **OpenRAG** | `release/v1.10.0` / **`2f88353`** | A + C | A：新增独立门禁 `validate_tenant_registry_policy`（`config/settings.py:639-658`，生产 ∧ `tenant_registry_enforce=False` → 拒绝启动；`main.py:110-118` 接线）——**采独立函数**以免破坏既有 `validate_identity_trust_policy` 契约；C：权威源 `__init__.__version__` `1.9.1→1.9.2`，`pyproject`/`version.json`×2 对齐，新增 `tests/unit/test_version_contract.py`（SemVer + 跨源一致，禁历史字面量） | 定向+相关面 **101 passed**（1 项 `test_config.py::test_qdrant_defaults` 为本地未跟踪 `.env` 驱动的**既有基线失败**，`git stash` 对照同数）⇒ 零新增失败；ruff 改动面 **0 新增**（余为未改动行的存量 D101/D102）；强制段「缺头不落 default」既有用例已锁定 |
+| **OpenMemory** | `release/v7.3.0` / **`447d8da`** | A + C | A：新增 `identity.require_tenant_scope`（**默认 False**）+ 生产 **M2** 门禁（`utils/config.py:264-269/:500-510`）+ 运行期强制段新异常 `TenantScopeRequiredError`（401 `AUTH_TENANT_ID_MISSING`，`api/middleware/identity_gate.py:187-204`，不落 default）+ verify-env 契约登记；C：权威源 `__version__` `7.1.3→7.3.1`，`pyproject`/`version.json` 对齐，新增 `tests/unit/test_version_contract.py` | 定向+相关面 **142 passed / 1 skipped**（基线 131 + 新增 11）、**6 errors 为既有基线**（`TestS2T12VerifyEnvContract` 夹具问题，前后逐字一致）⇒ 零新增失败；`ruff check src tests` **All checks passed** |
+| **DPS** | `main` / **`0551b4b`** | A + B + C | A：新增 `validate_tenant_context_policy`（`src/config.py:354-375`，生产 ∧ 多租户 ∧ `tenant_context_required=False` → 拒绝启动；`rest_api/app.py:359-360` 接线）；B：生产 env 清单置真 `TENANT_CONTEXT_REQUIRED=true`（`doc/operation/DPS-部署文档-v2.1.0.md:79`，该仓无 `.env.example`）；C：权威源 `config.version`/`mcp_server_version` `2.12.1→2.12.2`，`__init__`/`DPS_VERSION` 对齐，新增 `assert_declared_versions_match_settings`，消除 `test_v2_9_1_permission_mapping`/`e2e_test_v2_6` 历史版本硬断言 | 定向+相关面 **116 passed / 1 skipped**；`flake8 --select=E9,F63,F7,F82` **0 error**；ruff 改动面 **0 新增**（27→27 同行号位移）⇒ 零新增失败 |
+| **OpenLLM** | `feature/s4-identity-channel-b` / **`4f11c48`** | A + B + C + D | A：生产门禁**三项逐项校验**（`core/config.py:846-866`：`TENANT_SCOPE_ENFORCE` / `TENANT_HEADER_CONSISTENCY_ENFORCE` / `QUOTA_MISSING_FAIL_CLOSED` 任一为假 → 拒绝启动）；B：`.env.example` 五项置真（`ENV=production` 下）+ `运维手册 §7 生产环境启动门禁`登记；C：权威源 `version.json` `2.17.0→2.17.1`，`APP_VERSION`（2.14.5→2.17.1，**消除历史漂移**）/`app.__version__`/`.env.example`×2 对齐，新增 `tests/unit/version_contract_utils.py`，消除 3 处历史硬断言；D：`GET /chat/models` **按白名单过滤**（`api/chat.py:63-81`）+ `_normalize_allowed_models` 输入校验（字符串数组，非法项丢弃+WARN，不新增列）+ API 设计文档 §8 契约登记 | 我复核执行：定向+相关面 **932 passed / 0 failed**；ruff 改动面唯一新增 2 项（SIM117/W292）**已修正**，余为 `chat.py` 既有 F401/I001/E712/F841 存量债 ⇒ 零新增失败 |
+
+**环境侧对齐（不入库）**：OpenLLM 本地 `backend/.env`（`.gitignore:38` 忽略）`APP_VERSION` 2.14.5→**2.17.1**——该文件是「运行时版本漂移」的根因，属环境配置对齐。
+
+**四仓三远程一致性（核验于 2026-10-14）**：OpenRAG `2f88353`、OpenMemory `447d8da`、DPS `0551b4b`、OpenLLM `4f11c48` —— **origin / backup / github HEAD 与本地逐一一致**。
+
+**落地后遗留（登记）**：① 各仓门禁**仅在 `create_app()`/启动装配路径生效**（直连装配绕过，与既有 C4/row_scope 门禁同款边界）；② 生产环境**必须下发新开关**（OpenMemory `REQUIRE_TENANT_SCOPE=true`、DPS `TENANT_CONTEXT_REQUIRED=true`、OpenLLM 三项 `true`），否则按新门禁**拒绝启动**（门禁本意，部署侧须同步 `.env`）；③ OpenLLM 生产门禁现强耦合 5 组开关；④ OpenRAG 根 `version.json`（DevFlow 元数据）已对齐，若 DevFlow 约定其独立于应用版本需跨仓确认；⑤ DPS 未新增 `version.json`（避免引入第二事实源）；⑥ OpenLLM `edgerouter-lib` 子包版本保持独立（设计选择）。
+
 ---
 
 ## 7. 证据索引
@@ -234,6 +251,7 @@
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
+| v1.3.0 | 2026-10-14 | AT/SE/AD/PM-OpenBase-Dev | 依指令「按照建议推进」落地 §6 四项裁定建议：新增 §6.6 裁定落地状态表（四仓分支/提交/改动/验证 + 三远程一致性 + 落地后遗留 6 项）；OpenRAG `2f88353`（A 门禁扩展 + C 版本 1.9.2）、OpenMemory `447d8da`（A 生产 M2 强制段 + C 版本 7.3.1）、DPS `0551b4b`（A 门禁扩展 + B 生产置真 + C 版本 2.12.2）、OpenLLM `4f11c48`（A 三项门禁 + B 生产置真 + C 版本 2.17.1 + D 列表过滤/契约化）；代码默认值一律未翻转；状态转 [Final] |
 | v1.2.0 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | 新增 §6「待裁定项裁定建议（裁定输入）」：依既有契约与先例对 4 项待裁定项给出建议（A 生产默认 fail-closed 采纳、以扩展 C4 生产启动门禁落地；B 三开关生产置真、代码默认不翻转；C 缺陷修复走修订号 + 消除 OpenLLM 版本硬断言 + 收敛单一事实源；D `/chat/models` 按白名单过滤 + `Tenant.settings["allowed_models"]` 契约化而非新增列），含 6.5 建议汇总表；原 §6/§7 顺延为 §7/§8；状态转 [Review]（待裁定） |
 | v1.1.0 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | 跨仓修复闭环：依指令「依次跨仓小版本修复高危、中危问题」，按仓（OpenRAG→OpenMemory→DPS→OpenLLM）完成 D1–D20 中高危 7 + 中危 10 的修复/显式化（§4.4 修复闭环表 + 四仓提交号 + 三远程一致性核验）；§4 标题与说明、§5.1 结论同步更新；需翻转默认者改等价开关并登记需裁定 |
 | v1.0.0 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | 首次产出：下游四仓数据面租户隔离跨仓走查（静态 + 运行时闸门矩阵 + 转发链裁决），登记 D1–D20 问题待裁定 |
