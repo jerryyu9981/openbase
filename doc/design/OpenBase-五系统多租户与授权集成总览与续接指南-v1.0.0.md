@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-OVERVIEW-v1.0.0 |
-| 文档版本 | **v1.0.3**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.0.4**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（本文为**汇总视图**，不引入新结论；一切结论以其上游单一事实源为准） |
 | 作者 | AA/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-09 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.4 | 2026-10-14 | AA/PM-OpenBase-Dev | 新增 §10「OIDC/Redis 吊销面与下游三仓数据面隔离清查（2026-10-14）」：① 清查 A（真实 IdP/Redis 面：结构面 PASS／真实面 PENDING）；② 清查 B（下游三仓数据面：D1–D20 + 4 裁定已闭环，A 写 B 读实证待授权）；③ **跨仓生产开关下发清单**（OpenMemory/DPS/OpenLLM 生产者开关 + 载体现状）；④ 处置与遗留。同步登记 OpenMemory 载体补齐提交 `934e34e`（三远程一致） |
 | v1.0.3 | 2026-10-09 | AA/PM-OpenBase-Dev | 状态刷新：§4.1 批次表 C3 由「未实施」更新为「**第一阶段（契约与登记）已完成**」；§7.1 未决项 7 同步；新增契约制品 `config/identity_exemptions.json`（豁免治理单一事实源） |
 | v1.0.2 | 2026-10-09 | AA/PM-OpenBase-Dev | 状态刷新：§4.1 批次表 C4/C5 由「已写入规范、未落地」更新为「**OpenLLM 已落地**」；§7.1 未决项 4/5 同步；登记 OpenLLM `daea828`（v2.16.3，23 passed） |
 | v1.0.1 | 2026-10-09 | AA/PM-OpenBase-Dev | 状态刷新：§4.3 增补「强制期模块级灰度」开关行；§7.1 未决项 1 更新为「灰度机制已就位、实际翻转待运行环境」；登记 OpenLLM `6f06198`（v2.16.2，20 passed） |
@@ -331,3 +332,58 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 | L3 | **`pg_constraint` 不含索引型唯一约束** | 核查 `ON CONFLICT (col)` 前提时须查 `pg_indexes`（`ix_roles_code` / `ix_permissions_code` 即为索引型唯一约束），勿据 `pg_constraint` 误判为「缺失」 |
 | L4 | **窄口径验证会掩盖整组失败** | 凡触及鉴权主链路的改动，验收**必须以全量回归为判据**，不得以筛选后的子集宣称通过 |
 | L5 | **测试环境机制先查仓内既有约定** | 本仓 `OPENLLM_TEST_EXTRAS` 早已预留 cp313 原生扩展目录，无需外部造环境 |
+
+---
+
+## §10 OIDC/Redis 吊销面与下游三仓数据面隔离清查（2026-10-14）
+
+> 依人工指令「真实 IdP（OIDC）/ Redis 吊销面隔离走查 和 下游三仓数据面租户隔离（OpenLLM/OpenRAG/OpenMemory）都需要在这里跨仓梳理并清查解决」，按「只读取证 → 统一登记 → 生产开关处置」收敛。本节为**汇总视图**，PENDING 项**不填 PASS**；一律以其上游单一事实源（S7 总收官报告 / 跨仓数据面租户隔离走查报告）为准。
+
+### 10.1 清查 A：真实 IdP（OIDC）/ Redis 吊销面
+
+| 维度 | 结论 | 证据 |
+|------|------|------|
+| 结构面（沙箱可判定） | ✅ **PASS** —— RA-06 聚合 **82 用例**：双租户隔离 19 / fail-closed 21 / **OIDC 批次 12** / 委托跨界 13 / **吊销即时性 17** | `doc/test/evidence/s7/gate/gate-aggregate.json` §RA-06；`scripts/gate_aggregate.py` |
+| 真实面（联调窗口） | ⏳ **PENDING** —— 真实双租户数据面 / **真实 IdP** / **真实 Redis 吊销** 未执行 | S7 总收官报告 §4.2 |
+| 关联断言 | S7-T6-1（RA-06 五项真实面）、S7-T6-2（冒烟 S0-S6 真实执行）、S7-T1-3（K13 真实授权与跨 schema 写拒绝）、S6 B3/B4（真实双租户数据面 / 真实 IdP 回调与吊销） | 同文 §4.1/§6 |
+| 前置条件 | 真实 PG/Redis + **IdP** + 四仓运行态（责任方：联调窗口） | 同文 §4.2 |
+| 脚本就绪度 | ✅ 已就绪（`verify_l1_1_cascade.ps1`、`verify_l3_1_agent.ps1`、`gate_aggregate.py`），**只差实跑 + 回填证据** | `scripts/` |
+
+**判定**：OIDC/Redis 面为**验证欠账（PENDING）**，非生产阻塞；真实面须在联调窗口执行并回填证据后，方可由 [Review] 升 [Approved]。
+
+### 10.2 清查 B：下游三仓数据面租户隔离（OpenLLM/OpenRAG/OpenMemory）
+
+| 维度 | 结论 |
+|------|------|
+| 走查与修复 | ✅ **已闭环** —— D1–D20 高危 7 + 中危 10 已按仓依次修复；4 项裁定 A/B/C/D 已落地四仓（见《OpenBase-跨仓数据面租户隔离走查报告》v1.3.1 §4.4/§6.6） |
+| 低危 | D5（OpenRAG 异常未映射）、D15（DPS `TenantManager` 桩实现）**保持登记**（未在指令范围） |
+| 破坏性实证 | ⏳ **未执行** —— 「A 租户写 / B 租户读」需下游登记两套租户并写数据，属破坏性/需授权操作（走查报告 §5.2 登记） |
+| 落地后遗留 | 见 §10.3 与走查报告 §6.6（六项，含「生产开关未下发」） |
+
+### 10.3 跨仓生产开关下发清单
+
+> 「生产开关未下发」= 各仓新增的**生产强制门禁开关**必须由运维在**目标环境 `.env`** 显式置真，否则该仓**生产启动被拒**（门禁 fail-closed 本意，**部署当场失败**）。`.env` 被 `.gitignore` 排除，仓库侧只需保证「**模板 + 文档**」登记到位。
+
+| 仓 | 生产必需开关 | 仓库载体（模板/文档） | 生产值 | 载体现状 |
+|----|-------------|---------------------|:-----:|:-------:|
+| **OpenMemory** | `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE` | 根 `.env.example` + `deployments/docker/.env.example` + 变更记录 §8 | `true` | ✅ **已补齐（2026-10-14，`934e34e`）** |
+| **DPS** | `TENANT_CONTEXT_REQUIRED`（+ `MULTI_TENANT_ENABLED`，默认 true） | `doc/operation/DPS-部署文档-v2.1.0.md` §4.2（该仓无 `.env.example`） | `true` | ✅ 已登记（v1.16.30） |
+| **OpenLLM** | `TENANT_SCOPE_ENFORCE` / `TENANT_HEADER_CONSISTENCY_ENFORCE` / `QUOTA_MISSING_FAIL_CLOSED` | `.env.example`（三处）+ 运维手册 §7「生产环境启动门禁」 | `true` | ✅ 已登记（v1.16.30） |
+| **OpenBase** | 无新增（B4 `token_version` 生产强制 / principal DB 降级环境门控已闭环） | — | — | — |
+| 既有门禁开关（非本批） | OpenLLM `ENFORCE_INBOUND_IDENTITY_HEADERS` / `RBAC_PERMISSION_ENFORCE`（C4/B1） | 同 OpenLLM 载体 | `true` | 既有 |
+
+**处置机制（三件套）**：
+1. **载体置真**（模板 + 文档）—— 已按上表登记（本轮补齐 OpenMemory）；
+2. **门禁 fail-fast**（护栏）—— 未置真 → 生产装配阶段直接拒绝启动；
+3. **发布前核验**（建议）—— 发布清单加「生产必需开关」核验项，把「拒绝启动」提前到发布门禁，避免部署当场失败。
+
+### 10.4 处置与遗留
+
+| 项 | 状态 | 说明 |
+|----|:---:|------|
+| 生产开关载体补齐（**已解决**） | ✅ 已闭环 | OpenMemory 载体补齐提交 `934e34e`（origin/backup/github 三端一致）；DPS/OpenLLM 已于 v1.16.30 登记 |
+| OIDC/Redis 真实面 | ⏳ PENDING | 需联调窗口（真实 IdP/Redis + 四仓运行态）；脚本已就绪，待实跑回填 |
+| 下游三仓「A 写 B 读」实证 | ⏳ 待授权 | 破坏性操作，需专项沙箱 + 授权 |
+| 各仓门禁仅装配路径生效 | ⏳ 登记 | 直连装配绕过（与既有 C4/row_scope 门禁同款边界） |
+| OpenLLM 生产门禁强耦合 5 组开关 | ⏳ 登记 | 见走查报告 §6.6 遗留③ |
+| OpenRAG `.devflow/config.json::projectVersion` | ⏳ 待 DevFlow 侧同步 | 由 DevFlow 工具维护，手工改恐冲突 |
