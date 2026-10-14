@@ -4,7 +4,11 @@
  * 统一前缀 `/platform/**`（作为 `/` AppLayout 的子路由，路径相对 `/`）。
  * 权限口径（§3.2 三处一致）：`meta.permission` 与后端权限码同名。
  *  - `log:read` / `module:manage` / `test:record` 显式声明（菜单可见性 + 守卫同源）；
- *  - 其余平台页沿用既有（无独立权限码 → 仅登录可见，与迁移前一致）。
+ *  - 2026-10-14（走查 F3 收口）：为「页内接口受后端权限码管控」的平台页补声明——
+ *    `tenant:view`（租户管理）、`users:view`（组织/团队/用户、用户管理）、
+ *    `auth:api-keys:view`（API 密钥）、`memory:manage`（记忆管理席位）——
+ *    避免「菜单可见但进入后接口 403」割裂；仍无独立权限码的页（角色/工作空间/注册找回/
+ *    全局配置/可观测各页/开发者资源等）沿用既有「仅登录可见」口径。
  * `GenericPage` 承载的占位路由按 UI 设计 §9.3 R2/R3：**复用** openllm 单份实现（不复制）。
  */
 import type { RouteRecordRaw } from 'vue-router'
@@ -13,20 +17,20 @@ const GenericPage = () => import('@/modules/openllm/pages/GenericPage.vue')
 
 /** 平台管理 · 身份与权限域 */
 export const identityRoutes: RouteRecordRaw[] = [
-  { path: 'platform/identity/tenants', name: 'platform-identity-tenants', component: () => import('@/pages/platform/identity/SystemTenants.vue'), meta: { title: '租户管理', icon: 'OfficeBuilding' } },
+  { path: 'platform/identity/tenants', name: 'platform-identity-tenants', component: () => import('@/pages/platform/identity/SystemTenants.vue'), meta: { title: '租户管理', icon: 'OfficeBuilding', permission: 'tenant:view' } },
   { path: 'platform/identity/roles', name: 'platform-identity-roles', component: () => import('@/pages/platform/identity/RolesView.vue'), meta: { title: '角色与权限', icon: 'User' } },
-  { path: 'platform/identity/org', name: 'platform-identity-org', component: () => import('@/pages/platform/identity/OrgTeamsUsersView.vue'), meta: { title: '组织/团队/用户', icon: 'OfficeBuilding' } },
+  { path: 'platform/identity/org', name: 'platform-identity-org', component: () => import('@/pages/platform/identity/OrgTeamsUsersView.vue'), meta: { title: '组织/团队/用户', icon: 'OfficeBuilding', permission: 'users:view' } },
   { path: 'platform/identity/workspaces', name: 'platform-identity-workspaces', component: () => import('@/pages/platform/identity/WorkspacesView.vue'), meta: { title: '工作空间', icon: 'Grid' } },
   { path: 'platform/identity/auth-ext', name: 'platform-identity-auth-ext', component: () => import('@/pages/platform/identity/AuthExt.vue'), meta: { title: '注册/找回密码', icon: 'Key' } },
-  { path: 'platform/identity/users', name: 'platform-identity-users', component: () => import('@/pages/platform/identity/UsersView.vue'), meta: { title: '用户管理', icon: 'User' } },
-  { path: 'platform/identity/memory-admin', name: 'platform-identity-memory-admin', component: () => import('@/pages/platform/identity/MemoryAdminView.vue'), meta: { title: '记忆管理席位', icon: 'Setting' } },
+  { path: 'platform/identity/users', name: 'platform-identity-users', component: () => import('@/pages/platform/identity/UsersView.vue'), meta: { title: '用户管理', icon: 'User', permission: 'users:view' } },
+  { path: 'platform/identity/memory-admin', name: 'platform-identity-memory-admin', component: () => import('@/pages/platform/identity/MemoryAdminView.vue'), meta: { title: '记忆管理席位', icon: 'Setting', permission: 'memory:manage' } },
 ]
 
 /** 平台管理 · 平台配置与密钥域 */
 export const configRoutes: RouteRecordRaw[] = [
   { path: 'platform/config/general', name: 'platform-config-general', component: () => import('@/pages/platform/config/ConfigManageView.vue'), meta: { title: '全局配置', icon: 'Setting' } },
   { path: 'platform/config/modules', name: 'platform-config-modules', component: () => import('@/pages/platform/config/ModuleSwitchView.vue'), meta: { title: '模块开关', icon: 'Grid', permission: 'module:manage' } },
-  { path: 'platform/config/api-keys', name: 'platform-config-api-keys', component: () => import('@/pages/platform/config/ApiKeys.vue'), meta: { title: 'API 密钥', icon: 'Key' } },
+  { path: 'platform/config/api-keys', name: 'platform-config-api-keys', component: () => import('@/pages/platform/config/ApiKeys.vue'), meta: { title: 'API 密钥', icon: 'Key', permission: 'auth:api-keys:view' } },
 ]
 
 /** 平台管理 · 可观测与审计域 */

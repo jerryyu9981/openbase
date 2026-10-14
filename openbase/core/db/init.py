@@ -10,6 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 logger = logging.getLogger("openbase.db")
 
+# 角色种子（单一事实源）：必须与 config/role_tier_anchors.json 的
+# canonical_role_codes.set 五码集合一致，避免「角色表未播种某码 → 分配时
+# BIZ_404 role not found」与「可分配枚举缺码 → PARAM_INVALID」两类漂移。
+SEEDED_ROLE_CODES: tuple[tuple[str, str, str], ...] = (
+    ("admin", "系统管理员", "内置管理员角色"),
+    ("viewer", "只读用户", "只读访问角色"),
+    ("user", "普通用户", "标准业务用户角色"),
+    ("org_admin", "组织管理员", "组织级管理角色"),
+    ("org_member", "组织成员", "组织成员角色（只读档）"),
+)
+
 
 async def ensure_schema(engine: AsyncEngine, schema: str = "openbase") -> None:
     """确保 openbase schema 存在（共享库内隔离，不污染 public）.
@@ -74,12 +85,10 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                 f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.roles WHERE code = 'admin')"
             )
         )
-        # OB-AUTH-OIDC（v1.3.0）：基础业务角色，供 OIDC claims roles 映射与常规授权
-        for _code, _name, _desc in (
-            ("viewer", "只读用户", "只读访问角色"),
-            ("user", "普通用户", "标准业务用户角色"),
-            ("org_admin", "组织管理员", "组织级管理角色"),
-        ):
+        # OB-AUTH-OIDC（v1.3.0）+ 五码对齐（2026-10-14）：基础业务角色，
+        # 供 OIDC claims roles 映射与常规授权；admin 已在上方以显式 id=1 幂等插入，
+        # 此处按 SEEDED_ROLE_CODES 循环（对 admin 因 WHERE NOT EXISTS 天然跳过）。
+        for _code, _name, _desc in SEEDED_ROLE_CODES:
             await conn.execute(
                 text(
                     f"INSERT INTO {schema}.roles (name, code, description, is_system, created_at, updated_at) "
@@ -144,10 +153,10 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                     f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = :code)"
                 ).bindparams(code=_code, name=_name, module=_module)
             )
-        # 业务角色（org_admin/user/viewer）→ 模块查看权限（admin 持 * 通配）。
+        # 业务角色（org_admin/org_member/user/viewer）→ 模块查看权限（admin 持 * 通配）。
         # 映射与架构文档模块矩阵一致：各角色可浏览统一前端全部模块，深层写操作
         # 仍由各自 *_manage/*:write 权限点管控（如 auth:api-keys:manage）。
-        for _role_code in ("org_admin", "user", "viewer"):
+        for _role_code in ("org_admin", "org_member", "user", "viewer"):
             await conn.execute(
                 text(
                     f"INSERT INTO {schema}.role_permission (role_id, permission_id) "
@@ -227,6 +236,18 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                     f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = :code)"
                 ).bindparams(code=_code, name=_name)
             )
+        # 记忆管理席位权限点种子（2026-10-14）：平台级「记忆管理席位」页
+        # （/platform/identity/memory-admin）经 memory-proxy 访问记忆数据，属平台
+        # 管理面（manage 档）。仅登记权限行（admin 持 '*' 通配，其余角色不授），
+        # 供前端 meta.permission / 菜单可见性与后端权限码同源。
+        await conn.execute(
+            text(
+                f"INSERT INTO {schema}.permissions "
+                "(code, name, module, type, created_at, updated_at) "
+                "SELECT 'memory:manage', '记忆管理席位', 'memory', 1, now(), now() "
+                f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions WHERE code = 'memory:manage')"
+            )
+        )
     # U1 统一身份幂等增量迁移（内联于初始化链末尾；幂等可重放，已生效则 columns_added 为空）。
     # 延迟导入：避免 core ↔ modules 模块级循环依赖，且仅在真实初始化时付导入开销。
     from openbase.modules.identity.migration import apply_identity_migration

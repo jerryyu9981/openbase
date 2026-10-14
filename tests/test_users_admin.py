@@ -18,6 +18,7 @@ from openbase import init_app
 from openbase.core.db.session import init_db
 from openbase.core.models import Base, Role, User, user_role
 from openbase.modules.auth import hash_password
+from openbase.modules.users import ALLOWED_ROLES
 from openbase.settings import Settings
 
 _DB_PATH = Path(tempfile.gettempdir()) / "openbase_test_users_v142.db"
@@ -47,9 +48,14 @@ def _build_app() -> TestClient:
         from openbase.core.db.session import get_session_factory
 
         async with get_session_factory()() as session:  # type: ignore[call-arg]
-            role_admin = Role(name="系统管理员", code="admin", is_system=True)
-            role_viewer = Role(name="只读用户", code="viewer", is_system=True)
-            session.add_all([role_admin, role_viewer])
+            # 角色种子与生产保持一致（SEEDED_ROLE_CODES 五码），覆盖 org_member 回归场景
+            from openbase.core.db.init import SEEDED_ROLE_CODES
+
+            roles: dict[str, Role] = {}
+            for code, name, description in SEEDED_ROLE_CODES:
+                role = Role(name=name, code=code, description=description, is_system=True)
+                session.add(role)
+                roles[code] = role
             await session.flush()
             admin = User(
                 username="admin",
@@ -67,7 +73,10 @@ def _build_app() -> TestClient:
             await session.flush()
             await session.execute(
                 user_role.insert().values(
-                    [{"user_id": admin.id, "role_id": role_admin.id}, {"user_id": viewer.id, "role_id": role_viewer.id}]
+                    [
+                        {"user_id": admin.id, "role_id": roles["admin"].id},
+                        {"user_id": viewer.id, "role_id": roles["viewer"].id},
+                    ]
                 )
             )
             await session.commit()
@@ -171,6 +180,25 @@ def test_jwt_payload_contains_org_id_and_role() -> None:
     assert payload["role"] == "admin"
     # org_id：无租户用户时为 None 或缺失均可，但键必须存在且语义正确
     assert "org_id" in payload
+
+
+def test_all_allowed_roles_assignable() -> None:
+    """五码可分配角色均能在创建时落库（回归 F2：org_member 未播种 / user 不在枚举）."""
+    admin_token = _token("admin", "admin123")
+    headers = _auth(admin_token)
+    for role_code in ALLOWED_ROLES:
+        resp = client.post(
+            "/api/v1/users",
+            json={
+                "username": _unique(f"role-{role_code.replace('_', '')}"),
+                "password": "pass123",
+                "display_name": f"角色{role_code}",
+                "role": role_code,
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 200, f"{role_code}: {resp.text}"
+        assert role_code in resp.json()["roles"]
 
 
 def test_user_permission_required() -> None:

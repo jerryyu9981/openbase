@@ -182,8 +182,14 @@ describe('S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）', (
     expect(texts).not.toContain('日志中心') // 缺 log:read
     expect(texts).not.toContain('测试记录') // 缺 test:record
     expect(texts).not.toContain('模块开关') // 缺 module:manage
-    // 平台非受限叶子仍可见（迁移后原系统页可达）
-    expect(texts).toContain('租户管理')
+    // F3（MTAUTH 走查收口）：身份/配置域补声明叶子同样按权限码裁剪
+    expect(texts).not.toContain('租户管理') // 缺 tenant:view
+    expect(texts).not.toContain('组织/团队/用户') // 缺 users:view
+    expect(texts).not.toContain('用户管理') // 缺 users:view
+    expect(texts).not.toContain('记忆管理席位') // 缺 memory:manage
+    expect(texts).not.toContain('API 密钥') // 缺 auth:api-keys:view
+    // 平台「仅登录可见」叶子仍可见（无独立权限码，F3 刻意保留）
+    expect(texts).toContain('角色与权限')
     expect(texts).toContain('全局配置')
     // 模块子页高亮回退到 route_prefix
     expect(wrapper.findComponent({ name: 'ElMenu' }).props('defaultActive')).toBe('/knowledge')

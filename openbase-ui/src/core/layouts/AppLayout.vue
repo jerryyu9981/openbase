@@ -106,12 +106,12 @@ const PLATFORM_LEAVES: MenuDomain[] = [
   {
     label: '身份与权限',
     items: [
-      { path: '/platform/identity/tenants', title: '租户管理', icon: OfficeBuilding },
+      { path: '/platform/identity/tenants', title: '租户管理', icon: OfficeBuilding, permission: 'tenant:view' },
       { path: '/platform/identity/roles', title: '角色与权限', icon: User },
-      { path: '/platform/identity/org', title: '组织/团队/用户', icon: OfficeBuilding },
+      { path: '/platform/identity/org', title: '组织/团队/用户', icon: OfficeBuilding, permission: 'users:view' },
       { path: '/platform/identity/workspaces', title: '工作空间', icon: Grid },
-      { path: '/platform/identity/users', title: '用户管理', icon: User },
-      { path: '/platform/identity/memory-admin', title: '记忆管理席位', icon: Setting },
+      { path: '/platform/identity/users', title: '用户管理', icon: User, permission: 'users:view' },
+      { path: '/platform/identity/memory-admin', title: '记忆管理席位', icon: Setting, permission: 'memory:manage' },
       { path: '/platform/identity/auth-ext', title: '注册/找回密码', icon: Key },
     ],
   },
@@ -120,7 +120,7 @@ const PLATFORM_LEAVES: MenuDomain[] = [
     items: [
       { path: '/platform/config/general', title: '全局配置', icon: Setting },
       { path: '/platform/config/modules', title: '模块开关', icon: Grid, permission: 'module:manage' },
-      { path: '/platform/config/api-keys', title: 'API 密钥', icon: Key },
+      { path: '/platform/config/api-keys', title: 'API 密钥', icon: Key, permission: 'auth:api-keys:view' },
     ],
   },
   {

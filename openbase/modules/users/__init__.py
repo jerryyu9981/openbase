@@ -35,8 +35,10 @@ router = APIRouter(prefix="/api/v1/users", tags=["users"])
 USER_MANAGE_PERMISSION = "users:manage"
 USER_VIEW_PERMISSION = "users:view"
 
-# 允许分配的角色码（受控枚举）
-ALLOWED_ROLES = ("admin", "org_admin", "org_member", "viewer")
+# 允许分配的角色码（受控枚举）：与 config/role_tier_anchors.json 的
+# canonical_role_codes.set 五码集合一致（含 user，避免「角色表已播种但不可分配」漂移）；
+# 每码均须在 openbase.core.db.init.SEEDED_ROLE_CODES 中有对应种子。
+ALLOWED_ROLES = ("admin", "org_admin", "org_member", "user", "viewer")
 
 
 # ---- Schemas ----

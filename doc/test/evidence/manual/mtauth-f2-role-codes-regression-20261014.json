@@ -1,0 +1,136 @@
+{
+  "evidence_id": "MTAUTH-F2-ROLE-CODES-REGRESSION-20261014",
+  "generated_at": "2026-10-14T12:30:10",
+  "base_url": "http://127.0.0.1:8000",
+  "fix_anchor": {
+    "before": {
+      "org_member": "404 BIZ_404 role not found",
+      "user": "400 PARAM_INVALID invalid role"
+    },
+    "after_expected": "five canonical roles all create HTTP 200"
+  },
+  "health": {
+    "GET /health": 200,
+    "body": {
+      "status": "ok"
+    }
+  },
+  "login_admin": 200,
+  "role_create_matrix": [
+    {
+      "requested_role": "admin",
+      "username": "f2reg-admin-1791952210",
+      "http_status": 200,
+      "business_code": "",
+      "message": null,
+      "created_id": 104
+    },
+    {
+      "requested_role": "org_admin",
+      "username": "f2reg-org_admin-1791952210",
+      "http_status": 200,
+      "business_code": "",
+      "message": null,
+      "created_id": 105
+    },
+    {
+      "requested_role": "org_member",
+      "username": "f2reg-org_member-1791952210",
+      "http_status": 200,
+      "business_code": "",
+      "message": null,
+      "created_id": 106
+    },
+    {
+      "requested_role": "user",
+      "username": "f2reg-user-1791952210",
+      "http_status": 200,
+      "business_code": "",
+      "message": null,
+      "created_id": 107
+    },
+    {
+      "requested_role": "viewer",
+      "username": "f2reg-viewer-1791952210",
+      "http_status": 200,
+      "business_code": "",
+      "message": null,
+      "created_id": 108
+    }
+  ],
+  "jwt_role_claims": {
+    "org_member": {
+      "login_status": 200,
+      "claims": {
+        "sub": "106",
+        "username": "f2reg-org_member-1791952210",
+        "role": "org_member",
+        "tenant_id": null,
+        "sub_type": "user",
+        "tvn": 0
+      }
+    },
+    "user": {
+      "login_status": 200,
+      "claims": {
+        "sub": "107",
+        "username": "f2reg-user-1791952210",
+        "role": "user",
+        "tenant_id": null,
+        "sub_type": "user",
+        "tvn": 0
+      }
+    }
+  },
+  "admin_list_users": {
+    "http_status": 200,
+    "business_code": "",
+    "returned_type": "list",
+    "row_count": 89
+  },
+  "cleanup": [
+    {
+      "role": "admin",
+      "username": "f2reg-admin-1791952210",
+      "id": 104,
+      "http_status": 200,
+      "business_code": "0"
+    },
+    {
+      "role": "org_admin",
+      "username": "f2reg-org_admin-1791952210",
+      "id": 105,
+      "http_status": 200,
+      "business_code": "0"
+    },
+    {
+      "role": "org_member",
+      "username": "f2reg-org_member-1791952210",
+      "id": 106,
+      "http_status": 200,
+      "business_code": "0"
+    },
+    {
+      "role": "user",
+      "username": "f2reg-user-1791952210",
+      "id": 107,
+      "http_status": 200,
+      "business_code": "0"
+    },
+    {
+      "role": "viewer",
+      "username": "f2reg-viewer-1791952210",
+      "id": 108,
+      "http_status": 200,
+      "business_code": "0"
+    }
+  ],
+  "passwords_recorded": false,
+  "tokens_recorded": false,
+  "verdict": {
+    "five_roles_create_all_200": true,
+    "org_member_and_user_login_jwt_ok": true,
+    "cleanup_all_200": true,
+    "overall_pass": true
+  }
+}

@@ -5,6 +5,7 @@
  *  - AC-146-14-1：legacyRedirects 全量映射「旧路径可达且落到预期新路径」（函数式 redirect 保留 query/hash）；
  *  - §3.2 ③：平台权限门禁 —— `meta.permission` 路由无权限 → 403 页（不回退 /dashboard）；
  *  - AC-146-10-2：平台四域路由为静态路由，不因单一模块启停而消失（禁 404）。
+ *  - F3（2026-10-14 MTAUTH 走查）：租户/用户/记忆席位/API 密钥页补声明后的门禁与契约同源。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, type Router, type RouteRecordRaw } from 'vue-router'
@@ -108,6 +109,61 @@ describe('§3.2 ③: 平台权限门禁（meta.permission ↔ 守卫同源）', 
     // log:read 与 module:manage 两条受权叶子必须显式声明
     expect(permissionMeta).toContainEqual(['platform/observability/logs', 'log:read'])
     expect(permissionMeta).toContainEqual(['platform/config/modules', 'module:manage'])
+  })
+})
+
+describe('F3（MTAUTH 走查）: 身份/配置域补声明页面 —— 守卫门禁与三处同源', () => {
+  // [路由路径, 后端同名权限码]：F3 收口时由「仅登录可见」升级为显式权限门禁
+  const F3_GATED: ReadonlyArray<readonly [string, string]> = [
+    ['/platform/identity/tenants', 'tenant:view'],
+    ['/platform/identity/org', 'users:view'],
+    ['/platform/identity/users', 'users:view'],
+    ['/platform/identity/memory-admin', 'memory:manage'],
+    ['/platform/config/api-keys', 'auth:api-keys:view'],
+  ]
+
+  it.each(F3_GATED)('低档位访问 %s（需 %s）→ /forbidden（不回退 /dashboard）', async (path, _permission) => {
+    const router = await setupRouter(['openllm:view']) // 低档位：不含任一 F3 权限码
+    await router.push(path)
+    expect(router.currentRoute.value.path).toBe('/forbidden')
+    expect(router.currentRoute.value.query.from).toBe(path)
+  })
+
+  it('admin（* 通配）访问 F3 补声明页全部可达（显式 meta 存在但通配放行）', { timeout: 60000 }, async () => {
+    const router = await setupRouter(['*'])
+    for (const [path] of F3_GATED) {
+      await router.push(path)
+      expect(router.currentRoute.value.path, `admin 应可达 ${path}`).toBe(path)
+    }
+  })
+
+  it('F3 五叶子 meta.permission 显式声明且与后端权限码同名（路由层契约锁定）', () => {
+    const flat = (routes: RouteRecordRaw[]): RouteRecordRaw[] =>
+      routes.flatMap((r) => (r.children?.length ? flat(r.children) : [r]))
+    const leaves = flat(platformRoutes).filter((r) => !r.redirect)
+    const permissionMeta = leaves.map((r) => [r.path, (r.meta as { permission?: string })?.permission ?? undefined] as const)
+    for (const [path, permission] of F3_GATED) {
+      expect(permissionMeta).toContainEqual([path.slice(1), permission])
+    }
+  })
+
+  it('F3：仍无独立权限码的平台页刻意保持「仅登录可见」（permission 留空，防止误加/误删漂移）', () => {
+    const flat = (routes: RouteRecordRaw[]): RouteRecordRaw[] =>
+      routes.flatMap((r) => (r.children?.length ? flat(r.children) : [r]))
+    const leaves = flat(platformRoutes).filter((r) => !r.redirect)
+    const permissionOf = (path: string): string | undefined => {
+      const leaf = leaves.find((r) => r.path === path)
+      return (leaf?.meta as { permission?: string } | undefined)?.permission
+    }
+    for (const loginOnlyPath of [
+      'platform/identity/roles',
+      'platform/identity/workspaces',
+      'platform/identity/auth-ext',
+      'platform/config/general',
+      'platform/developers/docs',
+    ]) {
+      expect(permissionOf(loginOnlyPath), `${loginOnlyPath} 应保持仅登录可见`).toBeUndefined()
+    }
   })
 })
 
