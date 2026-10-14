@@ -1,0 +1,194 @@
+{
+  "evidence_id": "CROSS-REPO-TENANT-ISOLATION-20261014",
+  "generated_at": "2026-10-14T15:28:08",
+  "scope": "下游数据面（OpenRAG/OpenMemory/DPS/OpenLLM）租户隔离：身份闸门 fail-closed 矩阵 + OpenBase 转发链裁决",
+  "tokens_recorded": false,
+  "passwords_recorded": false,
+  "downstream_gate_matrix": [
+    {
+      "service": "OpenRAG",
+      "base": "http://127.0.0.1:8010",
+      "probe_path": "/api/v1/collections",
+      "cases": [
+        {
+          "case": "no_identity_headers",
+          "http_status": 401,
+          "summary": {
+            "code": "AUTH-4010",
+            "message": "missing api key"
+          }
+        },
+        {
+          "case": "untrusted_source_with_identity_headers",
+          "http_status": 401,
+          "summary": {
+            "code": "AUTH-4010",
+            "message": "missing api key"
+          }
+        },
+        {
+          "case": "trusted_source_reserved_tenant_code",
+          "http_status": 401,
+          "summary": {
+            "code": "AUTH-4010",
+            "message": "missing api key"
+          }
+        },
+        {
+          "case": "trusted_source_unknown_tenant",
+          "http_status": 401,
+          "summary": {
+            "code": "AUTH-4010",
+            "message": "missing api key"
+          }
+        }
+      ],
+      "health": {
+        "http_status": 404,
+        "summary": {
+          "code": "NOTFOUND-4040",
+          "message": "Not Found"
+        }
+      }
+    },
+    {
+      "service": "OpenMemory",
+      "base": "http://127.0.0.1:8020",
+      "probe_path": "/api/v1/memories",
+      "cases": [
+        {
+          "case": "no_identity_headers",
+          "http_status": 401,
+          "summary": {
+            "message": "缺少或无效的 API Key，请在请求头中提供 X-API-Key"
+          }
+        },
+        {
+          "case": "untrusted_source_with_identity_headers",
+          "http_status": 401,
+          "summary": {
+            "message": "缺少或无效的 API Key，请在请求头中提供 X-API-Key"
+          }
+        },
+        {
+          "case": "trusted_source_reserved_tenant_code",
+          "http_status": 401,
+          "summary": {
+            "message": "缺少或无效的 API Key，请在请求头中提供 X-API-Key"
+          }
+        },
+        {
+          "case": "trusted_source_unknown_tenant",
+          "http_status": 401,
+          "summary": {
+            "message": "缺少或无效的 API Key，请在请求头中提供 X-API-Key"
+          }
+        }
+      ],
+      "health": {
+        "http_status": 200,
+        "summary": {
+          "status": "healthy"
+        }
+      }
+    },
+    {
+      "service": "DPS",
+      "base": "http://127.0.0.1:8030",
+      "probe_path": "/api/v1/profiles",
+      "cases": [
+        {
+          "case": "no_identity_headers",
+          "http_status": 401,
+          "summary": {
+            "code": "401",
+            "message": "缺少组织或租户标识"
+          }
+        },
+        {
+          "case": "untrusted_source_with_identity_headers",
+          "http_status": 401,
+          "summary": {
+            "code": "401",
+            "message": "缺少组织或租户标识"
+          }
+        },
+        {
+          "case": "trusted_source_reserved_tenant_code",
+          "http_status": 400,
+          "summary": {
+            "code": "BIZ_RESERVED_TENANT_CODE",
+            "message": "reserved tenant code is not allowed as inbound tenant",
+            "detail": "{'code': 'default', 'source': 'openbase-dps-proxy', 'dps_code_legacy': '400'}"
+          }
+        },
+        {
+          "case": "trusted_source_unknown_tenant",
+          "http_status": 401,
+          "summary": {
+            "code": "401",
+            "message": "缺少组织或租户标识"
+          }
+        },
+        {
+          "case": "trusted_source_registered_tenant",
+          "http_status": 403,
+          "summary": {
+            "code": "403",
+            "message": "无权限执行 read 操作于 unknown"
+          }
+        }
+      ],
+      "health": {
+        "http_status": 404,
+        "summary": {
+          "code": "NOT_FOUND",
+          "message": "Not Found"
+        }
+      }
+    }
+  ],
+  "openbase_forwarding": {
+    "health": 200,
+    "negative_control_no_token_users": 401,
+    "negative_control_bad_token_users": 401,
+    "login_admin": 200,
+    "rag_proxy_collections": {
+      "http_status": 200,
+      "summary": {
+        "code": "0",
+        "message": "success"
+      }
+    },
+    "rag_proxy_stats": {
+      "http_status": 404,
+      "summary": {
+        "code": "404",
+        "message": "Not Found",
+        "detail": null
+      }
+    },
+    "memory_proxy_memories": {
+      "http_status": 200,
+      "summary": {
+        "code": "0",
+        "message": "success"
+      }
+    },
+    "dps_proxy_profiles": {
+      "http_status": 404,
+      "summary": {
+        "code": "404",
+        "message": "Not Found",
+        "detail": null
+      }
+    }
+  },
+  "openllm": {
+    "health_http_status": 0,
+    "summary": {
+      "transport": "<urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>"
+    },
+    "note": "8001 未启动时以静态走查结论为准"
+  }
+}
