@@ -1,0 +1,2003 @@
+{
+  "evidence_id": "mtauth-rbac-tenant-walkthrough-20261014",
+  "title": "OpenBase 权限管理与多租户授权走查证据（四角色 × 端点 × 前端）",
+  "tool": "backend_matrix.py / probe2.py (stdlib urllib) + ui_roles.cjs (Playwright 1.63.0, 路线 C)",
+  "environment": {
+    "sut": "http://127.0.0.1:8000 (OpenBase)",
+    "ui": "http://localhost:5173",
+    "db": "PostgreSQL 192.168.0.151:5432/nuct schema=openbase",
+    "stamps": [
+      "1791945366",
+      "1791945485"
+    ]
+  },
+  "seed": {
+    "tenants": {
+      "a": 18,
+      "b": 19
+    },
+    "accounts": {
+      "wa_admin-1791945485": {
+        "role": "org_admin",
+        "tenant_id": 18,
+        "id": 96,
+        "password": "***"
+      },
+      "wa_viewer-1791945485": {
+        "role": "viewer",
+        "tenant_id": 18,
+        "id": 97,
+        "password": "***"
+      },
+      "wb_admin-1791945485": {
+        "role": "org_admin",
+        "tenant_id": 19,
+        "id": 98,
+        "password": "***"
+      }
+    }
+  },
+  "backend_matrix": [
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "label": "当前用户",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "label": "用户列表",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/api/v1/users",
+      "label": "创建用户",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/api/v1/tenants",
+      "label": "租户列表",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "admin",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "label": "创建租户",
+      "status": 200,
+      "code": "mtw-tmp-1791945366"
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/api/v1/auth/api-keys",
+      "label": "服务密钥列表",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "label": "日志检索(log:read)",
+      "status": 400,
+      "code": "PARAM_400"
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/api/v1/identity/agents",
+      "label": "主体列表(identity:view)",
+      "status": 405,
+      "code": "405"
+    },
+    {
+      "actor": "admin",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/memories",
+      "label": "记忆代理(租户数据)",
+      "status": 200,
+      "code": "0"
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "label": "当前用户",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "label": "用户列表",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "POST",
+      "path": "/api/v1/users",
+      "label": "创建用户",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/tenants",
+      "label": "租户列表",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "label": "创建租户",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/auth/api-keys",
+      "label": "服务密钥列表",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "label": "日志检索(log:read)",
+      "status": 400,
+      "code": "PARAM_400"
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/identity/agents",
+      "label": "主体列表(identity:view)",
+      "status": 405,
+      "code": "405"
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/memories",
+      "label": "记忆代理(租户数据)",
+      "status": 403,
+      "code": "403"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "label": "当前用户",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "label": "用户列表",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "POST",
+      "path": "/api/v1/users",
+      "label": "创建用户",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "GET",
+      "path": "/api/v1/tenants",
+      "label": "租户列表",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "label": "创建租户",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "GET",
+      "path": "/api/v1/auth/api-keys",
+      "label": "服务密钥列表",
+      "status": 403,
+      "code": "AUTH_403"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "label": "日志检索(log:read)",
+      "status": 403,
+      "code": "PERM_403"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "GET",
+      "path": "/api/v1/identity/agents",
+      "label": "主体列表(identity:view)",
+      "status": 405,
+      "code": "405"
+    },
+    {
+      "actor": "wa_viewer-1791945366",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/memories",
+      "label": "记忆代理(租户数据)",
+      "status": 403,
+      "code": "403"
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "label": "当前用户",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "label": "用户列表",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "POST",
+      "path": "/api/v1/users",
+      "label": "创建用户",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/tenants",
+      "label": "租户列表",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "label": "创建租户",
+      "status": 403,
+      "code": "PERM_FORBIDDEN"
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/auth/api-keys",
+      "label": "服务密钥列表",
+      "status": 200,
+      "code": ""
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/logs/search",
+      "label": "日志检索(log:read)",
+      "status": 400,
+      "code": "PARAM_400"
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/identity/agents",
+      "label": "主体列表(identity:view)",
+      "status": 405,
+      "code": "405"
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "method": "GET",
+      "path": "/api/v1/memory-proxy/memories",
+      "label": "记忆代理(租户数据)",
+      "status": 403,
+      "code": "403"
+    }
+  ],
+  "role_assignment_matrix": [
+    {
+      "requested_role": "admin",
+      "status": 200,
+      "error_code": "",
+      "message": null,
+      "created_id": 99
+    },
+    {
+      "requested_role": "org_admin",
+      "status": 200,
+      "error_code": "",
+      "message": null,
+      "created_id": 100
+    },
+    {
+      "requested_role": "org_member",
+      "status": 404,
+      "error_code": "BIZ_404",
+      "message": "role not found: org_member",
+      "created_id": null
+    },
+    {
+      "requested_role": "viewer",
+      "status": 200,
+      "error_code": "",
+      "message": null,
+      "created_id": 102
+    },
+    {
+      "requested_role": "user",
+      "status": 400,
+      "error_code": "PARAM_INVALID",
+      "message": "invalid role: user",
+      "created_id": null
+    }
+  ],
+  "jwt_claims": {
+    "wa_admin-1791945485": {
+      "sub": "96",
+      "username": "wa_admin-1791945485",
+      "role": "org_admin",
+      "tenant_id": "18",
+      "tenant_code": "mtw-a-1791945485",
+      "org_id": "mtw-a-1791945485",
+      "sub_type": "user",
+      "tvn": 0
+    },
+    "wa_viewer-1791945485": {
+      "sub": "97",
+      "username": "wa_viewer-1791945485",
+      "role": "viewer",
+      "tenant_id": "18",
+      "tenant_code": "mtw-a-1791945485",
+      "org_id": "mtw-a-1791945485",
+      "sub_type": "user",
+      "tvn": 0
+    },
+    "wb_admin-1791945485": {
+      "sub": "98",
+      "username": "wb_admin-1791945485",
+      "role": "org_admin",
+      "tenant_id": "19",
+      "tenant_code": "mtw-b-1791945485",
+      "org_id": "mtw-b-1791945485",
+      "sub_type": "user",
+      "tvn": 0
+    }
+  },
+  "tenant_context": [
+    {
+      "actor": "wa_admin-1791945366",
+      "case": "非受信来源携带 X-Tenant-Id=B",
+      "headers": {
+        "X-Tenant-Id": "10",
+        "X-Proxy-Source": "rogue-client"
+      },
+      "status": 403,
+      "code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+      "payload": {
+        "code": "PERM_UNTRUSTED_IDENTITY_HEADER",
+        "message": "identity headers from untrusted source",
+        "detail": {
+          "proxy_source": "rogue-client",
+          "headers": [
+            "X-Tenant-Id"
+          ]
+        },
+        "request_id": "req-b3579145f841"
+      }
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "case": "受信来源携带 X-Tenant-Id=B",
+      "headers": {
+        "X-Tenant-Id": "10",
+        "X-Proxy-Source": "openbase-orchestrator"
+      },
+      "status": 200,
+      "code": "",
+      "payload": {
+        "id": 67,
+        "username": "wa_admin-1791945366",
+        "tenant_id": "9",
+        "permissions": [
+          "openllm:view",
+          "openrag:view",
+          "openmemory:view",
+          "dps:view",
+          "gateway:view",
+          "auth:api-keys:view",
+          "auth:api-keys:manage",
+          "log:read",
+          "module:manage"
+        ]
+      }
+    },
+    {
+      "actor": "wa_admin-1791945366",
+      "case": "受信来源携带 X-Tenant-Id=A",
+      "headers": {
+        "X-Tenant-Id": "9",
+        "X-Proxy-Source": "openbase-orchestrator"
+      },
+      "status": 200,
+      "code": "",
+      "payload": {
+        "id": 67,
+        "username": "wa_admin-1791945366",
+        "tenant_id": "9",
+        "permissions": [
+          "openllm:view",
+          "openrag:view",
+          "openmemory:view",
+          "dps:view",
+          "gateway:view",
+          "auth:api-keys:view",
+          "auth:api-keys:manage",
+          "log:read",
+          "module:manage"
+        ]
+      }
+    }
+  ],
+  "isolation": [
+    {
+      "actor": "wa_admin-1791945366",
+      "endpoint": "/api/v1/memory-proxy/memories",
+      "status": 403,
+      "code": "403",
+      "item_count": null
+    },
+    {
+      "actor": "wb_admin-1791945366",
+      "endpoint": "/api/v1/memory-proxy/memories",
+      "status": 403,
+      "code": "403",
+      "item_count": null
+    }
+  ],
+  "upstream_passthrough": {
+    "admin": {
+      "status": 200,
+      "body": {
+        "code": 0,
+        "message": "success",
+        "data": {
+          "items": [
+            {
+              "memory_id": "c559fec1-59eb-423d-b617-35ee8f32473f",
+              "content": "bypass-write 1788545783",
+              "score": 0.06705199,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-09-04T18:16:23.947408+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-09-04T18:16:23.948575+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-09-04T18:16:23.947408+00:00"
+            },
+            {
+              "memory_id": "ec9b629d-c754-4f21-b9a2-2d77667aa123",
+              "content": "cross-channel consistency test data v2",
+              "score": 0.04537606,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-09-04T18:04:21.549427+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-09-04T18:04:21.549427+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-09-04T18:04:21.549427+00:00"
+            },
+            {
+              "memory_id": "29e852b9-2f7f-454a-8ccc-4b395c3ab57c",
+              "content": "regress 1788545966",
+              "score": 0.0091066845,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-09-04T18:19:26.820052+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-09-04T18:19:26.820052+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-09-04T18:19:26.820052+00:00"
+            },
+            {
+              "memory_id": "ff6ac715-a446-445a-8b2d-95cf82ef0d61",
+              "content": "S6 dual-link consistency check 1788545783",
+              "score": 0.0020320192,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-09-04T18:16:23.642299+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-09-04T18:16:23.642299+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-09-04T18:16:23.642299+00:00"
+            },
+            {
+              "memory_id": "a9597749-42d3-4917-8dfe-87db96426908",
+              "content": "__ob_c1_probe_20261008152252__",
+              "score": -0.004393695,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-10-08T07:23:01.936894+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-10-08T07:23:01.937412+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-10-08T07:23:01.936894+00:00"
+            },
+            {
+              "memory_id": "b77f53ad-0988-465a-bee1-9c3596dfbc98",
+              "content": "__ob_c1_probe_20261008152623__",
+              "score": -0.005149677,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-10-08T07:26:25.737023+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-10-08T07:26:25.737023+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-10-08T07:26:25.737023+00:00"
+            },
+            {
+              "memory_id": "1558c274-a426-47d5-8806-931862636fcd",
+              "content": "cross-channel consistency test data v3",
+              "score": -0.006768547,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-09-04T18:05:18.571388+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-09-04T18:05:18.571388+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-09-04T18:05:18.571388+00:00"
+            },
+            {
+              "memory_id": "a8a021d1-24e0-47f0-9119-b7706cb5fa2d",
+              "content": "cross-channel consistency test data",
+              "score": -0.028616495,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-09-04T18:03:03.191862+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-09-04T18:03:03.191862+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-09-04T18:03:03.191862+00:00"
+            },
+            {
+              "memory_id": "e6301903-07ba-4b32-91fe-9e2a55579468",
+              "content": "integration test identity",
+              "score": -0.050897468,
+              "memory_type": "persistent",
+              "metadata": {
+                "agent_id": null,
+                "created_at": "2026-09-04T17:58:11.166608+00:00",
+                "is_active": true,
+                "session_id": null,
+                "updated_at": "2026-09-04T17:58:11.205897+00:00",
+                "user_id": "1"
+              },
+              "entities": [],
+              "highlights": [],
+              "source": "semantic",
+              "decayed_weight": null,
+              "tags": [],
+              "created_at": "2026-09-04T17:58:11.166608+00:00"
+            }
+          ],
+          "total": 9,
+          "page": 1,
+          "page_size": 20
+        },
+        "timestamp": "2026-10-14T02:38:22.525787+00:00"
+      }
+    },
+    "wa_admin-1791945485": {
+      "status": 403,
+      "body": {
+        "code": 403,
+        "message": "Forbidden",
+        "data": null,
+        "timestamp": "2026-10-14T02:38:22.553661+00:00"
+      }
+    }
+  },
+  "negative_controls": [
+    {
+      "case": "无令牌",
+      "path": "/api/v1/users",
+      "status": 401,
+      "code": "AUTH_401"
+    },
+    {
+      "case": "无令牌",
+      "path": "/api/v1/tenants",
+      "status": 401,
+      "code": "AUTH_401"
+    },
+    {
+      "case": "篡改令牌",
+      "path": "/api/v1/users",
+      "status": 401,
+      "code": "AUTH_401"
+    }
+  ],
+  "ui_roles": {
+    "summary": [
+      {
+        "role": "admin",
+        "login": true,
+        "navCount": 35,
+        "normal": 27,
+        "forbidden_routes": [],
+        "http_bad_routes": [],
+        "console_err_routes": []
+      },
+      {
+        "role": "wa_admin(org_admin)",
+        "login": true,
+        "navCount": 34,
+        "normal": 26,
+        "forbidden_routes": [
+          "/platform/observability/test-records"
+        ],
+        "http_bad_routes": [
+          {
+            "path": "/platform/identity/tenants",
+            "bad": [
+              "403 /api/v1/tenants"
+            ]
+          },
+          {
+            "path": "/platform/identity/org",
+            "bad": [
+              "403 /api/v1/users"
+            ]
+          },
+          {
+            "path": "/platform/identity/memory-admin",
+            "bad": [
+              "403 /api/v1/memory-proxy/memories",
+              "403 /api/v1/memory-proxy/monitor"
+            ]
+          }
+        ],
+        "console_err_routes": [
+          "/platform/identity/tenants",
+          "/platform/identity/org",
+          "/platform/identity/memory-admin"
+        ]
+      },
+      {
+        "role": "wa_viewer(viewer)",
+        "login": true,
+        "navCount": 32,
+        "normal": 24,
+        "forbidden_routes": [
+          "/platform/config/modules",
+          "/platform/observability/logs",
+          "/platform/observability/test-records"
+        ],
+        "http_bad_routes": [
+          {
+            "path": "/platform/identity/tenants",
+            "bad": [
+              "403 /api/v1/tenants"
+            ]
+          },
+          {
+            "path": "/platform/identity/org",
+            "bad": [
+              "403 /api/v1/users"
+            ]
+          },
+          {
+            "path": "/platform/identity/memory-admin",
+            "bad": [
+              "403 /api/v1/memory-proxy/memories",
+              "403 /api/v1/memory-proxy/monitor"
+            ]
+          }
+        ],
+        "console_err_routes": [
+          "/platform/identity/tenants",
+          "/platform/identity/org",
+          "/platform/identity/memory-admin"
+        ]
+      },
+      {
+        "role": "wb_admin(org_admin)",
+        "login": true,
+        "navCount": 34,
+        "normal": 26,
+        "forbidden_routes": [
+          "/platform/observability/test-records"
+        ],
+        "http_bad_routes": [
+          {
+            "path": "/platform/identity/tenants",
+            "bad": [
+              "403 /api/v1/tenants"
+            ]
+          },
+          {
+            "path": "/platform/identity/org",
+            "bad": [
+              "403 /api/v1/users"
+            ]
+          },
+          {
+            "path": "/platform/identity/memory-admin",
+            "bad": [
+              "403 /api/v1/memory-proxy/memories",
+              "403 /api/v1/memory-proxy/monitor"
+            ]
+          }
+        ],
+        "console_err_routes": [
+          "/platform/identity/tenants",
+          "/platform/identity/org",
+          "/platform/identity/memory-admin"
+        ]
+      }
+    ],
+    "routes_detail": {
+      "admin": [
+        {
+          "path": "/platform/identity/tenants",
+          "finalUrl": "/platform/identity/tenants",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/roles",
+          "finalUrl": "/platform/identity/roles",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/org",
+          "finalUrl": "/platform/identity/org",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/workspaces",
+          "finalUrl": "/platform/identity/workspaces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/auth-ext",
+          "finalUrl": "/platform/identity/auth-ext",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/users",
+          "finalUrl": "/platform/identity/users",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/memory-admin",
+          "finalUrl": "/platform/identity/memory-admin",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/general",
+          "finalUrl": "/platform/config/general",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/modules",
+          "finalUrl": "/platform/config/modules",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/api-keys",
+          "finalUrl": "/platform/config/api-keys",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/logs",
+          "finalUrl": "/platform/observability/logs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/test-records",
+          "finalUrl": "/platform/observability/test-records",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring",
+          "finalUrl": "/platform/observability/monitoring",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/costs",
+          "finalUrl": "/platform/observability/monitoring/costs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/alerts",
+          "finalUrl": "/platform/observability/monitoring/alerts",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/traces",
+          "finalUrl": "/platform/observability/monitoring/traces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/budgets",
+          "finalUrl": "/platform/observability/monitoring/budgets",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gpu",
+          "finalUrl": "/platform/observability/gpu",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/usage",
+          "finalUrl": "/platform/observability/usage",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/billing",
+          "finalUrl": "/platform/observability/billing",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/service-discovery",
+          "finalUrl": "/platform/observability/service-discovery",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gateway-test",
+          "finalUrl": "/platform/observability/gateway-test",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/app-calls",
+          "finalUrl": "/platform/observability/app-calls",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/docs",
+          "finalUrl": "/platform/developers/docs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/edgerouter",
+          "finalUrl": "/platform/developers/edgerouter",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/plugins",
+          "finalUrl": "/platform/developers/plugins",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/personal/settings",
+          "finalUrl": "/personal/settings",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        }
+      ],
+      "wa_admin(org_admin)": [
+        {
+          "path": "/platform/identity/tenants",
+          "finalUrl": "/platform/identity/tenants",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 1,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/tenants"
+            }
+          ]
+        },
+        {
+          "path": "/platform/identity/roles",
+          "finalUrl": "/platform/identity/roles",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/org",
+          "finalUrl": "/platform/identity/org",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 1,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/users"
+            }
+          ]
+        },
+        {
+          "path": "/platform/identity/workspaces",
+          "finalUrl": "/platform/identity/workspaces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/auth-ext",
+          "finalUrl": "/platform/identity/auth-ext",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/users",
+          "finalUrl": "/platform/identity/users",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/memory-admin",
+          "finalUrl": "/platform/identity/memory-admin",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 2,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/memory-proxy/memories"
+            },
+            {
+              "status": 403,
+              "url": "/api/v1/memory-proxy/monitor"
+            }
+          ]
+        },
+        {
+          "path": "/platform/config/general",
+          "finalUrl": "/platform/config/general",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/modules",
+          "finalUrl": "/platform/config/modules",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/api-keys",
+          "finalUrl": "/platform/config/api-keys",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/logs",
+          "finalUrl": "/platform/observability/logs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/test-records",
+          "finalUrl": "/forbidden?from=/platform/observability/test-records",
+          "forbidden": true,
+          "renderState": "sparse",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring",
+          "finalUrl": "/platform/observability/monitoring",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/costs",
+          "finalUrl": "/platform/observability/monitoring/costs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/alerts",
+          "finalUrl": "/platform/observability/monitoring/alerts",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/traces",
+          "finalUrl": "/platform/observability/monitoring/traces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/budgets",
+          "finalUrl": "/platform/observability/monitoring/budgets",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gpu",
+          "finalUrl": "/platform/observability/gpu",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/usage",
+          "finalUrl": "/platform/observability/usage",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/billing",
+          "finalUrl": "/platform/observability/billing",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/service-discovery",
+          "finalUrl": "/platform/observability/service-discovery",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gateway-test",
+          "finalUrl": "/platform/observability/gateway-test",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/app-calls",
+          "finalUrl": "/platform/observability/app-calls",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/docs",
+          "finalUrl": "/platform/developers/docs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/edgerouter",
+          "finalUrl": "/platform/developers/edgerouter",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/plugins",
+          "finalUrl": "/platform/developers/plugins",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/personal/settings",
+          "finalUrl": "/personal/settings",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        }
+      ],
+      "wa_viewer(viewer)": [
+        {
+          "path": "/platform/identity/tenants",
+          "finalUrl": "/platform/identity/tenants",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 1,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/tenants"
+            }
+          ]
+        },
+        {
+          "path": "/platform/identity/roles",
+          "finalUrl": "/platform/identity/roles",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/org",
+          "finalUrl": "/platform/identity/org",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 1,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/users"
+            }
+          ]
+        },
+        {
+          "path": "/platform/identity/workspaces",
+          "finalUrl": "/platform/identity/workspaces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/auth-ext",
+          "finalUrl": "/platform/identity/auth-ext",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/users",
+          "finalUrl": "/platform/identity/users",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/memory-admin",
+          "finalUrl": "/platform/identity/memory-admin",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 2,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/memory-proxy/memories"
+            },
+            {
+              "status": 403,
+              "url": "/api/v1/memory-proxy/monitor"
+            }
+          ]
+        },
+        {
+          "path": "/platform/config/general",
+          "finalUrl": "/platform/config/general",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/modules",
+          "finalUrl": "/forbidden?from=/platform/config/modules",
+          "forbidden": true,
+          "renderState": "sparse",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/api-keys",
+          "finalUrl": "/platform/config/api-keys",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/logs",
+          "finalUrl": "/forbidden?from=/platform/observability/logs",
+          "forbidden": true,
+          "renderState": "sparse",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/test-records",
+          "finalUrl": "/forbidden?from=/platform/observability/test-records",
+          "forbidden": true,
+          "renderState": "sparse",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring",
+          "finalUrl": "/platform/observability/monitoring",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/costs",
+          "finalUrl": "/platform/observability/monitoring/costs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/alerts",
+          "finalUrl": "/platform/observability/monitoring/alerts",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/traces",
+          "finalUrl": "/platform/observability/monitoring/traces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/budgets",
+          "finalUrl": "/platform/observability/monitoring/budgets",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gpu",
+          "finalUrl": "/platform/observability/gpu",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/usage",
+          "finalUrl": "/platform/observability/usage",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/billing",
+          "finalUrl": "/platform/observability/billing",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/service-discovery",
+          "finalUrl": "/platform/observability/service-discovery",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gateway-test",
+          "finalUrl": "/platform/observability/gateway-test",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/app-calls",
+          "finalUrl": "/platform/observability/app-calls",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/docs",
+          "finalUrl": "/platform/developers/docs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/edgerouter",
+          "finalUrl": "/platform/developers/edgerouter",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/plugins",
+          "finalUrl": "/platform/developers/plugins",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/personal/settings",
+          "finalUrl": "/personal/settings",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        }
+      ],
+      "wb_admin(org_admin)": [
+        {
+          "path": "/platform/identity/tenants",
+          "finalUrl": "/platform/identity/tenants",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 1,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/tenants"
+            }
+          ]
+        },
+        {
+          "path": "/platform/identity/roles",
+          "finalUrl": "/platform/identity/roles",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/org",
+          "finalUrl": "/platform/identity/org",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 1,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/users"
+            }
+          ]
+        },
+        {
+          "path": "/platform/identity/workspaces",
+          "finalUrl": "/platform/identity/workspaces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/auth-ext",
+          "finalUrl": "/platform/identity/auth-ext",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/users",
+          "finalUrl": "/platform/identity/users",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/identity/memory-admin",
+          "finalUrl": "/platform/identity/memory-admin",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 2,
+          "httpBad": [
+            {
+              "status": 403,
+              "url": "/api/v1/memory-proxy/memories"
+            },
+            {
+              "status": 403,
+              "url": "/api/v1/memory-proxy/monitor"
+            }
+          ]
+        },
+        {
+          "path": "/platform/config/general",
+          "finalUrl": "/platform/config/general",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/modules",
+          "finalUrl": "/platform/config/modules",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/config/api-keys",
+          "finalUrl": "/platform/config/api-keys",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/logs",
+          "finalUrl": "/platform/observability/logs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/test-records",
+          "finalUrl": "/forbidden?from=/platform/observability/test-records",
+          "forbidden": true,
+          "renderState": "sparse",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring",
+          "finalUrl": "/platform/observability/monitoring",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/costs",
+          "finalUrl": "/platform/observability/monitoring/costs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/alerts",
+          "finalUrl": "/platform/observability/monitoring/alerts",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/traces",
+          "finalUrl": "/platform/observability/monitoring/traces",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/monitoring/budgets",
+          "finalUrl": "/platform/observability/monitoring/budgets",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gpu",
+          "finalUrl": "/platform/observability/gpu",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/usage",
+          "finalUrl": "/platform/observability/usage",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/billing",
+          "finalUrl": "/platform/observability/billing",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/service-discovery",
+          "finalUrl": "/platform/observability/service-discovery",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/gateway-test",
+          "finalUrl": "/platform/observability/gateway-test",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/observability/app-calls",
+          "finalUrl": "/platform/observability/app-calls",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/docs",
+          "finalUrl": "/platform/developers/docs",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/edgerouter",
+          "finalUrl": "/platform/developers/edgerouter",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/platform/developers/plugins",
+          "finalUrl": "/platform/developers/plugins",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        },
+        {
+          "path": "/personal/settings",
+          "finalUrl": "/personal/settings",
+          "forbidden": false,
+          "renderState": "normal",
+          "consoleErrorCount": 0,
+          "httpBad": []
+        }
+      ]
+    }
+  },
+  "cleanup": {
+    "users": [
+      {
+        "id": 62,
+        "username": "wa_admin-1791945342",
+        "deactivate_status": 200
+      },
+      {
+        "id": 64,
+        "username": "wa_viewer-1791945342",
+        "deactivate_status": 200
+      },
+      {
+        "id": 65,
+        "username": "wb_admin-1791945342",
+        "deactivate_status": 200
+      },
+      {
+        "id": 66,
+        "username": "mtw-tmp-1791945342",
+        "deactivate_status": 200
+      },
+      {
+        "id": 67,
+        "username": "wa_admin-1791945366",
+        "deactivate_status": 200
+      },
+      {
+        "id": 69,
+        "username": "wa_viewer-1791945366",
+        "deactivate_status": 200
+      },
+      {
+        "id": 70,
+        "username": "wb_admin-1791945366",
+        "deactivate_status": 200
+      },
+      {
+        "id": 71,
+        "username": "mtw-tmp-1791945366",
+        "deactivate_status": 200
+      },
+      {
+        "id": 72,
+        "username": "wa_admin-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 73,
+        "username": "wa_viewer-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 74,
+        "username": "wb_admin-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 75,
+        "username": "mtw-role-admin-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 76,
+        "username": "mtw-role-org_admin-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 78,
+        "username": "mtw-role-viewer-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 80,
+        "username": "wa_admin-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 81,
+        "username": "wa_viewer-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 82,
+        "username": "wb_admin-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 83,
+        "username": "mtw-role-admin-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 84,
+        "username": "mtw-role-org_admin-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 86,
+        "username": "mtw-role-viewer-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 88,
+        "username": "wa_admin-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 89,
+        "username": "wa_viewer-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 90,
+        "username": "wb_admin-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 91,
+        "username": "mtw-role-admin-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 92,
+        "username": "mtw-role-org_admin-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 94,
+        "username": "mtw-role-viewer-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 96,
+        "username": "wa_admin-1791945485",
+        "deactivate_status": 200
+      },
+      {
+        "id": 97,
+        "username": "wa_viewer-1791945485",
+        "deactivate_status": 200
+      },
+      {
+        "id": 98,
+        "username": "wb_admin-1791945485",
+        "deactivate_status": 200
+      },
+      {
+        "id": 99,
+        "username": "mtw-role-admin-1791945485",
+        "deactivate_status": 200
+      },
+      {
+        "id": 100,
+        "username": "mtw-role-org_admin-1791945485",
+        "deactivate_status": 200
+      },
+      {
+        "id": 102,
+        "username": "mtw-role-viewer-1791945485",
+        "deactivate_status": 200
+      }
+    ],
+    "tenants": [
+      {
+        "id": 6,
+        "code": "mtw-a-1791945342",
+        "deactivate_status": 200
+      },
+      {
+        "id": 7,
+        "code": "mtw-b-1791945342",
+        "deactivate_status": 200
+      },
+      {
+        "id": 8,
+        "code": "mtw-tmp-1791945342",
+        "deactivate_status": 200
+      },
+      {
+        "id": 9,
+        "code": "mtw-a-1791945366",
+        "deactivate_status": 200
+      },
+      {
+        "id": 10,
+        "code": "mtw-b-1791945366",
+        "deactivate_status": 200
+      },
+      {
+        "id": 11,
+        "code": "mtw-tmp-1791945366",
+        "deactivate_status": 200
+      },
+      {
+        "id": 12,
+        "code": "mtw-a-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 13,
+        "code": "mtw-b-1791945415",
+        "deactivate_status": 200
+      },
+      {
+        "id": 14,
+        "code": "mtw-a-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 15,
+        "code": "mtw-b-1791945440",
+        "deactivate_status": 200
+      },
+      {
+        "id": 16,
+        "code": "mtw-a-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 17,
+        "code": "mtw-b-1791945463",
+        "deactivate_status": 200
+      },
+      {
+        "id": 18,
+        "code": "mtw-a-1791945485",
+        "deactivate_status": 200
+      },
+      {
+        "id": 19,
+        "code": "mtw-b-1791945485",
+        "deactivate_status": 200
+      }
+    ]
+  }
+}
