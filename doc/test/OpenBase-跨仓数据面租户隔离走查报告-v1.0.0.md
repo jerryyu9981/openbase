@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | **v1.0.0**（首版） |
-| 状态 | **[Review]** |
+| 文档版本 | **v1.1.0**（v1.0.0 首版走查 + v1.1.0 跨仓修复闭环） |
+| 状态 | **[Final]** |
 | 走查编号 | OB-CROSSREPO-TENANT-ISOLATION-v1.0.0 |
 | 作者 | AT-OpenBase-Dev（API 测试视图）/ SE-OpenBase-Dev（安全视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
 | 创建日期 | 2026-10-14 |
@@ -78,9 +78,11 @@
 
 ---
 
-## 4. 问题清单（登记待裁定）
+## 4. 问题清单与修复闭环
 
 > 说明：以下为**静态走查发现**（含 `文件:行号` 证据），严重度按「是否可导致跨租户数据泄露/破坏」判定。运行时已验证的「闸门层」未见放行，故高危项集中在**绕过闸门或闸门未覆盖的旁路**。
+>
+> **修复状态（2026-10-14，v1.1.0）**：依人工指令「依次跨仓小版本修复高危、中危问题」，已按仓依次完成 D1–D20 中**高危 7 项 + 中危 10 项**的最小侵入修复，逐仓 TDD + 回归 + 留痕 + 本地提交 + 推送三远程（详见 §4.4）；**低危 D5/D15 不在本次指令范围**，保持登记。**凡需翻转默认配置（影响单租户兼容）者一律未翻转，改以等价开关/条件化实现并登记「需裁定」**（见 §4.4 表末列）。
 
 ### 4.1 高危（跨租户数据泄露 / 数据破坏）
 
@@ -119,6 +121,21 @@
 
 ---
 
+### 4.4 修复闭环（v1.1.0，按仓依次实施）
+
+> 实施纪律：每仓 TDD（先 RED 后 GREEN）→ 定向 + 相关面回归 → 静态检查 → 该仓留痕 → 本地提交 → 推送三远程并核验 HEAD 一致。四仓均**未翻转既有默认值**；需翻转默认者改为等价开关/条件化实现并登记「需裁定」。
+
+| 仓 | 分支 / 提交 | 处置项（状态） | 关键改动 | 验证 | 已登记「需裁定」 |
+|----|------------|---------------|---------|------|-----------------|
+| **OpenRAG** | `release/v1.10.0` / **`b7c83a7`** | D1 ✅ 修复（写路径经 `_scope_tenant`，enforce 缺域拒绝）；D2 ✅ 修复（删除前先做域校验，不触碰向量）；D3 ⚠️ 登记（强制段已 fail-closed，观察段为设计取舍）；D4 ✅ 修复（`/system/stats` 按调用者租户过滤，运维契约不变） | `storage/sqlite.py:282`、`storage/postgres.py:372`、`api/routes/collections.py:182-184`、`api/routes/system.py:180-193` | 新增 `test_cross_repo_tenant_isolation_fix.py`；定向 + 相关面 **92 passed**；本次改动 ruff 0 新增错误；对照基线**零新增失败** | D3 多租户是否默认开强制段；D4 全租户聚合是否需平台凭据 |
+| **OpenMemory** | `release/v7.3.0` / **`6a12609`** | D6 ✅ 修复（`/recall` 下推租户 scope 至持久/向量检索）；D7 ✅ 修复（decay/image/trace 统一走 `state.identity` 派生租户，trace 跨域 404）；D8 ✅ 显式化（集中兜底策略 + 表征测试锁定，无行为变更） | `memory/service.py:205-258`、`memory/dual_memory.py:79-117`、`api/controllers.py`（`_tenant_code_of` + 6 端点）、`memory/multimodal_engine.py:216-221`、`memory/retrieval.py:91-100` | 新增 3 个测试文件（D6 5 例 / D7 7 例 / D8 7 例）；定向+必保面 **102 passed**；`tests/unit` 1391 passed；`ruff check src tests` **All checks passed** | D8 多租户生产是否默认 fail-closed；graph/temporal 检索未覆盖租户谓词 |
+| **DPS** | `main` / **`83e5933`** | D9 ✅ 修复（新增等价开关 `tenant_context_required`，启用时引擎层缺域显式拒绝）；D10 ✅ 修复（MCP 15 工具入口注入租户上下文 + 入参必填校验）；D11 ✅ 修复（画像缓存键加租户维度）；D12 ✅ 修复（白名单改精确/路径段匹配）；D13 ✅ 修复（标签路由统一走 contextvar，缺域拒绝）；D14 ✅ 修复（限流租户维度取统一上下文，不再兜底 default） | `src/engines/tenant_context.py:73-92`、`query_engine.py` 7 处接线、`src/mcp_server/tools.py:85-103`、`src/cache.py:18-29,83-93`、`src/middleware/tenant_middleware.py:102-115`、`rest_api/routes/routes_tags.py:34-50`、`src/middleware/rate_limit_middleware.py:27-29,50-63` | 新增 `test_tenant_hardening_d9_d14.py`（RED 14F/3P → GREEN 17 passed）；必保面 **65 passed**；受影响面 174 + 284 passed；全量分批 1263 passed、4 failed 均环境性；改动文件 ruff 0 新增错误 | D9 生产是否默认开 `tenant_context_required`；代码版本号递增（建议 v2.12.1→v2.12.2） |
+| **OpenLLM** | `feature/s4-identity-channel-b` / **`762357c`** | D16 ✅ 修复（模型路由接入白名单，**仅非空 `allowed_models` 约束时**校验、越权 403 契约码 1002）；D17 ✅ 修复（新增 `QUOTA_MISSING_FAIL_CLOSED`，默认 False 兼容）；D18 ⚠️ 登记（强制段已 fail-closed，三开关默认未翻转，补守门测试）；D19 ✅ 修复（限流键加租户维度，无租户时键格式逐字等价）；D20 ✅ 修复（新增 `TENANT_HEADER_CONSISTENCY_ENFORCE`，受信源+API Key 下头租户与归属不一致 → 403） | 新增 `services/model_access.py`；`api/chat.py`、`api/chat_stream.py`、`api/openllm_gateway.py`（1002→403）、`core/config.py:116-125`、`middleware/rate_limit.py:168-214`、`services/auth_service.py:369-380,455-482`、`services/billing_service.py:125-142` | 新增 `test_tenant_isolation_walkthrough_d16_d20.py`（RED 9F/11P → GREEN 20 passed）；相关面回归 **986 passed / 0 failed**；更广 API 面 1327 passed、1 项为存量基线失败（已对照）⇒ 零新增失败；新增文件 ruff 0 错误 | D17/D18/D20 生产默认是否开启；`APP_VERSION` 递增口径；D16 列表端点未按白名单过滤 + 租户级约束列是否新增 |
+
+**四仓三远程一致性（核验于 2026-10-14）**：OpenRAG `b7c83a7`、OpenMemory `6a12609`、DPS `83e5933`、OpenLLM `762357c` —— **origin / backup / github HEAD 与本地逐一一致**（github 因出网抖动经多次重试后全部追平）。
+
+---
+
 ## 5. 结论与限制
 
 ### 5.1 结论
@@ -127,6 +144,7 @@
 2. **隔离强度不均**：OpenRAG/OpenMemory/DPS 的**主存储面**为行级 `tenant_code` 过滤且测试充分；但**旁路面**（向量库、检索面、缓存、MCP、模型路由）存在结构性缺口。
 3. **核心风险 = 旁路绕过，而非闸门失效**：最高危的 7 项（D1/D2/D6/D9/D10/D11/D16）全部是「不经主闸门/闸门未覆盖的路径」，其中 **D9（引擎层无上下文即不过滤）** 与 **D11（缓存键缺租户）**、**D10（MCP 无上下文）** 可在真实多租户下直接跨租户泄露。
 4. **默认兜底普遍存在**：四仓均存在「缺租户 → 回落 `default`」的宽容策略，在多租户生产部署下构成弱隔离点（D3/D8/D14/D18）。
+5. **修复闭环（v1.1.0）**：D1–D20 中**高危 7 项、中危 10 项已按仓依次修复**（见 §4.4），四仓提交均已推送三远程且 HEAD 一致；其中 4 项（D3/D8/D18/D20 相关的「默认翻转」）按「不破坏单租户兼容」纪律改为**等价开关/条件化实现 + 登记需裁定**，D8 为「无行为变更的显式化」。
 
 ### 5.2 限制与边界
 
@@ -151,4 +169,5 @@
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
+| v1.1.0 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | 跨仓修复闭环：依指令「依次跨仓小版本修复高危、中危问题」，按仓（OpenRAG→OpenMemory→DPS→OpenLLM）完成 D1–D20 中高危 7 + 中危 10 的修复/显式化（§4.4 修复闭环表 + 四仓提交号 + 三远程一致性核验）；§4 标题与说明、§5.1 结论同步更新；需翻转默认者改等价开关并登记需裁定 |
 | v1.0.0 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | 首次产出：下游四仓数据面租户隔离跨仓走查（静态 + 运行时闸门矩阵 + 转发链裁决），登记 D1–D20 问题待裁定 |
