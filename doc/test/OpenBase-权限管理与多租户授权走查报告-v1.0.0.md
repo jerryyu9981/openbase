@@ -3,18 +3,19 @@
 | 项 | 内容 |
 |----|------|
 | 文档编号 | OB-RBAC-TENANT-WALKTHROUGH-v1.0.0 |
-| 文档版本 | v1.0.0 |
-| 文档状态 | [Final] |
+| 文档版本 | v1.1.0 |
+| 文档状态 | [Final]（v1.1.0：F1/F2/F3 已修复并回归，见 §5） |
 | 适用环境 | Dev（本机全栈：OpenBase 8000 / 前端 5173 / 共享 PG） |
 | 走查日期 | 2026-10-14 |
 | 走查执行 | DevFlow Step 4（测试与质量验证）——权限管理与多租户授权专项走查 |
-| 关联文档 | 台账《OpenBase-自研系统多租户与授权集成总体完善方案》(v1.16.25)；《OpenBase-全栈功能走查报告》OB-WALKTHROUGH-v1.0.0 (v1.1.0) |
-| 证据制品 | `doc/test/evidence/manual/mtauth-rbac-tenant-walkthrough-20261014.json` |
+| 关联文档 | 台账《OpenBase-自研系统多租户与授权集成总体完善方案》(v1.16.26)；《OpenBase-全栈功能走查报告》OB-WALKTHROUGH-v1.0.0 (v1.1.0) |
+| 证据制品 | `doc/test/evidence/manual/mtauth-rbac-tenant-walkthrough-20261014.json`；F2 修复回归 `doc/test/evidence/manual/mtauth-f2-role-codes-regression-20261014.json` |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
+| v1.1.0 | 2026-10-14 | AA-OpenBase-Dev | F1/F2/F3 修复闭环：F1 架构/UI 设计 v1.4.2 文档口径更正（文档版本 v1.0.1，不改实现）；F2 角色种子补 `org_member`、`ALLOWED_ROLES` 补 `user`、新增 `memory:manage` 权限点登记 + 后端 10 例与真实 PG API 回归；F3 前端五叶子补 `meta.permission` 与菜单同源 + 守卫/菜单 34 例单测回归。§5 问题清单补修复状态与证据 |
 | v1.0.0 | 2026-10-14 | AI 辅助（测试角色） | 首次产出：四角色 × 端点 × 前端逐页的权限管理与多租户授权走查 |
 
 ---
@@ -73,8 +74,8 @@
 | 端点 | 设计期望 | admin | org_admin | viewer | 实测判定 |
 |------|---------|-------|-----------|--------|---------|
 | `GET /api/v1/auth/me` | 登录可见 | 200 | 200 | 200 | ✅ |
-| `GET /api/v1/users` | admin/org_admin | 200 | **403 PERM_FORBIDDEN** | **403 PERM_FORBIDDEN** | ⚠️ 见 F1 |
-| `POST /api/v1/users` | admin/org_admin | 200 | **403 PERM_FORBIDDEN** | **403 PERM_FORBIDDEN** | ⚠️ 见 F1 |
+| `GET /api/v1/users` | admin/org_admin（v1.4.2 旧口径） | 200 | **403 PERM_FORBIDDEN** | **403 PERM_FORBIDDEN** | ⚠️→✅ F1（v1.1.0 裁定现行预期=admin-only，文档已更正，见 §5） |
+| `POST /api/v1/users` | admin/org_admin（v1.4.2 旧口径） | 200 | **403 PERM_FORBIDDEN** | **403 PERM_FORBIDDEN** | ⚠️→✅ F1（同上） |
 | `GET /api/v1/tenants` | admin | 200 | 403 PERM_FORBIDDEN | 403 PERM_FORBIDDEN | ✅ |
 | `POST /api/v1/tenants` | admin | 200 | 403 PERM_FORBIDDEN | 403 PERM_FORBIDDEN | ✅ |
 | `GET /api/v1/auth/api-keys` | admin/org_admin | 200 | 200 | 403 AUTH_403 | ✅ |
@@ -82,7 +83,7 @@
 | `POST /api/v1/identity/agents`（`identity:manage`） | admin | 400 PARAM_400（缺参，权限层已过） | 403 PERM_FORBIDDEN | 403 PERM_FORBIDDEN | ✅ 权限层正确 |
 | `GET /api/v1/memory-proxy/memories` | 登录 + 上游授权 | 200 | **403（上游透传）** | **403（上游透传）** | ⚠️ 见 §4.3 |
 
-- 结论：**主权限边界（admin 全通；org_admin 获授 `log:read` / `module:manage` / `auth:api-keys:*`；viewer 仅模块查看）与现行档位锚点一致**；`users:*` 一致性缺口见 F1。
+- 结论：**主权限边界（admin 全通；org_admin 获授 `log:read` / `module:manage` / `auth:api-keys:*`；viewer 仅模块查看）与现行档位锚点一致**；v1.0.0 记录的 `users:*` 一致性缺口 F1 经裁定为文档滞后，v1.1.0 已改文档闭环（见 §5）。
 - 错误码规范性：403 场景分别返回 `PERM_FORBIDDEN` / `PERM_403` / `AUTH_403`，与端点受权点声明同源，无裸 500。
 
 ### 3.2 角色分配枚举一致性
@@ -97,7 +98,7 @@
 | **org_member** | **404 `BIZ_404 role not found: org_member`** | ❌ 角色表未播种 org_member |
 | **user** | **400 `PARAM_INVALID invalid role: user`** | ❌ `ALLOWED_ROLES` 未含 user |
 
-→ 见问题 **F2**。
+→ 见问题 **F2**（v1.1.0 已修复：五码种子/白名单对齐 + 真实 PG API 实测 200，见 §5）。
 
 ### 3.3 JWT 身份声明
 
@@ -127,7 +128,7 @@
 | org_admin(B) | ✅ | 26/27 | `/platform/observability/test-records` | tenants、org、memory-admin |
 
 - `meta.permission` 三条路由守卫准确：`module:manage`（模块开关）对 viewer 拦截；`log:read`（日志中心）对 viewer 拦截；`test:record`（测试记录）对 org_admin/viewer 均拦截（`test:record` 未播种，仅 admin 通配可见）。
-- 未声明 `meta.permission` 的平台页（tenants/org/memory-admin）对非 admin **可进入但页内接口 403** → 见问题 **F3**。
+- 未声明 `meta.permission` 的平台页（tenants/org/memory-admin）对非 admin **可进入但页内接口 403** → 见问题 **F3**（v1.1.0 已修复：五叶子补 `meta.permission` 与菜单同源，低档位直访跳 `/forbidden`，见 §5；修复前的本条观测作为事实保留）。
 
 ---
 
@@ -159,15 +160,15 @@
 
 ---
 
-## 5. 问题清单
+## 5. 问题清单与修复闭环（v1.1.0）
 
-| # | 问题 | 严重度 | 类型 | 证据 | 建议 |
-|---|------|--------|------|------|------|
-| **F1** | 架构/UI 设计（v1.4.2）声明 `/api/v1/users` POST/GET/PUT 权限为 admin/org_admin、用户管理页 org_admin 可操作；实测 org_admin 一律 403 `PERM_FORBIDDEN`（`users:manage`/`users:view` 权限点未播种，仅 admin 经 `username=="admin"` 短路放行） | 中 | **文档滞后**（现行 MTAUTH 档位锚点：org_admin=readwrite，平台管理面=manage 档=admin-only，实现与现行锚点一致） | backend-matrix、ui-roles | 更新 v1.4.2 架构/UI 文档相应行，或登记文档漂移至台账；**不改实现**（否则破坏现行档位口径） |
-| **F2** | 角色码集合三处不一致：`canonical_role_codes.set` 为五码 `{admin, org_admin, org_member, user, viewer}`，但 (a) 角色表种子缺 `org_member` → 分配 org_member 返回 404 `BIZ_404`；(b) `ALLOWED_ROLES` 缺 `user` → 分配 user 返回 400 `PARAM_INVALID` | 中 | **实现缺陷**（与已批准事实源不一致；违背「角色档位锚点需覆盖全部标准角色码集合，避免 ROLE_UNMAPPED 误拒」既有结论） | probe2 role_matrix | 按五码锚点对齐：`init.py` 幂等补种 `org_member` 角色；`ALLOWED_ROLES` 补 `user`；同步断言用例 |
-| **F3** | 未声明 `meta.permission` 的平台页（tenants / org / memory-admin）对非 admin 可进入，页内接口 403 → 控制台报错 + 失败请求（与 `router/index.ts` §3.2 ③「权限码与菜单可见性同源，避免菜单可见但接口 403 割裂」的目标不符；`routes.ts` 注释称此类页「仅登录可见」为沿用口径） | 低-中 | **一致性缺口 / 待定口径** | ui-roles | 二选一：为相关页补 `meta.permission` 声明（与后端权限码同源）；或在 `routes.ts`/设计文档显式登记「仅登录可见」口径并做页内 403 的友好空态/无权限提示 |
+| # | 问题 | 严重度 | 类型 | 证据 | 处置方案 | 状态 / 修复与回归证据（2026-10-14） |
+|---|------|--------|------|------|---------|-----------------------------------|
+| **F1** | 架构/UI 设计（v1.4.2）声明 `/api/v1/users` POST/GET/PUT 权限为 admin/org_admin、用户管理页 org_admin 可操作；实测 org_admin 一律 403 `PERM_FORBIDDEN`（`users:manage`/`users:view` 权限点未播种，仅 admin 经 `username=="admin"` 短路放行） | 中 | **文档滞后**（现行 MTAUTH 档位锚点：org_admin=readwrite，平台管理面=manage 档=admin-only，实现与现行锚点一致） | backend-matrix、ui-roles | 更新 v1.4.2 架构/UI 文档相应行；**不改实现**（否则破坏现行档位口径） | **已闭环（改文档）**：《架构设计文档-v1.4.2》§4.1 与《UI设计文档-v1.4.2》§2.2/§3 追加「口径更正（MTAUTH 走查 F1/F2/F3）」blockquote，两文档版本 v1.0.0→v1.0.1 并各加修订行；原表记载保留、不改实现 |
+| **F2** | 角色码集合三处不一致：`canonical_role_codes.set` 为五码 `{admin, org_admin, org_member, user, viewer}`，但 (a) 角色表种子缺 `org_member` → 分配 org_member 返回 404 `BIZ_404`；(b) `ALLOWED_ROLES` 缺 `user` → 分配 user 返回 400 `PARAM_INVALID` | 中 | **实现缺陷**（与已批准事实源不一致；违背「角色档位锚点需覆盖全部标准角色码集合，避免 ROLE_UNMAPPED 误拒」既有结论） | probe2 role_matrix | 按五码锚点对齐：`init.py` 幂等补种 `org_member` 角色；`ALLOWED_ROLES` 补 `user`；同步断言用例 | **已闭环（改实现）**：`openbase/core/db/init.py` 新增 `SEEDED_ROLE_CODES` 五码常量并驱动幂等角色播种（admin 显式 id=1 天然跳过），新增 `memory:manage` 权限点登记（不授予，admin 经 `*` 通配）；`openbase/modules/users/__init__.py` 的 `ALLOWED_ROLES` 补 `user` 并注释与种子对齐；模块查看权限同步授予 org_admin/org_member/user/viewer。回归：新增 `tests/test_rbac_role_codes.py`（4 例锚点/种子/白名单锁定）+ `tests/test_users_admin.py` 扩为 6 例（含五码可分配落库），**10 passed**；ruff 0 错误；真实 PG 重启补种后经 API 实测 `org_member`/`user` 创建 200（证据 `mtauth-f2-role-codes-regression-20261014.json`） |
+| **F3** | 未声明 `meta.permission` 的平台页（tenants / org / memory-admin）对非 admin 可进入，页内接口 403 → 控制台报错 + 失败请求（与 `router/index.ts` §3.2 ③「权限码与菜单可见性同源，避免菜单可见但接口 403 割裂」的目标不符；`routes.ts` 注释称此类页「仅登录可见」为沿用口径） | 低-中 | **一致性缺口** | ui-roles | 为相关页补 `meta.permission` 声明（与后端权限码/菜单同名同源）；仍无独立权限码的页显式保留「仅登录可见」 | **已闭环（改前端）**：`openbase-ui/src/pages/platform/routes.ts` 五叶子补声明——租户管理 `tenant:view`、组织/团队/用户与用户管理 `users:view`、记忆管理席位 `memory:manage`、API 密钥 `auth:api-keys:view`；`AppLayout.vue` 菜单叶子同步同码（无权限不渲染）；既有全局守卫对无权限者跳 `/forbidden`；角色/工作空间/注册找回/全局配置/可观测/开发者页刻意保持仅登录可见并以用例锁定。回归：`platform-ia.spec.ts` 新增 F3 门禁/契约 8 例（低档位 5 路由→`/forbidden`、admin 通配全可达、meta 五码同源、仅登录页留空锁定），`router-nav.spec.ts` 菜单裁剪断言同步更新，两文件 **34 passed**；eslint+vue-tsc 0 错误 |
 
-> F1、F3 涉及「口径与实现孰为基线」的判断，F2 涉及权限/角色契约与用例，均需人工裁定后再修复——列入待批准事项，本轮不改代码。
+> v1.0.0 列「F1/F3 涉及口径与实现孰为基线的判断、F2 涉及契约」的待批准事项，已于 2026-10-14 经人工裁定批准：**F1 改文档（实现正确）、F2 改实现（五码对齐）、F3 采纳「补 `meta.permission` 同源声明」方案**；修复与回归见上表，原始走查观测（§3）作为修复前事实保留不回改。
 
 ---
 
@@ -175,7 +176,7 @@
 
 - **权限管理**：核心边界正确——admin 全通；org_admin 获授日志/模块/服务密钥管理权限、被拒 users/tenants 管理（符合现行档位锚点）；viewer 仅模块查看；前端 `meta.permission` 三条守卫路由对低档位准确拦截；401/403 错误码规范、无裸 500。**存在 1 处文档滞后（F1）与 1 处角色码一致性缺陷（F2）**。
 - **多租户授权**：JWT 租户声明完整；非受信身份头 fail-closed 403；受信来源采纳；跨系统转发对未授权租户由下游 fail-closed 拒绝。**隔离口径符合「空或 403、无 500」**。
-- 总体：MTAUTH 权限与多租户授权主线**走查通过**，遗留 3 项问题（1 文档滞后 + 1 实现缺陷 + 1 一致性缺口）建议按 §5 处置。
+- 总体：MTAUTH 权限与多租户授权主线**走查通过**，v1.0.0 发现的 3 项问题（1 文档滞后 + 1 实现缺陷 + 1 一致性缺口）**已在 v1.1.0 全部修复并回归闭环**（F1 文档口径更正；F2 五码对齐 + 真实 PG API 实测；F3 前端三处同源 + 34 例单测），详见 §5。
 
 ---
 
@@ -184,6 +185,7 @@
 | 产物 | 路径 |
 |------|------|
 | 走查证据（脱敏） | `doc/test/evidence/manual/mtauth-rbac-tenant-walkthrough-20261014.json` |
+| F2 修复后回归证据（脱敏） | `doc/test/evidence/manual/mtauth-f2-role-codes-regression-20261014.json`（五码创建 200 ＋ JWT 角色声明 ＋ 停用清理） |
 | 后端矩阵（原始） | `doc/tmp/mtw/backend-matrix.json`（临时，不入库） |
 | 补充探针（原始） | `doc/tmp/mtw/probe2.json`（临时，不入库） |
 | 前端逐页（原始） | `doc/tmp/mtw/ui-roles.json`（临时，不入库） |
@@ -193,4 +195,5 @@
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
+| v1.1.0 | 2026-10-14 | AA-OpenBase-Dev | F1/F2/F3 修复闭环（见文首修订历史与 §5 修复证据） |
 | v1.0.0 | 2026-10-14 | AI 辅助（测试角色） | 首次产出（见文首修订历史，此处为本报告主体章节尾注） |

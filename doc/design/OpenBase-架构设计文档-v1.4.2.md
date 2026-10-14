@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.2 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 状态 | [Review] |
 | 作者 | SA-OpenBase |
 | 创建日期 | 2026-08-29 |
@@ -119,6 +119,8 @@ OpenMemory 后端（FastAPI，:8020，独立部署）
 
 错误码：PARAM（参数）/PERM（越权 403）/BIZ（业务）/SYS（系统），统一 BaseError 格式 {code,message,detail,request_id}。
 
+> **口径更正（2026-10-14，MTAUTH 走查 F1）**：上表「`/api/v1/users` POST/GET/PUT = admin/org_admin」为 **v1.4.2 当时的实现口径**。后续 MTAUTH（多租户与授权集成）将平台管理面收敛为 **manage 档（admin-only）**，权威判据为 `config/role_tier_anchors.json`（`admin=manage / org_admin=readwrite / user·org_member·viewer=readonly`，fail-closed）。因此 `users:manage` / `users:view` / `tenant:manage` / `tenant:view` 仅由 admin 持有，**org_admin 访问 `/api/v1/users` / `/api/v1/tenants` 返回 403 `PERM_FORBIDDEN` 属现行预期行为**（实测见《OpenBase-权限管理与多租户授权走查报告》OB-RBAC-TENANT-WALKTHROUGH-v1.0.0）。本表其余端点口径不变。
+
 ### 4.2 Phase 2 接口（OpenMemory 对接）
 
 | 方法 | 路径（OpenBase proxy） | 上游（OpenMemory 8020） | 认证 |
@@ -155,4 +157,5 @@ proxy 内部契约：注入 `X-API-Key: {OpenBase 服务 Key}` + `Authorization:
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.0.1 | 2026-10-14 | AA-OpenBase-Dev | MTAUTH 走查 F1 口径更正：在 §4.1 接口表下追加「口径更正」说明——`/api/v1/users` 权限经 MTAUTH 收敛为 manage 档（admin-only），权威判据 `config/role_tier_anchors.json`；org_admin 403 属现行预期。仅追加说明，不改变 v1.4.2 原表记载 |
 | v1.0.0 | 2026-08-29 | SA-OpenBase | 初始创建：两 Phase 架构（租户/用户管理 + OpenMemory 对接），ADR-142-01/02/03（部署 8020 / JWT 密钥共享 / proxy 适配），数据模型 + 接口契约，前置验证（OpenMemory 实际代码核验）通过 |

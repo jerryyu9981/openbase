@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 版本号 | v1.4.2 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 状态 | [Review] |
 | 作者 | UI-OpenBase |
 | 创建日期 | 2026-08-29 |
@@ -46,6 +46,8 @@
 | API 绑定 | GET/POST /api/v1/users、PUT/DELETE /api/v1/users/{id}、PUT .../role |
 | 权限 | admin/org_admin 可操作 |
 
+> **口径更正（2026-10-14，MTAUTH 走查 F1/F2）**：① 本表「权限 = admin/org_admin 可操作」为 v1.4.2 当时口径；MTAUTH 已将平台管理面收敛为 **manage 档（admin-only）**，权威判据为 `config/role_tier_anchors.json`（`admin=manage / org_admin=readwrite / user·org_member·viewer=readonly`，fail-closed）——用户管理页菜单与路由现由 `users:view`（仅 admin 持有）门禁，org_admin 菜单不可见、直访跳 `/forbidden`、页内接口返回 403 `PERM_FORBIDDEN`，均属现行预期。② 角色弹窗可选角色补全为五码 `{admin, org_admin, org_member, user, viewer}`（与 `canonical_role_codes.set` / 角色种子 / `ALLOWED_ROLES` 同源；F2 修复前缺 `org_member` 种子与 `user` 分配白名单）。
+
 ### 2.3 OpenMemory 记忆列表页（真实化）
 
 | 项 | 内容 |
@@ -74,6 +76,8 @@
 | 空态/错误态 | 空数据展示引导文案；接口错误展示 detail（统一响应格式） |
 | 路由守卫 | 页面级权限（admin/org_admin 角色路由守卫） |
 
+> **口径更正（2026-10-14，MTAUTH 走查 F1/F3）**：路由守卫现行实现为「路由 `meta.permission` ↔ 菜单 `permission` ↔ 后端权限码」三处同名同源，经全局前置守卫判定（无权限跳 `/forbidden`，不回退 `/dashboard`），不再按角色名粗判。平台身份/配置域各页门禁码：租户管理 `tenant:view`、组织/团队/用户与用户管理 `users:view`、记忆管理席位 `memory:manage`、API 密钥 `auth:api-keys:view`、模块开关 `module:manage`、日志中心 `log:read`、测试记录 `test:record`；上述权限码仅 admin（`*` 通配）持有，org_admin 及以下被拦截。仍无独立权限码的页（角色/工作空间/注册找回/全局配置/可观测各页/开发者资源等）沿用「仅登录可见」。
+
 ## 4. 设计验收标准（对应 AC）
 
 | AC | 验收方法 |
@@ -87,4 +91,5 @@
 
 | 版本 | 日期 | 修改人 | 摘要 |
 |------|------|--------|------|
+| v1.0.1 | 2026-10-14 | AA-OpenBase-Dev | MTAUTH 走查 F1/F2/F3 口径更正：§2.2 用户管理页权限收敛为 admin-only（`users:view` 门禁，org_admin 不可见/403 为现行预期），角色弹窗可选角色补全五码（含 `user`）；§3 路由守卫更正为 `meta.permission` ↔ 菜单 ↔ 后端权限码三处同源并列出门禁码清单。仅追加说明，不改变 v1.4.2 原表记载 |
 | v1.0.0 | 2026-08-29 | UI-OpenBase | 初始创建：4 页面设计（租户/用户管理重做 + OpenMemory 记忆 2 页真实化），API 绑定 + 交互约定 + 验收 |
