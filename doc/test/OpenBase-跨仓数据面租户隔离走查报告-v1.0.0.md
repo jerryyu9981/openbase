@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | **v1.3.0**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 裁定建议 → v1.3.0 裁定落地） |
+| 文档版本 | **v1.3.1**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 裁定建议 → v1.3.0 裁定落地 → v1.3.1 版本口径跨仓确认） |
 | 状态 | **[Final]** |
 | 走查编号 | OB-CROSSREPO-TENANT-ISOLATION-v1.0.0 |
 | 作者 | AT-OpenBase-Dev（API 测试视图）/ SE-OpenBase-Dev（安全视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
@@ -233,7 +233,7 @@
 
 **四仓三远程一致性（核验于 2026-10-14）**：OpenRAG `2f88353`、OpenMemory `447d8da`、DPS `0551b4b`、OpenLLM `4f11c48` —— **origin / backup / github HEAD 与本地逐一一致**。
 
-**落地后遗留（登记）**：① 各仓门禁**仅在 `create_app()`/启动装配路径生效**（直连装配绕过，与既有 C4/row_scope 门禁同款边界）；② 生产环境**必须下发新开关**（OpenMemory `REQUIRE_TENANT_SCOPE=true`、DPS `TENANT_CONTEXT_REQUIRED=true`、OpenLLM 三项 `true`），否则按新门禁**拒绝启动**（门禁本意，部署侧须同步 `.env`）；③ OpenLLM 生产门禁现强耦合 5 组开关；④ OpenRAG 根 `version.json`（DevFlow 元数据）已对齐，若 DevFlow 约定其独立于应用版本需跨仓确认；⑤ DPS 未新增 `version.json`（避免引入第二事实源）；⑥ OpenLLM `edgerouter-lib` 子包版本保持独立（设计选择）。
+**落地后遗留（登记）**：① 各仓门禁**仅在 `create_app()`/启动装配路径生效**（直连装配绕过，与既有 C4/row_scope 门禁同款边界）；② 生产环境**必须下发新开关**（OpenMemory `REQUIRE_TENANT_SCOPE=true`、DPS `TENANT_CONTEXT_REQUIRED=true`、OpenLLM 三项 `true`），否则按新门禁**拒绝启动**（门禁本意，部署侧须同步 `.env`）；③ OpenLLM 生产门禁现强耦合 5 组开关；④ **OpenRAG 根 `version.json` 口径——已跨仓确认（2026-10-14，OpenRAG `aac82ca`）**：该文件为 **DevFlow 遗留元数据**（`name:"DevFlow"`+`devflowVersion`），**DevFlow 官方契约声明其自 v2.15.0 起「彻底弃用并删除」**，故**不是版本事实源、不存在「应独立于应用版本」的约定**；现行「对齐应用版本」口径保留，并由契约测试显式标注语义 + **兼容未来删除**（文件缺失即跳过）；DevFlow 现役版本载体为 `.devflow/*`（由工具维护，`config.json::projectVersion` 仍 1.9.1，登记待 DevFlow 侧同步）；⑤ DPS 未新增 `version.json`（避免第二事实源）；⑥ OpenLLM `edgerouter-lib` 子包版本保持独立（设计选择）。
 
 ---
 
@@ -251,6 +251,7 @@
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
+| v1.3.1 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | **OpenRAG 版本口径跨仓确认**：§6.6 遗留④ 闭合——根 `version.json` 为 DevFlow **遗留**元数据（官方自 v2.15.0 起弃用删除），**非版本事实源**、不存在「应独立于应用版本」的约定；现行对齐口径保留并由契约测试显式标注语义 + 兼容未来删除；OpenRAG 提交 `aac82ca`（含 DevLogReport v1.1.0 §六 同名不同义跨仓对照表） |
 | v1.3.0 | 2026-10-14 | AT/SE/AD/PM-OpenBase-Dev | 依指令「按照建议推进」落地 §6 四项裁定建议：新增 §6.6 裁定落地状态表（四仓分支/提交/改动/验证 + 三远程一致性 + 落地后遗留 6 项）；OpenRAG `2f88353`（A 门禁扩展 + C 版本 1.9.2）、OpenMemory `447d8da`（A 生产 M2 强制段 + C 版本 7.3.1）、DPS `0551b4b`（A 门禁扩展 + B 生产置真 + C 版本 2.12.2）、OpenLLM `4f11c48`（A 三项门禁 + B 生产置真 + C 版本 2.17.1 + D 列表过滤/契约化）；代码默认值一律未翻转；状态转 [Final] |
 | v1.2.0 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | 新增 §6「待裁定项裁定建议（裁定输入）」：依既有契约与先例对 4 项待裁定项给出建议（A 生产默认 fail-closed 采纳、以扩展 C4 生产启动门禁落地；B 三开关生产置真、代码默认不翻转；C 缺陷修复走修订号 + 消除 OpenLLM 版本硬断言 + 收敛单一事实源；D `/chat/models` 按白名单过滤 + `Tenant.settings["allowed_models"]` 契约化而非新增列），含 6.5 建议汇总表；原 §6/§7 顺延为 §7/§8；状态转 [Review]（待裁定） |
 | v1.1.0 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | 跨仓修复闭环：依指令「依次跨仓小版本修复高危、中危问题」，按仓（OpenRAG→OpenMemory→DPS→OpenLLM）完成 D1–D20 中高危 7 + 中危 10 的修复/显式化（§4.4 修复闭环表 + 四仓提交号 + 三远程一致性核验）；§4 标题与说明、§5.1 结论同步更新；需翻转默认者改等价开关并登记需裁定 |
