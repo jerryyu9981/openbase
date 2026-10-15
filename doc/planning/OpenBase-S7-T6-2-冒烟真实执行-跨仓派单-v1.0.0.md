@@ -3,7 +3,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-DISPATCH-S7T62-SMOKE-v1.0.0 |
-| 文档版本 | v1.0.2 |
+| 文档版本 | v1.0.3 |
 | 状态 | **[Approved]（已批准，正式分发；第三轮真实执行完成并回执）** |
 | 日期 | 2026-10-15 |
 | 发起方 | AA/PM-OpenBase-Dev |
@@ -15,6 +15,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|----------|
+| v1.0.3 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-9 修复回填（§9 已知环境适配项）**：L2 探针同窗口暴露的 `POST /api/v1/users` 未派生 `tenant_code`（致同域账号作委托目标被误判 `PERM_DELEGATION_CROSS_TENANT`）已按 TDD 修复（提交 `6bf7832`），探针观测项 O **403 → 200**；§9 该行同步为「已修复并复验」，缺陷编号统一为 **F-9**（原记为「DEF-B」）。余 F-8（`/auth/me` 绑租户主体 500）同批修复，见《S7-冒烟缺陷分派待办单》v1.0.14 §8 |
 | v1.0.2 | 2026-10-16 | AA/PM-OpenBase-Dev | **冒烟 S0–S6 第三轮真实执行完成并逐仓回执（§8 全部勾选）**：修复包装脚本 `$Args` 自动变量冲突（首轮「服务全灭」根因）+ 新增 ready-gate（等待 OpenLLM 三上游组件 ok，消除启动窗口抖动）+ 运行器 4 处执行侧适配（S2-2 recall 轮询 ≤21s、S3-2 轮询改 `rag_write` 带租户头、S3-3 兼容 `data.items` 响应结构、模型选择小模型优先规避非流式超时）。**第三轮结果 `total=32 / PASS 25 / FAIL 0 / PENDING 7`**（首轮基线 17/8/7 → 8 项 FAIL 全部转绿）；余 7 项 PENDING 均为「需分项条件」登记项（审计端点配合 / 停服故障注入 / 回写队列 / 钩子接入 / dps-proxy 路径核对 / P1 登记）。证据 `doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`；§5 验收四项判据（P0 全绿 / P1 登记 / 不伪造 / 证据齐全）满足 |
 | v1.0.1 | 2026-10-15 | AA/PM-OpenBase-Dev | **批准转 [Approved] 并正式分发**：状态 [Draft] → [Approved]；新增「分发记录」（见上）；登记台账 v1.16.33 与续接指南 v1.0.11 |
 | v1.0.0 | 2026-10-15 | AA/PM-OpenBase-Dev | 初始创建：分仓分发表、准入判据、执行步骤、验收判据、证据归集、风险回滚、逐仓回执清单、已知环境适配项 |
@@ -177,7 +178,7 @@
 | 记忆契约经 memory-proxy | 本环境 OpenMemory 直连鉴权被网关层拒绝，运行器改经 `memory-proxy`（语义等价链路，含四头） | OpenBase/OpenMemory |
 | 注册表 ∩ Ollama 为空 → 运行器降级择小模型 | 第三轮实测 `registry∩ollama=[]`（注册表 `active ∧ is_public ∧ allowed` 过滤后与 Ollama 可用集无交集），运行器按 **Ollama 可用集择小模型**（`qwen2.5:0.5b`）执行，全部 LLM 用例 200 | OpenLLM/基础设施 |
 | 包装脚本 OpenLLM 探活用 `/health` 返回 up=False | OpenLLM `/openllm/v1/health` 可正常返回组件态（ready-gate 据此判定 `ready=True`），但旧探活路径 `/health` 在冷启动窗口内不返回 200 → 日志出现 `openllm up=False (240s)` 的**假阴性**（不阻断，ready-gate 已兜底） | OpenBase（脚本）/ OpenLLM |
-| 委托目标需「目标行域非空」 | 委托不变式要求 `目标行 tenant_code == claim 域`；`POST /api/v1/users` 路径**未派生 `tenant_code`**，故 users 路径建的账号作委托目标会被判 `PERM_DELEGATION_CROSS_TENANT`（**已登记缺陷 DEF-B**，见《S7-冒烟缺陷分派待办单》） | OpenBase |
+| 委托目标需「目标行域非空」 | 委托不变式要求 `目标行 tenant_code == claim 域`；`POST /api/v1/users` 路径**未派生 `tenant_code`**，故 users 路径建的账号作委托目标会被判 `PERM_DELEGATION_CROSS_TENANT`（**已登记缺陷 F-9；已于 `6bf7832` 修复并复验观测项 O 403→200**，见《S7-冒烟缺陷分派待办单》v1.0.14 §8.2） | OpenBase |
 
 ---
 

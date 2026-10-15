@@ -1008,8 +1008,43 @@
       "evidence": "doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json"
     },
     "new_defects_registered": [
-      { "id": "F-8", "title": "GET /api/v1/auth/me 对绑租户主体（tenant_id 为 int）返回 500", "severity": "P1", "blocking_cases": 0, "status": "待修复", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.13 §8.1" },
-      { "id": "F-9", "title": "POST /api/v1/users 未派生 tenant_code → 同域委托被误判 PERM_DELEGATION_CROSS_TENANT", "severity": "P1", "blocking_cases": 0, "status": "待修复", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.13 §8.2" }
-    ]
+      { "id": "F-8", "title": "GET /api/v1/auth/me 对绑租户主体（tenant_id 为 int）返回 500", "severity": "P1", "blocking_cases": 0, "status": "已修复（6bf7832）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §8.1" },
+      { "id": "F-9", "title": "POST /api/v1/users（及 OIDC JIT）未派生 tenant_code → 同域委托被误判 PERM_DELEGATION_CROSS_TENANT", "severity": "P1", "blocking_cases": 0, "status": "已修复（6bf7832）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §8.2" },
+      { "id": "F-10", "title": "SHR 受管编排唯一入口门禁：run_smoke_s0_s6.ps1 / verify_mtauth_realface.ps1 共 3 处直接 Stop-Process", "severity": "P1", "blocking_cases": 0, "status": "预存登记（e2c4f25 基线同样失败，非本轮引入；修复方案待裁定）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §9.1" },
+      { "id": "F-11", "title": "S7 工具骨架门禁 12 项：L1-1/L2-1/L3-1 干跑退出码与证据落盘契约不符", "severity": "P2", "blocking_cases": 0, "status": "预存登记（e2c4f25 基线同样失败，非本轮引入；修复方案待裁定）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §9.2" }
+    ],
+    "fix_verify": {
+      "commit": "6bf7832",
+      "touched": [
+        "openbase/modules/auth/__init__.py（F-8：me() 出参 tenant_id 归一为 str）",
+        "openbase/modules/users/__init__.py（F-9：create_user 补 tenant_code 派生）",
+        "openbase/modules/auth/oidc.py（F-9 同根因旁路：_bind_or_create_user 补 tenant_code）"
+      ],
+      "tdd_red_then_green": [
+        "tests/test_identity_t1.py::test_t1_3b_agent_bound_to_tenant_me_returns_200",
+        "tests/test_users_admin.py::test_create_user_derives_tenant_code",
+        "tests/test_oidc_binding.py::test_jit_create_derives_tenant_code"
+      ],
+      "ruff": "All checks passed",
+      "isolated_suites": {
+        "test_identity_t1.py": "9 passed",
+        "test_users_admin.py": "7 passed",
+        "test_oidc_binding.py": "6 passed",
+        "test_tenant_admin.py": "5 passed",
+        "test_s7_t7_signoff.py": "20 passed",
+        "test_s7_t8_writeback.py": "19 passed",
+        "test_s7_docs.py": "6 passed",
+        "test_s7_t6_gate.py": "16 passed"
+      },
+      "full_regression_grouped": "scripts/run_regression.py → passed=1118 / failed=0 / skipped=4（异常分组仅 F-10/F-11 预存项）",
+      "probe_rerun": {
+        "evidence": "doc/test/evidence/manual/mtauth-delegation-l31-20261016.json",
+        "pre_fix_evidence": "doc/test/evidence/manual/mtauth-delegation-l31-20261016-defect.json",
+        "overall_pass": true,
+        "E_agent_key_auth_200": "500 → 200",
+        "O_user_target_same_domain_observed": "403 → 200"
+      },
+      "baseline_worktree": "e2c4f25（用于证明 F-10/F-11 预存）"
+    }
   }
 }

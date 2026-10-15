@@ -5,16 +5,16 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-FAULT-DISPATCH-v1.0.0 |
-| 版本 | v1.0.13 |
+| 版本 | v1.0.14 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-12 |
 | 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.2；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.3；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.4；S7 批次 14 DPS 探活口径修复会话修订 v1.0.5；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.6；S7 批次 16 跨仓提交状态同步回填会话修订 v1.0.7；S7 批次 17 K07 门禁收口与聚合复跑会话修订 v1.0.8；S7 批次 18 K07 收口提交与脚本路径回填会话修订 v1.0.9；S7 批次 19 DPS 豁免续期入库回填会话修订 v1.0.10；S7 批次 20 OpenLLM 快照落仓脚本登记会话修订 v1.0.11） |
 | 用途 | **冒烟缺陷分派与闭环回填**：将 S7-T6-2 全量冒烟 S0~S6 实测暴露的三项功能缺陷（F-1/F-2/F-3），逐条落笔为「现象与证据 → 根因判定 → 修复动作 → 验证方式 → 回填位置 → 风险与边界」，供责任方按单修复、重跑指定用例、回填台账，并由 OpenBase 侧复核收口 |
 | 上游依据 | ①`doc/test/evidence/s7/smoke/smoke-summary.json`、`doc/test/evidence/s7/smoke/s0-s6-cases.json`（P0 30 例：PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED）；②`doc/test/evidence/s7/env/env-check.json`（READY 14 / UNREACHABLE 2 / BLOCKED 1）；③《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2**，§2.6 四项功能缺陷）；④《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，内部 **v1.1.0**，§3 用例定义）；⑤各仓实际配置文件（只读定位）；⑥《OpenBase-S7-沙箱外执行单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.5**，§2/§3 结构与回填位）；⑦《OpenBase-数据隔离实现任务卡-v1.0.0.md》（K02/K07/K09/K10/K15，七线 JT 口径回填位） |
-| 关联证据 | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}`；`doc/test/evidence/s7/env/env-check.json`；`doc/test/evidence/s7/gate/gate-aggregate.json`；**（v1.0.13）** `doc/test/evidence/manual/{mtauth-realface-20261015.json,mtauth-delegation-l31-20261016.json}`；`doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json` |
+| 关联证据 | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}`；`doc/test/evidence/s7/env/env-check.json`；`doc/test/evidence/s7/gate/gate-aggregate.json`；**（v1.0.13）** `doc/test/evidence/manual/{mtauth-realface-20261015.json,mtauth-delegation-l31-20261016.json}`；`doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`；**（v1.0.14）** `doc/test/evidence/manual/mtauth-delegation-l31-20261016-defect.json`（F-8/F-9 修复前 RED 证据） |
 | 使用说明（闭环四步） | **① 责任方按单修复**（§2~§4「修复动作」）→ **② 重跑指定用例**（各缺陷「验证方式」用例 ID 清单 + 命令模板）→ **③ 回填三处**（执行单 §2/§3、测试报告 §2.2、`smoke-summary.json`）→ **④ 通知 OpenBase 侧复核**（§7 复核动作） |
 | 脱敏口径 | 本单**不输出任何明文密钥 / 口令**；数据库 / Redis 连接串仅记 host 与库名，键值以「已配置 / 脱敏」表述；`.env` 只引用键名，值以「当前值 / 目标值」呈现（密钥类不落值） |
-| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.2 新增 F-6**（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.13 新增 F-8 / F-9**（L2 真实面探针 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json` 暴露的 OpenBase 侧两项缺陷：`/auth/me` 500、`users` 路径未派生 `tenant_code`；均 P1、阻塞用例数 0，见 §8） |
+| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.2 新增 F-6**（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.13 新增 F-8 / F-9**（L2 真实面探针 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json` 暴露的 OpenBase 侧两项缺陷：`/auth/me` 500、`users` 路径未派生 `tenant_code`；均 P1、阻塞用例数 0，见 §8）；**v1.0.14：F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`），并**新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露、经 `e2c4f25` 基线证明非本轮引入，见 §9） |
 
 ### 修订历史
 
@@ -33,6 +33,7 @@
 | v1.0.10 | 2026-09-13 | AI（S7 批次 19 DPS 豁免续期入库回填会话） | **DPS 侧 K07 豁免续期入库（`b5f5c06`）+ 包装脚本修复**：① 一键提交包装 `dps-k07-commit-push.bat` 行尾由 LF 更正为 CRLF（cmd 对 LF-only 批处理逐行解析失败，实测误报 `"\cmd.exe"` / `->` / `doc` 等命令），并改用 `%SystemRoot%` 解析 powershell/chcp；② DPS 侧已于 2026-09-13 执行提交 **`b5f5c06`**（3 文件 = `doc/design/DPS-K07-端点过滤矩阵填报-v1.0.0.md` + `scripts/dps_k07_exempt_commit_push.ps1` + `dps-k07-commit-push.bat`），**origin/backup/github 三远端 `ls-remote` 与本地 HEAD 一致**；③ hash 已回填 §1/§5.6/§7 与 `k07-finalize.json`（新增 `dps_exemption_commit`）及 `gate-aggregate.json` `k07_backfill.dps` → **本单待提交项清零（F-1~F-7 + 全部 K07 挂起项闭环）**。未改动任何子系统仓文件 |
 | v1.0.11 | 2026-09-13 | AI（S7 批次 20 OpenLLM 快照落仓脚本登记会话） | **F-5 遗留项（OpenLLM `backend\data\openapi-llm-snapshot.json` 落仓）收口为可执行形态**：生成一键脚本 `openllm-k07-snapshot-commit-push.bat` + `scripts/openllm_k07_snapshot_commit_push.ps1`（宿主仓库＝OpenBase），源快照取 K07 证据导出 `k07-openapi/openllm.openapi.json`（278 路径 / **351 操作**，与终验台账一致）；脚本含 351 操作校验 + 提交面守卫（仅 1 文件）+ 三远端 `ls-remote` 校验，`-DryRun` 通过；提交分支与 **OpenLLM `backend/data/**` 与 `.git` 在本沙箱被拦截（全仓只读，实测无残留）** → 待沙箱外执行并回填 hash。**F-1~F-7 全部闭环状态不变；本项仅影响 K07 无参 CI 离线校验能力，非冒烟阻塞项（阻塞用例数 0）。** |
 | v1.0.13 | 2026-10-16 | AA/PM-OpenBase-Dev | **新增 F-8 / F-9（L2 真实面探针暴露的 OpenBase 侧缺陷，P1，阻塞用例数 0）**：按「更宽口径遗留问题」推进 L2（RA-06 余项真实面），以原子窗口探针（`doc/tmp/run_l2_probe.ps1` + `doc/tmp/l2_delegation_probe.py`）在运行态验证「委托跨界 403 + agent key 面」，取得 **反例自证配对**：B 跨域委托 **403 `PERM_DELEGATION_CROSS_TENANT`** / C 同域委托 **200**（放行）→ 委托跨界不变式**真实面达成**；A（user 挂委托 → 403 `PERM_FORBIDDEN`）、D（agent 发放 200）、F（agent key 越权 403）、G1/G2（吊销即时 200→401）全部 PASS。**同窗口暴露两项缺陷**：① **F-8** `GET /api/v1/auth/me` 在主体 `tenant_id` 为整数（agent 绑定租户）时 **500**——`MeResponse.tenant_id: str \| None` 与 `resolve_agent_principal` 返回的 int 冲突（pydantic `string_type` 校验失败）；② **F-9** `POST /api/v1/users` **不派生 `tenant_code`**（agent 路径经 `_resolve_tenant_code` 派生），致该路径建的同域账号作委托目标时「目标行域为空 → 同域被误判 `PERM_DELEGATION_CROSS_TENANT`」（探针观测项 O 自证：期望同域放行 200，实测 403）。证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json`（`overall_pass=false`，仅 F-8 对应项 E 不通过；`O` 为如实观测项不入门禁）。新增 §8 详单与 §5.7/§5.8 闭环清单、§7 第 9 项复核动作。**未改动任何功能语义代码**（缺陷按单登记，待裁定修复窗口） |
+| v1.0.14 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-8 / F-9 修复闭环（TDD）+ F-10 / F-11 预存失败登记**：① 依人工指令「按 TDD 修复 F-8 和 F-9」实施——先写 3 条 RED 用例（`tests/test_identity_t1.py::test_t1_3b_agent_bound_to_tenant_me_returns_200`、`tests/test_users_admin.py::test_create_user_derives_tenant_code`、`tests/test_oidc_binding.py::test_jit_create_derives_tenant_code`，均先失败）→ 再修复：**F-8** `me()` 出参口径统一为 `str`；**F-9** `create_user` 与 OIDC JIT `_bind_or_create_user` 补齐 `tenant_code` 派生（复用 `auth.resolve_tenant_code`）。**提交 `6bf7832`**（8 文件 / +178 −6）。② **验证**：`ruff` 全清；三新用例 + 相关模块隔离全绿（t1 9 / users 7 / oidc 6 / tenant_admin 5 / s7_t7 20 / s7_t8 19 / s7_docs 6 / s7_t6_gate 16）；**仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`**；**L2 探针复跑 `overall_pass=true`**（E 由 500→**200**、观测项 O 由 403→**200**，修复前原始证据留档 `mtauth-delegation-l31-20261016-defect.json`）。③ §1 F-8/F-9 状态转「已修复（`6bf7832`）」、§5.7/§5.8 逐项勾选、§7 第 9 项复核落笔、§8 追加修复与验证记录。④ **新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露；已用 `e2c4f25` 基线 worktree 证明非本轮引入，见 §9）。**仅改动 OpenBase 仓源码/测试/文档** |
 
 ---
 
@@ -48,9 +49,11 @@
 | **F-5** | OpenLLM K07 端点-过滤矩阵全量缺填（真实底单 351 操作中 344 未登记 + 无隔离用例） | **OpenLLM 仓**（工作树全量补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(LL) | **已提交（`41af780`，三远端同步）** |
 | **F-6** | OpenMemory K07 端点-过滤矩阵 8 条缺口（真实底单 36 操作中 8 条未登记 + 无隔离用例） | **OpenMemory 仓**（工作树 8 条缺口补填已完成/待提交） | P0 | **0**（非冒烟阻塞项，属 K07 矩阵治理） | S7-T6-4（K07/SYS-1） | K07（端点-过滤矩阵填报）、K02(OM) | **已提交（`0a6f351`，三远端同步）** |
 | **F-7** | OpenLLM DPS 组件探活恒 401（real 模式探活打业务只读面 `/api/v2/portrait/list`，要求组织/租户身份头，而探活上下文无身份）→ `/openllm/v1/health` 的 dps 恒 unavailable，掩盖真实可用性 | **OpenLLM 仓**（探活改走运维端点 `/health/liveness`） | P0 | **0**（非冒烟阻塞项，属健康探活口径） | S7-T6-1（RA-06 真实面）、S7-T6-2 | K09（编排出站身份透传）、K02(LL) | **已提交（`f1d187b`，三远端同步）** |
-| **F-8** | `GET /api/v1/auth/me` 在主体 `tenant_id` 为整数（agent 绑定租户）时返回 **500** —— `MeResponse.tenant_id: str \| None` 与 `resolve_agent_principal` 返回的 int 冲突（pydantic `string_type` 校验失败）；主体未绑租户（int=None）时不触发 | **OpenBase 仓**（响应模型 / 端点序列化口径对齐） | P1 | **0**（非冒烟 S0~S6 阻塞项；属 L3-1 agent key 面读取端点） | S7-T5-1~4（L3-1 Agent 端到端）、S7-T6-1（RA-06 真实面） | — | **待修复（v1.0.13 登记）** |
-| **F-9** | `POST /api/v1/users` **不派生 `tenant_code`**（agent 路径经 `_resolve_tenant_code` 派生），致该路径建的同域账号作委托目标时「目标行域为空 → 同域委托被误判 `PERM_DELEGATION_CROSS_TENANT` 403」（探针观测项 O 自证：期望同域放行 200，实测 403） | **OpenBase 仓**（`users` 创建路径补 `tenant_code` 派生，与 `identity/agents` 口径统一） | P1 | **0**（非冒烟 S0~S6 阻塞项；属委托域不变式的目标装配口径） | S7-T6-1（RA-06 委托跨界真实面）、S7-T5-1~4 | — | **待修复（v1.0.13 登记）** |
-| — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5/F-6/F-7/F-8/F-9 各计 0） | — | — | — |
+| **F-8** | `GET /api/v1/auth/me` 在主体 `tenant_id` 为整数（agent 绑定租户）时返回 **500** —— `MeResponse.tenant_id: str \| None` 与 `resolve_agent_principal` 返回的 int 冲突（pydantic `string_type` 校验失败）；主体未绑租户（int=None）时不触发 | **OpenBase 仓**（响应模型 / 端点序列化口径对齐） | P1 | **0**（非冒烟 S0~S6 阻塞项；属 L3-1 agent key 面读取端点） | S7-T5-1~4（L3-1 Agent 端到端）、S7-T6-1（RA-06 真实面） | — | **已修复（`6bf7832`，v1.0.14）** |
+| **F-9** | `POST /api/v1/users` **不派生 `tenant_code`**（agent 路径经 `_resolve_tenant_code` 派生），致该路径建的同域账号作委托目标时「目标行域为空 → 同域委托被误判 `PERM_DELEGATION_CROSS_TENANT` 403」（探针观测项 O 自证：期望同域放行 200，实测 403）；**同根因旁路**：OIDC JIT `_bind_or_create_user` 同样只落 `tenant_id` | **OpenBase 仓**（`users` 创建路径 + OIDC JIT 建号补 `tenant_code` 派生，与 `identity/agents` 口径统一） | P1 | **0**（非冒烟 S0~S6 阻塞项；属委托域不变式的目标装配口径） | S7-T6-1（RA-06 委托跨界真实面）、S7-T5-1~4 | — | **已修复（`6bf7832`，v1.0.14）** |
+| **F-10** | **SHR 门禁 T1-4 失败**：`scripts/scan_orchestrator_bypass.py` 命中 3 处批量杀路径——`scripts/run_smoke_s0_s6.ps1`（L59 端口残留清理、L123 收尾停服）与 `scripts/verify_mtauth_realface.ps1`（L237 收尾停服）均直接使用 `Stop-Process`，违反「服务生命周期编排唯一入口」纪律 | **OpenBase 仓**（改为经受管编排 `service-orchestrator.ps1 -Action start/stop -Only ...`，或在扫描器加**带票据/审批人/有效期**的豁免位） | P1 | **0**（门禁项，非冒烟用例阻塞项） | S7-T1-4（SHR 受管编排唯一入口） | — | **预存登记（v1.0.14；`e2c4f25` 基线同样失败）** |
+| **F-11** | **S7 工具骨架门禁失败 12 项**：`tests/test_s7_tools_skeleton.py` 期望 `verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1` 干跑退出码 = 2（PENDING）实测为 1，且 `l1_1/l2_1/l3_1` 证据 JSON 未在临时目录产出（`FileNotFoundError`） | **OpenBase 仓**（核对 l1_1/l2_1/l3_1 工具干跑退出码契约与 `-EvidenceDir` 参数，或同步测试期望） | P2 | **0**（门禁项，非冒烟用例阻塞项） | S7-T2-1 / S7-T3-1 / S7-T5-1（三原则总验证工具面） | — | **预存登记（v1.0.14；`e2c4f25` 基线同样失败：12 failed / 14 passed）** |
+| — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5/F-6/F-7/F-8/F-9/F-10/F-11 各计 0） | — | — | — |
 
 > **冒烟快照**（`smoke-summary.json`，`generated_at=2026-09-11T18:57:56+08:00`，`openbase_commit=0595bcde788bd19d3a2e21ffc647b827eaa3fded` / 短号 `0595bcd`）：**P0 30 例 PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED**（`entry_criteria_met=false`）。9 条 FAIL **全部**由 F-1/F-2/F-3 覆盖（F-1 2 条：S0-1、S1-2；F-2 5 条：S1-1、S3-1、S3-2、S3-3、S6-1；F-3 2 条：S0-4、S5-3）；7 条 BLOCKED 中 6 条由 F-1 覆盖（S2-4、S3-4、S5-1、S5-2、S5-4、S5-5），余 1 条 **S5-6** 为禁停服务约束（归受控窗口，不在本单）。
 > **v1.0.8 收口（2026-09-12）**：K07 挂起项全部闭环——**F-5**（OpenLLM `41af780`）、**F-6**（OpenMemory `0a6f351`）均已入库并三远端同步；**DPS 35 条豁免已续期至 2026-12-31**（续期日 2026-09-12，门禁复跑 exit 0）→ K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**（缺口 0 / 未覆盖 0 / 豁免 59 全有效）；门禁聚合复跑 `overall=PASS exit=0 pass=20 fail=0 pending=2`。**F-1~F-7 与全部 K07 挂起项至此闭环**（余环境侧写限制与特性缺口登记，非缺陷）。
@@ -394,27 +397,27 @@
 
 ### 5.7 F-8（`GET /api/v1/auth/me` 对绑租户主体 500：`MeResponse.tenant_id` 形态不一致）—— v1.0.13 新增
 
-> 说明：F-8 非冒烟 S0~S6 阻塞项（阻塞用例数 0），属 **L3-1 agent key 面读取端点**；由 L2 真实面探针暴露。**待修复**。
+> 说明：F-8 非冒烟 S0~S6 阻塞项（阻塞用例数 0），属 **L3-1 agent key 面读取端点**；由 L2 真实面探针暴露。**已修复（`6bf7832`）**。
 
 | 检查项 | 是否完成 | 责任人 | 日期 | 备注 |
 |--------|:---:|--------|------|------|
-| 已登记（现象 / 根因 / 证据） | ☑ | OpenBase 侧 | 2026-10-16 | 证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json`（项 E：500）+ 服务日志 pydantic `string_type` |
-| 已修复（`me()` 出参归一化为 str，或 `MeResponse.tenant_id` 放宽为 `int \| str \| None`；TDD 先行） | ☐ | OpenBase 仓 | | 选项 A 推荐（§8.1） |
-| 已重跑（探针项 E → 200 且 `me_id == agent_id`；`tests/test_identity_t3.py` / `tests/test_users_admin.py` 全绿） | ☐ | OpenBase 仓 | | |
-| 已回填（本单 §1；`mtauth-delegation-l31-*.json`；`gate-aggregate.json` §RA-06；S7 报告 §4.2） | ☐ | OpenBase 侧 | | |
-| OpenBase 复核（§7 第 9 项） | ☐ | OpenBase 侧 | | |
+| 已登记（现象 / 根因 / 证据） | ☑ | OpenBase 侧 | 2026-10-16 | 证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016-defect.json`（项 E：500）+ 服务日志 pydantic `string_type` |
+| 已修复（`me()` 出参归一化为 str；**TDD 先行**：`test_t1_3b_agent_bound_to_tenant_me_returns_200` 先 RED） | ☑ | OpenBase 仓 | 2026-10-16 | 提交 **`6bf7832`**（选项 A，§8.1） |
+| 已重跑（探针项 E → **200** 且 `me_id == agent_id`；`tests/test_identity_t1.py` 9 passed） | ☑ | OpenBase 仓 | 2026-10-16 | 证据 `mtauth-delegation-l31-20261016.json`（`overall_pass=true`，E observed=200） |
+| 已回填（本单 §1/§5.7/§8.1；`mtauth-delegation-l31-20261016*.json`；`gate-aggregate.json` §RA-06；S7 报告 §4.2） | ☑ | OpenBase 侧 | 2026-10-16 | 见本单 v1.0.14 修订历史 |
+| OpenBase 复核（§7 第 9 项） | ☑ | OpenBase 侧 | 2026-10-16 | 独立复跑一致（探针 + 隔离用例 + 分组全量回归） |
 
 ### 5.8 F-9（`POST /api/v1/users` 未派生 `tenant_code`：同域委托被误判跨界）—— v1.0.13 新增
 
-> 说明：F-9 非冒烟 S0~S6 阻塞项（阻塞用例数 0），属 **委托域不变式的目标装配口径**；由 L2 真实面探针暴露。**待修复**。
+> 说明：F-9 非冒烟 S0~S6 阻塞项（阻塞用例数 0），属 **委托域不变式的目标装配口径**；由 L2 真实面探针暴露。**已修复（`6bf7832`）**。
 
 | 检查项 | 是否完成 | 责任人 | 日期 | 备注 |
 |--------|:---:|--------|------|------|
-| 已登记（现象 / 根因 / 证据） | ☑ | OpenBase 侧 | 2026-10-16 | 探针观测项 O：同域用户作目标 → 403 `PERM_DELEGATION_CROSS_TENANT`（对照项 C 同域 agent 目标 → 200） |
-| 已修复（`create_user` 补 `tenant_code` 派生，与 agents 口径统一；TDD 先行） | ☐ | OpenBase 仓 | | 连带核查 `PUT /users/{id}`、`UserOut`、存量回填（§8.2） |
-| 已重跑（探针项 O → 200，探针 `overall_pass=true`；`tests/test_identity_t4.py` / `tests/test_users_admin.py` 全绿） | ☐ | OpenBase 仓 | | |
-| 已回填（本单 §1；`mtauth-delegation-l31-*.json`；`gate-aggregate.json` §RA-06；S7 报告 §4.2；派单 §9） | ☐ | OpenBase 侧 | | |
-| OpenBase 复核（§7 第 9 项） | ☐ | OpenBase 侧 | | |
+| 已登记（现象 / 根因 / 证据） | ☑ | OpenBase 侧 | 2026-10-16 | 探针观测项 O（修复前）：同域用户作目标 → 403 `PERM_DELEGATION_CROSS_TENANT`（对照项 C 同域 agent 目标 → 200）；留档 `mtauth-delegation-l31-20261016-defect.json` |
+| 已修复（`create_user` + OIDC JIT `_bind_or_create_user` 补 `tenant_code` 派生；**TDD 先行**：`test_create_user_derives_tenant_code`、`test_jit_create_derives_tenant_code` 先 RED） | ☑ | OpenBase 仓 | 2026-10-16 | 提交 **`6bf7832`**；连带核查：`PUT /users/{id}` 无 `tenant_id` 字段（不可改租户 → 无失同步路径）、`UserOut` 不加字段（契约不变）、存量未派生行**本轮不批量回填**（需幂等脚本 + 证据，另立任务） |
+| 已重跑（探针项 O → **200**，探针 `overall_pass=true`；`tests/test_users_admin.py` 7 passed / `tests/test_oidc_binding.py` 6 passed） | ☑ | OpenBase 仓 | 2026-10-16 | 证据 `mtauth-delegation-l31-20261016.json`（O observed.status=200） |
+| 已回填（本单 §1/§5.8/§8.2；`mtauth-delegation-l31-20261016*.json`；`gate-aggregate.json` §RA-06；S7 报告 §4.2；派单 §9） | ☑ | OpenBase 侧 | 2026-10-16 | 见本单 v1.0.14 修订历史 |
+| OpenBase 复核（§7 第 9 项） | ☑ | OpenBase 侧 | 2026-10-16 | 独立复跑一致（探针 + 隔离用例 + 分组全量回归） |
 
 ---
 
@@ -445,6 +448,8 @@
 8. **K07 门禁收口复核（v1.0.8 新增）**：OpenBase 侧已独立复核——① 门禁聚合实跑 `python scripts/gate_aggregate.py` → `overall=PASS exit=0 pass=20 fail=0 pending=2`；② K07 真实终验 `k07-finalize.json` 三项判定全部满足（缺口 0 / 未覆盖 0 / 豁免 59 全有效）→ `gate_verdict=PASS`；③ 两仓补填提交 hash 实证（OpenLLM `41af780` / OpenMemory `0a6f351`，三远端同步）；④ DPS 35 条豁免续期至 2026-12-31 且门禁复跑 exit 0；⑤ 回填 `k07-finalize.json`（`status=PASS`、断言 `S7-T6-4-c` FAIL→PASS、挂起项 DONE）与 `gate-aggregate.json` §K07-SYS-1（`status=PASS`）；⑥ 下游文档同步（测试报告 v1.0.12 / 总收官报告 v1.0.8 / 本单 v1.0.8 / 执行单 §3.4/§3.5）。**待提交项**：DPS 仓 K07 填报文档改动（一键提交脚本 `DPS/dps-k07-commit-push.bat`（包装 `DPS/scripts/dps_k07_exempt_commit_push.ps1`，支持 `-DryRun`） 已就绪（`-DryRun` 通过），实跑因环境写入受限中止，待可写环境执行并回填 DPS hash）。**收口（2026-09-13）**：DPS 侧已执行提交 **`b5f5c06`**（3 文件，三远端同步）→ **待提交项：无**。
 
 9. **L2 真实面探针缺陷复核（v1.0.13 新增，F-8 / F-9）**：责任方修复后由 OpenBase 侧按下述口径复核——① **F-8**：以绑租户（`tenant_id` 非空）的 agent 密钥调 `GET /api/v1/auth/me` → 期望 **200** 且 `id == agent_id`（当前实测 **500**，pydantic `string_type`）；② **F-9**：以 `POST /api/v1/users` 建同域账号作委托目标，agent 同域委托 → 期望 **200**（当前实测 **403 `PERM_DELEGATION_CROSS_TENANT`**）；③ 两项修复后重跑探针（`doc/tmp/run_l2_probe.ps1`）→ 期望 `overall_pass=true`（`O_user_target_same_domain_observed.status=200`）；④ 回归 `tests/test_identity_t4.py`（委托域不变式）+ `tests/test_users_admin.py` / `tests/test_identity_t3.py`（`me` 端点与吊销面）全绿；⑤ 回填证据 `doc/test/evidence/manual/mtauth-delegation-l31-<日期>.json`、本单 §1/§5.7/§5.8、`gate-aggregate.json` §RA-06、S7 报告 §4.2。
+
+> **复核结论（2026-10-16，v1.0.14）**：**F-8 / F-9 复核通过**。① **F-8**：`tests/test_identity_t1.py::test_t1_3b_agent_bound_to_tenant_me_returns_200`（9 passed）隔离全绿，探针项 E 由 500 → **200**（`me_id == agent_id`）；② **F-9**：`tests/test_users_admin.py::test_create_user_derives_tenant_code`（7 passed）与 `tests/test_oidc_binding.py::test_jit_create_derives_tenant_code`（6 passed）隔离全绿，探针项 O 由 403 → **200**，探针 `overall_pass=true`；③ 回归：`ruff` 全清、**仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`**（余 F-10/F-11 预存项见 §9，非本轮引入）；④ 证据留档：修复前 `mtauth-delegation-l31-20261016-defect.json` / 修复后 `mtauth-delegation-l31-20261016.json`。判定：**F-8 / F-9 关闭**（提交 `6bf7832`，本单待提交项清零）。
 
 ---
 
@@ -514,6 +519,82 @@
 
 **风险与边界**：**不得**放宽委托域不变式（跨界必须继续 403）；修复仅补齐「目标行域装配」口径，**不得**改为「目标域为空时放行」（那会打开跨界旁路）；存量数据回填须幂等且留证。
 
+### 8.3 修复与验证记录（v1.0.14，2026-10-16）
+
+| 项 | 内容 |
+|----|------|
+| 指令 | 人工指令「按 TDD 修复 F-8 和 F-9」 |
+| TDD（RED） | 先加 3 条用例并确认**先失败**：`test_t1_3b_agent_bound_to_tenant_me_returns_200`（pydantic `string_type` 500）、`test_create_user_derives_tenant_code`（users 行无 tenant_code）、`test_jit_create_derives_tenant_code`（OIDC JIT 行无 tenant_code） |
+| 实现（GREEN） | ① `openbase/modules/auth/__init__.py::me()` 出参 `tenant_id` 归一为 `str`；② `openbase/modules/users/__init__.py::create_user` 补 `resolve_tenant_code` 派生；③ `openbase/modules/auth/oidc.py::_bind_or_create_user` 补 `tenant_code=tenant.code` |
+| 提交 | **`6bf7832`**（8 文件 / +178 −6；含 2 个因本轮文档升版而同步的版本锚点用例 `tests/test_s7_t7_signoff.py` / `tests/test_s7_t8_writeback.py`） |
+| 静态检查 | `python -m ruff check openbase tests` → **All checks passed** |
+| 定向验证 | 隔离复跑：t1 **9 passed** / users **7 passed** / oidc **6 passed** / tenant_admin **5 passed** / s7_t7 **20 passed** / s7_t8 **19 passed** / s7_docs **6 passed** / s7_t6_gate **16 passed** |
+| 全量回归 | `python scripts/run_regression.py`（仓内既定分组子进程隔离）→ **`passed=1118 / failed=0 / skipped=4`**；异常分组仅 F-10/F-11 预存项（见 §9） |
+| 真实面复验 | 探针复跑 `doc/tmp/run_l2_probe.ps1` → **`overall_pass=true`**：E（agent key `/auth/me`）**500 → 200**、O（users 路径同域目标委托）**403 → 200**；保存分界证据 `mtauth-delegation-l31-20261016-defect.json`（修复前）/ `mtauth-delegation-l31-20261016.json`（修复后） |
+| 连带核查 | `PUT /api/v1/users/{id}` 无 `tenant_id` 字段（不可改租户 → 无 `tenant_code` 失同步路径）；`UserOut` 不加字段（响应契约不变）；**存量未派生行不批量回填**（需幂等脚本 + 证据，另立任务登记） |
+
+---
+
+## §9 预存门禁失败登记（v1.0.14 新增，非本轮引入）
+
+> 来源：2026-10-16 全量回归暴露；已用 **`e2c4f25` 基线 worktree** 复跑同项对比，证明二者**在改动前即失败**。二者均为门禁项（阻塞用例数 0），不阻断业务链路，但**须在段门禁最终通过前关闭**。
+
+### 9.1 F-10 详单（受管编排唯一入口门禁：3 处直接 `Stop-Process`）
+
+**现象与证据**
+
+| 项 | 内容 |
+|----|------|
+| 门禁 | `tests/test_s7_t1_shr.py::test_s7_t1_4_bypass_scan_zero_hits_and_not_vacuous` |
+| 结果 | **1 failed / 14 passed**（隔离复跑一致） |
+| 命中 | `scripts/run_smoke_s0_s6.ps1:59`（端口残留清理）、`:123`（收尾停服）；`scripts/verify_mtauth_realface.ps1:237`（收尾停服）——token=`stop-process`、`allowed=false` |
+| 基线 | `e2c4f25` worktree 复跑**同样失败** → **预存**（两脚本的 `Stop-Process` 分别由 `7ca4ed9`/`876f50d` 与 `2aafbaa` 引入） |
+| 复核命令 | `python scripts/scan_orchestrator_bypass.py`（命中 3 项，exit 1） |
+
+**根因判定**：扫描器 `scripts/scan_orchestrator_bypass.py` 的唯一允许位限定于 `scripts/service-orchestrator.ps1`（且仅 `Stop-Process -Id <pid>` 形态，见 `_is_allowed_hit()`）；上述两脚本在自身进程内直接终止所启子进程（按 PID，非按名/通配）→ 仍计为绕过。
+
+**修复动作（建议，二选一，待裁定）**
+
+- **A（推荐，口径正确）**：两脚本的服务启停改为经受管编排入口——`scripts/service-orchestrator.ps1 -Action start|stop -Only openbase,openllm`（该入口已注入 `.env.shared-infra` 与 DPS/代理映射，具备环境等价性；可用 `-HealthTimeout` 覆盖首健康等待）；自持 PID 的收尾停服随之删除。
+- **B**：在扫描器内为「启动方自持 PID 的收尾停服」增设**带票据/审批人/有效期**的豁免位（对齐 `config/identity_exemptions.json` 治理口径），并保留非空化自检以防豁免滥用。
+
+**验证方式**：`python -m pytest tests/test_s7_t1_shr.py -q` → 期望 **15 passed**；`python scripts/scan_orchestrator_bypass.py` → `disallowed=0` / exit 0。
+
+**回填位置**：本单 §1/§9.1；`doc/test/evidence/s7/shr/orchestrator/bypass-scan.json`（重跑刷新）。
+
+**风险与边界**：不得放宽「批量杀」拦截（`-Name` / `/IM` / 通配仍须命中）；改造后必须保持沙箱「同一命令内启动 + 探针」的原子性，避免服务随命令结束被回收。
+
+### 9.2 F-11 详单（S7 工具骨架门禁 12 项）
+
+**现象与证据**
+
+| 项 | 内容 |
+|----|------|
+| 门禁 | `tests/test_s7_tools_skeleton.py` |
+| 结果 | **12 failed / 14 passed**（隔离复跑一致） |
+| 失败族① | 干跑退出码：`verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1` **期望 2（PENDING）实测 1** |
+| 失败族② | 证据文件缺失：`l1_1/cascade-result.json`、`l2_1/failover-drill.json`、`l3_1/agent-e2e.json` → `FileNotFoundError`（经 `test_evidence_schema_valid` / `test_checks_mapped_to_assertions` / `test_no_fake_pass_without_real_environment` 三组参数化各 3 项） |
+| 基线 | `e2c4f25` worktree 复跑**同样 12 failed / 14 passed** → **预存** |
+
+**根因判定（待核）**：三件 L1-1/L2-1/L3-1 工具的干跑契约（退出码 2 = PENDING）与当前实现不一致；且测试在临时目录 `s7_tools0/**` 期望证据 JSON 产出，实际未产出 → 疑为**工具与测试契约漂移**或沙箱路径/参数不匹配。
+
+**修复动作（建议，待核定）**：逐件核对三件工具干跑实现与退出码定义；确认 `-EvidenceDir` 语义与测试 fixture 一致；**据实修工具或同步测试期望**（禁止以「改期望」掩盖工具契约缺失）。
+
+**验证方式**：`python -m pytest tests/test_s7_tools_skeleton.py -q` → 期望 **26 passed**。
+
+**回填位置**：本单 §1/§9.2；S7 报告 §4.2（T2~T5 工具面）。
+
+**风险与边界**：修复须保留「干跑禁伪造 PASS」的可证伪性（`test_no_fake_pass_without_real_environment` 不得弱化）。
+
+### 9.3 预存项与同进程串扰的归因汇总（2026-10-16）
+
+| ID | 门禁/用例 | 隔离结果 | 基线（`e2c4f25`） | 本轮引入 |
+|:--:|-----------|---------|------------------|:-------:|
+| F-10 | `tests/test_s7_t1_shr.py` | 1 failed / 14 passed | 同样失败 | ❌ 否 |
+| F-11 | `tests/test_s7_tools_skeleton.py` | 12 failed / 14 passed | 同样失败 | ❌ 否 |
+
+> **同进程串扰说明**：单进程全量跑另出现 6 例 `asyncpg.exceptions.ConnectionDoesNotExistError`（`test_tenant_admin.py` / `test_users_admin.py`），经**逐文件隔离复跑全部通过**（t_users 7 / t_tenant 5），且仓内既定分组回归（`scripts/run_regression.py`，3 文件/组子进程隔离）**未复现** → 判定为「全局 engine 单例 + 共享 PG 连接」在多文件同进程场景的**环境性串扰**，非业务缺陷（与既有登记口径一致）。
+
 ---
 
 ## 附录
@@ -564,4 +645,4 @@
 
 ---
 
-> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.2）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；**v1.0.2 新增 F-6（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何功能语义代码、未将 `dogfood-output/` 纳入提交面。**v1.0.8 收口**：K07 挂起项（F-5 / F-6 / DPS 35 条豁免续期）全部闭环，K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**；四仓改动与提交由各仓在可写环境执行（本单只登记不代改），DPS 侧改动已生成一键提交脚本待执行。**v1.0.13 新增**：**F-8 / F-9**（L2 真实面探针暴露的 OpenBase 侧两项缺陷，均 P1、阻塞用例数 0，见 §8；同窗口已达成「委托跨界 403 + 同域放行 200」反例自证配对与 agent key 面 A/D/F/G 全绿）；两项**仅登记、未改代码**，修复窗口待裁定。
+> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.2）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；**v1.0.2 新增 F-6（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何功能语义代码、未将 `dogfood-output/` 纳入提交面。**v1.0.8 收口**：K07 挂起项（F-5 / F-6 / DPS 35 条豁免续期）全部闭环，K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**；四仓改动与提交由各仓在可写环境执行（本单只登记不代改），DPS 侧改动已生成一键提交脚本待执行。**v1.0.13；**v1.0.13 新增**：**F-8 / F-9**（L2 真实面探针暴露的 OpenBase 侧两项缺陷，均 P1、阻塞用例数 0，见 §8；同窗口已达成「委托跨界 403 + 同域放行 200」反例自证配对与 agent key 面 A/D/F/G 全绿）；两项**仅登记、未改代码**，修复窗口待裁定。**v1.0.14 收口**：**F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`；仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`），**本单待提交项清零**；同时**新增 F-10 / F-11 预存门禁失败登记**（§9，经 `e2c4f25` 基线证明非本轮引入，修复方案待裁定）。
