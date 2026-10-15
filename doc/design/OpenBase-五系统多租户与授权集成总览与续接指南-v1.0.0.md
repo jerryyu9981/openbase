@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-OVERVIEW-v1.0.0 |
-| 文档版本 | **v1.0.10**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.0.11**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（本文为**汇总视图**，不引入新结论；一切结论以其上游单一事实源为准） |
 | 作者 | AA/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-09 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.11 | 2026-10-15 | AA/PM-OpenBase-Dev | §10.5 新增**跨仓派单指针**：《OpenBase-S7-T6-2 冒烟真实执行-跨仓派单》v1.0.0（OB-DISPATCH-S7T62-SMOKE-v1.0.0，[Draft] 待批准分发）——分仓分发表、准入判据、验收标准、逐仓回执项、已知环境适配项 |
 | v1.0.10 | 2026-10-15 | AA/PM-OpenBase-Dev | **查清 OpenBase/OpenLLM「启停抖动」根因**（**非产品缺陷**）：① 包装脚本健康检查超时过短（4–5s）≪ OpenLLM `/openllm/v1/health` 首调用耗时（~11–40s，依赖三上游+Ollama 探活）→ 误判「未起」（已修为 90s）；② 多轮重叠运行的**端口残留竞争**（已加启动前清端口）；③ **沙箱在命令结束时回收子进程**，故必须「同命令内启动+探针」；④ 运行器 httpx 30s < 单次 LLM 调用 60–90s（已升 120s）+ 登录重试。**实测**：干净单命令启动 OpenLLM **11s healthy**、OpenBase 2–40s。另登记：OpenLLM→DPS 画像调用因 org 别名 `11111111-…` 未在 `OPENLLM_DPS_*_MAP` 覆盖返回 403（配置项，非缺陷）。 |
 | v1.0.9 | 2026-10-15 | AA/PM-OpenBase-Dev | **S7-T6-2 冒烟 S0-S6 真实执行推进**：新增可复用运行器 `scripts/smoke_s0_s6.py`（32 例）+ 包装 `scripts/run_smoke_s0_s6.ps1`（跨仓拉起 + 加载 `.env.shared-infra`）；首轮真实执行 `total=32 / PASS 17 / FAIL 8 / PENDING 7`（证据 `doc/test/evidence/s7/smoke/smoke-summary-20261015132711.json`）；已修复环境适配项（组件嵌套/模型选择/召回解析/轮询/登录重试）；因 OpenBase/OpenLLM 启停抖动未取得干净复跑 |
 | v1.0.8 | 2026-10-15 | AA/PM-OpenBase-Dev | **真实面已执行（沙箱内跑通）**：查明此前「沙箱网络阻塞」为**误判**——根因是脚本**漏注入 `POSTGRES_URL`**（OpenBase DB DSN 只从进程环境解析，`.env` 不参与），致 `db_url` 回落 `localhost:5432`。脚本加载 `.env.shared-infra` 后一条命令 **`overall_pass=true`**：A OIDC IdP ✅、**B 吊销即时性 ✅（旧 token 401）**、**C 跨租户 A 写 B 读 ✅（B 列表不含 A 集合、B 直取 A 集合 404）**、D 转发链 ✅；证据 `doc/test/evidence/manual/mtauth-realface-20261015.json`；§10.4/§10.5 状态同步 |
@@ -403,4 +404,5 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 - **跨仓脚本执行（2026-10-15）**：脚本升级为 `-StartServices` → ✅ **一键拉起六服务**（`openllm`/`openbase` 新起、余者在线的跳过）；✅ A/D 复现 PASS。
 - **真实面执行完成（2026-10-15，`overall_pass=true`）**：查明此前「沙箱网络阻塞」为**误判**——根因是脚本**漏注入 `POSTGRES_URL`**（OpenBase DSN 只从进程 env 解析）致回落 `localhost:5432`。修复后 **B/C 全绿**：**吊销即时性（旧 token 401）**、**A 写 B 读（B 列表不含 A 集合 / B 直取 A 集合 404）**。证据 `doc/test/evidence/manual/mtauth-realface-20261015.json`；执行单升 v1.2.0 [Approved]。
 - **S7-T6-2 冒烟 S0-S6 真实执行（2026-10-15）**：新增运行器 `scripts/smoke_s0_s6.py`（32 例）+ 包装 `scripts/run_smoke_s0_s6.ps1`；首轮真实执行 `total=32 / PASS 17 / FAIL 8 / PENDING 7`（证据 `doc/test/evidence/s7/smoke/smoke-summary-20261015132711.json`）。**启停抖动根因（已查清，非产品缺陷）**：健康检查超时过短（≪ 首健康 ~11–40s）→ 已修 90s；端口残留竞争 → 已加启动前清端口；沙箱**命令结束回收子进程** → 必须原子执行；LLM 调用 60–90s > 原 httpx 30s → 已升 120s。**实测干净启动 OpenLLM 11s healthy**。
+- **跨仓派单（2026-10-15）**：《[OpenBase-S7-T6-2 冒烟真实执行-跨仓派单](file:///d:/Trae%20CN/myproject/Dev/OpenBase/doc/planning/OpenBase-S7-T6-2-%E5%86%92%E7%83%9F%E7%9C%9F%E5%AE%9E%E6%89%A7%E8%A1%8C-%E8%B7%A8%E4%BB%93%E6%B4%BE%E5%8D%95-v1.0.0.md) v1.0.0》（OB-DISPATCH-S7T62-SMOKE）——[Draft] 待批准分发；含分仓分发表（OpenBase 宿主 / OpenLLM / OpenRAG / OpenMemory / DPS / 基础设施）、准入判据（服务常驻 + Ollama 就绪 + 环境变量 + 端口空闲）、验收判据（P0 全绿 / P1 登记 / 不伪造）、逐仓回执项与已知环境适配项。
 - **结论**：真实面（A/B/C/D）**已在沙箱执行通过**；RA-06 余项（fail-closed 故障注入、委托跨界、冒烟 S0-S6、L3-1 agent key）仍 PENDING，回填 S7 §4.2 与走查报告 §5.2。
