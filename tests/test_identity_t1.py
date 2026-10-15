@@ -149,6 +149,28 @@ def _create_agent(headers: dict[str, str], display_name: str = "Agent Demo") -> 
     return body
 
 
+def _ensure_tenant(code: str) -> int:
+    """确保存在租户行并返回其 id（F-8 用例前置：agent 绑租户）."""
+    from sqlalchemy import select as sa_select
+
+    from openbase.core.models import Tenant
+
+    async def _run() -> int:
+        async with get_session_factory()() as session:
+            found = (
+                await session.execute(sa_select(Tenant).where(Tenant.code == code))
+            ).scalar_one_or_none()
+            if found is not None:
+                return found.id
+            tenant = Tenant(name=f"租户 {code}", code=code)
+            session.add(tenant)
+            await session.commit()
+            await session.refresh(tenant)
+            return tenant.id
+
+    return asyncio.run(_run())
+
+
 # ---- T1-1 ----
 
 
@@ -241,6 +263,39 @@ def test_t1_3_agent_key_bearer_auth_succeeds() -> None:
     body = resp.json()
     assert body["id"] == agent_id
     assert body["username"] == created["username"]
+
+
+def test_t1_3b_agent_bound_to_tenant_me_returns_200() -> None:
+    """F-8 回归：绑租户（tenant_id 非空）的 agent 调 /auth/me 返回 200.
+
+    RED 根因：agent 密钥通道 `resolve_agent_principal` 返回的 `tenant_id` 为 DB 的 int，
+    与 `MeResponse.tenant_id: str | None` 冲突 → pydantic v2 校验失败 → 500
+    （未绑租户时为 None，不触发，故既有 T1-3 用例未覆盖此路径）。
+    出参口径统一为字符串后，两条主体通道（JWT / agent 密钥）行为一致。
+    """
+    admin_headers = _admin_headers()
+    tenant_id = _ensure_tenant("tenant-1")
+    resp = client.post(
+        "/api/v1/identity/agents",
+        json={
+            "username": _unique("agent"),
+            "display_name": "Tenant Bound Agent",
+            "role": "viewer",
+            "tenant_id": tenant_id,
+        },
+        headers=admin_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    created = resp.json()
+    agent_id = created["agent_id"]
+    raw_key = created["api_key"]["raw_key"]
+
+    me_resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {raw_key}"})
+    assert me_resp.status_code == 200, me_resp.text
+    body = me_resp.json()
+    assert body["id"] == agent_id
+    # 出参形态：绑租户主体的 tenant_id 统一为字符串（与 JWT 通道一致）
+    assert body["tenant_id"] == str(tenant_id)
 
 
 # ---- T1-4 ----

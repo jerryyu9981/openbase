@@ -386,6 +386,9 @@ async def _bind_or_create_user(
             email=(claims.get("email") or None),
             status=1,
             tenant_id=tenant.id if tenant else None,
+            # F-9（同根因旁路，2026-10-16）：与 POST /users 一致——派生列 tenant_code
+            # 必须随 tenant_id 同时落库（委托域不变式要求目标行域非空）。
+            tenant_code=tenant.code if tenant else None,
         )
         session.add(user_obj)
         await session.flush()

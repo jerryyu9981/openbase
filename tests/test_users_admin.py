@@ -108,6 +108,50 @@ def _decode(token: str) -> dict:
     return jose_jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
 
 
+def _user_tenant_columns(user_id: int) -> tuple | None:
+    """按主键读 users 行 (tenant_id, tenant_code).
+
+    走全局 engine 会话（与应用同一库），避免本仓「模块级 SQLite 文件库 + 全局 engine
+    单例」在多文件同进程运行时读到其它模块库文件的串扰。
+    """
+    from sqlalchemy import text
+
+    from openbase.core.db.session import get_session_factory
+
+    async def _run() -> tuple | None:
+        async with get_session_factory()() as session:  # type: ignore[call-arg]
+            res = await session.execute(
+                text("SELECT tenant_id, tenant_code FROM users WHERE id = :uid"),
+                {"uid": user_id},
+            )
+            return res.first()
+
+    return asyncio.run(_run())
+
+
+def _ensure_tenant(code: str) -> int:
+    """确保存在租户行并返回其 id（F-9 用例前置）."""
+    from sqlalchemy import select as sa_select
+
+    from openbase.core.db.session import get_session_factory
+    from openbase.core.models import Tenant
+
+    async def _run() -> int:
+        async with get_session_factory()() as session:  # type: ignore[call-arg]
+            found = (
+                await session.execute(sa_select(Tenant).where(Tenant.code == code))
+            ).scalar_one_or_none()
+            if found is not None:
+                return found.id
+            tenant = Tenant(name=f"租户 {code}", code=code)
+            session.add(tenant)
+            await session.commit()
+            await session.refresh(tenant)
+            return tenant.id
+
+    return asyncio.run(_run())
+
+
 # ---- RED 用例 ----
 
 
@@ -154,6 +198,37 @@ def test_user_crud_flow() -> None:
     assert role_resp.status_code == 200
     detail_after = client.get(f"/api/v1/users/{user_id}", headers=headers).json()
     assert "admin" in detail_after["roles"]
+
+
+def test_create_user_derives_tenant_code() -> None:
+    """F-9 回归：POST /users 带 tenant_id 时派生 tenant_code（与 identity/agents 口径一致）.
+
+    RED 根因：`create_user` 只落 `tenant_id`、不派生 `tenant_code`（而 `create_agent_subject`
+    经 `_resolve_tenant_code` 派生），致该路径建的同域账号作**委托目标**时
+    「目标行域为空」→ 合法同域委托被误判 403 `PERM_DELEGATION_CROSS_TENANT`。
+    """
+    admin_token = _token("admin", "admin123")
+    tenant_id = _ensure_tenant("tenant-users-1")
+    username = _unique("tuser")
+    resp = client.post(
+        "/api/v1/users",
+        json={
+            "username": username,
+            "password": "pass123",
+            "display_name": "租户用户",
+            "role": "viewer",
+            "tenant_id": tenant_id,
+        },
+        headers=_auth(admin_token),
+    )
+    assert resp.status_code == 200, resp.text
+    user_id = resp.json()["id"]
+
+    row = _user_tenant_columns(user_id)
+    assert row is not None
+    got_tenant_id, got_tenant_code = row
+    assert got_tenant_id == tenant_id
+    assert got_tenant_code == "tenant-users-1"
 
 
 def test_new_user_can_login() -> None:

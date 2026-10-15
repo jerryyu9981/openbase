@@ -421,7 +421,12 @@ async def me(
     return MeResponse(
         id=user["id"],
         username=user["username"],
-        tenant_id=user.get("tenant_id"),
+        # F-8（2026-10-16）：出参口径统一为字符串。JWT 通道的 tenant_id 来自 claim（str），
+        # 而 agent 密钥通道（resolve_agent_principal）返回 DB 的 int，直接透传给
+        # `tenant_id: str | None` 会触发 pydantic v2 校验失败 → 500（绑租户主体必现）。
+        tenant_id=(
+            str(user.get("tenant_id")) if user.get("tenant_id") is not None else None
+        ),
         permissions=permissions,
     )
 

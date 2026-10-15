@@ -18,7 +18,7 @@ from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, User, user_role
-from openbase.modules.auth import hash_password
+from openbase.modules.auth import hash_password, resolve_tenant_code
 from openbase.modules.auth.rbac import PermissionService, has_permission
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
@@ -173,6 +173,10 @@ async def create_user(
     if existing.scalar_one_or_none() is not None:
         raise BaseError(ErrorCode.BIZ_CONFLICT, f"username already exists: {payload.username}")
 
+    # F-9（2026-10-16）：派生列 tenant_code 必须与 tenant_id 同时落库——委托域不变式
+    # （delegation.verify_delegation）要求「目标行 tenant_code == claim 域」，缺派生会让
+    # 该路径建的同域账号作委托目标时被误判跨界 403；口径与 identity/agents 一致。
+    tenant_code = await resolve_tenant_code(payload.tenant_id, session)
     new_user = User(
         username=payload.username,
         password_hash=hash_password(payload.password),
@@ -181,6 +185,7 @@ async def create_user(
         phone=payload.phone,
         status=1,
         tenant_id=payload.tenant_id,
+        tenant_code=tenant_code,
     )
     session.add(new_user)
     await session.flush()

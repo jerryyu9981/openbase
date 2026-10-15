@@ -74,6 +74,34 @@ async def test_jit_create_binds_mapping_and_role(session):
 
 
 @pytest.mark.asyncio
+async def test_jit_create_derives_tenant_code(session):
+    """F-9（同根因旁路）回归：OIDC JIT 建号带租户来源（claims.org）时派生 tenant_code.
+
+    RED 根因：`_bind_or_create_user` 建 User 行时只落 `tenant_id=tenant.id`，
+    未派生 `tenant_code=tenant.code` → 该账号作委托目标时行域为空，
+    合法同域委托被误判 403 PERM_DELEGATION_CROSS_TENANT（与 POST /users 路径同根因）。
+    """
+    from openbase.core.models import Tenant
+
+    session.add(Tenant(name="租户 oidc-tenant", code="oidc-tenant"))
+    await session.commit()
+
+    claims = dict(
+        CLAIMS_ADMIN,
+        sub="oidc-sub-tenant-001",
+        preferred_username="oidc-tenant-user",
+        email="oidc-tenant@openbase.local",
+        org="oidc-tenant",
+    )
+    bound = await _bind_or_create_user(claims, session)
+    assert bound is not None
+    result = await session.execute(select(User).where(User.username == "oidc-tenant-user"))
+    user = result.scalar_one()
+    assert user.tenant_id is not None
+    assert user.tenant_code == "oidc-tenant"
+
+
+@pytest.mark.asyncio
 async def test_reuse_existing_identity(session):
     """二次 OIDC 登录：按 sub 复用既有用户（不重复建号，id 一致）. """
     first = await _bind_or_create_user(CLAIMS_ADMIN, session)
