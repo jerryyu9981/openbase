@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |----|------|
 | 文档编号 | OB-PLAN-MTAUTH-REALFACE-EXEC-v1.0.0 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | [Review]（待联调窗口执行回填） |
 | 作者 | AA/AT/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-15 |
@@ -16,6 +16,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.1.0 | 2026-10-15 | AA/AT/PM-OpenBase-Dev | 脚本升级为**跨仓一键启动**（`-StartServices`，用沙箱共享解释器 `TRAE SOLO CN\...\vm\tools\python` 可拉起六服务含 OpenLLM）；§7 更新沙箱结论（A/D PASS；B/C 换解释器后同根因仍阻塞 → 证明与解释器无关；SQLite 兜底不可行：`demo_app` 初始化 SQL 为 PG 专用） |
 | v1.0.0 | 2026-10-15 | AA/AT/PM-OpenBase-Dev | 初始创建：真实面执行单（范围/前置/步骤/验收判据/证据/风险回滚）+ 沙箱内已取得的部分真实面证据登记 |
 
 ---
@@ -45,10 +46,13 @@
 
 ## 3. 执行步骤
 
-> 推荐一条命令跑完 A–D（沙箱内可用 `-StartOpenBase` 原子模式降级执行 A/D）：
+> 推荐**一条命令**跑完 A–D（服务未起时加 `-StartServices` 由脚本跨仓一键拉起六服务）：
 
 ```powershell
-# 标准（服务常驻的联调环境）：A + B + D
+# 跨仓一键：启动 OpenBase/OpenLLM/OpenRAG/OpenMemory/DPS/OIDC-IdP + 全量真实面（含 A 写 B 读）
+.\scripts\verify_mtauth_realface.ps1 -StartServices -IncludeDataPlane
+
+# 服务常驻的联调环境：A + B + D
 .\scripts\verify_mtauth_realface.ps1
 
 # 含跨租户数据面（A 写 B 读，会创建临时租户/用户/集合，用后清理）
@@ -99,16 +103,20 @@
 
 ## 7. 沙箱内已取得的部分真实面（2026-10-15，非联调窗口）
 
-> 沙箱内服务进程随命令回收、且到共享 PG 的连接被**网络重置**（`OSError [WinError 64]`），故仅以「同命令内启动 + 探针」**原子执行**取到部分真实面；**PENDING 项不填 PASS、不伪造**（证据 `doc/tmp/mtw/realface-20261015014315.json`，临时）。
+> 沙箱内服务进程随命令回收，故以「同命令内启动 + 探针」**原子执行**；B/C 因 OpenBase 进程到共享 PG 的连接被**网络重置**（`OSError [WinError 64] 指定的网络名不再可用` + `ConnectionResetError` + `ConnectionDoesNotExistError`）而阻塞。**PENDING 项不填 PASS、不伪造**（证据 `doc/tmp/mtw/realface-20261015105028.json`，临时）。
 
-| 项 | 沙箱内结论 | 证据 |
+| 项 | 沙箱内结论 | 说明 |
 |----|-----------|------|
-| OpenBase 可用性 | ✅ `/health`=200、`/openapi.json`=200 | 原子启动 |
-| A OIDC IdP 真实面 | ✅ discovery=200、jwks=200（`issuer=http://127.0.0.1:8090`，RS256，claims 含 `roles`/`tenant_id`） | 同上 |
-| D 跨仓转发链 | ✅ `rag-proxy/collections`=200（→ OpenRAG）、`memory-proxy/memories`=200（→ OpenMemory） | 同上 |
-| B 吊销即时性 | ⏳ **阻塞**：`create_user` 500 —— `database init failed, fallback to memory` + `WinError 64`（共享 PG 连接被重置，两次重试同结果） | 同上 |
-| C 双租户 A 写 B 读 | ⏳ **阻塞**：同因（需 DB 建租户/用户） | — |
+| 跨仓一键启动 | ✅ 脚本 `-StartServices` 可拉起六服务（`openllm` 200 / `openbase` 200；已在线者跳过） | 统一用沙箱共享解释器 `TRAE SOLO CN\...\vm\tools\python`（各仓依赖齐备），**OpenLLM 可启动**（旧结论「不可启动」已更正） |
+| A OIDC IdP 真实面 | ✅ discovery=200、jwks=200（`issuer=http://127.0.0.1:8090`，RS256，claims 含 `roles`/`tenant_id`） | — |
+| D 跨仓转发链 | ✅ `rag-proxy/collections`=200（→ OpenRAG）、`memory-proxy/memories`=200（→ OpenMemory） | — |
+| B 吊销即时性 | ⏳ **阻塞**：`create_user` 500（`database init failed, fallback to memory` + `WinError 64`） | **换用沙箱共享解释器后同结果** ⇒ 与解释器无关，为沙箱网络到共享 PG 的持连接被重置 |
+| C 双租户 A 写 B 读 | ⏳ **阻塞**：建租户/建用户均 500（同因）；`B_cannot_see_A_collection` 因 A 无写入而空过 | 同上 |
 | E fail-closed 故障注入 | ⏳ 未执行（破坏性，未做） | — |
-| OpenLLM 运行态（8001） | ⏳ **阻塞**：沙箱内无可匹配的 OpenLLM 依赖/解释器，服务无法拉起 | — |
 
-**结论**：真实面全量执行**须在稳定联调环境按本单进行**；沙箱仅可复现 A/D 两项。
+**补充排查（已排除的替代路径）**：
+- **换解释器**：pgAdmin Python 3.13 与沙箱共享 Python 3.10 均复现同一 `WinError 64` ⇒ 非解释器/deps 问题。
+- **SQLite 兜底**：`OPENBASE_DB_URL` 可覆盖，但 `openbase.core.db.init.init_database` 的种子 SQL 为 **PG 专用**（`setval(pg_get_serial_sequence(...))`、schema 限定、`now()`）⇒ SQLite 初始化不可行（需改代码，超范围）。
+- 直连短连接 `asyncpg` 查询可通（`select 1`=1、`openbase.users`=89）⇒ **唯进程级长连接被重置**，属沙箱网络行为。
+
+**结论**：真实面全量执行**须在稳定联调环境按本单进行**；沙箱仅可复现 A/D 两项 + 一键拉起六服务。
