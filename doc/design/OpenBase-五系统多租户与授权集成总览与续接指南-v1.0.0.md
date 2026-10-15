@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-OVERVIEW-v1.0.0 |
-| 文档版本 | **v1.0.5**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.0.6**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（本文为**汇总视图**，不引入新结论；一切结论以其上游单一事实源为准） |
 | 作者 | AA/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-09 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.6 | 2026-10-15 | AA/PM-OpenBase-Dev | §10.5 登记**二次重跑**结果（出网恢复后重试 B/C）：A/D 再次 PASS；B/C **同根因仍阻塞**（`OSError [WinError 64]` + `ConnectionResetError` + `ConnectionDoesNotExistError`，OpenBase 进程到共享 PG 的**持连接被网络重置**，DB 写入 500）。判定为**稳定环境阻塞**，停止重试 |
 | v1.0.5 | 2026-10-15 | AA/PM-OpenBase-Dev | §10 补「联调窗口真实面执行单」与脚本指针；登记沙箱内已取得的部分真实面（A OIDC IdP ✅ / D 转发链 ✅；B/C/E 因共享 PG 网络重置 WinError 64 + OpenLLM 不可启动而阻塞）。沙箱内**不填 PASS、不伪造** |
 | v1.0.4 | 2026-10-14 | AA/PM-OpenBase-Dev | 新增 §10「OIDC/Redis 吊销面与下游三仓数据面隔离清查（2026-10-14）」：① 清查 A（真实 IdP/Redis 面：结构面 PASS／真实面 PENDING）；② 清查 B（下游三仓数据面：D1–D20 + 4 裁定已闭环，A 写 B 读实证待授权）；③ **跨仓生产开关下发清单**（OpenMemory/DPS/OpenLLM 生产者开关 + 载体现状）；④ 处置与遗留。同步登记 OpenMemory 载体补齐提交 `934e34e`（三远程一致） |
 | v1.0.3 | 2026-10-09 | AA/PM-OpenBase-Dev | 状态刷新：§4.1 批次表 C3 由「未实施」更新为「**第一阶段（契约与登记）已完成**」；§7.1 未决项 7 同步；新增契约制品 `config/identity_exemptions.json`（豁免治理单一事实源） |
@@ -394,4 +395,5 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 - **执行单**：《[OpenBase-联调窗口真实面执行单](file:///d:/Trae%20CN/myproject/Dev/OpenBase/doc/planning/OpenBase-%E8%81%94%E8%B0%83%E7%AA%97%E5%8F%A3%E7%9C%9F%E5%AE%9E%E9%9D%A2%E6%89%A7%E8%A1%8C%E5%8D%95-v1.0.0.md) v1.0.0》（前置/步骤/验收判据/证据/风险回滚）。
 - **脚本**：`scripts/verify_mtauth_realface.ps1`（覆盖 OIDC IdP / 吊销即时性 / 跨仓转发链 / 跨租户 A 写 B 读）。
 - **沙箱内已取部分真实面（2026-10-15）**：✅ A OIDC IdP（discovery+jwks 200）、✅ D 跨仓转发链（rag/memory-proxy 200）；⏳ B/C 因**共享 PG 连接网络重置**（`OSError [WinError 64]`，两次同结果）阻塞、E 未做、OpenLLM 沙箱内不可启动 —— **PENDING 项不填 PASS**。
+- **二次重跑（2026-10-15，出网恢复后）**：✅ A/D 再次 PASS；⏳ B/C **同根因仍阻塞**（`WinError 64` + `ConnectionResetError` + `ConnectionDoesNotExistError`，`/api/v1/users`、`/api/v1/tenants` 写入均 500）。**判定：稳定环境阻塞（沙箱网络到共享 PG 的持连接被重置），停止重试**，留待稳定联调环境执行。
 - **结论**：真实面全量执行须在**网络稳定的联调环境**按执行单进行，回填 S7 §4.2 与走查报告 §5.2。
