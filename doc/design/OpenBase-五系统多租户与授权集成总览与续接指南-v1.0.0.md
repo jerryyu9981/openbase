@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-OVERVIEW-v1.0.0 |
-| 文档版本 | **v1.0.8**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.0.9**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（本文为**汇总视图**，不引入新结论；一切结论以其上游单一事实源为准） |
 | 作者 | AA/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-09 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.9 | 2026-10-15 | AA/PM-OpenBase-Dev | **S7-T6-2 冒烟 S0-S6 真实执行推进**：新增可复用运行器 `scripts/smoke_s0_s6.py`（32 例）+ 包装 `scripts/run_smoke_s0_s6.ps1`（跨仓拉起 + 加载 `.env.shared-infra`）；首轮真实执行 `total=32 / PASS 17 / FAIL 8 / PENDING 7`（证据 `doc/test/evidence/s7/smoke/smoke-summary-20261015132711.json`）；已修复环境适配项（组件嵌套/模型选择/召回解析/轮询/登录重试）；因 OpenBase/OpenLLM 启停抖动未取得干净复跑 |
 | v1.0.8 | 2026-10-15 | AA/PM-OpenBase-Dev | **真实面已执行（沙箱内跑通）**：查明此前「沙箱网络阻塞」为**误判**——根因是脚本**漏注入 `POSTGRES_URL`**（OpenBase DB DSN 只从进程环境解析，`.env` 不参与），致 `db_url` 回落 `localhost:5432`。脚本加载 `.env.shared-infra` 后一条命令 **`overall_pass=true`**：A OIDC IdP ✅、**B 吊销即时性 ✅（旧 token 401）**、**C 跨租户 A 写 B 读 ✅（B 列表不含 A 集合、B 直取 A 集合 404）**、D 转发链 ✅；证据 `doc/test/evidence/manual/mtauth-realface-20261015.json`；§10.4/§10.5 状态同步 |
 | v1.0.7 | 2026-10-15 | AA/PM-OpenBase-Dev | §10.5 登记**跨仓脚本执行**结果：脚本升级为 `-StartServices`（用沙箱共享解释器一键拉起六服务，**含 OpenLLM**）；A/D 复现 PASS；B/C **换解释器后仍同根因阻塞**（证明与解释器无关，为沙箱网络到共享 PG 的持连接被重置）；**SQLite 兜底不可行**（`demo_app` 初始化 SQL 为 PG 专用） |
 | v1.0.6 | 2026-10-15 | AA/PM-OpenBase-Dev | §10.5 登记**二次重跑**结果（出网恢复后重试 B/C）：A/D 再次 PASS；B/C **同根因仍阻塞**（`OSError [WinError 64]` + `ConnectionResetError` + `ConnectionDoesNotExistError`，OpenBase 进程到共享 PG 的**持连接被网络重置**，DB 写入 500）。判定为**稳定环境阻塞**，停止重试 |
@@ -400,4 +401,5 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 - **二次重跑（2026-10-15，出网恢复后）**：✅ A/D 再次 PASS；⏳ B/C **同根因仍阻塞**（`WinError 64` + `ConnectionResetError` + `ConnectionDoesNotExistError`，`/api/v1/users`、`/api/v1/tenants` 写入均 500）。**判定：稳定环境阻塞（沙箱网络到共享 PG 的持连接被重置），停止重试**，留待稳定联调环境执行。
 - **跨仓脚本执行（2026-10-15）**：脚本升级为 `-StartServices` → ✅ **一键拉起六服务**（`openllm`/`openbase` 新起、余者在线的跳过）；✅ A/D 复现 PASS。
 - **真实面执行完成（2026-10-15，`overall_pass=true`）**：查明此前「沙箱网络阻塞」为**误判**——根因是脚本**漏注入 `POSTGRES_URL`**（OpenBase DSN 只从进程 env 解析）致回落 `localhost:5432`。修复后 **B/C 全绿**：**吊销即时性（旧 token 401）**、**A 写 B 读（B 列表不含 A 集合 / B 直取 A 集合 404）**。证据 `doc/test/evidence/manual/mtauth-realface-20261015.json`；执行单升 v1.2.0 [Approved]。
+- **S7-T6-2 冒烟 S0-S6 真实执行（2026-10-15）**：新增运行器 `scripts/smoke_s0_s6.py`（32 例）+ 包装 `scripts/run_smoke_s0_s6.ps1`；首轮真实执行 `total=32 / PASS 17 / FAIL 8 / PENDING 7`（证据 `doc/test/evidence/s7/smoke/smoke-summary-20261015132711.json`）；已入库环境适配修复；**因 OpenBase/OpenLLM 启停抖动未取得干净复跑**，待环境稳定复跑回填。
 - **结论**：真实面（A/B/C/D）**已在沙箱执行通过**；RA-06 余项（fail-closed 故障注入、委托跨界、冒烟 S0-S6、L3-1 agent key）仍 PENDING，回填 S7 §4.2 与走查报告 §5.2。

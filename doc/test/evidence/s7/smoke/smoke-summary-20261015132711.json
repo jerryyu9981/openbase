@@ -1,0 +1,335 @@
+{
+  "schema_version": 5,
+  "tool": "smoke",
+  "mode": "real",
+  "generated_at": "2026-10-15T13:28:12.252125+08:00",
+  "openbase_commit": "3f7534d",
+  "ollama_available": true,
+  "model_used": "qwen3:0.6b",
+  "total": 32,
+  "pass": 17,
+  "fail": 8,
+  "pending": 7,
+  "cases": [
+    {
+      "id": "S0-1",
+      "section": "S0",
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/openllm/v1/health",
+      "status_code": 200,
+      "verdict": "FAIL",
+      "evidence": "components={\"openmemory\": {\"status\": \"ok\", \"latency_ms\": 0, \"channel\": \"b\"}, \"openrag\": {\"status\": \"ok\", \"latency_ms\": 31, \"channel\": \"b\"}, \"dps\": {\"status\": \"ok\", \"latency_ms\": 63, \"channel\": \"b\"}, \"ollama\": {\"status\": \"ok\", \"latency_ms\": 63, \"models\": 4, \"channel\": \"a\"}}",
+      "reason": "三上游组件探活未全 ok"
+    },
+    {
+      "id": "S0-2",
+      "section": "S0",
+      "method": "GET",
+      "url": "http://127.0.0.1:8010/openrag/endpoints",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "status=200; contains_documents_text=True",
+      "reason": ""
+    },
+    {
+      "id": "S0-3",
+      "section": "S0",
+      "method": "GET",
+      "url": "http://127.0.0.1:8030/health/liveness + /openapi.json",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "liveness=200; openapi=200; put_portrait=True",
+      "reason": ""
+    },
+    {
+      "id": "S0-4",
+      "section": "S0",
+      "method": "POST/GET",
+      "url": "http://127.0.0.1:8001/openllm/v1/chat + audit",
+      "status_code": null,
+      "verdict": "PENDING",
+      "evidence": "信任链审计断言需 OpenLLM 审计端点配合",
+      "reason": "登记：由 S5-3 覆盖（M3 审计）"
+    },
+    {
+      "id": "S0-5",
+      "section": "S0",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "create=200 memory_id=2a867db3-af89-4e34-b888-f3fe4d0aafca",
+      "reason": "经 memory-proxy（持同一凭据 + 注入四头）"
+    },
+    {
+      "id": "S1-1",
+      "section": "S1",
+      "method": "GET",
+      "url": "http://127.0.0.1:8010/api/v1/collections",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "RAG no-key=401 key=200",
+      "reason": "OpenMemory 直连鉴权在本环境由网关层拒绝（见模块 docstring）"
+    },
+    {
+      "id": "S1-2",
+      "section": "S1",
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/openllm/v1/health",
+      "status_code": 200,
+      "verdict": "FAIL",
+      "evidence": "components={\"openmemory\": {\"status\": \"ok\", \"latency_ms\": 0, \"channel\": \"b\"}, \"openrag\": {\"status\": \"ok\", \"latency_ms\": 31, \"channel\": \"b\"}, \"dps\": {\"status\": \"ok\", \"latency_ms\": 63, \"channel\": \"b\"}, \"ollama\": {\"status\": \"ok\", \"latency_ms\": 63, \"models\": 4, \"channel\": \"a\"}}",
+      "reason": ""
+    },
+    {
+      "id": "S2-1",
+      "section": "S2",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "status=200 memory_id=0eec941f-906f-4d9f-8a44-0cf28174ece2",
+      "reason": ""
+    },
+    {
+      "id": "S2-2",
+      "section": "S2",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/recall",
+      "status_code": 200,
+      "verdict": "FAIL",
+      "evidence": "recall=200 命中=False",
+      "reason": ""
+    },
+    {
+      "id": "S2-3",
+      "section": "S2",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember",
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "无内容=422（错误凭据用例见模块 docstring）",
+      "reason": ""
+    },
+    {
+      "id": "S2-4",
+      "section": "S2",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+      "status_code": 404,
+      "verdict": "FAIL",
+      "evidence": "chat=404 model=qwen3:0.6b body={\"code\":2001,\"message\":\"模型 'qwen3:0.6b' 不存在\",\"data\":null,\"timestamp\":\"2026-10-15T05:27:37.685653+00:",
+      "reason": ""
+    },
+    {
+      "id": "S2-5",
+      "section": "S2",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/recall + /remember",
+      "status_code": 422,
+      "verdict": "PASS",
+      "evidence": "空query=422; 无session remember=200",
+      "reason": ""
+    },
+    {
+      "id": "S2-6",
+      "section": "S2",
+      "method": "GET",
+      "url": "OpenMemory history（已知限制）",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "真实模式 history 为已知限制（登记项，不设通过断言）",
+      "reason": ""
+    },
+    {
+      "id": "S3-1",
+      "section": "S3",
+      "method": "POST/GET",
+      "url": "http://127.0.0.1:8010/api/v1/collections",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "create=200 cid=58a403fb-c17e-4769-ae95-63354f24b108 list=200",
+      "reason": ""
+    },
+    {
+      "id": "S3-2",
+      "section": "S3",
+      "method": "POST/GET",
+      "url": "http://127.0.0.1:8010/api/v1/collections/58a403fb-c17e-4769-ae95-63354f24b108/documents/text",
+      "status_code": 200,
+      "verdict": "FAIL",
+      "evidence": "submit=200 doc=a4d6e2dd-9e27-4c26-a10f-ba8e983310fe 轮询=PENDING",
+      "reason": ""
+    },
+    {
+      "id": "S3-3",
+      "section": "S3",
+      "method": "POST",
+      "url": "http://127.0.0.1:8010/api/v1/collections/58a403fb-c17e-4769-ae95-63354f24b108/query/retrieve",
+      "status_code": 200,
+      "verdict": "FAIL",
+      "evidence": "retrieve=200 命中=False items=0",
+      "reason": ""
+    },
+    {
+      "id": "S3-4",
+      "section": "S3",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat（rag）",
+      "status_code": 404,
+      "verdict": "FAIL",
+      "evidence": "chat=404 body={\"code\":2001,\"message\":\"模型 'qwen3:0.6b' 不存在\",\"data\":null,\"timestamp\":\"2026-10-15T05:28:10.674868+00:",
+      "reason": ""
+    },
+    {
+      "id": "S4-0",
+      "section": "S4",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
+      "status_code": null,
+      "verdict": "PENDING",
+      "evidence": "dps-proxy 列表路径待核对",
+      "reason": "登记：主路径走 OpenBase dps-proxy"
+    },
+    {
+      "id": "S4-1",
+      "section": "S4",
+      "method": "POST/GET",
+      "url": "http://127.0.0.1:8030/api/v2/portrait/calculate",
+      "status_code": 404,
+      "verdict": "PASS",
+      "evidence": "calculate=404",
+      "reason": "404 属 person 预置缺失（环境待办）"
+    },
+    {
+      "id": "S4-2",
+      "section": "S4",
+      "method": "PUT/GET",
+      "url": "http://127.0.0.1:8030/api/v2/portrait/smoke_person_052733",
+      "status_code": 404,
+      "verdict": "PASS",
+      "evidence": "PUT=404",
+      "reason": ""
+    },
+    {
+      "id": "S4-3",
+      "section": "S4",
+      "method": "GET",
+      "url": "http://127.0.0.1:8030/api/v2/portrait/list",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "缺头=401; 四头=200",
+      "reason": ""
+    },
+    {
+      "id": "S4-4",
+      "section": "S4",
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/openllm/v1/writeback",
+      "status_code": null,
+      "verdict": "PENDING",
+      "evidence": "P1 登记项",
+      "reason": "回写队列就绪性依环境"
+    },
+    {
+      "id": "S5-1",
+      "section": "S5",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat",
+      "status_code": 404,
+      "verdict": "FAIL",
+      "evidence": "chat=404 model=qwen3:0.6b body={\"code\":2001,\"message\":\"模型 'qwen3:0.6b' 不存在\",\"data\":null,\"timestamp\":\"2026-10-15T05:28:11.687756+00:",
+      "reason": ""
+    },
+    {
+      "id": "S5-2",
+      "section": "S5",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "SSE status=200 routing=True",
+      "reason": ""
+    },
+    {
+      "id": "S5-5",
+      "section": "S5",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/chat/stream",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "SSE status=200 routing=True",
+      "reason": ""
+    },
+    {
+      "id": "S5-4",
+      "section": "S5",
+      "method": "-",
+      "url": "EvaluateSession",
+      "status_code": null,
+      "verdict": "PENDING",
+      "evidence": "钩子接入登记",
+      "reason": "登记项"
+    },
+    {
+      "id": "S5-3",
+      "section": "S5",
+      "method": "POST/GET",
+      "url": "M3 审计",
+      "status_code": null,
+      "verdict": "PENDING",
+      "evidence": "需审计端点配合",
+      "reason": "登记：由既有 M3 结论承载"
+    },
+    {
+      "id": "S5-6",
+      "section": "S5",
+      "method": "-",
+      "url": "OpenRAG 停服降级",
+      "status_code": null,
+      "verdict": "PENDING",
+      "evidence": "需停服注入故障",
+      "reason": "受约束未执行（清单 §4）"
+    },
+    {
+      "id": "S6-1",
+      "section": "S6",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections/{cid}/query/retrieve",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "retrieve=200",
+      "reason": ""
+    },
+    {
+      "id": "S6-2",
+      "section": "S6",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/remember + /recall",
+      "status_code": 200,
+      "verdict": "PASS",
+      "evidence": "remember=200; recall=200",
+      "reason": ""
+    },
+    {
+      "id": "S6-3",
+      "section": "S6",
+      "method": "-",
+      "url": "跨链路一致性",
+      "status_code": null,
+      "verdict": "PENDING",
+      "evidence": "主通道沉淀依赖 LLM/回写",
+      "reason": "P1 登记"
+    },
+    {
+      "id": "S6-4",
+      "section": "S6",
+      "method": "-",
+      "url": "P1 登记不阻塞",
+      "status_code": null,
+      "verdict": "PASS",
+      "evidence": "S4-4/S6-3 如实登记为 PENDING，不作为阻塞项",
+      "reason": ""
+    }
+  ]
+}

@@ -112,6 +112,8 @@
 | 6 | S7-T2-1 / S7-T3-1 / S7-T4-1 / S7-T5-1 | T2~T5 联调窗口（L1-1 级联 / L2-1 演练 / L2-2 终验 / L3-1 Agent） | 四仓运行态 + 可注故障运行态 + 真实 agent key | 联调窗口 |
 | 7 | S7-T7-1 / S7-T7-2 | T7 跨仓推送受限项（OpenLLM `jerry.yu` 远端无写权限）+ 本地点跟踪 ref 待 `git fetch`；勾稽 A 类回读已闭环（差异 0） | 各仓远端写权限（`jerry.yu`）+ `git fetch` | 用户（沙箱外） |
 
+> **S7-T6-2 冒烟真实执行进展（2026-10-15 追加）**：已重建可复用运行器 `scripts/smoke_s0_s6.py`（32 例 S0-S6 真实 HTTP，schema_version=5）+ 包装脚本 `scripts/run_smoke_s0_s6.ps1`（跨仓拉起 OpenBase/OpenLLM，加载 `.env.shared-infra`）。**首轮真实执行**（证据 `doc/test/evidence/s7/smoke/smoke-summary-20261015132711.json`）：`total=32 / PASS 17 / FAIL 8 / PENDING 7`（Ollama 在线；OIDC/IdP 面、转发链、S3 入库、S4 DPS、S6 旁路多项全绿）。**已入库的环境适配修复**：组件嵌套判定（`data.components` 为 `{status}` 形态）、模型取自 Ollama 可用集 ∩ 注册表、召回响应解析、入库轮询时长、OpenBase 登录重试。**后续复跑因沙箱内 OpenBase/OpenLLM 启停抖动未取得干净结果** → 待环境稳定按同一脚本复跑回填（P0 全绿判定）。
+
 ### 4.3 `PG-ENV-1`~`PG-ENV-4`（环境性挂起 → **v1.0.4 全部关闭**）
 
 | ID | 挂起项 | 前置条件 | 责任方 | 复核动作 |
