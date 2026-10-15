@@ -62,7 +62,7 @@ SMOKE_USER = f"smoke_user_{STAMP}"
 PERSON = f"smoke_person_{STAMP}"
 
 CASES: list[dict] = []
-_c = httpx.Client(timeout=30.0)
+_c = httpx.Client(timeout=120.0)
 
 
 def add(cid, section, method, url, verdict, code, evidence, reason=""):

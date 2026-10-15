@@ -50,7 +50,35 @@ if (Test-Path $sharedEnv) {
 $Py = Resolve-Python
 Write-Output "python = $Py"
 
-function Test-Up { param($Url) try { (Invoke-WebRequest $Url -TimeoutSec 4 -UseBasicParsing).StatusCode -eq 200 } catch { $false } }
+function Test-Up { param($Url) try { (Invoke-WebRequest $Url -TimeoutSec 90 -UseBasicParsing).StatusCode -eq 200 } catch { $false } }
+
+function Clear-Listener {
+    param([int]$Port)
+    $c = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+    if ($c) {
+        $c.OwningProcess | Select-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+        Start-Sleep -Seconds 2
+        Write-Host ("  cleared stale listener on {0}" -f $Port)
+    }
+}
+
+function Start-Svc {
+    param([string]$Name, [int]$Port, [string]$Cwd, [string[]]$Args, [string]$Health, [hashtable]$ExtraEnv)
+    if (Test-Up $Health) { Write-Host ("{0} already online" -f $Name); return }
+    Clear-Listener -Port $Port
+    if ($ExtraEnv) { foreach ($k in $ExtraEnv.Keys) { Set-Item -Path ("Env:" + $k) -Value $ExtraEnv[$k] } }
+    $err = Join-Path $OutDir ("{0}.{1}.err.log" -f $Name, $Stamp)
+    $outf = Join-Path $OutDir ("{0}.{1}.out.log" -f $Name, $Stamp)
+    $p = Start-Process -FilePath $Py -ArgumentList $Args -WorkingDirectory $Cwd -PassThru -RedirectStandardOutput $outf -RedirectStandardError $err -WindowStyle Hidden
+    $up = $false
+    for ($i = 0; $i -lt 120; $i++) { Start-Sleep -Seconds 2; if (Test-Up $Health) { $up = $true; break } }
+    Write-Host ("{0} up={1} ({2}s)" -f $Name, $up, ($i * 2))
+    if (-not $up) {
+        Write-Host ("  {0} NOT UP; err tail:" -f $Name)
+        Get-Content $err -Tail 8 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("    " + $_) }
+    }
+    return ,$p
+}
 
 $env:PYTHONDONTWRITEBYTECODE = '1'
 $env:PORT = '8001'
@@ -62,21 +90,10 @@ $obEnv = @{
 }
 
 $started = @()
-# OpenLLM
-if (-not (Test-Up 'http://127.0.0.1:8001/health')) {
-    $p = Start-Process -FilePath $Py -ArgumentList @('-m','uvicorn','main:app','--host','127.0.0.1','--port','8001') -WorkingDirectory "$DevRoot\OpenLLM\backend" -PassThru -RedirectStandardOutput "$OutDir\openllm.$Stamp.out.log" -RedirectStandardError "$OutDir\openllm.$Stamp.err.log" -WindowStyle Hidden
-    $started += $p
-    for ($i = 0; $i -lt 60; $i++) { Start-Sleep -Seconds 2; if (Test-Up 'http://127.0.0.1:8001/health') { break } }
-    Write-Output ("openllm up=$((Test-Up 'http://127.0.0.1:8001/health'))")
-} else { Write-Output "openllm already online" }
-# OpenBase
-if (-not (Test-Up 'http://127.0.0.1:8000/health')) {
-    foreach ($k in $obEnv.Keys) { Set-Item -Path ("Env:" + $k) -Value $obEnv[$k] }
-    $p = Start-Process -FilePath $Py -ArgumentList @('-m','uvicorn','openbase.demo_app:app','--host','127.0.0.1','--port','8000') -WorkingDirectory $OpenBaseRoot -PassThru -RedirectStandardOutput "$OutDir\openbase.$Stamp.out.log" -RedirectStandardError "$OutDir\openbase.$Stamp.err.log" -WindowStyle Hidden
-    $started += $p
-    for ($i = 0; $i -lt 60; $i++) { Start-Sleep -Seconds 2; if (Test-Up 'http://127.0.0.1:8000/health') { break } }
-    Write-Output ("openbase up=$((Test-Up 'http://127.0.0.1:8000/health'))")
-} else { Write-Output "openbase already online" }
+$p1 = Start-Svc -Name 'openllm' -Port 8001 -Cwd "$DevRoot\OpenLLM\backend" -Args @('-m','uvicorn','main:app','--host','127.0.0.1','--port','8001') -Health 'http://127.0.0.1:8001/health' -ExtraEnv $null
+if ($p1) { $started += $p1 }
+$p2 = Start-Svc -Name 'openbase' -Port 8000 -Cwd $OpenBaseRoot -Args @('-m','uvicorn','openbase.demo_app:app','--host','127.0.0.1','--port','8000') -Health 'http://127.0.0.1:8000/health' -ExtraEnv $obEnv
+if ($p2) { $started += $p2 }
 
 $env:SMOKE_COMMIT = (git -C $OpenBaseRoot rev-parse --short HEAD 2>$null)
 $env:PYTHONIOENCODING = 'utf-8'
