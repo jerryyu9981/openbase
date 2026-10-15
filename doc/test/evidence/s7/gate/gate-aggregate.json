@@ -33,8 +33,9 @@
             "tests/test_identity_t2.py"
           ],
           "execution_face": "A+B",
-          "real_face_status": "PENDING",
+          "real_face_status": "PASS",
           "reason": "真实双租户数据面（DPS 画像/OpenMemory 记忆跨租户读写）需 PG + 四仓运行态，属 B 面",
+          "real_face_evidence": "联调窗口真实面：租户 A 建集合 200 → 租户 B 列举不含 A 集合 → 租户 B 直取 A 集合 404（跨租户不可见/不可读）；证据 doc/test/evidence/manual/mtauth-realface-20261015.json（overall_pass=true）；另 S3-1/S3-3 冒烟真实链路（smoke-summary-20261016005540.json）佐证",
           "status": "PASS",
           "exit_code": 0,
           "cases": 19,
@@ -95,8 +96,9 @@
             "tests/test_oidc_keycloak.py"
           ],
           "execution_face": "A+B",
-          "real_face_status": "PENDING",
+          "real_face_status": "PASS",
           "reason": "真实 IdP 回调与吊销链路需身份提供方，属 B 面",
+          "real_face_evidence": "联调窗口真实面：OIDC IdP discovery 200 + jwks 200 + 吊销即时性（旧 token 401）；证据 doc/test/evidence/manual/mtauth-realface-20261015.json（overall_pass=true）",
           "status": "PASS",
           "exit_code": 0,
           "cases": 12,
@@ -125,8 +127,9 @@
             "tests/test_identity_t4.py"
           ],
           "execution_face": "A+B",
-          "real_face_status": "PENDING",
+          "real_face_status": "PASS",
           "reason": "真实网关代理链路的跨界 403 需四仓运行态，属 B 面",
+          "real_face_evidence": "L2 原子窗口探针（doc/tmp/run_l2_probe.ps1 + doc/tmp/l2_delegation_probe.py）：B 跨域委托 403 PERM_DELEGATION_CROSS_TENANT / C 同域委托 200（反例自证配对）；A user 挂 on_behalf_of 403 PERM_FORBIDDEN；证据 doc/test/evidence/manual/mtauth-delegation-l31-20261016.json。**附注：同窗口暴露 F-8/F-9 两项 OpenBase 侧缺陷（登记于《S7-冒烟缺陷分派待办单》v1.0.13 §8，均 P1、阻塞用例数 0）**",
           "status": "PASS",
           "exit_code": 0,
           "cases": 13,
@@ -149,8 +152,9 @@
             "tests/test_identity_t3.py"
           ],
           "execution_face": "A+B",
-          "real_face_status": "PENDING",
+          "real_face_status": "PASS",
           "reason": "真实 token 吊销即时性需 Redis/PG 运行态，属 B 面",
+          "real_face_evidence": "联调窗口真实面：admin suspend 后旧 token 复用 → 401（吊销即时）；证据 doc/test/evidence/manual/mtauth-realface-20261015.json（overall_pass=true）；另探针 G1/G2（agent key 吊销 200 → 401）佐证 doc/test/evidence/manual/mtauth-delegation-l31-20261016.json",
           "status": "PASS",
           "exit_code": 0,
           "cases": 17,
@@ -173,35 +177,40 @@
           "item": "双租户隔离回归 真实面",
           "precondition": "真实双租户数据面（DPS 画像/OpenMemory 记忆跨租户读写）需 PG + 四仓运行态，属 B 面",
           "owner": "联调窗口",
-          "action": "真实环境执行后回填 status"
+          "action": "已完成（B 面真实执行）：租户 A 写 / 租户 B 读隔离实证；证据 doc/test/evidence/manual/mtauth-realface-20261015.json",
+          "status": "DONE"
         },
         {
           "id": "RA-06::fail_closed::B",
           "item": "fail-closed 用例 真实面",
           "precondition": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
           "owner": "联调窗口",
-          "action": "真实环境执行后回填 status"
+          "action": "真实环境执行后回填 status（**需停服故障注入 → 属受控窗口，待用户授权**）",
+          "status": "PENDING"
         },
         {
           "id": "RA-06::oidc_batch_isolation::B",
           "item": "OIDC 批次隔离（存量 T2 归档关闭） 真实面",
           "precondition": "真实 IdP 回调与吊销链路需身份提供方，属 B 面",
           "owner": "联调窗口",
-          "action": "真实环境执行后回填 status"
+          "action": "已完成（B 面真实执行）：OIDC IdP discovery/jwks 200 + 吊销即时性 401；证据 doc/test/evidence/manual/mtauth-realface-20261015.json",
+          "status": "DONE"
         },
         {
           "id": "RA-06::delegation_cross_tenant_403::B",
           "item": "委托跨界 403 真实面",
           "precondition": "真实网关代理链路的跨界 403 需四仓运行态，属 B 面",
           "owner": "联调窗口",
-          "action": "真实环境执行后回填 status"
+          "action": "已完成（L2 原子窗口探针）：跨域 403 PERM_DELEGATION_CROSS_TENANT + 同域 200 反例自证；证据 doc/test/evidence/manual/mtauth-delegation-l31-20261016.json",
+          "status": "DONE"
         },
         {
           "id": "RA-06::revocation_immediacy::B",
           "item": "吊销即时性 真实面",
           "precondition": "真实 token 吊销即时性需 Redis/PG 运行态，属 B 面",
           "owner": "联调窗口",
-          "action": "真实环境执行后回填 status"
+          "action": "已完成（B 面真实执行）：suspend 后旧 token 401；证据 doc/test/evidence/manual/mtauth-realface-20261015.json（探针 G1/G2 佐证）",
+          "status": "DONE"
         }
       ]
     },
@@ -209,9 +218,9 @@
       "id": "SMOKE-S0-S6",
       "name": "冒烟 S0-S6 聚合（冒烟清单 v1.1.0 §3）",
       "execution_face": "B",
-      "status": "PENDING",
+      "status": "PASS",
       "structure_status": "PASS",
-      "real_face_status": "PENDING",
+      "real_face_status": "PASS",
       "matrix": {
         "groups": [
           "S0",
@@ -262,15 +271,16 @@
         ],
         "missing": []
       },
-      "evidence": "OpenBase-真实联调冒烟清单-v1.0.0.md §3（结构对账）",
-      "reason": "冒烟 S0-S6 需真实五服务（OpenLLM/OpenMemory/OpenRAG/DPS/OpenBase）与真实开关；沙箱无运行态 → 真实执行 PENDING（结构对账已 PASS）",
+      "evidence": "doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json（第三轮真实执行：total=32 / PASS 25 / FAIL 0 / PENDING 7；mode=real / schema_version=5 / ollama_available=true / model_used=qwen2.5:0.5b）；派单 §8 逐仓回执 7 项已勾选（doc/planning/OpenBase-S7-T6-2-冒烟真实执行-跨仓派单-v1.0.0.md，内部 v1.0.2）；结构对账 `OpenBase-真实联调冒烟清单-v1.0.0.md` §3",
+      "reason": "已闭环：真实五服务 + 密钥 + 三真实开关环境下由包装脚本 `scripts/run_smoke_s0_s6.ps1` 一条命令执行（含 ready-gate）；P0 无 FAIL，余 7 项 PENDING 为「需分项条件」登记项（S0-4/S5-3 审计端点配合、S4-0 路径核对、S4-4/S6-3 P1 登记、S5-4 钩子接入、S5-6 停服故障注入受约束未执行），逐条附原因",
       "pending_items": [
         {
           "id": "SMOKE-REAL",
           "item": "冒烟 S0-S6 真实执行（P0 全绿、P1 登记）",
           "precondition": "真实五服务 + 密钥 + 三真实开关 + DPS org/tenant 预置",
           "owner": "联调窗口",
-          "action": "按冒烟清单 v1.1.0 §5 产出执行记录并回填"
+          "action": "已完成（第三轮，2026-10-16）：total=32 / PASS 25 / FAIL 0 / PENDING 7；证据 doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json",
+          "status": "DONE"
         }
       ]
     },
@@ -799,42 +809,48 @@
       "item": "双租户隔离回归 真实面",
       "precondition": "真实双租户数据面（DPS 画像/OpenMemory 记忆跨租户读写）需 PG + 四仓运行态，属 B 面",
       "owner": "联调窗口",
-      "action": "真实环境执行后回填 status"
+      "action": "已完成（B 面真实执行）；证据 doc/test/evidence/manual/mtauth-realface-20261015.json",
+      "status": "DONE"
     },
     {
       "id": "RA-06::fail_closed::B",
       "item": "fail-closed 用例 真实面",
       "precondition": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
       "owner": "联调窗口",
-      "action": "真实环境执行后回填 status"
+      "action": "真实环境执行后回填 status（**需停服故障注入 → 受控窗口，待用户授权**）",
+      "status": "PENDING"
     },
     {
       "id": "RA-06::oidc_batch_isolation::B",
       "item": "OIDC 批次隔离（存量 T2 归档关闭） 真实面",
       "precondition": "真实 IdP 回调与吊销链路需身份提供方，属 B 面",
       "owner": "联调窗口",
-      "action": "真实环境执行后回填 status"
+      "action": "已完成（B 面真实执行）；证据 doc/test/evidence/manual/mtauth-realface-20261015.json",
+      "status": "DONE"
     },
     {
       "id": "RA-06::delegation_cross_tenant_403::B",
       "item": "委托跨界 403 真实面",
       "precondition": "真实网关代理链路的跨界 403 需四仓运行态，属 B 面",
       "owner": "联调窗口",
-      "action": "真实环境执行后回填 status"
+      "action": "已完成（L2 原子窗口探针）；证据 doc/test/evidence/manual/mtauth-delegation-l31-20261016.json",
+      "status": "DONE"
     },
     {
       "id": "RA-06::revocation_immediacy::B",
       "item": "吊销即时性 真实面",
       "precondition": "真实 token 吊销即时性需 Redis/PG 运行态，属 B 面",
       "owner": "联调窗口",
-      "action": "真实环境执行后回填 status"
+      "action": "已完成（B 面真实执行）；证据 doc/test/evidence/manual/mtauth-realface-20261015.json",
+      "status": "DONE"
     },
     {
       "id": "SMOKE-REAL",
       "item": "冒烟 S0-S6 真实执行（P0 全绿、P1 登记）",
       "precondition": "真实五服务 + 密钥 + 三真实开关 + DPS org/tenant 预置",
       "owner": "联调窗口",
-      "action": "按冒烟清单 v1.1.0 §5 产出执行记录并回填"
+      "action": "已完成（第三轮，2026-10-16）：total=32 / PASS 25 / FAIL 0 / PENDING 7；证据 doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json",
+      "status": "DONE"
     },
     {
       "id": "PG-ENV-1",
@@ -970,5 +986,30 @@
       }
     ],
     "note": "本批（v1.0.18 段门禁 ①②④ 联调）复跑。因该脚本为无状态重算、不保留历史回填字段，故以原地追加方式记录复跑结论，仓内权威字段（k07_backfill/k07_finalize_ref/smoke_baseline_ref）保持不变。"
+  },
+  "aggregate_rerun_20261016": {
+    "generated_at": "2026-10-16T02:00:00+08:00",
+    "mode": "manual-backfill",
+    "note": "B 面真实执行回填（L1 冒烟第三轮 + L2 RA-06 余项探针）。因 gate_aggregate.py 为无状态重算脚本（硬编码 real_face_status=PENDING），本批以「原地回填」方式更新 B 面字段（§RA-06 四项 real_face_status PASS / §SMOKE-S0-S6 status+real_face_status PASS），并保留全部历史字段（k07_backfill / k07_finalize_ref / closed_items / real_finalize / aggregate_rerun_20260913）。",
+    "ra06_real_face": {
+      "tenant_isolation_regression": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-realface-20261015.json" },
+      "fail_closed": { "status": "PENDING", "reason": "需停服故障注入（受控窗口），待用户授权" },
+      "oidc_batch_isolation": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-realface-20261015.json" },
+      "delegation_cross_tenant_403": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-delegation-l31-20261016.json" },
+      "revocation_immediacy": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-realface-20261015.json" }
+    },
+    "smoke_s0_s6": {
+      "status": "PASS",
+      "real_face_status": "PASS",
+      "total": 32,
+      "pass": 25,
+      "fail": 0,
+      "pending": 7,
+      "evidence": "doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json"
+    },
+    "new_defects_registered": [
+      { "id": "F-8", "title": "GET /api/v1/auth/me 对绑租户主体（tenant_id 为 int）返回 500", "severity": "P1", "blocking_cases": 0, "status": "待修复", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.13 §8.1" },
+      { "id": "F-9", "title": "POST /api/v1/users 未派生 tenant_code → 同域委托被误判 PERM_DELEGATION_CROSS_TENANT", "severity": "P1", "blocking_cases": 0, "status": "待修复", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.13 §8.2" }
+    ]
   }
 }

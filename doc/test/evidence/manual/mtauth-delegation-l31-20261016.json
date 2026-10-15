@@ -1,0 +1,95 @@
+{
+  "stamp": "2026-10-16T01:33:32.248445+08:00",
+  "base": "http://127.0.0.1:8000",
+  "scope": "RA-06 委托跨界 403（含同域反例自证）+ L3-1 agent key 真实面",
+  "results": {
+    "admin_login_200": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true
+    },
+    "admin_me_200": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true,
+      "admin_id": 1
+    },
+    "T_tenant_resolved": {
+      "observed": {
+        "id": 1,
+        "code": "tenant-1"
+      },
+      "expected": "存在可用租户",
+      "pass": true
+    },
+    "D0_target_agent_200": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true,
+      "target_agent_id": 118,
+      "tenant_code": "tenant-1"
+    },
+    "D_agent_create_200": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true,
+      "agent_id": 119,
+      "key_id": 45,
+      "tenant_code": "tenant-1"
+    },
+    "A_user_delegation_403": {
+      "observed": 403,
+      "expected": 403,
+      "pass": true,
+      "error_code": "PERM_FORBIDDEN"
+    },
+    "E_agent_key_auth_200": {
+      "observed": 500,
+      "expected": 200,
+      "pass": false,
+      "me_id": null,
+      "agent_id": 119,
+      "basis": "MeResponse 不含 subject_type；以 id==agent_id 佐证 agent 主体"
+    },
+    "F_agent_key_forbidden_403": {
+      "observed": 403,
+      "expected": 403,
+      "pass": true,
+      "error_code": "PERM_FORBIDDEN"
+    },
+    "B_cross_tenant_delegation_403": {
+      "observed": 403,
+      "expected": 403,
+      "pass": true,
+      "error_code": "PERM_DELEGATION_CROSS_TENANT"
+    },
+    "C_same_tenant_delegation_200": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true,
+      "error_code": null,
+      "basis": "反例自证：同域（主体域==claim 域==目标行域）委托放行 ⇒ 印证 B 的 403 源于跨界"
+    },
+    "O_user_target_same_domain_observed": {
+      "observed": {
+        "status": 403,
+        "code": "PERM_DELEGATION_CROSS_TENANT"
+      },
+      "expected": "同域放行 200（如实观测，不入门禁）",
+      "pass": true,
+      "inform": true,
+      "defect": "DEF-B：create_user 未派生 tenant_code → 目标行域为空 → 同域被误判 PERM_DELEGATION_CROSS_TENANT"
+    },
+    "G1_key_revoke_200": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true
+    },
+    "G2_revoked_key_401": {
+      "observed": 401,
+      "expected": 401,
+      "pass": true
+    }
+  },
+  "overall_pass": false
+}

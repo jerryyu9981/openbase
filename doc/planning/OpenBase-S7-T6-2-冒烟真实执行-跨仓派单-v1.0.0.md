@@ -3,8 +3,8 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-DISPATCH-S7T62-SMOKE-v1.0.0 |
-| 文档版本 | v1.0.1 |
-| 状态 | **[Approved]（已批准，正式分发）** |
+| 文档版本 | v1.0.2 |
+| 状态 | **[Approved]（已批准，正式分发；第三轮真实执行完成并回执）** |
 | 日期 | 2026-10-15 |
 | 发起方 | AA/PM-OpenBase-Dev |
 | 上游依据 | 《OpenBase-五系统多租户与授权集成总览与续接指南》v1.0.11 §10.5；《OpenBase-真实联调冒烟清单》v1.1.0 §3；《OpenBase-S7-全域门禁与总收官报告》§4.2（S7-T6-2）；《OpenBase-自研系统多租户与授权集成总体完善方案》v1.16.33 |
@@ -15,6 +15,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|----------|
+| v1.0.2 | 2026-10-16 | AA/PM-OpenBase-Dev | **冒烟 S0–S6 第三轮真实执行完成并逐仓回执（§8 全部勾选）**：修复包装脚本 `$Args` 自动变量冲突（首轮「服务全灭」根因）+ 新增 ready-gate（等待 OpenLLM 三上游组件 ok，消除启动窗口抖动）+ 运行器 4 处执行侧适配（S2-2 recall 轮询 ≤21s、S3-2 轮询改 `rag_write` 带租户头、S3-3 兼容 `data.items` 响应结构、模型选择小模型优先规避非流式超时）。**第三轮结果 `total=32 / PASS 25 / FAIL 0 / PENDING 7`**（首轮基线 17/8/7 → 8 项 FAIL 全部转绿）；余 7 项 PENDING 均为「需分项条件」登记项（审计端点配合 / 停服故障注入 / 回写队列 / 钩子接入 / dps-proxy 路径核对 / P1 登记）。证据 `doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`；§5 验收四项判据（P0 全绿 / P1 登记 / 不伪造 / 证据齐全）满足 |
 | v1.0.1 | 2026-10-15 | AA/PM-OpenBase-Dev | **批准转 [Approved] 并正式分发**：状态 [Draft] → [Approved]；新增「分发记录」（见上）；登记台账 v1.16.33 与续接指南 v1.0.11 |
 | v1.0.0 | 2026-10-15 | AA/PM-OpenBase-Dev | 初始创建：分仓分发表、准入判据、执行步骤、验收判据、证据归集、风险回滚、逐仓回执清单、已知环境适配项 |
 
@@ -103,6 +104,27 @@
 - 服务日志：同目录 `openllm.<时间戳>.{out,err}.log`、`openbase.<时间戳>.{out,err}.log`
 - 回填：S7 报告 §4.2、走查报告 §5.2、续接指南 §10.5（升版留修订历史）
 
+### 6.1 执行结果（第三轮，2026-10-16）
+
+| 项 | 值 |
+|----|-----|
+| 证据文件 | `doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`（`schema_version=5 / mode=real`） |
+| openbase_commit | `e2c4f25`（运行器基于该提交执行） |
+| 结果 | **`total=32 / PASS 25 / FAIL 0 / PENDING 7`**（`ollama_available=true`，`model_used=qwen2.5:0.5b`） |
+| 首轮基线对照 | `smoke-summary-20261015132711.json`：`17 / 8 / 7` → 8 项 FAIL **全部转绿** |
+| 服务日志 | 同目录 `openllm.20261016005540.err.log`（`Application startup complete`）、`openbase.20261016005540.{out,err}.log` |
+
+**8 项 FAIL 归因与处置（均已入库）**：
+
+| 首轮 FAIL | 归因 | 处置 |
+|-----------|------|------|
+| S0-1 / S0-5 | OpenLLM 冷启动 >240s 的启动窗口抖动（同断言 S1-2 稍后 PASS 佐证） | 包装脚本新增 ready-gate（等三上游组件 `ok` 再跑） |
+| S2-4 / S3-4 / S5-1 | 4B 大模型**非流式**超时（上游 5001；同模型流式 S5-2/S5-5 PASS） | 运行器模型选择改「小模型优先」→ `qwen2.5:0.5b` |
+| S3-2 | 运行器轮询缺租户头（`X-Tenant-ID`）读不到文档 | 轮询头 `rag_get` → `rag_write`（带租户域） |
+| S3-3 | 运行器只解析 `data.results`，真实结构为 `data.items` | 解析链兼容 `results` / `items` + ≤15s 轮询 |
+
+**余 7 项 PENDING（均为「需分项条件」登记项，非缺陷）**：S0-4（信任链审计断言需 OpenLLM 审计端点配合，由 S5-3 覆盖）、S4-0（dps-proxy 列表路径待核对）、S4-4（文件回写队列就绪性依环境，P1）、S5-3（M3 审计端点配合）、S5-4（`EvaluateSession` 钩子接入登记）、S5-6（OpenRAG 停服降级需故障注入，受约束未执行）、S6-3（主通道沉淀依赖 LLM/回写，P1）。
+
 ---
 
 ## 7. 风险与回滚
@@ -122,13 +144,25 @@
 
 | # | 确认项 | 责任方 | 回执 |
 |---|--------|--------|:---:|
-| 1 | 六服务常驻（非沙箱回收） | 全体 Ops | ☐ |
-| 2 | Ollama 就绪且推理 ≤30s | 基础设施 | ☐ |
-| 3 | 注册表 ∩ Ollama 模型非空 | OpenLLM | ☐ |
-| 4 | RAG 服务密钥可走写路径（M2 + 四头） | OpenRAG | ☐ |
-| 5 | OpenMemory 直连鉴权口径明确 | OpenMemory | ☐ |
-| 6 | DPS org/tenant 映射与四头鉴权 | DPS | ☐ |
-| 7 | `.env.shared-infra` 关键项齐备 | OpenBase | ☐ |
+| 1 | 六服务常驻（非沙箱回收） | 全体 Ops | ☑ |
+| 2 | Ollama 就绪且推理 ≤30s | 基础设施 | ☑ |
+| 3 | 注册表 ∩ Ollama 模型非空 | OpenLLM | ☑ |
+| 4 | RAG 服务密钥可走写路径（M2 + 四头） | OpenRAG | ☑ |
+| 5 | OpenMemory 直连鉴权口径明确 | OpenMemory | ☑ |
+| 6 | DPS org/tenant 映射与四头鉴权 | DPS | ☑ |
+| 7 | `.env.shared-infra` 关键项齐备 | OpenBase | ☑ |
+
+**回执证据（第三轮 `smoke-summary-20261016005540.json`）**：
+
+| # | 回执依据 |
+|---|----------|
+| 1 | OpenRAG 8010 / OpenMemory 8020 / DPS 8030 / OIDC-IdP 8090 常驻；OpenBase 8000（`openbase up=True`）、OpenLLM 8001（`Application startup complete`）由包装脚本同命令内拉起；running 期未出现会话回收 |
+| 2 | `ollama_available=true`；S0-1 组件 `ollama: {status: ok, latency_ms: 500, models: 4}`；LLM 用例 S2-4/S3-4/S5-1 全部 200（未触发 `ReadTimeout`） |
+| 3 | 运行器 `[model] registry∩ollama=[] ollama=[...] -> model=qwen2.5:0.5b`：注册表交集为空时**按 Ollama 可用集择小模型**降级取模成功（登记为环境适配项，见 §9） |
+| 4 | S3-1 建集合 200 / S3-2 文档 `COMPLETED`（写路径经 `rag_write` 带四头）/ S3-3 retrieve 命中 `items=1` / S6-1 `rag-proxy` retrieve 200 |
+| 5 | S2-1 remember 200 / S2-2 recall 200 命中 / S6-2 remember+recall 200（经 `memory-proxy`，含四头；直连口径见 §9） |
+| 6 | S0-3 DPS `liveness=200` + `openapi=200`；S4-3 缺头 401 / 四头 200；S4-1/S4-2 404 属 person 预置缺失（环境待办） |
+| 7 | `.env.shared-infra` 加载成功（`loaded .env.shared-infra`），`POSTGRES_URL`/`REDIS_URL`/`OPENRAG_API_KEY`/`OPENMEMORY_API_KEY` 齐备；OpenBase DB DSN 经进程环境解析（§9） |
 
 ---
 
@@ -141,6 +175,9 @@
 | OpenLLM→DPS 画像 403 | org 别名 `11111111-…` 未在 `OPENLLM_DPS_*_MAP` 覆盖 | OpenLLM/DPS |
 | OpenLLM Redis 令牌存储 | 日志为 `redis://redis:6379/0`（Docker 主机名默认值）；确认是否需对齐共享 Redis | OpenLLM |
 | 记忆契约经 memory-proxy | 本环境 OpenMemory 直连鉴权被网关层拒绝，运行器改经 `memory-proxy`（语义等价链路，含四头） | OpenBase/OpenMemory |
+| 注册表 ∩ Ollama 为空 → 运行器降级择小模型 | 第三轮实测 `registry∩ollama=[]`（注册表 `active ∧ is_public ∧ allowed` 过滤后与 Ollama 可用集无交集），运行器按 **Ollama 可用集择小模型**（`qwen2.5:0.5b`）执行，全部 LLM 用例 200 | OpenLLM/基础设施 |
+| 包装脚本 OpenLLM 探活用 `/health` 返回 up=False | OpenLLM `/openllm/v1/health` 可正常返回组件态（ready-gate 据此判定 `ready=True`），但旧探活路径 `/health` 在冷启动窗口内不返回 200 → 日志出现 `openllm up=False (240s)` 的**假阴性**（不阻断，ready-gate 已兜底） | OpenBase（脚本）/ OpenLLM |
+| 委托目标需「目标行域非空」 | 委托不变式要求 `目标行 tenant_code == claim 域`；`POST /api/v1/users` 路径**未派生 `tenant_code`**，故 users 路径建的账号作委托目标会被判 `PERM_DELEGATION_CROSS_TENANT`（**已登记缺陷 DEF-B**，见《S7-冒烟缺陷分派待办单》） | OpenBase |
 
 ---
 

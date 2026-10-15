@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | **v1.3.2**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 裁定建议 → v1.3.0 裁定落地 → v1.3.1 版本口径跨仓确认 → v1.3.2 跨租户 A 写 B 读实证执行） |
+| 文档版本 | **v1.3.3**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 裁定建议 → v1.3.0 裁定落地 → v1.3.1 版本口径跨仓确认 → v1.3.2 跨租户 A 写 B 读实证执行 → v1.3.3 委托跨界/agent key 面真实面执行与 F-8/F-9 缺陷登记） |
 | 状态 | **[Final]** |
 | 走查编号 | OB-CROSSREPO-TENANT-ISOLATION-v1.0.0 |
 | 作者 | AT-OpenBase-Dev（API 测试视图）/ SE-OpenBase-Dev（安全视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
@@ -152,6 +152,7 @@
 - 本次为**只读走查**，未修改任何仓的代码；四仓修复需各仓自行施工，本报告仅登记问题与建议处置。
 - 跨租户**数据面实证**（在 A 租户写、以 B 租户读）**已执行（2026-10-15）**：经 `rag-proxy` 载体 —— 租户 A 建集合 **200** → 租户 B **列举不含** A 集合 → 租户 B **直取 A 集合 404**（跨租户不可见/不可读）。证据 `doc/test/evidence/manual/mtauth-realface-20261015.json`；执行方式见《OpenBase-联调窗口真实面执行单》v1.2.0（`scripts/verify_mtauth_realface.ps1 -StartServices -IncludeDataPlane`，临时租户/用户/集合用后清理）。**余**：OpenMemory **记忆数据面**（`memory-proxy /remember|/recall`）的同类跨租户用例可后续增强。
 - 运行时环境受限：OpenBase `8000` 进程随会话回收（WMI 脱离启动后被沙箱回收），转发探针采用「同命令内启动 + 探针」原子执行完成取证。
+- **委托跨界与 agent key 面真实面已执行（2026-10-16）**：以原子窗口探针（`doc/tmp/run_l2_probe.ps1` + `doc/tmp/l2_delegation_probe.py`）真实 HTTP 验证——**反例自证配对**：agent 跨域委托 **403 `PERM_DELEGATION_CROSS_TENANT`** / 同域委托 **200**（放行）；user 挂 `on_behalf_of` → **403 `PERM_FORBIDDEN`**；agent 发放 **200**、agent key 越权 `identity:manage` → **403**、吊销即时 **200 → 401**。证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json`。**同窗口暴露两项 OpenBase 侧缺陷（已登记、待修复，均 P1、阻塞用例数 0）**：**F-8** `/api/v1/auth/me` 对绑租户主体（`tenant_id` 为 int 的 agent 通道）返回 **500**；**F-9** `POST /api/v1/users` 未派生 `tenant_code`，致同域账号作委托目标时被误判 `PERM_DELEGATION_CROSS_TENANT`（探针观测项 O 自证）。详见《OpenBase-S7-冒烟缺陷分派待办单》v1.0.13 §8。**余**：fail-closed 故障注入（需停服受控窗口）仍 PENDING。
 
 ---
 
@@ -251,6 +252,7 @@
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
+| v1.3.3 | 2026-10-16 | AT/SE/AU/PM-OpenBase-Dev | **委托跨界 403 与 agent key 面真实面执行完成 + 两项缺陷登记**：§5.2 新增限制/边界条目——原子窗口探针取得**反例自证配对**（agent 跨域委托 **403 `PERM_DELEGATION_CROSS_TENANT`** / 同域委托 **200**），user 挂委托 403 `PERM_FORBIDDEN`、agent 发放 200、agent key 越权 403、吊销即时 200→401；证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json`。同窗口暴露 OpenBase 侧 **F-8**（`/auth/me` 对绑租户主体 500）/ **F-9**（`users` 路径未派生 `tenant_code` → 同域委托误判跨界），已登记《OpenBase-S7-冒烟缺陷分派待办单》v1.0.13 §8（均 P1、阻塞用例数 0、待修复）；余 fail-closed 故障注入（需停服受控窗口）仍 PENDING |
 | v1.3.2 | 2026-10-15 | AT/SE/AU/PM-OpenBase-Dev | **跨租户「A 写 B 读」数据面实证执行完成**：§5.2 该限制项由「未执行」更新为「已执行」——经 `rag-proxy` 载体，租户 A 建集合 200 → 租户 B 列表不含 A 集合 → 租户 B 直取 A 集合 **404**；证据 `doc/test/evidence/manual/mtauth-realface-20261015.json`；执行入口见《联调窗口真实面执行单》v1.2.0 |
 | v1.3.1 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | **OpenRAG 版本口径跨仓确认**：§6.6 遗留④ 闭合——根 `version.json` 为 DevFlow **遗留**元数据（官方自 v2.15.0 起弃用删除），**非版本事实源**、不存在「应独立于应用版本」的约定；现行对齐口径保留并由契约测试显式标注语义 + 兼容未来删除；OpenRAG 提交 `aac82ca`（含 DevLogReport v1.1.0 §六 同名不同义跨仓对照表） |
 | v1.3.0 | 2026-10-14 | AT/SE/AD/PM-OpenBase-Dev | 依指令「按照建议推进」落地 §6 四项裁定建议：新增 §6.6 裁定落地状态表（四仓分支/提交/改动/验证 + 三远程一致性 + 落地后遗留 6 项）；OpenRAG `2f88353`（A 门禁扩展 + C 版本 1.9.2）、OpenMemory `447d8da`（A 生产 M2 强制段 + C 版本 7.3.1）、DPS `0551b4b`（A 门禁扩展 + B 生产置真 + C 版本 2.12.2）、OpenLLM `4f11c48`（A 三项门禁 + B 生产置真 + C 版本 2.17.1 + D 列表过滤/契约化）；代码默认值一律未翻转；状态转 [Final] |
