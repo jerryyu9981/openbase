@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   S7-T6-2 smoke S0-S6 real-execution wrapper (cross-repo bring-up + run scripts/smoke_s0_s6.py).
 
@@ -63,13 +63,13 @@ function Clear-Listener {
 }
 
 function Start-Svc {
-    param([string]$Name, [int]$Port, [string]$Cwd, [string[]]$Args, [string]$Health, [hashtable]$ExtraEnv)
+    param([string]$Name, [int]$Port, [string]$Cwd, [string[]]$SvcArgs, [string]$Health, [hashtable]$ExtraEnv)
     if (Test-Up $Health) { Write-Host ("{0} already online" -f $Name); return }
     Clear-Listener -Port $Port
     if ($ExtraEnv) { foreach ($k in $ExtraEnv.Keys) { Set-Item -Path ("Env:" + $k) -Value $ExtraEnv[$k] } }
     $err = Join-Path $OutDir ("{0}.{1}.err.log" -f $Name, $Stamp)
     $outf = Join-Path $OutDir ("{0}.{1}.out.log" -f $Name, $Stamp)
-    $p = Start-Process -FilePath $Py -ArgumentList $Args -WorkingDirectory $Cwd -PassThru -RedirectStandardOutput $outf -RedirectStandardError $err -WindowStyle Hidden
+    $p = Start-Process -FilePath $Py -ArgumentList $SvcArgs -WorkingDirectory $Cwd -PassThru -RedirectStandardOutput $outf -RedirectStandardError $err -WindowStyle Hidden
     $up = $false
     for ($i = 0; $i -lt 120; $i++) { Start-Sleep -Seconds 2; if (Test-Up $Health) { $up = $true; break } }
     Write-Host ("{0} up={1} ({2}s)" -f $Name, $up, ($i * 2))
@@ -90,10 +90,32 @@ $obEnv = @{
 }
 
 $started = @()
-$p1 = Start-Svc -Name 'openllm' -Port 8001 -Cwd "$DevRoot\OpenLLM\backend" -Args @('-m','uvicorn','main:app','--host','127.0.0.1','--port','8001') -Health 'http://127.0.0.1:8001/health' -ExtraEnv $null
+$p1 = Start-Svc -Name 'openllm' -Port 8001 -Cwd "$DevRoot\OpenLLM\backend" -SvcArgs @('-m','uvicorn','main:app','--host','127.0.0.1','--port','8001') -Health 'http://127.0.0.1:8001/health' -ExtraEnv $null
 if ($p1) { $started += $p1 }
-$p2 = Start-Svc -Name 'openbase' -Port 8000 -Cwd $OpenBaseRoot -Args @('-m','uvicorn','openbase.demo_app:app','--host','127.0.0.1','--port','8000') -Health 'http://127.0.0.1:8000/health' -ExtraEnv $obEnv
+$p2 = Start-Svc -Name 'openbase' -Port 8000 -Cwd $OpenBaseRoot -SvcArgs @('-m','uvicorn','openbase.demo_app:app','--host','127.0.0.1','--port','8000') -Health 'http://127.0.0.1:8000/health' -ExtraEnv $obEnv
 if ($p2) { $started += $p2 }
+
+# ready-gate：OpenLLM 三上游组件 ok + OpenBase /health（消除启动窗口 S0-1/S0-5 抖动；OpenLLM 冷启动实测 >240s）
+function Test-LLMReady {
+    try {
+        $r = Invoke-RestMethod 'http://127.0.0.1:8001/openllm/v1/health' -TimeoutSec 20
+        $comp = $null
+        if ($r.data -and $r.data.components) { $comp = $r.data.components } elseif ($r.components) { $comp = $r.components }
+        if (-not $comp) { return $false }
+        foreach ($k in 'openmemory','openrag','dps') {
+            $v = $comp.$k
+            $ok = ($v -eq 'ok') -or ($null -ne $v -and $v.status -eq 'ok')
+            if (-not $ok) { return $false }
+        }
+        return $true
+    } catch { return $false }
+}
+$ready = $false
+for ($i = 0; $i -lt 90; $i++) {
+    if ((Test-LLMReady) -and (Test-Up 'http://127.0.0.1:8000/health')) { $ready = $true; break }
+    Start-Sleep -Seconds 5
+}
+Write-Host ("ready-gate: ready={0} ({1}s)" -f $ready, ($i * 5))
 
 $env:SMOKE_COMMIT = (git -C $OpenBaseRoot rev-parse --short HEAD 2>$null)
 $env:PYTHONIOENCODING = 'utf-8'

@@ -120,7 +120,13 @@ def main() -> int:
     if isinstance(cand, list):
         codes = [m.get("model_code") or m.get("id") or m.get("model_name") for m in cand if isinstance(m, dict)]
     codes = [c for c in codes if c]
-    model = next((c for c in codes if c in ollama_names), None) or (ollama_names[0] if ollama_names else None) or (codes[0] if codes else MODEL)
+    # 小模型优先（非流式 chat 须在 OpenLLM 队列超时预算内完成；4B 档位实测超时 5001）
+    _PREFER = ("qwen2.5:0.5b", "llama3.2:1b", "qwen3.5:2b-q4_K_M")
+    pool = [c for c in codes if c in ollama_names]
+    model = next((p for p in _PREFER if p in pool), None) or (pool[0] if pool else None) \
+        or next((p for p in _PREFER if p in ollama_names), None) \
+        or (ollama_names[0] if ollama_names else None) or (codes[0] if codes else MODEL)
+    print(f"[model] registry∩ollama={pool} ollama={ollama_names} -> model={model}")
 
     def comp_of(body):
         return jget(body, "data", "components", default=jget(body, "components", default={})) or {}
@@ -176,10 +182,15 @@ def main() -> int:
     add("S2-1", "S2", "POST", f"{mem_base}/remember", "PASS" if st == 200 else "FAIL", st,
         f"status={st} memory_id={jget(body,'memory_id') or jget(body,'data','memory_id')}")
 
-    st, body = req("POST", f"{mem_base}/recall", mem_h, {"query": "smoke_s2", "user_id": SMOKE_USER, "top_k": 5})
-    hit = bool(jget(body, "data", "memories", default=jget(body, "memories", default=[])) or jget(body, "items", default=[]) or jget(body, "data", "items", default=[])) or ("smoke_s2" in body)
+    hit, st, body = False, 0, ""
+    for _ in range(7):  # recall 轮询 ≤21s（异步索引可见性，执行侧适配）
+        st, body = req("POST", f"{mem_base}/recall", mem_h, {"query": "smoke_s2", "user_id": SMOKE_USER, "top_k": 5})
+        hit = bool(jget(body, "data", "memories", default=jget(body, "memories", default=[])) or jget(body, "items", default=[]) or jget(body, "data", "items", default=[])) or ("smoke_s2" in body)
+        if st == 200 and hit:
+            break
+        time.sleep(3)
     add("S2-2", "S2", "POST", f"{mem_base}/recall", "PASS" if (st == 200 and hit) else "FAIL", st,
-        f"recall={st} 命中={hit}")
+        f"recall={st} 命中={hit}（≤21s 轮询）")
 
     st_bad, _ = req("POST", f"{mem_base}/remember", mem_h, {})
     add("S2-3", "S2", "POST", f"{mem_base}/remember", "PASS" if st_bad == 422 else "FAIL", st_bad,
@@ -215,24 +226,29 @@ def main() -> int:
                        {"content": f"冒烟文本 {STAMP} 唯一内容 smoke", "metadata": {"smoke": True}})
         doc = jget(body, "data", "document_id") or jget(body, "document_id")
         final = jget(body, "data", "status") or jget(body, "status")
-        for _ in range(30):
+        for _ in range(45):  # 文档处理轮询 ≤90s（embedding 链路耗时，执行侧适配）
             if final == "COMPLETED":
                 break
             time.sleep(2)
-            _, bg = req("GET", f"{OPENRAG}/api/v1/collections/{cid}/documents/{doc}", rag_get)
+            _, bg = req("GET", f"{OPENRAG}/api/v1/collections/{cid}/documents/{doc}", rag_write)
             final = jget(bg, "data", "status") or jget(bg, "status") or final
         add("S3-2", "S3", "POST/GET", f"{OPENRAG}/api/v1/collections/{cid}/documents/text",
-            "PASS" if final == "COMPLETED" else "FAIL", st, f"submit={st} doc={doc} 轮询={final}")
+            "PASS" if final == "COMPLETED" else "FAIL", st, f"submit={st} doc={doc} 轮询={final}（≤90s）")
     else:
         add("S3-2", "S3", "POST", "documents/text", "FAIL", None, "cid 未创建（S3-1 失败连带）")
 
     if cid:
-        st, body = req("POST", f"{OPENRAG}/api/v1/collections/{cid}/query/retrieve", rag_write,
-                       {"query": "冒烟文本", "top_k": 5, "retrieval_strategy": "auto"})
-        items = jget(body, "data", "results", default=jget(body, "data", default=[])) or []
-        n = len(items) if isinstance(items, list) else 0
+        st, body, n = 0, "", 0
+        for _ in range(5):  # retrieve 轮询 ≤15s（索引可见性，执行侧适配）
+            st, body = req("POST", f"{OPENRAG}/api/v1/collections/{cid}/query/retrieve", rag_write,
+                           {"query": "冒烟文本", "top_k": 5, "retrieval_strategy": "auto"})
+            items = jget(body, "data", "results", default=None) or jget(body, "data", "items", default=None) or jget(body, "data", default=[]) or []
+            n = len(items) if isinstance(items, list) else 0
+            if st == 200 and n > 0:
+                break
+            time.sleep(3)
         add("S3-3", "S3", "POST", f"{OPENRAG}/api/v1/collections/{cid}/query/retrieve",
-            "PASS" if (st == 200 and n > 0) else "FAIL", st, f"retrieve={st} 命中={n>0} items={n}")
+            "PASS" if (st == 200 and n > 0) else "FAIL", st, f"retrieve={st} 命中={n>0} items={n}（≤15s 轮询）")
     else:
         add("S3-3", "S3", "POST", "query/retrieve", "FAIL", None, "cid 未创建（连带）")
 
