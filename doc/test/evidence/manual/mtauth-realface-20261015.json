@@ -1,0 +1,74 @@
+﻿{
+    "stamp":  "20261015131549",
+    "ts":  "2026-10-15T13:15:49.8907006+08:00",
+    "base":  "http://127.0.0.1:8000",
+    "start_openllm":  true,
+    "start_openbase":  true,
+    "oidc_discovery_body":  "{\"issuer\":\"http://127.0.0.1:8090\",\"authorization_endpoint\":\"http://127.0.0.1:8090/authorize\",\"token_endpoint\":\"http://127.0.0.1:8090/token\",\"userinfo_endpoint\":\"http://127.0.0.1:8090/userinfo\",\"jwks_uri\":\"http://127.0.0.1:8090/jwks\",\"response_types_supported\":[\"code\"],\"response_modes_supported\":[\"query\"],\"grant_types_supported\":[\"authorization_code\"],\"subject_types_supported\":[\"public\"],\"id_token_signing_alg_values_supported\":[\"RS256\"],\"token_endpoint_auth_methods_supported\":[\"client_secret_post\"],\"scopes_supported\":[\"openid\",\"profile\",\"email\"],\"claims_supported\":[\"sub\",\"preferred_username\",\"email\",\"roles\",\"tenant_id\"]}",
+    "oidc_discovery_200":  {
+                               "observed":  200,
+                               "pass":  true,
+                               "expected":  200
+                           },
+    "oidc_jwks_200":  {
+                          "observed":  200,
+                          "pass":  true,
+                          "expected":  200
+                      },
+    "admin_login_200":  {
+                            "observed":  200,
+                            "pass":  true,
+                            "expected":  200
+                        },
+    "admin_me_200":  {
+                         "observed":  200,
+                         "pass":  true,
+                         "expected":  200
+                     },
+    "create_user_2xx":  {
+                            "observed":  200,
+                            "pass":  true,
+                            "expected":  "2xx"
+                        },
+    "user_me_before_200":  {
+                               "observed":  200,
+                               "pass":  true,
+                               "expected":  200
+                           },
+    "suspend_2xx":  {
+                        "observed":  200,
+                        "pass":  true,
+                        "expected":  "2xx"
+                    },
+    "revoked_old_token_401":  {
+                                  "observed":  401,
+                                  "pass":  true,
+                                  "expected":  401
+                              },
+    "rag_proxy_200":  {
+                          "observed":  200,
+                          "pass":  true,
+                          "expected":  200
+                      },
+    "memory_proxy_200":  {
+                             "observed":  200,
+                             "pass":  true,
+                             "expected":  200
+                         },
+    "A_write_collection_2xx":  {
+                                   "observed":  200,
+                                   "pass":  true,
+                                   "expected":  "2xx"
+                               },
+    "B_cannot_see_A_collection":  {
+                                      "observed":  false,
+                                      "pass":  true,
+                                      "expected":  false
+                                  },
+    "B_direct_get_A_collection_denied":  {
+                                             "observed":  404,
+                                             "pass":  true,
+                                             "expected":  "404/403"
+                                         },
+    "overall_pass":  true
+}

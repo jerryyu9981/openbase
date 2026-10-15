@@ -77,6 +77,23 @@ function Rec { param($name, $observed, $expected, $pass)
 $Py = Resolve-Python
 Write-Output "python = $Py"
 
+# ---- load shared-infra env (POSTGRES_URL/REDIS_URL/...) as service-orchestrator.ps1 does ----
+# OpenBase settings resolve the DB/Redis DSN from process env (POSTGRES_URL/REDIS_URL); .env does NOT
+# participate in DSN resolution. Without this, db_url falls back to localhost:5432 and every DB write fails.
+$sharedEnv = Join-Path $OpenBaseRoot '.env.shared-infra'
+if (Test-Path $sharedEnv) {
+    Get-Content $sharedEnv | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith('#') -and $line.Contains('=')) {
+            $i = $line.IndexOf('=')
+            $k = $line.Substring(0, $i).Trim()
+            $v = $line.Substring($i + 1).Trim()
+            if ($k) { Set-Item -Path ("Env:" + $k) -Value $v }
+        }
+    }
+    Write-Output ("loaded .env.shared-infra; POSTGRES_URL={0}" -f $env:POSTGRES_URL)
+} else { Write-Output "WARN: .env.shared-infra not found" }
+
 # ---- service definitions (aligned with scripts/service-orchestrator.ps1) ----
 $obEnv = @{
     OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030'
@@ -86,7 +103,7 @@ $obEnv = @{
 }
 $Services = @(
     @{ Name = 'openllm';    Cwd = "$DevRoot\OpenLLM\backend"; Args = @('-m','uvicorn','main:app','--host','127.0.0.1','--port','8001'); Env = @{ PORT = '8001' }; Health = 'http://127.0.0.1:8001/health' },
-    @{ Name = 'openrag';    Cwd = "$DevRoot\OpenRAG";         Args = @('-m','uvicorn','openrag.main:app','--app-dir','src','--host','127.0.0.1','--port','8010'); Env = @{ OPENRAG_API_PORT = '8010' }; Health = 'http://127.0.0.1:8010/health' },
+    @{ Name = 'openrag';    Cwd = "$DevRoot\OpenRAG";         Args = @('-m','uvicorn','openrag.main:app','--app-dir','src','--host','127.0.0.1','--port','8010'); Env = @{ OPENRAG_API_PORT = '8010' }; Health = 'http://127.0.0.1:8010/api/v1/system/health' },
     @{ Name = 'openmemory'; Cwd = "$DevRoot\OpenMemory";       Args = @('scripts\start_openmemory.py'); Env = @{}; Health = 'http://127.0.0.1:8020/health' },
     @{ Name = 'dps';        Cwd = "$DevRoot\DPS";              Args = @('-m','uvicorn','rest_api.app:app','--app-dir','src','--host','127.0.0.1','--port','8030'); Env = @{ API_PORT = '8030' }; Health = 'http://127.0.0.1:8030/health/liveness' },
     @{ Name = 'oidc-idp';   Cwd = $OpenBaseRoot;               Args = @('scripts\oidc-idp\idp_server.py'); Env = @{}; Health = 'http://127.0.0.1:8090/health' },
@@ -177,25 +194,39 @@ if ($IncludeDataPlane) {
         }
         if ($hit) { $idOf[$code] = $hit.id }
     }
-    $tokOf = @{}
+    $tokOf = @{}; $uidOf = @{}
     foreach ($code in @($TenantA, $TenantB)) {
         $un = "probe_${code}_$Stamp"
-        Invoke-Probe 'POST' "$Base/api/v1/users" $adminH (@{ username = $un; password = 'Probe12345'; display_name = $un; role = 'admin'; tenant_id = $idOf[$code] } | ConvertTo-Json -Compress) | Out-Null
+        $u = Invoke-Probe 'POST' "$Base/api/v1/users" $adminH (@{ username = $un; password = 'Probe12345'; display_name = $un; role = 'admin'; tenant_id = $idOf[$code] } | ConvertTo-Json -Compress)
+        try { $uidOf[$code] = ($u.body | ConvertFrom-Json).id } catch { $uidOf[$code] = $null }
         $l = Invoke-Probe 'POST' "$Base/api/v1/auth/login" $null (@{ username = $un; password = 'Probe12345' } | ConvertTo-Json -Compress)
         try { $tokOf[$code] = ($l.body | ConvertFrom-Json).access_token } catch { $tokOf[$code] = $null }
     }
     $colName = "probe-a-$Stamp"
     $cA = Invoke-Probe 'POST' "$Base/api/v1/rag-proxy/collections" @{ Authorization = ("Bearer " + $tokOf[$TenantA]) } (@{ name = $colName } | ConvertTo-Json -Compress)
     Rec 'A_write_collection_2xx' $cA.status '2xx' ($cA.status -ge 200 -and $cA.status -lt 300)
-    $colIdA = $null; try { $colIdA = ($cA.body | ConvertFrom-Json).id } catch {}
+    $cAj = $null; try { $cAj = $cA.body | ConvertFrom-Json } catch {}
+    $colIdA = $null
+    foreach ($obj in @($cAj, $cAj.data)) {
+        if ($obj) { foreach ($k in @('id', 'collection_id')) { if ($obj.PSObject.Properties.Name -contains $k) { $colIdA = $obj.$k; break } } }
+        if ($colIdA) { break }
+    }
     $listB = Invoke-Probe 'GET' "$Base/api/v1/rag-proxy/collections" @{ Authorization = ("Bearer " + $tokOf[$TenantB]) } $null
     $seenByB = $false
-    try { $seenByB = [bool](($listB.body | ConvertFrom-Json) | Where-Object { $_.name -eq $colName }) } catch {}
+    try {
+        $lb = $listB.body | ConvertFrom-Json
+        $items = $lb; if ($lb.data) { $items = $lb.data }
+        if ($items -isnot [array]) { $items = @($items) }
+        $seenByB = [bool]($items | Where-Object { $_.name -eq $colName })
+    } catch {}
     Rec 'B_cannot_see_A_collection' $seenByB $false (-not $seenByB)
     if ($colIdA) {
         $detB = Invoke-Probe 'GET' "$Base/api/v1/rag-proxy/collections/$colIdA" @{ Authorization = ("Bearer " + $tokOf[$TenantB]) } $null
         Rec 'B_direct_get_A_collection_denied' $detB.status '404/403' ($detB.status -eq 404 -or $detB.status -eq 403)
         Invoke-Probe 'DELETE' "$Base/api/v1/rag-proxy/collections/$colIdA" @{ Authorization = ("Bearer " + $tokOf[$TenantA]) } $null | Out-Null
+    } else { $Results.A_collection_id_unresolved = $cA.body }
+    foreach ($code in @($TenantA, $TenantB)) {
+        if ($uidOf[$code]) { Invoke-Probe 'POST' "$Base/api/v1/identity/lifecycle/user/$($uidOf[$code])/deactivate" $adminH '{"confirm":true,"reason":"probe cleanup"}' | Out-Null }
     }
 }
 
