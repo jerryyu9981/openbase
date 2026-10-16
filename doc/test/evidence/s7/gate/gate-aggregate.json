@@ -1011,8 +1011,25 @@
       { "id": "F-8", "title": "GET /api/v1/auth/me 对绑租户主体（tenant_id 为 int）返回 500", "severity": "P1", "blocking_cases": 0, "status": "已修复（6bf7832）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §8.1" },
       { "id": "F-9", "title": "POST /api/v1/users（及 OIDC JIT）未派生 tenant_code → 同域委托被误判 PERM_DELEGATION_CROSS_TENANT", "severity": "P1", "blocking_cases": 0, "status": "已修复（6bf7832）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §8.2" },
       { "id": "F-10", "title": "SHR 受管编排唯一入口门禁：run_smoke_s0_s6.ps1 / verify_mtauth_realface.ps1 共 3 处直接 Stop-Process", "severity": "P1", "blocking_cases": 0, "status": "已修复（方案 A：两脚本生命周期改经受管编排 service-orchestrator.ps1；扫描器 disallowed=0 / t1_shr 15 passed）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.15 §9.1" },
-      { "id": "F-11", "title": "S7 工具骨架门禁 12 项：L1-1/L2-1/L3-1 干跑退出码与证据落盘契约不符", "severity": "P2", "blocking_cases": 0, "status": "预存登记（e2c4f25 基线同样失败，非本轮引入；修复方案待裁定）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.15 §9.2" }
+      { "id": "F-11", "title": "S7 工具骨架门禁 12 项：L1-1/L2-1/L3-1 干跑退出码与证据落盘契约不符", "severity": "P2", "blocking_cases": 0, "status": "已修复（夹具自洽化：PS 分支显式传 -PythonExe sys.executable；工具契约本身已满足，断言零改动；tests/test_s7_tools_skeleton.py 26 passed）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.16 §9.2" }
     ],
+    "fix_verify_f11": {
+      "mode": "hermetic-test-fixture",
+      "root_cause": "测试夹具非自洽：三件 PS 工具以裸 `python` 为默认解释器（有意设计，暴露 -PythonExe 覆盖），受限环境 PATH 无解释器 → CommandNotFoundException 退出 1 且运行器未启动（无证据落盘）",
+      "contract_evidence": {
+        "cmd": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/<tool>.ps1 -DryRun -BaseUrl http://127.0.0.1:1 -EvidenceDir <dir> -PythonExe <interp> [-SubjectId|-Scenario|-AgentKey] …",
+        "observed": "l1_1/l2_1/l3_1 均 exit=2（PENDING）；证据 cascade-result.json / failover-drill.json / agent-e2e.json 落至 -EvidenceDir",
+        "l1_1_evidence": { "tool": "verify_l1_1_cascade.ps1", "mode": "dry-run", "status": "PENDING", "exit_code": 2, "checks": 4 }
+      },
+      "changed": [
+        "tests/test_s7_tools_skeleton.py::_build_dry_run_command（PS 分支补 \"-PythonExe\", sys.executable；断言零改动）"
+      ],
+      "verify": {
+        "pytest": "tests/test_s7_tools_skeleton.py → 26 passed（原 12 failed / 14 passed）",
+        "ruff": "All checks passed",
+        "scope_check": "全仓仅该测试文件裸调这三件工具（已复核）"
+      }
+    },
     "fix_verify_f10": {
       "mode": "plan-A-managed-orchestrator",
       "changed": [

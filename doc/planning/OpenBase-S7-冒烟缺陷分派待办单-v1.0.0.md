@@ -5,7 +5,7 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-FAULT-DISPATCH-v1.0.0 |
-| 版本 | v1.0.15 |
+| 版本 | v1.0.16 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-12 |
 | 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.2；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.3；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.4；S7 批次 14 DPS 探活口径修复会话修订 v1.0.5；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.6；S7 批次 16 跨仓提交状态同步回填会话修订 v1.0.7；S7 批次 17 K07 门禁收口与聚合复跑会话修订 v1.0.8；S7 批次 18 K07 收口提交与脚本路径回填会话修订 v1.0.9；S7 批次 19 DPS 豁免续期入库回填会话修订 v1.0.10；S7 批次 20 OpenLLM 快照落仓脚本登记会话修订 v1.0.11） |
@@ -14,7 +14,7 @@
 | 关联证据 | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}`；`doc/test/evidence/s7/env/env-check.json`；`doc/test/evidence/s7/gate/gate-aggregate.json`；**（v1.0.13）** `doc/test/evidence/manual/{mtauth-realface-20261015.json,mtauth-delegation-l31-20261016.json}`；`doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`；**（v1.0.14）** `doc/test/evidence/manual/mtauth-delegation-l31-20261016-defect.json`（F-8/F-9 修复前 RED 证据）；**（v1.0.15）** `doc/test/evidence/s7/shr/orchestrator/bypass-scan.json`（F-10 修复后重跑：`scanned=46 / allowed=1 / disallowed=0`）、`doc/test/evidence/s7/smoke/smoke-summary-20261016120118.json`（受管编排复跑冒烟） |
 | 使用说明（闭环四步） | **① 责任方按单修复**（§2~§4「修复动作」）→ **② 重跑指定用例**（各缺陷「验证方式」用例 ID 清单 + 命令模板）→ **③ 回填三处**（执行单 §2/§3、测试报告 §2.2、`smoke-summary.json`）→ **④ 通知 OpenBase 侧复核**（§7 复核动作） |
 | 脱敏口径 | 本单**不输出任何明文密钥 / 口令**；数据库 / Redis 连接串仅记 host 与库名，键值以「已配置 / 脱敏」表述；`.env` 只引用键名，值以「当前值 / 目标值」呈现（密钥类不落值） |
-| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.2 新增 F-6**（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.13 新增 F-8 / F-9**（L2 真实面探针 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json` 暴露的 OpenBase 侧两项缺陷：`/auth/me` 500、`users` 路径未派生 `tenant_code`；均 P1、阻塞用例数 0，见 §8）；**v1.0.14：F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`），并**新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露、经 `e2c4f25` 基线证明非本轮引入，见 §9）；**v1.0.15：F-10 已按方案 A 修复并验证通过**（两个脚本的服务生命周期改经受管编排 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟经受管编排复跑 `PASS 25 / FAIL 0 / PENDING 7`） |
+| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.2 新增 F-6**（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.13 新增 F-8 / F-9**（L2 真实面探针 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json` 暴露的 OpenBase 侧两项缺陷：`/auth/me` 500、`users` 路径未派生 `tenant_code`；均 P1、阻塞用例数 0，见 §8）；**v1.0.14：F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`），并**新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露、经 `e2c4f25` 基线证明非本轮引入，见 §9）；**v1.0.15：F-10 已按方案 A 修复并验证通过**（两个脚本的服务生命周期改经受管编排 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟经受管编排复跑 `PASS 25 / FAIL 0 / PENDING 7`）；**v1.0.16：F-11 干跑核对完成并修复**（根因＝**测试夹具非自洽**：三件 PS 工具以裸 `python` 为默认解释器，受限环境 PATH 无解释器 → `CommandNotFoundException` 退出 1 且不落证据，掩盖干跑契约判定；**工具契约本身已满足**——显式传 `-PythonExe` 时三件均 `exit=2 / status=PENDING / exit_code=2 / checks=4` 且证据落 `-EvidenceDir`）→ 修夹具（显式传 `sys.executable`），`tests/test_s7_tools_skeleton.py` **26 passed**） |
 
 ### 修订历史
 
@@ -35,6 +35,7 @@
 | v1.0.13 | 2026-10-16 | AA/PM-OpenBase-Dev | **新增 F-8 / F-9（L2 真实面探针暴露的 OpenBase 侧缺陷，P1，阻塞用例数 0）**：按「更宽口径遗留问题」推进 L2（RA-06 余项真实面），以原子窗口探针（`doc/tmp/run_l2_probe.ps1` + `doc/tmp/l2_delegation_probe.py`）在运行态验证「委托跨界 403 + agent key 面」，取得 **反例自证配对**：B 跨域委托 **403 `PERM_DELEGATION_CROSS_TENANT`** / C 同域委托 **200**（放行）→ 委托跨界不变式**真实面达成**；A（user 挂委托 → 403 `PERM_FORBIDDEN`）、D（agent 发放 200）、F（agent key 越权 403）、G1/G2（吊销即时 200→401）全部 PASS。**同窗口暴露两项缺陷**：① **F-8** `GET /api/v1/auth/me` 在主体 `tenant_id` 为整数（agent 绑定租户）时 **500**——`MeResponse.tenant_id: str \| None` 与 `resolve_agent_principal` 返回的 int 冲突（pydantic `string_type` 校验失败）；② **F-9** `POST /api/v1/users` **不派生 `tenant_code`**（agent 路径经 `_resolve_tenant_code` 派生），致该路径建的同域账号作委托目标时「目标行域为空 → 同域被误判 `PERM_DELEGATION_CROSS_TENANT`」（探针观测项 O 自证：期望同域放行 200，实测 403）。证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json`（`overall_pass=false`，仅 F-8 对应项 E 不通过；`O` 为如实观测项不入门禁）。新增 §8 详单与 §5.7/§5.8 闭环清单、§7 第 9 项复核动作。**未改动任何功能语义代码**（缺陷按单登记，待裁定修复窗口） |
 | v1.0.14 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-8 / F-9 修复闭环（TDD）+ F-10 / F-11 预存失败登记**：① 依人工指令「按 TDD 修复 F-8 和 F-9」实施——先写 3 条 RED 用例（`tests/test_identity_t1.py::test_t1_3b_agent_bound_to_tenant_me_returns_200`、`tests/test_users_admin.py::test_create_user_derives_tenant_code`、`tests/test_oidc_binding.py::test_jit_create_derives_tenant_code`，均先失败）→ 再修复：**F-8** `me()` 出参口径统一为 `str`；**F-9** `create_user` 与 OIDC JIT `_bind_or_create_user` 补齐 `tenant_code` 派生（复用 `auth.resolve_tenant_code`）。**提交 `6bf7832`**（8 文件 / +178 −6）。② **验证**：`ruff` 全清；三新用例 + 相关模块隔离全绿（t1 9 / users 7 / oidc 6 / tenant_admin 5 / s7_t7 20 / s7_t8 19 / s7_docs 6 / s7_t6_gate 16）；**仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`**；**L2 探针复跑 `overall_pass=true`**（E 由 500→**200**、观测项 O 由 403→**200**，修复前原始证据留档 `mtauth-delegation-l31-20261016-defect.json`）。③ §1 F-8/F-9 状态转「已修复（`6bf7832`）」、§5.7/§5.8 逐项勾选、§7 第 9 项复核落笔、§8 追加修复与验证记录。④ **新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露；已用 `e2c4f25` 基线 worktree 证明非本轮引入，见 §9）。**仅改动 OpenBase 仓源码/测试/文档** |
 | v1.0.15 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-10 按方案 A 修复闭环（受管编排唯一入口）+ 冒烟受管复跑验证**：依人工指令「按方案 A 修复 F-10 并重新跑冒烟验证」实施——① **`scripts/run_smoke_s0_s6.ps1`**：删除本地 `Start-Svc`/`Clear-Listener`/收尾 `Stop-Process`，服务生命周期改由 `& scripts/service-orchestrator.ps1 -Action stop|start|stop -Only openbase,openllm -HealthTimeout 240` 驱动（含 `.env.shared-infra` 环境等价、就绪门保留）；② **`scripts/verify_mtauth_realface.ps1`**：`-StartServices` 分支删除本地进程表与 `Start-Process`/收尾 `Stop-Process`，改经同一编排入口对六服务 `stop`→`start`→（末尾）`stop`；③ 两脚本均补 **PATH 引导**（编排器以裸命令 `python` 启动服务，沙箱 PATH 无解释器 → 前置解释器目录）并转 **UTF-8 with BOM**（解析 0 错误）。**验证**：`python scripts/scan_orchestrator_bypass.py` → `disallowed=0 / allowed=1 / exit 0`（证据 `bypass-scan.json` 重跑 `scanned=46`）；`pytest tests/test_s7_t1_shr.py tests/test_s7_t6_gate.py` → **31 passed**；**冒烟经受管编排复跑 `total=32 / PASS 25 / FAIL 0 / PENDING 7`**（证据 `smoke-summary-20261016120118.json`，与第三轮结果一致 → 行为等价）。§1 F-10 状态转「已修复」、§9.1 追加修复与验证记录、§9.3 表更新。**仅改动 OpenBase 仓脚本/文档** |
+| v1.0.16 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-11 干跑核对完成并修复（夹具自洽化）**：依人工指令「先处理 F-11 的干跑核对」实施——① **逐件核对**：三件 PS 工具（`verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1`）为**薄包装**（参数转发至同名 `.py` 运行器），其 `$PythonExe` 默认值 `'python'` 为**有意设计**（假定宿主 PATH 有解释器，并暴露 `-PythonExe` 供覆盖）；② **实测复现**：受限环境 PATH 无 `python.exe` 时，`& $PythonExe` 抛 `CommandNotFoundException` → 脚本以 **exit 1** 终止且**不落证据**（与 F-11 现象逐项吻合，非工具契约缺失）；③ **契约实证**：显式传 `-PythonExe <解释器>`（且不依赖门控 env）时三件工具均满足契约——`exit=2（PENDING）`、证据落 `-EvidenceDir/<name>`、`status=PENDING / exit_code=2 / mode=dry-run / checks=4`；④ **修复**：`tests/test_s7_tools_skeleton.py` 夹具**自洽化**（PS 分支显式传 `-PythonExe sys.executable`，与 .py 分支既有的 `sys.executable` 口径一致），**未改动任何断言**（退出码约定、必需字段、`checks` 映射、禁伪造自证全部保留）；⑤ **验证**：`pytest tests/test_s7_tools_skeleton.py -q` → **26 passed**（原 12 failed / 14 passed）；`ruff` 全清。§1 F-11 状态转「已修复」、§9.2 追加根因定论与修复验证记录、§9.3 表更新。**仅改动 OpenBase 仓测试/文档** |
 
 ---
 
@@ -53,7 +54,7 @@
 | **F-8** | `GET /api/v1/auth/me` 在主体 `tenant_id` 为整数（agent 绑定租户）时返回 **500** —— `MeResponse.tenant_id: str \| None` 与 `resolve_agent_principal` 返回的 int 冲突（pydantic `string_type` 校验失败）；主体未绑租户（int=None）时不触发 | **OpenBase 仓**（响应模型 / 端点序列化口径对齐） | P1 | **0**（非冒烟 S0~S6 阻塞项；属 L3-1 agent key 面读取端点） | S7-T5-1~4（L3-1 Agent 端到端）、S7-T6-1（RA-06 真实面） | — | **已修复（`6bf7832`，v1.0.14）** |
 | **F-9** | `POST /api/v1/users` **不派生 `tenant_code`**（agent 路径经 `_resolve_tenant_code` 派生），致该路径建的同域账号作委托目标时「目标行域为空 → 同域委托被误判 `PERM_DELEGATION_CROSS_TENANT` 403」（探针观测项 O 自证：期望同域放行 200，实测 403）；**同根因旁路**：OIDC JIT `_bind_or_create_user` 同样只落 `tenant_id` | **OpenBase 仓**（`users` 创建路径 + OIDC JIT 建号补 `tenant_code` 派生，与 `identity/agents` 口径统一） | P1 | **0**（非冒烟 S0~S6 阻塞项；属委托域不变式的目标装配口径） | S7-T6-1（RA-06 委托跨界真实面）、S7-T5-1~4 | — | **已修复（`6bf7832`，v1.0.14）** |
 | **F-10** | **SHR 门禁 T1-4 失败**：`scripts/scan_orchestrator_bypass.py` 命中 3 处批量杀路径——`scripts/run_smoke_s0_s6.ps1`（L59 端口残留清理、L123 收尾停服）与 `scripts/verify_mtauth_realface.ps1`（L237 收尾停服）均直接使用 `Stop-Process`，违反「服务生命周期编排唯一入口」纪律 | **OpenBase 仓**（改为经受管编排 `service-orchestrator.ps1 -Action start/stop -Only ...`，或在扫描器加**带票据/审批人/有效期**的豁免位） | P1 | **0**（门禁项，非冒烟用例阻塞项） | S7-T1-4（SHR 受管编排唯一入口） | — | **已修复（方案 A，v1.0.15）** |
-| **F-11** | **S7 工具骨架门禁失败 12 项**：`tests/test_s7_tools_skeleton.py` 期望 `verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1` 干跑退出码 = 2（PENDING）实测为 1，且 `l1_1/l2_1/l3_1` 证据 JSON 未在临时目录产出（`FileNotFoundError`） | **OpenBase 仓**（核对 l1_1/l2_1/l3_1 工具干跑退出码契约与 `-EvidenceDir` 参数，或同步测试期望） | P2 | **0**（门禁项，非冒烟用例阻塞项） | S7-T2-1 / S7-T3-1 / S7-T5-1（三原则总验证工具面） | — | **预存登记（v1.0.14；`e2c4f25` 基线同样失败：12 failed / 14 passed）** |
+| **F-11** | **S7 工具骨架门禁失败 12 项**：`tests/test_s7_tools_skeleton.py` 期望 `verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1` 干跑退出码 = 2（PENDING）实测为 1，且 `l1_1/l2_1/l3_1` 证据 JSON 未在临时目录产出（`FileNotFoundError`） | **OpenBase 仓**（核对 l1_1/l2_1/l3_1 工具干跑退出码契约与 `-EvidenceDir` 参数，或同步测试期望） | P2 | **0**（门禁项，非冒烟用例阻塞项） | S7-T2-1 / S7-T3-1 / S7-T5-1（三原则总验证工具面） | — | **已修复（夹具自洽化，v1.0.16）** |
 | — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5/F-6/F-7/F-8/F-9/F-10/F-11 各计 0） | — | — | — |
 
 > **冒烟快照**（`smoke-summary.json`，`generated_at=2026-09-11T18:57:56+08:00`，`openbase_commit=0595bcde788bd19d3a2e21ffc647b827eaa3fded` / 短号 `0595bcd`）：**P0 30 例 PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED**（`entry_criteria_met=false`）。9 条 FAIL **全部**由 F-1/F-2/F-3 覆盖（F-1 2 条：S0-1、S1-2；F-2 5 条：S1-1、S3-1、S3-2、S3-3、S6-1；F-3 2 条：S0-4、S5-3）；7 条 BLOCKED 中 6 条由 F-1 覆盖（S2-4、S3-4、S5-1、S5-2、S5-4、S5-5），余 1 条 **S5-6** 为禁停服务约束（归受控窗口，不在本单）。
@@ -592,22 +593,35 @@
 | 失败族② | 证据文件缺失：`l1_1/cascade-result.json`、`l2_1/failover-drill.json`、`l3_1/agent-e2e.json` → `FileNotFoundError`（经 `test_evidence_schema_valid` / `test_checks_mapped_to_assertions` / `test_no_fake_pass_without_real_environment` 三组参数化各 3 项） |
 | 基线 | `e2c4f25` worktree 复跑**同样 12 failed / 14 passed** → **预存** |
 
-**根因判定（待核）**：三件 L1-1/L2-1/L3-1 工具的干跑契约（退出码 2 = PENDING）与当前实现不一致；且测试在临时目录 `s7_tools0/**` 期望证据 JSON 产出，实际未产出 → 疑为**工具与测试契约漂移**或沙箱路径/参数不匹配。
+**根因判定（已定论，2026-10-16）**：三件 PS 工具为**薄包装**，真实逻辑在同名 `.py` 运行器；包装脚本 `$PythonExe` 默认 `'python'`（有意设计：假定宿主 PATH 有解释器，并暴露 `-PythonExe` 覆盖）。**受限环境 PATH 无 `python.exe`** 时，`& $PythonExe @runnerArgs` 抛 `CommandNotFoundException` → 脚本 `exit 1` 且**运行器从未启动** → 证据 JSON 未产出。故：**工具契约本身已满足**（显式传解释器即 `exit=2 / status=PENDING / 证据落 -EvidenceDir`），缺陷在**测试夹具非自洽**（依赖环境 PATH）。
 
-**修复动作（建议，待核定）**：逐件核对三件工具干跑实现与退出码定义；确认 `-EvidenceDir` 语义与测试 fixture 一致；**据实修工具或同步测试期望**（禁止以「改期望」掩盖工具契约缺失）。
+**修复动作（已实施）**：`tests/test_s7_tools_skeleton.py::_build_dry_run_command` 的 PowerShell 分支显式传 `-PythonExe sys.executable`（与 .py 分支既有口径一致），使夹具自洽、不再依赖宿主 PATH；**未改动任何断言**。
 
-**验证方式**：`python -m pytest tests/test_s7_tools_skeleton.py -q` → 期望 **26 passed**。
+**验证方式**：`python -m pytest tests/test_s7_tools_skeleton.py -q` → 期望 **26 passed**（实测 **26 passed**）。
 
 **回填位置**：本单 §1/§9.2；S7 报告 §4.2（T2~T5 工具面）。
 
 **风险与边界**：修复须保留「干跑禁伪造 PASS」的可证伪性（`test_no_fake_pass_without_real_environment` 不得弱化）。
+
+**修复与验证记录（v1.0.16，2026-10-16）**
+
+| 项 | 内容 |
+|----|------|
+| 指令 | 人工指令「先处理 F-11 的干跑核对」 |
+| 逐件核对① | 三件 PS 工具均为薄包装：`& $PythonExe @runnerArgs`（`--dry-run --evidence-dir … --repo-root … --tool-name …`），无自身判定逻辑 |
+| 逐件核对② | 实测（当前 PATH 无 `python`）：`verify_l1_1_cascade.ps1 -DryRun …` → `The term 'python' is not recognized…`（`CommandNotFoundException`）、**exit=1**、`-EvidenceDir` 下 **0 个文件** |
+| 逐件核对③ | 实测（显式 `-PythonExe <解释器>`，且**不设**门控 env）：l1_1 / l2_1 / l3_1 三件均 **exit=2**、证据 `cascade-result.json` / `failover-drill.json` / `agent-e2e.json` 落至 `-EvidenceDir`；l1_1 证据内容 `tool=verify_l1_1_cascade.ps1 / mode=dry-run / status=PENDING / exit_code=2 / checks=4` |
+| 结论 | 工具契约**已满足**；缺陷在**测试夹具非自洽**（未传 `-PythonExe`，依赖宿主 PATH） |
+| 修复 | `_build_dry_run_command` PS 分支补 `"-PythonExe", sys.executable`（1 处 3 行 + 注释）；**断言零改动** |
+| 验证 | `pytest tests/test_s7_tools_skeleton.py -q` → **26 passed**（原 12 failed / 14 passed）；`ruff check openbase tests` → **All checks passed**；全仓范围仅该测试文件裸调这三件工具（已复核） |
+| 残留说明 | 工具默认值 `'python'` **保持不变**（有意的宿主约定 + `-PythonExe` 覆盖）；仓内 PATH 级答案为 `.venv\shim\python.cmd`（其解释器依赖门控 env，故不作为夹具默认） |
 
 ### 9.3 预存项与同进程串扰的归因汇总（2026-10-16）
 
 | ID | 门禁/用例 | 隔离结果 | 基线（`e2c4f25`） | 本轮引入 |
 |:--:|-----------|---------|------------------|:-------:|
 | F-10 | `tests/test_s7_t1_shr.py` | 修复前 1 failed / 14 passed → **修复后 15 passed** | 同样失败 | ❌ 否（**已修复，方案 A，v1.0.15**） |
-| F-11 | `tests/test_s7_tools_skeleton.py` | 12 failed / 14 passed（**未修复，待裁定**） | 同样失败 | ❌ 否 |
+| F-11 | `tests/test_s7_tools_skeleton.py` | 修复前 12 failed / 14 passed → **修复后 26 passed** | 同样失败 | ❌ 否（**已修复，夹具自洽化，v1.0.16**） |
 
 > **同进程串扰说明**：单进程全量跑另出现 6 例 `asyncpg.exceptions.ConnectionDoesNotExistError`（`test_tenant_admin.py` / `test_users_admin.py`），经**逐文件隔离复跑全部通过**（t_users 7 / t_tenant 5），且仓内既定分组回归（`scripts/run_regression.py`，3 文件/组子进程隔离）**未复现** → 判定为「全局 engine 单例 + 共享 PG 连接」在多文件同进程场景的**环境性串扰**，非业务缺陷（与既有登记口径一致）。
 
@@ -661,4 +675,4 @@
 
 ---
 
-> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.2）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；**v1.0.2 新增 F-6（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何功能语义代码、未将 `dogfood-output/` 纳入提交面。**v1.0.8 收口**：K07 挂起项（F-5 / F-6 / DPS 35 条豁免续期）全部闭环，K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**；四仓改动与提交由各仓在可写环境执行（本单只登记不代改），DPS 侧改动已生成一键提交脚本待执行。**v1.0.13；**v1.0.13 新增**：**F-8 / F-9**（L2 真实面探针暴露的 OpenBase 侧两项缺陷，均 P1、阻塞用例数 0，见 §8；同窗口已达成「委托跨界 403 + 同域放行 200」反例自证配对与 agent key 面 A/D/F/G 全绿）；两项**仅登记、未改代码**，修复窗口待裁定。**v1.0.14 收口**：**F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`；仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`），**本单待提交项清零**；同时**新增 F-10 / F-11 预存门禁失败登记**（§9，经 `e2c4f25` 基线证明非本轮引入，修复方案待裁定）。**v1.0.15 收口**：**F-10 已按方案 A 修复并验证通过**（两脚本服务生命周期改经 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟受管复跑 `PASS 25 / FAIL 0 / PENDING 7`，证据 `smoke-summary-20261016120118.json`）；**F-11 仍待裁定**。
+> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.2）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；**v1.0.2 新增 F-6（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何功能语义代码、未将 `dogfood-output/` 纳入提交面。**v1.0.8 收口**：K07 挂起项（F-5 / F-6 / DPS 35 条豁免续期）全部闭环，K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**；四仓改动与提交由各仓在可写环境执行（本单只登记不代改），DPS 侧改动已生成一键提交脚本待执行。**v1.0.13；**v1.0.13 新增**：**F-8 / F-9**（L2 真实面探针暴露的 OpenBase 侧两项缺陷，均 P1、阻塞用例数 0，见 §8；同窗口已达成「委托跨界 403 + 同域放行 200」反例自证配对与 agent key 面 A/D/F/G 全绿）；两项**仅登记、未改代码**，修复窗口待裁定。**v1.0.14 收口**：**F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`；仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`），**本单待提交项清零**；同时**新增 F-10 / F-11 预存门禁失败登记**（§9，经 `e2c4f25` 基线证明非本轮引入，修复方案待裁定）。**v1.0.15 收口**：**F-10 已按方案 A 修复并验证通过**（两脚本服务生命周期改经 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟受管复跑 `PASS 25 / FAIL 0 / PENDING 7`，证据 `smoke-summary-20261016120118.json`）；**F-11 仍待裁定**。**v1.0.16 收口**：**F-11 干跑核对完成并修复**（根因＝测试夹具非自洽：工具默认解释器为裸 `python`，受限环境 PATH 无解释器 → 退出 1 且不落证据；**工具契约本身已满足**——显式传 `-PythonExe` 即 `exit=2 / PENDING / 证据落 -EvidenceDir`）→ 夹具补 `-PythonExe sys.executable`（断言零改动），`tests/test_s7_tools_skeleton.py` **26 passed**。**F-1~F-11 至此全部闭环**（本单待办清零）。
