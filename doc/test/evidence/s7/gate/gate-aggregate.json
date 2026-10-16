@@ -1010,9 +1010,28 @@
     "new_defects_registered": [
       { "id": "F-8", "title": "GET /api/v1/auth/me 对绑租户主体（tenant_id 为 int）返回 500", "severity": "P1", "blocking_cases": 0, "status": "已修复（6bf7832）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §8.1" },
       { "id": "F-9", "title": "POST /api/v1/users（及 OIDC JIT）未派生 tenant_code → 同域委托被误判 PERM_DELEGATION_CROSS_TENANT", "severity": "P1", "blocking_cases": 0, "status": "已修复（6bf7832）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §8.2" },
-      { "id": "F-10", "title": "SHR 受管编排唯一入口门禁：run_smoke_s0_s6.ps1 / verify_mtauth_realface.ps1 共 3 处直接 Stop-Process", "severity": "P1", "blocking_cases": 0, "status": "预存登记（e2c4f25 基线同样失败，非本轮引入；修复方案待裁定）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §9.1" },
-      { "id": "F-11", "title": "S7 工具骨架门禁 12 项：L1-1/L2-1/L3-1 干跑退出码与证据落盘契约不符", "severity": "P2", "blocking_cases": 0, "status": "预存登记（e2c4f25 基线同样失败，非本轮引入；修复方案待裁定）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.14 §9.2" }
+      { "id": "F-10", "title": "SHR 受管编排唯一入口门禁：run_smoke_s0_s6.ps1 / verify_mtauth_realface.ps1 共 3 处直接 Stop-Process", "severity": "P1", "blocking_cases": 0, "status": "已修复（方案 A：两脚本生命周期改经受管编排 service-orchestrator.ps1；扫描器 disallowed=0 / t1_shr 15 passed）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.15 §9.1" },
+      { "id": "F-11", "title": "S7 工具骨架门禁 12 项：L1-1/L2-1/L3-1 干跑退出码与证据落盘契约不符", "severity": "P2", "blocking_cases": 0, "status": "预存登记（e2c4f25 基线同样失败，非本轮引入；修复方案待裁定）", "ref": "《OpenBase-S7-冒烟缺陷分派待办单》v1.0.15 §9.2" }
     ],
+    "fix_verify_f10": {
+      "mode": "plan-A-managed-orchestrator",
+      "changed": [
+        "scripts/run_smoke_s0_s6.ps1（移除 Start-Svc/Clear-Listener/收尾 Stop-Process；改经 service-orchestrator.ps1 -Action stop|start|stop -Only openbase,openllm -HealthTimeout 240）",
+        "scripts/verify_mtauth_realface.ps1（-StartServices 分支移除本地进程表/Start-Process/收尾 Stop-Process；改经同一编排入口对六服务 stop→start→stop）",
+        "两脚本补 PATH 引导（编排器以裸命令 python 启动服务）+ 转 UTF-8 with BOM（解析 0 错误）"
+      ],
+      "gate_verify": {
+        "scanner": "scripts/scan_orchestrator_bypass.py → scanned=46 / allowed=1 / disallowed=0 / exit 0",
+        "scanner_evidence": "doc/test/evidence/s7/shr/orchestrator/bypass-scan.json",
+        "pytest": "tests/test_s7_t1_shr.py + tests/test_s7_t6_gate.py → 31 passed"
+      },
+      "smoke_rerun": {
+        "evidence": "doc/test/evidence/s7/smoke/smoke-summary-20261016120118.json",
+        "result": "total=32 / pass=25 / fail=0 / pending=7",
+        "ready_gate": "ready=True (5s)",
+        "equivalence": "与第三轮 smoke-summary-20261016005540.json 逐项一致 ⇒ 方案 A 改造行为等价"
+      }
+    },
     "fix_verify": {
       "commit": "6bf7832",
       "touched": [

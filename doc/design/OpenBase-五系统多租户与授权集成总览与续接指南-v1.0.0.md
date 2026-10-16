@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-OVERVIEW-v1.0.0 |
-| 文档版本 | **v1.0.14**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.0.15**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（本文为**汇总视图**，不引入新结论；一切结论以其上游单一事实源为准） |
 | 作者 | AA/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-09 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.15 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-10 修复闭环（方案 A：受管编排唯一入口）+ 冒烟受管复跑**：① `scripts/run_smoke_s0_s6.ps1` 与 `scripts/verify_mtauth_realface.ps1` 的服务生命周期全部改经 `scripts/service-orchestrator.ps1`（`-Action stop\|start\|stop -Only …`），自身不再直接终止进程；补 PATH 引导 + UTF-8 BOM；② 验证：扫描器 `disallowed=0 / exit 0`（`bypass-scan.json` 重跑 `scanned=46`）、`test_s7_t1_shr.py` **15 passed**（与 t6_gate 合计 **31 passed**）、**冒烟受管复跑 `PASS 25 / FAIL 0 / PENDING 7`**（`smoke-summary-20261016120118.json`，与第三轮逐项一致）；③ §10.4/§10.5 状态同步为「**F-10 已修复；仅余 F-11 待裁定**」；回填 S7 报告 v1.0.12、《S7-冒烟缺陷分派待办单》v1.0.15 §9.1 |
 | v1.0.14 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-8 / F-9 修复闭环（TDD）+ 预存门禁失败登记**：① **F-8**（`/auth/me` 对绑租户主体 500）与 **F-9**（`users` / OIDC JIT 建号未派生 `tenant_code` → 同域委托误判跨界）已按 TDD 修复——3 条 RED 用例先行，**提交 `6bf7832`**；验证：`ruff` 全清、隔离用例全绿、**仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`**、**L2 探针复跑 `overall_pass=true`**（E 500→200、O 403→200）；② §10.4 遗留表与 §10.5 结论同步为「**F-8/F-9 已修复**」；③ 新增 **F-10**（SHR 受管编排唯一入口门禁：两脚本 3 处直接 `Stop-Process`）/ **F-11**（S7 工具骨架门禁 12 项）**预存登记**（经 `e2c4f25` 基线证明非本轮引入，修复方案待裁定）；④ 回填 S7 报告 v1.0.11、`gate-aggregate.json`（`aggregate_rerun_20261016.fix_verify` + `new_defects_registered` 扩至 4 项）、《S7-冒烟缺陷分派待办单》v1.0.14 |
 | v1.0.13 | 2026-10-16 | AA/PM-OpenBase-Dev | **§10.5 刷新（L1 冒烟第三轮闭环 + L2 RA-06 余项探针）**：① **冒烟 S0–S6 第三轮真实执行** `total=32 / PASS 25 / FAIL 0 / PENDING 7`（首轮 17/8/7 → 8 项 FAIL 全绿），证据 `doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`，跨仓派单升 v1.0.2（§8 回执 7 项勾选）；② **RA-06 余项真实面 4/5 闭环**——委托跨界 ✅（跨域 403 `PERM_DELEGATION_CROSS_TENANT` + 同域 200 反例自证）、L3-1 agent key 面 A/D/F/G 全绿，证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json`；**余 fail-closed 故障注入 PENDING（需停服，待授权）**；③ 探针暴露两项 OpenBase 侧缺陷 **F-8**（`/auth/me` 对绑租户主体 500）/ **F-9**（`users` 路径未派生 `tenant_code` → 同域委托误判跨界），登记《S7-冒烟缺陷分派待办单》v1.0.13 §8（P1/阻塞用例数 0/待修复）；④ §10.4 遗留表与 §10.5 逐条同步；回填 S7 报告 v1.0.10 §4.2、`gate-aggregate.json`（§RA-06 四项 real_face_status PASS / §SMOKE-S0-S6 PASS / `aggregate_rerun_20261016`） |
 | v1.0.12 | 2026-10-16 | AA/PM-OpenBase-Dev | **状态回写（消除 v1.0.3 以来的滞后）**：经逐项核对台账 v1.16.33，§4.1 批次表 B3/C1-d/C2/C3/C4/C5/D3 由「未启动/未实施/第一阶段/其余三仓未落地」回写为**已闭环**（B3 2026-10-09 锚点全覆盖；C1-d/C2 2026-10-09 `code_normalize.py`；C3 三阶段全部完成至 2026-10-13 OM 消费侧 `3f1fa5f`；C4/C5 2026-10-09 四仓覆盖；D3 2026-10-12 探针 18 PASS/0 FAIL）；§4.3 现状表与 §7.1 未决项同步刷新——**B1 强制期全 4 模块已完成灰度翻转（2026-10-13）**，§7.1 九项中 8 项已解决，仅第 8 项（DPS 自身 IAM 演进）仍为规划中项；上游台账版本引用 v1.9.4 → v1.16.33 |
@@ -418,3 +419,4 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 
 - **F-8 / F-9 修复闭环（2026-10-16，TDD）**：**F-8** `me()` 出参 `tenant_id` 归一为 `str`；**F-9** `create_user` 与 OIDC JIT `_bind_or_create_user` 补齐 `tenant_code` 派生（复用 `auth.resolve_tenant_code`，与 `identity/agents` 口径一致）。**提交 `6bf7832`**；验证：`ruff` 全清、隔离用例全绿（t1 9 / users 7 / oidc 6 / tenant_admin 5 / s7_t7 20 / s7_t8 19 / s7_docs 6 / s7_t6_gate 16）、**仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`**、探针 E 500→200 与 O 403→200（分界证据 `mtauth-delegation-l31-20261016-defect.json` / `-20261016.json`）。
 - **预存门禁失败登记（2026-10-16，非本轮引入）**：**F-10**（SHR 受管编排唯一入口门禁：`run_smoke_s0_s6.ps1` / `verify_mtauth_realface.ps1` 3 处直接 `Stop-Process`）、**F-11**（S7 工具骨架门禁 12 项：L1-1/L2-1/L3-1 干跑退出码与证据落盘契约不符）；二者经 `e2c4f25` 基线 worktree 复跑证明改动前即失败；修复方案待裁定（详见《S7-冒烟缺陷分派待办单》v1.0.14 §9）。
+- **F-10 修复闭环（2026-10-16，方案 A）**：两脚本服务生命周期全部改经**受管编排唯一入口** `scripts/service-orchestrator.ps1`（`-Action stop|start|stop -Only …`，`-HealthTimeout 240`），自身不再直接终止进程（`Stop-Process`/`Clear-Listener`/本地服务表全部移除）；补 PATH 引导（编排器以裸命令 `python` 启动服务）并转 UTF-8 with BOM。验证：`scan_orchestrator_bypass.py` → `scanned=46 / allowed=1 / disallowed=0 / exit 0`；`tests/test_s7_t1_shr.py` **15 passed**（+t6_gate 合计 31 passed）；**冒烟受管复跑 `total=32 / PASS 25 / FAIL 0 / PENDING 7`**（`smoke-summary-20261016120118.json`，与第三轮逐项一致 ⇒ 行为等价）。→ **F-10 已修复；仅余 F-11 待裁定**。
