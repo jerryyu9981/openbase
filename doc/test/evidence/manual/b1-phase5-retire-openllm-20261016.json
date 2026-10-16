@@ -170,8 +170,10 @@
     {
       "id": "O1",
       "item": "app/api/tenant_management.py 未被任何入口挂载（疑似遗留文件）",
-      "status": "登记待裁定（去留：删除或接入）",
-      "impact": "本次已退役其 2 处旧门以消除死代码旧门；不影响运行时行为"
+      "status": "✅ 已裁定并执行：删除（OpenLLM 0d87bf1 / v2.17.4，2026-10-16）",
+      "basis": "四条件取证：① 未被任何入口挂载（全仓无 import / include_router）；② 功能由 tenants.py 严格超集承载（5 端点全覆盖 + teams 等）；③ 最新 API 设计文档 v2.14.3 0 次提及；④ v1.8.0 已裁定「合并到 tenants.py 并删除」（ISSUE-003 / BUG-ROUTE-003 / GAP-03 / TD-003 闭合），但 git log --follow 显示自 73c375d 起从未进入删除记录",
+      "impact": "app/api/ 旧管理硬门退役面由 12 文件收窄为 11 文件；相关回归 test_tenant_management_api + test_tenants_api → 27 passed",
+      "follow_up": "tests/unit/test_tenant_management_api.py 名义覆盖该模块实为零耦合空断言（仅打 /api/v1/tenants/stats 与 /config，断言 != 404 恒真），其去留另行裁定"
     },
     {
       "id": "O2",
