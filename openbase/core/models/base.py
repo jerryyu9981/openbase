@@ -1,4 +1,4 @@
-﻿"""基础模型：声明式 Base + 公共字段 + 5 个核心模型."""
+"""基础模型：声明式 Base + 公共字段 + 5 个核心模型."""
 
 from __future__ import annotations
 

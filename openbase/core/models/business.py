@@ -1,4 +1,4 @@
-﻿"""业务模块模型：dict/config/scheduler/storage/notify（数据库落库用）.
+"""业务模块模型：dict/config/scheduler/storage/notify（数据库落库用）.
 
 与 base.py 共用 Base.metadata，保证 init_db 建表与 schema 绑定覆盖全部表。
 对齐数据库设计文档 §3.9~3.14。

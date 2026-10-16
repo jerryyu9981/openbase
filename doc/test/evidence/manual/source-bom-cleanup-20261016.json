@@ -1,0 +1,85 @@
+{
+  "stamp": "2026-10-16T22:08:00+08:00",
+  "scope": "源码编码统一：清理 Python 源码 UTF-8 BOM（7 文件 / 3 仓）",
+  "upstream_claim": "OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md §23.4 登记的独立清理项（audit_service.py 带 BOM，影响以 ast.parse(文本) 做源码扫描的工具链）；人工指令「先统一清理 audit_service.py 的 UTF-8 BOM」",
+  "readonly": false,
+  "note": "字节级剥离（仅删文件首 3 字节，不重编码、不改行尾）；.ps1 有意保留 BOM（PowerShell 5.1 对无 BOM 的 UTF-8 会按 GBK 误解码）",
+  "scan": {
+    "method": "字节级判据 = 首 3 字节 EF BB BF；扩展名 *.py,*.json,*.md,*.yml,*.yaml,*.sql,*.ps1,*.ts,*.js,*.vue,*.txt；排除 .git / node_modules / .venv* / extras / .pylib / __pycache__ / dist / build / 缓存目录",
+    "roots": ["OpenBase", "OpenLLM", "OpenRAG", "OpenMemory", "DPS"],
+    "files_scanned": 8908,
+    "bom_hits": 497,
+    "by_kind": {
+      "py": 7,
+      "ps1": 46,
+      "other": 444
+    },
+    "by_extension_other": {
+      "md": 236,
+      "json": 29,
+      "sql_vue_ts_js_yml_yaml_txt": 179
+    }
+  },
+  "results": {
+    "A_stripped_py": {
+      "observed": 7,
+      "expected": 7,
+      "pass": true,
+      "files": [
+        {"repo": "OpenBase", "path": "openbase/core/models/base.py", "before": 22023, "after": 22020},
+        {"repo": "OpenBase", "path": "openbase/core/models/business.py", "before": 10237, "after": 10234},
+        {"repo": "OpenLLM", "path": "backend/app/services/audit_service.py", "before": 25692, "after": 25689},
+        {"repo": "OpenLLM", "path": "backend/tests/test_ollama_adapter.py", "before": 20470, "after": 20467},
+        {"repo": "OpenLLM", "path": "backend/tests/unit/test_assembly_refine_rule_tier.py", "before": 16858, "after": 16855},
+        {"repo": "OpenLLM", "path": "backend/tests/unit/test_rag_unregistered_no_fallback.py", "before": 4450, "after": 4447},
+        {"repo": "OpenMemory", "path": "tests/test_v700_smoke.py", "before": 7789, "after": 7786}
+      ],
+      "basis": "逐文件三重校验：① 首 3 字节确为 EF BB BF；② 正文以 UTF8Encoding(throwOnInvalidBytes:true) 严格解码通过（排除 BOM+GBK 混编风险）；③ 剥离前后解码内容完全一致（无 ABORT）；写回仅删 3 字节，均 -3 bytes 且 bom_now=False"
+    },
+    "B_contract_test": {
+      "observed": {
+        "red": "2 failed / 2 passed",
+        "green": "4 passed"
+      },
+      "expected": "护栏先行（RED）→ 剥离后全绿（GREEN）",
+      "pass": true,
+      "basis": "在 tests/unit/test_b1_d4_retired_gate_symbols_cleanup.py 追加第 4 条 test_python_sources_have_no_utf8_bom（扫描 backend/**/*.py，排除第三方/缓存目录），并把第 3 条 AST 扫描由 utf-8-sig 兜底回归 utf-8；RED 时第 3 条报 SyntaxError: invalid non-printable character U+FEFF、第 4 条精确列出 4 个带 BOM 的 .py"
+    },
+    "C_regression": {
+      "observed": {
+        "openllm": "183 passed / 0 failed",
+        "openbase": "tests/test_models.py + tests/test_db_init.py + tests/test_three_modules.py 全通过（exit 0）"
+      },
+      "expected": "行为零变化（仅删 3 字节）",
+      "pass": true,
+      "basis": "OpenLLM：契约 4 + edgerouter/test_audit_service + test_audit_logs_api + phase-5 护栏 98 + test_ollama_adapter + test_assembly_refine_rule_tier + test_rag_unregistered_no_fallback；OpenBase：被剥离者为核心模型（models/base.py、models/business.py），经 doc/tmp/pyrun.py 运行器复跑模型/DB 相关用例"
+    },
+    "D_ps1_kept": {
+      "observed": 46,
+      "expected": "有意保留",
+      "pass": true,
+      "basis": "PowerShell 5.1 对无 BOM 的 UTF-8 源文件按 GBK 解读（中文注释致 Parser::ParseFile 报错）——本项目既定做法，不在清理范围"
+    },
+    "E_other_text_pending": {
+      "observed": 444,
+      "expected": "待裁定",
+      "pass": false,
+      "basis": "md 236 / json 29 / sql·vue·ts·js·yml·yaml·txt 179：是否统一清理涉文档版本管理规范（触达大量 .md 的版本与修订留痕）与各工具链兼容性，未纳入本批范围"
+    }
+  },
+  "open_items": [
+    {
+      "id": "S1",
+      "item": "其余 444 个非 .py 文本文件的 BOM（.md 236 / .json 29 / 其它 179）",
+      "status": "待人工裁定",
+      "impact": "清理会触及大量 .md，需评估是否按文档版本管理规范逐篇留痕；.json 若带 BOM 对严格 JSON 解析器不友好（当前可用）"
+    },
+    {
+      "id": "S2",
+      "item": "各仓「源码编码契约」尚未统一建立（本批仅在 OpenLLM 建立 test_python_sources_have_no_utf8_bom）",
+      "status": "待裁定",
+      "impact": "OpenBase / OpenRAG / OpenMemory / DPS 尚无同款护栏；建议后续以跨仓扫描脚本或各仓契约测试统一"
+    }
+  ],
+  "overall_pass": true
+}
