@@ -1,10 +1,12 @@
-<#
+﻿<#
 .SYNOPSIS
   MTAUTH cross-repo "real-face" execution script (start 6 services + RA-06 real-face + cross-tenant A-write-B-read).
 
 .DESCRIPTION
   Starts and health-checks OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS / OIDC-IdP within the SAME command
-  (sandbox recycles child processes at command end, so execution must be atomic), then runs the real-face probes:
+  (sandbox recycles child processes at command end, so execution must be atomic) via the managed orchestrator
+  `scripts/service-orchestrator.ps1` (SHR gate S7-T1-4 / F-10: the orchestrator is the ONLY permitted
+  service-lifecycle entry point; this script performs no direct process termination), then runs the real-face probes:
     §1 OIDC IdP real-face          -- discovery / jwks
     §2 Revocation immediacy (token_version) -- create temp user -> suspend -> reuse old token expects 401
     §3 Cross-repo forward chain    -- rag/memory-proxy upstream reachable
@@ -39,7 +41,6 @@ $ErrorActionPreference = 'Continue'
 $Stamp = Get-Date -Format 'yyyyMMddHHmmss'
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 $OpenBaseRoot = Split-Path $PSScriptRoot -Parent
-$DevRoot = Split-Path $OpenBaseRoot -Parent
 $Results = [ordered]@{ stamp = $Stamp; ts = (Get-Date).ToString('o'); base = $Base }
 
 function Resolve-Python {
@@ -77,6 +78,11 @@ function Rec { param($name, $observed, $expected, $pass)
 $Py = Resolve-Python
 Write-Output "python = $Py"
 
+# The managed orchestrator launches services with the bare command `python`; make sure a python.exe is on
+# PATH so its Start-Process can resolve it (the sandbox PATH ships no interpreter by default).
+$PyDir = Split-Path $Py -Parent
+if ($PyDir -and (Test-Path (Join-Path $PyDir 'python.exe'))) { $env:PATH = $PyDir + ';' + $env:PATH }
+
 # ---- load shared-infra env (POSTGRES_URL/REDIS_URL/...) as service-orchestrator.ps1 does ----
 # OpenBase settings resolve the DB/Redis DSN from process env (POSTGRES_URL/REDIS_URL); .env does NOT
 # participate in DSN resolution. Without this, db_url falls back to localhost:5432 and every DB write fails.
@@ -94,41 +100,39 @@ if (Test-Path $sharedEnv) {
     Write-Output ("loaded .env.shared-infra; POSTGRES_URL={0}" -f $env:POSTGRES_URL)
 } else { Write-Output "WARN: .env.shared-infra not found" }
 
-# ---- service definitions (aligned with scripts/service-orchestrator.ps1) ----
-$obEnv = @{
-    OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030'
-    OPENBASE_DPS_ORG_MAP = '{"org-1":"dps-org-001","tenant-1":"dps-org-001"}'
-    OPENBASE_DPS_TENANT_MAP = '{"org-1":"dps-tenant-001","tenant-1":"dps-tenant-001"}'
-    OPENBASE_PROXY_CODE_MAP = '{"schema_version":1,"source_of_truth":"openbase.tenants.code","targets":{"rag":{"reserved_codes":["default","openrag-local"],"default_tenant_code":"tenant-1"},"memory":{"reserved_codes":[],"default_tenant_code":"tenant-1"}}}'
-}
-$Services = @(
-    @{ Name = 'openllm';    Cwd = "$DevRoot\OpenLLM\backend"; Args = @('-m','uvicorn','main:app','--host','127.0.0.1','--port','8001'); Env = @{ PORT = '8001' }; Health = 'http://127.0.0.1:8001/health' },
-    @{ Name = 'openrag';    Cwd = "$DevRoot\OpenRAG";         Args = @('-m','uvicorn','openrag.main:app','--app-dir','src','--host','127.0.0.1','--port','8010'); Env = @{ OPENRAG_API_PORT = '8010' }; Health = 'http://127.0.0.1:8010/api/v1/system/health' },
-    @{ Name = 'openmemory'; Cwd = "$DevRoot\OpenMemory";       Args = @('scripts\start_openmemory.py'); Env = @{}; Health = 'http://127.0.0.1:8020/health' },
-    @{ Name = 'dps';        Cwd = "$DevRoot\DPS";              Args = @('-m','uvicorn','rest_api.app:app','--app-dir','src','--host','127.0.0.1','--port','8030'); Env = @{ API_PORT = '8030' }; Health = 'http://127.0.0.1:8030/health/liveness' },
-    @{ Name = 'oidc-idp';   Cwd = $OpenBaseRoot;               Args = @('scripts\oidc-idp\idp_server.py'); Env = @{}; Health = 'http://127.0.0.1:8090/health' },
-    @{ Name = 'openbase';   Cwd = $OpenBaseRoot;               Args = @('-m','uvicorn','openbase.demo_app:app','--host','127.0.0.1','--port','8000'); Env = $obEnv; Health = 'http://127.0.0.1:8000/health' }
-)
+# ---- managed service lifecycle (SHR gate S7-T1-4 / F-10) ----
+# scripts/service-orchestrator.ps1 is the ONLY permitted lifecycle entry point; this script never
+# terminates processes directly (stale listeners are released by the orchestrator's `stop`, which
+# falls back to the port owner when no recorded PID exists).
+$Orchestrator = Join-Path $PSScriptRoot 'service-orchestrator.ps1'
+$LifecycleTargets = @('openbase', 'openllm', 'openrag', 'openmemory', 'oidc-idp', 'dps')
 
 function Test-Up { param($Url) (Invoke-Probe 'GET' $Url $null $null).status -eq 200 }
 
-$started = @()
+function Invoke-Managed {
+    param([string]$Action)
+    if (-not (Test-Path $Orchestrator)) { Write-Output ("WARN: orchestrator not found: {0}" -f $Orchestrator); return }
+    Write-Output ("== orchestrator -Action {0} -Only {1} ==" -f $Action, ($LifecycleTargets -join ','))
+    try { & $Orchestrator -Action $Action -Only $LifecycleTargets }
+    catch { Write-Output ("  orchestrator {0} error: {1}" -f $Action, $_.Exception.Message) }
+}
+
 if ($StartServices) {
-    Write-Output "== start services (cross-repo) =="
-    foreach ($s in $Services) {
-        if (Test-Up $s.Health) { Write-Output ("  {0} already online" -f $s.Name); continue }
-        $keys = @($s.Env.Keys)
-        foreach ($k in $keys) { Set-Item -Path ("Env:" + $k) -Value $s.Env[$k] }
-        $env:PYTHONDONTWRITEBYTECODE = '1'
-        $errLog = Join-Path $OutDir ("{0}.{1}.err.log" -f $s.Name, $Stamp)
-        $outLog = Join-Path $OutDir ("{0}.{1}.out.log" -f $s.Name, $Stamp)
-        $p = Start-Process -FilePath $Py -ArgumentList $s.Args -WorkingDirectory $s.Cwd -PassThru `
-            -RedirectStandardOutput $outLog -RedirectStandardError $errLog -WindowStyle Hidden
-        $started += $p
-        $up = $false
-        for ($i = 0; $i -lt 60; $i++) { Start-Sleep -Seconds 2; if (Test-Up $s.Health) { $up = $true; break } }
-        Write-Output ("  {0} up={1} ({2}s)" -f $s.Name, $up, ($i * 2))
-        $Results[("start_" + $s.Name)] = $up
+    Write-Output "== start services (managed orchestrator, cross-repo) =="
+    Invoke-Managed -Action 'stop'
+    Invoke-Managed -Action 'start'
+    $startHealth = [ordered]@{
+        openbase   = 'http://127.0.0.1:8000/health'
+        openllm    = 'http://127.0.0.1:8001/health'
+        openrag    = 'http://127.0.0.1:8010/api/v1/system/health'
+        openmemory = 'http://127.0.0.1:8020/health'
+        'oidc-idp' = 'http://127.0.0.1:8090/health'
+        dps        = 'http://127.0.0.1:8030/health/liveness'
+    }
+    foreach ($k in $startHealth.Keys) {
+        $up = Test-Up $startHealth[$k]
+        Write-Output ("  {0} up={1}" -f $k, $up)
+        $Results[("start_" + $k)] = $up
     }
 }
 
@@ -234,7 +238,7 @@ $pass = ($Results.Values | Where-Object { $_ -is [hashtable] -and $_.ContainsKey
 $Results.overall_pass = $pass
 $evi = Join-Path $OutDir ("realface-" + $Stamp + ".json")
 $Results | ConvertTo-Json -Depth 8 | Set-Content $evi -Encoding UTF8
-foreach ($p in $started) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+if ($StartServices) { Invoke-Managed -Action 'stop' }
 Write-Output "== result =="
 Write-Output ("overall_pass = {0}" -f $pass)
 Write-Output ("evidence = {0}" -f $evi)
