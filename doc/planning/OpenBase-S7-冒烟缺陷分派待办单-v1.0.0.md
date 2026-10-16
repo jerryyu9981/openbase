@@ -5,16 +5,16 @@
 | 属性 | 值 |
 |------|-----|
 | 文档编号 | OB-S7-FAULT-DISPATCH-v1.0.0 |
-| 版本 | v1.0.16 |
+| 版本 | v1.0.17 |
 | 状态 | [Draft] |
 | 日期 | 2026-09-12 |
 | 作者 | AI（S7 批次 9 冒烟缺陷分派会话；证据与各仓配置只读核对 2026-09-11；S7 批次 10 OpenLLM K07 补填回填会话修订 v1.0.1；S7 批次 11 OpenMemory K07 缺口补填回填会话修订 v1.0.2；S7 批次 12 F-2/F-3 修复与冒烟重跑会话修订 v1.0.3；S7 批次 13 F-1 环境配置与主链路修复会话修订 v1.0.4；S7 批次 14 DPS 探活口径修复会话修订 v1.0.5；S7 批次 15 冒烟 v4 重跑与回填会话修订 v1.0.6；S7 批次 16 跨仓提交状态同步回填会话修订 v1.0.7；S7 批次 17 K07 门禁收口与聚合复跑会话修订 v1.0.8；S7 批次 18 K07 收口提交与脚本路径回填会话修订 v1.0.9；S7 批次 19 DPS 豁免续期入库回填会话修订 v1.0.10；S7 批次 20 OpenLLM 快照落仓脚本登记会话修订 v1.0.11） |
 | 用途 | **冒烟缺陷分派与闭环回填**：将 S7-T6-2 全量冒烟 S0~S6 实测暴露的三项功能缺陷（F-1/F-2/F-3），逐条落笔为「现象与证据 → 根因判定 → 修复动作 → 验证方式 → 回填位置 → 风险与边界」，供责任方按单修复、重跑指定用例、回填台账，并由 OpenBase 侧复核收口 |
 | 上游依据 | ①`doc/test/evidence/s7/smoke/smoke-summary.json`、`doc/test/evidence/s7/smoke/s0-s6-cases.json`（P0 30 例：PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED）；②`doc/test/evidence/s7/env/env-check.json`（READY 14 / UNREACHABLE 2 / BLOCKED 1）；③《OpenBase-S7-联调窗口环境检查报告-v1.0.0.md》（`doc/planning/`，内部 **v1.0.2**，§2.6 四项功能缺陷）；④《OpenBase-真实联调冒烟清单-v1.0.0.md》（仓根，内部 **v1.1.0**，§3 用例定义）；⑤各仓实际配置文件（只读定位）；⑥《OpenBase-S7-沙箱外执行单-v1.0.0.md》（`doc/planning/`，内部 **v1.0.5**，§2/§3 结构与回填位）；⑦《OpenBase-数据隔离实现任务卡-v1.0.0.md》（K02/K07/K09/K10/K15，七线 JT 口径回填位） |
-| 关联证据 | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}`；`doc/test/evidence/s7/env/env-check.json`；`doc/test/evidence/s7/gate/gate-aggregate.json`；**（v1.0.13）** `doc/test/evidence/manual/{mtauth-realface-20261015.json,mtauth-delegation-l31-20261016.json}`；`doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`；**（v1.0.14）** `doc/test/evidence/manual/mtauth-delegation-l31-20261016-defect.json`（F-8/F-9 修复前 RED 证据）；**（v1.0.15）** `doc/test/evidence/s7/shr/orchestrator/bypass-scan.json`（F-10 修复后重跑：`scanned=46 / allowed=1 / disallowed=0`）、`doc/test/evidence/s7/smoke/smoke-summary-20261016120118.json`（受管编排复跑冒烟） |
+| 关联证据 | `doc/test/evidence/s7/smoke/{smoke-summary.json,s0-s6-cases.json}`；`doc/test/evidence/s7/env/env-check.json`；`doc/test/evidence/s7/gate/gate-aggregate.json`；**（v1.0.13）** `doc/test/evidence/manual/{mtauth-realface-20261015.json,mtauth-delegation-l31-20261016.json}`；`doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json`；**（v1.0.14）** `doc/test/evidence/manual/mtauth-delegation-l31-20261016-defect.json`（F-8/F-9 修复前 RED 证据）；**（v1.0.15）** `doc/test/evidence/s7/shr/orchestrator/bypass-scan.json`（F-10 修复后重跑：`scanned=46 / allowed=1 / disallowed=0`）、`doc/test/evidence/s7/smoke/smoke-summary-20261016120118.json`（受管编排复跑冒烟）；**（v1.0.17）** `doc/test/evidence/manual/{ra06-failclosed-20261016.json,b1-compat-retire-openllm-20261016.json}`（RA-06 fail-closed 受控窗口注入；L3/B1 兼容层退役跨仓复核） |
 | 使用说明（闭环四步） | **① 责任方按单修复**（§2~§4「修复动作」）→ **② 重跑指定用例**（各缺陷「验证方式」用例 ID 清单 + 命令模板）→ **③ 回填三处**（执行单 §2/§3、测试报告 §2.2、`smoke-summary.json`）→ **④ 通知 OpenBase 侧复核**（§7 复核动作） |
 | 脱敏口径 | 本单**不输出任何明文密钥 / 口令**；数据库 / Redis 连接串仅记 host 与库名，键值以「已配置 / 脱敏」表述；`.env` 只引用键名，值以「当前值 / 目标值」呈现（密钥类不落值） |
-| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.2 新增 F-6**（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.13 新增 F-8 / F-9**（L2 真实面探针 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json` 暴露的 OpenBase 侧两项缺陷：`/auth/me` 500、`users` 路径未派生 `tenant_code`；均 P1、阻塞用例数 0，见 §8）；**v1.0.14：F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`），并**新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露、经 `e2c4f25` 基线证明非本轮引入，见 §9）；**v1.0.15：F-10 已按方案 A 修复并验证通过**（两个脚本的服务生命周期改经受管编排 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟经受管编排复跑 `PASS 25 / FAIL 0 / PENDING 7`）；**v1.0.16：F-11 干跑核对完成并修复**（根因＝**测试夹具非自洽**：三件 PS 工具以裸 `python` 为默认解释器，受限环境 PATH 无解释器 → `CommandNotFoundException` 退出 1 且不落证据，掩盖干跑契约判定；**工具契约本身已满足**——显式传 `-PythonExe` 时三件均 `exit=2 / status=PENDING / exit_code=2 / checks=4` 且证据落 `-EvidenceDir`）→ 修夹具（显式传 `sys.executable`），`tests/test_s7_tools_skeleton.py` **26 passed**） |
+| 适用范围 | S7 段冒烟 S0~S6 暴露的 **F-1 / F-2 / F-3**；**不含** F-4（统一前端路由告警，v1.0.2 已修复，E2E 9/9 PASS）与 S5-6（禁停服务降级，归受控窗口 / T3 纪律）；**v1.0.1 新增 F-5**（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.2 新增 F-6**（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）；**v1.0.13 新增 F-8 / F-9**（L2 真实面探针 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json` 暴露的 OpenBase 侧两项缺陷：`/auth/me` 500、`users` 路径未派生 `tenant_code`；均 P1、阻塞用例数 0，见 §8）；**v1.0.14：F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`），并**新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露、经 `e2c4f25` 基线证明非本轮引入，见 §9）；**v1.0.15：F-10 已按方案 A 修复并验证通过**（两个脚本的服务生命周期改经受管编排 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟经受管编排复跑 `PASS 25 / FAIL 0 / PENDING 7`）；**v1.0.16：F-11 干跑核对完成并修复**（根因＝**测试夹具非自洽**：三件 PS 工具以裸 `python` 为默认解释器，受限环境 PATH 无解释器 → `CommandNotFoundException` 退出 1 且不落证据，掩盖干跑契约判定；**工具契约本身已满足**——显式传 `-PythonExe` 时三件均 `exit=2 / status=PENDING / exit_code=2 / checks=4` 且证据落 `-EvidenceDir`）→ 修夹具（显式传 `sys.executable`），`tests/test_s7_tools_skeleton.py` **26 passed**）；**v1.0.17：新增 F-12（OpenLLM 仓）**——**L3 / B1 D4 phase 4「兼容层退役」跨仓复核**发现：退役本体已落地（`users.py` 旧硬门已移除、43 例护栏/接口用例通过），但其**生产安全耦合（生产拒绝启动）实测未生效**（`get_settings()` 生产门禁被 `main.py` 启动自检的 fail-open 兜底吞掉 → 生产带 `RBAC_PERMISSION_ENFORCE=false` 仍能启动）；详见 §10 |
 
 ### 修订历史
 
@@ -36,6 +36,7 @@
 | v1.0.14 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-8 / F-9 修复闭环（TDD）+ F-10 / F-11 预存失败登记**：① 依人工指令「按 TDD 修复 F-8 和 F-9」实施——先写 3 条 RED 用例（`tests/test_identity_t1.py::test_t1_3b_agent_bound_to_tenant_me_returns_200`、`tests/test_users_admin.py::test_create_user_derives_tenant_code`、`tests/test_oidc_binding.py::test_jit_create_derives_tenant_code`，均先失败）→ 再修复：**F-8** `me()` 出参口径统一为 `str`；**F-9** `create_user` 与 OIDC JIT `_bind_or_create_user` 补齐 `tenant_code` 派生（复用 `auth.resolve_tenant_code`）。**提交 `6bf7832`**（8 文件 / +178 −6）。② **验证**：`ruff` 全清；三新用例 + 相关模块隔离全绿（t1 9 / users 7 / oidc 6 / tenant_admin 5 / s7_t7 20 / s7_t8 19 / s7_docs 6 / s7_t6_gate 16）；**仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`**；**L2 探针复跑 `overall_pass=true`**（E 由 500→**200**、观测项 O 由 403→**200**，修复前原始证据留档 `mtauth-delegation-l31-20261016-defect.json`）。③ §1 F-8/F-9 状态转「已修复（`6bf7832`）」、§5.7/§5.8 逐项勾选、§7 第 9 项复核落笔、§8 追加修复与验证记录。④ **新增 F-10 / F-11 预存门禁失败登记**（全量回归暴露；已用 `e2c4f25` 基线 worktree 证明非本轮引入，见 §9）。**仅改动 OpenBase 仓源码/测试/文档** |
 | v1.0.15 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-10 按方案 A 修复闭环（受管编排唯一入口）+ 冒烟受管复跑验证**：依人工指令「按方案 A 修复 F-10 并重新跑冒烟验证」实施——① **`scripts/run_smoke_s0_s6.ps1`**：删除本地 `Start-Svc`/`Clear-Listener`/收尾 `Stop-Process`，服务生命周期改由 `& scripts/service-orchestrator.ps1 -Action stop|start|stop -Only openbase,openllm -HealthTimeout 240` 驱动（含 `.env.shared-infra` 环境等价、就绪门保留）；② **`scripts/verify_mtauth_realface.ps1`**：`-StartServices` 分支删除本地进程表与 `Start-Process`/收尾 `Stop-Process`，改经同一编排入口对六服务 `stop`→`start`→（末尾）`stop`；③ 两脚本均补 **PATH 引导**（编排器以裸命令 `python` 启动服务，沙箱 PATH 无解释器 → 前置解释器目录）并转 **UTF-8 with BOM**（解析 0 错误）。**验证**：`python scripts/scan_orchestrator_bypass.py` → `disallowed=0 / allowed=1 / exit 0`（证据 `bypass-scan.json` 重跑 `scanned=46`）；`pytest tests/test_s7_t1_shr.py tests/test_s7_t6_gate.py` → **31 passed**；**冒烟经受管编排复跑 `total=32 / PASS 25 / FAIL 0 / PENDING 7`**（证据 `smoke-summary-20261016120118.json`，与第三轮结果一致 → 行为等价）。§1 F-10 状态转「已修复」、§9.1 追加修复与验证记录、§9.3 表更新。**仅改动 OpenBase 仓脚本/文档** |
 | v1.0.16 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-11 干跑核对完成并修复（夹具自洽化）**：依人工指令「先处理 F-11 的干跑核对」实施——① **逐件核对**：三件 PS 工具（`verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1`）为**薄包装**（参数转发至同名 `.py` 运行器），其 `$PythonExe` 默认值 `'python'` 为**有意设计**（假定宿主 PATH 有解释器，并暴露 `-PythonExe` 供覆盖）；② **实测复现**：受限环境 PATH 无 `python.exe` 时，`& $PythonExe` 抛 `CommandNotFoundException` → 脚本以 **exit 1** 终止且**不落证据**（与 F-11 现象逐项吻合，非工具契约缺失）；③ **契约实证**：显式传 `-PythonExe <解释器>`（且不依赖门控 env）时三件工具均满足契约——`exit=2（PENDING）`、证据落 `-EvidenceDir/<name>`、`status=PENDING / exit_code=2 / mode=dry-run / checks=4`；④ **修复**：`tests/test_s7_tools_skeleton.py` 夹具**自洽化**（PS 分支显式传 `-PythonExe sys.executable`，与 .py 分支既有的 `sys.executable` 口径一致），**未改动任何断言**（退出码约定、必需字段、`checks` 映射、禁伪造自证全部保留）；⑤ **验证**：`pytest tests/test_s7_tools_skeleton.py -q` → **26 passed**（原 12 failed / 14 passed）；`ruff` 全清。§1 F-11 状态转「已修复」、§9.2 追加根因定论与修复验证记录、§9.3 表更新。**仅改动 OpenBase 仓测试/文档** |
+| v1.0.17 | 2026-10-16 | AA/PM-OpenBase-Dev | **新增 F-12（OpenLLM 仓，P1）—— L3 / B1 D4 phase 4 兼容层退役跨仓复核发现（生产安全耦合未生效）**：依人工指令「先处理 L3 B1 兼容层退役」实施**跨仓只读复核**（探针 `doc/tmp/b1_compat_retire_probe.py`，不修改 OpenLLM 任何文件）。① **退役本体已落地（实证）**：`app/api/users.py` 已无 `get_current_admin_user` 导入/依赖，改挂 `require_permission(PERM_USER_READ/WRITE/DELETE)`；交付提交 `298fe7d`（v2.17.0）在 HEAD 祖先链上且分支跟踪 origin；`tests/unit/{test_b1_d4_compat_gate,test_users_api,test_b1_rbac_wiring}.py` 本机复跑 **43 passed**。② **安全耦合未生效（F-12）**：受控端口 8056 实跑三场景——`ENV=production` + `RBAC_PERMISSION_ENFORCE=false`、以及 enforce=true 但 `MODULES=["role"]`（user 未纳入）——**两次均 `Application startup complete.` 正常启动**，仅打印 `WARNING 启动自检跳过: 生产环境必须开启 RBAC_PERMISSION_ENFORCE=true…`；根因＝`get_settings()` 的生产门禁在 app 内**唯一**启动期调用点位于 `app/core/startup_alignment.py:128`，而 `main.py` 的 lifespan 以 `try/except Exception: logger.warning("启动自检跳过: …")` **fail-open** 包裹该自检 → `ValueError` 被吞。③ **残量边界（如实登记，未在本批范围）**：`get_current_admin_user` 在 `app/` 下仍有 **40 处调用点 / 12 个模块**（auth_service 定义 + config/audit_logs/tenants/roles/plugins/billing/cascade_routing/semantic_routing/circuit_breakers/tenant_management/prompt_assembly/config_import_export），与 OpenLLM 交付记录 §17.5「退役面 = only users 端点」一致。证据 `doc/test/evidence/manual/b1-compat-retire-openllm-20261016.json`（`overall_pass=false`，D1/D2 即为 F-12 客观取证）。**未改动 OpenLLM 任何文件；修复需 OpenLLM 侧授权** |
 
 ---
 
@@ -55,7 +56,8 @@
 | **F-9** | `POST /api/v1/users` **不派生 `tenant_code`**（agent 路径经 `_resolve_tenant_code` 派生），致该路径建的同域账号作委托目标时「目标行域为空 → 同域委托被误判 `PERM_DELEGATION_CROSS_TENANT` 403」（探针观测项 O 自证：期望同域放行 200，实测 403）；**同根因旁路**：OIDC JIT `_bind_or_create_user` 同样只落 `tenant_id` | **OpenBase 仓**（`users` 创建路径 + OIDC JIT 建号补 `tenant_code` 派生，与 `identity/agents` 口径统一） | P1 | **0**（非冒烟 S0~S6 阻塞项；属委托域不变式的目标装配口径） | S7-T6-1（RA-06 委托跨界真实面）、S7-T5-1~4 | — | **已修复（`6bf7832`，v1.0.14）** |
 | **F-10** | **SHR 门禁 T1-4 失败**：`scripts/scan_orchestrator_bypass.py` 命中 3 处批量杀路径——`scripts/run_smoke_s0_s6.ps1`（L59 端口残留清理、L123 收尾停服）与 `scripts/verify_mtauth_realface.ps1`（L237 收尾停服）均直接使用 `Stop-Process`，违反「服务生命周期编排唯一入口」纪律 | **OpenBase 仓**（改为经受管编排 `service-orchestrator.ps1 -Action start/stop -Only ...`，或在扫描器加**带票据/审批人/有效期**的豁免位） | P1 | **0**（门禁项，非冒烟用例阻塞项） | S7-T1-4（SHR 受管编排唯一入口） | — | **已修复（方案 A，v1.0.15）** |
 | **F-11** | **S7 工具骨架门禁失败 12 项**：`tests/test_s7_tools_skeleton.py` 期望 `verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1` 干跑退出码 = 2（PENDING）实测为 1，且 `l1_1/l2_1/l3_1` 证据 JSON 未在临时目录产出（`FileNotFoundError`） | **OpenBase 仓**（核对 l1_1/l2_1/l3_1 工具干跑退出码契约与 `-EvidenceDir` 参数，或同步测试期望） | P2 | **0**（门禁项，非冒烟用例阻塞项） | S7-T2-1 / S7-T3-1 / S7-T5-1（三原则总验证工具面） | — | **已修复（夹具自洽化，v1.0.16）** |
-| — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5/F-6/F-7/F-8/F-9/F-10/F-11 各计 0） | — | — | — |
+| **F-12** | **（OpenLLM，跨仓复核发现）** L3 / B1 D4 phase 4「兼容层退役」的**生产安全耦合未生效**：`APP/core/config.py::get_settings()` 中「生产必须 `RBAC_PERMISSION_ENFORCE=true` 且 user 纳入灰度」门禁，在 app 内唯一启动期调用点被 `main.py` 启动自检的 **fail-open 兜底吞掉** → 生产带 `RBAC_PERMISSION_ENFORCE=false` 仍能启动（实测 `Application startup complete.`），users 端点将处于无保护状态（该门禁本为退役后的机械截止手段） | **OpenLLM 仓**（把启动门禁置于 fail-open 自检之外，或令门禁 `ValueError` 不被吞） | P1 | **0**（不影响 S7 冒烟用例；属生产启动门禁有效性） | L3 / B1 D4 phase 4（S7-T1-4 同源纪律：门禁必须真实生效） | — | **待修复（v1.0.17 登记；需 OpenLLM 侧授权）** |
+| — | **合计** | — | — | **15**（F-1~F-3 冒烟阻塞 15；F-5~F-12 各计 0） | — | — | — |
 
 > **冒烟快照**（`smoke-summary.json`，`generated_at=2026-09-11T18:57:56+08:00`，`openbase_commit=0595bcde788bd19d3a2e21ffc647b827eaa3fded` / 短号 `0595bcd`）：**P0 30 例 PASS 14 / FAIL 9 / BLOCKED 7；P1 2 例 BLOCKED**（`entry_criteria_met=false`）。9 条 FAIL **全部**由 F-1/F-2/F-3 覆盖（F-1 2 条：S0-1、S1-2；F-2 5 条：S1-1、S3-1、S3-2、S3-3、S6-1；F-3 2 条：S0-4、S5-3）；7 条 BLOCKED 中 6 条由 F-1 覆盖（S2-4、S3-4、S5-1、S5-2、S5-4、S5-5），余 1 条 **S5-6** 为禁停服务约束（归受控窗口，不在本单）。
 > **v1.0.8 收口（2026-09-12）**：K07 挂起项全部闭环——**F-5**（OpenLLM `41af780`）、**F-6**（OpenMemory `0a6f351`）均已入库并三远端同步；**DPS 35 条豁免已续期至 2026-12-31**（续期日 2026-09-12，门禁复跑 exit 0）→ K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**（缺口 0 / 未覆盖 0 / 豁免 59 全有效）；门禁聚合复跑 `overall=PASS exit=0 pass=20 fail=0 pending=2`。**F-1~F-7 与全部 K07 挂起项至此闭环**（余环境侧写限制与特性缺口登记，非缺陷）。
@@ -627,6 +629,57 @@
 
 ---
 
+## §10 跨仓复核发现（L3 / B1 兼容层退役，2026-10-16 登记）
+
+> **来源**：依人工指令「先处理 L3 B1 兼容层退役」实施**跨仓只读复核**（`doc/tmp/b1_compat_retire_probe.py`）；证据 `doc/test/evidence/manual/b1-compat-retire-openllm-20261016.json`（`overall_pass=false`）。**未改动 OpenLLM 任何文件**。
+
+### 10.1 复核结论
+
+| 面 | 结论 |
+|----|------|
+| 退役本体（`users` 端点旧管理硬门） | ✅ **已落地且实证**：`app/api/users.py` 无 `get_current_admin_user` 导入/依赖，改挂 `require_permission(PERM_USER_READ/WRITE/DELETE)`；交付提交 `298fe7d`（v2.17.0，2026-10-13）在 HEAD 祖先链上，分支 `feature/s4-identity-channel-b` 跟踪 origin；`tests/unit/{test_b1_d4_compat_gate,test_users_api,test_b1_rbac_wiring}.py` 本机复跑 **43 passed** |
+| 安全耦合（生产拒绝启动） | ❌ **未生效 → F-12**（详见 §10.2） |
+| 残量边界 | ⬜ **如实登记**：`get_current_admin_user` 在 `app/` 下仍有 **40 处调用点 / 12 个模块**（`auth_service` 定义 + config / audit_logs / tenants / roles / plugins / billing / cascade_routing / semantic_routing / circuit_breakers / tenant_management / prompt_assembly / config_import_export）；与 OpenLLM 交付记录 §17.5「退役面 = only `users` 端点，其余由各自路由既有语义承担」一致 —— **未在本批范围**，如需退役其余模块需按其各自「模块纳入强制期」逐一耦合（与 users 同款方案 A 纪律） |
+
+### 10.2 F-12 详单（生产启动门禁被 fail-open 兜底吞掉）
+
+**现象与证据**（受控端口 8056，不影响常驻 8001/8000）
+
+| 场景 | 配置 | 期望 | 实测 |
+|:----:|------|------|------|
+| D1 | `ENV=production` + `RBAC_PERMISSION_ENFORCE=false` | 拒绝启动（exit≠0） | **`Application startup complete.` 正常启动**（exit 未发生）；仅 `WARNING 启动自检跳过: 生产环境必须开启 RBAC_PERMISSION_ENFORCE=true…` |
+| D2 | `ENV=production` + `enforce=true` + `MODULES=["role"]`（user 未纳入） | 拒绝启动（exit≠0） | **同上**（正常启动 + 同条 WARNING） |
+| D3（机制自证） | 静态：`main.py` 以 `try/except Exception: logger.warning("启动自检跳过: …")` 包裹 `run_startup_alignment_checks`，而 `get_settings()` 的**唯一**启动期调用点在该自检内（`app/core/startup_alignment.py:128`） | 成立 | 成立（`ValueError` 被吞） |
+| D4（对照） | 两项前置满足（`enforce=true` + `MODULES=[]`） | 该门禁文案不出现 | 不出现 ✓（区分「门禁拒绝」与「其它启动失败」） |
+
+**根因判定**：B1 D4 phase 4 的「安全耦合」把生产截止实现为 `get_settings()` 内的 `ValueError`（见 `app/core/config.py`「B1 D4 phase 4 兼容层退役安全耦合」段），但该函数在应用启动路径上的**唯一调用点**（`startup_alignment.py::run_startup_alignment_checks`）被 `main.py` lifespan 的**启动自检 fail-open 兜底**包裹 → 门禁异常被降级为 WARNING，应用继续启动。即：**门禁存在、单测通过，但运行态不生效**。同根因还波及同一函数内的其它生产门禁（`SECRET_KEY` / C4 `ENFORCE_INBOUND_IDENTITY_HEADERS` / 租户隔离 A 三项），见 §10.4 待裁定。
+
+**修复建议（待 OpenLLM 侧授权；二选一）**
+
+- **方案 A（推荐，语义正确）**：在 `main.py` lifespan **开头**（fail-open 自检之前）显式求值一次启动门禁——例如 `get_settings()`（或抽出 `assert_startup_gates()`）——使其 `ValueError` **不被任何 fail-open 包裹**；启动自检（版本口径/默认模型漂移）保持原 fail-open 语义不变。
+- **方案 B**：收窄自检的 `except`（如仅捕获漂移类异常，或对门禁类 `ValueError` 重新抛出）。
+- 配套：新增**启动级**回归用例（在 `ENV=production` 且门禁不满足时，应用启动应失败），避免再次出现「单测绿而运行态 fail-open」。
+
+**验证方式**：`python doc/tmp/b1_compat_retire_probe.py` → 期望 **D1/D2 转为 `exit!=0`**（探针 `overall_pass=true`）；同时 `pytest tests/unit/test_b1_d4_compat_gate.py tests/unit/test_users_api.py tests/unit/test_b1_rbac_wiring.py` 保持 **43 passed**。
+
+**回填位置**：本单 §1/§10；`doc/test/evidence/manual/b1-compat-retire-openllm-<日期>.json`（重跑刷新）；《五系统多租户与授权集成总览与续接指南》§7.1（新增未决项）。
+
+**风险与边界**：**不得**以「放开门禁」或「改单测期望」消除该差异；修复后**生产若配置不合规将拒绝启动**（这正是既定机械截止语义，但**属运行影响面变化**，需 OpenLLM 侧确认其生产环境配置已满足全部门禁再实施）；退役其余 12 个模块的旧门**须逐个耦合其模块强制期**，禁止一次性批量移除。
+
+### 10.3 与 L3 项闭环状态的关系
+
+**L3 / B1 兼容层退役：未闭环**。退役本体已完成（§10.1 第 1 行），但其**验收判据之一（生产安全耦合生效）**被 F-12 打破 —— 在 F-12 修复并复验通过前，该项**不得标记为已闭环**。
+
+### 10.4 待裁定（F-12 影响面）
+
+F-12 的根因位于「启动门禁求值点被 fail-open 包裹」，**同一处**还决定以下门禁在运行态是否有效：`SECRET_KEY`（弱密钥拒绝）、C4 `ENFORCE_INBOUND_IDENTITY_HEADERS`、租户隔离 A 三项（`TENANT_SCOPE_ENFORCE` / `TENANT_HEADER_CONSISTENCY_ENFORCE` / `QUOTA_MISSING_FAIL_CLOSED`）。故需裁定：
+
+1. 是否在 OpenLLM 实施**方案 A**（一处修复同时恢复上述全部门禁的运行态效力）；
+2. 是否同步复核各门禁对应的历史交付声明（C4 `daea828`、租户隔离 A `4f11c48`）是否需要**追加运行态取证**；
+3. 其余 12 个模块的旧 `get_current_admin_user` 硬门是否排期退役（须逐模块耦合强制期）。
+
+---
+
 ## 附录
 
 ### 附录 A 用例 → 缺陷 → 责任方映射表
@@ -675,4 +728,4 @@
 
 ---
 
-> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.2）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；**v1.0.2 新增 F-6（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何功能语义代码、未将 `dogfood-output/` 纳入提交面。**v1.0.8 收口**：K07 挂起项（F-5 / F-6 / DPS 35 条豁免续期）全部闭环，K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**；四仓改动与提交由各仓在可写环境执行（本单只登记不代改），DPS 侧改动已生成一键提交脚本待执行。**v1.0.13；**v1.0.13 新增**：**F-8 / F-9**（L2 真实面探针暴露的 OpenBase 侧两项缺陷，均 P1、阻塞用例数 0，见 §8；同窗口已达成「委托跨界 403 + 同域放行 200」反例自证配对与 agent key 面 A/D/F/G 全绿）；两项**仅登记、未改代码**，修复窗口待裁定。**v1.0.14 收口**：**F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`；仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`），**本单待提交项清零**；同时**新增 F-10 / F-11 预存门禁失败登记**（§9，经 `e2c4f25` 基线证明非本轮引入，修复方案待裁定）。**v1.0.15 收口**：**F-10 已按方案 A 修复并验证通过**（两脚本服务生命周期改经 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟受管复跑 `PASS 25 / FAIL 0 / PENDING 7`，证据 `smoke-summary-20261016120118.json`）；**F-11 仍待裁定**。**v1.0.16 收口**：**F-11 干跑核对完成并修复**（根因＝测试夹具非自洽：工具默认解释器为裸 `python`，受限环境 PATH 无解释器 → 退出 1 且不落证据；**工具契约本身已满足**——显式传 `-PythonExe` 即 `exit=2 / PENDING / 证据落 -EvidenceDir`）→ 夹具补 `-PythonExe sys.executable`（断言零改动），`tests/test_s7_tools_skeleton.py` **26 passed**。**F-1~F-11 至此全部闭环**（本单待办清零）。
+> **文档结束**。本单为 S7 段冒烟缺陷（F-1/F-2/F-3）**分派与闭环回填待办**（[Draft] v1.0.2）；**v1.0.1 新增 F-5（OpenLLM K07 端点过滤矩阵全量补填：工作树完成/待提交，非冒烟阻塞项）**；**v1.0.2 新增 F-6（OpenMemory K07 端点过滤矩阵 8 条缺口已补填：工作树完成/待提交，非冒烟阻塞项）**；所有键名 / 文件路径 / 行号均自实际仓内只读核对得出，每缺陷的验证用例 ID 与 `smoke` 证据逐条对应；**不输出明文密钥 / 口令**；未改动任何功能语义代码、未将 `dogfood-output/` 纳入提交面。**v1.0.8 收口**：K07 挂起项（F-5 / F-6 / DPS 35 条豁免续期）全部闭环，K07/SYS-1 门禁 verdict 由 `PARTIAL` 升 **PASS**；四仓改动与提交由各仓在可写环境执行（本单只登记不代改），DPS 侧改动已生成一键提交脚本待执行。**v1.0.13；**v1.0.13 新增**：**F-8 / F-9**（L2 真实面探针暴露的 OpenBase 侧两项缺陷，均 P1、阻塞用例数 0，见 §8；同窗口已达成「委托跨界 403 + 同域放行 200」反例自证配对与 agent key 面 A/D/F/G 全绿）；两项**仅登记、未改代码**，修复窗口待裁定。**v1.0.14 收口**：**F-8 / F-9 已按 TDD 修复并验证通过**（提交 `6bf7832`；探针复跑 `overall_pass=true`；仓内分组全量回归 `passed=1118 / failed=0 / skipped=4`），**本单待提交项清零**；同时**新增 F-10 / F-11 预存门禁失败登记**（§9，经 `e2c4f25` 基线证明非本轮引入，修复方案待裁定）。**v1.0.15 收口**：**F-10 已按方案 A 修复并验证通过**（两脚本服务生命周期改经 `service-orchestrator.ps1`，自身不再直接终止进程；扫描器 `disallowed=0`、`test_s7_t1_shr.py` 15 passed、冒烟受管复跑 `PASS 25 / FAIL 0 / PENDING 7`，证据 `smoke-summary-20261016120118.json`）；**F-11 仍待裁定**。**v1.0.16 收口**：**F-11 干跑核对完成并修复**（根因＝测试夹具非自洽：工具默认解释器为裸 `python`，受限环境 PATH 无解释器 → 退出 1 且不落证据；**工具契约本身已满足**——显式传 `-PythonExe` 即 `exit=2 / PENDING / 证据落 -EvidenceDir`）→ 夹具补 `-PythonExe sys.executable`（断言零改动），`tests/test_s7_tools_skeleton.py` **26 passed**。**F-1~F-11 至此全部闭环**（本单待办清零）。**v1.0.17 新增 F-12（OpenLLM 仓，P1，跨仓复核发现）**：L3 / B1 D4 phase 4「兼容层退役」**退役本体已落地并实证**（`298fe7d` / 43 passed），但其**生产安全耦合实测未生效**（启动门禁被 `main.py` 启动自检 fail-open 兜底吞掉 → 生产带 `RBAC_PERMISSION_ENFORCE=false` 仍可启动）→ **L3 项未闭环**（详见 §10，待 OpenLLM 侧授权修复）；其余 12 模块 40 处旧门按交付记录**本批范围外**（已如实登记）。

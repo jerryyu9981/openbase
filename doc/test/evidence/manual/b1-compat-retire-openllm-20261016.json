@@ -1,0 +1,128 @@
+{
+  "stamp": "2026-10-16T15:16:07.466750+08:00",
+  "scope": "L3 / B1 D4 phase 4 过渡期兼容层退役（OpenLLM users 端点）跨仓收口复核",
+  "upstream_claim": "OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md §17（退役面 = only users 端点；安全耦合生产门禁）",
+  "readonly": true,
+  "results": {
+    "A1_head_present": {
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "head": "4f11c48d9b51c208c367aa6a820f247d85352cee",
+      "branch": "feature/s4-identity-channel-b"
+    },
+    "A2_delivery_commit_is_ancestor_of_head": {
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "commit": "298fe7d",
+      "subject": "298fe7d 2026-10-13 feat(identity): B1 D4 phase 4 兼容层退役（裁定方案 A 安全耦合：生产强制 users 强制期门禁）（v2.17.0）"
+    },
+    "A3_commit_touches_users_config_tests": {
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "files": "users.py/config.py/test_b1_d4_compat_gate.py"
+    },
+    "B1_users_no_legacy_import": {
+      "observed": false,
+      "expected": false,
+      "pass": true
+    },
+    "B2_users_no_legacy_dependency": {
+      "observed": false,
+      "expected": false,
+      "pass": true
+    },
+    "B3_users_on_require_permission": {
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "occurrences": 5
+    },
+    "B4_config_production_gate_present": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "B5_users_retirement_note_in_header": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "C1_b1_guard_tests_pass": {
+      "observed": {
+        "exit": 0,
+        "passed": 43
+      },
+      "expected": "exit=0 且 43 passed",
+      "pass": true,
+      "passed": 43,
+      "files": "test_b1_d4_compat_gate + test_users_api + test_b1_rbac_wiring"
+    },
+    "D0_port_8056_free": {
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "note": "专用端口，不触碰常驻 8001/8000"
+    },
+    "D1_production_without_enforce_refused": {
+      "observed": {
+        "exit": null,
+        "started": true,
+        "gate_text": true
+      },
+      "expected": "exit!=0（拒绝启动）",
+      "pass": false,
+      "exit_code": null,
+      "started": true,
+      "finding": "F-12：门禁仅打印 WARNING「启动自检跳过」并**继续启动**（fail-open），未拒绝启动"
+    },
+    "D2_production_user_module_missing_refused": {
+      "observed": {
+        "exit": null,
+        "started": true
+      },
+      "expected": "exit!=0（拒绝启动）",
+      "pass": false,
+      "exit_code": null,
+      "started": true,
+      "finding": "F-12（同根因）"
+    },
+    "D3_defect_mechanism_swallowed_by_fail_open": {
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "basis": "main.py lifespan 以 try/except 包裹启动自检（fail-open），而 get_settings() 的生产门禁是该自检内的唯一启动期调用点 → ValueError 被吞，仅记 WARNING"
+    },
+    "D4_control_gate_text_absent": {
+      "observed": {
+        "exit": null,
+        "gate_text_in_logs": false
+      },
+      "expected": "门禁文案不出现（对照：前置满足时该门禁不触发）",
+      "pass": true,
+      "exit_code": null
+    },
+    "E1_remaining_legacy_usages_outside_users": {
+      "observed": {
+        "call_sites": 40,
+        "modules": 12
+      },
+      "expected": ">0（明示未在本批范围）",
+      "pass": true,
+      "call_sites": 40,
+      "modules": 12,
+      "sample_files": [
+        "audit_logs.py",
+        "billing.py",
+        "cascade_routing.py",
+        "circuit_breakers.py",
+        "config.py",
+        "config_import_export.py"
+      ],
+      "basis": "OpenLLM B1 交付记录 §17.5：退役面 = only users 端点"
+    }
+  },
+  "overall_pass": false
+}

@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-OVERVIEW-v1.0.0 |
-| 文档版本 | **v1.0.17**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.0.18**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（本文为**汇总视图**，不引入新结论；一切结论以其上游单一事实源为准） |
 | 作者 | AA/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-09 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.18 | 2026-10-16 | AA/PM-OpenBase-Dev | **L3 / B1 兼容层退役跨仓复核：退役本体已落地，但生产安全耦合未生效（新增 F-12）**：依人工指令「先处理 L3 B1 兼容层退役」实施跨仓**只读复核**。① **已落地并实证**：OpenLLM `app/api/users.py` 旧硬门（`get_current_admin_user`）已移除、改挂 `require_permission(PERM_USER_*)`；交付提交 `298fe7d`（v2.17.0）在 HEAD 祖先链；`tests/unit/{test_b1_d4_compat_gate,test_users_api,test_b1_rbac_wiring}.py` 本机复跑 **43 passed**。② **未生效（F-12，P1）**：受控端口 8056 实跑——`ENV=production` + `RBAC_PERMISSION_ENFORCE=false`（及 enforce=true 但 user 未纳入灰度）**均正常 `Application startup complete.`**，仅 `WARNING 启动自检跳过: …RBAC_PERMISSION_ENFORCE=true…`；根因＝`get_settings()` 的生产门禁唯一启动期调用点位于 fail-open 的启动自检内（`main.py` lifespan `try/except` 吞掉 `ValueError`）→ **门禁存在、单测通过，但运行态不生效**。③ **残量边界**：其余 **12 模块 / 40 处**旧门按 OpenLLM 交付记录 §17.5 属**本批范围外**（已如实登记）。④ **本次修复了本文档此前的滞后表述**（§4 原记「兼容层退役为独立后续项」→ 更正为「已交付但耦合未生效」）；§7.1 新增未决项 10。证据 `doc/test/evidence/manual/b1-compat-retire-openllm-20261016.json`（`overall_pass=false`）；详见《S7-冒烟缺陷分派待办单》v1.0.17 §10。**未改动 OpenLLM 任何文件** |
 | v1.0.17 | 2026-10-16 | AA/PM-OpenBase-Dev | **RA-06 fail-closed 受控窗口故障注入完成（5 场景全 PASS）→ §10.4 遗留表 RA-06 五项真实面 5/5 全闭环**：**非破坏性注入**（仅探针实例 `POSTGRES_URL → 127.0.0.1:1` 不可达；专用端口 8055；共享 PG / 常驻服务未受影响）。**S1** production+DB 不可达 → **503 `SYS_503` / `detail.reason=db_unavailable`** + ERROR `denied (fail-closed)` / `policy_source=env_production`；**S2** development+DB 不可达 → **200 兼容放行** + WARN `reason=db_unavailable_env_allow`（留痕）；**S3** production+白名单命中 → **200 放行** + WARN `reason=db_unavailable_allowlisted`（留痕）；**S4** production+policy=allow → **拒绝启动**；**S5** production+enforce_token_version=false → **拒绝启动**。证据 `doc/test/evidence/manual/ra06-failclosed-20261016.json`（`overall_pass=true`）；回填 S7 报告 v1.0.14、`gate-aggregate.json`（§RA-06 `fail_closed` `real_face_status=PASS` + `ra06_fail_closed_real_face` 明细） |
 | v1.0.16 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-11 干跑核对完成并修复（夹具自洽化）**：① 逐件核对三件 PS 工具（`verify_l1_1_cascade.ps1` / `drill_l2_1_failover.ps1` / `verify_l3_1_agent.ps1`）——均为转发同名 `.py` 运行器的**薄包装**，`$PythonExe` 默认 `'python'` 为有意设计（暴露 `-PythonExe` 覆盖）；② **根因＝测试夹具非自洽**：受限环境 PATH 无解释器 → `CommandNotFoundException` 退出 1 且**运行器从未启动**（无证据落盘）；③ **契约实证**：显式传 `-PythonExe`（不依赖门控 env）→ 三件均 `exit=2 / status=PENDING / exit_code=2 / checks=4`，证据落 `-EvidenceDir`；④ 修复：`tests/test_s7_tools_skeleton.py` 夹具 PS 分支补 `-PythonExe sys.executable`（**断言零改动**）；⑤ 验证：**26 passed**、`ruff` 全清 → **F-11 关闭，段门禁预存失败（F-10/F-11）清零**；回填 S7 报告 v1.0.13、《S7-冒烟缺陷分派待办单》v1.0.16 §9.2 |
 | v1.0.15 | 2026-10-16 | AA/PM-OpenBase-Dev | **F-10 修复闭环（方案 A：受管编排唯一入口）+ 冒烟受管复跑**：① `scripts/run_smoke_s0_s6.ps1` 与 `scripts/verify_mtauth_realface.ps1` 的服务生命周期全部改经 `scripts/service-orchestrator.ps1`（`-Action stop\|start\|stop -Only …`），自身不再直接终止进程；补 PATH 引导 + UTF-8 BOM；② 验证：扫描器 `disallowed=0 / exit 0`（`bypass-scan.json` 重跑 `scanned=46`）、`test_s7_t1_shr.py` **15 passed**（与 t6_gate 合计 **31 passed**）、**冒烟受管复跑 `PASS 25 / FAIL 0 / PENDING 7`**（`smoke-summary-20261016120118.json`，与第三轮逐项一致）；③ §10.4/§10.5 状态同步为「**F-10 已修复；仅余 F-11 待裁定**」；回填 S7 报告 v1.0.12、《S7-冒烟缺陷分派待办单》v1.0.15 §9.1 |
@@ -184,7 +185,7 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 | OpenBase（B4） | 非生产：allow + WARN + 留痕 | 生产：fail-closed 503 + 显式白名单 | `OPENBASE_PRINCIPAL_DB_DEGRADED_POLICY` 按环境推导 |
 | 其余四仓 | 过渡期「忽略 + 标注 + WARN」 | 生产 enforce（C4 已四仓落地） | **四仓均已写成启动校验（2026-10-09，C4）** |
 
-> **B1 强制期翻转已完成（2026-10-13）**：前置消化（影子期观测补 member 别名后消化率 100%、存量 14 真实用户绑定迁移）→ users 首翻（2026-10-12，57 例探针状态面与影子期逐项相同、结构化 403 契约完整、回滚验证通过）→ roles / knowledge_bases / conversations 三模块灰度翻转（2026-10-13，全 4 模块保持强制态）。兼容层（旧 `get_current_admin_user` 硬门）退役为独立后续项。
+> **B1 强制期翻转已完成（2026-10-13）**：前置消化（影子期观测补 member 别名后消化率 100%、存量 14 真实用户绑定迁移）→ users 首翻（2026-10-12，57 例探针状态面与影子期逐项相同、结构化 403 契约完整、回滚验证通过）→ roles / knowledge_bases / conversations 三模块灰度翻转（2026-10-13，全 4 模块保持强制态）。兼容层（旧 `get_current_admin_user` 硬门）**退役已交付**（OpenLLM `298fe7d`/v2.17.0，2026-10-13，裁定方案 A 安全耦合；**退役面 = only `users` 端点**）——但 **2026-10-16 跨仓复核发现其生产安全耦合实测未生效（F-12）**：`get_settings()` 的生产门禁被 `main.py` 启动自检的 fail-open 兜底吞掉，生产带 `RBAC_PERMISSION_ENFORCE=false` 仍可启动 → **该项未闭环**（详见 §7.1 第 10 项与《S7-冒烟缺陷分派待办单》§10）。
 
 ---
 
@@ -298,6 +299,7 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 | 7 | **C3 豁免治理统一**（票据+审批人+有效期） | ✅ **已闭环（三阶段全部完成，2026-10-13）**：契约 → OpenBase 收紧（修复 `expires_at` 死字段）→ 各仓对齐（OpenLLM 审计 `5a9a29a`；OpenMemory DB 落点 + 消费侧 `3f1fa5f`/v7.1.3；三仓字段归一） | 台账 §10.3 C3 行 |
 | 8 | **DPS 自身 IAM 演进**（吊销 / 用户表 / `X-API-Key` 语义澄清） | ⬜ **仍为规划中项**：其版本规划排期，未立项实施 | 依赖 OpenBase 总线 |
 | 9 | **OpenMemory 组织策略双源漂移**（内存 `_org_registry` + DB 表） | ✅ **已完成（P0~P4，2026-10-12，`68701e9`+`26dc728`）**：policy JSONB 列 → 影子读比对 → 切换读（TTL≤60s）→ 切换写 → 退役 default 兜底（fail-closed）；全量 1366 passed | 台账 §10.3 未决项 9 行 |
+| 10 | **L3 / B1 兼容层退役**（`users` 端点旧管理硬门退役的生产安全耦合） | ⬜ **未闭环（2026-10-16 复核）**：退役本体已落地（OpenLLM `298fe7d`/v2.17.0；43 例护栏/接口用例通过），但**生产安全耦合未生效（F-12）**——启动门禁被 fail-open 自检吞掉，生产带 `RBAC_PERMISSION_ENFORCE=false` 仍可启动；**修复待 OpenLLM 侧授权**。**残量**：其余 12 模块 / 40 处旧门按交付记录属本批范围外 | `doc/test/evidence/manual/b1-compat-retire-openllm-20261016.json`（`overall_pass=false`）；《S7-冒烟缺陷分派待办单》v1.0.17 §10 |
 
 ### 7.2 迭代建议
 
