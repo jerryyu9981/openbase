@@ -193,7 +193,7 @@
       "status": "✅ 已裁定并执行：删除（OpenLLM 4993f43 / v2.17.5，2026-10-16）",
       "basis": "三条件取证：① 断言恒真（4 条断言全打在不存在端点 GET /api/v1/tenants/stats、GET/PUT /api/v1/tenants/config 上，被 GET /{tenant_id} 的 UUID 校验挡为 422 → != 404 因错误原因通过）；② 全仓（含门禁契约）对该文件名零引用；③ 命名指向已于 O1 删除的模块",
       "impact": "移除 4 条空断言（无有效覆盖损失）；pytest tests/unit --collect-only → 3871 tests collected / exit 0（无悬挂引用）",
-      "follow_up": "被删模块原有三端点现存于 tenants.py 且功能覆盖为零：PUT /{tenant_id}/quota、GET /{tenant_id}/usage、GET /{tenant_id}/gpu-allocation；建议独立补测（跨租户 403 / 未认证 401 反例自证），归属 tests/unit/test_tenants_api.py"
+      "resolution": "✅ 覆盖缺口已闭合（OpenLLM 4a87cc0 / v2.17.6，2026-10-16）：在归属文件 tests/unit/test_tenants_api.py 新增 TestTenantQuotaUsageGpuAPI（12 例）——PUT /{id}/quota（落库断言 + 既有行更新路径 + 不存在租户 404 + 未认证 401）、GET /{id}/usage（聚合数值逐项等于种子 + 同租户成员放行含空聚合分支 + 跨租户 403 反例自证 + 401）、GET /{id}/gpu-allocation（字段逐项校验 + 空列表 + 跨租户 403 反例自证 + 401）；单跑 12 passed，合并回归（test_tenants_api 35 + phase-5 护栏 98）133 passed / 0 failed；ruff 新增区间 0 命中"
     }
   ],
   "overall_pass": true
