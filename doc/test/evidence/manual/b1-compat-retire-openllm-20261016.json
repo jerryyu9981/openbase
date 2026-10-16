@@ -1,5 +1,5 @@
 {
-  "stamp": "2026-10-16T15:16:07.466750+08:00",
+  "stamp": "2026-10-16T15:28:55.414264+08:00",
   "scope": "L3 / B1 D4 phase 4 过渡期兼容层退役（OpenLLM users 端点）跨仓收口复核",
   "upstream_claim": "OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md §17（退役面 = only users 端点；安全耦合生产门禁）",
   "readonly": true,
@@ -68,32 +68,36 @@
     },
     "D1_production_without_enforce_refused": {
       "observed": {
-        "exit": null,
-        "started": true,
+        "exit": 3,
+        "started": false,
         "gate_text": true
       },
       "expected": "exit!=0（拒绝启动）",
-      "pass": false,
-      "exit_code": null,
-      "started": true,
+      "pass": true,
+      "exit_code": 3,
+      "started": false,
       "finding": "F-12：门禁仅打印 WARNING「启动自检跳过」并**继续启动**（fail-open），未拒绝启动"
     },
     "D2_production_user_module_missing_refused": {
       "observed": {
-        "exit": null,
-        "started": true
+        "exit": 3,
+        "started": false
       },
       "expected": "exit!=0（拒绝启动）",
-      "pass": false,
-      "exit_code": null,
-      "started": true,
+      "pass": true,
+      "exit_code": 3,
+      "started": false,
       "finding": "F-12（同根因）"
     },
-    "D3_defect_mechanism_swallowed_by_fail_open": {
-      "observed": true,
-      "expected": true,
+    "D3_gate_evaluated_before_fail_open_and_not_wrapped": {
+      "observed": {
+        "fail_open_kept": true,
+        "gate_before_selfcheck": true,
+        "wrapped_by_try": false
+      },
+      "expected": "自检 fail-open 保留 + 门禁在自检之前显式求值且未被 try 包裹",
       "pass": true,
-      "basis": "main.py lifespan 以 try/except 包裹启动自检（fail-open），而 get_settings() 的生产门禁是该自检内的唯一启动期调用点 → ValueError 被吞，仅记 WARNING"
+      "basis": "方案 A：main.py lifespan 开头 assert_startup_gates()（无包裹）→ 不合规即拒绝启动；启动自检（版本/默认模型漂移）保持 fail-open"
     },
     "D4_control_gate_text_absent": {
       "observed": {
@@ -124,5 +128,5 @@
       "basis": "OpenLLM B1 交付记录 §17.5：退役面 = only users 端点"
     }
   },
-  "overall_pass": false
+  "overall_pass": true
 }
