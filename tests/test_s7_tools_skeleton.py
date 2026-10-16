@@ -145,6 +145,12 @@ def _build_dry_run_command(spec: dict[str, Any], base: Path) -> tuple[list[str],
             "http://127.0.0.1:1",
             "-EvidenceDir",
             str(evidence_dir),
+            # F-11（2026-10-16）：夹具必须自洽——显式传入运行本测试的解释器。
+            # 三件工具的 `$PythonExe` 默认值是有意为之的 'python'（假定宿主 PATH 有解释器，
+            # 并暴露 -PythonExe 供覆盖）；受限环境中 PATH 无 python 时，裸默认会以
+            # CommandNotFoundException 退出 1，掩盖「干跑契约」本身的判定。
+            "-PythonExe",
+            sys.executable,
         ]
         if spec["key"] == "l1_1":
             args += ["-SubjectId", "smoke_l1_1_skeleton"]
