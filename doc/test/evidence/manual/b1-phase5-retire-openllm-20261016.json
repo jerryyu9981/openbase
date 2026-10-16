@@ -1,0 +1,190 @@
+{
+  "stamp": "2026-10-16T18:24:17+08:00",
+  "scope": "B1 D4 phase 5 其余 12 模块旧管理硬门退役（退役面全量清零）——OpenLLM 仓交付跨仓复核",
+  "upstream_claim": "OpenLLM-B1-授权接线收口-DevLogReport-v1.0.0.md §19（v1.2.2）；依据《OpenBase-S7-冒烟缺陷分派待办单-v1.0.0》§10.4 第 3 项「其余 12 模块 / 40 处旧门是否退役 → 另行立项」",
+  "readonly": false,
+  "note": "本项为 OpenLLM 仓代码级退役（非运行态门禁），验证以目标仓测试证据 + 静态取证为准；不涉及常驻服务启停",
+  "target": {
+    "repo": "OpenLLM",
+    "branch": "feature/s4-identity-channel-b",
+    "commit": "f7c7073",
+    "commit_subject": "fix(security): B1 D4 phase 5 其余 12 模块旧管理硬门退役（退役面全量清零）（v2.17.3）",
+    "diff": "27 files changed, 434 insertions(+), 96 deletions(-)",
+    "version": "2.17.3",
+    "remotes": {
+      "origin": "f7c707323f6e3c99335bee86864146b77355a6ef",
+      "backup": "f7c707323f6e3c99335bee86864146b77355a6ef",
+      "github": "f7c707323f6e3c99335bee86864146b77355a6ef"
+    }
+  },
+  "results": {
+    "A1_retired_call_sites_in_app_api": {
+      "observed": 0,
+      "expected": 0,
+      "pass": true,
+      "basis": "app/api/ 下 get_current_admin_user 调用点归零（仅余 auth_service.py 定义本体 + get_admin_user_or_api_key 内部复用 + services/__init__ 再导出 + 文档/注释提及）"
+    },
+    "A2_retired_files_count": {
+      "observed": {
+        "files": 12,
+        "call_sites": 40
+      },
+      "expected": {
+        "files": 12,
+        "call_sites": 40
+      },
+      "pass": true,
+      "files": [
+        "app/api/audit_logs.py",
+        "app/api/config.py",
+        "app/api/config_import_export.py",
+        "app/api/plugins.py",
+        "app/api/billing.py",
+        "app/api/semantic_routing.py",
+        "app/api/cascade_routing.py",
+        "app/api/circuit_breakers.py",
+        "app/api/tenants.py",
+        "app/api/tenant_management.py",
+        "app/api/prompt_assembly.py",
+        "app/api/roles.py"
+      ]
+    },
+    "A3_new_permission_codes": {
+      "observed": 10,
+      "expected": 10,
+      "pass": true,
+      "codes": [
+        "audit:read",
+        "config:read",
+        "config:write",
+        "plugin:write",
+        "billing:write",
+        "routing:read",
+        "routing:write",
+        "tenant:read",
+        "tenant:write",
+        "prompt:write"
+      ]
+    },
+    "A4_production_gate_extended_to_full_retired_set": {
+      "observed": {
+        "constant": "ADMIN_GATE_RETIRED_MODULES",
+        "modules": 11,
+        "lists_missing_modules": true
+      },
+      "expected": "门禁判据由「仅 user」扩展为退役面全集（11 模块），白名单（空=全部）未覆盖即拒绝启动并逐项列出缺失模块",
+      "pass": true,
+      "modules": [
+        "user",
+        "role",
+        "knowledge_base",
+        "conversation",
+        "audit",
+        "config",
+        "plugin",
+        "billing",
+        "routing",
+        "tenant",
+        "prompt"
+      ]
+    },
+    "B1_guard_tests_phase5": {
+      "observed": {
+        "exit": 0,
+        "passed": 98,
+        "failed": 0
+      },
+      "expected": "exit=0 且 98 passed",
+      "pass": true,
+      "file": "tests/unit/test_b1_d4_phase5_admin_gate_retire.py",
+      "groups": {
+        "non_admin_forbidden_when_module_enforced": 30,
+        "non_admin_allowed_when_module_not_in_whitelist": 30,
+        "admin_still_allowed_when_module_enforced": 30,
+        "shadow_mode_logs_but_allows": 3,
+        "production_gate_and_coverage": 5
+      },
+      "strong_discriminator": "30 例反例自证（强制期 + 模块未纳入灰度 → 放行）在旧硬门存在时必然失败 → 可判别新旧门"
+    },
+    "B2_related_regression_first_sweep": {
+      "observed": {
+        "collected": 292,
+        "passed": 285,
+        "failed": 7
+      },
+      "expected": "失败项均为退役后语义同步项（非功能缺陷）",
+      "pass": true,
+      "failures": [
+        "test_b1_d4_compat_gate.py::test_production_passes_with_user_enforced（门禁判据由 phase 4「仅 user」扩展为退役面全集）",
+        "test_billing_api.py::test_create_billing_plan_as_normal_user",
+        "test_roles_api.py::test_create_role_non_admin_forbidden",
+        "test_roles_api.py::test_update_role_non_admin_forbidden",
+        "test_roles_api.py::test_delete_role_non_admin_forbidden",
+        "test_tenants_api.py::test_list_tenants_as_normal_user",
+        "test_tenants_api.py::test_create_tenant_as_normal_user"
+      ]
+    },
+    "B3_related_regression_after_sync": {
+      "observed": {
+        "exit": 0,
+        "collected": 239,
+        "passed": 239,
+        "failed": 0
+      },
+      "expected": "exit=0 且全通过",
+      "pass": true,
+      "files": [
+        "tests/unit/test_b1_d4_phase5_admin_gate_retire.py",
+        "tests/unit/test_b1_d4_compat_gate.py",
+        "tests/unit/test_b1_rbac_wiring.py",
+        "tests/unit/test_billing_api.py",
+        "tests/unit/test_roles_api.py",
+        "tests/unit/test_tenants_api.py",
+        "tests/unit/test_assembly_template.py",
+        "tests/unit/test_users_api.py"
+      ],
+      "synced_files": [
+        "test_b1_d4_compat_gate.py（判据扩展：新增 full_retired_set / rejects_partial_retired_set）",
+        "test_billing_api.py（2 例转强制期语义）",
+        "test_roles_api.py（3 例转强制期语义）",
+        "test_tenants_api.py（2 例转强制期语义）",
+        "test_assembly_template.py（1 例转强制期语义）",
+        "test_b1_rbac_wiring.py（1 例更名转强制期语义）",
+        "test_audit_logs_enhanced.py（夹具改覆盖 get_current_active_user_or_api_key）"
+      ]
+    },
+    "C1_ruff_no_new_findings": {
+      "observed": {
+        "baseline_head": "ff506e9",
+        "baseline_errors": 374,
+        "current_errors": 371,
+        "delta": -3,
+        "new_findings": 0
+      },
+      "expected": "零新增（净减 = 移除的死导入数）",
+      "pass": true,
+      "basis": "HEAD worktree 同文件集配置化 ruff 对比；差额即 workspaces/ab_tests/usage 三处死导入；其余类别（W293/UP045/UP006/I001/UP035/E402/E712/B010/F541/N806/W292）逐项一致"
+    }
+  },
+  "open_items": [
+    {
+      "id": "O1",
+      "item": "app/api/tenant_management.py 未被任何入口挂载（疑似遗留文件）",
+      "status": "登记待裁定（去留：删除或接入）",
+      "impact": "本次已退役其 2 处旧门以消除死代码旧门；不影响运行时行为"
+    },
+    {
+      "id": "O2",
+      "item": "app/api/circuit_breakers.py 注解 current_user: dict 与实际返回 User 不一致",
+      "status": "改动前既有（非本批引入）",
+      "impact": "函数体内 current_user.get(...) 位于既有 try/except 内，行为逐字不变"
+    },
+    {
+      "id": "O3",
+      "item": "生产强制期实际翻转（RBAC_PERMISSION_ENFORCE=true + 模块灰度）",
+      "status": "未在本批执行（需影子期观测窗口 + 运维授权）",
+      "impact": "退役面的实际保护依赖强制期；生产由启动门禁兜底（未满足即拒绝启动）"
+    }
+  ],
+  "overall_pass": true
+}
