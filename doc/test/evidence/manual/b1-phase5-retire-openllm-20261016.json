@@ -206,7 +206,17 @@
       "gate": "ADMIN_GATE_RETIRED_MODULES 由 11 → 13 模块（新增 provider / local_model），生产启动门禁同步扩展",
       "equivalence": "管理员 JWT 与管理员所属 API Key 均经 _guard 的 is_admin() 快路径等价放行；非管理员通道由「恒定 403」→「按权限码（强制期）」",
       "verification": "新增护栏 tests/unit/test_b1_d4_phase6_admin_gate_retire.py（43 例，含 12 例反例自证）；RED（git stash 暂回退源至 HEAD）15 failed / 28 passed → GREEN 171 passed / 0 failed（含同步后的 test_providers_api 与 phase-5 护栏 98）；ruff 新增文件 All checks passed、改动文件零新增",
-      "follow_up": "get_admin_user_or_api_key 退役后无调用点（定义保留，待裁定清理）；e2e_v214_security.py（M2-004 非管理员 API Key 模型写 403）等 e2e 脚本期望需按强制期配置复核"
+      "follow_up": "get_admin_user_or_api_key 退役后无调用点（定义保留，待裁定清理）→ 已于 O6 清理；e2e_v214_security.py（M2-004 非管理员 API Key 模型写 403）等 e2e 脚本期望需按强制期配置复核"
+    },
+    {
+      "id": "O6",
+      "item": "auth_service 退役后死定义（get_current_admin_user / get_admin_user_or_api_key）及 app.services 对前者的再导出",
+      "status": "✅ 已清理（OpenLLM f477d1e / v2.17.9，2026-10-16，TDD）",
+      "basis": "phase 4~6 已清零旧管理硬门调用点；get_current_admin_user 仅被 get_admin_user_or_api_key 调用 + 由 app/services/__init__ 再导出，get_admin_user_or_api_key 退役后零调用点 → 两者均无外部调用点",
+      "guardrail": "新增源码契约 tests/unit/test_b1_d4_retired_gate_symbols_cleanup.py（3 例）：① 符号不再存在于 app.services.auth_service（inspect）；② 不再由 app.services 再导出（__all__ + 属性面双查）；③ 全 app/ 源码 AST 扫描无代码级引用（注释与文档字符串不计）",
+      "verification": "RED 3 failed（并暴露 app/services/audit_service.py 带 UTF-8 BOM，护栏读取改用 utf-8-sig）→ GREEN 216 passed / 0 failed（护栏 3 + phase-5 98 + phase-6 43 + providers 30 + auth 20 + users 22）；ruff 改动/新增文件 All checks passed；pytest tests/unit --collect-only 无悬挂引用",
+      "impact": "行为零变化（删除无调用点定义体与再导出）；全仓仅在注释/文档字符串提及该两符号，跨仓为 HTTP 无 Python 导入面",
+      "follow_up": "app/services/audit_service.py 的 UTF-8 BOM 影响以 ast.parse(文本) 做源码扫描的工具链（是否统一去 BOM 属独立清理项）；v2.14.x 历史设计文档作为快照不回溯改写，后续版本设计文档需按 phase 5/6/死定义清理同步"
     }
   ],
   "overall_pass": true
