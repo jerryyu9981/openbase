@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | **v1.3.3**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 裁定建议 → v1.3.0 裁定落地 → v1.3.1 版本口径跨仓确认 → v1.3.2 跨租户 A 写 B 读实证执行 → v1.3.3 委托跨界/agent key 面真实面执行与 F-8/F-9 缺陷登记） |
+| 文档版本 | **v1.4.0**（v1.0.0 首版走查 → v1.1.0 修复闭环 → v1.2.0 裁定建议 → v1.3.0 裁定落地 → v1.3.1 版本口径跨仓确认 → v1.3.2 跨租户 A 写 B 读实证执行 → v1.3.3 委托跨界/agent key 面真实面执行与 F-8/F-9 缺陷登记 → v1.4.0 余项处置：D5/D15 低危修复 + 装配边界接受 / 生产开关强制核验 / 开关矩阵并入（裁定②③④）） |
 | 状态 | **[Final]** |
 | 走查编号 | OB-CROSSREPO-TENANT-ISOLATION-v1.0.0 |
 | 作者 | AT-OpenBase-Dev（API 测试视图）/ SE-OpenBase-Dev（安全视图）/ AU-OpenBase-Dev（审计视图）/ PM-OpenBase-Dev |
@@ -116,8 +116,8 @@
 
 | # | 仓库 | 问题 | 证据（文件:行） | 建议处置 |
 |---|------|------|----------------|---------|
-| **D5** | OpenRAG | `TenantScopeRequiredError` 未注册异常映射 → 兜底 500，与 docstring 声称的 403 不符 | `src/openrag/api/exception_handlers.py:119-123`、`core/exceptions.py:131` | 注册映射为 403 |
-| **D15** | DPS | `TenantManager` 为桩实现（租户 CRUD / 跨租户授权返回硬编码假数据） | `src/engines/tenant_manager.py:70-94`、`:96-138` | 明确标注不可用于授权判定或补齐实现 |
+| **D5** | OpenRAG | `TenantScopeRequiredError` 未注册异常映射 → 兜底 500，与 docstring 声称的 403 不符 | `src/openrag/api/exception_handlers.py:119-123`、`core/exceptions.py:131` | ✅ **已修复（2026-10-16，OpenRAG `e2b1ddd`/v1.9.3）**：注册映射为 **403 `PERM_FORBIDDEN`**（原为兜底 500）；TDD 2 例（含反例自证） |
+| **D15** | DPS | `TenantManager` 为桩实现（租户 CRUD / 跨租户授权返回硬编码假数据） | `src/engines/tenant_manager.py:70-94`、`:96-138` | ✅ **已修复（2026-10-16，DPS `8e27614`）**：显式标注「不可用于授权判定」+ 反例自证契约（全 `src/` 无引用）；不改行为 / 不改 `config.version` |
 
 ---
 
@@ -238,6 +238,25 @@
 
 ---
 
+## 6.7 余项处置裁定与落地（v1.4.0，2026-10-16）
+
+> 依人工裁定「①a/①b 施工 + ② 接受边界 + ③ 设强制核验 + ④ 并入矩阵」处置 §4.3 低危与 §6.6 落地后遗留。
+
+| # | 项 | 裁定 / 处置 | 证据 |
+|:-:|----|-------------|------|
+| ①a | D5 OpenRAG 异常映射（低危） | ✅ **已修复**：`TenantScopeRequiredError` → **403 `PERM_FORBIDDEN`**（原兜底 500）；TDD 2 例（含反例自证） | OpenRAG **`e2b1ddd`**（v1.9.3）；`tests/unit/test_d5_tenant_scope_exception_mapping.py` |
+| ①b | D15 DPS 桩实现（低危） | ✅ **已修复**：显式标注「不可用于授权判定」+ 反例自证契约（全 `src/` 无引用）；**不改行为 / 不改 `config.version`** | DPS **`8e27614`**；`src/tests/test_d15_tenant_manager_stub_contract.py` |
+| ② | §6.6 遗留①：门禁仅在 `create_app()` 装配路径生效（直连装配可绕过） | ✅ **接受为设计边界**（与既有 C4 / row_scope 同款；登记说明，不立项收口） | 本报告 §6.6；续接指南 §10.4 |
+| ③ | §6.6 遗留②：生产环境必须下发新开关（运维侧 `.env`） | ✅ **设为发布强制核验项**：纳入「生产必需开关矩阵」，发布/上线检查时逐项核验（把「拒绝启动」提前到发布门禁） | 续接指南 §10.3「发布强制核验」 |
+| ④ | §6.6 遗留③：OpenLLM 生产门禁强耦合 5 组开关 | ✅ **并入「生产必需开关矩阵」**（非缺陷；矩阵化 + 发布核验，不拆分门禁） | 续接指南 §10.3 |
+| ⑤ | §6.6 遗留④：OpenRAG 根 `version.json`（DevFlow 遗留元数据） | ✅ 已于 **v1.3.1** 闭合（跨仓确认） | 本报告 §8 修订历史 v1.3.1 |
+| ⑥ | §6.6 遗留⑤⑥：DPS 不新增 `version.json` / OpenLLM `edgerouter-lib` 版本独立 | 设计选择（非欠账） | 本报告 §6.6 |
+| ⑦ | 附：OpenRAG `.devflow/config.json::projectVersion`（1.9.1） | ⏳ **保持登记**（DevFlow 工具维护，本仓不擅改），待 DevFlow 侧同步 | 续接指南 §10.4 |
+
+**本报告 D1–D20 至此全部处置完毕**：高危 7 / 中危 10 已于 v1.1.0 修复；低危 2（D5/D15）已于 v1.4.0 修复；4 项「需裁定」已按口径落地（A/B/C/D 于 v1.3.0，本次裁定②「接受边界」）。仅余「OpenRAG DevFlow 版本口径」1 项**外部依赖登记**。
+
+---
+
 ## 7. 证据索引
 
 | 产物 | 路径 |
@@ -252,6 +271,7 @@
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
+| v1.4.0 | 2026-10-16 | AT/SE/AU/PM-OpenBase-Dev | **余项处置（裁定②③④ + D5/D15 低危闭环）**：依人工裁定「①a/①b 施工 + ② 接受边界 + ③ 设强制核验 + ④ 并入矩阵」执行。① **D5**（OpenRAG 低危）已修复——`TenantScopeRequiredError` 注册为 **403 `PERM_FORBIDDEN`**（原先兜底 500），OpenRAG `e2b1ddd`/v1.9.3、TDD 2 例；② **D15**（DPS 低危）已修复——`TenantManager` 桩实现**显式标注「不可用于授权判定」** + 反例自证契约（全 `src/` 无引用），DPS `8e27614`（不改行为 / 不改 `config.version`）、TDD 2 例；③ §6.6 遗留① **接受为设计边界**（门禁仅在装配路径生效，与 C4/row_scope 同款）；④ §6.6 遗留②③ **并入「生产必需开关矩阵」并设为发布强制核验项**（见续接指南 §10.3）；⑤ §6.6 遗留④ 已于 v1.3.1 闭合、⑤⑥ 为设计选择。详见 §4.3 与新增 §6.7 |
 | v1.3.3 | 2026-10-16 | AT/SE/AU/PM-OpenBase-Dev | **委托跨界 403 与 agent key 面真实面执行完成 + 两项缺陷登记**：§5.2 新增限制/边界条目——原子窗口探针取得**反例自证配对**（agent 跨域委托 **403 `PERM_DELEGATION_CROSS_TENANT`** / 同域委托 **200**），user 挂委托 403 `PERM_FORBIDDEN`、agent 发放 200、agent key 越权 403、吊销即时 200→401；证据 `doc/test/evidence/manual/mtauth-delegation-l31-20261016.json`。同窗口暴露 OpenBase 侧 **F-8**（`/auth/me` 对绑租户主体 500）/ **F-9**（`users` 路径未派生 `tenant_code` → 同域委托误判跨界），已登记《OpenBase-S7-冒烟缺陷分派待办单》v1.0.13 §8（均 P1、阻塞用例数 0、待修复）；余 fail-closed 故障注入（需停服受控窗口）仍 PENDING |
 | v1.3.2 | 2026-10-15 | AT/SE/AU/PM-OpenBase-Dev | **跨租户「A 写 B 读」数据面实证执行完成**：§5.2 该限制项由「未执行」更新为「已执行」——经 `rag-proxy` 载体，租户 A 建集合 200 → 租户 B 列表不含 A 集合 → 租户 B 直取 A 集合 **404**；证据 `doc/test/evidence/manual/mtauth-realface-20261015.json`；执行入口见《联调窗口真实面执行单》v1.2.0 |
 | v1.3.1 | 2026-10-14 | AT/SE/AU/PM-OpenBase-Dev | **OpenRAG 版本口径跨仓确认**：§6.6 遗留④ 闭合——根 `version.json` 为 DevFlow **遗留**元数据（官方自 v2.15.0 起弃用删除），**非版本事实源**、不存在「应独立于应用版本」的约定；现行对齐口径保留并由契约测试显式标注语义 + 兼容未来删除；OpenRAG 提交 `aac82ca`（含 DevLogReport v1.1.0 §六 同名不同义跨仓对照表） |

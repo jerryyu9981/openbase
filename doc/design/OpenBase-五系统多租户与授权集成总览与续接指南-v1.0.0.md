@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座）及四套自研后端系统（OpenLLM / OpenRAG / OpenMemory / DPS） |
 | 文档编号 | OB-DESIGN-MTAUTH-OVERVIEW-v1.0.0 |
-| 文档版本 | **v1.0.23**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
+| 文档版本 | **v1.0.24**（文件名版本＝首次定稿版本；内容版本以本字段与修订历史承载） |
 | 状态 | **[Review]**（本文为**汇总视图**，不引入新结论；一切结论以其上游单一事实源为准） |
 | 作者 | AA/PM-OpenBase-Dev |
 | 创建日期 | 2026-10-09 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.0.24 | 2026-10-16 | AA/PM-OpenBase-Dev | **余项处置裁定（②接受边界 / ③强制核验 / ④并入矩阵）+ D5/D15 低危闭环**：依人工裁定实施。① §10.3 生产开关清单强化为**发布强制核验**（「处置机制」第 3 条由「建议」转「**强制**」），并**并入 OpenLLM 5 组强耦合启动门禁**（本批 3 + 既有 2，不拆分）；② §10.4 遗留表同步——「各仓门禁仅装配路径生效」转 ✅ **已接受边界**（裁定②）、「OpenLLM 5 组开关强耦合」转 ✅ **已并入矩阵**（裁定④）、「OpenRAG `.devflow` projectVersion」保持登记，并新增「走查低危 D5/D15 ✅ 已修复」行；③ 跨仓落地：OpenRAG **`e2b1ddd`**（D5：`TenantScopeRequiredError` → 403 `PERM_FORBIDDEN`，v1.9.3）、DPS **`8e27614`**（D15：`TenantManager` 桩显式标注 + 反例自证，不改行为/版本）；④ 回填跨仓走查报告 **v1.4.0** §4.3/§6.7 |
 | v1.0.23 | 2026-10-16 | AA/PM-OpenBase-Dev | **余下未决项裁定执行（A 挂起 / B1 / C1 / D 维持）**：依人工裁定「A 挂起、B1、C1、D 维持」执行。① **B1**（在 **OpenLLM 仓**，提交 `e451177`）：`e2e_v214_security.py` 的 **M2-004**（非管理员 API Key 模型写 403）期望由「恒定 403」改为**按强制态判定**——新增模块级 `EXPECT_WRITE_ENFORCED`（读环境变量 `OPENLLM_E2E_RBAC_ENFORCE`，默认 `0`）；强制态断言 `st == 403`，否则断言「放行（∉{401,403}）」并标注观察态。**验证**：`py_compile` OK；`ruff`（本仓 `ruff.toml`）与 HEAD 基线**逐项一致（UP009/I001/C408）→ 零新增**；运行态未实跑（脚本需 `127.0.0.1:8013` 活动服务 + 共享 PG，不在本机 pytest 面内）；DevLogReport **v1.2.11 §26**（产品版本保持 v2.17.10）。② **D（§7.1 未决项 8 DPS 自身 IAM）→ 维持规划中项，不立项**；③ **C1**：其余 444 个非 `.py` 文本 BOM **维持现状**（仅统计上报）；④ **A**：退役面（13 模块）生产强制期翻转**挂起**（待影子期观测窗口 + 运维授权）。回填《S7-冒烟缺陷分派待办单》**v1.0.28** §10.5 项 3/5/7/8/新增项 9 |
 | v1.0.22 | 2026-10-16 | AA/PM-OpenBase-Dev | **退役后死定义清理 → 旧管理硬门「符号零残留」**：依人工指令「清理 auth_service 中的死定义」，在 **OpenLLM 仓**实施（提交 `f477d1e`/v2.17.9）：整段移除 `auth_service.get_current_admin_user`、`auth_service.get_admin_user_or_api_key`（phase 4~6 退役后**均无调用点**），并移除 `app/services/__init__` 对其的 import 与 `__all__` 条目。**护栏（先 RED）**：新增源码契约 `tests/unit/test_b1_d4_retired_gate_symbols_cleanup.py`（**3 例**：符号不再存在于 `auth_service` / 不再由 `app.services` 再导出（`__all__` + 属性面双查） / **全 `app/` AST 扫描**无代码级引用，注释与文档字符串不计）→ **RED 3 failed** → **GREEN 216 passed / 0 failed**（护栏 3 + phase-5 98 + phase-6 43 + providers 30 + auth 20 + users 22）；`ruff` **All checks passed**；`collect-only` 无悬挂引用。**行为零变化**（删除无调用点定义体与再导出）。**回填**：§7.1 未决项 10；《S7-冒烟缺陷分派待办单》v1.0.25 §10.5（证据 `open_items.O6`）。**登记**：`audit_service.py` 带 UTF-8 BOM（影响 `ast.parse(文本)` 类工具链）；v2.14.x 历史设计文档作快照不回溯改写 |
 | v1.0.21 | 2026-10-16 | AA/PM-OpenBase-Dev | **B1 D4 phase 6：同族旧管理硬门（`get_admin_user_or_api_key`）退役 → 退役面含同族门全量清零**：依人工裁定「方案 A」，在 **OpenLLM 仓**实施（提交 `da3b834`/v2.17.8）：`providers.py`（6 处）与 `local_models.py`（6 处）共 **2 文件 / 12 处**写端点由 `Depends(get_admin_user_or_api_key)`（v2.14.0 设计的「管理员 API Key 通道」，判定链同为 `is_admin()`）改挂 `require_permission(provider:write / local_model:write)`；新增 2 权限码；`ADMIN_GATE_RETIRED_MODULES` 由 11 → **13 模块**。**语义等价性**：管理员 JWT 与**管理员所属 API Key** 均经 `is_admin()` 快路径等价放行；非管理员通道由「恒定 403」→「按权限码（强制期）」。**验证（TDD）**：新增护栏 43 例 → **RED 15 failed / 28 passed**（`git stash` 暂回退源至 HEAD）→ **GREEN 171 passed / 0 failed**；ruff 新增文件全清。**回填**：§4 注记与 §7.1 未决项 10；《S7-冒烟缺陷分派待办单》v1.0.24 §10.5（证据 `doc/test/evidence/manual/b1-phase5-retire-openllm-20261016.json`，`overall_pass=true`，`open_items.O5`）。**本次依人工裁定实施（该门为 v2.14.0 有意设计，故先请裁定再执行）** |
@@ -390,12 +391,14 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 | **DPS** | `TENANT_CONTEXT_REQUIRED`（+ `MULTI_TENANT_ENABLED`，默认 true） | `doc/operation/DPS-部署文档-v2.1.0.md` §4.2（该仓无 `.env.example`） | `true` | ✅ 已登记（v1.16.30） |
 | **OpenLLM** | `TENANT_SCOPE_ENFORCE` / `TENANT_HEADER_CONSISTENCY_ENFORCE` / `QUOTA_MISSING_FAIL_CLOSED` | `.env.example`（三处）+ 运维手册 §7「生产环境启动门禁」 | `true` | ✅ 已登记（v1.16.30） |
 | **OpenBase** | 无新增（B4 `token_version` 生产强制 / principal DB 降级环境门控已闭环） | — | — | — |
-| 既有门禁开关（非本批） | OpenLLM `ENFORCE_INBOUND_IDENTITY_HEADERS` / `RBAC_PERMISSION_ENFORCE`（C4/B1） | 同 OpenLLM 载体 | `true` | 既有 |
+| **OpenLLM（既有门禁，同属启动门禁）** | `ENFORCE_INBOUND_IDENTITY_HEADERS` / `RBAC_PERMISSION_ENFORCE`（C4/B1） | 同 OpenLLM 载体 | `true` | 既有 |
+
+> **OpenLLM 生产启动门禁（2026-10-16 裁定④：5 组强耦合，**并入本矩阵**）**：上表「本批三项」+「既有两项」= **5 组开关**；`ENV=production` 下**任一为假即拒绝启动**（有意的 fail-closed 设计，**不拆分门禁**）——发布核验须逐项确认。
 
 **处置机制（三件套）**：
 1. **载体置真**（模板 + 文档）—— 已按上表登记（本轮补齐 OpenMemory）；
 2. **门禁 fail-fast**（护栏）—— 未置真 → 生产装配阶段直接拒绝启动；
-3. **发布前核验**（建议）—— 发布清单加「生产必需开关」核验项，把「拒绝启动」提前到发布门禁，避免部署当场失败。
+3. **发布前核验（强制，2026-10-16 裁定③）**—— 发布/上线检查清单**必须**逐项核验上表「生产必需开关」（含 OpenLLM 5 组），把「拒绝启动」提前到发布门禁，避免部署当场失败。
 
 ### 10.4 处置与遗留
 
@@ -408,9 +411,10 @@ L4 数据面裁决层（各目标域自治，OpenBase 不越权）
 | L3-1 agent key 真实面（发放/越权/吊销） | ✅ **已执行（2026-10-16）** | `POST /identity/agents` 发放 200 + 首条 `sk-agent-*`；越权 `identity:manage` 403；吊销即时 200→401；同上证据（**读取面 `/auth/me` 曾因缺陷 F-8 返回 500，已于 `6bf7832` 修复并复验 200**） |
 | fail-closed 故障注入真实面（RA-06） | ✅ **已执行（2026-10-16，受控窗口）** | 非破坏性注入（探针实例 DSN 不可达；专用端口 8055）：production → **503 `SYS_503`**（`detail.reason=db_unavailable`）+ ERROR 留痕；development → **200 兼容放行** + WARN 留痕；白名单命中 → **200 放行** + 留痕；production+`policy=allow` / production+`enforce_token_version=false` → **均拒绝启动**。证据 `doc/test/evidence/manual/ra06-failclosed-20261016.json` |
 | 冒烟 S0–S6 真实执行（S7-T6-2） | ✅ **已闭环（2026-10-16，第三轮）** | `total=32 / PASS 25 / FAIL 0 / PENDING 7`；证据 `doc/test/evidence/s7/smoke/smoke-summary-20261016005540.json` |
-| 各仓门禁仅装配路径生效 | ⏳ 登记 | 直连装配绕过（与既有 C4/row_scope 门禁同款边界） |
-| OpenLLM 生产门禁强耦合 5 组开关 | ⏳ 登记 | 见走查报告 §6.6 遗留③ |
-| OpenRAG `.devflow/config.json::projectVersion` | ⏳ 待 DevFlow 侧同步 | 由 DevFlow 工具维护，手工改恐冲突 |
+| 各仓门禁仅装配路径生效 | ✅ **已接受边界（2026-10-16 裁定②）** | 直连装配绕过（与既有 C4/row_scope 门禁同款边界）；登记说明，不立项收口 |
+| 走查低危 **D5 / D15** | ✅ **已修复（2026-10-16）** | OpenRAG `e2b1ddd`（`TenantScopeRequiredError` → 403 `PERM_FORBIDDEN`）/ DPS `8e27614`（`TenantManager` 桩显式标注 + 反例自证）；见走查报告 §4.3/§6.7 |
+| OpenLLM 生产门禁强耦合 5 组开关 | ✅ **已并入生产必需开关矩阵（裁定④）** | 见 §10.3；非缺陷——矩阵化 + 发布强制核验，不拆分门禁 |
+| OpenRAG `.devflow/config.json::projectVersion` | ⏳ 保持登记（待 DevFlow 侧同步） | 由 DevFlow 工具维护，手工改恐冲突 |
 
 ### 10.5 联调窗口真实面执行（指针）
 
