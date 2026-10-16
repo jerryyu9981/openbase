@@ -1,0 +1,63 @@
+{
+  "stamp": "2026-10-16T22:24:30+08:00",
+  "scope": "跨仓源码编码契约落地时发现的 `.ps1` GBK 误解码风险修复（12 文件 / 3 仓）",
+  "upstream_claim": "《OpenBase-S7-冒烟缺陷分派待办单》§10.5 项 7 的登记 follow-up（S2：各仓源码编码契约尚未统一建立）；人工指令「按这个方案统一建立跨仓源码编码契约」",
+  "readonly": false,
+  "note": "判据与修复均为**字节级**：修复 = 在文件首**前置** 3 字节 EF BB BF（不改正文、不重编码、不改行尾）；「GBK 模拟解析错误」= 以主机默认代码页 936 解码原文后用 PowerShell Parser::ParseInput 解析的错误数，用于**因果取证**",
+  "contract": {
+    "scanner": "scripts/scan_source_encoding.py（零第三方依赖；`--check` / `--json --out` / `--strip-py` / `--roots`）",
+    "tests": "tests/test_source_encoding_contract.py（5 例：工具自检 / 契约主体 / `.py` 带 BOM 正控 / `.ps1` 带 BOM 负控 / 非 ASCII `.ps1` 无 BOM 正控）",
+    "rules": {
+      "REQUIRED_NO_BOM": [".py"],
+      "REQUIRED_BOM_IF_NON_ASCII": [".ps1"],
+      "other_extensions": "仅统计上报（不计失败）"
+    },
+    "excluded": "第三方/缓存/构建目录 + `doc/tmp`（临时工作目录，.gitignore 覆盖）"
+  },
+  "results": {
+    "A_contract_established": {
+      "observed": {
+        "contract_test": "5 passed",
+        "scanner_post_fix": "扫描 8857 个文件；违规 0；契约校验 PASS（exit 0）"
+      },
+      "expected": "契约可执行且可回归",
+      "pass": true,
+      "basis": "先写契约测试（RED：4 failed / 扫描器缺失）→ 实现扫描器 → GREEN；`.py` 无 BOM 与「非 ASCII 的 `.ps1` 必须带 BOM」均为硬判据（违规即 exit 1 / 测试失败）"
+    },
+    "B_ps1_remediation_causal_evidence": {
+      "observed": {
+        "files": 12,
+        "repos": ["OpenLLM", "OpenRAG", "OpenMemory"],
+        "gbk_parse_errors_before_total": 37,
+        "gbk_parse_errors_after_total": 0,
+        "files_actually_broken_under_gbk": 9
+      },
+      "expected": "含非 ASCII 的 .ps1 在 GBK 默认代码页下必须可解析",
+      "pass": true,
+      "basis": "逐文件前后对照（GBK 模拟解析错误 → 加 BOM 后解析错误）",
+      "files": [
+        {"repo": "OpenLLM", "path": ".devflow/hooks/backup.ps1", "gbk_parse_errors_before": 0, "after": 0},
+        {"repo": "OpenLLM", "path": ".devflow/hooks/post-push.ps1", "gbk_parse_errors_before": 2, "after": 0},
+        {"repo": "OpenLLM", "path": "backend/scripts/verify-env/verify-env.ps1", "gbk_parse_errors_before": 2, "after": 0},
+        {"repo": "OpenLLM", "path": "devflow-plugin/blue_green_deploy.ps1", "gbk_parse_errors_before": 1, "after": 0},
+        {"repo": "OpenLLM", "path": "devflow-plugin/blue_green_rollback.ps1", "gbk_parse_errors_before": 1, "after": 0},
+        {"repo": "OpenLLM", "path": "scripts/connect-infra.ps1", "gbk_parse_errors_before": 1, "after": 0},
+        {"repo": "OpenLLM", "path": "scripts/deploy.ps1", "gbk_parse_errors_before": 18, "after": 0},
+        {"repo": "OpenLLM", "path": "scripts/install-ollama.ps1", "gbk_parse_errors_before": 9, "after": 0},
+        {"repo": "OpenLLM", "path": "scripts/setup-test-env.ps1", "gbk_parse_errors_before": 0, "after": 0},
+        {"repo": "OpenLLM", "path": "scripts/start-e2e-env.ps1", "gbk_parse_errors_before": 1, "after": 0},
+        {"repo": "OpenRAG", "path": "scripts/r384_commit_push.ps1", "gbk_parse_errors_before": 0, "after": 0},
+        {"repo": "OpenMemory", "path": "scripts/start_frontend.ps1", "gbk_parse_errors_before": 2, "after": 0}
+      ]
+    }
+  },
+  "open_items": [
+    {
+      "id": "T1",
+      "item": "其余 444 个非 .py 文本文件的 BOM（.md 236 / .json 23 / .txt 178 等）",
+      "status": "待人工裁定（契约中仅统计上报，不计失败）",
+      "impact": "清理会触及大量 .md（文档版本管理规范）与各工具链兼容性"
+    }
+  ],
+  "overall_pass": true
+}

@@ -1,0 +1,38 @@
+{
+  "roots": [
+    "D:\\Trae CN\\myproject\\Dev\\OpenBase",
+    "D:\\Trae CN\\myproject\\Dev\\OpenLLM",
+    "D:\\Trae CN\\myproject\\Dev\\OpenRAG",
+    "D:\\Trae CN\\myproject\\Dev\\OpenMemory",
+    "D:\\Trae CN\\myproject\\Dev\\DPS"
+  ],
+  "scanned_files": 8857,
+  "bom_hits_total": 495,
+  "bom_hits_by_kind": {
+    "txt": 178,
+    "md": 236,
+    "json": 23,
+    "ps1": 58
+  },
+  "violations": [],
+  "policy": {
+    "required_no_bom": [
+      ".py"
+    ],
+    "required_bom_if_non_ascii": [
+      ".ps1"
+    ],
+    "other_extensions": [
+      ".js",
+      ".json",
+      ".md",
+      ".sql",
+      ".ts",
+      ".txt",
+      ".vue",
+      ".yaml",
+      ".yml"
+    ]
+  },
+  "pass": true
+}

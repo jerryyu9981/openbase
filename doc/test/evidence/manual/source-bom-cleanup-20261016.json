@@ -77,8 +77,9 @@
     {
       "id": "S2",
       "item": "各仓「源码编码契约」尚未统一建立（本批仅在 OpenLLM 建立 test_python_sources_have_no_utf8_bom）",
-      "status": "待裁定",
-      "impact": "OpenBase / OpenRAG / OpenMemory / DPS 尚无同款护栏；建议后续以跨仓扫描脚本或各仓契约测试统一"
+      "status": "✅ 已建立（2026-10-16）：OpenBase `scripts/scan_source_encoding.py`（跨仓扫描器单一事实源，硬判据「`.py` 不得带 BOM」/「非 ASCII 的 `.ps1` 必须带 BOM」）+ `tests/test_source_encoding_contract.py`（5 例，含 3 正/负控）；契约首跑即修复 12 个 `.ps1`（其中 9 个在 GBK 默认代码页下确实解析失败，共 37 个解析错误）",
+      "impact": "OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 现由同一契约覆盖；OpenLLM 仓内护栏（§24 第 4 条）保留为仓内快速检查",
+      "evidence": "doc/test/evidence/manual/{source-encoding-contract-20261016.json,source-encoding-ps1-remediation-20261016.json}"
     }
   ],
   "overall_pass": true
