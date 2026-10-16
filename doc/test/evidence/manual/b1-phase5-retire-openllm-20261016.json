@@ -177,9 +177,11 @@
     },
     {
       "id": "O2",
-      "item": "app/api/circuit_breakers.py 注解 current_user: dict 与实际返回 User 不一致",
-      "status": "改动前既有（非本批引入）",
-      "impact": "函数体内 current_user.get(...) 位于既有 try/except 内，行为逐字不变"
+      "item": "app/api/circuit_breakers.py 注解 current_user: dict 与实际返回 User 不一致（实为真实缺陷）",
+      "status": "✅ 已修复（OpenLLM 2263ba4 / v2.17.7，2026-10-16，TDD）",
+      "basis": "8 端点标注 current_user: dict 但依赖实际返回 User（auth_service.get_current_user / require_permission._guard）；3 个管理端点（POST /{id}/reset、PUT /{id}/config、POST /global-config）函数体沿用 dict 语义 current_user.get(\"id\") → 运行态 AttributeError：审计事件 CircuitBreakerEvent 被内层 try 静默吞掉（不落库）→ 外层 logger 再次抛出 → 兜底 500",
+      "masking": "既有用例 test_reset_circuit_breaker_success 为 test_admin 动态补 get 方法（把 User 伪装成 dict）以迁就实现 → 测试通过而运行态 500",
+      "resolution": "修复：注解 dict→User（8 处）、取值改 .id（JSONB 值域 str(...)）、新增 from app.models.user import User。验证：RED 3 例均 assert 500 == 200 → GREEN test_circuit_breakers_api 9 passed；合并回归（含 phase-5 护栏 98）107 passed / 0 failed；ruff 零新增"
     },
     {
       "id": "O3",
