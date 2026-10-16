@@ -65,8 +65,9 @@
             "tests/test_verdict_k03.py"
           ],
           "execution_face": "A+B",
-          "real_face_status": "PENDING",
+          "real_face_status": "PASS",
           "reason": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
+          "real_face_evidence": "受控窗口故障注入探针（doc/tmp/run_ra06_failclosed.ps1 + doc/tmp/ra06_failclosed_probe.py，专用端口 8055；仅探针实例注入不可达 DSN POSTGRES_URL→127.0.0.1:1，共享 PG 未受影响）5 场景全 PASS：S1 production+DB 不可达 → **503 SYS_503 / detail.reason=db_unavailable** + ERROR 日志 `principal verify db degraded; denied (fail-closed)` / policy_source=env_production；S2 development+DB 不可达 → **200 兼容放行** + WARN `allow pass-through` / reason=db_unavailable_env_allow；S3 production+白名单命中(`users.id`) → **200 放行** + WARN `allowlisted pass-through` / reason=db_unavailable_allowlisted；S4 production+policy=allow → **拒绝启动**(exit=1 + 门禁文案)；S5 production+enforce_token_version=false → **拒绝启动**(exit=1 + 门禁文案)。证据 doc/test/evidence/manual/ra06-failclosed-20261016.json（overall_pass=true）",
           "status": "PASS",
           "exit_code": 0,
           "cases": 21,
@@ -185,8 +186,8 @@
           "item": "fail-closed 用例 真实面",
           "precondition": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
           "owner": "联调窗口",
-          "action": "真实环境执行后回填 status（**需停服故障注入 → 属受控窗口，待用户授权**）",
-          "status": "PENDING"
+          "action": "已完成（受控窗口故障注入，5 场景 PASS）：production 503 SYS_503 / development 200 放行 + 留痕 / 白名单放行 + 留痕 / 两处生产启动门禁拒绝启动；证据 doc/test/evidence/manual/ra06-failclosed-20261016.json",
+          "status": "DONE"
         },
         {
           "id": "RA-06::oidc_batch_isolation::B",
@@ -817,8 +818,8 @@
       "item": "fail-closed 用例 真实面",
       "precondition": "真实 IdP/DB 故障注入窗口的 fail-closed 行为需受控环境，属 B 面",
       "owner": "联调窗口",
-      "action": "真实环境执行后回填 status（**需停服故障注入 → 受控窗口，待用户授权**）",
-      "status": "PENDING"
+      "action": "已完成（受控窗口故障注入，5 场景 PASS）；证据 doc/test/evidence/manual/ra06-failclosed-20261016.json",
+      "status": "DONE"
     },
     {
       "id": "RA-06::oidc_batch_isolation::B",
@@ -990,13 +991,26 @@
   "aggregate_rerun_20261016": {
     "generated_at": "2026-10-16T02:00:00+08:00",
     "mode": "manual-backfill",
-    "note": "B 面真实执行回填（L1 冒烟第三轮 + L2 RA-06 余项探针）。因 gate_aggregate.py 为无状态重算脚本（硬编码 real_face_status=PENDING），本批以「原地回填」方式更新 B 面字段（§RA-06 四项 real_face_status PASS / §SMOKE-S0-S6 status+real_face_status PASS），并保留全部历史字段（k07_backfill / k07_finalize_ref / closed_items / real_finalize / aggregate_rerun_20260913）。",
+    "note": "B 面真实执行回填（L1 冒烟第三轮 + L2 RA-06 余项探针 + RA-06 fail-closed 受控窗口故障注入）。因 gate_aggregate.py 为无状态重算脚本（硬编码 real_face_status=PENDING），本批以「原地回填」方式更新 B 面字段（§RA-06 五项 real_face_status PASS / §SMOKE-S0-S6 status+real_face_status PASS），并保留全部历史字段（k07_backfill / k07_finalize_ref / closed_items / real_finalize / aggregate_rerun_20260913）。",
     "ra06_real_face": {
       "tenant_isolation_regression": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-realface-20261015.json" },
-      "fail_closed": { "status": "PENDING", "reason": "需停服故障注入（受控窗口），待用户授权" },
+      "fail_closed": { "status": "PASS", "evidence": "doc/test/evidence/manual/ra06-failclosed-20261016.json（受控窗口故障注入，5 场景全 PASS）" },
       "oidc_batch_isolation": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-realface-20261015.json" },
       "delegation_cross_tenant_403": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-delegation-l31-20261016.json" },
       "revocation_immediacy": { "status": "PASS", "evidence": "doc/test/evidence/manual/mtauth-realface-20261015.json" }
+    },
+    "ra06_fail_closed_real_face": {
+      "injection": "受控窗口：仅探针实例注入不可达 DSN（POSTGRES_URL→127.0.0.1:1），专用端口 8055；共享 PG 未受影响，非破坏性",
+      "runner": "doc/tmp/run_ra06_failclosed.ps1 + doc/tmp/ra06_failclosed_probe.py（doc/tmp 被 .gitignore 覆盖，作中间产物）",
+      "scenarios": [
+        { "id": "S1", "config": "OPENBASE_ENV=production + enforce_token_version=true + DB 不可达", "observed": "503 / code=SYS_503 / detail.reason=db_unavailable", "logs": "ERROR principal verify db degraded; denied (fail-closed)；policy_source=env_production", "pass": true },
+        { "id": "S2", "config": "OPENBASE_ENV=development + DB 不可达", "observed": "200（兼容放行 / fail-open）", "logs": "WARNING ... environment/policy allow pass-through；reason=db_unavailable_env_allow", "pass": true },
+        { "id": "S3", "config": "OPENBASE_ENV=production + OPENBASE_PRINCIPAL_DB_DEGRADED_ALLOWLIST=1（命中 users.id）", "observed": "200（应急窄口径放行）", "logs": "WARNING ... allowlisted pass-through；reason=db_unavailable_allowlisted", "pass": true },
+        { "id": "S4", "config": "OPENBASE_ENV=production + principal_db_degraded_policy=allow", "observed": "拒绝启动（exit=1）", "logs": "Value error, 生产环境不得将 OPENBASE_PRINCIPAL_DB_DEGRADED_POLICY 设为 allow…", "pass": true },
+        { "id": "S5", "config": "OPENBASE_ENV=production + enforce_token_version=false", "observed": "拒绝启动（exit=1）", "logs": "Value error, 生产环境必须启用 OPENBASE_ENFORCE_TOKEN_VERSION=true…", "pass": true }
+      ],
+      "evidence": "doc/test/evidence/manual/ra06-failclosed-20261016.json",
+      "overall_pass": true
     },
     "smoke_s0_s6": {
       "status": "PASS",

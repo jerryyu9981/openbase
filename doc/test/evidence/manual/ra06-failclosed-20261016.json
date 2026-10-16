@@ -1,0 +1,110 @@
+{
+  "stamp": "2026-10-16T14:36:23.950325+08:00",
+  "scope": "RA-06::fail_closed 真实面（DB 不可达故障注入 + 生产启动门禁）",
+  "injection": "探针实例 POSTGRES_URL → 127.0.0.1:1（不可达）；专用端口 8055；共享 PG 未受影响",
+  "results": {
+    "P0_port_8055_free": {
+      "observed": true,
+      "expected": true,
+      "pass": true,
+      "note": "专用端口，不触碰常驻 8000"
+    },
+    "S1_startup_healthy": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S1_me_status_503": {
+      "observed": 503,
+      "expected": 503,
+      "pass": true,
+      "error_code": "SYS_503",
+      "detail_reason": "db_unavailable"
+    },
+    "S1_error_code_SYS_503": {
+      "observed": "SYS_503",
+      "expected": "SYS_503",
+      "pass": true
+    },
+    "S1_detail_reason": {
+      "observed": "db_unavailable",
+      "expected": "db_unavailable",
+      "pass": true
+    },
+    "S1_log_deny_marker": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S1_log_policy_source_env_production": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S2_startup_healthy": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S2_me_status_200_fail_open": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true,
+      "error_code": null
+    },
+    "S2_log_allow_marker": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S2_log_reason_env_allow": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S3_startup_healthy": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S3_me_status_200_allowlisted": {
+      "observed": 200,
+      "expected": 200,
+      "pass": true,
+      "error_code": null
+    },
+    "S3_log_allowlist_marker": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S3_log_reason_allowlisted": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S4_refuses_startup": {
+      "observed": true,
+      "expected": "exit!=0",
+      "pass": true,
+      "exit_code": 1
+    },
+    "S4_log_marker": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    },
+    "S5_refuses_startup": {
+      "observed": true,
+      "expected": "exit!=0",
+      "pass": true,
+      "exit_code": 1
+    },
+    "S5_log_marker": {
+      "observed": true,
+      "expected": true,
+      "pass": true
+    }
+  },
+  "overall_pass": true
+}
