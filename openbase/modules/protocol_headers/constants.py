@@ -10,6 +10,9 @@ HEADER_USER_ID = "X-User-ID"
 HEADER_TENANT_ID = "X-Tenant-ID"
 HEADER_ORG_ID = "X-Org-ID"
 HEADER_USER_ROLE = "X-User-Role"
+# Q1 裁定方案 A（2026-10-17）：显式外部主体键 {tenant_code}_{user_id}。
+# 与 X-User-ID（username 语义）分离，避免改变 OpenMemory/OpenRAG 的主体归属。
+HEADER_SUBJECT_ID = "X-Subject-ID"
 HEADER_PROXY_SOURCE = "X-Proxy-Source"
 HEADER_REQUEST_ID = "X-Request-Id"
 HEADER_AGENT_ID = "X-Agent-Id"
@@ -54,6 +57,8 @@ INBOUND_IDENTITY_HEADERS: frozenset[str] = frozenset(
         HEADER_USER_ROLE,
         HEADER_AGENT_ID,
         HEADER_ON_BEHALF_OF,
+        # Q6：显式主体键纳入入站裁剪集（客户端直连携带即伪造嫌疑）
+        HEADER_SUBJECT_ID,
     }
 )
 
@@ -68,6 +73,8 @@ IDENTITY_HEADER_LENGTH_LIMITS: dict[str, int] = {
     HEADER_AGENT_ID: 64,
     HEADER_ON_BEHALF_OF: 512,
     HEADER_TEAM_ID: 64,
+    # Q1：{tenant_code}_{user_id}（tenant ≤64 + 下划线 + user ≤128 的实用上限）
+    HEADER_SUBJECT_ID: 128,
 }
 
 # 规范值域（§3.1）：禁止空串/控制字符；简单字符集校验（头值不出现 CR/LF）

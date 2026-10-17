@@ -27,6 +27,7 @@ from openbase.modules.protocol_headers.constants import (
     HEADER_ORG_ID,
     HEADER_PROXY_SOURCE,
     HEADER_REQUEST_ID,
+    HEADER_SUBJECT_ID,
     HEADER_TENANT_ID,
     HEADER_TEST_CASE_ID,
     HEADER_TEST_STEP_ID,
@@ -206,6 +207,14 @@ def build_outbound_headers(
                     "hint": "configure dps_code_map with dps_org_id == dps_tenant_id",
                 },
             )
+
+    # Q1 裁定方案 A（2026-10-17）：显式外部主体键 = {tenant_code}_{user_id}。
+    # 用**未互译**的 tenant_code（OpenBase 事实源），保证跨系统同一主体键一致；
+    # 与 X-User-ID（username）分离，不改变 OpenMemory/OpenRAG 的主体归属。
+    if subject_id and tenant_value:
+        headers[HEADER_SUBJECT_ID] = validate_header_value(
+            HEADER_SUBJECT_ID, f"{tenant_value}_{subject_id}"
+        )
 
     # X-User-Role：仅对**主体解析出的有效角色**做互译（§6.3/T6 挂点）；
     # 显式默认值（如 dps 历史语义 default_role="user"）为目标侧原生码，原样透传。

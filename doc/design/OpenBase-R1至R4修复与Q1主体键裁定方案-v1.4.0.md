@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.3.0 |
-| 文档状态 | [Approved]（Q1 已裁定方案 A；R1~R4 全部实施并验证） |
+| 文档版本 | v1.4.0 |
+| 文档状态 | [Approved]（Q1 方案 A 三仓落地并端到端验证；R1~R4 全部完成） |
 | 适用环境 | Dev / Test；生产需另行编排窗口 |
 | 编制日期 | 2026-10-17 |
 | 编制人 | OpenBase 架构组 |
@@ -421,6 +421,42 @@ Q1 裁定（主体键格式）
 | 实测 FAIL | 缺 `tenant-2` 键 → 精确指出 `tenant-2→期望 …，实际 <缺失>` / `实际 WRONG-VALUE`；非法 JSON → `[1/3] FAIL`；均 exit 2 |
 | 发布检查单 | 已在《主备双通道生产上线必办事项清单 v1.1.0》「G1/G2 发布前机械校验」块增补 4 项校验 |
 
+### 11.8 Q1 实施记录（2026-10-17）
+
+**三仓落地**
+
+| 仓 | 文件 | 变更 |
+| --- | --- | --- |
+| OpenBase | `openbase/modules/protocol_headers/constants.py` | 新增 `HEADER_SUBJECT_ID="X-Subject-ID"`；纳入 `INBOUND_IDENTITY_HEADERS`（Q6：非受信来源携带即按入站裁剪处理）；长度上限 128 |
+| OpenBase | `openbase/modules/protocol_headers/inject.py` | 出站装配：`if subject_id and tenant_value` → `X-Subject-ID={未互译 tenant_code}_{subject_id}`（保证跨系统同一主体键一致；`X-User-ID` 语义不变） |
+| OpenLLM | `app/identity/protocol_headers.py` | 头名常量 + 入站/出站集合 + 长度上限 128 |
+| OpenLLM | `app/identity/identity_context.py` | `IdentityContext.subject_id` 字段（含 `as_dict()`） |
+| OpenLLM | `app/identity/outbound.py` | 出站**原样透传**（本层不做二次拼接） |
+| OpenLLM | `app/services/external_identity.py` | `ExternalIdentity.subject_id` + 受信来源下读取该头 |
+| OpenLLM | `app/api/openllm_gateway.py` | `GatewayIdentity.subject_id`（API Key 通道填充）；读路径 `_build_request_context` 透出；回写参数贯通 |
+| OpenLLM | `app/api/writeback.py` | 回写 `RequestContext.subject_id`（与读路径同源；缺省 None 零变化） |
+| DPS | `src/identity/constants.py` | 头名常量 + `IDENTITY_HEADERS`（受信校验集合）+ 长度上限 128 |
+| DPS | `src/identity/inbound_gate.py` | 受信 principal 落定 `external_subject_id`（与 `subject_id`/X-User-ID 分离） |
+| DPS | `src/middleware/permission_middleware.py` | 主体解析**优先 `external_subject_id`**；未命中回退既有 `principal.subject_id/state.user_id/X-User-ID`（B2 username 解析链路） |
+| DPS | `src/engines/permission_engine.py` | 主体键后缀回退：`{tenant_code}_{user_id}` → 后缀直查 → `users.username` 解析本地 id（开关 `SUBJECT_USERNAME_RESOLVE_ENABLED` 控制，关闭即严格直查） |
+
+**测试与端到端证据**
+
+| 编号 | 结果 |
+| --- | --- |
+| OpenBase 单测 | `tests/test_q1_subject_id_inject.py` 5 passed；协议头相关 33 passed |
+| OpenLLM 单测 | `tests/unit/test_q1_subject_id_passthrough.py` 6 passed；网关/上下文/身份/画像回归 123 passed（1 例 `test_models_contract_with_jwt` 为既有 JWT+`api_key=None` 缺陷，与 Q1 无关） |
+| DPS 单测 | `tests/test_q1_subject_id_resolve.py` 7 passed；B2 既有 4 例 11 passed；身份/权限/审计回归 114 passed（另修正 `test_p22_fail_closed.py` 两处 mock 缺 `fetch_one` 的既有夹具缺口） |
+| E2E（B 通道） | 经 OpenBase `/api/v1/llm-proxy/chat`（explicit：memory+llm）→ `200`、`degraded=[]`、`segment_tokens.profile=108`、`memory.injected_items=3` |
+| DPS 审计证据 | 读路径 `profile-…` 与回写路径 `writeback-…` 的 `principal.external_subject_id` 均为 **`tenant-1_1`**；`person_id` 同为 `tenant-1_1`；`X-User-ID`（principal.subject_id）保持 `tenant-1_<uuid>` 不变 |
+| 直连反证 | `X-Subject-ID: tenant-9_ghost` 解析为空（fail-closed，不凭空放行） |
+
+**实施期环境事件（非代码缺陷）**
+
+| 项 | 说明 |
+| --- | --- |
+| 运行态版本漂移 | `run_openbase.py` 原将 `.venv` 置于源码根之前，而 `.venv` 内含**陈旧 `openbase` 包快照** → 运行态静默加载旧实现（首轮 E2E 审计 `external_subject_id=null` 即由此导致）。已改为源码根优先；重启后审计出现 `tenant-1_1`，证明三仓链路贯通 |
+
 ---
 
 ## 12. 修订历史
@@ -431,3 +467,4 @@ Q1 裁定（主体键格式）
 | v1.1.0 | 2026-10-17 | OpenBase 架构组 | Q1 裁定为方案 A（状态转 [Approved]）；R1 实施完成并验证（JWT `org_id=tenant-1`、三路 `degraded=[]`）；补 §11 实施记录与后续动作 |
 | v1.2.0 | 2026-10-17 | OpenBase 架构组 | R2 实施完成：person_id 按 Q1 键归约、DPS 画像占位幂等播种、404 收敛为 skipped；端到端 `calculate→GET→PUT` 全 200、画像段 90 tokens；OpenLLM 2.17.12 |
 | v1.3.0 | 2026-10-17 | OpenBase 架构组 | R4 实施（测试基线隔离，OpenRAG 1.9.5，28 passed）与 R3 实施（`verify_dps_code_map.py` 三项校验，PASS/FAIL 双向实测）；状态转为 R1~R4 全部完成 |
+| v1.4.0 | 2026-10-17 | OpenBase 架构组 | Q1 方案 A 三仓落地：OpenBase 装配 `X-Subject-ID`、OpenLLM 透传、DPS 主体解析优先；端到端审计证据 `external_subject_id=tenant-1_1`；修正运行态 `.venv` 陈旧包快照的路径顺序问题 |
