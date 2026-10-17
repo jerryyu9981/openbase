@@ -1,16 +1,16 @@
-# OpenBase-主备双通道生产上线必办事项处置记录-v1.1.0
+# OpenBase-主备双通道生产上线必办事项处置记录-v1.2.0
 
 | 项目 | 内容 |
 |------|------|
 | 记录名称 | 主备双通道生产上线必办事项（S1~S5 / G1~G6）处置记录 |
-| 记录编号 | OB-GOLIVE-CHANNEL-AB-DISPOSITION-v1.1.0 |
-| 版本 | **v1.1.0** |
-| 状态 | **[Approved]**（G3/G5/G6 闭环；G4 机器面闭环、人工双签待窗口） |
+| 记录编号 | OB-GOLIVE-CHANNEL-AB-DISPOSITION-v1.2.0 |
+| 版本 | **v1.2.0** |
+| 状态 | **[Approved]**（G3/G5/G6 闭环；G4 待双签；G5-OBS 已立项跨仓小版本） |
 | 编制日期 | 2026-10-16 |
 | 编制人 | AA/PM-OpenBase-Dev |
-| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v1.2.0》（OB-GOLIVE-CHANNEL-AB-v1.2.0） |
-| 处置日期 | 2026-10-16（v1.0.0）/ 2026-10-18（v1.1.0 真实面执行） |
-| 关联交付 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》（S2）；OpenLLM `.env.example` 生产 profile 补齐（`9948d22`）；G3/G4/G5 演练脚本与证据 |
+| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v1.3.0》（OB-GOLIVE-CHANNEL-AB-v1.3.0） |
+| 处置日期 | 2026-10-16（v1.0.0）/ 2026-10-18（v1.1.0 真实面执行 / v1.2.0 双签与立项） |
+| 关联交付 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》（S2）；《G4-T4-2 A 直连豁免行双签审批单-v1.0.0》；《G5-OBS Memory 跨租户隔离修复立项方案-v1.0.0》 |
 
 ## 修订历史
 
@@ -18,6 +18,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-16 | AA/PM-OpenBase-Dev | 首次产出：S1~S5 / G1~G6 的逐项处置结论、已完成项证据、阻塞项的**执行手册**（步骤/命令/判据/证据落点）与阻塞条件 |
 | v1.1.0 | 2026-10-18 | OpenBase 架构组 | G3/G5/G6 真实运行态执行并闭环；G4 机器面（矩阵/读写等价/K14）闭环；新增观测项 G5-OBS；Q5/Q6/Q7 裁定落地 |
+| v1.2.0 | 2026-10-18 | OpenBase 架构组 | 产出 G4-T4-2 双签审批单（[待签署]）；G5-OBS 立项为跨仓小版本迭代并明确版本/迁移/验收/回滚 |
 
 ---
 
@@ -28,8 +29,8 @@
 | **G1** | 三 REAL 开关置真 | **仓库侧 ✅ 已办**（载体补齐）；运维侧 ⬜ 待下发 | OpenLLM `9948d22`；§G1 |
 | **G2** | 生产门禁 5 组开关置真 | **仓库侧 ✅ 已办**（根模板已含 5 组；本批补本地缺省声明）；运维侧 ⬜ 待下发 | OpenLLM `9948d22`；§G2 |
 | **G3** | L2-1 主备切换演练（真实） | ✅ **PASS**（S7-T3-1~4） | `doc/test/evidence/s7/l2-1/failover-drill.json`、`drill-report.md` |
-| **G4** | L2-2 通道矩阵终验（真实） | 🟡 **机器面 PASS**（T4-1/3/4）；T4-2 人工双签待窗口 | `doc/test/evidence/s7/l2-2/**` |
-| **G5** | 回写链路真实面 | ✅ **PASS**（三路落地 + 复投幂等） | `doc/test/evidence/s7/g5/writeback-realface.json` |
+| **G4** | L2-2 通道矩阵终验（真实） | 🟡 **机器面 PASS**（T4-1/3/4）；双签审批单已产出（[待签署]） | `doc/test/evidence/s7/l2-2/**`；《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.0.0》 |
+| **G5** | 回写链路真实面 | ✅ **PASS**（三路落地 + 复投幂等）；观测项 G5-OBS 已立项 | `doc/test/evidence/s7/g5/writeback-realface.json`；《OpenBase-G5-OBS-Memory跨租户隔离修复立项方案-v1.0.0》 |
 | **G6** | 回写 `profile` 真实化 | ✅ **PASS**（真实 DPS + `extract_targets`） | 同上 |
 | **S1** | 接管审计开关评估 | ✅ 已评估并落载体（建议审批后开启） | §S1 |
 | **S2** | 回滚方案与演练 | ✅ 方案已产出；演练待窗口 | §S2 |
@@ -131,7 +132,7 @@
 
 | 编号 | 观测 | 影响 | 处置 |
 |:----:|------|------|------|
-| **G5-OBS** | OpenMemory 回写落库域实测为 `default`（`owner=tenant-1_1`）：OpenMemory 适配器客户端为进程级共享头，未按请求透传 `X-Tenant-ID` | 三路"真实落地"成立；但 B 通道 memory 的**跨租户隔离**未生效（同一实例内按 owner 隔离） | 单列迭代修复（需同时评估历史数据迁移）；修复前**不得宣称 memory 租户隔离已闭环** |
+| **G5-OBS** | OpenMemory 回写落库域实测为 `default`（`owner=tenant-1_1`）：OpenMemory 适配器客户端为进程级共享头，未按请求透传 `X-Tenant-ID` | 三路"真实落地"成立；但 B 通道 memory 的**跨租户隔离**未生效（同一实例内按 owner 隔离） | **已立项**：《OpenBase-G5-OBS-Memory跨租户隔离修复立项方案-v1.0.0》——跨仓小版本（OpenLLM 2.18.0 / OpenMemory 7.3.2 / OpenBase 验收）；开关默认 `false`，先迁移后开启 |
 
 ### 回归与静态检查（v1.1.0 批次）
 
@@ -150,8 +151,10 @@
 |------|------|------|
 | OpenLLM `.env.example` 生产 profile 补齐 | OpenLLM `9948d22`（`.env.example` + `backend/.env.example`） | G1/G2 载体补齐 + 版本对齐 2.17.10 |
 | G3/G4/G5 演练脚本 | `scripts/drill_l2_1_failover.py`、`scripts/dual_channel_e2e.py`、`scripts/finalize_l2_2_matrix.py`、`scripts/writeback_realface.py` | 真实运行态执行与证据生成 |
+| G4-T4-2 双签审批单 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.0.0》 | A 直连/健康管理面豁免行清单、对账、双签栏 |
+| G5-OBS 立项方案 | 《OpenBase-G5-OBS-Memory跨租户隔离修复立项方案-v1.0.0》 | 根因、跨仓小版本改动、迁移、验收、回滚 |
 | 本处置记录 | 本文件 | S1~S5 / G1~G6 逐项处置 + 真实面执行结果 |
 
 ---
 
-**记录状态**：[Approved]（G4 人工双签为唯一残留）
+**记录状态**：[Approved]（G4 双签为唯一发布阻断残留；G5-OBS 已立项跟踪）
