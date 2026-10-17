@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.1.0 |
-| 文档状态 | [Approved]（Q1 已裁定方案 A；R1 已实施并验证） |
+| 文档版本 | v1.2.0 |
+| 文档状态 | [Approved]（Q1 已裁定方案 A；R1/R2 已实施并验证） |
 | 适用环境 | Dev / Test；生产需另行编排窗口 |
 | 编制日期 | 2026-10-17 |
 | 编制人 | OpenBase 架构组 |
@@ -336,7 +336,7 @@ Q1 裁定（主体键格式）
 
 ---
 
-## 11. R1 实施记录（2026-10-17）
+## 11. 实施记录（2026-10-17）
 
 ### 11.1 代码与数据
 
@@ -372,6 +372,36 @@ Q1 裁定（主体键格式）
 | R3 | 配置下发 + `verify_dps_code_map.py` | 与 R1/R2 配置最终形态对齐 |
 | R4 | OpenRAG 测试基线隔离 | 无依赖 |
 
+### 11.5 R2 实施记录（2026-10-17）
+
+**代码与数据**
+
+| 项 | 内容 |
+| --- | --- |
+| person_id 规约 | `app/edgerouter/adapters/profile.py::_resolve_real_person_id`：`subject_id`（X-Subject-ID）优先 → `{tenant_code}_{external_user_id}`（Q1 方案 A）→ 仅 external → 内部隔离形态 |
+| 上下文字段 | `app/edgerouter/schemas/router.py::RequestContext` 新增 `subject_id`（默认 None，既有构造点零感知） |
+| 404 语义 | `_profile_update_with_absent_guard`：DPS「人员不存在」→ WARN `profile_absent` + 返回 `skipped`（不重试）；其余组件故障维持降级 |
+| 播种脚本 | DPS 新增 `scripts/seed_profile_placeholder.py`（按 `(person_id, tenant_id)` 查重，幂等；org/tenant 按 code 解析 UUID） |
+| 数据 | 播种 `platform.profile`：`person_id=tenant-1_1`、`dps-org-001`/`dps-tenant-001`（重跑返回 `exists`，幂等已验证） |
+| 版本 | OpenLLM 2.17.11 → **2.17.12** |
+
+**验证结果**
+
+| 编号 | 结果 |
+| --- | --- |
+| R2-T1 | `PUT /api/v2/portrait/tenant-1_1` → **200**（person 存在性校验通过） |
+| R2-T2 | 回写路径无 `回写失败`、无 404 重试；`person_id` 为 `tenant-1_1` |
+| R2-T3 | 端到端：`POST /portrait/calculate 200` → `GET /portrait/tenant-1_1 200` → `PUT 200`；`segment_tokens.profile=90` |
+| 单测 | `test_r2_profile_person_id.py` 7 passed |
+| 回归 | 画像既有用例（real_contract / v2143 / s4_t6 / v213）**70 passed**；与 A2/B3 合跑 15 passed |
+
+**实施偏差**
+
+| 项 | 说明 |
+| --- | --- |
+| X-Subject-ID 传输 | 本次采用**隐式归约**（OpenLLM 本地拼 `{tenant}_{user_id}`），尚未在 OpenBase 装配该头；`RequestContext.subject_id` 与 `_resolve_real_person_id` 的首优先级已预留，协议头落地后无需再改画像侧 |
+| 回写 404 语义 | WritebackQueue 按「返回 dict 即成功」处理，`skipped` 结果不再触发重试（无需改队列） |
+
 ---
 
 ## 12. 修订历史
@@ -380,3 +410,4 @@ Q1 裁定（主体键格式）
 | --- | --- | --- | --- |
 | v1.0.0 | 2026-10-17 | OpenBase 架构组 | 首版：基于 A1/A2/B1/B2 实施后的实测证据（R1~R4）编制；Q1 给出四方案对比与推荐（A：`{tenant_code}_{user_id}` + `X-Subject-ID`） |
 | v1.1.0 | 2026-10-17 | OpenBase 架构组 | Q1 裁定为方案 A（状态转 [Approved]）；R1 实施完成并验证（JWT `org_id=tenant-1`、三路 `degraded=[]`）；补 §11 实施记录与后续动作 |
+| v1.2.0 | 2026-10-17 | OpenBase 架构组 | R2 实施完成：person_id 按 Q1 键归约、DPS 画像占位幂等播种、404 收敛为 skipped；端到端 `calculate→GET→PUT` 全 200、画像段 90 tokens；OpenLLM 2.17.12 |
