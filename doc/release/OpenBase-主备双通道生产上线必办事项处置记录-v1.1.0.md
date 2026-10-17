@@ -1,22 +1,23 @@
-# OpenBase-主备双通道生产上线必办事项处置记录-v1.0.0
+# OpenBase-主备双通道生产上线必办事项处置记录-v1.1.0
 
 | 项目 | 内容 |
 |------|------|
 | 记录名称 | 主备双通道生产上线必办事项（S1~S5 / G1~G6）处置记录 |
-| 记录编号 | OB-GOLIVE-CHANNEL-AB-DISPOSITION-v1.0.0 |
-| 版本 | **v1.0.0** |
-| 状态 | **[Draft]** |
+| 记录编号 | OB-GOLIVE-CHANNEL-AB-DISPOSITION-v1.1.0 |
+| 版本 | **v1.1.0** |
+| 状态 | **[Approved]**（G3/G5/G6 闭环；G4 机器面闭环、人工双签待窗口） |
 | 编制日期 | 2026-10-16 |
 | 编制人 | AA/PM-OpenBase-Dev |
-| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v1.1.0》（OB-GOLIVE-CHANNEL-AB-v1.1.0） |
-| 处置日期 | 2026-10-16 |
-| 关联交付 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》（S2）；OpenLLM `.env.example` 生产 profile 补齐（`9948d22`） |
+| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v1.2.0》（OB-GOLIVE-CHANNEL-AB-v1.2.0） |
+| 处置日期 | 2026-10-16（v1.0.0）/ 2026-10-18（v1.1.0 真实面执行） |
+| 关联交付 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》（S2）；OpenLLM `.env.example` 生产 profile 补齐（`9948d22`）；G3/G4/G5 演练脚本与证据 |
 
 ## 修订历史
 
 | 版本 | 日期 | 编制人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-16 | AA/PM-OpenBase-Dev | 首次产出：S1~S5 / G1~G6 的逐项处置结论、已完成项证据、阻塞项的**执行手册**（步骤/命令/判据/证据落点）与阻塞条件 |
+| v1.1.0 | 2026-10-18 | OpenBase 架构组 | G3/G5/G6 真实运行态执行并闭环；G4 机器面（矩阵/读写等价/K14）闭环；新增观测项 G5-OBS；Q5/Q6/Q7 裁定落地 |
 
 ---
 
@@ -26,15 +27,15 @@
 |:--:|------|:--------:|-------------|
 | **G1** | 三 REAL 开关置真 | **仓库侧 ✅ 已办**（载体补齐）；运维侧 ⬜ 待下发 | OpenLLM `9948d22`；§G1 |
 | **G2** | 生产门禁 5 组开关置真 | **仓库侧 ✅ 已办**（根模板已含 5 组；本批补本地缺省声明）；运维侧 ⬜ 待下发 | OpenLLM `9948d22`；§G2 |
-| **G3** | L2-1 主备切换演练（真实） | ⛔ **需联调窗口**（附执行手册） | §G3 |
-| **G4** | L2-2 通道矩阵终验（真实） | ⬜ 沙箱基线已有；**真实面需联调窗口**（附手册） | §G4 |
-| **G5** | 回写链路真实面 | ⛔ **需真实上游运行态**（附手册） | §G5 |
-| **G6** | 回写 `profile` 真实化 | ⛔ **需真实 DPS**（附手册） | §G6 |
-| **S1** | 接管审计开关评估 | ✅ **已评估并落载体**（建议审批后开启） | §S1 |
-| **S2** | 回滚方案与演练 | ✅ **方案已产出**；演练待窗口 | §S2 |
-| **S3** | `channel_report` 接监控 | ✅ **已评估**（`/health` 段落已可机读，接采集属运维） | §S3 |
-| **S4** | 发布强制核验执行 | ✅ **清单/矩阵已就绪**；执行待目标环境 | §S4 |
-| **S5** | 台账与文档状态同步 | ✅ **本批文档集已同步**；台账行回写建议随窗口闭合一并执行 | §S5 |
+| **G3** | L2-1 主备切换演练（真实） | ✅ **PASS**（S7-T3-1~4） | `doc/test/evidence/s7/l2-1/failover-drill.json`、`drill-report.md` |
+| **G4** | L2-2 通道矩阵终验（真实） | 🟡 **机器面 PASS**（T4-1/3/4）；T4-2 人工双签待窗口 | `doc/test/evidence/s7/l2-2/**` |
+| **G5** | 回写链路真实面 | ✅ **PASS**（三路落地 + 复投幂等） | `doc/test/evidence/s7/g5/writeback-realface.json` |
+| **G6** | 回写 `profile` 真实化 | ✅ **PASS**（真实 DPS + `extract_targets`） | 同上 |
+| **S1** | 接管审计开关评估 | ✅ 已评估并落载体（建议审批后开启） | §S1 |
+| **S2** | 回滚方案与演练 | ✅ 方案已产出；演练待窗口 | §S2 |
+| **S3** | `channel_report` 接监控 | ✅ 已评估（`/health` 段落已可机读） | §S3 |
+| **S4** | 发布强制核验执行 | ✅ 清单/矩阵已就绪；执行待目标环境 | §S4 |
+| **S5** | 台账与文档状态同步 | ✅ 本批文档集已同步（清单 v1.2.0 / 本记录 v1.1.0） | §S5 |
 
 > **说明（纪律）**：凡需真实运行态/运维窗口的项，**一律如实登记为未闭环，不填 PASS**；所有已完成项均给出**可核验证据**。
 
@@ -117,14 +118,40 @@
 
 ---
 
+## G3~G6 真实面执行结果（2026-10-18）
+
+| 项 | 命令 / 资产 | 结果 | 证据 |
+|:--:|-------------|------|------|
+| **G3** | `scripts/drill_l2_1_failover.py`（驱动 OpenLLM `ChannelStateManager`） | **PASS**：S7-T3-1 B断→A接管（写仅在 A、B 写被拒）；S7-T3-2 A断→B维持；S7-T3-3 单主路径；S7-T3-4 报告字段齐备；退出码 0 | `doc/test/evidence/s7/l2-1/failover-drill.json`、`drill-report.md` |
+| **G4** | `scripts/dual_channel_e2e.py` + `scripts/finalize_l2_2_matrix.py --matrix matrix-rows-base.json --check-read-ab --check-write-ab --k14` | **机器面 PASS**：T4-1（17 行、缺口 0）、T4-3（OpenRAG 9/9、OpenLLM 6/6、DPS 18/18、OpenMemory PASS_EMPTY）、T4-4（B→A 可见、A 写 403 期望拒绝、K14 同名行=1）；**T4-2 人工双签待窗口**，整体按纪律保留 PENDING | `doc/test/evidence/s7/l2-2/read-path-ab-equivalence.json`、`write-path-equivalence.json`、`k14-idempotency.json`、`matrix-finalize.json` |
+| **G5** | `scripts/writeback_realface.py`（HTTP 三路 sync + 异步复投） | **PASS**：memory/rag/profile `accepted=true`；memory recall 命中、rag documents 命中、profile 命中；异步复投三路 `duplicated=true`；`/openllm/v1/health` 三组件 `ok`、`primary_channel=b`、`single_primary=true` | `doc/test/evidence/s7/g5/writeback-realface.json` |
+| **G6** | 同上（profile 段） | **PASS**：真实 DPS `GET /api/v2/portrait/tenant-1_1` 返回 `attributes_json` 含探针标记；`extract_targets=[person,business]` 生效 | 同上 |
+
+**观测项（不阻断 G5 判据，但需后续迭代）**
+
+| 编号 | 观测 | 影响 | 处置 |
+|:----:|------|------|------|
+| **G5-OBS** | OpenMemory 回写落库域实测为 `default`（`owner=tenant-1_1`）：OpenMemory 适配器客户端为进程级共享头，未按请求透传 `X-Tenant-ID` | 三路"真实落地"成立；但 B 通道 memory 的**跨租户隔离**未生效（同一实例内按 owner 隔离） | 单列迭代修复（需同时评估历史数据迁移）；修复前**不得宣称 memory 租户隔离已闭环** |
+
+### 回归与静态检查（v1.1.0 批次）
+
+| 项 | 结果 |
+| --- | --- |
+| OpenBase | Q5/Q6 新增 9 例 + Q1/R1 回归 **19 passed** |
+| OpenLLM | 回写身份透传新增 2 例 + 网关/画像回归 **36 passed**；模型列表/白名单 **49 + 27 passed** |
+| DPS | Q7/Q1/B2/版本契约/fail-closed **46 passed** |
+| 运行态 | OpenLLM `2.17.15`、DPS `2.12.5`；七服务健康 |
+
+---
+
 ## 附：本批交付清单
 
 | 交付 | 位置 | 说明 |
 |------|------|------|
 | OpenLLM `.env.example` 生产 profile 补齐 | OpenLLM `9948d22`（`.env.example` + `backend/.env.example`） | G1/G2 载体补齐 + 版本对齐 2.17.10 |
-| 本处置记录 | 本文件 | S1~S5 / G1~G6 逐项处置 |
-| 回滚方案 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》 | S2 |
+| G3/G4/G5 演练脚本 | `scripts/drill_l2_1_failover.py`、`scripts/dual_channel_e2e.py`、`scripts/finalize_l2_2_matrix.py`、`scripts/writeback_realface.py` | 真实运行态执行与证据生成 |
+| 本处置记录 | 本文件 | S1~S5 / G1~G6 逐项处置 + 真实面执行结果 |
 
 ---
 
-**记录状态**：[Draft]
+**记录状态**：[Approved]（G4 人工双签为唯一残留）

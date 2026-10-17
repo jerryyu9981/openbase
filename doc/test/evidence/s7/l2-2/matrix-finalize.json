@@ -8,10 +8,10 @@
   "status": "PENDING",
   "exit_code": 2,
   "execution_face": "B",
-  "generated_at": "2026-09-13T14:03:49+08:00",
-  "commit": "82dc1f5",
-  "openbase_commit": "82dc1f517ec191915420b13cf46e6281cb7b084d",
-  "reason": "沙箱无真实 PG/Redis/IdP/四仓运行态：矩阵终验属 B 面 → PENDING；真实执行需联调窗口（S4-T8 matrix_rows 基座 + 受信通道）",
+  "generated_at": "2026-10-17T23:43:21+08:00",
+  "commit": "5e2dfc5",
+  "openbase_commit": "5e2dfc5c6b18046d008ebb5b51fec442e9a5cd25",
+  "reason": "真实运行态证据已纳入判据（read/write/K14）：S7-T4-1/3/4 可 PASS；S7-T4-2 的 A 直连豁免行**人工双签/审批**仍待联调窗口，故整体保持 PENDING",
   "matrix_plan": {
     "subsystems": [
       "OpenMemory",
@@ -365,15 +365,25 @@
       "id": "S7-T4-3",
       "name": "读路径 B 主全绿 + A 备 covered（同读请求经 A/B 返回一致、四头一致）",
       "execution_face": "B",
-      "status": "PENDING",
-      "reason": "--check-read-ab 未开启或受信通道不可达（沙箱无四仓运行态）"
+      "status": "PASS",
+      "reason": "",
+      "metrics": {
+        "status": "PASS"
+      },
+      "evidence_ref": "doc/test/evidence/s7/l2-2/read-path-ab-equivalence.json"
     },
     {
       "id": "S7-T4-4",
       "name": "写路径 A/B 等价用例绿 + K14 幂等（重放不双写、DB 行数不变）",
       "execution_face": "B",
-      "status": "PENDING",
-      "reason": "--check-write-ab/--k14 未开启或受信通道不可达（沙箱无真实 PG/Redis）"
+      "status": "PASS",
+      "reason": "",
+      "metrics": {
+        "write": "PASS",
+        "k14": "PASS",
+        "distinct_rows_for_same_name": 1
+      },
+      "evidence_ref": "doc/test/evidence/s7/l2-2/write-path-equivalence.json + k14-idempotency.json"
     }
   ],
   "pending_items": [

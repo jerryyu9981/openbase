@@ -34,6 +34,10 @@ def init_app(settings: Settings) -> object:
     from fastapi import FastAPI
 
     from openbase.core.errors import install_exception_handlers
+    from openbase.settings import validate_production_login_tenant_policy
+
+    # Q5（2026-10-17 裁定）：生产必须强制登录租户绑定（fail-closed 启动门禁）
+    validate_production_login_tenant_policy(settings)
 
     app = FastAPI(title=settings.app_name, version=__version__, docs_url="/docs")
 

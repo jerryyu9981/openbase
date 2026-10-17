@@ -1,6 +1,6 @@
 # S7-T3 L2-1 主备切换演练报告
 
-- 生成时间：2026-09-13T18:21:14+0800
+- 生成时间：2026-10-17T23:30:57+0800
 - 驱动面：OpenLLM `app.identity.channel.ChannelStateManager`（S4-T7 真实状态机）
 - 结论：PASS
 - 边界：事件通道（L1-1）不纳入演练矩阵（Q-S7-4）
@@ -21,6 +21,6 @@
 - 回切成功：True
 - 审计动作序列：['failover_b_to_a', 'recover_b', 'drill_window_open', 'drill_verified', 'drill_window_elapsed', 'switch_back_to_b']
 - 缺失动作：[]
-- 通道状态上报：{'preference': 'b-primary', 'primary_channel': 'b', 'single_primary': True, 'state': 'b-primary', 'healthy_b': True, 'drill_window_seconds': 300.0, 'auto_failover_enabled': False}
+- 通道状态上报：{'preference': 'b-primary', 'primary_channel': 'b', 'single_primary': True, 'state': 'b-primary', 'healthy_b': True, 'llm_unreachable': False, 'llm_consecutive_failures': 0, 'fallback_action': 'none', 'drill_window_seconds': 300.0, 'auto_failover_enabled': False}
 
 > 未真实执行项保持 PENDING；本报告由真实状态机驱动生成，非样例填充。

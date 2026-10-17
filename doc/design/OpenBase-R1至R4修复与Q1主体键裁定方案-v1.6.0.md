@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.5.0 |
-| 文档状态 | [Approved]（Q1 方案 A 三仓落地并端到端验证；R1~R4 全部完成；衍生缺陷已闭环） |
+| 文档版本 | v1.6.0 |
+| 文档状态 | [Approved]（Q1 三仓落地；R1~R4 完成；**Q5/Q6/Q7 已裁定并落地**；G3/G5/G6 闭环、G4 机器面闭环） |
 | 适用环境 | Dev / Test；生产需另行编排窗口 |
 | 编制日期 | 2026-10-17 |
 | 编制人 | OpenBase 架构组 |
@@ -330,9 +330,9 @@ Q1 裁定（主体键格式）
 | 编号 | 事项 | 建议 | 影响 |
 | --- | --- | --- | --- |
 | **Q1** | 外部主体键格式与传输方式 | **方案 A：`{tenant_code}_{user_id}` + `X-Subject-ID`** | 决定 R2 `person_id` 与 DPS 绑定键 |
-| Q5 | 生产是否强制 `require_tenant_on_login=true` | 建议是（fail-closed） | 未绑定用户将被拒绝登录 |
-| Q6 | `X-Subject-ID` 是否纳入受信头强校验集合 | 建议是（与四头同规则） | 影响协议头规范版本 |
-| Q7 | username 回退的退役时限 | 建议 2 个版本内 | 影响 Q1 收敛节奏 |
+| Q5 | 生产是否强制 `require_tenant_on_login=true` | **已裁定：是（fail-closed）**；生产启动门禁要求 `require=true` 且 `default_tenant_code` 为空 | 未绑定用户将被拒绝登录；配置不当则拒绝启动 |
+| Q6 | `X-Subject-ID` 是否纳入受信头强校验集合 | **已裁定：是（与四头同规则）**；三仓已纳入入站身份头集合，长度 ≤128 | 非受信来源携带即按既有策略（enforce→403 / 过渡期标注忽略） |
+| Q7 | username 回退的退役时限 | **已裁定：DPS 2.14.0 默认关闭、2.15.0 移除**；过渡期命中 WARN 留痕 | 推动 `user_roles` 绑定键迁移至 `{tenant_code}_{user_id}` |
 
 ---
 
@@ -469,6 +469,28 @@ Q1 回归期间暴露、与 Q1 无因果关系的既有缺陷，本次一并闭�
 | 验证 | `test_openllm_gateway.py`（含原失败用例 `test_models_contract_with_jwt`）+ `test_chat_api.py` **49 passed**；模型白名单与 D16~D20 隔离走查 **27 passed** |
 | 版本 | OpenLLM 2.17.13 → **2.17.14** |
 
+### 11.10 Q5 / Q6 / Q7 裁定落地（2026-10-18）
+
+| 编号 | 裁定 | 落地 |
+| --- | --- | --- |
+| **Q5** | 生产强制租户绑定 | `openbase/settings.py::validate_production_login_tenant_policy`：production 下 `require_tenant_on_login=false` 或 `default_tenant_code` 非空 → **拒绝启动**；`openbase/__init__.py::init_app` 装配期调用 |
+| **Q6** | `X-Subject-ID` 纳入强校验 | 三仓 `INBOUND_IDENTITY_HEADERS`/`IDENTITY_HEADERS` 已含该头（长度 128）；OpenBase `classify_inbound` 对非受信来源 + enforce → FORBIDDEN |
+| **Q7** | username 回退退役时限 | DPS `subject_username_resolve_retire_version="2.14.0"`；回退命中改 **WARN** 并输出退役版本；2.14.0 默认关闭、2.15.0 移除代码 |
+| 测试 | — | `tests/test_q5_q6_decisions.py` 9 例；DPS Q7 相关回归 46 例 |
+
+### 11.11 G3~G6 真实面演练（2026-10-18）
+
+| 项 | 结果 | 证据 |
+| --- | --- | --- |
+| G3 | **PASS**：B断→A接管（写仅 A、双主禁止）、A断→B维持、单主路径、报告字段齐备 | `doc/test/evidence/s7/l2-1/**` |
+| G4 | **机器面 PASS**：矩阵 17 行缺口 0；读等价（OpenRAG 9/9、OpenLLM 6/6、DPS 18/18、OpenMemory PASS_EMPTY）；写 B→A 可见、A 写 403 期望拒绝；K14 同名行=1；**T4-2 人工双签待窗口** | `doc/test/evidence/s7/l2-2/**` |
+| G5 | **PASS**：三路 sync `accepted=true`；memory/rag/profile 均真实落地；异步复投三路 `duplicated=true` | `doc/test/evidence/s7/g5/writeback-realface.json` |
+| G6 | **PASS**：profile 落真实 DPS `person_id=tenant-1_1`，`attributes_json` 含探针标记 | 同上 |
+
+**配套修复（HTTP 回写身份透传）**：`/openllm/v1/writeback` 此前同步 payload 缺 `tenant_code/org_id/role/external_*/subject_id` → 写落到非预期域且 `person_id` 退化。已新增 `_writeback_identity_kwargs`（与 chat 路径同一口径）并逐 target 合并（OpenLLM 2.17.15）。
+
+**观测项 G5-OBS**：OpenMemory 回写落库域仍为 `default`（适配器客户端共享头未透传 per-request `X-Tenant-ID`）。三路"真实落地"判据成立，但 **memory 跨租户隔离未闭环**，需单列迭代（含历史数据迁移评估）。
+
 ---
 
 ## 12. 修订历史
@@ -481,3 +503,4 @@ Q1 回归期间暴露、与 Q1 无因果关系的既有缺陷，本次一并闭�
 | v1.3.0 | 2026-10-17 | OpenBase 架构组 | R4 实施（测试基线隔离，OpenRAG 1.9.5，28 passed）与 R3 实施（`verify_dps_code_map.py` 三项校验，PASS/FAIL 双向实测）；状态转为 R1~R4 全部完成 |
 | v1.4.0 | 2026-10-17 | OpenBase 架构组 | Q1 方案 A 三仓落地：OpenBase 装配 `X-Subject-ID`、OpenLLM 透传、DPS 主体解析优先；端到端审计证据 `external_subject_id=tenant-1_1`；修正运行态 `.venv` 陈旧包快照的路径顺序问题 |
 | v1.5.0 | 2026-10-17 | OpenBase 架构组 | 衍生缺陷闭环：`/openllm/v1/models` JWT 通道 `api_key=None` 500 修复（OpenLLM 2.17.14，49 + 27 例回归通过） |
+| v1.6.0 | 2026-10-18 | OpenBase 架构组 | Q5/Q6/Q7 裁定并落地（生产启动门禁、受信头集合、username 回退退役时限）；G3/G5/G6 真实运行态闭环、G4 机器面闭环（T4-2 人工双签待窗口）；HTTP 回写端点补齐身份参数（OpenLLM 2.17.15，DPS 2.12.5） |

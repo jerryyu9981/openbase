@@ -225,12 +225,14 @@ class Settings(BaseSettings):
     # 运行环境：development | production（production 强制强 JWT 密钥，弱值启动即拒绝）
     env: str = "development"
 
-    # ---- 登录主体租户策略（R1，2026-10-17） ----
+    # ---- 登录主体租户策略（R1，2026-10-17；Q5 裁定 2026-10-17） ----
     # 背景：users.tenant_id 为空时 JWT 不带 org_id → llm-proxy 出站缺 X-Tenant-ID
     # → 下游按保留码 default 处理 → 跨域 404/403。
     # default_tenant_code：未绑定租户时的显式兜底（空 = 不兜底），命中即留痕 WARN。
     # require_tenant_on_login：生产（env=production）下未绑定租户一律拒签（fail-closed）；
     #   非生产仅留痕，保证联调可用。
+    # **Q5 裁定（方案：生产强制）**：生产必须 require=true 且 default_tenant_code 为空，
+    #   由 `validate_production_login_tenant_policy` 在应用装配期做启动门禁。
     default_tenant_code: str = ""
     require_tenant_on_login: bool = False
 
@@ -811,6 +813,35 @@ class Settings(BaseSettings):
 
 
 _settings: Settings | None = None
+
+
+def validate_production_login_tenant_policy(settings: Settings) -> None:
+    """Q5（2026-10-17 裁定）：生产强制登录租户绑定（fail-closed 启动门禁）.
+
+    生产环境必须同时满足：
+
+    1. ``require_tenant_on_login=True`` —— 未绑定租户的登录一律拒签；
+    2. ``default_tenant_code`` 为空 —— 显式兜底会把未绑定主体静默迁入默认租户，
+       使第 1 条失效。
+
+    任一不满足 → 拒绝启动（照 ``_validate_production_token_version_enforcement``
+    的 fail-fast 风格）。非生产环境不做限制（联调可用）。
+
+    Raises:
+        RuntimeError: production 且未启用强制绑定 / 配置了显式兜底租户。
+    """
+    if str(settings.env or "").lower() != "production":
+        return
+    if not settings.require_tenant_on_login:
+        raise RuntimeError(
+            "生产环境必须启用 OPENBASE_REQUIRE_TENANT_ON_LOGIN=true（登录租户绑定强校验），"
+            "否则拒绝启动（fail-closed）；非生产环境可维持默认关闭"
+        )
+    if (settings.default_tenant_code or "").strip():
+        raise RuntimeError(
+            "生产环境禁止配置 OPENBASE_DEFAULT_TENANT_CODE（显式兜底会掩盖未绑定主体，"
+            "破坏 fail-closed）；请移除该配置并完成用户租户绑定"
+        )
 
 
 def get_settings() -> Settings:

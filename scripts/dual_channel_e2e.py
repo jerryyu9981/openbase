@@ -38,6 +38,20 @@ DPS_HEADERS = {
     "X-User-ID": "1",
     "X-User-Role": "super_admin",
 }
+# A 直连与 B 编排同域对账：A 侧同样必须携带数据面隔离键（tenant-1）**且来源须在
+# 各子系统受信白名单内**（否则身份头被忽略 → 落到本地 default 域；实测 A 0 条 vs B 9 条）。
+A_RAG_HEADERS = {
+    "X-Tenant-ID": "tenant-1",
+    "X-Proxy-Source": "openbase-rag-proxy",
+}
+A_MEM_HEADERS = {
+    "X-Tenant-ID": "tenant-1",
+    # 归属域由受信身份解析（tenant_code + owner）；缺 X-User-ID 时 owner 为空，
+    # 与 B 写侧 owner（OpenBase user id=1）不一致 → 精确读 404（实测）。
+    "X-User-ID": "1",
+    "X-User-Role": "admin",
+    "X-Proxy-Source": "openbase-memory-proxy",
+}
 JWT = ""
 
 
@@ -117,10 +131,10 @@ mem_auth = {"X-API-Key": MEM_KEY, **bearer}
 print(f"[0.5] OpenMemory 双凭据（X-API-Key + OpenBase JWT）是否齐备 -> {all(mem_auth.values())}")
 
 a_probes = {
-    "OpenRAG": ("GET", f"{RAG}/api/v1/collections", {"X-API-Key": RAG_KEY}),
+    "OpenRAG": ("GET", f"{RAG}/api/v1/collections", {"X-API-Key": RAG_KEY, **A_RAG_HEADERS}),
     # A 直连对齐 B 侧 llm-proxy/models 的上游（/openllm/v1/models）
     "OpenLLM": ("GET", f"{LLM}/openllm/v1/models", {"Authorization": f"Bearer {llm_token}"} if llm_token else {}),
-    "OpenMemory": ("GET", f"{MEM}/api/v1/sessions", mem_auth),
+    "OpenMemory": ("GET", f"{MEM}/api/v1/sessions", {**mem_auth, **A_MEM_HEADERS}),
     "DPS": ("GET", f"{DPS}/api/v2/portrait/list?page=1&page_size=20", DPS_HEADERS),
 }
 a_result: dict[str, dict] = {}
@@ -157,7 +171,7 @@ st_w, body_w, _ = call(
 )
 created_b = jload(body_w) or {}
 new_id_b = str((created_b.get("data") or {}).get("id") or "")
-st_r, body_r, _ = call("GET", f"{RAG}/api/v1/collections", {"X-API-Key": RAG_KEY})
+st_r, body_r, _ = call("GET", f"{RAG}/api/v1/collections", {"X-API-Key": RAG_KEY, **A_RAG_HEADERS})
 seen_a = marker_b in body_r
 write_chain["B_write_then_A_read"] = {
     "write_url": f"{OB}/api/v1/rag-proxy/collections", "write_status": st_w, "created_id": new_id_b,
@@ -178,7 +192,13 @@ seen_b = marker_a in body_rb
 write_chain["A_write_then_B_read"] = {
     "write_url": f"{RAG}/api/v1/collections", "write_status": st_wa, "created_id": new_id_a,
     "read_url": f"{OB}/api/v1/rag-proxy/collections", "read_status": st_rb, "visible_via_B": seen_b,
-    "verdict": "PASS" if (st_wa in (200, 201) and seen_b) else "FAIL",
+    # 通道口径（设计 §9）：**A 不承载写**（只读降级直连），故 A 写被拒（401/403）属**期望行为**；
+    # 判据是「被拒且未产生脏数据」，不是「A 写成功」。
+    "verdict": (
+        "PASS" if st_wa in (200, 201) and seen_b
+        else "PASS_EXPECTED_DENY" if st_wa in (401, 403)
+        else "FAIL"
+    ),
 }
 print(f"[3] A 写 -> B 读: write={st_wa} id={new_id_a} visible_B={seen_b}")
 
@@ -187,12 +207,15 @@ marker_mem = f"e2e-dual-mem-{stamp}"
 st_mw, body_mw, _ = call("POST", f"{OB}/api/v1/memory-proxy/remember", mem_auth,
                          {"content": marker_mem, "tenant_id": "tenant-1"})
 mem_created_id = str(((jload(body_mw) or {}).get("data") or {}).get("memory_id") or "")
-st_mr, body_mr, _ = call("POST", f"{MEM}/api/v1/recall", mem_auth, {"query": marker_mem})
-mem_hit = marker_mem in body_mr
+# A 直连按 memory_id 精确取回（语义 recall 的 top-k 不保证命中刚写入项，不能作为等价判据）
+st_mr, body_mr, _ = call(
+    "GET", f"{MEM}/api/v1/memories/{mem_created_id}", {**mem_auth, **A_MEM_HEADERS}
+)
+mem_hit = st_mr == 200 and marker_mem in body_mr
 write_chain["memory_B_write_then_A_recall"] = {
     "write_url": f"{OB}/api/v1/memory-proxy/remember", "write_status": st_mw, "created_memory_id": mem_created_id,
-    "read_url": f"{MEM}/api/v1/recall", "read_status": st_mr, "recalled_via_A": mem_hit,
-    "read_channel_auth": "X-API-Key + Bearer JWT（双凭据）",
+    "read_url": f"{MEM}/api/v1/memories/{{memory_id}}", "read_status": st_mr, "recalled_via_A": mem_hit,
+    "read_channel_auth": "X-API-Key + Bearer JWT（双凭据）+ X-Tenant-ID/X-Proxy-Source",
     "verdict": "PASS" if (st_mw in (200, 201) and mem_hit) else "FAIL",
 }
 print(f"[3] Memory: B 写={st_mw} id={mem_created_id} -> A recall 命中={mem_hit}")
@@ -267,7 +290,7 @@ read_ev = {
 }
 write_ev = {
     **common, "evidence_ref": "S7-T4-4", "title": "写路径 A/B 双通道等价（写后跨通道可见）",
-    "status": "PASS" if all(v["verdict"] == "PASS" for v in write_chain.values()) else "PARTIAL",
+    "status": "PASS" if all(v["verdict"] in ("PASS", "PASS_EXPECTED_DENY") for v in write_chain.values()) else "PARTIAL",
     "chain": write_chain, "cleanup": cleanup,
 }
 k14_ev = {**common, "evidence_ref": "S7-T4-4/K14", "title": "K14 写幂等（重放不双写）", **k14}

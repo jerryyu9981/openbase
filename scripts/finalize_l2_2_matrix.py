@@ -179,6 +179,38 @@ def _probe(base_url: str, timeout: float = 3.0) -> bool:
         return False
 
 
+def _load_l2_2_evidence() -> dict[str, Any]:
+    """加载 dual_channel_e2e.py 产出的真实运行态证据（缺失/不可解析如实登记）."""
+    directory = ROOT / "doc" / "test" / "evidence" / "s7" / "l2-2"
+    names = {
+        "read": "read-path-ab-equivalence.json",
+        "write": "write-path-equivalence.json",
+        "k14": "k14-idempotency.json",
+    }
+    loaded: dict[str, Any] = {}
+    for key, name in names.items():
+        path = directory / name
+        if not path.exists():
+            loaded[key] = {"loaded": False, "reason": f"证据缺失: {path.name}"}
+            continue
+        try:
+            loaded[key] = {"loaded": True, "payload": json.loads(path.read_text(encoding="utf-8-sig"))}
+        except (OSError, ValueError):
+            loaded[key] = {"loaded": False, "reason": f"证据解析失败: {path.name}"}
+    return loaded
+
+
+def _evidence_status(loaded: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    """按证据文件的 status/verdict 汇总（仅接受 PASS / PASS_EMPTY）."""
+    if not loaded.get("loaded"):
+        return "PENDING", loaded.get("reason", "证据缺失"), {}
+    payload = loaded.get("payload") or {}
+    status = str(payload.get("status") or "")
+    if status == "PASS":
+        return "PASS", "", {"status": status}
+    return "PENDING", f"证据结论非 PASS: status={status or '空'}", {"status": status}
+
+
 def _check_matrix_coverage(matrix: dict[str, Any]) -> dict[str, Any]:
     if not matrix["loaded"]:
         return {
@@ -213,40 +245,71 @@ def _check_k07_exempt(reconcile: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _check_read_path(base_url: str, enabled: bool) -> dict[str, Any]:
+def _check_read_path(base_url: str, enabled: bool, evidence: dict[str, Any]) -> dict[str, Any]:
+    status, reason, metrics = _evidence_status(evidence)
+    if status == "PASS":
+        return {
+            "id": "S7-T4-3",
+            "name": "读路径 B 主全绿 + A 备 covered（同读请求经 A/B 返回一致、四头一致）",
+            "execution_face": "B",
+            "status": "PASS",
+            "reason": "",
+            "metrics": metrics,
+            "evidence_ref": "doc/test/evidence/s7/l2-2/read-path-ab-equivalence.json",
+        }
     if enabled and _probe(base_url):
-        # 真实通道可达时走真实对账（联调窗口填断言；骨架不伪造 PASS 结论）
         return {
             "id": "S7-T4-3",
             "name": "读路径 B 主全绿 + A 备 covered（同读请求经 A/B 返回一致、四头一致）",
             "execution_face": "B",
             "status": "PENDING",
-            "reason": "受信通道可达，读路径 A/B 等价断言需真实四仓响应（联调窗口回填）",
+            "reason": f"受信通道可达，但缺少真实等价证据（{reason}）",
         }
     return {
         "id": "S7-T4-3",
         "name": "读路径 B 主全绿 + A 备 covered（同读请求经 A/B 返回一致、四头一致）",
         "execution_face": "B",
         "status": "PENDING",
-        "reason": "--check-read-ab 未开启或受信通道不可达（沙箱无四仓运行态）",
+        "reason": f"--check-read-ab 未开启/通道不可达，且缺少真实证据（{reason}）",
     }
 
 
-def _check_write_path(base_url: str, enabled: bool, k14: bool) -> dict[str, Any]:
+def _check_write_path(
+    base_url: str, enabled: bool, k14: bool, evidence: dict[str, Any]
+) -> dict[str, Any]:
+    write_status, write_reason, _ = _evidence_status(evidence.get("write") or {})
+    k14_payload = (evidence.get("k14") or {}).get("payload") or {}
+    k14_status = "PASS" if k14_payload.get("verdict") == "PASS" else "PENDING"
+    if write_status == "PASS" and k14_status == "PASS":
+        return {
+            "id": "S7-T4-4",
+            "name": "写路径 A/B 等价用例绿 + K14 幂等（重放不双写、DB 行数不变）",
+            "execution_face": "B",
+            "status": "PASS",
+            "reason": "",
+            "metrics": {
+                "write": write_status,
+                "k14": k14_status,
+                "distinct_rows_for_same_name": k14_payload.get("distinct_rows_for_same_name"),
+            },
+            "evidence_ref": (
+                "doc/test/evidence/s7/l2-2/write-path-equivalence.json + k14-idempotency.json"
+            ),
+        }
     if enabled and k14 and _probe(base_url):
         return {
             "id": "S7-T4-4",
             "name": "写路径 A/B 等价用例绿 + K14 幂等（重放不双写、DB 行数不变）",
             "execution_face": "B",
             "status": "PENDING",
-            "reason": "受信通道可达，写路径等价与 K14 幂等需真实 DB 行数对账（联调窗口回填）",
+            "reason": f"受信通道可达，但真实写/幂等证据未 PASS（write={write_reason}）",
         }
     return {
         "id": "S7-T4-4",
         "name": "写路径 A/B 等价用例绿 + K14 幂等（重放不双写、DB 行数不变）",
         "execution_face": "B",
         "status": "PENDING",
-        "reason": "--check-write-ab/--k14 未开启或受信通道不可达（沙箱无真实 PG/Redis）",
+        "reason": f"--check-write-ab/--k14 未开启或通道不可达，且证据未 PASS（{write_reason}）",
     }
 
 
@@ -263,11 +326,14 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     """构造 L2-2 终验证据（分项失败不伪造，如实登记；无真实环境一律 PENDING）."""
     matrix = _load_matrix(args.matrix)
     reconcile = _k07_exempt_reconcile()
+    evidence = _load_l2_2_evidence()
     checks = [
         _check_matrix_coverage(matrix),
         _check_k07_exempt(reconcile),
-        _check_read_path(args.base_url, args.check_read_ab),
-        _check_write_path(args.base_url, args.check_write_ab, args.k14),
+        _check_read_path(args.base_url, args.check_read_ab, evidence["read"]),
+        _check_write_path(
+            args.base_url, args.check_write_ab, args.k14, evidence
+        ),
     ]
     status = _overall_status(checks)
     exit_code = {"PASS": EXIT_PASS, "FAIL": EXIT_FAIL, "PENDING": EXIT_PENDING}[status]
@@ -286,7 +352,10 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         "commit": head[:7],
         "openbase_commit": head,
         "reason": (
-            "沙箱无真实 PG/Redis/IdP/四仓运行态：矩阵终验属 B 面 → PENDING；"
+            "真实运行态证据已纳入判据（read/write/K14）：S7-T4-1/3/4 可 PASS；"
+            "S7-T4-2 的 A 直连豁免行**人工双签/审批**仍待联调窗口，故整体保持 PENDING"
+            if any(item["id"] != "S7-T4-2" and item["status"] == "PASS" for item in checks)
+            else "沙箱无真实 PG/Redis/IdP/四仓运行态：矩阵终验属 B 面 → PENDING；"
             "真实执行需联调窗口（S4-T8 matrix_rows 基座 + 受信通道）"
         ),
         "matrix_plan": {

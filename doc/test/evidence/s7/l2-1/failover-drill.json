@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "tool": "drill_l2_1_failover.ps1",
+  "tool": "drill_l2_1_failover.py",
   "task": "S7-T3",
   "evidence_ref": "S7-T3-1~4",
   "title": "S7-T3 L2-1 主备切换演练",
   "mode": "run",
   "execution_face": "B",
-  "generated_at": "2026-09-13T18:21:11+0800",
-  "commit": "ebbbed0e04c6dacdb361b31c61e7d4b26c59acc7",
+  "generated_at": "2026-10-17T23:30:54+0800",
+  "commit": "5e2dfc5c6b18046d008ebb5b51fec442e9a5cd25",
   "openllm_backend": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
   "status": "PASS",
   "exit_code": 0,
@@ -116,6 +116,9 @@
         "single_primary": true,
         "state": "b-primary",
         "healthy_b": true,
+        "llm_unreachable": false,
+        "llm_consecutive_failures": 0,
+        "fallback_action": "none",
         "drill_window_seconds": 300.0,
         "auto_failover_enabled": false
       }
