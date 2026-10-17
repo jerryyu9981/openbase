@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.2.0 |
-| 文档状态 | [Approved]（Q1 已裁定方案 A；R1/R2 已实施并验证） |
+| 文档版本 | v1.3.0 |
+| 文档状态 | [Approved]（Q1 已裁定方案 A；R1~R4 全部实施并验证） |
 | 适用环境 | Dev / Test；生产需另行编排窗口 |
 | 编制日期 | 2026-10-17 |
 | 编制人 | OpenBase 架构组 |
@@ -402,6 +402,25 @@ Q1 裁定（主体键格式）
 | X-Subject-ID 传输 | 本次采用**隐式归约**（OpenLLM 本地拼 `{tenant}_{user_id}`），尚未在 OpenBase 装配该头；`RequestContext.subject_id` 与 `_resolve_real_person_id` 的首优先级已预留，协议头落地后无需再改画像侧 |
 | 回写 404 语义 | WritebackQueue 按「返回 dict 即成功」处理，`skipped` 结果不再触发重试（无需改队列） |
 
+### 11.6 R4 实施记录（2026-10-17）
+
+| 项 | 内容 |
+| --- | --- |
+| 基线隔离 | `tests/conftest.py` 显式置 `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES="[]"`（空串会触发 pydantic-settings 的 JSON 解析错误，已实测） |
+| 基线断言 | 新增 `tests/unit/test_r4_identity_baseline.py`：默认构造 `trust_mode=="m1"`；显式传参仍为 `m2` |
+| 验证 | `test_r4_identity_baseline + test_s3_t9_role_mapping + test_a1_readonly_semantic` → **28 passed** |
+| 版本 | OpenRAG 1.9.4 → **1.9.5** |
+
+### 11.7 R3 实施记录（2026-10-17）
+
+| 项 | 内容 |
+| --- | --- |
+| 校验脚本 | 新增 `scripts/verify_dps_code_map.py`：①结构（登记式解析/必填/冲突）；②一致性（登记式期望 ⊆ OpenLLM 两表，允许额外 UUID 别名）；③存在性（共享 PG 中 org/tenant 存在且 active） |
+| 严格模式 | `--strict`：不可执行项（缺一致性输入/缺 DSN）计为失败；`--skip-db` 显式跳过存在性 |
+| 实测 PASS | `[1/3] OK（2 条登记）` → `[2/3] OK（期望全部被覆盖）` → `[3/3] OK（均存在且 active）` → `RESULT: PASS`（exit 0） |
+| 实测 FAIL | 缺 `tenant-2` 键 → 精确指出 `tenant-2→期望 …，实际 <缺失>` / `实际 WRONG-VALUE`；非法 JSON → `[1/3] FAIL`；均 exit 2 |
+| 发布检查单 | 已在《主备双通道生产上线必办事项清单 v1.1.0》「G1/G2 发布前机械校验」块增补 4 项校验 |
+
 ---
 
 ## 12. 修订历史
@@ -411,3 +430,4 @@ Q1 裁定（主体键格式）
 | v1.0.0 | 2026-10-17 | OpenBase 架构组 | 首版：基于 A1/A2/B1/B2 实施后的实测证据（R1~R4）编制；Q1 给出四方案对比与推荐（A：`{tenant_code}_{user_id}` + `X-Subject-ID`） |
 | v1.1.0 | 2026-10-17 | OpenBase 架构组 | Q1 裁定为方案 A（状态转 [Approved]）；R1 实施完成并验证（JWT `org_id=tenant-1`、三路 `degraded=[]`）；补 §11 实施记录与后续动作 |
 | v1.2.0 | 2026-10-17 | OpenBase 架构组 | R2 实施完成：person_id 按 Q1 键归约、DPS 画像占位幂等播种、404 收敛为 skipped；端到端 `calculate→GET→PUT` 全 200、画像段 90 tokens；OpenLLM 2.17.12 |
+| v1.3.0 | 2026-10-17 | OpenBase 架构组 | R4 实施（测试基线隔离，OpenRAG 1.9.5，28 passed）与 R3 实施（`verify_dps_code_map.py` 三项校验，PASS/FAIL 双向实测）；状态转为 R1~R4 全部完成 |

@@ -8,7 +8,7 @@
 | 状态 | **[Draft]** |
 | 编制日期 | 2026-10-16 |
 | 编制人 | AA/PM-OpenBase-Dev |
-| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v1.0.0》（OB-GOLIVE-CHANNEL-AB-v1.0.0） |
+| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v1.1.0》（OB-GOLIVE-CHANNEL-AB-v1.1.0） |
 | 处置日期 | 2026-10-16 |
 | 关联交付 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》（S2）；OpenLLM `.env.example` 生产 profile 补齐（`9948d22`） |
 
