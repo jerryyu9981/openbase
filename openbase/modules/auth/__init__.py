@@ -221,6 +221,46 @@ class UserService:
 
 # ---- 路由 ----
 
+logger = logging.getLogger(__name__)
+
+
+def apply_login_tenant_policy(
+    tenant_code: str | None,
+    *,
+    default_tenant_code: str = "",
+    require_tenant_on_login: bool = False,
+    is_production: bool = False,
+) -> tuple[str | None, str | None]:
+    """解析登录生效租户与兜底原因（R1）.
+
+    顺序：已绑定 → 原值；未绑定 → 显式默认租户兜底；否则按环境策略处理。
+
+    Args:
+        tenant_code: 由 users.tenant_id 解析出的租户 code（可能为空）。
+        default_tenant_code: 未绑定时的显式兜底租户码（空 = 不兜底）。
+        require_tenant_on_login: 生产是否强制要求租户声明。
+        is_production: 当前是否生产环境。
+
+    Returns:
+        (effective_tenant_code, fallback_reason)；
+        fallback_reason ∈ {None, "default_config", "unbound"}。
+
+    Raises:
+        BaseError: 生产 + 强制开关开启且无任何租户来源（AUTH_FORBIDDEN，
+            detail.reason=tenant_unbound）。
+    """
+    if tenant_code:
+        return tenant_code, None
+    if default_tenant_code:
+        return default_tenant_code, "default_config"
+    if require_tenant_on_login and is_production:
+        raise BaseError(
+            ErrorCode.AUTH_FORBIDDEN,
+            "tenant identity required for login",
+            detail={"reason": "tenant_unbound"},
+        )
+    return None, "unbound"
+
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
@@ -267,6 +307,27 @@ async def login(
     tenant_code = user.get("tenant_code")
     if not tenant_code:
         tenant_code = await resolve_tenant_code(tenant_value, session)
+    # R1：登录期租户策略（已绑定优先；未绑定按显式兜底/环境门禁处理）
+    tenant_code, tenant_fallback = apply_login_tenant_policy(
+        tenant_code,
+        default_tenant_code=settings.default_tenant_code,
+        require_tenant_on_login=settings.require_tenant_on_login,
+        is_production=str(settings.env).lower() == "production",
+    )
+    if tenant_fallback == "default_config":
+        logger.warning(
+            "login tenant fallback applied",
+            extra={
+                "username": user.get("username"),
+                "tenant_code": tenant_code,
+                "reason": tenant_fallback,
+            },
+        )
+    elif tenant_fallback == "unbound":
+        logger.warning(
+            "login without tenant binding",
+            extra={"username": user.get("username"), "env": settings.env},
+        )
     subject_type = user.get("subject_type") or SUBJECT_TYPE_USER
     token_version = user.get("token_version")
     if token_version is None:

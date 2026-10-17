@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.0.0 |
-| 文档状态 | [Draft]（Q1 为待裁定项） |
+| 文档版本 | v1.1.0 |
+| 文档状态 | [Approved]（Q1 已裁定方案 A；R1 已实施并验证） |
 | 适用环境 | Dev / Test；生产需另行编排窗口 |
 | 编制日期 | 2026-10-17 |
 | 编制人 | OpenBase 架构组 |
@@ -265,7 +265,12 @@ Q1 裁定（主体键格式）
 | C | 纯 `user_id`（`1`） | 最简 | 无租户语义；与 DPS 现有数字 `person_id`（49/50…）冲突 | 高风险 |
 | D | 直接覆盖 `X-User-ID` 为复合键 | 不新增头 | OpenMemory 记忆按 user_id 归属 → 历史记忆不可见，需数据迁移 | 高 |
 
-### 7.2 推荐：方案 A
+### 7.2 推荐：方案 A（**已裁定，2026-10-17**）
+
+> **裁定结果**：采用方案 A —— 外部主体键 = `{tenant_code}_{user_id}`，经专用头
+> `X-Subject-ID` 传输；`X-User-ID` 保持 username 语义不变。
+> 后续实现（R2 及三仓协议头）按此执行；`X-Subject-ID` 未提供时保留 username 回退（B2）
+> 作为过渡，退役时限见 Q7。
 
 **裁定建议：外部主体键 = `{tenant_code}_{user_id}`，经 `X-Subject-ID` 传输；`X-User-ID` 保持 username 语义不变。**
 
@@ -331,8 +336,47 @@ Q1 裁定（主体键格式）
 
 ---
 
-## 11. 修订历史
+## 11. R1 实施记录（2026-10-17）
+
+### 11.1 代码与数据
+
+| 项 | 内容 |
+| --- | --- |
+| 配置项 | `openbase/settings.py` 新增 `default_tenant_code`（默认空）、`require_tenant_on_login`（默认 False） |
+| 策略函数 | `openbase/modules/auth/__init__.py::apply_login_tenant_policy`：已绑定优先 → 显式兜底 → 生产 fail-closed / 非生产留痕 |
+| 登录接入 | 在 `resolve_tenant_code` 之后调用策略并输出 WARN（`login tenant fallback applied` / `login without tenant binding`） |
+| 数据修复 | `UPDATE openbase.users SET tenant_id=<tenant-1.id> WHERE username='admin' AND tenant_id IS NULL` → 影响 1 行（admin 绑定 tenant-1） |
+| 测试 | `tests/test_r1_login_tenant_policy.py`（5 例） |
+
+### 11.2 验证结果
+
+| 编号 | 结果 |
+| --- | --- |
+| R1-T1 | JWT payload：`"tenant_code":"tenant-1","org_id":"tenant-1"` ✅ |
+| R1-T2 | 经 OpenBase 显式 `memory+rag+llm`：**`executed=rag,memory,llm`、`degraded=[]`、`rag_source=external`** ✅ |
+| 单测 | 5 passed |
+| 回归 | 鉴权/租户相关用例：首轮 3 例 `connection was closed`（共享 PG 瞬态），隔离复跑 **12 passed** |
+| 静态检查 | `ruff check` 三个改动文件：All checks passed |
+| 全栈 | 七服务均 HTTP 200 |
+
+### 11.3 实施期环境事件（非代码缺陷）
+
+验证过程中 OpenLLM（8001）、OpenMemory（8020）、前端（5173）进程先后掉线，均以编排脚本重启后恢复（健康耗时 19s / 24s / 17s）。未发现与 R1 改动相关的崩溃日志。
+
+### 11.4 后续动作
+
+| 编号 | 动作 | 依赖 |
+| --- | --- | --- |
+| R2 | 按 Q1 方案 A 键格式播种 `platform.profile`（`person_id={tenant_code}_{user_id}`） | Q1 已裁定，可执行 |
+| Q1 实现 | 三仓新增 `X-Subject-ID`（装配/透传/解析） | 需协议头规范升版 |
+| R3 | 配置下发 + `verify_dps_code_map.py` | 与 R1/R2 配置最终形态对齐 |
+| R4 | OpenRAG 测试基线隔离 | 无依赖 |
+
+---
+
+## 12. 修订历史
 
 | 版本 | 日期 | 修订人 | 说明 |
 | --- | --- | --- | --- |
 | v1.0.0 | 2026-10-17 | OpenBase 架构组 | 首版：基于 A1/A2/B1/B2 实施后的实测证据（R1~R4）编制；Q1 给出四方案对比与推荐（A：`{tenant_code}_{user_id}` + `X-Subject-ID`） |
+| v1.1.0 | 2026-10-17 | OpenBase 架构组 | Q1 裁定为方案 A（状态转 [Approved]）；R1 实施完成并验证（JWT `org_id=tenant-1`、三路 `degraded=[]`）；补 §11 实施记录与后续动作 |

@@ -225,6 +225,15 @@ class Settings(BaseSettings):
     # 运行环境：development | production（production 强制强 JWT 密钥，弱值启动即拒绝）
     env: str = "development"
 
+    # ---- 登录主体租户策略（R1，2026-10-17） ----
+    # 背景：users.tenant_id 为空时 JWT 不带 org_id → llm-proxy 出站缺 X-Tenant-ID
+    # → 下游按保留码 default 处理 → 跨域 404/403。
+    # default_tenant_code：未绑定租户时的显式兜底（空 = 不兜底），命中即留痕 WARN。
+    # require_tenant_on_login：生产（env=production）下未绑定租户一律拒签（fail-closed）；
+    #   非生产仅留痕，保证联调可用。
+    default_tenant_code: str = ""
+    require_tenant_on_login: bool = False
+
     # ---- 数据库 ----
     db_url: str = _resolve_db_url()
     db_echo: bool = False
