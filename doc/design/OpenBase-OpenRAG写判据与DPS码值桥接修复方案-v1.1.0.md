@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.0.0 |
-| 文档状态 | [Draft] |
+| 文档版本 | v1.1.0 |
+| 文档状态 | [Implemented] |
 | 适用环境 | Dev / Test（联调态）；生产需另行编排窗口 |
 | 编制日期 | 2026-10-17 |
 | 编制人 | OpenBase 架构组 |
@@ -108,7 +108,8 @@ m2_readonly_post_paths: list[str] = Field(
 )
 ```
 
-环境变量：`OPENRAG_M2_READONLY_POST_PATHS`（JSON 数组，与其他 `list[str]` 字段一致）。
+环境变量：`OPENRAG_IDENTITY_M2_READONLY_POST_PATHS`（JSON 数组；`IdentityTrustConfig`
+的 `env_prefix=OPENRAG_IDENTITY_`，故与字段名共同决定变量名）。
 
 ### 4.3 判定改造（`role_gate.py`）
 
@@ -174,17 +175,25 @@ OpenBase 侧：
 - 以登记式 `dps_code_map` 为**唯一入口**（旧 `dps_org_map/dps_tenant_map` 仅兼容读取）；
 - 登记内容需覆盖三种入站形态：`tenant-1`、`org-1`、OpenBase 内部 UUID。
 
-示意（`OPENBASE_DPS_CODE_MAP`）：
+示意（`OPENBASE_DPS_CODE_MAP`，字段名与 `dps_code_map.py` 实现一致）：
 
 ```json
 {
   "schema_version": 1,
+  "source_of_truth": "openbase.tenants.code",
   "entries": [
-    {"tenant_code": "tenant-1", "org_code": "org-1", "dps_org_code": "dps-org-001", "dps_tenant_code": "dps-tenant-001"},
-    {"tenant_code": "tenant-2", "org_code": "org-1", "dps_org_code": "dps-org-001", "dps_tenant_code": "dps-tenant-002"}
+    {"tenant_code": "tenant-1",
+     "dps_org_id": "10000000-0000-0000-0000-000000000001",
+     "dps_tenant_id": "20000000-0000-0000-0000-000000000001"}
   ]
 }
 ```
+
+> **UUID 别名（实施期补强）**：实测 OpenBase 出站 `X-Org-ID` 可能携带内部 org UUID
+> （`11111111-1111-1111-1111-111111111111`），而登记式基线按 `tenant_code` 建键，
+> 覆盖不到 UUID 形态。故 UUID 别名经兼容表补登：
+> `OPENBASE_DPS_ORG_MAP` / `OPENBASE_DPS_TENANT_MAP`（`build_compat_value_maps`
+> 先合并旧表、再用基线覆盖 tenant_code 键，二者键不冲突）。
 
 OpenLLM 侧：`DPS_ORG_CODE_MAP / DPS_TENANT_CODE_MAP` 由同一份登记表**生成**（脚本产出，禁止手抄），并在启动期做一致性校验（见 B3）。
 
@@ -307,8 +316,58 @@ B1（码值同源 + 生成脚本）
 
 ---
 
-## 10. 修订历史
+## 10. 实施记录（2026-10-17）
+
+### 10.1 代码落地
+
+| 编号 | 仓库 | 提交 | 关键改动 |
+| --- | --- | --- | --- |
+| B2 | DPS | `6e813a0` | `config.py` 新增 `subject_username_resolve_enabled`（默认 True）；`permission_engine.get_user_permissions` 增加「直查 miss → users.username 解析 → 重查」回退；新增 4 例测试 |
+| A1 | OpenRAG | `b6752b0` | `IdentityTrustConfig.m2_readonly_post_paths`（默认 3 条后缀模式）；`role_gate.is_readonly_semantic` + 匿名/受信两分支接入；新增 9 例测试；版本 1.9.3 → 1.9.4 |
+| A2+B3 | OpenLLM | `933311c` | `apply_dps_code_map` miss 告警（`dps_code_map_miss`）；`startup_alignment.detect_dps_code_map_alerts` 接入启动自检；新增 8 例测试；版本 2.17.10 → 2.17.11 |
+| B1 | OpenBase | 见本次提交 | 新增 `scripts/gen_dps_code_map.py`（登记式基线 → OpenLLM 两表）；本地 `.env.shared-infra` 补登记（不入库） |
+
+### 10.2 测试结果
+
+| 仓库 | 用例范围 | 结果 |
+| --- | --- | --- |
+| DPS | `test_b2_subject_username_resolve.py` | **4 passed** |
+| OpenRAG | `test_a1_readonly_semantic.py` | **9 passed** |
+| OpenRAG | 既有身份中间件回归（role_mapping / rbac_closure / m1_m2_modes / permission_codes） | **53 passed / 1 failed**（失败为既有环境依赖：本地 `.env` 置 `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES`，使 M1 用例进入 M2 分支；与本改动无关） |
+| OpenLLM | `test_a2_b3_dps_code_map.py` | **8 passed** |
+
+### 10.3 端到端实测
+
+| 编号 | 场景 | 结果 |
+| --- | --- | --- |
+| E-A1 | 直连 OpenLLM（完整四头，`X-Tenant-ID=tenant-1`）显式 `rag+llm` | **200，`executed=rag,llm`，`degraded=`（空），`rag_source=external`** |
+| E-B1 | 出站 org 携带内部 UUID | miss 告警消失；DPS 返回由「组织不存在」变为 **404 人员不存在**（租户/码值校验已通过） |
+| E-B2 | `X-User-ID=admin`（username 形态） | 权限判定通过（不再 403「无权限执行 create」），进入业务逻辑 |
+| E-A2 | 人为制造映射 miss | 日志输出 `dps_code_map_miss target=org value=11111111-... mapped_keys=[...]`，原值保留 |
+
+### 10.4 与方案的偏差与补强
+
+| 项 | 方案原文 | 实际实现 | 原因 |
+| --- | --- | --- | --- |
+| B2 | 数据播种外部主体绑定 | **权限引擎 username 回退**（默认开、可关）+ 保留播种建议 | 播种需确定主体键格式（Q1 未裁定）；回退不新增键空间、可即时回滚，且实测 `users.username` 已存在 |
+| B1 | entries 用 `dps_org_code/dps_tenant_code` | 实际字段为 `dps_org_id/dps_tenant_id`（UUID） | 与 `dps_code_map.py` 既有实现对齐 |
+| B1 | 仅登记 tenant_code 键 | 追加 UUID 别名映射 | 实测出站 `X-Org-ID` 携带内部 org UUID，纯 tenant_code 键覆盖不到 |
+| A1 | 环境变量 `OPENRAG_M2_READONLY_POST_PATHS` | `OPENRAG_IDENTITY_M2_READONLY_POST_PATHS` | `IdentityTrustConfig` 的 `env_prefix` 约束 |
+
+### 10.5 未闭环项（不属于本次两处修复范围）
+
+| 编号 | 事项 | 说明 |
+| --- | --- | --- |
+| R1 | 经 OpenBase 的 B 通道 rag 仍 404 | 登录主体（admin）无租户声明，OpenLLM 按保留码 `default` 出站 → OpenRAG 集合在 `tenant-1` 域 → 域不匹配。需为账号绑定租户（数据层），属 Q1/主体完整性范畴 |
+| R2 | DPS 无 `person=admin` 画像 | 回写 `PUT /api/v2/portrait/admin` 返回 404「人员不存在」，属业务数据缺失，链路本身已通 |
+| R3 | 生产配置下发 | `.env.shared-infra` 不入库，需运维按本方案 §5.1 同步 `OPENBASE_DPS_CODE_MAP` / UUID 别名表 / 两仓互译表 |
+| R4 | OpenRAG 本地回归 1 例失败 | 既有 `.env` 环境依赖，建议测试基线显式隔离（可另立缺陷） |
+
+---
+
+## 11. 修订历史
 
 | 版本 | 日期 | 修订人 | 说明 |
 | --- | --- | --- | --- |
 | v1.0.0 | 2026-10-17 | OpenBase 架构组 | 首版：基于 2026-10-17 全栈实跑证据（E1~E3、D1~D4）编制，覆盖 A1/A2/B1/B2/B3 五项改造与验收判据 |
+| v1.1.0 | 2026-10-17 | OpenBase 架构组 | 状态转 [Implemented]：补 §10 实施记录（三仓提交、用例结果、端到端实测、偏差与补强、四项未闭环）；修正 §4.2 环境变量名与 §5.1 登记字段名；新增 UUID 别名登记说明 |
