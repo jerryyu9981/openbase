@@ -2,8 +2,8 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | v1.4.0 |
-| 文档状态 | [Approved]（Q1 方案 A 三仓落地并端到端验证；R1~R4 全部完成） |
+| 文档版本 | v1.5.0 |
+| 文档状态 | [Approved]（Q1 方案 A 三仓落地并端到端验证；R1~R4 全部完成；衍生缺陷已闭环） |
 | 适用环境 | Dev / Test；生产需另行编排窗口 |
 | 编制日期 | 2026-10-17 |
 | 编制人 | OpenBase 架构组 |
@@ -457,6 +457,18 @@ Q1 裁定（主体键格式）
 | --- | --- |
 | 运行态版本漂移 | `run_openbase.py` 原将 `.venv` 置于源码根之前，而 `.venv` 内含**陈旧 `openbase` 包快照** → 运行态静默加载旧实现（首轮 E2E 审计 `external_subject_id=null` 即由此导致）。已改为源码根优先；重启后审计出现 `tenant-1_1`，证明三仓链路贯通 |
 
+### 11.9 衍生缺陷修复（2026-10-17）
+
+Q1 回归期间暴露、与 Q1 无因果关系的既有缺陷，本次一并闭环：
+
+| 项 | 内容 |
+| --- | --- |
+| 缺陷 | `GET /openllm/v1/models`（`gateway_models` 复用 `chat.list_models`）在 **JWT 通道**（`GatewayIdentity.api_key=None`）下无条件读 `api_key.organization_id` → `AttributeError` → 500 |
+| 根因 | `4f11c48`（v2.17.1 模型白名单）在 `list_models` 中加入 `resolve_allowed_models(...api_key...)`，未覆盖 JWT 复用路径 |
+| 修复 | `app/api/chat.py::list_models`：API Key 通道取 key 归属 org/team；JWT 通道取 `user.organization_id`（无 team 语义），未配置约束时维持全量放行 |
+| 验证 | `test_openllm_gateway.py`（含原失败用例 `test_models_contract_with_jwt`）+ `test_chat_api.py` **49 passed**；模型白名单与 D16~D20 隔离走查 **27 passed** |
+| 版本 | OpenLLM 2.17.13 → **2.17.14** |
+
 ---
 
 ## 12. 修订历史
@@ -468,3 +480,4 @@ Q1 裁定（主体键格式）
 | v1.2.0 | 2026-10-17 | OpenBase 架构组 | R2 实施完成：person_id 按 Q1 键归约、DPS 画像占位幂等播种、404 收敛为 skipped；端到端 `calculate→GET→PUT` 全 200、画像段 90 tokens；OpenLLM 2.17.12 |
 | v1.3.0 | 2026-10-17 | OpenBase 架构组 | R4 实施（测试基线隔离，OpenRAG 1.9.5，28 passed）与 R3 实施（`verify_dps_code_map.py` 三项校验，PASS/FAIL 双向实测）；状态转为 R1~R4 全部完成 |
 | v1.4.0 | 2026-10-17 | OpenBase 架构组 | Q1 方案 A 三仓落地：OpenBase 装配 `X-Subject-ID`、OpenLLM 透传、DPS 主体解析优先；端到端审计证据 `external_subject_id=tenant-1_1`；修正运行态 `.venv` 陈旧包快照的路径顺序问题 |
+| v1.5.0 | 2026-10-17 | OpenBase 架构组 | 衍生缺陷闭环：`/openllm/v1/models` JWT 通道 `api_key=None` 500 修复（OpenLLM 2.17.14，49 + 27 例回归通过） |
