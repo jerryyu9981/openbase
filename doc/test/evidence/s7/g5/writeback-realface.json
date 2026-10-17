@@ -3,9 +3,9 @@
   "tool": "writeback_realface.py",
   "task": "S7-G5/G6",
   "execution_face": "B",
-  "generated_at": "2026-10-18T00:09:27+08:00",
-  "session_id": "g5-writeback-20261018000908",
-  "kb_id": "62c4370a-384f-45f7-9a23-685eef731c15",
+  "generated_at": "2026-10-18T02:32:32+08:00",
+  "session_id": "g5-writeback-20261018023228",
+  "kb_id": "da895245-4c1a-45a5-99b9-c4751cde0161",
   "status": "PASS",
   "checks": {
     "prepare_auth": {
@@ -14,8 +14,8 @@
     },
     "prepare_kb": {
       "status": 200,
-      "kb_id": "62c4370a-384f-45f7-9a23-685eef731c15",
-      "body_head": "{\"code\":0,\"message\":\"知识库创建成功\",\"data\":{\"id\":\"62c4370a-384f-45f7-9a23-685eef731c15\",\"name\":\"g5-writeback-20261018000908\",\"description\":\"G5 writeback realface probe\",\"embedding_model\":\"BAAI/bge-m3\",\"embe"
+      "kb_id": "da895245-4c1a-45a5-99b9-c4751cde0161",
+      "body_head": "{\"code\":0,\"message\":\"知识库创建成功\",\"data\":{\"id\":\"da895245-4c1a-45a5-99b9-c4751cde0161\",\"name\":\"g5-writeback-20261018023228\",\"description\":\"G5 writeback realface probe\",\"embedding_model\":\"BAAI/bge-m3\",\"embe"
     },
     "sync_three_paths": {
       "status": 200,
@@ -30,7 +30,7 @@
         "rag": false,
         "profile": false
       },
-      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-wb-a14cf21fc6bd444c9fe50e8e\",\"accepted\":{\"memory\":true,\"rag\":true,\"profile\":true},\"mode\":\"mixed\",\"duplicated\":{\"memory\":false,\"rag\":false,\"profile\":false}}}",
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-wb-6b39e47d3cb84512bd803b00\",\"accepted\":{\"memory\":true,\"rag\":true,\"profile\":true},\"mode\":\"mixed\",\"duplicated\":{\"memory\":false,\"rag\":false,\"profile\":false}}}",
       "verdict": "PASS"
     },
     "memory_landing": {
@@ -38,14 +38,14 @@
       "status": 200,
       "marker_hit": true,
       "observed_domain": "default（适配器共享头未透传 per-request tenant；已登记观测项）",
-      "body_head": "{\"results\":[{\"memory_id\":\"4914bc3a-4835-4fbd-aaa5-3432cfdb23d1\",\"content\":\"抱歉，您的问题显示为乱码：`?????????:?????`，我无法判断您具体想咨询什么。\\n\\n当前也没有可用的用户画像、记忆或知识库上下文可供依据，因此我不能据此编造回答。请您重新输入清晰的问题，或补充相关背景/资料；我收到后会基于已提供的信息作",
+      "body_head": "{\"results\":[{\"memory_id\":\"d4022586-d635-4026-884e-77fa0c5b71ca\",\"content\":\"这是用于验证三路回写落地的探针内容 g5-writeback-20261018023050。\",\"score\":0.12087391,\"memory_type\":\"persistent\",\"metadata\":{\"agent_id\":null,\"cr",
       "verdict": "PASS"
     },
     "rag_landing": {
       "read_url": "http://127.0.0.1:8010/api/v1/collections/{kb_id}/documents",
       "status": 200,
       "marker_hit": true,
-      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"cf4d6991-4ab4-4b19-8a68-94e65c0bb54d\",\"collection_id\":\"62c4370a-384f-45f7-9a23-685eef731c15\",\"filename\":\"text-2ed949c12c9a.txt\",\"file_type\":\"text\",\"file_size\":82,\"file_hash\":\"2ed949c12c9a67dee2dd4ccfff924ae399c6ac1b14dfb67fa4e415eda672a975\",\"stor",
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"4dda38e1-fd70-4131-88d0-aed639ec303f\",\"collection_id\":\"da895245-4c1a-45a5-99b9-c4751cde0161\",\"filename\":\"text-d0d201991357.txt\",\"file_type\":\"text\",\"file_size\":82,\"file_hash\":\"d0d201991357b419e81291534dde3041210c373c9a28573f28f03c340c14ad0c\",\"stor",
       "verdict": "PASS"
     },
     "profile_landing": {
@@ -53,7 +53,7 @@
       "status": 200,
       "marker_hit": true,
       "person_id": "tenant-1_1",
-      "attributes_head": "{\"g5_probe\": \"g5-writeback-20261018000908\"}",
+      "attributes_head": "{\"g5_probe\": \"g5-writeback-20261018023228\"}",
       "verdict": "PASS"
     },
     "k14_idempotency": {
@@ -93,22 +93,22 @@
         },
         "openrag": {
           "status": "ok",
-          "latency_ms": 1875,
+          "latency_ms": 304,
           "channel": "b"
         },
         "dps": {
           "status": "ok",
-          "latency_ms": 1822,
+          "latency_ms": 323,
           "channel": "b"
         },
         "ollama": {
           "status": "ok",
-          "latency_ms": 1795,
+          "latency_ms": 290,
           "models": 4,
           "channel": "a"
         }
       },
-      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.17.15\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0,\"channel\":\"b\"},\"openrag\":{\"status\":\"ok\",\"latency_ms\":1875,\"channel\":\"b\"},\"dps\":{\"status\":\"ok\",\"latency_ms\":1822,\"channel\":\"b\"},\"ollama\":{\"status\":\"ok\",\"latency_ms\":1795,\"models\":4,\"channel\":\"a\"}},\"channel\":{\"preference\":\"b-primary\",\"primary_channel\":\"b\",\"single_primary\":true,\"state\":\"b-primary\",\"healthy_b\":true,\"llm_unreachable\":false,\"llm_consecutive_failures\":0,\"fallback_action\":\"none\",\"drill_window_seconds\":300.0,\"auto_failover_enabled\":false},\"channel_report"
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.18.0\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0,\"channel\":\"b\"},\"openrag\":{\"status\":\"ok\",\"latency_ms\":304,\"channel\":\"b\"},\"dps\":{\"status\":\"ok\",\"latency_ms\":323,\"channel\":\"b\"},\"ollama\":{\"status\":\"ok\",\"latency_ms\":290,\"models\":4,\"channel\":\"a\"}},\"channel\":{\"preference\":\"b-primary\",\"primary_channel\":\"b\",\"single_primary\":true,\"state\":\"b-primary\",\"healthy_b\":true,\"llm_unreachable\":false,\"llm_consecutive_failures\":0,\"fallback_action\":\"none\",\"drill_window_seconds\":300.0,\"auto_failover_enabled\":false},\"channel_report\":{\""
     }
   }
 }

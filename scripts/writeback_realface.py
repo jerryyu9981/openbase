@@ -143,16 +143,21 @@ def main() -> int:
     # 2) 上游落地核验
     # 注：OpenMemory 适配器客户端为进程级共享头（无 per-request X-Tenant-ID），
     # 实测回写落库域为 `default`（owner=tenant-1_1）；故此处按同域（不带 tenant 头）回读。
+    # 检索策略用 keyword：语义 auto 的 top-k 不保证命中刚写入项（实测），
+    # keyword 按内容精确匹配，作为"已落真实上游"的确定性判据。
     status, body = call(
-        "POST", f"{MEM}/api/v1/recall", {**MEM_HEADERS, "X-API-Key": MEM_KEY, "Authorization": f"Bearer {jwt_token}"}, {"query": MARKER}
+        "POST",
+        f"{MEM}/api/v1/recall",
+        {**MEM_HEADERS, "X-API-Key": MEM_KEY, "Authorization": f"Bearer {jwt_token}"},
+        {"query": MARKER, "strategy": "keyword", "top_k": 50},
     )
     memory_hit = status == 200 and MARKER in body
     if not memory_hit:
-        # 兼容：若适配器后续改为按请求透传 tenant，则带 tenant-1 头同样应命中
+        # 兜底：不带 strategy（auto）再试一次（不同版本默认策略差异）
         status, body = call(
             "POST",
             f"{MEM}/api/v1/recall",
-            {**MEM_HEADERS, "X-Tenant-ID": "tenant-1", "X-API-Key": MEM_KEY, "Authorization": f"Bearer {jwt_token}"},
+            {**MEM_HEADERS, "X-API-Key": MEM_KEY, "Authorization": f"Bearer {jwt_token}"},
             {"query": MARKER},
         )
         memory_hit = status == 200 and MARKER in body

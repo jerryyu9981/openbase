@@ -1,15 +1,15 @@
-# OpenBase-G5-OBS Memory 跨租户隔离修复立项方案-v1.0.0
+# OpenBase-G5-OBS Memory 跨租户隔离修复立项方案-v1.1.0
 
 | 项目 | 内容 |
 |------|------|
-| 文档编号 | OB-GOLIVE-G5-OBS-MEMTENANT-v1.0.0 |
-| 版本 | **v1.0.0** |
-| 状态 | **[Draft]**（待评审；批准后转 [Approved] 并按跨仓小版本迭代排期） |
+| 文档编号 | OB-GOLIVE-G5-OBS-MEMTENANT-v1.1.0 |
+| 版本 | **v1.1.0** |
+| 状态 | **[Approved]**（T1~T4 已实施并验证；T5 迁移执行 / T6 开关开启待迁移窗口显式批准） |
 | 编制日期 | 2026-10-18 |
 | 编制人 | OpenBase 架构组 |
-| 来源 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.1.0》观测项 **G5-OBS** |
-| 关联证据 | `doc/test/evidence/s7/g5/writeback-realface.json`（`observed_domain=default`） |
-| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v1.2.0》G5 |
+| 来源 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.2.0》观测项 **G5-OBS** |
+| 关联证据 | `doc/test/evidence/s7/g5/writeback-realface.json`（`observed_domain=default`）；`migration-dry-run-20261018.json` |
+| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v1.3.0》G5 |
 | 迭代类型 | **跨仓小版本（minor）**：OpenLLM 行为开关 + OpenMemory 数据迁移 + OpenBase 治理验收 |
 
 ## 修订历史
@@ -17,6 +17,7 @@
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：G5-OBS 根因、跨仓改动范围、开关与迁移方案、验收判据、回滚与风险 |
+| v1.1.0 | 2026-10-18 | OpenBase 架构组 | 状态转 [Approved]；T1~T4 实施完成（OpenLLM 2.18.0 / OpenMemory 7.3.2），T4 目标库 dry-run 实测 279/37/242；T5/T6 待迁移窗口批准 |
 
 ---
 
@@ -157,4 +158,48 @@ WHERE m.tenant_code = 'default'
 
 ---
 
-**文档状态**：[Draft]（待评审批准后进入实施；批准前不改动任何运行态默认值）
+## 9. 实施记录（v1.1.0，2026-10-18）
+
+### 9.1 代码与开关（T1/T2）
+
+| 仓 | 文件 | 变更 |
+|----|------|------|
+| OpenLLM | `app/edgerouter/adapters/openmemory_client.py` | `remember/recall/search/history` 新增 per-request `headers` 参数并透传 `_request`（与 `X-API-Key`/共享头合并顺序不变） |
+| OpenLLM | `app/edgerouter/adapters/openmemory.py` | 新增 `_tenant_headers(request_context)`（对齐 OpenRAG 范式）；`write/search/history` 在开关开启时携带 |
+| OpenLLM | `app/core/config.py` / 根与 backend `.env.example` | 新增 `OPENMEMORY_TENANT_HEADERS=false`（缺省不翻转行为） |
+| OpenLLM | `tests/unit/test_openmemory_tenant_headers.py` | 7 例：开关关闭零变化、开启头集、无 tenant 不带头、双租户不串状态、客户端合并/缺省 |
+| 版本 | — | OpenLLM **2.18.0** |
+
+**回归**：`test_openmemory_tenant_headers.py` + 既有 OpenMemory 相关用例 **40 passed**。
+
+### 9.2 迁移脚本（T3）
+
+| 项 | 内容 |
+|----|------|
+| 脚本 | `OpenMemory/scripts/migrate_memory_tenant_domain.py` |
+| 能力 | `--dry-run` / `--apply` / `--verify` / `--rollback`；批次表 `memory_tenant_migration` + 明细表 `memory_tenant_migration_item` |
+| 安全 | 批次防重、单事务、仅迁移 owner 前缀可解析且租户存在的行、可精确回滚 |
+| 测试 | `tests/unit/test_migrate_memory_tenant_domain.py` **6 passed** |
+| 版本 | OpenMemory **7.3.2** |
+
+### 9.3 目标库 dry-run（T4，只读）
+
+证据：`doc/test/evidence/s7/g5/migration-dry-run-20261018.json`
+
+| 指标 | 值 |
+|------|----|
+| `tenant_code='default'` 总行数 | **279** |
+| 可迁移（owner 前缀可解析且租户存在） | **37** |
+| 不可解析（保持 default，人工判定） | **242**（样本均为 `e2e-user-*`/`e2e-forget-*` 等测试主体） |
+
+### 9.4 未执行项（需显式批准）
+
+| 项 | 原因 |
+|----|------|
+| T5 迁移执行（`--apply`） | 写共享库，属高影响操作；须迁移窗口 + 双人确认 |
+| T6 开关开启（`OPENMEMORY_TENANT_HEADERS=true`） | 依赖 T5 verify 通过；开启前保持 false |
+| AC-MT-2/3/4/5 运行态验证 | 依赖 T6；当前仅完成单测与 dry-run |
+
+---
+
+**文档状态**：[Approved]（T1~T4 已闭环；T5/T6 待迁移窗口批准后执行，开启前不改动运行态默认值）

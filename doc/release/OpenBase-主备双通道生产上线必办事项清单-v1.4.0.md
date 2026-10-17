@@ -1,11 +1,11 @@
-# OpenBase-主备双通道生产上线必办事项清单-v1.3.0
+# OpenBase-主备双通道生产上线必办事项清单-v1.4.0
 
 | 项目 | 内容 |
 |------|------|
 | 清单名称 | 主备双通道（B 主通道 / A 备用直连）生产上线必办事项清单 |
-| 清单编号 | OB-GOLIVE-CHANNEL-AB-v1.3.0 |
-| 版本 | **v1.3.0** |
-| 状态 | **[处置中]**（G1/G2 仓库侧载体已办；G3/G5/G6 已闭环；G4 待双签；G5-OBS 已立项跨仓小版本） |
+| 清单编号 | OB-GOLIVE-CHANNEL-AB-v1.4.0 |
+| 版本 | **v1.4.0** |
+| 状态 | **[处置中]**（G1/G2 仓库侧载体已办；G3/G5/G6 已闭环；G4 待双签；G5-OBS 代码/迁移脚本就绪、待迁移窗口） |
 | 编制日期 | 2026-10-16 |
 | 编制人 | AA/PM-OpenBase-Dev |
 | 适用范围 | 经统一前端 / 智能体发起的会话，经 **OpenLLM 主通道 B**（编排 + 三基础设施取数/回写）与 **OpenBase 备用直连 A** 两条通道上生产前的必办事项 |
@@ -22,6 +22,7 @@
 | v1.1.0 | 2026-10-17 | OpenBase 架构组 | 增补「G1/G2 发布前机械校验」块（R3：`verify_dps_code_map.py` 三项校验 + 4 项勾选）；状态说明同步 |
 | v1.2.0 | 2026-10-18 | OpenBase 架构组 | G3/G5/G6 真实运行态闭环；G4 机器面（矩阵/读写等价/K14）闭环、仅余 A 直连豁免行人工双签；新增 G5 观测项（memory 落库域）；Q5/Q6/Q7 裁定落地 |
 | v1.3.0 | 2026-10-18 | OpenBase 架构组 | 产出《G4-T4-2 A 直连豁免行双签审批单-v1.0.0》；G5-OBS 立项为跨仓小版本迭代（《Memory 跨租户隔离修复立项方案-v1.0.0》） |
+| v1.4.0 | 2026-10-18 | OpenBase 架构组 | G5-OBS 实施 T1~T4：OpenLLM 2.18.0 开关与按请求头、OpenMemory 7.3.2 迁移脚本；目标库 dry-run 279/37/242；T5/T6 待迁移窗口批准 |
 
 ---
 
@@ -51,7 +52,7 @@
 > - **G3**：✅ 已跑 `scripts/drill_l2_1_failover.py`（驱动 OpenLLM 真实通道状态机）→ S7-T3-1~4 **全 PASS**。
 > - **G4**：🟡 `dual_channel_e2e.py` 真实双通道：四子系统读等价 PASS（OpenRAG 9/9、OpenLLM 6/6、DPS 18/18、OpenMemory PASS_EMPTY）、写路径 B→A 可见、A 写被拒（期望）、K14 同名行=1；`finalize_l2_2_matrix.py` T4-1/3/4 PASS，**T4-2（A 直连豁免行人工双签/审批）待窗口**。
 > - **G5 / G6**：✅ `scripts/writeback_realface.py` 三路 sync 回写 `accepted` 全 true；memory/rag/profile 均真实落地；异步复投三路 `duplicated=true`；profile 落 `person_id=tenant-1_1`（真实 DPS）。
-> - **观测项 G5-OBS**：OpenMemory 回写落库域实测为 `default`（客户端共享头未透传 per-request `X-Tenant-ID`）；不影响"真实落地"判据，但**跨租户隔离需在后续迭代修复**（涉历史数据迁移，单列评估）。**已立项**：《OpenBase-G5-OBS-Memory跨租户隔离修复立项方案-v1.0.0》（跨仓小版本：OpenLLM 2.18.0 / OpenMemory 7.3.2 / OpenBase 验收），批准前不改动运行态默认值。
+> - **观测项 G5-OBS**：OpenMemory 回写落库域实测为 `default`（客户端共享头未透传 per-request `X-Tenant-ID`）。**立项方案已升 v1.1.0 [Approved]**：T1~T4 已实施（OpenLLM 2.18.0 / OpenMemory 7.3.2；单测 40 + 6 passed；目标库 dry-run：default 279 行、可迁移 37、不可解析 242）；**T5 迁移执行 / T6 开关开启待迁移窗口显式批准**，开启前运行态默认值不变。
 > - **S1~S5**：维持 v1.1.0 结论。
 
 ### G1 / G2 发布前机械校验（R3，2026-10-17）
