@@ -1,12 +1,12 @@
-# OpenBase-OpenLLM 豁免行安全加固方案-评审记录-v1.1.0
+# OpenBase-OpenLLM 豁免行安全加固方案-评审记录-v1.2.0
 
 | 项目 | 内容 |
 |------|------|
-| 评审编号 | OB-SEC-EXEMPT-REVIEW-v1.1.0 |
+| 评审编号 | OB-SEC-EXEMPT-REVIEW-v1.2.0 |
 | 评审对象 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.0.0》 |
-| 评审后方案 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.2.0》（已回填评审结论与实施结果） |
-| 关联实施 | 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.0.0》 |
-| 版本 | **v1.1.0** |
+| 评审后方案 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.3.0》（已回填评审结论与实施结果） |
+| 关联实施 | 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.1.0》 |
+| 版本 | **v1.2.0** |
 | 状态 | **[Approved]**（批准人 2026-10-18 批准并指示执行；实施结果见实施记录） |
 | 评审日期 | 2026-10-18 |
 | 评审方式 | 文档评审 + 代码事实核验（架构组初评） |
@@ -21,6 +21,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次评审：对方案 v1.0.0 的 H1~H8 与 Q1~Q5 出具意见，结论为有条件通过 |
 | v1.1.0 | 2026-10-18 | OpenBase 架构组 | 批准人签署并指示执行；关联方案升 v1.2.0、新增实施记录引用；状态转 [Approved] |
+| v1.2.0 | 2026-10-18 | OpenBase 架构组 | 同步关联方案 v1.3.0 与实施记录 v1.1.0（补充缓存提交 `cff0a32`） |
 
 ---
 
@@ -169,8 +170,8 @@
 
 ## 8. 附件与引用
 
-1. 《OpenBase-OpenLLM 豁免行安全加固方案-v1.2.0》
-2. 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.0.0》
+1. 《OpenBase-OpenLLM 豁免行安全加固方案-v1.3.0》
+2. 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.1.0》
 3. 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8
 4. 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4
 5. OpenLLM `app/security/exempt_policy.py`、`app/middleware/identity_gate.py`、`app/middleware/rate_limit.py`

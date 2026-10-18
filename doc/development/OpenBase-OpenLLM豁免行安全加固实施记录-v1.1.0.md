@@ -1,23 +1,24 @@
-# OpenBase-OpenLLM 豁免行安全加固实施记录-v1.0.0
+# OpenBase-OpenLLM 豁免行安全加固实施记录-v1.1.0
 
 | 项目 | 内容 |
 |------|------|
 | 记录名称 | OpenLLM 豁免行（A 直连健康/管理面）安全加固实施记录 |
-| 记录编号 | OB-SEC-EXEMPT-IMPL-v1.0.0 |
-| 版本 | **v1.0.0** |
+| 记录编号 | OB-SEC-EXEMPT-IMPL-v1.1.0 |
+| 版本 | **v1.1.0** |
 | 状态 | **[Final]**（T1~T10 已实施并验证；遗留项见 §6） |
 | 实施日期 | 2026-10-18 |
 | 实施方 | OpenBase 架构组（设计/验收）+ OpenLLM 开发 |
-| 设计依据 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.2.0》（设计基线 v1.1.0） |
+| 设计依据 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.3.0》（设计基线 v1.1.0） |
 | 评审依据 | 《OpenBase-OpenLLM 豁免行安全加固方案-评审记录-v1.1.0》 |
 | 风险依据 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5（R1~R8） |
-| 代码仓 | OpenLLM `feature/s4-identity-channel-b`，提交 **`dd59291`**（v2.19.0） |
+| 代码仓 | OpenLLM `feature/s4-identity-channel-b`，提交 **`dd59291` + `cff0a32`**（v2.19.0） |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：T1~T10 实施结果、代码落点、测试数据、遗留项与回滚说明 |
+| v1.1.0 | 2026-10-18 | OpenBase 架构组 | 补充提交 `cff0a32`（登记表读取 60s 进程内缓存）；同步方案 v1.3.0 引用 |
 
 ---
 
@@ -84,9 +85,9 @@
 
 ## 5. 提交与推送
 
-- OpenLLM 提交：**`dd59291`**（14 files，+1081/−32）
+- OpenLLM 提交：**`dd59291`**（14 files，+1081/−32）；**`cff0a32`**（登记表 60s 缓存）
 - 分支：`feature/s4-identity-channel-b`
-- 三远程 HEAD 核验一致：origin / backup / github 均 `dd59291`
+- 三远程 HEAD 核验一致：origin / backup / github 均 **`cff0a32`**
 
 ## 6. 遗留项
 

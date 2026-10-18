@@ -1,18 +1,18 @@
-# OpenBase-OpenLLM 豁免行安全加固方案-v1.2.0
+# OpenBase-OpenLLM 豁免行安全加固方案-v1.3.0
 
 | 项目 | 内容 |
 |------|------|
 | 方案名称 | OpenLLM A 直连豁免行（健康/管理面）安全加固方案 |
-| 方案编号 | OB-SEC-EXEMPT-HARDENING-v1.2.0 |
-| 版本 | **v1.2.0** |
-| 状态 | **[Approved]**（评审通过并已实施；实施结果见《实施记录-v1.0.0》与 §13） |
+| 方案编号 | OB-SEC-EXEMPT-HARDENING-v1.3.0 |
+| 版本 | **v1.3.0** |
+| 状态 | **[Approved]**（评审通过并已实施；实施结果见《实施记录-v1.1.0》与 §13） |
 | 编制日期 | 2026-10-18 |
 | 编制人 | OpenBase 架构组 |
 | 适用范围 | OpenLLM 服务 `GATE_EXEMPT_PATH_PREFIXES` 命中的 5 个豁免端点：`/health`、`/metrics`、`/docs`、`/redoc`、`/openapi.json` |
 | 风险来源 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5（R1~R8） |
 | 关联门禁 | 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4（T4-2） |
-| 关联评审 | 《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.1.0》 |
-| 关联实施 | 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.0.0》 |
+| 关联评审 | 《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.2.0》 |
+| 关联实施 | 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.1.0》 |
 | 关联代码 | OpenLLM `app/security/exempt_policy.py`、`app/middleware/identity_gate.py`、`app/middleware/rate_limit.py`、`app/api/metrics.py`、`backend/main.py`、`app/core/config.py` |
 
 ## 修订历史
@@ -22,6 +22,7 @@
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：基于 R1~R8 的现状基线、四层纵深防御设计、H1~H8 逐项加固、配置/实施/验收/回滚/残余风险 |
 | v1.1.0 | 2026-10-18 | OpenBase 架构组 | 回填评审记录 v1.0.0 对 Q1~Q5 的结论：Q1 改为 token 必选 + CIDR 可选叠加；Q2 明确不纳入豁免登记；Q3 增补同宿主网络隔离口径；Q4 确定审计 IP 模式与 90 天留存；Q5 确定短期加固 + 中长期独立管理端口；同步 H3/H8/配置项/验收判据/§11 |
 | v1.2.0 | 2026-10-18 | OpenBase 架构组 | T1~T10 实施完成（OpenLLM `dd59291` / v2.19.0）：新增 §13 实施结果与遗留项；状态转 [Approved] |
+| v1.3.0 | 2026-10-18 | OpenBase 架构组 | 补充实施提交 `cff0a32`（登记表读取 60s 缓存，避免到期强制后每请求读盘）；同步实施记录 v1.1.0 |
 
 ---
 
@@ -414,7 +415,7 @@ def assert_exempt_routes(app) -> None:
 
 ### 11.1 评审结论摘要
 
-《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.1.0》（2026-10-18）结论为 **有条件通过**：
+《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.2.0》（2026-10-18）结论为 **有条件通过**：
 H1~H8 设计成立，Q1~Q5 已给出结论并回填正文；附加条件为 Q3 网络控制证据与 Q4 合规确认。
 
 ### 11.2 Q1~Q5 评审结论
@@ -456,7 +457,7 @@ H1~H8 设计成立，Q1~Q5 已给出结论并回填正文；附加条件为 Q3 �
 
 ## 12. 附件与引用
 
-1. 《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.1.0》
+1. 《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.2.0》
 2. 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8
 3. 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4
 4. OpenLLM `app/security/exempt_policy.py`
@@ -474,7 +475,7 @@ H1~H8 设计成立，Q1~Q5 已给出结论并回填正文；附加条件为 Q3 �
 
 ### 13.1 总结
 
-T1~T10 已全部实施并推送（OpenLLM `dd59291`，版本 **2.19.0**）。新增开关默认值保持现行行为；
+T1~T10 已全部实施并推送（OpenLLM `dd59291` + `cff0a32`，版本 **2.19.0**）。新增开关默认值保持现行行为；
 生产收紧由 `validate_production_hardening()` 在 lifespan 中 fail-closed 强制。
 
 ### 13.2 任务完成度
@@ -503,7 +504,7 @@ T1~T10 已全部实施并推送（OpenLLM `dd59291`，版本 **2.19.0**）。新
 | L-5 | 内网受控文档入口 | LL | 非本次验收必需，另行立项 |
 | L-6 | `audit_logs` 测试夹具失败 | LL | 既有问题，与本次改动无关 |
 
-详见《OpenBase-OpenLLM豁免行安全加固实施记录-v1.0.0》§6。
+详见《OpenBase-OpenLLM豁免行安全加固实施记录-v1.1.0》§6。
 
 ---
 
