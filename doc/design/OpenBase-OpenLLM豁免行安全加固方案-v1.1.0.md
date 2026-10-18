@@ -1,16 +1,17 @@
-# OpenBase-OpenLLM 豁免行安全加固方案-v1.0.0
+# OpenBase-OpenLLM 豁免行安全加固方案-v1.1.0
 
 | 项目 | 内容 |
 |------|------|
 | 方案名称 | OpenLLM A 直连豁免行（健康/管理面）安全加固方案 |
-| 方案编号 | OB-SEC-EXEMPT-HARDENING-v1.0.0 |
-| 版本 | **v1.0.0** |
-| 状态 | **[Draft]**（待技术评审；评审通过后转 [Review] → [Approved]） |
+| 方案编号 | OB-SEC-EXEMPT-HARDENING-v1.1.0 |
+| 版本 | **v1.1.0** |
+| 状态 | **[Review]**（评审记录 v1.0.0 已出具并回填；待 Approver 批准后转 [Approved]） |
 | 编制日期 | 2026-10-18 |
 | 编制人 | OpenBase 架构组 |
 | 适用范围 | OpenLLM 服务 `GATE_EXEMPT_PATH_PREFIXES` 命中的 5 个豁免端点：`/health`、`/metrics`、`/docs`、`/redoc`、`/openapi.json` |
 | 风险来源 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5（R1~R8） |
 | 关联门禁 | 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4（T4-2） |
+| 关联评审 | 《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.0.0》 |
 | 关联代码 | OpenLLM `app/middleware/identity_gate.py`、`app/middleware/audit.py`、`app/middleware/rate_limit.py`、`app/api/metrics.py`、`backend/main.py`、`app/core/config.py` |
 
 ## 修订历史
@@ -18,6 +19,7 @@
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：基于 R1~R8 的现状基线、四层纵深防御设计、H1~H8 逐项加固、配置/实施/验收/回滚/残余风险 |
+| v1.1.0 | 2026-10-18 | OpenBase 架构组 | 回填评审记录 v1.0.0 对 Q1~Q5 的结论：Q1 改为 token 必选 + CIDR 可选叠加；Q2 明确不纳入豁免登记；Q3 增补同宿主网络隔离口径；Q4 确定审计 IP 模式与 90 天留存；Q5 确定短期加固 + 中长期独立管理端口；同步 H3/H8/配置项/验收判据/§11 |
 
 ---
 
@@ -83,6 +85,16 @@ R1~R8 八项风险，本方案给出可落地的加固设计。
 | **L2 应用层** | 收紧豁免语义 | 精确匹配、路径规范化、明细分级、指标鉴权、独立限流、审计留痕 | LL |
 | **L3 配置与门禁** | 防漂移/防过期 | 豁免登记表单一事实源、启动断言、发布门禁脚本 | LL / OB |
 | **L4 观测与响应** | 可发现可告警 | 豁免访问计数、异常调用告警、到期告警 | OPS |
+
+**评审结论 Q3（网络层落地口径）**
+
+1. 归属：**OPS 所有**；LL 提供「必须放行的来源清单」（OpenBase 出口、监控采集、探活源）。
+2. 三层控制：① 监听地址收紧为 `127.0.0.1` 或私网网卡，禁止 `0.0.0.0`；② 主机防火墙/安全组仅放行
+   上述来源；③ 若上 K8s，`default-deny` ingress + 仅允许 `openbase`、`monitoring` 命名空间。
+3. **同宿主约束**：五系统共用同一主机/网段，网段级 ACL 区分度有限 ⇒ **端口/进程级隔离优先**，
+   应用层 token 为主控制、CIDR 为附加约束。
+4. 证据：安全组 JSON / NetworkPolicy YAML / `ss -lntp` 输出**至少一项**留档，作为发布签字前置；
+   应用层加固不以网络层为前提，但生产 Go 必须至少有一项网络控制证据。
 
 > L1 是必要条件但不可单独依赖：若应用层仍按前缀放行，网络层被突破后无第二道防线。
 
@@ -164,11 +176,18 @@ def assert_exempt_routes(app) -> None:
    - `none`（默认，保持现行行为）
    - `token`：校验 `X-Metrics-Token`，与 `OPENLLM_METRICS_TOKEN` 做 `hmac.compare_digest`
    - `trusted-source`：校验来源 IP 属于 `OPENLLM_METRICS_ALLOWED_SOURCES`（CIDR 列表）
-2. 生产门禁：`ENV=production` 时 `mode` 必须为 `token` 或 `trusted-source`，否则拒绝启动；
-3. 标签审计：新增单测扫描指标 label 名，禁止出现 `tenant`、`user`、`subject`、`org`、`email` 等维度；
-4. 未授权返回 `401`，不返回指标内容，错误体不含内部路径。
+2. **评审结论 Q1**：生产采用「**token 必选 + CIDR 可选叠加**」——
+   `mode=token` 为生产最低要求；`OPENLLM_METRICS_ALLOWED_SOURCES` 非空时作为**额外的 AND 条件**，
+   即「token 正确 **且** 来源命中白名单」才放行。`trusted-source` 单模式仅保留给无法注入 token 的
+   过渡场景，不作为生产推荐值。
+3. token 轮换：支持 `OPENLLM_METRICS_TOKEN`（CURRENT）+ `OPENLLM_METRICS_TOKEN_PREVIOUS`（PREVIOUS）
+   短重叠窗口，重叠期 ≤7 天；两值均空则视为未配置，生产拒绝启动。
+4. 生产门禁：`ENV=production` 时 `mode` 必须为 `token`（推荐）或 `trusted-source`，否则拒绝启动；
+5. 标签审计：新增单测扫描指标 label 名，禁止出现 `tenant`、`user`、`subject`、`org`、`email` 等维度；
+6. 未授权返回 `401`，不返回指标内容，错误体不含内部路径。
 
 **说明**：Prometheus 抓取侧需同步配置 token 或来源白名单，属 OPS 交付项。
+**同宿主约束**：五系统共用同一主机/网段，CIDR 区分度有限，故 token 为主控制、CIDR 为附加约束。
 
 ---
 
@@ -203,7 +222,9 @@ def assert_exempt_routes(app) -> None:
 3. 指标：`openllm_exempt_path_requests_total{path,trusted}`，用于基线与异常告警。
 4. 开关 `OPENLLM_EXEMPT_AUDIT_ENABLED`，默认 `false`（保持现行“无记录”），生产要求 `true`。
 
-> 隐私说明：`client_ip` 属网络层标识，保留期与脱敏策略由 OPS 统一规定（见 §11 Q4）。
+> 隐私说明（评审结论 Q4）：`client_ip` 仅写入**安全审计域**，默认保留 **90 天**，仅安全/审计角色可查；
+> 新增 `OPENLLM_EXEMPT_AUDIT_IP_MODE=full|hashed|masked`，默认 `full`；合规要求更严时使用带密钥的
+> HMAC 哈希（可关联、不可逆），密钥单独保管。普通应用日志不重复记录该字段。
 
 ---
 
@@ -263,7 +284,9 @@ def assert_exempt_routes(app) -> None:
    - `OPENLLM_EXEMPT_RATE_LIMIT_RPM`（默认 `0`＝不限，保持现行行为；生产建议 `120`）
    - 按 `client_ip + path` 计数，超限返回 `429` + `Retry-After`；
 3. `trusted-source`（Prometheus 抓取源、探活源）不计数或使用更高额度；
-4. 限流状态复用现有内存桶实现，不引入 Redis 依赖。
+4. **评审结论 Q2**：`/openllm/v1/health` 现有「限流豁免」同步收紧为**仅受信来源豁免**，
+   非受信来源纳入同一限流桶；该端点**不进入豁免登记表**（详见 §11.2）；
+5. 限流状态复用现有内存桶实现，不引入 Redis 依赖。
 
 ---
 
@@ -277,9 +300,12 @@ def assert_exempt_routes(app) -> None:
 | `OPENLLM_EXEMPT_EXPIRY_ENFORCE` | `false` | `true` | 到期强制失效（H7） |
 | `OPENLLM_EXEMPT_AUDIT_ENABLED` | `false` | `true` | 豁免访问审计（H5） |
 | `OPENLLM_EXEMPT_RATE_LIMIT_RPM` | `0` | `120`（建议） | 豁免路径限流（H8） |
-| `OPENLLM_METRICS_AUTH_MODE` | `none` | `token` 或 `trusted-source` | 指标鉴权（H3） |
-| `OPENLLM_METRICS_TOKEN` | 空 | 由密钥管理下发 | 指标 token（H3） |
-| `OPENLLM_METRICS_ALLOWED_SOURCES` | 空 | 抓取源 CIDR | 指标来源白名单（H3） |
+| `OPENLLM_EXEMPT_AUDIT_IP_MODE` | `full` | `full` 或 `hashed` | 审计 IP 记录模式（H5） |
+| `OPENLLM_EXEMPT_AUDIT_RETENTION_DAYS` | `90` | `90` | 审计留存天数（H5） |
+| `OPENLLM_METRICS_AUTH_MODE` | `none` | `token`（推荐；CIDR 可选叠加） | 指标鉴权（H3） |
+| `OPENLLM_METRICS_TOKEN` | 空 | 由密钥管理下发 | 指标 token CURRENT（H3） |
+| `OPENLLM_METRICS_TOKEN_PREVIOUS` | 空 | 仅轮换期 ≤7 天 | 指标 token PREVIOUS（H3） |
+| `OPENLLM_METRICS_ALLOWED_SOURCES` | 空 | 抓取源 CIDR（可选，非空则 AND） | 指标来源白名单（H3） |
 | `OPENLLM_HEALTH_DETAIL_MODE` | `all` | `trusted-only` | 健康明细分级（H4） |
 | `OPENLLM_HEALTH_TRUSTED_SOURCES` | 空 | 探活/监控 CIDR | 健康明细来源白名单（H4） |
 | `OPENLLM_INTERNAL_DOCS_ENABLED` | `false` | `false` | 内网受控文档入口（H2） |
@@ -317,13 +343,15 @@ def assert_exempt_routes(app) -> None:
 | **AC-2** | 含 `..`、`//`、`%2f` 的路径不进入豁免且被拒绝 | 负向用例返回 400/404，且无豁免审计事件 |
 | **AC-3** | 生产 `DEBUG=true` 或 `OPENAPI_PUBLIC=true` 时拒绝启动 | 启动命令退出码非 0，日志含明确原因 |
 | **AC-4** | 生产 `/docs`、`/redoc`、`/openapi.json` 返回 404 | 真实运行态探针 |
-| **AC-5** | `/metrics` 无 token/非白名单来源返回 401；授权来源 200 | 三态用例（无/错/对） |
+| **AC-5** | `/metrics` 无 token / 错 token 返回 401；token 正确但来源不在白名单（已配置时）返回 401；双因子均满足 200；轮换期 PREVIOUS token 可放行 | 四态用例（无/错/对/仅旧） |
 | **AC-6** | 非受信来源 `/health` 仅返回 `status`；受信来源返回完整明细 | 两组来源对比 |
-| **AC-7** | 每次豁免访问产生 `exempt_path_access` 审计事件（不含身份头） | 日志检索 + 字段白名单断言 |
+| **AC-7** | 每次豁免访问产生 `exempt_path_access` 审计事件（不含身份头）；`IP_MODE` 三态行为正确 | 日志检索 + 字段白名单断言 |
 | **AC-8** | 登记表与路由、K07 矩阵不一致时脚本退出码 1；生产启动失败 | 篡改登记表复跑 |
 | **AC-9** | 过期豁免在生产失效（请求转为 401/403） | 注入 `expires_at` 为昨日 |
 | **AC-10** | 超限返回 429；受信抓取源不受影响 | 压测豁免路径 |
 | **AC-11** | 业务面 403/401 行为、L2-2 读写等价与 K14 幂等**无变化** | 全量回归 + 矩阵复跑 |
+| **AC-12** | `/openllm/v1/health` 非受信来源不再享受限流豁免；受信来源不受影响 | 双来源限流对比 |
+| **AC-13** | 网络层至少一项控制证据留档（监听地址/安全组/NetworkPolicy） | 证据文件核对 |
 
 ---
 
@@ -337,7 +365,7 @@ def assert_exempt_routes(app) -> None:
 | 单元测试 | `audit` | 事件字段白名单、级别（INFO/WARN） |
 | 单元测试 | `expiry` | 未到期/≤30 天/已过期三态；时钟注入 |
 | 单元测试 | `rate_limit` | 独立桶、429、受信源放行 |
-| 集成测试 | 真实启动 | 生产门禁 12 项配置逐项缺失 → 拒绝启动 |
+| 集成测试 | 真实启动 | 生产门禁 15 项配置逐项缺失 → 拒绝启动 |
 | 回归 | 业务面 | 既有 403/401 矩阵与 K07 隔离用例 |
 | 回归 | 通道 | `dual_channel_e2e.py` 四子系统读写等价 + K14 |
 
@@ -380,31 +408,64 @@ def assert_exempt_routes(app) -> None:
 
 ---
 
-## 11. 残余风险与未决问题
+## 11. 评审结论与剩余事项
 
-| 编号 | 事项 | 处置建议 |
+### 11.1 评审结论摘要
+
+《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.0.0》（2026-10-18）结论为 **有条件通过**：
+H1~H8 设计成立，Q1~Q5 已给出结论并回填正文；附加条件为 Q3 网络控制证据与 Q4 合规确认。
+
+### 11.2 Q1~Q5 评审结论
+
+| 编号 | 原未决问题 | 评审结论 | 责任方 | 阻断发布 | 回填位置 |
+|:----:|-----------|---------|:------:|:--------:|---------|
+| **Q1** | metrics token 下发方式 | **token 必选 + CIDR 可选叠加**；token 经密钥管理下发，支持 CURRENT/PREVIOUS 轮换（重叠 ≤7 天）；五系统同宿主，CIDR 区分度有限，token 为主控制 | OPS / LL | 否（配置到位即可） | §4 H3、§5 |
+| **Q2** | `/openllm/v1/health` 是否纳入豁免登记 | **不纳入**，登记表保持 5 条；K07 标注为「受信管理面（非豁免）」；其限流豁免收紧为仅受信来源 | LL | 否（需口径确认） | §4 H8、§11.4 |
+| **Q3** | 网络层 ACL/NetworkPolicy 归属 | **OPS 所有**；三层控制（监听地址/主机防火墙/default-deny）；同宿主优先端口与进程级隔离；至少一项控制证据留档 | OPS | **是（发布签字前置）** | §3、§7 AC-13 |
+| **Q4** | `client_ip` 留存与隐私 | 仅写入安全审计域；默认 `full`，可切 `hashed`/`masked`；保留 **90 天**，仅安全/审计角色可查；普通应用日志不重复记录 | 安全/合规 + OPS | 否（需合规确认） | §4 H5、§5 |
+| **Q5** | 豁免机制长期替代方案 | 短期保留 5 行豁免并完成 H1~H8；**两个版本内**改为独立管理端口（127.0.0.1:9xxx），逐步退役路径豁免 | LL | 否（路线图项） | §11.3 |
+
+### 11.3 中长期路线（Q5）
+
+| 阶段 | 内容 | 退出判据 |
 |:----:|------|---------|
-| **Q1** | metrics token 下发方式（K8s Secret / 配置中心 / 仅 CIDR） | 由 OPS 在发布窗口前裁定；优先 CIDR + token 双因子 |
-| **Q2** | `/openllm/v1/health` 当前不在 `GATE_EXEMPT_PATH_PREFIXES`，但被限流豁免 | 本方案按“受信分级”处理；是否纳入正式豁免登记需评审确认 |
-| **Q3** | 网络层 ACL/NetworkPolicy 归属与落地载体 | OPS 提供；应用层加固不以其为前提 |
-| **Q4** | `client_ip` 审计留存期与隐私合规 | 按组织日志规范执行，默认 90 天可配置 |
-| **Q5** | 豁免到期后的替代方案（长期是否保留 A 直连探活） | 建议在下一版本评估“独立管理端口”替代路径豁免 |
+| **阶段 1（当前版本）** | 落地 H1~H8，生产门禁收紧 | AC-1~AC-13 全通过 |
+| **阶段 2（下一主版本）** | 新增独立管理监听端口（回环/私网），承载 `/health` 与 `/metrics` | 监控与探活全部迁移至管理端口 |
+| **阶段 3（再下一版本）** | 主端口仅保留粗粒度存活探针；`/docs`、`/redoc`、`/openapi.json` 生产永久关闭 | 豁免表缩至 1~2 条或清零；审批单可注销 |
+
+### 11.4 剩余待确认事项（不阻断实施，阻断相应签字）
+
+| 编号 | 事项 | 需谁确认 | 关闭时点 |
+|:----:|------|---------|---------|
+| **R-01** | Q3 网络控制证据（监听地址/安全组/NetworkPolicy 至少一项） | OPS | 发布签字前 |
+| **R-02** | Q4 合规口径（`full` / `hashed` / `masked` 与 90 天留存） | 安全/合规 | 发布签字前 |
+| **R-03** | Q2 K07 分类口径（「受信管理面（非豁免）」标注） | 方案评审组 | 实施 T1 前 |
+| **R-04** | Q1 token 下发载体（K8s Secret / 配置中心） | OPS | 实施 T4 前 |
+
+### 11.5 评审遗留风险
+
+| 风险 | 说明 | 缓解 |
+|------|------|------|
+| 同宿主部署导致网段 ACL 区分度低 | 五系统同主机/网段，CIDR 难以区分服务 | 以 token 为主控制，结合端口/进程隔离 |
+| 到期强制失效影响 A 直连探活 | 到期未续期会使探活收到 401/403 | 30 天前告警 + 续期流程演练 |
+| 精确匹配影响未知子路径消费者 | 若存在未盘点到的 `/health/*` 调用会失败 | 实施前做调用盘点，灰度期观察 |
 
 ---
 
 ## 12. 附件与引用
 
-1. 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8
-2. 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4
-3. OpenLLM `app/middleware/identity_gate.py`
-4. OpenLLM `app/middleware/audit.py`
-5. OpenLLM `app/middleware/rate_limit.py`
-6. OpenLLM `app/api/metrics.py`
-7. OpenLLM `backend/main.py`
-8. OpenLLM `app/core/config.py`
-9. `doc/test/evidence/s7/gate/k07-finalize.json`
-10. `doc/test/evidence/s7/l2-2/matrix-finalize.json`
+1. 《OpenBase-OpenLLM豁免行安全加固方案-评审记录-v1.0.0》
+2. 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8
+3. 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4
+4. OpenLLM `app/middleware/identity_gate.py`
+5. OpenLLM `app/middleware/audit.py`
+6. OpenLLM `app/middleware/rate_limit.py`
+7. OpenLLM `app/api/metrics.py`
+8. OpenLLM `backend/main.py`
+9. OpenLLM `app/core/config.py`
+10. `doc/test/evidence/s7/gate/k07-finalize.json`
+11. `doc/test/evidence/s7/l2-2/matrix-finalize.json`
 
 ---
 
-**方案状态**：[Draft]（待技术评审；评审通过后进入实施排期，实施完成回填 §7 验收结果并升版）
+**方案状态**：[Review]（评审记录 v1.0.0 已出具并回填；待 Approver 批准后进入实施排期，实施完成回填 §7 验收结果并升版）
