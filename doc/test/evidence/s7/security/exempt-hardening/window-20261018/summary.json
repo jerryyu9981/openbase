@@ -12,7 +12,7 @@
     "P3": {"status": "PASS", "evidence": "p3-startup.json"},
     "P4": {"status": "PASS_REUSED", "evidence": "p4-negative.json"},
     "P5": {"status": "PASS", "evidence": "p5-prometheus.json", "note": "Prometheus 3.13.4 本地实例 target UP；Bearer 抓取成功；标签扫描无敏感维度"},
-    "P6": {"status": "BLOCKED_ELEVATION", "evidence": "p6-network.json + p6-firewall.json + p6-firewall-baseline.json + p6-inbound-rules-export.json", "note": "防火墙读写均需管理员，当前会话 admin=False；提权脚本与回滚已就绪，待管理员/OPS 执行"},
+    "P6": {"status": "PASS", "evidence": "p6-firewall.json + firewall-backup-20261018-213258.wfw + p6-elevated-run.log", "note": "UAC 提权完成：Domain/Private/Public 启用且默认入站 Block；8001/8020 入站规则仅允许 127.0.0.1"},
     "P7": {"status": "PASS_PRIOR", "evidence": "l4-k07-annotation.json"},
     "P8": {"status": "PENDING_DUAL_SIGN", "evidence": "—"}
   },
@@ -21,7 +21,7 @@
   "notes": [
     "正例已在真实服务上验证；反例沿用同一基线预演证据",
     "P5 已闭环：抓取配置 promtool 校验通过，target UP，Bearer 四态鉴权与标签扫描完成",
-    "P6 规则写入与策略导出均需管理员（New-NetFirewallRule / netsh export 均返回 Access denied）",
+    "P6 已闭环：经 UAC 提权启用三 Profile 并落地 8001/8020 入站规则，全量策略已备份",
     "G4-T4-2 双签仍需人工完成"
   ]
 }
