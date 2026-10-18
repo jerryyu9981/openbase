@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "stage": "RECHECK",
+  "generated_at": "2026-10-19T01:00:00+08:00",
+  "operator": "OpenBase 架构组",
+  "mode": "production overlay (ENV=production)",
+  "openllm": {"version": "2.19.1", "env": "production", "health": 200},
+  "components": {
+    "openmemory": "ok",
+    "openrag": "ok",
+    "dps": "ok",
+    "ollama": "ok"
+  },
+  "channel": {"primary": "b", "single_primary": true},
+  "prometheus": {"target": "openllm", "up": 1},
+  "k07": {"total": 367, "gaps": 0, "uncovered": 0, "exemption_without_approval": 0},
+  "g5_obs": {
+    "t5_migration": "NOT_EXECUTED",
+    "t6_switch": "NOT_EXECUTED",
+    "reason": "MQ1/MQ3 未签字；禁止在未裁定前写入共享库"
+  },
+  "note": "OpenRAG 首次探测曾命中健康缓存中的 unavailable，缓存过期后复测 ok；直接 X-API-Key 200",
+  "verdict": "PASS"
+}
