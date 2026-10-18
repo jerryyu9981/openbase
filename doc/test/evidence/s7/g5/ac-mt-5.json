@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "tool": "acmt45_writeback.py",
+  "generated_at": "2026-10-18T17:57:35.938037+00:00",
+  "openllm_base": "http://127.0.0.1:8012",
+  "probe_note": "隔离探针实例 8012：ENV=staging + TENANT_HEADER_CONSISTENCY_ENFORCE=false（生产门禁 D20 强制 true，API Key 跨租户写被 403，已登记为冲突项）；其余真实数据面开关与生产 overlay 一致。",
+  "marker": "g5-acmt5-20261019015732",
+  "session_id": "g5obs-g5-acmt5-20261019015732",
+  "seq": 9001,
+  "tenant": "tenant-1",
+  "owner": "tenant-1_1",
+  "kb_id": "da895245-4c1a-45a5-99b9-c4751cde0161",
+  "task": "S7-G5 / AC-MT-5",
+  "sync_first_response": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": {
+        "request_id": "openllm-wb-6c9cdb59da2c4a36a5c57dbe",
+        "accepted": {
+          "memory": true,
+          "rag": true,
+          "profile": true
+        },
+        "mode": "mixed",
+        "duplicated": {
+          "memory": false,
+          "rag": false,
+          "profile": false
+        }
+      }
+    },
+    "text_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-wb-6c9cdb59da2c4a36a5c57dbe\",\"accepted\":{\"memory\":true,\"rag\":true,\"profile\":true},\"mode\":\"mixed\",\"duplicated\":{\"memory\":false,\"rag\":false,\"profile\":false}}}"
+  },
+  "idem_first_response": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": {
+        "request_id": "openllm-wb-314edd56461d4a0d93ec33f4",
+        "accepted": {
+          "memory": true,
+          "rag": true,
+          "profile": true
+        },
+        "mode": "async",
+        "duplicated": {
+          "memory": false,
+          "rag": false,
+          "profile": false
+        }
+      }
+    },
+    "text_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-wb-314edd56461d4a0d93ec33f4\",\"accepted\":{\"memory\":true,\"rag\":true,\"profile\":true},\"mode\":\"async\",\"duplicated\":{\"memory\":false,\"rag\":false,\"profile\":false}}}"
+  },
+  "idem_replay_response": {
+    "status": 200,
+    "body": {
+      "code": 0,
+      "message": "success",
+      "data": {
+        "request_id": "openllm-wb-45a646bf7a30430c8cd0a0c6",
+        "accepted": {
+          "memory": true,
+          "rag": true,
+          "profile": true
+        },
+        "mode": "async",
+        "duplicated": {
+          "memory": true,
+          "rag": true,
+          "profile": true
+        }
+      }
+    },
+    "text_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-wb-45a646bf7a30430c8cd0a0c6\",\"accepted\":{\"memory\":true,\"rag\":true,\"profile\":true},\"mode\":\"async\",\"duplicated\":{\"memory\":true,\"rag\":true,\"profile\":true}}}"
+  },
+  "accepted": {
+    "memory": true,
+    "rag": true,
+    "profile": true
+  },
+  "duplicated_first": {
+    "memory": false,
+    "rag": false,
+    "profile": false
+  },
+  "idem_duplicated_first": {
+    "memory": false,
+    "rag": false,
+    "profile": false
+  },
+  "idem_duplicated_replay": {
+    "memory": true,
+    "rag": true,
+    "profile": true
+  },
+  "landing": {
+    "memory_db": {
+      "tenant_code": "tenant-1",
+      "owner": "tenant-1_1",
+      "content": "G5 AC-MT-5 三路回写真实面标记 g5-acmt5-20261019015732"
+    },
+    "rag_db": {
+      "tenant_code": "tenant-1",
+      "filename": "text-9683cd27dee4.txt",
+      "content": "G5 AC-MT-5 三路回写真实面标记 g5-acmt5-20261019015732"
+    },
+    "profile": {
+      "status": 200,
+      "person_id": "tenant-1_1",
+      "marker_hit": true,
+      "attributes_head": "{\"g5_acmt5\": \"g5-acmt5-20261019015732\"}"
+    }
+  },
+  "checks": {
+    "first_status_200": true,
+    "accepted_all_true": true,
+    "first_not_duplicated": true,
+    "idem_first_accepted": true,
+    "idem_first_not_duplicated": true,
+    "idem_replay_status_200": true,
+    "idem_replay_duplicated_all_true": true,
+    "memory_landed_tenant_1": true,
+    "rag_landed_tenant_1": true,
+    "profile_landed": true
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "tool": "migrate_memory_tenant_domain.py",
+  "generated_at": "2026-10-18T17:37:21+00:00",
+  "operator": "jerry",
+  "status": "PASS",
+  "mode": "verify",
+  "batch_id": "g5obs-20261019-0132",
+  "by_tenant": {
+    "tenant-1": 1
+  },
+  "updated_rows": 1,
+  "leftover_default": 0,
+  "passed": true
+}

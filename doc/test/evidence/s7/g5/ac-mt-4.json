@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "tool": "acmt45_writeback.py",
+  "generated_at": "2026-10-18T17:57:35.938037+00:00",
+  "openllm_base": "http://127.0.0.1:8012",
+  "probe_note": "隔离探针实例 8012：ENV=staging + TENANT_HEADER_CONSISTENCY_ENFORCE=false（生产门禁 D20 强制 true，API Key 跨租户写被 403，已登记为冲突项）；其余真实数据面开关与生产 overlay 一致。",
+  "marker": "g5-acmt5-20261019015732",
+  "session_id": "g5obs-g5-acmt5-20261019015732",
+  "seq": 9001,
+  "tenant": "tenant-1",
+  "owner": "tenant-1_1",
+  "kb_id": "da895245-4c1a-45a5-99b9-c4751cde0161",
+  "task": "S7-G5 / AC-MT-4",
+  "execution_face": "B（OpenLLM writeback）→ A（OpenMemory 直连 recall）",
+  "memory_recall_a_channel": {
+    "status": 200,
+    "result_count": 9,
+    "marker_hit": true
+  },
+  "memory_db": {
+    "tenant_code": "tenant-1",
+    "owner": "tenant-1_1",
+    "content": "G5 AC-MT-5 三路回写真实面标记 g5-acmt5-20261019015732"
+  },
+  "checks": {
+    "b_write_a_read_same_domain": true
+  },
+  "status": "PASS"
+}

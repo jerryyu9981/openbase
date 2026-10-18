@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "tool": "acmt26_evidence.py",
+  "task": "S7-G5 / AC-MT-2",
+  "generated_at": "2026-10-18T17:58:01.202937+00:00",
+  "method": "OpenLLM 生产 overlay（OPENMEMORY_TENANT_HEADERS=true）下经 `_memory_writeback` 直调探针写入（脚本 doc/tmp/g5obs/acmt_write.py），随后直查 public.memory_metadata 核验 tenant_code/owner",
+  "session_id": "g5obs-acmt-tenant1",
+  "expected_tenant": "tenant-1",
+  "rows": [
+    {
+      "memory_id": "e0d89c74-012f-4560-ac8f-4bff9773f210",
+      "tenant_code": "tenant-1",
+      "owner": "tenant-1_user-1",
+      "user_id": "tenant-1_user-1",
+      "session_id": "g5obs-acmt-tenant1",
+      "content": "tenant isolation verification payload",
+      "created_at": "2026-10-18T17:27:25.363762+00:00"
+    },
+    {
+      "memory_id": "97e2631d-525a-432b-9bfb-2f8f83cee10a",
+      "tenant_code": "tenant-1",
+      "owner": "tenant-1_user-1",
+      "user_id": "tenant-1_user-1",
+      "session_id": "g5obs-acmt-tenant1",
+      "content": "tenant isolation verification payload",
+      "created_at": "2026-10-18T17:32:28.913271+00:00"
+    }
+  ],
+  "checks": {
+    "row_present": true,
+    "landed_tenant_1": true,
+    "no_default_domain": true
+  },
+  "status": "PASS"
+}

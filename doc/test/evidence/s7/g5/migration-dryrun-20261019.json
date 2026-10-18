@@ -1,0 +1,93 @@
+﻿{
+  "schema_version": 1,
+  "tool": "migrate_memory_tenant_domain.py",
+  "generated_at": "2026-10-18T17:12:41+00:00",
+  "operator": "jerry",
+  "status": "PASS",
+  "mode": "dry-run",
+  "total_default": 283,
+  "migratable": 41,
+  "unresolved_count": 242,
+  "unresolved_samples": [
+    {
+      "memory_id": "9ed9724c-5553-4b26-82fb-292b8204e34c",
+      "owner": "e2e-user-f0cfc821"
+    },
+    {
+      "memory_id": "629da74a-9ba6-4580-b93a-0edd124d559a",
+      "owner": "e2e-user-f0cfc821"
+    },
+    {
+      "memory_id": "08a459fd-82be-4a24-b99f-99b54968ed6c",
+      "owner": "e2e-user-f0cfc821"
+    },
+    {
+      "memory_id": "72d8abef-ee1b-4c49-b8e0-25e9d0e13885",
+      "owner": "e2e-user-f0cfc821"
+    },
+    {
+      "memory_id": "24e9d1c3-5393-445d-9e8d-b0b6edad63c6",
+      "owner": "e2e-user-f0cfc821"
+    },
+    {
+      "memory_id": "46c7418f-0fcc-49e3-9d61-77e2094c1665",
+      "owner": "e2e-user-f0cfc821"
+    },
+    {
+      "memory_id": "f0918f16-eb60-435b-ad83-f20b912ab98f",
+      "owner": "e2e-forget-e7fbe10a"
+    },
+    {
+      "memory_id": "25cf7fbc-1632-4afc-9c5e-94470f376ee5",
+      "owner": "e2e-forget-e7fbe10a"
+    },
+    {
+      "memory_id": "a62e9d11-193d-4248-8654-4642dbaf9816",
+      "owner": "e2e-forget-e7fbe10a"
+    },
+    {
+      "memory_id": "42098968-2477-4ea3-bded-287da5178d55",
+      "owner": "e2e-decay-3ffc6b46"
+    },
+    {
+      "memory_id": "4e288592-0bbc-48b7-9d70-968633cd9992",
+      "owner": "e2e-graph-cc0e6e0e"
+    },
+    {
+      "memory_id": "37eef1ec-d265-4230-8977-6554154524a1",
+      "owner": "e2e-user-c9a87620"
+    },
+    {
+      "memory_id": "468ab9c6-4561-4219-a678-3a170287b07a",
+      "owner": "e2e-user-c9a87620"
+    },
+    {
+      "memory_id": "ea29f4a7-cf30-4dcc-b980-ba772bd0d52d",
+      "owner": "e2e-user-c9a87620"
+    },
+    {
+      "memory_id": "8f310268-3c5c-4a15-85b8-232c65d793eb",
+      "owner": "e2e-user-c9a87620"
+    },
+    {
+      "memory_id": "45c47755-cf05-4fc7-b79a-116ee788a0e6",
+      "owner": "e2e-user-c9a87620"
+    },
+    {
+      "memory_id": "10048301-07fa-4d20-97ed-034002f3e4a7",
+      "owner": "e2e-user-c9a87620"
+    },
+    {
+      "memory_id": "e8d080db-7d21-43db-b082-9ee0abedc409",
+      "owner": "e2e-forget-147e3dbf"
+    },
+    {
+      "memory_id": "3da9621f-a73e-4274-828b-2543a406b82d",
+      "owner": "e2e-forget-147e3dbf"
+    },
+    {
+      "memory_id": "73593c4b-7d72-47b2-a695-6222c0f85442",
+      "owner": "e2e-forget-147e3dbf"
+    }
+  ]
+}

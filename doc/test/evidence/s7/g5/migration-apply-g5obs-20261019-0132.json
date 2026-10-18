@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "tool": "migrate_memory_tenant_domain.py",
+  "generated_at": "2026-10-18T17:33:05+00:00",
+  "operator": "OpenBase-Arch",
+  "status": "PASS",
+  "mode": "apply",
+  "batch_id": "g5obs-20261019-0132",
+  "updated_rows": 1
+}

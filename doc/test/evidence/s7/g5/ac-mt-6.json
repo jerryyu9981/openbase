@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "tool": "acmt26_evidence.py",
+  "task": "S7-G5 / AC-MT-6",
+  "generated_at": "2026-10-18T17:58:01.202937+00:00",
+  "batch_id": "g5obs-20261019-0132",
+  "verify": {
+    "by_tenant": {
+      "tenant-1": 1
+    },
+    "leftover_default": 0,
+    "passed": true
+  },
+  "idempotent_apply": {
+    "updated_rows": 0
+  },
+  "checks": {
+    "verify_passed": true,
+    "no_leftover_default": true,
+    "second_apply_zero_rows": true
+  },
+  "status": "PASS"
+}
