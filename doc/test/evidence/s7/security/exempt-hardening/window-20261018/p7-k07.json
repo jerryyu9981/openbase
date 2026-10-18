@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P7",
+  "generated_at": "2026-10-18T21:50:00+08:00",
+  "operator": "OpenBase 架构组",
+  "environment": "available-fullstack-host (192.168.0.157)",
+  "openllm_version": "2.19.1",
+  "openllm_commit": "8d20a27",
+  "live_snapshot": {
+    "path": "doc/tmp/p7-openapi-snapshot.json",
+    "source": "build_openapi_from_app() via main.app",
+    "size_bytes": 2046780,
+    "sha256": "DC2679B319054996BCFF044577B3DA1AD0DE3D15ECC9AD2990D02F975B9B381F",
+    "paths": 292,
+    "operations": 367
+  },
+  "gate_check_live": {
+    "command": "python scripts/k07_endpoint_matrix.py --openapi-file <live_snapshot> --check",
+    "exit_code": 1,
+    "total": 367,
+    "covered": 365,
+    "exempt": 2,
+    "gaps": 16,
+    "uncovered": 0,
+    "exemption_without_approval": 0,
+    "verdict": "FAIL",
+    "gap_items": [
+      "GET /openllm/v1/trace/metrics/export",
+      "GET /openllm/v1/prompt/assembly/template",
+      "PUT /openllm/v1/prompt/assembly/template",
+      "POST /openllm/v1/prompt/assembly/preview",
+      "GET /openllm/v1/prompt/assembly/compare",
+      "GET /openllm/v1/prompt/assembly/compare/records",
+      "GET /openllm/v1/trace/fidelity/export",
+      "GET /openllm/v1/writeback/receipts",
+      "GET /openllm/v1/writeback/stats",
+      "GET /openllm/v1/writeback/dead-letter",
+      "POST /openllm/v1/writeback/dead-letter/replay",
+      "GET /api/v1/prompt/assembly/template",
+      "PUT /api/v1/prompt/assembly/template",
+      "POST /api/v1/prompt/assembly/preview",
+      "GET /api/v1/prompt/assembly/compare",
+      "GET /api/v1/prompt/assembly/compare/records"
+    ]
+  },
+  "gate_replay_baseline": {
+    "command": "python scripts/k07_endpoint_matrix.py --openapi-file backend/data/openapi-llm-snapshot.json --check",
+    "snapshot_date": "2026-09-11",
+    "exit_code": 0,
+    "total": 351,
+    "covered": 349,
+    "exempt": 2,
+    "gaps": 0,
+    "uncovered": 0,
+    "exemption_without_approval": 0,
+    "verdict": "PASS"
+  },
+  "drift_analysis": {
+    "delta_operations": 16,
+    "delta_paths": 14,
+    "classification": "K07-NEW-ENDPOINTS（业务面临时未注册隔离用例，与 A 直连豁免行无关）",
+    "cause": "2026-09-11 基线快照之后新增的 writeback / prompt assembly / trace export 端点未登记到 k07_isolation_registry.py，矩阵 v1.2.0 未同步",
+    "impact": "下次 CI 运行 K07 门禁将拒绝（AC-T12-2）；本次豁免行加固不引入该漂移"
+  },
+  "trusted_management_annotation": {
+    "endpoint": "/openllm/v1/health",
+    "category": "受信管理面（非豁免）",
+    "status": "PASS"
+  },
+  "exempt_rows_in_live_snapshot": [
+    {"method": "GET", "endpoint": "/health", "category": "健康管理（A 直连豁免）"},
+    {"method": "GET", "endpoint": "/metrics", "category": "健康管理（A 直连豁免）"}
+  ],
+  "exempt_rows_note": "文档面 /docs、/redoc、/openapi.json 生产关闭后不出现在 openapi 文档中；豁免登记表仍为 5 条，由 verify_exempt_endpoints.py 校验",
+  "verify_exempt_endpoints": {
+    "command": "python scripts/verify_exempt_endpoints.py --k07 doc/test/evidence/s7/gate/k07-finalize.json",
+    "exit_code": 0,
+    "result": "PASS",
+    "registry_routes": ["/docs", "/health", "/metrics", "/openapi.json", "/redoc"],
+    "code_routes": ["/docs", "/health", "/metrics", "/openapi.json", "/redoc"],
+    "dps": "WARN exempt_invalid=35（K07-DPS-AUTH 独立项，不阻断）"
+  },
+  "verdict": "FAIL_DRIFT",
+  "conclusion": "豁免行相关判据全部满足（登记表一致、受信管理面标注正确、DPS 仅 WARN）；但当前代码相对基线新增 16 个未注册业务端点，K07 全量门禁不通过，P8 双签前置不成立。",
+  "next_actions": [
+    "方案 A（推荐）：为 16 个新端点补登记 k07_isolation_registry.py，重生成矩阵 v1.3.0 与填报文档，复跑 --check 至 gaps=0 后重新执行 P7",
+    "方案 B：由审批人将 K07-NEW-ENDPOINTS 列为独立整改项并书面豁免本次 G4-T4-2 双签，整改单列跟踪"
+  ]
+}

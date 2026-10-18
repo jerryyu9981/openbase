@@ -1,10 +1,10 @@
-# OpenBase-G4-T4-2 A 直连豁免行双签审批单-v1.1.0
+# OpenBase-G4-T4-2 A 直连豁免行双签审批单-v1.2.0
 
 | 项目 | 内容 |
 |------|------|
-| 审批单编号 | OB-GOLIVE-G4-T4-2-DS-v1.1.0 |
-| 版本 | **v1.1.0** |
-| 状态 | **[待签署]**（技术签字 / 发布签字均未完成，签署后转 [Approved]） |
+| 审批单编号 | OB-GOLIVE-G4-T4-2-DS-v1.2.0 |
+| 版本 | **v1.2.0** |
+| 状态 | **[待签署]**（P8 前置核对完成：P7 全量门禁 `FAIL_DRIFT`，暂不具备签署条件；详见 §8.1） |
 | 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4（T4-2） |
 | 关联处置记录 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.4.0》 |
 | 关联判据 | S7-T4-2「管理面/探活 A 直连豁免行显式标注（与 K07 端点矩阵豁免行对账一致）」 |
@@ -19,6 +19,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：G4-T4-2 A 直连/健康管理面豁免行清单、对账结果、判据核对与双签栏 |
 | v1.1.0 | 2026-10-18 | OpenBase 架构组 | 增补 §5「A 直连豁免风险点」（R1~R8 风险清单、逐端点风险映射、控制措施与残余风险）与 §8「签署前机械核对项」；原 §5/§6/§7 顺延为 §6/§7/§9 |
+| v1.2.0 | 2026-10-18 | OpenBase 架构组 | 回填 §8 签署前机械核对结果（7 项满足 / 1 项部分 / 2 项未留证）；新增 §8.1 P8 执行结论；§2.2 OpenMemory 豁免行按 `k07-finalize.json` 修正为 9；登记 P7 `FAIL_DRIFT`（16 个新增业务端点未注册） |
 
 ---
 
@@ -54,7 +55,7 @@
 | 系统 | A 直连/健康管理豁免行 | 有效 | 无效 | 来源 |
 |------|:---------------------:|:----:|:----:|------|
 | OpenRAG | 10 | 10 | 0 | `k07-finalize.json`（openrag 段） |
-| OpenMemory | 5 | 5 | 0 | `k07-finalize.json`（openmemory 段） |
+| OpenMemory | 9 | 9 | 0 | `k07-finalize.json`（openmemory 段） |
 | OpenLLM | 5 | 5 | 0 | `k07-finalize.json`（openllm 段）+ 本单 §2.1 |
 | OpenBase | 1（模板样例） | 1 | 0 | `k07-finalize.json`（openbase 段，role=template） |
 
@@ -170,16 +171,27 @@ if path.startswith(GATE_EXEMPT_PATH_PREFIXES):
   豁免 ticket/审批人变更、§5.4 前置控制失效、或 L2-2 矩阵证据被后续运行态推翻。
 - **复核责任**：OpenBase 架构组（技术面）+ OPS（发布面）。
 
-## 8. 签署前机械核对项（逐项勾选并留存输出）
+## 8. 签署前机械核对项（2026-10-18 回填）
 
-- [ ] `GATE_EXEMPT_PATH_PREFIXES` 与 §2.1 五项**逐一相等**（集合 diff 为空）
-- [ ] `k07-finalize.json` 状态 `PASS`，四子系统 `exempt_invalid=0`
-- [ ] `matrix-finalize.json` 中 S7-T4-1/3/4 均为 `PASS`
-- [ ] 三基础设施 + OpenLLM 监听地址/安全组证据（无公网入口）
-- [ ] 生产 `/docs`、`/redoc` 关闭证据
-- [ ] `/metrics` 访问控制证据（ACL 或专用 token）
-- [ ] 豁免路径调用量告警配置截图/配置片段
-- [ ] 豁免到期（2026-12-31）告警配置截图/配置片段
+| # | 核对项 | 结果 | 证据 |
+|:-:|--------|:----:|------|
+| 1 | `GATE_EXEMPT_PATH_PREFIXES` 与 §2.1 五项逐一相等（集合 diff 为空） | ✅ | `verify_exempt_endpoints.py`：`code_routes` 与 `registry_routes` 均为 `/docs,/health,/metrics,/openapi.json,/redoc` |
+| 2 | `k07-finalize.json` 状态 `PASS`，四子系统 `exempt_invalid=0` | ✅ | `s7/gate/k07-finalize.json`：openbase 1/1、openrag 10/10、openmemory 9/9、openllm 5/5，DPS 35 单列 |
+| 3 | `matrix-finalize.json` 中 S7-T4-1/3/4 均为 `PASS` | ✅ | `s7/l2-2/matrix-finalize.json`（T4-2 仍 PENDING，由本单闭合） |
+| 4 | 三基础设施 + OpenLLM 监听地址/安全组证据（无公网入口） | ⚠️ 部分 | `p6-network.json`/`p6-firewall.json`：8001/8020 回环绑定、Domain/Private/Public 已启用且默认入站 Block；OpenRAG/DPS 目标环境待 OPS |
+| 5 | 生产 `/docs`、`/redoc` 关闭证据 | ✅ | `p3-startup.json`：`/docs=404`、`/openapi.json=404` |
+| 6 | `/metrics` 访问控制证据（ACL 或专用 token） | ✅ | `p5-prometheus.json`：无 token 401、Bearer/X-Metrics-Token 200、Prometheus target UP |
+| 7 | 豁免路径调用量告警配置截图/配置片段 | ❌ 未留证 | 需 OPS 提供告警规则与阈值 |
+| 8 | 豁免到期（2026-12-31）告警配置截图/配置片段 | ❌ 未留证 | 代码侧已实现到期 fail-closed（H7）；告警规则待 OPS 配置 |
+
+### 8.1 P8 执行结论
+
+1. **P7 全量门禁**：`FAIL_DRIFT`。当前代码实时导出 367 操作，较 2026-09-11 基线新增 16 个未注册隔离用例的业务端点（writeback / prompt assembly / trace export），与豁免行无关，但 AC-T12-2 门禁拒绝。
+2. **豁免面判据**：全部满足（§8 第 1/2/3/5/6 项）。
+3. **未留证项**：第 4 项目标环境网络证据（部分）、第 7/8 项告警配置（缺失）。
+4. **结论**：**暂不具备双签条件**，审批单维持 `[待签署]`。需先完成「16 个新端点注册 + 矩阵 v1.3.0 复跑」与「告警配置留证」，再由技术与发布签字人签署。
+
+详见《OpenBase-P7-K07终验报告-v1.0.0》§6 处置选项 A/B。
 
 ## 9. 附件与引用
 
@@ -195,4 +207,4 @@ if path.startswith(GATE_EXEMPT_PATH_PREFIXES):
 
 ---
 
-**审批单状态**：[待签署]（双签完成后由编制人回写状态并同步清单 v1.5.0 → G4 结项）
+**审批单状态**：[待签署]（P8 前置核对完成；待 P7 门禁清零与告警留证后由双签人签署，再同步清单 v1.5.0 → G4 结项）
