@@ -1,24 +1,25 @@
-# OpenBase-OpenLLM 豁免行加固剩余四项闭环执行计划-v1.0.0
+# OpenBase-OpenLLM 豁免行加固剩余四项闭环执行计划-v1.1.0
 
 | 项目 | 内容 |
 |------|------|
 | 计划名称 | OpenLLM 豁免行安全加固 L-1~L-4 闭环执行计划 |
-| 计划编号 | OB-SEC-EXEMPT-CLOSURE-v1.0.0 |
-| 版本 | **v1.0.0** |
-| 状态 | **[Draft]**（待 OPS / 评审组确认后进入执行窗口） |
+| 计划编号 | OB-SEC-EXEMPT-CLOSURE-v1.1.0 |
+| 版本 | **v1.1.0** |
+| 状态 | **[Draft]**（R-1/R-2 已确认；待 OPS 窗口执行 L-1/L-2/L-3 与评审组确认 L-4） |
 | 编制日期 | 2026-10-18 |
 | 编制人 | OpenBase 架构组 |
 | 适用范围 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.3.0》实施后剩余 4 项未闭环事项 |
 | 关联实施 | 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.1.0》§6 |
 | 关联门禁 | 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4（T4-2） |
 | 关联审批 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8 |
-| 代码基线 | OpenLLM `feature/s4-identity-channel-b` @ `cff0a32`（v2.19.0） |
+| 代码基线 | OpenLLM `feature/s4-identity-channel-b` @ `17763c0`（v2.19.1） |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：L-1~L-4 的目标、前置、步骤、验收、证据、回滚与执行顺序 |
+| v1.1.0 | 2026-10-18 | OpenBase 架构组 | 确认 R-1（Prometheus 2.48 不支持自定义头）与 R-2（OpenMemory 绑定 0.0.0.0）；L-2-0 Bearer 兼容已实施（OpenLLM 2.19.1 / `17763c0`） |
 
 ---
 
@@ -42,10 +43,44 @@
 - 不翻转新增开关的代码默认值（仅目标环境 `.env` 收紧）；
 - 不涉及 G5-OBS 迁移窗口与 DPS 认证类豁免整改。
 
+## 2A. R-1 / R-2 确认结论（2026-10-18）
+
+### R-1 Prometheus 自定义头支持：**已确认不成立（必须走 Bearer）**
+
+| 核对项 | 事实 | 来源 |
+|--------|------|------|
+| 目标版本 | `prom/prometheus:v2.48.0` | OpenLLM `docker-compose.prod.yml:202` |
+| 2.48 配置能力 | `scrape_config` **不存在 `http_headers`**；仅支持 `authorization`（含 `credentials_file`） | Prometheus 2.48 官方配置文档（逐项检索无 `http_headers`） |
+| 结论 | 仅靠 `X-Metrics-Token` 无法被标准 Prometheus 抓取 | 已确认 |
+
+**处置**：L-2-0 由“可选”改为**必做**，且已实施——
+`metrics_access_allowed` 同时接受 `X-Metrics-Token` 与 `Authorization: Bearer`；
+OpenLLM **2.19.1**（提交 `17763c0`），新增 Bearer 正/负例单测，32 例全部通过。
+Prometheus 侧使用 `authorization: {type: Bearer, credentials_file: ...}`。
+
+### R-2 服务监听地址：**已确认存在 0.0.0.0 暴露（OpenMemory）**
+
+| 服务 | 监听配置 | 来源 | 判定 |
+|------|---------|------|:----:|
+| OpenLLM | `uvicorn.run(..., host="127.0.0.1", port=8001)` | `doc/tmp/run_openllm.py:28` | ✅ 回环 |
+| OpenBase | `uvicorn.run(..., host="127.0.0.1", port=8000)` | `doc/tmp/run_openbase.py:16` | ✅ 回环 |
+| OpenRAG | `--host 127.0.0.1 --port 8010` | `doc/tmp/start-all-services.ps1:34` | ✅ 回环 |
+| DPS | `--host 127.0.0.1 --port 8030` | `doc/tmp/start-all-services.ps1:45` | ✅ 回环 |
+| **OpenMemory** | `OPENMEMORY_SERVER__HOST=0.0.0.0`、`PORT=8020` | `OpenMemory/.env` | **❌ 全接口暴露** |
+
+补充事实：核对时应用服务均未监听（8000/8001/8010/8020/8030 无监听）；
+本机 IP 为 `192.168.0.157`；本机 PostgreSQL 监听 `0.0.0.0:5432`（不属本次四服务范围，另行评估）。
+
+**处置（L-3 前置）**：目标环境将 OpenMemory 改为 `OPENMEMORY_SERVER__HOST=127.0.0.1`
+（同宿主部署，不影响调用方），或在防火墙层限制 8020 仅本机可访问；
+随后重新导出监听证据，确保 8000/8001/8010/8020/8030 **均不出现 `0.0.0.0`**。
+
+> 证据落点：`doc/test/evidence/s7/security/exempt-hardening/r1-r2-confirmation.json`
+
 ## 3. 执行顺序与依赖
 
 ```
-L-2-0（可选代码调整：Bearer 兼容）
+L-2-0（Bearer 兼容）── 已完成（OpenLLM 2.19.1 / 17763c0）
         │
 L-2-1 token 生成与密钥下发 ──► L-1-1 .env 下发 ──► L-1-2 正例启动
         │                              │
@@ -53,7 +88,7 @@ L-2-1 token 生成与密钥下发 ──► L-1-1 .env 下发 ──► L-1-2 �
         │
 L-2-2 Prometheus 抓取配置 ──► L-2-3 四态验证 ──► L-2-4 轮换演练
 
-L-3（网络控制，可与 L-1/L-2 并行）
+L-3（先整改 OpenMemory 监听 → 网络控制 → 证据；可与 L-1/L-2 并行）
 
 L-4（K07 标注，可与 L-1/L-2/L-3 并行）
 ```
@@ -146,18 +181,16 @@ python -m uvicorn main:app --host 127.0.0.1 --port 18001 2>&1 | Tee-Object -File
 
 ## 5. L-2：`/metrics` token 与 Prometheus 抓取
 
-### 5.1 L-2-0（可选，推荐）：Bearer 兼容
+### 5.1 L-2-0（必做，已完成）：Bearer 兼容
 
-当前实现仅接受 `X-Metrics-Token`。标准 Prometheus 抓取配置原生支持
-`authorization: {type: Bearer, credentials_file: ...}`，对自定义头支持有限。
-建议补充 **`Authorization: Bearer <token>` 与 `X-Metrics-Token` 双通道**（同一 token 校验），
-避免依赖代理注入或非标准抓取器。
+R-1 已确认：Prometheus 2.48 `scrape_config` 无 `http_headers`，仅支持
+`authorization`。因此必须提供 Bearer 通道。
 
 - 改动点：`app/security/exempt_policy.metrics_access_allowed`
-- 测试：新增 Bearer 正/负例，保持 X-Metrics-Token 用例不回归
-- 版本：OpenLLM `2.19.1`（修订号）
-
-> 若监控侧确认支持自定义头（vmagent/代理注入），可跳过本项并在证据中说明。
+- 实现：同时接受 `X-Metrics-Token` 与 `Authorization: Bearer <token>`（同一 token 校验）
+- 测试：Bearer 正例/错 token/Basic 负例；X-Metrics-Token 用例不回归（共 **32 passed**）
+- 版本：OpenLLM **2.19.1**，提交 **`17763c0`**
+- 状态：**✅ 已完成**
 
 ### 5.2 L-2-1 token 生成与下发
 
@@ -330,12 +363,12 @@ python scripts/verify_exempt_endpoints.py --k07 <OpenBase>/doc/test/evidence/s7/
 
 | 编号 | 事项 | 影响 | 处置 |
 |:----:|------|------|------|
-| R-1 | Prometheus 不支持自定义头 | L-2 无法直接落地 | 采用 L-2-0 Bearer 兼容（推荐）或代理注入 |
-| R-2 | 服务当前绑定 `0.0.0.0` | 监听面证据不达标 | 改为回环/私网网卡；评估跨主机调用影响 |
+| R-1 | Prometheus 2.48 不支持自定义头 | L-2 无法直接落地 | **已确认**；L-2-0 Bearer 兼容已完成（2.19.1 / `17763c0`） |
+| R-2 | OpenMemory 绑定 `0.0.0.0` | 监听面证据不达标 | **已确认**；目标环境改 `OPENMEMORY_SERVER__HOST=127.0.0.1` 或防火墙限制 8020，再导出证据 |
 | R-3 | token 轮换窗口操作失误 | 抓取中断 | 双 token 重叠 + 先加后删 |
 | R-4 | 矩阵重生成与手工 MD 不一致 | K07 对账失败 | 以脚本输出为准，MD 同步后再跑 `--check` |
 | R-5 | 生产窗口内反例探针误连共享库 | 污染/干扰 | 探针使用独立端口 + 明确 `DATABASE_URL`；单命令起停 |
 
 ---
 
-**计划状态**：[Draft]（待 OPS 确认窗口与监控方案、评审组确认 K07 分类口径后执行）
+**计划状态**：[Draft]（R-1/R-2 已确认并落处置；待 OPS 窗口执行 L-1/L-2/L-3、评审组确认 L-4）

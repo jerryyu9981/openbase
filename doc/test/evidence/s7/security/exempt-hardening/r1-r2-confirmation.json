@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "tool": "manual-r1-r2-confirmation",
+  "task": "OB-SEC-EXEMPT-CLOSURE",
+  "generated_at": "2026-10-18T14:52:37+08:00",
+  "operator": "OpenBase 架构组",
+  "r1_prometheus_custom_headers": {
+    "target_version": "prom/prometheus:v2.48.0",
+    "source": "OpenLLM/docker-compose.prod.yml:202",
+    "finding": "Prometheus 2.48 scrape_config 不存在 http_headers 字段；仅支持 authorization/credentials_file",
+    "evidence": "https://prometheus.io/docs/prometheus/2.48/configuration/configuration/（逐项检索无 http_headers）",
+    "verdict": "CONFIRMED_NOT_SUPPORTED",
+    "remediation": "L-2-0 已实施：/metrics 同时接受 X-Metrics-Token 与 Authorization Bearer",
+    "code_commit": "17763c0",
+    "code_version": "2.19.1"
+  },
+  "r2_listen_addresses": {
+    "checked_ports": [8000, 8001, 8010, 8020, 8030],
+    "runtime_state_at_check": "应用服务均未监听（端口无 LISTEN）",
+    "config_facts": {
+      "openllm": {"host": "127.0.0.1", "port": 8001, "source": "OpenBase/doc/tmp/run_openllm.py:28"},
+      "openbase": {"host": "127.0.0.1", "port": 8000, "source": "OpenBase/doc/tmp/run_openbase.py:16"},
+      "openrag": {"host": "127.0.0.1", "port": 8010, "source": "OpenBase/doc/tmp/start-all-services.ps1:34"},
+      "dps": {"host": "127.0.0.1", "port": 8030, "source": "OpenBase/doc/tmp/start-all-services.ps1:45"},
+      "openmemory": {"host": "0.0.0.0", "port": 8020, "source": "OpenMemory/.env:OPENMEMORY_SERVER__HOST"}
+    },
+    "verdict": "CONFIRMED_OPENMEMORY_BIND_ALL",
+    "remediation": "目标环境设置 OPENMEMORY_SERVER__HOST=127.0.0.1，或在防火墙限制 8020 仅本机可访问；整改后重新导出监听证据",
+    "notes": [
+      "本机 IP 为 192.168.0.157",
+      "本机 PostgreSQL 监听 0.0.0.0:5432，不属本次四服务范围，另行评估"
+    ]
+  },
+  "overall_verdict": "CONFIRMED"
+}
