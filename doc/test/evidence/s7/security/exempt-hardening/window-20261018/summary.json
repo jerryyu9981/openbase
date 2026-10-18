@@ -12,7 +12,7 @@
     "P3": {"status": "PASS", "evidence": "p3-startup.json"},
     "P4": {"status": "PASS_REUSED", "evidence": "p4-negative.json"},
     "P5": {"status": "BLOCKED_ENVIRONMENT", "evidence": "p5-prometheus.json"},
-    "P6": {"status": "PARTIAL", "evidence": "p6-network.json"},
+    "P6": {"status": "PARTIAL", "evidence": "p6-network.json", "note": "回环绑定已确认；Private/Public 防火墙未启用，生产需整改"},
     "P7": {"status": "PASS_PRIOR", "evidence": "l4-k07-annotation.json"},
     "P8": {"status": "PENDING_DUAL_SIGN", "evidence": "—"}
   },

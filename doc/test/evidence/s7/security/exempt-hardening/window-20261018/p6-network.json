@@ -18,7 +18,20 @@
     "OpenMemory 已在本机改绑 127.0.0.1 并实测 HEALTHY",
     "本机 PostgreSQL 0.0.0.0:5432 不属本次四服务范围，另行评估"
   ],
-  "firewall_evidence": "NOT_COLLECTED（需管理员权限/目标环境控制台）",
+  "firewall_evidence": {
+    "profiles": [
+      {"name": "Domain", "enabled": true, "default_inbound": "NotConfigured"},
+      {"name": "Private", "enabled": false, "default_inbound": "NotConfigured"},
+      {"name": "Public", "enabled": false, "default_inbound": "NotConfigured"}
+    ],
+    "rules_for_8001_8020": "none",
+    "command": "netsh advfirewall firewall show rule name=all | Select-String '8001|8020'",
+    "finding": "Private/Public 防火墙未启用；8001/8020 无显式入站规则。当前实际控制为回环绑定（127.0.0.1），远程不可达"
+  },
   "verdict": "PARTIAL",
-  "pending": ["防火墙/安全组规则导出", "K8s NetworkPolicy（如适用）"]
+  "pending": [
+    "目标环境启用防火墙（至少 Private/Public）并配置 default-deny",
+    "导出允许来源的入站规则 JSON",
+    "K8s NetworkPolicy（如适用）"
+  ]
 }
