@@ -1,10 +1,10 @@
-# OpenBase-G4-T4-2 A 直连豁免行双签审批单-v1.4.0
+# OpenBase-G4-T4-2 A 直连豁免行双签审批单-v1.5.0
 
 | 项目 | 内容 |
 |------|------|
-| 审批单编号 | OB-GOLIVE-G4-T4-2-DS-v1.4.0 |
-| 版本 | **v1.4.0** |
-| 状态 | **[待签署]**（技术前置已闭合：P7 PASS + 告警规则落地；剩余：目标环境网络证据 + 人工双签） |
+| 审批单编号 | OB-GOLIVE-G4-T4-2-DS-v1.5.0 |
+| 版本 | **v1.5.0** |
+| 状态 | **[待签署]**（全部技术前置已闭合，含四服务回环监听与防火墙证据；待技术与发布双签） |
 | 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4（T4-2） |
 | 关联处置记录 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.4.0》 |
 | 关联判据 | S7-T4-2「管理面/探活 A 直连豁免行显式标注（与 K07 端点矩阵豁免行对账一致）」 |
@@ -22,6 +22,7 @@
 | v1.2.0 | 2026-10-18 | OpenBase 架构组 | 回填 §8 签署前机械核对结果（7 项满足 / 1 项部分 / 2 项未留证）；新增 §8.1 P8 执行结论；§2.2 OpenMemory 豁免行按 `k07-finalize.json` 修正为 9；登记 P7 `FAIL_DRIFT`（16 个新增业务端点未注册） |
 | v1.3.0 | 2026-10-18 | OpenBase 架构组 | P7 整改完成：16 个新增端点补登记、矩阵升级 v1.3.0、基线快照同步，K07 gaps 16→0；更新 §8.1 结论（P7 已闭环，剩余告警留证与人工双签） |
 | v1.4.0 | 2026-10-18 | OpenBase 架构组 | 落地豁免告警规则 `config/prometheus/openllm-exempt-alerts.yml`（5 条）并在运行实例加载验证；§8 第 7/8 项转 ✅；§8.1 更新为「技术前置闭合，待目标环境网络证据与人工双签」 |
+| v1.5.0 | 2026-10-18 | OpenBase 架构组 | 拉起 OpenRAG/OpenMemory/DPS 并实测 HEALTHY，四服务与 Prometheus 全部仅绑定 127.0.0.1（wildcard=0）；§8 第 4 项转 ✅（窗口环境），§8.1 更新为「技术前置全部闭合，待双签」 |
 
 ---
 
@@ -180,7 +181,7 @@ if path.startswith(GATE_EXEMPT_PATH_PREFIXES):
 | 1 | `GATE_EXEMPT_PATH_PREFIXES` 与 §2.1 五项逐一相等（集合 diff 为空） | ✅ | `verify_exempt_endpoints.py`：`code_routes` 与 `registry_routes` 均为 `/docs,/health,/metrics,/openapi.json,/redoc` |
 | 2 | `k07-finalize.json` 状态 `PASS`，四子系统 `exempt_invalid=0` | ✅ | `s7/gate/k07-finalize.json`：openbase 1/1、openrag 10/10、openmemory 9/9、openllm 5/5，DPS 35 单列 |
 | 3 | `matrix-finalize.json` 中 S7-T4-1/3/4 均为 `PASS` | ✅ | `s7/l2-2/matrix-finalize.json`（T4-2 仍 PENDING，由本单闭合） |
-| 4 | 三基础设施 + OpenLLM 监听地址/安全组证据（无公网入口） | ⚠️ 部分 | `p6-network.json`/`p6-firewall.json`：8001/8020 回环绑定、Domain/Private/Public 已启用且默认入站 Block；OpenRAG/DPS 目标环境待 OPS |
+| 4 | 三基础设施 + OpenLLM 监听地址/安全组证据（无公网入口） | ✅ | `p6-network.json`：OpenLLM 8001 / OpenRAG 8010 / OpenMemory 8020 / DPS 8030 全部 `127.0.0.1` 且 HEALTHY，`wildcard_bindings=0`；三 Profile 默认入站 Block；生产主机/命名空间需 OPS 按同口径复验 |
 | 5 | 生产 `/docs`、`/redoc` 关闭证据 | ✅ | `p3-startup.json`：`/docs=404`、`/openapi.json=404` |
 | 6 | `/metrics` 访问控制证据（ACL 或专用 token） | ✅ | `p5-prometheus.json`：无 token 401、Bearer/X-Metrics-Token 200、Prometheus target UP |
 | 7 | 豁免路径调用量告警配置截图/配置片段 | ✅ | `config/prometheus/openllm-exempt-alerts.yml`（`OpenLLMExemptPathRateHigh` + `OpenLLMExemptSensitiveUntrustedAccess`）；`p8-alerts.json`：promtool 5 rules、运行实例已加载 health=ok |
@@ -191,8 +192,8 @@ if path.startswith(GATE_EXEMPT_PATH_PREFIXES):
 1. **P7 全量门禁**：**PASS**。矩阵 v1.3.0（370 行）与 367 操作底单一致；`gaps=0 / uncovered=0 / exemption_without_approval=0`；隔离用例 792 passed。
 2. **豁免面判据**：全部满足（§8 第 1/2/3/5/6 项）。
 3. **告警配置**：已完成（§8 第 7/8 项）——5 条规则经 `promtool` 校验并由运行实例加载，全部 `health=ok / state=inactive`；生产告警路由（Alertmanager/企业平台）待 OPS 接入。
-4. **剩余未闭合**：§8 第 4 项目标环境网络证据（本机回环已证，生产待 OPS）+ 技术与发布签字。
-5. **结论**：技术前置已闭合，**具备提交双签条件**；双签完成后审批单转 `[Approved]`，清单 v1.5.0 → v1.6.0，G4 关闭。
+4. **剩余未闭合**：生产主机/命名空间按同口径复验（OPS）+ 技术与发布签字。
+5. **结论**：**全部技术前置已闭合，具备双签条件**；双签完成后审批单转 `[Approved]`，清单 v1.5.0 → v1.6.0，G4 关闭。
 
 详见《OpenBase-P7-K07终验报告-v1.1.0》§6 与 `p8-alerts.json`。
 
@@ -212,4 +213,4 @@ if path.startswith(GATE_EXEMPT_PATH_PREFIXES):
 
 ---
 
-**审批单状态**：[待签署]（技术前置已闭合；待目标环境网络证据与双签人签署后转 [Approved]，并同步清单 v1.5.0 → v1.6.0、关闭 G4）
+**审批单状态**：[待签署]（全部技术前置已闭合；待技术与发布双签后转 [Approved]，并同步清单 v1.5.0 → v1.6.0、关闭 G4）

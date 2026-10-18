@@ -1,37 +1,51 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "task": "OB-SEC-EXEMPT-WINDOW",
   "stage": "P6",
-  "generated_at": "2026-10-18T19:06:59+08:00",
+  "generated_at": "2026-10-18T22:28:00+08:00",
   "operator": "OpenBase 架构组",
-  "listeners_during_window": [
-    {"service": "openllm", "local_address": "127.0.0.1", "port": 8001}
+  "environment": "available-fullstack-host (192.168.0.157)",
+  "fullstack_listeners": [
+    {"service": "openllm", "local_address": "127.0.0.1", "port": 8001, "state": "HEALTHY"},
+    {"service": "openrag", "local_address": "127.0.0.1", "port": 8010, "state": "HEALTHY"},
+    {"service": "openmemory", "local_address": "127.0.0.1", "port": 8020, "state": "HEALTHY"},
+    {"service": "dps", "local_address": "127.0.0.1", "port": 8030, "state": "HEALTHY"},
+    {"service": "prometheus", "local_address": "127.0.0.1", "port": 9090, "state": "READY"},
+    {"service": "openbase", "local_address": "DOWN", "port": 8000, "state": "NOT_STARTED"},
+    {"service": "oidc-idp", "local_address": "DOWN", "port": 8090, "state": "NOT_STARTED"}
   ],
+  "wildcard_bindings": 0,
+  "listener_cmd": "Get-NetTCPConnection -LocalPort <port> -State Listen",
   "config_facts": {
-    "openbase": "127.0.0.1:8000",
-    "openrag": "127.0.0.1:8010",
-    "dps": "127.0.0.1:8030",
-    "openmemory": "127.0.0.1:8020（本窗口前已改绑）"
+    "openbase": "127.0.0.1:8000（本次未拉起，历史窗口已验证回环）",
+    "openrag": "127.0.0.1:8010（本次实测 HEALTHY，29s）",
+    "dps": "127.0.0.1:8030（本次实测 HEALTHY，8s）",
+    "openmemory": "127.0.0.1:8020（本窗口前已改绑，本次实测 HEALTHY，9s）",
+    "openllm": "127.0.0.1:8001（窗口内实测 HEALTHY）",
+    "prometheus": "127.0.0.1:9090（本窗口启动）"
   },
   "findings": [
-    "窗口内 OpenLLM 仅绑定回环，无 0.0.0.0 暴露",
-    "OpenMemory 已在本机改绑 127.0.0.1 并实测 HEALTHY",
+    "三基础设施（OpenRAG/OpenMemory/DPS）与 OpenLLM 全部仅绑定 127.0.0.1，无 0.0.0.0/:: 暴露",
+    "Prometheus 亦仅绑定回环；抓取走 loopback + Bearer token",
+    "OpenMemory 已从 0.0.0.0 改绑 127.0.0.1，本次健康检查 9s 通过",
     "本机 PostgreSQL 0.0.0.0:5432 不属本次四服务范围，另行评估"
   ],
   "firewall_evidence": {
     "profiles": [
-      {"name": "Domain", "enabled": true, "default_inbound": "NotConfigured"},
-      {"name": "Private", "enabled": false, "default_inbound": "NotConfigured"},
-      {"name": "Public", "enabled": false, "default_inbound": "NotConfigured"}
+      {"name": "Domain", "enabled": true, "default_inbound": "Block", "default_outbound": "Allow"},
+      {"name": "Private", "enabled": true, "default_inbound": "Block", "default_outbound": "Allow"},
+      {"name": "Public", "enabled": true, "default_inbound": "Block", "default_outbound": "Allow"}
     ],
-    "rules_for_8001_8020": "none",
-    "command": "netsh advfirewall firewall show rule name=all | Select-String '8001|8020'",
-    "finding": "Private/Public 防火墙未启用；8001/8020 无显式入站规则。当前实际控制为回环绑定（127.0.0.1），远程不可达"
+    "rules": [
+      {"name": "OpenBase-Security-8001-In", "local_port": 8001, "remote_address": "127.0.0.1", "action": "Allow", "profile": "Domain, Private"},
+      {"name": "OpenBase-Security-8020-In", "local_port": 8020, "remote_address": "127.0.0.1", "action": "Allow", "profile": "Domain, Private"}
+    ],
+    "backup": "doc/tmp/p6-backup/firewall-backup-20261018-213258.wfw（SHA256 7A8D8D78…954049，不入库）",
+    "finding": "三 Profile 已启用且默认入站 Block；8001/8020 入站仅允许回环"
   },
-  "verdict": "PARTIAL",
+  "verdict": "PASS",
   "pending": [
-    "目标环境启用防火墙（至少 Private/Public）并配置 default-deny",
-    "导出允许来源的入站规则 JSON",
+    "目标环境（生产主机/命名空间）按同一口径复验监听与安全组，并归档证据",
     "K8s NetworkPolicy（如适用）"
   ]
 }
