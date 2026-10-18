@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "stage": "P0",
+  "generated_at": "2026-10-18T23:15:00+08:00",
+  "operator": "OpenBase 架构组",
+  "environment": "available-fullstack-host (192.168.0.157) / production-mode overlay",
+  "precheck": {
+    "openllm_version_before": "2.19.1",
+    "ports_before": {"8001": "LISTEN", "8010": "LISTEN", "8020": "LISTEN", "8030": "LISTEN", "9090": "LISTEN"},
+    "database": "192.168.0.151:5432/nuct",
+    "redis": "healthy",
+    "env_file_untouched": true,
+    "overlay": "process environment injected by doc/tmp/prod-window/start-openllm-prod.ps1"
+  },
+  "verdict": "PASS"
+}

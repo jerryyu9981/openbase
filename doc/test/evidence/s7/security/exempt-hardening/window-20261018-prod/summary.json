@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "generated_at": "2026-10-18T23:26:00+08:00",
+  "operator": "OpenBase 架构组",
+  "environment": "available-fullstack-host (192.168.0.157) / production-mode overlay",
+  "items": {
+    "P0": {"status": "PASS", "evidence": "p0-precheck.json"},
+    "P1": {"status": "PASS", "evidence": "p1-token.json"},
+    "P2": {"status": "PASS", "evidence": "p2-env-diff.json", "note": "进程环境覆盖，backend/.env 未改"},
+    "P3": {"status": "PASS", "evidence": "p3-startup.json", "note": "production / 2.19.1 / 三组件 ok / docs 404"},
+    "P4": {"status": "PASS", "evidence": "p4-negative.json", "note": "N-1~N-5 + N-7 全部拒绝启动"},
+    "P5": {"status": "PASS", "evidence": "p5-prometheus.json", "note": "target up=1；5 规则 health=ok"},
+    "P6": {"status": "PASS", "evidence": "p6-network.json", "note": "五端口回环；wildcard=0"},
+    "P7": {"status": "PASS", "evidence": "p7-k07.json", "note": "gaps=0 / uncovered=0"},
+    "P8": {"status": "PASS", "evidence": "window-20261018/p8-recheck.json", "note": "双签与 §8 复核沿用"}
+  },
+  "g1_g2": {
+    "G1": "窗口环境已验证：三 REAL 开关置真后 OpenRAG/OpenMemory/DPS 均 ok",
+    "G2": "窗口环境已验证：5 组门禁置真可启动；6 个反例全部拒绝",
+    "production_pending": "生产主机 .env 下发与复跑仍待 OPS"
+  },
+  "g5_obs": "未执行 T5/T6：MQ1/MQ3 待裁定，迁移执行单已就绪",
+  "overall_verdict": "WINDOW_PROD_MODE_PASS",
+  "notes": [
+    "本次为生产模式窗口复跑（进程环境覆盖），不是真实生产主机",
+    "OpenRAG 需 OPENRAG_API_KEY（X-API-Key）；未注入时组件 unavailable，已修复",
+    "G5-OBS 迁移未执行，避免在未裁定前写入共享库"
+  ]
+}

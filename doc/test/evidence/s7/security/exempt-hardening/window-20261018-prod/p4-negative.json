@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "stage": "P4",
+  "generated_at": "2026-10-18T23:22:00+08:00",
+  "operator": "OpenBase 架构组",
+  "mode": "port 8011 isolated probes; each case overrides one gate and must fail startup",
+  "cases": [
+    {"case": "N-1", "variable": "ENFORCE_INBOUND_IDENTITY_HEADERS", "value": "false", "verdict": "PASS"},
+    {"case": "N-2", "variable": "RBAC_PERMISSION_ENFORCE", "value": "false", "verdict": "PASS"},
+    {"case": "N-3", "variable": "TENANT_SCOPE_ENFORCE", "value": "false", "verdict": "PASS"},
+    {"case": "N-4", "variable": "QUOTA_MISSING_FAIL_CLOSED", "value": "false", "verdict": "PASS"},
+    {"case": "N-5", "variable": "OPENLLM_METRICS_TOKEN", "value": "", "verdict": "PASS"},
+    {"case": "N-7", "variable": "OPENLLM_EXEMPT_EXPIRY_ENFORCE", "value": "false", "verdict": "PASS"}
+  ],
+  "note": "N-6（SECRET_KEY 空）未单列：进程环境不可置空覆盖 backend/.env 中的 SECRET_KEY；生产下发时以缺失键验证",
+  "verdict": "PASS"
+}

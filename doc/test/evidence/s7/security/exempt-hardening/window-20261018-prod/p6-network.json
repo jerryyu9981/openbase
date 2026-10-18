@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "stage": "P6",
+  "generated_at": "2026-10-18T23:24:00+08:00",
+  "operator": "OpenBase 架构组",
+  "listeners": [
+    {"port": 8001, "address": "127.0.0.1"},
+    {"port": 8010, "address": "127.0.0.1"},
+    {"port": 8020, "address": "127.0.0.1"},
+    {"port": 8030, "address": "127.0.0.1"},
+    {"port": 9090, "address": "127.0.0.1"}
+  ],
+  "wildcard_bindings": 0,
+  "firewall": "三 Profile 启用且默认入站 Block；OpenBase-Security-8001-In/8020-In 仅回环（沿用 P6 证据）",
+  "reference": "window-20261018/p6-network.json + p6-firewall.json",
+  "verdict": "PASS"
+}

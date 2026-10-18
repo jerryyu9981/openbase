@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "stage": "P3",
+  "generated_at": "2026-10-18T23:18:00+08:00",
+  "operator": "OpenBase 架构组",
+  "startup": {
+    "mode": "production overlay (ENV=production, DEBUG=false, OPENAPI_PUBLIC=false)",
+    "listen": "127.0.0.1:8001",
+    "env_reported": "production",
+    "version": "2.19.1",
+    "startup_complete": true
+  },
+  "checks": {
+    "health": 200,
+    "version": 2.19.1,
+    "docs": 404,
+    "redoc": 404,
+    "openapi_json": 404,
+    "metrics_without_token": 401,
+    "metrics_bearer": 200,
+    "postgresql": "healthy",
+    "redis": "healthy"
+  },
+  "components": {
+    "openmemory": {"status": "ok", "channel": "b"},
+    "openrag": {"status": "ok", "channel": "b", "latency_ms": 283},
+    "dps": {"status": "ok", "channel": "b", "latency_ms": 320},
+    "ollama": {"status": "ok", "channel": "a"}
+  },
+  "channel": {"primary_channel": "b", "single_primary": true, "state": "b-primary"},
+  "g1_validation": "三 REAL 开关置真后三组件均 ok（真实契约可达）",
+  "g2_validation": "生产门禁全部置真后启动成功；反例见 p4",
+  "notes": [
+    "OpenRAG 在 production 模式要求 X-API-Key；通过 OPENRAG_API_KEY 注入后组件恢复 ok",
+    "backend/.env 未修改，全部通过进程环境覆盖"
+  ],
+  "verdict": "PASS"
+}

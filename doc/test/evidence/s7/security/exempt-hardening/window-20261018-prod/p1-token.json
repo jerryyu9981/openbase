@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "stage": "P1",
+  "generated_at": "2026-10-18T23:15:00+08:00",
+  "operator": "OpenBase 架构组",
+  "token": {
+    "reused_from": "doc/tmp/prometheus/metrics_token",
+    "length": 64,
+    "prefix": "da55",
+    "plaintext_logged": false,
+    "note": "复用窗口 P1 token；生产由密钥管理下发"
+  },
+  "verdict": "PASS"
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW-PROD",
+  "stage": "P7",
+  "generated_at": "2026-10-18T23:25:00+08:00",
+  "operator": "OpenBase 架构组",
+  "command": "python scripts/k07_endpoint_matrix.py --check",
+  "result": {
+    "total": 367,
+    "covered": 365,
+    "exempt": 2,
+    "gaps": 0,
+    "uncovered": 0,
+    "exemption_without_approval": 0,
+    "exit_code": 0
+  },
+  "matrix_version": "v1.3.0",
+  "reference": "window-20261018/p7-k07.json",
+  "verdict": "PASS"
+}
