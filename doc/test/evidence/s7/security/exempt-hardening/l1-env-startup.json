@@ -14,8 +14,16 @@
     "gateway_health": {"status": 200},
     "docs": 404,
     "openapi_json": 404,
-    "observed_app_version": "2.18.0",
-    "warning": "启动自检｜版本口径漂移：运行时 APP_VERSION=2.18.0 与代码版本 2.19.1 不一致（.env 覆盖）"
+    "observed_app_version": "2.19.1",
+    "version_drift_resolved": true,
+    "local_env_fix": "OpenLLM/backend/.env APP_VERSION 2.18.0 -> 2.19.1（备份 .env.bak-20261018-version）；复验 /health 返回 2.19.1"
+  },
+  "reverified_at": "2026-10-18T17:33:00+08:00",
+  "reverified_checks": {
+    "health": 200,
+    "version": "2.19.1",
+    "docs": 404,
+    "metrics_without_token": 401
   },
   "negative": [
     {"id": "N-1", "injection": "OPENLLM_EXEMPT_MATCH_MODE=prefix", "exit_code": 3, "keyword_matched": true},

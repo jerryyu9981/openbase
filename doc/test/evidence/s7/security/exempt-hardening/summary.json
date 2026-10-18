@@ -5,7 +5,7 @@
   "operator": "OpenBase 架构组",
   "code_baseline": {"repo": "OpenLLM", "branch": "feature/s4-identity-channel-b", "commits": ["dd59291", "cff0a32", "17763c0", "8d20a27"], "version": "2.19.1"},
   "items": {
-    "L-1": {"status": "PARTIAL", "local": "正例启动 + N-1~N-5 反例全部通过", "pending": "生产 .env 下发与重启验证"},
+    "L-1": {"status": "PARTIAL", "local": "正例启动（版本 2.19.1 复验一致）+ N-1~N-5 反例全部通过", "pending": "生产 .env 下发与重启验证"},
     "L-2": {"status": "PARTIAL", "local": "四态鉴权 + Bearer + 轮换 + 健康分级通过", "pending": "Prometheus 抓取 target UP 证据"},
     "L-3": {"status": "PARTIAL", "local": "OpenMemory 已改绑 127.0.0.1:8020 并实测 HEALTHY（18s），验证后已停止", "pending": "生产同步整改 + 防火墙/NetworkPolicy 证据"},
     "L-4": {"status": "PASS", "local": "矩阵 v1.2.0 标注完成；--check 与门禁脚本均通过", "pending": "评审组确认分类口径"}
