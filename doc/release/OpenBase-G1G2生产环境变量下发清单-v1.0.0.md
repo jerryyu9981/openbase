@@ -18,7 +18,7 @@
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
-| v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：G1/G2 共 10 项开关、生产启动必需项、豁免加固 24 键、码值映射、机械校验与反例验收、回滚与签字栏 |
+| v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：G1/G2 共 10 项开关、生产启动必需项、豁免加固 24 键、码值映射、机械校验与反例验收、回滚与签字栏。**窗口复跑补充**：`OPENRAG_API_KEY` 为 production 必需（缺失时 OpenRAG 401），已加入 §2.5 |
 
 ---
 
@@ -93,6 +93,8 @@
 | `OPENLLM_DPS_REAL_TENANT` | `<DPS 预建租户码>` | 低 | 同上 |
 | `OPENLLM_DPS_REAL_USER` | `<DPS 人员 ID>` | 低 | 同上 |
 | `OPENLLM_DPS_REAL_ROLE` | `<标准角色码>` | 低 | 需在互译表内（如 `org_member`） |
+| `OPENRAG_API_KEY` | `<OpenRAG X-API-Key>` | **高** | **窗口复跑发现**：production 模式 OpenRAG 强制 `X-API-Key`，缺失将导致 `openrag=unavailable`（401）。取值与 OpenRAG `.env::OPENRAG_API_SERVICE_API_KEY` 一致 |
+| `OPENMEMORY_API_KEY` | `<OpenMemory API Key>`（如其启用） | **高** | 与 OpenMemory 侧配置一致；未启用可留空 |
 
 > 码值映射必须由生成器产出，禁止手抄：`python scripts/gen_dps_code_map.py --format env`。
 
