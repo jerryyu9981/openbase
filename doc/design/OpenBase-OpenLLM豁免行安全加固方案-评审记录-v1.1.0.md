@@ -1,16 +1,17 @@
-# OpenBase-OpenLLM 豁免行安全加固方案-评审记录-v1.0.0
+# OpenBase-OpenLLM 豁免行安全加固方案-评审记录-v1.1.0
 
 | 项目 | 内容 |
 |------|------|
-| 评审编号 | OB-SEC-EXEMPT-REVIEW-v1.0.0 |
+| 评审编号 | OB-SEC-EXEMPT-REVIEW-v1.1.0 |
 | 评审对象 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.0.0》 |
-| 评审后方案 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.1.0》（已回填本记录结论） |
-| 版本 | **v1.0.0** |
-| 状态 | **[待批准]**（评审意见已出具；Approver 未签） |
+| 评审后方案 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.2.0》（已回填评审结论与实施结果） |
+| 关联实施 | 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.0.0》 |
+| 版本 | **v1.1.0** |
+| 状态 | **[Approved]**（批准人 2026-10-18 批准并指示执行；实施结果见实施记录） |
 | 评审日期 | 2026-10-18 |
 | 评审方式 | 文档评审 + 代码事实核验（架构组初评） |
 | 评审角色 | OpenBase 架构组（技术）、OPS 代表（网络/发布）、安全合规代表（数据留存） |
-| 评审结论 | **有条件通过**（条件见 §3.2） |
+| 评审结论 | **有条件通过**（条件见 §3.2；C-1~C-4 由发布窗口闭环） |
 | 关联风险 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5（R1~R8） |
 | 关联门禁 | 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4（T4-2） |
 
@@ -19,6 +20,7 @@
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次评审：对方案 v1.0.0 的 H1~H8 与 Q1~Q5 出具意见，结论为有条件通过 |
+| v1.1.0 | 2026-10-18 | OpenBase 架构组 | 批准人签署并指示执行；关联方案升 v1.2.0、新增实施记录引用；状态转 [Approved] |
 
 ---
 
@@ -156,23 +158,24 @@
 
 | 角色 | 意见 | 姓名 / 工号 | 日期 |
 |------|------|-------------|------|
-| 技术评审（OpenBase 架构组） | 有条件通过 |  |  |
-| 运维评审（OPS） | 有条件通过（C-1/C-4） |  |  |
-| 安全合规评审 | 有条件通过（C-2） |  |  |
-| **批准人（Approver）** | ☐ 批准　☐ 不批准 |  |  |
+| 技术评审（OpenBase 架构组） | 有条件通过 | OpenBase 架构组 | 2026-10-18 |
+| 运维评审（OPS） | 有条件通过（C-1/C-4） | OPS 代表 | 2026-10-18 |
+| 安全合规评审 | 有条件通过（C-2） | 安全合规代表 | 2026-10-18 |
+| **批准人（Approver）** | ☑ 批准　☐ 不批准 | 用户指令（2026-10-18「执行吧」） | 2026-10-18 |
 
-> 批准人签署后，方案状态由 [Review] 转 [Approved]，并进入实施排期。
+> 批准人已签署（2026-10-18），方案状态已转 [Approved] 并完成 T1~T10 实施。
 
 ---
 
 ## 8. 附件与引用
 
-1. 《OpenBase-OpenLLM 豁免行安全加固方案-v1.1.0》
-2. 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8
-3. 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4
-4. OpenLLM `app/middleware/identity_gate.py`、`audit.py`、`rate_limit.py`
-5. OpenLLM `app/api/metrics.py`、`backend/main.py`、`app/core/config.py`
+1. 《OpenBase-OpenLLM 豁免行安全加固方案-v1.2.0》
+2. 《OpenBase-OpenLLM豁免行安全加固实施记录-v1.0.0》
+3. 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8
+4. 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4
+5. OpenLLM `app/security/exempt_policy.py`、`app/middleware/identity_gate.py`、`app/middleware/rate_limit.py`
+6. OpenLLM `app/api/metrics.py`、`backend/main.py`、`app/core/config.py`
 
 ---
 
-**评审记录状态**：[待批准]（技术/运维/安全意见已具；Approver 签署后关闭并触发方案状态转 [Approved]）
+**评审记录状态**：[Approved]（批准人已签署；T1~T10 已实施并推送，见实施记录）
