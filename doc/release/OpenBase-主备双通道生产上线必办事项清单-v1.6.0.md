@@ -1,11 +1,11 @@
-# OpenBase-主备双通道生产上线必办事项清单-v1.5.0
+# OpenBase-主备双通道生产上线必办事项清单-v1.6.0
 
 | 项目 | 内容 |
 |------|------|
 | 清单名称 | 主备双通道（B 主通道 / A 备用直连）生产上线必办事项清单 |
-| 清单编号 | OB-GOLIVE-CHANNEL-AB-v1.5.0 |
-| 版本 | **v1.5.0** |
-| 状态 | **[处置中]**（G1/G2 仓库侧载体已办；G3/G5/G6 已闭环；G4 待双签；G5-OBS 代码/迁移脚本就绪、待迁移窗口） |
+| 清单编号 | OB-GOLIVE-CHANNEL-AB-v1.6.0 |
+| 版本 | **v1.6.0** |
+| 状态 | **[处置中]**（G3/G4/G5/G6 已闭环；G1/G2 运维侧 `.env` 下发待窗口；G5-OBS 迁移/开关待窗口批准） |
 | 编制日期 | 2026-10-16 |
 | 编制人 | AA/PM-OpenBase-Dev |
 | 适用范围 | 经统一前端 / 智能体发起的会话，经 **OpenLLM 主通道 B**（编排 + 三基础设施取数/回写）与 **OpenBase 备用直连 A** 两条通道上生产前的必办事项 |
@@ -24,6 +24,7 @@
 | v1.3.0 | 2026-10-18 | OpenBase 架构组 | 产出《G4-T4-2 A 直连豁免行双签审批单-v1.0.0》；G5-OBS 立项为跨仓小版本迭代（《Memory 跨租户隔离修复立项方案-v1.0.0》） |
 | v1.4.0 | 2026-10-18 | OpenBase 架构组 | G5-OBS 实施 T1~T4：OpenLLM 2.18.0 开关与按请求头、OpenMemory 7.3.2 迁移脚本；目标库 dry-run 279/37/242；T5/T6 待迁移窗口批准 |
 | v1.5.0 | 2026-10-18 | OpenBase 架构组 | G4-T4-2 审批单升 v1.1.0：增补 A 直连豁免风险点（R1~R8）、逐端点风险映射与签署前机械核对项；G4 行与处置进展同步引用 |
+| v1.6.0 | 2026-10-18 | OpenBase 架构组 | G4 闭环：T4-2 双签完成（审批单 v1.6.0 `[Approved]`）；同步 P7 矩阵 v1.3.0、告警规则与四服务回环监听证据；G4 行转 ✅ PASS |
 
 ---
 
@@ -42,7 +43,7 @@
 | **G1** | **三 REAL 开关置真**——`OPENLLM_OPENRAG_REAL` / `OPENLLM_OPENMEMORY_REAL` / `OPENLLM_DPS_REAL` 及 `OPENMEMORY_ENABLED` / `DPS_ENABLED` 在**目标环境 `.env` 显式置 `true`**（代码默认全 `False` ⇒ 走 stub） | LL / OPS | OpenLLM `.env.example` + 运维手册「生产环境启动门禁」；`.env`（不入库，运维下发） | 运行态确认**真实契约端点**被调用（`/api/v1 remember/recall`、`/api/v1 search/ingest`、DPS 真实契约），**非** `/openmemory/v1`、`/openrag/v1` stub；`/health` 三组件 `ok` | ⬜ |
 | **G2** | **生产门禁 5 组开关置真**——`ENFORCE_INBOUND_IDENTITY_HEADERS` / `RBAC_PERMISSION_ENFORCE` / `TENANT_SCOPE_ENFORCE` / `TENANT_HEADER_CONSISTENCY_ENFORCE` / `QUOTA_MISSING_FAIL_CLOSED` | LL / OPS | 同 G1 载体 | `ENV=production` 下应用**正常启动**（未置真即按门禁**拒绝启动**）；启动日志无门禁告警 | ⬜ |
 | **G3** | **L2-1 主备切换演练（真实运行态）**——`B 断 → A 接管` / `A 断 → B 维持` 双场景 | OPS / OB | 联调窗口注故障 + 切换演练脚本；判据 S7-T3-1~4 | 双场景演练报告留证：B 断时 `bypass_orchestration=true`、改走 A 直连且**写路径暂停**；A 断时 B 维持 | ✅ **PASS**（S7-T3-1~4；证据 `doc/test/evidence/s7/l2-1/**`） |
-| **G4** | **L2-2 通道矩阵终验（真实运行态）**——每子系统 × A/B × **头语义**矩阵 + **写路径等价** + **K14 幂等** | OB / LL | 以 S4-T8 `matrix_rows` 为基座；判据 S7-T4-1~4；证据落 `doc/test/evidence/s7/l2-2/**` | 矩阵逐行真实双签通过；写路径 A/B 等价（A 不承载写，B 承载）；幂等复投不重复执行 | 🟡 **待双签**：T4-1/3/4 PASS；审批单《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》已产出（[待签署]，含 R1~R8 风险分析） |
+| **G4** | **L2-2 通道矩阵终验（真实运行态）**——每子系统 × A/B × **头语义**矩阵 + **写路径等价** + **K14 幂等** | OB / LL | 以 S4-T8 `matrix_rows` 为基座；判据 S7-T4-1~4；证据落 `doc/test/evidence/s7/l2-2/**` | 矩阵逐行真实双签通过；写路径 A/B 等价（A 不承载写，B 承载）；幂等复投不重复执行 | ✅ **PASS**：T4-1/3/4 PASS + T4-2 双签完成（审批单 v1.6.0 `[Approved]`，2026-10-18） |
 | **G5** | **回写链路真实面**——`POST /openllm/v1/writeback` 三路（`memory` / `rag` / `profile`）真实上游落地 | LL / OM / RG / DPS | 回写队列就绪性（原 S4-4）+ 主通道沉淀（原 S6-3）；幂等键 `session_id + seq + target` | 三路均落真实上游并留证；重复投递返回 `duplicated=true` 且不重复执行；失败按指数退避 ≤3 次 + 死信可视 | ✅ **PASS**（三路 accepted=true；复投三路 duplicated=true；证据 `doc/test/evidence/s7/g5/**`） |
 | **G6** | **回写 `profile` 路由真实化确认**——当前注记「DPS Mock 先行」，须确认真实 DPS 契约已生效 | LL / DPS | 配置注释与运行态探针 | `profile` 回写打到**真实 DPS**（非 Mock）；`extract_targets` 生效 | ✅ **PASS**（`person_id=tenant-1_1`，`attributes_json` 写入探针标记；证据同上） |
 
@@ -51,7 +52,7 @@
 > **处置进展（2026-10-18，详见《处置记录》v1.4.0）**：
 > - **G1 / G2**：**仓库侧载体已补齐**；**运维侧 `.env` 下发待窗口**。
 > - **G3**：✅ 已跑 `scripts/drill_l2_1_failover.py`（驱动 OpenLLM 真实通道状态机）→ S7-T3-1~4 **全 PASS**。
-> - **G4**：🟡 `dual_channel_e2e.py` 真实双通道：四子系统读等价 PASS（OpenRAG 9/9、OpenLLM 6/6、DPS 18/18、OpenMemory PASS_EMPTY）、写路径 B→A 可见、A 写被拒（期望）、K14 同名行=1；`finalize_l2_2_matrix.py` T4-1/3/4 PASS，**T4-2（A 直连豁免行人工双签/审批）待窗口**。审批单已升 **v1.1.0**，新增 A 直连豁免风险点（R1~R8）与签署前 8 项机械核对。
+> - **G4**：✅ **已闭环**。`dual_channel_e2e.py` 四子系统读等价 PASS、写路径 B→A 可见、A 写被拒（期望）、K14 同名行=1；`finalize_l2_2_matrix.py` T4-1/3/4 PASS；T4-2 双签完成——《G4-T4-2 A 直连豁免行双签审批单-v1.6.0》`[Approved]`（含 R1~R8 风险分析与 8 项机械核对全部 ✅）。
 > - **G5 / G6**：✅ `scripts/writeback_realface.py` 三路 sync 回写 `accepted` 全 true；memory/rag/profile 均真实落地；异步复投三路 `duplicated=true`；profile 落 `person_id=tenant-1_1`（真实 DPS）。
 > - **观测项 G5-OBS**：OpenMemory 回写落库域实测为 `default`（客户端共享头未透传 per-request `X-Tenant-ID`）。**立项方案已升 v1.1.0 [Approved]**：T1~T4 已实施（OpenLLM 2.18.0 / OpenMemory 7.3.2；单测 40 + 6 passed；目标库 dry-run：default 279 行、可迁移 37、不可解析 242）；**T5 迁移执行 / T6 开关开启待迁移窗口显式批准**，开启前运行态默认值不变。
 > - **S1~S5**：维持 v1.1.0 结论。
@@ -97,4 +98,4 @@
 
 ---
 
-**清单状态**：[待执行]
+**清单状态**：[处置中]（G3/G4/G5/G6 已闭环；G1/G2 与 G5-OBS 待运维窗口）

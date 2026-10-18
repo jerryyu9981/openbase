@@ -14,16 +14,17 @@
     "P5": {"status": "PASS", "evidence": "p5-prometheus.json", "note": "Prometheus 3.13.4 本地实例 target UP；Bearer 抓取成功；标签扫描无敏感维度"},
     "P6": {"status": "PASS", "evidence": "p6-firewall.json + firewall-backup-20261018-213258.wfw + p6-elevated-run.log", "note": "UAC 提权完成：Domain/Private/Public 启用且默认入站 Block；8001/8020 入站规则仅允许 127.0.0.1"},
     "P7": {"status": "PASS", "evidence": "p7-k07.json", "note": "矩阵 v1.3.0：16 个新增端点已补登记，gaps=0 / uncovered=0；基线快照同步为 2026-10-18 导出"},
-    "P8": {"status": "PENDING_SIGN", "evidence": "p8-alerts.json + p6-network.json", "note": "全部技术前置闭合：告警 5 条已加载、四服务回环监听 wildcard=0；待技术与发布双签"}
+    "P8": {"status": "PASS", "evidence": "OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.6.0.md", "note": "技术/发布双签完成（2026-10-18 会话授权记录）；审批单 [Approved]；G4-T4-2 关闭"}
   },
   "config_restored_after_window": true,
-  "overall_verdict": "P8_PENDING",
+  "overall_verdict": "G4_CLOSED",
   "notes": [
     "正例已在真实服务上验证；反例沿用同一基线预演证据",
     "P5 已闭环：抓取配置 promtool 校验通过，target UP，Bearer 四态鉴权与标签扫描完成",
     "P6 已闭环：经 UAC 提权启用三 Profile 并落地 8001/8020 入站规则，全量策略已备份",
     "P7 已闭环：16 个新增端点补登记，矩阵 v1.3.0，gaps 16→0，隔离用例 792 passed",
-    "P8 待办：豁免调用量与到期告警配置留证（OPS）+ 人工双签",
-    "G4-T4-2 双签仍需人工完成"
+    "P8 已闭环：告警 5 条加载、四服务回环监听 wildcard=0、技术/发布双签完成",
+    "G4-T4-2 审批单 [Approved]（v1.6.0）；清单升 v1.6.0，G4 关闭",
+    "生产主机/命名空间仍由 OPS 按同口径复验并归档"
   ]
 }
