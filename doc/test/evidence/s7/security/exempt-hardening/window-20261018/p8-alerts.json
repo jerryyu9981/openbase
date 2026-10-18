@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P8-alerts",
+  "generated_at": "2026-10-18T22:20:00+08:00",
+  "operator": "OpenBase 架构组",
+  "environment": "available-fullstack-host (192.168.0.157)",
+  "purpose": "补齐审批单 v1.3.0 §8 第 7/8 项（豁免路径调用量告警、豁免到期告警）",
+  "rules_file": {
+    "path": "config/prometheus/openllm-exempt-alerts.yml",
+    "size_bytes": 3568,
+    "sha256": "245A1ED0E451C1D402344619E0086C56EEC0AF266739647E75D274DB296CC4A9"
+  },
+  "static_validation": {
+    "command": "promtool check rules config/prometheus/openllm-exempt-alerts.yml",
+    "result": "SUCCESS: 5 rules found"
+  },
+  "config_validation": {
+    "command": "promtool check config doc/tmp/prometheus/prometheus.yml",
+    "result": "SUCCESS: 1 rule files found / valid prometheus config file syntax"
+  },
+  "loaded": {
+    "prometheus": "3.13.4 (127.0.0.1:9090)",
+    "reload": "POST /-/reload -> 200",
+    "group": "openllm-exempt",
+    "file": "config/prometheus/openllm-exempt-alerts.yml",
+    "rules": [
+      {"name": "OpenLLMExemptSensitiveUntrustedAccess", "state": "inactive", "health": "ok"},
+      {"name": "OpenLLMExemptPathRateHigh", "state": "inactive", "health": "ok"},
+      {"name": "OpenLLMExemptExpiryWithin30Days", "state": "inactive", "health": "ok"},
+      {"name": "OpenLLMExemptExpired", "state": "inactive", "health": "ok"},
+      {"name": "OpenLLMMetricsTargetDown", "state": "inactive", "health": "ok"}
+    ]
+  },
+  "runtime_checks": {
+    "seconds_to_expiry": 6342088,
+    "expiry": "2026-12-31T00:00:00Z (epoch 1798675200)",
+    "expiry_within_30d_expected": false,
+    "up_openllm": 1,
+    "firing_alerts": 0
+  },
+  "thresholds": {
+    "sensitive_untrusted_access": "sum by(path) rate(...{trusted=\"false\",path=~\"/metrics|/docs|/redoc|/openapi.json\"}[5m]) > 0, for 5m, critical",
+    "path_rate": "sum by(path) rate(openllm_exempt_path_requests_total[5m]) > 1 req/s, for 10m, warning（可按业务基线调整）",
+    "expiry_warning": "(1798675200 - time()) < 30d 且 > 0, for 1h, warning",
+    "expiry_critical": "1798675200 - time() <= 0, for 5m, critical",
+    "scrape_down": "up{job=\"openllm\"} == 0, for 5m, critical"
+  },
+  "verdict": "PASS",
+  "notes": [
+    "规则已由运行中的 Prometheus 加载并评估（health=ok，全部 inactive 符合当前状态）",
+    "告警路由（Alertmanager/企业告警平台）未在本机配置，生产由 OPS 接入并在审批单 §8 第 4 项一并留证",
+    "豁免续期时必须同步更新规则中的到期 epoch，并重签审批单"
+  ]
+}

@@ -1,0 +1,80 @@
+# OpenLLM 豁免行告警规则（G4-T4-2 / P8 前置）
+# 依据：审批单 v1.4.0 §8 第 7/8 项；执行包 §10（Prometheus Bearer 抓取）
+# 用法：Prometheus rule_files 加载本文件；生产由 OPS 接入告警路由（Alertmanager/企业告警平台）。
+#
+# 续期约定：豁免到期日变更时，必须同步更新 OPENLLM_EXEMPT_EXPIRY_EPOCH（并走同一审批单重签）。
+groups:
+  - name: openllm-exempt
+    rules:
+      # 7.1 敏感豁免路径被非受信来源访问（任何非零速率即告警）
+      - alert: OpenLLMExemptSensitiveUntrustedAccess
+        expr: |
+          sum by (path) (
+            rate(openllm_exempt_path_requests_total{
+              trusted="false",
+              path=~"/metrics|/docs|/redoc|/openapi.json"
+            }[5m])
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: openllm
+          scope: exempt-hardening
+        annotations:
+          summary: "OpenLLM 敏感豁免路径被非受信来源访问: {{ $labels.path }}"
+          description: "5 分钟速率 {{ $value | printf \"%.4f\" }} req/s；检查网络 ACL、metrics token 与来源白名单。"
+          runbook: "doc/release/OpenBase-豁免行加固生产窗口执行包-v1.0.0.md §11/§17"
+
+      # 7.2 豁免路径调用量异常（默认阈值 1 req/s 每路径，按业务基线调整）
+      - alert: OpenLLMExemptPathRateHigh
+        expr: |
+          sum by (path) (rate(openllm_exempt_path_requests_total[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: openllm
+          scope: exempt-hardening
+        annotations:
+          summary: "OpenLLM 豁免路径调用量偏高: {{ $labels.path }}"
+          description: "5 分钟速率 {{ $value | printf \"%.4f\" }} req/s，持续 10 分钟；核对探活频率与滥用告警基线。"
+
+      # 8.1 豁免到期前 30 天预警
+      - alert: OpenLLMExemptExpiryWithin30Days
+        expr: |
+          (vector(1798675200) - time()) < 30 * 24 * 3600
+          and
+          (vector(1798675200) - time()) > 0
+        for: 1h
+        labels:
+          severity: warning
+          component: openllm
+          scope: exempt-hardening
+          expires_at: "2026-12-31"
+        annotations:
+          summary: "OpenLLM A 直连豁免将在 30 天内到期（2026-12-31）"
+          description: "请完成续期复核并重签《G4-T4-2 双签审批单》；剩余 {{ $value | printf \"%.0f\" }} 秒。"
+
+      # 8.2 豁免已过期（fail-closed 已由 H7 强制；此处用于兜底告警）
+      - alert: OpenLLMExemptExpired
+        expr: vector(1798675200) - time() <= 0
+        for: 5m
+        labels:
+          severity: critical
+          component: openllm
+          scope: exempt-hardening
+          expires_at: "2026-12-31"
+        annotations:
+          summary: "OpenLLM A 直连豁免已过期（2026-12-31）"
+          description: "确认 OPENLLM_EXEMPT_EXPIRY_ENFORCE=true 已使过期豁免 fail-closed，并立即续期或迁移。"
+
+      # 抓取可用性（metrics token/网络变更导致的采集中断）
+      - alert: OpenLLMMetricsTargetDown
+        expr: up{job="openllm"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: openllm
+          scope: exempt-hardening
+        annotations:
+          summary: "OpenLLM /metrics 抓取失败"
+          description: "检查 8001 监听、OPENLLM_METRICS_TOKEN 与 Prometheus credentials_file。"
