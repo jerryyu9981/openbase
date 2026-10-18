@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P8-recheck",
+  "generated_at": "2026-10-18T22:40:00+08:00",
+  "operator": "OpenBase 架构组",
+  "environment": "available-fullstack-host (192.168.0.157)",
+  "purpose": "审批单 §8 八项逐项实时复核（首次回填后的一致性再验证）",
+  "checks": {
+    "health_status": 200,
+    "health_version": "2.19.1",
+    "docs_status": 404,
+    "openapi_status": 404,
+    "metrics_no_token_status": 401,
+    "prometheus_up_openllm": 1,
+    "k07_gate": {
+      "total": 367,
+      "covered": 365,
+      "exempt": 2,
+      "gaps": 0,
+      "uncovered": 0,
+      "exemption_without_approval": 0,
+      "exit_code": 0
+    },
+    "verify_exempt_endpoints": {
+      "result": "PASS",
+      "exit_code": 0,
+      "dps": "WARN exempt_invalid=35（K07-DPS-AUTH 独立项）"
+    },
+    "alerts": {
+      "group": "openllm-exempt",
+      "rules": 5,
+      "health": "ok",
+      "seconds_to_expiry": 6342088
+    },
+    "listeners": {
+      "wildcard_bindings": 0,
+      "services": {
+        "openllm": "127.0.0.1:8001",
+        "openrag": "127.0.0.1:8010",
+        "openmemory": "127.0.0.1:8020",
+        "dps": "127.0.0.1:8030",
+        "prometheus": "127.0.0.1:9090"
+      }
+    }
+  },
+  "result": "8/8 PASS",
+  "verdict": "PASS",
+  "note": "复核结果与 2026-10-18 首次回填一致；审批单维持 [Approved]，签署结论无需变更"
+}

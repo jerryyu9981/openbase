@@ -24,7 +24,7 @@
 | v1.4.0 | 2026-10-18 | OpenBase 架构组 | 落地豁免告警规则 `config/prometheus/openllm-exempt-alerts.yml`（5 条）并在运行实例加载验证；§8 第 7/8 项转 ✅；§8.1 更新为「技术前置闭合，待目标环境网络证据与人工双签」 |
 | v1.5.0 | 2026-10-18 | OpenBase 架构组 | 拉起 OpenRAG/OpenMemory/DPS 并实测 HEALTHY，四服务与 Prometheus 全部仅绑定 127.0.0.1（wildcard=0）；§8 第 4 项转 ✅（窗口环境），§8.1 更新为「技术前置全部闭合，待双签」 |
 | v1.6.0 | 2026-10-18 | OpenBase 架构组 | 完成技术签字与发布签字（会话内电子授权记录），状态转 `[Approved]`；G4-T4-2 关闭，清单同步升 v1.6.0 |
-| v1.7.0 | 2026-10-18 | OpenBase 架构组 | 回填 §7.1 生效记录（生效时间、依据、有效期、复核日 2026-12-01、到期 fail-closed 与失效登记责任）；状态维持 `[Approved]` |
+| v1.7.0 | 2026-10-18 | OpenBase 架构组 | 回填 §7.1 生效记录（生效时间、依据、有效期、复核日 2026-12-01、到期 fail-closed 与失效登记责任）；新增 §8.2 逐项实时复核记录（8/8 通过）；状态维持 `[Approved]` |
 
 ---
 
@@ -211,10 +211,26 @@ if path.startswith(GATE_EXEMPT_PATH_PREFIXES):
 1. **P7 全量门禁**：**PASS**。矩阵 v1.3.0（370 行）与 367 操作底单一致；`gaps=0 / uncovered=0 / exemption_without_approval=0`；隔离用例 792 passed。
 2. **豁免面判据**：全部满足（§8 第 1/2/3/5/6 项）。
 3. **告警配置**：已完成（§8 第 7/8 项）——5 条规则经 `promtool` 校验并由运行实例加载，全部 `health=ok / state=inactive`；生产告警路由（Alertmanager/企业平台）待 OPS 接入。
-4. **剩余未闭合**：生产主机/命名空间按同口径复验（OPS）+ 技术与发布签字。
+4. **剩余未闭合**：生产主机/命名空间按同口径复验（OPS 跟踪项，不影响 G4 关闭）；双签已完成。
 5. **结论**：**双签已完成（2026-10-18）**，审批单转 `[Approved]`；清单同步升 v1.6.0，G4-T4-2 关闭。生产主机/命名空间仍由 OPS 按 §8 同口径复验并归档。
 
 详见《OpenBase-P7-K07终验报告-v1.1.0》§6 与 `p8-alerts.json`。
+
+### 8.2 逐项实时复核记录（2026-10-18 22:40）
+
+| # | 复核方式 | 实测输出 | 结论 |
+|:-:|----------|---------|:----:|
+| 1 | 代码/登记表路由集合 | `/docs,/health,/metrics,/openapi.json,/redoc` 两侧一致 | ✅ |
+| 2 | `verify_exempt_endpoints.py --k07` | `RESULT: PASS`（DPS `exempt_invalid=35` 仅 WARN） | ✅ |
+| 3 | `matrix-finalize.json` T4-1/3/4 | 均为 `PASS`（既有证据，未变更） | ✅ |
+| 4 | 监听面 + 防火墙 | 8001/8010/8020/8030 均 `127.0.0.1`，`wildcard_bindings=0`；三 Profile 默认入站 Block | ✅ |
+| 5 | `GET /docs`、`GET /openapi.json` | **404 / 404** | ✅ |
+| 6 | `GET /metrics`（无 token）、Prometheus | **401**；`up{job="openllm"}=1` | ✅ |
+| 7 | 告警规则加载 | 5 条 `health=ok`（group `openllm-exempt`） | ✅ |
+| 8 | 到期窗口 | `seconds_to_expiry=6,342,088`（未进入 30 天告警窗口） | ✅ |
+| 附 | 服务健康与版本 | `/health=200`，`version=2.19.1`；K07 `total=367 / gaps=0` | ✅ |
+
+> 复核结论：§8 八项全部通过，与 2026-10-18 首次回填一致；审批单维持 `[Approved]`，无需变更签署结论。
 
 ## 9. 附件与引用
 
