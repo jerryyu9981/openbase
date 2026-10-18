@@ -14,7 +14,7 @@
     "P5": {"status": "PASS", "evidence": "p5-prometheus.json", "note": "Prometheus 3.13.4 本地实例 target UP；Bearer 抓取成功；标签扫描无敏感维度"},
     "P6": {"status": "PASS", "evidence": "p6-firewall.json + firewall-backup-20261018-213258.wfw + p6-elevated-run.log", "note": "UAC 提权完成：Domain/Private/Public 启用且默认入站 Block；8001/8020 入站规则仅允许 127.0.0.1"},
     "P7": {"status": "PASS", "evidence": "p7-k07.json", "note": "矩阵 v1.3.0：16 个新增端点已补登记，gaps=0 / uncovered=0；基线快照同步为 2026-10-18 导出"},
-    "P8": {"status": "PASS", "evidence": "OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.6.0.md", "note": "技术/发布双签完成（2026-10-18 会话授权记录）；审批单 [Approved]；G4-T4-2 关闭"}
+    "P8": {"status": "PASS", "evidence": "OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.7.0.md", "note": "技术/发布双签完成；§7.1 生效记录已回填（2026-10-18 生效，复核 2026-12-01）；G4-T4-2 关闭"}
   },
   "config_restored_after_window": true,
   "overall_verdict": "G4_CLOSED",
