@@ -245,6 +245,8 @@ if path.startswith(GATE_EXEMPT_PATH_PREFIXES):
 9. OpenLLM `backend/app/identity/channel.py`（`bypass_orchestration` 判定）
 10. `config/prometheus/openllm-exempt-alerts.yml`（豁免告警规则，5 条）
 11. `doc/test/evidence/s7/security/exempt-hardening/window-20261018/p8-alerts.json`（规则校验/加载/评估证据）
+12. `doc/test/evidence/s7/security/exempt-hardening/window-20261018/p6-network.json`（四服务回环监听 + 防火墙证据）
+13. `doc/test/evidence/s7/security/exempt-hardening/window-20261018/p8-recheck.json`（§8 八项实时复核）
 
 ---
 

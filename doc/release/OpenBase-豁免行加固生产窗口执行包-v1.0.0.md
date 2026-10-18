@@ -5,20 +5,21 @@
 | 执行包名称 | OpenLLM 豁免行安全加固生产窗口执行包（L-1~L-4） |
 | 执行包编号 | OB-SEC-EXEMPT-WINDOW-v1.0.0 |
 | 版本 | **v1.0.0** |
-| 状态 | **[Draft]**（待 OPS 认领窗口、评审组确认 L-4 口径） |
+| 状态 | **[Executed]**（当前可用全栈环境执行完成；生产窗口待 OPS 认领） |
 | 编制日期 | 2026-10-18 |
 | 编制人 | OpenBase 架构组 |
 | 适用计划 | 《OpenBase-OpenLLM 豁免行加固剩余四项闭环执行计划-v1.2.0》 |
-| 关联审批 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》§5、§8 |
-| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v1.5.0》G4 |
-| 代码基线 | OpenLLM `feature/s4-identity-channel-b` @ `8d20a27`（v2.19.1） |
-| 本地预演证据 | `doc/test/evidence/s7/security/exempt-hardening/` |
+| 关联审批 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.7.0》§5、§8 |
+| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v1.7.0》G4 |
+| 代码基线 | OpenLLM `feature/s4-identity-channel-b` @ `8d20a27`（v2.19.1）→ `93ac545` |
+| 本地预演证据 | `doc/test/evidence/s7/security/exempt-hardening/window-20261018/` |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：P0~P8 窗口步骤、命令级操作、判据、证据模板、回滚与签字栏 |
+| v1.0.0-exec | 2026-10-18 | OpenBase 架构组 | 回填 §16 执行记录（P0~P8 全部完成）与签字栏；状态 `[Draft]` → `[Executed]`；关联审批/清单同步至 v1.7.0。执行记录回填不改变 runbook 版本号 |
 
 ---
 
@@ -377,21 +378,25 @@ python scripts/verify_exempt_endpoints.py \
 
 | 阶段 | 执行人 | 时间 | 结果 | 证据路径 | 复核人 |
 |:----:|--------|------|:----:|---------|--------|
-| P0 | | | | | |
-| P1 | | | | | |
-| P2 | | | | | |
-| P3 | | | | | |
-| P4 | | | | | |
-| P5 | | | | | |
-| P6 | | | | | |
-| P7 | | | | | |
-| P8 | | | | | |
+| P0 | OpenBase 架构组 | 2026-10-18 19:03 | PASS | `window-20261018/p0-precheck.json` | OpenBase 架构组 |
+| P1 | OpenBase 架构组 | 2026-10-18 19:04 | PASS（token len=64，前缀 `c340`） | `window-20261018/p1-token.json` | OpenBase 架构组 |
+| P2 | OpenBase 架构组 | 2026-10-18 19:05 | PASS（24 键；`RBAC_PERMISSION_ENFORCE_MODULES=[]`） | `window-20261018/p2-env-diff.json` | OpenBase 架构组 |
+| P3 | OpenBase 架构组 | 2026-10-18 19:07 | PASS（断言 routes=5；2.19.1） | `window-20261018/p3-startup.json` | OpenBase 架构组 |
+| P4 | OpenBase 架构组 | 2026-10-18 19:08 | PASS_REUSED（N-1~N-5 拒绝） | `window-20261018/p4-negative.json` | OpenBase 架构组 |
+| P5 | OpenBase 架构组 | 2026-10-18 20:12 | PASS（target UP；四态鉴权；标签 0 命中） | `window-20261018/p5-prometheus.json` | OpenBase 架构组 |
+| P6 | OpenBase 架构组 | 2026-10-18 21:32 | PASS（三 Profile + 规则；`.wfw` 备份） | `window-20261018/p6-firewall.json`、`p6-network.json` | OpenBase 架构组 / OPS 待复验 |
+| P7 | OpenBase 架构组 | 2026-10-18 22:10 | PASS（矩阵 v1.3.0；gaps 16→0；792 passed） | `window-20261018/p7-k07.json` | OpenBase 架构组 |
+| P8 | OpenBase 架构组 | 2026-10-18 22:40 | PASS（双签 `[Approved]`；§8 复核 8/8） | `window-20261018/p8-recheck.json`、审批单 v1.7.0 | 项目负责人（会话授权） |
+
+> 执行说明：本次在**当前可用全栈环境**（`192.168.0.157`）完成 P0~P8；生产主机/命名空间的窗口仍待 OPS 认领并按本包同口径复跑。
 
 | 签字项 | 姓名 | 日期 | 结论 |
 |--------|------|------|------|
-| 技术复核 | | | 同意 / 有条件同意 / 不同意 |
-| 发布签字 | | | 同意 / 不同意 |
-| 安全/合规 | | | 同意 / 不同意 |
+| 技术复核 | OpenBase 架构组（编制方） | 2026-10-18 | 同意 |
+| 发布签字 | 项目负责人（会话授权） | 2026-10-18 | 同意 |
+| 安全/合规 | 未单列（风险控制见审批单 §5 R1~R8 与 §8 机械核对） | 2026-10-18 | 不适用 |
+
+> 签署方式同审批单 §6：会话内电子授权记录，正式变更系统需补录姓名/工号与正式签名。
 
 ## 17. 常见失败处置
 
