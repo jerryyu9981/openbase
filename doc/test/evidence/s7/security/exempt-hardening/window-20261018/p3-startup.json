@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P3",
+  "generated_at": "2026-10-18T19:06:59+08:00",
+  "operator": "OpenBase 架构组",
+  "service": "OpenLLM",
+  "startup": {
+    "mode": "direct uvicorn (pgAdmin py3.13 launcher)",
+    "listen": "127.0.0.1:8001",
+    "assert_log": "豁免行启动断言通过（routes=5）",
+    "startup_complete": true
+  },
+  "checks": {
+    "health": 200,
+    "version": 2.19.1,
+    "docs": 404,
+    "openapi_json": 404,
+    "metrics_without_token": 401,
+    "metrics_bearer": 200,
+    "metrics_x_header": 200,
+    "token_length": 64
+  },
+  "audit_observation": {
+    "event": "exempt_path_access",
+    "paths_observed": ["/docs", "/openapi.json", "/metrics"],
+    "identity_headers_logged": false
+  },
+  "notes": [
+    "首次以 WMI 编排器启动未生成日志（子进程未存活），改用直接 uvicorn 启动完成验证",
+    "服务在验证后已停止，端口 8001 已释放"
+  ],
+  "verdict": "PASS"
+}

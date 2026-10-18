@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P5",
+  "generated_at": "2026-10-18T19:06:59+08:00",
+  "operator": "OpenBase 架构组",
+  "prometheus_target": "NOT_VERIFIED",
+  "reason": "当前环境无 Prometheus 实例、无 Docker；无法验证 target UP 与抓取配置",
+  "ready_artifacts": {
+    "auth_mode": "token + Authorization Bearer（OpenLLM 2.19.1 已支持）",
+    "scrape_config": "见生产窗口执行包 §10.1",
+    "local_auth_checks": "无 token 401 / Bearer 200 / X-Metrics-Token 200（p3-startup.json）"
+  },
+  "verdict": "BLOCKED_ENVIRONMENT",
+  "pending": ["目标环境 Prometheus 配置与 target UP 证据", "指标标签租户维度扫描"]
+}

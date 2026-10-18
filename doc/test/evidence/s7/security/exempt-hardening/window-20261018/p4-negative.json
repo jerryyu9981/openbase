@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P4",
+  "generated_at": "2026-10-18T19:06:59+08:00",
+  "operator": "OpenBase 架构组",
+  "executed_in_window": false,
+  "reused_from": "l1-env-startup.json",
+  "equivalence": "同一代码基线 2.19.1（8d20a27），同一注入变量；正例已在窗口内用真实服务复验",
+  "negative": [
+    {"id": "N-1", "injection": "OPENLLM_EXEMPT_MATCH_MODE=prefix", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-2", "injection": "OPENAPI_PUBLIC=true", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-3", "injection": "OPENLLM_METRICS_AUTH_MODE=none", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-4", "injection": "OPENLLM_METRICS_TOKEN=<empty>", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-5", "injection": "OPENLLM_HEALTH_DETAIL_MODE=all", "exit_code": 3, "keyword_matched": true}
+  ],
+  "verdict": "PASS_REUSED"
+}

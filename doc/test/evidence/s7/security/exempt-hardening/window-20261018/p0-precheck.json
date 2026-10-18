@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P0",
+  "execution_face": "available-fullstack-host",
+  "generated_at": "2026-10-18T19:04:11+08:00",
+  "operator": "OpenBase 架构组",
+  "host_ip": "192.168.0.157",
+  "precheck": {
+    "code_version": "2.19.1",
+    "port_8001_listening": false,
+    "env_keys_present": ["APP_VERSION", "DEBUG", "ENV"],
+    "env_backup": "OpenLLM/backend/.env.bak-window-20261018"
+  },
+  "verdict": "PASS"
+}

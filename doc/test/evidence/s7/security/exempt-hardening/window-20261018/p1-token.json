@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P1",
+  "generated_at": "2026-10-18T19:04:30+08:00",
+  "operator": "OpenBase 架构组",
+  "token": {
+    "generated": true,
+    "length": 64,
+    "prefix": "c340",
+    "algorithm": "32 random bytes hex",
+    "stored_in": "OpenLLM/backend/.env:OPENLLM_METRICS_TOKEN（窗口后已随 .env 恢复移除）",
+    "plaintext_logged": false
+  },
+  "verdict": "PASS"
+}

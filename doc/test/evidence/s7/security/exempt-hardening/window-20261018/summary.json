@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "generated_at": "2026-10-18T19:08:30+08:00",
+  "operator": "OpenBase 架构组",
+  "environment": "available-fullstack-host (192.168.0.157)",
+  "code_baseline": {"repo": "OpenLLM", "commit": "8d20a27", "version": "2.19.1"},
+  "items": {
+    "P0": {"status": "PASS", "evidence": "p0-precheck.json"},
+    "P1": {"status": "PASS", "evidence": "p1-token.json"},
+    "P2": {"status": "PASS", "evidence": "p2-env-diff.json", "note": "RBAC_PERMISSION_ENFORCE_MODULES=[] 修正"},
+    "P3": {"status": "PASS", "evidence": "p3-startup.json"},
+    "P4": {"status": "PASS_REUSED", "evidence": "p4-negative.json"},
+    "P5": {"status": "BLOCKED_ENVIRONMENT", "evidence": "p5-prometheus.json"},
+    "P6": {"status": "PARTIAL", "evidence": "p6-network.json"},
+    "P7": {"status": "PASS_PRIOR", "evidence": "l4-k07-annotation.json"},
+    "P8": {"status": "PENDING_DUAL_SIGN", "evidence": "—"}
+  },
+  "config_restored_after_window": true,
+  "overall_verdict": "PARTIAL_WINDOW_EXECUTED",
+  "notes": [
+    "正例已在真实服务上验证；反例沿用同一基线预演证据",
+    "Prometheus 与网络控制证据需目标环境补齐",
+    "G4-T4-2 双签仍需人工完成"
+  ]
+}
