@@ -13,17 +13,17 @@
     "P4": {"status": "PASS_REUSED", "evidence": "p4-negative.json"},
     "P5": {"status": "PASS", "evidence": "p5-prometheus.json", "note": "Prometheus 3.13.4 本地实例 target UP；Bearer 抓取成功；标签扫描无敏感维度"},
     "P6": {"status": "PASS", "evidence": "p6-firewall.json + firewall-backup-20261018-213258.wfw + p6-elevated-run.log", "note": "UAC 提权完成：Domain/Private/Public 启用且默认入站 Block；8001/8020 入站规则仅允许 127.0.0.1"},
-    "P7": {"status": "FAIL_DRIFT", "evidence": "p7-k07.json", "note": "基线快照回放 gaps=0 PASS；当前代码实时导出新增 16 个未注册业务端点（K07-NEW-ENDPOINTS），全量门禁拒绝"},
-    "P8": {"status": "BLOCKED_BY_P7", "evidence": "—", "note": "双签前置不成立：P7 全量门禁 FAIL；另告警配置两项待 OPS 留证"}
+    "P7": {"status": "PASS", "evidence": "p7-k07.json", "note": "矩阵 v1.3.0：16 个新增端点已补登记，gaps=0 / uncovered=0；基线快照同步为 2026-10-18 导出"},
+    "P8": {"status": "BLOCKED_ALERTS", "evidence": "—", "note": "P7 已闭环；剩余前置为豁免调用量/到期告警配置留证（OPS）与人工双签"}
   },
   "config_restored_after_window": true,
-  "overall_verdict": "NO_GO_K07_DRIFT",
+  "overall_verdict": "P8_PENDING",
   "notes": [
     "正例已在真实服务上验证；反例沿用同一基线预演证据",
     "P5 已闭环：抓取配置 promtool 校验通过，target UP，Bearer 四态鉴权与标签扫描完成",
     "P6 已闭环：经 UAC 提权启用三 Profile 并落地 8001/8020 入站规则，全量策略已备份",
-    "P7 双口径：基线快照回放 gaps=0 PASS；当前代码实时导出 gaps=16（K07-NEW-ENDPOINTS），全量门禁拒绝",
-    "P8 暂停：P7 漂移未清零 + 告警配置两项未留证，双签前置不成立",
+    "P7 已闭环：16 个新增端点补登记，矩阵 v1.3.0，gaps 16→0，隔离用例 792 passed",
+    "P8 待办：豁免调用量与到期告警配置留证（OPS）+ 人工双签",
     "G4-T4-2 双签仍需人工完成"
   ]
 }
