@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "tool": "run_openllm_probe.py + run_l1_negative.ps1",
+  "task": "OB-SEC-EXEMPT-CLOSURE-L1",
+  "execution_face": "local-probe",
+  "generated_at": "2026-10-18T15:27:40+08:00",
+  "operator": "OpenBase 架构组",
+  "code_version": "2.19.1",
+  "positive": {
+    "startup": "PASS",
+    "assert_log": "豁免行启动断言通过（routes=5）",
+    "env": "production",
+    "health": {"status": 200, "detail": "full（127.0.0.1 回环受信）"},
+    "gateway_health": {"status": 200},
+    "docs": 404,
+    "openapi_json": 404,
+    "observed_app_version": "2.18.0",
+    "warning": "启动自检｜版本口径漂移：运行时 APP_VERSION=2.18.0 与代码版本 2.19.1 不一致（.env 覆盖）"
+  },
+  "negative": [
+    {"id": "N-1", "injection": "OPENLLM_EXEMPT_MATCH_MODE=prefix", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-2", "injection": "OPENAPI_PUBLIC=true", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-3", "injection": "OPENLLM_METRICS_AUTH_MODE=none", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-4", "injection": "OPENLLM_METRICS_TOKEN=<empty>", "exit_code": 3, "keyword_matched": true},
+    {"id": "N-5", "injection": "OPENLLM_HEALTH_DETAIL_MODE=all", "exit_code": 3, "keyword_matched": true}
+  ],
+  "gate_script": {"command": "verify_exempt_endpoints.py --k07 k07-finalize.json", "result": "PASS", "dps_warn": "exempt_invalid=35（独立整改项）"},
+  "verdict": "PARTIAL_LOCAL_PASS_PRODUCTION_PENDING",
+  "pending": [
+    "目标环境 .env 下发（含 APP_VERSION=2.19.1，消除版本漂移）",
+    "生产实例重启并复跑 N-1~N-5 反例"
+  ]
+}

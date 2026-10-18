@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "tool": "Get-NetTCPConnection + config inspection",
+  "task": "OB-SEC-EXEMPT-CLOSURE-L3",
+  "execution_face": "local",
+  "generated_at": "2026-10-18T15:27:40+08:00",
+  "operator": "OpenBase 架构组",
+  "local_listeners": {
+    "checked_ports": [8000, 8001, 8010, 8020, 8030, 18001, 18011],
+    "result": "无监听（应用服务与探针均已停止）"
+  },
+  "config_facts": {
+    "openllm": {"host": "127.0.0.1", "port": 8001, "source": "OpenBase/doc/tmp/run_openllm.py:28"},
+    "openbase": {"host": "127.0.0.1", "port": 8000, "source": "OpenBase/doc/tmp/run_openbase.py:16"},
+    "openrag": {"host": "127.0.0.1", "port": 8010, "source": "OpenBase/doc/tmp/start-all-services.ps1:34"},
+    "dps": {"host": "127.0.0.1", "port": 8030, "source": "OpenBase/doc/tmp/start-all-services.ps1:45"},
+    "openmemory": {"host": "0.0.0.0", "port": 8020, "source": "OpenMemory/.env:OPENMEMORY_SERVER__HOST"}
+  },
+  "findings": [
+    "OpenMemory 绑定 0.0.0.0:8020，存在全接口暴露（R-2 已确认）",
+    "其余四服务启动器绑定 127.0.0.1",
+    "本机 IP 为 192.168.0.157；本机 PostgreSQL 监听 0.0.0.0:5432（不属本次四服务范围）"
+  ],
+  "remediation": "目标环境设置 OPENMEMORY_SERVER__HOST=127.0.0.1，或在防火墙限制 8020 仅本机可访问",
+  "verdict": "PARTIAL_CONFIG_CONFIRMED_PRODUCTION_EVIDENCE_PENDING",
+  "pending": [
+    "OpenMemory 监听整改后复跑监听证据",
+    "防火墙/安全组规则 JSON 导出",
+    "K8s NetworkPolicy YAML（如适用）"
+  ]
+}

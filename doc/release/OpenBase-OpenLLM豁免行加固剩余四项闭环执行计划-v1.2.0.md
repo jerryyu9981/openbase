@@ -1,11 +1,11 @@
-# OpenBase-OpenLLM 豁免行加固剩余四项闭环执行计划-v1.1.0
+# OpenBase-OpenLLM 豁免行加固剩余四项闭环执行计划-v1.2.0
 
 | 项目 | 内容 |
 |------|------|
 | 计划名称 | OpenLLM 豁免行安全加固 L-1~L-4 闭环执行计划 |
-| 计划编号 | OB-SEC-EXEMPT-CLOSURE-v1.1.0 |
-| 版本 | **v1.1.0** |
-| 状态 | **[Draft]**（R-1/R-2 已确认；待 OPS 窗口执行 L-1/L-2/L-3 与评审组确认 L-4） |
+| 计划编号 | OB-SEC-EXEMPT-CLOSURE-v1.2.0 |
+| 版本 | **v1.2.0** |
+| 状态 | **[Approved]**（本地预演全部通过；L-1/L-2/L-3 生产证据待 OPS 窗口，L-4 待评审确认） |
 | 编制日期 | 2026-10-18 |
 | 编制人 | OpenBase 架构组 |
 | 适用范围 | 《OpenBase-OpenLLM 豁免行安全加固方案-v1.3.0》实施后剩余 4 项未闭环事项 |
@@ -20,6 +20,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：L-1~L-4 的目标、前置、步骤、验收、证据、回滚与执行顺序 |
 | v1.1.0 | 2026-10-18 | OpenBase 架构组 | 确认 R-1（Prometheus 2.48 不支持自定义头）与 R-2（OpenMemory 绑定 0.0.0.0）；L-2-0 Bearer 兼容已实施（OpenLLM 2.19.1 / `17763c0`） |
+| v1.2.0 | 2026-10-18 | OpenBase 架构组 | 本地隔离探针执行 L-1~L-4：L-1 正例+5 反例通过、L-2 四态/轮换/分级通过、L-3 配置事实确认、L-4 矩阵 v1.2.0 与门禁通过；新增 §12 执行结果与证据索引 |
 
 ---
 
@@ -371,4 +372,34 @@ python scripts/verify_exempt_endpoints.py --k07 <OpenBase>/doc/test/evidence/s7/
 
 ---
 
-**计划状态**：[Draft]（R-1/R-2 已确认并落处置；待 OPS 窗口执行 L-1/L-2/L-3、评审组确认 L-4）
+## 12. 执行结果（2026-10-18 本地隔离探针）
+
+### 12.1 结果总览
+
+| 项 | 本地预演 | 生产闭环 | 证据 |
+|:--:|:--------:|:--------:|------|
+| **L-1** | ✅ 正例启动 + N-1~N-5 全部拒绝启动（exit=3，关键字命中） | ⬜ 待 OPS 下发 `.env` 并重启复跑 | `l1-env-startup.json` |
+| **L-2** | ✅ 四态鉴权 + Bearer + 轮换 + 健康分级通过 | ⬜ 待 Prometheus target UP 证据 | `l2-metrics-auth.json` |
+| **L-3** | 🟡 配置事实确认（OpenMemory `0.0.0.0`） | ⬜ 待监听整改 + 防火墙/NetworkPolicy 证据 | `l3-network-controls.json` |
+| **L-4** | ✅ 矩阵 v1.2.0 标注；`--check` 与门禁脚本 PASS | ⬜ 待评审组确认分类口径 | `l4-k07-annotation.json` |
+
+证据目录：`doc/test/evidence/s7/security/exempt-hardening/`（另含 `summary.json`、`r1-r2-confirmation.json`）。
+
+### 12.2 执行中发现并修复的缺陷
+
+| 编号 | 现象 | 根因 | 修复 |
+|:----:|------|------|------|
+| D-1 | 生产启动断言误报「必需豁免路由未注册: ['/metrics']」 | FastAPI 0.143 `include_router` 生成 `_IncludedRouter` 包装（`route.path=None`），原断言遍历 `app.routes` 漏掉子路由 | 改为以 `app.openapi()["paths"]` 为准；新增 `include_router` 回归用例（41 passed） |
+| D-2 | 门禁脚本被 DPS 35 条认证类豁免阻断 | K07-DPS-AUTH 属独立整改项 | `verify_exempt_endpoints.py` 仅对 OpenLLM/OpenRAG/OpenMemory 判失败，DPS 仅 WARN |
+
+### 12.3 生产窗口待办（不改变 §3 顺序）
+
+1. L-2-1 token 生成与密钥下发（先于 L-1）；
+2. L-1 `.env` 下发（含 `APP_VERSION=2.19.1`，消除当前 2.18.0 版本漂移）与重启；
+3. L-2-2 Prometheus 抓取配置与 target UP 取证；
+4. L-3 OpenMemory 监听整改 + 防火墙/NetworkPolicy 证据；
+5. L-4 评审确认并回填 K07 终验证据。
+
+---
+
+**计划状态**：[Approved]（本地预演通过；生产 L-1/L-2/L-3 证据待 OPS 窗口，L-4 待评审确认）

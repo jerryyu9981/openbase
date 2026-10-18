@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "tool": "k07_endpoint_matrix.py + verify_exempt_endpoints.py",
+  "task": "OB-SEC-EXEMPT-CLOSURE-L4",
+  "execution_face": "local",
+  "generated_at": "2026-10-18T15:27:40+08:00",
+  "operator": "OpenBase 架构组",
+  "matrix": {
+    "version": "v1.2.0",
+    "file": "doc/design/OpenLLM-K07-端点过滤矩阵填报-v1.2.0.matrix.json",
+    "target_row": {
+      "endpoint": "/openllm/v1/health",
+      "method": "GET",
+      "category_before": "列表分页/集合读",
+      "category_after": "受信管理面（非豁免）",
+      "exemption": "否",
+      "isolation_case": "test_isolation_matrix_endpoints.py::TestK07EndpointIsolation::test_business_endpoint_untrusted_header_source_403[GET /openllm/v1/health]"
+    },
+    "generator": "TRUSTED_MANAGEMENT_PATHS 覆盖表已加入 backend/scripts/k07_endpoint_matrix.py"
+  },
+  "k07_check": {
+    "command": "k07_endpoint_matrix.py --openapi-file <openllm.openapi.json> --check",
+    "total": 351,
+    "covered": 349,
+    "exempt": 2,
+    "gaps": 0,
+    "uncovered": 0,
+    "exemption_without_approval": 0,
+    "exit_code": 0
+  },
+  "verify_exempt_endpoints": {
+    "command": "verify_exempt_endpoints.py --k07 k07-finalize.json",
+    "result": "PASS",
+    "dps_warn": "K07 dps: exempt_invalid=35（K07-DPS-AUTH 独立整改项，不阻断本门禁）"
+  },
+  "verdict": "PASS"
+}
