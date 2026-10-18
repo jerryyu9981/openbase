@@ -2,15 +2,64 @@
   "schema_version": 1,
   "task": "OB-SEC-EXEMPT-WINDOW",
   "stage": "P5",
-  "generated_at": "2026-10-18T19:06:59+08:00",
+  "generated_at": "2026-10-18T20:12:30+08:00",
   "operator": "OpenBase 架构组",
-  "prometheus_target": "NOT_VERIFIED",
-  "reason": "当前环境无 Prometheus 实例、无 Docker；无法验证 target UP 与抓取配置",
-  "ready_artifacts": {
-    "auth_mode": "token + Authorization Bearer（OpenLLM 2.19.1 已支持）",
-    "scrape_config": "见生产窗口执行包 §10.1",
-    "local_auth_checks": "无 token 401 / Bearer 200 / X-Metrics-Token 200（p3-startup.json）"
+  "prometheus": {
+    "version": "3.13.4",
+    "build_date": "20260929-13:31:30",
+    "platform": "windows/amd64",
+    "source": "https://mirrors.tuna.tsinghua.edu.cn/github-release/prometheus/prometheus/LatestRelease/prometheus-3.13.4.windows-amd64.tar.gz",
+    "note": "执行包 §10 原定 2.48.0；GitHub 直连下载多次中断且镜像无 2.48 归档，改用清华镜像最新归档 3.13.4。scrape_config 的 authorization Bearer 语法与 2.x 一致，不影响判据。",
+    "listen": "127.0.0.1:9090",
+    "config_file": "doc/tmp/prometheus/prometheus.yml",
+    "config_validated": "promtool check config -> SUCCESS",
+    "tsdb_path": "doc/tmp/prometheus/data"
   },
-  "verdict": "BLOCKED_ENVIRONMENT",
-  "pending": ["目标环境 Prometheus 配置与 target UP 证据", "指标标签租户维度扫描"]
+  "scrape_config": {
+    "job_name": "openllm",
+    "scheme": "http",
+    "metrics_path": "/metrics",
+    "targets": ["127.0.0.1:8001"],
+    "auth": {
+      "type": "Bearer",
+      "credentials_file": "doc/tmp/prometheus/metrics_token",
+      "token_length": 64,
+      "token_prefix": "da55",
+      "plaintext_logged": false
+    }
+  },
+  "openllm_runtime": {
+    "version": "2.19.1",
+    "listen": "127.0.0.1:8001",
+    "env": "development（P5 仅切换豁免/指标键；生产门禁已在 P3 验证）",
+    "metrics_auth_mode": "token",
+    "metrics_allowed_sources": "127.0.0.1/32,::1/128",
+    "exempt_match_mode": "exact",
+    "exempt_assert_on_startup": true
+  },
+  "metrics_auth_probe": {
+    "no_token": 401,
+    "bearer_current": 200,
+    "x_metrics_token": 200,
+    "wrong_bearer": 401,
+    "payload_bytes": 1567
+  },
+  "target_status": {
+    "health": "up",
+    "scrape_url": "http://127.0.0.1:8001/metrics",
+    "last_error": "",
+    "query_up": 1,
+    "last_scrape": "2026-10-18T20:12:05+08:00"
+  },
+  "label_scan": {
+    "labels": ["__name__", "env", "generation", "implementation", "instance", "job", "major", "minor", "patchlevel", "path", "system", "trusted", "version"],
+    "sensitive_hits": [],
+    "checked_keys": ["tenant", "tenant_id", "user", "user_id", "subject", "subject_id", "org", "org_id", "email", "token", "authorization"],
+    "openllm_series_count": 4
+  },
+  "verdict": "PASS",
+  "notes": [
+    "target UP 且 lastError 为空，说明 Bearer 凭证被 /metrics 接受（无 401/403）",
+    "Prometheus 3.13.4 与执行包原定 2.48.0 的差异已登记；如生产要求 2.48 需由 OPS 提供离线包"
+  ]
 }

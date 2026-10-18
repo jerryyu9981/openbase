@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "task": "OB-SEC-EXEMPT-WINDOW",
+  "stage": "P6",
+  "generated_at": "2026-10-18T20:14:00+08:00",
+  "operator": "OpenBase 架构组",
+  "elevated": false,
+  "identity": "当前会话账号",
+  "blocker": "Windows 防火墙读写均要求管理员权限；当前会话 admin=False",
+  "probes": {
+    "new_net_firewall_rule": "DENIED :: Access is denied.",
+    "netsh_advfirewall_export": "The requested operation requires elevation (Run as administrator).",
+    "start_process_verb_runas": "已发起 UAC 提权但进程退出，规则未创建（无交互确认）"
+  },
+  "profiles_before": [
+    {"name": "Domain", "enabled": true, "default_inbound": "NotConfigured", "default_outbound": "NotConfigured"},
+    {"name": "Private", "enabled": false, "default_inbound": "NotConfigured", "default_outbound": "NotConfigured"},
+    {"name": "Public", "enabled": false, "default_inbound": "NotConfigured", "default_outbound": "NotConfigured"}
+  ],
+  "rules_for_8001_8020": "none",
+  "listener_fact": "8001/8020 均绑定 127.0.0.1（回环），远程不可达；防火墙规则用于纵深防御与后续改绑",
+  "prepared_script": {
+    "path": "doc/tmp/p6-firewall-enable.ps1",
+    "actions": [
+      "netsh advfirewall export 全量策略备份（.wfw）",
+      "Set-NetFirewallProfile Domain/Private/Public -Enabled True -DefaultInboundAction Block",
+      "New-NetFirewallRule OpenBase-Security-8001-In / OpenBase-Security-8020-In（TCP，来源白名单）",
+      "导出 profiles_after + 规则 JSON，写回本文件并置 verdict=PASS",
+      "支持 -Rollback 删除规则并按快照恢复 profile 开关"
+    ],
+    "allow_sources_default": ["127.0.0.1"],
+    "allow_sources_production": "需由 OPS 补入 OpenBase 出口 IP 与监控采集网段"
+  },
+  "verdict": "BLOCKED_ELEVATION",
+  "pending": [
+    "以管理员身份重跑 doc/tmp/p6-firewall-enable.ps1（或由 OPS 在目标机执行）",
+    "补入生产来源白名单后重跑并归档 p6-firewall.json（PASS 版）",
+    "K8s NetworkPolicy（如适用）"
+  ]
+}

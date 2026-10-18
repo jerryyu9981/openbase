@@ -1,0 +1,30 @@
+﻿{
+    "schema_version":  1,
+    "task":  "OB-SEC-EXEMPT-WINDOW",
+    "stage":  "P6-baseline",
+    "generated_at":  "2026-10-18T20:13:16.4968325+08:00",
+    "operator":  "OpenBase 架构组",
+    "identity":  "DESKTOP-JERRY\\jerry",
+    "elevated":  false,
+    "profiles":  [
+                     {
+                         "Name":  "Domain",
+                         "Enabled":  1,
+                         "DefaultInboundAction":  0,
+                         "DefaultOutboundAction":  0
+                     },
+                     {
+                         "Name":  "Private",
+                         "Enabled":  0,
+                         "DefaultInboundAction":  0,
+                         "DefaultOutboundAction":  0
+                     },
+                     {
+                         "Name":  "Public",
+                         "Enabled":  0,
+                         "DefaultInboundAction":  0,
+                         "DefaultOutboundAction":  0
+                     }
+                 ],
+    "note":  "非提权基线；规则写入需管理员"
+}
