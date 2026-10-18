@@ -22,9 +22,21 @@
     "本机 IP 为 192.168.0.157；本机 PostgreSQL 监听 0.0.0.0:5432（不属本次四服务范围）"
   ],
   "remediation": "目标环境设置 OPENMEMORY_SERVER__HOST=127.0.0.1，或在防火墙限制 8020 仅本机可访问",
-  "verdict": "PARTIAL_CONFIG_CONFIRMED_PRODUCTION_EVIDENCE_PENDING",
+  "remediation_applied_local": {
+    "file": "OpenMemory/.env",
+    "change": "OPENMEMORY_SERVER__HOST: 0.0.0.0 -> 127.0.0.1",
+    "backup": "OpenMemory/.env.bak-20261018-l3",
+    "verification": {
+      "startup": "HEALTHY OK (18s)",
+      "listen_address": "127.0.0.1",
+      "listen_port": 8020,
+      "health": 200,
+      "stopped_after_check": true
+    }
+  },
+  "verdict": "LOCAL_BIND_FIXED_PRODUCTION_EVIDENCE_PENDING",
   "pending": [
-    "OpenMemory 监听整改后复跑监听证据",
+    "目标环境同步该监听整改并复跑监听证据",
     "防火墙/安全组规则 JSON 导出",
     "K8s NetworkPolicy YAML（如适用）"
   ]

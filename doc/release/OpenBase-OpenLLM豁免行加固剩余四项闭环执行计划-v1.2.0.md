@@ -380,7 +380,7 @@ python scripts/verify_exempt_endpoints.py --k07 <OpenBase>/doc/test/evidence/s7/
 |:--:|:--------:|:--------:|------|
 | **L-1** | ✅ 正例启动 + N-1~N-5 全部拒绝启动（exit=3，关键字命中） | ⬜ 待 OPS 下发 `.env` 并重启复跑 | `l1-env-startup.json` |
 | **L-2** | ✅ 四态鉴权 + Bearer + 轮换 + 健康分级通过 | ⬜ 待 Prometheus target UP 证据 | `l2-metrics-auth.json` |
-| **L-3** | 🟡 配置事实确认（OpenMemory `0.0.0.0`） | ⬜ 待监听整改 + 防火墙/NetworkPolicy 证据 | `l3-network-controls.json` |
+| **L-3** | 🟡 OpenMemory 已改绑 `127.0.0.1:8020` 并实测 HEALTHY（18s），验证后停止 | ⬜ 待生产同步整改 + 防火墙/NetworkPolicy 证据 | `l3-network-controls.json` |
 | **L-4** | ✅ 矩阵 v1.2.0 标注；`--check` 与门禁脚本 PASS | ⬜ 待评审组确认分类口径 | `l4-k07-annotation.json` |
 
 证据目录：`doc/test/evidence/s7/security/exempt-hardening/`（另含 `summary.json`、`r1-r2-confirmation.json`）。
