@@ -29,14 +29,18 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.modules.protocol_headers import TARGET_SYSTEM_LLM, build_outbound_headers
+from openbase.modules.protocol_headers import (
+    HEADER_TENANT_ID,
+    TARGET_SYSTEM_LLM,
+    build_outbound_headers,
+)
 from openbase.modules.proxy.upstream_observe import (
     UPSTREAM_SYSTEM_OPENLLM,
     content_type_of,
     elapsed_ms,
     publish_upstream_response,
 )
-from openbase.settings import get_settings
+from openbase.settings import get_settings, parse_llm_api_keys_by_tenant
 
 logger = logging.getLogger("openbase.llm_proxy")
 
@@ -63,10 +67,39 @@ def _upstream_config() -> tuple[str, str, float, float]:
     )
 
 
-def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, str]:
-    """构造转发上游的请求头（OpenLLM API Key Bearer + 外部身份归属注入）.
+def _select_llm_api_key(
+    tenant_code: str | None,
+    default_key: str,
+    mapping_raw: str | None = None,
+) -> str:
+    """按请求租户选择 OpenLLM API Key（G7 方案 ①）.
 
-    OpenLLM 认证契约：API Key 仅经 Authorization: Bearer 传递，不支持
+    OpenLLM D20 要求「API Key 归属租户 == 入站 X-Tenant-ID」。优先取
+    ``llm_api_keys_by_tenant[tenant_code]``；未配置/未命中 → 全局 ``llm_api_key``
+    （行为零变化，兼容单租户部署）。
+
+    Args:
+        tenant_code: 出站 X-Tenant-ID（由统一身份上下文装配，同源）。
+        default_key: 全局默认 Key（settings.llm_api_key）。
+        mapping_raw: 可选映射 JSON（缺省读 settings，供测试注入）。
+
+    Returns:
+        str: 选中的 API Key。
+    """
+    if mapping_raw is None:
+        mapping_raw = get_settings().llm_api_keys_by_tenant
+    mapping = parse_llm_api_keys_by_tenant(mapping_raw)
+    if tenant_code:
+        selected = mapping.get(str(tenant_code))
+        if selected:
+            return selected
+    return default_key
+
+
+def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, str]:
+    """构造转发上游的请求头（租户级 API Key Bearer + 外部身份归属注入）.
+
+    OpenLLM 认证契约：API Key 仅经 ``Authorization: Bearer`` 传递，不支持
     X-API-Key 头（代码核验 auth_service.get_api_key_user 只读 Authorization）。
 
     P2-1 T1（K01）：删除 ``_extract_identity`` 二次 JWT 解码，统一经
@@ -75,21 +108,27 @@ def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, st
     ``PROXY_SOURCE_LLM``（值不变 = ``openbase-llm-proxy``，下游白名单零迁移）；
     委托场景出站四头取委托域值 + X-Agent-Id。匿名/服务级内部调用（user=None）不携带
     身份头，避免误标。
+
+    G7 方案 ①（2026-10-19）：身份头装配完成后按出站 ``X-Tenant-ID`` 选择租户级
+    API Key（``OPENBASE_LLM_API_KEYS_BY_TENANT``）；未配置/未命中回落全局 Key。
     """
     api_key, _, _, _ = _upstream_config()
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
     settings = get_settings()
-    return build_outbound_headers(
+    headers = build_outbound_headers(
         request,
         user,
         target_system=TARGET_SYSTEM_LLM,
-        extra_headers=headers,
+        extra_headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
         enforce_org_alias=settings.enforce_org_alias,
     )
+    tenant_code = headers.get(HEADER_TENANT_ID)
+    headers["Authorization"] = (
+        f"Bearer {_select_llm_api_key(tenant_code, api_key)}"
+    )
+    return headers
 
 
 def _adapt_response(upstream: httpx.Response) -> JSONResponse:

@@ -585,3 +585,99 @@ def test_llm_proxy_assembly_requires_auth(client: TestClient) -> None:
     ):
         resp = client.get(path)
         assert resp.status_code == 401, f"{path} 未拦截匿名访问"
+
+
+# ---------------------------------------------------------------------------
+# G7 方案 ①：租户级 OpenLLM API Key 选择（OPENBASE_LLM_API_KEYS_BY_TENANT）
+# ---------------------------------------------------------------------------
+
+
+def test_parse_llm_api_keys_by_tenant_valid_and_empty() -> None:
+    """空串 → 空映射；合法 JSON → 原样解析（行为零变化的兼容基线）."""
+    from openbase.settings import parse_llm_api_keys_by_tenant
+
+    assert parse_llm_api_keys_by_tenant("") == {}
+    assert parse_llm_api_keys_by_tenant(None) == {}
+    assert parse_llm_api_keys_by_tenant(
+        '{"tenant-1":"sk-openllm-tenant-1"}'
+    ) == {"tenant-1": "sk-openllm-tenant-1"}
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "{bad",
+        "[]",
+        '{"tenant-1":""}',
+        '{"tenant-1":"sk-openllm-a b"}',
+        '{"":"sk-openllm-x"}',
+    ],
+)
+def test_parse_llm_api_keys_by_tenant_invalid(raw: str) -> None:
+    """非法 JSON/空值/空白字符 → ValueError（fail-fast，禁静默降级）."""
+    from openbase.settings import parse_llm_api_keys_by_tenant
+
+    with pytest.raises(ValueError):
+        parse_llm_api_keys_by_tenant(raw)
+
+
+def test_settings_rejects_invalid_tenant_key_map() -> None:
+    """Settings 启动校验：非法映射直接拒绝装配."""
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Settings(llm_api_keys_by_tenant="{bad")
+
+
+def test_select_llm_api_key_prefers_tenant_mapping() -> None:
+    """命中租户 → 租户 Key；未命中/无租户 → 全局默认 Key."""
+    mapping = '{"tenant-1":"sk-openllm-tenant-1"}'
+    assert (
+        llm_proxy_module._select_llm_api_key(
+            "tenant-1", "sk-openllm-global", mapping
+        )
+        == "sk-openllm-tenant-1"
+    )
+    assert (
+        llm_proxy_module._select_llm_api_key(
+            "tenant-2", "sk-openllm-global", mapping
+        )
+        == "sk-openllm-global"
+    )
+    assert (
+        llm_proxy_module._select_llm_api_key(
+            None, "sk-openllm-global", mapping
+        )
+        == "sk-openllm-global"
+    )
+
+
+def test_llm_proxy_build_headers_uses_tenant_scoped_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """出站装配：按 X-Tenant-ID 选择租户级 Key，身份头保持同源."""
+    settings = Settings()
+    settings.llm_api_key = "sk-openllm-global-key"
+    settings.llm_api_keys_by_tenant = '{"tenant-1":"sk-openllm-tenant-1-key"}'
+    monkeypatch.setattr(llm_proxy_module, "get_settings", lambda: settings)
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/openllm/v1/models",
+        "raw_path": b"/openllm/v1/models",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "client": ("127.0.0.1", 12345),
+        "server": ("test", 80),
+        "state": {},
+    }
+    headers = llm_proxy_module._build_upstream_headers(
+        StarletteRequest(scope),
+        {"id": "42", "tenant_code": "tenant-1", "role": "admin"},
+    )
+    assert headers["Authorization"] == "Bearer sk-openllm-tenant-1-key"
+    assert headers["X-Tenant-ID"] == "tenant-1"
+    assert headers["X-User-ID"] == "42"

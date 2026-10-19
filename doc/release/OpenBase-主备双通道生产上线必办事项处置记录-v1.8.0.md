@@ -1,16 +1,16 @@
-# OpenBase-主备双通道生产上线必办事项处置记录-v1.7.0
+# OpenBase-主备双通道生产上线必办事项处置记录-v1.8.0
 
 | 项目 | 内容 |
 |------|------|
 | 记录名称 | 主备双通道生产上线必办事项（S1~S5 / G1~G7）处置记录 |
-| 记录编号 | OB-GOLIVE-CHANNEL-AB-DISPOSITION-v1.7.0 |
-| 版本 | **v1.7.0** |
-| 状态 | **[Approved]**（G3/G4/G5/G6/G5-OBS/G7 闭环；G1/G2 运维侧待下发） |
+| 记录编号 | OB-GOLIVE-CHANNEL-AB-DISPOSITION-v1.8.0 |
+| 版本 | **v1.8.0** |
+| 状态 | **[Approved]**（G3/G4/G5/G6/G5-OBS/G7 闭环；G1/G2 运维侧待下发；G7 B 通道注入完成、端到端复核待共享 PG 恢复） |
 | 编制日期 | 2026-10-16 |
 | 编制人 | AA/PM-OpenBase-Dev |
-| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v2.1.0》（OB-GOLIVE-CHANNEL-AB-v2.1.0） |
-| 处置日期 | 2026-10-16（v1.0.0）/ 2026-10-18（v1.1.0 真实面 / v1.2.0 双签与立项 / v1.3.0 G5-OBS 实施 / v1.4.0 审批单风险补充 / v1.5.0 G4 双签闭环 / v1.6.0 G5-OBS 闭环 / v1.7.0 G7 闭环） |
-| 关联交付 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》（S2）；《G4-T4-2 A 直连豁免行双签审批单-v1.7.0》（[Approved]）；《G5-OBS Memory 跨租户隔离修复立项方案-v1.1.0》；《OpenBase-G5-OBS迁移窗口执行单-v1.1.1》（[Final]）；《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》（[Approved]） |
+| 处置依据 | 《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》（OB-GOLIVE-CHANNEL-AB-v2.2.0） |
+| 处置日期 | 2026-10-16（v1.0.0）/ 2026-10-18（v1.1.0 真实面 / v1.2.0 双签与立项 / v1.3.0 G5-OBS 实施 / v1.4.0 审批单风险补充 / v1.5.0 G4 双签闭环 / v1.6.0 G5-OBS 闭环 / v1.7.0 G7 闭环 / v1.8.0 G7 B 通道注入） |
+| 关联交付 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》（S2）；《G4-T4-2 A 直连豁免行双签审批单-v1.7.0》（[Approved]）；《G5-OBS Memory 跨租户隔离修复立项方案-v1.1.0》；《OpenBase-G5-OBS迁移窗口执行单-v1.1.2》（[Final]）；《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.1.0》（[Approved]） |
 
 ## 修订历史
 
@@ -24,6 +24,7 @@
 | v1.5.0 | 2026-10-18 | OpenBase 架构组 | G4 闭环：审批单升 v1.7.0 `[Approved]`（双签 + §7.1 生效记录）；补记 P5~P8 窗口证据（Prometheus target UP、防火墙规则、K07 矩阵 v1.3.0 gaps=0、告警 5 条、四服务回环监听）；清单引用同步至 v1.7.0 |
 | v1.6.0 | 2026-10-19 | OpenBase 架构组 | **G5-OBS 闭环**：MQ1=A/MQ3=A；T5 迁移批次 0113（41 行）+ 0132（1 行）、verify/幂等 PASS；T6 开启；AC-MT-2~6 全 PASS；新增 **G7**（D20 跨租户 API Key 写冲突待裁定）；清单引用同步至 v2.0.0 |
 | v1.7.0 | 2026-10-19 | OpenBase 架构组 | **G7 闭环（方案 ①）**：OpenLLM 建 `tenant-1` 租户 + `svc-tenant-1` 服务账号 + 租户级 API Key；生产 8001 在 D20 开启下三路回写 PASS；产出《G7 裁定与生产验证记录-v1.0.0》；清单引用同步至 v2.1.0 |
+| v1.8.0 | 2026-10-19 | OpenBase 架构组 | G7 后续：OpenBase B 通道新增 `OPENBASE_LLM_API_KEYS_BY_TENANT` 按租户选 Key；本地 `.env` 注入、单测 33/73 passed、进程内选择 PASS；端到端转发复核因共享 PG 不可达登记待补跑；G7 记录升 v1.1.0、清单引用同步 v2.2.0 |
 
 ---
 
@@ -35,15 +36,15 @@
 | **G2** | 生产门禁 5 组开关置真 | **仓库侧 ✅ 已办**（根模板已含 5 组；本批补本地缺省声明）；运维侧 ⬜ 待下发 | OpenLLM `9948d22`；§G2 |
 | **G3** | L2-1 主备切换演练（真实） | ✅ **PASS**（S7-T3-1~4） | `doc/test/evidence/s7/l2-1/failover-drill.json`、`drill-report.md` |
 | **G4** | L2-2 通道矩阵终验（真实） | ✅ **PASS**（T4-1/3/4 PASS + T4-2 双签完成）；审批单 v1.7.0 `[Approved]`，2026-10-18 生效 | `doc/test/evidence/s7/l2-2/**`；《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.7.0》 |
-| **G5** | 回写链路真实面 | ✅ **PASS**（三路落地 + async 复投幂等）；观测项 G5-OBS 已闭环 | `doc/test/evidence/s7/g5/**`；《OpenBase-G5-OBS迁移窗口执行单-v1.1.1》 |
+| **G5** | 回写链路真实面 | ✅ **PASS**（三路落地 + async 复投幂等）；观测项 G5-OBS 已闭环 | `doc/test/evidence/s7/g5/**`；《OpenBase-G5-OBS迁移窗口执行单-v1.1.2》 |
 | **G6** | 回写 `profile` 真实化 | ✅ **PASS**（真实 DPS + `extract_targets`） | 同上 |
-| **G7** | D20 跨租户 API Key 写冲突 | ✅ **PASS（方案 ①）**：租户级服务 Key + 生产实例三路写入 | `doc/test/evidence/s7/g5/g7-production-writeback.json`；《G7 裁定与生产验证记录-v1.0.0》 |
+| **G7** | D20 跨租户 API Key 写冲突 | ✅ **PASS（方案 ①）**：租户级服务 Key + 生产实例三路写入；OpenBase B 通道注入完成（端到端复核待共享 PG） | `doc/test/evidence/s7/g5/g7-production-writeback.json`、`g7-openbase-key-injection.json`；《G7 裁定与生产验证记录-v1.1.0》 |
 | **G5-OBS** | memory 跨租户隔离修复 | ✅ **已闭环**（T5/T6/AC-MT-2~6） | `doc/test/evidence/s7/g5/ac-mt-*.json` |
 | **S1** | 接管审计开关评估 | ✅ 已评估并落载体（建议审批后开启） | §S1 |
 | **S2** | 回滚方案与演练 | ✅ 方案已产出；演练待窗口 | §S2 |
 | **S3** | `channel_report` 接监控 | ✅ 已评估（`/health` 段落已可机读） | §S3 |
 | **S4** | 发布强制核验执行 | ✅ 清单/矩阵已就绪；执行待目标环境 | §S4 |
-| **S5** | 台账与文档状态同步 | ✅ 本批文档集已同步（清单 v2.1.0 / 本记录 v1.7.0） | §S5 |
+| **S5** | 台账与文档状态同步 | ✅ 本批文档集已同步（清单 v2.2.0 / 本记录 v1.8.0） | §S5 |
 
 > **说明（纪律）**：凡需真实运行态/运维窗口的项，**一律如实登记为未闭环，不填 PASS**；所有已完成项均给出**可核验证据**。
 
@@ -149,7 +150,7 @@
 
 | 编号 | 观测 | 影响 | 处置 |
 |:----:|------|------|------|
-| **G5-OBS** | OpenMemory 回写落库域实测为 `default`（`owner=tenant-1_1`）：OpenMemory 适配器客户端为进程级共享头，未按请求透传 `X-Tenant-ID` | 三路"真实落地"成立；但 B 通道 memory 的**跨租户隔离**未生效（同一实例内按 owner 隔离） | ✅ **已闭环**：T5 迁移（41+1 行）+ T6 开关 + AC-MT-2~6 全 PASS；详见下节与《OpenBase-G5-OBS迁移窗口执行单-v1.1.1》[Final] |
+| **G5-OBS** | OpenMemory 回写落库域实测为 `default`（`owner=tenant-1_1`）：OpenMemory 适配器客户端为进程级共享头，未按请求透传 `X-Tenant-ID` | 三路"真实落地"成立；但 B 通道 memory 的**跨租户隔离**未生效（同一实例内按 owner 隔离） | ✅ **已闭环**：T5 迁移（41+1 行）+ T6 开关 + AC-MT-2~6 全 PASS；详见下节与《OpenBase-G5-OBS迁移窗口执行单-v1.1.2》[Final] |
 
 ### G5-OBS 执行结果（2026-10-19）
 
@@ -179,9 +180,11 @@
 | DPS 映射 | 生产 overlay 的 `DPS_ORG_CODE_MAP` / `DPS_TENANT_CODE_MAP` 增加该租户 UUID → DPS org/tenant |
 | 生产验证 | 8001 在 D20 开启下三路回写 200、`accepted` 全 true；memory/rag 落 `tenant-1`、profile 落 `tenant-1_1`；四组件 ok |
 | 证据 | `doc/test/evidence/s7/g5/g7-production-writeback.json` |
+| OpenBase 注入 | 新增 `OPENBASE_LLM_API_KEYS_BY_TENANT` + llm-proxy 按 `X-Tenant-ID` 选 Key；本地 `.env` 已注入；单测 33/73 passed、进程内选择 PASS；端到端转发待共享 PG 恢复 |
+| 注入证据 | `doc/test/evidence/s7/g5/g7-openbase-key-injection.json` |
 | 交接 | 密钥明文与服务账号口令仅落 `doc/tmp/g7/handoff.txt`（不入库），OPS 注入后须轮换 |
 
-> 结论：**G7 PASS**。OPS 待办为密钥注入/轮换与生产环境 DPS 码表登记；不改变既定 D20 安全语义。
+> 结论：**G7 PASS**。OpenBase B 通道已新增 `OPENBASE_LLM_API_KEYS_BY_TENANT` 并按出站 `X-Tenant-ID` 选 Key（未配置回落全局），本地注入与进程内选择验证 PASS；端到端 llm-proxy 转发复核因共享 PG 不可达暂阻塞，待基础设施恢复后补跑。OPS 待办为真实生产环境密钥注入/轮换与 DPS 码表登记；不改变既定 D20 安全语义。
 
 ### 回归与静态检查（v1.1.0 批次）
 
@@ -202,13 +205,14 @@
 | G3/G4/G5 演练脚本 | `scripts/drill_l2_1_failover.py`、`scripts/dual_channel_e2e.py`、`scripts/finalize_l2_2_matrix.py`、`scripts/writeback_realface.py` | 真实运行态执行与证据生成 |
 | G4-T4-2 双签审批单 | 《OpenBase-G4-T4-2-A直连豁免行双签审批单-v1.1.0》 | A 直连/健康管理面豁免行清单、对账、**R1~R8 风险分析**、签署前机械核对、双签栏 |
 | G5-OBS 立项方案 | 《OpenBase-G5-OBS-Memory跨租户隔离修复立项方案-v1.1.0》 | 根因、跨仓小版本改动、迁移、验收、回滚 + T1~T4 实施记录 |
-| G5-OBS 迁移执行单 | 《OpenBase-G5-OBS迁移窗口执行单-v1.1.1》（[Final]） | MQ1/MQ3 裁定、T5 两批次执行、T6 灰度、AC-MT-2~6、D20 冲突发现与回滚 |
+| G5-OBS 迁移执行单 | 《OpenBase-G5-OBS迁移窗口执行单-v1.1.2》（[Final]） | MQ1/MQ3 裁定、T5 两批次执行、T6 灰度、AC-MT-2~6、D20 冲突发现与回滚 |
 | G5-OBS 运行态证据 | `doc/test/evidence/s7/g5/migration-*.json`、`ac-mt-{2,3,4,5,6}.json` | 迁移、落域、跨租户不可见、B/A 同域、三路回写、幂等 |
 | OpenMemory 迁移脚本修复 | OpenMemory `scripts/migrate_memory_tenant_domain.py` | D-3：`ensure_schema()` 前置到批次查重之前 |
-| G7 裁定与验证记录 | 《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》（[Approved]） | 方案 ①、租户/服务账号/Key、DPS 映射、生产实例三路验证、交接与回滚 |
+| G7 裁定与验证记录 | 《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.1.0》（[Approved]） | 方案 ①、租户/服务账号/Key、DPS 映射、生产实例三路验证、B 通道注入、交接与回滚 |
 | G7 运行态证据 | `doc/test/evidence/s7/g5/g7-production-writeback.json` | D20 开启下的三路落域与组件健康 |
+| G7 注入证据 | `doc/test/evidence/s7/g5/g7-openbase-key-injection.json` | 租户级 Key 选择、单测、进程内验证与运行时阻塞说明 |
 | 本处置记录 | 本文件 | S1~S5 / G1~G7 逐项处置 + 真实面执行结果 |
 
 ---
 
-**记录状态**：[Approved]（G3/G4/G5/G6/G5-OBS/G7 已闭环；G1/G2 待运维下发；G7 密钥注入/轮换与 DPS 码表登记待 OPS）
+**记录状态**：[Approved]（G3/G4/G5/G6/G5-OBS/G7 已闭环；G1/G2 待运维下发；G7 B 通道注入完成，端到端复核待共享 PG 恢复，真实生产密钥注入/轮换与 DPS 码表登记待 OPS）

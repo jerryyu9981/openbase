@@ -1,24 +1,25 @@
-# OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0
+# OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.1.0
 
 | 项目 | 内容 |
 |------|------|
 | 文档名称 | G7（D20 租户一致性门禁与跨租户 API Key 写冲突）裁定与生产验证记录 |
-| 文档编号 | OB-G7-D20-v1.0.0 |
-| 版本 | **v1.0.0** |
-| 状态 | **[Approved]**（方案 ① 执行完成，生产实例验证 PASS） |
+| 文档编号 | OB-G7-D20-v1.1.0 |
+| 版本 | **v1.1.0** |
+| 状态 | **[Approved]**（方案 ① 执行完成；生产实例回写验证 PASS；OpenBase B 通道注入完成，端到端运行时复核待共享 PG 恢复） |
 | 编制日期 | 2026-10-19 |
 | 编制人 | OpenBase 架构组 |
 | 裁定人 | 项目负责人（G7 选 ①，2026-10-19） |
-| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v2.1.0》G7 |
-| 关联记录 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.7.0》 |
-| 关联执行单 | 《OpenBase-G5-OBS迁移窗口执行单-v1.1.1》§5.3（G7 发现来源） |
-| 验证证据 | `doc/test/evidence/s7/g5/g7-production-writeback.json` |
+| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》G7 |
+| 关联记录 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.8.0》 |
+| 关联执行单 | 《OpenBase-G5-OBS迁移窗口执行单-v1.1.2》§5.3（G7 发现来源） |
+| 验证证据 | `doc/test/evidence/s7/g5/g7-production-writeback.json`；`doc/test/evidence/s7/g5/g7-openbase-key-injection.json` |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-19 | OpenBase 架构组 | 首次产出：G7 冲突复述、方案 ① 裁定、租户/服务账号/API Key 落地、生产实例三路回写验证、DPS 映射依赖、交接与回滚 |
+| v1.1.0 | 2026-10-19 | OpenBase 架构组 | 增补 §8：OpenBase B 通道租户级 Key 注入（代码 + 配置）、选择逻辑与 fail-fast 校验、单测与进程内验证；端到端运行时复核因共享 PG 不可达登记为待补跑 |
 
 ---
 
@@ -75,7 +76,7 @@ G5-OBS 执行期间发现：生产实例（`ENV=production` + `TENANT_HEADER_CON
 
 ## 5. 运维下发要求
 
-1. **密钥注入**：将 `g7-tenant-1-service` 密钥注入 OpenBase B 通道的租户级配置，按 `tenant_code` 选择 Key；禁止回落到 `default-tenant` 服务密钥承载 `tenant-1` 写入。
+1. **密钥注入**：将 `g7-tenant-1-service` 密钥注入 OpenBase B 通道的租户级配置，按 `tenant_code` 选择 Key；禁止回落到 `default-tenant` 服务密钥承载 `tenant-1` 写入。**本地已落地**（§8）；真实生产环境待 OPS 按同一键名注入并轮换。
 2. **DPS 码表**：真实生产环境的 OpenLLM 侧需登记该环境 `tenant-1` 租户 UUID → DPS org/tenant 的映射（本地验证值为 `ae2130a8-…`，生产以实际建租户结果为准）。
 3. **密钥轮换**：首次注入完成后轮换一次；后续按密钥管理策略周期轮换，轮换窗口需覆盖旧 Key 有效期。
 4. **租户事实源**：OpenBase `openbase.tenants` 仍是租户码唯一事实源；OpenLLM `tenants` 为其服务侧镜像，新增/变更需双写同步并纳入巡检。
@@ -98,3 +99,36 @@ G5-OBS 执行期间发现：生产实例（`ENV=production` + `TENANT_HEADER_CON
 | OpenLLM 租户镜像与 OpenBase 漂移 | 双写同步 + 巡检；以 OpenBase 为唯一事实源 |
 | DPS 码表遗漏新租户 UUID | 建租户后强制登记映射；纳入发布前机械校验 |
 | 交接明文 | 仅落 `doc/tmp`（不入库），交付后立即轮换并转入密钥管理 |
+
+## 8. OpenBase B 通道租户级 Key 注入（2026-10-19）
+
+### 8.1 代码改动
+
+| 文件 | 改动 |
+|------|------|
+| `openbase/settings.py` | 新增 `llm_api_keys_by_tenant: str`（JSON `{"<tenant_code>": "<key>"}`）+ `parse_llm_api_keys_by_tenant` 纯函数 + 启动 fail-fast 校验（非法 JSON/空值/空白字符直接拒绝装配） |
+| `openbase/modules/llm_proxy/__init__.py` | 新增 `_select_llm_api_key`：身份头装配完成后按出站 `X-Tenant-ID` 选 Key；未配置/未命中回落 `OPENBASE_LLM_API_KEY`（行为零变化） |
+| `tests/test_llm_proxy.py` | 新增 8 例：解析合法/非法、Settings fail-fast、命中租户/回落全局、出站头选择 |
+
+### 8.2 配置注入
+
+- 在 OpenBase `.env` 写入 `OPENBASE_LLM_API_KEYS_BY_TENANT={"tenant-1":"<g7-tenant-1-service>"}`；
+- 密钥明文不落文档/证据（证据仅记录 SHA256 前 12 位 `41cca7132543` 与长度 43）；
+- 全局 `OPENBASE_LLM_API_KEY` 保持不变，非 `tenant-1` 流量继续使用全局 Key。
+
+### 8.3 验证结果
+
+| 项 | 结果 |
+|------|:----:|
+| 进程内选择（加载实际 `.env`） | PASS：`tenant-1` → 租户 Key；`tenant-2` → 全局 Key；全局 Key 未变 |
+| 单测 | `test_llm_proxy.py` 33 passed；三文件回归 73 passed |
+| 全量回归 | **BLOCKED**：共享 PG 不可达，PG 依赖用例连接超时、整体长时间未收敛，已终止；待基础设施恢复补跑 |
+| 静态检查 | ruff All checks passed |
+| OpenBase 服务启动 | HEALTHY（PID 17300，注入后启动，已加载新配置） |
+| 端到端 llm-proxy 转发 | **BLOCKED**：共享 PostgreSQL `192.168.0.151:5432` 不可达（主机 ping 失败），OpenLLM 8001 启动 `ConnectionTimeout`；代理返回 502 `SYS_502` |
+
+> 待补跑：共享 PG 恢复后重启 OpenLLM 8001，分别以 `tenant-1` / `tenant-2` 身份调用 `/api/v1/llm-proxy/models`，确认租户 Key 与全局 Key 均转发成功。证据：`doc/test/evidence/s7/g5/g7-openbase-key-injection.json`（`status=PARTIAL`）。
+
+### 8.4 回滚
+
+移除 `OPENBASE_LLM_API_KEYS_BY_TENANT` 并重启 OpenBase → 全部流量回落全局 `OPENBASE_LLM_API_KEY`（与注入前逐字一致）。

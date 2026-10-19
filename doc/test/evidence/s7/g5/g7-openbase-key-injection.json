@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "task": "S7-G7 / OpenBase B 通道租户级 API Key 注入",
+  "generated_at": "2026-10-19T16:45:00+08:00",
+  "openbase_base": "http://127.0.0.1:8000",
+  "openllm_base": "http://127.0.0.1:8001",
+  "tenant": "tenant-1",
+  "config_key": "OPENBASE_LLM_API_KEYS_BY_TENANT",
+  "injection": {
+    "env_file": "OpenBase/.env",
+    "replaced_existing": false,
+    "api_key_len": 43,
+    "api_key_digest_sha256_12": "41cca7132543",
+    "plaintext_recorded": false
+  },
+  "code_changes": {
+    "settings": "openbase/settings.py::parse_llm_api_keys_by_tenant + fail-fast validator",
+    "llm_proxy": "openbase/modules/llm_proxy/__init__.py::_select_llm_api_key（按出站 X-Tenant-ID 选 Key）",
+    "fallback": "未配置/未命中 → OPENBASE_LLM_API_KEY（行为零变化）"
+  },
+  "checks": {
+    "map_loaded": true,
+    "tenant_1_uses_tenant_key": true,
+    "tenant_1_header_tenant": true,
+    "tenant_2_falls_back_global": true,
+    "global_key_unchanged": true
+  },
+  "unit_tests": {
+    "targeted": {
+      "command": "pytest tests/test_llm_proxy.py -q",
+      "result": "33 passed"
+    },
+    "regression": {
+      "command": "pytest tests/test_llm_proxy.py tests/test_outbound_tenant_code_space.py tests/test_org_alias_code.py -q",
+      "result": "73 passed"
+    },
+    "ruff": "All checks passed",
+    "full_suite": {
+      "command": "pytest tests -q",
+      "result": "BLOCKED",
+      "reason": "共享 PostgreSQL 192.168.0.151:5432 不可达，PG 依赖用例连接超时导致整体长时间未收敛，已终止；待基础设施恢复后补跑全量"
+    }
+  },
+  "runtime": {
+    "openbase_start": {
+      "status": "HEALTHY",
+      "pid": 17300,
+      "config_loaded_after_injection": true
+    },
+    "proxy_verification": {
+      "status": "BLOCKED",
+      "reason": "共享 PostgreSQL 192.168.0.151:5432 不可达（主机 ping 失败），OpenLLM 8001 启动 ConnectionTimeout；llm-proxy 转发返回 502 SYS_502",
+      "observed_http": {
+        "tenant-1": 502,
+        "tenant-2": 502
+      },
+      "pending": "共享 PG 恢复后重启 OpenLLM 8001，复跑 /api/v1/llm-proxy/models（tenant-1/tenant-2）并核验上游 Key 选择"
+    }
+  },
+  "status": "PARTIAL",
+  "conclusion": "代码与配置注入完成、进程内选择与单测全部通过；端到端运行时复核因共享 PG 不可达暂阻塞，待基础设施恢复后补跑。"
+}

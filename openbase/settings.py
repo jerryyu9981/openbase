@@ -108,6 +108,54 @@ def parse_proxy_code_map(raw: str | None) -> dict[str, dict[str, object]]:
     return result
 
 
+def parse_llm_api_keys_by_tenant(raw: str | None) -> dict[str, str]:
+    """解析 `OPENBASE_LLM_API_KEYS_BY_TENANT` 租户级 OpenLLM API Key 映射（纯函数）.
+
+    Schema:
+        {"<tenant_code>": "<sk-openllm-...>"}
+
+    背景（G7 方案 ①，2026-10-19）：OpenLLM D20 要求「API Key 归属租户 == 入站
+    X-Tenant-ID」；单一全局 Key 无法承载多租户 B 通道。空串 = 未配置（全部回落
+    `llm_api_key`，行为零变化）。
+
+    Args:
+        raw: JSON 字符串；空 → 返回空映射。
+
+    Returns:
+        {tenant_code: api_key}
+
+    Raises:
+        ValueError: JSON 非法、结构不符、租户码/密钥为空或密钥含空白/控制字符
+            （fail-fast，禁静默降级）。
+    """
+    text = (raw or "").strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"OPENBASE_LLM_API_KEYS_BY_TENANT 不是合法 JSON：{exc}"
+        ) from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("OPENBASE_LLM_API_KEYS_BY_TENANT 顶层必须是对象")
+    result: dict[str, str] = {}
+    for tenant, key in parsed.items():
+        if not isinstance(tenant, str) or not tenant.strip():
+            raise ValueError("OPENBASE_LLM_API_KEYS_BY_TENANT 租户码必须是非空字符串")
+        if not isinstance(key, str) or not key.strip():
+            raise ValueError(
+                f"OPENBASE_LLM_API_KEYS_BY_TENANT.{tenant} 密钥必须是非空字符串"
+            )
+        value = key.strip()
+        if any(char in value for char in ("\r", "\n", "\t", " ", "\x00")):
+            raise ValueError(
+                f"OPENBASE_LLM_API_KEYS_BY_TENANT.{tenant} 密钥含非法字符"
+            )
+        result[tenant.strip()] = value
+    return result
+
+
 def resolve_target_code_space(raw: str | None) -> dict[str, dict[str, object]]:
     """按内置基线 + 覆盖表解析各目标码空间（纯函数）.
 
@@ -343,6 +391,12 @@ class Settings(BaseSettings):
 
     # ---- OpenLLM 对接（v1.4.3 R-379，API Key Bearer 注入转发） ----
     llm_api_key: str = "sk-openllm-openbase-gateway-key"
+    # G7 方案 ①（2026-10-19）：租户级 OpenLLM API Key 映射
+    #   JSON: {"<tenant_code>": "<sk-openllm-...>"}
+    # OpenLLM D20 要求「API Key 归属租户 == 入站 X-Tenant-ID」，单一全局 Key 无法
+    # 承载多租户 B 通道写入。空串 = 未配置（全部回落 llm_api_key，行为零变化）。
+    # 值为密钥，禁止落日志/文档；生产经密钥管理系统注入。
+    llm_api_keys_by_tenant: str = ""
     llm_upstream_base: str = "http://127.0.0.1:8001"
     # 本轮迭代（智能体对话全链路）修正：非流式上游预算 20.0s → 120.0s。
     # 依据：OpenLLM 在 mode=auto 下按真实契约**同步**完成「画像拉取 + 记忆检索 +
@@ -538,6 +592,16 @@ class Settings(BaseSettings):
         """
         resolved = resolve_target_code_space(self.proxy_code_map)
         validate_target_code_space(resolved)
+        return self
+
+    @model_validator(mode="after")
+    def _validate_llm_api_keys_by_tenant(self) -> Settings:
+        """租户级 OpenLLM API Key 映射校验（G7 方案 ①，fail-fast）.
+
+        Raises:
+            ValueError: JSON 非法、结构不符或密钥含空白/控制字符。
+        """
+        parse_llm_api_keys_by_tenant(self.llm_api_keys_by_tenant)
         return self
 
     def enable_module(self, name: str) -> None:

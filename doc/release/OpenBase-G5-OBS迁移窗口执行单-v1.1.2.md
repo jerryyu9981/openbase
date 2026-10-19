@@ -1,17 +1,17 @@
-# OpenBase-G5-OBS 迁移窗口执行单-v1.1.1
+# OpenBase-G5-OBS 迁移窗口执行单-v1.1.2
 
 | 项目 | 内容 |
 |------|------|
 | 文档名称 | G5-OBS（OpenMemory 历史 `default` 域记忆迁移 + 租户头开关灰度）迁移窗口执行单 |
-| 文档编号 | OB-G5-OBS-MIG-v1.1.1 |
-| 版本 | **v1.1.1** |
+| 文档编号 | OB-G5-OBS-MIG-v1.1.2 |
+| 版本 | **v1.1.2** |
 | 状态 | **[Final]**（T5 迁移、T6 开关、AC-MT-2~6 全部执行完成并留证） |
 | 编制日期 | 2026-10-18（首版）/ 2026-10-19（执行回填） |
 | 编制人 | OpenBase 架构组 |
 | 裁定人 | 项目负责人（MQ1=A / MQ3=A，2026-10-19） |
 | 关联立项方案 | 《OpenBase-G5-OBS-Memory跨租户隔离修复立项方案-v1.1.0》§4/§5/§6 |
-| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v2.1.0》G5-OBS |
-| 关联 G7 记录 | 《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》 |
+| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》G5-OBS |
+| 关联 G7 记录 | 《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.1.0》 |
 | 关联迁移脚本 | OpenMemory `scripts/migrate_memory_tenant_domain.py` |
 | 目标库 | 共享 PostgreSQL `nuct`（schema：`public.memory_metadata` / `openbase.tenants`） |
 | 关联开关 | OpenLLM `OPENMEMORY_TENANT_HEADERS`（默认 `false`） |
@@ -23,6 +23,7 @@
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：迁移前检查、MQ1/MQ3 裁定栏、dry-run/apply/verify/rollback 步骤、T6 灰度与 AC-MT-2~6 验收、回滚与签字 |
 | v1.1.0 | 2026-10-19 | OpenBase 架构组 | 执行回填：MQ1=A/MQ3=A 签字；T5 批次 `g5obs-20261019-0113`（41 行）+ `g5obs-20261019-0132`（1 行）；T6 开启；AC-MT-2~6 全 PASS；登记 D20 跨租户 API Key 一致性门禁冲突（探针实例 8012 完成 AC-MT-4/5） |
 | v1.1.1 | 2026-10-19 | OpenBase 架构组 | §5.3 更正：G7 已按方案 ① 闭环（租户级 API Key，保持 D20 开启），补生产实例验证结论与记录引用；关联清单同步 v2.1.0 |
+| v1.1.2 | 2026-10-19 | OpenBase 架构组 | §5.3 引用同步：G7 记录升 v1.1.0（补 OpenBase B 通道注入）；关联清单同步 v2.2.0 |
 
 ---
 
@@ -162,7 +163,7 @@ OPENMEMORY_TENANT_HEADERS=true
 - 原因：D20 门禁要求「受信来源 + API Key 通道」的 `X-Tenant-ID` 必须等于 API Key 所有者所属租户码；OpenLLM 侧现有 API Key 均归属 `default-tenant`，无 `tenant-1` 归属主体。
 - 影响：若生产 B 通道以**单一服务账号 API Key** 承载多租户写入，跨租户写路径会被 D20 拦截。
 - 处置过程：AC-MT-4/5 先在**隔离探针实例 8012**（`ENV=staging` + `TENANT_HEADER_CONSISTENCY_ENFORCE=false`）完成机制验证（未改动生产实例配置）；证据 JSON 已标注 `openllm_base` 与 `probe_note`。
-- 最终裁定与验证：**G7 选方案 ①**——按租户发放归属一致的 API Key（保持 D20 开启）。OpenLLM 建 `tenant-1` 租户 + `svc-tenant-1` + 租户级 Key，生产实例 8001 三路回写 PASS。详见《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》。
+- 最终裁定与验证：**G7 选方案 ①**——按租户发放归属一致的 API Key（保持 D20 开启）。OpenLLM 建 `tenant-1` 租户 + `svc-tenant-1` + 租户级 Key，生产实例 8001 三路回写 PASS。详见《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.1.0》。
 
 ## 6. 回滚
 
