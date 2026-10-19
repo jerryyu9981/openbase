@@ -49,7 +49,7 @@
     },
     "proxy_verification": {
       "status": "BLOCKED",
-      "reason": "共享 PostgreSQL 192.168.0.151:5432 不可达（主机 ping 失败），OpenLLM 8001 启动 ConnectionTimeout；llm-proxy 转发返回 502 SYS_502",
+      "reason": "共享 PostgreSQL 192.168.0.151:5432 不可达（主机 ping 失败）；同网段 Git 主机 192.168.0.14 同时不可达，判定为局域网链路中断。OpenLLM 8001 启动 ConnectionTimeout；llm-proxy 转发返回 502 SYS_502",
       "observed_http": {
         "tenant-1": 502,
         "tenant-2": 502
