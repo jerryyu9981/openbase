@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "tool": "g7_provision.py",
+  "task": "S7-G7 / D20 跨租户 API Key 裁定方案 ①",
+  "generated_at": "2026-10-19T03:16:49.315222+00:00",
+  "openllm_base": "http://127.0.0.1:8001",
+  "env": "production",
+  "tenant_scope_consistency_enforce": true,
+  "tenant": {
+    "id": "ae2130a8-14fe-4606-a5cf-09ce75d3d1f1",
+    "tenant_code": "tenant-1",
+    "tenant_name": "Tenant 1 (G7 service)",
+    "created": false
+  },
+  "service_user": {
+    "id": "15837fe6-53d6-44b9-b894-5280de9a259f",
+    "username": "svc-tenant-1",
+    "role": "org_admin",
+    "organization_id": "ae2130a8-14fe-4606-a5cf-09ce75d3d1f1",
+    "created": false
+  },
+  "api_key": {
+    "id": "d73b9386-aba3-434c-a7a3-7d8a3b65e2e6",
+    "key_name": "g7-tenant-1-service",
+    "key_prefix": "sk-openllm-4010c",
+    "previous_keys_revoked": [
+      "0c6d83f9-f754-4f65-b6ab-82beef109d5a"
+    ]
+  },
+  "writeback": {
+    "request": {
+      "status": 200,
+      "body": {
+        "code": 0,
+        "message": "success",
+        "data": {
+          "request_id": "openllm-wb-01a2cac919db4d52816cccf5",
+          "accepted": {
+            "memory": true,
+            "rag": true,
+            "profile": true
+          },
+          "mode": "mixed",
+          "duplicated": {
+            "memory": false,
+            "rag": false,
+            "profile": false
+          }
+        }
+      },
+      "text_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"request_id\":\"openllm-wb-01a2cac919db4d52816cccf5\",\"accepted\":{\"memory\":true,\"rag\":true,\"profile\":true},\"mode\":\"mixed\",\"duplicated\":{\"memory\":false,\"rag\":false,\"profile\":false}}}"
+    },
+    "marker": "g7-d20-20261019111633",
+    "session_id": "g7-g7-d20-20261019111633"
+  },
+  "landing": {
+    "memory_db": {
+      "tenant_code": "tenant-1",
+      "owner": "tenant-1_1",
+      "content": "G7 D20 同码租户写验证标记 g7-d20-20261019111633"
+    },
+    "rag_db": {
+      "tenant_code": "tenant-1",
+      "filename": "text-6986cac90e59.txt",
+      "content": "G7 D20 同码租户写验证标记 g7-d20-20261019111633"
+    },
+    "profile": {
+      "status": 200,
+      "person_id": "tenant-1_1",
+      "marker_hit": true,
+      "attributes_head": "{\"g7_d20_probe\": \"g7-d20-20261019111633\"}"
+    }
+  },
+  "health": {
+    "status": 200,
+    "components": {
+      "openmemory": "ok",
+      "openrag": "ok",
+      "dps": "ok",
+      "ollama": "ok"
+    },
+    "primary_channel": "b"
+  },
+  "checks": {
+    "tenant_code_is_tenant_1": true,
+    "service_user_in_tenant": true,
+    "service_user_role_org_admin": true,
+    "api_key_created": true,
+    "writeback_status_200": true,
+    "accepted_all_true": true,
+    "first_not_duplicated": true,
+    "memory_landed_tenant_1": true,
+    "memory_owner_expected": true,
+    "rag_landed_tenant_1": true,
+    "profile_landed": true,
+    "health_components_ok": true
+  },
+  "status": "PASS",
+  "health_recheck": {
+    "note": "writeback 已完成；OpenRAG 首次 health 读数为缓存期瞬态 unavailable，等待缓存周期后复测",
+    "components": {
+      "openmemory": "ok",
+      "openrag": "ok",
+      "dps": "ok",
+      "ollama": "ok"
+    }
+  }
+}

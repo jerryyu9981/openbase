@@ -1,18 +1,18 @@
-# OpenBase-主备双通道生产上线必办事项清单-v2.0.0
+# OpenBase-主备双通道生产上线必办事项清单-v2.1.0
 
 | 项目 | 内容 |
 |------|------|
 | 清单名称 | 主备双通道（B 主通道 / A 备用直连）生产上线必办事项清单 |
-| 清单编号 | OB-GOLIVE-CHANNEL-AB-v2.0.0 |
-| 版本 | **v2.0.0** |
-| 状态 | **[处置中]**（G3/G4/G5/G6 已闭环；G5-OBS 已闭环；G1/G2 生产模式窗口已验证、生产 `.env` 待 OPS 下发；**新增 G7：D20 跨租户 API Key 归属裁定待 OPS/LL**） |
+| 清单编号 | OB-GOLIVE-CHANNEL-AB-v2.1.0 |
+| 版本 | **v2.1.0** |
+| 状态 | **[处置中]**（G3/G4/G5/G6/G5-OBS/G7 已闭环；G1/G2 生产模式窗口已验证、生产 `.env` 待 OPS 下发） |
 | 编制日期 | 2026-10-16 |
 | 编制人 | AA/PM-OpenBase-Dev |
 | 适用范围 | 经统一前端 / 智能体发起的会话，经 **OpenLLM 主通道 B**（编排 + 三基础设施取数/回写）与 **OpenBase 备用直连 A** 两条通道上生产前的必办事项 |
 | 判据来源 | 《OpenBase-统一身份与主备双通道贯通总体方案》；《OpenBase-问题跟踪记录-v1.4.8》§4AD/§4AH（通道口径）；《OpenBase-上下文精装配与组件通道优化收口方案-v1.6.0》（W1~W4 + T1~T15）；《OpenBase-S7-全域门禁与总收官报告/测试报告-v1.0.0》；《OpenBase-五系统多租户与授权集成总览与续接指南-v1.0.0》§10.3（生产必需开关矩阵） |
 | 关联验收单 | 《OpenBase-主备双通道生产上线验收确认单-v1.0.0》 |
-| 关联处置记录 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.6.0》 |
-| 关联执行单 | 《OpenBase-G5-OBS迁移窗口执行单-v1.1.0》（[Final]） |
+| 关联处置记录 | 《OpenBase-主备双通道生产上线必办事项处置记录-v1.7.0》 |
+| 关联执行单 | 《OpenBase-G5-OBS迁移窗口执行单-v1.1.1》（[Final]）；《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》（[Approved]） |
 | 关联回滚方案 | 《OpenBase-主备双通道生产上线回滚方案-v1.0.0》 |
 
 ## 修订历史
@@ -30,6 +30,7 @@
 | v1.8.0 | 2026-10-18 | OpenBase 架构组 | G1/G2 窗口环境验证：production 模式启动成功（2.19.1）、三组件 ok、6 个反例拒绝（证据 `window-20261018-prod/`）；新增 G1/G2 下发清单与 G5-OBS 迁移执行单；G5-OBS 维持 T5/T6 待裁定 |
 | v1.9.0 | 2026-10-18 | OpenBase 架构组 | 回填 G5-OBS 分项状态（T1~T4 ✅ / T5~T6 ⬜ 待 MQ1、MQ3 裁定）；生产模式窗口复跑实时复核（四组件 ok、target up=1、K07 gaps=0，证据 `window-20261018-prod/recheck.json`）；修正清单结尾状态口径 |
 | v2.0.0 | 2026-10-19 | OpenBase 架构组 | **G5-OBS 闭环**：MQ1=A/MQ3=A；T5 迁移 41+1 行、verify/幂等 PASS；T6 开启；AC-MT-2~6 全 PASS。**新增 G7 阻断项**：D20 租户一致性门禁与跨租户 API Key 写冲突待裁定 |
+| v2.1.0 | 2026-10-19 | OpenBase 架构组 | **G7 闭环（方案 ①）**：OpenLLM 侧建 `tenant-1` 租户与服务账号、签发归属一致 API Key；生产实例 8001 在 D20 开启下三路回写 PASS；新增《G7 裁定与生产验证记录》 |
 
 ---
 
@@ -51,7 +52,7 @@
 | **G4** | **L2-2 通道矩阵终验（真实运行态）**——每子系统 × A/B × **头语义**矩阵 + **写路径等价** + **K14 幂等** | OB / LL | 以 S4-T8 `matrix_rows` 为基座；判据 S7-T4-1~4；证据落 `doc/test/evidence/s7/l2-2/**` | 矩阵逐行真实双签通过；写路径 A/B 等价（A 不承载写，B 承载）；幂等复投不重复执行 | ✅ **PASS**：T4-1/3/4 PASS + T4-2 双签完成（审批单 v1.7.0 `[Approved]`，生效记录见 §7.1） |
 | **G5** | **回写链路真实面**——`POST /openllm/v1/writeback` 三路（`memory` / `rag` / `profile`）真实上游落地 | LL / OM / RG / DPS | 回写队列就绪性（原 S4-4）+ 主通道沉淀（原 S6-3）；幂等键 `session_id + seq + target` | 三路均落真实上游并留证；重复投递返回 `duplicated=true` 且不重复执行；失败按指数退避 ≤3 次 + 死信可视 | ✅ **PASS**（三路 accepted=true；async 复投三路 duplicated=true；证据 `doc/test/evidence/s7/g5/**`） |
 | **G6** | **回写 `profile` 路由真实化确认**——当前注记「DPS Mock 先行」，须确认真实 DPS 契约已生效 | LL / DPS | 配置注释与运行态探针 | `profile` 回写打到**真实 DPS**（非 Mock）；`extract_targets` 生效 | ✅ **PASS**（`person_id=tenant-1_1`，`attributes_json` 写入探针标记；证据同上） |
-| **G7** | **D20 租户一致性门禁与跨租户 API Key 写冲突裁定**——生产 `TENANT_HEADER_CONSISTENCY_ENFORCE=true` 下，归属 `default-tenant` 的 API Key 携带 `X-Tenant-ID=tenant-1` 写回被 403 | OPS / LL | 方案二选一：①按租户发放归属一致的 API Key；②调整 D20 策略（需安全评审） | 生产实例上以目标租户身份完成一次 `/openllm/v1/writeback` 三路写入（非探针实例），并留证 | ⬜ **待裁定**（详见执行单 §5.3；探针实例 8012 已完成机制验证） |
+| **G7** | **D20 租户一致性门禁与跨租户 API Key 写冲突裁定**——生产 `TENANT_HEADER_CONSISTENCY_ENFORCE=true` 下，归属 `default-tenant` 的 API Key 携带 `X-Tenant-ID=tenant-1` 写回被 403 | OPS / LL | **已裁定方案 ①**：按租户发放归属一致的 API Key（保持 D20 开启）；OpenLLM 建 `tenant-1` 租户 + `svc-tenant-1` 服务账号 + 租户级 Key | 生产实例上以目标租户身份完成一次 `/openllm/v1/writeback` 三路写入（非探针实例），并留证 | ✅ **PASS**：生产 8001 在 D20 开启下三路 `accepted=true`，memory/rag 落 `tenant-1`、profile 落 `tenant-1_1`（[证据](computer://d:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\s7\g5\g7-production-writeback.json)；《G7 裁定与生产验证记录-v1.0.0》） |
 
 > **Go 判定**：G1~G7 **全部通过**方可进入发布；任一未闭环 ⇒ **No-Go**。
 
@@ -75,12 +76,13 @@
 | AC-MT-5 三路回写 | ✅ | [ac-mt-5.json](computer://d:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\s7\g5\ac-mt-5.json)（隔离探针实例 8012） |
 | AC-MT-6 迁移幂等 | ✅ | [ac-mt-6.json](computer://d:\Trae CN\myproject\Dev\OpenBase\doc\test\evidence\s7\g5\ac-mt-6.json) |
 
-> **处置进展（2026-10-19，详见《处置记录》v1.6.0）**：
+> **处置进展（2026-10-19，详见《处置记录》v1.7.0）**：
 > - **G1 / G2**：仓库侧载体已补齐；**窗口环境已验证**（production 模式启动成功、三组件 ok、6 个反例拒绝）；**生产主机 `.env` 下发待 OPS**。下发清单见《OpenBase-G1G2生产环境变量下发清单-v1.0.0》。
 > - **G3**：✅ 已跑 `scripts/drill_l2_1_failover.py`（驱动 OpenLLM 真实通道状态机）→ S7-T3-1~4 **全 PASS**。
 > - **G4**：✅ **已闭环**。`dual_channel_e2e.py` 四子系统读等价 PASS、写路径 B→A 可见、A 写被拒（期望）、K14 同名行=1；`finalize_l2_2_matrix.py` T4-1/3/4 PASS；T4-2 双签完成——《G4-T4-2 A 直连豁免行双签审批单-v1.7.0》`[Approved]`（2026-10-18 生效，有效期至 2026-12-31，下次复核 2026-12-01）。
 > - **G5 / G6**：✅ `scripts/writeback_realface.py` 三路 sync 回写 `accepted` 全 true；memory/rag/profile 均真实落地；异步复投三路 `duplicated=true`；profile 落 `person_id=tenant-1_1`（真实 DPS）。
-> - **G5-OBS**：✅ **已闭环**。MQ1=A/MQ3=A；T5 两批次迁移（41+1 行）、verify 无 `default` 残留、幂等 0 行；T6 开启；AC-MT-2~6 全 PASS。执行单升 v1.1.0 `[Final]`。**遗留**：D20 跨租户 API Key 写冲突已升级为 **G7 阻断项**。
+> - **G5-OBS**：✅ **已闭环**。MQ1=A/MQ3=A；T5 两批次迁移（41+1 行）、verify 无 `default` 残留、幂等 0 行；T6 开启；AC-MT-2~6 全 PASS。执行单升 v1.1.1 `[Final]`。
+> - **G7**：✅ **已闭环（方案 ①）**。OpenLLM 建 `tenant-1` 租户 + `svc-tenant-1`（org_admin）+ 租户级 API Key；生产实例 8001 保持 D20 开启，三路回写 `accepted=true`，memory/rag 落 `tenant-1`、profile 落 `tenant-1_1`；完整记录见《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》。**OPS 待办**：密钥注入与轮换、DPS 码表登记该租户 UUID。
 > - **S1~S5**：维持 v1.1.0 结论。
 
 ### G1 / G2 发布前机械校验（R3，2026-10-17）
@@ -124,4 +126,4 @@
 
 ---
 
-**清单状态**：[处置中]（G3/G4/G5/G6/G5-OBS 已闭环；G1/G2 生产 `.env` 下发待 OPS；**G7 D20 冲突待裁定**）
+**清单状态**：[处置中]（G3/G4/G5/G6/G5-OBS/G7 已闭环；G1/G2 生产 `.env` 下发与 G7 密钥注入/码表登记待 OPS）

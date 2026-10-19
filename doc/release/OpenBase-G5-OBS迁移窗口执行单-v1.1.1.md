@@ -1,16 +1,17 @@
-# OpenBase-G5-OBS 迁移窗口执行单-v1.1.0
+# OpenBase-G5-OBS 迁移窗口执行单-v1.1.1
 
 | 项目 | 内容 |
 |------|------|
 | 文档名称 | G5-OBS（OpenMemory 历史 `default` 域记忆迁移 + 租户头开关灰度）迁移窗口执行单 |
-| 文档编号 | OB-G5-OBS-MIG-v1.1.0 |
-| 版本 | **v1.1.0** |
+| 文档编号 | OB-G5-OBS-MIG-v1.1.1 |
+| 版本 | **v1.1.1** |
 | 状态 | **[Final]**（T5 迁移、T6 开关、AC-MT-2~6 全部执行完成并留证） |
 | 编制日期 | 2026-10-18（首版）/ 2026-10-19（执行回填） |
 | 编制人 | OpenBase 架构组 |
 | 裁定人 | 项目负责人（MQ1=A / MQ3=A，2026-10-19） |
 | 关联立项方案 | 《OpenBase-G5-OBS-Memory跨租户隔离修复立项方案-v1.1.0》§4/§5/§6 |
-| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v2.0.0》G5-OBS |
+| 关联清单 | 《OpenBase-主备双通道生产上线必办事项清单-v2.1.0》G5-OBS |
+| 关联 G7 记录 | 《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》 |
 | 关联迁移脚本 | OpenMemory `scripts/migrate_memory_tenant_domain.py` |
 | 目标库 | 共享 PostgreSQL `nuct`（schema：`public.memory_metadata` / `openbase.tenants`） |
 | 关联开关 | OpenLLM `OPENMEMORY_TENANT_HEADERS`（默认 `false`） |
@@ -21,6 +22,7 @@
 |------|------|--------|---------|
 | v1.0.0 | 2026-10-18 | OpenBase 架构组 | 首次产出：迁移前检查、MQ1/MQ3 裁定栏、dry-run/apply/verify/rollback 步骤、T6 灰度与 AC-MT-2~6 验收、回滚与签字 |
 | v1.1.0 | 2026-10-19 | OpenBase 架构组 | 执行回填：MQ1=A/MQ3=A 签字；T5 批次 `g5obs-20261019-0113`（41 行）+ `g5obs-20261019-0132`（1 行）；T6 开启；AC-MT-2~6 全 PASS；登记 D20 跨租户 API Key 一致性门禁冲突（探针实例 8012 完成 AC-MT-4/5） |
+| v1.1.1 | 2026-10-19 | OpenBase 架构组 | §5.3 更正：G7 已按方案 ① 闭环（租户级 API Key，保持 D20 开启），补生产实例验证结论与记录引用；关联清单同步 v2.1.0 |
 
 ---
 
@@ -154,13 +156,13 @@ OPENMEMORY_TENANT_HEADERS=true
 | AC-MT-5 | 三路回写 | 三路 `accepted=true`；async 首投 `duplicated=false`、复投三路 `duplicated=true`；memory/rag 落 `tenant-1`、profile 落 `tenant-1_1` | ✅ `ac-mt-5.json` |
 | AC-MT-6 | 迁移幂等 | 批次 `…-0132` verify PASS，二次 apply `updated_rows=0` | ✅ `ac-mt-6.json` |
 
-### 5.3 执行发现：D20 与跨租户 API Key 写冲突（需 OPS 裁定）
+### 5.3 执行发现：D20 与跨租户 API Key 写冲突（已按方案 ① 闭环）
 
 - 现象：在生产 overlay（`ENV=production` + `TENANT_HEADER_CONSISTENCY_ENFORCE=true`）下，以默认租户（`default-tenant`）归属的 API Key 携带 `X-Tenant-ID: tenant-1` 调用 `/openllm/v1/writeback` → **403「入站租户标识与 API Key 归属租户不一致」**。
 - 原因：D20 门禁要求「受信来源 + API Key 通道」的 `X-Tenant-ID` 必须等于 API Key 所有者所属租户码；OpenLLM 侧现有 API Key 均归属 `default-tenant`，无 `tenant-1` 归属主体。
 - 影响：若生产 B 通道以**单一服务账号 API Key** 承载多租户写入，跨租户写路径会被 D20 拦截。
-- 本次处置：AC-MT-4/5 在与生产同真实数据面开关、仅 `ENV=staging` + `TENANT_HEADER_CONSISTENCY_ENFORCE=false` 的**隔离探针实例 8012** 上完成（未改动生产实例配置）；证据 JSON 内 `openllm_base` 与 `probe_note` 已如实标注。
-- 待办（阻断上线）：OPS/LL 需在「按租户配置归属一致的 API Key」与「调整 D20 策略」之间裁定，并补一条生产实例上的跨租户写验证。
+- 处置过程：AC-MT-4/5 先在**隔离探针实例 8012**（`ENV=staging` + `TENANT_HEADER_CONSISTENCY_ENFORCE=false`）完成机制验证（未改动生产实例配置）；证据 JSON 已标注 `openllm_base` 与 `probe_note`。
+- 最终裁定与验证：**G7 选方案 ①**——按租户发放归属一致的 API Key（保持 D20 开启）。OpenLLM 建 `tenant-1` 租户 + `svc-tenant-1` + 租户级 Key，生产实例 8001 三路回写 PASS。详见《OpenBase-G7-D20跨租户APIKey裁定与生产验证记录-v1.0.0》。
 
 ## 6. 回滚
 
@@ -193,7 +195,7 @@ OPENMEMORY_TENANT_HEADERS=true
 | 执行人（OpenBase 架构组） | OpenBase-Arch | 2026-10-19 | 已按单执行（T5 两批次 + T6 + AC-MT-2~6） |
 | 复核人（OpenBase 架构组） | OpenBase-Arch | 2026-10-19 | 行数/verify/幂等/跨租户不可见复核通过 |
 | 裁定人（项目负责人） | 项目负责人 | 2026-10-19 | MQ1=A、MQ3=A；同意开启 T6 |
-| 发布负责人 | 待 OPS 指派 | — | 待 D20 冲突裁定后签署 |
+| 发布负责人 | 待 OPS 指派 | — | G7 已闭环；待密钥注入/轮换后签署 |
 
 ## 9. 风险控制
 
@@ -203,4 +205,4 @@ OPENMEMORY_TENANT_HEADERS=true
 | 迁移期间新增 `default` 行 | MQ3 暂停写回；T6 开启后新增 1 行已由批次 `…-0132` 二次收口 |
 | 开关开启后历史数据不可见 | 强制 verify 通过后再开 T6；开关可即时回退 |
 | 回滚遗漏 | 批次明细表逐行可回退；库级备份兜底 |
-| **D20 与跨租户 API Key 写冲突** | 生产实例按单租户 API Key 归属；跨租户写需 OPS 裁定并补生产实例验证（见 §5.3） |
+| **D20 与跨租户 API Key 写冲突** | 已按 G7 方案 ① 闭环：按租户发放归属一致的 API Key、保持 D20 开启；生产实例三路验证 PASS（见 §5.3） |
