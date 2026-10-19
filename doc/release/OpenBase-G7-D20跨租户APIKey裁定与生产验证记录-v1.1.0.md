@@ -125,9 +125,9 @@ G5-OBS 执行期间发现：生产实例（`ENV=production` + `TENANT_HEADER_CON
 | 全量回归 | **BLOCKED**：共享 PG 不可达，PG 依赖用例连接超时、整体长时间未收敛，已终止；待基础设施恢复补跑 |
 | 静态检查 | ruff All checks passed |
 | OpenBase 服务启动 | HEALTHY（PID 17300，注入后启动，已加载新配置） |
-| 端到端 llm-proxy 转发 | **BLOCKED**：共享 PostgreSQL `192.168.0.151:5432` 不可达（主机 ping 失败），同网段 Git 主机 `192.168.0.14` 同时不可达，判定为局域网链路中断；OpenLLM 8001 启动 `ConnectionTimeout`；代理返回 502 `SYS_502` |
+| 端到端 llm-proxy 转发 | **BLOCKED**：共享 PostgreSQL `192.168.0.151:5432` 与 Git 主机 `192.168.0.14:22` 不可达；本机以太网正常（`192.168.0.111`，网关可达），判定为目标主机不可用。OpenLLM 8001 启动 `ConnectionTimeout`；代理返回 502 `SYS_502` |
 
-> 待补跑：共享 PG 恢复后重启 OpenLLM 8001，分别以 `tenant-1` / `tenant-2` 身份调用 `/api/v1/llm-proxy/models`，确认租户 Key 与全局 Key 均转发成功。证据：`doc/test/evidence/s7/g5/g7-openbase-key-injection.json`（`status=PARTIAL`）。
+> 待补跑：共享 PG 恢复后执行 `doc/tmp/g7/after_network_recovery.ps1`（自动检测连通性 → 重启 OpenLLM → 以 `tenant-1`/`tenant-2` 身份调用 `/api/v1/llm-proxy/models`）。证据：`doc/test/evidence/s7/g5/g7-openbase-key-injection.json`（`status=PARTIAL`）。
 
 ### 8.4 回滚
 

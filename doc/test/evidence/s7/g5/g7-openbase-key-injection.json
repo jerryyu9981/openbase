@@ -49,12 +49,24 @@
     },
     "proxy_verification": {
       "status": "BLOCKED",
-      "reason": "共享 PostgreSQL 192.168.0.151:5432 不可达（主机 ping 失败）；同网段 Git 主机 192.168.0.14 同时不可达，判定为局域网链路中断。OpenLLM 8001 启动 ConnectionTimeout；llm-proxy 转发返回 502 SYS_502",
+      "reason": "共享 PostgreSQL 192.168.0.151:5432 与 Git 主机 192.168.0.14:22 不可达；本机以太网正常（192.168.0.111，网关 192.168.0.1 可达），判定为目标主机不可用而非本机断网。OpenLLM 8001 启动 ConnectionTimeout；llm-proxy 转发返回 502 SYS_502",
       "observed_http": {
         "tenant-1": 502,
         "tenant-2": 502
       },
       "pending": "共享 PG 恢复后重启 OpenLLM 8001，复跑 /api/v1/llm-proxy/models（tenant-1/tenant-2）并核验上游 Key 选择"
+    },
+    "network_recheck": {
+      "checked_at": "2026-10-19T17:15:00+08:00",
+      "local_adapter": "以太网 Up 100Mbps",
+      "local_ipv4": "192.168.0.111",
+      "gateway_192_168_0_1": "reachable",
+      "pg_192_168_0_151_5432": "unreachable",
+      "git_192_168_0_14_22": "unreachable",
+      "poll_attempts": 12,
+      "poll_duration_seconds": 240,
+      "result": "STILL_DOWN",
+      "one_shot_script": "doc/tmp/g7/after_network_recovery.ps1"
     }
   },
   "status": "PARTIAL",
