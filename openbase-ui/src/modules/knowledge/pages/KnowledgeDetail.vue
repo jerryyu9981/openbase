@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer description="知识库详情与文档管理" test-id="knowledge-detail-page">
     <el-page-header :content="`知识库：${kb?.name || '详情'}`" class="mb-16" @back="$router.push('/knowledge/list')" />
     <el-row :gutter="16">
       <el-col :xs="24" :lg="10">
@@ -54,10 +54,11 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { UploadFilled } from '@element-plus/icons-vue'

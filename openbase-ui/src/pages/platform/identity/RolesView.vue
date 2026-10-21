@@ -1,5 +1,5 @@
 <template>
-  <div class="roles-page">
+  <PageContainer title="角色与权限" description="角色档位与权限码绑定" test-id="roles-view-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="role-new" @click="openCreate">新建角色</el-button>
     </div>
@@ -55,10 +55,11 @@
         <el-button type="primary" data-test="role-perms-save" @click="savePerms">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -149,6 +150,5 @@ function remove(id: number) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .perm-group { display: flex; flex-wrap: wrap; gap: 8px 20px; max-height: 360px; overflow: auto; }
 </style>

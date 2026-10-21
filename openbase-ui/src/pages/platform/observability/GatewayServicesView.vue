@@ -1,5 +1,5 @@
 <template>
-  <div class="gateway-services">
+  <PageContainer title="服务发现与编排" description="四系统服务实例与健康状态" test-id="gateway-services-view-page">
     <div class="page-toolbar">
       <el-button type="primary" :loading="loading" data-test="gw-refresh" @click="load">刷新</el-button>
       <el-button :loading="pinging" data-test="gw-ping" @click="runPing">连通性检测</el-button>
@@ -91,10 +91,11 @@
         <el-button type="primary" :loading="registering" data-test="gw-register-submit" @click="register">提交</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { gatewayApi, type SystemServices } from '@/core/api/gateway'
@@ -189,5 +190,4 @@ onMounted(load)
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 </style>

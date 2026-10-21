@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="Playground" description="在线调试模型与提示词" test-id="playground-page">
     <div class="page-toolbar">
       <el-select
         v-model="modelId"
@@ -28,10 +28,11 @@
       </div>
       <el-empty v-if="messages.length === 0" description="选择模型并开始一段对话调试" :image-size="60" />
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { onMounted, ref } from 'vue'
 import { llmApi, type ChatMessage, type LlmModel } from '@/core/api/llm'
 
@@ -142,7 +143,6 @@ onMounted(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .chat-panel { min-height: 360px; border: 1px solid var(--ob-border); border-radius: var(--ob-radius-md); padding: 16px; background: var(--ob-surface); }
 .chat-msg { margin-bottom: 12px; }
 .chat-role { font-weight: 600; font-size: 13px; color: var(--ob-text-secondary); }

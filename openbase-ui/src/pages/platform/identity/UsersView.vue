@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="用户管理" description="账号、状态与角色分配" test-id="users-view-page">
     <div class="page-toolbar">
       <el-input
         v-model="keyword"
@@ -116,10 +116,11 @@
         <el-button type="primary" data-test="role-submit" @click="saveRole">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -254,6 +255,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 </style>

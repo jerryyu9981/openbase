@@ -41,7 +41,20 @@ def init_db(url: str, echo: bool = False, schema: str | None = "openbase") -> As
             if table.schema is None:
                 table.schema = schema
 
-    _engine = create_async_engine(url, echo=echo, connect_args={"timeout": 5})
+    # 连接池加固（v1.4.11 排查 8s 级请求耗时）：显式 pool 参数 + pre_ping/recycle，
+    # 避免长时间运行后持有失效连接（死 socket / 网络抖动）导致的请求级等待。
+    engine_kwargs: dict[str, object] = {"connect_args": {"timeout": 5}}
+    if url.startswith("postgresql"):
+        engine_kwargs.update(
+            {
+                "pool_size": 10,
+                "max_overflow": 20,
+                "pool_timeout": 10,
+                "pool_recycle": 1800,
+                "pool_pre_ping": True,
+            }
+        )
+    _engine = create_async_engine(url, echo=echo, **engine_kwargs)
 
     # PG 专用：连接时设置 search_path 隔离 schema；SQLite 无 schema 概念，跳过
     if not url.startswith("sqlite"):

@@ -1,13 +1,13 @@
 <template>
-  <div>
-    <div class="page-toolbar">
+  <PageContainer title="统一监控" description="服务指标与最新告警（1h / 6h / 24h / 7d）" test-id="monitoring-page">
+    <template #actions>
       <el-radio-group v-model="timeRange" data-test="time-range" @change="renderChart">
         <el-radio-button value="1h">1 小时</el-radio-button>
         <el-radio-button value="6h">6 小时</el-radio-button>
         <el-radio-button value="24h">24 小时</el-radio-button>
         <el-radio-button value="7d">7 天</el-radio-button>
       </el-radio-group>
-    </div>
+    </template>
     <el-row :gutter="16">
       <el-col v-for="card in metricCards" :key="card.label" :xs="12" :lg="6">
         <el-card class="metric-card">
@@ -30,15 +30,19 @@
         <el-table-column prop="content" label="内容" />
       </el-table>
       <div class="list-footer">
-        <el-button link type="primary" @click="$router.push('/openllm/monitoring/alerts')">前往告警中心 →</el-button>
+        <el-button link type="primary" @click="$router.push('/platform/observability/monitoring/alerts')">告警中心 →</el-button>
+        <el-button link type="primary" @click="$router.push('/platform/observability/monitoring/traces')">链路追踪 →</el-button>
+        <el-button link type="primary" @click="$router.push('/platform/observability/monitoring/budgets')">预算管理 →</el-button>
+        <el-button link type="primary" @click="$router.push('/platform/observability/app-calls')">应用调用记录 →</el-button>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
+import PageContainer from '@/components/page/PageContainer.vue'
 
 const chartRef = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
@@ -95,7 +99,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.page-toolbar { margin-bottom: 16px; }
 .metric-card { text-align: center; }
 .metric-label { color: var(--ob-text-secondary); font-size: 13px; }
 .metric-value { font-size: 22px; font-weight: 600; margin-top: 6px; }

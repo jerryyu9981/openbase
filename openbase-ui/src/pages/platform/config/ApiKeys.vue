@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="API 密钥" description="服务级 API Key 的创建与吊销" test-id="api-keys-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="create-api-key" @click="openCreate">创建密钥</el-button>
     </div>
@@ -119,10 +119,11 @@
         <span v-if="!detailRow?.full_key" class="text-muted">完整密钥仅在创建时展示一次，出于安全考虑不再提供明文查看</span>
       </div>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -285,13 +286,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .mb-16 {
   margin-bottom: 16px;
 }

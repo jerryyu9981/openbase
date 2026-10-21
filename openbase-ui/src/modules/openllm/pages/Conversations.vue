@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="对话管理" description="会话记录与消息明细" test-id="conversations-page">
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -104,10 +104,11 @@
         </div>
       </el-drawer>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { llmApi, type ChatMessage as ApiChatMessage } from '@/core/api/llm'
@@ -320,7 +321,6 @@ function exportJson() {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .request-id { color: #6b7280; font-size: 12px; margin-bottom: 8px; }
 .chat-box { height: 380px; overflow-y: auto; padding: 8px; background: var(--ob-bg-secondary, #f5f7fa); border-radius: 6px; }

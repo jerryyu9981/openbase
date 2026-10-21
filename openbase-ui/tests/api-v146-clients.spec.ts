@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
+import { createPinia, setActivePinia } from 'pinia'
 
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
@@ -33,6 +34,7 @@ import {
   type TestCaseRecord,
 } from '@/core/api/testing'
 import ModuleSwitchView from '@/pages/platform/config/ModuleSwitchView.vue'
+import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 
 /** 统一响应信封（`{code, message, data}`），与后端 FastAPI 返回结构一致 */
 const envelope = (data: unknown) => ({ data: { code: 0, message: 'ok', data } })
@@ -175,6 +177,13 @@ describe('DEF-FE-146-002: modules.ts 注册表只读', () => {
 })
 
 describe('DEF-FE-146-001: 模块开关页「修改详情」抽屉端到端回归', () => {
+  // v1.4.11：切换成功后组件会调用注册表 reload 做「即时生效」；
+  // 单测只需断言抽屉契约，故安装 pinia 并把 reload 置空（不触达路由装载）。
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.spyOn(useModuleRegistry(), 'reload').mockResolvedValue(undefined)
+  })
+
   it('切换成功后抽屉「模块/新状态/生效方式/请求号」四项均非空（修复前四项全空）', async () => {
     mocks.get.mockResolvedValueOnce(envelope({ items: [openllmModule], total: 1 }))
     mocks.patch.mockResolvedValueOnce(

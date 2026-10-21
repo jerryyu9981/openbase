@@ -5,54 +5,24 @@ import { tokenStore } from '@/core/api/http'
 import { registerLoginNavigator } from '@/core/api/redirect'
 import { platformRoutes } from '@/pages/platform/routes'
 import { personalRoutes } from '@/pages/personal/routes'
-import { legacyRedirectRoutes } from '@/core/router/legacyRedirects'
+import {
+  legacyPrefixRedirectRoutes,
+  legacyRedirectRoutes,
+} from '@/core/router/legacyRedirects'
 
 /**
- * DPS 模板化 12 页路由（v1.4.10 §2；页面落点 `modules/portrait/pages/Dps*View.vue`）。
- *
- * 页面↔端点映射 100%（22 端点 ↔ 12 页面，TD-1410-23／AC-18）：
- *  - P-01 模板族管理 ↔ #11 #12 #15 #16
- *  - P-02 版本对比与回滚 ↔ #3 #4
- *  - P-03 预检与影响面 ↔ #5 #7
- *  - P-04 包导出／导入 ↔ #1 #2
- *  - P-05 血缘反查与影响面 ↔ #6 #7
- *  - P-06 措施建议 ↔ #8
- *  - P-07 评分类型 ↔ #10
- *  - P-08 AI 标注候选与复核 ↔ #9（＋ llm_proxy／chat ＋ DPS review）
- *  - P-09 画像模板新建／编辑 ↔ #12 #13 #14（`new` 与 `:code/edit` 同页两路径）
- *  - P-10 标注模板管理 ↔ #17 #18 #19 #21
- *  - P-11 标注模板字段与归属 ↔ #12 #18 #20
- *  - P-12 标签体系查看 ↔ #21 #22
- *
- * 路由顺序：静态段（/dps/templates/new、/dps/template-packages、/dps/lineage…）先于同名动态段，
- * 避免被 `:code` 吞并（沿用既有模块内静态先于动态的注册口径）。
+ * v1.4.11 收口：DPS 模板化 12 页（P-01~P-12）已从「`/dps/**` 顶部静态路由」归位到画像业务模块
+ * （`modules/portrait/index.ts` 的 `dps/*` 子路由，实际路径 `/portrait/dps/**`），
+ * 使其随 portrait 模块启停并出现在模块导航中；旧路径由 legacyRedirects 承接（禁 404）。
  */
-const dpsRoutes: RouteRecordRaw[] = [
-  { path: 'dps/templates', name: 'dps-template-list', component: () => import('@/modules/portrait/pages/DpsTemplateListView.vue'), meta: { title: '模板族管理' } },
-  // P-09：新建与编辑同页；`new` 与 `:code/edit` 为两条路径（同一页面组件）
-  { path: 'dps/templates/new', name: 'dps-template-new', component: () => import('@/modules/portrait/pages/DpsTemplateEditView.vue'), meta: { title: '画像模板新建' } },
-  { path: 'dps/templates/:code/edit', name: 'dps-template-edit', component: () => import('@/modules/portrait/pages/DpsTemplateEditView.vue'), meta: { title: '画像模板编辑' } },
-  { path: 'dps/templates/:code/versions', name: 'dps-template-versions', component: () => import('@/modules/portrait/pages/DpsTemplateVersionView.vue'), meta: { title: '版本对比与回滚' } },
-  { path: 'dps/templates/:code/preflight', name: 'dps-template-preflight', component: () => import('@/modules/portrait/pages/DpsTemplatePreflightView.vue'), meta: { title: '预检与影响面' } },
-  { path: 'dps/template-packages', name: 'dps-template-packages', component: () => import('@/modules/portrait/pages/DpsTemplatePackageView.vue'), meta: { title: '模板包导出／导入' } },
-  { path: 'dps/lineage', name: 'dps-lineage', component: () => import('@/modules/portrait/pages/DpsLineageView.vue'), meta: { title: '标签血缘反查' } },
-  { path: 'dps/measures', name: 'dps-measures', component: () => import('@/modules/portrait/pages/DpsMeasureView.vue'), meta: { title: '措施建议' } },
-  { path: 'dps/scoring-types', name: 'dps-scoring-types', component: () => import('@/modules/portrait/pages/DpsScoringTypeView.vue'), meta: { title: '评分类型' } },
-  { path: 'dps/annotation-adapters', name: 'dps-annotation-adapters', component: () => import('@/modules/portrait/pages/DpsAnnotationAdapterView.vue'), meta: { title: 'AI 标注候选与复核' } },
-  { path: 'dps/annotation-templates', name: 'dps-annotation-templates', component: () => import('@/modules/portrait/pages/DpsAnnotationTemplateView.vue'), meta: { title: '标注模板管理' } },
-  { path: 'dps/annotation-templates/:code/fields', name: 'dps-annotation-fields', component: () => import('@/modules/portrait/pages/DpsAnnotationFieldView.vue'), meta: { title: '标注模板字段与归属' } },
-  { path: 'dps/tags', name: 'dps-tags', component: () => import('@/modules/portrait/pages/DpsTagSystemView.vue'), meta: { title: '标签体系查看' } },
-]
 
 /**
- * 平台管理四域 + 个人 + DPS 模板化 路由（v1.4.6 IA 重构，ADR-146-08；v1.4.10 追加 DPS 路由）
+ * 平台管理四域 + 个人 路由（v1.4.6 IA 重构，ADR-146-08）
  * 作为 `/` AppLayout 子路由。与业务模块路由平行；不受单一模块启停影响（AC-146-10-2）。
- * DPS 路由：设计 §2 的 **12 条**（P-09 由 `new`／`:code/edit` **两条路径**承载，同一页面组件）。
  * 旧 `/system/**` 已迁出，交由 legacyRedirectRoutes 顶层承接（禁 404）。
  */
 const appChildren: RouteRecordRaw[] = [
   { path: 'dashboard', name: 'dashboard', component: () => import('@/pages/Dashboard.vue'), meta: { title: '仪表盘', icon: 'Odometer' } },
-  ...dpsRoutes,
   ...platformRoutes,
   ...personalRoutes,
 ]
@@ -71,6 +41,8 @@ export const staticRoutes: RouteRecordRaw[] = [
   { path: '/forbidden', name: 'forbidden', component: () => import('@/pages/Forbidden.vue'), meta: { title: '无权限访问' } },
   // 旧路径重定向（顶层承接，禁 404；保留 query/hash，ADR-146-08 §3.1/§3.3）
   ...legacyRedirectRoutes,
+  // 旧前缀整体迁移（DPS 动态子路径，无法逐条枚举）
+  ...legacyPrefixRedirectRoutes,
 ]
 
 /** 模块路由表注册（模块 index.ts 导出 routes + navItems，实现路由级懒加载与页内导航，RT-203）。
@@ -97,7 +69,8 @@ export function findNavItemsOverrides(routes: RouteRecordRaw[]): string[] {
 
 export interface AppRouterBundle {
   router: Router
-  mountModuleRoutes: () => Promise<void>
+  mountModuleRoutes: (only?: Set<string>) => Promise<void>
+  syncModuleRoutes: (enabledIds?: Set<string>) => Promise<void>
 }
 
 /**
@@ -115,10 +88,14 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ap
     void router.replace({ path: target.path, query: target.query })
   })
 
-  /** 挂载已启用模块的路由（模块布局承载板块导航 + AppLayout 外层）；幂等、可重试 */
-  async function mountModuleRoutes(): Promise<void> {
+  /** 挂载已启用模块的路由（模块布局承载板块导航 + AppLayout 外层）；幂等、可重试。
+   *
+   * @param only 可选：仅装载该集合内的模块（供 `syncModuleRoutes` 在停用后精确重装）
+   */
+  async function mountModuleRoutes(only?: Set<string>): Promise<void> {
     const registry = useModuleRegistry()
     for (const module of registry.enabledModules) {
+      if (only && !only.has(module.info.id)) continue
       const loader = moduleRouteLoaders[module.info.id]
       if (!loader) continue
       // 幂等：路由表已注册 → 补标记并跳过（连续调用不重复注册、不触发重名告警）
@@ -156,6 +133,26 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ap
     }
   }
 
+  /**
+   * 同步模块路由到目标启用集合（v1.4.11，模块开关即时生效）：
+   * 先卸载已停用模块的路由（`removeRoute`），再装载启用模块（复用幂等 `mountModuleRoutes`）。
+   * 入参缺省时取当前注册表的 enabledModules。
+   */
+  async function syncModuleRoutes(enabledIds?: Set<string>): Promise<void> {
+    const registry = useModuleRegistry()
+    const enabled =
+      enabledIds ?? new Set(registry.enabledModules.map((m) => m.info.id))
+    for (const moduleId of Object.keys(moduleRouteLoaders)) {
+      if (!enabled.has(moduleId) && router.hasRoute(moduleId)) {
+        router.removeRoute(moduleId)
+      }
+    }
+    for (const module of registry.modules) {
+      if (!enabled.has(module.info.id)) module.loaded = false
+    }
+    await mountModuleRoutes(enabled)
+  }
+
   router.beforeEach(async (to) => {
     const auth = useAuthStore()
     if (to.meta.public) {
@@ -165,7 +162,14 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ap
     if (!tokenStore.access) return { path: '/auth/login', query: { redirect: to.fullPath } }
     if (!auth.loaded) await auth.loadMe()
     const registry = useModuleRegistry()
-    if (!registry.initialized) await registry.init(auth.permissions)
+    if (!registry.initialized) {
+      // v1.4.11：注册表加载失败不再阻断导航（后端慢/瞬时不可用时页面仍可进入）
+      try {
+        await registry.init(auth.permissions)
+      } catch (error) {
+        console.warn('[router] module registry init failed', error)
+      }
+    }
     // 幂等必达：无论 init 是否刚刚执行，都尝试装载（修复「单次装载门」导致深链丢上下文）
     await mountModuleRoutes()
     // 模块路由刚注册：若当前导航是注册前解析的（matched 为空）且现在可匹配 → 重导
@@ -180,6 +184,11 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ap
     if (perm && !(auth.permissions.includes('*') || auth.permissions.includes(perm))) {
       return { path: '/forbidden', query: to.path !== '/forbidden' ? { from: to.fullPath } : undefined }
     }
+    // 公共域「依赖业务模块」的治理页（v1.4.11）：模块停用 → 页面不可达（与菜单隐藏同源）
+    const dependsOn = to.meta.dependsOn as string | undefined
+    if (dependsOn && !registry.enabledModules.some((m) => m.info.id === dependsOn)) {
+      return { path: '/forbidden', query: to.path !== '/forbidden' ? { from: to.fullPath } : undefined }
+    }
     const moduleId = to.meta.module as string | undefined
     if (moduleId) {
       const found = registry.enabledModules.find((m) => m.info.id === moduleId)
@@ -190,12 +199,13 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ap
     return true
   })
 
-  return { router, mountModuleRoutes }
+  return { router, mountModuleRoutes, syncModuleRoutes }
 }
 
 const defaultBundle = createAppRouter()
 
 export const mountModuleRoutes = defaultBundle.mountModuleRoutes
+export const syncModuleRoutes = defaultBundle.syncModuleRoutes
 export default defaultBundle.router
 
 /**

@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-annotation-templates">
+  <PageContainer title="标注模板管理" description="标注模板列表与字段维护" test-id="dps-annotation-template-view-page">
     <div class="page-toolbar">
       <el-input v-model="templateCodeFilter" placeholder="按 template_code 过滤" clearable style="width: 220px" data-test="annotation-template-filter" />
       <el-select v-model="scenarioFilter" placeholder="scenario：全部" clearable style="width: 170px" data-test="annotation-scenario-filter">
@@ -102,10 +102,11 @@
         <el-button type="primary" :loading="saving" data-test="annotation-create-save" @click="create">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -210,7 +211,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }
 .request-id { color: var(--ob-text-disabled); font-size: 12px; margin-left: 8px; }

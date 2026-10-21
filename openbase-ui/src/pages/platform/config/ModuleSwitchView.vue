@@ -1,14 +1,12 @@
 <template>
-  <div class="page">
-    <div class="page-toolbar">
-      <div>
-        <h2 class="page-title">模块开关</h2>
-        <p class="page-desc">
-          控制各业务模块的启用状态。修改后<b>下次登录/刷新生效</b>（不热生效，ADR-146-07）；操作会写入审计留痕。
-        </p>
-      </div>
+  <PageContainer
+    title="模块开关"
+    description="控制各业务模块的启用状态。修改后立即生效：侧栏菜单与模块路由同步增删（后端仍按 next_login 记录审计留痕）。"
+    test-id="module-switch-page"
+  >
+    <template #actions>
       <el-button data-test="refresh-modules" @click="load()">刷新</el-button>
-    </div>
+    </template>
 
     <el-alert
       v-if="loadingError"
@@ -18,7 +16,16 @@
       class="mb12"
     />
 
-    <el-table v-loading="loading" :data="modules" size="default" class="ob-table-scroll" :empty-text="emptyText">
+    <el-alert
+      v-if="migratedModules.length"
+      type="info"
+      :closable="false"
+      class="mb12"
+      data-test="module-migrated-hint"
+      :title="`${migratedModules.map((m) => m.name).join('、')} 已迁入公共功能（页面常驻），不再随模块开关启停`"
+    />
+
+    <el-table v-loading="loading" :data="switchableModules" size="default" class="ob-table-scroll" :empty-text="emptyText">
       <el-table-column prop="name" label="模块" min-width="140" />
       <el-table-column prop="id" label="模块 ID" min-width="120">
         <template #default="{ row }"><span class="mono">{{ row.id }}</span></template>
@@ -54,19 +61,26 @@
       <el-descriptions v-if="lastResult" :column="1" border>
         <el-descriptions-item label="模块">{{ lastResult.id }}</el-descriptions-item>
         <el-descriptions-item label="新状态">{{ lastResult.status }}</el-descriptions-item>
-        <el-descriptions-item label="生效方式">{{ lastResult.effective === 'next_login' ? '下次登录/刷新' : lastResult.effective }}</el-descriptions-item>
+        <el-descriptions-item label="前端生效">立即生效（菜单/路由已同步）</el-descriptions-item>
+        <el-descriptions-item label="审计口径">{{ lastResult.effective === 'next_login' ? '下次登录/刷新' : lastResult.effective }}</el-descriptions-item>
         <el-descriptions-item label="请求号">
           <span class="mono">{{ lastResult.request_id }}</span>
         </el-descriptions-item>
       </el-descriptions>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import PageContainer from '@/components/page/PageContainer.vue'
 import { listModuleDefinitions, modulesWriteApi, type ModuleDefinition, type ModuleSwitchResult } from '@/core/api/modules'
+import { useAuthStore } from '@/core/stores/auth'
+import { useModuleRegistry } from '@/core/stores/moduleRegistry'
+
+const auth = useAuthStore()
+const registry = useModuleRegistry()
 
 const modules = ref<ModuleDefinition[]>([])
 const loading = ref(false)
@@ -76,6 +90,15 @@ const drawerVisible = ref(false)
 const lastResult = ref<ModuleSwitchResult | null>(null)
 
 const emptyText = computed(() => (loading.value ? '加载中…' : '暂无模块'))
+
+/**
+ * 已迁入公共功能的模块（v1.4.11）：其前端页面已常驻 `/platform/**`，不再由模块路由装载，
+ * 因此开关对其前端无效果——只做只读说明，不提供可误导的切换。
+ */
+const MIGRATED_MODULE_IDS = new Set(['gateway'])
+
+const switchableModules = computed(() => modules.value.filter((m) => !MIGRATED_MODULE_IDS.has(m.id)))
+const migratedModules = computed(() => modules.value.filter((m) => MIGRATED_MODULE_IDS.has(m.id)))
 
 async function load() {
   loading.value = true
@@ -96,9 +119,17 @@ async function toggle(row: ModuleDefinition, next: string | number | boolean) {
   try {
     const result = await modulesWriteApi.switch(row.id, nextStatus)
     lastResult.value = result
-    // 以服务端回读为准刷新状态（语义不变：不热生效，注册表仍显示目标状态）
     const target = modules.value.find((m) => m.id === row.id)
     if (target) target.status = result.status
+    // 即时生效：重建注册表 + 同步模块路由（侧栏菜单随之增删）。
+    // 同步失败不回滚后端结果（已留痕），仅提示需刷新页面。
+    try {
+      await registry.reload(auth.permissions)
+    } catch (reloadError) {
+      console.warn('[module-switch] registry reload failed', reloadError)
+      ElMessage.warning('模块状态已保存，但菜单同步失败，请刷新页面')
+    }
+    ElMessage.success(`模块 ${row.id} 已${nextStatus === 'enabled' ? '启用' : '停用'}，已即时生效`)
     drawerVisible.value = true
   } catch (error) {
     ElMessage.error((error as Error).message || '操作失败')
@@ -113,8 +144,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-title { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
-.page-desc { font-size: 13px; color: var(--el-text-color-secondary); margin: 0 0 12px; }
 .mb12 { margin-bottom: 12px; }
 .ml8 { margin-left: 8px; }
 </style>

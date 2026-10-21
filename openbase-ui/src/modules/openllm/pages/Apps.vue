@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="AI 应用" description="基于模型能力构建的应用" test-id="apps-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索应用" clearable style="width: 240px" />
       <el-button type="primary" data-test="create-app" @click="$router.push('/openllm/apps/new')">创建应用</el-button>
@@ -29,10 +29,11 @@
         </el-table-column>
       </el-table>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
@@ -83,5 +84,4 @@ onMounted(fetchApps)
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 </style>

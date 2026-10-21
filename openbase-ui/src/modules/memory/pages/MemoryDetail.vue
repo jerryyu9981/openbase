@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="记忆详情" description="单条记忆的内容、来源与关联" test-id="memory-detail-page">
     <el-page-header content="记忆详情" class="mb-16" @back="$router.push('/memory')" />
     <div v-loading="loading">
       <template v-if="memory">
@@ -38,10 +38,11 @@
       </template>
       <el-empty v-else-if="!loading" description="记忆不存在或已被删除" :image-size="60" />
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { http } from '@/core/api/http'

@@ -1,5 +1,5 @@
 <template>
-  <div class="config-page">
+  <PageContainer title="全局配置" description="平台级配置项集中管理" test-id="config-manage-view-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索配置项" clearable style="width: 220px" data-test="cfg-search" />
       <el-button type="primary" :loading="loading" data-test="cfg-reload" @click="load">刷新</el-button>
@@ -79,10 +79,11 @@
         <el-button type="primary" data-test="cfg-save" @click="save">保存并热加载</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -187,6 +188,5 @@ onMounted(load)
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
 .version-row { display: flex; justify-content: space-between; padding: 4px 0; }
 </style>

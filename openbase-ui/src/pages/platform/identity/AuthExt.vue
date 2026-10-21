@@ -1,5 +1,5 @@
 <template>
-  <div class="auth-ext-page">
+  <PageContainer title="注册/找回密码" description="自助注册与密码找回入口" test-id="auth-ext-page">
     <el-card class="auth-card" data-test="auth-ext-card">
       <div class="auth-header">
         <h2>OpenBase 账户</h2>
@@ -101,10 +101,11 @@
         <el-button link type="primary" data-test="back-to-login" @click="goLogin">返回登录</el-button>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { onBeforeUnmount, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'

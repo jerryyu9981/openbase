@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索模型" clearable style="width: 200px" data-test="model-search" />
       <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 130px" data-test="model-status-filter">
@@ -79,10 +79,11 @@
         <el-button type="primary" data-test="create-model-submit" @click="saveModel">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { llmApi, type LlmModel } from '@/core/api/llm'
@@ -187,7 +188,6 @@ function remove(id: string) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .cap-tag { margin-right: 4px; }
 .text-muted { color: #909399; }
 </style>

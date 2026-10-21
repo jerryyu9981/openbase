@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-api">
+  <PageContainer title="画像 API 管理" description="端点清单与调用管理" test-id="dps-api-manage-view-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索端点" clearable style="width: 200px" data-test="api-search" />
       <el-button type="primary" data-test="api-new" @click="openCreate">新增端点</el-button>
@@ -87,10 +87,11 @@
         <el-table-column prop="message" label="说明" min-width="200" />
       </el-table>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -188,7 +189,6 @@ function remove(id: number) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .mt-8 { margin-top: 8px; }
 .code-block { background: #f6f8fa; color: #334155; border-radius: 8px; padding: 12px; font-size: 12px; min-height: 120px; }
 .ver-row { display: flex; gap: 12px; align-items: center; }

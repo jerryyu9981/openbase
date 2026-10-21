@@ -1,5 +1,6 @@
 <template>
-  <el-form :model="form" label-width="90px" class="app-form">
+  <PageContainer title="AI 应用" description="应用配置：模型、提示词与参数" test-id="app-form-page">
+    <el-form :model="form" label-width="90px" class="app-form">
     <el-form-item label="应用名称" required>
       <el-input v-model="form.name" data-test="app-name" placeholder="如：智能问答助手" />
     </el-form-item>
@@ -24,10 +25,12 @@
       <el-button type="primary" data-test="app-submit" :loading="submitting" @click="save">保存</el-button>
       <el-button @click="$router.back()">取消</el-button>
     </el-form-item>
-  </el-form>
+    </el-form>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

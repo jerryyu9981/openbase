@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="RAG 对话" description="基于知识库的检索增强对话" test-id="chat-view-page">
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -139,10 +139,11 @@
         </div>
       </section>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ragApi, type RagCollection, type RagSource } from '@/core/api/rag'

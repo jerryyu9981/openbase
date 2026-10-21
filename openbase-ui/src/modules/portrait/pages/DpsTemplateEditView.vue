@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-template-edit">
+  <PageContainer title="画像模板" description="模板字段编排与保存" test-id="dps-template-edit-view-page">
     <el-alert type="info" show-icon :closable="false" class="mb-16" data-test="edit-version-tip">
       <template #title>保存后版本自动递增（v1 → v2）并写入模板变更历史；code 创建后不可修改。</template>
     </el-alert>
@@ -86,13 +86,14 @@
 
     <div class="page-toolbar">
       <el-button type="primary" :loading="saving" :disabled="!!extendsIssue || !canSave" data-test="edit-save" @click="save">保存</el-button>
-      <el-button data-test="edit-cancel" @click="router.push('/dps/templates')">取消</el-button>
+      <el-button data-test="edit-cancel" @click="router.push('/portrait/dps/templates')">取消</el-button>
       <span class="muted sm">保存中按钮置灰（表单提交态）</span>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -223,7 +224,7 @@ async function save() {
     } else {
       const created = await dpsApi.createTemplate(payload as Partial<DpsPortraitTemplate> & { code: string })
       ElMessage.success(`创建成功（v${created.version ?? 1}）`)
-      await router.push('/dps/templates')
+      await router.push('/portrait/dps/templates')
     }
   } catch (caught) {
     error.value = describeDpsError(caught)
@@ -238,7 +239,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 .mb-16 { margin-bottom: 16px; }
 .mt-12 { margin-top: 12px; }
 .muted { color: var(--ob-text-secondary); }

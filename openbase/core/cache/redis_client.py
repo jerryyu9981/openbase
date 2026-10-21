@@ -13,13 +13,24 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
+import time
 from typing import Any
 
 logger = logging.getLogger("openbase.cache")
 
 _client = None
 _client_available: bool | None = None
+# 熔断冷却（v1.4.11 性能排查）：Redis 在运行期变为不可达时，同步客户端每次调用都会
+# 阻塞 socket_timeout；若无冷却，慢请求会反复付出超时代价（实测 8s 级）。
+# 失败即熔断 COOLDOWN 秒，到期后再探测；期间所有缓存调用立即返回降级值。
+_UNAVAILABLE_UNTIL: float = 0.0
+# 冷却窗口：默认 300s。Redis 长时间不可达时，每次到期探测都要付出 connect 超时
+# （默认 1s，实测本机 0.7~2s）；300s 把探测代价摊薄到可忽略，同时保证恢复后
+# 最多 5 分钟内重新启用缓存。
+COOLDOWN_SECONDS = float(os.getenv("OPENBASE_REDIS_COOLDOWN_SECONDS", "300"))
+SOCKET_TIMEOUT_SECONDS = float(os.getenv("OPENBASE_REDIS_SOCKET_TIMEOUT", "1"))
 
 # ---- U1 T5（L1-1）：进程内事件订阅注册表（Redis 不可用时的本地通道兜底） ----
 # publish 先投递本地处理器（同步，确定性），再尽力 Redis 广播（跨进程）。
@@ -29,15 +40,27 @@ _LOCAL_EVENT_HANDLERS: dict[str, set[Any]] = {}
 _LOCAL_EVENT_LOCK = threading.Lock()
 
 
+def _mark_unavailable(reason: str) -> None:
+    """标记 Redis 不可用并进入冷却（运行期失败调用；避免每次请求重复超时）。"""
+    global _client_available, _UNAVAILABLE_UNTIL
+    _client_available = False
+    _UNAVAILABLE_UNTIL = time.monotonic() + COOLDOWN_SECONDS
+    logger.warning("redis unavailable, cache disabled: %s", reason)
+
+
 def get_client():
-    """获取 Redis 客户端（懒初始化；不可用时返回 None）.
+    """获取 Redis 客户端（懒初始化；不可用/冷却期返回 None）.
 
     Returns:
-        redis.Redis；Redis 不可用时返回 None。
+        redis.Redis；Redis 不可用或处于熔断冷却期时返回 None。
     """
     global _client, _client_available
     if _client_available is False:
-        return None
+        if time.monotonic() < _UNAVAILABLE_UNTIL:
+            return None
+        # 冷却结束：允许重新探测一次
+        _client = None
+        _client_available = None
     if _client is None:
         try:
             from redis import Redis
@@ -47,16 +70,16 @@ def get_client():
             settings = get_settings()
             _client = Redis.from_url(
                 settings.redis_url,
-                socket_timeout=2,
-                socket_connect_timeout=2,
+                socket_timeout=SOCKET_TIMEOUT_SECONDS,
+                socket_connect_timeout=SOCKET_TIMEOUT_SECONDS,
                 decode_responses=True,
             )
             _client.ping()
             _client_available = True
             logger.info("redis cache enabled", extra={"url": settings.redis_url.split("@")[-1]})
         except Exception as exc:  # noqa: BLE001
-            _client_available = False
-            logger.warning("redis unavailable, cache disabled: %s", exc)
+            _client = None
+            _mark_unavailable(str(exc) or exc.__class__.__name__)
             return None
     return _client
 
@@ -76,7 +99,8 @@ def cache_get(key: str) -> Any | None:
     try:
         raw = client.get(f"openbase:{key}")
         return json.loads(raw) if raw else None
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        _mark_unavailable(str(exc) or exc.__class__.__name__)
         return None
 
 
@@ -96,7 +120,8 @@ def cache_set(key: str, value: Any, ttl: int = 300) -> bool:
         return False
     try:
         return bool(client.set(f"openbase:{key}", json.dumps(value, ensure_ascii=False), ex=ttl))
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        _mark_unavailable(str(exc) or exc.__class__.__name__)
         return False
 
 
@@ -115,7 +140,8 @@ def cache_delete(*keys: str) -> bool:
     try:
         client.delete(*[f"openbase:{k}" for k in keys])
         return True
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        _mark_unavailable(str(exc) or exc.__class__.__name__)
         return False
 
 
@@ -179,10 +205,7 @@ def publish(channel: str, payload: dict) -> bool:
             client.publish(channel, json.dumps(payload, ensure_ascii=False))
             return True
         except Exception as exc:  # noqa: BLE001 - Redis 发布失败 → 本地已投递则兜底成功
-            logger.warning(
-                "redis publish failed; local channel fallback",
-                extra={"channel": channel, "error": str(exc) or exc.__class__.__name__},
-            )
+            _mark_unavailable(str(exc) or exc.__class__.__name__)
     return delivered_local
 
 
@@ -202,7 +225,8 @@ def pub(channel: str, payload: dict) -> bool:
     try:
         client.publish(channel, json.dumps(payload, ensure_ascii=False))
         return True
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        _mark_unavailable(str(exc) or exc.__class__.__name__)
         return False
 
 

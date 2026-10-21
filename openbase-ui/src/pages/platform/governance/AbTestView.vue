@@ -1,5 +1,5 @@
 <template>
-  <div class="ab-test-page">
+  <PageContainer title="A/B 测试" description="模型效果对比实验" test-id="ab-test-view-page">
     <div class="page-toolbar">
       <el-select v-model="statusFilter" placeholder="状态" clearable style="width: 130px" data-test="ab-status-filter">
         <el-option label="运行中" value="running" />
@@ -89,10 +89,11 @@
         </el-table>
       </template>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -165,7 +166,6 @@ function openDetail(row: AbExperiment) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .traffic-bar { display: flex; align-items: center; gap: 8px; }
 .traffic-a { font-size: 12px; color: #1677FF; width: 34px; }
 .metric-title { font-weight: 600; margin: 16px 0 8px; }

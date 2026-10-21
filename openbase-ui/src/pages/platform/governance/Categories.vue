@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="模型分类" description="模型目录与分类归属" test-id="categories-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索模型名称 / Provider" clearable style="width: 240px" data-test="category-search" />
       <el-radio-group v-model="dimension" data-test="category-dimension" @change="handleDimensionChange">
@@ -66,10 +66,11 @@
         </el-table>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 
 type Dimension = 'capability' | 'scenario' | 'scale'
@@ -176,13 +177,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .mb-16 {
   margin-bottom: 16px;
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="billing-page">
+  <PageContainer title="计费" description="计费口径与账单" test-id="billing-view-page">
     <el-row :gutter="16" class="mb-16">
       <el-col v-for="card in statCards" :key="card.label" :span="6">
         <el-card shadow="hover" data-test="billing-stat">
@@ -54,10 +54,11 @@
         </el-table>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'

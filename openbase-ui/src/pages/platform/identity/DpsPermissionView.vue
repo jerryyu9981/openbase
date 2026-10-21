@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-permission">
+  <PageContainer title="画像数据权限" description="DPS 权限码与角色映射" test-id="dps-permission-view-page">
     <el-row :gutter="16">
       <el-col :span="12">
         <el-card header="角色管理" data-test="perm-card">
@@ -66,10 +66,11 @@
         <el-button type="primary" data-test="perm-save" @click="save">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -139,7 +140,6 @@ function remove(id: number) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .mt-16 { margin-top: 16px; }
 .mt-8 { margin-top: 8px; }
 .matrix-group { display: flex; flex-wrap: wrap; gap: 8px 20px; max-height: 260px; overflow: auto; }

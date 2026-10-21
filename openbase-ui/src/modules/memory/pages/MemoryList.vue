@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="记忆管理" description="记忆条目的检索、筛选与维护" test-id="memory-list-page">
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -95,10 +95,11 @@
         />
       </div>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
@@ -226,7 +227,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .pager { margin-top: 8px; display: flex; justify-content: flex-end; }
 .mr-4 { margin-right: 4px; }
 .mb-16 { margin-bottom: 16px; }

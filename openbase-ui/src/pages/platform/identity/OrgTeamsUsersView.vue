@@ -1,5 +1,5 @@
 <template>
-  <div class="org-page">
+  <PageContainer title="组织/团队/用户" description="组织架构与成员归属" test-id="org-teams-users-view-page">
     <el-row :gutter="16">
       <!-- 组织树（v1.4.2 保留占位，团队管理 v1.5 真实化） -->
       <el-col :span="8">
@@ -89,10 +89,11 @@
         <el-button type="primary" :loading="saving" @click="saveRole">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
@@ -234,7 +235,6 @@ onMounted(loadUsers)
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .mt-8 { margin-top: 8px; }
 .org-note { margin-top: 12px; color: var(--el-text-color-secondary); font-size: 12px; }
 </style>

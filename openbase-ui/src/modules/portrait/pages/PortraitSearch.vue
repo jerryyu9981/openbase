@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="画像搜索" description="按标签与属性检索画像" test-id="portrait-search-page">
     <!-- TD-13-24 画像查询：多条件组合查询表单（真实 DPS 数据；维度对齐 profile 表实际字段） -->
     <el-card shadow="never" class="query-card mb-16" data-test="portrait-search-form">
       <el-form inline :model="queryForm" label-width="auto">
@@ -85,10 +85,11 @@
       class="table-pagination"
       data-test="search-pagination"
     />
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'

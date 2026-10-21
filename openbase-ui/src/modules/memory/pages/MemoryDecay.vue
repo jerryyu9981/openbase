@@ -1,7 +1,6 @@
 <template>
-  <div>
+  <PageContainer title="衰减配置" description="记忆权重衰减策略" test-id="memory-decay-page">
     <div class="page-toolbar">
-      <span class="page-title" data-test="decay-title">衰减配置</span>
       <span class="tab-hint">记忆衰减引擎参数：控制记忆随时间的权重衰减策略（OpenMemory GET/PUT /decay/config）</span>
     </div>
     <el-alert
@@ -57,10 +56,11 @@
       </template>
       <el-empty v-else-if="!loading" description="衰减配置加载失败或无数据" data-test="decay-empty" />
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
@@ -121,8 +121,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.page-title { font-size: 16px; font-weight: 600; }
 .tab-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-annotation-field">
+  <PageContainer title="标注模板字段与归属" description="模板字段配置与归属约束" test-id="dps-annotation-field-view-page">
     <el-card header="归属（强归属 · 不可置空）" class="mb-16">
       <el-form label-width="120px">
         <el-form-item label="当前归属">
@@ -103,14 +103,15 @@
 
       <div class="page-toolbar mt-16">
         <el-button type="primary" :loading="saving" :disabled="issues.length > 0" data-test="field-save" @click="save">保存</el-button>
-        <el-button data-test="field-cancel" @click="router.push('/dps/annotation-templates')">取消</el-button>
+        <el-button data-test="field-cancel" @click="router.push('/portrait/dps/annotation-templates')">取消</el-button>
         <span v-if="issues.length" class="muted sm">校验未通过，保存按钮置灰</span>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -243,7 +244,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }

@@ -24,9 +24,9 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 平台管理四域（域 → 页，二级分组，权限码驱动可见性） -->
+        <!-- 公共功能五域（域 → 页，二级分组，权限码 + 模块依赖双门禁） -->
         <el-sub-menu v-if="platformDomains.length" index="platform">
-          <template #title><el-icon><Setting /></el-icon><span>平台管理</span></template>
+          <template #title><el-icon><Setting /></el-icon><span>公共功能</span></template>
           <el-sub-menu v-for="domain in platformDomains" :key="domain.label" :index="domain.label">
             <template #title>{{ domain.label }}</template>
             <el-menu-item v-for="item in domain.items" :key="item.path" :index="item.path">
@@ -81,7 +81,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Fold, Expand, ArrowDown, Odometer, ChatDotRound, Collection, User,
   OfficeBuilding, Connection, Setting, Grid, Key, Document, Monitor, DataLine, Money,
-  Bell, TrendCharts, Cpu, Operation, Reading, Box, Memo as MemoAlias,
+  Bell, TrendCharts, Cpu, Operation, Reading, Box, Memo as MemoAlias, Download,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
@@ -93,7 +93,7 @@ const auth = useAuthStore()
 const registry = useModuleRegistry()
 const ui = useUiStore()
 
-interface MenuLeaf { path: string; title: string; icon: Component; permission?: string }
+interface MenuLeaf { path: string; title: string; icon: Component; permission?: string; dependsOn?: string }
 interface MenuDomain { label: string; items: MenuLeaf[] }
 
 /** 模块图标映射（键 = 后端 `ModuleInfo.icon`；未命中由回退 ChatDotRound） */
@@ -101,7 +101,10 @@ const moduleIconMap: Record<string, Component> = {
   Odometer, ChatDotRound, Collection, Memo: MemoAlias, User, OfficeBuilding, Connection,
 }
 
-/** 平台菜单叶子（§3.2：permission 与路由 meta 同源，无权限即不渲染该叶子；空域不显示） */
+/** 公共功能五域（§3.2：permission 与路由 meta 同源，无权限即不渲染该叶子；空域不显示）
+ *
+ * v1.4.11：平台管理更名为「公共功能」，新增「AI 能力治理」域（从 OpenLLM 模块上收），
+ * 并为依赖具体业务模块的叶子声明 `dependsOn`——模块停用时菜单同步隐藏。 */
 const PLATFORM_LEAVES: MenuDomain[] = [
   {
     label: '身份与权限',
@@ -111,8 +114,9 @@ const PLATFORM_LEAVES: MenuDomain[] = [
       { path: '/platform/identity/org', title: '组织/团队/用户', icon: OfficeBuilding, permission: 'users:view' },
       { path: '/platform/identity/workspaces', title: '工作空间', icon: Grid },
       { path: '/platform/identity/users', title: '用户管理', icon: User, permission: 'users:view' },
-      { path: '/platform/identity/memory-admin', title: '记忆管理席位', icon: Setting, permission: 'memory:manage' },
+      { path: '/platform/identity/memory-admin', title: '记忆管理席位', icon: Setting, permission: 'memory:manage', dependsOn: 'memory' },
       { path: '/platform/identity/auth-ext', title: '注册/找回密码', icon: Key },
+      { path: '/platform/identity/dps-permissions', title: '画像数据权限', icon: User, dependsOn: 'portrait' },
     ],
   },
   {
@@ -121,6 +125,7 @@ const PLATFORM_LEAVES: MenuDomain[] = [
       { path: '/platform/config/general', title: '全局配置', icon: Setting },
       { path: '/platform/config/modules', title: '模块开关', icon: Grid, permission: 'module:manage' },
       { path: '/platform/config/api-keys', title: 'API 密钥', icon: Key, permission: 'auth:api-keys:view' },
+      { path: '/platform/config/rate-limits', title: '画像接口限流', icon: Operation, dependsOn: 'portrait' },
     ],
   },
   {
@@ -136,6 +141,22 @@ const PLATFORM_LEAVES: MenuDomain[] = [
       { path: '/platform/observability/gateway-test', title: '聚合网关测试', icon: Operation },
       { path: '/platform/observability/monitoring/costs', title: '成本分析', icon: TrendCharts },
       { path: '/platform/observability/monitoring/alerts', title: '告警中心', icon: Bell },
+      { path: '/platform/observability/dps-monitor', title: '画像系统监控', icon: Monitor, dependsOn: 'portrait' },
+    ],
+  },
+  {
+    label: 'AI 能力治理',
+    items: [
+      { path: '/platform/governance/providers', title: '提供商管理', icon: Connection, dependsOn: 'openllm' },
+      { path: '/platform/governance/model-categories', title: '模型分类', icon: Grid, dependsOn: 'openllm' },
+      { path: '/platform/governance/routing', title: '路由策略', icon: Connection, dependsOn: 'openllm' },
+      { path: '/platform/governance/circuit-breakers', title: '熔断器', icon: Operation, dependsOn: 'openllm' },
+      { path: '/platform/governance/deploy', title: '模型部署', icon: Cpu, dependsOn: 'openllm' },
+      { path: '/platform/governance/downloads', title: '下载管理', icon: Download, dependsOn: 'openllm' },
+      { path: '/platform/governance/tool-calls', title: '工具调用监控', icon: DataLine, dependsOn: 'openllm' },
+      { path: '/platform/governance/ab-tests', title: 'A/B 测试', icon: TrendCharts, dependsOn: 'openllm' },
+      { path: '/platform/governance/prompt-templates', title: 'Prompt 模板', icon: Document, dependsOn: 'openllm' },
+      { path: '/platform/governance/prompt-experiments', title: 'Prompt 实验', icon: Operation, dependsOn: 'openllm' },
     ],
   },
   {
@@ -144,6 +165,9 @@ const PLATFORM_LEAVES: MenuDomain[] = [
       { path: '/platform/developers/docs', title: '文档中心', icon: Reading },
       { path: '/platform/developers/edgerouter', title: 'EdgeRouter 与适配器', icon: Connection },
       { path: '/platform/developers/plugins', title: '插件管理', icon: Box },
+      { path: '/platform/developers/dps-api', title: '画像 API 管理', icon: Connection, dependsOn: 'portrait' },
+      { path: '/platform/developers/knowledge-admin', title: '知识库管理后台', icon: Collection, dependsOn: 'knowledge' },
+      { path: '/platform/developers/knowledge-console', title: '知识库 API 控制台', icon: Reading, dependsOn: 'knowledge' },
     ],
   },
 ]
@@ -171,11 +195,17 @@ const businessModules = computed<MenuLeaf[]>(() =>
     })),
 )
 
-/** 平台管理四域（权限过滤：无权限叶子不渲染；空域不显示；AC-146-10-2 不受单模块启停影响） */
+/** 依赖的业务模块是否启用（无 dependsOn → true） */
+function dependencyEnabled(moduleId?: string): boolean {
+  if (!moduleId) return true
+  return registry.enabledModules.some((m) => m.info.id === moduleId)
+}
+
+/** 公共功能五域（权限码 + 模块依赖双门禁：无权限/依赖模块停用 均不渲染该叶子；空域不显示） */
 const platformDomains = computed<MenuDomain[]>(() =>
   PLATFORM_LEAVES.map((domain) => ({
     label: domain.label,
-    items: domain.items.filter((item) => hasPerm(item.permission)),
+    items: domain.items.filter((item) => hasPerm(item.permission) && dependencyEnabled(item.dependsOn)),
   })).filter((domain) => domain.items.length > 0),
 )
 

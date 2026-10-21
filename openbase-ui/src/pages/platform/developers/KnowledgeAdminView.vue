@@ -1,5 +1,5 @@
 <template>
-  <div class="rag-admin">
+  <PageContainer title="知识库管理后台" description="知识库运维与索引状态" test-id="knowledge-admin-view-page">
     <!-- KPI 概览（真实数据） -->
     <el-row :gutter="16" class="mb-16">
       <el-col :span="6">
@@ -166,10 +166,11 @@
         </el-table>
       </template>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ragApi, type RagCollection, type RagDocument } from '@/core/api/rag'
@@ -432,7 +433,6 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .kpi-label { font-size: 13px; color: #6b7280; }
 .kpi-value { font-size: 24px; font-weight: 600; margin: 4px 0; }
 .kpi-sub { font-size: 12px; color: #9ca3af; }

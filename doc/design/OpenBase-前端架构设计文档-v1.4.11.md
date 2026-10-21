@@ -1,0 +1,324 @@
+# OpenBase 前端架构设计文档 - v1.4.11
+
+| 项目 | 内容 |
+|------|------|
+| 项目名称 | OpenBase（开放底座） |
+| 文档版本 | v1.6.0 |
+| 状态 | **[Approved]** |
+| 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
+| 作者 | FA-OpenBase-Dev |
+| 创建日期 | 2026-09-29 |
+| 更新日期 | 2026-10-21 |
+| 上游依据 | 《OpenBase-系统架构设计文档-v1.4.10》**v1.1.0** §3；《OpenBase-UIUX需求说明-v1.4.10》v1.2.0；《OpenBase-API接口设计文档-v1.4.10》v1.1.0 §5；《OpenBase-技术选型与ADR-v1.4.10》v1.0.0（ADR-05／06） |
+| 存放 | `doc/design/` |
+
+---
+
+## 1. 架构总览（沿用现有分层）
+
+```text
+openbase-ui/src/
+├── core/
+│   ├── api/        http.ts（统一请求）｜error.ts（错误归一）｜dps.ts ⬅【本版扩展】
+│   ├── router/     index.ts ⬅【本版新增 8 条路由】｜legacyRedirects.ts
+│   ├── stores/     auth｜moduleRegistry｜ui（**不新增全局 store**，ADR-05）
+│   ├── layouts/    AppLayout｜ModuleLayout
+│   └── styles/     tokens.css（**不改**）
+├── modules/        模块级页面（本版 DPS 模块落点）
+└── pages/          页面级容器
+```
+
+**架构约束（沿用）**：页面不直接调 HTTP（必须经 `core/api/*`）；不直连 DPS（经本仓 `/api/v1/proxy/dps/*`）；**不改视觉规范与设计系统**（`tokens.css` 不动）。
+
+---
+
+## 2. 路由设计（新增 **12** 条，D-1410-03 修正）
+
+> **⚠ G2 修正**：本表原将 **P-01 写为 `#1 #2 #3`**（实为导出／导入／版本对比），与 P-02／P-04 **撞号且语义错误**。现按《API 接口设计文档-v1.4.10》v1.2.0 的端点编号**逐项重写**。
+
+| # | 路由（建议路径） | 页面 | 端点（API 文档编号） | 说明 |
+|:-:|------------------|------|----------------------|------|
+| 1 | `/dps/templates` | **P-01** 模板族管理 | **#11 #12 #15 #16** | 列表（`status`／`profile_type`／`subject_type` 过滤）＋ 详情抽屉 ＋ **启停确认（幂等）** |
+| 2 | `/dps/templates/:code/versions` | **P-02** 版本对比与回滚 | #3 #4 | 双版本选择 ＋ 差异 ＋ **回滚二次确认四要素** |
+| 3 | `/dps/templates/:code/preflight` | **P-03** 预检与影响面 | #5 #7 | **显式「预检（不写入）」** ＋ `basis` 折叠气泡 |
+| 4 | `/dps/template-packages` | **P-04** 包导出／导入 | #1 #2 | **`dry_run` 与实做显式单选（不得默认实做）** |
+| 5 | `/dps/lineage` | **P-05** 血缘反查与影响面 | #6 #7 | 三层维度 ＋ `basis` 折叠 ＋ 无谱系 404 |
+| 6 | `/dps/measures` | **P-06** 措施建议（只读） | #8 | 原样呈现（含 `disclaimer`） |
+| 7 | `/dps/scoring-types` | **P-07** 评分类型（只读） | #10 | 只读列表 |
+| 8 | `/dps/annotation-adapters` | **P-08** AI 标注候选与复核 | #9 ＋ **`llm_proxy`／chat** ＋ **DPS review** | 跨两上游（ADR-03） |
+| 9 | `/dps/templates/new`、`/dps/templates/:code/edit` | **P-09** 画像模板新建／编辑 | **#12 #13 #14** | 表单 ＋ **`extends` 继承选择（≤2 层／禁自环，实时校验提示）**；更新后版本递增 |
+| 10 | `/dps/annotation-templates` | **P-10** 标注模板管理 | **#17 #18 #19 #21** | 列表（`template_code`／`scenario` 过滤）＋ 详情 ＋ 新建 ＋ **删除（409 拒绝时显示关联条数）** |
+| 11 | `/dps/annotation-templates/:code/fields` | **P-11** 标注模板字段与归属 | **#12 #18 #20** | **`field_schema` 字段编辑器（5 类字段）** ＋ **归属改挂（`template_code`，候选项仅 `active` 画像模板）**；**无"解除归属"按钮** |
+| 12 | `/dps/tags` | **P-12** 标签体系查看 | **#21 #22** | 分类 → 标签值**两层**呈现 ＋ 标签联动口径说明（只读） |
+
+> **路由前缀**沿用既有 DPS 模块注册口径；**最终路径以 Step 3 落地为准**，但**页面↔端点映射不得变更**（**22 端点 ↔ 12 页面**，覆盖率 100%，DT-23／AC-18）。
+>
+> **既有页面**：画像模块 2 页**不改**（NFR-1410-05）。
+
+---
+
+## 3. 数据层设计（DT-13）
+
+### 3.1 `core/api/dps.ts` 扩展
+
+| 方法 | 对应端点（API 文档编号） | 备注 |
+|------|:------------------------:|------|
+| **契约 10 新增端点** | | |
+| `exportPackage(body)` / `importPackage(body)` | #1／#2 | 导入须带 `dry_run` 标志 |
+| `diffVersions(code, from, to)` | #3 | — |
+| `rollbackTemplate(code, body)` | #4 | **写操作（二次确认四要素前置）** |
+| `preflightTemplate(code)` | #5 | 只读（预检，不写入） |
+| `getTagLineage(tagCode)` | #6 | 无谱系 → 404 |
+| `queryImpact(params)` | #7 | 三层维度（`template_code`／`annotation_template_code`／`tag_code`） |
+| `suggestMeasures(personId)` | #8 | 只读 |
+| `generateAnnotationCandidates(body)` | #9 | AI 候选生成（写；默认关闭态） |
+| `listScoringTypes(params)` | #10 | 只读 |
+| **补代理 12 端点（D-1410-03 新增）** | | |
+| `listTemplates(params)` | **#11** | 过滤 `status`／`profile_type`／`subject_type` |
+| `getTemplate(code)` | **#12** | 详情（含 `extends`／`dimension_config`／`tag_bindings`，**原样呈现不假设结构**） |
+| `createTemplate(body)` | **#13** | 写；400 含字段级原因／409 `code` 冲突 |
+| `updateTemplate(code, body)` | **#14** | 写；版本递增 ＋ history |
+| `activateTemplate(code)` / `deactivateTemplate(code)` | **#15／#16** | 写（**动作按 `update`**）；**幂等** |
+| `listAnnotationTemplates(params)` | **#17** | 过滤 `template_code`／`scenario` |
+| `getAnnotationTemplate(code)` | **#18** | 详情（含 `field_schema`） |
+| `createAnnotationTemplate(body)` | **#19** | 写；**`template_code` 必填且归属须 `active`** |
+| `updateAnnotationTemplate(code, body)` | **#20** | 写；**含 `template_code` 即改挂**（**不提供"解除归属"**） |
+| `deleteAnnotationTemplate(code)` | **#21** | 写；**409 时展示关联标注条数** |
+| `listLabels()` | **#22** | 只读（`action=list`；仅此一种） |
+| **跨上游协作（非本版 22 端点）** | | |
+| `assistReview(payload)` | **`llm_proxy` `/chat`** | 复核辅助（OpenLLM 通道，A-1410-01） |
+| `submitReview(annotationId, body)` | **DPS 既有 review 端点** | 复核提交（`POST /portrait/annotations/{id}/review`） |
+
+> **mock 真实化（DT-13）**：DPS 模块范围内**不得残留 mock 常量**（AC-13）；数据一律经上述方法。
+>
+> **方法总数**：**22 个（10 新增 ＋ 12 补代理）＋ 2 个跨上游协作方法**。`dps.ts` 既有 11 个方法**不改**。
+
+### 3.2 状态与副作用
+
+| 项 | 设计 |
+|----|------|
+| 页面状态 | **组合式函数**（页面内聚），不引入新全局 store（ADR-05） |
+| 共享逻辑 | 抽取 `useAsyncState()`（加载／错误／空态）与 `useBasisTooltip()`（`basis` 折叠，ADR-06） |
+| 缓存 | **不引入前端缓存层**（每次进入页面拉取；避免与后端口径分叉） |
+
+---
+
+## 4. 状态与错误呈现架构（DT-14）
+
+| 层 | 职责 | 落点 |
+|----|------|------|
+| `core/api/http.ts` | 请求封装、超时、`request_id` 透传 | 既有，不改 |
+| `core/api/error.ts` | **错误归一**：按 `code` 映射为可呈现模型 | 扩展映射表（新增 409／422 语义） |
+| 页面 | 按归一模型渲染**空态／错误态／未启用态** | **12 页**统一样式（不改 tokens） |
+
+**错误码呈现分工**：
+
+| code | 呈现 | 页面 |
+|:----:|------|------|
+| 400 | 语义文案（如「该字段键不受支持」／**字段级校验原因**／**归属模板未激活**／**`extends` 深度超限**） | P-03／P-04／P-05／**P-09／P-10／P-11** |
+| 403 | 「无权限执行」／「AI 通道未启用」 | 全部写操作页（含 **P-09~P-11**）／ P-08 |
+| 404 | 「未找到」（含无谱系） | P-05／P-02／**P-09／P-10／P-11** |
+| **409** | 「存在未复核候选，不得进入标签/画像路径」／「code 冲突未指定策略」／**「`code` 已存在」**／**「存在 N 条关联标注数据，禁止删除」** | P-08／P-04／**P-09（创建冲突）／P-10（删除被拒）** |
+| 422 | 「包结构非法」（白名单校验） | P-04 |
+| 503 | 「AI 适配器暂不可用」（**降级非阻塞**） | P-08 |
+| 5xx／不可用 | 「服务暂不可用」＋ 重试（**不静默降级**） | 全部 |
+
+---
+
+## 5. 构建与产物
+
+| 项 | 设计 |
+|----|------|
+| 构建 | 沿用既有 Vite 配置（**不改构建链**） |
+| 产物 | `dist-v1.4.10` |
+| 体积 | 无新依赖 ⇒ 体积增量应主要来自页面代码；Step 3 记录基线对比 |
+| 兼容 | 沿用既有浏览器支持面 |
+
+---
+
+## 6. 与设计系统的关系
+
+| 项 | 结论 |
+|----|------|
+| `tokens.css` / 设计系统 | **不改**（规划 §2.2 已排除视觉规范改动） |
+| **原型一致性（强制）** | 原型 `doc/design/prototype/` **逐项照搬** `tokens.css` 的 `--ob-*` 变量 ＋ 模拟 **Element Plus** 组件视觉 ＋ 对齐 `AppLayout.vue` 布局（侧栏 220／64px ＋ 顶栏 56px ＋ 内容区）；实现时**不得偏离**（详见 UI 设计文档 §1.1） |
+| **页面落点与命名** | 8 页落点 **`openbase-ui/src/modules/portrait/pages/`**，命名沿用既有 `Dps*View.vue` 风格（如 `DpsTemplateListView.vue`）；**不新建模块、不改既有页面** |
+| 组件复用 | 优先复用既有基础组件；不足时**新增业务组件**（不改基础组件语义） |
+| 无障碍 | 新增交互须满足 UIUX §6（键盘可达、`aria-expanded` 用于 `basis` 折叠、`prefers-reduced-motion`） |
+
+---
+
+## 7. 前端架构风险
+
+| # | 风险 | 级别 | 缓解 |
+|:-:|------|:----:|------|
+| 1 | 8 页并发开发导致**状态处理不一致** | P2 | 统一 `useAsyncState()` ＋ 错误码映射表（§4） |
+| 2 | P-08 跨两上游（DPS ＋ OpenLLM）**语义混淆** | P1 | UI 明确标识来源；`llm_proxy` 不可用时**仅降级辅助**（不阻断复核提交） |
+| 3 | 回滚等写操作**误触** | **P1** | 二次确认四要素（UI 设计 §P-02）＋ 权限门禁结果呈现 |
+| 4 | `basis` 折叠过深导致复核遗漏 | P2 | `tag_count=0` 等场景**强制展开**（ADR-06 风险缓解） |
+
+---
+
+## 8. 公共功能域重组与统一页面骨架（v1.4.11）
+
+### 8.1 目标
+
+1. 非业务专属的统一前端功能全部归集到「公共功能」域；
+2. 公共功能内的业务模块开关决定对应模块页面/菜单是否展示（停用即不可见、直链不可达）；
+3. 功能划分与页面排布统一到商用生产系统级（统一骨架、统一门禁、统一空态/加载/错误）。
+
+### 8.2 信息架构（公共功能五域 + 业务模块）
+
+```text
+/（AppLayout）
+├── 仪表盘 /dashboard
+├── 公共功能（静态路由 /platform/**，权限码 + 模块依赖双门禁）
+│   ├── 身份与权限    租户/角色/组织团队用户/工作空间/用户/记忆席位/注册找回/画像数据权限
+│   ├── 平台配置与密钥 全局配置/模块开关/API 密钥/画像接口限流
+│   ├── 可观测与审计   日志/测试记录/统一监控/GPU/用量/计费/服务发现/网关测试/成本/告警/画像系统监控
+│   ├── AI 能力治理    提供商/模型分类/路由策略/熔断器/模型部署/下载/工具调用/AB 测试/Prompt 模板/实验
+│   └── 开发者资源     文档/EdgeRouter/插件/画像 API 管理/知识库管理后台/知识库 API 控制台
+├── 业务模块（动态装载，受模块开关控制）
+│   ├── /openllm   模型管理/本地模型/模型对比/开源市场/收藏/AI 应用/Playground/对话/推荐/报表趋势
+│   ├── /knowledge 知识库列表与详情/RAG 对话
+│   ├── /memory    记忆列表/详情/搜索/会话/图谱/衰减/写入
+│   └── /portrait  总览/列表/详情/搜索/标签/规则 ＋ **/portrait/dps/**（模板族/版本/预检/模板包/血缘/措施/评分/标注/标签体系）
+└── /personal/settings
+```
+
+> v1.4.11 收口：DPS 模板化 12 页原为顶部 `/dps/**` 静态路由（无菜单项、不受模块开关约束），
+> 已归位为画像模块的 `dps/*` 子路由（`/portrait/dps/**`），随 portrait 模块启停并进入模块导航；
+> 旧 `/dps/**` 路径由 `legacyRedirects` 承接（9 条，其余子路径由父路径回退）。
+
+上收清单（v1.4.11 实际迁移，`git mv` 保留历史）：
+
+| 原位置 | 新位置 |
+|---|---|
+| `modules/openllm/pages/Providers.vue`、`Categories.vue`、`Routing.vue`、`DownloadManagerView.vue`、`ToolCallMonitorView.vue`、`AbTestView.vue`、`PromptTemplatesView.vue`、`PromptExperimentsView.vue`、`GenericPage.vue` | `pages/platform/governance/**` |
+| `modules/portrait/pages/DpsPermissionView.vue` | `pages/platform/identity/` |
+| `modules/portrait/pages/DpsRateLimitView.vue` | `pages/platform/config/` |
+| `modules/portrait/pages/DpsMonitorView.vue` | `pages/platform/observability/` |
+| `modules/portrait/pages/DpsApiManageView.vue` | `pages/platform/developers/` |
+| `modules/knowledge/pages/KnowledgeAdminView.vue`、`KnowledgeConsoleView.vue` | `pages/platform/developers/` |
+
+### 8.3 模块开关语义（即时生效）
+
+- 后端契约不变：`PATCH /modules/{id}` 返回 `effective=next_login` 并写审计留痕；
+- 前端在切换成功后执行 `moduleRegistry.reload(permissions)`：
+  1. 重新拉取 `/modules` 并重建注册表（权限过滤）；
+  2. `syncModuleRoutes(enabledIds)` 先 `router.removeRoute(id)` 卸载停用模块，再按目标集合重装启用模块；
+  3. 侧栏「业务模块」分组随注册表即时增删。
+- 公共功能域新增 `meta.dependsOn`：治理页声明所依赖的业务模块；模块停用时
+  菜单叶子隐藏，直链导航被守卫拦到 `/forbidden`（与权限门禁同源）。
+- 同步失败不回滚后端结果，仅提示“请刷新页面”（`console.warn` 留痕）。
+
+### 8.4 统一页面骨架
+
+新增 `src/components/page/`：
+
+| 组件 | 职责 |
+|---|---|
+| `PageContainer.vue` | 页面外壳：统一纵向间距 + 页头 + 内容插槽 |
+| `PageHeader.vue` | 标题/描述/返回/右侧操作区（`actions`）/标题旁元信息（`meta`） |
+| `FilterBar.vue` | 筛选区：左侧条件插槽 + 右侧操作插槽，统一边框与内边距 |
+| `EmptyState.vue` | 统一空态（描述 + 可选操作插槽） |
+
+排布规范：页头 → 筛选区 → 内容卡（表格/卡片）→ 分页；主操作固定在页头右侧；
+间距统一 16px；空态统一用 `EmptyState`；表格统一加 `ob-table-scroll`。
+
+阶段一已套用：仪表盘、模块开关页。阶段二已套用：统一监控、统一日志。阶段三：公共功能五域 **37 页**全部套用
+`PageContainer`。**阶段四（本轮收口）：四个业务模块 39 页全部套用**（openllm 11 / portrait 18（含 DPS 12）/
+memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范；`.page-toolbar` 由 20+ 份 scoped 规则
+收敛为 `core/styles/layout.css` 中的**单份全局类**。
+
+### 8.4.1 启动与首屏（生产级要求）
+
+| 问题 | 处置 |
+|---|---|
+| 首帧导航等待期白屏（实测 32s） | `App.vue` 在 `route.matched` 为空时渲染启动骨架（`data-test="app-boot"`），不再白屏 |
+| `bootstrapModuleRoutes` 阻塞 `app.mount` | 预热最多等待 2500ms，超时先挂载，守卫在导航阶段继续装载 |
+| `/auth/me` 与 `/modules` 串行（各 ~8s） | 启动即 `registry.prefetch()` 并行预取模块清单；`init` 复用同一 Promise |
+| 预热与守卫重复请求 | `loadMe` / `init` 均加在途去重（模块级 Promise） |
+| 注册表加载失败导致路由启动异常 | 守卫内 try/catch，失败降级为空模块并允许导航（`console.warn` 留痕） |
+| 注册表晚于导航就绪 | `init` 成功后立即 `syncModuleRoutes`，模块页随即可达 |
+
+实测（本机 dev，后端 `/auth/me`、`/modules` 单次约 8s，并发时可达 15~35s）：
+
+| 阶段 | 首屏表现 |
+|---|---|
+| 改造前 | 白屏 32.6s，控制台 `timeout of 15000ms exceeded` + `Unexpected error when starting the router` |
+| 骨架 + 预热 2.5s 上限 | 骨架 2.8s 上屏（不再白屏），控制台 0 error |
+| 并行预取 + 在途去重 + 清单缓存 | 骨架 2.8s；`/auth/me` 与 `/modules` 同时发起（起始差 0~2ms）；后端超时后仅重试 1 次 `/modules` |
+
+**结论**：前端已完成其边界内的治理。8s 级耗时已由后端侧定位并处置（详见 §8.8），
+改造后同一台机器实测热态：`/auth/me` 中位 91ms（44~124ms）、`/modules` 中位 81ms（38~150ms），
+首屏不再依赖超时重试。
+
+### 8.5 旧路径兼容
+
+`core/router/legacyRedirects.ts` 在 v1.4.11 累计新增 28 条精确映射（`/openllm/providers`、`/openllm/downloads`、
+`/openllm/routing/*`、`/openllm/prompt-*`、`/openllm/ab-tests`、`/openllm/tool-calls`、
+`/portrait/{permissions,rate-limit,monitor,api-manage,reports,batch}`、`/knowledge/{admin,console}`、
+`/dps/*` 共 9 条等），另加一条 `/dps/:pathMatch(.*)*` 前缀兜底（覆盖 `/:code/edit` 等动态子路径）；
+函数式 redirect 统一保留 query/hash，禁 404。
+
+### 8.6 验证
+
+| 项 | 结果 |
+|---|---|
+| `vue-tsc --noEmit` | 通过（0 错误，收口全量改动后复跑） |
+| `vitest run --no-file-parallelism` | 21 文件 / **250 用例全通过**（串行执行，无超时；并行跑在宿主满载时会出现 3 条超时，属环境噪声） |
+| `vite build` | 构建成功（3079 modules transformed） |
+| 路由契约 | 菜单 ⊆ 路由、routes−菜单 ⊆ 白名单、旧路径全量可达（`nav-consistency` 21 条、`platform-ia` 21 条全通过） |
+
+### 8.7 遗留（阶段二之后）
+
+- 页面级加载/错误态统一到 `useAsyncState` + 统一错误条；
+- 面包屑与详情页页签规范落地；
+- 4 个占位页（模型部署、链路追踪、预算管理、应用调用记录）待上游接口就绪后转真实页面，入口已挂在统一监控/治理域内。
+
+### 8.8 后端 8s 级耗时的定位与处置（跨前后端）
+
+前端首屏耗时问题溯源到后端两条鉴权接口，排查结论如下（证据与改动清单见
+《OpenBase-DevLogReport-v1.4.11》§3）：
+
+| 成分 | 实测 | 处置 |
+|---|---|---|
+| Redis 不可达（`6380` 连接超时） | 每次缓存调用阻塞 socket 超时，多调用叠加至 8s 级 | 缓存层加**熔断冷却**（失败即停用 300s，`OPENBASE_REDIS_COOLDOWN_SECONDS` 可调） |
+| 同一请求内主体验证**双读**（中间件 + 依赖层） | 每请求多一次 `users` 读库（Redis 熔断后即每次落库） | 中间件标注 `verified_principal_subject`，依赖层同主体跳过重复校验 |
+| 登录 bcrypt 校验 | 1.1~1.9s/次（`rounds=12`，本机 CPU 满载） | 保留强度；属可接受登录成本，不在热路径 |
+| DB 连接池 | 未显式配置，长连接易失效 | `pool_size=10/max_overflow=20/pool_timeout=10/pool_recycle=1800/pool_pre_ping` |
+| 宿主资源 | CPU 100%、可用内存 668MB/12GB、安全软件常驻 | 新建 PG 连接 0.6~6s、进程启动 1~16s → 抖动主因；**非应用缺陷**，需清理宿主负载 |
+
+验收：改造后 `/auth/me`、`/modules`、`/tenants` 热态 P50 分别为 91 / 81 / 57ms，
+`/health` 12ms；连续 8 次采样无 ≥1s 样本（宿主高负载时仍可能出现秒级离群值，已如实登记）。
+
+### 8.9 公共域收口记录（缺陷修复与一致性对齐）
+
+| # | 问题 | 处置 | 落点 |
+|:-:|------|------|------|
+| 1 | `记忆管理席位` 未声明 `dependsOn`，记忆模块关闭后仍显示 | 路由 + 菜单叶子补 `dependsOn: 'memory'`（双门禁） | `pages/platform/routes.ts`、`core/layouts/AppLayout.vue` |
+| 2 | `gateway` 已迁入公共功能，但模块开关页仍提供可切换项（切换对前端无效，属误导） | 开关页对 `gateway` 只读处理：过滤出可切换列表，并给出「已迁入公共功能、页面常驻」提示 | `pages/platform/config/ModuleSwitchView.vue` |
+| 3 | `providers/register` 为独立占位页，而提供商新增已是列表页内嵌对话框 | 下线该路由，旧直达链接收敛到 `/platform/governance/providers` | `pages/platform/routes.ts`、`core/router/legacyRedirects.ts` |
+| 4 | 画像「分析报表 / 批量任务」复用列表组件，点击后与画像列表完全相同（假页面） | 下线两条路由与菜单项，旧链接回落到 `/portrait/list`，待上游专用接口后再成页 | `modules/portrait/index.ts`、`legacyRedirects.ts` |
+| 5 | 记忆模块的 `ApiGateway.vue`、`MemoryMonitorView.vue` 已是死文件（路由早前迁出） | 删除，避免后续误引用 | `modules/memory/pages/` |
+| 6 | 占位页文案停留在「v1.2.0 已规划」，且 3 条占位路由无任何入口 | 占位页改为统一样式的结果页（明确「未交付 + 上游依赖」）；在统一监控页提供链路追踪/预算管理/应用调用记录入口 | `pages/platform/governance/GenericPage.vue`、`observability/Monitoring.vue` |
+| 7 | 公共域页面各自 `*-page` 私有布局（69 处） | 五域 37 页统一套 `PageContainer`，页头标题/描述集中定义 | `pages/platform/**` |
+| 8 | DPS 模板化 12 页挂在顶部 `/dps/**` 静态路由：无菜单入口、不受模块开关约束 | 归位为画像模块 `dps/*` 子路由（`/portrait/dps/**`），进入模块导航并随 portrait 启停；旧前缀（含动态子路径）重定向承接 | `modules/portrait/index.ts`、`core/router/index.ts`、`legacyRedirects.ts` |
+| 9 | `.page-toolbar` 在 20+ 页面各写一份 scoped 样式 | 收敛为 `core/styles/layout.css` 单份全局类（纵向间距交由 `PageContainer` 的 16px gap） | `core/styles/layout.css`、各页面 `<style>` |
+| 10 | `modules/knowledge/pages/Settings.vue` 已无路由引用（`/knowledge/settings` 早已重定向到全局配置） | 删除死文件 | `modules/knowledge/pages/` |
+| 11 | 业务模块 39 页仍为各自私有布局 | 全部套用 `PageContainer`（openllm 11 / portrait 18 / memory 7 / knowledge 3） | `modules/*/pages/**` |
+
+---
+
+## 9. 修订历史
+
+| 版本 | 日期 | 修改人 | 修改摘要 |
+|------|------|--------|----------|
+| **v1.6.0** | 2026-10-21 | 研发（AI 辅助） | **业务模块收口（阶段四）**：① §8.2 把 DPS 模板化 12 页从顶部 `/dps/**` 静态路由归位到画像模块 `/portrait/dps/**`（进入模块导航、随 portrait 启停）；② §8.4 业务模块 39 页全部套用 `PageContainer`，全站 76 页统一页头与间距；③ §8.5 累计 28 条精确重定向 + `/dps/:pathMatch(.*)*` 前缀兜底；④ §8.9 增补第 8~11 项（DPS 归位、`.page-toolbar` 全局化、删除 `knowledge/Settings.vue` 死文件、业务模块页骨架）；⑤ §8.7 遗留收窄为 `useAsyncState`、面包屑与 4 个占位页。 |
+| **v1.5.0** | 2026-10-21 | 研发（AI 辅助） | **公共域收口（阶段三）**：① §8.4 公共功能五域 **37 页全部套用 `PageContainer`**；② 新增 §8.9 收口记录（7 项）——记忆席位补 `dependsOn`、gateway 开关只读化、`providers/register` 下线并收敛重定向、画像「分析报表/批量任务」假页下线、删除 2 个死文件、占位页统一为结果页并补入口；③ §8.7 遗留收窄为业务模块页（42 页）与 `useAsyncState` 统一。 |
+| **v1.4.0** | 2026-10-21 | 研发（AI 辅助） | **阶段二推进 + 后端耗时收口**：① §8.4 补充阶段二已套用页面（统一监控、统一日志）与页头操作区上移口径；② 新增 §8.8「后端 8s 级耗时的定位与处置」——Redis 不可达熔断（冷却 300s）、主体验证请求内去重、连接池加固、宿主资源瓶颈（新建 PG 连接 0.6~6s）四项成分与验收数据；③ §8.4.1 结论回写为热态实测（`/auth/me` P50 91ms、`/modules` P50 81ms），删除「剩余 25s 由后端造成」的过期表述；④ §8.7 遗留按阶段二完成情况收窄。 |
+| **v1.3.0** | 2026-10-21 | 研发（AI 辅助） | **v1.4.11 公共功能域重组与统一页面骨架**：① 新增 §8 信息架构（公共功能五域 + 业务模块），把提供商/路由/部署/下载/工具调用/AB 测试/Prompt 资产与 DPS 权限/限流/监控/API 管理、知识库管理后台/控制台共 15 个页面 `git mv` 上收至 `pages/platform/**`；② 模块开关改为**前端即时生效**（`moduleRegistry.reload` + `syncModuleRoutes` 卸载/重装路由），新增 `meta.dependsOn` 双门禁（菜单隐藏 + 直链 403）；③ 新增 `components/page/` 四件套页面骨架并在仪表盘/模块开关页落地；④ `legacyRedirects` 补 17 条旧路径；⑤ 验证：`vue-tsc` 0 错误、`vitest` 250/250、`vite build` 成功；⑥ 首屏治理：启动骨架 + 预热 2.5s 上限 + 模块清单并行预取 + `loadMe/init` 在途去重，消除实测 32s 白屏。 |
+| **v1.2.0** | 2026-09-29 | FA-OpenBase-Dev | **D-1410-03 回写（G2 缺陷闭环 ＋ 页面 8 → 12）**：① **§2 路由表全量重写** —— 原将 P-01 写为 `#1 #2 #3`（实为导出／导入／版本对比）**撞号且语义错误**，现改为 **P-01↔#11·#12·#15·#16**，并新增 **P-09 画像模板新建／编辑（#12·#13·#14，`extends` 继承选择）／P-10 标注模板管理（#17·#18·#19·#21）／P-11 标注模板字段与归属（#12·#18·#20，**无"解除归属"按钮**）／P-12 标签体系查看（#21·#22）**；② **§3.1 方法表全量重写** —— 原编号系统性错位（`listTemplates`→#1 实为导出），现按 API 文档编号分「契约 10 新增」「补代理 12」两段列 **22 方法 ＋ 2 跨上游方法**；③ §4 页面数 8 → **12**；错误码分工补 **P-09~P-11** 与新增 409 语义（`code` 已存在／存在 N 条关联标注）；④ 声明既有画像 2 页不改。 |
+| v1.1.0 | 2026-09-29 | FA-OpenBase-Dev | 按「原型必须与前端既有设计风格一致」要求增补 §6 两行强制约束：**原型一致性（照搬 `tokens.css` `--ob-*` 变量 ＋ 模拟 Element Plus 视觉 ＋ 对齐 `AppLayout.vue` 布局，禁止自创主题）**；**页面落点 `openbase-ui/src/modules/portrait/pages/`，命名沿用 `Dps*View.vue`，不新建模块、不改既有页面**。 |
+| v1.0.0 | 2026-09-29 | FA-OpenBase-Dev | 初始创建（Step 2 §2.5b 产出）：**架构总览**（沿用 core／modules／pages 分层，标注本版扩展点）；**路由设计 8 条**（页面↔端点映射）；**数据层设计**（`dps.ts` 扩展 14 个方法，含 **AI 复核跨两上游**；mock 真实化；组合式函数承载页面状态，**不新增全局 store**）；**状态与错误呈现架构**（错误码映射表 **7 类 ＋ 兜底**）；**构建与产物**（不改构建链）；**与设计系统关系**（不改 tokens）；**风险 4 项**（2 项 P1）。状态 [Review]。 |

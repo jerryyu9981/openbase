@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-tag-system">
+  <PageContainer title="标签体系查看" description="标签分类与标签值只读呈现" test-id="dps-tag-system-view-page">
     <el-alert type="info" show-icon :closable="false" class="mb-16" data-test="tag-readonly-tip">
       <template #title>本页为只读呈现：分类 → 标签值两层结构</template>
       <div>分类的增删改沿用既有「标签分类」能力（/tags/categories），本页不复制编辑入口。</div>
@@ -77,10 +77,11 @@
         人工标注优先（人工值覆盖自动计算结果）；联动落库为 profile_tag，并可经标签血缘反查追溯来源。
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { dpsApi, type DpsTagCategory } from '@/core/api/dps'
 import { describeDpsError, type DpsErrorPresentation } from '@/core/api/error'

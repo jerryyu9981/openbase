@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="知识库" description="知识库列表、索引状态与入口" test-id="knowledge-list-page">
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -89,10 +89,11 @@
         </template>
       </el-dialog>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ragApi, type RagCollection } from '@/core/api/rag'
@@ -208,7 +209,6 @@ onMounted(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .kb-card { margin-bottom: 16px; }
 .kb-card h3 { margin: 0 0 8px; cursor: pointer; }
 .meta { color: var(--ob-text-secondary); font-size: 13px; margin-bottom: 10px; }

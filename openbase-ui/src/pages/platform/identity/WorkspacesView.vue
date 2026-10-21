@@ -1,5 +1,5 @@
 <template>
-  <div class="workspaces-page">
+  <PageContainer title="工作空间" description="工作空间与资源归属" test-id="workspaces-view-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="ws-new" @click="openCreate">新建工作空间</el-button>
     </div>
@@ -57,10 +57,11 @@
         <el-button size="small" type="primary" data-test="ws-member-add" @click="addMember">添加</el-button>
       </div>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -130,7 +131,6 @@ function remove(id: number) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .key-tag { font-family: monospace; }
 .key-empty { color: #909399; font-size: 12px; }
 .member-add { display: flex; gap: 8px; margin-top: 12px; }

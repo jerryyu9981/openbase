@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-lineage">
+  <PageContainer title="标签血缘反查" description="标签来源与下游影响反查" test-id="dps-lineage-view-page">
     <div class="page-toolbar">
       <el-input v-model="tagCode" placeholder="tag_code（如 service:channel）" style="width: 280px" data-test="lineage-tag" />
       <el-button type="primary" :loading="loading" data-test="lineage-run" @click="lookup">反查</el-button>
@@ -65,10 +65,11 @@
         </div>
       </el-card>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { dpsApi, type DpsImpactResult, type DpsLineageSource } from '@/core/api/dps'
@@ -115,7 +116,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .metrics-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }

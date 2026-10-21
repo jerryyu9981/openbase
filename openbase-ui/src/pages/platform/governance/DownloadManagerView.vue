@@ -1,5 +1,5 @@
 <template>
-  <div class="download-manager">
+  <PageContainer title="下载管理" description="模型下载任务与进度" test-id="download-manager-view-page">
     <div class="page-toolbar">
       <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 150px" data-test="dl-status-filter">
         <el-option label="下载中" value="downloading" />
@@ -44,10 +44,11 @@
         </el-table>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -121,5 +122,4 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 </style>

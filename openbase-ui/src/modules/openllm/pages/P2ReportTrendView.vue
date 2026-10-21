@@ -1,5 +1,5 @@
 <template>
-  <div class="p2-reports">
+  <PageContainer title="报表趋势" description="调用量、成本与效果趋势" test-id="p2-report-trend-view-page">
     <el-row :gutter="16">
       <el-col :span="16">
         <el-card header="报表趋势分析" data-test="rep-trend-card">
@@ -32,10 +32,11 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 
@@ -79,7 +80,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .trend-chart { height: 340px; }
 .rank-badge { display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: #f1f5f9; align-items: center; justify-content: center; font-size: 13px; }
 .rank-badge.top { background: #1677FF; color: #fff; }

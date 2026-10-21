@@ -1,5 +1,5 @@
 <template>
-  <div class="edgerouter-page">
+  <PageContainer title="EdgeRouter 与适配器" description="组织与适配器配置" test-id="edge-router-view-page">
     <el-tabs v-model="activeTab" data-test="er-tabs">
       <!-- 组织管理 -->
       <el-tab-pane label="组织管理" name="orgs">
@@ -65,10 +65,11 @@
         </el-table>
       </el-tab-pane>
     </el-tabs>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -122,5 +123,4 @@ function toggleAdapter(row: AdapterRow) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 </style>

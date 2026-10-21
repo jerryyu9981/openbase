@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-monitor">
+  <PageContainer title="画像系统监控" description="DPS 依赖健康与关键指标" test-id="dps-monitor-view-page">
     <!-- 依赖健康 -->
     <el-row :gutter="16" class="mb-16">
       <el-col v-for="dep in deps" :key="dep.name" :span="6">
@@ -48,10 +48,11 @@
         </el-table-column>
       </el-table>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -124,7 +125,6 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .dep-header { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
 .dep-latency { font-size: 13px; color: #6b7280; margin-top: 8px; }
 .chart { height: 260px; }

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="用量统计" description="调用量与 Token 统计" test-id="usage-page">
     <div class="page-toolbar">
       <el-date-picker
         v-model="dateRange"
@@ -71,10 +71,11 @@
         data-test="usage-pagination"
       />
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -279,13 +280,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .mb-16 {
   margin-bottom: 16px;
 }

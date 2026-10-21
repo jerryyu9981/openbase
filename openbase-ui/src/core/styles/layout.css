@@ -1,0 +1,19 @@
+/* 统一页面排布基类（v1.4.11 收口）
+ *
+ * 页面内的筛选/操作行统一用 `.page-toolbar`：横向排列、12px 间距、可换行。
+ * 该样式此前在 20+ 个页面内各写一份 scoped 规则，现收敛为全局单份，
+ * 纵向间距由 `PageContainer` 的 16px gap 负责，故此处不再设置 margin。
+ */
+.page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 页内分组标题（如记忆模块工具条中的标题）——与页头标题区分，不再重复页面级标题 */
+.page-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ob-text-primary, #303133);
+}

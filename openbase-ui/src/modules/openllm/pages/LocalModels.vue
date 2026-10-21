@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="本地模型" description="本地部署模型与运行状态" test-id="local-models-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="pull-model" :loading="pulling" @click="pullModel">拉取新模型（Ollama）</el-button>
       <el-button data-test="open-repo" @click="repoVisible = true">模型仓库</el-button>
@@ -54,10 +54,11 @@
         <el-button @click="gpuVisible = false">关闭</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -113,7 +114,6 @@ function toggleGpu(row: GpuCard, enabled: boolean) {
 </script>
 
 <style scoped>
-.page-toolbar { margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
 .model-card { margin-bottom: 16px; }
 .model-card h3 { margin: 0 0 8px; }
 .meta { color: var(--ob-text-secondary); font-size: 13px; }

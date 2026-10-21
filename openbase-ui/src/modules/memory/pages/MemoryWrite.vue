@@ -1,7 +1,6 @@
 <template>
-  <div>
+  <PageContainer title="写入记忆" description="手工写入与批量导入记忆" test-id="memory-write-page">
     <div class="page-toolbar">
-      <span class="page-title" data-test="write-title">写入记忆</span>
       <span class="tab-hint">内容将经 memory-proxy 写入 OpenMemory 持久存储（POST /api/v1/remember）</span>
     </div>
     <el-alert
@@ -83,10 +82,11 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
@@ -159,8 +159,6 @@ function resetForm() {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.page-title { font-size: 16px; font-weight: 600; }
 .tab-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }

@@ -1,5 +1,5 @@
 <template>
-  <div class="prompt-experiments">
+  <PageContainer title="Prompt 实验" description="Prompt 实验编排与结果" test-id="prompt-experiments-view-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="pe-new" @click="openCreate">创建实验</el-button>
     </div>
@@ -75,10 +75,11 @@
         <el-table-column prop="latency" label="延迟(ms)" width="90" />
       </el-table>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { nextTick, ref } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -160,7 +161,6 @@ function remove(id: number) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .variant-row { display: flex; gap: 8px; margin-bottom: 8px; }
 .report-chart { height: 260px; margin-top: 8px; }
 .mt-8 { margin-top: 8px; }

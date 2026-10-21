@@ -1,7 +1,6 @@
 <template>
-  <div>
+  <PageContainer title="记忆搜索" description="语义检索与相似度排序" test-id="memory-search-page">
     <div class="page-toolbar">
-      <span class="page-title" data-test="search-title">记忆搜索</span>
       <span class="tab-hint">语义召回：输入查询词，经 memory-proxy 调用 OpenMemory recall 检索最相关记忆</span>
     </div>
     <el-card class="mb-16">
@@ -95,10 +94,11 @@
         :image-size="70"
       />
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { http } from '@/core/api/http'
 
@@ -155,8 +155,6 @@ function scoreType(score: number | null) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.page-title { font-size: 16px; font-weight: 600; }
 .tab-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
 .mr-4 { margin-right: 4px; }

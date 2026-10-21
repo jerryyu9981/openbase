@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-templates">
+  <PageContainer title="模板族管理" description="画像模板族列表与新建入口" test-id="dps-template-list-view-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索模板族名称 / code" clearable style="width: 240px" data-test="template-search" />
       <el-select v-model="statusFilter" placeholder="状态：全部" clearable style="width: 140px" data-test="template-status-filter">
@@ -9,7 +9,7 @@
       </el-select>
       <el-button type="primary" data-test="template-query" @click="load">查询</el-button>
       <el-button data-test="template-reset" @click="resetFilters">重置</el-button>
-      <el-button type="primary" plain data-test="template-new" @click="router.push('/dps/templates/new')">新建模板</el-button>
+      <el-button type="primary" plain data-test="template-new" @click="router.push('/portrait/dps/templates/new')">新建模板</el-button>
     </div>
 
     <el-alert
@@ -82,10 +82,11 @@
         <el-button size="small" data-test="template-edit" @click="router.push(`/dps/templates/${detail?.code}/edit`)">编辑</el-button>
       </div>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -155,7 +156,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .mt-12 { margin-top: 12px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }

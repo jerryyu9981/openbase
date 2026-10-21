@@ -182,9 +182,6 @@ function mockDelay(ms: number) {
 </script>
 
 <style scoped>
-.page-toolbar {
-  margin-bottom: 16px;
-}
 .page-toolbar h3 {
   margin: 0;
 }

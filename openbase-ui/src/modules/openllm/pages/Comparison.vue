@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="模型对比" description="多模型效果与成本对比" test-id="comparison-page">
     <div class="page-toolbar">
       <h3>模型对比</h3>
       <el-button type="primary" data-test="comparison-add" @click="openDialog">添加对比模型</el-button>
@@ -84,10 +84,11 @@
         <el-button type="primary" data-test="comparison-confirm" @click="confirmAdd">加入对比</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -216,13 +217,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .page-toolbar h3 {
   margin: 0;
 }

@@ -1,14 +1,17 @@
 <template>
-  <div class="logs-page">
+  <PageContainer
+    title="统一日志"
+    description="统一检索：L1 文件 / 审计库 / 测试记录 / 四仓日志"
+    test-id="logs-page"
+  >
     <!-- 数据源切换（四仓统一检索；切源即重置分页与 facets） -->
-    <div class="page-toolbar logs-toolbar">
+    <template #actions>
       <el-radio-group v-model="source" size="default" data-test="logs-source" @change="onChangeSource">
         <el-radio-button v-for="s in LOG_SOURCE_OPTIONS" :key="s" :value="s" data-test="logs-source-option">
           {{ LOG_SOURCE_LABELS[s] }}
         </el-radio-button>
       </el-radio-group>
-      <span class="mode-hint">统一检索：L1 文件 / 审计库 / 测试记录 / 四仓日志</span>
-    </div>
+    </template>
 
     <!-- 筛选条件栏 -->
     <el-card class="mt-8 logs-filter" data-test="logs-filter-card">
@@ -270,13 +273,14 @@
         </div>
       </template>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
+import PageContainer from '@/components/page/PageContainer.vue'
 import {
   logsApi,
   LOG_SOURCE_LABELS,
@@ -516,11 +520,6 @@ onMounted(() => void load())
 </script>
 
 <style scoped>
-.logs-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .logs-filter-form :deep(.el-form-item) {
   margin-bottom: 0;
   margin-right: 16px;

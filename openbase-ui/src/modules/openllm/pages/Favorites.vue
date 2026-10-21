@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="我的收藏" description="常用模型与应用的收藏夹" test-id="favorites-page">
     <div class="page-toolbar">
       <h3>我的收藏</h3>
       <el-tag type="info" data-test="favorites-total">{{ totalCount }} 个收藏模型</el-tag>
@@ -53,10 +53,11 @@
         </el-tab-pane>
       </el-tabs>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -135,12 +136,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  align-items: center;
-}
 .page-toolbar h3 {
   margin: 0;
 }

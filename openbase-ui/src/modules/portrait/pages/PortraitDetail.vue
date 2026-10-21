@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="画像详情" description="单主体画像与标签明细" test-id="portrait-detail-page">
     <el-page-header content="画像详情" class="mb-16" @back="$router.push('/portrait')" />
 
     <el-result
@@ -73,10 +73,11 @@
         </el-row>
       </div>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'

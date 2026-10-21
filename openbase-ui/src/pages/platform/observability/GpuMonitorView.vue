@@ -1,5 +1,5 @@
 <template>
-  <div class="gpu-monitor">
+  <PageContainer title="GPU 资源" description="GPU 使用率与显存占用" test-id="gpu-monitor-view-page">
     <div class="page-toolbar">
       <el-radio-group v-model="timeRange" data-test="gpu-range">
         <el-radio-button value="1h">1 小时</el-radio-button>
@@ -47,10 +47,11 @@
         <div v-else ref="chartRef" class="chart" />
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 
@@ -136,6 +137,5 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .chart { height: 320px; }
 </style>

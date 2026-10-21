@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-version">
+  <PageContainer title="版本对比与回滚" description="模板版本差异与回滚" test-id="dps-template-version-view-page">
     <div class="page-toolbar">
       <el-input v-model="code" placeholder="模板 code" style="width: 220px" data-test="version-code" />
       <el-select v-model="fromVersion" placeholder="版本 A" style="width: 130px" data-test="version-from">
@@ -89,10 +89,11 @@
         <el-button type="danger" :loading="submitting" data-test="rollback-confirm" @click="doRollback">确认回滚</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -203,7 +204,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .mt-8 { margin-top: 8px; }
 .muted { color: var(--ob-text-secondary); }

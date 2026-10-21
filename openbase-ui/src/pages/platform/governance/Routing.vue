@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer :title="pageTitle" description="路由策略与熔断器共用同一策略视图（按路由 meta 呈现标题）" test-id="routing-page">
     <el-alert
       v-if="errorMessage"
       :title="errorMessage"
@@ -122,12 +122,17 @@
         <el-descriptions-item label="说明">{{ testResult.reason }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import PageContainer from '@/components/page/PageContainer.vue'
+
+const route = useRoute()
+const pageTitle = computed(() => (route.meta.title as string) || '路由策略')
 
 interface RouteStrategy {
   id: number
@@ -337,13 +342,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .mb-16 {
   margin-bottom: 16px;
 }

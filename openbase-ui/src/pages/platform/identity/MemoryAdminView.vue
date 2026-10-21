@@ -1,7 +1,6 @@
 <template>
-  <div>
+  <PageContainer title="记忆管理席位" description="记忆库的维护与清理" test-id="memory-admin-view-page">
     <div class="page-toolbar">
-      <span class="page-title" data-test="admin-title">记忆维护</span>
       <span class="tab-hint">记忆管理后台：概览统计 + 运行监控（真实 OpenMemory 数据）+ 记忆维护操作</span>
     </div>
     <el-alert
@@ -156,10 +155,11 @@
         </el-tab-pane>
       </el-tabs>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
@@ -359,8 +359,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.page-title { font-size: 16px; font-weight: 600; }
 .tab-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
 .mr-4 { margin-right: 4px; }

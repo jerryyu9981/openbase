@@ -13,7 +13,7 @@
  */
 import type { RouteRecordRaw } from 'vue-router'
 
-const GenericPage = () => import('@/modules/openllm/pages/GenericPage.vue')
+const GenericPage = () => import('@/pages/platform/governance/GenericPage.vue')
 
 /** 平台管理 · 身份与权限域 */
 export const identityRoutes: RouteRecordRaw[] = [
@@ -23,7 +23,9 @@ export const identityRoutes: RouteRecordRaw[] = [
   { path: 'platform/identity/workspaces', name: 'platform-identity-workspaces', component: () => import('@/pages/platform/identity/WorkspacesView.vue'), meta: { title: '工作空间', icon: 'Grid' } },
   { path: 'platform/identity/auth-ext', name: 'platform-identity-auth-ext', component: () => import('@/pages/platform/identity/AuthExt.vue'), meta: { title: '注册/找回密码', icon: 'Key' } },
   { path: 'platform/identity/users', name: 'platform-identity-users', component: () => import('@/pages/platform/identity/UsersView.vue'), meta: { title: '用户管理', icon: 'User', permission: 'users:view' } },
-  { path: 'platform/identity/memory-admin', name: 'platform-identity-memory-admin', component: () => import('@/pages/platform/identity/MemoryAdminView.vue'), meta: { title: '记忆管理席位', icon: 'Setting', permission: 'memory:manage' } },
+  { path: 'platform/identity/memory-admin', name: 'platform-identity-memory-admin', component: () => import('@/pages/platform/identity/MemoryAdminView.vue'), meta: { title: '记忆管理席位', icon: 'Setting', permission: 'memory:manage', dependsOn: 'memory' } },
+  // v1.4.11：DPS 权限管理从画像模块上收（公共域统一治理）
+  { path: 'platform/identity/dps-permissions', name: 'platform-identity-dps-permissions', component: () => import('@/pages/platform/identity/DpsPermissionView.vue'), meta: { title: '画像数据权限', icon: 'User', dependsOn: 'portrait' } },
 ]
 
 /** 平台管理 · 平台配置与密钥域 */
@@ -31,6 +33,8 @@ export const configRoutes: RouteRecordRaw[] = [
   { path: 'platform/config/general', name: 'platform-config-general', component: () => import('@/pages/platform/config/ConfigManageView.vue'), meta: { title: '全局配置', icon: 'Setting' } },
   { path: 'platform/config/modules', name: 'platform-config-modules', component: () => import('@/pages/platform/config/ModuleSwitchView.vue'), meta: { title: '模块开关', icon: 'Grid', permission: 'module:manage' } },
   { path: 'platform/config/api-keys', name: 'platform-config-api-keys', component: () => import('@/pages/platform/config/ApiKeys.vue'), meta: { title: 'API 密钥', icon: 'Key', permission: 'auth:api-keys:view' } },
+  // v1.4.11：DPS 限流管理从画像模块上收（公共域统一治理）
+  { path: 'platform/config/rate-limits', name: 'platform-config-rate-limits', component: () => import('@/pages/platform/config/DpsRateLimitView.vue'), meta: { title: '画像接口限流', icon: 'Operation', dependsOn: 'portrait' } },
 ]
 
 /** 平台管理 · 可观测与审计域 */
@@ -48,6 +52,8 @@ export const observabilityRoutes: RouteRecordRaw[] = [
   { path: 'platform/observability/service-discovery', name: 'platform-observability-service-discovery', component: () => import('@/pages/platform/observability/GatewayServicesView.vue'), meta: { title: '服务发现与编排', icon: 'Connection' } },
   { path: 'platform/observability/gateway-test', name: 'platform-observability-gateway-test', component: () => import('@/pages/platform/observability/GatewayAggregateView.vue'), meta: { title: '聚合网关测试', icon: 'Operation' } },
   { path: 'platform/observability/app-calls', name: 'platform-observability-app-calls', component: GenericPage, meta: { title: '应用调用记录', icon: 'ChatDotRound' } },
+  // v1.4.11：DPS 系统监控从画像模块上收（公共域可观测）
+  { path: 'platform/observability/dps-monitor', name: 'platform-observability-dps-monitor', component: () => import('@/pages/platform/observability/DpsMonitorView.vue'), meta: { title: '画像系统监控', icon: 'Monitor', dependsOn: 'portrait' } },
 ]
 
 /** 平台管理 · 开发者资源域 */
@@ -55,12 +61,40 @@ export const developerRoutes: RouteRecordRaw[] = [
   { path: 'platform/developers/docs', name: 'platform-developers-docs', component: () => import('@/pages/platform/developers/DocCenterView.vue'), meta: { title: '文档中心', icon: 'Reading' } },
   { path: 'platform/developers/edgerouter', name: 'platform-developers-edgerouter', component: () => import('@/pages/platform/developers/EdgeRouterView.vue'), meta: { title: 'EdgeRouter 与适配器', icon: 'Connection' } },
   { path: 'platform/developers/plugins', name: 'platform-developers-plugins', component: () => import('@/pages/platform/developers/PluginsView.vue'), meta: { title: '插件管理', icon: 'Box' } },
+  // v1.4.11：DPS API 管理 + 知识库管理后台/控制台从业务模块上收（公共域开发者资源）
+  { path: 'platform/developers/dps-api', name: 'platform-developers-dps-api', component: () => import('@/pages/platform/developers/DpsApiManageView.vue'), meta: { title: '画像 API 管理', icon: 'Connection', dependsOn: 'portrait' } },
+  { path: 'platform/developers/knowledge-admin', name: 'platform-developers-knowledge-admin', component: () => import('@/pages/platform/developers/KnowledgeAdminView.vue'), meta: { title: '知识库管理后台', icon: 'Collection', dependsOn: 'knowledge' } },
+  { path: 'platform/developers/knowledge-console', name: 'platform-developers-knowledge-console', component: () => import('@/pages/platform/developers/KnowledgeConsoleView.vue'), meta: { title: '知识库 API 控制台', icon: 'Reading', dependsOn: 'knowledge' } },
 ]
 
-/** 平台管理全部路由（AppLayout 子路由，路径相对 `/`；AC-146-10-2：不受单一模块启停影响） */
+/**
+ * 公共功能 · AI 能力治理域（v1.4.11）
+ *
+ * 从 OpenLLM 业务模块上收的「统一 AI 能力治理」页面：提供商、路由/熔断、部署、
+ * 下载、工具调用、A/B 与 Prompt 资产。`dependsOn: 'openllm'` 表示随 OpenLLM
+ * 模块启停——模块停用时菜单隐藏、直链进 403/仪表盘，避免出现「页面在但后端能力已下线」。
+ */
+export const governanceRoutes: RouteRecordRaw[] = [
+  { path: 'platform/governance/providers', name: 'platform-governance-providers', component: () => import('@/pages/platform/governance/Providers.vue'), meta: { title: '提供商管理', icon: 'Connection', dependsOn: 'openllm' } },
+  { path: 'platform/governance/model-categories', name: 'platform-governance-model-categories', component: () => import('@/pages/platform/governance/Categories.vue'), meta: { title: '模型分类', icon: 'Grid', dependsOn: 'openllm' } },
+  { path: 'platform/governance/routing', name: 'platform-governance-routing', component: () => import('@/pages/platform/governance/Routing.vue'), meta: { title: '路由策略', icon: 'Connection', dependsOn: 'openllm' } },
+  { path: 'platform/governance/circuit-breakers', name: 'platform-governance-circuit-breakers', component: () => import('@/pages/platform/governance/Routing.vue'), meta: { title: '熔断器', icon: 'Operation', dependsOn: 'openllm' } },
+  { path: 'platform/governance/deploy', name: 'platform-governance-deploy', component: GenericPage, meta: { title: '模型部署', icon: 'Cpu', dependsOn: 'openllm' } },
+  { path: 'platform/governance/downloads', name: 'platform-governance-downloads', component: () => import('@/pages/platform/governance/DownloadManagerView.vue'), meta: { title: '下载管理', icon: 'Download', dependsOn: 'openllm' } },
+  { path: 'platform/governance/tool-calls', name: 'platform-governance-tool-calls', component: () => import('@/pages/platform/governance/ToolCallMonitorView.vue'), meta: { title: '工具调用监控', icon: 'DataLine', dependsOn: 'openllm' } },
+  { path: 'platform/governance/ab-tests', name: 'platform-governance-ab-tests', component: () => import('@/pages/platform/governance/AbTestView.vue'), meta: { title: 'A/B 测试', icon: 'TrendCharts', dependsOn: 'openllm' } },
+  { path: 'platform/governance/prompt-templates', name: 'platform-governance-prompt-templates', component: () => import('@/pages/platform/governance/PromptTemplatesView.vue'), meta: { title: 'Prompt 模板', icon: 'Document', dependsOn: 'openllm' } },
+  { path: 'platform/governance/prompt-experiments', name: 'platform-governance-prompt-experiments', component: () => import('@/pages/platform/governance/PromptExperimentsView.vue'), meta: { title: 'Prompt 实验', icon: 'Operation', dependsOn: 'openllm' } },
+]
+
+/** 平台管理全部路由（AppLayout 子路由，路径相对 `/`；AC-146-10-2：不受单一模块启停影响）
+ *
+ * v1.4.11 例外：`dependsOn` 声明的治理页随对应模块启停（菜单隐藏 + 守卫拦截），
+ * 其余公共域页面仍为静态常驻。 */
 export const platformRoutes: RouteRecordRaw[] = [
   ...identityRoutes,
   ...configRoutes,
   ...observabilityRoutes,
   ...developerRoutes,
+  ...governanceRoutes,
 ]

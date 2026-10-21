@@ -186,6 +186,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 session, payload, request_id=request_id
             )
         _annotate_degraded_verify(request, principal_verification)
+        # v1.4.11 性能：标注已完成门禁的主体，供 get_current_user 复用，
+        # 避免同一请求内重复读库（Redis 不可用时快照缓存失效，双读即双倍 RTT）。
+        request.state.verified_principal_subject = subject_text
         if snapshot is not None:
             request.state.verified_principal = snapshot
 
@@ -329,10 +332,14 @@ async def get_current_user(
     # 消灭「仅验签不验状态」路径：仅验签通过的 JWT 不再直接进入端点（草案 §5.1/§11 T3-6）。
     from openbase.modules.identity import verification as principal_verification
 
-    await principal_verification.verify_principal(
-        session, payload, request_id=getattr(request.state, "request_id", None)
-    )
-    _annotate_degraded_verify(request, principal_verification)
+    # v1.4.11 性能：AuthMiddleware 已对同一 token 的同一主体执行过门禁（存在则状态/版本
+    # 均校验通过或因降级策略放行），请求内不再重复读库；未经过中间件的路径
+    # （如 PUBLIC_PREFIXES 中的 /proxy）仍在此处执行完整校验。
+    if getattr(request.state, "verified_principal_subject", None) != str(user_id):
+        await principal_verification.verify_principal(
+            session, payload, request_id=getattr(request.state, "request_id", None)
+        )
+        _annotate_degraded_verify(request, principal_verification)
 
     # 用户信息以 payload 中精简字段返回，详细查询由 auth 模块服务提供
     # permissions 透传（含 "*" 通配），供 require_permission 直接校验

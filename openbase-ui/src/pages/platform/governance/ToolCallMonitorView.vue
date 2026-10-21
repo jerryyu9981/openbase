@@ -1,5 +1,5 @@
 <template>
-  <div class="tool-monitor">
+  <PageContainer title="工具调用监控" description="工具调用链路与结果" test-id="tool-call-monitor-view-page">
     <div class="page-toolbar">
       <el-select v-model="statusFilter" placeholder="状态" clearable style="width: 130px" data-test="tc-status">
         <el-option label="执行中" value="running" />
@@ -54,10 +54,11 @@
         </el-timeline>
       </template>
     </el-drawer>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -135,7 +136,6 @@ function cancel(row: CallRecord) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
 .mt-8 { margin-top: 8px; }
 .chain-node { margin-bottom: 8px; }
 .chain-body { background: #f6f8fa; border-radius: 6px; padding: 8px; font-size: 12px; margin-top: 6px; }

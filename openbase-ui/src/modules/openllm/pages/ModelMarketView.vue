@@ -1,5 +1,5 @@
 <template>
-  <div class="model-market">
+  <PageContainer title="开源模型市场" description="开源模型检索与引入" test-id="model-market-view-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索模型" clearable style="width: 220px" data-test="market-search" />
       <el-select v-model="category" placeholder="分类" clearable style="width: 160px" data-test="market-category">
@@ -54,10 +54,11 @@
       class="market-pagination"
       data-test="market-pagination"
     />
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -116,7 +117,6 @@ function download(model: MarketModel) {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .model-desc { min-height: 48px; font-size: 13px; color: #475569; line-height: 1.6; }
 .model-meta { display: flex; gap: 8px; margin: 8px 0; }

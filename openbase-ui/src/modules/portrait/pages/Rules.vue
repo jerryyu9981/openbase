@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="规则引擎" description="画像规则与计算口径" test-id="rules-page">
     <!-- 错误态 -->
     <el-alert
       v-if="errorMessage"
@@ -106,10 +106,11 @@
         <el-button type="primary" data-test="rule-submit" @click="saveRule">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -309,6 +310,5 @@ function formatNow(): string {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 .mb-16 { margin-bottom: 16px; }
 </style>

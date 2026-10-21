@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-preflight">
+  <PageContainer title="预检与影响面" description="变更前预检与影响面评估" test-id="dps-template-preflight-view-page">
     <div class="page-toolbar">
       <el-input v-model="code" placeholder="模板 code" style="width: 220px" data-test="preflight-code" />
       <el-button type="primary" :loading="loading" data-test="preflight-run" @click="runPreflight">执行预检</el-button>
@@ -77,10 +77,11 @@
         </div>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { dpsApi, type DpsImpactResult, type DpsPreflightResult } from '@/core/api/dps'
@@ -147,7 +148,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-12 { margin-bottom: 12px; }
 .mb-16 { margin-bottom: 16px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }

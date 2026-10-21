@@ -1,5 +1,5 @@
 <template>
-  <div class="plugins-page">
+  <PageContainer title="插件管理" description="插件注册与启用状态" test-id="plugins-view-page">
     <el-row :gutter="16">
       <el-col :span="14">
         <el-card header="插件列表" data-test="plugin-card">
@@ -40,10 +40,11 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 

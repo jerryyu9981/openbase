@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-adapter">
+  <PageContainer title="AI 标注候选与复核" description="模型标注候选与人工复核" test-id="dps-annotation-adapter-view-page">
     <!-- 状态一 · 能力未启用（信息态，非报错；零写入） -->
     <el-card v-if="capabilityDisabled" data-test="adapter-disabled">
       <el-empty description="该能力当前未启用">
@@ -77,10 +77,11 @@
         <span class="muted sm">（{{ pendingCount }} 条未复核）</span>
       </div>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsReviewSubmitRequest } from '@/core/api/dps'
@@ -173,7 +174,6 @@ async function submitAll() {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 .mb-16 { margin-bottom: 16px; }
 .muted { color: var(--ob-text-secondary); }
 .sm { font-size: 12px; margin-left: 6px; }

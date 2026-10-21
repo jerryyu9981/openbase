@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="记忆图谱" description="记忆实体与关系的可视化" test-id="memory-graph-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="new-entity" @click="openEntityForm()">新建实体</el-button>
       <el-button type="primary" plain data-test="new-relation" @click="openRelationForm()">新建关系</el-button>
@@ -115,10 +115,11 @@
         <el-button type="primary" data-test="save-relation" :disabled="entities.length < 2" @click="saveRelation">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import * as d3 from 'd3'
 import { ElMessage } from 'element-plus'
@@ -495,7 +496,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 .graph-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
 .graph-card { position: relative; }

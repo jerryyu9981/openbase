@@ -3,6 +3,12 @@ import { authApi, type AuthUser } from '@/core/api/auth'
 import { tokenStore } from '@/core/api/http'
 import { describeError } from '@/core/api/error'
 
+/**
+ * 在途去重（v1.4.11）：bootstrap 预热与路由守卫会并发调用 `loadMe`，
+ * 后端慢时会产生重复请求并叠加超时（实测白屏 30s+），此处合并为一次。
+ */
+let loadMeInFlight: Promise<void> | null = null
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null as AuthUser | null,
@@ -25,6 +31,14 @@ export const useAuthStore = defineStore('auth', {
         this.loaded = true
         return
       }
+      if (this.loaded) return
+      if (loadMeInFlight) return loadMeInFlight
+      loadMeInFlight = this._loadMe().finally(() => {
+        loadMeInFlight = null
+      })
+      return loadMeInFlight
+    },
+    async _loadMe() {
       try {
         this.user = await authApi.me()
         this.loadError = null

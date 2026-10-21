@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-scoring">
+  <PageContainer title="评分类型" description="评分口径与类型定义" test-id="dps-scoring-type-view-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索评分类型" clearable style="width: 220px" data-test="scoring-search" />
       <el-button type="primary" :loading="loading" data-test="scoring-query" @click="load">查询</el-button>
@@ -30,10 +30,11 @@
         </el-table>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { dpsApi, type DpsScoringType } from '@/core/api/dps'
 import { useAsyncState } from '@/core/composables/useAsyncState'
@@ -58,7 +59,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }
 .request-id { color: var(--ob-text-disabled); font-size: 12px; margin-left: 8px; }

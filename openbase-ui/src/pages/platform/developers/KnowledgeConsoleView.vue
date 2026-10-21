@@ -1,5 +1,5 @@
 <template>
-  <div class="rag-console">
+  <PageContainer title="知识库 API 控制台" description="知识库接口调试" test-id="knowledge-console-view-page">
     <el-tabs v-model="activeTab" data-test="rag-console-tabs">
       <!-- 控制台概览 -->
       <el-tab-pane label="概览" name="overview">
@@ -81,10 +81,11 @@
         </el-card>
       </el-tab-pane>
     </el-tabs>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'

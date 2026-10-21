@@ -15,7 +15,7 @@ import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
 import { useAsyncState, defaultIsEmpty } from '@/core/composables/useAsyncState'
 import { useBasisTooltip } from '@/core/composables/useBasisTooltip'
-import { staticRoutes } from '@/core/router'
+import { dpsRoutes } from '@/modules/portrait'
 import { dpsApi } from '@/core/api/dps'
 import type { ErrorResponse } from '@/core/api/error'
 
@@ -59,12 +59,13 @@ function apiError(status: number, body: Partial<ErrorResponse> = {}): AxiosError
   return error
 }
 
-async function mountPage(component: unknown, path = '/dps/templates'): Promise<ReturnType<typeof mount>> {
+async function mountPage(component: unknown, path = '/portrait/dps/templates'): Promise<ReturnType<typeof mount>> {
   const router: Router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: { template: '<div />' } },
-      { path: '/dps/:pathMatch(.*)*', component: { template: '<div />' } },
+      // 兜底匹配任意路径：v1.4.11 起 DPS 页面归位到 /portrait/dps/**，页内跳转同属该前缀
+      { path: '/:pathMatch(.*)*', component: { template: '<div />' } },
     ],
   })
   await router.push(path)
@@ -147,9 +148,8 @@ describe('useBasisTooltip', () => {
 })
 
 describe('DPS 12 条路由注册', () => {
-  const root = staticRoutes.find((route) => route.path === '/')
-  const children = root?.children ?? []
-  const dpsRoutes = children.filter((route) => String(route.name || '').startsWith('dps-'))
+  // v1.4.11 收口：DPS 路由由顶部 `/dps/**` 归位画像模块（实际路径 `/portrait/dps/**`），
+  // 直接断言模块子路由表（路径为模块内相对段，仍与设计 §2 一一对应）。
 
   it('新增 12 条 DPS 设计路由（P-09 双路径 ⇒ 13 条 route record，均具 title）', () => {
     // 设计 §2 共 12 行；P-09（新建／编辑）由 `dps/templates/new` 与 `dps/templates/:code/edit` 两条路径承载

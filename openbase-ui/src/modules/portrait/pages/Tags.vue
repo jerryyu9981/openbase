@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="标签管理" description="标签分类与标签值维护" test-id="tags-page">
     <!-- 错误态 -->
     <el-alert
       v-if="errorMessage"
@@ -69,10 +69,11 @@
         <el-button type="primary" :loading="saving" data-test="tag-submit" @click="saveTag">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsTagCategory } from '@/core/api/dps'
@@ -181,7 +182,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 .mb-16 { margin-bottom: 16px; }
 .text-secondary { color: var(--ob-text-secondary); }
 .stat-card { text-align: center; }

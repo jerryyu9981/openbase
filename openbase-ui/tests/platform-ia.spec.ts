@@ -20,8 +20,13 @@ import { platformRoutes } from '@/pages/platform/routes'
 
 let pinia: Pinia
 
+// v1.4.11：公共域叶子声明 dependsOn（治理页→openllm、画像页→portrait、知识库页→knowledge、
+// 记忆席位→memory），守卫按启停拦截，故夹具需覆盖被依赖的模块，否则 403 用例会被 dependsOn 抢先命中。
 const MODULE_INFOS: ModuleInfo[] = [
   { id: 'openllm', name: 'OpenLLM', icon: 'ChatDotRound', route_prefix: '/openllm', entry: 'x', permission: 'openllm:view', status: 'enabled', sort_order: 10 },
+  { id: 'memory', name: '记忆', icon: 'Memo', route_prefix: '/memory', entry: 'x', permission: 'openmemory:view', status: 'enabled', sort_order: 30 },
+  { id: 'portrait', name: '画像', icon: 'User', route_prefix: '/portrait', entry: 'x', permission: 'dps:view', status: 'enabled', sort_order: 40 },
+  { id: 'knowledge', name: '知识库', icon: 'Collection', route_prefix: '/knowledge', entry: 'x', permission: 'openrag:view', status: 'enabled', sort_order: 20 },
 ]
 
 function loginWith(permissions: string[]) {
@@ -181,5 +186,40 @@ describe('AC-146-10-2: 平台四域为静态路由，不受单一模块启停影
       await router.push(from)
       expect(router.currentRoute.value.path).toBe(to)
     }
+  })
+})
+
+describe('v1.4.11: 公共域治理页随业务模块启停（dependsOn）', () => {
+  it('openllm 停用时治理页直链 → /forbidden（与菜单隐藏同源）', async () => {
+    vi.spyOn(modulesApi, 'list').mockResolvedValue(
+      MODULE_INFOS.map((m) => ({ ...m, status: 'disabled' as const })),
+    )
+    loginWith(['*'])
+    const registry = useModuleRegistry()
+    await registry.init(['*'])
+    const router = createAppRouter(createMemoryHistory()).router
+    await router.push('/platform/governance/providers')
+    expect(router.currentRoute.value.path).toBe('/forbidden')
+    expect(router.currentRoute.value.query.from).toBe('/platform/governance/providers')
+  })
+
+  it('openllm 启用时治理页可达', { timeout: 60000 }, async () => {
+    const router = await setupRouter(['*'])
+    await router.push('/platform/governance/providers')
+    expect(router.currentRoute.value.path).toBe('/platform/governance/providers')
+  })
+
+  it('syncModuleRoutes：停用后卸载模块路由，重新启用后恢复装载', async () => {
+    vi.spyOn(modulesApi, 'list').mockResolvedValue(MODULE_INFOS)
+    loginWith(['*'])
+    const registry = useModuleRegistry()
+    await registry.init(['*'])
+    const bundle = createAppRouter(createMemoryHistory())
+    await bundle.mountModuleRoutes()
+    expect(bundle.router.hasRoute('openllm')).toBe(true)
+    await bundle.syncModuleRoutes(new Set())
+    expect(bundle.router.hasRoute('openllm')).toBe(false)
+    await bundle.syncModuleRoutes(new Set(['openllm']))
+    expect(bundle.router.hasRoute('openllm')).toBe(true)
   })
 })

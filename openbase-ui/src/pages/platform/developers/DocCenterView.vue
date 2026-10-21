@@ -1,5 +1,5 @@
 <template>
-  <div class="doc-center">
+  <PageContainer title="文档中心" description="接口与集成文档" test-id="doc-center-view-page">
     <el-row :gutter="16">
       <!-- 分组目录 -->
       <el-col :span="6">
@@ -29,10 +29,11 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 

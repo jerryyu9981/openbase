@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="租户管理" description="租户注册表与隔离配置" test-id="system-tenants-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索租户（编码/名称）" clearable style="width: 240px" data-test="tenant-search" />
       <el-select v-model="statusFilter" placeholder="状态" clearable style="width: 120px">
@@ -76,10 +76,11 @@
         <el-button type="primary" :loading="saving" data-test="quota-submit" @click="saveQuota">保存配额</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
@@ -203,7 +204,6 @@ onMounted(loadTenants)
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .pager { margin-top: 8px; display: flex; justify-content: flex-end; }
 .quota-summary { color: var(--el-text-color-secondary); font-size: 12px; }
 </style>

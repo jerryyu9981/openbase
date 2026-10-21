@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-package">
+  <PageContainer title="模板包导出／导入" description="模板包打包、导出与导入" test-id="dps-template-package-view-page">
     <el-card>
       <el-tabs v-model="activeTab" data-test="package-tabs">
         <!-- 导出 -->
@@ -102,10 +102,11 @@
         </el-table>
       </el-card>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { dpsApi, type DpsPackageImportResult, type DpsTemplatePackage } from '@/core/api/dps'

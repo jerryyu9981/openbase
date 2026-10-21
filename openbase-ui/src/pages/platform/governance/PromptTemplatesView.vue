@@ -1,5 +1,5 @@
 <template>
-  <div class="prompt-templates">
+  <PageContainer title="Prompt 模板" description="Prompt 资产与版本" test-id="prompt-templates-view-page">
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索模板" clearable style="width: 200px" data-test="pt-search" />
       <el-select v-model="statusFilter" placeholder="状态" clearable style="width: 130px" data-test="pt-status-filter">
@@ -68,10 +68,11 @@
         <el-button type="primary" data-test="pt-save" @click="save">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -178,7 +179,6 @@ function onImport(file: { raw?: File }) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
 .version-list { max-height: 200px; overflow: auto; }
 .version-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
 </style>

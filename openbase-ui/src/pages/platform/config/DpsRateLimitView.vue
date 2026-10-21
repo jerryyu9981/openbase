@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-rate-limit">
+  <PageContainer title="画像接口限流" description="限流策略与配额" test-id="dps-rate-limit-view-page">
     <el-row :gutter="16">
       <el-col :span="14">
         <el-card header="限流规则" data-test="rl-card">
@@ -90,10 +90,11 @@
         <el-button type="primary" data-test="rl-save" @click="save">保存并即时生效</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -172,5 +173,4 @@ function remove(id: number) {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 </style>

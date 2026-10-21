@@ -136,7 +136,7 @@
       "path": "/memory/sessions",
       "method": "GET",
       "data_endpoint": "/api/v1/memory-proxy/sessions",
-      "key_element": "[data-test=\"sessions-title\"]",
+      "key_element": "[data-test=\"memory-sessions-page\"]",
       "accept_states": [
         "[data-test=\"isolation-forbidden\"]",
         "[data-test=\"isolation-not-found\"]"
@@ -189,7 +189,7 @@
     ],
     "absolute_url_whitelist": [
       {
-        "path": "src/modules/knowledge/pages/KnowledgeConsoleView.vue",
+        "path": "src/pages/platform/developers/KnowledgeConsoleView.vue",
         "line_contains": "https://openbase.example.com/api/v1/rag",
         "reason": "API 控制台示例文档 base_url 展示文本（示例域名，非网络调用）"
       },
@@ -204,17 +204,17 @@
         "reason": "Ollama 适配器 mock 数据 endpoint 文本，非网络调用"
       },
       {
-        "path": "src/modules/openllm/pages/Providers.vue",
+        "path": "src/pages/platform/governance/Providers.vue",
         "line_contains": "https://api.openai.com",
         "reason": "提供商表单占位/mock 数据 base_url 文本，非网络调用"
       },
       {
-        "path": "src/modules/openllm/pages/Providers.vue",
+        "path": "src/pages/platform/governance/Providers.vue",
         "line_contains": "http://127.0.0.1:11434",
         "reason": "本地提供商 mock 数据 base_url 文本，非网络调用"
       },
       {
-        "path": "src/modules/openllm/pages/Providers.vue",
+        "path": "src/pages/platform/governance/Providers.vue",
         "line_contains": "https://xxx.openai.azure.com",
         "reason": "Azure 提供商 mock 数据 base_url 文本，非网络调用"
       },

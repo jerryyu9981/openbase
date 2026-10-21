@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="仪表盘" description="统一入口：公共功能与已启用业务模块概览" test-id="dashboard-page">
     <el-row :gutter="16">
       <el-col v-for="card in cards" :key="card.label" :xs="24" :sm="12" :lg="6">
         <el-card class="stat-card">
@@ -11,7 +11,7 @@
     <el-row :gutter="16" class="mt-16">
       <el-col :xs="24" :lg="12">
         <el-card header="统一入口">
-          <p>单前端登录访问四系统特色模块（对话监控 / 知识库 / 记忆 / 画像）与统一网关控制台。</p>
+          <p>单前端登录访问公共功能与已启用业务模块（对话监控 / 知识库 / 记忆 / 画像）。</p>
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="12">
@@ -19,15 +19,17 @@
           <el-tag v-for="m in registry.enabledModules" :key="m.info.id" class="module-tag" type="primary">
             {{ m.info.name }}
           </el-tag>
-          <el-empty v-if="registry.enabledModules.length === 0" description="暂无可用模块" :image-size="60" />
+          <EmptyState v-if="registry.enabledModules.length === 0" description="暂无可用模块" />
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import PageContainer from '@/components/page/PageContainer.vue'
+import EmptyState from '@/components/page/EmptyState.vue'
 import { useAuthStore } from '@/core/stores/auth'
 import { useModuleRegistry } from '@/core/stores/moduleRegistry'
 

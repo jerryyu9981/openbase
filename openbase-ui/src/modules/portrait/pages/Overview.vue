@@ -1,5 +1,5 @@
 <template>
-  <div v-loading="loading">
+  <PageContainer title="数据总览" description="画像规模、标签覆盖与更新情况" test-id="overview-page">
     <!-- 错误态 -->
     <el-alert v-if="errorMessage" type="error" show-icon closable class="mb-16" data-test="overview-error" @close="errorMessage = ''">
       <template #default>
@@ -70,10 +70,11 @@
         </el-table>
       </div>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'

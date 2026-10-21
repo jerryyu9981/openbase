@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="会话管理" description="会话列表、上下文与终止操作" test-id="memory-sessions-page">
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -21,7 +21,6 @@
 
     <template v-else>
       <div class="page-toolbar">
-        <span class="page-title" data-test="sessions-title">会话管理</span>
         <span class="tab-hint">OpenMemory 会话：查看会话列表与详情，可终止并清空会话上下文</span>
         <el-button type="primary" plain :loading="loading" data-test="sessions-refresh" @click="load">刷新</el-button>
       </div>
@@ -97,10 +96,11 @@
         </template>
       </el-dialog>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http, type ErrorResponse } from '@/core/api/http'
@@ -194,8 +194,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.page-title { font-size: 16px; font-weight: 600; }
 .tab-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }

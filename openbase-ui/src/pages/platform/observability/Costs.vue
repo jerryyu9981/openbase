@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="成本分析" description="按模型/租户维度的成本拆解" test-id="costs-page">
     <div class="page-toolbar">
       <el-radio-group v-model="dimension" data-test="cost-dimension" @change="handleDimensionChange">
         <el-radio-button value="model">模型</el-radio-button>
@@ -110,10 +110,11 @@
         <el-button type="primary" data-test="save-budget" @click="saveBudget">创建</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -317,13 +318,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .mb-16 {
   margin-bottom: 16px;
 }

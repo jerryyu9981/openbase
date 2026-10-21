@@ -1,5 +1,5 @@
 <template>
-  <div class="gateway-aggregate">
+  <PageContainer title="聚合网关测试" description="多系统聚合请求调试" test-id="gateway-aggregate-view-page">
     <div class="page-toolbar">
       <el-button type="primary" :loading="executing" data-test="agg-execute" @click="execute">执行聚合</el-button>
       <el-button data-test="agg-reset" @click="reset">重置</el-button>
@@ -84,10 +84,11 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { gatewayApi, type AggregateStep } from '@/core/api/gateway'
 
@@ -145,7 +146,6 @@ async function execute() {
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
 .mb-8 { margin-bottom: 8px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .step-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .mapping-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .mapping-arrow { color: #909399; }

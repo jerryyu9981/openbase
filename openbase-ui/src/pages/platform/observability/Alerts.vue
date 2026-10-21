@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="告警中心" description="告警规则与告警记录" test-id="alerts-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="create-alert-rule" @click="openCreateRule">新建规则</el-button>
     </div>
@@ -138,10 +138,11 @@
         <el-descriptions-item label="内容">{{ historyDetailRow.content }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -343,13 +344,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .mb-16 {
   margin-bottom: 16px;
 }

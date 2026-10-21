@@ -47,6 +47,38 @@ export const LEGACY_REDIRECTS: ReadonlyArray<readonly [string, string]> = [
   // gateway 迁入可观测域
   ['/gateway/services', '/platform/observability/service-discovery'],
   ['/gateway/aggregate', '/platform/observability/gateway-test'],
+  // v1.4.11：治理类页面上收至公共功能域（业务模块只保留场景功能）
+  ['/openllm/providers', '/platform/governance/providers'],
+  // 提供商注册为提供商管理页内嵌表单（不单独成页），旧直达链接收敛到列表页
+  ['/openllm/providers/register', '/platform/governance/providers'],
+  ['/openllm/models/categories', '/platform/governance/model-categories'],
+  ['/openllm/routing/strategies', '/platform/governance/routing'],
+  ['/openllm/routing/circuit-breakers', '/platform/governance/circuit-breakers'],
+  ['/openllm/deploy', '/platform/governance/deploy'],
+  ['/openllm/downloads', '/platform/governance/downloads'],
+  ['/openllm/tool-calls', '/platform/governance/tool-calls'],
+  ['/openllm/ab-tests', '/platform/governance/ab-tests'],
+  ['/openllm/prompt-templates', '/platform/governance/prompt-templates'],
+  ['/openllm/prompt-experiments', '/platform/governance/prompt-experiments'],
+  ['/portrait/permissions', '/platform/identity/dps-permissions'],
+  ['/portrait/rate-limit', '/platform/config/rate-limits'],
+  ['/portrait/monitor', '/platform/observability/dps-monitor'],
+  ['/portrait/api-manage', '/platform/developers/dps-api'],
+  // v1.4.11：画像「分析报表 / 批量任务」原为复用列表视图的假页面，下线后回落到画像列表
+  ['/portrait/reports', '/portrait/list'],
+  ['/portrait/batch', '/portrait/list'],
+  ['/knowledge/admin', '/platform/developers/knowledge-admin'],
+  ['/knowledge/console', '/platform/developers/knowledge-console'],
+  // v1.4.11 收口：DPS 模板化页面从顶部 `/dps/**` 归位到画像模块 `/portrait/dps/**`
+  ['/dps/templates', '/portrait/dps/templates'],
+  ['/dps/templates/new', '/portrait/dps/templates/new'],
+  ['/dps/template-packages', '/portrait/dps/template-packages'],
+  ['/dps/lineage', '/portrait/dps/lineage'],
+  ['/dps/measures', '/portrait/dps/measures'],
+  ['/dps/scoring-types', '/portrait/dps/scoring-types'],
+  ['/dps/annotation-adapters', '/portrait/dps/annotation-adapters'],
+  ['/dps/annotation-templates', '/portrait/dps/annotation-templates'],
+  ['/dps/tags', '/portrait/dps/tags'],
 ]
 
 /** 顶层重定向路由（承接旧路径，保留 query/hash）。 */
@@ -58,3 +90,21 @@ export const legacyRedirectRoutes: RouteRecordRaw[] = LEGACY_REDIRECTS.map(([fro
     hash: toLocation.hash,
   }),
 }))
+
+/**
+ * DPS 动态子路径前缀迁移（`/dps/templates/:code/edit|versions|preflight`、
+ * `/dps/annotation-templates/:code/fields` 无法逐条枚举）。
+ *
+ * 单独导出、不并入 `LEGACY_REDIRECTS`：该数组是「旧路径 ↔ 新路径」契约数据，
+ * 仅承载可枚举的精确映射，E2E 与用例按其条目逐条断言。
+ */
+export const legacyPrefixRedirectRoutes: RouteRecordRaw[] = [
+  {
+    path: '/dps/:pathMatch(.*)*',
+    redirect: (toLocation) => ({
+      path: `/portrait${toLocation.path}`,
+      query: toLocation.query,
+      hash: toLocation.hash,
+    }),
+  },
+]

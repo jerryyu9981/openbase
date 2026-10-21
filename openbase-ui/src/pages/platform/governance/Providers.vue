@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="提供商管理" description="模型提供商与接入凭据" test-id="providers-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="register-provider" @click="openForm()">新增提供商</el-button>
     </div>
@@ -44,10 +44,11 @@
         <el-button type="primary" data-test="provider-submit" @click="saveProvider">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -139,7 +140,6 @@ function remove(id: number) {
 </script>
 
 <style scoped>
-.page-toolbar { margin-bottom: 16px; }
 .provider-card { margin-bottom: 16px; }
 .provider-head { display: flex; justify-content: space-between; align-items: center; }
 .provider-card h3 { margin: 8px 0; }

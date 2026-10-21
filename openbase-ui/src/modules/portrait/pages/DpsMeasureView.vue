@@ -1,5 +1,5 @@
 <template>
-  <div class="dps-measure">
+  <PageContainer title="措施建议" description="基于画像结果的处理建议" test-id="dps-measure-view-page">
     <div class="page-toolbar">
       <el-input v-model="personId" placeholder="person_id" style="width: 260px" data-test="measure-person" />
       <el-button type="primary" :loading="loading" data-test="measure-run" @click="load">查询建议</el-button>
@@ -31,10 +31,11 @@
         <div>{{ disclaimer }}</div>
       </el-alert>
     </el-card>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { dpsApi, type DpsMeasureSuggestion } from '@/core/api/dps'
@@ -59,7 +60,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .mb-16 { margin-bottom: 16px; }
 .mt-16 { margin-top: 16px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }

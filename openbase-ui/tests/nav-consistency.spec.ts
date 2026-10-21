@@ -42,12 +42,19 @@ const MODULE_NAV_CASES: ModuleNavCase[] = [
 const NON_MENU_ROUTE_WHITELIST: Record<string, string[]> = {
   // AI 应用详情/新建表单（由列表页进入，不占菜单位）+ 注册/找回密码（auth-ext，登录态入口）
   openllm: ['apps/new', 'apps/:id', 'auth-ext'],
-  // 记忆详情（由列表行进入）+ 系统监控（运维页，菜单只保留业务板块）
-  memory: [':id', 'monitor'],
+  // 记忆详情（由列表行进入）
+  memory: [':id'],
   // 知识库详情（由列表卡片进入）
   knowledge: [':id'],
-  // 画像详情（由列表行进入；reports/batch 复用列表视图但已在菜单内）
-  portrait: [':id'],
+  // 画像详情（由列表行进入）；DPS 模板化的新建/编辑/版本/预检/字段页由列表或行内进入，不占菜单
+  portrait: [
+    ':id',
+    'dps/templates/new',
+    'dps/templates/:code/edit',
+    'dps/templates/:code/versions',
+    'dps/templates/:code/preflight',
+    'dps/annotation-templates/:code/fields',
+  ],
   // 网关模块全部路由均入菜单
   gateway: [],
 }

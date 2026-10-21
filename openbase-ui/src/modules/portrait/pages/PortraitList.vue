@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <PageContainer title="画像管理" description="画像列表、状态与详情入口" test-id="portrait-list-page">
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -106,10 +106,11 @@
         />
       </div>
     </template>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
@@ -215,7 +216,6 @@ onMounted(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .kpi-label { font-size: 13px; color: #6b7280; }
 .kpi-value { font-size: 24px; font-weight: 600; margin: 4px 0; }
 .kpi-sub { font-size: 12px; color: #9ca3af; }

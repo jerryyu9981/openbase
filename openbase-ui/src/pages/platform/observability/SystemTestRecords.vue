@@ -1,5 +1,5 @@
 <template>
-  <div class="test-records-page">
+  <PageContainer title="测试记录" description="人工测试轮次与用例留痕" test-id="system-test-records-page">
     <!-- 工具栏：run 选择 + 开轮 -->
     <div class="page-toolbar">
       <el-input
@@ -117,10 +117,11 @@
         <el-button type="primary" :loading="submitting" data-test="create-run-submit" @click="submitCreateRun">创建</el-button>
       </template>
     </el-dialog>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { testingApi, resultTagType, resultLabel, type CaseSummary, type TestResult } from '@/core/api/testing'
@@ -266,11 +267,6 @@ async function submitCreateRun(): Promise<void> {
 </script>
 
 <style scoped>
-.page-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 .mode-hint {
   margin-left: 12px;
   color: var(--el-text-color-secondary);

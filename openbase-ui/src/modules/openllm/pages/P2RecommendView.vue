@@ -1,5 +1,5 @@
 <template>
-  <div class="p2-recommend">
+  <PageContainer title="模型对比推荐" description="按场景与成本给出模型建议" test-id="p2-recommend-view-page">
     <el-row :gutter="16">
       <!-- 模型对比推荐 -->
       <el-col :span="14">
@@ -37,10 +37,11 @@
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup lang="ts">
+import PageContainer from '@/components/page/PageContainer.vue'
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
@@ -99,7 +100,6 @@ function searchDoc() {
 </script>
 
 <style scoped>
-.page-toolbar { display: flex; gap: 12px; margin-bottom: 16px; }
 .doc-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
 .doc-title { font-weight: 600; font-size: 14px; }
 .doc-meta { font-size: 12px; color: #9ca3af; margin-top: 4px; }
