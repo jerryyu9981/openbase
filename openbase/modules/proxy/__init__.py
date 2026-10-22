@@ -20,7 +20,15 @@ from fastapi.responses import JSONResponse
 from openbase.core.deps.auth import get_proxy_identity
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import AuditLog
-from openbase.modules.protocol_headers import TARGET_SYSTEM_GENERIC, build_outbound_headers
+from openbase.modules.protocol_headers import (
+    HEADER_TENANT_ID,
+    TARGET_SYSTEM_DPS,
+    TARGET_SYSTEM_GENERIC,
+    TARGET_SYSTEM_LLM,
+    TARGET_SYSTEM_MEMORY,
+    TARGET_SYSTEM_RAG,
+    build_outbound_headers,
+)
 from openbase.modules.proxy.memory_proxy import router as memory_proxy_router
 from openbase.modules.proxy.upstream_observe import (
     content_type_of,
@@ -71,6 +79,50 @@ def _resolve_base_url(system: str) -> str:
 
 def _timeout(system: str) -> float:
     return PROXY_SYSTEMS[system]["timeout"]
+
+
+# 通用代理的出站目标系统（v1.9.0）：按被代理系统取对应来源常量，
+# 使下游各仓的 TRUSTED_PROXY_SOURCES 白名单能够采信身份头。
+# 背景：此前固定为 TARGET_SYSTEM_GENERIC（`openbase-generic-proxy`），而 OpenLLM 等
+# 下游只登记各自的 `openbase-*-proxy`，导致「身份头被忽略 → 401」，聚合能力不可达。
+# 安全性不变：本代理已通过 JWT/服务 Key 认证与权限校验，来源常量只表达「谁转发的」。
+_TARGET_SYSTEM_BY_PROXY: dict[str, str] = {
+    "openllm": TARGET_SYSTEM_LLM,
+    "openrag": TARGET_SYSTEM_RAG,
+    "openmemory": TARGET_SYSTEM_MEMORY,
+    "dps": TARGET_SYSTEM_DPS,
+}
+
+
+def _target_system_of(system: str) -> str:
+    """解析通用代理的出站 target_system（未知系统回落 generic）."""
+    return _TARGET_SYSTEM_BY_PROXY.get(system, TARGET_SYSTEM_GENERIC)
+
+
+def _inject_upstream_credentials(system: str, headers: dict[str, str]) -> dict[str, str]:
+    """按被代理系统注入上游凭据（v1.9.0）.
+
+    OpenLLM 原生 `/api/v1/*` 走 ``get_current_active_user_or_api_key`` 双通道：
+    仅携带身份头不足以认证，必须同时带 ``Authorization: Bearer <OpenLLM API Key>``
+    （与 ``llm_proxy`` 同一注入方式与租户级选 Key 规则，单一事实源）。
+    其余系统（RAG/Memory/DPS）沿用身份头 + 各自 ``openbase-*-proxy`` 信任链，不注入。
+
+    Args:
+        system: 被代理系统（PROXY_SYSTEMS 的键）。
+        headers: 已装配身份头的出站头。
+
+    Returns:
+        dict[str, str]: 补入凭据后的出站头（原地修改并返回）。
+    """
+    if system != "openllm":
+        return headers
+    # 延迟导入：llm_proxy 依赖 openbase.modules.proxy 包，模块级导入会形成循环
+    from openbase.modules.llm_proxy import _select_llm_api_key
+
+    api_key = _select_llm_api_key(headers.get(HEADER_TENANT_ID), get_settings().llm_api_key)
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    return headers
 
 
 # K03 D-V6：匿名业务写（ob_k_ 服务 Key 写路径）白名单外的 HTTP 方法
@@ -295,10 +347,11 @@ async def proxy(
     headers = build_outbound_headers(
         request,
         outbound_user,
-        target_system=TARGET_SYSTEM_GENERIC,
+        target_system=_target_system_of(system),
         extra_headers=headers,
         enforce_org_alias=settings.enforce_org_alias,
     )
+    headers = _inject_upstream_credentials(system, headers)
     body = await request.body() if method in ("POST", "PUT", "PATCH") else None
 
     # C-16：上游耗时与专段观测（成功/业务错误/异常三路径共用同一结构，不新增日志点）

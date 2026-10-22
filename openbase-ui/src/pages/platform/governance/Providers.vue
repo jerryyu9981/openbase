@@ -1,47 +1,78 @@
 <template>
-  <PageContainer title="提供商管理" description="模型提供商与接入凭据" test-id="providers-page">
+  <PageContainer title="提供商管理" description="模型提供商与接入凭据（经 OpenBase 通用代理聚合 OpenLLM）" test-id="providers-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="register-provider" @click="openForm()">新增提供商</el-button>
+      <el-button data-test="provider-refresh" :loading="loading" @click="load()">刷新</el-button>
     </div>
+    <el-alert
+      v-if="errorText"
+      type="error"
+      :closable="false"
+      show-icon
+      class="page-alert"
+      :title="errorText"
+      data-test="provider-error"
+    />
+    <el-empty v-else-if="!loading && providers.length === 0" description="暂无提供商" data-test="provider-empty" />
     <el-row :gutter="16">
       <el-col v-for="p in providers" :key="p.id" :xs="24" :sm="12" :lg="8">
-        <el-card class="provider-card">
+        <el-card class="provider-card" :data-test="`provider-card-${p.provider_code}`">
           <div class="provider-head">
-            <el-tag size="small">{{ p.type }}</el-tag>
-            <el-switch :model-value="p.enabled" size="small" data-test="provider-toggle" @change="(v: boolean) => toggle(p, v)" />
+            <el-tag size="small">{{ p.provider_type }}</el-tag>
+            <el-switch
+              :model-value="p.status === 'active'"
+              size="small"
+              data-test="provider-toggle"
+              :loading="togglingId === p.id"
+              @change="(value: boolean) => toggle(p, value)"
+            />
           </div>
-          <h3>{{ p.name }}</h3>
-          <p class="meta">{{ p.base_url }}</p>
-          <p class="meta">支持模型：{{ p.model_count }} · P50 延迟：{{ p.latency_ms }}ms</p>
+          <h3>{{ p.provider_name }}</h3>
+          <p class="meta">{{ p.api_base_url }}</p>
+          <p class="meta">
+            健康：<el-tag size="small" :type="healthTagType(p.health_status)">{{ healthLabel(p.health_status) }}</el-tag>
+            · 优先级：{{ p.priority }}
+            · 模型数：{{ modelCounts[p.id] ?? '—' }}
+          </p>
+          <p class="meta">最近检查：{{ formatTime(p.last_health_check_at) }}</p>
           <div class="actions">
-            <el-button link type="primary" @click="testConnection(p)">测试连接</el-button>
-            <el-button link type="primary" @click="syncModels(p)">同步模型</el-button>
             <el-button link type="primary" @click="openForm(p)">编辑</el-button>
-            <el-popconfirm title="确认删除该提供商？" @confirm="remove(p.id)">
+            <el-popconfirm title="确认删除该提供商？" @confirm="remove(p)">
               <template #reference><el-button link type="danger">删除</el-button></template>
             </el-popconfirm>
           </div>
         </el-card>
       </el-col>
     </el-row>
-    <el-dialog v-model="formVisible" :title="editingId ? '编辑提供商' : '新增提供商'" width="520px" data-test="provider-dialog">
+    <el-dialog v-model="formVisible" :title="editing ? '编辑提供商' : '新增提供商'" width="520px" data-test="provider-dialog">
       <el-form label-width="110px">
-        <el-form-item label="名称" required><el-input v-model="form.name" placeholder="如：OpenAI" data-test="provider-name-input" /></el-form-item>
+        <el-form-item label="名称" required>
+          <el-input v-model="form.provider_name" placeholder="如：OpenAI" data-test="provider-name-input" />
+        </el-form-item>
+        <el-form-item label="代码" :required="!editing">
+          <el-input v-model="form.provider_code" :disabled="!!editing" placeholder="如：openai" data-test="provider-code-input" />
+        </el-form-item>
         <el-form-item label="类型">
-          <el-select v-model="form.type" style="width: 100%">
-            <el-option label="商业" value="商业" />
-            <el-option label="开源" value="开源" />
-            <el-option label="本地" value="本地" />
-            <el-option label="Azure" value="Azure" />
+          <el-select v-model="form.provider_type" style="width: 100%" data-test="provider-type-select">
+            <el-option label="商业" value="commercial" />
+            <el-option label="开源" value="open_source" />
+            <el-option label="本地" value="local" />
+            <el-option label="Azure" value="azure" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Base URL" required><el-input v-model="form.base_url" placeholder="https://api.openai.com" /></el-form-item>
-        <el-form-item label="API Key"><el-input v-model="form.api_key" type="password" show-password placeholder="留空不修改" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>
+        <el-form-item label="Base URL" required>
+          <el-input v-model="form.api_base_url" placeholder="https://api.openai.com" data-test="provider-base-url-input" />
+        </el-form-item>
+        <el-form-item label="API Key">
+          <el-input v-model="form.api_key" type="password" show-password placeholder="留空不修改" data-test="provider-key-input" />
+        </el-form-item>
+        <el-form-item label="优先级">
+          <el-input-number v-model="form.priority" :min="0" :max="100" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" data-test="provider-submit" @click="saveProvider">保存</el-button>
+        <el-button type="primary" :loading="saving" data-test="provider-submit" @click="saveProvider">保存</el-button>
       </template>
     </el-dialog>
   </PageContainer>
@@ -49,97 +80,165 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { governanceApi, type LlmProvider } from '@/core/api/governance'
 
-interface Provider {
-  id: number
-  name: string
-  type: string
-  enabled: boolean
-  base_url: string
-  api_key: string
-  description: string
-  model_count: number
-  latency_ms: number
-  healthy: boolean
-}
+/**
+ * 提供商管理（v1.9.0 真实化）：数据源 = OpenLLM `/api/v1/providers`，
+ * 经 `/api/v1/proxy/openllm/api/v1/providers` 聚合（OpenBase 注入 OpenLLM API Key）。
+ * 原「测试连接 / 同步模型」为前端假动作（随机延迟、随机模型数），
+ * 上游对应端点仅支持 JWT 通道，本轮先移除，缺口登记于能力缺口清单。
+ */
+const providers = ref<LlmProvider[]>([])
+const modelCounts = ref<Record<string, number>>({})
+const loading = ref(false)
+const saving = ref(false)
+const togglingId = ref('')
+const errorText = ref('')
 
 const formVisible = ref(false)
-const editingId = ref<number | null>(null)
-const form = reactive({ name: '', type: '商业', base_url: '', api_key: '', description: '' })
+const editing = ref<LlmProvider | null>(null)
+const form = reactive({
+  provider_name: '',
+  provider_code: '',
+  provider_type: 'commercial',
+  api_base_url: '',
+  api_key: '',
+  priority: 0,
+})
 
-const providers = ref<Provider[]>([
-  { id: 1, name: 'OpenAI', type: '商业', enabled: true, base_url: 'https://api.openai.com', api_key: '', description: '商业模型提供商', model_count: 8, latency_ms: 320, healthy: true },
-  { id: 2, name: 'Ollama 本地', type: '本地', enabled: true, base_url: 'http://127.0.0.1:11434', api_key: '', description: '本地 Ollama 服务', model_count: 5, latency_ms: 85, healthy: true },
-  { id: 3, name: 'Azure OpenAI', type: 'Azure', enabled: false, base_url: 'https://xxx.openai.azure.com', api_key: '', description: 'Azure 部署', model_count: 4, latency_ms: 0, healthy: false },
-])
+const HEALTH_LABELS: Record<string, string> = {
+  healthy: '正常',
+  degraded: '降级',
+  unhealthy: '异常',
+  unknown: '未知',
+}
 
-function openForm(p?: Provider) {
-  editingId.value = p?.id ?? null
-  form.name = p?.name ?? ''
-  form.type = p?.type ?? '商业'
-  form.base_url = p?.base_url ?? ''
+function healthLabel(status: string): string {
+  return HEALTH_LABELS[status] ?? status ?? '未知'
+}
+
+function healthTagType(status: string): 'success' | 'warning' | 'danger' | 'info' {
+  if (status === 'healthy') return 'success'
+  if (status === 'degraded') return 'warning'
+  if (status === 'unhealthy') return 'danger'
+  return 'info'
+}
+
+function formatTime(value: string | null): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
+}
+
+async function loadModelCounts(items: LlmProvider[]): Promise<void> {
+  const pairs = await Promise.all(
+    items.map(async (item) => {
+      try {
+        const models = await governanceApi.listProviderModels(item.id)
+        return [item.id, models.length] as const
+      } catch {
+        return [item.id, undefined] as const
+      }
+    }),
+  )
+  modelCounts.value = Object.fromEntries(pairs.filter((pair) => pair[1] !== undefined)) as Record<string, number>
+}
+
+async function load(): Promise<void> {
+  loading.value = true
+  errorText.value = ''
+  try {
+    const items = await governanceApi.listProviders()
+    providers.value = items
+    await loadModelCounts(items)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '提供商列表加载失败'
+    errorText.value = `提供商列表加载失败：${message}`
+  } finally {
+    loading.value = false
+  }
+}
+
+function openForm(target?: LlmProvider): void {
+  editing.value = target ?? null
+  form.provider_name = target?.provider_name ?? ''
+  form.provider_code = target?.provider_code ?? ''
+  form.provider_type = target?.provider_type ?? 'commercial'
+  form.api_base_url = target?.api_base_url ?? ''
   form.api_key = ''
-  form.description = p?.description ?? ''
+  form.priority = target?.priority ?? 0
   formVisible.value = true
 }
-function saveProvider() {
-  if (!form.name.trim() || !form.base_url.trim()) {
+
+async function saveProvider(): Promise<void> {
+  if (!form.provider_name.trim() || !form.api_base_url.trim()) {
     ElMessage.warning('请输入名称与 Base URL')
     return
   }
-  if (editingId.value) {
-    const target = providers.value.find((x) => x.id === editingId.value)
-    if (target) {
-      Object.assign(target, {
-        name: form.name.trim(),
-        type: form.type,
-        base_url: form.base_url.trim(),
-        api_key: form.api_key ? form.api_key : target.api_key,
-        description: form.description,
+  if (!editing.value && !form.provider_code.trim()) {
+    ElMessage.warning('请输入提供商代码')
+    return
+  }
+  saving.value = true
+  try {
+    if (editing.value) {
+      await governanceApi.updateProvider(editing.value.id, {
+        provider_name: form.provider_name.trim(),
+        api_base_url: form.api_base_url.trim(),
+        priority: form.priority,
+        ...(form.api_key ? { api_key: form.api_key } : {}),
       })
       ElMessage.success('提供商已更新')
+    } else {
+      await governanceApi.createProvider({
+        provider_name: form.provider_name.trim(),
+        provider_code: form.provider_code.trim(),
+        provider_type: form.provider_type,
+        api_base_url: form.api_base_url.trim(),
+        priority: form.priority,
+        ...(form.api_key ? { api_key: form.api_key } : {}),
+      })
+      ElMessage.success('提供商已添加')
     }
-  } else {
-    providers.value.push({
-      id: Date.now(),
-      name: form.name.trim(),
-      type: form.type,
-      enabled: true,
-      base_url: form.base_url.trim(),
-      api_key: form.api_key,
-      description: form.description,
-      model_count: 0,
-      latency_ms: 0,
-      healthy: false,
-    })
-    ElMessage.success('提供商已添加')
+    formVisible.value = false
+    await load()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '保存失败')
+  } finally {
+    saving.value = false
   }
-  formVisible.value = false
 }
-function toggle(p: Provider, enabled: boolean) {
-  p.enabled = enabled
-  p.healthy = enabled
-  ElMessage.success(`${p.name} 已${enabled ? '启用' : '禁用'}`)
+
+async function toggle(target: LlmProvider, enabled: boolean): Promise<void> {
+  togglingId.value = target.id
+  try {
+    const updated = await governanceApi.updateProvider(target.id, { status: enabled ? 'active' : 'inactive' })
+    target.status = updated.status
+    ElMessage.success(`${target.provider_name} 已${enabled ? '启用' : '停用'}`)
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '状态切换失败')
+  } finally {
+    togglingId.value = ''
+  }
 }
-function testConnection(p: Provider) {
-  const ok = p.base_url.length > 5
-  p.healthy = ok
-  p.latency_ms = ok ? Math.floor(60 + Math.random() * 120) : 0
-  ElMessage[ok ? 'success' : 'error'](`${p.name} 连接${ok ? '成功' : '失败'}（${p.latency_ms}ms）`)
+
+async function remove(target: LlmProvider): Promise<void> {
+  try {
+    await governanceApi.deleteProvider(target.id)
+    providers.value = providers.value.filter((item) => item.id !== target.id)
+    ElMessage.success('提供商已删除')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '删除失败')
+  }
 }
-function syncModels(p: Provider) {
-  p.model_count = p.model_count + Math.floor(1 + Math.random() * 3)
-  ElMessage.success(`${p.name} 模型同步完成，当前 ${p.model_count} 个`)
-}
-function remove(id: number) {
-  providers.value = providers.value.filter((x) => x.id !== id)
-  ElMessage.success('提供商已删除')
-}
+
+onMounted(load)
 </script>
 
 <style scoped>
+.page-alert { margin-bottom: 12px; }
 .provider-card { margin-bottom: 16px; }
 .provider-head { display: flex; justify-content: space-between; align-items: center; }
 .provider-card h3 { margin: 8px 0; }

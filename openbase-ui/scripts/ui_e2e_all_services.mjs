@@ -135,39 +135,144 @@ const PAGES = {
 }
 
 function parseArgs(argv) {
-  const args = { service: '', out: '', shots: '' }
+  const args = { service: '', out: '', shots: '', interact: false }
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--service') args.service = argv[i + 1] || ''
     if (argv[i] === '--out') args.out = argv[i + 1] || ''
     if (argv[i] === '--shots') args.shots = argv[i + 1] || ''
+    if (argv[i] === '--interact') args.interact = true
   }
   return args
+}
+
+/**
+ * 交互级功能审计（--interact）：只点击**非破坏性**的查询/刷新/切换类控件，
+ * 目的是把「页面加载不报错、但一按功能就报错」的问题暴露出来（§2.14）。
+ * 破坏性动作（删除/保存/提交/发布/回滚/导入导出等）一律跳过，避免污染运行态数据。
+ */
+const SAFE_ACTION_RE = /(查询|搜索|检索|刷新|重载|重新加载|筛选|过滤|重置筛选|重置|加载更多|查看更多|详情|概览|预检|校验|连通性|健康检查|计算|测试)/i
+const UNSAFE_ACTION_RE = /(删除|移除|清空|重置配置|保存|提交|发布|停用|禁用|启用|回滚|导入|导出|注销|退出|终止|归档|创建|新建|编辑|修改|同步|投递|复制|撤销|强制|覆盖)/i
+const ESCAPE_MS = 700
+
+function isSafeLabel(label) {
+  if (!label) return false
+  if (UNSAFE_ACTION_RE.test(label)) return false
+  return SAFE_ACTION_RE.test(label)
+}
+
+async function interact(page, target, apiBuffer) {
+  const actions = []
+  const tabLocator = page.locator('[role="tab"], .el-tabs__item')
+  const tabCount = await tabLocator.count()
+  for (let index = 0; index < Math.min(tabCount, 10); index += 1) {
+    const item = tabLocator.nth(index)
+    if (!(await item.isVisible().catch(() => false))) continue
+    const label = (await item.innerText().catch(() => '')).trim()
+    if (!label) continue
+    apiBuffer.length = 0
+    await item.click({ timeout: 4000 }).catch(() => {})
+    await page.waitForTimeout(ESCAPE_MS)
+    actions.push({ kind: 'tab', label, api: apiBuffer.slice(), nav: page.url() !== target })
+    if (page.url() !== target) return actions
+  }
+
+  const buttonLocator = page.locator('button:visible, .el-button:visible')
+  const total = await buttonLocator.count()
+  const picked = []
+  for (let index = 0; index < total && picked.length < 10; index += 1) {
+    const item = buttonLocator.nth(index)
+    const label = (await item.innerText().catch(() => '')).trim()
+    if (!isSafeLabel(label)) continue
+    picked.push({ index, label })
+  }
+  for (const entry of picked) {
+    if (page.url() !== target) break
+    const item = page.locator('button:visible, .el-button:visible').nth(entry.index)
+    if (!(await item.isVisible().catch(() => false))) continue
+    apiBuffer.length = 0
+    const clicked = await item.click({ timeout: 4000 }).then(() => true).catch(() => false)
+    if (!clicked) continue
+    await page.waitForTimeout(ESCAPE_MS)
+    const nav = page.url() !== target
+    actions.push({ kind: 'button', label: entry.label, api: apiBuffer.slice(), nav })
+    if (nav) break
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(120)
+  }
+  return actions
 }
 
 function slugOf(path) {
   return path.replace(/^\//, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/-+$/, '')
 }
 
-async function visit(page, path, shotsDir) {
+async function visit(page, path, shotsDir, options = {}) {
+  const { interactMode = false } = options
   const consoleErrors = []
   const consoleWarns = []
   const pageErrors = []
+  const networkErrors = []
+  const apiCalls = []
+  const apiBuffer = []
   const onConsole = (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text())
     if (message.type() === 'warning') consoleWarns.push(message.text())
   }
   const onPageError = (error) => pageErrors.push(error.message)
+  const isApiRequest = (url) => {
+    try {
+      return new URL(url).pathname.startsWith('/api/')
+    } catch {
+      return false
+    }
+  }
+  const onResponse = (response) => {
+    if (!isApiRequest(response.url())) return
+    const call = {
+      method: response.request().method(),
+      status: response.status(),
+      url: response.url().replace(BASE_URL, '').split('?')[0],
+    }
+    apiCalls.push(call)
+    apiBuffer.push(call)
+    if (response.status() < 400) return
+    networkErrors.push({
+      method: call.method,
+      url: response.url(),
+      status: response.status(),
+    })
+  }
+  const onRequestFailed = (request) => {
+    if (!isApiRequest(request.url())) return
+    const call = { method: request.method(), status: null, url: request.url().replace(BASE_URL, '').split('?')[0] }
+    apiCalls.push(call)
+    apiBuffer.push(call)
+    networkErrors.push({
+      method: request.method(),
+      url: request.url(),
+      status: null,
+      failure: request.failure()?.errorText || 'request failed',
+    })
+  }
   page.on('console', onConsole)
   page.on('pageerror', onPageError)
+  page.on('response', onResponse)
+  page.on('requestfailed', onRequestFailed)
 
   const target = `${BASE_URL}${path}`
-  const result = { path, url: target, nav_status: null, final_path: '', fallback_count: 0, console_errors: [], console_warns: [], page_errors: [], shot: '', result: 'FAIL', detail: '' }
+  const result = { path, url: target, nav_status: null, final_path: '', fallback_count: 0, api_calls: [], interactions: [], network_errors: [], console_errors: [], console_warns: [], page_errors: [], shot: '', result: 'FAIL', detail: '' }
   try {
     const response = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS })
     result.nav_status = response ? response.status() : null
     await page.waitForTimeout(SETTLE_MS)
     result.final_path = new URL(page.url()).pathname
     result.fallback_count = await page.locator(RENDER_FALLBACK).count()
+    if (interactMode && result.fallback_count === 0 && !result.final_path.startsWith('/auth/login')) {
+      result.interactions = await interact(page, page.url(), apiBuffer)
+      await page.waitForTimeout(300)
+    }
+    result.api_calls = apiCalls.slice(0, 60)
+    result.network_errors = networkErrors.slice(0, 10)
     result.console_errors = consoleErrors.slice(0, 5)
     result.console_warns = consoleWarns.slice(0, 5)
     result.page_errors = pageErrors.slice(0, 5)
@@ -178,12 +283,15 @@ async function visit(page, path, shotsDir) {
 
     const redirectedToLogin = result.final_path.startsWith('/auth/login')
     const bouncedToDashboard = result.final_path === '/dashboard' && path !== '/dashboard'
+    const serverErrors = result.network_errors.filter((item) => (item.status || 0) >= 500)
     if (redirectedToLogin) {
       result.detail = '被重定向到登录页（登录态未生效）'
     } else if (bouncedToDashboard) {
       result.detail = '被模块守卫退回 /dashboard（权限或路由未装载）'
     } else if (result.fallback_count > 0) {
       result.detail = '触发渲染兜底（白屏保护）'
+    } else if (serverErrors.length > 0) {
+      result.detail = `api 5xx: ${serverErrors[0].method} ${serverErrors[0].url} → ${serverErrors[0].status}`
     } else if (result.page_errors.length > 0) {
       result.detail = `pageerror: ${result.page_errors[0]}`
     } else if (result.console_errors.length > 0) {
@@ -192,13 +300,16 @@ async function visit(page, path, shotsDir) {
       result.detail = `console.warn: ${result.console_warns[0]}`
     } else {
       result.result = 'PASS'
-      result.detail = `HTTP ${result.nav_status} 渲染正常、无 console/page error/warn`
+      const api4xx = result.network_errors.filter((item) => (item.status || 0) >= 400).length
+      result.detail = `HTTP ${result.nav_status} 渲染正常、无 console/page error/warn${api4xx ? `（记录 ${api4xx} 个 4xx 接口）` : ''}`
     }
   } catch (error) {
     result.detail = `导航异常: ${error instanceof Error ? error.message : String(error)}`
   } finally {
     page.off('console', onConsole)
     page.off('pageerror', onPageError)
+    page.off('response', onResponse)
+    page.off('requestfailed', onRequestFailed)
   }
   return result
 }
@@ -210,13 +321,14 @@ async function main() {
   if (shotsDir) mkdirSync(shotsDir, { recursive: true })
   const services = args.service ? [args.service] : Object.keys(PAGES)
   const report = {
-    schema: 'openbase-ui-e2e-all-services/v1.0.0',
+    schema: 'openbase-ui-e2e-all-services/v1.1.0',
     base_url: BASE_URL,
     token_source: ACCESS_TOKEN ? 'OPENBASE_ACCESS_TOKEN' : '（缺失）',
     shots_dir: shotsDir || '',
+    interact: args.interact,
     started_at: new Date().toISOString(),
     services: {},
-    summary: { total: 0, pass: 0, fail: 0 },
+    summary: { total: 0, pass: 0, fail: 0, api_errors: 0 },
   }
 
   const browser = await chromium.launch({ headless: true })
@@ -240,11 +352,13 @@ async function main() {
     }
     const entries = []
     for (const [path, title] of pages) {
-      const item = await visit(page, path, shotsDir)
+      const item = await visit(page, path, shotsDir, { interactMode: args.interact })
       item.title = title
       entries.push(item)
       const flag = item.result === 'PASS' ? 'PASS' : 'FAIL'
-      console.log(`[${flag}] ${service} ${path} (${title}) :: ${item.detail}`)
+      const errCount = item.network_errors.length
+      const acts = item.interactions.length
+      console.log(`[${flag}] ${service} ${path} (${title}) :: ${item.detail}${errCount ? ` [api errors=${errCount}]` : ''}${acts ? ` [actions=${acts}]` : ''}`)
     }
     const pass = entries.filter((entry) => entry.result === 'PASS').length
     report.services[service] = {
@@ -256,6 +370,7 @@ async function main() {
     report.summary.total += entries.length
     report.summary.pass += pass
     report.summary.fail += entries.length - pass
+    report.summary.api_errors += entries.reduce((sum, entry) => sum + entry.network_errors.length, 0)
   }
 
   await browser.close()
@@ -267,7 +382,7 @@ async function main() {
   for (const [service, item] of Object.entries(report.services)) {
     console.log(`  ${service}: PASS ${item.pass} / FAIL ${item.fail}（共 ${item.total} 页）`)
   }
-  console.log(`  合计: PASS ${report.summary.pass} / FAIL ${report.summary.fail}（共 ${report.summary.total} 页）`)
+  console.log(`  合计: PASS ${report.summary.pass} / FAIL ${report.summary.fail}（共 ${report.summary.total} 页），api 失败 ${report.summary.api_errors} 次`)
   console.log(`  evidence: ${outPath}`)
   process.exit(report.summary.fail === 0 ? 0 : 1)
 }

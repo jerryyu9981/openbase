@@ -315,6 +315,59 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.14 全栈功能级审计与 OpenLLM 聚合通道打通（v1.9.0）
+
+**背景（用户指令）**：排查全栈运行时「前端所有页面的全部功能的错误」，并把「后端未具备的功能」单列后修复。经方案裁定，修复口径采用**打通 OpenLLM 聚合（跨多轮）**。
+
+**审计方法（四层）**
+
+| 层级 | 内容 | 实现 |
+|------|------|------|
+| L1 加载级 | 77 页逐页导航 | `openbase-ui/scripts/ui_e2e_all_services.mjs`（原有） |
+| L2 交互级 | 逐页点击**非破坏性**动作（页签、查询、刷新、详情、连通性检测等） | 新增 `--interact`：`SAFE_ACTION_RE` / `UNSAFE_ACTION_RE` 双名单，破坏性动作一律跳过 |
+| L3 API 面 | 逐页记录 `/api/**` 的方法/路径/状态 | 新增 `api_calls` 采集；判定优先级加入「api 5xx = FAIL」 |
+| L4 通道探测 | 40 个候选聚合端点 GET 探测 | 新增 `doc/tmp/probe_proxy_reachability.ps1` |
+
+**审计结果**
+
+- 77 页（OpenBase 44 / OpenLLM 11 / OpenRAG 2 / OpenMemory 6 / DPS 14）**PASS 76 / FAIL 1**，**API 失败 0 次**；
+- 唯一 FAIL 为 `net::ERR_NO_BUFFER_SPACE`（Chromium 在沙箱内写 `debug.log` 受限），该页单页复跑 0 错误，判为环境噪声；
+- **52 页无后端调用**（数据来自前端硬编码「契约 mock」），已逐页成账。
+
+**缺口分类（详见《OpenBase-全栈后端能力缺口清单-v1.0.0》）**
+
+| 类别 | 含义 | 数量级 |
+|:----:|------|--------|
+| A | OpenBase 已有端点（200），前端未接线 | 3 页（用户管理、API 密钥、EdgeRouter） |
+| B | 上游 OpenLLM 仅 JWT 通道，经聚合 401 | 20+ 页（治理/监控/RBAC 域） |
+| C | OpenBase 缺列表端点（405） | 3 项（`GET /configs`、`/test-records`、`/test-runs`） |
+| D | 上游 10s 超时（502） | 4 项（`local-models`、`models/favorites`、`models/compare`、`open-models/popular`） |
+| E | 三仓均无对应能力 | 12 页 |
+
+**本轮修复（两段 401 + 首批域）**
+
+1. **来源映射**：通用代理 `/api/v1/proxy/{system}/{path}` 出站来源固定 `openbase-generic-proxy`，下游白名单只登记各自的 `openbase-*-proxy` → OpenLLM 判定「非白名单来源携带身份头」并忽略身份头。改为按被代理系统映射（`openllm → openbase-llm-proxy` 等，未知回落 generic）。
+2. **凭据注入**：身份头被采信后，OpenLLM 原生 `/api/v1/*` 仍需 `Authorization: Bearer <OpenLLM API Key>`。通用代理补 `_inject_upstream_credentials`，**仅对 `system=openllm`** 注入，选 Key 复用 `llm_proxy._select_llm_api_key`（租户级优先、全局回落），其余系统不注入。
+3. **首批域真实化**：`providers`（提供商管理）端到端接入 `/proxy/openllm/api/v1/providers`——列表/新增/编辑/删除/启停 + 模型数；移除「测试连接」随机延迟与「同步模型」随机计数两处假动作（上游对应端点仅 JWT 通道，登记缺口）。
+
+**验证**
+
+| 项 | 命令/方式 | 结果 |
+|---|-----------|------|
+| 后端新增用例 | `pytest tests/test_proxy_target_system_v190.py` | **8 passed**（映射 4 组 + 未知回落 + 装配透传 + 凭据注入/不注入） |
+| 代理相关回归 | `pytest tests/test_proxy_auth.py tests/test_proxy_outbound_matrix.py tests/test_proxy_upstream_observe.py tests/test_protocol_headers_lib.py` | **55 passed** |
+| 后端静态 | `ruff check openbase tests` | 本轮文件 0 错误（全仓仍有 2 条**既有**告警：`test_q5_q6_decisions.py` 导入排序、`test_source_encoding_contract.py` UP012，未在本轮范围内改动） |
+| 前端用例 | `vitest run tests/providers-v190.spec.ts` | **4 passed** |
+| 接口实测 | `GET /api/v1/proxy/openllm/api/v1/providers` | **200**（3 条），`/{id}/models` 200（4 条），等值 `PUT` 200 |
+| 浏览器实测 | `node scripts/check_page.mjs /platform/governance/providers` | 3 张卡片、模型数 3、健康/优先级真实、**0 error** |
+| 全页面回归 | `ui_e2e_all_services.mjs --interact` | **76/77 PASS**（唯一 FAIL 为环境噪声），api 失败 **0** |
+
+**证据**：`doc/test/evidence/s6/ui-func-audit-v190.json`、`ui-func-audit-v190-summary.md`、`proxy-reachability-v190.json`。
+
+**遗留**：B 类（20+ 页）需 OpenLLM 侧将 `get_current_active_user` 改为双通道依赖或新增 `/openllm/v1/*` 网关端点，按缺口清单 R3~R5 分批；D 类需上游耗时治理；E 类需产品裁定。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -402,6 +455,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.5.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.14：**全栈功能级审计与 OpenLLM 聚合通道打通**——四层审计（加载/交互/API 面/通道探测）覆盖 77 页，PASS 76/1（唯一 FAIL 为沙箱下 Chromium `ERR_NO_BUFFER_SPACE` 噪声），API 失败 0；单列 52 页无后端调用并按 A~E 五类成账；修复通用代理两段 401（来源按系统映射 + 仅 openllm 注入 API Key）；提供商管理页端到端真实化。验证：后端 8+55 例、前端 4 例、浏览器实测 0 error、全页面回归 api 失败 0。 |
 | v2.4.0 | 2026-10-22 | 研发（AI 辅助） | §2.13 补充：排查服务重启期 `/api/v1/modules` 500——根因为 Vite 代理对上游连接失败返回空 500（非后端缺陷）；代理统一映射为 503 JSON，补 4 例单测并实测通过。 |
 | v2.3.0 | 2026-10-22 | 研发（AI 辅助） | §2.13 补充：修复 `/login` 首帧 `No match found` 告警与 `redirect=/login` 自回跳——新增 `/login → /auth/login` 顶层重定向（保留 query/hash）；S6-T2-5 两条用例 + 浏览器实测通过。 |
 | v2.2.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.13：**统一前端记忆模块对齐 OpenMemory v7.5.0~v7.8.0**——图谱页接真实 `graph/overview`（替换 mock）、搜索页补图谱策略与命中语义、写入页补重要度分层、列表页补软/硬删除；后端新增 overview 端点与代理透传。验证：前端 4 例 + vue-tsc、OpenMemory 3 例、OpenBase 代理 17 例通过。 |

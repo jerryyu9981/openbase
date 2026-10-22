@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.13.0 |
+| 文档版本 | v1.14.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -353,10 +353,35 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **验证**：`tests/dev-proxy-v180.spec.ts` 4 例通过；后端停止时 `5173/api/v1/modules`、`/api/v1/auth/login` 均返回 503 JSON（修复前为空 500）。
 
+### 8.12 OpenLLM 聚合通道与来源映射（v1.14.0）
+
+**背景**：全栈功能审计（见《OpenBase-全栈后端能力缺口清单-v1.0.0》）发现 52 页无后端调用；其中「AI 能力治理」域的上游能力（providers/plugins/routing/monitoring 等）实际存在于 OpenLLM，但经 OpenBase 通用代理访问时统一返回 **401**。
+
+**根因（两段）**：
+
+1. 通用代理 `/api/v1/proxy/{system}/{path}` 出站来源固定为 `TARGET_SYSTEM_GENERIC`（`openbase-generic-proxy`），而下游 `TRUSTED_PROXY_SOURCES` 只登记各自代理名 → OpenLLM 判定为「非白名单来源携带身份头」，**忽略身份头 → 401**；
+2. 身份头被采信后，OpenLLM 原生 `/api/v1/*` 走 `get_current_active_user_or_api_key` 双通道，**仍需要 `Authorization: Bearer <OpenLLM API Key>`**；通用代理此前不透传任何凭据 → **401「无法验证凭据」**。
+
+**设计**：
+
+- **来源按系统映射**：`openllm → openbase-llm-proxy`、`openrag → -rag-`、`openmemory → -memory-`、`dps → -dps-`，未知系统回落 generic。安全性不变——代理入口已完成 JWT/服务 Key 认证与权限校验，来源常量只表达「谁转发的」。
+- **上游凭据注入**：仅 `system=openllm` 注入 `Authorization: Bearer <OpenLLM API Key>`，选 Key 规则复用 `llm_proxy._select_llm_api_key`（按出站 `X-Tenant-ID` 取租户级 Key，未命中回落全局 Key），保证单一事实源；其余系统不注入，避免越权携带 OpenLLM Key。
+- **前端接入面**：新增 `src/core/api/governance.ts`，统一以 `/proxy/openllm/api/v1/<domain>` 访问，返回上游原生结构（非 OpenBase 信封）。
+- **首批域**：`providers`（提供商管理）完成端到端真实化——列表/新增/编辑/删除/启停 + 模型数统计，假动作（随机延迟「测试连接」、随机「同步模型」）移除。
+
+**边界**：
+
+- OpenLLM 侧仍使用 `get_current_active_user`（仅 JWT）的路由（plugins/model-categories/routing/monitoring 等）即使凭据就绪也返回 401，属**上游授权依赖改造**，按缺口清单 R3~R5 分批推进；
+- `local-models`、`models/favorites|compare`、`open-models/popular` 在 10s 代理超时内未返回（502），属上游耗时问题（R6）；
+- API Key 通道解析出的是 **Key 所属用户**，非终端用户；终端身份由 `X-User-*` 头供下游审计。
+
+**验证**：`tests/test_proxy_target_system_v190.py` 8 例（映射 4 组 + 未知回落 + 装配透传 + 凭据注入/不注入）；`tests/providers-v190.spec.ts` 4 例；55 条 proxy/protocol 相关后端用例通过；浏览器实测提供商页 3 张卡片、模型数 3、控制台 0 error；`PUT /providers/{id}` 等值更新 200。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.14.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.12：OpenLLM 聚合通道与来源映射——通用代理出站来源按被代理系统映射（修 401 根因）、仅 openllm 注入 API Key（修第二段 401）、新增 `core/api/governance.ts`，提供商管理页端到端真实化；同步缺口清单与后续轮次路线。 |
 | **v1.13.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.11：开发代理上游不可达时由空 500 改为 503 JSON（`SYS_UPSTREAM_UNAVAILABLE`），避免误判服务端故障；补 4 例单测与实测记录。 |
 | **v1.12.0** | 2026-10-22 | 研发（AI 辅助） | §8.5 补充：新增 `/login → /auth/login` 顶层重定向，消除首帧 `No match found` 告警与 `redirect=/login` 自我回跳；补 S6-T2-5 两条回归用例并通过浏览器实测。 |
 | **v1.11.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.10：记忆模块对齐 OpenMemory v7.5.0~v7.8.0——图谱页接真实 `graph/overview`（替换 mock）、搜索页补图谱策略与命中语义、写入页补重要度分层、列表页补软/硬删除模式；含代理契约、兼容性与验证记录。 |
