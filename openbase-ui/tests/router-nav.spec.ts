@@ -332,3 +332,30 @@ describe('S6-T2-1(B): 冷启动预热——首帧深链解析前完成模块装�
     expect(bundle.router.resolve('/auth/login').matched.length).toBeGreaterThan(0)
   })
 })
+
+describe('S6-T2-5: 旧登录入口 /login 兼容（v7.8.0）', () => {
+  it('首帧解析命中 /login，重定向到 /auth/login 且无 No match 告警', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { router } = createAppRouter(createMemoryHistory())
+
+    // 解析阶段即命中（此前 unmatched，触发 No match 告警）
+    expect(router.resolve('/login').matched.length).toBeGreaterThan(0)
+
+    await router.push('/login')
+
+    expect(router.currentRoute.value.path).toBe('/auth/login')
+    expect(
+      warn.mock.calls.some((call) => String(call[0]).includes('No match found')),
+    ).toBe(false)
+    warn.mockRestore()
+  })
+
+  it('保留显式 redirect 查询参数', async () => {
+    const { router } = createAppRouter(createMemoryHistory())
+
+    await router.push('/login?redirect=%2Fmemory%2Fgraph')
+
+    expect(router.currentRoute.value.path).toBe('/auth/login')
+    expect(router.currentRoute.value.query.redirect).toBe('/memory/graph')
+  })
+})

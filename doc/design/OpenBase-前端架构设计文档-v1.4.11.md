@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.11.0 |
+| 文档版本 | v1.12.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -262,6 +262,12 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 `/dps/*` 共 9 条等），另加一条 `/dps/:pathMatch(.*)*` 前缀兜底（覆盖 `/:code/edit` 等动态子路径）；
 函数式 redirect 统一保留 query/hash，禁 404。
 
+**v1.12.0 补充（旧登录入口）**：`/login` 未在路由表注册，直访会触发首帧
+`[Vue Router warn] No match found` 并由守卫兜底跳转（且可能生成 `redirect=/login` 自我回跳链）。
+现于 `staticRoutes` 增加 `/login → /auth/login` 的顶层重定向（保留 query/hash），
+解析阶段即命中；未登录访问落到 `/auth/login` 并保留显式 `redirect` 参数，已登录访问按守卫回落
+`/dashboard`。回归用例见 `tests/router-nav.spec.ts` S6-T2-5（2 条）。
+
 ### 8.6 验证
 
 | 项 | 结果 |
@@ -337,6 +343,7 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.12.0** | 2026-10-22 | 研发（AI 辅助） | §8.5 补充：新增 `/login → /auth/login` 顶层重定向，消除首帧 `No match found` 告警与 `redirect=/login` 自我回跳；补 S6-T2-5 两条回归用例并通过浏览器实测。 |
 | **v1.11.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.10：记忆模块对齐 OpenMemory v7.5.0~v7.8.0——图谱页接真实 `graph/overview`（替换 mock）、搜索页补图谱策略与命中语义、写入页补重要度分层、列表页补软/硬删除模式；含代理契约、兼容性与验证记录。 |
 | **v1.10.0** | 2026-10-22 | 研发（AI 辅助） | **记忆模块降级态闭环**：§8.7 更新——OpenMemory 启动故障已定位（Qdrant 客户端 5s 默认超时 → `ReadTimeout`）并修复（超时可配置，默认 30s；OpenMemory 提交 `c73b7c1`），记忆模块 6 页复跑 **PASS 6 / FAIL 0**；细节见《DevLogReport》v1.6.0 §2.10。 |
 | **v1.9.0** | 2026-10-22 | 研发（AI 辅助） | **环境前置补齐**：§8.7 更新——Neo4j 已以社区版 5.26.16 Windows 服务常驻（Bolt 7687 / HTTP 7474、认证开启、Auto），记忆模块降级态的根因已消除（细节见《DevLogReport》v1.5.0 §2.9）；`Redis/Qdrant` 维持编排脚本常驻结论不变。 |

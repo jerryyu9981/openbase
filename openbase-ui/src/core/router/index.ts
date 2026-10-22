@@ -30,6 +30,17 @@ const appChildren: RouteRecordRaw[] = [
 /** 公共静态路由 */
 export const staticRoutes: RouteRecordRaw[] = [
   { path: '/auth/login', name: 'login', component: () => import('@/pages/Login.vue'), meta: { public: true } },
+  // 兼容旧登录入口（v7.8.0）：`/login` 此前未注册，首帧解析会触发
+  // `[Vue Router warn] No match found` 并依赖守卫兜底跳转；显式重定向后
+  // 解析即命中，同时避免 `redirect=/login` 的自我回跳链。
+  {
+    path: '/login',
+    redirect: (toLocation) => ({
+      path: '/auth/login',
+      query: toLocation.query,
+      hash: toLocation.hash,
+    }),
+  },
   { path: '/auth/oidc/callback', name: 'oidc-callback', component: () => import('@/pages/OidcCallback.vue'), meta: { public: true } },
   {
     path: '/',
