@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v1.9.0 |
+| 文档版本 | v2.0.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -167,7 +167,7 @@ infra-qdrant  6333  HEALTHY  PID=20076
 | **v7.4.0（P1）** | 读路径加固：`:Entity` 唯一约束、`entity_fulltext` 全文索引、`label` 索引修正、`GraphSearch` 全文检索 + 精确 label 回退、`LIMIT`/深度收紧、`caller="GraphSearch"` 审计 | **已完成**，OpenMemory 提交 `17cba89` |
 | v7.5.0（P2） | `graph_outbox`（Alembic v708）、`GraphProjector`、worker（SKIP LOCKED/批量/退避/死信/背压）、`:Memory` 节点与边、租户字段、forget 级联、读路径租户过滤 | **已完成**（OpenMemory `v7.5.0` 提交，见下） |
 | v7.6.0（P3） | 重要度分层与采样、批量 UNWIND、`graph_repair`（重放/对账/回填）、retention 与 decay 联动、指标告警 | **已完成**（P3 探针见下） |
-| v7.7.0（P4） | 跨仓联调、压测、灰度与回滚演练、文档回填 | 待实施 |
+| v7.7.0（P4） | 跨仓联调、压测、灰度与回滚演练、文档回填 | **已完成**（P4 证据见下） |
 
 **P1 验证**：`pytest tests/unit/test_graph_store.py tests/unit/test_search_engines.py tests/unit/test_graph_search.py` → **53 passed（60.85s）**；新增 6 条用例覆盖「全文索引优先 / 索引缺失回退 / 无实体短路 / top_k 截断 / 约束与全文索引语句」。
 
@@ -200,6 +200,45 @@ cleanup_remaining_nodes= [{'c': 0}]
 新增能力：`projection_policy`（`importance`/`recall_count` 门槛，session 不投影）、`project_batch`、`scripts/graph_repair.py`（`--replay/--reconcile/--prune-done/--prune-orphans/--stats`）、`done_retention_days`；worker 已纳入 `start-all-services.ps1`（脚本新增无端口服务支持，`graph-worker` 常驻）。
 
 > **分层策略补充**：当前写入链路默认 `score=0` 且不写 `importance`，若直接按阈值过滤会导致「所有记忆都不投影」。因此**无重要度信号时按未知处理并保守投影**，待上层写入 `importance`/非零 `score` 后才真正启用分层（OpenMemory `31a8315` 修正）。
+
+**P4 验证（v7.7.0）**：跨仓探针走 OpenBase 代理全链路（`/api/v1/memory-proxy/{remember,recall,forget}`），中间插入 `graph_projection_worker.py --once`：
+
+```
+admin_token_ok=True nonce=p4probe20261022181009
+remember_status=success memory_id=3f75054f-…
+recall_before_worker=count=0                              # 未投影前不产生幽灵命中
+worker_run_1=… claimed=1 ok=1 failed=0
+graph_after_worker=memory_nodes=1 nonce_entities=1
+recall_after_worker=count=2 ids=3f75054f-…,entity:tenant-1:p4probe… types=memory,custom
+forget_count=1
+worker_run_2=… claimed=1 ok=1 failed=0                    # forget 已产生 delete 事件
+graph_after_delete=memory_nodes=0 nonce_entities=0        # 记忆与孤儿实体均清零
+recall_after_delete=count=0                               # 删除后不再召回
+backlog_write_status=success                              # worker 停摆期间主写仍成功
+backlog_worker_drain=… claimed=1 ok=1 failed=0            # 恢复后一次排空
+recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影后可召回
+```
+
+压测与门禁（16 路并发经 OpenBase 代理）：
+
+| 项 | 结果 |
+|---|---|
+| 写 1k | 1000/1000 成功；P50 4.285s / P95 4.903s / P99 6.123s（单请求基线 0.398s） |
+| 读 1k | 1000/1000 成功；P95 5.281s（单请求基线 0.303s） |
+| outbox 排空 | 801 条 pending，6 批（200/批）在 28.4s 完成 |
+| 排空后顺序读 200 | 命中率 100%，P50 0.294s / P95 0.313s / P99 0.376s |
+| 租户隔离 | tenant-1 数据以 tenant-2 身份召回 `hits=0`（fail-closed） |
+| 重要度分层 | `importance=0.1` → `claimed=0`、图节点 0；`importance=0.9` → 正常投影 |
+
+**P4 修复的缺陷（OpenMemory 侧，均带单测）**：
+
+1. `forget(hard)` 只删 PG/Qdrant/会话缓存，未入队图删除事件 → `PersistentMemory.delete` 成功后 `enqueue_graph_event(delete)`。
+2. 删除后孤儿 `:Entity` 仍被全文索引命中 → `GraphProjector.remove_memory` 清理失去全部 `MENTIONS` 入边的实体。
+3. 全文索引对删除的可见性滞后 → `GraphSearch` 对候选 id 做一次 `UNWIND` 回表校验，不返回幽灵结果。
+4. 结果缓存键缺租户 → `tenant_code` 并入 `_result_key`，避免跨租户串用。
+5. `forget` 后旧结果仍在 TTL 内 → `forget` 强制全量失效；并修正 `om:cache:` 前缀导致 `invalidate_all_results` 扫描空转、用户集合记录裸键无法删除的问题。
+
+回归：`ruff check src tests` 0 错误；`pytest tests/unit`（排除环境缺依赖的 `test_sdk.py`）**1376 passed / 18 failed / 27 errors**，失败项全部为环境中既有缺口（PG 组织事实源不可用、alembic `op` 导入、opentelemetry `sdk` 属性），与本次改动无关。
 
 ---
 
@@ -290,6 +329,7 @@ cleanup_remaining_nodes= [{'c': 0}]
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.0.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.7.0（P4 跨仓联调与生产门禁）已完成**——端到端探针全链路通过（写入→outbox→投影→图检索→forget→删除投影→不再召回）；修复 5 处缺陷（forget 未入队删除、孤儿实体残留、全文索引幽灵结果、缓存键缺租户、缓存失效前缀空转）；补压测（写 1k/读 1k）、租户隔离、重要度分层与 worker 停摆回滚演练结果；OpenBase 侧本轮无代码改动。 |
 | v1.9.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.6.0（P3 规模治理）已完成**——重要度分层（`projection_policy`）、批量 UNWIND（`project_batch`）、`graph_repair` CLI（回填/对账/清理）、`done` 事件保留期、worker 纳入 `start-all-services.ps1`；补单测 67 passed 与 P3 探针结果（低价值不入队 / 批量写入 / 幂等重投 / 清理归零）。 |
 | v1.8.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.5.0（P2 异步可靠投影）已完成**——登记 outbox 同事务落库、`GraphProjector`、worker、读路径租户 fail-closed；补单测 105 passed 与端到端探针结果（写入→投影→命中→跨租户 0→删除清零）。 |
 | v1.7.0 | 2026-10-22 | 研发（AI 辅助） | 更正 §2.10 第 7 项结论（「persistent 不写图」是实现缺口而非设计行为）；新增 §2.11「记忆图谱跨仓迭代」：登记跨仓方案 v1.0.0 与 v7.4.0~v7.7.0 路线，**v7.4.0（P1 读路径加固）已完成**（OpenMemory `17cba89`，回归 53 passed）。 |
