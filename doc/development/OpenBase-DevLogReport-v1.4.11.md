@@ -199,6 +199,8 @@ cleanup_remaining_nodes= [{'c': 0}]
 
 新增能力：`projection_policy`（`importance`/`recall_count` 门槛，session 不投影）、`project_batch`、`scripts/graph_repair.py`（`--replay/--reconcile/--prune-done/--prune-orphans/--stats`）、`done_retention_days`；worker 已纳入 `start-all-services.ps1`（脚本新增无端口服务支持，`graph-worker` 常驻）。
 
+> **分层策略补充**：当前写入链路默认 `score=0` 且不写 `importance`，若直接按阈值过滤会导致「所有记忆都不投影」。因此**无重要度信号时按未知处理并保守投影**，待上层写入 `importance`/非零 `score` 后才真正启用分层（OpenMemory `31a8315` 修正）。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
