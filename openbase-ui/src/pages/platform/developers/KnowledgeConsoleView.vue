@@ -86,7 +86,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 
@@ -134,6 +134,9 @@ function sendRequest() {
 
 function renderPerf() {
   if (!perfRef.value) return
+  // 图表位于「性能监控」页签内：页签未激活时容器尺寸为 0，此时初始化会触发
+  // ECharts 警告「Can't get DOM width or height」，故等激活后再初始化/重绘。
+  if (perfRef.value.clientWidth === 0 || perfRef.value.clientHeight === 0) return
   if (!chart) chart = echarts.init(perfRef.value)
   const hours = ['00', '04', '08', '12', '16', '20', '24']
   chart.setOption({
@@ -153,6 +156,12 @@ function renderPerf() {
 }
 
 onMounted(() => nextTick(renderPerf))
+
+/** 切到「性能监控」页签后再渲染（隐藏页签内初始化会得到 0 尺寸） */
+watch(activeTab, (tab) => {
+  if (tab === 'perf') nextTick(renderPerf)
+})
+
 onBeforeUnmount(() => {
   chart?.dispose()
   chart = null

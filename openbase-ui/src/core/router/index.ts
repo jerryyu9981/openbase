@@ -33,6 +33,7 @@ export const staticRoutes: RouteRecordRaw[] = [
   { path: '/auth/oidc/callback', name: 'oidc-callback', component: () => import('@/pages/OidcCallback.vue'), meta: { public: true } },
   {
     path: '/',
+    name: 'root',
     component: () => import('@/core/layouts/AppLayout.vue'),
     redirect: '/dashboard',
     children: appChildren,
@@ -111,10 +112,10 @@ export function createAppRouter(history: RouterHistory = createWebHistory()): Ap
             `[module:${module.info.id}] 子路由不得声明 navItems（覆盖父级导航），已检出：${overrides.join(', ')}`,
           )
         }
-        // P2-3 连带（UI-E2E #4 父路由告警）：顶层挂载命名父路由，避免 `Parent route "" not found`。
-        // 空路径子路由（模块根 redirect）须显式命名，否则命名父路由会触发
-        // `has a child without a name and an empty path` 告警（S6-T2-4 要求 console.warn = 0）。
-        router.addRoute({
+        // v1.4.11 收口：模块路由**挂到 AppLayout 之下**（父路由 `root`），
+        // 使业务模块页与公共功能页共用同一左侧导航与顶栏；此前作为顶层路由挂载，
+        // 进入任一模块页会丢掉全局侧栏（无法在模块与公共功能间切换）。
+        router.addRoute('root', {
           name: module.info.id,
           path: module.info.route_prefix,
           component: () => import('@/core/layouts/ModuleLayout.vue'),

@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>OpenBase 统一前端 · 全页面走查预览</title>
+<style>
+  :root { --ok:#16a34a; --fail:#dc2626; --line:#e5e7eb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background:#f6f7f9; color:#1f2937; }
+  header { padding:20px 24px; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:2; }
+  h1 { font-size:18px; margin:0 0 6px; }
+  header p { margin:0; color:#6b7280; font-size:13px; }
+  section { padding:20px 24px; }
+  h2 { font-size:15px; margin:0 0 12px; }
+  h2 small { color:#6b7280; font-weight:400; margin-left:8px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap:16px; }
+  figure { margin:0; background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  figcaption { padding:10px 12px; font-size:13px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  figcaption code { color:#6b7280; font-size:12px; }
+  .ok { background:#dcfce7; color:var(--ok); padding:1px 6px; border-radius:4px; font-size:12px; }
+  .fail { background:#fee2e2; color:var(--fail); padding:1px 6px; border-radius:4px; font-size:12px; }
+  img { width:100%; display:block; border-top:1px solid var(--line); }
+  .detail { margin:0; padding:8px 12px; color:#6b7280; font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>OpenBase 统一前端 · 全页面走查预览</h1>
+  <p>共 77 页 · PASS 77 · FAIL 0 · 采集时间 2026-10-22T03:48:54.961Z · 视口 1440×900</p>
+</header>
+<section>
+  <h2>OpenBase 公共功能（含仪表盘/个人设置） <small>PASS 44 / 44</small></h2>
+  <div class="grid"><figure id="openbase-_dashboard">
+  <figcaption><b>仪表盘</b> <code>/dashboard</code> <span class="ok">PASS</span></figcaption>
+  <a href="dashboard.png" target="_blank"><img loading="lazy" src="dashboard.png" alt="仪表盘"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_tenants">
+  <figcaption><b>租户管理</b> <code>/platform/identity/tenants</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-tenants.png" target="_blank"><img loading="lazy" src="platform-identity-tenants.png" alt="租户管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_roles">
+  <figcaption><b>角色与权限</b> <code>/platform/identity/roles</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-roles.png" target="_blank"><img loading="lazy" src="platform-identity-roles.png" alt="角色与权限"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_org">
+  <figcaption><b>组织/团队/用户</b> <code>/platform/identity/org</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-org.png" target="_blank"><img loading="lazy" src="platform-identity-org.png" alt="组织/团队/用户"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_workspaces">
+  <figcaption><b>工作空间</b> <code>/platform/identity/workspaces</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-workspaces.png" target="_blank"><img loading="lazy" src="platform-identity-workspaces.png" alt="工作空间"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_users">
+  <figcaption><b>用户管理</b> <code>/platform/identity/users</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-users.png" target="_blank"><img loading="lazy" src="platform-identity-users.png" alt="用户管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_memory-admin">
+  <figcaption><b>记忆管理席位</b> <code>/platform/identity/memory-admin</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-memory-admin.png" target="_blank"><img loading="lazy" src="platform-identity-memory-admin.png" alt="记忆管理席位"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_auth-ext">
+  <figcaption><b>注册/找回密码</b> <code>/platform/identity/auth-ext</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-auth-ext.png" target="_blank"><img loading="lazy" src="platform-identity-auth-ext.png" alt="注册/找回密码"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_identity_dps-permissions">
+  <figcaption><b>画像数据权限</b> <code>/platform/identity/dps-permissions</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-identity-dps-permissions.png" target="_blank"><img loading="lazy" src="platform-identity-dps-permissions.png" alt="画像数据权限"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_config_general">
+  <figcaption><b>全局配置</b> <code>/platform/config/general</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-config-general.png" target="_blank"><img loading="lazy" src="platform-config-general.png" alt="全局配置"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_config_modules">
+  <figcaption><b>模块开关</b> <code>/platform/config/modules</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-config-modules.png" target="_blank"><img loading="lazy" src="platform-config-modules.png" alt="模块开关"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_config_api-keys">
+  <figcaption><b>API 密钥</b> <code>/platform/config/api-keys</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-config-api-keys.png" target="_blank"><img loading="lazy" src="platform-config-api-keys.png" alt="API 密钥"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_config_rate-limits">
+  <figcaption><b>画像接口限流</b> <code>/platform/config/rate-limits</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-config-rate-limits.png" target="_blank"><img loading="lazy" src="platform-config-rate-limits.png" alt="画像接口限流"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_logs">
+  <figcaption><b>日志中心</b> <code>/platform/observability/logs</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-logs.png" target="_blank"><img loading="lazy" src="platform-observability-logs.png" alt="日志中心"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_test-records">
+  <figcaption><b>测试记录</b> <code>/platform/observability/test-records</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-test-records.png" target="_blank"><img loading="lazy" src="platform-observability-test-records.png" alt="测试记录"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_monitoring">
+  <figcaption><b>统一监控</b> <code>/platform/observability/monitoring</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-monitoring.png" target="_blank"><img loading="lazy" src="platform-observability-monitoring.png" alt="统一监控"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_monitoring_costs">
+  <figcaption><b>成本分析</b> <code>/platform/observability/monitoring/costs</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-monitoring-costs.png" target="_blank"><img loading="lazy" src="platform-observability-monitoring-costs.png" alt="成本分析"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_monitoring_alerts">
+  <figcaption><b>告警中心</b> <code>/platform/observability/monitoring/alerts</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-monitoring-alerts.png" target="_blank"><img loading="lazy" src="platform-observability-monitoring-alerts.png" alt="告警中心"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_monitoring_traces">
+  <figcaption><b>链路追踪</b> <code>/platform/observability/monitoring/traces</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-monitoring-traces.png" target="_blank"><img loading="lazy" src="platform-observability-monitoring-traces.png" alt="链路追踪"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_monitoring_budgets">
+  <figcaption><b>预算管理</b> <code>/platform/observability/monitoring/budgets</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-monitoring-budgets.png" target="_blank"><img loading="lazy" src="platform-observability-monitoring-budgets.png" alt="预算管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_gpu">
+  <figcaption><b>GPU 资源</b> <code>/platform/observability/gpu</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-gpu.png" target="_blank"><img loading="lazy" src="platform-observability-gpu.png" alt="GPU 资源"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_usage">
+  <figcaption><b>用量统计</b> <code>/platform/observability/usage</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-usage.png" target="_blank"><img loading="lazy" src="platform-observability-usage.png" alt="用量统计"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_billing">
+  <figcaption><b>计费</b> <code>/platform/observability/billing</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-billing.png" target="_blank"><img loading="lazy" src="platform-observability-billing.png" alt="计费"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_service-discovery">
+  <figcaption><b>服务发现与编排</b> <code>/platform/observability/service-discovery</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-service-discovery.png" target="_blank"><img loading="lazy" src="platform-observability-service-discovery.png" alt="服务发现与编排"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_gateway-test">
+  <figcaption><b>聚合网关测试</b> <code>/platform/observability/gateway-test</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-gateway-test.png" target="_blank"><img loading="lazy" src="platform-observability-gateway-test.png" alt="聚合网关测试"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_app-calls">
+  <figcaption><b>应用调用记录</b> <code>/platform/observability/app-calls</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-app-calls.png" target="_blank"><img loading="lazy" src="platform-observability-app-calls.png" alt="应用调用记录"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_observability_dps-monitor">
+  <figcaption><b>画像系统监控</b> <code>/platform/observability/dps-monitor</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-observability-dps-monitor.png" target="_blank"><img loading="lazy" src="platform-observability-dps-monitor.png" alt="画像系统监控"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_providers">
+  <figcaption><b>提供商管理</b> <code>/platform/governance/providers</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-providers.png" target="_blank"><img loading="lazy" src="platform-governance-providers.png" alt="提供商管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_model-categories">
+  <figcaption><b>模型分类</b> <code>/platform/governance/model-categories</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-model-categories.png" target="_blank"><img loading="lazy" src="platform-governance-model-categories.png" alt="模型分类"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_routing">
+  <figcaption><b>路由策略</b> <code>/platform/governance/routing</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-routing.png" target="_blank"><img loading="lazy" src="platform-governance-routing.png" alt="路由策略"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_circuit-breakers">
+  <figcaption><b>熔断器</b> <code>/platform/governance/circuit-breakers</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-circuit-breakers.png" target="_blank"><img loading="lazy" src="platform-governance-circuit-breakers.png" alt="熔断器"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_deploy">
+  <figcaption><b>模型部署</b> <code>/platform/governance/deploy</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-deploy.png" target="_blank"><img loading="lazy" src="platform-governance-deploy.png" alt="模型部署"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_downloads">
+  <figcaption><b>下载管理</b> <code>/platform/governance/downloads</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-downloads.png" target="_blank"><img loading="lazy" src="platform-governance-downloads.png" alt="下载管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_tool-calls">
+  <figcaption><b>工具调用监控</b> <code>/platform/governance/tool-calls</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-tool-calls.png" target="_blank"><img loading="lazy" src="platform-governance-tool-calls.png" alt="工具调用监控"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_ab-tests">
+  <figcaption><b>A/B 测试</b> <code>/platform/governance/ab-tests</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-ab-tests.png" target="_blank"><img loading="lazy" src="platform-governance-ab-tests.png" alt="A/B 测试"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_prompt-templates">
+  <figcaption><b>Prompt 模板</b> <code>/platform/governance/prompt-templates</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-prompt-templates.png" target="_blank"><img loading="lazy" src="platform-governance-prompt-templates.png" alt="Prompt 模板"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_governance_prompt-experiments">
+  <figcaption><b>Prompt 实验</b> <code>/platform/governance/prompt-experiments</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-governance-prompt-experiments.png" target="_blank"><img loading="lazy" src="platform-governance-prompt-experiments.png" alt="Prompt 实验"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_developers_docs">
+  <figcaption><b>文档中心</b> <code>/platform/developers/docs</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-developers-docs.png" target="_blank"><img loading="lazy" src="platform-developers-docs.png" alt="文档中心"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_developers_edgerouter">
+  <figcaption><b>EdgeRouter 与适配器</b> <code>/platform/developers/edgerouter</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-developers-edgerouter.png" target="_blank"><img loading="lazy" src="platform-developers-edgerouter.png" alt="EdgeRouter 与适配器"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_developers_plugins">
+  <figcaption><b>插件管理</b> <code>/platform/developers/plugins</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-developers-plugins.png" target="_blank"><img loading="lazy" src="platform-developers-plugins.png" alt="插件管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_developers_dps-api">
+  <figcaption><b>画像 API 管理</b> <code>/platform/developers/dps-api</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-developers-dps-api.png" target="_blank"><img loading="lazy" src="platform-developers-dps-api.png" alt="画像 API 管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_developers_knowledge-admin">
+  <figcaption><b>知识库管理后台</b> <code>/platform/developers/knowledge-admin</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-developers-knowledge-admin.png" target="_blank"><img loading="lazy" src="platform-developers-knowledge-admin.png" alt="知识库管理后台"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_platform_developers_knowledge-console">
+  <figcaption><b>知识库 API 控制台</b> <code>/platform/developers/knowledge-console</code> <span class="ok">PASS</span></figcaption>
+  <a href="platform-developers-knowledge-console.png" target="_blank"><img loading="lazy" src="platform-developers-knowledge-console.png" alt="知识库 API 控制台"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openbase-_personal_settings">
+  <figcaption><b>个人设置</b> <code>/personal/settings</code> <span class="ok">PASS</span></figcaption>
+  <a href="personal-settings.png" target="_blank"><img loading="lazy" src="personal-settings.png" alt="个人设置"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure></div>
+</section>
+<section>
+  <h2>OpenLLM 业务模块 <small>PASS 11 / 11</small></h2>
+  <div class="grid"><figure id="openllm-_openllm_models">
+  <figcaption><b>模型管理</b> <code>/openllm/models</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-models.png" target="_blank"><img loading="lazy" src="openllm-models.png" alt="模型管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_models_local">
+  <figcaption><b>本地模型</b> <code>/openllm/models/local</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-models-local.png" target="_blank"><img loading="lazy" src="openllm-models-local.png" alt="本地模型"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_models_comparison">
+  <figcaption><b>模型对比</b> <code>/openllm/models/comparison</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-models-comparison.png" target="_blank"><img loading="lazy" src="openllm-models-comparison.png" alt="模型对比"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_models_market">
+  <figcaption><b>开源模型市场</b> <code>/openllm/models/market</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-models-market.png" target="_blank"><img loading="lazy" src="openllm-models-market.png" alt="开源模型市场"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_favorites">
+  <figcaption><b>我的收藏</b> <code>/openllm/favorites</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-favorites.png" target="_blank"><img loading="lazy" src="openllm-favorites.png" alt="我的收藏"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_apps">
+  <figcaption><b>AI 应用</b> <code>/openllm/apps</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-apps.png" target="_blank"><img loading="lazy" src="openllm-apps.png" alt="AI 应用"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_apps_new">
+  <figcaption><b>创建应用</b> <code>/openllm/apps/new</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-apps-new.png" target="_blank"><img loading="lazy" src="openllm-apps-new.png" alt="创建应用"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_playground">
+  <figcaption><b>Playground</b> <code>/openllm/playground</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-playground.png" target="_blank"><img loading="lazy" src="openllm-playground.png" alt="Playground"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_conversations">
+  <figcaption><b>对话管理</b> <code>/openllm/conversations</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-conversations.png" target="_blank"><img loading="lazy" src="openllm-conversations.png" alt="对话管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_recommend">
+  <figcaption><b>模型对比推荐</b> <code>/openllm/recommend</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-recommend.png" target="_blank"><img loading="lazy" src="openllm-recommend.png" alt="模型对比推荐"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openllm-_openllm_reports-trend">
+  <figcaption><b>报表趋势</b> <code>/openllm/reports-trend</code> <span class="ok">PASS</span></figcaption>
+  <a href="openllm-reports-trend.png" target="_blank"><img loading="lazy" src="openllm-reports-trend.png" alt="报表趋势"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure></div>
+</section>
+<section>
+  <h2>OpenRAG 知识库模块 <small>PASS 2 / 2</small></h2>
+  <div class="grid"><figure id="openrag-_knowledge_list">
+  <figcaption><b>知识库</b> <code>/knowledge/list</code> <span class="ok">PASS</span></figcaption>
+  <a href="knowledge-list.png" target="_blank"><img loading="lazy" src="knowledge-list.png" alt="知识库"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openrag-_knowledge_chat">
+  <figcaption><b>RAG 对话</b> <code>/knowledge/chat</code> <span class="ok">PASS</span></figcaption>
+  <a href="knowledge-chat.png" target="_blank"><img loading="lazy" src="knowledge-chat.png" alt="RAG 对话"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure></div>
+</section>
+<section>
+  <h2>OpenMemory 记忆模块 <small>PASS 6 / 6</small></h2>
+  <div class="grid"><figure id="openmemory-_memory_list">
+  <figcaption><b>记忆列表</b> <code>/memory/list</code> <span class="ok">PASS</span></figcaption>
+  <a href="memory-list.png" target="_blank"><img loading="lazy" src="memory-list.png" alt="记忆列表"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openmemory-_memory_search">
+  <figcaption><b>记忆搜索</b> <code>/memory/search</code> <span class="ok">PASS</span></figcaption>
+  <a href="memory-search.png" target="_blank"><img loading="lazy" src="memory-search.png" alt="记忆搜索"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openmemory-_memory_sessions">
+  <figcaption><b>会话管理</b> <code>/memory/sessions</code> <span class="ok">PASS</span></figcaption>
+  <a href="memory-sessions.png" target="_blank"><img loading="lazy" src="memory-sessions.png" alt="会话管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openmemory-_memory_graph">
+  <figcaption><b>记忆图谱</b> <code>/memory/graph</code> <span class="ok">PASS</span></figcaption>
+  <a href="memory-graph.png" target="_blank"><img loading="lazy" src="memory-graph.png" alt="记忆图谱"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openmemory-_memory_decay">
+  <figcaption><b>衰减配置</b> <code>/memory/decay</code> <span class="ok">PASS</span></figcaption>
+  <a href="memory-decay.png" target="_blank"><img loading="lazy" src="memory-decay.png" alt="衰减配置"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="openmemory-_memory_write">
+  <figcaption><b>写入记忆</b> <code>/memory/write</code> <span class="ok">PASS</span></figcaption>
+  <a href="memory-write.png" target="_blank"><img loading="lazy" src="memory-write.png" alt="写入记忆"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure></div>
+</section>
+<section>
+  <h2>DPS 画像模块（含模板化能力） <small>PASS 14 / 14</small></h2>
+  <div class="grid"><figure id="dps-_portrait_overview">
+  <figcaption><b>数据总览</b> <code>/portrait/overview</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-overview.png" target="_blank"><img loading="lazy" src="portrait-overview.png" alt="数据总览"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_list">
+  <figcaption><b>画像列表</b> <code>/portrait/list</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-list.png" target="_blank"><img loading="lazy" src="portrait-list.png" alt="画像列表"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_search">
+  <figcaption><b>画像搜索</b> <code>/portrait/search</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-search.png" target="_blank"><img loading="lazy" src="portrait-search.png" alt="画像搜索"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_tags">
+  <figcaption><b>标签管理</b> <code>/portrait/tags</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-tags.png" target="_blank"><img loading="lazy" src="portrait-tags.png" alt="标签管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_rules">
+  <figcaption><b>规则引擎</b> <code>/portrait/rules</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-rules.png" target="_blank"><img loading="lazy" src="portrait-rules.png" alt="规则引擎"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_templates">
+  <figcaption><b>模板族管理</b> <code>/portrait/dps/templates</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-templates.png" target="_blank"><img loading="lazy" src="portrait-dps-templates.png" alt="模板族管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_templates_new">
+  <figcaption><b>画像模板新建</b> <code>/portrait/dps/templates/new</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-templates-new.png" target="_blank"><img loading="lazy" src="portrait-dps-templates-new.png" alt="画像模板新建"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_template-packages">
+  <figcaption><b>模板包导出/导入</b> <code>/portrait/dps/template-packages</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-template-packages.png" target="_blank"><img loading="lazy" src="portrait-dps-template-packages.png" alt="模板包导出/导入"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_lineage">
+  <figcaption><b>标签血缘反查</b> <code>/portrait/dps/lineage</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-lineage.png" target="_blank"><img loading="lazy" src="portrait-dps-lineage.png" alt="标签血缘反查"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_measures">
+  <figcaption><b>措施建议</b> <code>/portrait/dps/measures</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-measures.png" target="_blank"><img loading="lazy" src="portrait-dps-measures.png" alt="措施建议"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_scoring-types">
+  <figcaption><b>评分类型</b> <code>/portrait/dps/scoring-types</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-scoring-types.png" target="_blank"><img loading="lazy" src="portrait-dps-scoring-types.png" alt="评分类型"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_annotation-adapters">
+  <figcaption><b>AI 标注候选与复核</b> <code>/portrait/dps/annotation-adapters</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-annotation-adapters.png" target="_blank"><img loading="lazy" src="portrait-dps-annotation-adapters.png" alt="AI 标注候选与复核"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_annotation-templates">
+  <figcaption><b>标注模板管理</b> <code>/portrait/dps/annotation-templates</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-annotation-templates.png" target="_blank"><img loading="lazy" src="portrait-dps-annotation-templates.png" alt="标注模板管理"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure>
+<figure id="dps-_portrait_dps_tags">
+  <figcaption><b>标签体系查看</b> <code>/portrait/dps/tags</code> <span class="ok">PASS</span></figcaption>
+  <a href="portrait-dps-tags.png" target="_blank"><img loading="lazy" src="portrait-dps-tags.png" alt="标签体系查看"></a>
+  <p class="detail">HTTP 200 渲染正常、无 console/page error/warn</p>
+</figure></div>
+</section>
+</body>
+</html>

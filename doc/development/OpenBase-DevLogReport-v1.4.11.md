@@ -95,6 +95,8 @@
 | 9 | `.page-toolbar` 在 20+ 页面各写一份 scoped 样式 | 收敛为 `core/styles/layout.css` 单份全局类；纵向间距交给 `PageContainer` 的 16px gap | `core/styles/layout.css`、各页面 `<style>` |
 | 10 | `modules/knowledge/pages/Settings.vue` 无路由引用（死文件） | 删除 | `modules/knowledge/pages/` |
 | 11 | 业务模块 39 页仍用私有布局 | 全部套用 `PageContainer`（openllm 11 / portrait 18 / memory 7 / knowledge 3）；记忆四页去掉重复的页内标题，`key-pages` 夹具同步改指向页级 `test-id` | `modules/*/pages/**`、`tests/e2e/fixtures/key-pages.json` |
+| 12 | **全页面走查发现**：业务模块页丢失全局侧栏（模块路由以顶层路由挂载，进入模块后无法回到公共功能） | 模块路由改挂 `root`（AppLayout）之下，模块子导航进入内容区，侧栏/顶栏常驻 | `core/router/index.ts` |
+| 13 | **全页面走查发现**：知识库 API 控制台首屏 ECharts 警告（未激活页签内初始化，容器 0 尺寸） | 尺寸守卫 + `watch(activeTab)` 切到「性能监控」后再渲染 | `pages/platform/developers/KnowledgeConsoleView.vue` |
 
 **批量套用方式**：`doc/tmp/adopt_page_container.py`（公共域）与 `doc/tmp/adopt_module_pages.py`（业务模块）两个一次性脚本，
 只做根节点包裹 + 闭合标签 + 补 import；`Routing.vue` 按 `route.meta.title` 动态取标题、`AppForm.vue`（根为 `el-form`）与
@@ -161,6 +163,7 @@
 | 后端用例 | `pytest tests -k "auth or principal or permission"` | 103 用例全通过 |
 | 后端静态 | `ruff check openbase` | 0 错误 |
 | 接口实测 | `doc/tmp/probe_http_timing.py` | 见 §3.4 |
+| **全页面走查** | `node scripts/ui_e2e_all_services.mjs --shots ../doc/test/evidence/ui-preview` | **77 页 PASS 77 / FAIL 0**；逐页截图 + `index.html` 预览页（1440×900） |
 
 ### 4.1 超时用例处置说明
 
@@ -176,10 +179,12 @@
 | 1 | 页面级加载/错误态统一到 `useAsyncState` | 前端 | 与骨架配套，减少各页自写 loading/error |
 | 2 | 面包屑与详情页页签规范 | 前端 | 详情页目前用 `el-page-header` 各自实现 |
 | 3 | 4 个占位页转真实页面 | 前端 + 上游 | 模型部署、链路追踪、预算管理、应用调用记录；入口已就位 |
-| 4 | 宿主负载清理（quark 多实例、安全软件） | 运维/用户 | 直接决定连接建立与进程启动耗时 |
-| 5 | Redis（6380）恢复可用 | 运维 | 恢复后复核 P95 与缓存命中 |
-| 6 | bcrypt `rounds` 是否下调 | 安全裁定 | 影响登录耗时 1~2s |
-| 7 | 本轮改动提交与三远程推送 | 研发 | 见提交清单，按精确文件圈定，禁 `git add -A` |
+| 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | 本机缺 Neo4j → 记忆 6 页走查为降级态；补齐后可复跑走查 |
+| 5 | 记忆列表 loading 兜底 | 前端 | 上游挂起时无客户端超时，页面长时间停留 loading |
+| 6 | 宿主负载清理（quark 多实例、安全软件） | 运维/用户 | 直接决定连接建立与进程启动耗时 |
+| 7 | Redis（6380）已本机启动，需纳入服务编排常驻 | 运维 | 本次为手工启动，重启机器后需随栈启动 |
+| 8 | bcrypt `rounds` 是否下调 | 安全裁定 | 影响登录耗时 1~2s |
+| 9 | 本轮改动提交与三远程推送 | 研发 | 见提交清单，按精确文件圈定，禁 `git add -A` |
 
 ---
 
@@ -187,6 +192,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.3.0 | 2026-10-22 | 研发（AI 辅助） | 追加「全页面走查」：77 页 PASS 77/FAIL 0，产出逐页截图与预览页；§2.7 增补第 12~13 项走查缺陷（模块页丢失全局侧栏、ECharts 隐藏页签初始化告警）及修复；§4 增补走查门禁行；§5 登记 OpenMemory 依赖 Neo4j 的环境前置。 |
 | v1.2.0 | 2026-10-21 | 研发（AI 辅助） | 追加阶段四收口：§2.7 增补第 8~11 项（DPS 12 页归位画像模块并补导航、`.page-toolbar` 全局化、删除 `knowledge/Settings.vue`、业务模块 39 页套骨架并同步 `key-pages` 夹具）；§4 验证更新为全量 250 用例串行通过；§5 遗留收窄为 `useAsyncState`、面包屑与 4 个占位页。 |
 | v1.1.0 | 2026-10-21 | 研发（AI 辅助） | 新增 §2.7「公共域收口（阶段三）」：7 项缺口逐条处置（记忆席位 dependsOn、gateway 开关只读化、providers/register 与画像假页下线、2 个死文件删除、占位页统一为结果页并补入口、公共域 37 页套骨架），同步 E2E 页面清单与 `platform-ia` 测试夹具；§5 遗留收窄为业务模块页与占位页上游依赖。 |
 | v1.0.0 | 2026-10-21 | 研发（AI 辅助） | 初始创建：记录 v1.4.11 统一前端 IA（阶段一/二）、首屏治理、后端接口 8s 级耗时排查的证据链（6 项观测）、根因分解（R1~R5）、3 项处置与复测数据（`/auth/me` P50 91ms 等），并登记 6 项遗留。 |
