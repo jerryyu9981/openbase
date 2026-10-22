@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.3.0 |
+| 文档版本 | v2.4.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.12.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项、§8.10 记忆模块对齐 v7.5~v7.8、§8.5 `/login` 兼容）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.13.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项、§8.10 记忆模块对齐 v7.5~v7.8、§8.5 `/login` 兼容、§8.11 开发代理语义）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
 | 开发方式 | 结构先行（骨架/路由/状态）→ 页面上收 → 首屏治理 → 后端耗时排查 → 静态与用例门禁 → 留痕 |
 
 ---
@@ -304,7 +304,14 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 - 处置：在 `staticRoutes` 增加 `/login → /auth/login` 顶层函数式重定向（保留 query/hash），解析阶段即命中；未登录落到 `/auth/login` 并保留显式 `redirect`，已登录按守卫回落 `/dashboard`。
 - 验证：`tests/router-nav.spec.ts` 新增 S6-T2-5 两条用例（解析命中且无 No match / 保留 redirect 参数），该文件 **18 passed**；`vue-tsc --noEmit` 通过；浏览器实测未登录访问 `/login` → `/auth/login`、控制台 0 条 No match 警告，带 `redirect=%2Fmemory%2Fgraph` 时参数完整保留。
 
-**遗留**：本次浏览器视口仅 608px，搜索表格来源/命中方式列需横向滚动，建议宽屏复核一次；`/api/v1/modules` 在服务重启瞬间曾返回 500，属瞬时环境问题（守卫已降级），不作为本文档门禁项。
+**补充修复（同日）：服务重启期间 `/api/v1/modules` 500**
+
+- 现象：浏览器在服务重启窗口访问页面时，控制台出现 `[router] module registry init failed AxiosError: Request failed with status code 500`。
+- 根因：**不是 OpenBase 接口缺陷**。后端未就绪时请求未到达 OpenBase（后端日志无该请求记录，直连 8000 为 `ConnectionRefused`），Vite 开发代理（http-proxy）对上游连接失败返回**空 body 的 500**；OpenBase `/api/v1/modules` 读路径本身在 DB 异常时已降级为内存注册表（`_effective_status_map` 捕获并 WARN）。
+- 处置：`vite.config.ts` 的 `/api` 代理新增 `error` 处理，经 `src/core/api/devProxy.ts` 统一输出 **503 + JSON**（`code=SYS_UPSTREAM_UNAVAILABLE`），与 `describeError` 的「可重试」语义一致；`server` 与 `preview` 共用同一配置。
+- 验证：后端停止时经 `5173/api/v1/modules`、`/api/v1/auth/login` 均返回 **503 JSON**（修复前为空 body 500）；`tests/dev-proxy-v180.spec.ts` 4 例通过（503 映射、已发头仅收尾、已结束不重写、socket 安全跳过）；`vue-tsc --noEmit` 通过。
+
+**遗留**：本次浏览器视口仅 608px，搜索表格来源/命中方式列需横向滚动，建议宽屏复核一次。
 
 ---
 
@@ -395,6 +402,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.4.0 | 2026-10-22 | 研发（AI 辅助） | §2.13 补充：排查服务重启期 `/api/v1/modules` 500——根因为 Vite 代理对上游连接失败返回空 500（非后端缺陷）；代理统一映射为 503 JSON，补 4 例单测并实测通过。 |
 | v2.3.0 | 2026-10-22 | 研发（AI 辅助） | §2.13 补充：修复 `/login` 首帧 `No match found` 告警与 `redirect=/login` 自回跳——新增 `/login → /auth/login` 顶层重定向（保留 query/hash）；S6-T2-5 两条用例 + 浏览器实测通过。 |
 | v2.2.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.13：**统一前端记忆模块对齐 OpenMemory v7.5.0~v7.8.0**——图谱页接真实 `graph/overview`（替换 mock）、搜索页补图谱策略与命中语义、写入页补重要度分层、列表页补软/硬删除；后端新增 overview 端点与代理透传。验证：前端 4 例 + vue-tsc、OpenMemory 3 例、OpenBase 代理 17 例通过。 |
 | v2.1.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.12：**v7.8.0（检索质量与可观测性）已完成**——实体命中解析为记忆、孤立实体兜底、`+term` 全命中与 Lucene 转义；图投影/检索指标族、worker `:9101/metrics`、`openmemory-graph` 告警组；修复 `openmemory.api` 循环导入。验证：相关单测 43 passed、真实 Neo4j 无实体 id 结果、全量 1385 passed（失败项同基线）。 |

@@ -1,6 +1,26 @@
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import type { ProxyOptions } from 'vite'
+import { handleDevProxyError } from './src/core/api/devProxy'
+
+const API_TARGET = 'http://127.0.0.1:8000'
+
+/**
+ * `/api` 开发代理（v7.8.0）：
+ * 后端未就绪/重启期间，http-proxy 默认返回**空 body 的 500**，浏览器与日志会误判为
+ * 服务端 5xx。统一经 `handleDevProxyError` 映射为 **503 + JSON**，与前端
+ * `describeError` 的「可重试」语义一致，也便于区分「后端未起」与「后端内部错误」。
+ */
+export const apiProxy: Record<string, ProxyOptions> = {
+  '/api': {
+    target: API_TARGET,
+    changeOrigin: true,
+    configure: (proxy) => {
+      proxy.on('error', handleDevProxyError)
+    },
+  },
+}
 
 export default defineConfig({
   plugins: [vue()],
@@ -23,21 +43,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-    },
+    proxy: apiProxy,
   },
   preview: {
     port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-    },
+    proxy: apiProxy,
   },
   test: {
     environment: 'jsdom',

@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.12.0 |
+| 文档版本 | v1.13.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -339,10 +339,25 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **验证**：`memory-graph-v180.spec.ts`（3 例）与 `memory-search-v180.spec.ts`（1 例）通过；`vue-tsc --noEmit` 通过；OpenBase `test_memory_proxy.py` 17 例通过（含 overview 透传）；真实 Neo4j overview 返回 200（20 记忆 + 27 实体、99 条 MENTIONS 边）。服务级浏览器走查：图谱页统计 `1011/1038/599/0/0`、渲染 247 节点/599 边；搜索页图谱策略命中 1 条且来源=graph、命中方式=记忆命中；写入页重要度滑杆（0~1，默认 0.60）正常；三页控制台 0 error。
 
+### 8.11 开发代理上游不可达语义（v1.13.0）
+
+**问题**：后端重启/未启动时，Vite `http-proxy` 对上游连接失败返回**空 body 的 500**，浏览器与日志会把「上游未就绪」误判为 OpenBase 服务端 5xx（`module registry init failed ... status code 500`）。
+
+**设计**：
+
+- `/api` 代理（`server` 与 `preview` 共用）注册 `error` 处理器，经 `src/core/api/devProxy.ts` 的 `handleDevProxyError` 统一输出 **503 + JSON**：`{code:"SYS_UPSTREAM_UNAVAILABLE", message:"OpenBase API 尚未就绪或不可达，请稍后重试", data:null}`。
+- 响应头已发送时只结束响应体；响应已结束时不再写入；非 `ServerResponse`（socket）场景安全跳过。
+- 与前端 `describeError` 的「5xx 可重试」呈现一致，同时保留「后端未起」与「后端内部错误」的可区分性。
+
+**边界**：仅影响本地开发/预览代理，生产由 Nginx/网关承接；OpenBase `/api/v1/modules` 读路径的 DB 降级逻辑（回退内存注册表）保持不变。
+
+**验证**：`tests/dev-proxy-v180.spec.ts` 4 例通过；后端停止时 `5173/api/v1/modules`、`/api/v1/auth/login` 均返回 503 JSON（修复前为空 500）。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.13.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.11：开发代理上游不可达时由空 500 改为 503 JSON（`SYS_UPSTREAM_UNAVAILABLE`），避免误判服务端故障；补 4 例单测与实测记录。 |
 | **v1.12.0** | 2026-10-22 | 研发（AI 辅助） | §8.5 补充：新增 `/login → /auth/login` 顶层重定向，消除首帧 `No match found` 告警与 `redirect=/login` 自我回跳；补 S6-T2-5 两条回归用例并通过浏览器实测。 |
 | **v1.11.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.10：记忆模块对齐 OpenMemory v7.5.0~v7.8.0——图谱页接真实 `graph/overview`（替换 mock）、搜索页补图谱策略与命中语义、写入页补重要度分层、列表页补软/硬删除模式；含代理契约、兼容性与验证记录。 |
 | **v1.10.0** | 2026-10-22 | 研发（AI 辅助） | **记忆模块降级态闭环**：§8.7 更新——OpenMemory 启动故障已定位（Qdrant 客户端 5s 默认超时 → `ReadTimeout`）并修复（超时可配置，默认 30s；OpenMemory 提交 `c73b7c1`），记忆模块 6 页复跑 **PASS 6 / FAIL 0**；细节见《DevLogReport》v1.6.0 §2.10。 |
