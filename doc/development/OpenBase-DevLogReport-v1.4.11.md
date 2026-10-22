@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.1.0 |
+| 文档版本 | v2.2.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.10.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.11.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项、§8.10 记忆模块对齐 v7.5~v7.8）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
 | 开发方式 | 结构先行（骨架/路由/状态）→ 页面上收 → 首屏治理 → 后端耗时排查 → 静态与用例门禁 → 留痕 |
 
 ---
@@ -266,6 +266,35 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 **遗留/环境说明**：执行期间宿主 CPU 被 IDE/远控进程持续占满，OpenMemory/OpenBase 进程级重启多次超时（300s 健康等待），因此本轮采用「独立进程 + 真实 Neo4j」完成检索与指标端点验证；服务级冒烟待宿主负载恢复后复跑，不阻塞代码交付。
 
+### 2.13 统一前端 OpenMemory 记忆模块对齐（v7.8.0 P6）
+
+**范围**：根据 v7.5.0~v7.8.0（异步投影、删除一致性、检索质量、图链路指标）完善统一前端记忆模块；跨 OpenMemory（只读 overview 端点）与 OpenBase（代理 + UI）。
+
+**后端**：
+
+- OpenMemory 新增 `GET /api/v1/graph/overview?limit=120`：返回当前租户 `:Memory`/`:Entity`/`MENTIONS` 快照与统计（记忆数、实体数、关系数、outbox pending/dead）；跨租户 fail-closed，缺图存储返回 503 `SYS_SOURCE_UNAVAILABLE`；`GraphOverview` 纳入 `query_cypher` 调用方白名单。
+- `start_openmemory.py` 将 `graph_store` 挂到 `app.state`（`build_service` 返回值扩展）。
+- OpenBase 新增 `GET /api/v1/memory-proxy/graph/overview` 透传（limit 10~300，统一信封）。
+
+**前端（openbase-ui `modules/memory`）**：
+
+| 页面 | 变更 |
+|---|---|
+| 记忆图谱 | 删除 TD-13-18 mock 数据与本地增删；接真实 overview，D3 渲染记忆/实体节点与 `MENTIONS` 边；新增规模统计、待投影/死信提示、实体显示开关、记忆节点点击进详情、空图/错误态 |
+| 记忆搜索 | 策略补 `graph/temporal/fusion`；新增「命中方式」（记忆命中/实体节点）与 `matched_entity`；`entity:*` 孤立实体不提供详情入口；图谱策略展示语义说明 |
+| 写入记忆 | 新增重要度滑杆（`metadata.importance`，默认 0.6），与标签合并提交；补充异步投影/分层说明 |
+| 记忆列表 | 删除模式可选软删/硬删（透传 `mode`）；类型筛选对齐 `persistent/session/episode`；删除提示说明图投影同步清理 |
+
+**验证**：
+
+- `memory-graph-v180.spec.ts`（3 例）+ `memory-search-v180.spec.ts`（1 例）→ **4 passed**；`vue-tsc --noEmit` 通过。
+- OpenMemory `test_graph_overview.py` → **3 passed**（节点/边/统计、503、outbox 故障容错）。
+- OpenBase `tests/test_memory_proxy.py` → **17 passed**（新增 overview 透传与 limit 断言）。
+- 真实 Neo4j 端点验证（`p6_overview_verify.py`，tenant-1）：200；`stats={'memory_nodes': 1011, 'entity_nodes': 1038, 'edges': 99}`；`nodes=47`（20 个记忆 UUID + 27 个实体节点），记忆 id 均为 UUID、实体 id 为 `entity:<tenant>:<key>`，边为 `MENTIONS`。
+- 兼容性：仅新增只读端点与展示字段，既有响应结构与路由不变。
+
+**遗留**：宿主负载导致服务级页面走查未执行；图谱页 e2e 需在服务恢复后补一次真实数据走查（当前由组件单测覆盖渲染/空态/错误态）。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -355,6 +384,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.2.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.13：**统一前端记忆模块对齐 OpenMemory v7.5.0~v7.8.0**——图谱页接真实 `graph/overview`（替换 mock）、搜索页补图谱策略与命中语义、写入页补重要度分层、列表页补软/硬删除；后端新增 overview 端点与代理透传。验证：前端 4 例 + vue-tsc、OpenMemory 3 例、OpenBase 代理 17 例通过。 |
 | v2.1.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.12：**v7.8.0（检索质量与可观测性）已完成**——实体命中解析为记忆、孤立实体兜底、`+term` 全命中与 Lucene 转义；图投影/检索指标族、worker `:9101/metrics`、`openmemory-graph` 告警组；修复 `openmemory.api` 循环导入。验证：相关单测 43 passed、真实 Neo4j 无实体 id 结果、全量 1385 passed（失败项同基线）。 |
 | v2.0.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.7.0（P4 跨仓联调与生产门禁）已完成**——端到端探针全链路通过（写入→outbox→投影→图检索→forget→删除投影→不再召回）；修复 5 处缺陷（forget 未入队删除、孤儿实体残留、全文索引幽灵结果、缓存键缺租户、缓存失效前缀空转）；补压测（写 1k/读 1k）、租户隔离、重要度分层与 worker 停摆回滚演练结果；OpenBase 侧本轮无代码改动。 |
 | v1.9.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.6.0（P3 规模治理）已完成**——重要度分层（`projection_policy`）、批量 UNWIND（`project_batch`）、`graph_repair` CLI（回填/对账/清理）、`done` 事件保留期、worker 纳入 `start-all-services.ps1`；补单测 67 passed 与 P3 探针结果（低价值不入队 / 批量写入 / 幂等重投 / 清理归零）。 |

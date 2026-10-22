@@ -23,12 +23,18 @@
       <div class="page-toolbar">
         <el-input v-model="keyword" placeholder="搜索记忆内容/标签" clearable style="width: 220px" data-test="memory-keyword" />
         <el-select v-model="typeFilter" placeholder="记忆类型" clearable style="width: 140px" @change="onFilterChange">
-          <el-option label="文本" value="text" />
-          <el-option label="图像" value="image" />
-          <el-option label="音频" value="audio" />
+          <el-option label="持久" value="persistent" />
+          <el-option label="会话" value="session" />
+          <el-option label="片段" value="episode" />
         </el-select>
+        <el-tooltip content="删除后 graph worker 会同步清理图投影；硬删除不可恢复" placement="top">
+          <el-select v-model="deleteMode" style="width: 150px" data-test="delete-mode">
+            <el-option label="软删除（可恢复）" value="soft" />
+            <el-option label="硬删除（不可恢复）" value="hard" />
+          </el-select>
+        </el-tooltip>
         <el-button type="primary" data-test="write-memory" @click="$router.push('/memory/write')">写入记忆</el-button>
-        <el-popconfirm title="确认批量删除选中记忆？" @confirm="batchDelete">
+        <el-popconfirm :title="`确认批量${deleteMode === 'hard' ? '硬' : '软'}删除选中记忆？`" @confirm="batchDelete">
           <template #reference>
             <el-button type="danger" plain :disabled="selection.length === 0" data-test="batch-delete">批量删除</el-button>
           </template>
@@ -71,7 +77,7 @@
           <el-table-column label="操作" width="160" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" @click="$router.push(`/memory/${row.memory_id}`)">详情</el-button>
-              <el-popconfirm title="确认删除该记忆？" @confirm="remove(row.memory_id)">
+              <el-popconfirm :title="`确认${deleteMode === 'hard' ? '硬删除' : '软删除'}该记忆？`" @confirm="remove(row.memory_id)">
                 <template #reference><el-button link type="danger">删除</el-button></template>
               </el-popconfirm>
             </template>
@@ -124,6 +130,7 @@ interface MemoryListData {
 
 const keyword = ref('')
 const typeFilter = ref('')
+const deleteMode = ref<'soft' | 'hard'>('soft')
 const selection = ref<MemoryRow[]>([])
 const page = ref(1)
 const pageSize = 10
@@ -192,7 +199,7 @@ function weightColor(weight: number) {
 async function forgetOne(memoryId: string) {
   const { data } = await http.post<{ code: number; message: string; data: unknown }>(
     '/memory-proxy/forget',
-    { memory_id: memoryId, user_id: '' },
+    { memory_id: memoryId, mode: deleteMode.value },
   )
   return data.code === 0
 }

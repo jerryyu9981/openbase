@@ -475,6 +475,21 @@ async def _proxy_multipart(
     )
 
 
+@router.get("/graph/overview")
+async def memory_graph_overview(
+    request: Request,
+    limit: int = Query(120, ge=10, le=300),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """记忆图谱快照（GET /api/v1/graph/overview，v7.8.0 P6）."""
+    return await _forward(
+        "GET", "/api/v1/graph/overview",
+        params={"limit": limit},
+        headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
+
+
 @router.post("/improve")
 async def memory_improve(
     payload: dict[str, Any],

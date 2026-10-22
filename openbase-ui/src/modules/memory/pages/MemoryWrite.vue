@@ -50,6 +50,20 @@
                 data-test="write-tags"
               />
             </el-form-item>
+            <el-form-item label="重要度">
+              <el-slider
+                v-model="form.importance"
+                :min="0"
+                :max="1"
+                :step="0.05"
+                show-input
+                style="max-width: 360px"
+                data-test="write-importance"
+              />
+              <div class="field-hint">
+                重要度 ≥ 0.5（或累计召回 ≥ 2 次）才会进入图检索；低于阈值仅保留语义检索，用于控制图体积。
+              </div>
+            </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="submitting" data-test="write-submit" @click="submit">写入记忆</el-button>
               <el-button @click="resetForm">重置</el-button>
@@ -77,7 +91,8 @@
           <ul class="hint-list">
             <li>写入内容将经 OpenBase 统一认证（JWT）与双层密钥通道转发至 OpenMemory 8020。</li>
             <li>带标签的记忆便于后续列表页按标签过滤。</li>
-            <li>写入成功后可在「记忆列表」页看到该条记录。</li>
+            <li>图投影为异步链路（outbox → graph worker），通常数秒内可在「记忆图谱」页看到节点。</li>
+            <li>低重要度记忆不会进入图检索，但仍可通过语义/关键词策略召回。</li>
           </ul>
         </el-card>
       </el-col>
@@ -103,12 +118,14 @@ const form = reactive<{
   session_id: string
   agent_id: string
   tags: string[]
+  importance: number
 }>({
   content: '',
   user_id: '',
   session_id: '',
   agent_id: '',
   tags: [],
+  importance: 0.6,
 })
 
 const errorMsg = ref('')
@@ -128,7 +145,9 @@ async function submit() {
     if (form.user_id.trim()) payload.user_id = form.user_id.trim()
     if (form.session_id.trim()) payload.session_id = form.session_id.trim()
     if (form.agent_id.trim()) payload.agent_id = form.agent_id.trim()
-    if (form.tags.length) payload.metadata = { tags: form.tags }
+    const metadata: Record<string, unknown> = { importance: form.importance }
+    if (form.tags.length) metadata.tags = form.tags
+    payload.metadata = metadata
     const { data } = await http.post<{ code: number; message: string; data: RememberResult }>(
       '/memory-proxy/remember',
       payload,
@@ -154,6 +173,7 @@ function resetForm() {
   form.session_id = ''
   form.agent_id = ''
   form.tags = []
+  form.importance = 0.6
   errorMsg.value = ''
 }
 </script>
@@ -164,4 +184,5 @@ function resetForm() {
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
 .result-actions { margin-top: 12px; display: flex; gap: 8px; }
 .hint-list { margin: 0; padding-left: 18px; line-height: 1.9; color: var(--ob-text-secondary); font-size: 13px; }
+.field-hint { color: var(--ob-text-secondary); font-size: 12px; line-height: 1.6; margin-top: 4px; }
 </style>

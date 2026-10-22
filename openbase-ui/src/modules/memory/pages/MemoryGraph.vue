@@ -1,10 +1,47 @@
 <template>
-  <PageContainer title="记忆图谱" description="记忆实体与关系的可视化" test-id="memory-graph-page">
+  <PageContainer title="记忆图谱" description="OpenMemory 投影的记忆—实体关系（只读）" test-id="memory-graph-page">
     <div class="page-toolbar">
-      <el-button type="primary" data-test="new-entity" @click="openEntityForm()">新建实体</el-button>
-      <el-button type="primary" plain data-test="new-relation" @click="openRelationForm()">新建关系</el-button>
-      <span class="graph-hint" data-test="graph-hint">拖动节点调整布局 · 滚轮缩放 · 悬停查看实体详情</span>
+      <el-button type="primary" :loading="loading" data-test="graph-refresh" @click="load">刷新图谱</el-button>
+      <el-switch v-model="showEntities" active-text="显示实体" data-test="graph-show-entities" @change="renderGraph" />
+      <span class="graph-hint">数据源：memory_metadata → graph_outbox → graph worker → Neo4j</span>
     </div>
+
+    <el-row :gutter="12" class="mb-16" data-test="graph-stats">
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="never"><div class="stat-label">记忆节点</div><div class="stat-value">{{ stats.memory_nodes }}</div></el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="never"><div class="stat-label">实体节点</div><div class="stat-value">{{ stats.entity_nodes }}</div></el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="never"><div class="stat-label">关系数（当前视图）</div><div class="stat-value">{{ stats.edges }}</div></el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="never">
+          <div class="stat-label">待投影 / 死信</div>
+          <div class="stat-value">
+            {{ stats.outbox_pending }}<span class="stat-sub"> / {{ stats.outbox_dead }}</span>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-alert
+      v-if="stats.outbox_dead > 0"
+      :title="`存在 ${stats.outbox_dead} 条投影死信，请检查 graph worker 日志并执行 graph_repair --replay`"
+      type="error"
+      show-icon
+      class="mb-16"
+      data-test="graph-dead-alert"
+    />
+    <el-alert
+      v-else-if="stats.outbox_pending > 0"
+      :title="`${stats.outbox_pending} 条记忆等待图投影（异步，通常数秒内完成）`"
+      type="warning"
+      show-icon
+      class="mb-16"
+      data-test="graph-pending-alert"
+    />
     <el-alert
       v-if="errorMsg"
       :title="errorMsg"
@@ -15,216 +52,155 @@
       data-test="graph-error"
       @close="errorMsg = ''"
     />
-    <el-row :gutter="16">
-      <el-col :xs="24" :lg="16">
-        <el-card header="记忆图谱" body-style="padding: 0" class="graph-card">
-          <div v-loading="loading" class="graph-body" data-test="memory-graph">
-            <div ref="graphRef" class="graph-canvas" />
-            <el-empty
-              v-if="!loading && entities.length === 0"
-              description="暂无实体数据，请先新建实体"
-              class="graph-empty-overlay"
-              data-test="graph-empty"
-            />
-          </div>
-          <div
-            v-show="tooltipVisible"
-            ref="tooltipRef"
-            class="graph-tooltip"
-            :style="{ left: tooltipPos.left, top: tooltipPos.top }"
-            data-test="graph-tooltip"
-          >
-            <div class="tooltip-name" :style="{ color: typeColor(hoverNode?.type ?? '') }">{{ hoverNode?.name }}</div>
-            <div class="tooltip-meta">{{ hoverNode?.type }} · {{ hoverNode?.description }}</div>
-            <div class="tooltip-links">
-              <div v-if="hoverLinks.length === 0" class="tooltip-link">暂无关联关系</div>
-              <div v-for="(link, index) in hoverLinks" :key="index" class="tooltip-link">{{ link }}</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :lg="8">
-        <el-card header="实体列表" body-style="padding: 0">
-          <div class="ob-table-scroll">
-            <el-table :data="entities" stripe size="small" data-test="entity-table" empty-text="暂无实体">
-              <el-table-column prop="name" label="实体" min-width="110" />
-              <el-table-column label="类型" width="84">
-                <template #default="{ row }">
-                  <el-tag size="small" effect="dark" :color="typeColor(row.type)" style="border: none">{{ row.type }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="关系数" width="80" align="center">
-                <template #default="{ row }">
-                  <span :style="{ color: 'var(--ob-text-secondary)' }">{{ relationCount(row.id) }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="118" fixed="right">
-                <template #default="{ row }">
-                  <el-button link type="primary" data-test="edit-entity" @click="openEntityForm(row)">编辑</el-button>
-                  <el-popconfirm title="确认删除该实体及其全部关系？" @confirm="removeEntity(row.id)">
-                    <template #reference><el-button link type="danger" data-test="delete-entity">删除</el-button></template>
-                  </el-popconfirm>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
 
-    <el-dialog v-model="entityFormVisible" :title="editingEntityId ? '编辑实体' : '新建实体'" width="480px" data-test="entity-dialog">
-      <el-form label-width="80px">
-        <el-form-item label="名称" required>
-          <el-input v-model="entityForm.name" placeholder="如：OpenBase 项目" data-test="entity-name-input" />
-        </el-form-item>
-        <el-form-item label="类型" required>
-          <el-select v-model="entityForm.type" style="width: 100%">
-            <el-option v-for="type in entityTypes" :key="type" :label="type" :value="type" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="entityForm.description" type="textarea" :rows="2" placeholder="实体描述信息" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="entityFormVisible = false">取消</el-button>
-        <el-button type="primary" data-test="save-entity" @click="saveEntity">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="relationFormVisible" title="新建关系" width="480px" data-test="relation-dialog">
-      <el-form label-width="80px">
-        <el-form-item label="源实体" required>
-          <el-select v-model="relationForm.source" filterable placeholder="选择源实体" style="width: 100%" data-test="relation-source">
-            <el-option v-for="entity in entities" :key="entity.id" :label="entity.name" :value="entity.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关系" required>
-          <el-select v-model="relationForm.label" filterable allow-create default-first-option placeholder="如：参与、创建" style="width: 100%">
-            <el-option v-for="label in relationLabels" :key="label" :label="label" :value="label" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="目标实体" required>
-          <el-select v-model="relationForm.target" filterable placeholder="选择目标实体" style="width: 100%" data-test="relation-target">
-            <el-option v-for="entity in entities" :key="entity.id" :label="entity.name" :value="entity.id" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="relationFormVisible = false">取消</el-button>
-        <el-button type="primary" data-test="save-relation" :disabled="entities.length < 2" @click="saveRelation">保存</el-button>
-      </template>
-    </el-dialog>
+    <el-card body-style="padding: 0" class="graph-card">
+      <div v-loading="loading" class="graph-body" data-test="memory-graph">
+        <div ref="graphRef" class="graph-canvas" />
+        <el-empty
+          v-if="!loading && visibleNodeCount === 0"
+          description="暂无图谱数据：请先写入记忆，并等待 graph worker 完成投影"
+          class="graph-empty-overlay"
+          data-test="graph-empty"
+        />
+      </div>
+      <div v-show="tooltipVisible" ref="tooltipRef" class="graph-tooltip" :style="{ left: tooltipPos.left, top: tooltipPos.top }" data-test="graph-tooltip">
+        <div class="tooltip-name" :style="{ color: tooltipColor }">{{ hoverNode?.label }}</div>
+        <div class="tooltip-meta">{{ tooltipMeta }}</div>
+        <div v-if="hoverNode?.node_type === 'memory'" class="tooltip-link">点击节点查看记忆详情</div>
+      </div>
+    </el-card>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import * as d3 from 'd3'
-import { ElMessage } from 'element-plus'
+import { http } from '@/core/api/http'
 
-type EntityType = '人物' | '事件' | '概念' | '项目'
-
-interface GraphEntity {
-  id: number
-  name: string
-  type: EntityType
-  description: string
+interface GraphNode {
+  id: string
+  label: string
+  node_type: string
+  memory_type?: string | null
+  content?: string | null
+  updated_at?: string | null
 }
 
-interface GraphRelation {
-  id: number
-  source: number
-  target: number
-  label: string
+interface GraphEdge {
+  source: string
+  target: string
+  relation: string
+}
+
+interface GraphStats {
+  memory_nodes: number
+  entity_nodes: number
+  edges: number
+  outbox_pending: number
+  outbox_dead: number
+}
+
+interface GraphOverview {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  stats: GraphStats
 }
 
 interface SimNode extends d3.SimulationNodeDatum {
-  id: number
-  name: string
-  type: EntityType
-  description: string
+  id: string
+  label: string
+  node_type: string
+  memory_type?: string | null
+  content?: string | null
+  updated_at?: string | null
 }
 
 interface SimLink extends d3.SimulationLinkDatum<SimNode> {
-  id: number
-  label: string
+  relation: string
 }
 
-const TYPE_COLORS: Record<EntityType, string> = {
-  人物: '#6366f1',
-  事件: '#f59e0b',
-  概念: '#10b981',
-  项目: '#0ea5e9',
+const MEMORY_COLORS: Record<string, string> = {
+  persistent: '#6366f1',
+  session: '#10b981',
+  episode: '#f59e0b',
+  graph: '#0ea5e9',
 }
 
-const entityTypes: EntityType[] = ['人物', '事件', '概念', '项目']
-const relationLabels = ['参与', '创建', '关联', '引用', '影响', '提出', '负责', '属于']
+const ENTITY_COLORS: Record<string, string> = {
+  person: '#8b5cf6',
+  organization: '#0ea5e9',
+  location: '#14b8a6',
+  event: '#f59e0b',
+  concept: '#10b981',
+  custom: '#94a3b8',
+}
 
+const router = useRouter()
 const graphRef = ref<HTMLDivElement>()
 const tooltipRef = ref<HTMLDivElement>()
-const loading = ref(true)
+const loading = ref(false)
 const errorMsg = ref('')
+const showEntities = ref(true)
+const nodes = ref<GraphNode[]>([])
+const edges = ref<GraphEdge[]>([])
+const stats = ref<GraphStats>({ memory_nodes: 0, entity_nodes: 0, edges: 0, outbox_pending: 0, outbox_dead: 0 })
 const tooltipVisible = ref(false)
 const hoverNode = ref<SimNode | null>(null)
-const hoverLinks = ref<string[]>([])
 const tooltipPos = reactive({ left: '0px', top: '0px' })
 
 let simulation: d3.Simulation<SimNode, undefined> | null = null
-let currentLinks: SimLink[] = []
 let resizeTimer: number | undefined
 
-// TD-13-18 记忆图谱 mock 实体（10 个）与关系（12 条）
-const entities = ref<GraphEntity[]>([
-  { id: 1, name: '张伟', type: '人物', description: 'OpenBase 项目发起人' },
-  { id: 2, name: '李娜', type: '人物', description: '算法工程师，负责记忆模块' },
-  { id: 3, name: 'OpenBase', type: '项目', description: '开源多智能体协作平台' },
-  { id: 4, name: '记忆图谱', type: '概念', description: '实体与关系的语义网络' },
-  { id: 5, name: '语义检索', type: '概念', description: '基于向量的相似度召回' },
-  { id: 6, name: '2026 产品发布会', type: '事件', description: '2026-06 举办的产品发布活动' },
-  { id: 7, name: 'RAG 架构评审', type: '事件', description: '2026-07 完成 RAG 架构评审' },
-  { id: 8, name: 'OpenMemory', type: '项目', description: '记忆子系统，版本 v6.7' },
-  { id: 9, name: '王强', type: '人物', description: '前端工程师，负责图谱可视化' },
-  { id: 10, name: '知识蒸馏', type: '概念', description: '大模型轻量化技术' },
-])
+const visibleNodeCount = computed(() =>
+  showEntities.value ? nodes.value.length : nodes.value.filter((node) => node.node_type === 'memory').length,
+)
 
-const relations = ref<GraphRelation[]>([
-  { id: 1, source: 1, target: 3, label: '发起' },
-  { id: 2, source: 2, target: 8, label: '负责' },
-  { id: 3, source: 9, target: 4, label: '开发' },
-  { id: 4, source: 3, target: 4, label: '包含' },
-  { id: 5, source: 4, target: 5, label: '依赖' },
-  { id: 6, source: 8, target: 4, label: '实现' },
-  { id: 7, source: 3, target: 7, label: '组织' },
-  { id: 8, source: 6, target: 3, label: '推广' },
-  { id: 9, source: 5, target: 8, label: '用于' },
-  { id: 10, source: 7, target: 2, label: '参与' },
-  { id: 11, source: 1, target: 6, label: '演讲' },
-  { id: 12, source: 3, target: 10, label: '研究' },
-])
-
-const entityFormVisible = ref(false)
-const editingEntityId = ref<number | null>(null)
-const entityForm = reactive<{ name: string; type: EntityType; description: string }>({
-  name: '',
-  type: '人物',
-  description: '',
+const tooltipColor = computed(() => nodeColor(hoverNode.value))
+const tooltipMeta = computed(() => {
+  const node = hoverNode.value
+  if (!node) return ''
+  if (node.node_type === 'memory') {
+    return `记忆 · ${node.memory_type || 'unknown'} · ${node.updated_at || '-'}`
+  }
+  return `实体 · ${node.node_type}`
 })
 
-const relationFormVisible = ref(false)
-const relationForm = reactive<{ source: number | undefined; label: string; target: number | undefined }>({
-  source: undefined,
-  label: '',
-  target: undefined,
-})
-
-function typeColor(type: string) {
-  return TYPE_COLORS[type as EntityType] ?? '#909399'
+function nodeColor(node: SimNode | GraphNode | null | undefined) {
+  if (!node) return '#909399'
+  if (node.node_type === 'memory') return MEMORY_COLORS[node.memory_type || 'graph'] || '#6366f1'
+  return ENTITY_COLORS[node.node_type] || '#94a3b8'
 }
 
-function relationCount(id: number) {
-  return relations.value.filter((relation) => relation.source === id || relation.target === id).length
+function shortLabel(node: GraphNode) {
+  const text = (node.node_type === 'memory' ? node.content || node.label : node.label) || node.id
+  return text.length > 18 ? `${text.slice(0, 18)}…` : text
+}
+
+async function load() {
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    const { data } = await http.get<{ code: number; message: string; data: GraphOverview }>(
+      '/memory-proxy/graph/overview',
+      { params: { limit: 120 } },
+    )
+    const overview = data.data
+    nodes.value = overview?.nodes || []
+    edges.value = overview?.edges || []
+    stats.value = overview?.stats || { memory_nodes: 0, entity_nodes: 0, edges: 0, outbox_pending: 0, outbox_dead: 0 }
+    await nextTick()
+    renderGraph()
+  } catch (e) {
+    nodes.value = []
+    edges.value = []
+    errorMsg.value =
+      (e as { response?: { data?: { message?: string } } })?.response?.data?.message || '图谱加载失败，请稍后重试'
+    renderGraph()
+  } finally {
+    loading.value = false
+  }
 }
 
 function renderGraph() {
@@ -236,46 +212,41 @@ function renderGraph() {
   }
   d3.select(canvas).selectAll('*').remove()
   tooltipVisible.value = false
-  currentLinks = []
-  if (entities.value.length === 0) return
+
+  const allowEntity = (node: GraphNode) => showEntities.value || node.node_type === 'memory'
+  const visibleNodes = nodes.value.filter(allowEntity)
+  if (visibleNodes.length === 0) return
+  const visibleIds = new Set(visibleNodes.map((node) => node.id))
+  const visibleEdges = edges.value.filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
 
   const width = canvas.clientWidth || 800
-  const height = canvas.clientHeight || 560
+  const height = canvas.clientHeight || 520
 
-  const nodes: SimNode[] = entities.value.map((entity) => ({
-    id: entity.id,
-    name: entity.name,
-    type: entity.type,
-    description: entity.description,
+  const simNodes: SimNode[] = visibleNodes.map((node) => ({
+    id: node.id,
+    label: shortLabel(node),
+    node_type: node.node_type,
+    memory_type: node.memory_type,
+    content: node.content,
+    updated_at: node.updated_at,
   }))
-  const nodeById = new Map<number, SimNode>(nodes.map((node) => [node.id, node]))
-  const links: SimLink[] = []
-  for (const relation of relations.value) {
-    const source = nodeById.get(relation.source)
-    const target = nodeById.get(relation.target)
-    if (source && target) {
-      links.push({ id: relation.id, label: relation.label, source, target })
-    }
+  const nodeById = new Map(simNodes.map((node) => [node.id, node]))
+  const simLinks: SimLink[] = []
+  for (const edge of visibleEdges) {
+    const source = nodeById.get(edge.source)
+    const target = nodeById.get(edge.target)
+    if (source && target) simLinks.push({ relation: edge.relation, source, target })
   }
-  currentLinks = links
 
   const svg = d3.select(canvas).append('svg').attr('width', width).attr('height', height)
   const container = svg.append('g')
 
-  // 类型图例（不随缩放）
-  const legend = svg.append('g').attr('class', 'graph-legend')
-  entityTypes.forEach((type, index) => {
-    const item = legend.append('g').attr('transform', `translate(12, ${14 + index * 22})`)
-    item.append('circle').attr('r', 6).attr('fill', TYPE_COLORS[type])
-    item.append('text').attr('x', 14).attr('y', 4).attr('font-size', 12).attr('fill', '#909399').text(type)
-  })
-
-  // 有向箭头
-  svg.append('defs')
+  svg
+    .append('defs')
     .append('marker')
     .attr('id', 'graph-arrow')
     .attr('viewBox', '0 -5 10 10')
-    .attr('refX', 30)
+    .attr('refX', 22)
     .attr('refY', 0)
     .attr('markerWidth', 6)
     .attr('markerHeight', 6)
@@ -287,35 +258,36 @@ function renderGraph() {
   const linkElements = container
     .append('g')
     .selectAll('line')
-    .data(links)
+    .data(simLinks)
     .join('line')
     .attr('stroke', '#c0c4cc')
-    .attr('stroke-width', 1.6)
-    .attr('stroke-opacity', 0.75)
+    .attr('stroke-width', 1.4)
+    .attr('stroke-opacity', 0.7)
     .attr('marker-end', 'url(#graph-arrow)')
 
   const nodeElements = container
     .append('g')
     .selectAll<SVGGElement, SimNode>('g')
-    .data(nodes)
+    .data(simNodes)
     .join('g')
     .attr('class', 'graph-node')
+    .style('cursor', (node) => (node.node_type === 'memory' ? 'pointer' : 'default'))
     .call(dragBehavior())
 
   nodeElements
     .append('circle')
-    .attr('r', 26)
-    .attr('fill', (node) => TYPE_COLORS[node.type])
+    .attr('r', (node) => (node.node_type === 'memory' ? 20 : 13))
+    .attr('fill', (node) => nodeColor(node))
     .attr('stroke', '#ffffff')
     .attr('stroke-width', 2)
 
   nodeElements
     .append('text')
-    .attr('dy', 40)
+    .attr('dy', (node) => (node.node_type === 'memory' ? 34 : 26))
     .attr('text-anchor', 'middle')
-    .attr('font-size', 12)
+    .attr('font-size', 11)
     .attr('fill', '#303133')
-    .text((node) => node.name)
+    .text((node) => node.label)
 
   nodeElements
     .on('mouseover', (event: MouseEvent, node: SimNode) => {
@@ -329,8 +301,12 @@ function renderGraph() {
       tooltipVisible.value = false
       nodeElements.select<SVGCircleElement>('circle').attr('stroke', '#ffffff').attr('stroke-width', 2)
     })
+    .on('click', (_event: MouseEvent, node: SimNode) => {
+      if (node.node_type === 'memory') router.push(`/memory/${node.id}`)
+    })
 
-  const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+  const zoomBehavior = d3
+    .zoom<SVGSVGElement, unknown>()
     .scaleExtent([0.3, 3])
     .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
       container.attr('transform', event.transform.toString())
@@ -338,11 +314,11 @@ function renderGraph() {
   svg.call(zoomBehavior)
 
   simulation = d3
-    .forceSimulation<SimNode>(nodes)
-    .force('link', d3.forceLink<SimNode, SimLink>(links).id((node) => node.id).distance(120).strength(0.5))
-    .force('charge', d3.forceManyBody<SimNode>().strength(-420))
+    .forceSimulation<SimNode>(simNodes)
+    .force('link', d3.forceLink<SimNode, SimLink>(simLinks).id((node) => node.id).distance(90).strength(0.5))
+    .force('charge', d3.forceManyBody<SimNode>().strength(-260))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collide', d3.forceCollide<SimNode>().radius(46))
+    .force('collide', d3.forceCollide<SimNode>().radius(36))
 
   simulation.on('tick', () => {
     linkElements
@@ -375,12 +351,6 @@ function dragBehavior() {
 
 function showTooltip(event: MouseEvent, node: SimNode) {
   hoverNode.value = node
-  hoverLinks.value = currentLinks.map((link) => {
-    const source = link.source as SimNode
-    const target = link.target as SimNode
-    if (source.id !== node.id && target.id !== node.id) return ''
-    return source.id === node.id ? `${link.label} → ${target.name}` : `${source.name} → ${link.label}`
-  }).filter((text) => text !== '')
   tooltipVisible.value = true
   window.requestAnimationFrame(() => {
     const canvas = graphRef.value
@@ -391,96 +361,13 @@ function showTooltip(event: MouseEvent, node: SimNode) {
   })
 }
 
-function openEntityForm(row?: GraphEntity) {
-  editingEntityId.value = row?.id ?? null
-  entityForm.name = row?.name ?? ''
-  entityForm.type = row?.type ?? '人物'
-  entityForm.description = row?.description ?? ''
-  entityFormVisible.value = true
-}
-
-function saveEntity() {
-  const name = entityForm.name.trim()
-  if (!name) {
-    ElMessage.warning('请输入实体名称')
-    return
-  }
-  if (entities.value.some((entity) => entity.name === name && entity.id !== editingEntityId.value)) {
-    errorMsg.value = `实体名称「${name}」已存在`
-    return
-  }
-  if (editingEntityId.value) {
-    const target = entities.value.find((entity) => entity.id === editingEntityId.value)
-    if (target) {
-      target.name = name
-      target.type = entityForm.type
-      target.description = entityForm.description.trim()
-      ElMessage.success('实体已更新')
-    }
-  } else {
-    entities.value.push({
-      id: Date.now(),
-      name,
-      type: entityForm.type,
-      description: entityForm.description.trim(),
-    })
-    ElMessage.success('实体已创建')
-  }
-  entityFormVisible.value = false
-  errorMsg.value = ''
-  renderGraph()
-}
-
-function removeEntity(id: number) {
-  entities.value = entities.value.filter((entity) => entity.id !== id)
-  relations.value = relations.value.filter((relation) => relation.source !== id && relation.target !== id)
-  ElMessage.success('实体及其关系已删除')
-  renderGraph()
-}
-
-function openRelationForm() {
-  relationForm.source = undefined
-  relationForm.label = ''
-  relationForm.target = undefined
-  relationFormVisible.value = true
-}
-
-function saveRelation() {
-  if (relationForm.source === undefined || relationForm.target === undefined || !relationForm.label.trim()) {
-    ElMessage.warning('请完整填写源实体、关系与目标实体')
-    return
-  }
-  if (relationForm.source === relationForm.target) {
-    errorMsg.value = '源实体与目标实体不能相同'
-    return
-  }
-  const label = relationForm.label.trim()
-  if (
-    relations.value.some(
-      (relation) => relation.source === relationForm.source && relation.target === relationForm.target && relation.label === label,
-    )
-  ) {
-    errorMsg.value = '该关系已存在'
-    return
-  }
-  relations.value.push({ id: Date.now(), source: relationForm.source, target: relationForm.target, label })
-  ElMessage.success('关系已创建')
-  relationFormVisible.value = false
-  errorMsg.value = ''
-  renderGraph()
-}
-
 function handleResize() {
   window.clearTimeout(resizeTimer)
   resizeTimer = window.setTimeout(() => renderGraph(), 200)
 }
 
 onMounted(() => {
-  // 模拟拉取图谱数据
-  window.setTimeout(() => {
-    loading.value = false
-    renderGraph()
-  }, 600)
+  load()
   window.addEventListener('resize', handleResize)
 })
 
@@ -489,17 +376,18 @@ onBeforeUnmount(() => {
   window.clearTimeout(resizeTimer)
   simulation?.stop()
   simulation = null
-  if (graphRef.value) {
-    d3.select(graphRef.value).selectAll('*').remove()
-  }
+  if (graphRef.value) d3.select(graphRef.value).selectAll('*').remove()
 })
 </script>
 
 <style scoped>
 .graph-hint { color: var(--ob-text-secondary); font-size: 13px; }
 .mb-16 { margin-bottom: 16px; }
+.stat-label { color: var(--ob-text-secondary); font-size: 12px; }
+.stat-value { font-size: 22px; font-weight: 600; margin-top: 4px; }
+.stat-sub { font-size: 14px; color: var(--ob-text-secondary); font-weight: 400; }
 .graph-card { position: relative; }
-.graph-body { position: relative; height: 560px; }
+.graph-body { position: relative; height: 520px; }
 .graph-canvas { width: 100%; height: 100%; }
 .graph-canvas :deep(svg) { display: block; }
 .graph-empty-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #fff; }
@@ -512,7 +400,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   padding: 10px 12px;
-  max-width: 260px;
+  max-width: 280px;
   font-size: 12px;
 }
 .tooltip-name { font-weight: 600; font-size: 14px; }

@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.10.0 |
+| 文档版本 | v1.11.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -316,10 +316,28 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 ---
 
+### 8.10 OpenMemory 前端对齐（v7.5.0~v7.8.0，v1.11.0）
+
+**背景**：OpenMemory 在 v7.5.0~v7.8.0 完成异步图投影、删除一致性、检索质量控制与图链路指标；统一前端记忆模块此前仍使用 mock 图谱与有限检索策略，需对齐真实能力。
+
+| 页面 | 变更 |
+|---|---|
+| 记忆图谱 `MemoryGraph.vue` | 移除 TD-13-18 mock 实体/关系与本地增删；改为 `GET /memory-proxy/graph/overview` 真实数据（`:Memory` / `:Entity` / `MENTIONS`），新增规模统计（记忆/实体/关系/待投影/死信）、实体显示开关、记忆节点点击进详情、空图与错误态 |
+| 记忆搜索 `MemorySearch.vue` | 策略新增 `graph` / `temporal` / `fusion`；新增「命中方式」列（记忆命中 / 实体节点）与 `matched_entity`；孤立实体（`entity:*`）不提供详情入口；图谱策略显示语义说明 |
+| 写入记忆 `MemoryWrite.vue` | 新增重要度滑杆（`metadata.importance`，默认 0.6），与标签合并为 metadata 一次提交；补充异步投影与分层说明 |
+| 记忆列表 `MemoryList.vue` | 删除模式可选软删/硬删并透传 `mode`；类型筛选对齐 `persistent/session/episode`；删除提示说明图投影同步清理 |
+
+**代理契约**：`GET /api/v1/memory-proxy/graph/overview?limit=120`（10~300）→ 上游 `GET /api/v1/graph/overview`，响应统一 `{code,message,data}` 信封，`data` 为 `{nodes, edges, stats}`；跨租户 fail-closed，图库不可用返回 503。
+
+**兼容性**：仅新增只读端点与页面字段展示，不改变既有响应结构；旧 `/memory/*` 路由与 `legacyRedirects` 不变。
+
+**验证**：`memory-graph-v180.spec.ts`（3 例）与 `memory-search-v180.spec.ts`（1 例）通过；`vue-tsc --noEmit` 通过；OpenBase `test_memory_proxy.py` 17 例通过（含 overview 透传）；真实 Neo4j overview 返回 200（20 记忆 + 27 实体、99 条 MENTIONS 边）。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.11.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.10：记忆模块对齐 OpenMemory v7.5.0~v7.8.0——图谱页接真实 `graph/overview`（替换 mock）、搜索页补图谱策略与命中语义、写入页补重要度分层、列表页补软/硬删除模式；含代理契约、兼容性与验证记录。 |
 | **v1.10.0** | 2026-10-22 | 研发（AI 辅助） | **记忆模块降级态闭环**：§8.7 更新——OpenMemory 启动故障已定位（Qdrant 客户端 5s 默认超时 → `ReadTimeout`）并修复（超时可配置，默认 30s；OpenMemory 提交 `c73b7c1`），记忆模块 6 页复跑 **PASS 6 / FAIL 0**；细节见《DevLogReport》v1.6.0 §2.10。 |
 | **v1.9.0** | 2026-10-22 | 研发（AI 辅助） | **环境前置补齐**：§8.7 更新——Neo4j 已以社区版 5.26.16 Windows 服务常驻（Bolt 7687 / HTTP 7474、认证开启、Auto），记忆模块降级态的根因已消除（细节见《DevLogReport》v1.5.0 §2.9）；`Redis/Qdrant` 维持编排脚本常驻结论不变。 |
 | **v1.8.0** | 2026-10-22 | 研发（AI 辅助） | **请求超时兜底与本地基础设施编排**：① §8.9 新增第 14 项——代理类端点（memory/rag/dps/llm/gateway）超时由 15s 收敛到 **8s**，上游挂起时列表页尽早进入可重试错误态（流式调用 120s 不受影响）；② §8.7 关闭「loading 兜底」观察项，并把 `Redis(6380)`/`Qdrant(6333)` 纳入 `start-all-services.ps1` 常驻编排（新增 `TcpProbe` 探测与 local 模式依赖连带）；③ §8.6 复跑 `vitest` 250/250、`vite build` 成功。 |

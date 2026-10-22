@@ -16,11 +16,14 @@
           />
         </el-form-item>
         <el-form-item label="策略">
-          <el-select v-model="strategy" style="width: 150px" data-test="search-strategy">
+          <el-select v-model="strategy" style="width: 160px" data-test="search-strategy">
             <el-option label="自动" value="auto" />
             <el-option label="语义" value="semantic" />
             <el-option label="关键词" value="keyword" />
             <el-option label="混合" value="hybrid" />
+            <el-option label="图谱" value="graph" />
+            <el-option label="时序" value="temporal" />
+            <el-option label="融合" value="fusion" />
           </el-select>
         </el-form-item>
         <el-form-item label="数量">
@@ -31,6 +34,15 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <el-alert
+      v-if="isGraphStrategy && !errorMsg"
+      title="图谱检索仅返回记忆：实体命中会沿 MENTIONS 解析为关联记忆；未关联任何记忆的孤立实体会以实体节点展示"
+      type="info"
+      show-icon
+      class="mb-16"
+      data-test="search-graph-hint"
+    />
 
     <el-alert
       v-if="errorMsg"
@@ -66,6 +78,20 @@
               <el-tag size="small" effect="plain">{{ row.memory_type }}</el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="命中方式" min-width="150">
+            <template #default="{ row }">
+              <el-tag v-if="row.metadata?.node_type === 'memory'" size="small" type="success" effect="plain" data-test="search-hit-mode">
+                记忆命中
+              </el-tag>
+              <el-tag v-else-if="row.metadata?.node_type" size="small" type="warning" effect="plain" data-test="search-hit-mode">
+                实体节点 · {{ row.metadata.node_type }}
+              </el-tag>
+              <span v-else class="muted">-</span>
+              <div v-if="row.metadata?.matched_entity" class="matched-entity" data-test="search-matched-entity">
+                实体：{{ row.metadata.matched_entity }}
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="标签" min-width="130">
             <template #default="{ row }">
               <el-tag v-for="t in row.tags || []" :key="t" size="small" type="info" class="mr-4">{{ t }}</el-tag>
@@ -73,12 +99,19 @@
           </el-table-column>
           <el-table-column label="来源" width="90">
             <template #default="{ row }">
-              <el-tag size="small" effect="plain" type="warning">{{ row.source }}</el-tag>
+              <el-tag size="small" effect="plain" :type="sourceType(row.source)">{{ row.source }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="90" fixed="right">
             <template #default="{ row }">
-              <el-button link type="primary" data-test="search-detail" @click="$router.push(`/memory/${row.memory_id}`)">详情</el-button>
+              <el-button
+                v-if="isMemoryId(row.memory_id)"
+                link
+                type="primary"
+                data-test="search-detail"
+                @click="$router.push(`/memory/${row.memory_id}`)"
+              >详情</el-button>
+              <span v-else class="muted">实体节点</span>
             </template>
           </el-table-column>
         </el-table>
@@ -99,8 +132,15 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { http } from '@/core/api/http'
+
+interface RecallMetadata {
+  node_type?: string
+  matched_entity?: string
+  tags?: string[]
+  [key: string]: unknown
+}
 
 interface RecallResult {
   memory_id: string
@@ -110,6 +150,7 @@ interface RecallResult {
   source: string
   tags: string[]
   entities: unknown[]
+  metadata?: RecallMetadata
 }
 
 const query = ref('')
@@ -119,6 +160,8 @@ const loading = ref(false)
 const searched = ref(false)
 const errorMsg = ref('')
 const results = ref<RecallResult[]>([])
+
+const isGraphStrategy = computed(() => strategy.value === 'graph' || strategy.value === 'temporal')
 
 async function runSearch() {
   const q = query.value.trim()
@@ -136,7 +179,7 @@ async function runSearch() {
     )
     results.value = (data.data?.results || []).map((m) => ({
       ...m,
-      tags: (m as unknown as { metadata?: { tags?: string[] } })?.metadata?.tags || m.tags || [],
+      tags: m.metadata?.tags || m.tags || [],
     }))
   } catch (e) {
     results.value = []
@@ -152,6 +195,18 @@ function scoreType(score: number | null) {
   if (s >= 0.1) return 'warning'
   return 'info'
 }
+
+function sourceType(source: string) {
+  if (source === 'graph') return 'success'
+  if (source === 'semantic') return 'primary'
+  if (source === 'keyword') return 'warning'
+  return 'info'
+}
+
+/** 仅 UUID 记忆 id 可进入详情；`entity:*` 为孤立实体节点。 */
+function isMemoryId(memoryId: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memoryId)
+}
 </script>
 
 <style scoped>
@@ -160,4 +215,6 @@ function scoreType(score: number | null) {
 .mr-4 { margin-right: 4px; }
 .result-meta { margin-bottom: 8px; color: var(--ob-text-secondary); font-size: 13px; }
 .cell-content { white-space: pre-wrap; line-height: 1.6; }
+.muted { color: var(--ob-text-secondary); font-size: 12px; }
+.matched-entity { color: var(--ob-text-secondary); font-size: 12px; margin-top: 2px; }
 </style>

@@ -404,3 +404,29 @@ def test_memory_proxy_multipart_no_token_401(client: TestClient) -> None:
     )
     assert resp.status_code == 401, resp.text
     assert resp.json()["code"] == "AUTH_401"
+
+
+def test_memory_proxy_graph_overview_passthrough(client: TestClient) -> None:
+    """图谱 overview（v7.8.0 P6）→ limit 透传 + 统一信封."""
+    token = _token(client)
+    payload = {
+        "nodes": [{"id": "mem-1", "label": "OpenBase", "node_type": "memory"}],
+        "edges": [],
+        "stats": {"memory_nodes": 1, "entity_nodes": 0, "edges": 0,
+                  "outbox_pending": 0, "outbox_dead": 0},
+    }
+    client.fake.set_responses([FakeResponse(200, payload)])  # type: ignore[attr-defined]
+
+    resp = client.get(
+        "/api/v1/memory-proxy/graph/overview?limit=60",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["code"] == 0
+    assert body["data"]["stats"]["memory_nodes"] == 1
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "GET"
+    assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v1/graph/overview")
+    assert call["params"] == {"limit": 60}
