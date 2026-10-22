@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.14.0 |
+| 文档版本 | v1.15.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -377,10 +377,32 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **验证**：`tests/test_proxy_target_system_v190.py` 8 例（映射 4 组 + 未知回落 + 装配透传 + 凭据注入/不注入）；`tests/providers-v190.spec.ts` 4 例；55 条 proxy/protocol 相关后端用例通过；浏览器实测提供商页 3 张卡片、模型数 3、控制台 0 error；`PUT /providers/{id}` 等值更新 200。
 
+### 8.13 A 类页面接线（R1，v1.15.0）
+
+**范围**：缺口清单 R1——「后端已有端点、页面仍用 mock」的三页。原则：**不伪造成功**，后端不具备的能力显式降级并登记缺口。
+
+| 页面 | 契约 | 设计要点 |
+|------|------|----------|
+| 用户管理 | `GET/POST /users`、`PUT /users/{id}`、`PUT /users/{id}/role`、`DELETE /users/{id}` | 后端返回**裸数组**（非信封）；`status` 为 `0/1`；`roles[]` 取首元素展示、分配走独立端点；新建必填 `display_name`；角色下拉使用五码标准集合（admin/org_admin/org_member/user/viewer）；内置 `admin` 禁止停用与删除 |
+| API 密钥 | `GET/POST /auth/api-keys`、`DELETE /auth/api-keys/{raw_key}` | 列表不含明文与 id；创建响应一次性返回 `key`，仅本会话内存保存用于复制与吊销；其余历史记录「吊销」置禁用并说明原因（后端按明文定位）；移除后端不存在的模型权限/速率/过期字段 |
+| EdgeRouter | `/proxy/openllm/api/v1/edge/{status,health,adapters,organizations,quotas/{org},audit/logs}` | 概览、组织、适配器、审计四类真实数据；组织新增/编辑与配额调整走真实 `POST/PUT`；适配器只读（注销影响运行态，需运维窗口）；配额以组织为维度，无组织时给引导而非空表 |
+
+**新增模块**：`core/api/users.ts`、`core/api/apiKeys.ts`、`governance.ts#edgeApi`。
+
+**边界与已知缺口**：
+
+- 服务 Key 缺 `key_id` → 历史密钥无法前端吊销（缺口清单 C 类，R2 建议后端补 id 化吊销）；
+- Edge 组织为 OpenLLM 进程内存存储，重启清空；
+- 配额无组织时无数据（已给引导文案）；
+- **上游并发缺陷规避**：OpenLLM 同步端点并发访问 `scoped_session` 会抛 `InvalidRequestError`（并发必有一路 500）。提供商页的模型数改为串行拉取 + 逐条容错；根因修复归 OpenLLM（缺口清单 §7 第 5 项 / R2）。
+
+**验证**：`tests/r1-wiring-v191.spec.ts` 10 例；关联回归 4 文件 40 例；`vue-tsc --noEmit` 0 错误；密钥「创建 → 列表无明文 → 吊销」接口全链路；三页浏览器实测 0 error。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.15.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.13：A 类三页接线（R1）——用户管理 `/users`、API 密钥 `/auth/api-keys`、EdgeRouter `/edge/**`；明确「不伪造成功」原则、字段映射与三项已知缺口（服务 Key 无 id、Edge 组织内存态、配额无组织引导）。 |
 | **v1.14.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.12：OpenLLM 聚合通道与来源映射——通用代理出站来源按被代理系统映射（修 401 根因）、仅 openllm 注入 API Key（修第二段 401）、新增 `core/api/governance.ts`，提供商管理页端到端真实化；同步缺口清单与后续轮次路线。 |
 | **v1.13.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.11：开发代理上游不可达时由空 500 改为 503 JSON（`SYS_UPSTREAM_UNAVAILABLE`），避免误判服务端故障；补 4 例单测与实测记录。 |
 | **v1.12.0** | 2026-10-22 | 研发（AI 辅助） | §8.5 补充：新增 `/login → /auth/login` 顶层重定向，消除首帧 `No match found` 告警与 `redirect=/login` 自我回跳；补 S6-T2-5 两条回归用例并通过浏览器实测。 |

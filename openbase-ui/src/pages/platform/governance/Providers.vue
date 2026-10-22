@@ -132,18 +132,25 @@ function formatTime(value: string | null): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+/**
+ * 逐个拉取模型数（**串行**）。
+ *
+ * 上游 OpenLLM 的 `get_db` 使用 `scoped_session` + 线程池，同步端点并发访问同一
+ * Session 时会抛出 `InvalidRequestError: This session is provisioning a new connection;
+ * concurrent operations are not permitted`（实测 3 路并发必有 1 路 500）。
+ * 该缺陷归 OpenLLM 侧修复；前端在此串行化，避免以「模型数」这种非关键指标触发 5xx。
+ */
 async function loadModelCounts(items: LlmProvider[]): Promise<void> {
-  const pairs = await Promise.all(
-    items.map(async (item) => {
-      try {
-        const models = await governanceApi.listProviderModels(item.id)
-        return [item.id, models.length] as const
-      } catch {
-        return [item.id, undefined] as const
-      }
-    }),
-  )
-  modelCounts.value = Object.fromEntries(pairs.filter((pair) => pair[1] !== undefined)) as Record<string, number>
+  const counts: Record<string, number> = {}
+  for (const item of items) {
+    try {
+      const models = await governanceApi.listProviderModels(item.id)
+      counts[item.id] = models.length
+    } catch {
+      // 单个提供商失败不阻断列表展示（该行显示「—」）
+    }
+  }
+  modelCounts.value = counts
 }
 
 async function load(): Promise<void> {

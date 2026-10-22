@@ -368,6 +368,46 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.15 R1：A 类三页接线（v1.9.1）
+
+**范围**：按缺口清单 R1，把已有后端端点（实测 200）但页面仍用 mock 的三页接真实数据，并移除假动作。
+
+| 页面 | 数据源 | 关键改动 |
+|------|--------|----------|
+| 用户管理 `/platform/identity/users` | OpenBase `/api/v1/users` | 真实列表（用户名/显示名/邮箱/角色/状态/租户）；新建补 `display_name`（后端必填）；角色分配走 `PUT /users/{id}/role`；启停 `PUT /users/{id} {status}`；停用 `DELETE /users/{id}`（软删）；角色下拉对齐五码标准集合；内置 `admin` 禁止停用 |
+| API 密钥 `/platform/config/api-keys` | OpenBase `/api/v1/auth/api-keys` | 真实列表（访问范围/描述/创建时间/状态）；创建后一次性展示明文 + 复制；吊销走 `DELETE /auth/api-keys/{raw_key}`；删除虚构的「模型权限 / 速率限制 / 过期时间」字段（后端无此契约） |
+| EdgeRouter `/platform/developers/edgerouter` | OpenLLM `/api/v1/edge/**`（经通用代理） | 新增「概览」（status/health/能力开关）；组织管理（列表/新增/编辑）；配额管理（按组织查询/调整）；适配器管理（只读，附注销风险说明）；路由审计（分页）；移除随机造数的「新增组织/新增配额/适配器开关」 |
+
+**新增前端 API 模块**：`core/api/users.ts`、`core/api/apiKeys.ts`；`core/api/governance.ts` 追加 `edgeApi` 与 Edge 类型。
+
+**发现的真实后端缺口（登记入缺口清单 C 类）**
+
+- 服务 Key 列表 `ApiKeyOut` **不含 id**，吊销端点为 `DELETE /auth/api-keys/{raw_key}`（按明文 Key 定位）→ 列表中的历史密钥无法在前端吊销。
+- 本轮处置：仅「本次会话创建且仍持有明文」的密钥可吊销，其余按钮禁用并给出原因说明（不伪造成功）；R2 建议后端补 `key_id` 与 `DELETE /auth/api-keys/{id}`。
+
+**发现的跨仓缺陷（OpenLLM 并发 500）**
+
+- 现象：全页面回归时「提供商管理」每次加载产生 1 次 `GET /providers/{id}/models → 500`；单页连续 3 次复现，且失败对象随机。
+- 定位：OpenBase 审计日志显示 `upstream_status=500`（**上游返回**，非代理缺陷）；OpenLLM 栈为 `app/api/providers.py::list_models_by_provider → query.all()` + `app/db/session.py::get_db → db.close()`，异常为 `sqlalchemy.exc.InvalidRequestError: This session is provisioning a new connection; concurrent operations are not permitted`。根因是 `SessionLocal = scoped_session(...)` 与 FastAPI 同步端点的线程池组合：并发请求在线程间复用/交错同一 Session。
+- 规避（本仓）：模型数改为**串行**逐个拉取并逐条容错，不再 3 路并发；串行后连续 3 次浏览器加载均 0 error。
+- 根因修复：归 OpenLLM 侧（`get_db` 每请求独立 Session），已列入缺口清单 §7 第 5 项与 R2 跨仓派单。
+
+**验证**
+
+| 项 | 命令/方式 | 结果 |
+|---|-----------|------|
+| 新增前端用例 | `vitest run tests/r1-wiring-v191.spec.ts` | **10 passed**（用户 4 / 密钥 3 / Edge 3） |
+| 关联回归 | `vitest run l3-2-smoke + router-nav + providers-v190 + r1-wiring` | **40 passed（4 文件）** |
+| 类型检查 | `vue-tsc --noEmit` | 0 错误 |
+| 密钥全链路 | 接口实测：创建 → 列表（无明文）→ 吊销 | `created key_prefix=ob_k_…`、`list has_plaintext=False`、`revoked=True` |
+| 浏览器实测（用户） | `node scripts/check_page.mjs /platform/identity/users` | 3 条真实用户、`GET /users 200`、0 error |
+| 浏览器实测（密钥） | 同上 `/platform/config/api-keys` | 真实记录 + 「已吊销」态、0 error |
+| 浏览器实测（Edge） | 同上 `/platform/developers/edgerouter` | status/health/adapters/organizations 均 200、概览与能力开关真实、0 error |
+
+**遗留**：配额页在「无组织」时无数据可展示（已给引导文案）；Edge 组织为 OpenLLM 内存存储，重启即清空，属上游现状。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -455,6 +495,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.6.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.15：**R1 A 类三页接线**——用户管理（`/users` 全量 CRUD + 角色五码）、API 密钥（`/auth/api-keys` 列表/创建/吊销 + 一次性明文）、EdgeRouter（`/edge/**` 概览/组织/配额/适配器/审计）；移除三页全部假动作；登记「服务 Key 列表无 id、吊销需明文」后端缺口。验证：前端 10 例 + 关联回归 40 例、vue-tsc 0 错误、密钥创建→吊销全链路、三页浏览器实测 0 error。 |
 | v2.5.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.14：**全栈功能级审计与 OpenLLM 聚合通道打通**——四层审计（加载/交互/API 面/通道探测）覆盖 77 页，PASS 76/1（唯一 FAIL 为沙箱下 Chromium `ERR_NO_BUFFER_SPACE` 噪声），API 失败 0；单列 52 页无后端调用并按 A~E 五类成账；修复通用代理两段 401（来源按系统映射 + 仅 openllm 注入 API Key）；提供商管理页端到端真实化。验证：后端 8+55 例、前端 4 例、浏览器实测 0 error、全页面回归 api 失败 0。 |
 | v2.4.0 | 2026-10-22 | 研发（AI 辅助） | §2.13 补充：排查服务重启期 `/api/v1/modules` 500——根因为 Vite 代理对上游连接失败返回空 500（非后端缺陷）；代理统一映射为 503 JSON，补 4 例单测并实测通过。 |
 | v2.3.0 | 2026-10-22 | 研发（AI 辅助） | §2.13 补充：修复 `/login` 首帧 `No match found` 告警与 `redirect=/login` 自回跳——新增 `/login → /auth/login` 顶层重定向（保留 query/hash）；S6-T2-5 两条用例 + 浏览器实测通过。 |

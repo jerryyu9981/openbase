@@ -1,6 +1,7 @@
 <template>
-  <PageContainer title="API 密钥" description="服务级 API Key 的创建与吊销" test-id="api-keys-page">
+  <PageContainer title="API 密钥" description="服务级 API Key 的创建与吊销（数据源：OpenBase /api/v1/auth/api-keys）" test-id="api-keys-page">
     <div class="page-toolbar">
+      <el-button data-test="refresh-api-keys" :loading="loading" @click="load">刷新</el-button>
       <el-button type="primary" data-test="create-api-key" @click="openCreate">创建密钥</el-button>
     </div>
 
@@ -15,108 +16,140 @@
       @close="errorMessage = ''"
     />
 
+    <el-alert
+      type="info"
+      :closable="false"
+      show-icon
+      class="mb-16"
+      title="完整密钥仅在创建成功时展示一次；列表不回显明文。吊销接口按明文 Key 定位记录，因此只能吊销「本次会话中创建、且仍持有明文」的密钥。"
+      data-test="api-keys-notice"
+    />
+
     <div v-loading="loading" class="ob-table-scroll">
       <el-table :data="apiKeys" stripe data-test="api-keys-table">
         <template #empty>
           <el-empty description="暂无 API 密钥，点击右上角创建" :image-size="60" data-test="api-keys-empty" />
         </template>
-        <el-table-column prop="name" label="名称" min-width="140" />
-        <el-table-column label="模型权限" min-width="190">
+        <el-table-column prop="name" label="名称" min-width="150" />
+        <el-table-column label="访问范围" min-width="240">
           <template #default="{ row }">
-            <el-tag v-for="model in row.model_permissions" :key="model" size="small" class="perm-tag" type="info">{{ model }}</el-tag>
-            <span v-if="!row.model_permissions.length" class="text-muted">全部模型</span>
+            <div class="scope-row">
+              <span class="scope-label">系统</span>
+              <el-tag v-for="system in row.scope.system || []" :key="`s-${system}`" size="small" type="info" class="perm-tag">
+                {{ system }}
+              </el-tag>
+            </div>
+            <div class="scope-row">
+              <span class="scope-label">租户</span>
+              <el-tag v-for="tenant in row.scope.tenants || []" :key="`t-${tenant}`" size="small" class="perm-tag">
+                {{ tenant }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="速率限制" width="110">
-          <template #default="{ row }">{{ row.rate_limit }} rps</template>
+        <el-table-column prop="description" label="描述" min-width="160">
+          <template #default="{ row }">{{ row.description || '—' }}</template>
         </el-table-column>
-        <el-table-column label="过期时间" width="120">
-          <template #default="{ row }">
-            <span>{{ row.expires_at || '永不过期' }}</span>
-          </template>
+        <el-table-column label="创建时间" width="180">
+          <template #default="{ row }">{{ formatCreated(row.created) }}</template>
         </el-table-column>
         <el-table-column label="状态" width="90">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+            <el-tag :type="row.revoked ? 'danger' : 'success'" size="small">{{ row.revoked ? '已吊销' : '有效' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" data-test="view-api-key" @click="openDetail(row)">详情</el-button>
-            <el-popconfirm title="确认删除该密钥？删除后所有关联调用将立即失效" @confirm="remove(row.id)">
-              <template #reference>
-                <el-button link type="danger" data-test="delete-api-key">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <el-tooltip :disabled="canRevoke(row)" content="列表不回显明文 Key，无法定位记录；仅本次会话新建的密钥可在此吊销" placement="top">
+              <span>
+                <el-popconfirm
+                  title="确认吊销该密钥？关联调用将立即失效"
+                  :disabled="!canRevoke(row)"
+                  @confirm="revoke(row)"
+                >
+                  <template #reference>
+                    <el-button link type="danger" :disabled="!canRevoke(row)" data-test="delete-api-key">吊销</el-button>
+                  </template>
+                </el-popconfirm>
+              </span>
+            </el-tooltip>
           </template>
         </el-table-column>
       </el-table>
     </div>
 
-    <el-dialog v-model="createVisible" title="创建 API 密钥" width="520px" data-test="create-api-key-dialog">
+    <el-dialog v-model="createVisible" title="创建 API 密钥" width="560px" data-test="create-api-key-dialog">
       <el-form label-width="100px">
         <el-form-item label="名称" required>
-          <el-input v-model="form.name" placeholder="如：生产环境密钥" maxlength="50" data-test="api-key-name-input" />
+          <el-input v-model="form.name" placeholder="如：生产环境密钥" maxlength="64" data-test="api-key-name-input" />
         </el-form-item>
-        <el-form-item label="模型权限">
+        <el-form-item label="可访问系统">
           <el-select
-            v-model="form.model_permissions"
+            v-model="form.systems"
             multiple
             filterable
             allow-create
             default-first-option
-            placeholder="不选则默认授予全部模型权限"
+            placeholder="不选默认 *（全部系统）"
             style="width: 100%"
-            data-test="api-key-models-select"
+            data-test="api-key-systems-select"
           >
-            <el-option v-for="model in mockModels" :key="model" :label="model" :value="model" />
+            <el-option v-for="system in API_KEY_SYSTEM_OPTIONS" :key="system" :label="system" :value="system" />
           </el-select>
         </el-form-item>
-        <el-form-item label="速率限制">
-          <el-input-number v-model="form.rate_limit" :min="1" :max="1000" :step="10" style="width: 100%" data-test="api-key-rate-input" />
-          <div class="text-muted">单位：请求/秒（rps）</div>
-        </el-form-item>
-        <el-form-item label="过期时间">
-          <el-date-picker
-            v-model="form.expires_at"
-            type="date"
-            placeholder="选择过期日期"
-            value-format="YYYY-MM-DD"
+        <el-form-item label="可访问租户">
+          <el-select
+            v-model="form.tenants"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="不选默认 *（全部租户）"
             style="width: 100%"
-            data-test="api-key-expire-picker"
-          />
-          <div class="text-muted">留空表示永不过期</div>
+            data-test="api-key-tenants-select"
+          >
+            <el-option v-for="tenant in tenantOptions" :key="tenant" :label="tenant" :value="tenant" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="form.description" maxlength="200" placeholder="用途说明（可选）" data-test="api-key-desc-input" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" data-test="create-api-key-submit" @click="saveKey">创建</el-button>
+        <el-button type="primary" :loading="submitting" data-test="create-api-key-submit" @click="saveKey">创建</el-button>
       </template>
     </el-dialog>
 
-    <el-drawer v-model="detailVisible" title="密钥详情" size="420px" data-test="api-key-detail-drawer">
+    <el-drawer v-model="detailVisible" title="密钥详情" size="440px" data-test="api-key-detail-drawer">
       <el-descriptions v-if="detailRow" :column="1" border data-test="api-key-detail-desc">
-        <el-descriptions-item label="名称">{{ detailRow?.name }}</el-descriptions-item>
+        <el-descriptions-item label="名称">{{ detailRow.name }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusType(detailRow?.status || 'active')" size="small">{{ statusLabel(detailRow?.status || 'active') }}</el-tag>
+          <el-tag :type="detailRow.revoked ? 'danger' : 'success'" size="small">
+            {{ detailRow.revoked ? '已吊销' : '有效' }}
+          </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="完整密钥">
-          <span v-if="detailRow?.full_key" class="key-text" data-test="api-key-full-text">{{ detailRow.full_key }}</span>
-          <span v-else class="text-muted">{{ detailRow?.key_masked }}</span>
+          <span v-if="detailRow.key" class="key-text" data-test="api-key-full-text">{{ detailRow.key }}</span>
+          <span v-else class="text-muted">创建时已展示过一次，列表不再提供明文</span>
         </el-descriptions-item>
-        <el-descriptions-item label="模型权限">
-          <template v-if="detailRow?.model_permissions.length">
-            <el-tag v-for="model in detailRow?.model_permissions" :key="model" size="small" class="perm-tag" type="info">{{ model }}</el-tag>
-          </template>
-          <span v-else class="text-muted">全部模型</span>
+        <el-descriptions-item label="可访问系统">
+          <el-tag v-for="system in detailRow.scope.system || []" :key="`ds-${system}`" size="small" type="info" class="perm-tag">
+            {{ system }}
+          </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="速率限制">{{ detailRow?.rate_limit }} rps</el-descriptions-item>
-        <el-descriptions-item label="过期时间">{{ detailRow?.expires_at || '永不过期' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detailRow?.created_at }}</el-descriptions-item>
+        <el-descriptions-item label="可访问租户">
+          <el-tag v-for="tenant in detailRow.scope.tenants || []" :key="`dt-${tenant}`" size="small" class="perm-tag">
+            {{ tenant }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="描述">{{ detailRow.description || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatCreated(detailRow.created) }}</el-descriptions-item>
       </el-descriptions>
       <div class="drawer-footer">
-        <el-button v-if="detailRow?.full_key" type="primary" data-test="copy-api-key" @click="copyKey(detailRow)">复制密钥</el-button>
-        <span v-if="!detailRow?.full_key" class="text-muted">完整密钥仅在创建时展示一次，出于安全考虑不再提供明文查看</span>
+        <el-button v-if="detailRow?.key" type="primary" data-test="copy-api-key" @click="copyKey(detailRow)">复制密钥</el-button>
+        <span v-if="!detailRow?.key" class="text-muted">完整密钥仅在创建时展示一次，出于安全考虑不再提供明文查看</span>
       </div>
     </el-drawer>
   </PageContainer>
@@ -126,184 +159,141 @@
 import PageContainer from '@/components/page/PageContainer.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { API_KEY_SYSTEM_OPTIONS, apiKeysApi, type ApiKeyRecord } from '@/core/api/apiKeys'
 
-interface ApiKeyRow {
-  id: number
-  name: string
-  model_permissions: string[]
-  rate_limit: number
-  expires_at: string
-  status: string
-  created_at: string
-  /** 完整密钥明文：仅新建时临时保留，用于创建后唯一一次展示 */
-  full_key: string
-  /** 列表中展示的脱敏密钥 */
-  key_masked: string
-}
-
-const mockModels = ['gpt-4o', 'gpt-4o-mini', 'qwen2.5-7b', 'claude-3-5-sonnet', 'bge-m3']
-
-const loading = ref(true)
+const loading = ref(false)
+const submitting = ref(false)
 const errorMessage = ref('')
 const createVisible = ref(false)
 const detailVisible = ref(false)
-const detailRow = ref<ApiKeyRow | null>(null)
+const detailRow = ref<ApiKeyRecord | null>(null)
+
+const apiKeys = ref<ApiKeyRecord[]>([])
+/** 本次会话创建且仍持有明文 Key 的记录（仅这些可吊销） */
+const ownedKeys = ref<Record<string, string>>({})
+const tenantOptions = ref<string[]>([])
 
 const form = reactive({
   name: '',
-  model_permissions: [] as string[],
-  rate_limit: 60,
-  expires_at: '',
+  systems: [] as string[],
+  tenants: [] as string[],
+  description: '',
 })
 
-/** 契约 mock：本地密钥数据（不调用真实 API） */
-const apiKeys = ref<ApiKeyRow[]>([
-  {
-    id: 1,
-    name: '生产环境密钥',
-    model_permissions: ['gpt-4o', 'gpt-4o-mini'],
-    rate_limit: 120,
-    expires_at: '2027-08-27',
-    status: 'active',
-    created_at: '2026-08-01 10:00',
-    full_key: '',
-    key_masked: 'ob-••••••••••••••••••••••••••••••••',
-  },
-  {
-    id: 2,
-    name: '测试环境密钥',
-    model_permissions: [],
-    rate_limit: 30,
-    expires_at: '',
-    status: 'active',
-    created_at: '2026-08-10 14:30',
-    full_key: '',
-    key_masked: 'ob-••••••••••••••••••••••••••••••••',
-  },
-  {
-    id: 3,
-    name: '已过期密钥',
-    model_permissions: ['qwen2.5-7b'],
-    rate_limit: 10,
-    expires_at: '2026-06-30',
-    status: 'expired',
-    created_at: '2026-05-01 09:00',
-    full_key: '',
-    key_masked: 'ob-••••••••••••••••••••••••••••••••',
-  },
-])
+function recordKey(record: ApiKeyRecord): string {
+  return `${record.name}|${record.created}`
+}
 
-function statusType(status: string) {
-  return { active: 'success', expired: 'info', revoked: 'danger' }[status] || 'info'
+function formatCreated(created: number): string {
+  if (!created) return '—'
+  const date = new Date(created * 1000)
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString()
 }
-function statusLabel(status: string) {
-  return { active: '有效', expired: '已过期', revoked: '已吊销' }[status] || status
+
+function messageOf(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message
+  return fallback
 }
-function maskKey(fullKey: string): string {
-  return `${fullKey.slice(0, 6)}••••••••••••••••••••••••••••••••`
+
+function canRevoke(record: ApiKeyRecord): boolean {
+  return Boolean(ownedKeys.value[recordKey(record)]) && !record.revoked
 }
-function generateKey(): string {
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let randomPart = ''
-  for (let index = 0; index < 32; index += 1) {
-    randomPart += charset[Math.floor(Math.random() * charset.length)]
+
+async function load(): Promise<void> {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    apiKeys.value = await apiKeysApi.list()
+    const tenants = new Set<string>()
+    for (const record of apiKeys.value) {
+      for (const tenant of record.scope.tenants || []) tenants.add(tenant)
+    }
+    tenantOptions.value = [...tenants]
+  } catch (error) {
+    errorMessage.value = `密钥列表加载失败：${messageOf(error, '未知错误')}`
+  } finally {
+    loading.value = false
   }
-  return `ob-${randomPart}`
-}
-function nowText(): string {
-  return new Date().toISOString().slice(0, 16).replace('T', ' ')
 }
 
-function openCreate() {
+function openCreate(): void {
   errorMessage.value = ''
   form.name = ''
-  form.model_permissions = []
-  form.rate_limit = 60
-  form.expires_at = ''
+  form.systems = []
+  form.tenants = []
+  form.description = ''
   createVisible.value = true
 }
 
-function saveKey() {
+async function saveKey(): Promise<void> {
   if (!form.name.trim()) {
     ElMessage.warning('请输入密钥名称')
     return
   }
-  const fullKey = generateKey()
-  const newKey: ApiKeyRow = {
-    id: Date.now(),
-    name: form.name.trim(),
-    model_permissions: [...form.model_permissions],
-    rate_limit: form.rate_limit,
-    expires_at: form.expires_at,
-    status: 'active',
-    created_at: nowText(),
-    full_key: fullKey,
-    key_masked: maskKey(fullKey),
-  }
-  apiKeys.value.push(newKey)
-  createVisible.value = false
-  ElMessage.success('创建成功，密钥仅展示一次')
-  detailRow.value = newKey
-  detailVisible.value = true
-}
-
-function openDetail(row: ApiKeyRow) {
-  if (!row.full_key) {
-    // 安全策略：完整明文仅创建时展示一次
-    errorMessage.value = '该密钥的完整明文已在创建时展示过一次，出于安全考虑不再提供查看'
-    return
-  }
-  errorMessage.value = ''
-  detailRow.value = row
-  detailVisible.value = true
-}
-
-async function copyKey(row: ApiKeyRow) {
-  if (!row.full_key) return
+  submitting.value = true
   try {
-    await navigator.clipboard.writeText(row.full_key)
+    const record = await apiKeysApi.create({
+      name: form.name.trim(),
+      scope: {
+        system: form.systems.length ? [...form.systems] : ['*'],
+        tenants: form.tenants.length ? [...form.tenants] : ['*'],
+      },
+      description: form.description.trim(),
+    })
+    if (record.key) ownedKeys.value[recordKey(record)] = record.key
+    createVisible.value = false
+    ElMessage.success('创建成功，密钥仅展示一次')
+    detailRow.value = record
+    detailVisible.value = true
+    await load()
+  } catch (error) {
+    errorMessage.value = `创建失败：${messageOf(error, '未知错误')}`
+  } finally {
+    submitting.value = false
+  }
+}
+
+function openDetail(record: ApiKeyRecord): void {
+  errorMessage.value = ''
+  detailRow.value = { ...record, key: ownedKeys.value[recordKey(record)] }
+  detailVisible.value = true
+}
+
+async function copyKey(record: ApiKeyRecord): Promise<void> {
+  if (!record.key) return
+  try {
+    await navigator.clipboard.writeText(record.key)
     ElMessage.success('密钥已复制到剪贴板')
-  } catch (_error) {
+  } catch {
     ElMessage.warning('复制失败，请手动选择复制')
   }
 }
 
-function remove(id: number) {
-  const target = apiKeys.value.find((item) => item.id === id)
-  apiKeys.value = apiKeys.value.filter((item) => item.id !== id)
-  ElMessage.success(`密钥「${target?.name || ''}」已删除`)
+async function revoke(record: ApiKeyRecord): Promise<void> {
+  const rawKey = ownedKeys.value[recordKey(record)]
+  if (!rawKey) {
+    errorMessage.value = '该密钥的明文不在当前会话中，后端吊销接口无法定位记录'
+    return
+  }
+  try {
+    await apiKeysApi.revoke(rawKey)
+    delete ownedKeys.value[recordKey(record)]
+    ElMessage.success(`密钥「${record.name}」已吊销`)
+    await load()
+  } catch (error) {
+    errorMessage.value = `吊销失败：${messageOf(error, '未知错误')}`
+  }
 }
 
-function mockDelay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
-}
-
-onMounted(async () => {
-  loading.value = true
-  await mockDelay(500) // 契约 mock：模拟加载密钥列表
-  loading.value = false
-})
+onMounted(load)
 </script>
 
 <style scoped>
-.mb-16 {
-  margin-bottom: 16px;
-}
-.perm-tag {
-  margin-right: 4px;
-}
-.text-muted {
-  color: var(--ob-text-secondary);
-}
-.key-text {
-  font-family: monospace;
-  word-break: break-all;
-  user-select: all;
-}
-.drawer-footer {
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.mb-16 { margin-bottom: 16px; }
+.perm-tag { margin-right: 4px; }
+.scope-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.scope-label { color: var(--ob-text-secondary); font-size: 12px; min-width: 28px; }
+.text-muted { color: var(--ob-text-secondary); }
+.key-text { font-family: monospace; word-break: break-all; user-select: all; }
+.drawer-footer { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
 </style>
