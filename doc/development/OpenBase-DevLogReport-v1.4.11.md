@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v1.8.0 |
+| 文档版本 | v1.9.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -166,7 +166,7 @@ infra-qdrant  6333  HEALTHY  PID=20076
 |---|---|---|
 | **v7.4.0（P1）** | 读路径加固：`:Entity` 唯一约束、`entity_fulltext` 全文索引、`label` 索引修正、`GraphSearch` 全文检索 + 精确 label 回退、`LIMIT`/深度收紧、`caller="GraphSearch"` 审计 | **已完成**，OpenMemory 提交 `17cba89` |
 | v7.5.0（P2） | `graph_outbox`（Alembic v708）、`GraphProjector`、worker（SKIP LOCKED/批量/退避/死信/背压）、`:Memory` 节点与边、租户字段、forget 级联、读路径租户过滤 | **已完成**（OpenMemory `v7.5.0` 提交，见下） |
-| v7.6.0（P3） | 重要度分层与采样、批量 UNWIND、`graph_repair`（重放/对账/回填）、retention 与 decay 联动、指标告警 | 待实施 |
+| v7.6.0（P3） | 重要度分层与采样、批量 UNWIND、`graph_repair`（重放/对账/回填）、retention 与 decay 联动、指标告警 | **已完成**（P3 探针见下） |
 | v7.7.0（P4） | 跨仓联调、压测、灰度与回滚演练、文档回填 | 待实施 |
 
 **P1 验证**：`pytest tests/unit/test_graph_store.py tests/unit/test_search_engines.py tests/unit/test_graph_search.py` → **53 passed（60.85s）**；新增 6 条用例覆盖「全文索引优先 / 索引缺失回退 / 无实体短路 / top_k 截断 / 约束与全文索引语句」。
@@ -186,6 +186,18 @@ memory_nodes_after_delete= [{'c': 0}]
 Neo4j 侧索引已确认包含 `entity_id_unique`、`memory_id_unique`、`entity_fulltext`、`memory_fulltext`。
 
 **跨仓分工**：OpenBase 侧本轮**无代码改动**——outbox 由 OpenMemory 元数据写入同事务自动落库，代理无需改；`X-Tenant-ID` 已在 recall 链路透传，租户过滤在 OpenMemory 读路径 fail-closed 生效。
+
+**P3 验证（v7.6.0）**：单测 `test_graph_projection / test_graph_search / test_relational_store / test_config` → **67 passed**；探针（本机 PG + Neo4j）：
+
+```
+pending_low=0  pending_high=2                 # 分层策略：低价值不入队；高重要度/召回达标入队
+batch_stats= {'memories': 2, 'entities': 16}  # 批量 UNWIND：两条记忆一次写
+projected_nodes= [{'c': 2}] expected= 2
+after_replay_nodes= [{'c': 2}]                # 幂等重投不产生重复节点
+cleanup_remaining_nodes= [{'c': 0}]
+```
+
+新增能力：`projection_policy`（`importance`/`recall_count` 门槛，session 不投影）、`project_batch`、`scripts/graph_repair.py`（`--replay/--reconcile/--prune-done/--prune-orphans/--stats`）、`done_retention_days`；worker 已纳入 `start-all-services.ps1`（脚本新增无端口服务支持，`graph-worker` 常驻）。
 
 ---
 
@@ -276,6 +288,7 @@ Neo4j 侧索引已确认包含 `entity_id_unique`、`memory_id_unique`、`entity
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.9.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.6.0（P3 规模治理）已完成**——重要度分层（`projection_policy`）、批量 UNWIND（`project_batch`）、`graph_repair` CLI（回填/对账/清理）、`done` 事件保留期、worker 纳入 `start-all-services.ps1`；补单测 67 passed 与 P3 探针结果（低价值不入队 / 批量写入 / 幂等重投 / 清理归零）。 |
 | v1.8.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.5.0（P2 异步可靠投影）已完成**——登记 outbox 同事务落库、`GraphProjector`、worker、读路径租户 fail-closed；补单测 105 passed 与端到端探针结果（写入→投影→命中→跨租户 0→删除清零）。 |
 | v1.7.0 | 2026-10-22 | 研发（AI 辅助） | 更正 §2.10 第 7 项结论（「persistent 不写图」是实现缺口而非设计行为）；新增 §2.11「记忆图谱跨仓迭代」：登记跨仓方案 v1.0.0 与 v7.4.0~v7.7.0 路线，**v7.4.0（P1 读路径加固）已完成**（OpenMemory `17cba89`，回归 53 passed）。 |
 | v1.6.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.10「OpenMemory 启动失败根因与修复」：Qdrant 客户端 5s 默认超时导致 `ReadTimeout`（qdrant-client 1.7.3）+ 编排脚本单服务目标坍缩为字符串的 bug；处置为预建集合/索引 + OpenMemory `VectorStoreConfig.timeout=30`（提交 `c73b7c1`）；§4 增补记忆模块走查 6/6 与 OpenMemory 单测子集；§5 第 4 项闭环。 |
