@@ -3,12 +3,12 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.7.0 |
+| 文档版本 | v1.8.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
 | 创建日期 | 2026-09-29 |
-| 更新日期 | 2026-10-21 |
+| 更新日期 | 2026-10-22 |
 | 上游依据 | 《OpenBase-系统架构设计文档-v1.4.10》**v1.1.0** §3；《OpenBase-UIUX需求说明-v1.4.10》v1.2.0；《OpenBase-API接口设计文档-v1.4.10》v1.1.0 §5；《OpenBase-技术选型与ADR-v1.4.10》v1.0.0（ADR-05／06） |
 | 存放 | `doc/design/` |
 
@@ -267,17 +267,17 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 | 项 | 结果 |
 |---|---|
 | `vue-tsc --noEmit` | 通过（0 错误，收口全量改动后复跑） |
-| `vitest run --no-file-parallelism` | 21 文件 / **250 用例全通过**（串行执行，无超时；并行跑在宿主满载时会出现 3 条超时，属环境噪声） |
-| `vite build` | 构建成功（3079 modules transformed） |
+| `vitest run --no-file-parallelism` | 21 文件 / **250 用例全通过**（串行执行，无超时；并行跑在宿主满载时会出现 3 条超时，属环境噪声）。**v1.8.0 代理超时改动后复跑仍为 250/250** |
+| `vite build` | 构建成功（3079 modules transformed）；**v1.8.0 复跑成功**（`✓ built in 39.33s`） |
 | 路由契约 | 菜单 ⊆ 路由、routes−菜单 ⊆ 白名单、旧路径全量可达（`nav-consistency` 21 条、`platform-ia` 21 条全通过） |
 | **全页面走查** | `scripts/ui_e2e_all_services.mjs` 遍历 **77 页**：**PASS 77 / FAIL 0**（无 console error/warn、无 pageerror、无渲染兜底），逐页截图见 `doc/test/evidence/ui-preview/`（`index.html` 为预览页） |
 
 ### 8.7 遗留（阶段二之后）
 
-- 页面级加载/错误态统一到 `useAsyncState` + 统一错误条（**观察项**：上游挂起时记忆列表会长时间停留在 loading，需客户端超时兜底）；
+- ~~页面级加载/错误态统一到 `useAsyncState` + 统一错误条（**观察项**：上游挂起时记忆列表会长时间停留在 loading，需客户端超时兜底）~~ —— **客户端超时兜底已落地（v1.8.0）**：代理类端点 8s 硬超时，见 §8.9 第 14 项；`useAsyncState` 统一仍为后续项；
 - 面包屑与详情页页签规范落地；
 - 4 个占位页（模型部署、链路追踪、预算管理、应用调用记录）待上游接口就绪后转真实页面，入口已挂在统一监控/治理域内；
-- 环境前置：`OpenMemory` 依赖 **Neo4j(7687)**，本机未安装 → 记忆模块 6 页在走查中呈现降级态（页面本身无报错）。
+- 环境前置：`OpenMemory` 依赖 **Neo4j(7687)**，本机未安装 → 记忆模块 6 页在走查中呈现降级态（页面本身无报错）。`Redis(6380)` / `Qdrant(6333)` 已纳入 `doc/tmp/start-all-services.ps1` 常驻编排（local 模式下起 `openmemory`/`openrag` 自动连带拉起），仅 Neo4j 仍需人工安装。
 
 ### 8.8 后端 8s 级耗时的定位与处置（跨前后端）
 
@@ -312,6 +312,7 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 | 11 | 业务模块 39 页仍为各自私有布局 | 全部套用 `PageContainer`（openllm 11 / portrait 18 / memory 7 / knowledge 3） | `modules/*/pages/**` |
 | 12 | **模块页丢失全局侧栏**：模块路由以顶层路由挂载，进入任一业务模块页后左侧导航消失，无法回到公共功能 | `router.addRoute('root', ...)` 把模块路由挂到 AppLayout 之下，模块子导航渲染在内容区，侧栏/顶栏常驻 | `core/router/index.ts` |
 | 13 | 知识库 API 控制台首屏触发 ECharts 警告（图表在未激活页签内初始化，容器尺寸为 0） | 增加尺寸守卫 + `watch(activeTab)` 在切到「性能监控」后再渲染 | `pages/platform/developers/KnowledgeConsoleView.vue` |
+| 14 | 上游挂起时列表页长时间停留 loading（默认超时 15s，用户无反馈） | 代理类端点（`/memory-proxy/`、`/rag-proxy/`、`/dps-proxy/`、`/llm-proxy/`、`/gateway/`）超时收敛到 **8s**，让页面尽早进入「可重试」错误态；流式调用显式 120s 不受影响 | `core/api/http.ts` |
 
 ---
 
@@ -319,6 +320,7 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.8.0** | 2026-10-22 | 研发（AI 辅助） | **请求超时兜底与本地基础设施编排**：① §8.9 新增第 14 项——代理类端点（memory/rag/dps/llm/gateway）超时由 15s 收敛到 **8s**，上游挂起时列表页尽早进入可重试错误态（流式调用 120s 不受影响）；② §8.7 关闭「loading 兜底」观察项，并把 `Redis(6380)`/`Qdrant(6333)` 纳入 `start-all-services.ps1` 常驻编排（新增 `TcpProbe` 探测与 local 模式依赖连带）；③ §8.6 复跑 `vitest` 250/250、`vite build` 成功。 |
 | **v1.7.0** | 2026-10-22 | 研发（AI 辅助） | **全页面走查与两处走查缺陷修复**：① 走查 77 页（PASS 77/FAIL 0）并生成逐页截图与预览页；② §8.9 新增第 12~13 项——模块路由改挂 AppLayout 之下（修复业务模块页丢失全局侧栏）、知识库控制台 ECharts 隐藏页签初始化告警；③ §8.6 增加走查口径与结论；④ §8.7 登记环境前置（OpenMemory 依赖 Neo4j）与 loading 兜底观察项。 |
 | **v1.6.0** | 2026-10-21 | 研发（AI 辅助） | **业务模块收口（阶段四）**：① §8.2 把 DPS 模板化 12 页从顶部 `/dps/**` 静态路由归位到画像模块 `/portrait/dps/**`（进入模块导航、随 portrait 启停）；② §8.4 业务模块 39 页全部套用 `PageContainer`，全站 76 页统一页头与间距；③ §8.5 累计 28 条精确重定向 + `/dps/:pathMatch(.*)*` 前缀兜底；④ §8.9 增补第 8~11 项（DPS 归位、`.page-toolbar` 全局化、删除 `knowledge/Settings.vue` 死文件、业务模块页骨架）；⑤ §8.7 遗留收窄为 `useAsyncState`、面包屑与 4 个占位页。 |
 | **v1.5.0** | 2026-10-21 | 研发（AI 辅助） | **公共域收口（阶段三）**：① §8.4 公共功能五域 **37 页全部套用 `PageContainer`**；② 新增 §8.9 收口记录（7 项）——记忆席位补 `dependsOn`、gateway 开关只读化、`providers/register` 下线并收敛重定向、画像「分析报表/批量任务」假页下线、删除 2 个死文件、占位页统一为结果页并补入口；③ §8.7 遗留收窄为业务模块页（42 页）与 `useAsyncState` 统一。 |

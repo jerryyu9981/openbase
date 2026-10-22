@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.4.0 |
 | 状态 | **[Review]**（待人工批准） |
-| 日期 | 2026-10-21 |
+| 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.4.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.8.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
 | 开发方式 | 结构先行（骨架/路由/状态）→ 页面上收 → 首屏治理 → 后端耗时排查 → 静态与用例门禁 → 留痕 |
 
 ---
@@ -105,6 +105,27 @@
 **测试夹具同步**：`tests/platform-ia.spec.ts` 的模块夹具由「仅 openllm」扩为 openllm/memory/portrait/knowledge，
 否则新增的 `dependsOn` 会在 403 用例之前先行拦截，导致断言口径失真。
 
+### 2.8 请求超时兜底与本地基础设施编排（本轮补齐）
+
+补齐 §5 遗留第 5、7 项，均为「观察项转闭环」，不改变页面与接口契约。
+
+| # | 项 | 处置 | 文件 |
+|:-:|----|------|------|
+| 1 | 代理类端点沿用 15s 默认超时，上游挂起时列表页长时间停留 loading | 新增 `PROXY_TIMEOUT_MS = 8000` + `PROXY_PREFIXES`（`/memory-proxy/`、`/rag-proxy/`、`/dps-proxy/`、`/llm-proxy/`、`/gateway/`），请求拦截器仅在**未显式指定超时**时改写为 8s；流式调用（`llm.ts` / `rag.ts` 显式 120s）不受影响 | `core/api/http.ts` |
+| 2 | `Redis(6380)` 原为手工启动，重启后需人工拉起 | 纳入 `start-all-services.ps1` 常驻编排：新增 `infra-redis`（`--requirepass` 本机口令、关闭 RDB/AOF）、`infra-qdrant` 两个服务条目 | `doc/tmp/start-all-services.ps1` |
+| 3 | Redis 无 HTTP health 端点，原 `Test-HealthUrl` 判定恒为不健康 | 新增 `Test-TcpPort` 与 `Test-SvcHealthy`，服务条目支持 `TcpProbe=$true`（2s 建连即视为健康） | 同上 |
+| 4 | local 模式下起 `openmemory` 时若 Redis/Qdrant 未起会直接失败 | 新增依赖连带：`local` 模式下 `openmemory → {infra-redis, infra-qdrant}`、`openrag → {infra-qdrant}`，已监听则自动 skip | 同上 |
+
+**实测**（`-Only infra-redis,infra-qdrant`，`InfraMode=local`）：
+
+```
+===== final status =====
+infra-redis   6380  HEALTHY  PID=28288
+infra-qdrant  6333  HEALTHY  PID=20076
+```
+
+`OpenMemory` 仍需 **Neo4j(7687)**（本机未安装），本条如实保留为环境前置。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -157,9 +178,9 @@
 | 门禁 | 命令 | 结果 |
 |---|---|---|
 | 前端类型 | `vue-tsc --noEmit` | 0 错误（收口改动后复跑） |
-| 前端用例（串行全量） | `vitest run --no-file-parallelism` | **21 文件 / 250 用例全通过**，无超时 |
+| 前端用例（串行全量） | `vitest run --no-file-parallelism` | **21 文件 / 250 用例全通过**，无超时（§2.8 代理超时改动后复跑：`Tests 250 passed (250)`，86.75s） |
 | 前端用例（并行） | `vitest run` | 247/250（3 条超时，宿主 CPU 满载所致；串行全量已证 250/250） |
-| 前端构建 | `vite build` | 成功（3079 modules transformed） |
+| 前端构建 | `vite build` | 成功（3079 modules transformed）；§2.8 改动后复跑 `✓ built in 39.33s` |
 | 后端用例 | `pytest tests -k "auth or principal or permission"` | 103 用例全通过 |
 | 后端静态 | `ruff check openbase` | 0 错误 |
 | 接口实测 | `doc/tmp/probe_http_timing.py` | 见 §3.4 |
@@ -179,10 +200,10 @@
 | 1 | 页面级加载/错误态统一到 `useAsyncState` | 前端 | 与骨架配套，减少各页自写 loading/error |
 | 2 | 面包屑与详情页页签规范 | 前端 | 详情页目前用 `el-page-header` 各自实现 |
 | 3 | 4 个占位页转真实页面 | 前端 + 上游 | 模型部署、链路追踪、预算管理、应用调用记录；入口已就位 |
-| 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | 本机缺 Neo4j → 记忆 6 页走查为降级态；补齐后可复跑走查 |
-| 5 | 记忆列表 loading 兜底 | 前端 | 上游挂起时无客户端超时，页面长时间停留 loading |
+| 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | 本机缺 Neo4j → 记忆 6 页走查为降级态；补齐后可复跑走查。`Redis/Qdrant` 已由编排脚本常驻拉起 |
+| 5 | ~~记忆列表 loading 兜底~~ | 前端 | **已闭环（v1.4.0）**：代理类端点 8s 硬超时，见 §2.8 第 1 项 |
 | 6 | 宿主负载清理（quark 多实例、安全软件） | 运维/用户 | 直接决定连接建立与进程启动耗时 |
-| 7 | Redis（6380）已本机启动，需纳入服务编排常驻 | 运维 | 本次为手工启动，重启机器后需随栈启动 |
+| 7 | ~~Redis（6380）需纳入服务编排常驻~~ | 运维 | **已闭环（v1.4.0）**：`infra-redis`/`infra-qdrant` 入 `start-all-services.ps1`，见 §2.8 第 2~4 项 |
 | 8 | bcrypt `rounds` 是否下调 | 安全裁定 | 影响登录耗时 1~2s |
 | 9 | 本轮改动提交与三远程推送 | 研发 | 见提交清单，按精确文件圈定，禁 `git add -A` |
 
@@ -192,6 +213,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.4.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.8「请求超时兜底与本地基础设施编排」：代理类端点 8s 超时（`core/api/http.ts`）、`Redis/Qdrant` 纳入 `start-all-services.ps1`（`TcpProbe` 探测 + local 模式依赖连带）；§4 复跑 `vitest` 250/250 与 `vite build`；§5 第 5、7 项标记闭环；文档版本号与上游依据同步至架构文档 v1.8.0。 |
 | v1.3.0 | 2026-10-22 | 研发（AI 辅助） | 追加「全页面走查」：77 页 PASS 77/FAIL 0，产出逐页截图与预览页；§2.7 增补第 12~13 项走查缺陷（模块页丢失全局侧栏、ECharts 隐藏页签初始化告警）及修复；§4 增补走查门禁行；§5 登记 OpenMemory 依赖 Neo4j 的环境前置。 |
 | v1.2.0 | 2026-10-21 | 研发（AI 辅助） | 追加阶段四收口：§2.7 增补第 8~11 项（DPS 12 页归位画像模块并补导航、`.page-toolbar` 全局化、删除 `knowledge/Settings.vue`、业务模块 39 页套骨架并同步 `key-pages` 夹具）；§4 验证更新为全量 250 用例串行通过；§5 遗留收窄为 `useAsyncState`、面包屑与 4 个占位页。 |
 | v1.1.0 | 2026-10-21 | 研发（AI 辅助） | 新增 §2.7「公共域收口（阶段三）」：7 项缺口逐条处置（记忆席位 dependsOn、gateway 开关只读化、providers/register 与画像假页下线、2 个死文件删除、占位页统一为结果页并补入口、公共域 37 页套骨架），同步 E2E 页面清单与 `platform-ia` 测试夹具；§5 遗留收窄为业务模块页与占位页上游依赖。 |
