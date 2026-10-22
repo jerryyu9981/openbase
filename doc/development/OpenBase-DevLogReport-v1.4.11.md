@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.0.0 |
+| 文档版本 | v2.1.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -240,6 +240,32 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 回归：`ruff check src tests` 0 错误；`pytest tests/unit`（排除环境缺依赖的 `test_sdk.py`）**1376 passed / 18 failed / 27 errors**，失败项全部为环境中既有缺口（PG 组织事实源不可用、alembic `op` 导入、opentelemetry `sdk` 属性），与本次改动无关。
 
+### 2.12 v7.8.0 检索质量与可观测性（OpenMemory）
+
+**范围**（用户选定）：检索质量提升 + 可观测性补齐；方案见 OpenMemory `doc/planning/OpenMemory-v7.8.0-检索质量与可观测性迭代方案-v1.0.0.md`（v1.1.0）。OpenBase 无接口破坏、本轮无代码改动。
+
+**检索质量改动**（`search_engines.py`）：
+
+1. 实体命中不再把 `:Entity` 节点当作记忆返回，改为沿 `(m:Memory)-[:MENTIONS]->(e:Entity)` 解析为记忆（`score=0.90`，`metadata.matched_entity` 标注来源实体）；仅当实体无任何关联记忆时才保留节点级兜底（`score=0.80`）。
+2. 移除「遍历路径上的实体节点直接作为结果」的逻辑，避免 `memory_id=entity:*` 污染结果集。
+3. 实体名多词查询使用 `+term` 强制全部命中（抑制 OR 噪声）；自由查询保留 OR 召回。
+4. 统一转义 Lucene 保留字符（`+ - ! ( ) { } [ ] ^ " ~ * ? : \ /`、`&&`、`||`），用户输入不会触发查询语法错误。
+
+**可观测性改动**：
+
+- `/metrics` 新增 `openmemory_graph_projection_events_total{result}`、`openmemory_graph_projection_duration_seconds`、`openmemory_graph_search_total{result}`、`openmemory_graph_search_duration_seconds`、`openmemory_graph_search_hits`、`openmemory_graph_outbox_pending/_dead`。
+- graph worker 以内置 `http.server` 暴露 `http://127.0.0.1:9101/metrics`（`OPENMEMORY_GRAPH_PROJECTION_METRICS_PORT`，0=关闭），不新增依赖。
+- `deploy/prometheus/alerts/openmemory_alerts.yml` 新增 `openmemory-graph` 组：积压 >1000（10m）、死信 >0（5m）、检索 P95 >500ms、检索错误率 >5%。
+- `openmemory.api` 改为惰性导出，消除 `api.metrics` 与 `memory.service → retrieval → search_engines` 的循环导入。
+
+**验证**：
+
+- 相关单测（`test_graph_search` + `test_graph_quality_observability` + `test_graph_projection`）**43 passed**；`ruff check src tests scripts/graph_projection_worker.py` **0 错误**。
+- 真实 Neo4j 独立验证（`p5_verify.py`，tenant-1）：`hits=1`、`ids=['7d50cd3a-…']`、`entity_id_results=[]`（不再返回实体 id）；指标端点四类指标均可抓取，`openmemory_graph_search_total{result="ok"} 1`。
+- 全量单测：**1385 passed / 18 failed / 27 errors**，失败项与 v7.7.0 基线完全一致（环境缺口），新增 9 条用例全部通过。
+
+**遗留/环境说明**：执行期间宿主 CPU 被 IDE/远控进程持续占满，OpenMemory/OpenBase 进程级重启多次超时（300s 健康等待），因此本轮采用「独立进程 + 真实 Neo4j」完成检索与指标端点验证；服务级冒烟待宿主负载恢复后复跑，不阻塞代码交付。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -329,6 +355,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.1.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.12：**v7.8.0（检索质量与可观测性）已完成**——实体命中解析为记忆、孤立实体兜底、`+term` 全命中与 Lucene 转义；图投影/检索指标族、worker `:9101/metrics`、`openmemory-graph` 告警组；修复 `openmemory.api` 循环导入。验证：相关单测 43 passed、真实 Neo4j 无实体 id 结果、全量 1385 passed（失败项同基线）。 |
 | v2.0.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.7.0（P4 跨仓联调与生产门禁）已完成**——端到端探针全链路通过（写入→outbox→投影→图检索→forget→删除投影→不再召回）；修复 5 处缺陷（forget 未入队删除、孤儿实体残留、全文索引幽灵结果、缓存键缺租户、缓存失效前缀空转）；补压测（写 1k/读 1k）、租户隔离、重要度分层与 worker 停摆回滚演练结果；OpenBase 侧本轮无代码改动。 |
 | v1.9.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.6.0（P3 规模治理）已完成**——重要度分层（`projection_policy`）、批量 UNWIND（`project_batch`）、`graph_repair` CLI（回填/对账/清理）、`done` 事件保留期、worker 纳入 `start-all-services.ps1`；补单测 67 passed 与 P3 探针结果（低价值不入队 / 批量写入 / 幂等重投 / 清理归零）。 |
 | v1.8.0 | 2026-10-22 | 研发（AI 辅助） | §2.11 更新：**v7.5.0（P2 异步可靠投影）已完成**——登记 outbox 同事务落库、`GraphProjector`、worker、读路径租户 fail-closed；补单测 105 passed 与端到端探针结果（写入→投影→命中→跨租户 0→删除清零）。 |
