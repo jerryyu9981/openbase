@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v1.4.0 |
+| 文档版本 | v1.5.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.8.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.9.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
 | 开发方式 | 结构先行（骨架/路由/状态）→ 页面上收 → 首屏治理 → 后端耗时排查 → 静态与用例门禁 → 留痕 |
 
 ---
@@ -126,6 +126,22 @@ infra-qdrant  6333  HEALTHY  PID=20076
 
 `OpenMemory` 仍需 **Neo4j(7687)**（本机未安装），本条如实保留为环境前置。
 
+### 2.9 本地 Neo4j 社区版服务化（补齐环境前置）
+
+原 `D:\infra\neo4j` 只有 `Neo4jStandbyServer.java` + `neo4j-harness` jar（嵌入式启动器），没有发行目录与 `bin\neo4j.bat`，且 harness 每次启动新建随机 store 目录（数据不持久）、脱离会话易被回收。现已改为**社区版内核 + 发行布局 + Windows 服务**：
+
+| # | 项 | 结果 |
+|:-:|----|------|
+| 1 | 官方 zip 通道 | `dist.neo4j.org` 对本机返回 **403**（含 UA/Referer 伪装、`artifact.php` 302 落地、`versions/v1` 清单均不可达）；无 Docker / Chocolatey / NSSM；Maven Central 仅发布 jar 不发布发行包 |
+| 2 | 安装形态 | 用 **Maven Central 官方 jar（225 个，排除 junit/mockito/harness 等测试依赖）** 装配发行布局 `D:\infra\neo4j-community-5.26.16\{bin,conf,lib,data,logs,import,plugins,run}`，启动器为官方 `org.neo4j.server.startup.Neo4jCommand`（与发行包 `neo4j.bat` 同一入口） |
+| 3 | 配置 | `conf/neo4j.conf` 仅 ASCII 无 BOM（UTF8-BOM 会触发 `strict_validation` 报 `Unrecognized setting`）；仅监听 `127.0.0.1`，Bolt `:7687` / HTTP `:7474`；`dbms.security.auth_enabled=true`；堆 512m~1g、pagecache 512m（宿主资源紧张） |
+| 4 | 认证 | `neo4j-admin dbms set-initial-password` 在首次启动前写入，口令对齐 `.env.shared-infra` 的 `NEO4J_PASSWORD` |
+| 5 | 服务化 | 官方 `windows-service install` 依赖 `bin\tools\prunsrv-amd64.exe`（发行包内置，装配布局缺失）→ 从 `archive.apache.org` 取 **Apache Commons Daemon 1.4.1** 的 `prunsrv.exe` 落地为该文件；注册服务名 **`neo4j`**，启动类型 **Automatic**，运行账户 LocalSystem |
+| 6 | 验证 | 服务 `Running`、`StartMode=Auto`；`7687/7474` 均监听；HTTP 事务端点写读各 1 行成功（探针节点已删）；Python `neo4j` 驱动 Bolt 登录返回 `Neo4j Kernel 5.26.16 **community**` |
+| 7 | 数据持久性 | store 固定在 `data\databases\{neo4j,system}`，不再每次新建随机目录 |
+
+**已知坑（后续重装可复用）**：WMI 脱离会话拉起时环境 `PATH` 极简，Neo4j `WindowsBootloaderOs` 需调用 `powershell.exe`，必须显式补 `C:\Windows\System32` 与 `WindowsPowerShell\v1.0`，否则报 `Cannot run program "powershell.exe": CreateProcess error=2`。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -200,7 +216,7 @@ infra-qdrant  6333  HEALTHY  PID=20076
 | 1 | 页面级加载/错误态统一到 `useAsyncState` | 前端 | 与骨架配套，减少各页自写 loading/error |
 | 2 | 面包屑与详情页页签规范 | 前端 | 详情页目前用 `el-page-header` 各自实现 |
 | 3 | 4 个占位页转真实页面 | 前端 + 上游 | 模型部署、链路追踪、预算管理、应用调用记录；入口已就位 |
-| 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | 本机缺 Neo4j → 记忆 6 页走查为降级态；补齐后可复跑走查。`Redis/Qdrant` 已由编排脚本常驻拉起 |
+| 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | **已闭环（v1.5.0）**：社区版 5.26.16 已以 Windows 服务 `neo4j` 常驻（Auto），见 §2.9；OpenMemory 全量启动复跑仍待执行 |
 | 5 | ~~记忆列表 loading 兜底~~ | 前端 | **已闭环（v1.4.0）**：代理类端点 8s 硬超时，见 §2.8 第 1 项 |
 | 6 | 宿主负载清理（quark 多实例、安全软件） | 运维/用户 | 直接决定连接建立与进程启动耗时 |
 | 7 | ~~Redis（6380）需纳入服务编排常驻~~ | 运维 | **已闭环（v1.4.0）**：`infra-redis`/`infra-qdrant` 入 `start-all-services.ps1`，见 §2.8 第 2~4 项 |
@@ -213,6 +229,7 @@ infra-qdrant  6333  HEALTHY  PID=20076
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.5.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.9「本地 Neo4j 社区版服务化」：`dist.neo4j.org` 403 → 用官方 jar 装配发行布局 + `Neo4jCommand` 官方入口 + `prunsrv` 注册 Windows 服务 `neo4j`（Auto，LocalSystem），认证与数据持久性验证通过；§5 第 4 项标记闭环。 |
 | v1.4.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.8「请求超时兜底与本地基础设施编排」：代理类端点 8s 超时（`core/api/http.ts`）、`Redis/Qdrant` 纳入 `start-all-services.ps1`（`TcpProbe` 探测 + local 模式依赖连带）；§4 复跑 `vitest` 250/250 与 `vite build`；§5 第 5、7 项标记闭环；文档版本号与上游依据同步至架构文档 v1.8.0。 |
 | v1.3.0 | 2026-10-22 | 研发（AI 辅助） | 追加「全页面走查」：77 页 PASS 77/FAIL 0，产出逐页截图与预览页；§2.7 增补第 12~13 项走查缺陷（模块页丢失全局侧栏、ECharts 隐藏页签初始化告警）及修复；§4 增补走查门禁行；§5 登记 OpenMemory 依赖 Neo4j 的环境前置。 |
 | v1.2.0 | 2026-10-21 | 研发（AI 辅助） | 追加阶段四收口：§2.7 增补第 8~11 项（DPS 12 页归位画像模块并补导航、`.page-toolbar` 全局化、删除 `knowledge/Settings.vue`、业务模块 39 页套骨架并同步 `key-pages` 夹具）；§4 验证更新为全量 250 用例串行通过；§5 遗留收窄为 `useAsyncState`、面包屑与 4 个占位页。 |
