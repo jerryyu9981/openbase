@@ -331,7 +331,7 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **兼容性**：仅新增只读端点与页面字段展示，不改变既有响应结构；旧 `/memory/*` 路由与 `legacyRedirects` 不变。
 
-**验证**：`memory-graph-v180.spec.ts`（3 例）与 `memory-search-v180.spec.ts`（1 例）通过；`vue-tsc --noEmit` 通过；OpenBase `test_memory_proxy.py` 17 例通过（含 overview 透传）；真实 Neo4j overview 返回 200（20 记忆 + 27 实体、99 条 MENTIONS 边）。
+**验证**：`memory-graph-v180.spec.ts`（3 例）与 `memory-search-v180.spec.ts`（1 例）通过；`vue-tsc --noEmit` 通过；OpenBase `test_memory_proxy.py` 17 例通过（含 overview 透传）；真实 Neo4j overview 返回 200（20 记忆 + 27 实体、99 条 MENTIONS 边）。服务级浏览器走查：图谱页统计 `1011/1038/599/0/0`、渲染 247 节点/599 边；搜索页图谱策略命中 1 条且来源=graph、命中方式=记忆命中；写入页重要度滑杆（0~1，默认 0.60）正常；三页控制台 0 error。
 
 ## 9. 修订历史
 

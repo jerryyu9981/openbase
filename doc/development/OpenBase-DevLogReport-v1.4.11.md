@@ -291,9 +291,14 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 - OpenMemory `test_graph_overview.py` → **3 passed**（节点/边/统计、503、outbox 故障容错）。
 - OpenBase `tests/test_memory_proxy.py` → **17 passed**（新增 overview 透传与 limit 断言）。
 - 真实 Neo4j 端点验证（`p6_overview_verify.py`，tenant-1）：200；`stats={'memory_nodes': 1011, 'entity_nodes': 1038, 'edges': 99}`；`nodes=47`（20 个记忆 UUID + 27 个实体节点），记忆 id 均为 UUID、实体 id 为 `entity:<tenant>:<key>`，边为 `MENTIONS`。
+- **服务级页面走查（浏览器实测）**：登录 admin 后——
+  - `/memory/graph`：统计卡片 `记忆节点 1011 / 实体节点 1038 / 关系数 599 / 待投影 0 / 死信 0`；SVG 渲染 247 个圆形节点、599 条连线；无空态、无错误条、控制台 0 error。
+  - `/memory/search`（策略=图谱，查询 `p4load7`）：显示图检索说明；1 条结果，来源 `graph`、命中方式「记忆命中」、无「实体：」文本、无错误条、0 error。
+  - `/memory/write`：重要度滑杆存在（0~1，默认 0.60），「写入记忆」按钮存在，0 error。
+  - 走查发现并修复：OpenMemory `user`/`guest` 角色缺少 `*/graph/overview: GET` 导致代理 403，已在 `auth/permission.py` 补权限并加单测（`test_v711_core.py` 23 passed）。
 - 兼容性：仅新增只读端点与展示字段，既有响应结构与路由不变。
 
-**遗留**：宿主负载导致服务级页面走查未执行；图谱页 e2e 需在服务恢复后补一次真实数据走查（当前由组件单测覆盖渲染/空态/错误态）。
+**遗留**：`/login` 非有效路由（应用重定向到 `/auth/login`，控制台有既有路由 warn，非本次引入）；本次浏览器视口仅 608px，搜索表格来源/命中方式列需横向滚动，建议宽屏复核一次。
 
 ---
 
