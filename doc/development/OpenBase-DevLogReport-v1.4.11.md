@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v1.6.0 |
+| 文档版本 | v1.7.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -154,8 +154,24 @@ infra-qdrant  6333  HEALTHY  PID=20076
 | 4 | 处置 A（运维侧） | 预建 `openmemory` 集合（384/cosine）+ 5 个 payload 索引（`user_id`/`session_id`/`agent_id`/`memory_type`/`is_active`），使启动期 `initialize()` 走幂等快路径 |
 | 5 | 处置 B（代码侧） | OpenMemory `VectorStoreConfig` 新增 `timeout: float = 30.0`（env `OPENMEMORY_VECTOR_TIMEOUT`），`AsyncQdrantClient(..., timeout=...)` 显式传入；新增单测 `test_initialize_passes_configured_timeout`；**OpenMemory 提交 `c73b7c1`**（release/v7.3.0）。子集回归 `182 passed / 8 skipped`（`-k "vector or config"`，排除缺 `respx` 的 `test_sdk.py`） |
 | 6 | 验证 | `/health` → `{"status":"healthy","dependencies":{"vector_store":"healthy","metadata_store":"healthy","session_store":"healthy"}}`；经 OpenBase 代理 `readiness` **200 / 407ms**、`memories` **200 / 1160ms**；`remember` → `forget(hard)` 全链路成功，`forgotten_count=1`、`residuals=[]`、剩余 `total=0` |
-| 7 | 图库行为说明 | `build_service()` 第 4 步 `graph_store.initialize()` 是强依赖（失败即中止），服务 healthy ⇒ Neo4j 连接/初始化成功；但单条 `persistent` 记忆**不写图节点**（Neo4j `count(n)=0`），图检索需 episode/consolidation 场景触发，属设计行为而非缺陷 |
+| 7 | 图库行为说明（**已更正**） | `build_service()` 第 4 步 `graph_store.initialize()` 是强依赖（失败即中止），服务 healthy ⇒ Neo4j 连接/初始化成功。**但「persistent 不写图」是实现覆盖缺口，不是设计行为**：默认写入路径完全不经过图库，`GraphSearch` 又只用 `properties CONTAINS` 全表扫描 —— 结论是图检索实际不可用。已立跨仓迭代方案并启动 P1，见 §2.11 |
 | 8 | 走查复跑 | `node scripts/ui_e2e_all_services.mjs --service openmemory --shots ../doc/test/evidence/ui-preview-memory` → **6 页 PASS / FAIL 0**，降级态消失 |
+
+### 2.11 记忆图谱跨仓迭代（异步可靠投影方案）
+
+**方案文档**：OpenMemory 仓 `doc/planning/OpenMemory-记忆图谱异步投影跨仓迭代方案-v1.0.0.md`（状态 [Approved]）。
+选定方案：**PG 事务性 outbox + 幂等 worker 异步投影 ＋ 重要度分层 ＋ 读路径索引与租户过滤**（拒绝同步双写，理由：主写延迟耦合、写放大、Neo4j 单写者瓶颈）。
+
+| 小版本 | 范围 | 状态 |
+|---|---|---|
+| **v7.4.0（P1）** | 读路径加固：`:Entity` 唯一约束、`entity_fulltext` 全文索引、`label` 索引修正、`GraphSearch` 全文检索 + 精确 label 回退、`LIMIT`/深度收紧、`caller="GraphSearch"` 审计 | **已完成**，OpenMemory 提交 `17cba89` |
+| v7.5.0（P2） | `graph_outbox`（Alembic v708）、`GraphProjector`、worker（SKIP LOCKED/批量/退避/死信/背压）、`:Memory` 节点与边、租户字段、forget 级联、读路径租户过滤 | 待实施（核心） |
+| v7.6.0（P3） | 重要度分层与采样、批量 UNWIND、`graph_repair`（重放/对账/回填）、retention 与 decay 联动、指标告警 | 待实施 |
+| v7.7.0（P4） | 跨仓联调、压测、灰度与回滚演练、文档回填 | 待实施 |
+
+**P1 验证**：`pytest tests/unit/test_graph_store.py tests/unit/test_search_engines.py tests/unit/test_graph_search.py` → **53 passed（60.85s）**；新增 6 条用例覆盖「全文索引优先 / 索引缺失回退 / 无实体短路 / top_k 截断 / 约束与全文索引语句」。
+
+**跨仓分工**：OpenBase 侧本轮**无代码改动**（代理已透传 `X-Tenant-ID`/`X-User-ID`），P2 接入时仅需联调与验收；方案文档已含职责矩阵与回滚口径。
 
 ---
 
@@ -246,6 +262,7 @@ infra-qdrant  6333  HEALTHY  PID=20076
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.7.0 | 2026-10-22 | 研发（AI 辅助） | 更正 §2.10 第 7 项结论（「persistent 不写图」是实现缺口而非设计行为）；新增 §2.11「记忆图谱跨仓迭代」：登记跨仓方案 v1.0.0 与 v7.4.0~v7.7.0 路线，**v7.4.0（P1 读路径加固）已完成**（OpenMemory `17cba89`，回归 53 passed）。 |
 | v1.6.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.10「OpenMemory 启动失败根因与修复」：Qdrant 客户端 5s 默认超时导致 `ReadTimeout`（qdrant-client 1.7.3）+ 编排脚本单服务目标坍缩为字符串的 bug；处置为预建集合/索引 + OpenMemory `VectorStoreConfig.timeout=30`（提交 `c73b7c1`）；§4 增补记忆模块走查 6/6 与 OpenMemory 单测子集；§5 第 4 项闭环。 |
 | v1.5.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.9「本地 Neo4j 社区版服务化」：`dist.neo4j.org` 403 → 用官方 jar 装配发行布局 + `Neo4jCommand` 官方入口 + `prunsrv` 注册 Windows 服务 `neo4j`（Auto，LocalSystem），认证与数据持久性验证通过；§5 第 4 项标记闭环。 |
 | v1.4.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.8「请求超时兜底与本地基础设施编排」：代理类端点 8s 超时（`core/api/http.ts`）、`Redis/Qdrant` 纳入 `start-all-services.ps1`（`TcpProbe` 探测 + local 模式依赖连带）；§4 复跑 `vitest` 250/250 与 `vite build`；§5 第 5、7 项标记闭环；文档版本号与上游依据同步至架构文档 v1.8.0。 |
