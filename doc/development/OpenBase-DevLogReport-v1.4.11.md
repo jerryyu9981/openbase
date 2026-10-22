@@ -5,11 +5,11 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v1.5.0 |
+| 文档版本 | v1.6.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.9.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.10.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
 | 开发方式 | 结构先行（骨架/路由/状态）→ 页面上收 → 首屏治理 → 后端耗时排查 → 静态与用例门禁 → 留痕 |
 
 ---
@@ -142,6 +142,21 @@ infra-qdrant  6333  HEALTHY  PID=20076
 
 **已知坑（后续重装可复用）**：WMI 脱离会话拉起时环境 `PATH` 极简，Neo4j `WindowsBootloaderOs` 需调用 `powershell.exe`，必须显式补 `C:\Windows\System32` 与 `WindowsPowerShell\v1.0`，否则报 `Cannot run program "powershell.exe": CreateProcess error=2`。
 
+### 2.10 OpenMemory 启动失败根因与修复（跨仓）
+
+现象：Neo4j 修好后，`openmemory` 仍起不来（8020 不监听，进程秒退）。
+
+| # | 项 | 结论与证据 |
+|:-:|----|-----------|
+| 1 | 直接原因 | `VectorStoreError: Failed to initialize Qdrant` ← `httpx.ReadTimeout`。日志时序：`GET /collections` **200 OK**（06:36:18）→ 6s 后读响应头超时（06:36:24）→ 启动中止 |
+| 2 | 机制 | qdrant-client **1.7.3** 默认超时 **5s**；本机建一个 payload 索引实测 **0.6~1.4s**，冷建集合叠加宿主满载超过 5s。失败后复查集合**已存在但无 payload 索引**，证明服务端建集合成功、客户端先放弃 |
+| 3 | 放大因素（脚本 bug） | `start-all-services.ps1` 的 `$targets = if (...) { $Only }` 在**只指定 1 个服务**时把单元素数组坍缩成字符串，`-notcontains` 全部不匹配 → 静默不启动任何服务（打印 `openmemoryinfra-redisinfra-qdrant` 即证据）。已改为 `@(if (...) {...})` |
+| 4 | 处置 A（运维侧） | 预建 `openmemory` 集合（384/cosine）+ 5 个 payload 索引（`user_id`/`session_id`/`agent_id`/`memory_type`/`is_active`），使启动期 `initialize()` 走幂等快路径 |
+| 5 | 处置 B（代码侧） | OpenMemory `VectorStoreConfig` 新增 `timeout: float = 30.0`（env `OPENMEMORY_VECTOR_TIMEOUT`），`AsyncQdrantClient(..., timeout=...)` 显式传入；新增单测 `test_initialize_passes_configured_timeout`；**OpenMemory 提交 `c73b7c1`**（release/v7.3.0）。子集回归 `182 passed / 8 skipped`（`-k "vector or config"`，排除缺 `respx` 的 `test_sdk.py`） |
+| 6 | 验证 | `/health` → `{"status":"healthy","dependencies":{"vector_store":"healthy","metadata_store":"healthy","session_store":"healthy"}}`；经 OpenBase 代理 `readiness` **200 / 407ms**、`memories` **200 / 1160ms**；`remember` → `forget(hard)` 全链路成功，`forgotten_count=1`、`residuals=[]`、剩余 `total=0` |
+| 7 | 图库行为说明 | `build_service()` 第 4 步 `graph_store.initialize()` 是强依赖（失败即中止），服务 healthy ⇒ Neo4j 连接/初始化成功；但单条 `persistent` 记忆**不写图节点**（Neo4j `count(n)=0`），图检索需 episode/consolidation 场景触发，属设计行为而非缺陷 |
+| 8 | 走查复跑 | `node scripts/ui_e2e_all_services.mjs --service openmemory --shots ../doc/test/evidence/ui-preview-memory` → **6 页 PASS / FAIL 0**，降级态消失 |
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -201,6 +216,8 @@ infra-qdrant  6333  HEALTHY  PID=20076
 | 后端静态 | `ruff check openbase` | 0 错误 |
 | 接口实测 | `doc/tmp/probe_http_timing.py` | 见 §3.4 |
 | **全页面走查** | `node scripts/ui_e2e_all_services.mjs --shots ../doc/test/evidence/ui-preview` | **77 页 PASS 77 / FAIL 0**；逐页截图 + `index.html` 预览页（1440×900） |
+| **记忆模块走查（复跑）** | `... --service openmemory --shots ../doc/test/evidence/ui-preview-memory` | **6 页 PASS 6 / FAIL 0**（OpenMemory 修复后降级态消失），截图见 `doc/test/evidence/ui-preview-memory/` |
+| OpenMemory 单元子集 | `pytest tests/unit -k "vector or config"` | 182 passed / 8 skipped（排除缺 `respx` 的 `test_sdk.py`） |
 
 ### 4.1 超时用例处置说明
 
@@ -216,7 +233,7 @@ infra-qdrant  6333  HEALTHY  PID=20076
 | 1 | 页面级加载/错误态统一到 `useAsyncState` | 前端 | 与骨架配套，减少各页自写 loading/error |
 | 2 | 面包屑与详情页页签规范 | 前端 | 详情页目前用 `el-page-header` 各自实现 |
 | 3 | 4 个占位页转真实页面 | 前端 + 上游 | 模型部署、链路追踪、预算管理、应用调用记录；入口已就位 |
-| 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | **已闭环（v1.5.0）**：社区版 5.26.16 已以 Windows 服务 `neo4j` 常驻（Auto），见 §2.9；OpenMemory 全量启动复跑仍待执行 |
+| 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | **已闭环（v1.5.0 / v1.6.0）**：Neo4j 服务化见 §2.9；OpenMemory 启动故障已修复并复跑（6 页 PASS 6/0），见 §2.10 |
 | 5 | ~~记忆列表 loading 兜底~~ | 前端 | **已闭环（v1.4.0）**：代理类端点 8s 硬超时，见 §2.8 第 1 项 |
 | 6 | 宿主负载清理（quark 多实例、安全软件） | 运维/用户 | 直接决定连接建立与进程启动耗时 |
 | 7 | ~~Redis（6380）需纳入服务编排常驻~~ | 运维 | **已闭环（v1.4.0）**：`infra-redis`/`infra-qdrant` 入 `start-all-services.ps1`，见 §2.8 第 2~4 项 |
@@ -229,6 +246,7 @@ infra-qdrant  6333  HEALTHY  PID=20076
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.6.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.10「OpenMemory 启动失败根因与修复」：Qdrant 客户端 5s 默认超时导致 `ReadTimeout`（qdrant-client 1.7.3）+ 编排脚本单服务目标坍缩为字符串的 bug；处置为预建集合/索引 + OpenMemory `VectorStoreConfig.timeout=30`（提交 `c73b7c1`）；§4 增补记忆模块走查 6/6 与 OpenMemory 单测子集；§5 第 4 项闭环。 |
 | v1.5.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.9「本地 Neo4j 社区版服务化」：`dist.neo4j.org` 403 → 用官方 jar 装配发行布局 + `Neo4jCommand` 官方入口 + `prunsrv` 注册 Windows 服务 `neo4j`（Auto，LocalSystem），认证与数据持久性验证通过；§5 第 4 项标记闭环。 |
 | v1.4.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.8「请求超时兜底与本地基础设施编排」：代理类端点 8s 超时（`core/api/http.ts`）、`Redis/Qdrant` 纳入 `start-all-services.ps1`（`TcpProbe` 探测 + local 模式依赖连带）；§4 复跑 `vitest` 250/250 与 `vite build`；§5 第 5、7 项标记闭环；文档版本号与上游依据同步至架构文档 v1.8.0。 |
 | v1.3.0 | 2026-10-22 | 研发（AI 辅助） | 追加「全页面走查」：77 页 PASS 77/FAIL 0，产出逐页截图与预览页；§2.7 增补第 12~13 项走查缺陷（模块页丢失全局侧栏、ECharts 隐藏页签初始化告警）及修复；§4 增补走查门禁行；§5 登记 OpenMemory 依赖 Neo4j 的环境前置。 |

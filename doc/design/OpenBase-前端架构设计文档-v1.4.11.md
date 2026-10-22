@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.9.0 |
+| 文档版本 | v1.10.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -277,7 +277,7 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 - ~~页面级加载/错误态统一到 `useAsyncState` + 统一错误条（**观察项**：上游挂起时记忆列表会长时间停留在 loading，需客户端超时兜底）~~ —— **客户端超时兜底已落地（v1.8.0）**：代理类端点 8s 硬超时，见 §8.9 第 14 项；`useAsyncState` 统一仍为后续项；
 - 面包屑与详情页页签规范落地；
 - 4 个占位页（模型部署、链路追踪、预算管理、应用调用记录）待上游接口就绪后转真实页面，入口已挂在统一监控/治理域内；
-- 环境前置：`Redis(6380)` / `Qdrant(6333)` 已纳入 `doc/tmp/start-all-services.ps1` 常驻编排（local 模式下起 `openmemory`/`openrag` 自动连带拉起）；**Neo4j 已补齐**——社区版 5.26.16 以 Windows 服务 `neo4j` 常驻（Bolt 7687 / HTTP 7474，认证开启，Auto 启动），详见《DevLogReport》v1.5.0 §2.9。记忆模块 6 页的降级态可在 OpenMemory 复跑后重新验证。
+- 环境前置：`Redis(6380)` / `Qdrant(6333)` 已纳入 `doc/tmp/start-all-services.ps1` 常驻编排（local 模式下起 `openmemory`/`openrag` 自动连带拉起）；**Neo4j 已补齐**——社区版 5.26.16 以 Windows 服务 `neo4j` 常驻（Bolt 7687 / HTTP 7474，认证开启，Auto 启动），详见《DevLogReport》v1.6.0 §2.9。**记忆模块 6 页已复跑：PASS 6 / FAIL 0**（降级态消失，截图见 `doc/test/evidence/ui-preview-memory/`），OpenMemory 启动故障的根因与修复见 §2.10。
 
 ### 8.8 后端 8s 级耗时的定位与处置（跨前后端）
 
@@ -320,6 +320,7 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.10.0** | 2026-10-22 | 研发（AI 辅助） | **记忆模块降级态闭环**：§8.7 更新——OpenMemory 启动故障已定位（Qdrant 客户端 5s 默认超时 → `ReadTimeout`）并修复（超时可配置，默认 30s；OpenMemory 提交 `c73b7c1`），记忆模块 6 页复跑 **PASS 6 / FAIL 0**；细节见《DevLogReport》v1.6.0 §2.10。 |
 | **v1.9.0** | 2026-10-22 | 研发（AI 辅助） | **环境前置补齐**：§8.7 更新——Neo4j 已以社区版 5.26.16 Windows 服务常驻（Bolt 7687 / HTTP 7474、认证开启、Auto），记忆模块降级态的根因已消除（细节见《DevLogReport》v1.5.0 §2.9）；`Redis/Qdrant` 维持编排脚本常驻结论不变。 |
 | **v1.8.0** | 2026-10-22 | 研发（AI 辅助） | **请求超时兜底与本地基础设施编排**：① §8.9 新增第 14 项——代理类端点（memory/rag/dps/llm/gateway）超时由 15s 收敛到 **8s**，上游挂起时列表页尽早进入可重试错误态（流式调用 120s 不受影响）；② §8.7 关闭「loading 兜底」观察项，并把 `Redis(6380)`/`Qdrant(6333)` 纳入 `start-all-services.ps1` 常驻编排（新增 `TcpProbe` 探测与 local 模式依赖连带）；③ §8.6 复跑 `vitest` 250/250、`vite build` 成功。 |
 | **v1.7.0** | 2026-10-22 | 研发（AI 辅助） | **全页面走查与两处走查缺陷修复**：① 走查 77 页（PASS 77/FAIL 0）并生成逐页截图与预览页；② §8.9 新增第 12~13 项——模块路由改挂 AppLayout 之下（修复业务模块页丢失全局侧栏）、知识库控制台 ECharts 隐藏页签初始化告警；③ §8.6 增加走查口径与结论；④ §8.7 登记环境前置（OpenMemory 依赖 Neo4j）与 loading 兜底观察项。 |
