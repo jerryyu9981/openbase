@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.9.0 |
+| 文档版本 | v1.10.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -120,7 +120,7 @@
 | 41 | 画像 API 管理 | `/platform/developers/dps-api` | mock | E | 无对应端点 | 待立项 |
 | 42 | 知识库管理后台 | `/platform/developers/knowledge-admin` | 真实 | — | `/rag-proxy/collections` | 已接 |
 | 43 | 知识库 API 控制台 | `/platform/developers/knowledge-console` | 静态控制台 | E | 调试器为本地演示，未打通真实调用 | 待立项 |
-| 44 | 个人设置 | `/personal/settings` | **真实（v1.9.7 R7）** | — | `GET/PUT /auth/me`、`POST /auth/change-password`（新增）；通知偏好无端点，显式说明未开放 | **已闭环（资料+密码）** |
+| 44 | 个人设置 | `/personal/settings` | **真实（v1.9.7 R7 + v1.10.1）** | — | `GET/PUT /auth/me`、`POST /auth/change-password`、`GET/PUT /auth/notification-preferences`（v1.10.1 新增） | **已闭环（资料+密码+通知偏好）** |
 
 ### 4.2 OpenLLM（11 页）
 
@@ -216,7 +216,7 @@
 | R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | **已完成（v1.9.5）**；新增权限目录端点 |
 | R6 | D 类性能 | `local-models`、`models/favorites|compare`、`open-models/popular` 的 10s 超时治理 | **已完成（v1.9.6）**：探测短超时 + 双通道 + N+1 批量化 |
 | R7 | E 类立项 | 仪表盘/统一监控/画像系统监控/个人设置等纯形态页 | **已完成（v1.9.7）**：可建 5 页落地，其余裁定不建设/保留 |
-| R8 | 剩余事项处置与小版本迭代 | 通知偏好、DPS 指标/规则、OpenLLM 四页、租户过滤、跨仓/运维收口 | **已排期**：见《剩余事项统一清查与小版本迭代计划-v1.0.0》（v1.9.8 ~ v1.11.0） |
+| R8 | 剩余事项处置与小版本迭代 | 通知偏好、DPS 指标/规则、OpenLLM 四页、租户过滤、跨仓/运维收口 | **已排期**：见《剩余事项统一清查与小版本迭代计划-v1.0.0》（v1.9.8 ~ v1.11.0）；其中通知偏好（OB-01）已于 v1.10.1 闭环 |
 
 > 纪律：每轮完成「后端 + 前端 + 单测 + 浏览器实测 + 文档留痕 + 三远程推送」闭环，不跨轮混提交。
 
@@ -226,7 +226,7 @@
 |------|------|------|
 | 仪表盘 | **建设** | 已有 `/users` 与 OpenLLM `/monitoring/dashboard`，客户端可聚合 |
 | 统一监控 | **建设** | `/monitoring/dashboard` + `/alerts` 已具备（R4 双通道） |
-| 个人设置 | **建设（资料+密码）** | 新增 `PUT /auth/me`、`POST /auth/change-password`；通知偏好无端点，显式标注未开放 |
+| 个人设置 | **建设（资料+密码+通知偏好）** | v1.9.7 新增 `PUT /auth/me`、`POST /auth/change-password`；v1.10.1 新增 `GET/PUT /auth/notification-preferences`（站内/邮件/Webhook + 事件开关） |
 | 模型部署 | **建设** | `/open-models/{id}/deploy|deploy-status|logs|stop` 已具备 |
 | 画像系统监控 | **收敛为健康页** | 仅 `/dps-proxy/health`；无指标/告警规则端点，移除虚构数据 |
 | 注册/找回密码 | **不建设** | 无自助注册/找回端点；由管理员开户与重置 |
@@ -288,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.10.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.1 能力状态回填**：个人设置「通知偏好」由未开放 → 真实读写（`GET/PUT /auth/notification-preferences`，含事件开关与 Webhook 校验）；§6 R8 标注 OB-01 已闭环。 |
 | v1.9.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.0 能力状态回填**：OpenLLM 四页（本地模型/模型对比/开源市场/我的收藏）由 mock → 真实；§7 #7 监控 `tenant_id` 写入与过滤缺口标记已处置（XR-LLM-01）。 |
 | v1.8.0 | 2026-10-23 | FA-OpenBase-Dev | **剩余事项统一清查**：新增《剩余事项统一清查与小版本迭代计划-v1.0.0》，登记本仓 6 项、跨仓 12 项、运维/QA 6 项，排入 v1.9.8 / v1.10.0 / v1.10.1 / v1.10.2 / v1.11.0；本清单 §4 起改为只保留能力状态，排期以新计划为唯一来源。 |
 | v1.7.0 | 2026-10-23 | FA-OpenBase-Dev | **R7 收口**：新增 `PUT /auth/me`、`POST /auth/change-password` 并扩展 `/auth/me` 资料字段；仪表盘、统一监控、个人设置、模型部署四页接真实端点，画像系统监控收敛为健康页；新增 §6.1 E 类产品裁定（5 页建设 / 6 项不建设或保留）；无后端调用页面 29 → 24。 |

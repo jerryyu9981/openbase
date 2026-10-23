@@ -24,6 +24,15 @@ export interface ModuleInfo {
   sort_order: number
 }
 
+/** 通知偏好（v1.10.1 OB-01） */
+export interface NotificationPreferences {
+  in_app: boolean
+  email: boolean
+  webhook: boolean
+  webhook_url: string | null
+  events: Record<string, boolean>
+}
+
 /** 解析 OIDC 回调 URL fragment（#access_token=..&refresh_token=..），v1.6.0 */
 export function parseOidcHash(hash: string): { access_token: string; refresh_token?: string } {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash
@@ -74,6 +83,16 @@ export const authApi = {
       old_password: oldPassword,
       new_password: newPassword,
     })
+  },
+  /** 读取通知偏好（无记录时后端返回默认值） */
+  async getNotificationPreferences(): Promise<NotificationPreferences> {
+    const { data } = await http.get<NotificationPreferences>('/auth/notification-preferences')
+    return data
+  },
+  /** 保存通知偏好（upsert，幂等） */
+  async updateNotificationPreferences(payload: NotificationPreferences): Promise<NotificationPreferences> {
+    const { data } = await http.put<NotificationPreferences>('/auth/notification-preferences', payload)
+    return data
   },
 }
 

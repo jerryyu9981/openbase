@@ -166,6 +166,24 @@ class Notification(Base, TimestampMixin):
     )
 
 
+class NotificationPreference(Base, TimestampMixin):
+    """用户通知偏好（v1.10.1 OB-01）.
+
+    每用户一行；无行时按默认值返回（站内开启、邮件/Webhook 关闭）。
+    """
+
+    __tablename__ = "notification_preferences"
+
+    user_id: Mapped[int] = mapped_column(
+        BIGINT, ForeignKey("users.id"), primary_key=True
+    )
+    in_app: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    email: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    webhook: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    webhook_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    events: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+
 # ---- ai_apps 模块（数据库设计文档 v1.2.0 §2.1~2.3，全新补建） ----
 
 

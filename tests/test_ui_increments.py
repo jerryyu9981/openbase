@@ -152,6 +152,10 @@ def test_auth_me_returns_wildcard_for_admin():
         async def execute(self, *args, **kwargs):  # noqa: ANN002
             raise RuntimeError("no db in test")
 
+        async def get(self, model, pk):  # noqa: ANN001
+            # /auth/me 读取资料行时可能触发 session.get；测试无 DB → 返回 None（资料字段为空）
+            return None
+
     app = FastAPI()
     install_exception_handlers(app)
     app.include_router(auth_router)

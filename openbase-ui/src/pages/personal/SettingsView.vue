@@ -71,36 +71,78 @@
       </el-col>
     </el-row>
 
-    <el-alert
-      type="info"
-      :closable="false"
-      show-icon
-      class="mt-16"
-      title="通知偏好暂未开放：上游暂无通知偏好读写端点，待端点就绪后再行接线"
-      data-test="notify-unavailable"
-    />
+    <el-card v-loading="loadingNotify" header="通知偏好" class="mt-16" data-test="notify-card">
+      <el-alert
+        v-if="notifyError"
+        :title="notifyError"
+        type="error"
+        show-icon
+        closable
+        class="card-alert"
+        data-test="notify-error"
+        @close="notifyError = ''"
+      />
+      <el-form label-width="120px">
+        <el-form-item label="站内通知">
+          <el-switch v-model="notifyForm.in_app" data-test="notify-in-app" />
+        </el-form-item>
+        <el-form-item label="邮件通知">
+          <el-switch v-model="notifyForm.email" data-test="notify-email" />
+        </el-form-item>
+        <el-form-item label="Webhook 通知">
+          <el-switch v-model="notifyForm.webhook" data-test="notify-webhook" />
+        </el-form-item>
+        <el-form-item v-if="notifyForm.webhook" label="Webhook 地址">
+          <el-input
+            v-model="notifyForm.webhook_url"
+            placeholder="回调地址（需以 http(s):// 开头）"
+            data-test="notify-webhook-url"
+          />
+        </el-form-item>
+        <el-form-item label="通知事件">
+          <el-checkbox v-model="notifyForm.events.alert" data-test="notify-event-alert">告警</el-checkbox>
+          <el-checkbox v-model="notifyForm.events.approval" data-test="notify-event-approval">审批</el-checkbox>
+          <el-checkbox v-model="notifyForm.events.system" data-test="notify-event-system">系统</el-checkbox>
+        </el-form-item>
+        <el-button type="primary" :loading="savingNotify" data-test="notify-save" @click="handleSaveNotify">
+          保存偏好
+        </el-button>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { authApi } from '@/core/api/auth'
+import { authApi, type NotificationPreferences } from '@/core/api/auth'
 import { useAuthStore } from '@/core/stores/auth'
 
 /**
- * 个人设置（v1.9.7 R7 真实化）：`GET /auth/me` 回填资料，`PUT /auth/me` 保存，
- * `POST /auth/change-password` 修改密码。通知偏好无后端端点，页面显式说明未开放。
+ * 个人设置（v1.9.7 R7 真实化 + v1.10.1 OB-01）：`GET/PUT /auth/me` 资料、
+ * `POST /auth/change-password` 改密、`GET/PUT /auth/notification-preferences` 通知偏好。
  */
 const EMAIL_RE = /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/
 const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
+const WEBHOOK_RE = /^https?:\/\/\S+$/
 
 const auth = useAuthStore()
 const loading = ref(false)
 const savingProfile = ref(false)
 const changingPassword = ref(false)
+const loadingNotify = ref(false)
+const savingNotify = ref(false)
 const pageError = ref('')
 const passwordError = ref('')
+const notifyError = ref('')
+
+const notifyForm = reactive<NotificationPreferences>({
+  in_app: true,
+  email: false,
+  webhook: false,
+  webhook_url: null,
+  events: { alert: true, approval: true, system: true },
+})
 
 const profileFormRef = ref<FormInstance>()
 const profileForm = reactive({ displayName: '', email: '', phone: '' })
@@ -191,7 +233,56 @@ async function handleChangePassword() {
   }
 }
 
-onMounted(loadProfile)
+async function loadNotify() {
+  loadingNotify.value = true
+  notifyError.value = ''
+  try {
+    const prefs = await authApi.getNotificationPreferences()
+    notifyForm.in_app = prefs.in_app
+    notifyForm.email = prefs.email
+    notifyForm.webhook = prefs.webhook
+    notifyForm.webhook_url = prefs.webhook_url
+    notifyForm.events = { alert: true, approval: true, system: true, ...(prefs.events || {}) }
+  } catch (error) {
+    notifyError.value = `通知偏好加载失败：${errorText(error, '未知错误')}`
+  } finally {
+    loadingNotify.value = false
+  }
+}
+
+async function handleSaveNotify() {
+  notifyError.value = ''
+  const webhookUrl = (notifyForm.webhook_url || '').trim()
+  if (notifyForm.webhook && !WEBHOOK_RE.test(webhookUrl)) {
+    notifyError.value = '启用 Webhook 时，回调地址需以 http(s) 协议开头'
+    return
+  }
+  savingNotify.value = true
+  try {
+    const saved = await authApi.updateNotificationPreferences({
+      in_app: notifyForm.in_app,
+      email: notifyForm.email,
+      webhook: notifyForm.webhook,
+      webhook_url: webhookUrl || null,
+      events: { ...notifyForm.events },
+    })
+    notifyForm.in_app = saved.in_app
+    notifyForm.email = saved.email
+    notifyForm.webhook = saved.webhook
+    notifyForm.webhook_url = saved.webhook_url
+    notifyForm.events = { alert: true, approval: true, system: true, ...(saved.events || {}) }
+    ElMessage.success('通知偏好已保存')
+  } catch (error) {
+    notifyError.value = `通知偏好保存失败：${errorText(error, '未知错误')}`
+  } finally {
+    savingNotify.value = false
+  }
+}
+
+onMounted(() => {
+  void loadProfile()
+  void loadNotify()
+})
 </script>
 
 <style scoped>

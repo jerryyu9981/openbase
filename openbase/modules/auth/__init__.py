@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_api_key_store, get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import Role, User, user_role
+from openbase.core.models import NotificationPreference, Role, User, user_role
 from openbase.modules.auth.jwt import (
     decode_refresh_token,
     issue_token_pair,
@@ -580,6 +580,121 @@ async def change_password(
     row.password_hash = hash_password(payload.new_password)
     await session.commit()
     return {"message": "密码已修改"}
+
+
+# ---- v1.10.1（OB-01）用户通知偏好 ----
+
+
+DEFAULT_NOTIFICATION_EVENTS: dict[str, bool] = {
+    "alert": True,
+    "approval": True,
+    "system": True,
+}
+NOTIFICATION_WEBHOOK_PATTERN = re.compile(r"^https?://\S+$")
+
+
+class NotificationPreferencePayload(BaseModel):
+    """通知偏好请求/响应."""
+
+    in_app: bool = True
+    email: bool = False
+    webhook: bool = False
+    webhook_url: str | None = Field(None, max_length=512)
+    events: dict[str, bool] = Field(
+        default_factory=lambda: dict(DEFAULT_NOTIFICATION_EVENTS)
+    )
+
+
+def _numeric_user_id(user: dict) -> int | None:
+    """解析本地用户主键（OIDC 字符串主体可能无本地行）."""
+    try:
+        return int(user["id"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _notification_payload_from_row(
+    row: NotificationPreference | None,
+) -> NotificationPreferencePayload:
+    """行 → 响应（无行时返回默认值）."""
+    if row is None:
+        return NotificationPreferencePayload()
+    return NotificationPreferencePayload(
+        in_app=row.in_app,
+        email=row.email,
+        webhook=row.webhook,
+        webhook_url=row.webhook_url,
+        events={**DEFAULT_NOTIFICATION_EVENTS, **(row.events or {})},
+    )
+
+
+@router.get(
+    "/notification-preferences", response_model=NotificationPreferencePayload
+)
+async def get_notification_preferences(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> NotificationPreferencePayload:
+    """读取当前用户通知偏好（无记录时返回默认值）."""
+    user_id = _numeric_user_id(user)
+    if user_id is None:
+        return NotificationPreferencePayload()
+    row = await session.get(NotificationPreference, user_id)
+    return _notification_payload_from_row(row)
+
+
+@router.put(
+    "/notification-preferences", response_model=NotificationPreferencePayload
+)
+async def update_notification_preferences(
+    payload: NotificationPreferencePayload,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> NotificationPreferencePayload:
+    """保存当前用户通知偏好（upsert，幂等）."""
+    user_id = _numeric_user_id(user)
+    if user_id is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, "用户不存在")
+
+    unknown_events = sorted(set(payload.events) - set(DEFAULT_NOTIFICATION_EVENTS))
+    if unknown_events:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID, f"未知通知事件: {', '.join(unknown_events)}"
+        )
+
+    webhook_url = (payload.webhook_url or "").strip() or None
+    if payload.webhook and not (
+        webhook_url and NOTIFICATION_WEBHOOK_PATTERN.match(webhook_url)
+    ):
+        raise BaseError(
+            ErrorCode.PARAM_INVALID, "启用 Webhook 时必须填写 http(s) 回调地址"
+        )
+    if webhook_url and not NOTIFICATION_WEBHOOK_PATTERN.match(webhook_url):
+        raise BaseError(ErrorCode.PARAM_INVALID, "Webhook 地址需以 http(s):// 开头")
+
+    events = {
+        key: bool(payload.events.get(key, default))
+        for key, default in DEFAULT_NOTIFICATION_EVENTS.items()
+    }
+
+    row = await session.get(NotificationPreference, user_id)
+    if row is None:
+        row = NotificationPreference(user_id=user_id)
+        session.add(row)
+    row.in_app = payload.in_app
+    row.email = payload.email
+    row.webhook = payload.webhook
+    row.webhook_url = webhook_url
+    row.events = events
+
+    await session.commit()
+    return NotificationPreferencePayload(
+        in_app=row.in_app,
+        email=row.email,
+        webhook=row.webhook,
+        webhook_url=row.webhook_url,
+        events=events,
+    )
 
 
 # ---- v1.4.1 服务级 API Key（R-367，对齐完整方案 2.5 服务 Key ②） ----

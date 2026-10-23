@@ -29,6 +29,7 @@ from openbase.core.models.business import (
     DynamicModule,
     FileRecord,
     Notification,
+    NotificationPreference,
     ScheduleLog,
     ScheduleTask,
 )
@@ -56,6 +57,7 @@ __all__ = [
     "ScheduleLog",
     "FileRecord",
     "Notification",
+    "NotificationPreference",
     "DynamicModule",
     "user_role",
     "role_permission",

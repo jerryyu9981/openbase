@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.15.0 |
+| 文档版本 | v2.16.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -828,6 +828,61 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 ---
 
+### 2.25 v1.10.1 个人中心与通知执行记录（2026-10-23）
+
+**范围**：OB-01 通知偏好（端点 + 页面）。
+
+**1. 数据模型**
+
+| 项 | 内容 |
+|----|------|
+| 表 | `notification_preferences`（每用户一行，`user_id` 主键外键 `users.id`） |
+| 列 | `in_app` / `email` / `webhook`（布尔）、`webhook_url`（≤512）、`events`（JSON，键 `alert/approval/system`） |
+| 建表 | 挂在 `Base.metadata`（`core/models/business.py` + `core/models/__init__.py` 导出），随 `create_tables` 幂等建表，无独立迁移脚本 |
+
+**2. 端点（`openbase/modules/auth/__init__.py`）**
+
+| 端点 | 行为 |
+|------|------|
+| `GET /api/v1/auth/notification-preferences` | 有行返回值；无行返回默认（站内开、邮件/Webhook 关、三事件全开）；OIDC 字符串主体无本地行时直接返回默认 |
+| `PUT /api/v1/auth/notification-preferences` | upsert（幂等）；未知事件键 → 400 `PARAM_INVALID`；`webhook=true` 且地址为空/非 http(s) → 400 `PARAM_INVALID`；OIDC 无本地行 → 404 `BIZ_NOT_FOUND` |
+
+**3. 页面（`openbase-ui/src/pages/personal/SettingsView.vue`）**
+
+- 移除「通知偏好暂未开放」提示，新增真实卡片：站内/邮件/Webhook 开关、Webhook 地址（仅启用时显示）、告警/审批/系统事件勾选、保存按钮与错误条。
+- 本地前置校验（Webhook 协议）与后端校验双重拦截；保存后回填服务端返回值。
+- API 层：`core/api/auth.ts` 新增 `NotificationPreferences` 类型与 `getNotificationPreferences` / `updateNotificationPreferences`。
+
+**4. 验证**
+
+| 项 | 命令/方式 | 结果 |
+|----|-----------|------|
+| 后端新用例 | `pytest tests/test_auth_notification_prefs_v1101.py` | **6 passed**（默认值、upsert、未知事件、Webhook 必填、非 http(s)、OIDC 降级） |
+| 后端相邻回归 | `pytest tests/test_auth_profile_v197.py tests/test_ui_increments.py tests/test_source_encoding_contract.py` | **通过**（其中 `test_ui_increments` 的 FakeSession 补 `get` 以匹配 `/auth/me` 现有读取路径） |
+| 静态检查 | `ruff check` 四个改动文件 | 通过 |
+| 前端新用例 | `vitest run tests/r9-notify-prefs-v1101.spec.ts tests/r7-wiring-v197.spec.ts` | **13 passed** |
+| 前端全量 | `vitest run` | **349 passed / 34 files** |
+| 类型 | `vue-tsc --noEmit` | **0 error** |
+
+**5. 全量后端回归说明（未劣化基线）**
+
+`pytest tests` 全量存在 5 类与本轮无关的失败，均已隔离复核：
+
+| 现象 | 复核结论 |
+|------|----------|
+| `test_tenant_admin` / `test_users_admin` 连接中断 | 共享 PG 瞬态抖动；隔离复跑**全部通过** |
+| `test_service_agent_outbound::test_obk_service_account_mapped_outbound_headers` | `git stash` 基线复跑同样失败（出站租户头取哈希而非 5001），属存量问题 |
+| `test_verdict_k03::test_t2_6_unregistered_service_key_write_403` | 依赖真实 OpenLLM 上游，返回 `SYS_502 upstream unreachable`，属环境依赖 |
+| `test_s7_t6_gate`（10 项）+ `test_s7_tools_skeleton[l2_2]` | S7 门禁证据集为存量产物，与本次改动无交集 |
+| `test_source_encoding_contract` | 本轮发现并**已修复**：v1.10.0 提交的 `test_monitoring_coverage_v2112.py` 带 UTF-8 BOM（PowerShell 回写引入），已剥离并单独提交 |
+
+**6. 遗留**
+
+- v1.10.2：OB-02 聚合网关交互用例、XR-GOV-01 C1-d 码值双形态、XR-OPS-06 S2/S4 演练
+- v1.11.0：XR-DPS-04/05、OB-03/04/05、XR-LLM-03/04/05/06/08、XR-DPS-02/03、XR-MEM-01
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -915,6 +970,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.16.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.25：**v1.10.1 个人中心与通知（OB-01）**——新增 `notification_preferences` 表与 `GET/PUT /auth/notification-preferences`（默认值/upsert/事件白名单/Webhook 校验/OIDC 降级）；设置页通知偏好真实读写。验证：后端 6 例、前端 4 例、前端全量 349 例、`vue-tsc` 0 错误；全量回归 5 类存量失败已逐项隔离复核，并修复 v1.10.0 遗留 BOM。 |
 | v2.15.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.24：**v1.10.0 全栈缺口补齐 I**——OpenLLM 监控全链路租户隔离（查询过滤 + 端点透传 + 写入态回填 + 回填脚本）、错误率口径改按 `sum(value)` 计算；统一前端本地模型/模型对比/开源市场/我的收藏四页接真实端点、0 mock；XR-DPS-01 因 DPS ADR-290-01 规则写入已收口且无运行态指标端点，转入 v1.11.0。验证：OpenLLM 新用例 10/10、监控回归 29/29、前端全量 345/345、vue-tsc 0 错误。 |
 | v2.14.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.23：**v1.9.8 处置窗口执行记录**——OpenLLM 本地验证实例启动（健康 200）；21 个聚合端点经代理全部 200；浏览器抽检 9 页全部 PASS；DPS `0954b9a` 回执核验通过；新发现错误率口径与插件/工具口径两项并纳入计划；G1/G2/G7 仍待 OPS 窗口。 |
 | v2.13.1 | 2026-10-23 | 研发（AI 辅助） | §2.22 回填执行进展：XR-OPS-01 四仓 github 补推提前闭环（OpenBase `540f757`、OpenLLM `647d4bb`；OpenRAG/OpenMemory 已一致）；清查计划升 v1.0.1。 |
