@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.10.0 |
+| 文档版本 | v1.11.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -101,7 +101,7 @@
 | 22 | 用量统计 | `/platform/observability/usage` | **真实（v1.9.4 R4）** | — | `/usage/summary`、`/usage/trends`、`/usage/detail`（双通道后 200） | **已闭环** |
 | 23 | 计费 | `/platform/observability/billing` | **真实（v1.9.4 R4）** | — | `/billing/usage/statistics`、`/billing/quotas`、`/billing/bills`（双通道后 200） | **已闭环** |
 | 24 | 服务发现与编排 | `/platform/observability/service-discovery` | 真实 | — | `/services`、`/gateway/ping` | 已接 |
-| 25 | 聚合网关测试 | `/platform/observability/gateway-test` | 表单页（提交时触发） | A | `/gateway/aggregate`（200；审计未自动提交） | 待补充交互用例 |
+| 25 | 聚合网关测试 | `/platform/observability/gateway-test` | 表单页 + 交互用例 | — | `/gateway/aggregate`（200；审计未自动提交） | **已补用例（v1.10.2）**：成功/部分失败/超时/重置 4 例 |
 | 26 | 应用调用记录 | `/platform/observability/app-calls` | mock | E | `/ai-apps/{id}/calls` 需先选应用，缺全局聚合 | 待立项 |
 | 27 | 画像系统监控 | `/platform/observability/dps-monitor` | **部分真实（v1.9.7 R7）** | — | `/dps-proxy/health`；指标/告警规则无上游端点，页面显式说明未开放 | **已收敛（仅健康）** |
 | 28 | 提供商管理 | `/platform/governance/providers` | **真实（本轮）** | — | `/proxy/openllm/api/v1/providers` | **已闭环** |
@@ -288,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.11.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.2 能力状态回填**：聚合网关测试由「待补交互用例」→ 已覆盖成功/部分失败/超时/重置 4 类。 |
 | v1.10.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.1 能力状态回填**：个人设置「通知偏好」由未开放 → 真实读写（`GET/PUT /auth/notification-preferences`，含事件开关与 Webhook 校验）；§6 R8 标注 OB-01 已闭环。 |
 | v1.9.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.0 能力状态回填**：OpenLLM 四页（本地模型/模型对比/开源市场/我的收藏）由 mock → 真实；§7 #7 监控 `tenant_id` 写入与过滤缺口标记已处置（XR-LLM-01）。 |
 | v1.8.0 | 2026-10-23 | FA-OpenBase-Dev | **剩余事项统一清查**：新增《剩余事项统一清查与小版本迭代计划-v1.0.0》，登记本仓 6 项、跨仓 12 项、运维/QA 6 项，排入 v1.9.8 / v1.10.0 / v1.10.1 / v1.10.2 / v1.11.0；本清单 §4 起改为只保留能力状态，排期以新计划为唯一来源。 |

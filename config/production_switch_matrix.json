@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "source": "《OpenBase-五系统多租户与授权集成总览与续接指南》§10.3（2026-10-16 裁定③④：发布强制核验）",
+  "note": "生产必需开关矩阵（唯一事实源）。release 前须逐项核验：carrier 模式检查仓库载体（模板/文档）是否登记为生产值；--env-file 模式检查实际下发文件。",
+  "repos": {
+    "OpenLLM": {
+      "carriers": [".env.example", "backend/.env.example"],
+      "switches": {
+        "ENFORCE_INBOUND_IDENTITY_HEADERS": "true",
+        "RBAC_PERMISSION_ENFORCE": "true",
+        "TENANT_SCOPE_ENFORCE": "true",
+        "TENANT_HEADER_CONSISTENCY_ENFORCE": "true",
+        "QUOTA_MISSING_FAIL_CLOSED": "true"
+      }
+    },
+    "OpenMemory": {
+      "carriers": [".env.example", "deployments/docker/.env.example"],
+      "switches": {
+        "OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE": "true"
+      }
+    },
+    "DPS": {
+      "carriers": ["doc/operation/DPS-部署文档-v2.1.0.md"],
+      "switches": {
+        "TENANT_CONTEXT_REQUIRED": "true"
+      }
+    },
+    "OpenBase": {
+      "carriers": [],
+      "switches": {}
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "total": 8,
+  "passed": 7,
+  "failed": 1,
+  "results": [
+    {
+      "repo": "OpenLLM",
+      "key": "ENFORCE_INBOUND_IDENTITY_HEADERS",
+      "status": "PASS",
+      "detail": "ENFORCE_INBOUND_IDENTITY_HEADERS=true",
+      "source": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\.env.example"
+    },
+    {
+      "repo": "OpenLLM",
+      "key": "RBAC_PERMISSION_ENFORCE",
+      "status": "PASS",
+      "detail": "RBAC_PERMISSION_ENFORCE=true",
+      "source": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\.env.example"
+    },
+    {
+      "repo": "OpenLLM",
+      "key": "TENANT_SCOPE_ENFORCE",
+      "status": "PASS",
+      "detail": "TENANT_SCOPE_ENFORCE=true",
+      "source": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\.env.example"
+    },
+    {
+      "repo": "OpenLLM",
+      "key": "TENANT_HEADER_CONSISTENCY_ENFORCE",
+      "status": "PASS",
+      "detail": "TENANT_HEADER_CONSISTENCY_ENFORCE=true",
+      "source": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\.env.example"
+    },
+    {
+      "repo": "OpenLLM",
+      "key": "QUOTA_MISSING_FAIL_CLOSED",
+      "status": "PASS",
+      "detail": "QUOTA_MISSING_FAIL_CLOSED=true",
+      "source": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\.env.example"
+    },
+    {
+      "repo": "OpenMemory",
+      "key": "OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE",
+      "status": "FAIL",
+      "detail": "载体值为 'false'，生产要求 'true'",
+      "source": "D:\\Trae CN\\myproject\\Dev\\OpenMemory\\.env.example"
+    },
+    {
+      "repo": "DPS",
+      "key": "TENANT_CONTEXT_REQUIRED",
+      "status": "PASS",
+      "detail": "TENANT_CONTEXT_REQUIRED=true",
+      "source": "D:\\Trae CN\\myproject\\Dev\\DPS\\doc\\operation\\DPS-部署文档-v2.1.0.md"
+    },
+    {
+      "repo": "OpenBase",
+      "key": "-",
+      "status": "PASS",
+      "detail": "该仓无新增生产开关（矩阵豁免）",
+      "source": ""
+    }
+  ]
+}

@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.16.0 |
+| 文档版本 | v2.17.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -883,6 +883,69 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 ---
 
+### 2.26 v1.10.2 治理与发布收口执行记录（2026-10-23）
+
+**范围**：OB-02（聚合网关交互用例）、XR-GOV-01（C1-d 三仓）、XR-OPS-06（S2/S4）。
+
+**1. OB-02：聚合网关测试补交互用例（已闭环）**
+
+| 用例 | 断言要点 |
+|------|----------|
+| 成功执行 | `POST /gateway/aggregate` 请求体（步骤/超时/失败策略/映射）完整透传；渲染结果 JSON；无错误条 |
+| 部分失败 | 展示 `部分步骤失败（1）` + errors 明细，同时保留成功结果 |
+| 请求超时 | 错误条展示 `timeout of 5000ms exceeded`；不残留结果；`executing` 回到 false |
+| 重置 | 清空结果与错误条 |
+
+落点：`openbase-ui/tests/r10-gateway-aggregate-v1102.spec.ts`（4 例通过）。
+
+**2. XR-OPS-06 S4：发布强制核验（仓库侧已执行）**
+
+| 制品 | 内容 |
+|------|------|
+| `config/production_switch_matrix.json` | 生产必需开关矩阵唯一事实源（OpenLLM 5 组 / OpenMemory 1 组 / DPS 1 组 / OpenBase 豁免），标注来源《续接指南》§10.3（裁定③④） |
+| `scripts/verify_production_switches.py` | carrier 模式（核仓库载体）+ `--env-file` 模式（核实际下发）；任一 FAIL 退出码 1 |
+| `tests/test_production_switch_matrix_v1102.py` | 10 例（矩阵结构、env 解析、载体通过/漂移/缺失、文档表格载体、env-file、`--only` 过滤） |
+| 执行证据 | `doc/test/evidence/release/switch-matrix-20261023.json`；记录 `doc/release/OpenBase-发布强制核验执行记录-v1.0.0.md` |
+
+**执行结果（2026-10-23）**：`8 项 / PASS 7 / FAIL 1`
+
+| 仓 | 开关 | 结果 |
+|----|------|:----:|
+| OpenLLM | 5 组启动门禁（`ENFORCE_INBOUND_IDENTITY_HEADERS`/`RBAC_PERMISSION_ENFORCE`/`TENANT_SCOPE_ENFORCE`/`TENANT_HEADER_CONSISTENCY_ENFORCE`/`QUOTA_MISSING_FAIL_CLOSED`） | 全部 PASS |
+| OpenMemory | `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE`（模板值 `false`） | **FAIL** |
+| DPS | `TENANT_CONTEXT_REQUIRED`（部署文档表格） | PASS |
+| OpenBase | 无新增 | PASS（豁免） |
+
+**新增阻断项 XR-OPS-07（P1）**：OpenMemory `.env.example` 登记 `false`，与 §10.3 生产值 `true` 漂移；若照模板下发则门禁 fail-open。处置在 OpenMemory 仓（跨仓），本仓仅登记与阻断，不代为修改。
+
+**3. XR-GOV-01：C1-d 码值双形态（部分，转 v1.11.0）**
+
+| 仓 | 采纳状态 | 证据 |
+|----|----------|------|
+| OpenBase | ✅ 已闭环（2026-10-09） | `openbase/core/code_normalize.py` + `tests/test_code_normalize.py` 11 例 |
+| OpenLLM | ❌ 未采纳 | 全仓检索 `code_normalize` / `normalize_code_or_id` 零命中 |
+| OpenRAG | ❌ 未采纳 | 同上 |
+| OpenMemory | ❌ 未采纳 | 同上 |
+
+结论：能力已在 OpenBase 落地，但「三仓回执」需按 OpenLLM → OpenRAG → OpenMemory 顺序派单，不能在本仓单方闭环；转 v1.11.0。
+
+**4. XR-OPS-06 S2：回滚演练（未执行）**
+
+需 OPS 真实运行态与注故障窗口（开关级/通道级/版本级三级回滚）。本环境无部署面，按纪律**不填 PASS**，回滚方案 v1.0.0 已存在，执行清单见《发布强制核验执行记录》§5。
+
+**5. 验证**
+
+| 项 | 命令/方式 | 结果 |
+|----|-----------|------|
+| 网关交互用例 | `vitest run tests/r10-gateway-aggregate-v1102.spec.ts` | **4 passed** |
+| 核验脚本用例 | `pytest tests/test_production_switch_matrix_v1102.py` | **10 passed** |
+| 核验脚本实跑 | `python scripts/verify_production_switches.py` | **8 项 / PASS 7 / FAIL 1**（阻断项 XR-OPS-07） |
+| 前端全量 | `vitest run` | **353 passed / 35 files** |
+| 类型 | `vue-tsc --noEmit` | **0 error** |
+| ruff | 新增脚本与用例 | 通过 |
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -970,6 +1033,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.17.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.26：**v1.10.2 治理与发布收口**——OB-02 网关交互 4 例闭环；S4 仓库侧发布核验（矩阵 + 脚本 + 10 例，实测 7 PASS / 1 FAIL）；新登记 XR-OPS-07（OpenMemory 开关载体漂移，P1 阻断发布）；XR-GOV-01 三仓未采纳转 v1.11.0；S2 演练待 OPS。 |
 | v2.16.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.25：**v1.10.1 个人中心与通知（OB-01）**——新增 `notification_preferences` 表与 `GET/PUT /auth/notification-preferences`（默认值/upsert/事件白名单/Webhook 校验/OIDC 降级）；设置页通知偏好真实读写。验证：后端 6 例、前端 4 例、前端全量 349 例、`vue-tsc` 0 错误；全量回归 5 类存量失败已逐项隔离复核，并修复 v1.10.0 遗留 BOM。 |
 | v2.15.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.24：**v1.10.0 全栈缺口补齐 I**——OpenLLM 监控全链路租户隔离（查询过滤 + 端点透传 + 写入态回填 + 回填脚本）、错误率口径改按 `sum(value)` 计算；统一前端本地模型/模型对比/开源市场/我的收藏四页接真实端点、0 mock；XR-DPS-01 因 DPS ADR-290-01 规则写入已收口且无运行态指标端点，转入 v1.11.0。验证：OpenLLM 新用例 10/10、监控回归 29/29、前端全量 345/345、vue-tsc 0 错误。 |
 | v2.14.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.23：**v1.9.8 处置窗口执行记录**——OpenLLM 本地验证实例启动（健康 200）；21 个聚合端点经代理全部 200；浏览器抽检 9 页全部 PASS；DPS `0954b9a` 回执核验通过；新发现错误率口径与插件/工具口径两项并纳入计划；G1/G2/G7 仍待 OPS 窗口。 |
