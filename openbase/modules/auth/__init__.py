@@ -506,6 +506,7 @@ class ApiKeyCreate(BaseModel):
 class ApiKeyOut(BaseModel):
     """服务 Key 响应（创建时含明文，列表不回显）."""
 
+    id: str = ""
     name: str
     scope: dict
     description: str = ""
@@ -562,6 +563,7 @@ async def create_api_key(
     )
     record = store.list_keys()[-1]
     return ApiKeyOut(
+        id=record.get("id", ""),
         name=record["name"],
         scope=record["scope"],
         description=record["description"],
@@ -581,6 +583,7 @@ async def list_api_keys(
     store = get_api_key_store()
     return [
         ApiKeyOut(
+            id=record.get("id", ""),
             name=record["name"],
             scope=record["scope"],
             description=record["description"],
@@ -589,6 +592,23 @@ async def list_api_keys(
         )
         for record in store.list_keys()
     ]
+
+
+@router.delete("/api-keys/by-id/{key_id}", response_model=dict[str, str])
+async def revoke_api_key_by_id(
+    key_id: str,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """按稳定标识吊销服务 Key（v1.9.2；需 auth:api-keys:manage）.
+
+    列表已回显 ``id``，前端无需持有明文即可吊销；保留原「按明文 Key」端点
+    以兼容既有调用方。
+    """
+    await _check_api_key_permission(user, session, "auth:api-keys:manage")
+    if not get_api_key_store().revoke_by_id(key_id):
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"api key not found: {key_id}")
+    return {"revoked": key_id}
 
 
 @router.delete("/api-keys/{raw_key}", response_model=dict[str, str])

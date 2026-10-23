@@ -2,20 +2,44 @@
   <PageContainer title="测试记录" description="人工测试轮次与用例留痕" test-id="system-test-records-page">
     <!-- 工具栏：run 选择 + 开轮 -->
     <div class="page-toolbar">
+      <el-select
+        v-model="selectedRun"
+        placeholder="选择测试轮次"
+        clearable
+        filterable
+        style="width: 320px"
+        data-test="testrun-select"
+        @change="onSelectRun"
+      >
+        <el-option
+          v-for="run in runs"
+          :key="run.id"
+          :label="`${run.id}${run.title ? ' · ' + run.title : ''}（${run.record_count} 条）`"
+          :value="run.id"
+        />
+      </el-select>
       <el-input
         v-model="runIdInput"
-        placeholder="测试轮次 run_id，如 run-20260914-0230"
+        placeholder="或手填 run_id，如 run-20260914-0230"
         clearable
-        style="width: 300px"
+        style="width: 280px"
         data-test="testrun-input"
         @keyup.enter="loadSummary"
       />
       <el-button type="primary" :loading="loading" data-test="testrun-load" @click="loadSummary">加载</el-button>
+      <el-button :loading="runsLoading" data-test="testrun-refresh-runs" @click="loadRuns">刷新轮次</el-button>
       <el-button data-test="testrun-create" @click="openCreateRun">开新一轮</el-button>
       <span class="mode-hint" data-test="testrun-mode-hint">
         {{ testModeOn ? '测试模式：请求已注入 X-Test-Case-Id' : '测试模式关闭（开启后请求自动携带测试头）' }}
       </span>
     </div>
+
+    <el-empty
+      v-if="!runs.length && !summary && !loading"
+      description="暂无测试轮次：点击「开新一轮」创建，或手填 run_id 加载"
+      :image-size="70"
+      data-test="testrun-empty"
+    />
 
     <!-- 汇总卡片 -->
     <el-card v-if="summary" class="mt-8" header="汇总" data-test="testrun-summary-card">
@@ -122,12 +146,15 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { testingApi, resultTagType, resultLabel, type CaseSummary, type TestResult } from '@/core/api/testing'
+import { testingApi, resultTagType, resultLabel, type CaseSummary, type TestResult, type TestRunItem } from '@/core/api/testing'
 import { TEST_MODE_KEY } from '@/core/api/http'
 
 const runIdInput = ref('')
+const runs = ref<TestRunItem[]>([])
+const runsLoading = ref(false)
+const selectedRun = ref('')
 const loading = ref(false)
 const submitting = ref(false)
 const summary = ref<{ run_id: string; total: number; pass: number; fail: number; blocked: number; skipped: number; passed: boolean; cases: CaseSummary[] } | null>(null)
@@ -168,6 +195,30 @@ function resultTag(result: TestResult): 'success' | 'danger' | 'warning' | 'info
 }
 function resultText(result: TestResult): string {
   return resultLabel(result)
+}
+
+/** 加载轮次列表（v1.9.2）：首次进入自动选中最新一轮并加载其汇总。 */
+async function loadRuns(autoLoad = false): Promise<void> {
+  runsLoading.value = true
+  try {
+    const res = await testingApi.listRuns({ limit: 100 })
+    runs.value = res.data.items
+    if (autoLoad && !runIdInput.value && res.data.items.length) {
+      selectedRun.value = res.data.items[0].id
+      runIdInput.value = res.data.items[0].id
+      await loadSummary()
+    }
+  } catch {
+    /* 错误已由拦截器提示 */
+  } finally {
+    runsLoading.value = false
+  }
+}
+
+function onSelectRun(runId: string): void {
+  if (!runId) return
+  runIdInput.value = runId
+  void loadSummary()
 }
 
 async function loadSummary(): Promise<void> {
@@ -257,6 +308,8 @@ async function submitCreateRun(): Promise<void> {
     ElMessage.success(`已开新一轮：${res.data.run_id}`)
     createRunOpen.value = false
     runIdInput.value = res.data.run_id
+    selectedRun.value = res.data.run_id
+    await loadRuns()
     await loadSummary()
   } catch {
     /* 错误已由拦截器提示 */
@@ -264,6 +317,10 @@ async function submitCreateRun(): Promise<void> {
     submitting.value = false
   }
 }
+
+onMounted(() => {
+  void loadRuns(true)
+})
 </script>
 
 <style scoped>

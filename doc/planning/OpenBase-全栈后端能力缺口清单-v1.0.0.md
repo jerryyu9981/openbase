@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.2.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -48,7 +48,7 @@
 | L1+L2 结果 | **PASS 76 / FAIL 1**（唯一 FAIL 为 `net::ERR_NO_BUFFER_SPACE`，Chromium 在沙箱内写 `debug.log` 受限导致的资源加载抖动；该页单页复跑 0 错误，判为环境噪声，非应用缺陷） |
 | 首轮基线 | PASS 77 / FAIL 0（同一套探针，服务全部预热后） |
 | API 失败次数（4xx/5xx/请求失败） | **0** |
-| 无后端调用的页面 | **49**（v1.9.1 R1 收口 3 页后：52 − 3） |
+| 无后端调用的页面 | **47**（R1 收口 3 页、R2 收口 2 页后：52 − 5） |
 | 其中「无调用且无可交互动作」的静默页 | 28 |
 
 > 采样口径说明：无后端调用按「首屏 1.2s 稳定窗口内是否发出 `/api/**`」判定；记忆图谱/衰减、模板包导出、血缘、措施建议等**按需触发**页在该窗口内可能尚无请求，属测量假阴性。已在 §4 逐页以源码接线与实测复核，避免误判。
@@ -63,7 +63,7 @@
 |------|------|----------|
 | **A 前端未接线** | OpenBase 已有可用端点（实测 200），页面仍用 mock | 前端补 API 封装与页面接线，成本最低 |
 | **B 上游仅 JWT 通道** | OpenLLM 有该能力，但路由依赖 `get_current_active_user`（只认 OpenLLM 自签 JWT），经 OpenBase 聚合返回 **401** | 上游改双通道依赖 `get_current_active_user_or_api_key`，或新增 `/openllm/v1/*` 网关端点 |
-| **C 缺列表/定位接口** | OpenBase 侧端点仅支持写/单条读（实测 **405**），或缺少按 id 操作所需的标识（如服务 Key 列表无 id） | 补 `GET` 列表端点与稳定标识（分页 + 过滤 + id 化吊销） |
+| **C 缺列表/定位接口** | OpenBase 侧端点仅支持写/单条读（实测 **405**），或缺少按 id 操作所需的标识（如服务 Key 列表无 id） | 补 `GET` 列表端点与稳定标识（分页 + 过滤 + id 化吊销）——**R2 已闭环 3 项** |
 | **D 上游超时** | 能力存在，但 10s 代理超时内未返回（实测 **502**） | 上游性能治理或按端点调整超时 |
 | **E 无后端能力** | 三仓均无对应接口，属纯前端形态 | 需产品裁定：建设后端能力，或页面降级为「未交付」说明页 |
 
@@ -84,12 +84,12 @@
 | 7 | 记忆管理席位 | `/platform/identity/memory-admin` | 真实 | — | `/memory-proxy/monitor`、`/memories` | 已接 |
 | 8 | 注册/找回密码 | `/platform/identity/auth-ext` | mock | E | 无 `/auth/register`、无找回密码 | 待立项 |
 | 9 | 画像数据权限 | `/platform/identity/dps-permissions` | mock | E | 无对应端点 | 待立项 |
-| 10 | 全局配置 | `/platform/config/general` | mock | C | `GET /configs`（405） | 待补列表 |
+| 10 | 全局配置 | `/platform/config/general` | **真实（v1.9.2 R2）** | — | `GET /configs`（新增）、`POST /configs`、`GET /configs/{key}/versions`、`POST /configs/{key}/rollback` | **已闭环** |
 | 11 | 模块开关 | `/platform/config/modules` | 真实 | — | `/modules` | 已接 |
-| 12 | API 密钥 | `/platform/config/api-keys` | **真实（v1.9.1 R1）** | C（吊销） | `/auth/api-keys`（200）；吊销按明文 Key 定位，列表不含 id | 已接；吊销缺口待补 |
+| 12 | API 密钥 | `/platform/config/api-keys` | **真实（v1.9.2 R2）** | — | `/auth/api-keys`；新增 `id` 回显与 `DELETE /auth/api-keys/by-id/{id}` | **已闭环（含 id 化吊销）** |
 | 13 | 画像接口限流 | `/platform/config/rate-limits` | mock | E | 无对应端点 | 待立项 |
 | 14 | 日志中心 | `/platform/observability/logs` | 真实 | — | `/logs/search`、`/logs/facets` | 已接 |
-| 15 | 测试记录 | `/platform/observability/test-records` | mock | C | `GET /test-records`（405） | 待补列表 |
+| 15 | 测试记录 | `/platform/observability/test-records` | **真实（v1.9.2 R2）** | — | `GET /test-records`、`GET /test-runs`（新增）+ 既有开轮/记录/改判/summary | **已闭环** |
 | 16 | 统一监控 | `/platform/observability/monitoring` | mock 概览 | E | 无聚合概览端点 | 待立项 |
 | 17 | 成本分析 | `/platform/observability/monitoring/costs` | mock | B | OpenLLM `/monitoring/costs`（401） | 后续轮次 |
 | 18 | 告警中心 | `/platform/observability/monitoring/alerts` | mock | B | `/alerts`、`/alerts/rules`（401） | 后续轮次 |
@@ -186,6 +186,10 @@
 | **R1 用户管理**（v1.9.1） | 接 `/users`：真实列表（显示名/角色/状态/租户）、新建（含 `display_name`）、角色分配 `/users/{id}/role`、启停 `PUT`、停用 `DELETE`；角色下拉对齐五码标准集合；内置 admin 禁止停用 | `tests/r1-wiring-v191.spec.ts` 用户 4 例；浏览器实测 3 条真实用户、0 error |
 | **R1 API 密钥**（v1.9.1） | 接 `/auth/api-keys`：真实列表（访问范围/描述/创建时间/状态）、创建（一次性明文 + 复制）、吊销；移除虚构的模型权限/速率/过期字段；对「列表无 id、吊销需明文」的后端约束做显式降级提示 | 同上 3 例；接口实测创建 → 列表（无明文）→ 吊销（`revoked=true`）全链路通过 |
 | **R1 EdgeRouter**（v1.9.1） | 接 `/edge/**`：概览（status/health/能力开关）、组织（列表/新增/编辑）、配额（按组织查询/调整）、适配器（只读）、路由审计（分页）；移除「随机新增组织/配额/适配器开关」等假动作 | 同上 3 例；浏览器实测 6 个端点均 200（status/health/adapters/organizations）、0 error |
+| **R2 列表端点**（v1.9.2） | OpenBase 新增 `GET /configs`（并集：DB ∪ 运行时 ∪ 默认值，支持 prefix/level 过滤）、`GET /test-records`（轮次/用例/结论过滤 + 分页）、`GET /test-runs`（含记录数） | `tests/test_r2_lists_v192.py` 9 例 |
+| **R2 服务 Key id 化**（v1.9.2） | `ApiKeyOut` 增加 `id`；新增 `DELETE /auth/api-keys/by-id/{key_id}`（保留按明文吊销端点兼容）；前端改为按 id 吊销，解除「历史密钥不可吊销」限制 | 同上（含未知 id → 404）；`r1-wiring-v191` 吊销用例改为断言 by-id 端点 |
+| **R2 两页接线**（v1.9.2） | 全局配置：列表/搜索/级别过滤/编辑（值 JSON 解析）/版本抽屉/回滚/导入导出全部走真实端点；测试记录：轮次下拉自动选中最新一轮并加载汇总、开新一轮 | `tests/r2-wiring-v192.spec.ts` 7 例；浏览器实测见 DevLogReport §2.16 |
+| **R2 上游并发修复**（OpenLLM v1.9.2） | `get_db` 由 `scoped_session` 改为每请求独立 Session（`SessionFactory()`），从根因消除跨线程复用；`SessionLocal` 保留给既有直接调用方 | OpenLLM `test_db_session_concurrency_v192.py` 3 例；提供商页并发模型数不再 500 |
 
 ---
 
@@ -194,7 +198,7 @@
 | 轮次 | 主题 | 范围 | 关键依赖 |
 |:----:|------|------|----------|
 | R1 | A 类收口（低成本） | 用户管理、API 密钥、EdgeRouter 三页接真实端点 | **已完成（v1.9.1）** |
-| R2 | C 类补列表 | `GET /configs`、`GET /test-records`、`GET /test-runs` + 两页接线；服务 Key 改 id 化吊销 | OpenBase 后端小改 |
+| R2 | C 类补列表 | `GET /configs`、`GET /test-records`、`GET /test-runs` + 两页接线；服务 Key 改 id 化吊销 | **已完成（v1.9.2）**；同时修复 OpenLLM `get_db` 并发缺陷 |
 | R3 | B 类第一批 | OpenLLM `plugins`、`model-categories` 改双通道依赖；插件管理、模型分类两页接真实 | OpenLLM 授权依赖改造 |
 | R4 | B 类第二批 | `monitoring/*`、`alerts`、`budgets`、`usage`、`billing` → 成本/告警/链路/预算/用量/计费六页 | 观察类接口的租户过滤口径 |
 | R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | 写权限档位与 `role:write` 语义 |
@@ -213,7 +217,7 @@
 | 2 | 通用代理注入 OpenLLM Key 属新增出站凭据面 | 若代理权限判定失效，可能放大影响 | 代理入口仍强制 JWT + 权限校验；Key 仅对 `system=openllm` 注入 |
 | 3 | 上游 `local-models` 等端点 10s 超时 | 页面 502 | 与 D 类一并治理；必要时该组端点单独放宽超时 |
 | 4 | 服务进程（DPS/OpenRAG）在长时间无人访问后被回收 | 审计出现 503 假失败 | 审计前统一健康检查；服务编排侧增加守护（运维项） |
-| 5 | **OpenLLM `scoped_session` + 线程池并发缺陷**（新发现） | 同步端点并发访问同一 Session → `InvalidRequestError: This session is provisioning a new connection; concurrent operations are not permitted` → 上游 500。实测「提供商页 3 路并发拉模型数」每次必有 1 路 500 | 前端已串行化规避；根因需 OpenLLM 侧改 `get_db`（每请求独立 Session，移除 `scoped_session`）或显式 `SessionLocal.remove()` 前完成序列化。**列入 R2 跨仓派单** |
+| 5 | ~~**OpenLLM `scoped_session` + 线程池并发缺陷**~~ | 同步端点并发访问同一 Session → `InvalidRequestError` → 上游 500 | **已修复（R2 / OpenLLM v1.9.2）**：`get_db` 改为每请求独立 Session；前端串行化保留为额外防护 |
 | 6 | 「契约 mock」页面继续对外可见 | 用户误以为是真实数据 | 本清单作为派单依据；接线前不建议对外演示这些页面 |
 
 ---
@@ -253,5 +257,6 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.2.0 | 2026-10-23 | FA-OpenBase-Dev | **R2 收口**：新增 `GET /configs`、`GET /test-records`、`GET /test-runs` 并接线两页；服务 Key 增加 `id` 与 `by-id` 吊销端点（解除历史密钥不可吊销限制）；跨仓修复 OpenLLM `get_db` 并发 500；无后端调用页面 49 → 47。 |
 | v1.1.0 | 2026-10-23 | FA-OpenBase-Dev | **R1 收口**：用户管理、API 密钥、EdgeRouter 三页接真实端点并移除假动作；新增「服务 Key 列表无 id、吊销需明文」缺口（归 C 类）与 R2 范围；发现并规避 OpenLLM `scoped_session` 并发 500（前端串行化，根因列 R2 跨仓）；无后端调用页面 52 → 49。 |
 | v1.0.0 | 2026-10-22 | FA-OpenBase-Dev | 初始创建：77 页全栈功能审计（L1 加载 / L2 交互 / L3 API 面 / L4 通道探测），52 页无后端调用单列；缺口分 A~E 五类并逐页成表；记录本轮闭环（通用代理来源映射 + OpenLLM 凭据注入 + 提供商管理真实化）与 R1~R7 路线图。 |

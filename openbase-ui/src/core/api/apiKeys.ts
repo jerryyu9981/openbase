@@ -1,14 +1,15 @@
 /**
- * 服务级 API Key API（v1.9.1）：OpenBase `/api/v1/auth/api-keys`.
+ * 服务级 API Key API（v1.9.2）：OpenBase `/api/v1/auth/api-keys`.
  *
  * 契约要点：
  * - 列表 `ApiKeyOut[]` **不回显明文**（`key` 仅创建响应返回一次）；
- * - 吊销端点为 `DELETE /auth/api-keys/{raw_key}`，以**明文 Key** 定位记录。
- *   因此列表行无法直接删除（没有 id），仅本次会话新建、且仍持有明文的 Key 可吊销。
+ * - v1.9.2 起每条记录带稳定 `id`，吊销走 `DELETE /auth/api-keys/by-id/{id}`，
+ *   前端无需持有明文；原「按明文 Key」端点保留以兼容既有调用方。
  */
 import { http } from '@/core/api/http'
 
 export interface ApiKeyRecord {
+  id: string
   name: string
   scope: { system?: string[]; tenants?: string[] }
   description: string
@@ -40,7 +41,12 @@ export const apiKeysApi = {
     return data
   },
 
-  /** 吊销：需传入明文 Key（列表不提供 id） */
+  /** 按稳定标识吊销（列表已回显 id，无需明文） */
+  async revokeById(keyId: string): Promise<void> {
+    await http.delete(`/auth/api-keys/by-id/${encodeURIComponent(keyId)}`)
+  },
+
+  /** 按明文 Key 吊销（兼容既有调用方） */
   async revoke(rawKey: string): Promise<void> {
     await http.delete(`/auth/api-keys/${encodeURIComponent(rawKey)}`)
   },

@@ -21,7 +21,7 @@
       :closable="false"
       show-icon
       class="mb-16"
-      title="完整密钥仅在创建成功时展示一次；列表不回显明文。吊销接口按明文 Key 定位记录，因此只能吊销「本次会话中创建、且仍持有明文」的密钥。"
+      title="完整密钥仅在创建成功时展示一次；列表不回显明文。吊销按记录 id 执行，不依赖明文。"
       data-test="api-keys-notice"
     />
 
@@ -61,7 +61,7 @@
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" data-test="view-api-key" @click="openDetail(row)">详情</el-button>
-            <el-tooltip :disabled="canRevoke(row)" content="列表不回显明文 Key，无法定位记录；仅本次会话新建的密钥可在此吊销" placement="top">
+            <el-tooltip :disabled="canRevoke(row)" content="该密钥已吊销，无需重复操作" placement="top">
               <span>
                 <el-popconfirm
                   title="确认吊销该密钥？关联调用将立即失效"
@@ -196,7 +196,7 @@ function messageOf(error: unknown, fallback: string): string {
 }
 
 function canRevoke(record: ApiKeyRecord): boolean {
-  return Boolean(ownedKeys.value[recordKey(record)]) && !record.revoked
+  return Boolean(record.id) && !record.revoked
 }
 
 async function load(): Promise<void> {
@@ -270,13 +270,12 @@ async function copyKey(record: ApiKeyRecord): Promise<void> {
 }
 
 async function revoke(record: ApiKeyRecord): Promise<void> {
-  const rawKey = ownedKeys.value[recordKey(record)]
-  if (!rawKey) {
-    errorMessage.value = '该密钥的明文不在当前会话中，后端吊销接口无法定位记录'
+  if (!record.id) {
+    errorMessage.value = '该密钥缺少稳定标识，无法吊销'
     return
   }
   try {
-    await apiKeysApi.revoke(rawKey)
+    await apiKeysApi.revokeById(record.id)
     delete ownedKeys.value[recordKey(record)]
     ElMessage.success(`密钥「${record.name}」已吊销`)
     await load()

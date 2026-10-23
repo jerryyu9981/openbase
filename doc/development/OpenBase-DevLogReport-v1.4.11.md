@@ -408,6 +408,50 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.16 R2：C 类列表补齐与上游并发修复（v1.9.2）
+
+**范围**：按缺口清单 R2，补齐 3 个缺失列表端点、服务 Key id 化吊销、两页接线，并跨仓修复 OpenLLM `get_db` 并发缺陷。
+
+**后端（OpenBase）**
+
+| 变更 | 说明 |
+|------|------|
+| `GET /api/v1/configs` | 新增列表：key 来源 = DB `configs` 表 ∪ 运行时写入 ∪ 代码默认值；取值走三级合并，`level` 回显最高优先级来源；支持 `prefix` / `level` 过滤 |
+| `GET /api/v1/test-records` | 新增列表：按 `run_id` / `case_id` / `result` 过滤，`skip` / `limit` 分页（上限 500），按创建时间倒序 |
+| `GET /api/v1/test-runs` | 新增轮次列表：含 `record_count`，供页面轮次下拉 |
+| `ApiKeyOut.id` + `DELETE /auth/api-keys/by-id/{key_id}` | 记录生成稳定 `id`；新增按 id 吊销（未知 id → 404 `BIZ_404`），保留按明文吊销端点兼容 |
+
+**前端**
+
+| 页面 | 改动 |
+|------|------|
+| 全局配置 | 接 `GET /configs`；编辑保存 `POST /configs`（对象/布尔/数字自动解析）；版本抽屉接 `GET /configs/{key}/versions`，回滚 `POST /configs/{key}/rollback?version=`；导入改为逐条真实写入；移除 mock 配置与「热加载」假动作 |
+| 测试记录 | 新增轮次下拉（`GET /test-runs`），进入页面自动选中最新一轮并加载 summary；开新一轮后刷新轮次；保留手填 run_id |
+| API 密钥 | 改为 `DELETE /auth/api-keys/by-id/{id}`，「历史密钥不可吊销」限制解除；新增 `core/api/configs.ts` |
+
+**跨仓（OpenLLM v1.9.2）**
+
+- 根因：`SessionLocal = scoped_session(...)` 与 FastAPI 同步端点线程池组合，`get_db` 在 A 线程取的 Session 被 B 线程使用、teardown 又在 C 线程关闭 → 同一 Session 跨线程并发 → `InvalidRequestError: This session is provisioning a new connection; concurrent operations are not permitted`。
+- 修复：`get_db` 改用独立 `_SessionFactory()`（每请求一个 Session，不经注册表）；`SessionLocal` 原样保留给审计/脚本/网关重试等既有调用方。
+- 效果：提供商页 3 路并发拉模型数不再产生 500；`/openllm/conversations` 并发 500 亦消除。
+
+**验证**
+
+| 项 | 命令/方式 | 结果 |
+|---|-----------|------|
+| 后端新增用例 | `pytest tests/test_r2_lists_v192.py` | **10 passed**（配置列表 3 / 测试记录 3 / 轮次 2 / 服务 Key id 2） |
+| 跨仓用例 | OpenLLM `pytest tests/unit/test_db_session_concurrency_v192.py` | **3 passed**（线程间会话不同 / 不写 scoped 注册表 / 退出即关闭） |
+| 前端用例 | `vitest run r2-wiring-v192 + r1-wiring-v191 + providers-v190 + l3-2-smoke + router-nav` | **47 passed（5 文件）** |
+| 类型检查 | `vue-tsc --noEmit` | **0 错误** |
+| 接口实测 | `GET /configs`、`/test-records`、`/test-runs` | 均 **200** |
+| 服务 Key 全链路 | 创建 → 列表（`id` 回显、无明文）→ `DELETE /auth/api-keys/by-id/{id}` | `id=f00bee…`，吊销后 `revoked=True` |
+| 并发回归 | 提供商模型数 3 路并发 × 3 轮 | **9/9 均为 200**（修复前每轮必有一路 500） |
+| 浏览器实测 | 全局配置 / 测试记录页面 | **未完成**：服务进程在长命令执行期间被环境回收（DPS/前端存活，OpenBase 掉线），页面级验证暂以单测（jsdom）+ 接口实测替代，待服务稳定后复核 |
+
+**遗留**：`GET /configs` 返回代码默认值可能使列表较长（当前无分页），如需分页在 R3 增补 `skip/limit`；测试记录内存上限 5000 条，超限淘汰最旧。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -495,6 +539,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.7.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.16：**R2 C 类列表补齐与上游并发修复**——OpenBase 新增 `GET /configs`、`/test-records`、`/test-runs` 与服务 Key `id`/`by-id` 吊销；全局配置、测试记录两页接线并移除假动作；跨仓修复 OpenLLM `get_db`（`scoped_session` → 每请求独立 Session）并发 500。验证：后端 10 例、跨仓 3 例、前端 47 例、vue-tsc 0 错误、接口全链路与并发 9/9 通过；浏览器页面级验证因服务被环境回收待复核。 |
 | v2.6.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.15：**R1 A 类三页接线**——用户管理（`/users` 全量 CRUD + 角色五码）、API 密钥（`/auth/api-keys` 列表/创建/吊销 + 一次性明文）、EdgeRouter（`/edge/**` 概览/组织/配额/适配器/审计）；移除三页全部假动作；登记「服务 Key 列表无 id、吊销需明文」后端缺口。验证：前端 10 例 + 关联回归 40 例、vue-tsc 0 错误、密钥创建→吊销全链路、三页浏览器实测 0 error。 |
 | v2.5.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.14：**全栈功能级审计与 OpenLLM 聚合通道打通**——四层审计（加载/交互/API 面/通道探测）覆盖 77 页，PASS 76/1（唯一 FAIL 为沙箱下 Chromium `ERR_NO_BUFFER_SPACE` 噪声），API 失败 0；单列 52 页无后端调用并按 A~E 五类成账；修复通用代理两段 401（来源按系统映射 + 仅 openllm 注入 API Key）；提供商管理页端到端真实化。验证：后端 8+55 例、前端 4 例、浏览器实测 0 error、全页面回归 api 失败 0。 |
 | v2.4.0 | 2026-10-22 | 研发（AI 辅助） | §2.13 补充：排查服务重启期 `/api/v1/modules` 500——根因为 Vite 代理对上游连接失败返回空 500（非后端缺陷）；代理统一映射为 503 JSON，补 4 例单测并实测通过。 |

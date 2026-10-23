@@ -90,6 +90,7 @@ describe('v1.9.1 用户管理真实化', () => {
 
 describe('v1.9.1 API 密钥真实化', () => {
   const record = {
+    id: 'k-1',
     name: '生产环境密钥',
     scope: { system: ['openllm'], tenants: ['*'] },
     description: '生产用',
@@ -136,15 +137,24 @@ describe('v1.9.1 API 密钥真实化', () => {
     expect(vm.detailRow?.key).toBe('ob_k_raw_key')
   }, 20000)
 
-  it('列表中的历史密钥不可吊销（后端按明文定位，已提示降级）', async () => {
+  it('列表项可吊销：按 id 调用 DELETE，已吊销项禁用', async () => {
     mocks.get.mockResolvedValue({ data: [record] })
+    mocks.delete.mockResolvedValue({ data: { revoked: 'k-1' } })
 
     const wrapper = mountPage(ApiKeys)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { canRevoke: (row: unknown) => boolean }
-    expect(vm.canRevoke(record)).toBe(false)
-    expect(wrapper.find('[data-test="api-keys-notice"]').exists()).toBe(true)
+    const vm = wrapper.vm as unknown as {
+      canRevoke: (row: unknown) => boolean
+      revoke: (row: unknown) => Promise<void>
+    }
+    expect(vm.canRevoke(record)).toBe(true)
+    expect(vm.canRevoke({ ...record, revoked: true })).toBe(false)
+
+    await vm.revoke(record)
+    await flushPromises()
+
+    expect(mocks.delete).toHaveBeenCalledWith('/auth/api-keys/by-id/k-1')
   }, 20000)
 })
 

@@ -257,6 +257,61 @@ class ConfigVersionOut(BaseModel):
     value: Any
 
 
+class ConfigListOut(BaseModel):
+    """配置列表响应（v1.9.2）."""
+
+    items: list[ConfigOut]
+    total: int
+
+
+@router.get("", response_model=ConfigListOut)
+async def list_configs(
+    prefix: str | None = None,
+    level: str | None = None,
+    session: Any = Depends(get_db),
+) -> ConfigListOut:
+    """列出全部配置项（v1.9.2）.
+
+    key 来源 = DB `configs` 表 ∪ 运行时写入 ∪ 代码默认值；取值经三级合并，
+    `level` 字段回显该 key 的最高优先级来源级别。
+
+    Args:
+        prefix: 可选键前缀过滤（如 `proxy.`）。
+        level: 可选级别过滤（system/tenant/user）。
+        session: DB 会话。
+    """
+    resolved: dict[str, str] = {}
+    # 1) DB 为持久化事实源（低优先级起点）
+    try:
+        from sqlalchemy import select
+
+        from openbase.core.models import ConfigKV
+
+        rows = (await session.execute(select(ConfigKV))).scalars().all()
+        for row in rows:
+            resolved[row.config_key] = row.level
+    except Exception:  # noqa: BLE001
+        logger.debug("config db list failed, fallback memory only")
+    # 2) 运行时按 USER > TENANT > SYSTEM 覆盖来源级别
+    for level_name in (ConfigLevel.SYSTEM.value, ConfigLevel.TENANT.value, ConfigLevel.USER.value):
+        for key in ConfigStore._runtime.get(level_name, {}):
+            resolved[key] = level_name
+    # 3) 代码默认值补齐（未落库/未写入的键也可见）
+    for key in ConfigStore._defaults:
+        resolved.setdefault(key, ConfigLevel.SYSTEM.value)
+
+    keys = sorted(resolved)
+    if prefix:
+        keys = [key for key in keys if key.startswith(prefix)]
+    if level:
+        keys = [key for key in keys if resolved[key] == level]
+
+    items = [
+        ConfigOut(key=key, value=ConfigStore.get(key), level=resolved[key]) for key in keys
+    ]
+    return ConfigListOut(items=items, total=len(items))
+
+
 @router.get("/{key}", response_model=ConfigOut)
 async def get_config(
     key: str, session: Any = Depends(get_db)

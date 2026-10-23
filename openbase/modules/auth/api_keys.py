@@ -12,6 +12,7 @@ import logging
 import secrets
 import threading
 import time
+import uuid
 from typing import Any
 
 logger = logging.getLogger("openbase.auth.api_keys")
@@ -52,6 +53,8 @@ class ApiKeyStore:
         key_hash = self._hash(raw_key)
         with self._lock:
             self._keys[key_hash] = {
+                # v1.9.2：稳定标识（列表可回显，支持按 id 吊销，避免依赖明文 Key）
+                "id": uuid.uuid4().hex,
                 "name": name,
                 "key_hash": key_hash,
                 "scope": scope or {"system": ["*"], "tenants": ["*"]},
@@ -70,6 +73,23 @@ class ApiKeyStore:
             if record is not None:
                 record["revoked"] = True
                 logger.info("api key revoked", extra={"key_name": record["name"]})
+
+    def revoke_by_id(self, key_id: str) -> bool:
+        """按稳定标识吊销（列表可回显 id，前端无需持有明文）.
+
+        Args:
+            key_id: 记录 id（创建时生成）。
+
+        Returns:
+            命中并吊销返回 True；未找到返回 False。
+        """
+        with self._lock:
+            for record in self._keys.values():
+                if record.get("id") == key_id:
+                    record["revoked"] = True
+                    logger.info("api key revoked by id", extra={"key_name": record["name"]})
+                    return True
+        return False
 
     # ---- 校验 ----
 

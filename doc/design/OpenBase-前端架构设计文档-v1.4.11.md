@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.15.0 |
+| 文档版本 | v1.16.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -391,17 +391,42 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **边界与已知缺口**：
 
-- 服务 Key 缺 `key_id` → 历史密钥无法前端吊销（缺口清单 C 类，R2 建议后端补 id 化吊销）；
+- ~~服务 Key 缺 `key_id` → 历史密钥无法前端吊销~~ **已在 R2（v1.16.0）闭环**：`ApiKeyOut.id` + `DELETE /auth/api-keys/by-id/{id}`；
 - Edge 组织为 OpenLLM 进程内存存储，重启清空；
 - 配额无组织时无数据（已给引导文案）；
 - **上游并发缺陷规避**：OpenLLM 同步端点并发访问 `scoped_session` 会抛 `InvalidRequestError`（并发必有一路 500）。提供商页的模型数改为串行拉取 + 逐条容错；根因修复归 OpenLLM（缺口清单 §7 第 5 项 / R2）。
 
 **验证**：`tests/r1-wiring-v191.spec.ts` 10 例；关联回归 4 文件 40 例；`vue-tsc --noEmit` 0 错误；密钥「创建 → 列表无明文 → 吊销」接口全链路；三页浏览器实测 0 error。
 
+### 8.14 C 类列表补齐与服务 Key id 化（R2，v1.16.0）
+
+**背景**：缺口清单 C 类——三个列表端点缺失（`GET /configs`、`/test-records`、`/test-runs` 均 405），服务 Key 列表无稳定 id 导致吊销必须依赖明文。
+
+**后端契约（新增）**
+
+| 端点 | 返回 | 说明 |
+|------|------|------|
+| `GET /api/v1/configs?prefix=&level=` | `{items:[{key,value,level}], total}` | key 并集 = DB ∪ 运行时 ∪ 代码默认值；`level` 为最高优先级来源级别 |
+| `GET /api/v1/test-records?run_id=&case_id=&result=&skip=&limit=` | `{items,total,skip,limit}` | 倒序；`limit` 上限 500 |
+| `GET /api/v1/test-runs?skip=&limit=` | `{items:[{id,title,scope,operator,created_at,record_count}],total}` | 供页面轮次下拉 |
+| `DELETE /api/v1/auth/api-keys/by-id/{key_id}` | `{revoked:key_id}` | 未知 id → 404 `BIZ_404`；`ApiKeyOut` 增 `id` |
+
+**前端接线**
+
+- `core/api/configs.ts`（新）：`list/set/versions/rollback`；`core/api/testing.ts` 扩 `listRuns/listRecords`；`core/api/apiKeys.ts` 增 `revokeById`。
+- 全局配置：列表 + 关键字/级别过滤 + 编辑（值按 JSON/布尔/数字解析）+ 版本抽屉 + 回滚 + 导入（逐条真实写入）/导出。
+- 测试记录：轮次下拉（进入自动选最新一轮并加载 summary）+ 手填 run_id 兜底 + 开新一轮后刷新。
+- API 密钥：吊销改 `by-id`，解除「历史密钥不可吊销」。
+
+**跨仓修复（OpenLLM v1.9.2）**：`get_db` 由 `scoped_session` 改为每请求独立 Session，消除同步端点线程池下的跨线程会话复用（`InvalidRequestError`），并发 500 根因闭环。
+
+**边界**：`GET /configs` 暂无分页（默认值较多时列表较长）；测试记录内存上限 5000 条。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.16.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.14：R2 C 类列表补齐（`GET /configs`、`/test-records`、`/test-runs`）与服务 Key `id`/`by-id` 吊销；全局配置与测试记录两页接线；跨仓修复 OpenLLM `get_db` 并发缺陷。§8.13 的服务 Key 缺口标记闭环。 |
 | **v1.15.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.13：A 类三页接线（R1）——用户管理 `/users`、API 密钥 `/auth/api-keys`、EdgeRouter `/edge/**`；明确「不伪造成功」原则、字段映射与三项已知缺口（服务 Key 无 id、Edge 组织内存态、配额无组织引导）。 |
 | **v1.14.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.12：OpenLLM 聚合通道与来源映射——通用代理出站来源按被代理系统映射（修 401 根因）、仅 openllm 注入 API Key（修第二段 401）、新增 `core/api/governance.ts`，提供商管理页端到端真实化；同步缺口清单与后续轮次路线。 |
 | **v1.13.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.11：开发代理上游不可达时由空 500 改为 503 JSON（`SYS_UPSTREAM_UNAVAILABLE`），避免误判服务端故障；补 4 例单测与实测记录。 |

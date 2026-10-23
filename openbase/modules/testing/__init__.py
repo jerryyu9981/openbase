@@ -140,6 +140,62 @@ class TestRecordService:
         return run
 
     @classmethod
+    def list_records(
+        cls,
+        *,
+        run_id: str | None = None,
+        case_id: str | None = None,
+        result: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """列出测试记录（v1.9.2，按创建时间倒序）.
+
+        Args:
+            run_id: 按测试轮次过滤。
+            case_id: 按用例号过滤。
+            result: 按结论过滤（PASS/FAIL/BLOCKED/SKIPPED）。
+            skip: 偏移。
+            limit: 单页上限。
+
+        Returns:
+            (当前页记录, 过滤后总数)。
+        """
+        rows = [
+            record
+            for record in reversed(cls._records)
+            if (run_id is None or record.get("run_id") == run_id)
+            and (case_id is None or record.get("case_id") == case_id)
+            and (result is None or record.get("result") == result)
+        ]
+        return [dict(item) for item in rows[skip : skip + limit]], len(rows)
+
+    @classmethod
+    def list_runs(cls, *, skip: int = 0, limit: int = 100) -> tuple[list[dict[str, Any]], int]:
+        """列出测试轮次（v1.9.2，按创建时间倒序，附记录数）.
+
+        Returns:
+            (当前页轮次, 总数)。
+        """
+        runs = sorted(
+            cls._runs.values(),
+            key=lambda run: str(run.get("created_at") or ""),
+            reverse=True,
+        )
+        items = [
+            {
+                "id": run.get("id"),
+                "title": run.get("title") or "",
+                "scope": run.get("scope") or "",
+                "operator": run.get("operator"),
+                "created_at": run.get("created_at"),
+                "record_count": len(run.get("records") or []),
+            }
+            for run in runs[skip : skip + limit]
+        ]
+        return items, len(runs)
+
+    @classmethod
     def create_record(
         cls, *, run_id: str, payload: TestRecordRequest, operator: str | None
     ) -> dict[str, Any]:
@@ -346,6 +402,34 @@ def _operator(request: Request) -> tuple[str | None, str | None]:
 # ---- 受权端点（统一 require_permission("test:record")） ----
 
 _deps = [Depends(require_permission("test:record"))]
+
+
+@router.get("/test-records", dependencies=_deps)
+async def list_test_records(
+    run_id: str | None = None,
+    case_id: str | None = None,
+    result: str | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> dict[str, Any]:
+    """列出测试记录（v1.9.2；供「测试记录」页读取，支持轮次/用例/结论过滤）."""
+    capped = max(1, min(limit, 500))
+    items, total = TestRecordService.list_records(
+        run_id=run_id or None,
+        case_id=case_id or None,
+        result=result or None,
+        skip=max(0, skip),
+        limit=capped,
+    )
+    return _ok({"items": items, "total": total, "skip": max(0, skip), "limit": capped})
+
+
+@router.get("/test-runs", dependencies=_deps)
+async def list_test_runs(skip: int = 0, limit: int = 100) -> dict[str, Any]:
+    """列出测试轮次（v1.9.2；含记录数，供页面轮次下拉）."""
+    capped = max(1, min(limit, 500))
+    items, total = TestRecordService.list_runs(skip=max(0, skip), limit=capped)
+    return _ok({"items": items, "total": total, "skip": max(0, skip), "limit": capped})
 
 
 @router.post("/test-runs", dependencies=_deps)

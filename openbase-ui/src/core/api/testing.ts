@@ -51,9 +51,37 @@ export interface RunSummary {
   cases: CaseSummary[]
 }
 
+/** 测试轮次列表项（v1.9.2） */
+export interface TestRunItem {
+  id: string
+  title: string
+  scope: string
+  operator: string | null
+  created_at: string | null
+  record_count: number
+}
+
+/** 测试记录分页（v1.9.2） */
+export interface TestRecordPage {
+  items: TestCaseRecord[]
+  total: number
+  skip: number
+  limit: number
+}
+
 export const testingApi = {
   createRun(body: { run_id?: string; title?: string; scope?: string }): Promise<ApiSuccess<{ run_id: string }>> {
     return http.post('/test-runs', body).then((r) => r.data)
+  },
+  /** 轮次列表（v1.9.2，按创建时间倒序，含记录数） */
+  listRuns(params: { skip?: number; limit?: number } = {}): Promise<ApiSuccess<TestRecordPage & { items: TestRunItem[] }>> {
+    return http.get('/test-runs', { params }).then((r) => r.data)
+  },
+  /** 记录列表（v1.9.2，支持轮次/用例/结论过滤） */
+  listRecords(
+    params: { run_id?: string; case_id?: string; result?: TestResult; skip?: number; limit?: number } = {},
+  ): Promise<ApiSuccess<TestRecordPage>> {
+    return http.get('/test-records', { params }).then((r) => r.data)
   },
   createRecord(body: {
     run_id: string
