@@ -1,11 +1,15 @@
 <template>
-  <PageContainer title="成本分析" description="按模型/租户维度的成本拆解" test-id="costs-page">
+  <PageContainer title="成本分析" description="按模型/提供商/用户维度的成本拆解（OpenLLM 成本指标）" test-id="costs-page">
     <div class="page-toolbar">
-      <el-radio-group v-model="dimension" data-test="cost-dimension" @change="handleDimensionChange">
+      <el-radio-group v-model="dimension" data-test="cost-dimension" @change="renderChart">
         <el-radio-button value="model">模型</el-radio-button>
         <el-radio-button value="provider">提供商</el-radio-button>
-        <el-radio-button value="tenant">租户</el-radio-button>
+        <el-radio-button value="user">用户</el-radio-button>
       </el-radio-group>
+      <el-select v-model="timeRange" style="width: 140px" data-test="cost-range" @change="loadCost">
+        <el-option v-for="range in TIME_RANGES" :key="range.value" :label="range.label" :value="range.value" />
+      </el-select>
+      <el-button data-test="cost-refresh" :loading="loading" @click="loadAll">刷新</el-button>
       <el-button type="primary" data-test="create-budget" @click="openCreateBudget">创建预算</el-button>
     </div>
 
@@ -34,33 +38,49 @@
             <el-empty description="暂无预算，点击右上角创建" :image-size="60" data-test="budgets-empty" />
           </template>
           <el-table-column prop="name" label="预算名" min-width="150" />
-          <el-table-column label="周期" width="100">
+          <el-table-column label="范围" width="100">
+            <template #default="{ row }">{{ scopeLabel(row.scope) }}</template>
+          </el-table-column>
+          <el-table-column label="周期" width="90">
             <template #default="{ row }">{{ periodLabel(row.period) }}</template>
           </el-table-column>
-          <el-table-column label="额度" width="120">
-            <template #default="{ row }">${{ row.limit_amount }}</template>
+          <el-table-column label="额度($)" width="110">
+            <template #default="{ row }">{{ formatAmount(row.limit_usd) }}</template>
           </el-table-column>
-          <el-table-column label="已用" width="120">
-            <template #default="{ row }">${{ row.used_amount }}</template>
+          <el-table-column label="已用($)" width="110">
+            <template #default="{ row }">{{ formatAmount(row.current_usage_usd) }}</template>
           </el-table-column>
           <el-table-column label="进度" min-width="200">
             <template #default="{ row }">
-              <el-progress :percentage="usagePercent(row)" :status="usageStatus(row)" data-test="budget-progress" />
+              <el-progress
+                :percentage="progressPercent(row)"
+                :status="row.is_exceeded ? 'exception' : undefined"
+                data-test="budget-progress"
+              />
             </template>
           </el-table-column>
-          <el-table-column label="告警阈值" width="110">
-            <template #default="{ row }">{{ row.alert_threshold }}%</template>
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag :type="row.is_exceeded ? 'danger' : row.enabled ? 'success' : 'info'" size="small">
+                {{ row.is_exceeded ? '已超限' : row.enabled ? '启用' : '停用' }}
+              </el-tag>
+            </template>
           </el-table-column>
         </el-table>
       </div>
     </el-card>
 
     <el-card header="优化建议" data-test="optimization-card">
-      <el-empty v-if="suggestions.length === 0" description="暂无优化建议" :image-size="60" data-test="suggestions-empty" />
+      <el-empty
+        v-if="suggestions.length === 0"
+        description="暂无优化建议"
+        :image-size="60"
+        data-test="suggestions-empty"
+      />
       <div v-else class="suggestion-list">
         <el-card
-          v-for="suggestion in suggestions"
-          :key="suggestion.id"
+          v-for="(suggestion, index) in suggestions"
+          :key="`${suggestion.type}-${index}`"
           shadow="never"
           class="suggestion-item"
           data-test="suggestion-item"
@@ -68,19 +88,16 @@
           <div class="suggestion-body">
             <div class="suggestion-title">
               {{ suggestion.title }}
-              <el-tag size="small" type="success" class="saving-tag">预计节省 {{ suggestion.saving }}</el-tag>
+              <el-tag size="small" :type="severityType(suggestion.severity)">
+                {{ severityLabel(suggestion.severity) }}
+              </el-tag>
+              <el-tag v-if="suggestion.potential_savings" size="small" type="success" class="saving-tag">
+                预计节省 {{ suggestion.potential_savings }}
+              </el-tag>
             </div>
-            <div class="text-muted">{{ suggestion.detail }}</div>
+            <div class="text-muted">{{ suggestion.description }}</div>
+            <div class="suggestion-advice">建议：{{ suggestion.recommendation }}</div>
           </div>
-          <el-button
-            type="primary"
-            size="small"
-            :disabled="suggestion.applied"
-            data-test="apply-suggestion"
-            @click="applySuggestion(suggestion)"
-          >
-            {{ suggestion.applied ? '已应用' : '一键应用' }}
-          </el-button>
         </el-card>
       </div>
     </el-card>
@@ -98,16 +115,29 @@
           </el-select>
         </el-form-item>
         <el-form-item label="额度($)" required>
-          <el-input-number v-model="budgetForm.limit_amount" :min="1" :step="100" style="width: 100%" data-test="budget-limit-input" />
+          <el-input-number
+            v-model="budgetForm.limit_usd"
+            :min="1"
+            :step="100"
+            style="width: 100%"
+            data-test="budget-limit-input"
+          />
         </el-form-item>
         <el-form-item label="告警阈值">
-          <el-input-number v-model="budgetForm.alert_threshold" :min="1" :max="100" :step="5" style="width: 100%" data-test="budget-threshold-input" />
-          <div class="text-muted">已用额度达到该百分比时触发告警</div>
+          <el-input-number
+            v-model="budgetForm.alert_threshold"
+            :min="1"
+            :max="100"
+            :step="5"
+            style="width: 100%"
+            data-test="budget-threshold-input"
+          />
+          <div class="text-muted">已用额度达到该百分比时触发 warning 告警</div>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="budgetDialogVisible = false">取消</el-button>
-        <el-button type="primary" data-test="save-budget" @click="saveBudget">创建</el-button>
+        <el-button type="primary" :loading="saving" data-test="save-budget" @click="saveBudget">创建</el-button>
       </template>
     </el-dialog>
   </PageContainer>
@@ -118,108 +148,77 @@ import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import {
+  budgetsApi,
+  monitoringApi,
+  type LlmBudget,
+  type LlmCostAnalysis,
+  type LlmOptimizationSuggestion,
+} from '@/core/api/governance'
 
-interface BudgetRow {
-  id: number
-  name: string
-  period: string
-  limit_amount: number
-  used_amount: number
-  alert_threshold: number
-}
-
-interface Suggestion {
-  id: number
-  title: string
-  detail: string
-  saving: string
-  applied: boolean
-}
+/**
+ * 成本分析（v1.9.4 R4 真实化）：数据源 = OpenLLM `/api/v1/monitoring/costs`
+ * 与 `/api/v1/budgets`，经 OpenBase 通用代理聚合（双通道鉴权）。
+ * 原「一键应用优化建议」为前端假动作（上游无应用端点），本轮移除，仅展示建议内容。
+ */
+const TIME_RANGES = [
+  { value: '1h', label: '1 小时' },
+  { value: '6h', label: '6 小时' },
+  { value: '24h', label: '24 小时' },
+  { value: '7d', label: '7 天' },
+  { value: '30d', label: '30 天' },
+]
 
 const dimension = ref('model')
-const loading = ref(true)
+const timeRange = ref('7d')
+const loading = ref(false)
+const saving = ref(false)
 const errorMessage = ref('')
+
+const costData = ref<LlmCostAnalysis | null>(null)
+const budgets = ref<LlmBudget[]>([])
+const suggestions = ref<LlmOptimizationSuggestion[]>([])
 
 const chartRef = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
 
-const periodLabels: Record<string, string> = { monthly: '月度', quarterly: '季度', yearly: '年度' }
+const dimensionItems = computed(() => costData.value?.dimensions?.[dimension.value] ?? [])
+const pieData = computed(() => dimensionItems.value.map((item) => ({ name: item.value, value: item.total_cost })))
+
+const periodLabels: Record<string, string> = {
+  daily: '日',
+  weekly: '周',
+  monthly: '月度',
+  quarterly: '季度',
+  yearly: '年度',
+}
+const scopeLabels: Record<string, string> = {
+  global: '全局',
+  team: '团队',
+  project: '项目',
+  workspace: '工作区',
+  user: '用户',
+  api_key: 'API Key',
+}
+
 function periodLabel(period: string) {
   return periodLabels[period] || period
 }
-
-/** 契约 mock：各维度成本分布（单位 $，不调用真实 API） */
-const dimensionData: Record<string, Array<{ name: string; value: number }>> = {
-  model: [
-    { name: 'gpt-4o', value: 426.5 },
-    { name: 'gpt-4o-mini', value: 215.2 },
-    { name: 'claude-3-5-sonnet', value: 188.6 },
-    { name: 'qwen2.5-7b', value: 96.3 },
-    { name: 'bge-m3', value: 45.8 },
-  ],
-  provider: [
-    { name: 'OpenAI', value: 641.7 },
-    { name: 'Anthropic', value: 188.6 },
-    { name: '本地部署', value: 96.3 },
-    { name: 'BAAI', value: 45.8 },
-  ],
-  tenant: [
-    { name: '平台默认租户', value: 512.4 },
-    { name: 'AI 研发组', value: 268.9 },
-    { name: '数据分析组', value: 123.5 },
-    { name: '市场运营组', value: 67.6 },
-  ],
+function scopeLabel(scope: string) {
+  return scopeLabels[scope] || scope
 }
-
-const pieData = computed(() => dimensionData[dimension.value] || [])
-
-/** 契约 mock：本地预算数据（不调用真实 API） */
-const budgets = ref<BudgetRow[]>([
-  { id: 1, name: 'AI 研发月度预算', period: 'monthly', limit_amount: 800, used_amount: 642, alert_threshold: 80 },
-  { id: 2, name: '生产环境季度预算', period: 'quarterly', limit_amount: 3000, used_amount: 1200, alert_threshold: 70 },
-  { id: 3, name: '数据标注年度预算', period: 'yearly', limit_amount: 12000, used_amount: 4320, alert_threshold: 60 },
-])
-
-const suggestions = ref<Suggestion[]>([
-  {
-    id: 1,
-    title: '低优先级任务切换至 gpt-4o-mini',
-    detail: '将非关键链路的对话任务批量路由到 gpt-4o-mini，质量差异可忽略',
-    saving: '18%',
-    applied: false,
-  },
-  {
-    id: 2,
-    title: '启用对话级语义缓存',
-    detail: '对重复提问启用语义缓存，可显著减少输入 Token 重复计费',
-    saving: '22%',
-    applied: false,
-  },
-  {
-    id: 3,
-    title: '缩容闲置本地模型 qwen2.5-7b',
-    detail: '夜间调用量低于 5 rps 持续 30 天，建议缩容至 1 副本',
-    saving: '12%',
-    applied: false,
-  },
-  {
-    id: 4,
-    title: '收紧预算告警阈值',
-    detail: 'AI 研发月度预算当前阈值 80% 过于宽松，建议收紧至 70% 提前介入',
-    saving: '避免超支',
-    applied: false,
-  },
-])
-
-function usagePercent(row: BudgetRow) {
-  if (row.limit_amount <= 0) return 0
-  return Math.min(100, Math.round((row.used_amount / row.limit_amount) * 100))
+function formatAmount(amount: number) {
+  return Number(amount ?? 0).toFixed(2)
 }
-function usageStatus(row: BudgetRow) {
-  const percent = usagePercent(row)
-  if (percent >= row.alert_threshold) return 'exception'
-  if (percent >= 80) return 'warning'
-  return 'success'
+function progressPercent(row: LlmBudget) {
+  const percent = Number(row.usage_percentage ?? 0)
+  return Math.max(0, Math.min(100, Math.round(percent)))
+}
+function severityType(severity: string) {
+  return { critical: 'danger', high: 'danger', medium: 'warning', low: 'info' }[severity] || 'info'
+}
+function severityLabel(severity: string) {
+  return { critical: '严重', high: '高', medium: '中', low: '低' }[severity] || severity
 }
 
 function renderChart() {
@@ -247,10 +246,45 @@ function handleResize() {
   chart?.resize()
 }
 
-async function handleDimensionChange() {
+async function loadCost() {
+  try {
+    // 一次取三个维度，切换维度时本地切换，避免重复请求
+    costData.value = await monitoringApi.costs({
+      dimension: ['model', 'provider', 'user'],
+      time_range: timeRange.value,
+    })
+    await nextTick()
+    renderChart()
+  } catch (error) {
+    errorMessage.value = `成本数据加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
+}
+
+async function loadBudgets() {
+  try {
+    const page = await budgetsApi.list({ page: 1, page_size: 100 })
+    budgets.value = page.budgets
+  } catch (error) {
+    errorMessage.value = `预算列表加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
+}
+
+async function loadSuggestions() {
+  try {
+    suggestions.value = await monitoringApi.optimizationSuggestions()
+  } catch (error) {
+    errorMessage.value = `优化建议加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
+}
+
+async function loadAll() {
   errorMessage.value = ''
-  await nextTick()
-  renderChart()
+  loading.value = true
+  try {
+    await Promise.all([loadCost(), loadBudgets(), loadSuggestions()])
+  } finally {
+    loading.value = false
+  }
 }
 
 // ---------- 创建预算 ----------
@@ -258,7 +292,7 @@ const budgetDialogVisible = ref(false)
 const budgetForm = reactive({
   name: '',
   period: 'monthly',
-  limit_amount: 500,
+  limit_usd: 500,
   alert_threshold: 80,
 })
 
@@ -266,49 +300,42 @@ function openCreateBudget() {
   errorMessage.value = ''
   budgetForm.name = ''
   budgetForm.period = 'monthly'
-  budgetForm.limit_amount = 500
+  budgetForm.limit_usd = 500
   budgetForm.alert_threshold = 80
   budgetDialogVisible.value = true
 }
 
-function saveBudget() {
+async function saveBudget() {
   if (!budgetForm.name.trim()) {
     ElMessage.warning('请输入预算名称')
     return
   }
-  if (budgetForm.limit_amount <= 0) {
-    // 业务规则：额度必须为正数
+  if (budgetForm.limit_usd <= 0) {
     errorMessage.value = '预算额度必须大于 0，请重新设置后再创建'
     return
   }
-  budgets.value.push({
-    id: Date.now(),
-    name: budgetForm.name.trim(),
-    period: budgetForm.period,
-    limit_amount: budgetForm.limit_amount,
-    used_amount: 0,
-    alert_threshold: budgetForm.alert_threshold,
-  })
-  budgetDialogVisible.value = false
-  ElMessage.success('预算已创建')
-}
-
-function applySuggestion(suggestion: Suggestion) {
-  suggestion.applied = true
-  ElMessage.success(`已应用优化建议：${suggestion.title}`)
-}
-
-function mockDelay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+  saving.value = true
+  try {
+    await budgetsApi.create({
+      name: budgetForm.name.trim(),
+      scope: 'global',
+      period: budgetForm.period,
+      limit_usd: budgetForm.limit_usd,
+      alert_thresholds: [{ type: 'warning', value: budgetForm.alert_threshold }],
+    })
+    budgetDialogVisible.value = false
+    ElMessage.success('预算已创建')
+    await loadBudgets()
+  } catch (error) {
+    errorMessage.value = `预算创建失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    saving.value = false
+  }
 }
 
 onMounted(async () => {
-  loading.value = true
-  await mockDelay(600) // 契约 mock：模拟加载成本数据
-  loading.value = false
-  await nextTick()
-  renderChart()
   window.addEventListener('resize', handleResize)
+  await loadAll()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
@@ -333,14 +360,9 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 .suggestion-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   border: 1px solid var(--el-border-color-lighter);
 }
 .suggestion-body {
-  flex: 1;
   min-width: 0;
 }
 .suggestion-title {
@@ -350,6 +372,10 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+.suggestion-advice {
+  margin-top: 6px;
+  font-size: 13px;
 }
 .saving-tag {
   flex-shrink: 0;

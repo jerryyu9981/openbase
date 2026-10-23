@@ -3,12 +3,12 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.3.0 |
+| 文档版本 | v1.4.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
 | 创建日期 | 2026-10-22 |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.14.0 §8.12；《OpenBase-DevLogReport-v1.4.11》v2.5.0 §2.14 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.18.0 §8.16；《OpenBase-DevLogReport-v1.4.11》v2.9.0 §2.18 |
 | 证据 | `doc/test/evidence/s6/ui-func-audit-v190.json`、`ui-func-audit-v190-summary.md`、`proxy-reachability-v190.json` |
 | 存放 | `doc/planning/` |
 
@@ -48,7 +48,7 @@
 | L1+L2 结果 | **PASS 76 / FAIL 1**（唯一 FAIL 为 `net::ERR_NO_BUFFER_SPACE`，Chromium 在沙箱内写 `debug.log` 受限导致的资源加载抖动；该页单页复跑 0 错误，判为环境噪声，非应用缺陷） |
 | 首轮基线 | PASS 77 / FAIL 0（同一套探针，服务全部预热后） |
 | API 失败次数（4xx/5xx/请求失败） | **0** |
-| 无后端调用的页面 | **45**（R1 3 页、R2 2 页、R3 2 页收口后：52 − 7） |
+| 无后端调用的页面 | **39**（R1 3 页、R2 2 页、R3 2 页、R4 6 页收口后：52 − 13） |
 | 其中「无调用且无可交互动作」的静默页 | 28 |
 
 > 采样口径说明：无后端调用按「首屏 1.2s 稳定窗口内是否发出 `/api/**`」判定；记忆图谱/衰减、模板包导出、血缘、措施建议等**按需触发**页在该窗口内可能尚无请求，属测量假阴性。已在 §4 逐页以源码接线与实测复核，避免误判。
@@ -91,13 +91,13 @@
 | 14 | 日志中心 | `/platform/observability/logs` | 真实 | — | `/logs/search`、`/logs/facets` | 已接 |
 | 15 | 测试记录 | `/platform/observability/test-records` | **真实（v1.9.2 R2）** | — | `GET /test-records`、`GET /test-runs`（新增）+ 既有开轮/记录/改判/summary | **已闭环** |
 | 16 | 统一监控 | `/platform/observability/monitoring` | mock 概览 | E | 无聚合概览端点 | 待立项 |
-| 17 | 成本分析 | `/platform/observability/monitoring/costs` | mock | B | OpenLLM `/monitoring/costs`（401） | 后续轮次 |
-| 18 | 告警中心 | `/platform/observability/monitoring/alerts` | mock | B | `/alerts`、`/alerts/rules`（401） | 后续轮次 |
-| 19 | 链路追踪 | `/platform/observability/monitoring/traces` | mock | B | `/monitoring/traces`（401） | 后续轮次 |
-| 20 | 预算管理 | `/platform/observability/monitoring/budgets` | mock | B | `/budgets`（401） | 后续轮次 |
+| 17 | 成本分析 | `/platform/observability/monitoring/costs` | **真实（v1.9.4 R4）** | — | `/monitoring/costs`、`/monitoring/costs/optimization-suggestions`、`/budgets`（双通道后 200） | **已闭环** |
+| 18 | 告警中心 | `/platform/observability/monitoring/alerts` | **真实（v1.9.4 R4）** | — | `/alerts/rules`（增删改查）、`/alerts`、`/alerts/{id}/resolve|acknowledge`（双通道后 200） | **已闭环** |
+| 19 | 链路追踪 | `/platform/observability/monitoring/traces` | **真实（v1.9.4 R4）** | — | `/monitoring/traces`、`/monitoring/traces/statistics`、`/monitoring/traces/{id}`（双通道后 200） | **已闭环（新建页面替换占位）** |
+| 20 | 预算管理 | `/platform/observability/monitoring/budgets` | **真实（v1.9.4 R4）** | — | `/budgets`、`/budgets/{id}/status`（双通道后 200） | **已闭环（新建页面替换占位）** |
 | 21 | GPU 资源 | `/platform/observability/gpu` | mock | D | `/local-models/gpu`（502 超时） | 待性能治理 |
-| 22 | 用量统计 | `/platform/observability/usage` | mock | B | `/usage/summary`（401） | 后续轮次 |
-| 23 | 计费 | `/platform/observability/billing` | mock | B | `/billing/bills`（401） | 后续轮次 |
+| 22 | 用量统计 | `/platform/observability/usage` | **真实（v1.9.4 R4）** | — | `/usage/summary`、`/usage/trends`、`/usage/detail`（双通道后 200） | **已闭环** |
+| 23 | 计费 | `/platform/observability/billing` | **真实（v1.9.4 R4）** | — | `/billing/usage/statistics`、`/billing/quotas`、`/billing/bills`（双通道后 200） | **已闭环** |
 | 24 | 服务发现与编排 | `/platform/observability/service-discovery` | 真实 | — | `/services`、`/gateway/ping` | 已接 |
 | 25 | 聚合网关测试 | `/platform/observability/gateway-test` | 表单页（提交时触发） | A | `/gateway/aggregate`（200；审计未自动提交） | 待补充交互用例 |
 | 26 | 应用调用记录 | `/platform/observability/app-calls` | mock | E | `/ai-apps/{id}/calls` 需先选应用，缺全局聚合 | 待立项 |
@@ -192,6 +192,8 @@
 | **R2 上游并发修复**（OpenLLM v1.9.2） | `get_db` 由 `scoped_session` 改为每请求独立 Session（`SessionFactory()`），从根因消除跨线程复用；`SessionLocal` 保留给既有直接调用方 | OpenLLM `test_db_session_concurrency_v192.py` 3 例；提供商页并发模型数不再 500 |
 | **R3 双通道鉴权**（OpenLLM v1.9.3） | `plugins.py` 与 `model_categories.py` 全部路由由 `get_current_active_user` / `get_current_user` 改为 `get_current_active_user_or_api_key` | OpenLLM `test_r3_dual_channel_v193.py` 6 例；插件/分类既有 34 例回归通过 |
 | **R3 两页接线**（v1.9.3） | 插件管理：真实列表/工具清单/启停/注册/删除/健康检查；模型分类：分类树标签云 + 分类下模型分页 + 维度切换；移除全部契约 mock | `tests/r3-wiring-v193.spec.ts` 8 例；聚合端点实测 4/4 200 |
+| **R4 双通道鉴权**（OpenLLM v1.9.4） | `monitoring.py` / `traces.py` / `alerts.py` / `budgets.py` / `usage.py` / `billing.py` / `billing_v2.py` 共 46 处依赖改为 `get_current_active_user_or_api_key`；`monitoring.py` 的 `current_user.get("id")` 修正为 `getattr`；账单/计划写端点保持 `require_permission(PERM_BILLING_WRITE)` 不放宽 | OpenLLM `test_r4_dual_channel_v194.py` 15 例（14 条路由依赖断言 + 1 条「模块不得残留 JWT-only 依赖」守卫）+ R3 6 例回归，21 passed |
+| **R4 六页接线**（v1.9.4） | 成本分析：三维度成本分布 + 预算列表 + 优化建议（只读，移除上游不存在的「一键应用」）；告警中心：规则增删改查/启停 + 告警确认/解决 + 服务端分页；链路追踪：统计卡 + 筛选列表 + Span 详情抽屉（新建页替换 `GenericPage`）；预算管理：列表/新建/状态抽屉（新建页替换 `GenericPage`）；用量统计：总览/趋势/明细/CSV 导出；计费：用量统计/配额/账单/消费趋势 | `tests/r4-wiring-v194.spec.ts` 17 例；`vue-tsc --noEmit` 通过；前端全量回归 306 passed |
 
 ---
 
@@ -202,7 +204,7 @@
 | R1 | A 类收口（低成本） | 用户管理、API 密钥、EdgeRouter 三页接真实端点 | **已完成（v1.9.1）** |
 | R2 | C 类补列表 | `GET /configs`、`GET /test-records`、`GET /test-runs` + 两页接线；服务 Key 改 id 化吊销 | **已完成（v1.9.2）**；同时修复 OpenLLM `get_db` 并发缺陷 |
 | R3 | B 类第一批 | OpenLLM `plugins`、`model-categories` 改双通道依赖；插件管理、模型分类两页接真实 | **已完成（v1.9.3）** |
-| R4 | B 类第二批 | `monitoring/*`、`alerts`、`budgets`、`usage`、`billing` → 成本/告警/链路/预算/用量/计费六页 | 观察类接口的租户过滤口径 |
+| R4 | B 类第二批 | `monitoring/*`、`alerts`、`budgets`、`usage`、`billing` → 成本/告警/链路/预算/用量/计费六页 | **已完成（v1.9.4）**；指标表租户过滤见 §7 第 7 项 |
 | R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | 写权限档位与 `role:write` 语义 |
 | R6 | D 类性能 | `local-models`、`models/favorites|compare`、`open-models/popular` 的 10s 超时治理 | 上游耗时剖析 |
 | R7 | E 类立项 | 仪表盘/统一监控/画像系统监控/个人设置等纯形态页 | 产品裁定是否建设 |
@@ -221,6 +223,7 @@
 | 4 | 服务进程（DPS/OpenRAG）在长时间无人访问后被回收 | 审计出现 503 假失败 | 审计前统一健康检查；服务编排侧增加守护（运维项） |
 | 5 | ~~**OpenLLM `scoped_session` + 线程池并发缺陷**~~ | 同步端点并发访问同一 Session → `InvalidRequestError` → 上游 500 | **已修复（R2 / OpenLLM v1.9.2）**：`get_db` 改为每请求独立 Session；前端串行化保留为额外防护 |
 | 6 | 「契约 mock」页面继续对外可见 | 用户误以为是真实数据 | 本清单作为派单依据；接线前不建议对外演示这些页面 |
+| 7 | R4 观察域中 `monitoring_metrics` 的 `tenant_id` **列未被写入**（`record_request` / `record_llm_call` 仅把 `tenant_id` 放进 `dimensions` JSON） | `/monitoring/dashboard`、`/monitoring/costs`、`/monitoring/metrics` 当前按全局指标返回，无法按租户列过滤 | 已登记为后续治理项：先补写 `tenant_id` 列并回填，再启用服务端租户过滤；`alerts`/`budgets`/`usage`/`billing`/`traces` 已按 `current_user.organization_id` 过滤 |
 
 ---
 
@@ -260,6 +263,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
 | v1.3.0 | 2026-10-23 | FA-OpenBase-Dev | **R3 收口**：OpenLLM `plugins` / `model-categories` 改为双通道鉴权；插件管理、模型分类两页接真实端点（列表/工具/启停/注册/健康检查、分类树/分类模型分页）；无后端调用页面 47 → 45。 |
+| v1.4.0 | 2026-10-23 | FA-OpenBase-Dev | **R4 收口**：OpenLLM `monitoring` / `traces` / `alerts` / `budgets` / `usage` / `billing` / `billing_v2` 共 46 处依赖改双通道；成本/告警/链路/预算/用量/计费六页接真实端点（链路、预算由占位页改为真实页）；移除成本页「一键应用建议」假动作；无后端调用页面 45 → 39；新增 §7 第 7 项登记指标表租户过滤缺口。 |
 | v1.2.0 | 2026-10-23 | FA-OpenBase-Dev | **R2 收口**：新增 `GET /configs`、`GET /test-records`、`GET /test-runs` 并接线两页；服务 Key 增加 `id` 与 `by-id` 吊销端点（解除历史密钥不可吊销限制）；跨仓修复 OpenLLM `get_db` 并发 500；无后端调用页面 49 → 47。 |
 | v1.1.0 | 2026-10-23 | FA-OpenBase-Dev | **R1 收口**：用户管理、API 密钥、EdgeRouter 三页接真实端点并移除假动作；新增「服务 Key 列表无 id、吊销需明文」缺口（归 C 类）与 R2 范围；发现并规避 OpenLLM `scoped_session` 并发 500（前端串行化，根因列 R2 跨仓）；无后端调用页面 52 → 49。 |
 | v1.0.0 | 2026-10-22 | FA-OpenBase-Dev | 初始创建：77 页全栈功能审计（L1 加载 / L2 交互 / L3 API 面 / L4 通道探测），52 页无后端调用单列；缺口分 A~E 五类并逐页成表；记录本轮闭环（通用代理来源映射 + OpenLLM 凭据注入 + 提供商管理真实化）与 R1~R7 路线图。 |

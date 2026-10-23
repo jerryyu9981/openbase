@@ -319,3 +319,418 @@ export const modelCategoriesApi = {
     return data
   },
 }
+
+// ---------------------------------------------------------------------------
+// 观察域（v1.9.4 R4）：成本 / 告警 / 链路 / 预算 / 用量 / 计费
+// 上游统一为 OpenLLM 双通道鉴权（JWT OR API Key），经 OpenBase 通用代理聚合。
+// ---------------------------------------------------------------------------
+
+export interface LlmCostDimensionItem {
+  value: string
+  total_cost: number
+  request_count: number
+  avg_cost_per_request: number
+}
+
+export interface LlmCostTrendItem {
+  timestamp: string
+  cost: number
+  request_count: number
+}
+
+export interface LlmCostAnalysis {
+  time_range: string
+  start_time: string
+  end_time: string
+  dimensions: Record<string, LlmCostDimensionItem[]>
+  trend: LlmCostTrendItem[]
+}
+
+export interface LlmOptimizationSuggestion {
+  type: string
+  severity: string
+  title: string
+  description: string
+  recommendation: string
+  potential_savings: string | null
+}
+
+export const monitoringApi = {
+  /** 成本分析（维度：provider/model/user/api_key/workspace） */
+  async costs(params: { dimension: string[]; time_range?: string }): Promise<LlmCostAnalysis> {
+    const { data } = await http.get<LlmCostAnalysis>(`${OPENLLM}/monitoring/costs`, { params })
+    return data
+  },
+  /** 成本优化建议（最近 7 天） */
+  async optimizationSuggestions(): Promise<LlmOptimizationSuggestion[]> {
+    const { data } = await http.get<{ suggestions: LlmOptimizationSuggestion[]; total: number; generated_at: string }>(
+      `${OPENLLM}/monitoring/costs/optimization-suggestions`,
+    )
+    return data.suggestions
+  },
+}
+
+export interface LlmAlertRule {
+  id: string
+  name: string
+  description: string | null
+  alert_type: string
+  condition: Record<string, unknown>
+  severity: string
+  channels: Array<Record<string, unknown>>
+  provider: string | null
+  model: string | null
+  enabled: boolean
+  cooldown_seconds: number
+  last_evaluated_at: string | null
+  last_fired_at: string | null
+  created_at: string | null
+}
+
+export interface LlmAlertRulePayload {
+  name: string
+  description?: string
+  alert_type: string
+  condition: Record<string, unknown>
+  severity: string
+  channels?: Array<Record<string, unknown>>
+  provider?: string
+  model?: string
+  enabled?: boolean
+  cooldown_seconds?: number
+}
+
+export interface LlmAlertItem {
+  id: string
+  rule_id: string | null
+  alert_type: string
+  severity: string
+  status: string
+  title: string
+  message: string
+  provider: string | null
+  model: string | null
+  threshold_value: number | null
+  actual_value: number | null
+  fired_at: string | null
+  resolved_at: string | null
+  acknowledged_at: string | null
+  created_at: string | null
+}
+
+export const alertsApi = {
+  async listRules(params: { alert_type?: string; enabled?: boolean; page?: number; page_size?: number } = {}) {
+    const { data } = await http.get<{ rules: LlmAlertRule[]; total: number; page: number; page_size: number }>(
+      `${OPENLLM}/alerts/rules`,
+      { params },
+    )
+    return data
+  },
+  async createRule(payload: LlmAlertRulePayload): Promise<LlmAlertRule> {
+    const { data } = await http.post<LlmAlertRule>(`${OPENLLM}/alerts/rules`, payload)
+    return data
+  },
+  async updateRule(ruleId: string, payload: Partial<LlmAlertRulePayload>): Promise<LlmAlertRule> {
+    const { data } = await http.put<LlmAlertRule>(
+      `${OPENLLM}/alerts/rules/${encodeURIComponent(ruleId)}`,
+      payload,
+    )
+    return data
+  },
+  async removeRule(ruleId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/alerts/rules/${encodeURIComponent(ruleId)}`)
+  },
+  async list(params: { status?: string; severity?: string; alert_type?: string; page?: number; page_size?: number } = {}) {
+    const { data } = await http.get<{ alerts: LlmAlertItem[]; total: number; page: number; page_size: number }>(
+      `${OPENLLM}/alerts`,
+      { params },
+    )
+    return data
+  },
+  async resolve(alertId: string, resolutionNote?: string): Promise<LlmAlertItem> {
+    const { data } = await http.post<LlmAlertItem>(
+      `${OPENLLM}/alerts/${encodeURIComponent(alertId)}/resolve`,
+      { resolution_note: resolutionNote ?? null },
+    )
+    return data
+  },
+  async acknowledge(alertId: string): Promise<LlmAlertItem> {
+    const { data } = await http.post<LlmAlertItem>(
+      `${OPENLLM}/alerts/${encodeURIComponent(alertId)}/acknowledge`,
+      {},
+    )
+    return data
+  },
+}
+
+export interface LlmBudget {
+  id: string
+  name: string
+  description: string | null
+  scope: string
+  scope_id: string | null
+  period: string
+  limit_usd: number
+  current_usage_usd: number
+  usage_percentage: number
+  enabled: boolean
+  is_exceeded: boolean
+  created_at: string | null
+}
+
+export interface LlmBudgetStatus {
+  budget_id: string
+  name: string
+  scope: string
+  period: string
+  limit_usd: number
+  current_usage_usd: number
+  usage_percentage: number
+  is_exceeded: boolean
+  remaining_usd: number
+  days_remaining: number
+  projected_usage_usd: number
+}
+
+export interface LlmBudgetPayload {
+  name: string
+  description?: string
+  scope: string
+  scope_id?: string
+  period: string
+  limit_usd: number
+  alert_thresholds?: Array<{ type: string; value: number }>
+}
+
+export const budgetsApi = {
+  async list(params: { scope?: string; enabled?: boolean; page?: number; page_size?: number } = {}) {
+    const { data } = await http.get<{ budgets: LlmBudget[]; total: number; page: number; page_size: number }>(
+      `${OPENLLM}/budgets`,
+      { params },
+    )
+    return data
+  },
+  async create(payload: LlmBudgetPayload): Promise<LlmBudget> {
+    const { data } = await http.post<LlmBudget>(`${OPENLLM}/budgets`, payload)
+    return data
+  },
+  async status(budgetId: string): Promise<LlmBudgetStatus> {
+    const { data } = await http.get<LlmBudgetStatus>(
+      `${OPENLLM}/budgets/${encodeURIComponent(budgetId)}/status`,
+    )
+    return data
+  },
+}
+
+export interface LlmTrace {
+  id: string
+  trace_id: string
+  user_id: string | null
+  model: string | null
+  provider: string | null
+  request_type: string | null
+  start_time: string | null
+  end_time: string | null
+  latency_ms: number | null
+  status: string
+  span_count: number
+  tokens_total: number
+  cost: number
+  created_at: string | null
+}
+
+export interface LlmTraceSpan {
+  span_id: string
+  name: string
+  kind: string
+  parent_span_id: string | null
+  start_time: string | null
+  end_time: string | null
+  duration_ms: number | null
+  status: string
+  status_message: string | null
+  attributes: Record<string, unknown>
+  events: Array<Record<string, unknown>>
+}
+
+export interface LlmTraceDetail extends LlmTrace {
+  tenant_id: string | null
+  error_code: string | null
+  error_message: string | null
+  spans: LlmTraceSpan[]
+}
+
+export interface LlmTraceStatistics {
+  time_range: string
+  total_count: number
+  success_count: number
+  error_count: number
+  error_rate: number
+  avg_latency_ms: number
+  total_tokens: number
+  total_cost: number
+}
+
+export const tracesApi = {
+  async list(params: {
+    status?: string
+    model?: string
+    provider?: string
+    has_error?: boolean
+    page?: number
+    page_size?: number
+  } = {}) {
+    const { data } = await http.get<{ traces: LlmTrace[]; total: number; page: number; page_size: number }>(
+      `${OPENLLM}/monitoring/traces`,
+      { params },
+    )
+    return data
+  },
+  async statistics(timeRange = '24h'): Promise<LlmTraceStatistics> {
+    const { data } = await http.get<LlmTraceStatistics>(`${OPENLLM}/monitoring/traces/statistics`, {
+      params: { time_range: timeRange },
+    })
+    return data
+  },
+  async detail(traceId: string): Promise<LlmTraceDetail> {
+    const { data } = await http.get<LlmTraceDetail>(
+      `${OPENLLM}/monitoring/traces/${encodeURIComponent(traceId)}`,
+    )
+    return data
+  },
+}
+
+export interface LlmUsageSummary {
+  tenant_id: string | null
+  period: string
+  group_by: string
+  start_date: string
+  end_date: string
+  total_requests: number
+  total_prompt_tokens: number
+  total_completion_tokens: number
+  total_tokens: number
+  total_cost: number
+  avg_latency_ms: number
+  status_breakdown: Record<string, number>
+  grouped_data: Array<Record<string, unknown>>
+}
+
+export interface LlmUsageTrendPoint {
+  date: string
+  requests: number
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+  cost: number
+  avg_latency?: number
+}
+
+export interface LlmUsageTrends {
+  tenant_id: string | null
+  dimension: string
+  period: string
+  series: LlmUsageTrendPoint[]
+  summary: Record<string, unknown>
+}
+
+export interface LlmUsageRecord {
+  id: string
+  organization_id: string
+  user_id: string | null
+  api_key_id: string | null
+  provider_id: string
+  model_id: string
+  request_id: string
+  request_type: string
+  tokens_input: number
+  tokens_output: number
+  tokens_total: number
+  cost: number
+  currency: string
+  latency_ms: number | null
+  status: string
+  error_code: string | null
+  error_message: string | null
+  created_at: string | null
+}
+
+export const usageApi = {
+  async summary(params: { period?: string; group_by?: string; start_date?: string; end_date?: string } = {}) {
+    const { data } = await http.get<LlmUsageSummary>(`${OPENLLM}/usage/summary`, { params })
+    return data
+  },
+  async trends(params: { dimension?: string; period?: string; start_date?: string; end_date?: string } = {}) {
+    const { data } = await http.get<LlmUsageTrends>(`${OPENLLM}/usage/trends`, { params })
+    return data
+  },
+  async detail(params: { start_date?: string; end_date?: string; skip?: number; limit?: number } = {}) {
+    const { data } = await http.get<{
+      tenant_id: string | null
+      start_date: string | null
+      end_date: string | null
+      total: number
+      skip: number
+      limit: number
+      records: LlmUsageRecord[]
+    }>(`${OPENLLM}/usage/detail`, { params })
+    return data
+  },
+}
+
+export interface LlmQuota {
+  id: string
+  organization_id: string
+  team_id: string | null
+  quota_type: string
+  quota_limit: number
+  used_amount: number
+  usage_percent: number
+  period: string
+  alert_threshold: number
+  is_exceeded: boolean
+  period_start: string
+  period_end: string
+  created_at: string
+}
+
+export interface LlmBill {
+  id: string
+  organization_id: string
+  team_id: string | null
+  period_start: string
+  period_end: string
+  total_requests: number
+  total_tokens_input: number
+  total_tokens_output: number
+  total_cost: number
+  currency: string
+  details: Record<string, unknown>
+  status: string
+  notes: string | null
+  created_at: string
+}
+
+export interface LlmBillingUsageStatistics {
+  total_requests: number
+  total_tokens_input: number
+  total_tokens_output: number
+  total_cost: number
+  average_latency_ms: number
+  status_breakdown: Record<string, number>
+}
+
+export const billingApi = {
+  async usageStatistics(params: { start_date?: string; end_date?: string } = {}) {
+    const { data } = await http.get<LlmBillingUsageStatistics>(`${OPENLLM}/billing/usage/statistics`, { params })
+    return data
+  },
+  async quotas(): Promise<LlmQuota[]> {
+    const { data } = await http.get<LlmQuota[]>(`${OPENLLM}/billing/quotas`)
+    return data
+  },
+  async bills(): Promise<LlmBill[]> {
+    const { data } = await http.get<LlmBill[]>(`${OPENLLM}/billing/bills`)
+    return data
+  },
+}

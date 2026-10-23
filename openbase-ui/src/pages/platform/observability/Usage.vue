@@ -1,5 +1,5 @@
 <template>
-  <PageContainer title="用量统计" description="调用量与 Token 统计" test-id="usage-page">
+  <PageContainer title="用量统计" description="调用量与 Token 统计（OpenLLM 用量服务）" test-id="usage-page">
     <div class="page-toolbar">
       <el-date-picker
         v-model="dateRange"
@@ -26,38 +26,59 @@
       @close="errorMessage = ''"
     />
 
-    <el-card header="用量趋势" class="mb-16" data-test="usage-chart-card">
+    <el-row :gutter="16">
+      <el-col v-for="card in statCards" :key="card.label" :xs="12" :lg="6">
+        <el-card class="stat-card" data-test="usage-stat">
+          <div class="stat-label">{{ card.label }}</div>
+          <div class="stat-value">{{ card.value }}</div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-card header="用量趋势" class="mt-16" data-test="usage-chart-card">
       <div v-loading="loading">
         <el-empty v-if="trendEmpty" description="该时间范围内暂无趋势数据" :image-size="80" data-test="usage-chart-empty" />
-        <div v-else ref="chartRef" class="chart" />
+        <div v-else ref="chartRef" class="chart" data-test="usage-chart" />
       </div>
     </el-card>
 
-    <el-card header="用量明细" data-test="usage-table-card">
+    <el-card header="用量明细" class="mt-16" data-test="usage-table-card">
       <div class="table-toolbar">
-        <el-select v-model="modelFilter" placeholder="模型筛选" clearable style="width: 180px" data-test="usage-model-filter">
-          <el-option v-for="model in mockModels" :key="model" :label="model" :value="model" />
-        </el-select>
+        <el-input
+          v-model="keyword"
+          placeholder="按模型/请求 ID 筛选"
+          clearable
+          style="width: 220px"
+          data-test="usage-keyword-filter"
+        />
         <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 130px" data-test="usage-status-filter">
-          <el-option label="计费" value="billing" />
-          <el-option label="免费" value="free" />
-          <el-option label="异常" value="error" />
+          <el-option label="成功" value="success" />
+          <el-option label="失败" value="error" />
         </el-select>
+        <span class="text-muted">已加载 {{ records.length }} 条（上限 200）</span>
       </div>
       <div class="ob-table-scroll">
-        <el-table :data="pagedRows" stripe empty-text="暂无明细数据" data-test="usage-table">
-          <el-table-column prop="date" label="日期" width="120" />
-          <el-table-column prop="model" label="模型" min-width="150" />
+        <el-table :data="pagedRows" stripe data-test="usage-table">
+          <template #empty>
+            <el-empty description="暂无明细数据" :image-size="60" data-test="usage-empty" />
+          </template>
+          <el-table-column label="时间" width="170">
+            <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+          </el-table-column>
+          <el-table-column prop="request_id" label="请求 ID" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="model_id" label="模型 ID" min-width="160" show-overflow-tooltip />
           <el-table-column label="状态" width="90">
             <template #default="{ row }">
               <el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="requests" label="调用次数" width="100" />
-          <el-table-column prop="input_tokens" label="输入 Tokens" width="120" />
-          <el-table-column prop="output_tokens" label="输出 Tokens" width="120" />
-          <el-table-column label="费用($)" width="100">
-            <template #default="{ row }">{{ row.cost.toFixed(4) }}</template>
+          <el-table-column prop="tokens_input" label="输入 Tokens" width="120" />
+          <el-table-column prop="tokens_output" label="输出 Tokens" width="120" />
+          <el-table-column label="延迟(ms)" width="100">
+            <template #default="{ row }">{{ row.latency_ms ?? '-' }}</template>
+          </el-table-column>
+          <el-table-column label="费用($)" width="110">
+            <template #default="{ row }">{{ Number(row.cost ?? 0).toFixed(6) }}</template>
           </el-table-column>
         </el-table>
       </div>
@@ -65,9 +86,9 @@
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
         :total="filteredRows.length"
-        :page-sizes="[5, 10, 20]"
-        layout="total, sizes, prev, pager, next, jumper"
-        class="usage-pagination"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next"
+        class="pagination"
         data-test="usage-pagination"
       />
     </el-card>
@@ -76,22 +97,16 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { usageApi, type LlmUsageRecord, type LlmUsageSummary, type LlmUsageTrendPoint } from '@/core/api/governance'
 
-interface UsageRow {
-  date: string
-  model: string
-  status: 'billing' | 'free' | 'error'
-  requests: number
-  input_tokens: number
-  output_tokens: number
-  cost: number
-}
-
-/** 契约 mock：可查询区间为最近 30 天（不调用真实 API） */
-const MIN_QUERY_DAYS = 30
+/**
+ * 用量统计（v1.9.4 R4 真实化）：总览 `/usage/summary`、趋势 `/usage/trends`、明细 `/usage/detail`。
+ * 明细服务端单次上限 1000，本页取最近 200 条并在页内筛选/分页；导出为当前筛选结果（CSV）。
+ */
+const DETAIL_LIMIT = 200
 
 function formatDate(date: Date): string {
   const year = date.getFullYear()
@@ -104,65 +119,44 @@ function daysAgo(days: number): string {
   date.setDate(date.getDate() - days)
   return formatDate(date)
 }
-function today(): string {
-  return formatDate(new Date())
-}
 
 const rangeShortcuts = [
   { text: '最近 7 天', value: () => [new Date(Date.now() - 6 * 86400000), new Date()] },
   { text: '最近 30 天', value: () => [new Date(Date.now() - 29 * 86400000), new Date()] },
 ]
 
-const dateRange = ref<[string, string]>([daysAgo(29), today()])
-const loading = ref(true)
+const dateRange = ref<[string, string]>([daysAgo(29), formatDate(new Date())])
+const loading = ref(false)
 const errorMessage = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const modelFilter = ref('')
+const keyword = ref('')
 const statusFilter = ref('')
+
+const summary = ref<LlmUsageSummary | null>(null)
+const trendSeries = ref<LlmUsageTrendPoint[]>([])
+const records = ref<LlmUsageRecord[]>([])
 
 const chartRef = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
 
-const mockModels = ['gpt-4o', 'gpt-4o-mini', 'qwen2.5-7b', 'bge-m3', 'claude-3-5-sonnet']
-const mockStatuses = ['billing', 'free', 'error'] as const
-
-const allRows = ref<UsageRow[]>([])
-
-/** 契约 mock：生成本地最近 30 天明细数据 */
-function buildMockRows(): UsageRow[] {
-  const rows: UsageRow[] = []
-  const start = new Date()
-  start.setDate(start.getDate() - (MIN_QUERY_DAYS - 1))
-  for (let index = 0; index < MIN_QUERY_DAYS; index += 1) {
-    const date = new Date(start)
-    date.setDate(start.getDate() + index)
-    mockModels.forEach((model, modelIndex) => {
-      rows.push({
-        date: formatDate(date),
-        model,
-        status: mockStatuses[(index + modelIndex) % mockStatuses.length],
-        requests: Math.floor(80 + Math.random() * 1800),
-        input_tokens: Math.floor(20000 + Math.random() * 700000),
-        output_tokens: Math.floor(10000 + Math.random() * 350000),
-        cost: Number((Math.random() * 8).toFixed(4)),
-      })
-    })
-  }
-  return rows
-}
-
-const inRangeRows = computed(() => {
-  const [start, end] = dateRange.value
-  return allRows.value.filter((row) => row.date >= start && row.date <= end)
-})
+const statCards = computed(() => [
+  { label: '调用次数', value: String(summary.value?.total_requests ?? 0) },
+  { label: 'Token 总量', value: String(summary.value?.total_tokens ?? 0) },
+  { label: '总费用($)', value: Number(summary.value?.total_cost ?? 0).toFixed(4) },
+  { label: '平均延迟', value: `${Number(summary.value?.avg_latency_ms ?? 0).toFixed(0)} ms` },
+])
 
 const filteredRows = computed(() => {
-  const model = modelFilter.value
-  const status = statusFilter.value
-  return inRangeRows.value.filter(
-    (row) => (!model || row.model === model) && (!status || row.status === status),
-  )
+  const text = keyword.value.trim().toLowerCase()
+  return records.value.filter((row) => {
+    const matchesStatus = !statusFilter.value || row.status === statusFilter.value
+    const matchesKeyword =
+      !text ||
+      (row.model_id ?? '').toLowerCase().includes(text) ||
+      (row.request_id ?? '').toLowerCase().includes(text)
+    return matchesStatus && matchesKeyword
+  })
 })
 
 const pagedRows = computed(() => {
@@ -170,29 +164,21 @@ const pagedRows = computed(() => {
   return filteredRows.value.slice(offset, offset + pageSize.value)
 })
 
-const trendData = computed(() => {
-  const buckets = new Map<string, { requests: number; tokens: number }>()
-  for (const row of inRangeRows.value) {
-    const bucket = buckets.get(row.date) ?? { requests: 0, tokens: 0 }
-    bucket.requests += row.requests
-    bucket.tokens += row.input_tokens + row.output_tokens
-    buckets.set(row.date, bucket)
-  }
-  const dates = [...buckets.keys()].sort()
-  return {
-    dates,
-    requests: dates.map((date) => buckets.get(date)!.requests),
-    tokens: dates.map((date) => Math.round(buckets.get(date)!.tokens / 10000)),
-  }
+const trendEmpty = computed(() => trendSeries.value.length === 0)
+
+watch([keyword, statusFilter], () => {
+  currentPage.value = 1
 })
 
-const trendEmpty = computed(() => trendData.value.dates.length === 0)
-
 function statusType(status: string) {
-  return { billing: 'success', free: 'info', error: 'danger' }[status] || 'info'
+  return { success: 'success', error: 'danger' }[status] || 'info'
 }
 function statusLabel(status: string) {
-  return { billing: '计费', free: '免费', error: '异常' }[status] || status
+  return { success: '成功', error: '失败' }[status] || status
+}
+function formatTime(value: string | null) {
+  if (!value) return '-'
+  return value.replace('T', ' ').slice(0, 19)
 }
 
 function renderChart() {
@@ -202,11 +188,23 @@ function renderChart() {
     tooltip: { trigger: 'axis' },
     legend: { data: ['调用次数', 'Token 消耗(万)'] },
     grid: { left: 48, right: 16, top: 40, bottom: 28 },
-    xAxis: { type: 'category', boundaryGap: false, data: trendData.value.dates },
+    xAxis: { type: 'category', boundaryGap: false, data: trendSeries.value.map((point) => point.date) },
     yAxis: { type: 'value' },
     series: [
-      { name: '调用次数', type: 'line', smooth: true, data: trendData.value.requests, areaStyle: { opacity: 0.12 } },
-      { name: 'Token 消耗(万)', type: 'line', smooth: true, data: trendData.value.tokens, areaStyle: { opacity: 0.12 } },
+      {
+        name: '调用次数',
+        type: 'line',
+        smooth: true,
+        data: trendSeries.value.map((point) => point.requests),
+        areaStyle: { opacity: 0.12 },
+      },
+      {
+        name: 'Token 消耗(万)',
+        type: 'line',
+        smooth: true,
+        data: trendSeries.value.map((point) => Math.round(point.total_tokens / 10000)),
+        areaStyle: { opacity: 0.12 },
+      },
     ],
   })
 }
@@ -217,23 +215,30 @@ function handleResize() {
 
 async function loadUsage() {
   errorMessage.value = ''
-  const [start, end] = dateRange.value
+  const [start, end] = dateRange.value ?? []
+  if (!start || !end) {
+    errorMessage.value = '请选择统计时间范围'
+    return
+  }
   if (start > end) {
     errorMessage.value = '时间范围无效：开始日期不能晚于结束日期'
     return
   }
-  if (start < daysAgo(MIN_QUERY_DAYS)) {
-    errorMessage.value = '所选时间范围超出统计数据可查询区间（最近 30 天）'
-    return
-  }
   loading.value = true
   try {
-    await mockDelay(600) // 契约 mock：模拟请求统计接口
+    const [summaryData, trendData, detailData] = await Promise.all([
+      usageApi.summary({ period: 'daily', group_by: 'day', start_date: start, end_date: end }),
+      usageApi.trends({ dimension: 'time', period: 'day', start_date: start, end_date: end }),
+      usageApi.detail({ start_date: start, end_date: end, skip: 0, limit: DETAIL_LIMIT }),
+    ])
+    summary.value = summaryData
+    trendSeries.value = trendData.series ?? []
+    records.value = detailData.records ?? []
     currentPage.value = 1
     await nextTick()
     renderChart()
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '用量统计加载失败，请稍后重试'
+    errorMessage.value = `用量统计加载失败：${error instanceof Error ? error.message : '未知错误'}`
   } finally {
     loading.value = false
   }
@@ -244,9 +249,18 @@ function exportCsv() {
     ElMessage.warning('当前筛选结果为空，无可导出的数据')
     return
   }
-  const header = ['日期', '模型', '状态', '调用次数', '输入Tokens', '输出Tokens', '费用($)']
+  const header = ['时间', '请求ID', '模型ID', '状态', '输入Tokens', '输出Tokens', '延迟(ms)', '费用($)']
   const lines = filteredRows.value.map((row) =>
-    [row.date, row.model, statusLabel(row.status), row.requests, row.input_tokens, row.output_tokens, row.cost.toFixed(4)].join(','),
+    [
+      formatTime(row.created_at),
+      row.request_id,
+      row.model_id,
+      statusLabel(row.status),
+      row.tokens_input,
+      row.tokens_output,
+      row.latency_ms ?? '',
+      Number(row.cost ?? 0).toFixed(6),
+    ].join(','),
   )
   const csv = '\uFEFF' + [header.join(','), ...lines].join('\n')
   const [start, end] = dateRange.value
@@ -263,12 +277,7 @@ function exportCsv() {
   ElMessage.success(`已导出 ${filteredRows.value.length} 条记录：${filename}`)
 }
 
-function mockDelay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
-}
-
 onMounted(() => {
-  allRows.value = buildMockRows()
   window.addEventListener('resize', handleResize)
   void loadUsage()
 })
@@ -283,17 +292,37 @@ onBeforeUnmount(() => {
 .mb-16 {
   margin-bottom: 16px;
 }
+.mt-16 {
+  margin-top: 16px;
+}
 .table-toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
 .chart {
   height: 320px;
 }
-.usage-pagination {
+.pagination {
   margin-top: 12px;
   justify-content: flex-end;
+}
+.stat-card {
+  text-align: center;
+}
+.stat-label {
+  color: var(--ob-text-secondary);
+  font-size: 13px;
+}
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.text-muted {
+  color: var(--ob-text-secondary);
+  font-size: 12px;
 }
 </style>

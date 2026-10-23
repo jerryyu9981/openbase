@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.4.0 |
+| 文档版本 | v2.9.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -488,6 +488,54 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.18 R4：观察域双通道与六页接线（v1.9.4）
+
+**范围**：按缺口清单 R4，把 OpenLLM 观察域（`monitoring/*`、`alerts`、`budgets`、`usage`、`billing`）从 JWT-only 改为双通道，并将成本/告警/链路/预算/用量/计费六页接到真实端点。
+
+**跨仓（OpenLLM，7 文件 / 46 处依赖）**
+
+| 文件 | 变更 |
+|------|------|
+| `backend/app/api/monitoring.py` | 8 处依赖改 `get_current_active_user_or_api_key`；`current_user.get("id", "unknown")` 修正为 `getattr(current_user, "id", "unknown")`（依赖返回 ORM `User`） |
+| `backend/app/api/traces.py` | 6 处依赖改双通道（原参数类型为 `dict`，统一为 `User`） |
+| `backend/app/api/alerts.py` | 10 处依赖改双通道（规则 CRUD、告警列表、resolve/acknowledge、health） |
+| `backend/app/api/budgets.py` | 6 处依赖改双通道（预算列表/创建/状态/告警、成本分析/优化） |
+| `backend/app/api/usage.py` | 4 处依赖改双通道（summary/trends/detail/export） |
+| `backend/app/api/billing.py` | 8 处依赖改双通道；`POST /billing/bills`、`POST /billing/plans` 仍为 `require_permission(PERM_BILLING_WRITE)`，不放宽写权限 |
+| `backend/app/api/billing_v2.py` | 4 处依赖改双通道（cost-analysis/alerts/bills） |
+| `backend/tests/unit/test_r4_dual_channel_v194.py` | 新增 15 例：14 条路由依赖断言 + 1 条「观察域模块不得残留 JWT-only 依赖」源码守卫 |
+
+**前端（OpenBase）**
+
+| 页面 | 改动 |
+|------|------|
+| 成本分析 | 接 `/monitoring/costs`（一次取 model/provider/user 三维度，本地切换）、`/monitoring/costs/optimization-suggestions`、`/budgets`；创建预算走 `POST /budgets`（含 warning 阈值）；移除「一键应用建议」与本地预算/建议 mock |
+| 告警中心 | 接 `/alerts/rules`（列表/新建/编辑/启停/删除）、`/alerts`（服务端分页 + 状态筛选）、`/alerts/{id}/resolve`、`/alerts/{id}/acknowledge`；移除规则/历史 mock 与本地状态改写 |
+| 链路追踪 | **新建页**替换 `GenericPage`：`/monitoring/traces/statistics` 统计卡、`/monitoring/traces` 服务端筛选/分页、`/monitoring/traces/{id}` 详情抽屉含 Span 明细 |
+| 预算管理 | **新建页**替换 `GenericPage`：`/budgets` 列表 + `POST /budgets` 新建 + `/budgets/{id}/status` 状态抽屉 |
+| 用量统计 | 接 `/usage/summary`、`/usage/trends`、`/usage/detail`（最近 200 条，页内筛选/分页）；CSV 导出改为导出真实明细；移除 30 天本地数据生成器 |
+| 计费 | 接 `/billing/usage/statistics`、`/billing/quotas`、`/billing/bills`，消费趋势复用 `/usage/trends`；账单详情展示真实 `details` JSON；移除硬编码余额/账单/告警 |
+
+**验证**
+
+| 项 | 命令/方式 | 结果 |
+|---|-----------|------|
+| OpenLLM 新增用例 | `pytest tests/unit/test_r4_dual_channel_v194.py` | **15 passed** |
+| OpenLLM R3 回归 | 同上命令附带 `test_r3_dual_channel_v193.py` | **6 passed**（合计 21 passed） |
+| 前端新增用例 | `vitest run tests/r4-wiring-v194.spec.ts` | **17 passed** |
+| 前端全量回归 | `vitest run` | **29 文件 / 306 用例全通过** |
+| 类型检查 | `vue-tsc --noEmit` | **0 错误** |
+| 聚合端点实测 | `/proxy/openllm/api/v1/monitoring/costs`、`/alerts`、`/budgets`、`/usage/summary`、`/billing/bills` | **未完成（待复核）**：本轮复核时 OpenLLM `:8001` 未在运行；本机可用运行时装 OpenBase 依赖后缺 `psycopg2` 二进制、装 OpenLLM 应用后又缺 `prometheus_client` 等运行期可选依赖，无法拉起完整服务。以 21 例路由级依赖断言 + 306 例前端回归替代，未将未实测项写成已验证 |
+| 浏览器实测 | 六页加载/交互 | **未完成（待复核）**：依赖 OpenLLM 在线，原因同上 |
+
+**遗留**
+
+1. `monitoring_metrics.tenant_id` 列未写入（`record_request` / `record_llm_call` 仅写 `dimensions` JSON），`/monitoring/dashboard|costs|metrics` 暂按全局指标返回；补齐列并回填后再启用服务端租户过滤（已登记缺口清单 §7 第 7 项）。`alerts`/`budgets`/`usage`/`billing`/`traces` 已按 `current_user.organization_id` 过滤。
+2. 成本优化建议上游无「应用」端点，前端改为只读展示；若需闭环应用能力，需 OpenLLM 侧新增端点后另行派单。
+3. 聚合端点与页面级实测待 OpenLLM 可启动后补做。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -561,7 +609,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 |:-:|----|------|------|
 | 1 | 页面级加载/错误态统一到 `useAsyncState` | 前端 | 与骨架配套，减少各页自写 loading/error |
 | 2 | 面包屑与详情页页签规范 | 前端 | 详情页目前用 `el-page-header` 各自实现 |
-| 3 | 4 个占位页转真实页面 | 前端 + 上游 | 模型部署、链路追踪、预算管理、应用调用记录；入口已就位 |
+| 3 | 4 个占位页转真实页面 | 前端 + 上游 | 模型部署、应用调用记录（链路追踪、预算管理已于 R4 / v1.9.4 转真实页） |
 | 4 | OpenMemory 运行前置（Neo4j 7687） | 运维 | **已闭环（v1.5.0 / v1.6.0）**：Neo4j 服务化见 §2.9；OpenMemory 启动故障已修复并复跑（6 页 PASS 6/0），见 §2.10 |
 | 5 | ~~记忆列表 loading 兜底~~ | 前端 | **已闭环（v1.4.0）**：代理类端点 8s 硬超时，见 §2.8 第 1 项 |
 | 6 | 宿主负载清理（quark 多实例、安全软件） | 运维/用户 | 直接决定连接建立与进程启动耗时 |
@@ -575,6 +623,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.9.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.18：**R4 观察域双通道与六页接线**——OpenLLM `monitoring`/`traces`/`alerts`/`budgets`/`usage`/`billing`/`billing_v2` 共 46 处依赖改双通道（写权限端点不放宽）；成本、告警、链路、预算、用量、计费六页接真实端点，链路/预算由占位页改为真实页，移除成本页「一键应用建议」假动作。验证：OpenLLM 15+6 例、前端 17 例、vue-tsc 0 错误、前端全量 306 例通过；聚合端点与浏览器级实测因 OpenLLM 无法启动待复核（未伪造成已验证），并登记指标表租户过滤缺口。 |
 | v2.8.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.17：**R3 双通道鉴权与插件/模型分类接线**——OpenLLM `plugins`（8 处）与 `model_categories`（13 处）改用 `get_current_active_user_or_api_key`；插件管理、模型分类两页接真实端点并移除 mock。验证：OpenLLM 6+34 例、前端 8 例、vue-tsc 0 错误、聚合端点 4/4 200；浏览器级复核受环境限制待补。 |
 | v2.7.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.16：**R2 C 类列表补齐与上游并发修复**——OpenBase 新增 `GET /configs`、`/test-records`、`/test-runs` 与服务 Key `id`/`by-id` 吊销；全局配置、测试记录两页接线并移除假动作；跨仓修复 OpenLLM `get_db`（`scoped_session` → 每请求独立 Session）并发 500。验证：后端 10 例、跨仓 3 例、前端 47 例、vue-tsc 0 错误、接口全链路与并发 9/9 通过；浏览器页面级验证因服务被环境回收待复核。 |
 | v2.6.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.15：**R1 A 类三页接线**——用户管理（`/users` 全量 CRUD + 角色五码）、API 密钥（`/auth/api-keys` 列表/创建/吊销 + 一次性明文）、EdgeRouter（`/edge/**` 概览/组织/配额/适配器/审计）；移除三页全部假动作；登记「服务 Key 列表无 id、吊销需明文」后端缺口。验证：前端 10 例 + 关联回归 40 例、vue-tsc 0 错误、密钥创建→吊销全链路、三页浏览器实测 0 error。 |

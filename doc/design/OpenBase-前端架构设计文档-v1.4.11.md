@@ -3,12 +3,12 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.17.0 |
+| 文档版本 | v1.18.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
 | 创建日期 | 2026-09-29 |
-| 更新日期 | 2026-10-22 |
+| 更新日期 | 2026-10-23 |
 | 上游依据 | 《OpenBase-系统架构设计文档-v1.4.10》**v1.1.0** §3；《OpenBase-UIUX需求说明-v1.4.10》v1.2.0；《OpenBase-API接口设计文档-v1.4.10》v1.1.0 §5；《OpenBase-技术选型与ADR-v1.4.10》v1.0.0（ADR-05／06） |
 | 存放 | `doc/design/` |
 
@@ -447,10 +447,38 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **验证**：OpenLLM 新增 6 例 + 既有 34 例回归；前端 8 例；`vue-tsc` 0 错误；聚合端点 4/4 200（改造前 401）。
 
+### 8.16 B 类第二批：观察域双通道与六页接线（R4，v1.18.0）
+
+**问题**：观察域路由族（`monitoring/*`、`traces`、`alerts`、`budgets`、`usage`、`billing`、`billing_v2`）依赖 JWT-only，经通用代理（API Key 通道）恒返 401；成本、告警、用量、计费四页为「契约 mock」，链路追踪、预算管理仍是 `GenericPage` 占位。
+
+**上游改造（OpenLLM v1.9.4）**：7 个路由文件共 46 处依赖改为 `get_current_active_user_or_api_key`；`monitoring.py` 的 `current_user.get("id")` 随依赖返回 ORM `User` 改为 `getattr`；`POST /billing/bills`、`POST /billing/plans` 保持 `require_permission(PERM_BILLING_WRITE)`，不因双通道放宽写权限。
+
+**前端接线**：
+
+| 页面 | 端点 | 交互 |
+|------|------|------|
+| 成本分析 | `/monitoring/costs`、`/monitoring/costs/optimization-suggestions`、`/budgets` | 一次取 model/provider/user 三维度本地切换饼图；预算列表 + 新建；优化建议只读展示 |
+| 告警中心 | `/alerts/rules`（GET/POST/PUT/DELETE）、`/alerts`、`/alerts/{id}/resolve`、`/alerts/{id}/acknowledge` | 规则增删改查 + 启停；告警历史服务端分页 + 状态筛选；确认/解决 |
+| 链路追踪（新建页） | `/monitoring/traces/statistics`、`/monitoring/traces`、`/monitoring/traces/{id}` | 统计卡 + 状态/模型筛选 + 分页 + Span 详情抽屉 |
+| 预算管理（新建页） | `/budgets`、`/budgets/{id}/status` | 列表 + 新建 + 状态抽屉（剩余/预测/剩余天数） |
+| 用量统计 | `/usage/summary`、`/usage/trends`、`/usage/detail` | 统计卡 + 趋势图 + 明细（最近 200 条页内筛选/分页）+ CSV 导出 |
+| 计费 | `/billing/usage/statistics`、`/billing/quotas`、`/billing/bills`、`/usage/trends` | 统计卡 + 消费趋势 + 配额表 + 账单表 + 账单详情 JSON |
+
+**API 客户端**：全部收敛在 `src/core/api/governance.ts` 的 `monitoringApi` / `alertsApi` / `budgetsApi` / `tracesApi` / `usageApi` / `billingApi`，统一走 `OPENLLM = '/proxy/openllm/api/v1'`，响应直取上游原生结构。
+
+**边界**：
+
+- 空数据展示真实空态，前端不内置 mock；
+- 成本页移除「一键应用优化建议」（上游无应用端点），不做本地假成功；
+- `monitoring_metrics.tenant_id` 列未写入，指标类端点暂为全局口径（缺口已登记）；`alerts`/`budgets`/`usage`/`billing`/`traces` 由上游按 `current_user.organization_id` 过滤。
+
+**验证**：OpenLLM 新增 15 例 + R3 6 例回归；前端 17 例；`vue-tsc` 0 错误；前端全量 306 例通过；聚合端点与浏览器实测因 OpenLLM 无法启动待复核。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.18.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.16：R4 B 类第二批——OpenLLM 观察域 7 文件 46 处依赖改双通道；成本/告警/链路/预算/用量/计费六页接真实端点，链路与预算由 `GenericPage` 改为真实页；移除成本页假应用动作；登记指标表租户过滤缺口。 |
 | **v1.17.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.15：R3 B 类首批——OpenLLM `plugins`/`model_categories` 改双通道鉴权，插件管理（列表/工具/启停/注册/健康）与模型分类（树/标签云/分类模型分页）两页接真实端点并移除 mock。 |
 | **v1.16.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.14：R2 C 类列表补齐（`GET /configs`、`/test-records`、`/test-runs`）与服务 Key `id`/`by-id` 吊销；全局配置与测试记录两页接线；跨仓修复 OpenLLM `get_db` 并发缺陷。§8.13 的服务 Key 缺口标记闭环。 |
 | **v1.15.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.13：A 类三页接线（R1）——用户管理 `/users`、API 密钥 `/auth/api-keys`、EdgeRouter `/edge/**`；明确「不伪造成功」原则、字段映射与三项已知缺口（服务 Key 无 id、Edge 组织内存态、配额无组织引导）。 |
