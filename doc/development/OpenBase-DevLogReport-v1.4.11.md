@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.18.0 |
+| 文档版本 | v2.19.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -983,6 +983,55 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 ---
 
+### 2.28 v1.11.0 长尾事项产品裁定执行记录（2026-10-23）
+
+**范围**：计划 v1.5.0 §4 v1.11.0 全部 14 项。门禁仅要求书面裁定（建设/冻结/不建设 + 端点清单），建设项按纪律进入下一版本，本期**无代码改动**。
+
+**1. 裁定结果**
+
+| 裁定 | 数量 | 事项 |
+|------|:----:|------|
+| 已闭环 | 1 | XR-MEM-01 |
+| 建设 | 7 | OB-03、OB-04、XR-LLM-03（报表趋势）、XR-LLM-06、XR-DPS-03（只读）、XR-DPS-04、XR-DPS-05、XR-GOV-01 |
+| 冻结 | 5 | XR-LLM-03（推荐）、XR-LLM-04、XR-LLM-05、XR-LLM-08、XR-DPS-02、XR-DPS-03（写） |
+| 不建设 | 1 | OB-05 |
+
+产出：《OpenBase-长尾事项产品裁定-v1.0.0》（含逐项现状证据、端点清单、验收判据、解冻条件、下一版本分批）。
+
+**2. 关键事实核验（本轮取证）**
+
+| 事项 | 证据（文件:行） |
+|------|------------------|
+| OB-03 | 仅单应用 `GET /api/v1/ai-apps/{app_id}/calls`（`openbase/modules/ai_apps/__init__.py:250`），无全局聚合 |
+| OB-04 | OpenRAG `POST /retrieve/federated`、`GET /cache/stats` 可用（`src/openrag/api/v1_3_routes.py:25,63`） |
+| XR-LLM-03 | 无推荐端点；报表可复用 `/usage/trends` 与 `/monitoring/dashboard` |
+| XR-LLM-04 | 建议为启发式文本，无建议 ID / 回滚语义 |
+| XR-LLM-05 | 仅链级取消 `POST /tool-calls/chains/{chain_id}/cancel`（`app/api/tool_calls.py:237`） |
+| XR-LLM-06 | 成员新增仅接受 `user_id: UUID`（`app/api/workspaces.py:216`） |
+| XR-LLM-08 | `/plugins` 查 DB 表（`plugins.py:49`），`/plugins/tools` 合并运行时注册表（同文件 74-90 行）——非缺陷 |
+| XR-DPS-02/03 | 规则写面 410；`/rate-limits/status`、`/api-registry`、`/error-codes` 只读可用 |
+| XR-DPS-04/05 | 无 `/metrics`；`dps-proxy` 仅映射 `/api/v2/portrait/*` |
+| XR-MEM-01 | 已于 2026-10-12 交付（`68701e9`+`26dc728`，P4 fail-closed，1366 passed） |
+
+**3. 下一版本分批（v1.12.0）**
+
+| 批次 | 事项 | 依赖 |
+|------|------|------|
+| A（本仓低风险） | OB-03 全局调用聚合、OB-04 控制台接线、报表趋势页、XR-DPS-05 代理扩权 | 05 依赖 04 |
+| B（跨仓小改） | XR-LLM-06 用户名邀请 | OpenLLM 派单 |
+| C（跨仓交付） | XR-DPS-04 指标端点（含权限点注册） | DPS 可运行测试环境 |
+| D（跨仓派单） | XR-GOV-01 三仓码值规范化 | 三仓回执 |
+| E（前端文案） | XR-LLM-08「运行期内建」标注、XR-DPS-02/03 只读视图 | 无 |
+
+**4. 验证**
+
+| 项 | 结果 |
+|----|------|
+| 后端/前端测试 | 本期无代码改动，未新增用例；v1.10.2 基线（前端 353/353、vue-tsc 0 错误、后端相关用例全绿）维持 |
+| 文档 | 裁定文档 v1.0.0、计划 v1.6.0、缺口清单 v1.12.0 同步 |
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -1070,6 +1119,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.19.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.28：**v1.11.0 长尾事项产品裁定**——14 项逐条裁定（建设 7 / 冻结 5 / 不建设 1 / 已闭环 1），产出《长尾事项产品裁定-v1.0.0》，附现状证据、端点清单、验收与解冻条件；XR-MEM-01 确认已闭环（台账滞后）；建设项分批转入 v1.12.0，本期无代码改动。 |
 | v2.18.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.27：**XR-OPS-07 发布阻断处置**——根因复核为门禁判据误判（OpenMemory 模板开发默认值≠生产下发值，且运行期 `validate_identity_trust_policy` 已 fail-closed）；矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，守门 15 例、复跑 9/9 PASS；生产值改由 `--env-file` 在 OPS 侧核验。 |
 | v2.17.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.26：**v1.10.2 治理与发布收口**——OB-02 网关交互 4 例闭环；S4 仓库侧发布核验（矩阵 + 脚本 + 10 例，实测 7 PASS / 1 FAIL）；新登记 XR-OPS-07（OpenMemory 开关载体漂移，P1 阻断发布）；XR-GOV-01 三仓未采纳转 v1.11.0；S2 演练待 OPS。 |
 | v2.16.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.25：**v1.10.1 个人中心与通知（OB-01）**——新增 `notification_preferences` 表与 `GET/PUT /auth/notification-preferences`（默认值/upsert/事件白名单/Webhook 校验/OIDC 降级）；设置页通知偏好真实读写。验证：后端 6 例、前端 4 例、前端全量 349 例、`vue-tsc` 0 错误；全量回归 5 类存量失败已逐项隔离复核，并修复 v1.10.0 遗留 BOM。 |

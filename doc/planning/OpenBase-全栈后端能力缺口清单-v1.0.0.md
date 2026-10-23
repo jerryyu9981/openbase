@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.11.0 |
+| 文档版本 | v1.12.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -84,12 +84,12 @@
 | 5 | 工作空间 | `/platform/identity/workspaces` | **真实（v1.9.5 R5）** | — | `/workspaces`、`/workspaces/{id}/members`、`/workspaces/{id}/resources`、`/virtual-keys`（列表/创建/轮换，双通道后 200） | **已闭环** |
 | 6 | 用户管理 | `/platform/identity/users` | **真实（v1.9.1 R1）** | — | `/users` | **已闭环** |
 | 7 | 记忆管理席位 | `/platform/identity/memory-admin` | 真实 | — | `/memory-proxy/monitor`、`/memories` | 已接 |
-| 8 | 注册/找回密码 | `/platform/identity/auth-ext` | mock | E | 无 `/auth/register`、无找回密码 | 待立项 |
-| 9 | 画像数据权限 | `/platform/identity/dps-permissions` | mock | E | 无对应端点 | 待立项 |
+| 8 | 注册/找回密码 | `/platform/identity/auth-ext` | mock | E | 无 `/auth/register`、无找回密码 | **不建设（2026-10-23 裁定）** |
+| 9 | 画像数据权限 | `/platform/identity/dps-permissions` | mock | E | 无对应端点 | **只读建设（v1.12.0）**：接 `/permissions/roles` + `/permissions/check`；写面不建设 |
 | 10 | 全局配置 | `/platform/config/general` | **真实（v1.9.2 R2）** | — | `GET /configs`（新增）、`POST /configs`、`GET /configs/{key}/versions`、`POST /configs/{key}/rollback` | **已闭环** |
 | 11 | 模块开关 | `/platform/config/modules` | 真实 | — | `/modules` | 已接 |
 | 12 | API 密钥 | `/platform/config/api-keys` | **真实（v1.9.2 R2）** | — | `/auth/api-keys`；新增 `id` 回显与 `DELETE /auth/api-keys/by-id/{id}` | **已闭环（含 id 化吊销）** |
-| 13 | 画像接口限流 | `/platform/config/rate-limits` | mock | E | 无对应端点 | 待立项 |
+| 13 | 画像接口限流 | `/platform/config/rate-limits` | mock | E | 无对应端点 | **只读建设（v1.12.0）**：接 `/rate-limits/status`（只读） |
 | 14 | 日志中心 | `/platform/observability/logs` | 真实 | — | `/logs/search`、`/logs/facets` | 已接 |
 | 15 | 测试记录 | `/platform/observability/test-records` | **真实（v1.9.2 R2）** | — | `GET /test-records`、`GET /test-runs`（新增）+ 既有开轮/记录/改判/summary | **已闭环** |
 | 16 | 统一监控 | `/platform/observability/monitoring` | **真实（v1.9.7 R7）** | — | `/monitoring/dashboard`、`/alerts?status=firing`（双通道后 200） | **已闭环** |
@@ -102,7 +102,7 @@
 | 23 | 计费 | `/platform/observability/billing` | **真实（v1.9.4 R4）** | — | `/billing/usage/statistics`、`/billing/quotas`、`/billing/bills`（双通道后 200） | **已闭环** |
 | 24 | 服务发现与编排 | `/platform/observability/service-discovery` | 真实 | — | `/services`、`/gateway/ping` | 已接 |
 | 25 | 聚合网关测试 | `/platform/observability/gateway-test` | 表单页 + 交互用例 | — | `/gateway/aggregate`（200；审计未自动提交） | **已补用例（v1.10.2）**：成功/部分失败/超时/重置 4 例 |
-| 26 | 应用调用记录 | `/platform/observability/app-calls` | mock | E | `/ai-apps/{id}/calls` 需先选应用，缺全局聚合 | 待立项 |
+| 26 | 应用调用记录 | `/platform/observability/app-calls` | mock | E | `/ai-apps/{id}/calls` 需先选应用，缺全局聚合 | **建设（v1.12.0）**：新增 `GET /ai-apps/calls` 全局聚合 |
 | 27 | 画像系统监控 | `/platform/observability/dps-monitor` | **部分真实（v1.9.7 R7）** | — | `/dps-proxy/health`；指标/告警规则无上游端点，页面显式说明未开放 | **已收敛（仅健康）** |
 | 28 | 提供商管理 | `/platform/governance/providers` | **真实（本轮）** | — | `/proxy/openllm/api/v1/providers` | **已闭环** |
 | 29 | 模型分类 | `/platform/governance/model-categories` | **真实（v1.9.3 R3）** | — | `/model-categories`、`/model-categories/tree`、`/model-categories/{id}/models`（双通道后 200） | **已闭环** |
@@ -117,9 +117,9 @@
 | 38 | 文档中心 | `/platform/developers/docs` | 静态文档 | E | 无端点（内容型页面，可保留） | 保留 |
 | 39 | EdgeRouter 与适配器 | `/platform/developers/edgerouter` | **真实（v1.9.1 R1）** | — | `/edge/status`、`/edge/health`、`/edge/adapters`、`/edge/organizations`、`/edge/quotas/{org}`、`/edge/audit/logs`（均 200） | **已闭环** |
 | 40 | 插件管理 | `/platform/developers/plugins` | **真实（v1.9.3 R3）** | — | `/plugins`、`/plugins/tools`、`/plugins/{id}/health|enable|disable`、`/plugins/register`（双通道后 200） | **已闭环** |
-| 41 | 画像 API 管理 | `/platform/developers/dps-api` | mock | E | 无对应端点 | 待立项 |
+| 41 | 画像 API 管理 | `/platform/developers/dps-api` | mock | E | 无对应端点 | **只读建设（v1.12.0）**：接 `/api-registry` + `/error-codes` |
 | 42 | 知识库管理后台 | `/platform/developers/knowledge-admin` | 真实 | — | `/rag-proxy/collections` | 已接 |
-| 43 | 知识库 API 控制台 | `/platform/developers/knowledge-console` | 静态控制台 | E | 调试器为本地演示，未打通真实调用 | 待立项 |
+| 43 | 知识库 API 控制台 | `/platform/developers/knowledge-console` | 静态控制台 | E | 调试器为本地演示，未打通真实调用 | **建设（v1.12.0）**：复用 OpenRAG `POST /retrieve/federated` + `/cache/stats` |
 | 44 | 个人设置 | `/personal/settings` | **真实（v1.9.7 R7 + v1.10.1）** | — | `GET/PUT /auth/me`、`POST /auth/change-password`、`GET/PUT /auth/notification-preferences`（v1.10.1 新增） | **已闭环（资料+密码+通知偏好）** |
 
 ### 4.2 OpenLLM（11 页）
@@ -135,8 +135,8 @@
 | 7 | 创建应用 | `/openllm/apps/new` | 真实（提交时） | — | `POST /ai-apps` |
 | 8 | Playground | `/openllm/playground` | 真实 | — | `/llm-proxy/models`、`/llm-proxy/chat` |
 | 9 | 对话管理 | `/openllm/conversations` | 真实 | — | `/llm-proxy/conversations` |
-| 10 | 模型对比推荐 | `/openllm/recommend` | mock | E | 无推荐端点 |
-| 11 | 报表趋势 | `/openllm/reports-trend` | mock | E | 无报表端点 |
+| 10 | 模型对比推荐 | `/openllm/recommend` | mock | E | 无推荐端点 | **冻结（2026-10-23 裁定）**：无标注/评分数据基础 |
+| 11 | 报表趋势 | `/openllm/reports-trend` | mock | E | 无报表端点 | **建设（v1.12.0）**：复用 `/usage/trends` + `/monitoring/dashboard`，不新增端点 |
 
 ### 4.3 OpenRAG（2 页）
 
@@ -164,7 +164,7 @@
 | 2 | 画像列表 | `/portrait/list` | 真实 | — |
 | 3 | 画像搜索 | `/portrait/search` | 真实 | — |
 | 4 | 标签管理 | `/portrait/tags` | 真实 | — |
-| 5 | 规则引擎 | `/portrait/rules` | mock | E |
+| 5 | 规则引擎 | `/portrait/rules` | mock | E | **冻结（2026-10-23 裁定）**：写面已按 ADR-290-01 收口 410 |
 | 6 | 模板族管理 | `/portrait/dps/templates` | 真实 | — |
 | 7 | 画像模板新建 | `/portrait/dps/templates/new` | 真实（提交时） | — |
 | 8 | 模板包导出/导入 | `/portrait/dps/template-packages` | 真实（按需触发） | — |
@@ -230,11 +230,11 @@
 | 模型部署 | **建设** | `/open-models/{id}/deploy|deploy-status|logs|stop` 已具备 |
 | 画像系统监控 | **收敛为健康页** | 仅 `/dps-proxy/health`；无指标/告警规则端点，移除虚构数据 |
 | 注册/找回密码 | **不建设** | 无自助注册/找回端点；由管理员开户与重置 |
-| 画像数据权限 | **不建设** | 无对应端点 |
-| 画像接口限流 | **不建设** | 无对应端点 |
-| 画像 API 管理 | **不建设** | 无对应端点 |
-| 应用调用记录 | **保留占位** | `/ai-apps/{id}/calls` 需先选应用，缺全局聚合端点 |
-| 知识库 API 控制台 | **保留** | 本地调试演示，未打通真实调用；非阻塞业务 |
+| 画像数据权限 | **只读建设（v1.12.0）** | 2026-10-23 裁定刷新：只读接 `/permissions/roles` + `/permissions/check`；写面不建设（ADR-290-01 已收口 410） |
+| 画像接口限流 | **只读建设（v1.12.0）** | `/rate-limits/status` 已具备只读指标（含 `source` 标注） |
+| 画像 API 管理 | **只读建设（v1.12.0）** | `/api-registry` + `/error-codes` 只读可用 |
+| 应用调用记录 | **建设（v1.12.0）** | 新增 `GET /ai-apps/calls` 全局聚合（复用 `ai_app_calls` 表） |
+| 知识库 API 控制台 | **建设（v1.12.0）** | 复用 OpenRAG `POST /retrieve/federated` + `/cache/stats` |
 | 文档中心 | **保留** | 内容型页面，无需后端 |
 
 ---
@@ -288,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.12.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.11.0 长尾裁定回填**：9 个页面能力状态按裁定刷新（建设 6 / 只读建设 3 / 冻结 2 / 不建设 1），与《OpenBase-长尾事项产品裁定-v1.0.0》一致。 |
 | v1.11.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.2 能力状态回填**：聚合网关测试由「待补交互用例」→ 已覆盖成功/部分失败/超时/重置 4 类。 |
 | v1.10.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.1 能力状态回填**：个人设置「通知偏好」由未开放 → 真实读写（`GET/PUT /auth/notification-preferences`，含事件开关与 Webhook 校验）；§6 R8 标注 OB-01 已闭环。 |
 | v1.9.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.0 能力状态回填**：OpenLLM 四页（本地模型/模型对比/开源市场/我的收藏）由 mock → 真实；§7 #7 监控 `tenant_id` 写入与过滤缺口标记已处置（XR-LLM-01）。 |
