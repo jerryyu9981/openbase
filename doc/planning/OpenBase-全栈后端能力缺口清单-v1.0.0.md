@@ -3,12 +3,12 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.7.0 |
+| 文档版本 | v1.8.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
 | 创建日期 | 2026-10-22 |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.21.0 §8.19；《OpenBase-DevLogReport-v1.4.11》v2.12.0 §2.21 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.21.0 §8.19；《OpenBase-DevLogReport-v1.4.11》v2.13.0 §2.22；《OpenBase-剩余事项统一清查与小版本迭代计划-v1.0.0》 |
 | 证据 | `doc/test/evidence/s6/ui-func-audit-v190.json`、`ui-func-audit-v190-summary.md`、`proxy-reachability-v190.json` |
 | 存放 | `doc/planning/` |
 
@@ -70,6 +70,8 @@
 ---
 
 ## 4. 逐页缺口清单
+
+> **排期口径（v1.8.0）**：本表只保留「能力现状与缺口」，不再逐行标注轮次；所有未闭环项（含跨仓/运维/QA）的排期统一收敛至《OpenBase-剩余事项统一清查与小版本迭代计划-v1.0.0》，以该计划为唯一排期源。
 
 ### 4.1 OpenBase 公共域（44 页）
 
@@ -214,6 +216,7 @@
 | R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | **已完成（v1.9.5）**；新增权限目录端点 |
 | R6 | D 类性能 | `local-models`、`models/favorites|compare`、`open-models/popular` 的 10s 超时治理 | **已完成（v1.9.6）**：探测短超时 + 双通道 + N+1 批量化 |
 | R7 | E 类立项 | 仪表盘/统一监控/画像系统监控/个人设置等纯形态页 | **已完成（v1.9.7）**：可建 5 页落地，其余裁定不建设/保留 |
+| R8 | 剩余事项处置与小版本迭代 | 通知偏好、DPS 指标/规则、OpenLLM 四页、租户过滤、跨仓/运维收口 | **已排期**：见《剩余事项统一清查与小版本迭代计划-v1.0.0》（v1.9.8 ~ v1.11.0） |
 
 > 纪律：每轮完成「后端 + 前端 + 单测 + 浏览器实测 + 文档留痕 + 三远程推送」闭环，不跨轮混提交。
 
@@ -285,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.8.0 | 2026-10-23 | FA-OpenBase-Dev | **剩余事项统一清查**：新增《剩余事项统一清查与小版本迭代计划-v1.0.0》，登记本仓 6 项、跨仓 12 项、运维/QA 6 项，排入 v1.9.8 / v1.10.0 / v1.10.1 / v1.10.2 / v1.11.0；本清单 §4 起改为只保留能力状态，排期以新计划为唯一来源。 |
 | v1.7.0 | 2026-10-23 | FA-OpenBase-Dev | **R7 收口**：新增 `PUT /auth/me`、`POST /auth/change-password` 并扩展 `/auth/me` 资料字段；仪表盘、统一监控、个人设置、模型部署四页接真实端点，画像系统监控收敛为健康页；新增 §6.1 E 类产品裁定（5 页建设 / 6 项不建设或保留）；无后端调用页面 29 → 24。 |
 | v1.6.0 | 2026-10-23 | FA-OpenBase-Dev | **R6 收口**：Ollama 轻量探测改短超时（connect 2s/read 5s）；`open-models` 改双通道；收藏/下载任务列表批量化（消除 N+1）；GPU 资源与下载管理两页接真实端点并移除 mock；无后端调用页面 31 → 29。 |
 | v1.5.0 | 2026-10-23 | FA-OpenBase-Dev | **R5 收口**：OpenLLM 治理与 RBAC 11 个路由文件改双通道；新增 `GET /roles/permissions/catalog`；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点并移除配套假动作；无后端调用页面 39 → 31。 |
