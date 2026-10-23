@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.19.0 |
+| 文档版本 | v2.20.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -1032,6 +1032,54 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 ---
 
+### 2.29 v1.12.0 长尾建设 A 批执行记录（2026-10-23）
+
+**范围**：OB-03、OB-04、XR-LLM-03（报表趋势）；XR-DPS-05 因依赖 XR-DPS-04 未启动。
+
+**1. OB-03：应用调用记录全局聚合**
+
+| 项 | 内容 |
+|----|------|
+| 端点 | `GET /api/v1/ai-apps/calls?app_id=&status=&page=&page_size=`（注册在 `/{app_id}` **之前**，避免 `calls` 被当作 app_id） |
+| 服务 | `AiAppService.all_calls(app_id, status)` 跨应用汇总并补 `app_name` |
+| 页面 | 新增 `pages/platform/observability/AppCallsView.vue` 替换 `GenericPage`；应用/状态筛选（radio-button）、服务端分页、错误条与空态 |
+| 用例 | 后端 6 例（聚合/筛选/分页/路由顺序/参数校验）、前端 3 例（加载/筛选参数/错误态） |
+
+**2. OB-04：知识库 API 控制台真实化**
+
+| 项 | 内容 |
+|----|------|
+| 数据源 | `rag-proxy`：`GET /collections`、`GET /health`、`POST /collections/{id}/query/retrieve` |
+| 页面变更 | 移除「填写任意 API Key + 500ms 假响应」；改为选择知识库 → 输入检索语句 → 真实检索并展示响应与客户端耗时 |
+| 性能页 | 删除虚构的 38ms / QPS 156 / 0.8% 与随机曲线；改展示「最近检索耗时 / 知识库数量 / 上游健康 + 组件状态」 |
+| 边界 | 未新增缓存统计端点（rag-proxy 未暴露 `/cache/stats`），页面不展示该指标 |
+| 用例 | 前端 2 例（真实检索参数与响应、失败态不残留结果） |
+
+**3. XR-LLM-03（报表趋势部分）**
+
+| 项 | 内容 |
+|----|------|
+| 数据源 | `/usage/trends`（调用量/Token 序列）、`/monitoring/dashboard`（KPI 概览）、`/monitoring/costs?dimension=user`（成本 Top5） |
+| 页面变更 | 移除随机数曲线与虚构「组织排名」；改为真实 KPI 四卡 + 调用量/Token 双轴趋势 + 用户成本 Top5；时间范围收敛为 7d/30d（与后端支持口径一致） |
+| 降级 | `Promise.allSettled` 三源独立，单源失败提示但保留可用数据 |
+| 用例 | 前端 2 例（请求参数与渲染、单源失败降级） |
+
+**4. XR-DPS-05：未启动**
+
+指标数据源依赖 XR-DPS-04（`GET /api/v2/metrics` + 权限点注册），该端点需 DPS 可运行测试环境交付；只读规则/限流接线可在后续批次独立推进。
+
+**5. 验证**
+
+| 项 | 命令/方式 | 结果 |
+|----|-----------|------|
+| 后端新用例 | `pytest tests/test_ai_apps_calls_v1120.py` | **6 passed** |
+| 静态检查 | `ruff check openbase/modules/ai_apps tests/test_ai_apps_calls_v1120.py` | 通过 |
+| 前端新用例 | `vitest run tests/r11-longtail-v1120.spec.ts` | **7 passed** |
+| 前端全量 | `vitest run` | **360 passed / 36 files**（基线 353 + 新增 7） |
+| 类型 | `vue-tsc --noEmit` | **0 error**（同步移除已无引用的 `GenericPage` 常量） |
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -1119,6 +1167,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.20.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.29：**v1.12.0 长尾建设 A 批**——OB-03 新增全局调用记录端点与 `AppCallsView`；OB-04 知识库控制台接 `rag-proxy` 真实链路；XR-LLM-03 报表趋势接三聚合源；XR-DPS-05 阻塞于 XR-DPS-04。验证：后端 6 例、前端新增 7 例、前端全量 360/360、`vue-tsc` 0 错误。 |
 | v2.19.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.28：**v1.11.0 长尾事项产品裁定**——14 项逐条裁定（建设 7 / 冻结 5 / 不建设 1 / 已闭环 1），产出《长尾事项产品裁定-v1.0.0》，附现状证据、端点清单、验收与解冻条件；XR-MEM-01 确认已闭环（台账滞后）；建设项分批转入 v1.12.0，本期无代码改动。 |
 | v2.18.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.27：**XR-OPS-07 发布阻断处置**——根因复核为门禁判据误判（OpenMemory 模板开发默认值≠生产下发值，且运行期 `validate_identity_trust_policy` 已 fail-closed）；矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，守门 15 例、复跑 9/9 PASS；生产值改由 `--env-file` 在 OPS 侧核验。 |
 | v2.17.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.26：**v1.10.2 治理与发布收口**——OB-02 网关交互 4 例闭环；S4 仓库侧发布核验（矩阵 + 脚本 + 10 例，实测 7 PASS / 1 FAIL）；新登记 XR-OPS-07（OpenMemory 开关载体漂移，P1 阻断发布）；XR-GOV-01 三仓未采纳转 v1.11.0；S2 演练待 OPS。 |

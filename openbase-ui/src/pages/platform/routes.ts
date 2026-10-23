@@ -10,10 +10,9 @@
  *    避免「菜单可见但进入后接口 403」割裂；仍无独立权限码的页（角色/工作空间/注册找回/
  *    全局配置/可观测各页/开发者资源等）沿用既有「仅登录可见」口径。
  * `GenericPage` 承载的占位路由按 UI 设计 §9.3 R2/R3：**复用** openllm 单份实现（不复制）。
+ * v1.12.0：应用调用记录已由 `AppCallsView` 真实化，本文件暂不再声明 `GenericPage` 常量。
  */
 import type { RouteRecordRaw } from 'vue-router'
-
-const GenericPage = () => import('@/pages/platform/governance/GenericPage.vue')
 
 /** 平台管理 · 身份与权限域 */
 export const identityRoutes: RouteRecordRaw[] = [
@@ -51,7 +50,7 @@ export const observabilityRoutes: RouteRecordRaw[] = [
   { path: 'platform/observability/billing', name: 'platform-observability-billing', component: () => import('@/pages/platform/observability/BillingView.vue'), meta: { title: '计费', icon: 'Money' } },
   { path: 'platform/observability/service-discovery', name: 'platform-observability-service-discovery', component: () => import('@/pages/platform/observability/GatewayServicesView.vue'), meta: { title: '服务发现与编排', icon: 'Connection' } },
   { path: 'platform/observability/gateway-test', name: 'platform-observability-gateway-test', component: () => import('@/pages/platform/observability/GatewayAggregateView.vue'), meta: { title: '聚合网关测试', icon: 'Operation' } },
-  { path: 'platform/observability/app-calls', name: 'platform-observability-app-calls', component: GenericPage, meta: { title: '应用调用记录', icon: 'ChatDotRound' } },
+  { path: 'platform/observability/app-calls', name: 'platform-observability-app-calls', component: () => import('@/pages/platform/observability/AppCallsView.vue'), meta: { title: '应用调用记录', icon: 'ChatDotRound' } },
   // v1.4.11：DPS 系统监控从画像模块上收（公共域可观测）
   { path: 'platform/observability/dps-monitor', name: 'platform-observability-dps-monitor', component: () => import('@/pages/platform/observability/DpsMonitorView.vue'), meta: { title: '画像系统监控', icon: 'Monitor', dependsOn: 'portrait' } },
 ]

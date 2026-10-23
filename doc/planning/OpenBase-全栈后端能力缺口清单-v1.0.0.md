@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.12.0 |
+| 文档版本 | v1.13.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -102,7 +102,7 @@
 | 23 | 计费 | `/platform/observability/billing` | **真实（v1.9.4 R4）** | — | `/billing/usage/statistics`、`/billing/quotas`、`/billing/bills`（双通道后 200） | **已闭环** |
 | 24 | 服务发现与编排 | `/platform/observability/service-discovery` | 真实 | — | `/services`、`/gateway/ping` | 已接 |
 | 25 | 聚合网关测试 | `/platform/observability/gateway-test` | 表单页 + 交互用例 | — | `/gateway/aggregate`（200；审计未自动提交） | **已补用例（v1.10.2）**：成功/部分失败/超时/重置 4 例 |
-| 26 | 应用调用记录 | `/platform/observability/app-calls` | mock | E | `/ai-apps/{id}/calls` 需先选应用，缺全局聚合 | **建设（v1.12.0）**：新增 `GET /ai-apps/calls` 全局聚合 |
+| 26 | 应用调用记录 | `/platform/observability/app-calls` | **真实（v1.12.0）** | — | `GET /ai-apps/calls`（跨应用聚合 + 筛选 + 分页） | **已闭环** |
 | 27 | 画像系统监控 | `/platform/observability/dps-monitor` | **部分真实（v1.9.7 R7）** | — | `/dps-proxy/health`；指标/告警规则无上游端点，页面显式说明未开放 | **已收敛（仅健康）** |
 | 28 | 提供商管理 | `/platform/governance/providers` | **真实（本轮）** | — | `/proxy/openllm/api/v1/providers` | **已闭环** |
 | 29 | 模型分类 | `/platform/governance/model-categories` | **真实（v1.9.3 R3）** | — | `/model-categories`、`/model-categories/tree`、`/model-categories/{id}/models`（双通道后 200） | **已闭环** |
@@ -119,7 +119,7 @@
 | 40 | 插件管理 | `/platform/developers/plugins` | **真实（v1.9.3 R3）** | — | `/plugins`、`/plugins/tools`、`/plugins/{id}/health|enable|disable`、`/plugins/register`（双通道后 200） | **已闭环** |
 | 41 | 画像 API 管理 | `/platform/developers/dps-api` | mock | E | 无对应端点 | **只读建设（v1.12.0）**：接 `/api-registry` + `/error-codes` |
 | 42 | 知识库管理后台 | `/platform/developers/knowledge-admin` | 真实 | — | `/rag-proxy/collections` | 已接 |
-| 43 | 知识库 API 控制台 | `/platform/developers/knowledge-console` | 静态控制台 | E | 调试器为本地演示，未打通真实调用 | **建设（v1.12.0）**：复用 OpenRAG `POST /retrieve/federated` + `/cache/stats` |
+| 43 | 知识库 API 控制台 | `/platform/developers/knowledge-console` | **真实（v1.12.0）** | — | `rag-proxy/collections`、`/health`、`/collections/{id}/query/retrieve` | **已闭环** |
 | 44 | 个人设置 | `/personal/settings` | **真实（v1.9.7 R7 + v1.10.1）** | — | `GET/PUT /auth/me`、`POST /auth/change-password`、`GET/PUT /auth/notification-preferences`（v1.10.1 新增） | **已闭环（资料+密码+通知偏好）** |
 
 ### 4.2 OpenLLM（11 页）
@@ -136,7 +136,7 @@
 | 8 | Playground | `/openllm/playground` | 真实 | — | `/llm-proxy/models`、`/llm-proxy/chat` |
 | 9 | 对话管理 | `/openllm/conversations` | 真实 | — | `/llm-proxy/conversations` |
 | 10 | 模型对比推荐 | `/openllm/recommend` | mock | E | 无推荐端点 | **冻结（2026-10-23 裁定）**：无标注/评分数据基础 |
-| 11 | 报表趋势 | `/openllm/reports-trend` | mock | E | 无报表端点 | **建设（v1.12.0）**：复用 `/usage/trends` + `/monitoring/dashboard`，不新增端点 |
+| 11 | 报表趋势 | `/openllm/reports-trend` | **真实（v1.12.0）** | — | `/usage/trends` + `/monitoring/dashboard` + `/monitoring/costs`（不新增端点） | **已闭环** |
 
 ### 4.3 OpenRAG（2 页）
 
@@ -233,8 +233,8 @@
 | 画像数据权限 | **只读建设（v1.12.0）** | 2026-10-23 裁定刷新：只读接 `/permissions/roles` + `/permissions/check`；写面不建设（ADR-290-01 已收口 410） |
 | 画像接口限流 | **只读建设（v1.12.0）** | `/rate-limits/status` 已具备只读指标（含 `source` 标注） |
 | 画像 API 管理 | **只读建设（v1.12.0）** | `/api-registry` + `/error-codes` 只读可用 |
-| 应用调用记录 | **建设（v1.12.0）** | 新增 `GET /ai-apps/calls` 全局聚合（复用 `ai_app_calls` 表） |
-| 知识库 API 控制台 | **建设（v1.12.0）** | 复用 OpenRAG `POST /retrieve/federated` + `/cache/stats` |
+| 应用调用记录 | **✅ 已闭环（v1.12.0）** | `GET /ai-apps/calls` 全局聚合 + `AppCallsView` |
+| 知识库 API 控制台 | **✅ 已闭环（v1.12.0）** | `rag-proxy` 真实检索链路 + 真实性能指标 |
 | 文档中心 | **保留** | 内容型页面，无需后端 |
 
 ---
@@ -288,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.13.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.12.0 A 批回填**：应用调用记录、知识库 API 控制台、报表趋势三页由 mock → 真实并标闭环。 |
 | v1.12.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.11.0 长尾裁定回填**：9 个页面能力状态按裁定刷新（建设 6 / 只读建设 3 / 冻结 2 / 不建设 1），与《OpenBase-长尾事项产品裁定-v1.0.0》一致。 |
 | v1.11.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.2 能力状态回填**：聚合网关测试由「待补交互用例」→ 已覆盖成功/部分失败/超时/重置 4 类。 |
 | v1.10.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.1 能力状态回填**：个人设置「通知偏好」由未开放 → 真实读写（`GET/PUT /auth/notification-preferences`，含事件开关与 Webhook 校验）；§6 R8 标注 OB-01 已闭环。 |

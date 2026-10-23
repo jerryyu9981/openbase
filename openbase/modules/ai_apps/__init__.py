@@ -12,7 +12,7 @@ import logging
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
 from openbase.core.deps.auth import get_current_user
@@ -164,6 +164,25 @@ class AiAppService:
     def calls(self, app_id: str) -> list[dict]:
         return type(self)._calls.get(app_id, [])
 
+    def all_calls(
+        self,
+        app_id: str | None = None,
+        status: str | None = None,
+    ) -> list[dict]:
+        """跨应用汇总调用记录（v1.12.0 OB-03；按 app_id / status 筛选）."""
+        results: list[dict] = []
+        for current_app_id, calls in type(self)._calls.items():
+            if app_id and current_app_id != app_id:
+                continue
+            for call in calls:
+                if status and call.get("status") != status:
+                    continue
+                row = dict(call)
+                row["app_name"] = (type(self)._apps.get(current_app_id) or {}).get("name")
+                results.append(row)
+        # created_at 当前为 None（内存实现），保持稳定排序：按应用 ID + 调用顺序
+        return results
+
     def delete(self, app_id: str) -> None:
         if app_id not in type(self)._apps:
             raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"ai app not found: {app_id}")
@@ -196,6 +215,33 @@ def create_app(payload: AiAppCreateRequest, user: dict = Depends(get_current_use
         prompt_template_id=payload.prompt_template_id,
     )
     return {"code": 0, "message": "ok", "data": app}
+
+
+@router.get("/calls")
+def list_all_calls(
+    app_id: str | None = Query(None, description="按应用筛选"),
+    status: str | None = Query(None, description="按调用状态筛选"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """全局调用记录（跨应用聚合 + 筛选 + 分页，v1.12.0 OB-03）.
+
+    路由须注册在 ``/{app_id}`` 之前，否则 ``calls`` 会被当作 app_id 吞掉。
+    """
+    items = _service().all_calls(app_id=app_id, status=status)
+    total = len(items)
+    start = (page - 1) * page_size
+    return {
+        "code": 0,
+        "message": "ok",
+        "data": {
+            "items": items[start:start + page_size],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        },
+    }
 
 
 @router.get("/{app_id}")
