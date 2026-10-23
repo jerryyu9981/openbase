@@ -1386,6 +1386,135 @@ export const localModelsApi = {
     )
     return data
   },
+  /** 已安装本地模型列表（v1.10.0 XR-LLM-02） */
+  async list(): Promise<LlmLocalModelItem[]> {
+    const { data } = await http.get<LlmLocalModelItem[]>(`${OPENLLM}/local-models`)
+    return data
+  },
+  /** 可安装模型仓库（内置清单） */
+  async available(params: { search?: string; category?: string } = {}): Promise<LlmLocalModelsAvailable> {
+    const { data } = await http.get<LlmLocalModelsAvailable>(`${OPENLLM}/local-models/available`, {
+      params,
+    })
+    return data
+  },
+  /** Ollama 服务与资源状态 */
+  async serviceStatus(): Promise<LlmLocalModelStatus> {
+    const { data } = await http.get<LlmLocalModelStatus>(`${OPENLLM}/local-models/status`)
+    return data
+  },
+  async pull(modelName: string): Promise<void> {
+    await http.post(`${OPENLLM}/local-models/pull`, { model_name: modelName, stream: false })
+  },
+  async remove(modelName: string): Promise<void> {
+    await http.delete(`${OPENLLM}/local-models/${encodeURIComponent(modelName)}`)
+  },
+  async start(modelName: string): Promise<void> {
+    await http.post(`${OPENLLM}/local-models/${encodeURIComponent(modelName)}/start`, {})
+  },
+  async stop(modelName: string): Promise<void> {
+    await http.post(`${OPENLLM}/local-models/${encodeURIComponent(modelName)}/stop`, {})
+  },
+  async update(modelName: string): Promise<void> {
+    await http.post(`${OPENLLM}/local-models/${encodeURIComponent(modelName)}/update`, {})
+  },
+}
+
+export interface LlmLocalModelItem {
+  name: string
+  model: string
+  modified_at: string | null
+  size: number | null
+  digest: string | null
+  details?: Record<string, unknown> | null
+}
+
+export interface LlmAvailableModel {
+  id: string
+  name: string
+  provider: string
+  family: string
+  size: number | null
+  parameters: string | null
+  quantization: string | null
+  context_window: number | null
+  capabilities: string[]
+  description: string | null
+  tags: string[]
+}
+
+export interface LlmLocalModelsAvailable {
+  models: LlmAvailableModel[]
+  categories: string[]
+  total_count: number
+}
+
+export interface LlmLocalModelStatus {
+  ollama_running: boolean
+  gpu_available: boolean
+  gpu_name: string | null
+  gpu_memory: string | null
+  system_memory: string | null
+  disk_free: string | null
+}
+
+// ---------------------------------------------------------------------------
+// 模型收藏与对比（v1.10.0 XR-LLM-02）：`/models/favorites`、`/models/compare`
+// ---------------------------------------------------------------------------
+
+export interface LlmFavoriteModelBrief {
+  id: string
+  model_id: string
+  name: string
+  source: string | null
+  parameters: string | null
+  license: string | null
+  tags: string[]
+  description?: string | null
+}
+
+export interface LlmFavorite {
+  id: string
+  model_id: string
+  folder_name: string | null
+  notes: string | null
+  model: LlmFavoriteModelBrief | null
+  created_at: string | null
+}
+
+export const favoritesApi = {
+  async folders(): Promise<Array<{ name: string; count: number }>> {
+    const { data } = await http.get<{ items: Array<{ name: string; count: number }> }>(
+      `${OPENLLM}/models/favorite-folders`,
+    )
+    return data.items ?? []
+  },
+  async list(folder?: string): Promise<LlmFavorite[]> {
+    const { data } = await http.get<LlmFavorite[]>(`${OPENLLM}/models/favorites`, {
+      params: folder ? { folder } : {},
+    })
+    return data
+  },
+  async add(modelId: string, payload: { folder_name?: string; notes?: string } = {}): Promise<void> {
+    await http.post(`${OPENLLM}/models/${encodeURIComponent(modelId)}/favorite`, payload)
+  },
+  async remove(modelId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/models/${encodeURIComponent(modelId)}/favorite`)
+  },
+}
+
+export interface LlmModelCompareResult {
+  models: Array<Record<string, unknown>>
+  comparison: Record<string, unknown>
+}
+
+export const modelCompareApi = {
+  async compare(modelIds: string[]): Promise<LlmModelCompareResult> {
+    const { data } = await http.get<LlmModelCompareResult>(`${OPENLLM}/models/compare`, {
+      params: { model_ids: modelIds },
+    })
+    return data
+  },
 }
 
 export interface LlmDownloadTask {

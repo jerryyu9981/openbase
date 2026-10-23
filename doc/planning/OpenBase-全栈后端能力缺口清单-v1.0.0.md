@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.8.0 |
+| 文档版本 | v1.9.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -127,10 +127,10 @@
 | # | 页面 | 路由 | 现状 | 类别 | 说明 |
 |:-:|------|------|------|:----:|------|
 | 1 | 模型管理 | `/openllm/models` | 真实 | — | `/llm-proxy/models` |
-| 2 | 本地模型 | `/openllm/models/local` | mock | D | `/local-models` 502（超时，上游耗时 > 10s） |
-| 3 | 模型对比 | `/openllm/models/comparison` | mock | D | `/models/compare` 502 |
-| 4 | 开源模型市场 | `/openllm/models/market` | mock | D | `/open-models/popular` 502 |
-| 5 | 我的收藏 | `/openllm/favorites` | mock | D | `/models/favorites` 502 |
+| 2 | 本地模型 | `/openllm/models/local` | **真实（v1.10.0）** | — | `/local-models` 列表/仓库/状态/GPU + 启停/更新/删除/拉取；R6 短超时修复后 502 消除 |
+| 3 | 模型对比 | `/openllm/models/comparison` | **真实（v1.10.0）** | — | 模型池 `/open-models` + 对比 `/models/compare`（`comparison.advantages`） |
+| 4 | 开源模型市场 | `/openllm/models/market` | **真实（v1.10.0）** | — | `/open-models` 列表 + `/open-models/{id}/download` |
+| 5 | 我的收藏 | `/openllm/favorites` | **真实（v1.10.0）** | — | `/models/favorites`、`/models/favorite-folders`、取消收藏 |
 | 6 | AI 应用 | `/openllm/apps` | 真实 | — | `/ai-apps` |
 | 7 | 创建应用 | `/openllm/apps/new` | 真实（提交时） | — | `POST /ai-apps` |
 | 8 | Playground | `/openllm/playground` | 真实 | — | `/llm-proxy/models`、`/llm-proxy/chat` |
@@ -249,7 +249,7 @@
 | 4 | 服务进程（DPS/OpenRAG）在长时间无人访问后被回收 | 审计出现 503 假失败 | 审计前统一健康检查；服务编排侧增加守护（运维项） |
 | 5 | ~~**OpenLLM `scoped_session` + 线程池并发缺陷**~~ | 同步端点并发访问同一 Session → `InvalidRequestError` → 上游 500 | **已修复（R2 / OpenLLM v1.9.2）**：`get_db` 改为每请求独立 Session；前端串行化保留为额外防护 |
 | 6 | 「契约 mock」页面继续对外可见 | 用户误以为是真实数据 | 本清单作为派单依据；接线前不建议对外演示这些页面 |
-| 7 | R4 观察域中 `monitoring_metrics` 的 `tenant_id` **列未被写入**（`record_request` / `record_llm_call` 仅把 `tenant_id` 放进 `dimensions` JSON） | `/monitoring/dashboard`、`/monitoring/costs`、`/monitoring/metrics` 当前按全局指标返回，无法按租户列过滤 | 已登记为后续治理项：先补写 `tenant_id` 列并回填，再启用服务端租户过滤；`alerts`/`budgets`/`usage`/`billing`/`traces` 已按 `current_user.organization_id` 过滤 |
+| 7 | ~~R4 观察域中 `monitoring_metrics` 的 `tenant_id` **列未被写入**（`record_request` / `record_llm_call` 仅把 `tenant_id` 放进 `dimensions` JSON）~~ | `/monitoring/dashboard`、`/monitoring/costs`、`/monitoring/metrics` 曾按全局指标返回 | **已处置（v1.10.0 / XR-LLM-01）**：鉴权依赖回填 `request.state.user` → 中间件写 `tenant_id`；查询侧 `_apply_tenant_filter` 全量接入；历史数据用 `backfill_monitoring_tenant_v1100.py` 幂等回填（默认 dry-run） |
 
 ---
 
@@ -288,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.9.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.0 能力状态回填**：OpenLLM 四页（本地模型/模型对比/开源市场/我的收藏）由 mock → 真实；§7 #7 监控 `tenant_id` 写入与过滤缺口标记已处置（XR-LLM-01）。 |
 | v1.8.0 | 2026-10-23 | FA-OpenBase-Dev | **剩余事项统一清查**：新增《剩余事项统一清查与小版本迭代计划-v1.0.0》，登记本仓 6 项、跨仓 12 项、运维/QA 6 项，排入 v1.9.8 / v1.10.0 / v1.10.1 / v1.10.2 / v1.11.0；本清单 §4 起改为只保留能力状态，排期以新计划为唯一来源。 |
 | v1.7.0 | 2026-10-23 | FA-OpenBase-Dev | **R7 收口**：新增 `PUT /auth/me`、`POST /auth/change-password` 并扩展 `/auth/me` 资料字段；仪表盘、统一监控、个人设置、模型部署四页接真实端点，画像系统监控收敛为健康页；新增 §6.1 E 类产品裁定（5 页建设 / 6 项不建设或保留）；无后端调用页面 29 → 24。 |
 | v1.6.0 | 2026-10-23 | FA-OpenBase-Dev | **R6 收口**：Ollama 轻量探测改短超时（connect 2s/read 5s）；`open-models` 改双通道；收藏/下载任务列表批量化（消除 N+1）；GPU 资源与下载管理两页接真实端点并移除 mock；无后端调用页面 31 → 29。 |

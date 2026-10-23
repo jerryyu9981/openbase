@@ -41,10 +41,11 @@
               </div>
             </template>
             <template #default="{ row }">
-              <span v-if="row.key === 'capabilities'">
-                <el-tag v-for="cap in model.capabilities" :key="cap" size="small" type="info" class="cap-tag">{{ cap }}</el-tag>
+              <span v-if="row.key === 'tags'">
+                <el-tag v-for="tag in model.tags" :key="tag" size="small" type="info" class="cap-tag">{{ tag }}</el-tag>
+                <span v-if="model.tags.length === 0">-</span>
               </span>
-              <span v-else-if="row.key === 'price'">{{ formatPrice(model) }}</span>
+              <span v-else-if="row.key === 'advantage'">{{ advantageOf(model.name) }}</span>
               <span v-else>{{ cellValue(model, row.key) }}</span>
             </template>
           </el-table-column>
@@ -73,8 +74,8 @@
               data-test="comparison-checkbox"
             >
               <span class="pool-name">{{ model.name }}</span>
-              <el-tag size="small" type="info">{{ model.provider }}</el-tag>
-              <span class="pool-meta">{{ model.context_length }} · {{ model.speed }}</span>
+              <el-tag size="small" type="info">{{ model.source || '未知来源' }}</el-tag>
+              <span class="pool-meta">{{ model.parameters || '未知参数' }} · {{ model.license || '未知许可' }}</span>
             </el-checkbox>
           </div>
         </el-checkbox-group>
@@ -91,70 +92,88 @@
 import PageContainer from '@/components/page/PageContainer.vue'
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import {
+  modelCompareApi,
+  openModelsApi,
+  type LlmMarketModel,
+} from '@/core/api/governance'
+import { describeError } from '@/core/api/error'
 
 const maxModels = 4
-
-interface PoolModel {
-  id: number
-  name: string
-  provider: string
-  type: string
-  capabilities: string[]
-  input_price: number
-  output_price: number
-  context_length: string
-  speed: string
-  description: string
-}
 
 interface AttributeRow {
   key: string
   label: string
 }
 
-const loading = ref(true)
+const loading = ref(false)
 const errorMessage = ref('')
 const dialogVisible = ref(false)
 const dialogError = ref('')
-const poolLoading = ref(true)
-const dialogSelection = ref<number[]>([])
-
-/** 契约 mock：可对比模型池（不调用真实 API） */
-const poolModels = ref<PoolModel[]>([
-  { id: 1, name: 'gpt-4o', provider: 'OpenAI', type: '商业', capabilities: ['chat', 'vision'], input_price: 0.005, output_price: 0.015, context_length: '128K', speed: '180 tokens/s', description: '旗舰多模态模型' },
-  { id: 2, name: 'gpt-4o-mini', provider: 'OpenAI', type: '商业', capabilities: ['chat', 'vision'], input_price: 0.00015, output_price: 0.0006, context_length: '128K', speed: '320 tokens/s', description: '轻量高效版' },
-  { id: 3, name: 'claude-3-5-sonnet', provider: 'Anthropic', type: '商业', capabilities: ['chat', 'code'], input_price: 0.003, output_price: 0.015, context_length: '200K', speed: '150 tokens/s', description: '擅长代码与长文本' },
-  { id: 4, name: 'qwen2.5-72b', provider: '阿里云', type: '开源', capabilities: ['chat', 'code', 'reasoning'], input_price: 0.0008, output_price: 0.002, context_length: '128K', speed: '95 tokens/s', description: '开源旗舰模型' },
-  { id: 5, name: 'qwen2.5-7b', provider: 'Ollama', type: '本地', capabilities: ['chat'], input_price: 0, output_price: 0, context_length: '32K', speed: '260 tokens/s', description: '本地轻量部署' },
-  { id: 6, name: 'bge-m3', provider: 'BAAI', type: '开源', capabilities: ['embedding'], input_price: 0.0002, output_price: 0.0002, context_length: '8K', speed: '400 tokens/s', description: '多语言向量模型' },
-  { id: 7, name: 'llama3.1-8b', provider: 'Meta', type: '开源', capabilities: ['chat'], input_price: 0.0001, output_price: 0.0004, context_length: '128K', speed: '210 tokens/s', description: '通用开源模型' },
-  { id: 8, name: 'gemini-1.5-pro', provider: 'Google', type: '商业', capabilities: ['chat', 'vision', 'audio'], input_price: 0.00125, output_price: 0.005, context_length: '2M', speed: '140 tokens/s', description: '超长上下文多模态模型' },
-])
-
-const selectedModels = ref<PoolModel[]>([])
+const poolLoading = ref(false)
+const dialogSelection = ref<string[]>([])
+const poolModels = ref<LlmMarketModel[]>([])
+const selectedModels = ref<LlmMarketModel[]>([])
+const advantages = ref<Record<string, string>>({})
+const compared = ref(false)
 
 const attributeRows: AttributeRow[] = [
   { key: 'name', label: '名称' },
-  { key: 'provider', label: 'Provider' },
-  { key: 'type', label: '类型' },
-  { key: 'capabilities', label: '能力' },
-  { key: 'price', label: '定价(输入/输出)' },
-  { key: 'context', label: '上下文长度' },
-  { key: 'speed', label: '速度' },
+  { key: 'source', label: '来源' },
+  { key: 'parameters', label: '参数规模' },
+  { key: 'license', label: '许可证' },
+  { key: 'tags', label: '标签' },
+  { key: 'advantage', label: '对比结论' },
 ]
 
-function isSelected(id: number) {
+function isSelected(id: string) {
   return selectedModels.value.some((model) => model.id === id)
 }
 
-function cellValue(model: PoolModel, key: string): string {
-  if (key === 'context') return model.context_length
-  if (key === 'speed') return model.speed
-  return String(model[key as keyof PoolModel])
+function cellValue(model: LlmMarketModel, key: string): string {
+  const value = (model as unknown as Record<string, unknown>)[key]
+  return value ? String(value) : '-'
 }
 
-function formatPrice(model: PoolModel) {
-  return `$${model.input_price} / $${model.output_price}`
+function advantageOf(name: string) {
+  return compared.value ? advantages.value[name] || '无明显优势' : '对比后生成'
+}
+
+function errorText(error: unknown, fallback: string) {
+  return describeError(error).detail || fallback
+}
+
+async function loadPool() {
+  poolLoading.value = true
+  errorMessage.value = ''
+  try {
+    const data = await openModelsApi.list({ page: 1, page_size: 100 })
+    poolModels.value = data.items ?? []
+  } catch (error) {
+    errorMessage.value = errorText(error, '模型数据加载失败，请稍后重试')
+  } finally {
+    poolLoading.value = false
+  }
+}
+
+async function runCompare() {
+  if (selectedModels.value.length < 2) {
+    advantages.value = {}
+    compared.value = false
+    return
+  }
+  loading.value = true
+  try {
+    const result = await modelCompareApi.compare(selectedModels.value.map((model) => model.id))
+    const raw = (result.comparison?.advantages ?? {}) as Record<string, string>
+    advantages.value = raw
+    compared.value = true
+  } catch (error) {
+    errorMessage.value = errorText(error, '模型对比计算失败')
+    compared.value = false
+  } finally {
+    loading.value = false
+  }
 }
 
 function openDialog() {
@@ -163,7 +182,7 @@ function openDialog() {
   dialogVisible.value = true
 }
 
-function confirmAdd() {
+async function confirmAdd() {
   if (dialogSelection.value.length === 0) {
     dialogError.value = '请至少选择 1 个模型'
     return
@@ -178,37 +197,21 @@ function confirmAdd() {
   selectedModels.value = [...selectedModels.value, ...added]
   dialogVisible.value = false
   ElMessage.success(`已添加 ${added.length} 个模型参与对比`)
+  await runCompare()
 }
 
-function removeModel(id: number) {
+async function removeModel(id: string) {
   const target = selectedModels.value.find((model) => model.id === id)
   selectedModels.value = selectedModels.value.filter((model) => model.id !== id)
   ElMessage.success(`已移除对比模型：${target?.name ?? id}`)
+  await runCompare()
 }
 
 function clearAll() {
   selectedModels.value = []
+  advantages.value = {}
+  compared.value = false
   ElMessage.success('已清空对比列表')
-}
-
-async function loadPool() {
-  loading.value = true
-  poolLoading.value = true
-  errorMessage.value = ''
-  try {
-    await mockDelay(500) // 契约 mock：模拟拉取模型池
-    const initialIds = [1, 3]
-    selectedModels.value = poolModels.value.filter((model) => initialIds.includes(model.id))
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '模型数据加载失败，请稍后重试'
-  } finally {
-    loading.value = false
-    poolLoading.value = false
-  }
-}
-
-function mockDelay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
 }
 
 onMounted(() => {
@@ -219,6 +222,13 @@ onMounted(() => {
 <style scoped>
 .page-toolbar h3 {
   margin: 0;
+}
+.page-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 .mb-16 {
   margin-bottom: 12px;

@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.21.0 |
+| 文档版本 | v1.22.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -549,10 +549,30 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **验证**：OpenBase 后端 6 例；前端 9 例；`vue-tsc` 0 错误；前端全量 337 例通过；聚合端点与页面级实测因服务不可启动待复核。
 
+### 8.20 OpenLLM 四页真实接线与监控口径（v1.10.0，v1.22.0）
+
+**接线范围**（统一前端 `src/modules/openllm/pages/**`）：
+
+| 页面 | API 层方法 | 端点 | 关键约束 |
+|------|-----------|------|----------|
+| 本地模型 | `localModelsApi.list/available/serviceStatus/pull/remove/start/stop/update`、`gpuInfo/gpuAllocation` | `/local-models`、`/available`、`/status`、`/pull`、`/{name}`(DELETE)、`/{name}/start|stop|update`、`/gpu-info`、`/gpu-allocation/status` | 运行态由 `gpu-info.running_models` 判定；拉取目标改为文本输入（避免空下拉在无数据时递归渲染） |
+| 模型对比 | `openModelsApi.list` + `modelCompareApi.compare` | `/open-models`、`/models/compare` | 模型池取上游列表；对比结论读 `comparison.advantages`，2~4 个模型 |
+| 开源市场 | `openModelsApi.list/startDownload` | `/open-models`、`/open-models/{model_id}/download` | 来源筛选为文本匹配；分页仅保留页码（移除页大小下拉） |
+| 我的收藏 | `favoritesApi.list/folders/remove` + `openModelsApi.startDownload` | `/models/favorites`、`/models/favorite-folders`、`/models/{model_id}/favorite`(DELETE) | 分组来自 `folder_name`；下载复用开源模型下载端点 |
+
+**API 层**：`src/core/api/governance.ts` 内 `localModelsApi` 扩展 8 个方法，新增 `favoritesApi`、`modelCompareApi` 与 `LlmLocalModelItem`/`LlmAvailableModel`/`LlmFavorite`/`LlmModelCompareResult` 类型。
+
+**监控口径变化**（与后端同步）：统一监控的 `error_rate` 由 `错误行数 ÷ 请求行数` 改为 `Σerror.value ÷ Σrequest.value`，前端无需改动，但展示值会从虚高（29%~31%）回到真实量级。
+
+**错误态**：四页均有加载态与错误提示条（`data-test` 定位），失败时不清空已有数据（`Promise.allSettled` 单源降级仅用于本地模型页三接口组合）。
+
+**验证**：前端新增 8 例（`tests/r8-openllm-pages-v1100.spec.ts`）；前端全量 345/345；`vue-tsc` 0 错误；四页 mock 常量 0 处。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.22.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.20：OpenLLM 本地模型/模型对比/开源市场/我的收藏四页真实接线（0 mock）；同步监控错误率口径说明；前端全量 345 例通过。 |
 | **v1.21.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.19：R7 E 类产品裁定——仪表盘、统一监控、个人设置、模型部署、画像系统监控（健康）落地；OpenBase 新增资料更新与改密端点；其余 E 类页面不建设/保留；前端全量 337 例通过。 |
 | **v1.20.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.18：R6 D 类性能——Ollama 轻量探测改短超时、`open-models` 改双通道、收藏/下载任务 N+1 批量化；GPU 资源与下载管理两页接真实端点并移除 mock。 |
 | **v1.19.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.17：R5 B 类第三批——OpenLLM 治理与 RBAC 11 文件改双通道并新增权限目录端点；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点，移除假开闭/假调用链/假版本等动作。 |

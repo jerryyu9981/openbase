@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.14.0 |
+| 文档版本 | v2.15.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -764,6 +764,70 @@ DPS `0954b9a`（RequestIdFilter 改挂 handler 级）经 `git merge-base --is-an
 
 ---
 
+### 2.24 v1.10.0 全栈缺口补齐 I 执行记录（2026-10-23）
+
+**范围**：XR-LLM-01（监控租户隔离）、XR-LLM-07（错误率口径）、XR-LLM-02（OpenLLM 四页接线）、XR-DPS-01（画像指标/规则端点）。
+
+**1. XR-LLM-01：监控指标租户隔离（OpenLLM 后端）**
+
+| 环节 | 落点 | 说明 |
+|------|------|------|
+| 查询过滤 | `app/services/monitoring_service.py` | 新增 `_apply_tenant_filter` / `_apply_alert_tenant_filter`；`get_dashboard_data`、`_get_overview_data`、`_get_performance_data`、`_get_latency_time_series`、`_get_cost_data`、`_get_cost_trend`、`_get_error_data`、`_get_resource_data`、`get_cost_analysis`、`_analyze_by_dimension`、`get_optimization_suggestions`、`get_metrics`、`get_alerts`、`resolve_alert` 全量接入 |
+| 端点透传 | `app/api/monitoring.py` | 新增 `_current_tenant_id(current_user)`，8 个端点（dashboard / metrics / costs / optimization-suggestions / alerts / alerts:resolve / alerts:summary）透传租户；未归属组织的账号保持平台全局视图 |
+| 写入链路 | `app/services/auth_service.py` | `get_current_user` / `get_api_key_user` 回填 `request.state.user`（id + tenant_id）与 `request.state.api_key`；此前中间件读不到该状态，导致 `monitoring_metrics.tenant_id` 恒为 NULL |
+| 历史回填 | `backend/scripts/backfill_monitoring_tenant_v1100.py` | 以 `user_id → users.organization_id` 回填，默认 dry-run，`--apply` 落库；幂等（仅补 `tenant_id IS NULL`） |
+| 守卫 | `tests/unit/test_r10_monitoring_tenant_v1100.py` | 10 例：过滤 helper 语义、双租户互不可见、全局视图、跨租户解决告警被拒、错误率口径 |
+
+**2. XR-LLM-07：错误率口径修正**
+
+| 项 | 修正前 | 修正后 |
+|----|--------|--------|
+| 分子 | `count(id)`（ERROR_RATE 行数） | `sum(value)`（每条错误 value=1.0） |
+| 分母 | `count(id)`（REQUEST_COUNT 行数） | `sum(value)`（聚合写入后每行可代表多次请求） |
+| 错误分类聚合 | `count(id)` | `sum(value)`（`by_type` / `by_provider` 同口径） |
+
+样例（用例固化）：5 行 `request_count` 每行 value=4（共 20 次请求）+ 2 行 `error_rate`（2 次错误）→ 修正前按行数得 40%，修正后为 **2/20 = 10%**。此口径解释了 v1.9.8 实测 29%~31% 的失真来源（分子分母行数增长频次不同）。
+
+**3. XR-LLM-02：四页真实接线（统一前端）**
+
+| 页面 | 端点 | 说明 |
+|------|------|------|
+| 本地模型 | `GET /local-models`、`/available`、`/gpu-info`、`/gpu-allocation/status`、`POST /pull`、`/{name}/start|stop|update`、`DELETE /{name}` | 移除全部 mock 卡片与假动作；启停/更新/删除/拉取均真实调用 |
+| 模型对比 | `GET /open-models`（模型池）+ `GET /models/compare` | 移除 8 条 mock 模型池；对比结论取上游 `comparison.advantages` |
+| 开源市场 | `GET /open-models` + `POST /open-models/{model_id}/download` | 移除 8 条 mock；来源筛选改为文本匹配，分页保留 |
+| 我的收藏 | `GET /models/favorites`、`/models/favorite-folders`、`DELETE /models/{model_id}/favorite`、下载复用 `open-models/.../download` | 移除 8 条 mock；收藏夹按上游分组 |
+
+API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`（列表/仓库/状态/拉取/删除/启停/更新）、新增 `favoritesApi` 与 `modelCompareApi`。
+组件测试：`openbase-ui/tests/r8-openllm-pages-v1100.spec.ts` 8 例（加载、动作调用、错误态、对比请求参数）。
+
+**4. XR-DPS-01：未闭环，转 v1.11.0**
+
+| 阻塞项 | 事实依据 |
+|--------|----------|
+| 规则 CRUD 不可在 DPS 新增 | DPS v2.9.0 已按 ADR-290-01 将 `/alerts/rules` 写方法收口为 **410 Gone**，迁移目标为平台域 `/platform/observability/monitoring/alerts`；在 DPS 重新开口会与既有收口裁定冲突 |
+| 指标端点无运行态依赖 | DPS 未引入 `psutil` / `prometheus_client` 运行依赖，QPS/CPU/内存需新增采集与权限点注册（`PATH_RESOURCE_MAP` + `PRESET_PERMISSIONS` 类级守门用例同步） |
+| 本机无可运行测试环境 | DPS 无本地 venv/运行器，新增端点无法在本窗口给出真实回归证据 |
+| 代理允许清单未覆盖 | OpenBase `dps-proxy` 仅映射 `/api/v2/portrait/*`，`alerts/*`、`rate-limits/*` 需先扩允许清单 |
+
+处置：本窗口不改 DPS 代码，页面维持「仅健康 + 明确未开放提示」的真实态；XR-DPS-01 拆为两项（DPS 运行态指标端点 / OpenBase 代理扩权）纳入 v1.11.0。
+
+**5. 验证结果**
+
+| 项 | 命令/方式 | 结果 |
+|----|-----------|------|
+| OpenLLM 新用例 | `pytest tests/unit/test_r10_monitoring_tenant_v1100.py` | **10 passed** |
+| OpenLLM 监控回归 | `pytest tests/unit/test_monitoring_coverage_v2112.py tests/unit/test_r10_...` | **29 passed** |
+| OpenLLM 相关子集 | `-k "monitoring or auth or r4 or r5 or r6 or r7 or dual_channel"` | **352 passed / 6 failed**（6 项经 `git stash` 基线复跑确认为存量失败：4 例 gateway 401 格式断言 + resolve_alert 越权注入 + cost 断言，其中后 2 例本轮已修） |
+| 前端类型 | `vue-tsc --noEmit` | **0 error** |
+| 前端全量 | `vitest run` | **345 passed / 33 files**（基线 337 + 新增 8） |
+
+**6. 遗留**
+
+- XR-DPS-01（拆分后）→ v1.11.0
+- 平台级账号（`organization_id` 为空）仍为全局视图，租户强制期需按模块灰度另行开口（与 B2 权限灰度同批）
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -851,6 +915,7 @@ DPS `0954b9a`（RequestIdFilter 改挂 handler 级）经 `git merge-base --is-an
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.15.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.24：**v1.10.0 全栈缺口补齐 I**——OpenLLM 监控全链路租户隔离（查询过滤 + 端点透传 + 写入态回填 + 回填脚本）、错误率口径改按 `sum(value)` 计算；统一前端本地模型/模型对比/开源市场/我的收藏四页接真实端点、0 mock；XR-DPS-01 因 DPS ADR-290-01 规则写入已收口且无运行态指标端点，转入 v1.11.0。验证：OpenLLM 新用例 10/10、监控回归 29/29、前端全量 345/345、vue-tsc 0 错误。 |
 | v2.14.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.23：**v1.9.8 处置窗口执行记录**——OpenLLM 本地验证实例启动（健康 200）；21 个聚合端点经代理全部 200；浏览器抽检 9 页全部 PASS；DPS `0954b9a` 回执核验通过；新发现错误率口径与插件/工具口径两项并纳入计划；G1/G2/G7 仍待 OPS 窗口。 |
 | v2.13.1 | 2026-10-23 | 研发（AI 辅助） | §2.22 回填执行进展：XR-OPS-01 四仓 github 补推提前闭环（OpenBase `540f757`、OpenLLM `647d4bb`；OpenRAG/OpenMemory 已一致）；清查计划升 v1.0.1。 |
 | v2.13.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.22：**剩余事项统一清查与小版本迭代计划**——登记本仓 6 项、跨仓 12 项、运维/QA 6 项，拆入 v1.9.8 / v1.10.0 / v1.10.1 / v1.10.2 / v1.11.0；产出《剩余事项统一清查与小版本迭代计划-v1.0.0》，缺口清单升 v1.8.0 并收敛排期口径。本轮仅文档，不改代码。 |
