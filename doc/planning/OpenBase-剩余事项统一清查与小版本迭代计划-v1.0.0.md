@@ -73,7 +73,7 @@
 | XR-LLM-03 | 模型对比推荐 / 报表趋势 | OpenLLM | 缺口 §4.2 #10~#11 | 无推荐/报表端点 | P3 | v1.11.0 | **报表部分 ✅ 已闭环（v1.12.0）**：KPI + 调用量/Token 双轴趋势 + 用户成本 Top5（复用 `/usage/trends`、`/monitoring/dashboard`、`/monitoring/costs`）；**推荐部分仍冻结**（无标注/评分数据） | 报表页 0 mock |
 | XR-LLM-04 | 成本优化建议「应用」端点 | OpenLLM | R4 遗留 | 建议仅只读 | P3 | v1.11.0 | **裁定：冻结**（建议为启发式文本、无建议 ID 与回滚语义）；解冻需结构化建议 + 幂等执行 + 回滚端点 | 保持只读建议 |
 | XR-LLM-05 | 单条工具调用取消端点 | OpenLLM | R5 遗留 | 页面无法取消单条调用 | P3 | v1.11.0 | **裁定：冻结**（已有链级取消 `/tool-calls/chains/{id}/cancel`；单调用中止需可中断执行器） | 保留链级取消 |
-| XR-LLM-06 | 工作空间按用户名邀请成员 | OpenLLM | R5 遗留 | 成员添加需 UUID | P3 | v1.11.0 | **裁定：建设**（`POST /workspaces/{id}/members` 增可选 `username`，二选一必填；不存在 404、冲突 400）→ v1.12.0 | 重名/不存在有明确错误；单测 ≥4 |
+| XR-LLM-06 | 工作空间按用户名邀请成员 | OpenLLM | R5 遗留 | 成员添加需 UUID | P3 | v1.11.0 | **✅ 已闭环（v1.12.0）**：`POST /workspaces/{id}/members` 增可选 `username`（二选一必填；不存在 404 `BIZ_NOT_FOUND`、冲突 400 `PARAM_INVALID`）；前端成员弹窗改用户名输入；后端 9 例 + 前端 3 例 | 重名/不存在有明确错误；单测 ≥4 |
 | XR-LLM-07 | 监控错误率口径核验（6h 实测 29%~31%） | OpenLLM | v1.9.8 浏览器复核发现 | 错误率异常，影响监控可信度 | P2 | v1.10.0 | 核验：确认分母（请求/重试/流式中断）与错误分类；必要时修正聚合 | **✅ 已闭环（2026-10-23）**：分子分母统一 `sum(value)`；样例 2/20 = 10%（修正前按行数 40%） |
 | XR-LLM-08 | 插件列表与工具清单不一致 | OpenLLM | v1.9.8 浏览器复核发现 | 插件表 0 行但工具表有 `hello-world` | P3 | v1.11.0 | **裁定：冻结（口径说明）**：`/plugins` 查 DB 表，`/plugins/tools` 合并运行时注册表（内建工具），非缺陷；前端标注「运行期内建」 | 页面标注 + 文档口径 |
 | XR-DPS-01 | 画像系统指标 + 告警规则端点 | DPS | R7 遗留 | 监控页仅健康 | P2 | ~~v1.10.0~~ → v1.11.0 | **拆分转期（2026-10-23）**：规则写已按 ADR-290-01 收口 410（不可在 DPS 重开）；指标端点需新增采集/权限点/代理允许清单，本机无 DPS 可运行测试环境 → 拆为 XR-DPS-04 / XR-DPS-05 | 两项均闭环后页面可读写 |
@@ -190,22 +190,23 @@
 | 本期代码改动 | 无（门禁仅要求书面裁定；建设项按纪律进入下一版本） |
 
 
-### v1.12.0 —— 长尾建设 A 批（P2/P3）
+### v1.12.0 —— 长尾建设 A/B 批（P2/P3）
 
 | 项 | 内容 |
 |----|------|
-| 目标 | 落地裁定中「本仓低风险」三项，并清理对应 mock 页面 |
-| 范围 | OB-03、OB-04、XR-LLM-03（报表趋势）；XR-DPS-05 阻塞于 XR-DPS-04 |
+| 目标 | 落地裁定中「本仓低风险」三项，并清理对应 mock 页面；B 批完成 OpenLLM 用户名邀请小改 |
+| 范围 | A 批：OB-03、OB-04、XR-LLM-03（报表趋势）；B 批：XR-LLM-06；XR-DPS-05 阻塞于 XR-DPS-04 |
 | 门禁 | 三页 0 mock；后端用例通过；前端全量不劣于基线 |
-| 回滚 | 页面级回退到占位/只读提示；端点下线无数据依赖 |
+| 回滚 | 页面级回退到占位/只读提示；端点下线无数据依赖；成员邀请可回退为 UUID 输入（旧字段仍兼容） |
 
-| 执行状态（2026-10-23） | 结论 |
+| 执行状态（2026-10-24） | 结论 |
 |------------------------|------|
-| OB-03 | **✅ 已闭环**：`GET /api/v1/ai-apps/calls`（跨应用聚合 + app_id/status 筛选 + 分页 + `app_name`）；新增 `AppCallsView` 替换 GenericPage；后端 6 例、前端 3 例 |
-| OB-04 | **✅ 已闭环**：`KnowledgeConsoleView` 接 `rag-proxy` 真实链路（collections / health / `query/retrieve`），移除 mock 响应与虚构 QPS/错误率；前端 2 例 |
-| XR-LLM-03（报表） | **✅ 已闭环**：`P2ReportTrendView` 接 `/usage/trends` + `/monitoring/dashboard` + `/monitoring/costs`，含 KPI、双轴趋势、用户成本 Top5；前端 2 例 |
-| XR-DPS-05 | **未启动**：指标数据源依赖 XR-DPS-04（DPS 可运行环境）；只读规则/限流接线可在 D 批独立推进 |
-| 验证 | 前端全量 **360/360**（36 文件）、`vue-tsc` 0 错误；后端 6 例 + ruff 通过 |
+| OB-03（A 批） | **✅ 已闭环**：`GET /api/v1/ai-apps/calls`（跨应用聚合 + app_id/status 筛选 + 分页 + `app_name`）；新增 `AppCallsView` 替换 GenericPage；后端 6 例、前端 3 例 |
+| OB-04（A 批） | **✅ 已闭环**：`KnowledgeConsoleView` 接 `rag-proxy` 真实链路（collections / health / `query/retrieve`），移除 mock 响应与虚构 QPS/错误率；前端 2 例 |
+| XR-LLM-03（报表，A 批） | **✅ 已闭环**：`P2ReportTrendView` 接 `/usage/trends` + `/monitoring/dashboard` + `/monitoring/costs`，含 KPI、双轴趋势、用户成本 Top5；前端 2 例 |
+| XR-LLM-06（B 批） | **✅ 已闭环**：`POST /workspaces/{id}/members` 支持 `username`（二选一必填；不存在 404 `BIZ_NOT_FOUND`；双给冲突 400 `PARAM_INVALID`）；成员弹窗改用户名输入；后端 9 例、前端 3 例 |
+| XR-DPS-05 | **未启动**：指标数据源依赖 XR-DPS-04（DPS 可运行环境）；只读规则/限流接线可在 C 批独立推进 |
+| 验证 | 前端全量 **363/363**（37 文件）、`vue-tsc` 0 错误；后端 9 例 + 回归 34 例 |
 
 
 ---
@@ -262,6 +263,7 @@ v1.10.2 ──→ v1.11.0（长尾裁定需治理口径稳定）
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.8.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 B 批执行回填**：XR-LLM-06 用户名邀请闭环（OpenLLM 后端 schema/路由 + 前端成员弹窗）；前端全量 363/363。 |
 | v1.7.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.12.0 A 批执行回填**：OB-03（全局调用记录端点 + 页面）、OB-04（知识库控制台真实链路）、XR-LLM-03 报表趋势均闭环；XR-DPS-05 阻塞于 04；前端全量 360/360。 |
 | v1.6.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.11.0 长尾复核完成**：产出《OpenBase-长尾事项产品裁定-v1.0.0》，14 项逐条裁定（建设 7 / 冻结 5 / 不建设 1 / 已闭环 1），附端点清单、验收与解冻条件；建设项转入 v1.12.0。 |
 | v1.5.0 | 2026-10-23 | FA-OpenBase-Dev | **XR-OPS-07 闭环（发布阻断解除）**：根因复核为门禁判据误判（OpenMemory 模板开发默认值≠生产下发值），矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，守门用例 15 例，复跑 9/9 PASS；生产值改由 `--env-file` 在 OPS 侧核验。 |

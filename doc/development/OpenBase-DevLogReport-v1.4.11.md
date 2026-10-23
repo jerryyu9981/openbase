@@ -5,9 +5,9 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.20.0 |
+| 文档版本 | v2.21.0 |
 | 状态 | **[Review]**（待人工批准） |
-| 日期 | 2026-10-22 |
+| 日期 | 2026-10-24 |
 | 编制 | 研发（AI 辅助） |
 | 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.13.0（含 §8 公共功能域重组、§8.4.1 首屏治理、§8.8 后端耗时收口、§8.9 收口记录 14 项、§8.10 记忆模块对齐 v7.5~v7.8、§8.5 `/login` 兼容、§8.11 开发代理语义）；用户口径「公共功能归集 + 模块开关联动 + 商用生产系统级排布」 |
 | 开发方式 | 结构先行（骨架/路由/状态）→ 页面上收 → 首屏治理 → 后端耗时排查 → 静态与用例门禁 → 留痕 |
@@ -1078,6 +1078,39 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 | 前端全量 | `vitest run` | **360 passed / 36 files**（基线 353 + 新增 7） |
 | 类型 | `vue-tsc --noEmit` | **0 error**（同步移除已无引用的 `GenericPage` 常量） |
 
+### 2.30 v1.12.0 长尾建设 B 批执行记录（2026-10-24）
+
+**范围**：XR-LLM-06 工作空间按用户名邀请（OpenLLM 后端小改 + OpenBase 前端成员弹窗）。
+
+**1. 后端（OpenLLM）**
+
+| 项 | 内容 |
+|----|------|
+| Schema | `WorkspaceMemberAdd`：`user_id` 改为可选，新增 `username`（1~64，去首尾空白）；`@model_validator` 保证二选一必填 |
+| 路由 | `POST /workspaces/{workspace_id}/members` 新增 `_resolve_invitee_user_id`：用户名精确匹配 `users.username` |
+| 错误 | 用户名不存在 → 404 `BIZ_NOT_FOUND`；`user_id` 与 `username` 指向不同用户 → 400 `PARAM_INVALID`（`detail` 为 `{code, message}`） |
+| 兼容 | 仅传 `user_id` 保持旧路径（存在性仍由服务层校验）；同时传且一致时按用户名解析 |
+
+**2. 前端（OpenBase）**
+
+| 项 | 内容 |
+|----|------|
+| 页面 | `pages/platform/identity/WorkspacesView.vue` 成员抽屉输入由「用户 UUID」改为「用户名」；提交 `{username, role}` |
+| API | `core/api/governance.ts::workspacesApi.addMember` 载荷改为 `{user_id?, username?, role}` |
+| 文案 | 移除「后端无按用户名加成员能力」的旧注释；空输入提示改为「请输入用户名」 |
+
+**3. 用例与验证**
+
+| 项 | 命令/方式 | 结果 |
+|----|-----------|------|
+| 后端新用例 | `pytest tests/unit/test_r12_workspace_member_v1120.py` | **9 passed** |
+| 后端回归 | `pytest tests/unit/test_workspaces_api.py tests/unit/test_r12_workspace_member_v1120.py` | **34 passed** |
+| 前端新用例 | `vitest run tests/r12-workspace-invite-v1120.spec.ts` | **3 passed** |
+| 前端全量 | `vitest run` | **363 passed / 37 files**（基线 360 + 3） |
+| 类型 | `vue-tsc --noEmit` | **0 error** |
+
+> 环境说明：OpenLLM 用例以 `--confcutdir=tests/unit` + `DATABASE_URL=sqlite:///:memory:` 运行（本机缺 `psycopg` 运行依赖）；用户名匹配逻辑以 FakeSession 验证查询条件，未连接真实 PG。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -1167,6 +1200,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.21.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.30：**v1.12.0 长尾建设 B 批**——XR-LLM-06 工作空间按用户名邀请（OpenLLM schema/路由解析 + 前端成员弹窗）；用户名不存在 404、双给冲突 400；后端 9 例 + 回归 34 例、前端新增 3 例、全量 363/363、`vue-tsc` 0 错误。 |
 | v2.20.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.29：**v1.12.0 长尾建设 A 批**——OB-03 新增全局调用记录端点与 `AppCallsView`；OB-04 知识库控制台接 `rag-proxy` 真实链路；XR-LLM-03 报表趋势接三聚合源；XR-DPS-05 阻塞于 XR-DPS-04。验证：后端 6 例、前端新增 7 例、前端全量 360/360、`vue-tsc` 0 错误。 |
 | v2.19.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.28：**v1.11.0 长尾事项产品裁定**——14 项逐条裁定（建设 7 / 冻结 5 / 不建设 1 / 已闭环 1），产出《长尾事项产品裁定-v1.0.0》，附现状证据、端点清单、验收与解冻条件；XR-MEM-01 确认已闭环（台账滞后）；建设项分批转入 v1.12.0，本期无代码改动。 |
 | v2.18.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.27：**XR-OPS-07 发布阻断处置**——根因复核为门禁判据误判（OpenMemory 模板开发默认值≠生产下发值，且运行期 `validate_identity_trust_policy` 已 fail-closed）；矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，守门 15 例、复跑 9/9 PASS；生产值改由 `--env-file` 在 OPS 侧核验。 |

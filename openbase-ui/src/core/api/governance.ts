@@ -935,7 +935,10 @@ export const workspacesApi = {
     )
     return data
   },
-  async addMember(workspaceId: string, payload: { user_id: string; role: string }): Promise<LlmWorkspaceMember> {
+  async addMember(
+    workspaceId: string,
+    payload: { user_id?: string; username?: string; role: string },
+  ): Promise<LlmWorkspaceMember> {
     const { data } = await http.post<LlmWorkspaceMember>(
       `${OPENLLM}/workspaces/${encodeURIComponent(workspaceId)}/members`,
       payload,

@@ -92,7 +92,7 @@
         </el-table>
       </div>
       <div class="member-add">
-        <el-input v-model="newMemberId" placeholder="用户 UUID" size="small" data-test="ws-member-id" />
+        <el-input v-model="newMemberName" placeholder="用户名" size="small" data-test="ws-member-name" />
         <el-select v-model="newMemberRole" size="small" style="width: 110px">
           <el-option label="管理员" value="admin" />
           <el-option label="成员" value="member" />
@@ -128,7 +128,7 @@ import {
 /**
  * 工作空间（v1.9.5 R5 真实化）：`/workspaces` 列表/新建/删除、成员增删、资源统计；
  * Virtual Key 走 `/virtual-keys`（列表/创建/轮换），完整 Key 仅在创建/轮换响应中出现一次。
- * 后端无「按用户名加成员」能力，故成员添加按用户 UUID 输入。
+ * v1.12.0（XR-LLM-06）：成员邀请支持按用户名（精确匹配），不再要求用户 UUID。
  */
 const loading = ref(false)
 const saving = ref(false)
@@ -145,7 +145,7 @@ const memberLoading = ref(false)
 const memberSaving = ref(false)
 const currentWs = ref<LlmWorkspace | null>(null)
 const currentMembers = ref<LlmWorkspaceMember[]>([])
-const newMemberId = ref('')
+const newMemberName = ref('')
 const newMemberRole = ref('member')
 
 const keyDialogVisible = ref(false)
@@ -225,7 +225,7 @@ async function openMembers(row: LlmWorkspace) {
   currentWs.value = row
   memberDrawer.value = true
   memberLoading.value = true
-  newMemberId.value = ''
+  newMemberName.value = ''
   try {
     currentMembers.value = await workspacesApi.members(row.id)
   } catch (error) {
@@ -236,19 +236,19 @@ async function openMembers(row: LlmWorkspace) {
 }
 
 async function addMember() {
-  if (!currentWs.value || !newMemberId.value.trim()) {
-    ElMessage.warning('请输入用户 UUID')
+  if (!currentWs.value || !newMemberName.value.trim()) {
+    ElMessage.warning('请输入用户名')
     return
   }
   memberSaving.value = true
   try {
     await workspacesApi.addMember(currentWs.value.id, {
-      user_id: newMemberId.value.trim(),
+      username: newMemberName.value.trim(),
       role: newMemberRole.value,
     })
     ElMessage.success('成员已添加')
     currentMembers.value = await workspacesApi.members(currentWs.value.id)
-    newMemberId.value = ''
+    newMemberName.value = ''
     await loadWorkspaces()
   } catch (error) {
     errorMessage.value = `添加成员失败：${error instanceof Error ? error.message : '未知错误'}`
