@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.13.1 |
+| 文档版本 | v2.14.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -704,6 +704,66 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.23 v1.9.8 处置窗口执行记录（2026-10-23）
+
+**目标**：清除「服务不可启动 / R3~R7 未实测 / R384 回执未核验」三类阻塞；G1/G2/G7 属 OPS 窗口，本轮不代替执行。
+
+**1. 服务可启动（XR-OPS-02，部分闭环）**
+
+| 项 | 内容 |
+|----|------|
+| 运行时组合 | pgAdmin CPython 3.13 + `OpenBase/.venv` 依赖目录 + `C:/Python313` 遗留 site-packages（补 `prometheus_client`） |
+| 缺失依赖处理 | OTel gRPC 子包缺失：启动器注入空导出器且 `OTEL_ENABLED=false`（仅导入占位，不参与运行）；数据库切 SQLite 临时库 |
+| 结果 | `GET http://127.0.0.1:8001/health` → **200**，版本 2.19.1 |
+| 边界 | 正式镜像依赖仍待 OPS 固化；本轮桥接仅用于复核，不入库、不影响产品代码 |
+
+**2. 聚合端点复核（QA-01）**
+
+21 个 R3~R7 端点经 OpenBase 通用代理（`/api/v1/proxy/openllm/api/v1/...`）逐一实测，**全部 200**：
+
+| 批次 | 端点 |
+|------|------|
+| R3 | `plugins`、`model-categories/tree` |
+| R4 | `monitoring/dashboard`、`monitoring/costs`、`alerts`、`budgets`、`usage/summary`、`billing/bills`、`monitoring/traces`、`monitoring/traces/statistics` |
+| R5 | `roles`、`workspaces`、`routing/semantic`、`routing/circuit-breakers`、`tool-calls`、`prompt-templates`、`prompt-experiments`、`routing/ab-tests` |
+| R6 | `local-models/gpu-allocation/status`、`local-models/gpu-info`、`open-models/downloads` |
+
+**3. 浏览器抽检（9 页）**
+
+| 页面 | 结果 | 观察 |
+|------|------|------|
+| 插件管理 | PASS | 空态真实；工具表 1 行 `hello-world`，与插件列表为空不一致（已登记 XR-LLM-08） |
+| 成本分析 | PASS | 三维度空态、预算空态、优化建议空态均真实 |
+| 角色与权限 | PASS | 角色列表空态真实 |
+| 仪表盘 | PASS | 模块 5 / 用户 3 / 24h 调用 78~89 / 费用 $0.00 |
+| 链路追踪 | PASS | 统计 0、空态真实 |
+| 下载管理 | PASS | 空态真实 |
+| 统一监控 | PASS | 6h 错误率 29%~31%（已登记 XR-LLM-07）；告警空态 |
+| 模型部署 | PASS | 模型列表空态真实 |
+| 个人设置 | PASS | 资料回填 normal；通知偏好提示为设计内 info |
+
+三批均无错误提示条、无 console error；其中一次 dev server 热重载出现瞬时 500/503，重载后复测正常，未计为页面缺陷。
+
+**4. 跨仓回执（XR-OPS-05）**
+
+DPS `0954b9a`（RequestIdFilter 改挂 handler 级）经 `git merge-base --is-ancestor 0954b9a HEAD` 确认已在 `main`。
+
+**5. 新发现（已纳入计划）**
+
+| ID | 现象 | 目标版本 |
+|----|------|:--------:|
+| XR-LLM-07 | 统一监控 6h 错误率 29%~31%，需核验分母与错误分类 | v1.10.0 |
+| XR-LLM-08 | 插件表 0 行但工具表有 `hello-world`，需确认内建插件口径 | v1.11.0 |
+
+**6. 未完成**
+
+- XR-OPS-03：G1/G2 生产 `.env` 下发（OPS 窗口）
+- XR-OPS-04：G7 端到端 + 生产 Key 注入/轮换 + DPS 码表登记（OPS/研发窗口）
+
+计划升 v1.1.0 回填执行记录与新增项。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -791,6 +851,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.14.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.23：**v1.9.8 处置窗口执行记录**——OpenLLM 本地验证实例启动（健康 200）；21 个聚合端点经代理全部 200；浏览器抽检 9 页全部 PASS；DPS `0954b9a` 回执核验通过；新发现错误率口径与插件/工具口径两项并纳入计划；G1/G2/G7 仍待 OPS 窗口。 |
 | v2.13.1 | 2026-10-23 | 研发（AI 辅助） | §2.22 回填执行进展：XR-OPS-01 四仓 github 补推提前闭环（OpenBase `540f757`、OpenLLM `647d4bb`；OpenRAG/OpenMemory 已一致）；清查计划升 v1.0.1。 |
 | v2.13.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.22：**剩余事项统一清查与小版本迭代计划**——登记本仓 6 项、跨仓 12 项、运维/QA 6 项，拆入 v1.9.8 / v1.10.0 / v1.10.1 / v1.10.2 / v1.11.0；产出《剩余事项统一清查与小版本迭代计划-v1.0.0》，缺口清单升 v1.8.0 并收敛排期口径。本轮仅文档，不改代码。 |
 | v2.12.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.21：**R7 E 类产品裁定与五页收敛**——OpenBase 新增 `PUT /auth/me`、`POST /auth/change-password` 并扩展 `/auth/me` 资料字段；仪表盘、统一监控、个人设置、模型部署、画像系统监控（健康）落地；其余 E 类页面裁定不建设/保留。验证：后端 6 例、前端 9 例、vue-tsc 0 错误、前端全量 337 例通过；聚合端点与页面级实测因服务不可启动待复核。 |
