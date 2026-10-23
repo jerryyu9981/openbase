@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.16.0 |
+| 文档版本 | v1.17.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -422,10 +422,36 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **边界**：`GET /configs` 暂无分页（默认值较多时列表较长）；测试记录内存上限 5000 条。
 
+### 8.15 B 类首批：双通道鉴权与插件/模型分类（R3，v1.17.0）
+
+**问题**：OpenLLM `plugins`、`model_categories` 路由族依赖 `get_current_active_user`（JWT-only）或 `app.api.auth.get_current_user`，经 OpenBase 通用代理（API Key 通道）恒返 401，导致「插件管理」「模型分类」两页只能停留在 mock。
+
+**上游改造（OpenLLM v1.9.3）**：
+
+- `plugins.py` 8 处、`model_categories.py` 13 处依赖统一改为 `get_current_active_user_or_api_key`；
+- 双通道语义：`Bearer sk-openllm-*` 走 API Key 通道，其余走 JWT 通道（复用既有 `get_gateway_identity` 分流规则）；
+- 写操作仍受 `require_permission` 约束（plugins），model_categories 原本即“已认证即可写”，本次不额外放宽。
+
+**前端接线**：
+
+| 页面 | 端点 | 交互 |
+|------|------|------|
+| 插件管理 | `/plugins`（类型/状态过滤）、`/plugins/tools`、`/plugins/{id}/enable`、`/plugins/{id}/disable`、`/plugins/{id}/health`、`/plugins/register`、`DELETE /plugins/{id}` | 列表 + 工具清单 + 启停开关 + 注册 + 健康检查抽屉；系统插件禁删 |
+| 模型分类 | `/model-categories/tree`、`/model-categories/{id}/models` | 分类树拍平后按维度（capability/scene/architecture/scale）出标签云，选中分类加载模型分页；维度切换自动选首个分类 |
+
+**边界**：
+
+- 空数据显示真实空态，前端不内置 mock；演示数据应来自 OpenLLM 种子脚本；
+- 分类仅展示上游已有维度，缺少维度时给「该维度暂无分类」提示；
+- 健康检查依赖上游插件运行时状态，异常时以错误提示呈现，不伪造指标。
+
+**验证**：OpenLLM 新增 6 例 + 既有 34 例回归；前端 8 例；`vue-tsc` 0 错误；聚合端点 4/4 200（改造前 401）。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.17.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.15：R3 B 类首批——OpenLLM `plugins`/`model_categories` 改双通道鉴权，插件管理（列表/工具/启停/注册/健康）与模型分类（树/标签云/分类模型分页）两页接真实端点并移除 mock。 |
 | **v1.16.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.14：R2 C 类列表补齐（`GET /configs`、`/test-records`、`/test-runs`）与服务 Key `id`/`by-id` 吊销；全局配置与测试记录两页接线；跨仓修复 OpenLLM `get_db` 并发缺陷。§8.13 的服务 Key 缺口标记闭环。 |
 | **v1.15.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.13：A 类三页接线（R1）——用户管理 `/users`、API 密钥 `/auth/api-keys`、EdgeRouter `/edge/**`；明确「不伪造成功」原则、字段映射与三项已知缺口（服务 Key 无 id、Edge 组织内存态、配额无组织引导）。 |
 | **v1.14.0** | 2026-10-22 | 研发（AI 辅助） | 新增 §8.12：OpenLLM 聚合通道与来源映射——通用代理出站来源按被代理系统映射（修 401 根因）、仅 openllm 注入 API Key（修第二段 401）、新增 `core/api/governance.ts`，提供商管理页端到端真实化；同步缺口清单与后续轮次路线。 |

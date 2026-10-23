@@ -191,3 +191,131 @@ export const edgeApi = {
     return data
   },
 }
+
+// ---------------------------------------------------------------------------
+// 插件与模型分类（v1.9.3 R3）：OpenLLM 双通道鉴权（JWT OR API Key）
+// ---------------------------------------------------------------------------
+
+export interface LlmPlugin {
+  id: string
+  name: string
+  display_name: string
+  description: string | null
+  version: string
+  author: string | null
+  plugin_type: string
+  status: string
+  config_schema: Record<string, unknown>
+  config: Record<string, unknown>
+  permissions: unknown[]
+  metadata_: Record<string, unknown>
+  is_system: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface LlmPluginPage {
+  total: number
+  items: LlmPlugin[]
+}
+
+export interface LlmAvailableTool {
+  plugin_id: string
+  plugin_name: string
+  tool_name: string
+  description: string | null
+  parameters: Record<string, unknown>
+}
+
+export interface LlmPluginHealth {
+  plugin_id: string
+  name: string
+  is_healthy: boolean
+  status: string
+  total_calls: number
+  success_calls: number
+  failed_calls: number
+  avg_latency_ms: number
+  tools_count: number
+  error: string | null
+}
+
+export interface ModelCategory {
+  id: string
+  name: string
+  code: string
+  description: string | null
+  icon: string | null
+  sort_order: number | null
+  parent_id: string | null
+  category_type: string | null
+  model_count: number | null
+  children: ModelCategory[]
+}
+
+export interface OpenSourceModel {
+  id: string
+  model_id: string
+  name: string
+  source: string
+  architecture: string | null
+  parameters: string | null
+  license: string | null
+  download_count: number | null
+  rating: number | null
+  tags: string[]
+  categories: string[]
+  download_status: string | null
+  deploy_status: string | null
+}
+
+export interface CategoryModelPage {
+  category?: ModelCategory
+  items: OpenSourceModel[]
+  total: number
+}
+
+export const pluginsApi = {
+  async list(params: { plugin_type?: string; status?: string; is_system?: boolean; skip?: number; limit?: number } = {}): Promise<LlmPluginPage> {
+    const { data } = await http.get<LlmPluginPage>(`${OPENLLM}/plugins`, { params })
+    return data
+  },
+  async listTools(): Promise<LlmAvailableTool[]> {
+    const { data } = await http.get<{ total: number; items: LlmAvailableTool[] }>(`${OPENLLM}/plugins/tools`)
+    return data.items
+  },
+  async setEnabled(pluginId: string, enabled: boolean): Promise<LlmPlugin> {
+    const action = enabled ? 'enable' : 'disable'
+    const { data } = await http.post<LlmPlugin>(`${OPENLLM}/plugins/${pluginId}/${action}`)
+    return data
+  },
+  async health(pluginId: string): Promise<LlmPluginHealth> {
+    const { data } = await http.get<LlmPluginHealth>(`${OPENLLM}/plugins/${pluginId}/health`)
+    return data
+  },
+  async register(payload: { name: string; version?: string; description?: string; entry_point?: string }): Promise<LlmPlugin> {
+    const { data } = await http.post<LlmPlugin>(`${OPENLLM}/plugins/register`, payload)
+    return data
+  },
+  async remove(pluginId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/plugins/${pluginId}`)
+  },
+}
+
+export const modelCategoriesApi = {
+  async tree(): Promise<ModelCategory[]> {
+    const { data } = await http.get<{ items: ModelCategory[] }>(`${OPENLLM}/model-categories/tree`)
+    return data.items
+  },
+  async list(params: { type?: string } = {}): Promise<ModelCategory[]> {
+    const { data } = await http.get<ModelCategory[]>(`${OPENLLM}/model-categories`, { params })
+    return data
+  },
+  async models(categoryId: string, params: { page?: number; page_size?: number } = {}): Promise<CategoryModelPage> {
+    const { data } = await http.get<CategoryModelPage>(
+      `${OPENLLM}/model-categories/${encodeURIComponent(categoryId)}/models`,
+      { params },
+    )
+    return data
+  },
+}

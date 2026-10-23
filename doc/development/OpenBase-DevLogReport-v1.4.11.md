@@ -452,6 +452,42 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.17 R3：双通道鉴权与插件/模型分类接线（v1.9.3）
+
+**范围**：按缺口清单 R3，把 OpenLLM `plugins`、`model_categories` 两个路由族从 JWT-only 改为双通道，并将「插件管理」「模型分类」两页接到真实数据。
+
+**跨仓（OpenLLM）**
+
+| 文件 | 变更 |
+|------|------|
+| `backend/app/api/plugins.py` | 8 处 `Depends(get_current_active_user)` → `get_current_active_user_or_api_key`（列表/工具/详情/执行/健康检查等） |
+| `backend/app/api/model_categories.py` | 13 处 `Depends(get_current_user)` → `get_current_active_user_or_api_key`（分类/树/分类模型/标签/收藏等） |
+| `backend/tests/unit/test_r3_dual_channel_v193.py` | 新增 6 例：5 条路由依赖断言 + API Key 前缀分流 |
+
+> 直接检查 router 依赖而不导入 `main.app`：完整应用会拉起 opentelemetry 等运行期可选依赖，在测试环境不可用。
+
+**前端（OpenBase）**
+
+| 页面 | 改动 |
+|------|------|
+| 插件管理 | 接 `/plugins`（类型/状态过滤）、`/plugins/tools`、`/plugins/{id}/health|enable|disable`、`/plugins/register`、`DELETE /plugins/{id}`；系统插件禁删；移除 6 条硬编码插件与假工具 |
+| 模型分类 | 接 `/model-categories/tree`（拍平后按维度出标签云）、`/model-categories/{id}/models`（分页）；维度改为上游真实类型 capability/scene/architecture/scale；移除 10 条 mock 模型与本地 mock 延迟 |
+
+**验证**
+
+| 项 | 命令/方式 | 结果 |
+|---|-----------|------|
+| OpenLLM 新增用例 | `pytest tests/unit/test_r3_dual_channel_v193.py` | **6 passed** |
+| OpenLLM 既有回归 | `pytest test_plugins_api.py test_model_categories_api.py test_plugin_services.py` | **34 passed** |
+| 前端新增用例 | `vitest run tests/r3-wiring-v193.spec.ts` | **8 passed** |
+| 类型检查 | `vue-tsc --noEmit` | **0 错误** |
+| 聚合实测 | `/proxy/openllm/api/v1/plugins`、`/plugins/tools`、`/model-categories`、`/model-categories/tree` | **4/4 200**（改造前均 401） |
+| 浏览器实测 | 插件管理 / 模型分类 | **未完成**：探针未采集到页面 API 调用（环境侧服务回收/链路不稳定），页面级验证以 8 例 jsdom 单测 + 4 项接口实测替代，待服务稳定后复核 |
+
+**遗留**：当前库中分类/插件数据为空，页面按真实语义展示空态（非 mock）；如需演示数据，应由 OpenLLM 侧种子脚本提供，前端不内置假数据。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -539,6 +575,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.8.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.17：**R3 双通道鉴权与插件/模型分类接线**——OpenLLM `plugins`（8 处）与 `model_categories`（13 处）改用 `get_current_active_user_or_api_key`；插件管理、模型分类两页接真实端点并移除 mock。验证：OpenLLM 6+34 例、前端 8 例、vue-tsc 0 错误、聚合端点 4/4 200；浏览器级复核受环境限制待补。 |
 | v2.7.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.16：**R2 C 类列表补齐与上游并发修复**——OpenBase 新增 `GET /configs`、`/test-records`、`/test-runs` 与服务 Key `id`/`by-id` 吊销；全局配置、测试记录两页接线并移除假动作；跨仓修复 OpenLLM `get_db`（`scoped_session` → 每请求独立 Session）并发 500。验证：后端 10 例、跨仓 3 例、前端 47 例、vue-tsc 0 错误、接口全链路与并发 9/9 通过；浏览器页面级验证因服务被环境回收待复核。 |
 | v2.6.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.15：**R1 A 类三页接线**——用户管理（`/users` 全量 CRUD + 角色五码）、API 密钥（`/auth/api-keys` 列表/创建/吊销 + 一次性明文）、EdgeRouter（`/edge/**` 概览/组织/配额/适配器/审计）；移除三页全部假动作；登记「服务 Key 列表无 id、吊销需明文」后端缺口。验证：前端 10 例 + 关联回归 40 例、vue-tsc 0 错误、密钥创建→吊销全链路、三页浏览器实测 0 error。 |
 | v2.5.0 | 2026-10-22 | 研发（AI 辅助） | 新增 §2.14：**全栈功能级审计与 OpenLLM 聚合通道打通**——四层审计（加载/交互/API 面/通道探测）覆盖 77 页，PASS 76/1（唯一 FAIL 为沙箱下 Chromium `ERR_NO_BUFFER_SPACE` 噪声），API 失败 0；单列 52 页无后端调用并按 A~E 五类成账；修复通用代理两段 401（来源按系统映射 + 仅 openllm 注入 API Key）；提供商管理页端到端真实化。验证：后端 8+55 例、前端 4 例、浏览器实测 0 error、全页面回归 api 失败 0。 |

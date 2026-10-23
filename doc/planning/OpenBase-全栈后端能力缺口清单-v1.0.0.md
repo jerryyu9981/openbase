@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.2.0 |
+| 文档版本 | v1.3.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -48,7 +48,7 @@
 | L1+L2 结果 | **PASS 76 / FAIL 1**（唯一 FAIL 为 `net::ERR_NO_BUFFER_SPACE`，Chromium 在沙箱内写 `debug.log` 受限导致的资源加载抖动；该页单页复跑 0 错误，判为环境噪声，非应用缺陷） |
 | 首轮基线 | PASS 77 / FAIL 0（同一套探针，服务全部预热后） |
 | API 失败次数（4xx/5xx/请求失败） | **0** |
-| 无后端调用的页面 | **47**（R1 收口 3 页、R2 收口 2 页后：52 − 5） |
+| 无后端调用的页面 | **45**（R1 3 页、R2 2 页、R3 2 页收口后：52 − 7） |
 | 其中「无调用且无可交互动作」的静默页 | 28 |
 
 > 采样口径说明：无后端调用按「首屏 1.2s 稳定窗口内是否发出 `/api/**`」判定；记忆图谱/衰减、模板包导出、血缘、措施建议等**按需触发**页在该窗口内可能尚无请求，属测量假阴性。已在 §4 逐页以源码接线与实测复核，避免误判。
@@ -103,7 +103,7 @@
 | 26 | 应用调用记录 | `/platform/observability/app-calls` | mock | E | `/ai-apps/{id}/calls` 需先选应用，缺全局聚合 | 待立项 |
 | 27 | 画像系统监控 | `/platform/observability/dps-monitor` | mock | E | 无对应端点 | 待立项 |
 | 28 | 提供商管理 | `/platform/governance/providers` | **真实（本轮）** | — | `/proxy/openllm/api/v1/providers` | **已闭环** |
-| 29 | 模型分类 | `/platform/governance/model-categories` | mock | B | `/model-categories`（401） | 后续轮次 |
+| 29 | 模型分类 | `/platform/governance/model-categories` | **真实（v1.9.3 R3）** | — | `/model-categories`、`/model-categories/tree`、`/model-categories/{id}/models`（双通道后 200） | **已闭环** |
 | 30 | 路由策略 | `/platform/governance/routing` | mock | B | `/routing/*`（401） | 后续轮次 |
 | 31 | 熔断器 | `/platform/governance/circuit-breakers` | mock | B | `/routing/circuit-breakers`（401） | 后续轮次 |
 | 32 | 模型部署 | `/platform/governance/deploy` | mock | B/D | `/open-models/*`（401；部分 502） | 后续轮次 |
@@ -114,7 +114,7 @@
 | 37 | Prompt 实验 | `/platform/governance/prompt-experiments` | mock | B | `/prompt-experiments`（401） | 后续轮次 |
 | 38 | 文档中心 | `/platform/developers/docs` | 静态文档 | E | 无端点（内容型页面，可保留） | 保留 |
 | 39 | EdgeRouter 与适配器 | `/platform/developers/edgerouter` | **真实（v1.9.1 R1）** | — | `/edge/status`、`/edge/health`、`/edge/adapters`、`/edge/organizations`、`/edge/quotas/{org}`、`/edge/audit/logs`（均 200） | **已闭环** |
-| 40 | 插件管理 | `/platform/developers/plugins` | mock | B | `/plugins`、`/plugins/tools`（401） | 后续轮次 |
+| 40 | 插件管理 | `/platform/developers/plugins` | **真实（v1.9.3 R3）** | — | `/plugins`、`/plugins/tools`、`/plugins/{id}/health|enable|disable`、`/plugins/register`（双通道后 200） | **已闭环** |
 | 41 | 画像 API 管理 | `/platform/developers/dps-api` | mock | E | 无对应端点 | 待立项 |
 | 42 | 知识库管理后台 | `/platform/developers/knowledge-admin` | 真实 | — | `/rag-proxy/collections` | 已接 |
 | 43 | 知识库 API 控制台 | `/platform/developers/knowledge-console` | 静态控制台 | E | 调试器为本地演示，未打通真实调用 | 待立项 |
@@ -190,6 +190,8 @@
 | **R2 服务 Key id 化**（v1.9.2） | `ApiKeyOut` 增加 `id`；新增 `DELETE /auth/api-keys/by-id/{key_id}`（保留按明文吊销端点兼容）；前端改为按 id 吊销，解除「历史密钥不可吊销」限制 | 同上（含未知 id → 404）；`r1-wiring-v191` 吊销用例改为断言 by-id 端点 |
 | **R2 两页接线**（v1.9.2） | 全局配置：列表/搜索/级别过滤/编辑（值 JSON 解析）/版本抽屉/回滚/导入导出全部走真实端点；测试记录：轮次下拉自动选中最新一轮并加载汇总、开新一轮 | `tests/r2-wiring-v192.spec.ts` 7 例；浏览器实测见 DevLogReport §2.16 |
 | **R2 上游并发修复**（OpenLLM v1.9.2） | `get_db` 由 `scoped_session` 改为每请求独立 Session（`SessionFactory()`），从根因消除跨线程复用；`SessionLocal` 保留给既有直接调用方 | OpenLLM `test_db_session_concurrency_v192.py` 3 例；提供商页并发模型数不再 500 |
+| **R3 双通道鉴权**（OpenLLM v1.9.3） | `plugins.py` 与 `model_categories.py` 全部路由由 `get_current_active_user` / `get_current_user` 改为 `get_current_active_user_or_api_key` | OpenLLM `test_r3_dual_channel_v193.py` 6 例；插件/分类既有 34 例回归通过 |
+| **R3 两页接线**（v1.9.3） | 插件管理：真实列表/工具清单/启停/注册/删除/健康检查；模型分类：分类树标签云 + 分类下模型分页 + 维度切换；移除全部契约 mock | `tests/r3-wiring-v193.spec.ts` 8 例；聚合端点实测 4/4 200 |
 
 ---
 
@@ -199,7 +201,7 @@
 |:----:|------|------|----------|
 | R1 | A 类收口（低成本） | 用户管理、API 密钥、EdgeRouter 三页接真实端点 | **已完成（v1.9.1）** |
 | R2 | C 类补列表 | `GET /configs`、`GET /test-records`、`GET /test-runs` + 两页接线；服务 Key 改 id 化吊销 | **已完成（v1.9.2）**；同时修复 OpenLLM `get_db` 并发缺陷 |
-| R3 | B 类第一批 | OpenLLM `plugins`、`model-categories` 改双通道依赖；插件管理、模型分类两页接真实 | OpenLLM 授权依赖改造 |
+| R3 | B 类第一批 | OpenLLM `plugins`、`model-categories` 改双通道依赖；插件管理、模型分类两页接真实 | **已完成（v1.9.3）** |
 | R4 | B 类第二批 | `monitoring/*`、`alerts`、`budgets`、`usage`、`billing` → 成本/告警/链路/预算/用量/计费六页 | 观察类接口的租户过滤口径 |
 | R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | 写权限档位与 `role:write` 语义 |
 | R6 | D 类性能 | `local-models`、`models/favorites|compare`、`open-models/popular` 的 10s 超时治理 | 上游耗时剖析 |
@@ -257,6 +259,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.3.0 | 2026-10-23 | FA-OpenBase-Dev | **R3 收口**：OpenLLM `plugins` / `model-categories` 改为双通道鉴权；插件管理、模型分类两页接真实端点（列表/工具/启停/注册/健康检查、分类树/分类模型分页）；无后端调用页面 47 → 45。 |
 | v1.2.0 | 2026-10-23 | FA-OpenBase-Dev | **R2 收口**：新增 `GET /configs`、`GET /test-records`、`GET /test-runs` 并接线两页；服务 Key 增加 `id` 与 `by-id` 吊销端点（解除历史密钥不可吊销限制）；跨仓修复 OpenLLM `get_db` 并发 500；无后端调用页面 49 → 47。 |
 | v1.1.0 | 2026-10-23 | FA-OpenBase-Dev | **R1 收口**：用户管理、API 密钥、EdgeRouter 三页接真实端点并移除假动作；新增「服务 Key 列表无 id、吊销需明文」缺口（归 C 类）与 R2 范围；发现并规避 OpenLLM `scoped_session` 并发 500（前端串行化，根因列 R2 跨仓）；无后端调用页面 52 → 49。 |
 | v1.0.0 | 2026-10-22 | FA-OpenBase-Dev | 初始创建：77 页全栈功能审计（L1 加载 / L2 交互 / L3 API 面 / L4 通道探测），52 页无后端调用单列；缺口分 A~E 五类并逐页成表；记录本轮闭环（通用代理来源映射 + OpenLLM 凭据注入 + 提供商管理真实化）与 R1~R7 路线图。 |

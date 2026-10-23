@@ -1,12 +1,18 @@
 <template>
-  <PageContainer title="模型分类" description="模型目录与分类归属" test-id="categories-page">
+  <PageContainer
+    title="模型分类"
+    description="开源模型的分类归属与分类下模型（数据源：OpenLLM /api/v1/model-categories，经 OpenBase 通用代理）"
+    test-id="categories-page"
+  >
     <div class="page-toolbar">
-      <el-input v-model="keyword" placeholder="搜索模型名称 / Provider" clearable style="width: 240px" data-test="category-search" />
-      <el-radio-group v-model="dimension" data-test="category-dimension" @change="handleDimensionChange">
+      <el-input v-model="keyword" placeholder="搜索分类名称 / 代码" clearable style="width: 220px" data-test="category-search" />
+      <el-radio-group v-model="dimension" data-test="category-dimension" @change="onDimensionChange">
         <el-radio-button value="capability">能力</el-radio-button>
-        <el-radio-button value="scenario">场景</el-radio-button>
+        <el-radio-button value="scene">场景</el-radio-button>
+        <el-radio-button value="architecture">架构</el-radio-button>
         <el-radio-button value="scale">规模</el-radio-button>
       </el-radio-group>
+      <el-button :loading="loading" data-test="category-refresh" @click="loadTree">刷新</el-button>
       <el-tag type="info" data-test="category-result-count">共 {{ filteredModels.length }} 个模型</el-tag>
     </div>
 
@@ -22,49 +28,67 @@
     />
 
     <el-card v-loading="loading" header="分类标签云" class="mb-16" data-test="tag-cloud-card">
-      <el-empty v-if="dimensionTags.length === 0" description="暂无分类标签" :image-size="60" data-test="tag-cloud-empty" />
+      <el-empty v-if="dimensionTags.length === 0" description="该维度暂无分类" :image-size="60" data-test="tag-cloud-empty" />
       <div v-else class="tag-cloud">
         <el-tag
           v-for="tag in dimensionTags"
-          :key="tag.name"
-          :size="tagSize(tag.count)"
-          :type="activeTag === tag.name ? 'primary' : 'info'"
-          :effect="activeTag === tag.name ? 'dark' : 'plain'"
+          :key="tag.id"
+          :size="tagSize(tag.model_count ?? 0)"
+          :type="activeCategory?.id === tag.id ? 'primary' : 'info'"
+          :effect="activeCategory?.id === tag.id ? 'dark' : 'plain'"
           class="cloud-tag"
           data-test="category-tag"
-          @click="toggleTag(tag.name)"
+          @click="selectCategory(tag)"
         >
-          {{ tag.name }} ({{ tag.count }})
+          {{ tag.name }} ({{ tag.model_count ?? 0 }})
         </el-tag>
       </div>
     </el-card>
 
-    <el-card header="模型列表" data-test="category-model-card">
-      <div class="ob-table-scroll">
-        <el-table :data="filteredModels" stripe empty-text="暂无匹配的模型" data-test="category-table">
-          <el-table-column prop="name" label="模型" min-width="140" />
-          <el-table-column prop="provider" label="Provider" width="110" />
-          <el-table-column label="类型" width="90">
-            <template #default="{ row }"><el-tag size="small">{{ row.type }}</el-tag></template>
-          </el-table-column>
-          <el-table-column label="能力" min-width="150">
-            <template #default="{ row }">
-              <el-tag v-for="cap in row.capabilities" :key="cap" size="small" class="cap-tag" type="info">{{ cap }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="场景" min-width="150">
-            <template #default="{ row }">
-              <el-tag v-for="scenario in row.scenarios" :key="scenario" size="small" class="cap-tag" type="success">{{ scenario }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="scale" label="规模" width="120" />
-          <el-table-column label="状态" width="90">
-            <template #default="{ row }">
-              <el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+    <el-card :header="activeCategory ? `模型列表 · ${activeCategory.name}` : '模型列表'" data-test="category-model-card">
+      <el-empty
+        v-if="!activeCategory"
+        description="请选择上方分类标签查看该分类下的模型"
+        :image-size="60"
+        data-test="category-model-empty"
+      />
+      <template v-else>
+        <div class="ob-table-scroll">
+          <el-table v-loading="modelsLoading" :data="filteredModels" stripe empty-text="该分类下暂无模型" data-test="category-table">
+            <el-table-column label="模型" min-width="220">
+              <template #default="{ row }">
+                <div class="model-name">{{ row.name }}</div>
+                <div class="model-id">{{ row.model_id }}</div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="source" label="来源" width="120" />
+            <el-table-column label="架构" width="140">
+              <template #default="{ row }">{{ row.architecture || '—' }}</template>
+            </el-table-column>
+            <el-table-column label="参数规模" width="110">
+              <template #default="{ row }">{{ row.parameters || '—' }}</template>
+            </el-table-column>
+            <el-table-column label="许可证" width="130">
+              <template #default="{ row }">{{ row.license || '—' }}</template>
+            </el-table-column>
+            <el-table-column prop="download_count" label="下载量" width="100" />
+            <el-table-column label="部署状态" width="120">
+              <template #default="{ row }">
+                <el-tag :type="deployType(row.deploy_status)" size="small">{{ deployLabel(row.deploy_status) }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <el-pagination
+          v-if="modelTotal > pageSize"
+          class="pager"
+          layout="prev, pager, next, total"
+          :total="modelTotal"
+          :page-size="pageSize"
+          :current-page="page"
+          @current-change="changePage"
+        />
+      </template>
     </el-card>
   </PageContainer>
 </template>
@@ -72,124 +96,154 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
+import { modelCategoriesApi, type ModelCategory, type OpenSourceModel } from '@/core/api/governance'
 
-type Dimension = 'capability' | 'scenario' | 'scale'
+type Dimension = 'capability' | 'scene' | 'architecture' | 'scale'
 
-interface CategoryModel {
-  id: number
-  name: string
-  provider: string
-  type: string
-  status: string
-  capabilities: string[]
-  scenarios: string[]
-  scale: string
-}
-
-const loading = ref(true)
+const loading = ref(false)
+const modelsLoading = ref(false)
 const errorMessage = ref('')
 const keyword = ref('')
 const dimension = ref<Dimension>('capability')
-const activeTag = ref('')
 
-/** 契约 mock：模型分类数据（不调用真实 API） */
-const models = ref<CategoryModel[]>([
-  { id: 1, name: 'gpt-4o', provider: 'OpenAI', type: '商业', status: 'online', capabilities: ['对话', '多模态', '视觉理解'], scenarios: ['客服', '内容创作'], scale: '超大型(70B+)' },
-  { id: 2, name: 'gpt-4o-mini', provider: 'OpenAI', type: '商业', status: 'online', capabilities: ['对话', '多模态'], scenarios: ['客服', '办公协作'], scale: '中小(1B-7B)' },
-  { id: 3, name: 'claude-3-5-sonnet', provider: 'Anthropic', type: '商业', status: 'online', capabilities: ['对话', '代码生成', '推理'], scenarios: ['代码助手', '数据分析'], scale: '超大型(70B+)' },
-  { id: 4, name: 'qwen2.5-72b', provider: '阿里云', type: '开源', status: 'online', capabilities: ['对话', '代码生成', '推理'], scenarios: ['代码助手', '知识库'], scale: '中大型(7B-70B)' },
-  { id: 5, name: 'qwen2.5-7b', provider: 'Ollama', type: '本地', status: 'online', capabilities: ['对话'], scenarios: ['办公协作', '客服'], scale: '中小(1B-7B)' },
-  { id: 6, name: 'llama3.2-1b', provider: 'Meta', type: '开源', status: 'offline', capabilities: ['对话'], scenarios: ['办公协作'], scale: '轻量(<1B)' },
-  { id: 7, name: 'bge-m3', provider: 'BAAI', type: '开源', status: 'online', capabilities: ['Embedding'], scenarios: ['知识库', '检索增强'], scale: '中小(1B-7B)' },
-  { id: 8, name: 'text-embedding-3-large', provider: 'OpenAI', type: '商业', status: 'online', capabilities: ['Embedding'], scenarios: ['知识库', '检索增强'], scale: '超大型(70B+)' },
-  { id: 9, name: 'deepseek-coder-33b', provider: 'DeepSeek', type: '开源', status: 'deploying', capabilities: ['代码生成'], scenarios: ['代码助手'], scale: '中大型(7B-70B)' },
-  { id: 10, name: 'gemini-1.5-pro', provider: 'Google', type: '商业', status: 'online', capabilities: ['对话', '多模态', '视觉理解'], scenarios: ['数据分析', '内容创作'], scale: '超大型(70B+)' },
-])
+const categories = ref<ModelCategory[]>([])
+const activeCategory = ref<ModelCategory | null>(null)
+const models = ref<OpenSourceModel[]>([])
+const modelTotal = ref(0)
+const page = ref(1)
+const pageSize = 20
 
-const tagConfig = computed<{ pick: (model: CategoryModel) => string[] }>(() => {
-  if (dimension.value === 'capability') return { pick: (model) => model.capabilities }
-  if (dimension.value === 'scenario') return { pick: (model) => model.scenarios }
-  return { pick: (model) => [model.scale] }
-})
+/** 拍平分类树（父 → 子），保留层级用于展示 */
+function flatten(nodes: ModelCategory[]): ModelCategory[] {
+  const rows: ModelCategory[] = []
+  for (const node of nodes) {
+    rows.push(node)
+    if (node.children?.length) rows.push(...flatten(node.children))
+  }
+  return rows
+}
 
 const dimensionTags = computed(() => {
-  const counts = new Map<string, number>()
-  for (const model of models.value) {
-    for (const tag of tagConfig.value.pick(model)) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1)
-    }
-  }
-  return [...counts.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
+  const kw = keyword.value.trim().toLowerCase()
+  return categories.value
+    .filter((item) => item.category_type === dimension.value)
+    .filter((item) => !kw || item.name.toLowerCase().includes(kw) || item.code.toLowerCase().includes(kw))
+    .sort((a, b) => (b.model_count ?? 0) - (a.model_count ?? 0))
 })
 
 const filteredModels = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
-  return models.value.filter((model) => {
-    const matchKeyword =
-      !kw || model.name.toLowerCase().includes(kw) || model.provider.toLowerCase().includes(kw)
-    const matchTag = !activeTag.value || tagConfig.value.pick(model).includes(activeTag.value)
-    return matchKeyword && matchTag
-  })
+  if (!kw) return models.value
+  return models.value.filter(
+    (model) => model.name.toLowerCase().includes(kw) || model.model_id.toLowerCase().includes(kw),
+  )
 })
 
-function tagSize(count: number) {
-  if (count >= 3) return 'large'
-  if (count >= 2) return 'default'
+function tagSize(count: number): 'large' | 'default' | 'small' {
+  if (count >= 10) return 'large'
+  if (count >= 3) return 'default'
   return 'small'
 }
 
-function toggleTag(name: string) {
-  activeTag.value = activeTag.value === name ? '' : name
+const DEPLOY_LABELS: Record<string, string> = {
+  deployed: '已部署',
+  deploying: '部署中',
+  not_deployed: '未部署',
+  stopped: '已停止',
+  failed: '失败',
 }
 
-function handleDimensionChange() {
-  activeTag.value = ''
+function deployLabel(status: string | null): string {
+  return status ? DEPLOY_LABELS[status] ?? status : '—'
 }
 
-function statusType(status: string) {
-  return { online: 'success', offline: 'info', deploying: 'warning', error: 'danger' }[status] || 'info'
-}
-function statusLabel(status: string) {
-  return { online: '在线', offline: '离线', deploying: '部署中', error: '异常' }[status] || status
+function deployType(status: string | null): 'success' | 'warning' | 'danger' | 'info' {
+  if (status === 'deployed') return 'success'
+  if (status === 'deploying') return 'warning'
+  if (status === 'failed') return 'danger'
+  return 'info'
 }
 
-async function loadCategories() {
+function messageOf(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message
+  return fallback
+}
+
+async function loadTree(): Promise<void> {
   loading.value = true
   errorMessage.value = ''
   try {
-    await mockDelay(500) // 契约 mock：模拟拉取分类数据
+    const tree = await modelCategoriesApi.tree()
+    categories.value = flatten(tree)
+    const stillExists = categories.value.find((item) => item.id === activeCategory.value?.id)
+    const fallback = dimensionTags.value[0] ?? null
+    if (stillExists) {
+      await selectCategory(stillExists)
+    } else if (fallback) {
+      await selectCategory(fallback)
+    } else {
+      activeCategory.value = null
+      models.value = []
+      modelTotal.value = 0
+    }
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '分类数据加载失败，请稍后重试'
+    errorMessage.value = `分类加载失败：${messageOf(error, '未知错误')}`
   } finally {
     loading.value = false
   }
 }
 
-function mockDelay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+async function selectCategory(category: ModelCategory): Promise<void> {
+  activeCategory.value = category
+  page.value = 1
+  await loadModels()
+}
+
+async function loadModels(): Promise<void> {
+  if (!activeCategory.value) return
+  modelsLoading.value = true
+  try {
+    const result = await modelCategoriesApi.models(activeCategory.value.id, {
+      page: page.value,
+      page_size: pageSize,
+    })
+    models.value = result.items
+    modelTotal.value = result.total
+  } catch (error) {
+    models.value = []
+    modelTotal.value = 0
+    errorMessage.value = `模型列表加载失败：${messageOf(error, '未知错误')}`
+  } finally {
+    modelsLoading.value = false
+  }
+}
+
+function changePage(next: number): void {
+  page.value = next
+  void loadModels()
+}
+
+async function onDimensionChange(): Promise<void> {
+  const first = dimensionTags.value[0] ?? null
+  if (first) {
+    await selectCategory(first)
+  } else {
+    activeCategory.value = null
+    models.value = []
+    modelTotal.value = 0
+  }
 }
 
 onMounted(() => {
-  void loadCategories()
+  void loadTree()
 })
 </script>
 
 <style scoped>
-.mb-16 {
-  margin-bottom: 16px;
-}
-.tag-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-.cloud-tag {
-  cursor: pointer;
-}
-.cap-tag {
-  margin-right: 4px;
-}
+.mb-16 { margin-bottom: 16px; }
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.cloud-tag { cursor: pointer; }
+.model-name { font-weight: 500; }
+.model-id { color: var(--ob-text-secondary); font-size: 12px; word-break: break-all; }
+.pager { margin-top: 12px; justify-content: flex-end; }
 </style>
