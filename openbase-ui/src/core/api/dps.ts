@@ -249,6 +249,42 @@ export interface DpsReviewAssistResult {
   [key: string]: unknown
 }
 
+/** v1.12.0（XR-DPS-05）：DPS 运行态指标（上游 `GET /api/v2/metrics`） */
+export interface DpsRuntimeMetrics {
+  qps_1m: number
+  cpu_percent: number
+  memory_mb: number | null
+  memory_percent: number | null
+  uptime_seconds: number
+  requests_total: number
+  collected_at: string
+}
+
+/** 限流只读状态（上游 `GET /api/v2/rate-limits/status`） */
+export interface DpsRateLimitStatus {
+  tenant_id?: string
+  endpoint?: string
+  window_start?: string
+  count?: number
+  limit?: number
+  window?: number
+  utilization?: number
+  source?: string
+  [key: string]: unknown
+}
+
+/** 告警规则只读（上游 `GET /api/v2/alerts/rules`） */
+export interface DpsAlertRule {
+  id?: number
+  name?: string
+  condition?: string
+  threshold?: number
+  duration?: string
+  notification_channel?: string
+  enabled?: boolean | number
+  [key: string]: unknown
+}
+
 export const dpsApi = {
   /** 画像列表（GET /api/v1/dps-proxy/portraits） */
   async listPortraits(params?: { page?: number; page_size?: number }): Promise<{ items: DpsPortrait[]; total?: number }> {
@@ -313,6 +349,29 @@ export const dpsApi = {
   /** 上游健康（GET /api/v1/dps-proxy/health） */
   async getDpsHealth(): Promise<{ status?: string; version?: string }> {
     const { data } = await http.get<{ code: number; data: { status?: string; version?: string } }>('/dps-proxy/health')
+    return data.data
+  },
+
+  /* ==================== v1.12.0｜运行态观测只读（XR-DPS-05） ==================== */
+
+  /** 运行态指标（GET /dps-proxy/metrics；上游 DPS `GET /api/v2/metrics`） */
+  async getRuntimeMetrics(): Promise<DpsRuntimeMetrics> {
+    const { data } = await http.get<{ code: number; data: DpsRuntimeMetrics }>('/dps-proxy/metrics')
+    return data.data
+  },
+
+  /** 限流状态只读（GET /dps-proxy/rate-limits/status；查询参数透传） */
+  async getRateLimitStatus(params?: { tenant_id?: string }): Promise<DpsRateLimitStatus[]> {
+    const { data } = await http.get<{ code: number; data: DpsRateLimitStatus[] }>(
+      '/dps-proxy/rate-limits/status',
+      { params },
+    )
+    return data.data
+  },
+
+  /** 告警规则只读（GET /dps-proxy/alerts/rules） */
+  async getAlertRules(): Promise<DpsAlertRule[]> {
+    const { data } = await http.get<{ code: number; data: DpsAlertRule[] }>('/dps-proxy/alerts/rules')
     return data.data
   },
 

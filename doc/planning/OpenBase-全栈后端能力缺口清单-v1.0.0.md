@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.14.0 |
+| 文档版本 | v1.15.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -288,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.15.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 C 批回填**：DPS 运行态指标端点（`GET /api/v2/metrics`）与 OpenBase 代理三只读路由闭环，画像监控页由「仅健康」→ 指标/限流/告警只读视图（0 mock）。 |
 | v1.14.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 B 批回填**：工作空间成员邀请由「仅 UUID」→「用户名 / UUID 二选一」，对应缺口（成员管理可用性）闭环。 |
 | v1.13.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.12.0 A 批回填**：应用调用记录、知识库 API 控制台、报表趋势三页由 mock → 真实并标闭环。 |
 | v1.12.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.11.0 长尾裁定回填**：9 个页面能力状态按裁定刷新（建设 6 / 只读建设 3 / 冻结 2 / 不建设 1），与《OpenBase-长尾事项产品裁定-v1.0.0》一致。 |

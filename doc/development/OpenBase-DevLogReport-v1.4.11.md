@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.21.0 |
+| 文档版本 | v2.22.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-24 |
 | 编制 | 研发（AI 辅助） |
@@ -1111,6 +1111,41 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 > 环境说明：OpenLLM 用例以 `--confcutdir=tests/unit` + `DATABASE_URL=sqlite:///:memory:` 运行（本机缺 `psycopg` 运行依赖）；用户名匹配逻辑以 FakeSession 验证查询条件，未连接真实 PG。
 
+### 2.31 v1.12.0 长尾建设 C 批执行记录（2026-10-24）
+
+**范围**：XR-DPS-04（DPS 运行态指标端点）+ XR-DPS-05（OpenBase 代理扩权 + 画像监控页接线）。
+
+**1. DPS（v2.13.0）**
+
+| 项 | 内容 |
+|----|------|
+| 端点 | `GET /api/v2/metrics` → `{qps_1m, cpu_percent, memory_mb, memory_percent, uptime_seconds, requests_total, collected_at}` |
+| 采集 | 新增 `src/monitoring/runtime.py`：60s 滑窗 QPS、`process_time` 增量 CPU、Windows psapi / Linux `/proc` 内存；**不引入 psutil** |
+| 中间件 | `MetricsMiddleware` 逐请求登记窗口；`/api/v2/metrics` 加入排除表（防抓取自放大） |
+| 权限 | `PATH_RESOURCE_MAP["metrics"]="runtime_metric"`；`PRESET_PERMISSIONS` 注册 `runtime_metric:read`；admin/operator/readonly 授予只读 |
+| 版本 | 2.12.5 → **2.13.0**（`config.py` / `src/__init__.py` / `DPS_VERSION` 三处一致） |
+
+**2. OpenBase（v1.12.0 C 批）**
+
+| 项 | 内容 |
+|----|------|
+| 代理 | `dps-proxy` 允许清单新增三个**只读**路由：`/metrics`、`/rate-limits/status`、`/alerts/rules`；不注册任何写方法 |
+| 页面 | `DpsMonitorView` 四源独立（health / metrics / rate-limits / alerts）：5 项 KPI + 限流状态表 + 告警规则表；移除「指标未开放」占位 |
+| API | `core/api/dps.ts` 新增 `getRuntimeMetrics` / `getRateLimitStatus` / `getAlertRules` |
+
+**3. 验证**
+
+| 项 | 命令/方式 | 结果 |
+|----|-----------|------|
+| DPS 新用例 | `pytest src/tests/test_v2120_runtime_metrics.py` | **18 passed**（类级守门 / RBAC / 快照 / 自采样） |
+| DPS 全量 | `pytest`（3.11 运行器） | **1840 passed / 3 skipped / 1 xfailed / 1 xpassed，0 failed** |
+| OpenBase 代理用例 | `pytest tests/test_dps_proxy.py` | **26 passed**（新增 4 例） |
+| 前端新用例 | `vitest run tests/r12-dps-monitor-v1120.spec.ts` | **3 passed** |
+| 前端全量 | `vitest run` | **366 passed / 38 files**（基线 363 + 3） |
+| 静态 | `vue-tsc --noEmit` / `ruff check` | **0 error** |
+
+> 环境说明：DPS 全量首跑使用 pgAdmin CPython 3.13，因长时间回归后子进程无法再启动出现 11 例失败；改用 OpenRAG `.venv3`（CPython 3.11.9）+ `doc/tmp/run_dps_pytest311.py`，并以 shim 提供裸 `python`/`python3`、`pip --target DPS/.venv/libs311` 补齐 `pyjwt/bcrypt/mccabe` 后复跑全部通过。首跑失败已逐项归因：版本/BOM 为编辑窗口内产生（已清理），CI 脚本缺 `python` 与 smoke 超时随 shim 消除，`test_s5_t6_event_consumer` 隔离复跑通过。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -1200,6 +1235,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.22.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.31：**v1.12.0 长尾建设 C 批**——DPS 新增 `GET /api/v2/metrics`（60s QPS / CPU / 内存 / uptime / requests_total）与 `runtime_metric:read` 权限点，版本升至 2.13.0；OpenBase 代理扩权三个只读端点并重写画像监控页。验证：DPS 18 例 + 全量 1840 passed、OpenBase 26 例、前端 366/366、`vue-tsc`/`ruff` 0 错误。 |
 | v2.21.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.30：**v1.12.0 长尾建设 B 批**——XR-LLM-06 工作空间按用户名邀请（OpenLLM schema/路由解析 + 前端成员弹窗）；用户名不存在 404、双给冲突 400；后端 9 例 + 回归 34 例、前端新增 3 例、全量 363/363、`vue-tsc` 0 错误。 |
 | v2.20.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.29：**v1.12.0 长尾建设 A 批**——OB-03 新增全局调用记录端点与 `AppCallsView`；OB-04 知识库控制台接 `rag-proxy` 真实链路；XR-LLM-03 报表趋势接三聚合源；XR-DPS-05 阻塞于 XR-DPS-04。验证：后端 6 例、前端新增 7 例、前端全量 360/360、`vue-tsc` 0 错误。 |
 | v2.19.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.28：**v1.11.0 长尾事项产品裁定**——14 项逐条裁定（建设 7 / 冻结 5 / 不建设 1 / 已闭环 1），产出《长尾事项产品裁定-v1.0.0》，附现状证据、端点清单、验收与解冻条件；XR-MEM-01 确认已闭环（台账滞后）；建设项分批转入 v1.12.0，本期无代码改动。 |

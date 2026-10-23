@@ -572,3 +572,100 @@ def test_dps_proxy_health_probe_non_2xx_degrades_and_keeps_forwarding(
         "health" in record.getMessage() and "degraded" in record.getMessage()
         for record in caplog.records
     ), "探活失败应记录 WARN 降级提示"
+
+
+# ---------------------------------------------------------------------------
+# v1.12.0（XR-DPS-05）：运行态观测只读扩权（依赖 DPS XR-DPS-04）
+# ---------------------------------------------------------------------------
+
+OBSERVABILITY_ROUTES = [
+    ("/metrics", "/api/v2/metrics"),
+    ("/rate-limits/status", "/api/v2/rate-limits/status"),
+    ("/alerts/rules", "/api/v2/alerts/rules"),
+]
+
+
+@pytest.mark.parametrize("path", [route[0] for route in OBSERVABILITY_ROUTES])
+def test_observability_routes_are_get_only(path: str) -> None:
+    """允许清单仅注册 GET；不得出现任何写方法代理（XR-DPS-05 验收）。"""
+    full_path = f"/api/v1/dps-proxy{path}"
+    matched = [
+        route
+        for route in dps_proxy_module.router.routes
+        if getattr(route, "path", None) == full_path
+    ]
+    assert matched, f"未注册观测代理路由 {full_path}"
+
+    methods: set[str] = set()
+    for route in matched:
+        methods.update(getattr(route, "methods", None) or set())
+    assert "GET" in methods
+    assert not methods & {"POST", "PUT", "PATCH", "DELETE"}, (
+        f"{full_path} 不得暴露写方法，实际 {methods}"
+    )
+
+
+def test_metrics_proxy_forwards_to_dps_and_returns_snapshot(client: TestClient) -> None:
+    """`/dps-proxy/metrics` → 上游 `/api/v2/metrics`，快照字段原样透传."""
+    token = _token_with_identity()
+    snapshot = {
+        "qps_1m": 1.5,
+        "cpu_percent": 3.2,
+        "memory_mb": 128.5,
+        "memory_percent": 0.9,
+        "uptime_seconds": 42.0,
+        "requests_total": 9,
+        "collected_at": "2026-10-24T00:00:00+00:00",
+    }
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": snapshot}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/metrics",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == snapshot
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "GET"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/metrics"
+    assert call["headers"]["X-User-ID"] == "42"
+
+
+def test_rate_limit_status_proxy_passes_query_params(client: TestClient) -> None:
+    """限流状态代理保真透传查询参数（本仓不做裁剪）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": []}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/rate-limits/status?tenant_id=tenant-001",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/rate-limits/status"
+    assert call["params"] == {"tenant_id": "tenant-001"}
+
+
+def test_alert_rules_proxy_preserves_upstream_error(client: TestClient) -> None:
+    """告警规则只读代理：上游 403 语义保真（本仓不吞错、不改写为 200）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(403, {"detail": "forbidden"}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/alerts/rules",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 403, resp.text
+    body = resp.json()
+    assert body["code"] == 403
+    assert body["message"] == "forbidden"
+    assert body["data"] is None

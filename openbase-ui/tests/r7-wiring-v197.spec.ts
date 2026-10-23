@@ -226,9 +226,30 @@ describe('v1.9.7 个人设置真实化', () => {
   }, 20000)
 })
 
-describe('v1.9.7 DPS 监控收敛', () => {
-  it('仅展示健康状态并说明指标未开放', async () => {
-    mocks.get.mockResolvedValue({ data: { code: 0, data: { status: 'healthy', version: '1.0.0' } } })
+describe('v1.9.7 DPS 监控收敛（v1.12.0 起补运行态只读视图）', () => {
+  it('展示健康状态与运行态指标/限流/告警只读区域', async () => {
+    mocks.get.mockImplementation((url: string) => {
+      if (url === '/dps-proxy/health') {
+        return Promise.resolve({ data: { code: 0, data: { status: 'healthy', version: '1.0.0' } } })
+      }
+      if (url === '/dps-proxy/metrics') {
+        return Promise.resolve({
+          data: {
+            code: 0,
+            data: {
+              qps_1m: 0,
+              cpu_percent: 0,
+              memory_mb: 1,
+              memory_percent: 0,
+              uptime_seconds: 0,
+              requests_total: 0,
+              collected_at: '2026-10-24T00:00:00+00:00',
+            },
+          },
+        })
+      }
+      return Promise.resolve({ data: { code: 0, data: [] } })
+    })
 
     const wrapper = mountPage(DpsMonitorView)
     await flushPromises()
@@ -236,7 +257,9 @@ describe('v1.9.7 DPS 监控收敛', () => {
     expect(mocks.get).toHaveBeenCalledWith('/dps-proxy/health')
     expect(wrapper.text()).toContain('健康')
     expect(wrapper.text()).toContain('1.0.0')
-    expect(wrapper.find('[data-test="dps-monitor-unavailable"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="dps-metric-qps"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="dps-rate-limit-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="dps-alert-rules-card"]').exists()).toBe(true)
   }, 20000)
 })
 

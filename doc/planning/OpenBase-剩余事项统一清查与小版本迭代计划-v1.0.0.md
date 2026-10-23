@@ -79,8 +79,8 @@
 | XR-DPS-01 | 画像系统指标 + 告警规则端点 | DPS | R7 遗留 | 监控页仅健康 | P2 | ~~v1.10.0~~ → v1.11.0 | **拆分转期（2026-10-23）**：规则写已按 ADR-290-01 收口 410（不可在 DPS 重开）；指标端点需新增采集/权限点/代理允许清单，本机无 DPS 可运行测试环境 → 拆为 XR-DPS-04 / XR-DPS-05 | 两项均闭环后页面可读写 |
 | XR-DPS-02 | 画像规则引擎端点 | DPS | 缺口 §4.5 #5 | 规则引擎页 mock | P3 | v1.11.0 | **裁定：冻结**（无需求定义/数据模型；写面已按 ADR-290-01 收口 410）；前端移除 mock，保留只读告警规则 | 页面 0 mock |
 | XR-DPS-03 | 画像数据权限 / 接口限流 / API 管理端点 | DPS | 缺口 §4.1 #9/#13/#41 | 三页无端点 | P3 | v1.11.0 | **裁定：只读建设 / 写冻结**（`/rate-limits/status`、`/api-registry`、`/error-codes`、`/permissions/roles` 只读接线；写面 410）→ v1.12.0 | 三页 0 mock、只读可见 |
-| XR-DPS-04 | DPS 运行态指标端点（QPS/CPU/内存） | DPS | XR-DPS-01 拆分 | 监控页无指标 | P2 | v1.11.0 | **裁定：建设**（端点/字段/权限点已定稿）→ v1.12.0，须在 DPS 可运行测试环境交付 | 端点 200、权限点可达、DPS 全量回归通过 |
-| XR-DPS-05 | OpenBase 代理扩权 + 画像监控页接线 | OpenBase | XR-DPS-01 拆分 | `dps-proxy` 仅映射 `/api/v2/portrait/*` | P2 | v1.11.0 | **待启动（阻塞于 XR-DPS-04）**：指标端点未交付前无可用数据源；只读规则/限流可先接线（可先做） | 页面 0 mock、只读规则与指标可见 |
+| XR-DPS-04 | DPS 运行态指标端点（QPS/CPU/内存） | DPS | XR-DPS-01 拆分 | 监控页无指标 | P2 | v1.11.0 | **✅ 已闭环（v1.12.0）**：`GET /api/v2/metrics`（7 字段，60s 滑窗）+ `runtime_metric:read` 权限点 + 类级守门；DPS 2.13.0，全量 1840 passed | 端点 200、权限点可达、DPS 全量回归通过 |
+| XR-DPS-05 | OpenBase 代理扩权 + 画像监控页接线 | OpenBase | XR-DPS-01 拆分 | `dps-proxy` 仅映射 `/api/v2/portrait/*` | P2 | v1.11.0 | **✅ 已闭环（v1.12.0）**：代理允许清单新增 `/metrics`、`/rate-limits/status`、`/alerts/rules` 三个只读路由；画像监控页四源真实接线，前端 366/366 | 页面 0 mock、只读规则与指标可见 |
 | XR-GOV-01 | C1-d 码值规范化（码 ↔ UUID 双形态） | 三仓 | C1 派单 | 多形态码值未统一 | P2 | ~~v1.10.2~~ → v1.12.0 | **裁定：建设（派单）**：OpenBase 能力已入库（11 例）；OpenLLM/OpenRAG/OpenMemory 零命中未采纳 → 按 LL→RAG→Memory 派单并回执 | 三仓回执 + 回归 |
 | XR-MEM-01 | OpenMemory `default` 兜底退役 | OpenMemory | 组织事实源收敛 D4 | 过渡期兜底长期存在 | P2 | v1.11.0 | **✅ 已闭环（2026-10-12，台账滞后）**：P4 以空策略矩阵 fail-closed 启动，不再自动创建 `{"default":{"enabled":true}}`（`68701e9`+`26dc728`，全量 1366 passed） | 无 `default` 回退；AC 通过 |
 
@@ -190,14 +190,14 @@
 | 本期代码改动 | 无（门禁仅要求书面裁定；建设项按纪律进入下一版本） |
 
 
-### v1.12.0 —— 长尾建设 A/B 批（P2/P3）
+### v1.12.0 —— 长尾建设 A/B/C 批（P2/P3）
 
 | 项 | 内容 |
 |----|------|
-| 目标 | 落地裁定中「本仓低风险」三项，并清理对应 mock 页面；B 批完成 OpenLLM 用户名邀请小改 |
-| 范围 | A 批：OB-03、OB-04、XR-LLM-03（报表趋势）；B 批：XR-LLM-06；XR-DPS-05 阻塞于 XR-DPS-04 |
-| 门禁 | 三页 0 mock；后端用例通过；前端全量不劣于基线 |
-| 回滚 | 页面级回退到占位/只读提示；端点下线无数据依赖；成员邀请可回退为 UUID 输入（旧字段仍兼容） |
+| 目标 | 落地裁定中「本仓低风险」三项，并清理对应 mock 页面；B 批完成 OpenLLM 用户名邀请小改；C 批完成 DPS 指标端点到代理与页面 |
+| 范围 | A 批：OB-03、OB-04、XR-LLM-03（报表趋势）；B 批：XR-LLM-06；C 批：XR-DPS-04 → XR-DPS-05 |
+| 门禁 | 三页 0 mock；后端用例通过；DPS 全量不劣于基线；前端全量不劣于基线 |
+| 回滚 | 页面级回退到占位/只读提示；端点下线无数据依赖；成员邀请可回退为 UUID 输入（旧字段仍兼容）；DPS 指标端点可下线且不写库 |
 
 | 执行状态（2026-10-24） | 结论 |
 |------------------------|------|
@@ -205,8 +205,9 @@
 | OB-04（A 批） | **✅ 已闭环**：`KnowledgeConsoleView` 接 `rag-proxy` 真实链路（collections / health / `query/retrieve`），移除 mock 响应与虚构 QPS/错误率；前端 2 例 |
 | XR-LLM-03（报表，A 批） | **✅ 已闭环**：`P2ReportTrendView` 接 `/usage/trends` + `/monitoring/dashboard` + `/monitoring/costs`，含 KPI、双轴趋势、用户成本 Top5；前端 2 例 |
 | XR-LLM-06（B 批） | **✅ 已闭环**：`POST /workspaces/{id}/members` 支持 `username`（二选一必填；不存在 404 `BIZ_NOT_FOUND`；双给冲突 400 `PARAM_INVALID`）；成员弹窗改用户名输入；后端 9 例、前端 3 例 |
-| XR-DPS-05 | **未启动**：指标数据源依赖 XR-DPS-04（DPS 可运行环境）；只读规则/限流接线可在 C 批独立推进 |
-| 验证 | 前端全量 **363/363**（37 文件）、`vue-tsc` 0 错误；后端 9 例 + 回归 34 例 |
+| XR-DPS-04（C 批） | **✅ 已闭环**：DPS `GET /api/v2/metrics`（7 字段，60s 滑窗 QPS）+ `runtime_metric:read` 权限点 + `PATH_RESOURCE_MAP` 归一；DPS 2.13.0；新增 18 例 |
+| XR-DPS-05（C 批） | **✅ 已闭环**：`dps-proxy` 新增 `/metrics`、`/rate-limits/status`、`/alerts/rules` 只读路由（无写方法）；画像监控页四源真实接线；代理 4 例、前端 3 例 |
+| 验证 | DPS 全量 **1840 passed / 3 skipped / 1 xfailed / 1 xpassed，0 failed**；OpenBase 代理 **26 passed**；前端全量 **366/366**（38 文件）、`vue-tsc`/`ruff` 0 错误 |
 
 
 ---
@@ -263,6 +264,7 @@ v1.10.2 ──→ v1.11.0（长尾裁定需治理口径稳定）
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.9.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 C 批执行回填**：XR-DPS-04（`GET /api/v2/metrics` + `runtime_metric:read`，DPS 2.13.0）与 XR-DPS-05（代理三只读路由 + 画像监控页）闭环；DPS 全量 1840 passed，前端 366/366。 |
 | v1.8.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 B 批执行回填**：XR-LLM-06 用户名邀请闭环（OpenLLM 后端 schema/路由 + 前端成员弹窗）；前端全量 363/363。 |
 | v1.7.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.12.0 A 批执行回填**：OB-03（全局调用记录端点 + 页面）、OB-04（知识库控制台真实链路）、XR-LLM-03 报表趋势均闭环；XR-DPS-05 阻塞于 04；前端全量 360/360。 |
 | v1.6.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.11.0 长尾复核完成**：产出《OpenBase-长尾事项产品裁定-v1.0.0》，14 项逐条裁定（建设 7 / 冻结 5 / 不建设 1 / 已闭环 1），附端点清单、验收与解冻条件；建设项转入 v1.12.0。 |

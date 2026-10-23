@@ -533,6 +533,57 @@ async def dps_health(
 
 
 # ---------------------------------------------------------------------------
+# v1.12.0（XR-DPS-05）：运行态观测只读扩权（依赖 DPS XR-DPS-04 `GET /api/v2/metrics`）
+#
+# 允许清单**仅**包含三个只读端点：
+#   GET /api/v2/metrics            运行态指标（QPS/CPU/内存/uptime/requests_total）
+#   GET /api/v2/rate-limits/status 限流只读指标
+#   GET /api/v2/alerts/rules       告警规则只读
+# 不提供任何写方法代理；上游 401/403 语义保真透传（本仓不做权限判定）。
+# ---------------------------------------------------------------------------
+
+
+@router.get("/metrics")
+async def dps_runtime_metrics(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """DPS 运行态指标（GET /api/v2/metrics；上游权限 runtime_metric:read）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward("GET", "/api/v2/metrics", headers=headers, request=request)
+
+
+@router.get("/rate-limits/status")
+async def dps_rate_limit_status(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """DPS 限流状态（GET /api/v2/rate-limits/status；查询参数原样透传）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", "/api/v2/rate-limits/status",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/alerts/rules")
+async def dps_alert_rules(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """DPS 告警规则只读（GET /api/v2/alerts/rules；上游带 Deprecation/Sunset 头）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", "/api/v2/alerts/rules",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---------------------------------------------------------------------------
 # v1.4.10 Step 3 P1：模板化能力对接（10 新增端点 #1~#10 ＋ 12 补代理端点 #11~#22）
 #
 # 契约事实源：《OpenBase-API接口设计文档-v1.4.10》§1（路径映射）／§1.1（补代理）／
