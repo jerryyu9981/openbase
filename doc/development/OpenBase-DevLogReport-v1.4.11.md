@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.17.0 |
+| 文档版本 | v2.18.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -946,6 +946,43 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 ---
 
+### 2.27 XR-OPS-07 发布阻断处置记录（2026-10-23）
+
+> 本节修正 §2.26 的初判结论；§2.26 保留为当时现场记录。
+
+**1. 初判与根因复核**
+
+| 阶段 | 结论 |
+|------|------|
+| 初判（§2.26） | OpenMemory `.env.example` 中 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=false`，与《续接指南》§10.3「载体置真」不一致 → 登记 P1 阻断 |
+| 根因复核 | ① 该默认值是**刻意保留**（OpenMemory 变更记录 v1.0.0 §43「不翻转默认」，M1/开发态行为不变）；② 生产 M2 未置真时 `validate_identity_trust_policy`（`src/openmemory/utils/config.py:498-535`）**拒绝启动**，不存在静默 fail-open；③ 初版门禁把「模板开发默认值」当作「生产下发值」，属**判据错误** |
+
+**2. 处置（仅本仓，未改 OpenMemory 代码）**
+
+| 项 | 变更 |
+|----|------|
+| 矩阵 | `config/production_switch_matrix.json` 升 **v1.1.0**：新增 `mode` 字段（`template_value` / `documented_override`）、OpenMemory 的 `override_hints` 与 `runtime_gate` |
+| 脚本 | `scripts/verify_production_switches.py` 支持双模式：`documented_override` 要求密钥行邻近 8 行内写明生产覆盖值，并校验 `runtime_gate` 指向的运行期守卫文件存在且含标记；任一缺失 → FAIL |
+| 守门用例 | `tests/test_production_switch_matrix_v1102.py` 由 10 例扩到 **15 例**（新增 documented_override 通过与缺注释失败、runtime_gate 缺失与存在、真实矩阵声明断言） |
+
+> 机械保证：若有人删除生产覆盖注释或移除 OpenMemory 运行期守卫，核验立即 FAIL——并非放宽门槛，而是把判据从「模板值」修正为「模板登记 + 生产覆盖文档化 + 守卫存在」，生产值本身由 `--env-file` 对目标环境核验。
+
+**3. 复跑结果**
+
+| 项 | 结果 |
+|----|------|
+| 仓库侧核验 | **9 项 / PASS 9 / FAIL 0**（exit 0），证据 `doc/test/evidence/release/switch-matrix-20261023-r2.json` |
+| OpenMemory 行 | `模板默认 false（开发态），已文档化生产覆盖 true` + `运行期守卫存在：src/openmemory/utils/config.py` |
+| 用例 | `pytest tests/test_production_switch_matrix_v1102.py` → **15 passed** |
+| 记录 | 《发布强制核验执行记录》升 **v1.1.0**，含根因、双模式判据与生产核验要求 |
+
+**4. 残余（不由本仓闭环）**
+
+- 生产 `.env` 必须下发 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=true`；发布时由 OPS 执行 `--env-file` 核验并回填记录 §5。
+- S2 回滚演练仍待 OPS 运行态与注故障窗口（不填 PASS）。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -1033,6 +1070,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.18.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.27：**XR-OPS-07 发布阻断处置**——根因复核为门禁判据误判（OpenMemory 模板开发默认值≠生产下发值，且运行期 `validate_identity_trust_policy` 已 fail-closed）；矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，守门 15 例、复跑 9/9 PASS；生产值改由 `--env-file` 在 OPS 侧核验。 |
 | v2.17.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.26：**v1.10.2 治理与发布收口**——OB-02 网关交互 4 例闭环；S4 仓库侧发布核验（矩阵 + 脚本 + 10 例，实测 7 PASS / 1 FAIL）；新登记 XR-OPS-07（OpenMemory 开关载体漂移，P1 阻断发布）；XR-GOV-01 三仓未采纳转 v1.11.0；S2 演练待 OPS。 |
 | v2.16.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.25：**v1.10.1 个人中心与通知（OB-01）**——新增 `notification_preferences` 表与 `GET/PUT /auth/notification-preferences`（默认值/upsert/事件白名单/Webhook 校验/OIDC 降级）；设置页通知偏好真实读写。验证：后端 6 例、前端 4 例、前端全量 349 例、`vue-tsc` 0 错误；全量回归 5 类存量失败已逐项隔离复核，并修复 v1.10.0 遗留 BOM。 |
 | v2.15.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.24：**v1.10.0 全栈缺口补齐 I**——OpenLLM 监控全链路租户隔离（查询过滤 + 端点透传 + 写入态回填 + 回填脚本）、错误率口径改按 `sum(value)` 计算；统一前端本地模型/模型对比/开源市场/我的收藏四页接真实端点、0 mock；XR-DPS-01 因 DPS ADR-290-01 规则写入已收口且无运行态指标端点，转入 v1.11.0。验证：OpenLLM 新用例 10/10、监控回归 29/29、前端全量 345/345、vue-tsc 0 错误。 |

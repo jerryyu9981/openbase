@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端及五系统协同 |
-| 文档版本 | v1.4.0 |
+| 文档版本 | v1.5.0 |
 | 状态 | **[Review]**（待人工批准后进入执行） |
 | 适用范围 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五系统 + 运维/QA 收口项 |
 | 作者 | FA-OpenBase-Dev |
@@ -94,8 +94,8 @@
 | XR-OPS-03 | G1/G2 生产 `.env` 下发（三 REAL + 5 组门禁） | OPS | 必办清单 v2.2.0 | 生产门禁未生效 | **P1** | v1.9.8 | production 启动成功、反例拒绝 |
 | XR-OPS-04 | G7 端到端复核 + 生产 Key 注入/轮换 + DPS 码表登记 | OPS/研发 | 必办清单 v2.2.0 | G7 仅进程内验证 | **P1** | v1.9.8 | 真实转发 PASS、密钥轮换记录、码表登记 |
 | XR-OPS-05 | R384 DPS P1 修正提交与回执核验 | 研发 | R384 派单 §10 | 回执不完整 | P3 | v1.9.8 | **✅ 已闭环（2026-10-23）**：DPS `0954b9a`（RequestIdFilter 改挂 handler 级）已在 `main`（`git merge-base --is-ancestor` 通过） | commit hash 回填、回归通过 |
-| XR-OPS-07 | OpenMemory 生产开关载体置真 | OpenMemory/OPS | S4 执行发现 | 模板 `false` 与 §10.3 生产值 `true` 不一致，发布门禁阻断 | **P1** | v1.11.0（跨仓） | 建设：`.env.example` 生产值改 `true` 并回执 | 核验脚本 8/8 PASS |
-| XR-OPS-06 | S2 回滚演练 + S4 发布强制核验执行 | OPS/研发 | 必办清单 v2.2.0 | 仅有方案未演练 | P2 | v1.10.2 | 演练报告 + 核验清单签字 | **部分闭环（2026-10-23）**：S4 仓库侧已执行（矩阵 + 脚本 + 10 例；实测 7 PASS / 1 FAIL）；S2 需 OPS 运行态与注故障窗口，未执行（不填 PASS） |
+| XR-OPS-07 | OpenMemory 生产开关载体置真 | OpenMemory/OPS | S4 执行发现 | 初判为模板值与生产值漂移 | ~~P1~~ → P2 | v1.10.2 | **✅ 已闭环（2026-10-23）**：根因复核为**门禁判据误判**（模板默认 `false` 系刻意的 M1/开发态默认，生产 M2 未置真时 `validate_identity_trust_policy` 拒绝启动，不存在 fail-open）→ 矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，10 → 15 例守门；复跑 9/9 PASS。生产值仍需 OPS 以 `--env-file` 核验 | 仓库侧 9/9 PASS；生产下发核验待 OPS |
+| XR-OPS-06 | S2 回滚演练 + S4 发布强制核验执行 | OPS/研发 | 必办清单 v2.2.0 | 仅有方案未演练 | P2 | v1.10.2 | 演练报告 + 核验清单签字 | **部分闭环（2026-10-23）**：S4 仓库侧已执行并全绿（矩阵 v1.1.0 + 脚本 + 15 例；实测 9 PASS / 0 FAIL）；S2 需 OPS 运行态与注故障窗口，未执行（不填 PASS）；生产值由 `--env-file` 核验待 OPS |
 
 ---
 
@@ -168,8 +168,8 @@
 |------------------------|------|
 | OB-02 | **已闭环**：`r10-gateway-aggregate-v1102.spec.ts` 4 例（成功透传/部分失败/超时/重置）通过 |
 | XR-GOV-01 | **部分闭环，转 v1.11.0**：OpenBase 侧 `code_normalize.py` 能力已在库（11 例）；OpenLLM/OpenRAG/OpenMemory 全仓检索 `code_normalize` 零命中，未采纳 → 需三仓派单与回执，不在本仓单方闭环 |
-| XR-OPS-06 | **部分闭环**：S4 仓库侧已执行——新增 `config/production_switch_matrix.json`（唯一事实源）+ `scripts/verify_production_switches.py` + 10 例；实测 `8 项 / PASS 7 / FAIL 1`；S2 回滚演练需 OPS 运行态与注故障窗口，未执行（不填 PASS） |
-| 新增 | **XR-OPS-07（P1）**：OpenMemory `.env.example` 中 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=false`，与 §10.3 生产值 `true` 漂移，发布门禁阻断 |
+| XR-OPS-06 | **部分闭环**：S4 仓库侧已执行并全绿——矩阵 v1.1.0（`template_value` / `documented_override` 双模式）+ 脚本 + 15 例；实测 `9 项 / PASS 9 / FAIL 0`；S2 回滚演练需 OPS 运行态与注故障窗口，未执行（不填 PASS） |
+| 新增 | **XR-OPS-07（已闭环）**：初判 OpenMemory 载体漂移，根因复核为门禁判据误判（模板开发默认值≠生产下发值）；已改为 `documented_override` + `runtime_gate` 双机械校验，复跑 9/9 PASS |
 
 
 ### v1.11.0 —— 长尾产品复核（P3）
@@ -177,7 +177,7 @@
 | 项 | 内容 |
 |----|------|
 | 目标 | 对无端点/低价值页面一次性裁定，能建则建、不能建则冻结 |
-| 范围 | OB-03、OB-04、OB-05、XR-LLM-03、XR-LLM-04、XR-LLM-05、XR-LLM-06、XR-LLM-08、XR-DPS-02、XR-DPS-03、XR-DPS-04、XR-DPS-05、XR-MEM-01、XR-GOV-01（三仓回执）、XR-OPS-07 |
+| 范围 | OB-03、OB-04、OB-05、XR-LLM-03、XR-LLM-04、XR-LLM-05、XR-LLM-06、XR-LLM-08、XR-DPS-02、XR-DPS-03、XR-DPS-04、XR-DPS-05、XR-MEM-01、XR-GOV-01（三仓回执） |
 | 门禁 | 每项形成书面裁定（建设/冻结/不建设）+ 端点清单；建设的项进入下一版本 |
 | 回滚 | 仅文档与开关，无强制变更 |
 
@@ -235,6 +235,7 @@ v1.10.2 ──→ v1.11.0（长尾裁定需治理口径稳定）
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.5.0 | 2026-10-23 | FA-OpenBase-Dev | **XR-OPS-07 闭环（发布阻断解除）**：根因复核为门禁判据误判（OpenMemory 模板开发默认值≠生产下发值），矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，守门用例 15 例，复跑 9/9 PASS；生产值改由 `--env-file` 在 OPS 侧核验。 |
 | v1.4.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.2 执行回填**：OB-02 闭环（4 例网关交互）；XR-GOV-01 部分（OpenBase 能力在库，三仓未采纳）转 v1.11.0；XR-OPS-06 部分（S4 仓库侧核验 7 PASS/1 FAIL，S2 待 OPS）；新登记 XR-OPS-07（OpenMemory 载体漂移，P1）。 |
 | v1.3.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.1 执行回填**：OB-01 通知偏好闭环（新增 `notification_preferences` 表 + 读写端点 + 设置页卡片；后端 6 例 / 前端 4 例 / 前端全量 349 例 / `vue-tsc` 0 错误）。 |
 | v1.2.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.10.0 执行回填**：XR-LLM-01（监控租户隔离：查询过滤 + 端点透传 + 写入态回填 + 回填脚本）、XR-LLM-07（错误率口径 `sum(value)`）、XR-LLM-02（四页 0 mock）均已闭环；XR-DPS-01 因 DPS ADR-290-01 规则写收口 410、无运行态指标端点、本机无 DPS 可运行测试环境，拆分转期 v1.11.0，新登记 XR-DPS-04 / XR-DPS-05。 |

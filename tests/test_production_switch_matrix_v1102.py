@@ -168,3 +168,86 @@ def test_matrix_rejects_missing_repos(tmp_path):
     path.write_text(json.dumps({"version": "1.0.0"}), encoding="utf-8")
     with pytest.raises(ValueError):
         load_matrix(path)
+
+
+# ---- XR-OPS-07 修正：documented_override 模式 ---------------------------------
+
+
+def _override_spec(**overrides) -> dict:
+    spec = {
+        "mode": "documented_override",
+        "carriers": [".env.example"],
+        "switches": {"OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE": "true"},
+        "override_hints": ["生产", "true"],
+    }
+    spec.update(overrides)
+    return spec
+
+
+def test_documented_override_passes_with_dev_default_and_prod_note(tmp_path):
+    """模板保留开发默认 false，但邻近注释写明生产必须置 true → PASS。"""
+    repo_root = _write_repo(
+        tmp_path,
+        "OpenMemory",
+        {
+            ".env.example": (
+                "# 默认 false：开发/单租户行为不变；\n"
+                "# **生产 M2 必须置 true**，否则拒绝启动。\n"
+                "OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=false\n"
+            )
+        },
+    )
+    results = check_carrier_repo("OpenMemory", repo_root, _override_spec())
+    assert results[0].status == PASS
+    assert "已文档化生产覆盖" in results[0].detail
+
+
+def test_documented_override_fails_without_prod_note(tmp_path):
+    repo_root = _write_repo(
+        tmp_path,
+        "OpenMemory",
+        {".env.example": "OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=false\n"},
+    )
+    results = check_carrier_repo("OpenMemory", repo_root, _override_spec())
+    assert results[0].status == FAIL
+    assert "生产覆盖值" in results[0].detail
+
+
+def test_runtime_gate_missing_file_fails(tmp_path):
+    repo_root = _write_repo(
+        tmp_path,
+        "OpenMemory",
+        {".env.example": "# 生产必须置 true\nOPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=false\n"},
+    )
+    spec = _override_spec(runtime_gate={"file": "src/config.py", "marker": "require_tenant_scope"})
+    results = check_carrier_repo("OpenMemory", repo_root, spec)
+    gate = [item for item in results if item.key == "runtime_gate"]
+    assert len(gate) == 1 and gate[0].status == FAIL
+    assert "守卫文件不存在" in gate[0].detail
+
+
+def test_runtime_gate_marker_present_passes(tmp_path):
+    repo_root = _write_repo(
+        tmp_path,
+        "OpenMemory",
+        {
+            ".env.example": "# 生产必须置 true\nOPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=false\n",
+            "src/config.py": "def validate_identity_trust_policy():\n    if not config.require_tenant_scope:\n        raise RuntimeError('生产必须开启')\n",
+        },
+    )
+    spec = _override_spec(runtime_gate={"file": "src/config.py", "marker": "require_tenant_scope"})
+    results = check_carrier_repo("OpenMemory", repo_root, spec)
+    gate = [item for item in results if item.key == "runtime_gate"]
+    assert len(gate) == 1 and gate[0].status == PASS
+
+
+def test_real_matrix_declares_openmemory_documented_override():
+    import pathlib
+
+    matrix = load_matrix(pathlib.Path("config/production_switch_matrix.json"))
+    spec = matrix["repos"]["OpenMemory"]
+    assert spec["mode"] == "documented_override"
+    assert spec["runtime_gate"]["file"].endswith("config.py")
+    assert spec["runtime_gate"]["marker"] == "require_tenant_scope"
+    assert spec["override_hints"] == ["生产", "true"]
+

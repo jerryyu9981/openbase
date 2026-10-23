@@ -1,9 +1,10 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "source": "《OpenBase-五系统多租户与授权集成总览与续接指南》§10.3（2026-10-16 裁定③④：发布强制核验）",
-  "note": "生产必需开关矩阵（唯一事实源）。release 前须逐项核验：carrier 模式检查仓库载体（模板/文档）是否登记为生产值；--env-file 模式检查实际下发文件。",
+  "note": "生产必需开关矩阵（唯一事实源）。mode=template_value 要求模板登记生产值；mode=documented_override 允许模板保留开发默认值，但必须在密钥邻近注释中写明生产覆盖值，并由 runtime_gate 指向运行期 fail-closed 守卫。生产值最终以 --env-file 对目标环境核验。",
   "repos": {
     "OpenLLM": {
+      "mode": "template_value",
       "carriers": [".env.example", "backend/.env.example"],
       "switches": {
         "ENFORCE_INBOUND_IDENTITY_HEADERS": "true",
@@ -14,18 +15,26 @@
       }
     },
     "OpenMemory": {
+      "mode": "documented_override",
       "carriers": [".env.example", "deployments/docker/.env.example"],
       "switches": {
         "OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE": "true"
+      },
+      "override_hints": ["生产", "true"],
+      "runtime_gate": {
+        "file": "src/openmemory/utils/config.py",
+        "marker": "require_tenant_scope"
       }
     },
     "DPS": {
+      "mode": "template_value",
       "carriers": ["doc/operation/DPS-部署文档-v2.1.0.md"],
       "switches": {
         "TENANT_CONTEXT_REQUIRED": "true"
       }
     },
     "OpenBase": {
+      "mode": "template_value",
       "carriers": [],
       "switches": {}
     }
