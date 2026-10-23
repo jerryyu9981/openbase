@@ -1304,3 +1304,91 @@ export const abTestsApi = {
     return data
   },
 }
+
+// ---------------------------------------------------------------------------
+// 本地资源与模型市场（v1.9.6 R6）：GPU 资源、下载任务、部署
+// ---------------------------------------------------------------------------
+
+export interface LlmGpuInfo {
+  available: boolean
+  running_models: Array<Record<string, unknown>>
+}
+
+export interface LlmGpuAllocation {
+  gpu_id: number
+  name: string
+  total_memory_mb: number
+  used_memory_mb: number
+  free_memory_mb: number
+  utilization: number
+  allocated_models: Array<{ model_name: string; schedule_type: string }>
+}
+
+export interface LlmGpuAllocationStatus {
+  available: boolean
+  gpu_count: number
+  gpus: LlmGpuAllocation[]
+  message?: string | null
+}
+
+export const localModelsApi = {
+  async gpuInfo(): Promise<LlmGpuInfo> {
+    const { data } = await http.get<LlmGpuInfo>(`${OPENLLM}/local-models/gpu-info`)
+    return data
+  },
+  async gpuAllocation(): Promise<LlmGpuAllocationStatus> {
+    const { data } = await http.get<LlmGpuAllocationStatus>(
+      `${OPENLLM}/local-models/gpu-allocation/status`,
+    )
+    return data
+  },
+}
+
+export interface LlmDownloadTask {
+  id: string
+  model_id: string
+  model_name?: string | null
+  status: string
+  total_size: number | null
+  downloaded_size: number | null
+  progress: number
+  download_speed: number | null
+  error_message: string | null
+  retry_count: number
+  local_path: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export const openModelsApi = {
+  async downloads(params: { status?: string; page?: number; page_size?: number } = {}) {
+    const { data } = await http.get<{
+      items: LlmDownloadTask[]
+      total: number
+      page: number
+      page_size: number
+    }>(`${OPENLLM}/open-models/downloads`, { params })
+    return data
+  },
+  async startDownload(modelId: string, payload: { version?: string; resume?: boolean } = {}): Promise<void> {
+    await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/download`, {
+      version: payload.version ?? 'main',
+      resume: payload.resume ?? true,
+    })
+  },
+  async pauseDownload(modelId: string): Promise<void> {
+    await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/pause-download`, {})
+  },
+  async resumeDownload(modelId: string): Promise<void> {
+    await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/resume-download`, {})
+  },
+  async cancelDownload(modelId: string): Promise<void> {
+    await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/cancel-download`, {})
+  },
+  async deploy(modelId: string): Promise<void> {
+    await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/deploy`, {
+      framework: 'auto',
+      max_context_length: 4096,
+    })
+  },
+}

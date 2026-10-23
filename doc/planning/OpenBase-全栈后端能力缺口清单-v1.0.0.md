@@ -3,12 +3,12 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.5.0 |
+| 文档版本 | v1.6.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
 | 创建日期 | 2026-10-22 |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.19.0 §8.17；《OpenBase-DevLogReport-v1.4.11》v2.10.0 §2.19 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.20.0 §8.18；《OpenBase-DevLogReport-v1.4.11》v2.11.0 §2.20 |
 | 证据 | `doc/test/evidence/s6/ui-func-audit-v190.json`、`ui-func-audit-v190-summary.md`、`proxy-reachability-v190.json` |
 | 存放 | `doc/planning/` |
 
@@ -48,7 +48,7 @@
 | L1+L2 结果 | **PASS 76 / FAIL 1**（唯一 FAIL 为 `net::ERR_NO_BUFFER_SPACE`，Chromium 在沙箱内写 `debug.log` 受限导致的资源加载抖动；该页单页复跑 0 错误，判为环境噪声，非应用缺陷） |
 | 首轮基线 | PASS 77 / FAIL 0（同一套探针，服务全部预热后） |
 | API 失败次数（4xx/5xx/请求失败） | **0** |
-| 无后端调用的页面 | **31**（R1 3 页、R2 2 页、R3 2 页、R4 6 页、R5 8 路由收口后：52 − 21） |
+| 无后端调用的页面 | **29**（R1 3 页、R2 2 页、R3 2 页、R4 6 页、R5 8 路由、R6 2 页收口后：52 − 23） |
 | 其中「无调用且无可交互动作」的静默页 | 28 |
 
 > 采样口径说明：无后端调用按「首屏 1.2s 稳定窗口内是否发出 `/api/**`」判定；记忆图谱/衰减、模板包导出、血缘、措施建议等**按需触发**页在该窗口内可能尚无请求，属测量假阴性。已在 §4 逐页以源码接线与实测复核，避免误判。
@@ -95,7 +95,7 @@
 | 18 | 告警中心 | `/platform/observability/monitoring/alerts` | **真实（v1.9.4 R4）** | — | `/alerts/rules`（增删改查）、`/alerts`、`/alerts/{id}/resolve|acknowledge`（双通道后 200） | **已闭环** |
 | 19 | 链路追踪 | `/platform/observability/monitoring/traces` | **真实（v1.9.4 R4）** | — | `/monitoring/traces`、`/monitoring/traces/statistics`、`/monitoring/traces/{id}`（双通道后 200） | **已闭环（新建页面替换占位）** |
 | 20 | 预算管理 | `/platform/observability/monitoring/budgets` | **真实（v1.9.4 R4）** | — | `/budgets`、`/budgets/{id}/status`（双通道后 200） | **已闭环（新建页面替换占位）** |
-| 21 | GPU 资源 | `/platform/observability/gpu` | mock | D | `/local-models/gpu`（502 超时） | 待性能治理 |
+| 21 | GPU 资源 | `/platform/observability/gpu` | **真实（v1.9.6 R6）** | — | `/local-models/gpu-allocation/status`、`/local-models/gpu-info`；探测短超时（connect 2s/read 5s） | **已闭环** |
 | 22 | 用量统计 | `/platform/observability/usage` | **真实（v1.9.4 R4）** | — | `/usage/summary`、`/usage/trends`、`/usage/detail`（双通道后 200） | **已闭环** |
 | 23 | 计费 | `/platform/observability/billing` | **真实（v1.9.4 R4）** | — | `/billing/usage/statistics`、`/billing/quotas`、`/billing/bills`（双通道后 200） | **已闭环** |
 | 24 | 服务发现与编排 | `/platform/observability/service-discovery` | 真实 | — | `/services`、`/gateway/ping` | 已接 |
@@ -106,8 +106,8 @@
 | 29 | 模型分类 | `/platform/governance/model-categories` | **真实（v1.9.3 R3）** | — | `/model-categories`、`/model-categories/tree`、`/model-categories/{id}/models`（双通道后 200） | **已闭环** |
 | 30 | 路由策略 | `/platform/governance/routing` | **真实（v1.9.5 R5）** | — | `/routing/semantic`（CRUD/测试/缓存）、`/routing/cascade`（双通道后 200） | **已闭环** |
 | 31 | 熔断器 | `/platform/governance/circuit-breakers` | **真实（v1.9.5 R5）** | — | `/routing/circuit-breakers`（列表/重置/配置/事件） | **已闭环** |
-| 32 | 模型部署 | `/platform/governance/deploy` | mock | B/D | `/open-models/*`（401；部分 502） | 后续轮次 |
-| 33 | 下载管理 | `/platform/governance/downloads` | mock | B | `/open-models/downloads`（401） | 后续轮次 |
+| 32 | 模型部署 | `/platform/governance/deploy` | 占位页 | E | 部署/停止/日志端点已存在（`/open-models/{id}/deploy|stop|logs`）；下载页已提供单模型部署入口 | 待立项（页面形态） |
+| 33 | 下载管理 | `/platform/governance/downloads` | **真实（v1.9.6 R6）** | — | `/open-models/downloads`、`pause|resume|cancel-download`、`download`、`deploy`（双通道后 200） | **已闭环** |
 | 34 | 工具调用监控 | `/platform/governance/tool-calls` | **真实（v1.9.5 R5）** | — | `/tool-calls`、`/tool-calls/{id}`（双通道后 200） | **已闭环** |
 | 35 | A/B 测试 | `/platform/governance/ab-tests` | **真实（v1.9.5 R5）** | — | `/routing/ab-tests`（列表/创建/暂停/恢复/完成/报表） | **已闭环** |
 | 36 | Prompt 模板 | `/platform/governance/prompt-templates` | **真实（v1.9.5 R5）** | — | `/prompt-templates`（CRUD/版本/回滚/导入） | **已闭环** |
@@ -196,6 +196,8 @@
 | **R4 六页接线**（v1.9.4） | 成本分析：三维度成本分布 + 预算列表 + 优化建议（只读，移除上游不存在的「一键应用」）；告警中心：规则增删改查/启停 + 告警确认/解决 + 服务端分页；链路追踪：统计卡 + 筛选列表 + Span 详情抽屉（新建页替换 `GenericPage`）；预算管理：列表/新建/状态抽屉（新建页替换 `GenericPage`）；用量统计：总览/趋势/明细/CSV 导出；计费：用量统计/配额/账单/消费趋势 | `tests/r4-wiring-v194.spec.ts` 17 例；`vue-tsc --noEmit` 通过；前端全量回归 306 passed |
 | **R5 双通道鉴权**（OpenLLM v1.9.5） | `roles` / `workspaces` / `virtual_keys` / `semantic_routing` / `cascade_routing` / `circuit_breakers` / `ab_tests` / `prompt_templates` / `prompt_experiments` / `prompt_assembly` / `tool_calls` 共 11 文件依赖改 `get_current_active_user_or_api_key`；新增 `GET /roles/permissions/catalog` 权限目录端点 | OpenLLM `test_r5_dual_channel_v195.py` 28 条路由断言 + 2 条守卫（30 passed） |
 | **R5 七页接线**（v1.9.5） | 角色与权限：角色 CRUD + 权限目录勾选保存 + 系统角色保护；工作空间：列表/新建/删除 + 成员增删 + 资源统计 + Virtual Key 创建/轮换；路由策略：语义路由 CRUD/启停/测试/缓存统计 + 熔断器列表/重置（移除假「手动开闭」）；工具调用：列表筛选/分页 + 输入输出详情（移除假调用链/取消）；Prompt 模板：CRUD/版本/回滚/导入/系统模板保护；Prompt 实验：创建/启动/完成/报表；A/B 测试：创建/暂停/恢复/完成/报表 | `tests/r5-wiring-v195.spec.ts` 15 例；`vue-tsc --noEmit` 通过；前端全量回归 321 passed |
+| **R6 超时治理**（OpenLLM v1.9.6） | Ollama 轻量探测（`/api/tags`、`/api/ps`）由 300s 读/10s 连接改为 `OLLAMA_PROBE_TIMEOUT`（read 5s / connect 2s），拉取模型长任务超时不变；`open-models` 全部路由改双通道；收藏列表与下载任务列表改为单次 `IN` 批量查询（消除 N+1），下载任务列表批量补 `model_name` | OpenLLM `test_r6_perf_v196.py` 13 例（10 条路由断言 + 3 条性能守卫） |
+| **R6 两页接线**（v1.9.6） | GPU 资源：接 `/local-models/gpu-allocation/status` + `/local-models/gpu-info`，展示分配/利用率/显存/占用模型与运行中模型；移除 mock 卡、随机趋势、温度/功耗列；下载管理：接 `/open-models/downloads` + 暂停/恢复/取消/重试/部署，移除本地 mock 与假删除 | `tests/r6-wiring-v196.spec.ts` 7 例；`vue-tsc --noEmit` 通过；前端全量回归 328 passed |
 
 ---
 
@@ -208,7 +210,7 @@
 | R3 | B 类第一批 | OpenLLM `plugins`、`model-categories` 改双通道依赖；插件管理、模型分类两页接真实 | **已完成（v1.9.3）** |
 | R4 | B 类第二批 | `monitoring/*`、`alerts`、`budgets`、`usage`、`billing` → 成本/告警/链路/预算/用量/计费六页 | **已完成（v1.9.4）**；指标表租户过滤见 §7 第 7 项 |
 | R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | **已完成（v1.9.5）**；新增权限目录端点 |
-| R6 | D 类性能 | `local-models`、`models/favorites|compare`、`open-models/popular` 的 10s 超时治理 | 上游耗时剖析 |
+| R6 | D 类性能 | `local-models`、`models/favorites|compare`、`open-models/popular` 的 10s 超时治理 | **已完成（v1.9.6）**：探测短超时 + 双通道 + N+1 批量化 |
 | R7 | E 类立项 | 仪表盘/统一监控/画像系统监控/个人设置等纯形态页 | 产品裁定是否建设 |
 
 > 纪律：每轮完成「后端 + 前端 + 单测 + 浏览器实测 + 文档留痕 + 三远程推送」闭环，不跨轮混提交。
@@ -221,7 +223,7 @@
 |:-:|-----------|------|------|
 | 1 | OpenLLM 原生 `/api/v1/*` 的 API Key 通道返回的是 **Key 所属用户**身份，不是终端用户 | 审计/权限粒度以服务账号为准，非真实操作者 | 身份头（`X-User-*`）已透传，供下游审计；如需终端级权限，改走 `/openllm/v1/*` 网关 |
 | 2 | 通用代理注入 OpenLLM Key 属新增出站凭据面 | 若代理权限判定失效，可能放大影响 | 代理入口仍强制 JWT + 权限校验；Key 仅对 `system=openllm` 注入 |
-| 3 | 上游 `local-models` 等端点 10s 超时 | 页面 502 | 与 D 类一并治理；必要时该组端点单独放宽超时 |
+| 3 | ~~上游 `local-models` 等端点 10s 超时~~ | 页面 502 | **已处置（R6 / v1.9.6）**：轻量探测改短超时（connect 2s/read 5s）；拉取模型长任务不变；页面降级展示 |
 | 4 | 服务进程（DPS/OpenRAG）在长时间无人访问后被回收 | 审计出现 503 假失败 | 审计前统一健康检查；服务编排侧增加守护（运维项） |
 | 5 | ~~**OpenLLM `scoped_session` + 线程池并发缺陷**~~ | 同步端点并发访问同一 Session → `InvalidRequestError` → 上游 500 | **已修复（R2 / OpenLLM v1.9.2）**：`get_db` 改为每请求独立 Session；前端串行化保留为额外防护 |
 | 6 | 「契约 mock」页面继续对外可见 | 用户误以为是真实数据 | 本清单作为派单依据；接线前不建议对外演示这些页面 |
@@ -264,6 +266,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.6.0 | 2026-10-23 | FA-OpenBase-Dev | **R6 收口**：Ollama 轻量探测改短超时（connect 2s/read 5s）；`open-models` 改双通道；收藏/下载任务列表批量化（消除 N+1）；GPU 资源与下载管理两页接真实端点并移除 mock；无后端调用页面 31 → 29。 |
 | v1.5.0 | 2026-10-23 | FA-OpenBase-Dev | **R5 收口**：OpenLLM 治理与 RBAC 11 个路由文件改双通道；新增 `GET /roles/permissions/catalog`；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点并移除配套假动作；无后端调用页面 39 → 31。 |
 | v1.4.0 | 2026-10-23 | FA-OpenBase-Dev | **R4 收口**：OpenLLM `monitoring` / `traces` / `alerts` / `budgets` / `usage` / `billing` / `billing_v2` 共 46 处依赖改双通道；成本/告警/链路/预算/用量/计费六页接真实端点（链路、预算由占位页改为真实页）；移除成本页「一键应用建议」假动作；无后端调用页面 45 → 39；新增 §7 第 7 项登记指标表租户过滤缺口。 |
 | v1.3.0 | 2026-10-23 | FA-OpenBase-Dev | **R3 收口**：OpenLLM `plugins` / `model-categories` 改为双通道鉴权；插件管理、模型分类两页接真实端点（列表/工具/启停/注册/健康检查、分类树/分类模型分页）；无后端调用页面 47 → 45。 |

@@ -1,125 +1,253 @@
 <template>
-  <PageContainer title="下载管理" description="模型下载任务与进度" test-id="download-manager-view-page">
+  <PageContainer title="下载管理" description="模型下载任务与进度（OpenLLM Model Download）" test-id="download-manager-view-page">
     <div class="page-toolbar">
-      <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 150px" data-test="dl-status-filter">
+      <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 150px" data-test="dl-status-filter" @change="reload">
+        <el-option label="等待中" value="pending" />
         <el-option label="下载中" value="downloading" />
+        <el-option label="已暂停" value="paused" />
         <el-option label="已完成" value="completed" />
         <el-option label="失败" value="failed" />
-        <el-option label="已暂停" value="paused" />
+        <el-option label="已取消" value="cancelled" />
       </el-select>
       <el-button type="primary" :loading="loading" data-test="dl-refresh" @click="load">刷新</el-button>
     </div>
 
+    <el-alert
+      v-if="errorMessage"
+      :title="errorMessage"
+      type="error"
+      show-icon
+      closable
+      class="mb-16"
+      data-test="dl-error"
+      @close="errorMessage = ''"
+    />
+
     <el-card header="下载任务" data-test="dl-card">
-      <div class="ob-table-scroll">
-        <el-table :data="filteredTasks" stripe empty-text="暂无下载任务" data-test="dl-table">
-          <el-table-column prop="model" label="模型" min-width="160" />
-          <el-table-column prop="size" label="大小" width="90" />
+      <div v-loading="loading" class="ob-table-scroll">
+        <el-table :data="tasks" stripe data-test="dl-table">
+          <template #empty>
+            <el-empty description="暂无下载任务" :image-size="60" data-test="dl-empty" />
+          </template>
+          <el-table-column label="模型" min-width="200">
+            <template #default="{ row }">{{ row.model_name || row.model_id }}</template>
+          </el-table-column>
+          <el-table-column label="大小" width="100">
+            <template #default="{ row }">{{ formatSize(row.total_size) }}</template>
+          </el-table-column>
           <el-table-column label="进度" min-width="200">
             <template #default="{ row }">
-              <el-progress :percentage="row.progress" :status="progressStatus(row)" />
+              <el-progress :percentage="Math.round(Number(row.progress ?? 0))" :status="progressStatus(row)" />
             </template>
           </el-table-column>
-          <el-table-column prop="speed" label="速度" width="100">
-            <template #default="{ row }">{{ row.speed }}</template>
+          <el-table-column label="速度" width="120">
+            <template #default="{ row }">{{ formatSpeed(row.download_speed) }}</template>
           </el-table-column>
           <el-table-column label="状态" width="100">
             <template #default="{ row }">
               <el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200">
+          <el-table-column label="操作" width="250" fixed="right">
             <template #default="{ row }">
-              <el-button v-if="row.status === 'downloading'" link type="warning" size="small" data-test="dl-pause" @click="toggle(row)">暂停</el-button>
-              <el-button v-if="row.status === 'paused'" link type="success" size="small" @click="toggle(row)">恢复</el-button>
-              <el-button v-if="row.status === 'failed'" link type="primary" size="small" data-test="dl-retry" @click="retry(row)">重试</el-button>
-              <el-button v-if="row.status === 'completed'" link type="primary" size="small" data-test="dl-deploy" @click="deploy(row)">部署</el-button>
-              <el-popconfirm title="确认删除该任务？" @confirm="remove(row.id)">
-                <template #reference>
-                  <el-button link type="danger" size="small">删除</el-button>
-                </template>
-              </el-popconfirm>
+              <el-button
+                v-if="row.status === 'downloading' || row.status === 'pending'"
+                link
+                type="warning"
+                size="small"
+                data-test="dl-pause"
+                @click="pause(row)"
+              >
+                暂停
+              </el-button>
+              <el-button
+                v-if="row.status === 'paused'"
+                link
+                type="success"
+                size="small"
+                data-test="dl-resume"
+                @click="resume(row)"
+              >
+                恢复
+              </el-button>
+              <el-button
+                v-if="row.status === 'failed' || row.status === 'cancelled'"
+                link
+                type="primary"
+                size="small"
+                data-test="dl-retry"
+                @click="retry(row)"
+              >
+                重试
+              </el-button>
+              <el-button
+                v-if="row.status === 'completed'"
+                link
+                type="primary"
+                size="small"
+                data-test="dl-deploy"
+                @click="deploy(row)"
+              >
+                部署
+              </el-button>
+              <el-button
+                v-if="['pending', 'downloading', 'paused', 'failed'].includes(row.status)"
+                link
+                type="danger"
+                size="small"
+                data-test="dl-cancel"
+                @click="cancel(row)"
+              >
+                取消
+              </el-button>
             </template>
           </el-table-column>
         </el-table>
       </div>
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next"
+        class="pagination"
+        data-test="dl-pagination"
+        @current-change="load"
+        @size-change="reload"
+      />
     </el-card>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { openModelsApi, type LlmDownloadTask } from '@/core/api/governance'
 
-interface DownloadTask {
-  id: number
-  model: string
-  size: string
-  progress: number
-  speed: string
-  status: 'downloading' | 'completed' | 'failed' | 'paused'
-}
-
-const mockTasks: DownloadTask[] = [
-  { id: 1, model: 'llama3-8b', size: '4.9GB', progress: 68, speed: '18.5 MB/s', status: 'downloading' },
-  { id: 2, model: 'qwen2-7b', size: '4.4GB', progress: 100, speed: '—', status: 'completed' },
-  { id: 3, model: 'deepseek-coder-6.7b', size: '3.8GB', progress: 32, speed: '12.0 MB/s', status: 'downloading' },
-  { id: 4, model: 'bge-large-zh', size: '1.3GB', progress: 0, speed: '—', status: 'failed' },
-]
-
-const tasks = ref<DownloadTask[]>([])
+/**
+ * 下载管理（v1.9.6 R6 真实化）：`/open-models/downloads` 列表（服务端分页/状态筛选）+
+ * 暂停/恢复/取消/重试（重试=重新创建下载任务）/部署。上游无「删除任务」端点，故不提供删除。
+ */
 const statusFilter = ref('')
 const loading = ref(false)
+const errorMessage = ref('')
+const tasks = ref<LlmDownloadTask[]>([])
+const total = ref(0)
+const page = ref(1)
+const pageSize = ref(20)
 
-const filteredTasks = computed(() =>
-  statusFilter.value ? tasks.value.filter((t) => t.status === statusFilter.value) : tasks.value,
-)
-
-function load() {
-  loading.value = true
-  setTimeout(() => {
-    tasks.value = mockTasks.map((t) => ({ ...t }))
-    loading.value = false
-  }, 300)
+function statusType(status: string) {
+  return {
+    pending: 'info',
+    downloading: 'warning',
+    paused: 'info',
+    completed: 'success',
+    failed: 'danger',
+    cancelled: 'info',
+  }[status] || 'info'
 }
-
-function progressStatus(row: DownloadTask): 'success' | 'exception' {
+function statusLabel(status: string) {
+  return {
+    not_downloaded: '未下载',
+    pending: '等待中',
+    downloading: '下载中',
+    paused: '已暂停',
+    completed: '已完成',
+    failed: '失败',
+    cancelled: '已取消',
+  }[status] || status
+}
+function progressStatus(row: LlmDownloadTask): 'success' | 'exception' | undefined {
   if (row.status === 'completed') return 'success'
   if (row.status === 'failed') return 'exception'
-  return 'success'
+  return undefined
+}
+function formatSize(bytes: number | null) {
+  if (!bytes) return '-'
+  return `${(Number(bytes) / 1024 / 1024 / 1024).toFixed(2)} GB`
+}
+function formatSpeed(bytesPerSecond: number | null) {
+  if (!bytesPerSecond) return '—'
+  return `${(Number(bytesPerSecond) / 1024 / 1024).toFixed(1)} MB/s`
 }
 
-function statusType(s: DownloadTask['status']): 'success' | 'warning' | 'danger' | 'info' {
-  return { downloading: 'warning', completed: 'success', failed: 'danger', paused: 'info' }[s] as 'success' | 'warning' | 'danger' | 'info'
+async function load() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const result = await openModelsApi.downloads({
+      status: statusFilter.value || undefined,
+      page: page.value,
+      page_size: pageSize.value,
+    })
+    tasks.value = result.items
+    total.value = result.total
+  } catch (error) {
+    errorMessage.value = `下载任务加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    loading.value = false
+  }
 }
 
-function statusLabel(s: DownloadTask['status']): string {
-  return { downloading: '下载中', completed: '已完成', failed: '失败', paused: '已暂停' }[s]
+function reload() {
+  page.value = 1
+  void load()
 }
 
-function toggle(row: DownloadTask) {
-  row.status = row.status === 'paused' ? 'downloading' : 'paused'
-  ElMessage.success(row.status === 'paused' ? '任务已暂停' : '任务已恢复')
+async function pause(row: LlmDownloadTask) {
+  try {
+    await openModelsApi.pauseDownload(row.model_id)
+    ElMessage.success('任务已暂停')
+    await load()
+  } catch (error) {
+    errorMessage.value = `暂停失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
-function retry(row: DownloadTask) {
-  row.status = 'downloading'
-  row.progress = 0
-  ElMessage.success('任务已重新开始')
+async function resume(row: LlmDownloadTask) {
+  try {
+    await openModelsApi.resumeDownload(row.model_id)
+    ElMessage.success('任务已恢复')
+    await load()
+  } catch (error) {
+    errorMessage.value = `恢复失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
-function deploy(row: DownloadTask) {
-  ElMessage.success(`模型 ${row.model} 部署已触发`)
+async function retry(row: LlmDownloadTask) {
+  try {
+    await openModelsApi.startDownload(row.model_id, { version: 'main', resume: true })
+    ElMessage.success('已重新创建下载任务')
+    await load()
+  } catch (error) {
+    errorMessage.value = `重试失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
-function remove(id: number) {
-  tasks.value = tasks.value.filter((t) => t.id !== id)
-  ElMessage.success('任务已删除')
+async function cancel(row: LlmDownloadTask) {
+  try {
+    await openModelsApi.cancelDownload(row.model_id)
+    ElMessage.success('任务已取消')
+    await load()
+  } catch (error) {
+    errorMessage.value = `取消失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
+}
+
+async function deploy(row: LlmDownloadTask) {
+  try {
+    await openModelsApi.deploy(row.model_id)
+    ElMessage.success(`模型 ${row.model_name || row.model_id} 部署已触发`)
+  } catch (error) {
+    errorMessage.value = `部署失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
 onMounted(load)
 </script>
 
 <style scoped>
+.mb-16 { margin-bottom: 16px; }
+.pagination { margin-top: 12px; justify-content: flex-end; }
 </style>

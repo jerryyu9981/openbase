@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.19.0 |
+| 文档版本 | v1.20.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -502,10 +502,38 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **验证**：OpenLLM 新增 30 例 + R4 15 例回归；前端 15 例；`vue-tsc` 0 错误；前端全量 321 例通过；聚合端点与浏览器实测因 OpenLLM 无法启动待复核。
 
+### 8.18 D 类性能：本地资源超时治理与两页接线（R6，v1.20.0）
+
+**问题**：`local-models` 的轻量探测（`/api/tags`、`/api/ps`）沿用 300s 读 / 10s 连接超时，Ollama 不可达时 GPU/本地模型页等待 10s；`open-models` 仍为 JWT-only；收藏列表与下载任务列表存在逐条回查（N+1）。
+
+**上游改造（OpenLLM v1.9.6）**：
+
+- `OLLAMA_PROBE_TIMEOUT`（read 5s / connect 2s）用于 `/api/tags`（列表/健康检查）与 `/api/ps`（状态/GPU）；拉取模型长任务超时不变；
+- `open-models` 全部路由改 `get_current_active_user_or_api_key`；
+- `get_favorites` 与 `get_all_download_tasks` 改为单次 `IN` 批量查询；下载任务额外批量补 `model_name`。
+
+**前端接线**：
+
+| 页面 | 端点 | 交互 |
+|------|------|------|
+| GPU 资源 | `/local-models/gpu-allocation/status`、`/local-models/gpu-info` | GPU 卡（利用率/显存/占用模型）+ Ollama 运行中模型；不可用时展示上游 `message` 降级提示 |
+| 下载管理 | `/open-models/downloads`、`pause|resume|cancel-download`、`download`、`deploy` | 服务端分页/状态筛选；暂停/恢复/取消/重试/部署 |
+
+**API 客户端**：新增 `localModelsApi` 与 `openModelsApi`，收敛于 `src/core/api/governance.ts`。
+
+**边界**：
+
+- 移除无上游数据源的 GPU 温度/功耗与随机趋势图，不做假数据；
+- 上游无「删除下载任务」端点，页面不提供删除；
+- 「重试」通过重新创建下载任务实现（无独立 retry 端点）。
+
+**验证**：OpenLLM 新增 13 例；前端 7 例；`vue-tsc` 0 错误；前端全量 328 例通过；运行态耗时与聚合端点实测因 OpenLLM 无法启动待复核。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.20.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.18：R6 D 类性能——Ollama 轻量探测改短超时、`open-models` 改双通道、收藏/下载任务 N+1 批量化；GPU 资源与下载管理两页接真实端点并移除 mock。 |
 | **v1.19.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.17：R5 B 类第三批——OpenLLM 治理与 RBAC 11 文件改双通道并新增权限目录端点；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点，移除假开闭/假调用链/假版本等动作。 |
 | **v1.18.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.16：R4 B 类第二批——OpenLLM 观察域 7 文件 46 处依赖改双通道；成本/告警/链路/预算/用量/计费六页接真实端点，链路与预算由 `GenericPage` 改为真实页；移除成本页假应用动作；登记指标表租户过滤缺口。 |
 | **v1.17.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.15：R3 B 类首批——OpenLLM `plugins`/`model_categories` 改双通道鉴权，插件管理（列表/工具/启停/注册/健康）与模型分类（树/标签云/分类模型分页）两页接真实端点并移除 mock。 |

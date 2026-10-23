@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.10.0 |
+| 文档版本 | v2.11.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -590,6 +590,46 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.20 R6：本地资源超时治理与两页接线（v1.9.6）
+
+**范围**：按缺口清单 R6，处置 `local-models`、`models/favorites`、`open-models/popular` 的 10s 级超时，并把 GPU 资源、下载管理两页接到真实端点。
+
+**跨仓（OpenLLM）**
+
+| 文件 | 变更 |
+|------|------|
+| `backend/app/gateway/ollama_adapter.py` | 新增 `OLLAMA_PROBE_TIMEOUT`（read 5s / connect 2s）；`/api/tags`（列表、健康检查）与 `/api/ps`（状态、GPU）显式使用短超时；拉取模型等长任务仍用 300s |
+| `backend/app/api/open_models.py` | 全部路由由 `get_current_user` 改 `get_current_active_user_or_api_key`（列表/热门/搜索/下载任务/暂停/恢复/取消/部署/状态/日志） |
+| `backend/app/services/model_category.py` | `get_favorites` 由逐条回查模型改为单次 `IN` 批量查询，消除 N+1 |
+| `backend/app/services/model_download.py` | `get_all_download_tasks` 单次 `IN` 批量补 `model_name`，避免逐条回查 |
+| `backend/tests/unit/test_r6_perf_v196.py` | 新增 13 例：10 条 open-models 路由双通道断言 + 探测短超时 + 两处批量查询守卫 |
+
+**前端（OpenBase）**
+
+| 页面 | 改动 |
+|------|------|
+| GPU 资源 | 接 `/local-models/gpu-allocation/status`（分配/利用率/显存/占用模型）与 `/local-models/gpu-info`（运行中模型）；GPU 不可用时展示上游 `message` 降级提示；移除 mock 卡、随机趋势、温度/功耗列 |
+| 下载管理 | 接 `/open-models/downloads`（服务端分页/状态筛选），暂停/恢复/取消/重试/部署走真实端点；重试 = 重新创建下载任务；上游无删除端点，移除删除按钮 |
+
+**验证**
+
+| 项 | 命令/方式 | 结果 |
+|---|-----------|------|
+| OpenLLM 新增用例 | `pytest tests/unit/test_r6_perf_v196.py` | **13 passed** |
+| 前端新增用例 | `vitest run tests/r6-wiring-v196.spec.ts` | **7 passed** |
+| 前端全量回归 | `vitest run` | **31 文件 / 328 用例全通过** |
+| 类型检查 | `vue-tsc --noEmit` | **0 错误** |
+| 运行态耗时对比 | 前后 P50/P95 | **未完成（待复核）**：OpenLLM `:8001` 未运行且本机缺少 `psycopg2`/`prometheus_client` 等运行期依赖，无法拉起服务；以超时常量与代码守卫锁定，不伪造耗时数据 |
+| 聚合端点实测 | `/local-models/gpu-allocation/status`、`/open-models/downloads` | **未完成（待复核）**：原因同上 |
+
+**遗留**
+
+1. GPU 温度/功耗与历史趋势无上游数据源，页面已移除，不做伪造。
+2. 下载任务「重试」通过重新创建任务实现；上游未提供独立 retry 端点。
+3. 运行态耗时与聚合端点实测待 OpenLLM 可启动后补做。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -677,6 +717,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.11.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.20：**R6 本地资源超时治理与两页接线**——Ollama 轻量探测改短超时（connect 2s/read 5s）、`open-models` 改双通道、收藏与下载任务列表批量化（消除 N+1）；GPU 资源、下载管理两页接真实端点并移除 mock。验证：OpenLLM 13 例、前端 7 例、vue-tsc 0 错误、前端全量 328 例通过；运行态耗时与聚合端点实测因 OpenLLM 无法启动待复核（未伪造耗时）。 |
 | v2.10.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.19：**R5 治理与 RBAC 双通道与七页接线**——OpenLLM 11 个路由文件改双通道并新增 `/roles/permissions/catalog`；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点，移除假开闭/假调用链/假版本等动作。验证：OpenLLM 30+15 例、前端 15 例、vue-tsc 0 错误、前端全量 321 例通过；聚合端点与浏览器级实测待 OpenLLM 可启动后补做。 |
 | v2.9.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.18：**R4 观察域双通道与六页接线**——OpenLLM `monitoring`/`traces`/`alerts`/`budgets`/`usage`/`billing`/`billing_v2` 共 46 处依赖改双通道（写权限端点不放宽）；成本、告警、链路、预算、用量、计费六页接真实端点，链路/预算由占位页改为真实页，移除成本页「一键应用建议」假动作。验证：OpenLLM 15+6 例、前端 17 例、vue-tsc 0 错误、前端全量 306 例通过；聚合端点与浏览器级实测因 OpenLLM 无法启动待复核（未伪造成已验证），并登记指标表租户过滤缺口。 |
 | v2.8.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.17：**R3 双通道鉴权与插件/模型分类接线**——OpenLLM `plugins`（8 处）与 `model_categories`（13 处）改用 `get_current_active_user_or_api_key`；插件管理、模型分类两页接真实端点并移除 mock。验证：OpenLLM 6+34 例、前端 8 例、vue-tsc 0 错误、聚合端点 4/4 200；浏览器级复核受环境限制待补。 |
