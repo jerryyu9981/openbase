@@ -8,6 +8,9 @@ export interface AuthUser {
   username: string
   tenant_id?: string
   permissions: string[]
+  display_name?: string | null
+  email?: string | null
+  phone?: string | null
 }
 
 export interface ModuleInfo {
@@ -57,6 +60,20 @@ export const authApi = {
     // 后端 /auth/me 返回扁平 MeResponse
     const { data } = await http.get<AuthUser>('/auth/me')
     return data
+  },
+  async updateProfile(payload: {
+    display_name?: string
+    email?: string | null
+    phone?: string | null
+  }): Promise<AuthUser> {
+    const { data } = await http.put<AuthUser>('/auth/me', payload)
+    return data
+  },
+  async changePassword(oldPassword: string, newPassword: string): Promise<void> {
+    await http.post('/auth/change-password', {
+      old_password: oldPassword,
+      new_password: newPassword,
+    })
   },
 }
 

@@ -161,6 +161,9 @@ describe('v1.9.6 下载管理真实化', () => {
     await vm.deploy(row)
     expect(mocks.post).toHaveBeenCalledWith(`${OPENLLM}/open-models/model-1/deploy`, {
       framework: 'auto',
+      quantization: null,
+      gpu_devices: null,
+      port: 8000,
       max_context_length: 4096,
     })
   }, 20000)

@@ -332,6 +332,43 @@ export interface LlmCostDimensionItem {
   avg_cost_per_request: number
 }
 
+export interface LlmMonitoringOverview {
+  total_requests: number
+  total_tokens: number
+  total_cost: number
+  avg_latency_ms: number
+  error_rate: number
+  active_users: number
+  time_range: string
+}
+
+export interface LlmMonitoringTimePoint {
+  timestamp: string
+  avg_latency_ms: number
+  request_count: number
+}
+
+export interface LlmMonitoringDashboard {
+  overview: LlmMonitoringOverview
+  performance: {
+    by_provider: Array<Record<string, unknown>>
+    by_model: Array<Record<string, unknown>>
+    time_series: LlmMonitoringTimePoint[]
+  }
+  cost: {
+    by_provider: Array<Record<string, unknown>>
+    by_model: Array<Record<string, unknown>>
+    by_user: Array<Record<string, unknown>>
+    trend: Array<{ timestamp: string; cost: number; request_count: number }>
+  }
+  error: {
+    by_type: Array<Record<string, unknown>>
+    by_provider: Array<Record<string, unknown>>
+    active_alerts: Array<Record<string, unknown>>
+  }
+  resource: Record<string, unknown>
+}
+
 export interface LlmCostTrendItem {
   timestamp: string
   cost: number
@@ -356,6 +393,13 @@ export interface LlmOptimizationSuggestion {
 }
 
 export const monitoringApi = {
+  /** 监控仪表盘（概览/性能/成本/错误/资源） */
+  async dashboard(timeRange = '24h'): Promise<LlmMonitoringDashboard> {
+    const { data } = await http.get<LlmMonitoringDashboard>(`${OPENLLM}/monitoring/dashboard`, {
+      params: { time_range: timeRange },
+    })
+    return data
+  },
   /** 成本分析（维度：provider/model/user/api_key/workspace） */
   async costs(params: { dimension: string[]; time_range?: string }): Promise<LlmCostAnalysis> {
     const { data } = await http.get<LlmCostAnalysis>(`${OPENLLM}/monitoring/costs`, { params })
@@ -1360,7 +1404,46 @@ export interface LlmDownloadTask {
   updated_at: string | null
 }
 
+export interface LlmMarketModel {
+  id: string
+  model_id: string
+  name: string
+  source: string | null
+  parameters: string | null
+  license: string | null
+  download_status: string | null
+  deploy_status: string | null
+  version: string | null
+  tags: string[]
+}
+
+export interface LlmDeployStatus {
+  deployment_id: string | null
+  status: string
+  framework: string | null
+  port: number | null
+  process_id: number | null
+  health_check_url: string | null
+  is_healthy: boolean
+  resource_usage: Record<string, unknown>
+  start_time: string | null
+  uptime_seconds: number | null
+}
+
+export interface LlmDeployLog {
+  logs: Array<Record<string, unknown>>
+}
+
 export const openModelsApi = {
+  async list(params: { page?: number; page_size?: number; source?: string } = {}) {
+    const { data } = await http.get<{
+      items: LlmMarketModel[]
+      total: number
+      page: number
+      page_size: number
+    }>(`${OPENLLM}/open-models`, { params })
+    return data
+  },
   async downloads(params: { status?: string; page?: number; page_size?: number } = {}) {
     const { data } = await http.get<{
       items: LlmDownloadTask[]
@@ -1385,10 +1468,37 @@ export const openModelsApi = {
   async cancelDownload(modelId: string): Promise<void> {
     await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/cancel-download`, {})
   },
-  async deploy(modelId: string): Promise<void> {
+  async deploy(
+    modelId: string,
+    payload: {
+      framework?: string
+      quantization?: string | null
+      gpu_devices?: number[] | null
+      port?: number
+      max_context_length?: number
+    } = {},
+  ): Promise<void> {
     await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/deploy`, {
-      framework: 'auto',
-      max_context_length: 4096,
+      framework: payload.framework ?? 'auto',
+      quantization: payload.quantization ?? null,
+      gpu_devices: payload.gpu_devices ?? null,
+      port: payload.port ?? 8000,
+      max_context_length: payload.max_context_length ?? 4096,
     })
+  },
+  async deployStatus(modelId: string): Promise<LlmDeployStatus> {
+    const { data } = await http.get<LlmDeployStatus>(
+      `${OPENLLM}/open-models/${encodeURIComponent(modelId)}/deploy-status`,
+    )
+    return data
+  },
+  async stop(modelId: string): Promise<void> {
+    await http.post(`${OPENLLM}/open-models/${encodeURIComponent(modelId)}/stop`, {})
+  },
+  async logs(modelId: string): Promise<LlmDeployLog> {
+    const { data } = await http.get<LlmDeployLog>(
+      `${OPENLLM}/open-models/${encodeURIComponent(modelId)}/logs`,
+    )
+    return data
   },
 }

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -77,6 +78,29 @@ class MeResponse(BaseModel):
     username: str
     tenant_id: str | None = None
     permissions: list[str] = []
+    # v1.9.7（R7）：个人设置页所需的资料字段
+    display_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    """个人资料更新请求（仅更新传入字段）."""
+
+    display_name: str | None = Field(None, min_length=1, max_length=128)
+    email: str | None = Field(None, max_length=128)
+    phone: str | None = Field(None, max_length=32)
+
+
+class ChangePasswordRequest(BaseModel):
+    """修改密码请求."""
+
+    old_password: str = Field(..., min_length=1, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
+EMAIL_PATTERN = re.compile(r"^[\w.+-]+@[\w-]+(\.[\w-]+)+$")
+PASSWORD_PATTERN = re.compile(r"^(?=.*[A-Za-z])(?=.*\d).{8,}$")
 
 
 # ---- 密码校验 ----
@@ -464,21 +488,24 @@ async def refresh(
     )
 
 
-@router.get("/me", response_model=MeResponse)
-async def me(
-    user: dict = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db),
-) -> MeResponse:
-    """当前用户信息（含权限标识）.
+async def _load_profile_user(session: AsyncSession, user_id: int | str) -> User | None:
+    """按当前主体 ID 加载 users 行（OIDC 字符串主体可能无本地行）."""
+    try:
+        numeric_id = int(user_id)
+    except (TypeError, ValueError):
+        return None
+    return await session.get(User, numeric_id)
 
-    供统一前端登录后拉取用户与权限（v1.2.0 统一前端契约）。
-    """
+
+async def _build_me_response(session: AsyncSession, user: dict) -> MeResponse:
+    """构建 /auth/me 响应（权限 + 资料字段）."""
     from openbase.modules.auth.rbac import PermissionService
 
     permissions = await PermissionService.permissions_for_with_fallback(session, str(user["id"]))
     # 系统管理员（admin）兜底通配权限：数据库 RBAC 关联未就绪时保证全模块可见
     if user.get("username") == "admin" and "*" not in permissions:
         permissions = ["*", *permissions]
+    row = await _load_profile_user(session, user["id"])
     return MeResponse(
         id=user["id"],
         username=user["username"],
@@ -489,7 +516,70 @@ async def me(
             str(user.get("tenant_id")) if user.get("tenant_id") is not None else None
         ),
         permissions=permissions,
+        display_name=row.display_name if row else None,
+        email=row.email if row else None,
+        phone=row.phone if row else None,
     )
+
+
+@router.get("/me", response_model=MeResponse)
+async def me(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> MeResponse:
+    """当前用户信息（含权限标识与资料字段）.
+
+    供统一前端登录后拉取用户与权限（v1.2.0 统一前端契约）。
+    """
+    return await _build_me_response(session, user)
+
+
+@router.put("/me", response_model=MeResponse)
+async def update_me(
+    payload: ProfileUpdateRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> MeResponse:
+    """更新当前用户资料（昵称/邮箱/手机号）."""
+    row = await _load_profile_user(session, user["id"])
+    if row is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, "用户不存在")
+
+    fields = payload.model_dump(exclude_unset=True)
+    if "email" in fields and fields["email"]:
+        if not EMAIL_PATTERN.match(fields["email"]):
+            raise BaseError(ErrorCode.PARAM_INVALID, "邮箱格式不正确")
+    if "display_name" in fields:
+        row.display_name = fields["display_name"]
+    if "email" in fields:
+        row.email = fields["email"] or None
+    if "phone" in fields:
+        row.phone = fields["phone"] or None
+
+    await session.commit()
+    return await _build_me_response(session, user)
+
+
+@router.post("/change-password", response_model=dict[str, str])
+async def change_password(
+    payload: ChangePasswordRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """修改当前用户密码（校验旧密码；新密码需含字母与数字）."""
+    row = await _load_profile_user(session, user["id"])
+    if row is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, "用户不存在")
+    if not verify_password(payload.old_password, row.password_hash):
+        raise BaseError(ErrorCode.PARAM_INVALID, "旧密码不正确")
+    if payload.new_password == payload.old_password:
+        raise BaseError(ErrorCode.PARAM_INVALID, "新密码不能与旧密码相同")
+    if not PASSWORD_PATTERN.match(payload.new_password):
+        raise BaseError(ErrorCode.PARAM_INVALID, "密码至少 8 位，且需同时包含字母和数字")
+
+    row.password_hash = hash_password(payload.new_password)
+    await session.commit()
+    return {"message": "密码已修改"}
 
 
 # ---- v1.4.1 服务级 API Key（R-367，对齐完整方案 2.5 服务 Key ②） ----
