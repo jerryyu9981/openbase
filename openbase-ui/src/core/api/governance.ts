@@ -734,3 +734,573 @@ export const billingApi = {
     return data
   },
 }
+
+// ---------------------------------------------------------------------------
+// 治理与 RBAC（v1.9.5 R5）：roles / workspaces / virtual-keys / routing /
+// circuit-breakers / tool-calls / prompt-templates / prompt-experiments / ab-tests
+// 上游均支持双通道鉴权（JWT OR API Key）。
+// ---------------------------------------------------------------------------
+
+export interface LlmRolePermission {
+  permission_id: string
+  code: string
+  name: string
+  resource_type: string
+  action: string
+  constraints: Record<string, unknown>
+}
+
+export interface LlmRole {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  role_type: string
+  level: number
+  scope: string
+  organization_id: string | null
+  metadata_: Record<string, unknown>
+  is_active: boolean
+  is_system: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface LlmRoleDetail extends LlmRole {
+  permissions: LlmRolePermission[]
+}
+
+export interface LlmPermissionCatalogItem {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  resource_type: string
+  action: string
+  scope: string
+  group_name: string | null
+  is_active: boolean
+}
+
+export const rolesApi = {
+  async list(params: { role_type?: string; is_active?: boolean; skip?: number; limit?: number } = {}) {
+    const { data } = await http.get<LlmRole[]>(`${OPENLLM}/roles`, { params })
+    return data
+  },
+  async detail(roleId: string): Promise<LlmRoleDetail> {
+    const { data } = await http.get<LlmRoleDetail>(`${OPENLLM}/roles/${encodeURIComponent(roleId)}`)
+    return data
+  },
+  async create(payload: {
+    code: string
+    name: string
+    description?: string
+    role_type?: string
+    level?: number
+    scope?: string
+  }): Promise<LlmRole> {
+    const { data } = await http.post<LlmRole>(`${OPENLLM}/roles`, payload)
+    return data
+  },
+  async update(roleId: string, payload: { name?: string; description?: string; level?: number; scope?: string; is_active?: boolean }) {
+    const { data } = await http.put<LlmRole>(`${OPENLLM}/roles/${encodeURIComponent(roleId)}`, payload)
+    return data
+  },
+  async remove(roleId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/roles/${encodeURIComponent(roleId)}`)
+  },
+  async catalog(): Promise<LlmPermissionCatalogItem[]> {
+    const { data } = await http.get<LlmPermissionCatalogItem[]>(`${OPENLLM}/roles/permissions/catalog`)
+    return data
+  },
+  async setPermissions(roleId: string, permissionIds: string[]): Promise<LlmRoleDetail> {
+    const { data } = await http.put<LlmRoleDetail>(
+      `${OPENLLM}/roles/${encodeURIComponent(roleId)}/permissions`,
+      { permission_ids: permissionIds },
+    )
+    return data
+  },
+}
+
+export interface LlmWorkspace {
+  id: string
+  name: string
+  description: string | null
+  owner_id: string
+  settings: Record<string, unknown>
+  quota: Record<string, unknown>
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface LlmWorkspaceMember {
+  id: string
+  workspace_id: string
+  user_id: string
+  role: string
+  joined_at: string
+  invited_by: string | null
+  username: string | null
+  email: string | null
+}
+
+export interface LlmWorkspaceResources {
+  workspace_id: string
+  member_count: number
+  virtual_key_count: number
+  total_requests: number
+  total_tokens: number
+}
+
+export interface LlmVirtualKey {
+  id: string
+  workspace_id: string
+  name: string
+  key_prefix: string
+  quota: Record<string, unknown>
+  rate_limit: Record<string, unknown>
+  model_whitelist: string[]
+  permissions: Record<string, unknown>
+  expires_at: string | null
+  last_used_at: string | null
+  usage_stats: Record<string, unknown>
+  is_active: boolean
+  created_at: string
+}
+
+export interface LlmVirtualKeyCreated extends LlmVirtualKey {
+  key: string
+}
+
+export const workspacesApi = {
+  async list(params: { status_filter?: string; skip?: number; limit?: number } = {}) {
+    const { data } = await http.get<LlmWorkspace[]>(`${OPENLLM}/workspaces`, { params })
+    return data
+  },
+  async create(payload: { name: string; description?: string }): Promise<LlmWorkspace> {
+    const { data } = await http.post<LlmWorkspace>(`${OPENLLM}/workspaces`, payload)
+    return data
+  },
+  async remove(workspaceId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/workspaces/${encodeURIComponent(workspaceId)}`)
+  },
+  async members(workspaceId: string): Promise<LlmWorkspaceMember[]> {
+    const { data } = await http.get<LlmWorkspaceMember[]>(
+      `${OPENLLM}/workspaces/${encodeURIComponent(workspaceId)}/members`,
+    )
+    return data
+  },
+  async addMember(workspaceId: string, payload: { user_id: string; role: string }): Promise<LlmWorkspaceMember> {
+    const { data } = await http.post<LlmWorkspaceMember>(
+      `${OPENLLM}/workspaces/${encodeURIComponent(workspaceId)}/members`,
+      payload,
+    )
+    return data
+  },
+  async removeMember(workspaceId: string, userId: string): Promise<void> {
+    await http.delete(
+      `${OPENLLM}/workspaces/${encodeURIComponent(workspaceId)}/members/${encodeURIComponent(userId)}`,
+    )
+  },
+  async resources(workspaceId: string): Promise<LlmWorkspaceResources> {
+    const { data } = await http.get<LlmWorkspaceResources>(
+      `${OPENLLM}/workspaces/${encodeURIComponent(workspaceId)}/resources`,
+    )
+    return data
+  },
+}
+
+export const virtualKeysApi = {
+  async list(params: { workspace_id?: string; active_only?: boolean } = {}): Promise<LlmVirtualKey[]> {
+    const { data } = await http.get<LlmVirtualKey[]>(`${OPENLLM}/virtual-keys`, { params })
+    return data
+  },
+  async create(workspaceId: string, payload: { name: string }): Promise<LlmVirtualKeyCreated> {
+    const { data } = await http.post<LlmVirtualKeyCreated>(`${OPENLLM}/virtual-keys`, payload, {
+      params: { workspace_id: workspaceId },
+    })
+    return data
+  },
+  async rotate(keyId: string): Promise<LlmVirtualKeyCreated> {
+    const { data } = await http.post<LlmVirtualKeyCreated>(
+      `${OPENLLM}/virtual-keys/${encodeURIComponent(keyId)}/rotate`,
+      {},
+    )
+    return data
+  },
+}
+
+export interface LlmSemanticRoute {
+  id: string
+  name: string
+  description: string | null
+  category: string
+  model_id: string | null
+  provider_id: string | null
+  sample_queries: string[]
+  enabled: boolean
+  priority: number
+  threshold: number
+  metadata: Record<string, unknown>
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface LlmRouteTestResponse {
+  message: string
+  result: {
+    category: string | null
+    route_id: string | null
+    model_id: string | null
+    provider_id: string | null
+    similarity_score: number
+    matched: boolean
+    from_cache: boolean
+    message: string | null
+  }
+  processing_time_ms: number
+}
+
+export interface LlmRouteCacheStats {
+  total_requests: number
+  cache_hits: number
+  cache_misses: number
+  hit_rate: number
+  hit_rate_percent: number
+  evictions: number
+  current_size: number
+  max_size: number
+  ttl_seconds: number
+  utilization_percent: number
+  avg_lookup_time_ms: number
+}
+
+export const routingApi = {
+  async list(params: { category?: string; enabled?: boolean; skip?: number; limit?: number } = {}) {
+    const { data } = await http.get<{ total: number; items: LlmSemanticRoute[] }>(
+      `${OPENLLM}/routing/semantic`,
+      { params },
+    )
+    return data
+  },
+  async create(payload: {
+    name: string
+    category: string
+    description?: string
+    sample_queries: string[]
+    enabled?: boolean
+    priority?: number
+    threshold?: number
+  }): Promise<LlmSemanticRoute> {
+    const { data } = await http.post<LlmSemanticRoute>(`${OPENLLM}/routing/semantic`, payload)
+    return data
+  },
+  async update(
+    routeId: string,
+    payload: Partial<{
+      name: string
+      category: string
+      description: string
+      sample_queries: string[]
+      enabled: boolean
+      priority: number
+      threshold: number
+    }>,
+  ): Promise<LlmSemanticRoute> {
+    const { data } = await http.put<LlmSemanticRoute>(
+      `${OPENLLM}/routing/semantic/${encodeURIComponent(routeId)}`,
+      payload,
+    )
+    return data
+  },
+  async remove(routeId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/routing/semantic/${encodeURIComponent(routeId)}`)
+  },
+  async test(payload: { message: string; threshold?: number; use_cache?: boolean }): Promise<LlmRouteTestResponse> {
+    const { data } = await http.post<LlmRouteTestResponse>(`${OPENLLM}/routing/semantic/test`, payload)
+    return data
+  },
+  async cacheStats(): Promise<LlmRouteCacheStats> {
+    const { data } = await http.get<LlmRouteCacheStats>(`${OPENLLM}/routing/semantic/cache/stats`)
+    return data
+  },
+  async clearCache(): Promise<void> {
+    await http.post(`${OPENLLM}/routing/semantic/cache/clear`, {})
+  },
+}
+
+export interface LlmCircuitBreaker {
+  id: string
+  provider: string
+  model: string
+  state: string
+  failure_count: number
+  success_count: number
+  consecutive_successes: number
+  consecutive_failures: number
+  error_rate: number
+  last_failure_time: string | null
+  last_success_time: string | null
+  last_state_change: string | null
+  total_calls: number
+  total_failures: number
+  total_successes: number
+  config: Record<string, unknown>
+  created_at: string | null
+  updated_at: string | null
+}
+
+export const circuitBreakersApi = {
+  async list(params: { provider?: string; model?: string; state?: string; page?: number; page_size?: number } = {}) {
+    const { data } = await http.get<{ items: LlmCircuitBreaker[]; total: number; page: number; page_size: number }>(
+      `${OPENLLM}/routing/circuit-breakers`,
+      { params },
+    )
+    return data
+  },
+  async reset(breakerId: string): Promise<{ success: boolean; message: string; current_state: string }> {
+    const { data } = await http.post<{ success: boolean; message: string; current_state: string }>(
+      `${OPENLLM}/routing/circuit-breakers/${encodeURIComponent(breakerId)}/reset`,
+      {},
+    )
+    return data
+  },
+}
+
+export interface LlmToolCall {
+  id: string
+  tenant_id: string
+  user_id: string
+  conversation_id: string | null
+  plugin_id: string
+  tool_name: string
+  input_params: Record<string, unknown>
+  output_result: Record<string, unknown>
+  status: string
+  error_message: string | null
+  token_count: number
+  latency_ms: number
+  created_at: string
+  completed_at: string | null
+}
+
+export const toolCallsApi = {
+  async list(params: { status?: string; tool_name?: string; plugin_id?: string; skip?: number; limit?: number } = {}) {
+    const { data } = await http.get<{ total: number; items: LlmToolCall[] }>(`${OPENLLM}/tool-calls`, { params })
+    return data
+  },
+  async detail(toolCallId: string): Promise<LlmToolCall> {
+    const { data } = await http.get<LlmToolCall>(`${OPENLLM}/tool-calls/${encodeURIComponent(toolCallId)}`)
+    return data
+  },
+}
+
+export interface LlmPromptTemplate {
+  id: string
+  name: string
+  content: string
+  variables: Array<{ name: string; description: string | null; required: boolean; default_value: string | null }>
+  category: string
+  description: string | null
+  current_version: number
+  is_system: boolean
+  created_by: string | null
+  workspace_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LlmPromptVersion {
+  id: string
+  template_id: string
+  version: number
+  content: string
+  changelog: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export const promptTemplatesApi = {
+  async list(params: { category?: string; keyword?: string; page?: number; page_size?: number; include_system?: boolean } = {}) {
+    const { data } = await http.get<{
+      items: LlmPromptTemplate[]
+      total: number
+      page: number
+      page_size: number
+      total_pages: number
+    }>(`${OPENLLM}/prompt-templates`, { params })
+    return data
+  },
+  async create(payload: {
+    name: string
+    content: string
+    category: string
+    description?: string
+    is_system?: boolean
+  }): Promise<LlmPromptTemplate> {
+    const { data } = await http.post<LlmPromptTemplate>(`${OPENLLM}/prompt-templates`, payload)
+    return data
+  },
+  async update(
+    templateId: string,
+    payload: { name?: string; content?: string; category?: string; description?: string; changelog?: string },
+  ): Promise<LlmPromptTemplate> {
+    const { data } = await http.put<LlmPromptTemplate>(
+      `${OPENLLM}/prompt-templates/${encodeURIComponent(templateId)}`,
+      payload,
+    )
+    return data
+  },
+  async remove(templateId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/prompt-templates/${encodeURIComponent(templateId)}`)
+  },
+  async versions(templateId: string): Promise<{ items: LlmPromptVersion[]; total: number }> {
+    const { data } = await http.get<{ items: LlmPromptVersion[]; total: number }>(
+      `${OPENLLM}/prompt-templates/${encodeURIComponent(templateId)}/versions`,
+    )
+    return data
+  },
+  async rollback(templateId: string, version: number): Promise<LlmPromptTemplate> {
+    const { data } = await http.post<LlmPromptTemplate>(
+      `${OPENLLM}/prompt-templates/${encodeURIComponent(templateId)}/rollback/${version}`,
+      {},
+    )
+    return data
+  },
+  async importTemplate(payload: { content: string; format: string }): Promise<LlmPromptTemplate> {
+    const { data } = await http.post<LlmPromptTemplate>(`${OPENLLM}/prompt-templates/import`, payload)
+    return data
+  },
+}
+
+export interface LlmVariant {
+  name: string
+  content: string
+  variables?: Array<Record<string, unknown>>
+}
+
+export interface LlmPromptExperiment {
+  id: string
+  name: string
+  description: string | null
+  prompt_template_id: string | null
+  variants: LlmVariant[]
+  status: string
+  metrics: Record<string, unknown>
+  winner_variant: string | null
+  created_by: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface LlmExperimentReport {
+  experiment_id: string
+  experiment_name: string
+  variant_stats: Record<string, Record<string, unknown>>
+  recommendation: string | null
+}
+
+export const promptExperimentsApi = {
+  async list(params: { status_filter?: string; skip?: number; limit?: number } = {}) {
+    const { data } = await http.get<LlmPromptExperiment[]>(`${OPENLLM}/prompt-experiments`, { params })
+    return data
+  },
+  async create(payload: { name: string; description?: string; prompt_template_id?: string; variants: LlmVariant[] }) {
+    const { data } = await http.post<LlmPromptExperiment>(`${OPENLLM}/prompt-experiments`, payload)
+    return data
+  },
+  async start(experimentId: string): Promise<LlmPromptExperiment> {
+    const { data } = await http.post<LlmPromptExperiment>(
+      `${OPENLLM}/prompt-experiments/${encodeURIComponent(experimentId)}/start`,
+      {},
+    )
+    return data
+  },
+  async complete(experimentId: string): Promise<LlmPromptExperiment> {
+    const { data } = await http.post<LlmPromptExperiment>(
+      `${OPENLLM}/prompt-experiments/${encodeURIComponent(experimentId)}/complete`,
+      {},
+    )
+    return data
+  },
+  async report(experimentId: string): Promise<LlmExperimentReport> {
+    const { data } = await http.get<LlmExperimentReport>(
+      `${OPENLLM}/prompt-experiments/${encodeURIComponent(experimentId)}/report`,
+    )
+    return data
+  },
+  async remove(experimentId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/prompt-experiments/${encodeURIComponent(experimentId)}`)
+  },
+}
+
+export interface LlmAbTest {
+  id: string
+  name: string
+  description: string | null
+  model_a: string
+  model_b: string
+  traffic_split: Record<string, number>
+  metrics: Record<string, unknown>
+  status: string
+  start_time: string
+  end_time: string | null
+  created_by: string | null
+  organization_id: string | null
+  target_config: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface LlmAbTestReport {
+  test_id: string
+  test_name: string
+  model_a: string
+  model_b: string
+  model_a_stats: Record<string, unknown>
+  model_b_stats: Record<string, unknown>
+  significance: Record<string, unknown> | null
+  recommendation: string | null
+}
+
+export const abTestsApi = {
+  async list(params: { status_filter?: string; skip?: number; limit?: number } = {}) {
+    const { data } = await http.get<LlmAbTest[]>(`${OPENLLM}/routing/ab-tests`, { params })
+    return data
+  },
+  async create(payload: {
+    name: string
+    model_a: string
+    model_b: string
+    description?: string
+    traffic_split?: Record<string, number>
+  }): Promise<LlmAbTest> {
+    const { data } = await http.post<LlmAbTest>(`${OPENLLM}/routing/ab-tests`, payload)
+    return data
+  },
+  async pause(testId: string): Promise<LlmAbTest> {
+    const { data } = await http.post<LlmAbTest>(`${OPENLLM}/routing/ab-tests/${encodeURIComponent(testId)}/pause`, {})
+    return data
+  },
+  async resume(testId: string): Promise<LlmAbTest> {
+    const { data } = await http.post<LlmAbTest>(`${OPENLLM}/routing/ab-tests/${encodeURIComponent(testId)}/resume`, {})
+    return data
+  },
+  async complete(testId: string): Promise<LlmAbTest> {
+    const { data } = await http.post<LlmAbTest>(
+      `${OPENLLM}/routing/ab-tests/${encodeURIComponent(testId)}/complete`,
+      {},
+    )
+    return data
+  },
+  async remove(testId: string): Promise<void> {
+    await http.delete(`${OPENLLM}/routing/ab-tests/${encodeURIComponent(testId)}`)
+  },
+  async report(testId: string): Promise<LlmAbTestReport> {
+    const { data } = await http.get<LlmAbTestReport>(
+      `${OPENLLM}/routing/ab-tests/${encodeURIComponent(testId)}/report`,
+    )
+    return data
+  },
+}

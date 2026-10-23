@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
-| 文档版本 | v1.18.0 |
+| 文档版本 | v1.19.0 |
 | 状态 | **[Approved]** |
 | 版本号 | **v1.4.11**（公共功能域重组与统一页面骨架） |
 | 作者 | FA-OpenBase-Dev |
@@ -474,10 +474,39 @@ memory 7 / knowledge 3），全站合计 76 页共用同一页头与间距规范
 
 **验证**：OpenLLM 新增 15 例 + R3 6 例回归；前端 17 例；`vue-tsc` 0 错误；前端全量 306 例通过；聚合端点与浏览器实测因 OpenLLM 无法启动待复核。
 
+### 8.17 B 类第三批：治理与 RBAC 双通道与七页接线（R5，v1.19.0）
+
+**问题**：治理与 RBAC 路由族（`roles`、`workspaces`、`virtual-keys`、`routing/semantic`、`routing/cascade`、`routing/circuit-breakers`、`routing/ab-tests`、`prompt-templates`、`prompt-experiments`、`prompt/assembly`、`tool-calls`）依赖 JWT-only，经通用代理（API Key 通道）恒返 401；相关七页为「契约 mock」。
+
+**上游改造（OpenLLM v1.9.5）**：11 个路由文件统一改为 `get_current_active_user_or_api_key`；新增 `GET /roles/permissions/catalog` 权限目录（供角色权限分配选择）；`require_permission` 守卫本身已走双通道，角色写类端点权限档位不变。
+
+**前端接线**：
+
+| 页面 | 端点 | 交互 |
+|------|------|------|
+| 角色与权限 | `/roles`（GET/POST/PUT/DELETE）、`/roles/{id}`、`/roles/{id}/permissions`、`/roles/permissions/catalog` | 角色 CRUD + 启停；权限目录勾选保存；系统角色禁改/禁删 |
+| 工作空间 | `/workspaces`（GET/POST/DELETE）、`/workspaces/{id}/members`、`/workspaces/{id}/resources`、`/virtual-keys`（GET/POST/rotate） | 列表/新建/删除 + 成员增删 + 资源统计；Virtual Key 创建/轮换（完整 Key 只显示一次） |
+| 路由策略 | `/routing/semantic`（CRUD/启停/test/cache stats/clear）、`/routing/circuit-breakers`（列表/reset） | 语义路由 CRUD + 测试 + 缓存；熔断器仅重置（上游无手动开闭） |
+| 工具调用监控 | `/tool-calls`（GET）、`/tool-calls/{id}` | 状态/工具名筛选 + 服务端分页；输入/输出详情 |
+| Prompt 模板 | `/prompt-templates`（CRUD/versions/rollback/import） | 列表/新建/编辑/删除/版本/回滚/导入；系统模板只读 |
+| Prompt 实验 | `/prompt-experiments`（list/create/start/complete/report/delete） | ≥2 变体创建；启动/完成；报表推荐 |
+| A/B 测试 | `/routing/ab-tests`（list/create/pause/resume/complete/delete/report） | 流量拆分创建；暂停/恢复/完成；分组指标与显著性 |
+
+**API 客户端**：新增 `rolesApi` / `workspacesApi` / `virtualKeysApi` / `routingApi` / `circuitBreakersApi` / `toolCallsApi` / `promptTemplatesApi` / `promptExperimentsApi` / `abTestsApi`，仍收敛于 `src/core/api/governance.ts`。
+
+**边界**：
+
+- 空数据展示真实空态，前端不内置 mock；
+- 移除上游不存在的能力：熔断器「手动开启/关闭」、工具调用「取消单条调用」、A/B「版本/归档」、Prompt 模板「启用开关」；
+- 成员添加按用户 UUID（上游无按用户名邀请端点）；系统角色/系统模板的保护由前端同步上游约束。
+
+**验证**：OpenLLM 新增 30 例 + R4 15 例回归；前端 15 例；`vue-tsc` 0 错误；前端全量 321 例通过；聚合端点与浏览器实测因 OpenLLM 无法启动待复核。
+
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| **v1.19.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.17：R5 B 类第三批——OpenLLM 治理与 RBAC 11 文件改双通道并新增权限目录端点；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点，移除假开闭/假调用链/假版本等动作。 |
 | **v1.18.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.16：R4 B 类第二批——OpenLLM 观察域 7 文件 46 处依赖改双通道；成本/告警/链路/预算/用量/计费六页接真实端点，链路与预算由 `GenericPage` 改为真实页；移除成本页假应用动作；登记指标表租户过滤缺口。 |
 | **v1.17.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.15：R3 B 类首批——OpenLLM `plugins`/`model_categories` 改双通道鉴权，插件管理（列表/工具/启停/注册/健康）与模型分类（树/标签云/分类模型分页）两页接真实端点并移除 mock。 |
 | **v1.16.0** | 2026-10-23 | 研发（AI 辅助） | 新增 §8.14：R2 C 类列表补齐（`GET /configs`、`/test-records`、`/test-runs`）与服务 Key `id`/`by-id` 吊销；全局配置与测试记录两页接线；跨仓修复 OpenLLM `get_db` 并发缺陷。§8.13 的服务 Key 缺口标记闭环。 |

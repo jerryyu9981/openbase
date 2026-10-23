@@ -3,12 +3,12 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.4.0 |
+| 文档版本 | v1.5.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
 | 创建日期 | 2026-10-22 |
-| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.18.0 §8.16；《OpenBase-DevLogReport-v1.4.11》v2.9.0 §2.18 |
+| 上游依据 | 《OpenBase-前端架构设计文档-v1.4.11》v1.19.0 §8.17；《OpenBase-DevLogReport-v1.4.11》v2.10.0 §2.19 |
 | 证据 | `doc/test/evidence/s6/ui-func-audit-v190.json`、`ui-func-audit-v190-summary.md`、`proxy-reachability-v190.json` |
 | 存放 | `doc/planning/` |
 
@@ -48,7 +48,7 @@
 | L1+L2 结果 | **PASS 76 / FAIL 1**（唯一 FAIL 为 `net::ERR_NO_BUFFER_SPACE`，Chromium 在沙箱内写 `debug.log` 受限导致的资源加载抖动；该页单页复跑 0 错误，判为环境噪声，非应用缺陷） |
 | 首轮基线 | PASS 77 / FAIL 0（同一套探针，服务全部预热后） |
 | API 失败次数（4xx/5xx/请求失败） | **0** |
-| 无后端调用的页面 | **39**（R1 3 页、R2 2 页、R3 2 页、R4 6 页收口后：52 − 13） |
+| 无后端调用的页面 | **31**（R1 3 页、R2 2 页、R3 2 页、R4 6 页、R5 8 路由收口后：52 − 21） |
 | 其中「无调用且无可交互动作」的静默页 | 28 |
 
 > 采样口径说明：无后端调用按「首屏 1.2s 稳定窗口内是否发出 `/api/**`」判定；记忆图谱/衰减、模板包导出、血缘、措施建议等**按需触发**页在该窗口内可能尚无请求，属测量假阴性。已在 §4 逐页以源码接线与实测复核，避免误判。
@@ -77,9 +77,9 @@
 |:-:|------|------|------|:----:|----------------|------|
 | 1 | 仪表盘 | `/dashboard` | 静态 KPI 卡 | E | 无聚合总览端点 | 待立项 |
 | 2 | 租户管理 | `/platform/identity/tenants` | 真实 | — | `/tenants` | 已接 |
-| 3 | 角色与权限 | `/platform/identity/roles` | mock | B | OpenLLM `/roles`（401） | 后续轮次 |
+| 3 | 角色与权限 | `/platform/identity/roles` | **真实（v1.9.5 R5）** | — | `/roles`（CRUD）、`/roles/{id}`、`/roles/{id}/permissions`、`/roles/permissions/catalog`（新增，双通道后 200） | **已闭环** |
 | 4 | 组织/团队/用户 | `/platform/identity/org` | 真实 | — | `/users`、`/org/departments` | 已接 |
-| 5 | 工作空间 | `/platform/identity/workspaces` | mock | B | OpenLLM `/workspaces`（401） | 后续轮次 |
+| 5 | 工作空间 | `/platform/identity/workspaces` | **真实（v1.9.5 R5）** | — | `/workspaces`、`/workspaces/{id}/members`、`/workspaces/{id}/resources`、`/virtual-keys`（列表/创建/轮换，双通道后 200） | **已闭环** |
 | 6 | 用户管理 | `/platform/identity/users` | **真实（v1.9.1 R1）** | — | `/users` | **已闭环** |
 | 7 | 记忆管理席位 | `/platform/identity/memory-admin` | 真实 | — | `/memory-proxy/monitor`、`/memories` | 已接 |
 | 8 | 注册/找回密码 | `/platform/identity/auth-ext` | mock | E | 无 `/auth/register`、无找回密码 | 待立项 |
@@ -104,14 +104,14 @@
 | 27 | 画像系统监控 | `/platform/observability/dps-monitor` | mock | E | 无对应端点 | 待立项 |
 | 28 | 提供商管理 | `/platform/governance/providers` | **真实（本轮）** | — | `/proxy/openllm/api/v1/providers` | **已闭环** |
 | 29 | 模型分类 | `/platform/governance/model-categories` | **真实（v1.9.3 R3）** | — | `/model-categories`、`/model-categories/tree`、`/model-categories/{id}/models`（双通道后 200） | **已闭环** |
-| 30 | 路由策略 | `/platform/governance/routing` | mock | B | `/routing/*`（401） | 后续轮次 |
-| 31 | 熔断器 | `/platform/governance/circuit-breakers` | mock | B | `/routing/circuit-breakers`（401） | 后续轮次 |
+| 30 | 路由策略 | `/platform/governance/routing` | **真实（v1.9.5 R5）** | — | `/routing/semantic`（CRUD/测试/缓存）、`/routing/cascade`（双通道后 200） | **已闭环** |
+| 31 | 熔断器 | `/platform/governance/circuit-breakers` | **真实（v1.9.5 R5）** | — | `/routing/circuit-breakers`（列表/重置/配置/事件） | **已闭环** |
 | 32 | 模型部署 | `/platform/governance/deploy` | mock | B/D | `/open-models/*`（401；部分 502） | 后续轮次 |
 | 33 | 下载管理 | `/platform/governance/downloads` | mock | B | `/open-models/downloads`（401） | 后续轮次 |
-| 34 | 工具调用监控 | `/platform/governance/tool-calls` | mock | B | `/tool-calls`（401） | 后续轮次 |
-| 35 | A/B 测试 | `/platform/governance/ab-tests` | mock | B | `/routing/ab-tests`（401） | 后续轮次 |
-| 36 | Prompt 模板 | `/platform/governance/prompt-templates` | mock | B | `/prompt-templates`（401） | 后续轮次 |
-| 37 | Prompt 实验 | `/platform/governance/prompt-experiments` | mock | B | `/prompt-experiments`（401） | 后续轮次 |
+| 34 | 工具调用监控 | `/platform/governance/tool-calls` | **真实（v1.9.5 R5）** | — | `/tool-calls`、`/tool-calls/{id}`（双通道后 200） | **已闭环** |
+| 35 | A/B 测试 | `/platform/governance/ab-tests` | **真实（v1.9.5 R5）** | — | `/routing/ab-tests`（列表/创建/暂停/恢复/完成/报表） | **已闭环** |
+| 36 | Prompt 模板 | `/platform/governance/prompt-templates` | **真实（v1.9.5 R5）** | — | `/prompt-templates`（CRUD/版本/回滚/导入） | **已闭环** |
+| 37 | Prompt 实验 | `/platform/governance/prompt-experiments` | **真实（v1.9.5 R5）** | — | `/prompt-experiments`（列表/创建/启动/完成/报表） | **已闭环** |
 | 38 | 文档中心 | `/platform/developers/docs` | 静态文档 | E | 无端点（内容型页面，可保留） | 保留 |
 | 39 | EdgeRouter 与适配器 | `/platform/developers/edgerouter` | **真实（v1.9.1 R1）** | — | `/edge/status`、`/edge/health`、`/edge/adapters`、`/edge/organizations`、`/edge/quotas/{org}`、`/edge/audit/logs`（均 200） | **已闭环** |
 | 40 | 插件管理 | `/platform/developers/plugins` | **真实（v1.9.3 R3）** | — | `/plugins`、`/plugins/tools`、`/plugins/{id}/health|enable|disable`、`/plugins/register`（双通道后 200） | **已闭环** |
@@ -194,6 +194,8 @@
 | **R3 两页接线**（v1.9.3） | 插件管理：真实列表/工具清单/启停/注册/删除/健康检查；模型分类：分类树标签云 + 分类下模型分页 + 维度切换；移除全部契约 mock | `tests/r3-wiring-v193.spec.ts` 8 例；聚合端点实测 4/4 200 |
 | **R4 双通道鉴权**（OpenLLM v1.9.4） | `monitoring.py` / `traces.py` / `alerts.py` / `budgets.py` / `usage.py` / `billing.py` / `billing_v2.py` 共 46 处依赖改为 `get_current_active_user_or_api_key`；`monitoring.py` 的 `current_user.get("id")` 修正为 `getattr`；账单/计划写端点保持 `require_permission(PERM_BILLING_WRITE)` 不放宽 | OpenLLM `test_r4_dual_channel_v194.py` 15 例（14 条路由依赖断言 + 1 条「模块不得残留 JWT-only 依赖」守卫）+ R3 6 例回归，21 passed |
 | **R4 六页接线**（v1.9.4） | 成本分析：三维度成本分布 + 预算列表 + 优化建议（只读，移除上游不存在的「一键应用」）；告警中心：规则增删改查/启停 + 告警确认/解决 + 服务端分页；链路追踪：统计卡 + 筛选列表 + Span 详情抽屉（新建页替换 `GenericPage`）；预算管理：列表/新建/状态抽屉（新建页替换 `GenericPage`）；用量统计：总览/趋势/明细/CSV 导出；计费：用量统计/配额/账单/消费趋势 | `tests/r4-wiring-v194.spec.ts` 17 例；`vue-tsc --noEmit` 通过；前端全量回归 306 passed |
+| **R5 双通道鉴权**（OpenLLM v1.9.5） | `roles` / `workspaces` / `virtual_keys` / `semantic_routing` / `cascade_routing` / `circuit_breakers` / `ab_tests` / `prompt_templates` / `prompt_experiments` / `prompt_assembly` / `tool_calls` 共 11 文件依赖改 `get_current_active_user_or_api_key`；新增 `GET /roles/permissions/catalog` 权限目录端点 | OpenLLM `test_r5_dual_channel_v195.py` 28 条路由断言 + 2 条守卫（30 passed） |
+| **R5 七页接线**（v1.9.5） | 角色与权限：角色 CRUD + 权限目录勾选保存 + 系统角色保护；工作空间：列表/新建/删除 + 成员增删 + 资源统计 + Virtual Key 创建/轮换；路由策略：语义路由 CRUD/启停/测试/缓存统计 + 熔断器列表/重置（移除假「手动开闭」）；工具调用：列表筛选/分页 + 输入输出详情（移除假调用链/取消）；Prompt 模板：CRUD/版本/回滚/导入/系统模板保护；Prompt 实验：创建/启动/完成/报表；A/B 测试：创建/暂停/恢复/完成/报表 | `tests/r5-wiring-v195.spec.ts` 15 例；`vue-tsc --noEmit` 通过；前端全量回归 321 passed |
 
 ---
 
@@ -205,7 +207,7 @@
 | R2 | C 类补列表 | `GET /configs`、`GET /test-records`、`GET /test-runs` + 两页接线；服务 Key 改 id 化吊销 | **已完成（v1.9.2）**；同时修复 OpenLLM `get_db` 并发缺陷 |
 | R3 | B 类第一批 | OpenLLM `plugins`、`model-categories` 改双通道依赖；插件管理、模型分类两页接真实 | **已完成（v1.9.3）** |
 | R4 | B 类第二批 | `monitoring/*`、`alerts`、`budgets`、`usage`、`billing` → 成本/告警/链路/预算/用量/计费六页 | **已完成（v1.9.4）**；指标表租户过滤见 §7 第 7 项 |
-| R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | 写权限档位与 `role:write` 语义 |
+| R5 | B 类第三批 | `routing/*`、`prompt-*`、`tool-calls`、`roles`、`workspaces` → 治理与 RBAC 页 | **已完成（v1.9.5）**；新增权限目录端点 |
 | R6 | D 类性能 | `local-models`、`models/favorites|compare`、`open-models/popular` 的 10s 超时治理 | 上游耗时剖析 |
 | R7 | E 类立项 | 仪表盘/统一监控/画像系统监控/个人设置等纯形态页 | 产品裁定是否建设 |
 
@@ -262,8 +264,9 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
-| v1.3.0 | 2026-10-23 | FA-OpenBase-Dev | **R3 收口**：OpenLLM `plugins` / `model-categories` 改为双通道鉴权；插件管理、模型分类两页接真实端点（列表/工具/启停/注册/健康检查、分类树/分类模型分页）；无后端调用页面 47 → 45。 |
+| v1.5.0 | 2026-10-23 | FA-OpenBase-Dev | **R5 收口**：OpenLLM 治理与 RBAC 11 个路由文件改双通道；新增 `GET /roles/permissions/catalog`；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点并移除配套假动作；无后端调用页面 39 → 31。 |
 | v1.4.0 | 2026-10-23 | FA-OpenBase-Dev | **R4 收口**：OpenLLM `monitoring` / `traces` / `alerts` / `budgets` / `usage` / `billing` / `billing_v2` 共 46 处依赖改双通道；成本/告警/链路/预算/用量/计费六页接真实端点（链路、预算由占位页改为真实页）；移除成本页「一键应用建议」假动作；无后端调用页面 45 → 39；新增 §7 第 7 项登记指标表租户过滤缺口。 |
+| v1.3.0 | 2026-10-23 | FA-OpenBase-Dev | **R3 收口**：OpenLLM `plugins` / `model-categories` 改为双通道鉴权；插件管理、模型分类两页接真实端点（列表/工具/启停/注册/健康检查、分类树/分类模型分页）；无后端调用页面 47 → 45。 |
 | v1.2.0 | 2026-10-23 | FA-OpenBase-Dev | **R2 收口**：新增 `GET /configs`、`GET /test-records`、`GET /test-runs` 并接线两页；服务 Key 增加 `id` 与 `by-id` 吊销端点（解除历史密钥不可吊销限制）；跨仓修复 OpenLLM `get_db` 并发 500；无后端调用页面 49 → 47。 |
 | v1.1.0 | 2026-10-23 | FA-OpenBase-Dev | **R1 收口**：用户管理、API 密钥、EdgeRouter 三页接真实端点并移除假动作；新增「服务 Key 列表无 id、吊销需明文」缺口（归 C 类）与 R2 范围；发现并规避 OpenLLM `scoped_session` 并发 500（前端串行化，根因列 R2 跨仓）；无后端调用页面 52 → 49。 |
 | v1.0.0 | 2026-10-22 | FA-OpenBase-Dev | 初始创建：77 页全栈功能审计（L1 加载 / L2 交互 / L3 API 面 / L4 通道探测），52 页无后端调用单列；缺口分 A~E 五类并逐页成表；记录本轮闭环（通用代理来源映射 + OpenLLM 凭据注入 + 提供商管理真实化）与 R1~R7 路线图。 |

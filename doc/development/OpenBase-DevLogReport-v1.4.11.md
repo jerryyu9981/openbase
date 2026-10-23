@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.9.0 |
+| 文档版本 | v2.10.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-22 |
 | 编制 | 研发（AI 辅助） |
@@ -536,6 +536,60 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 ---
 
+### 2.19 R5：治理与 RBAC 双通道与七页接线（v1.9.5）
+
+**范围**：按缺口清单 R5，把 OpenLLM 治理与 RBAC 路由族从 JWT-only 改为双通道，并将角色与权限、工作空间、路由策略、熔断器、工具调用、Prompt 模板、Prompt 实验、A/B 测试七页（8 路由）接到真实端点。
+
+**跨仓（OpenLLM，11 文件）**
+
+| 文件 | 变更 |
+|------|------|
+| `backend/app/api/roles.py` | 6 处依赖改双通道；新增 `GET /roles/permissions/catalog`（权限目录，供角色权限分配） |
+| `backend/app/api/workspaces.py` | 10 处依赖改双通道（列表/创建/更新/删除/成员/资源） |
+| `backend/app/api/virtual_keys.py` | 10 处依赖改双通道（列表/创建/更新/删除/轮换/吊销/用量） |
+| `backend/app/api/semantic_routing.py` | 12 处依赖改双通道（语义路由 CRUD/测试/缓存） |
+| `backend/app/api/cascade_routing.py` | 12 处依赖改双通道（级联规则与执行） |
+| `backend/app/api/circuit_breakers.py` | 4 处 `get_current_user` 改双通道（列表/详情/重置/事件/配置） |
+| `backend/app/api/ab_tests.py` | 12 处依赖改双通道（A/B 测试 CRUD/暂停/恢复/完成/报表） |
+| `backend/app/api/prompt_templates.py` | 11 处依赖改双通道（CRUD/版本/回滚/导入/导出） |
+| `backend/app/api/prompt_experiments.py` | 8 处依赖改双通道（实验 CRUD/启动/完成/胜出/报表） |
+| `backend/app/api/prompt_assembly.py` | 5 处依赖改双通道（装配模板/预览/保真度） |
+| `backend/app/api/tool_calls.py` | 7 处依赖改双通道（调用记录/详情/调用链） |
+| `backend/tests/unit/test_r5_dual_channel_v195.py` | 新增 30 例：28 条路由依赖断言 + 权限守卫双通道 + 权限目录注册 |
+
+**前端（OpenBase，7 页 / 8 路由）**
+
+| 页面 | 改动 |
+|------|------|
+| 角色与权限 | `/roles` 列表/新建/更新/启停/删除；权限抽屉 = `/roles/permissions/catalog` + `/roles/{id}` + `PUT /roles/{id}/permissions`；系统角色禁改/禁删 |
+| 工作空间 | `/workspaces` 列表/新建/删除、成员增删、资源统计；Virtual Key 走 `/virtual-keys`（列表/创建/轮换），完整 Key 仅展示一次；成员按用户 UUID 添加（上游无按用户名邀请） |
+| 路由策略 | `/routing/semantic` CRUD/启停/测试/缓存统计与清空；熔断器列表 + 重置（移除假「手动开启/关闭」） |
+| 工具调用监控 | `/tool-calls` 状态/工具名筛选 + 服务端分页；详情抽屉展示真实输入/输出（移除假调用链与取消） |
+| Prompt 模板 | `/prompt-templates` 列表/新建/编辑/删除/版本/回滚/导入；系统模板禁改/禁删/禁回滚；分类对齐上游 6 类 |
+| Prompt 实验 | `/prompt-experiments` 列表/创建（≥2 变体）/启动/完成/删除/报表 |
+| A/B 测试 | `/routing/ab-tests` 列表/创建（流量拆分）/暂停/恢复/完成/删除/报表 |
+
+**验证**
+
+| 项 | 命令/方式 | 结果 |
+|---|-----------|------|
+| OpenLLM 新增用例 | `pytest tests/unit/test_r5_dual_channel_v195.py` | **30 passed** |
+| OpenLLM R4 回归 | 同批运行 `test_r4_dual_channel_v194.py` | **15 passed**（合计 45 passed） |
+| 前端新增用例 | `vitest run tests/r5-wiring-v195.spec.ts` | **15 passed** |
+| 前端全量回归 | `vitest run` | **30 文件 / 321 用例全通过** |
+| 类型检查 | `vue-tsc --noEmit` | **0 错误** |
+| 聚合端点实测 | `/proxy/openllm/api/v1/roles`、`/workspaces`、`/routing/semantic`、`/tool-calls`、`/prompt-templates` 等 | **未完成（待复核）**：OpenLLM `:8001` 未运行，本机运行时装依赖后缺 `psycopg2`/`prometheus_client` 等，无法拉起完整服务；以路由级依赖断言 + 前端回归替代，未写成已验证 |
+| 浏览器实测 | 七页加载/交互 | **未完成（待复核）**：原因同上 |
+
+**遗留**
+
+1. Virtual Key 的创建/轮换依赖工作空间已存在；工作空间创建后需要刷新才能看到 Key 列（页面已在操作后重载）。
+2. 成员添加按用户 UUID（上游 `WorkspaceMemberAdd.user_id` 为 UUID），未提供用户名搜索/邀请端点。
+3. 单条工具调用无取消端点，取消能力仅作用于调用链（`/tool-calls/chains/{id}/cancel`），页面已移除该假动作。
+4. 聚合端点与页面级实测待 OpenLLM 可启动后补做。
+
+---
+
 ## 3. 后端接口耗时排查（阶段二核心）
 
 ### 3.1 现象
@@ -623,6 +677,7 @@ recall_backlog_memory=count=2 ids=7d50cd3a-…              # 积压记忆投影
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.10.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.19：**R5 治理与 RBAC 双通道与七页接线**——OpenLLM 11 个路由文件改双通道并新增 `/roles/permissions/catalog`；角色/工作空间/路由策略/熔断器/工具调用/Prompt 模板/Prompt 实验/A-B 测试七页（8 路由）接真实端点，移除假开闭/假调用链/假版本等动作。验证：OpenLLM 30+15 例、前端 15 例、vue-tsc 0 错误、前端全量 321 例通过；聚合端点与浏览器级实测待 OpenLLM 可启动后补做。 |
 | v2.9.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.18：**R4 观察域双通道与六页接线**——OpenLLM `monitoring`/`traces`/`alerts`/`budgets`/`usage`/`billing`/`billing_v2` 共 46 处依赖改双通道（写权限端点不放宽）；成本、告警、链路、预算、用量、计费六页接真实端点，链路/预算由占位页改为真实页，移除成本页「一键应用建议」假动作。验证：OpenLLM 15+6 例、前端 17 例、vue-tsc 0 错误、前端全量 306 例通过；聚合端点与浏览器级实测因 OpenLLM 无法启动待复核（未伪造成已验证），并登记指标表租户过滤缺口。 |
 | v2.8.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.17：**R3 双通道鉴权与插件/模型分类接线**——OpenLLM `plugins`（8 处）与 `model_categories`（13 处）改用 `get_current_active_user_or_api_key`；插件管理、模型分类两页接真实端点并移除 mock。验证：OpenLLM 6+34 例、前端 8 例、vue-tsc 0 错误、聚合端点 4/4 200；浏览器级复核受环境限制待补。 |
 | v2.7.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.16：**R2 C 类列表补齐与上游并发修复**——OpenBase 新增 `GET /configs`、`/test-records`、`/test-runs` 与服务 Key `id`/`by-id` 吊销；全局配置、测试记录两页接线并移除假动作；跨仓修复 OpenLLM `get_db`（`scoped_session` → 每请求独立 Session）并发 500。验证：后端 10 例、跨仓 3 例、前端 47 例、vue-tsc 0 错误、接口全链路与并发 9/9 通过；浏览器页面级验证因服务被环境回收待复核。 |

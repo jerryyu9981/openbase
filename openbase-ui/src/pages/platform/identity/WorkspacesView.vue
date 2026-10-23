@@ -1,27 +1,56 @@
 <template>
-  <PageContainer title="工作空间" description="工作空间与资源归属" test-id="workspaces-view-page">
+  <PageContainer title="工作空间" description="工作空间、成员与 Virtual Key（OpenLLM 团队空间）" test-id="workspaces-view-page">
     <div class="page-toolbar">
       <el-button type="primary" data-test="ws-new" @click="openCreate">新建工作空间</el-button>
+      <el-button :loading="loading" data-test="ws-refresh" @click="loadWorkspaces">刷新</el-button>
     </div>
+
+    <el-alert
+      v-if="errorMessage"
+      :title="errorMessage"
+      type="error"
+      show-icon
+      closable
+      class="mb-16"
+      data-test="ws-error"
+      @close="errorMessage = ''"
+    />
+
     <el-card header="工作空间" data-test="ws-card">
-      <div class="ob-table-scroll">
-        <el-table :data="workspaces" stripe empty-text="暂无工作空间" data-test="ws-table">
+      <div v-loading="loading" class="ob-table-scroll">
+        <el-table :data="workspaces" stripe data-test="ws-table">
+          <template #empty>
+            <el-empty description="暂无工作空间" :image-size="60" data-test="ws-empty" />
+          </template>
           <el-table-column prop="name" label="名称" min-width="150" />
-          <el-table-column prop="description" label="描述" min-width="180" />
-          <el-table-column prop="member_count" label="成员数" width="90" />
-          <el-table-column label="Virtual Key" min-width="180">
+          <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+          <el-table-column label="成员数" width="90">
+            <template #default="{ row }">{{ resourcesMap[row.id]?.member_count ?? '—' }}</template>
+          </el-table-column>
+          <el-table-column label="Virtual Key" min-width="200">
             <template #default="{ row }">
-              <el-tag v-if="row.virtualKey" size="small" type="warning" class="key-tag">{{ maskKey(row.virtualKey) }}</el-tag>
+              <el-tag v-if="keysMap[row.id]?.length" size="small" type="warning" class="key-tag">
+                {{ maskKey(keysMap[row.id][0].key_prefix) }}
+              </el-tag>
               <span v-else class="key-empty">未创建</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="260">
+          <el-table-column label="状态" width="90">
             <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openMembers(row)">成员</el-button>
-              <el-button link type="primary" size="small" data-test="ws-key" @click="rotateKey(row)">轮换 Key</el-button>
+              <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
+                {{ row.status === 'active' ? '启用' : row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="260" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" data-test="ws-members" @click="openMembers(row)">成员</el-button>
+              <el-button link type="primary" size="small" data-test="ws-key" @click="rotateOrCreateKey(row)">
+                {{ keysMap[row.id]?.length ? '轮换 Key' : '创建 Key' }}
+              </el-button>
               <el-popconfirm title="确认删除该工作空间？" @confirm="remove(row.id)">
                 <template #reference>
-                  <el-button link type="danger" size="small">删除</el-button>
+                  <el-button link type="danger" size="small" data-test="ws-delete">删除</el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -30,10 +59,9 @@
       </div>
     </el-card>
 
-    <!-- 新建 -->
     <el-dialog v-model="dialogOpen" title="新建工作空间" width="480px" data-test="ws-dialog">
       <el-form :model="form" label-width="70px">
-        <el-form-item label="名称">
+        <el-form-item label="名称" required>
           <el-input v-model="form.name" data-test="ws-name" />
         </el-form-item>
         <el-form-item label="描述">
@@ -42,96 +70,225 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogOpen = false">取消</el-button>
-        <el-button type="primary" data-test="ws-save" @click="save">创建</el-button>
+        <el-button type="primary" :loading="saving" data-test="ws-save" @click="save">创建</el-button>
       </template>
     </el-dialog>
 
-    <!-- 成员 -->
-    <el-drawer v-model="memberDrawer" :title="`成员管理 - ${currentWs?.name || ''}`" size="360px" data-test="ws-members-drawer">
-      <el-table :data="currentMembers" size="small" empty-text="暂无成员">
-        <el-table-column prop="username" label="用户" />
-        <el-table-column prop="role" label="角色" width="90" />
-      </el-table>
+    <el-drawer v-model="memberDrawer" :title="`成员管理 - ${currentWs?.name || ''}`" size="440px" data-test="ws-members-drawer">
+      <div v-loading="memberLoading">
+        <el-table :data="currentMembers" size="small" data-test="ws-member-table">
+          <template #empty>
+            <el-empty description="暂无成员" :image-size="50" />
+          </template>
+          <el-table-column label="用户" min-width="150">
+            <template #default="{ row }">{{ row.username || row.user_id }}</template>
+          </el-table-column>
+          <el-table-column prop="role" label="角色" width="90" />
+          <el-table-column label="操作" width="80">
+            <template #default="{ row }">
+              <el-button link type="danger" size="small" @click="removeMember(row.user_id)">移除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
       <div class="member-add">
-        <el-input v-model="newMember" placeholder="输入用户名添加" size="small" />
-        <el-button size="small" type="primary" data-test="ws-member-add" @click="addMember">添加</el-button>
+        <el-input v-model="newMemberId" placeholder="用户 UUID" size="small" data-test="ws-member-id" />
+        <el-select v-model="newMemberRole" size="small" style="width: 110px">
+          <el-option label="管理员" value="admin" />
+          <el-option label="成员" value="member" />
+          <el-option label="只读" value="viewer" />
+        </el-select>
+        <el-button size="small" type="primary" :loading="memberSaving" data-test="ws-member-add" @click="addMember">添加</el-button>
       </div>
     </el-drawer>
+
+    <el-dialog v-model="keyDialogVisible" title="Virtual Key（仅显示一次）" width="560px" data-test="ws-key-dialog">
+      <el-alert type="warning" :closable="false" show-icon title="请立即保存该 Key，关闭后无法再次查看完整值" class="mb-16" />
+      <el-input :model-value="createdKey" readonly data-test="ws-key-value" />
+      <template #footer>
+        <el-button type="primary" @click="keyDialogVisible = false">我已保存</el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import {
+  virtualKeysApi,
+  workspacesApi,
+  type LlmVirtualKey,
+  type LlmWorkspace,
+  type LlmWorkspaceMember,
+  type LlmWorkspaceResources,
+} from '@/core/api/governance'
 
-interface Workspace {
-  id: number
-  name: string
-  description: string
-  member_count: number
-  virtualKey: string | null
-}
-
-const workspaces = ref<Workspace[]>([
-  { id: 1, name: '默认工作空间', description: '平台默认空间', member_count: 3, virtualKey: 'ob_sk_live_8f3a2b1c9d4e' },
-  { id: 2, name: '模型组空间', description: '模型研发专用', member_count: 5, virtualKey: null },
-])
+/**
+ * 工作空间（v1.9.5 R5 真实化）：`/workspaces` 列表/新建/删除、成员增删、资源统计；
+ * Virtual Key 走 `/virtual-keys`（列表/创建/轮换），完整 Key 仅在创建/轮换响应中出现一次。
+ * 后端无「按用户名加成员」能力，故成员添加按用户 UUID 输入。
+ */
+const loading = ref(false)
+const saving = ref(false)
+const errorMessage = ref('')
+const workspaces = ref<LlmWorkspace[]>([])
+const resourcesMap = ref<Record<string, LlmWorkspaceResources>>({})
+const keysMap = ref<Record<string, LlmVirtualKey[]>>({})
 
 const dialogOpen = ref(false)
-const form = ref({ name: '', description: '' })
+const form = reactive({ name: '', description: '' })
+
 const memberDrawer = ref(false)
-const currentWs = ref<Workspace | null>(null)
-const currentMembers = ref<Array<{ username: string; role: string }>>([])
-const newMember = ref('')
+const memberLoading = ref(false)
+const memberSaving = ref(false)
+const currentWs = ref<LlmWorkspace | null>(null)
+const currentMembers = ref<LlmWorkspaceMember[]>([])
+const newMemberId = ref('')
+const newMemberRole = ref('member')
+
+const keyDialogVisible = ref(false)
+const createdKey = ref('')
+
+function maskKey(prefix: string) {
+  if (!prefix) return '-'
+  return `${prefix}****`
+}
+
+async function loadWorkspaces() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const items = await workspacesApi.list({ limit: 200 })
+    workspaces.value = items
+    const entries = await Promise.all(
+      items.map(async (item) => {
+        const [resources, keys] = await Promise.all([
+          workspacesApi.resources(item.id).catch(() => null),
+          virtualKeysApi.list({ workspace_id: item.id }).catch(() => [] as LlmVirtualKey[]),
+        ])
+        return { id: item.id, resources, keys }
+      }),
+    )
+    const nextResources: Record<string, LlmWorkspaceResources> = {}
+    const nextKeys: Record<string, LlmVirtualKey[]> = {}
+    for (const entry of entries) {
+      if (entry.resources) nextResources[entry.id] = entry.resources
+      nextKeys[entry.id] = entry.keys
+    }
+    resourcesMap.value = nextResources
+    keysMap.value = nextKeys
+  } catch (error) {
+    errorMessage.value = `工作空间加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    loading.value = false
+  }
+}
 
 function openCreate() {
-  form.value = { name: '', description: '' }
+  errorMessage.value = ''
+  form.name = ''
+  form.description = ''
   dialogOpen.value = true
 }
 
-function save() {
-  if (!form.value.name) {
+async function save() {
+  if (!form.name.trim()) {
     ElMessage.warning('请填写名称')
     return
   }
-  const id = Math.max(0, ...workspaces.value.map((w) => w.id)) + 1
-  workspaces.value.push({ id, name: form.value.name, description: form.value.description, member_count: 0, virtualKey: null })
-  ElMessage.success('工作空间已创建')
-  dialogOpen.value = false
+  saving.value = true
+  try {
+    await workspacesApi.create({ name: form.name.trim(), description: form.description || undefined })
+    ElMessage.success('工作空间已创建')
+    dialogOpen.value = false
+    await loadWorkspaces()
+  } catch (error) {
+    errorMessage.value = `工作空间创建失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    saving.value = false
+  }
 }
 
-function openMembers(row: Workspace) {
+async function remove(workspaceId: string) {
+  try {
+    await workspacesApi.remove(workspaceId)
+    ElMessage.success('工作空间已删除')
+    await loadWorkspaces()
+  } catch (error) {
+    errorMessage.value = `工作空间删除失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
+}
+
+async function openMembers(row: LlmWorkspace) {
   currentWs.value = row
-  currentMembers.value = [{ username: 'admin', role: 'owner' }]
   memberDrawer.value = true
+  memberLoading.value = true
+  newMemberId.value = ''
+  try {
+    currentMembers.value = await workspacesApi.members(row.id)
+  } catch (error) {
+    errorMessage.value = `成员列表加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    memberLoading.value = false
+  }
 }
 
-function addMember() {
-  if (!newMember.value) return
-  currentMembers.value.push({ username: newMember.value, role: 'member' })
-  if (currentWs.value) currentWs.value.member_count += 1
-  newMember.value = ''
-  ElMessage.success('成员已添加')
+async function addMember() {
+  if (!currentWs.value || !newMemberId.value.trim()) {
+    ElMessage.warning('请输入用户 UUID')
+    return
+  }
+  memberSaving.value = true
+  try {
+    await workspacesApi.addMember(currentWs.value.id, {
+      user_id: newMemberId.value.trim(),
+      role: newMemberRole.value,
+    })
+    ElMessage.success('成员已添加')
+    currentMembers.value = await workspacesApi.members(currentWs.value.id)
+    newMemberId.value = ''
+    await loadWorkspaces()
+  } catch (error) {
+    errorMessage.value = `添加成员失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    memberSaving.value = false
+  }
 }
 
-function rotateKey(row: Workspace) {
-  row.virtualKey = `ob_sk_live_${Math.random().toString(16).slice(2, 14)}`
-  ElMessage.success('Virtual Key 已轮换（旧密钥已失效）')
+async function removeMember(userId: string) {
+  if (!currentWs.value) return
+  try {
+    await workspacesApi.removeMember(currentWs.value.id, userId)
+    ElMessage.success('成员已移除')
+    currentMembers.value = await workspacesApi.members(currentWs.value.id)
+    await loadWorkspaces()
+  } catch (error) {
+    errorMessage.value = `移除成员失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
-function maskKey(key: string) {
-  return `${key.slice(0, 12)}...${key.slice(-4)}`
+async function rotateOrCreateKey(row: LlmWorkspace) {
+  try {
+    const existing = keysMap.value[row.id]?.[0]
+    const result = existing
+      ? await virtualKeysApi.rotate(existing.id)
+      : await virtualKeysApi.create(row.id, { name: `${row.name}-key` })
+    createdKey.value = result.key
+    keyDialogVisible.value = true
+    await loadWorkspaces()
+  } catch (error) {
+    errorMessage.value = `Virtual Key 操作失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
-function remove(id: number) {
-  workspaces.value = workspaces.value.filter((w) => w.id !== id)
-  ElMessage.success('工作空间已删除')
-}
+onMounted(loadWorkspaces)
 </script>
 
 <style scoped>
+.mb-16 { margin-bottom: 16px; }
 .key-tag { font-family: monospace; }
-.key-empty { color: #909399; font-size: 12px; }
+.key-empty { color: var(--ob-text-secondary); font-size: 12px; }
 .member-add { display: flex; gap: 8px; margin-top: 12px; }
 </style>

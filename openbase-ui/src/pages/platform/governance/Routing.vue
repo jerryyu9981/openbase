@@ -1,5 +1,5 @@
 <template>
-  <PageContainer :title="pageTitle" description="路由策略与熔断器共用同一策略视图（按路由 meta 呈现标题）" test-id="routing-page">
+  <PageContainer :title="pageTitle" description="语义路由策略与熔断器（按路由 meta 呈现标题）" test-id="routing-page">
     <el-alert
       v-if="errorMessage"
       :title="errorMessage"
@@ -15,28 +15,30 @@
       <el-tab-pane label="路由策略" name="strategies">
         <div class="page-toolbar">
           <el-button type="primary" data-test="create-strategy" @click="openCreateStrategy">新建策略</el-button>
+          <el-button :loading="loading" data-test="routing-refresh" @click="loadRoutes">刷新</el-button>
+          <el-button data-test="route-cache-stats" @click="showCacheStats">缓存统计</el-button>
         </div>
         <div v-loading="loading" class="ob-table-scroll">
-          <el-table :data="strategies" stripe data-test="strategies-table">
+          <el-table :data="routes" stripe data-test="strategies-table">
             <template #empty>
               <el-empty description="暂无路由策略，点击上方新建策略" :image-size="60" data-test="strategies-empty" />
             </template>
             <el-table-column prop="name" label="策略名" min-width="150" />
-            <el-table-column label="类型" width="110">
-              <template #default="{ row }">{{ strategyTypeLabel(row.type) }}</template>
-            </el-table-column>
+            <el-table-column prop="category" label="类别" width="120" />
             <el-table-column prop="priority" label="优先级" width="90" />
-            <el-table-column prop="target_model" label="目标模型" min-width="150" />
-            <el-table-column label="状态" width="90">
+            <el-table-column label="阈值" width="90">
+              <template #default="{ row }">{{ Number(row.threshold ?? 0).toFixed(2) }}</template>
+            </el-table-column>
+            <el-table-column label="启用" width="90">
               <template #default="{ row }">
-                <el-tag :type="strategyStatusType(row.status)" size="small">{{ strategyStatusLabel(row.status) }}</el-tag>
+                <el-switch v-model="row.enabled" data-test="strategy-toggle" @change="toggleRoute(row)" />
               </template>
             </el-table-column>
             <el-table-column label="操作" width="200" fixed="right">
               <template #default="{ row }">
                 <el-button link type="primary" data-test="edit-strategy" @click="openEditStrategy(row)">编辑</el-button>
-                <el-button link type="primary" data-test="test-strategy" @click="openTestDialog(row)">测试</el-button>
-                <el-popconfirm title="确认删除该策略？删除后相关流量将按剩余策略路由" @confirm="removeStrategy(row.id)">
+                <el-button link type="primary" data-test="test-strategy" @click="openTestDialog">测试</el-button>
+                <el-popconfirm title="确认删除该策略？" @confirm="removeStrategy(row.id)">
                   <template #reference>
                     <el-button link type="danger" data-test="delete-strategy">删除</el-button>
                   </template>
@@ -48,27 +50,32 @@
       </el-tab-pane>
 
       <el-tab-pane label="熔断器" name="breakers">
-        <div v-loading="loading" class="ob-table-scroll">
+        <div class="page-toolbar">
+          <el-button :loading="breakerLoading" data-test="breaker-refresh" @click="loadBreakers">刷新</el-button>
+        </div>
+        <div v-loading="breakerLoading" class="ob-table-scroll">
           <el-table :data="breakers" stripe data-test="breakers-table">
             <template #empty>
               <el-empty description="暂无熔断器配置" :image-size="60" data-test="breakers-empty" />
             </template>
-            <el-table-column prop="service" label="服务" min-width="160" />
+            <el-table-column prop="provider" label="提供商" min-width="140" />
+            <el-table-column prop="model" label="模型" min-width="140" />
             <el-table-column label="状态" width="100">
               <template #default="{ row }">
-                <el-tag :type="breakerStatusType(row.status)" size="small">{{ breakerStatusLabel(row.status) }}</el-tag>
+                <el-tag :type="breakerStatusType(row.state)" size="small">{{ breakerStatusLabel(row.state) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="失败率" width="110">
-              <template #default="{ row }">{{ row.failure_rate }}%</template>
+            <el-table-column label="错误率" width="110">
+              <template #default="{ row }">{{ (Number(row.error_rate ?? 0) * 100).toFixed(1) }}%</template>
             </el-table-column>
-            <el-table-column label="熔断阈值" width="110">
-              <template #default="{ row }">{{ row.threshold }}%</template>
-            </el-table-column>
-            <el-table-column label="操作" width="180" fixed="right">
+            <el-table-column prop="total_calls" label="总调用" width="100" />
+            <el-table-column label="操作" width="110" fixed="right">
               <template #default="{ row }">
-                <el-button link type="success" data-test="manual-open-breaker" @click="manualOpen(row)">手动开启</el-button>
-                <el-button link type="info" data-test="manual-close-breaker" @click="manualClose(row)">手动关闭</el-button>
+                <el-popconfirm title="确认重置该熔断器？" @confirm="resetBreaker(row.id)">
+                  <template #reference>
+                    <el-button link type="warning" data-test="breaker-reset">重置</el-button>
+                  </template>
+                </el-popconfirm>
               </template>
             </el-table-column>
           </el-table>
@@ -76,33 +83,41 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog v-model="strategyDialogVisible" :title="editingStrategyId ? '编辑策略' : '新建策略'" width="520px" data-test="strategy-dialog">
+    <el-dialog v-model="strategyDialogVisible" :title="editingStrategyId ? '编辑策略' : '新建策略'" width="560px" data-test="strategy-dialog">
       <el-form label-width="100px">
         <el-form-item label="策略名" required>
-          <el-input v-model="strategyForm.name" placeholder="如：默认权重路由" data-test="strategy-name-input" />
+          <el-input v-model="strategyForm.name" placeholder="如：客服意图路由" data-test="strategy-name-input" />
         </el-form-item>
-        <el-form-item label="类型" required>
-          <el-select v-model="strategyForm.type" style="width: 100%" data-test="strategy-type-select">
-            <el-option v-for="type in strategyTypes" :key="type.value" :label="type.label" :value="type.value" />
-          </el-select>
+        <el-form-item label="类别" required>
+          <el-input v-model="strategyForm.category" placeholder="如：chat" data-test="strategy-category-input" />
         </el-form-item>
-        <el-form-item label="优先级" required>
-          <el-input-number v-model="strategyForm.priority" :min="1" :max="100" :step="1" style="width: 100%" data-test="strategy-priority-input" />
-          <div class="text-muted">数值越小优先级越高</div>
+        <el-form-item label="优先级">
+          <el-input-number v-model="strategyForm.priority" :min="0" :max="1000" :step="1" style="width: 100%" data-test="strategy-priority-input" />
+          <div class="text-muted">数值越大优先级越高</div>
         </el-form-item>
-        <el-form-item label="目标模型" required>
-          <el-select v-model="strategyForm.target_model" placeholder="选择目标模型" style="width: 100%" data-test="strategy-model-select">
-            <el-option v-for="model in mockModels" :key="model" :label="model" :value="model" />
-          </el-select>
+        <el-form-item label="相似度阈值">
+          <el-input-number v-model="strategyForm.threshold" :min="0" :max="1" :step="0.05" :precision="2" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="示例问题">
+          <el-input
+            v-model="strategyForm.sampleQueries"
+            type="textarea"
+            :rows="4"
+            placeholder="每行一条示例问题，用于计算语义向量"
+            data-test="strategy-samples-input"
+          />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="strategyForm.description" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="strategyDialogVisible = false">取消</el-button>
-        <el-button type="primary" data-test="save-strategy" @click="saveStrategy">保存</el-button>
+        <el-button type="primary" :loading="saving" data-test="save-strategy" @click="saveStrategy">保存</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="testDialogVisible" :title="`路由测试：${testStrategy?.name || ''}`" width="560px" data-test="route-test-dialog">
+    <el-dialog v-model="testDialogVisible" title="语义路由测试" width="580px" data-test="route-test-dialog">
       <el-input
         v-model="testPrompt"
         type="textarea"
@@ -111,15 +126,16 @@
         data-test="test-prompt-input"
       />
       <div class="test-actions">
-        <el-button type="primary" data-test="run-route-test" @click="runTest">运行测试</el-button>
+        <el-button type="primary" :loading="testing" data-test="run-route-test" @click="runTest">运行测试</el-button>
         <el-button data-test="clear-route-cache" @click="clearCache">清缓存</el-button>
       </div>
       <el-descriptions v-if="testResult" :column="1" border class="test-result" data-test="test-result">
-        <el-descriptions-item label="目标模型">{{ testResult.target_model }}</el-descriptions-item>
-        <el-descriptions-item label="匹配策略">{{ testResult.strategy }}</el-descriptions-item>
-        <el-descriptions-item label="置信度">{{ testResult.confidence }}</el-descriptions-item>
-        <el-descriptions-item label="预估延迟">{{ testResult.latency }}</el-descriptions-item>
-        <el-descriptions-item label="说明">{{ testResult.reason }}</el-descriptions-item>
+        <el-descriptions-item label="是否命中">{{ testResult.result.matched ? '命中' : '未命中' }}</el-descriptions-item>
+        <el-descriptions-item label="匹配类别">{{ testResult.result.category || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="相似度">{{ Number(testResult.result.similarity_score ?? 0).toFixed(4) }}</el-descriptions-item>
+        <el-descriptions-item label="目标模型">{{ testResult.result.model_id || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="来源">{{ testResult.result.from_cache ? '缓存' : '实时计算' }}</el-descriptions-item>
+        <el-descriptions-item label="耗时">{{ testResult.processing_time_ms }} ms</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </PageContainer>
@@ -130,220 +146,233 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageContainer from '@/components/page/PageContainer.vue'
+import {
+  circuitBreakersApi,
+  routingApi,
+  type LlmCircuitBreaker,
+  type LlmRouteTestResponse,
+  type LlmSemanticRoute,
+} from '@/core/api/governance'
 
+/**
+ * 路由策略与熔断器（v1.9.5 R5 真实化）：
+ * - 策略 = OpenLLM 语义路由 `/routing/semantic`（列表/新建/编辑/启停/删除/测试/缓存）
+ * - 熔断器 = `/routing/circuit-breakers`（列表/重置）
+ * 上游未提供「手动开启/关闭」端点，本轮仅保留「重置」，不做本地假动作。
+ */
 const route = useRoute()
 const pageTitle = computed(() => (route.meta.title as string) || '路由策略')
 
-interface RouteStrategy {
-  id: number
-  name: string
-  type: string
-  priority: number
-  target_model: string
-  status: string
-}
-
-interface CircuitBreaker {
-  id: number
-  service: string
-  status: string
-  failure_rate: number
-  threshold: number
-}
-
-interface TestResult {
-  target_model: string
-  strategy: string
-  confidence: string
-  latency: string
-  reason: string
-}
-
 const activeTab = ref('strategies')
-const loading = ref(true)
+const loading = ref(false)
+const saving = ref(false)
 const errorMessage = ref('')
 
-const mockModels = ['gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'qwen2.5-7b']
-const strategyTypes = [
-  { value: 'weighted', label: '权重路由' },
-  { value: 'priority', label: '优先级路由' },
-  { value: 'fallback', label: '兜底路由' },
-  { value: 'semantic', label: '语义路由' },
-]
+const routes = ref<LlmSemanticRoute[]>([])
+const breakers = ref<LlmCircuitBreaker[]>([])
+const breakerLoading = ref(false)
 
-function strategyTypeLabel(type: string) {
-  return strategyTypes.find((item) => item.value === type)?.label || type
+function breakerStatusType(state: string) {
+  const normalized = (state || '').toUpperCase()
+  return { OPEN: 'danger', HALF_OPEN: 'warning', CLOSED: 'success' }[normalized] || 'info'
 }
-function strategyStatusType(status: string) {
-  return { enabled: 'success', disabled: 'info' }[status] || 'info'
-}
-function strategyStatusLabel(status: string) {
-  return { enabled: '启用', disabled: '停用' }[status] || status
-}
-function breakerStatusType(status: string) {
-  return { open: 'success', half_open: 'warning', closed: 'info' }[status] || 'info'
-}
-function breakerStatusLabel(status: string) {
-  return { open: '开启', half_open: '半开', closed: '关闭' }[status] || status
+function breakerStatusLabel(state: string) {
+  const normalized = (state || '').toUpperCase()
+  return { OPEN: '开启', HALF_OPEN: '半开', CLOSED: '关闭' }[normalized] || state
 }
 
-/** 契约 mock：本地路由策略数据（不调用真实 API） */
-const strategies = ref<RouteStrategy[]>([
-  { id: 1, name: '默认权重路由', type: 'weighted', priority: 10, target_model: 'gpt-4o-mini', status: 'enabled' },
-  { id: 2, name: '付费用户优先', type: 'priority', priority: 5, target_model: 'gpt-4o', status: 'enabled' },
-  { id: 3, name: '高并发降级策略', type: 'fallback', priority: 20, target_model: 'qwen2.5-7b', status: 'enabled' },
-  { id: 4, name: '夜间省钱策略', type: 'weighted', priority: 30, target_model: 'qwen2.5-7b', status: 'disabled' },
-])
+async function loadRoutes() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const page = await routingApi.list({ limit: 200 })
+    routes.value = page.items
+  } catch (error) {
+    errorMessage.value = `路由策略加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    loading.value = false
+  }
+}
 
-/** 契约 mock：本地熔断器数据（不调用真实 API） */
-const breakers = ref<CircuitBreaker[]>([
-  { id: 1, service: 'gpt-4o', status: 'closed', failure_rate: 1.2, threshold: 50 },
-  { id: 2, service: 'claude-3-5-sonnet', status: 'half_open', failure_rate: 28.5, threshold: 50 },
-  { id: 3, service: 'qwen2.5-7b', status: 'open', failure_rate: 67.3, threshold: 50 },
-])
+async function loadBreakers() {
+  breakerLoading.value = true
+  try {
+    const page = await circuitBreakersApi.list({ page: 1, page_size: 100 })
+    breakers.value = page.items
+  } catch (error) {
+    errorMessage.value = `熔断器加载失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    breakerLoading.value = false
+  }
+}
 
 // ---------- 策略编辑 ----------
 const strategyDialogVisible = ref(false)
-const editingStrategyId = ref<number | null>(null)
+const editingStrategyId = ref<string | null>(null)
 const strategyForm = reactive({
   name: '',
-  type: 'weighted',
+  category: 'chat',
   priority: 10,
-  target_model: 'gpt-4o-mini',
+  threshold: 0.7,
+  sampleQueries: '',
+  description: '',
 })
 
 function openCreateStrategy() {
   errorMessage.value = ''
   editingStrategyId.value = null
   strategyForm.name = ''
-  strategyForm.type = 'weighted'
+  strategyForm.category = 'chat'
   strategyForm.priority = 10
-  strategyForm.target_model = 'gpt-4o-mini'
+  strategyForm.threshold = 0.7
+  strategyForm.sampleQueries = ''
+  strategyForm.description = ''
   strategyDialogVisible.value = true
 }
 
-function openEditStrategy(row: RouteStrategy) {
+function openEditStrategy(row: LlmSemanticRoute) {
   errorMessage.value = ''
   editingStrategyId.value = row.id
   strategyForm.name = row.name
-  strategyForm.type = row.type
+  strategyForm.category = row.category
   strategyForm.priority = row.priority
-  strategyForm.target_model = row.target_model
+  strategyForm.threshold = row.threshold
+  strategyForm.sampleQueries = (row.sample_queries || []).join('\n')
+  strategyForm.description = row.description || ''
   strategyDialogVisible.value = true
 }
 
-function saveStrategy() {
-  if (!strategyForm.name.trim()) {
-    ElMessage.warning('请输入策略名称')
-    return
-  }
-  if (editingStrategyId.value) {
-    const target = strategies.value.find((item) => item.id === editingStrategyId.value)
-    if (target) {
-      Object.assign(target, {
-        name: strategyForm.name.trim(),
-        type: strategyForm.type,
-        priority: strategyForm.priority,
-        target_model: strategyForm.target_model,
-      })
-      ElMessage.success('策略已更新')
-    }
-  } else {
-    strategies.value.push({
-      id: Date.now(),
-      name: strategyForm.name.trim(),
-      type: strategyForm.type,
-      priority: strategyForm.priority,
-      target_model: strategyForm.target_model,
-      status: 'enabled',
-    })
-    ElMessage.success('策略已创建')
-  }
-  strategyDialogVisible.value = false
+function sampleQueries(): string[] {
+  return strategyForm.sampleQueries
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean)
 }
 
-function removeStrategy(id: number) {
-  const target = strategies.value.find((item) => item.id === id)
-  strategies.value = strategies.value.filter((item) => item.id !== id)
-  ElMessage.success(`策略「${target?.name || ''}」已删除`)
+async function saveStrategy() {
+  if (!strategyForm.name.trim() || !strategyForm.category.trim()) {
+    ElMessage.warning('请填写策略名与类别')
+    return
+  }
+  saving.value = true
+  try {
+    const payload = {
+      name: strategyForm.name.trim(),
+      category: strategyForm.category.trim(),
+      priority: strategyForm.priority,
+      threshold: strategyForm.threshold,
+      sample_queries: sampleQueries(),
+      description: strategyForm.description || undefined,
+    }
+    if (editingStrategyId.value) {
+      await routingApi.update(editingStrategyId.value, payload)
+      ElMessage.success('策略已更新')
+    } else {
+      await routingApi.create({ ...payload, enabled: true })
+      ElMessage.success('策略已创建')
+    }
+    strategyDialogVisible.value = false
+    await loadRoutes()
+  } catch (error) {
+    errorMessage.value = `策略保存失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    saving.value = false
+  }
+}
+
+async function toggleRoute(row: LlmSemanticRoute) {
+  const next = row.enabled
+  try {
+    await routingApi.update(row.id, { enabled: next })
+    ElMessage.success(next ? '策略已启用' : '策略已停用')
+  } catch (error) {
+    row.enabled = !next
+    errorMessage.value = `策略启停失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
+}
+
+async function removeStrategy(routeId: string) {
+  try {
+    await routingApi.remove(routeId)
+    ElMessage.success('策略已删除')
+    await loadRoutes()
+  } catch (error) {
+    errorMessage.value = `策略删除失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
 // ---------- 路由测试 ----------
 const testDialogVisible = ref(false)
-const testStrategy = ref<RouteStrategy | null>(null)
 const testPrompt = ref('')
-const testResult = ref<TestResult | null>(null)
+const testing = ref(false)
+const testResult = ref<LlmRouteTestResponse | null>(null)
 
-function openTestDialog(row: RouteStrategy) {
+function openTestDialog() {
   errorMessage.value = ''
-  testStrategy.value = row
   testPrompt.value = ''
   testResult.value = null
   testDialogVisible.value = true
 }
 
-function runTest() {
-  if (!testStrategy.value) return
+async function runTest() {
   if (!testPrompt.value.trim()) {
     ElMessage.warning('请输入提示词后再测试')
     return
   }
-  const strategy = testStrategy.value
-  // 契约 mock：本地模拟路由决策（不调用真实 API）
-  testResult.value = {
-    target_model: strategy.target_model,
-    strategy: strategy.name,
-    confidence: `${(85 + Math.random() * 14).toFixed(1)}%`,
-    latency: `${Math.floor(120 + Math.random() * 380)}ms`,
-    reason: strategy.status === 'disabled'
-      ? '该策略当前处于停用状态，本次为模拟路由结果，启用后正式生效'
-      : '命中策略优先级，成功路由至目标模型',
+  testing.value = true
+  try {
+    testResult.value = await routingApi.test({ message: testPrompt.value.trim() })
+  } catch (error) {
+    errorMessage.value = `路由测试失败：${error instanceof Error ? error.message : '未知错误'}`
+  } finally {
+    testing.value = false
   }
 }
 
-function clearCache() {
-  testPrompt.value = ''
-  testResult.value = null
-  ElMessage.success('路由缓存已清空')
-}
-
-// ---------- 熔断器操作 ----------
-function manualOpen(row: CircuitBreaker) {
-  if (row.status === 'open') {
-    // 业务规则：重复开启无意义
-    errorMessage.value = `服务「${row.service}」的熔断器已处于开启状态，无需重复操作`
-    return
+async function clearCache() {
+  try {
+    await routingApi.clearCache()
+    testResult.value = null
+    ElMessage.success('路由缓存已清空')
+  } catch (error) {
+    errorMessage.value = `清缓存失败：${error instanceof Error ? error.message : '未知错误'}`
   }
-  errorMessage.value = ''
-  row.status = 'open'
-  ElMessage.success(`服务「${row.service}」熔断器已手动开启，流量将熔断`)
 }
 
-function manualClose(row: CircuitBreaker) {
-  if (row.status === 'closed') {
-    // 业务规则：重复关闭无意义
-    errorMessage.value = `服务「${row.service}」的熔断器已处于关闭状态，无需重复操作`
-    return
+async function showCacheStats() {
+  try {
+    const stats = await routingApi.cacheStats()
+    ElMessage.success(
+      `缓存：${stats.current_size}/${stats.max_size}，命中率 ${stats.hit_rate_percent}%，查询均值 ${stats.avg_lookup_time_ms}ms`,
+    )
+  } catch (error) {
+    errorMessage.value = `缓存统计加载失败：${error instanceof Error ? error.message : '未知错误'}`
   }
-  errorMessage.value = ''
-  row.status = 'closed'
-  ElMessage.success(`服务「${row.service}」熔断器已手动关闭，流量恢复`)
 }
 
-function mockDelay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+// ---------- 熔断器 ----------
+async function resetBreaker(breakerId: string) {
+  try {
+    const result = await circuitBreakersApi.reset(breakerId)
+    ElMessage.success(result.message || `熔断器已重置（${result.current_state}）`)
+    await loadBreakers()
+  } catch (error) {
+    errorMessage.value = `熔断器重置失败：${error instanceof Error ? error.message : '未知错误'}`
+  }
 }
 
 onMounted(async () => {
-  loading.value = true
-  await mockDelay(500) // 契约 mock：模拟加载路由与熔断器数据
-  loading.value = false
+  await Promise.all([loadRoutes(), loadBreakers()])
 })
 </script>
 
 <style scoped>
 .mb-16 {
   margin-bottom: 16px;
+}
+.text-muted {
+  color: var(--ob-text-secondary);
+  font-size: 12px;
 }
 .test-actions {
   display: flex;
