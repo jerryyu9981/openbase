@@ -61,6 +61,25 @@ def test_api_key_store_list() -> None:
     assert "key" not in records[0] or records[0]["key"] != key  # 不回显明文
 
 
+def test_api_key_store_verify_excludes_key_hash() -> None:
+    """verify 返回的凭据不得携带存储内部字段 key_hash，且为副本（防调用方改坏存储）."""
+    from openbase.modules.auth.api_keys import ApiKeyStore
+
+    store = ApiKeyStore()
+    key = store.create("svc", scope={"system": ["*"], "tenants": ["*"]})
+    record = store.verify(key)
+    assert record is not None
+    assert "key_hash" not in record
+    assert record["name"] == "svc"
+    assert record["id"]  # 稳定标识保留（按 id 吊销依赖）
+    assert "scope" in record
+
+    # 副本语义：改写返回 dict 不得影响存储内记录
+    record["name"] = "tampered"
+    refreshed = store.verify(key)
+    assert refreshed is not None and refreshed["name"] == "svc"
+
+
 def test_api_key_scope_check() -> None:
     """scope 校验：越系统/越租户拒绝."""
     from openbase.modules.auth.api_keys import ApiKeyStore
@@ -106,6 +125,19 @@ def test_require_api_key_accepts_valid_key() -> None:
     request = _FakeKeyRequest({"X-API-Key": key})
     credential = require_api_key(request=request, store=store)
     assert credential is not None
+    assert credential["name"] == "svc"
+
+
+def test_require_api_key_credential_excludes_key_hash() -> None:
+    """require_api_key 凭据仅暴露认证所需字段（无 key_hash），并带认证方式标记."""
+    from openbase.core.deps.auth import require_api_key
+    from openbase.modules.auth.api_keys import ApiKeyStore
+
+    store = ApiKeyStore()
+    key = store.create("svc", scope={"system": ["*"], "tenants": ["*"]})
+    credential = require_api_key(request=_FakeKeyRequest({"X-API-Key": key}), store=store)
+    assert "key_hash" not in credential
+    assert credential["auth_method"] == "service-key"
     assert credential["name"] == "svc"
 
 

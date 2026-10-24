@@ -20,6 +20,18 @@ logger = logging.getLogger("openbase.auth.api_keys")
 KEY_PREFIX = "ob_k_"
 
 
+_INTERNAL_FIELDS = frozenset({"key_hash"})
+
+
+def _public_record(record: dict[str, Any]) -> dict[str, Any]:
+    """对外凭据副本：剔除存储内部字段（`key_hash`），避免凭据面外泄哈希.
+
+    Returns:
+        浅拷贝后的记录（调用方可安全改写，不影响存储内记录）。
+    """
+    return {key: value for key, value in record.items() if key not in _INTERNAL_FIELDS}
+
+
 class ApiKeyStore:
     """服务 Key 存储与校验（线程安全）.
 
@@ -107,7 +119,7 @@ class ApiKeyStore:
             tenant_id: 目标租户（scope 校验）。
 
         Returns:
-            通过返回记录 dict；无效/吊销/越 scope 返回 None。
+            通过返回记录**副本**（不含 `key_hash`）；无效/吊销/越 scope 返回 None。
         """
         key_hash = self._hash(raw_key)
         with self._lock:
@@ -122,17 +134,12 @@ class ApiKeyStore:
             return None
         if tenant_id is not None and tenant_id not in tenants and "*" not in tenants:
             return None
-        return record
+        return _public_record(record)
 
     def list_keys(self) -> list[dict[str, Any]]:
-        """列表签发记录（不回显明文 Key）."""
+        """列表签发记录（不回显明文 Key / 哈希）."""
         with self._lock:
-            records: list[dict[str, Any]] = []
-            for record in self._keys.values():
-                safe = dict(record)
-                safe.pop("key_hash", None)
-                records.append(safe)
-            return records
+            return [_public_record(record) for record in self._keys.values()]
 
     @staticmethod
     def _hash(raw_key: str) -> str:

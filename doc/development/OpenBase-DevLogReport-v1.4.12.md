@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.12**（缺陷修复：服务 Key 身份判定回归 D-03） |
 | 文档 | 开发记录报告（Step 3 产出，增量修复型） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-24 |
 | 编制 | 研发（AI 辅助） |
@@ -16,6 +16,7 @@
 
 | 版本 | 日期 | 编制人 | 修订内容 |
 |------|------|--------|---------|
+| v1.1.0 | 2026-10-24 | 研发（AI 辅助） | 同版本技术债清理：`ApiKeyStore.verify` / `require_api_key` 凭据面剔除存储内部字段 `key_hash`（TDD 2 例）；§2 增补回归；§4 遗留 1 关闭 |
 | v1.0.0 | 2026-10-24 | 研发（AI 辅助） | 首次产出：D-03 根因、修复实现、断言修正、定向与全量回归证据、影响面与回滚 |
 
 ---
@@ -57,17 +58,35 @@
 
 `test_obk_service_account_mapped_outbound_headers` 原断言 `X-Proxy-Source == openbase-generic-proxy`，与现行实现不符：`_TARGET_SYSTEM_BY_PROXY` 按**被代理系统**发布来源（`openrag → openbase-rag-proxy`），以便下游 `TRUSTED_PROXY_SOURCES` 采信身份头。已改为 `PROXY_SOURCE_RAG` 并注明依据，同时移除未再使用的 `PROXY_SOURCE_GENERIC` 导入。
 
+### 1.5 同版本技术债清理：凭据面剔除 `key_hash`
+
+**问题**：`ApiKeyStore.verify()` 直接返回存储记录（含 `key_hash`），`require_api_key` 再原样透传给 `/proxy` 身份上下文 —— 服务 Key 的哈希进入凭据面（日志/审计一旦整体序列化即外泄），且调用方持有可写引用可污染存储。
+
+**修复**（`openbase/modules/auth/api_keys.py`）：
+
+- 新增 `_public_record(record)`：剔除 `_INTERNAL_FIELDS = {"key_hash"}` 并返回**浅拷贝**；
+- `verify()` 改为返回 `_public_record(record)`（保留 `id` / `name` / `scope` / `created` / `revoked`，按 id 吊销能力不受影响）；
+- `list_keys()` 复用同一函数，消除「列表已剔除、校验未剔除」的口径分裂。
+
+**结果**：`require_api_key` 返回 `{id, name, scope, created, revoked, auth_method}`，不含 `key_hash`；TDD 2 例（`test_api_key_store_verify_excludes_key_hash` 含副本语义、`test_require_api_key_credential_excludes_key_hash`）。
+
 ## 2. 验证
 
 | 项 | 命令 | 结果 |
 |---|---|---|
 | 静态检查 | `ruff check openbase/core/deps/auth.py openbase/modules/proxy/__init__.py tests/test_service_agent_outbound.py` | 0 错误 |
+| 技术债定向（v1.1.0） | `pytest tests/test_api_keys.py tests/test_api_keys_api.py tests/test_service_agent_outbound.py tests/test_verdict_k03.py` | **53 passed**（含新增 2 例） |
+| 认证/代理面回归（v1.1.0） | `pytest`（api_keys/auth/proxy/identity/protocol 共 21 文件） | 见 §2.1 |
 | 定向回归 | `pytest tests/test_service_agent_outbound.py tests/test_api_keys.py tests/test_verdict_k03.py` | **47 passed** |
 | 全量（除 S7 门禁自检） | `pytest tests --ignore=tests/test_s7_t6_gate.py` | **1295 passed / 4 skipped / 6 failed** |
 | 6 例失败隔离复跑 | `pytest tests/test_tenant_admin.py tests/test_users_admin.py` | **12 passed**（共享 PG 瞬态，非回归） |
 | S7 门禁自检 | `pytest tests/test_s7_t6_gate.py` | **16 passed**（129s） |
 
 有效基线：**1311 passed / 4 skipped / 0 功能失败**；6 例失败全部为 `asyncpg connection was closed in the middle of operation` / `TimeoutError`，隔离复跑通过。
+
+### 2.1 认证/代理面回归明细（v1.1.0）
+
+`api_keys` / `auth` / `proxy` / `identity` / `protocol` 共 **21 个文件**：**225 passed / 9 failed**。9 例全部落在**身份面 DB 依赖**（日志 `agent principal verification unavailable: database degraded`、OIDC 绑定回落），与本次 `ApiKeyStore` 凭据收窄无交集；**9 例隔离复跑全部通过**（8.83s）⇒ 共享 PG 瞬态，非回归。
 
 ## 3. 影响面与回滚
 
@@ -80,5 +99,5 @@
 
 ## 4. 遗留
 
-1. `require_api_key` 返回的凭据 dict 仍含 `key_hash`（存储内部字段），建议后续收窄为显式白名单字段（本次不动，避免扩大改动面）；
+1. ~~`require_api_key` 返回的凭据 dict 仍含 `key_hash`（存储内部字段），建议后续收窄为显式白名单字段~~ → **已闭环（v1.1.0，§1.5）**：`verify` / `list_keys` 统一经 `_public_record` 剔除 `key_hash`，TDD 2 例守门；
 2. 生产发布需在 v1.4.12 镜像上回归 `/proxy` 服务 Key 链路（真实环境验证归 OPS）。
