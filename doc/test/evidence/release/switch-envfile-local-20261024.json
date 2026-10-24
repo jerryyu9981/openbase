@@ -1,0 +1,14 @@
+{
+  "total": 1,
+  "passed": 0,
+  "failed": 1,
+  "results": [
+    {
+      "repo": "OpenMemory",
+      "key": "OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE",
+      "status": "FAIL",
+      "detail": "未下发该开关",
+      "source": "D:\\Trae CN\\myproject\\Dev\\OpenMemory\\.env"
+    }
+  ]
+}

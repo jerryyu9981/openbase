@@ -2,9 +2,9 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.2.0 |
 | 状态 | [Review]（待 OPS 复核签字） |
-| 日期 | 2026-10-23 |
+| 日期 | 2026-10-24 |
 | 执行人 | 研发（AI 辅助） |
 | 上游依据 | 《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》S2/S4；《OpenBase-五系统多租户与授权集成总览与续接指南-v1.0.0》§10.3（裁定③④） |
 | 判据 | carrier 核验逐项 PASS；生产发布另须以 `--env-file` 核验目标环境下发值 |
@@ -17,7 +17,7 @@
 |----|------|
 | S4 发布强制核验（仓库侧） | **已执行且全绿**：`9 项 / PASS 9 / FAIL 0`（矩阵 v1.1.0 + 脚本 + 15 例单测） |
 | XR-OPS-07（初版登记为 P1 阻断） | **已闭环**：经根因复核为**门禁语义误判**（模板开发默认值被当作生产值），非 OpenMemory 配置缺陷 |
-| 生产下发核验 | **待 OPS**：发布时须对目标环境 `.env` 执行 `--env-file` 模式，确认 OpenMemory 生产值 `true` |
+| 生产下发核验 | **下发单已就绪（待 OPS 执行）**：《OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0》（编号 XR-OPS-07-ENV-001）已给出备份/覆盖/`--env-file` 核验/重启/回滚/回执步骤；本地演练 **PASS**，本机开发 `.env` 实测 **FAIL（未下发）** 作为缺口证据 |
 | S2 回滚演练 | **未执行**（需 OPS 运行态与注故障窗口；回滚方案 v1.0.0 已存在） |
 
 > 判定：仓库侧核验能力就绪且矩阵全绿；**生产发布仍以 OPS 的 `--env-file` 核验结果为准**（本记录不代替生产环境核验）。
@@ -68,7 +68,7 @@ python scripts/verify_production_switches.py --env-file <目标环境 .env> --re
 | 初判（r1） | OpenMemory `.env.example` 中 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=false`，与 §10.3「载体置真」不一致 → 判定 P1 阻断 |
 | 根因复核 | ① 该默认值为**刻意保留**（变更记录 §43「不翻转默认」，M1/开发态不受影响）；② 生产 M2 未置真时 `validate_identity_trust_policy` **拒绝启动**（`src/openmemory/utils/config.py:498-535`），不存在 fail-open；③ 初版门禁把「模板默认值」等同于「生产下发值」，属**判据错误** |
 | 闭环动作 | 矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`；门禁新增「生产覆盖注释存在性」与「运行期守卫存在性」两项机械校验（移除注释或守卫 → 立即 FAIL） |
-| 残余要求 | 生产 `.env` 必须 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=true`，由 OPS 以 `--env-file` 核验并回填本节 |
+| 残余要求 | 生产 `.env` 必须 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=true`，由 OPS 以 `--env-file` 核验并回填本节。**当前状态：待 OPS 执行**；下发单 `XR-OPS-07-ENV-001` 已就绪；本地演练 PASS（`switch-envfile-rehearsal-20261024.json`），开发 `.env` 未下发 FAIL（`switch-envfile-local-20261024.json`） |
 
 ## 6. S2 回滚演练（待 OPS）
 
@@ -84,5 +84,6 @@ python scripts/verify_production_switches.py --env-file <目标环境 .env> --re
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.2.0 | 2026-10-24 | 研发（AI 辅助） | **OPS 配置下发就绪**：新增《生产环境配置下发单-XR-OPS-07-v1.0.0》（备份/覆盖/`--env-file` 核验/重启/回滚/回执）；本地演练 PASS、开发 `.env` 未下发 FAIL 证据归档；生产执行仍待 OPS 回填 |
 | v1.1.0 | 2026-10-23 | 研发（AI 辅助） | **XR-OPS-07 闭环**：矩阵升 v1.1.0（`documented_override` + `runtime_gate`），修正「模板默认值≠生产值」判据错误；复跑 9/9 PASS；补生产 `--env-file` 核验要求与根因说明 |
 | v1.0.0 | 2026-10-23 | 研发（AI 辅助） | 初始创建：S4 仓库侧核验执行（7 PASS / 1 FAIL），登记 OpenMemory 载体漂移为 XR-OPS-07；S2 待 OPS 窗口 |
