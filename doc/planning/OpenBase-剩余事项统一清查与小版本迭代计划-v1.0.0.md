@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端及五系统协同 |
-| 文档版本 | v1.16.0 |
+| 文档版本 | v1.17.0 |
 | 状态 | **[Review]**（待人工批准后进入执行） |
 | 适用范围 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五系统 + 运维/QA 收口项 |
 | 作者 | FA-OpenBase-Dev |
@@ -96,6 +96,7 @@
 | XR-OPS-05 | R384 DPS P1 修正提交与回执核验 | 研发 | R384 派单 §10 | 回执不完整 | P3 | v1.9.8 | **✅ 已闭环（2026-10-23）**：DPS `0954b9a`（RequestIdFilter 改挂 handler 级）已在 `main`（`git merge-base --is-ancestor` 通过） | commit hash 回填、回归通过 |
 | XR-OPS-07 | OpenMemory 生产开关载体置真 | OpenMemory/OPS | S4 执行发现 | 初判为模板值与生产值漂移 | ~~P1~~ → P2 | v1.10.2 | **✅ 仓库侧闭环（2026-10-23）**：根因复核为**门禁判据误判**（模板默认 `false` 系刻意的 M1/开发态默认，生产 M2 未置真时 `validate_identity_trust_policy` 拒绝启动，不存在 fail-open）→ 矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`，10 → 15 例守门；复跑 9/9 PASS。**生产下发单已就绪**（XR-OPS-07-ENV-001，2026-10-24）：本地 `--env-file` 演练 PASS、开发 `.env` 实测 FAIL（未下发）；生产执行待 OPS 回填 | 仓库侧 9/9 PASS；生产下发单已就绪 |
 | XR-OPS-06 | S2 回滚演练 + S4 发布强制核验执行 | OPS/研发 | 必办清单 v2.2.0 | 仅有方案未演练 | P2 | v1.10.2 | 演练报告 + 核验清单签字 | **部分闭环（2026-10-25）**：S4 仓库侧已执行并全绿（矩阵 v1.1.0 + 脚本 + 15 例；实测 9 PASS / 0 FAIL）；生产配置下发单已就绪（XR-OPS-07-ENV-001）；**S2 离线段 + 本地活实例段已演练**（《OpenBase-S2-三级回滚演练报告-v1.1.0》：L1/L2/L3 `14 PASS / 3 PENDING / 0 FAIL`；含进程级门禁双向、受管编排冷启动 7s + `/health` 200、活实例 `verify_release` PASS 7 / FAIL 0）；剩生产实机段 3 项（L1-5b 重启验证 / L2-5 通道复位写路径 / L3-5b 镜像回切+15 分钟校验）与 `--env-file` 核验待 OPS，不填 PASS |
+| XR-OPS-08 | 共享库（PostgreSQL）启动期主备探测与切换（备用=本机 127.0.0.1:5432） | OB | 2026-10-25 新增需求 | 主用异常导致启动即失败/半启动 | **P0** | v1.4.12 周期内 | 建设：受管编排入口启动前探测 + 自动切备用 + 双不可达拒绝启动 | **Phase 1 ✅ 已交付（2026-10-25）**：`service-orchestrator.ps1` 增 `-DbMode auto/primary/standby/off` 与 `-Action dbcheck`；start/startcheck/monitor 前置门禁；5 服务环境变量覆盖（不改写 `.env`）；证据 `doc/test/evidence/ops/**`；单测 9 例（含「主用异常自动切备用」「双不可达 exit 2 不启动」）；**Phase 2/3（运行期复检、Redis/Qdrant/Neo4j 纳管、应用内自检、HA/切回）见全栈计划 v1.1.0 §7.0** | 主用可达→primary；主用异常→standby；双不可达→exit 2 |
 
 ---
 
@@ -273,6 +274,7 @@ v1.10.2 ──→ v1.11.0（长尾裁定需治理口径稳定）
 | v1.13.0 | 2026-10-24 | FA-OpenBase-Dev | **OPS 配置下发就绪**：新增《生产环境配置下发单-XR-OPS-07-v1.0.0》（备份/覆盖/`--env-file` 核验/重启/回滚/回执）；本地演练 PASS、开发 `.env` 未下发 FAIL 证据归档；XR-OPS-07 / 06 台账同步。 |
 | v1.12.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 收口审计**：A~E 11 项追溯闭环；产品版本三处统一 1.4.11；产出《OpenBase-长尾迭代收口审计-v1.12.0》（结论：通过（有条件），3 项环境/配置失败归因 + 5 项遗留）。 |
 | v1.11.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 E 批执行回填**：XR-LLM-08 工具来源标注；XR-DPS-02/03 三页只读真实化（0 mock），代理只读端点扩至 6 个；前端全量 370/370。 |
+| v1.17.0 | 2026-10-25 | FA-OpenBase-Dev | **新增 XR-OPS-08 并交付 Phase 1**：受管编排入口启动前探测主用 PostgreSQL，异常自动切本机 `127.0.0.1:5432`，双不可达拒绝启动（exit 2）；`-DbMode` / `-Action dbcheck`；证据 `doc/test/evidence/ops/**`；单测 9 例；运维记录升 v1.9.0（§16）；全栈计划升 v1.1.0（A8 + §7.0 三阶段）。 |
 | v1.16.0 | 2026-10-25 | FA-OpenBase-Dev | **产出全栈剩余问题统一清单**：《OpenBase-全栈生产系统剩余问题清单与迭代解决方案-v1.0.0》汇总 17 项（生产阻断 7 / 本仓工程 4 / 跨仓能力 2 / 冻结 4）并给出 v1.13.0 / v1.13.1 / v1.14.0 迭代方案；本表 §4 后续排期以该文档为准。 |
 | v1.15.0 | 2026-10-25 | FA-OpenBase-Dev | **S2 本地活实例段补录**：L1 进程级门禁双向 + 受管编排启停（冷启动 7s、`/health` 200）、L3 活实例 `verify_release`（PASS 7 / FAIL 0）；XR-OPS-06 升为 `14 PASS / 3 PENDING / 0 FAIL`，报告升 v1.1.0；登记 D-04（编排 stop 首次未生效）、D-05（本机编排前置）。 |
 | v1.14.0 | 2026-10-24 | FA-OpenBase-Dev | **XR-OPS-06 S2 离线段演练回填**：三级回滚（L1 开关 / L2 通道 / L3 版本）`11 PASS / 3 PENDING / 0 FAIL`，产出《OpenBase-S2-三级回滚演练报告-v1.0.0》与 `doc/test/evidence/s2/**`；登记 D-01（旧基线版本号不统一）、D-02（L2 演练器跨仓配置面约束，已修复）；生产实机段 4 项待 OPS。 |

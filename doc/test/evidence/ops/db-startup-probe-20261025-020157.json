@@ -1,0 +1,28 @@
+﻿{
+    "schema_version":  1,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "dbcheck",
+    "generated_at":  "2026-10-25T02:01:57+08:00",
+    "requested_mode":  "auto",
+    "resolved_mode":  "primary",
+    "ok":  true,
+    "reason":  "主用可达",
+    "primary":  {
+                    "Port":  5432,
+                    "Host":  "192.168.0.151",
+                    "Healthy":  true,
+                    "LatencyMs":  1173,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  5432,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  true,
+                    "LatencyMs":  367,
+                    "Method":  "pg_isready"
+                },
+    "override_services":  [
+
+                          ],
+    "note":  "仅记录主机/端口/判定/耗时；不含 DSN 与口令；不改写任何 .env"
+}

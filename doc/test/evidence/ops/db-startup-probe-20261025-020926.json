@@ -1,0 +1,37 @@
+﻿{
+    "schema_version":  1,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "dbcheck",
+    "generated_at":  "2026-10-25T02:09:26+08:00",
+    "requested_mode":  "auto",
+    "resolved_mode":  "standby",
+    "ok":  true,
+    "reason":  "主用不可达，切备用",
+    "primary":  {
+                    "Port":  1,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  false,
+                    "LatencyMs":  1158,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  5432,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  true,
+                    "LatencyMs":  225,
+                    "Method":  "pg_isready"
+                },
+    "override_services":  [
+                              "openllm",
+                              "openmemory",
+                              "openrag"
+                          ],
+    "applied_endpoints":  {
+                              "openllm":  "postgresql://nuct:***@127.0.0.1:5432/nuct",
+                              "openmemory":  "127.0.0.1:5432",
+                              "openrag":  "postgresql+asyncpg://nuct:***@127.0.0.1:5432/nuct",
+                              "openbase":  "postgresql://nuct:***@127.0.0.1:5432/nuct",
+                              "dps":  "postgresql://nuct:***@127.0.0.1:5432/nuct"
+                          },
+    "note":  "仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env"
+}

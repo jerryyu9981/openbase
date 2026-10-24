@@ -1,0 +1,31 @@
+﻿{
+    "schema_version":  1,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "start",
+    "generated_at":  "2026-10-25T02:08:22+08:00",
+    "requested_mode":  "standby",
+    "resolved_mode":  "unavailable",
+    "ok":  false,
+    "reason":  "强制备用（-DbMode standby）",
+    "primary":  {
+                    "Port":  5432,
+                    "Host":  "192.168.0.151",
+                    "Healthy":  true,
+                    "LatencyMs":  115,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  1,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  false,
+                    "LatencyMs":  1124,
+                    "Method":  "pg_isready"
+                },
+    "override_services":  [
+
+                          ],
+    "applied_endpoints":  {
+
+                          },
+    "note":  "仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env"
+}

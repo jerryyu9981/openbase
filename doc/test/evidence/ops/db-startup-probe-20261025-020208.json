@@ -1,0 +1,30 @@
+﻿{
+    "schema_version":  1,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "dbcheck",
+    "generated_at":  "2026-10-25T02:02:08+08:00",
+    "requested_mode":  "standby",
+    "resolved_mode":  "standby",
+    "ok":  true,
+    "reason":  "强制备用（-DbMode standby）",
+    "primary":  {
+                    "Port":  5432,
+                    "Host":  "192.168.0.151",
+                    "Healthy":  true,
+                    "LatencyMs":  120,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  5432,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  true,
+                    "LatencyMs":  184,
+                    "Method":  "pg_isready"
+                },
+    "override_services":  [
+                              "openllm",
+                              "openmemory",
+                              "openrag"
+                          ],
+    "note":  "仅记录主机/端口/判定/耗时；不含 DSN 与口令；不改写任何 .env"
+}

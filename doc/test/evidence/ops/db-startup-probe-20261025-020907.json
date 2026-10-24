@@ -1,0 +1,31 @@
+﻿{
+    "schema_version":  1,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "dbcheck",
+    "generated_at":  "2026-10-25T02:09:07+08:00",
+    "requested_mode":  "auto",
+    "resolved_mode":  "unavailable",
+    "ok":  false,
+    "reason":  "主备均不可达",
+    "primary":  {
+                    "Port":  1,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  false,
+                    "LatencyMs":  1086,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  1,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  false,
+                    "LatencyMs":  1075,
+                    "Method":  "pg_isready"
+                },
+    "override_services":  [
+
+                          ],
+    "applied_endpoints":  {
+
+                          },
+    "note":  "仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env"
+}

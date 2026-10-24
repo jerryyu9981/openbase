@@ -23,6 +23,13 @@
 #   .\scripts\service-orchestrator.ps1 -Action stop
 #   .\scripts\service-orchestrator.ps1 -Action start -ServiceLogRoot D:\tmp\svc-logs   # 覆盖服务日志采集根目录
 #   .\scripts\service-orchestrator.ps1 -Action namecheck        # 采集文件命名实测（不改动任何服务）
+#   .\scripts\service-orchestrator.ps1 -Action dbcheck           # 仅探测共享库主备（不启动任何服务）
+#   .\scripts\service-orchestrator.ps1 -Action start -DbMode standby   # 强制走备用库通道
+#
+# 共享库（PostgreSQL）启动期主备（P0，2026-10-25）：
+#   - 每次 start/startcheck/monitor 前必探测主用；`-DbMode auto`（默认）异常自动切备用；
+#     `-DbMode primary|standby|off` 可强制/关闭。备用以**子进程环境覆盖**生效，不改写 `.env`；
+#     主备均不可达 ⇒ 拒绝启动（退出码 2）。探测/覆盖/耗时写 `doc/test/evidence/ops/`。
 #
 # 环境要求：Windows PowerShell 5+；各服务 Python 依赖已安装（各项目自有环境）
 #
@@ -48,7 +55,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('start', 'startcheck', 'monitor', 'status', 'checkall', 'stop', 'namecheck')]
+    [ValidateSet('start', 'startcheck', 'monitor', 'status', 'checkall', 'stop', 'namecheck', 'dbcheck')]
     [string]$Action = 'start',
     [string[]]$Only = @(),
     [int]$Interval = 15,
@@ -57,7 +64,13 @@ param(
     # 沙箱/受限环境日志目录覆盖（默认 OpenBase\logs\service-orchestrator）
     [string]$LogRoot = '',
     # 服务子进程日志采集根目录覆盖（默认 OpenBase\logs，见 C-6）
-    [string]$ServiceLogRoot = ''
+    [string]$ServiceLogRoot = '',
+    # 共享库（PostgreSQL）启动期主备策略：
+    #   auto=探测主用，异常切备用（默认）；primary=强制主用；standby=强制备用；off=不探测（兼容旧行为）
+    [ValidateSet('auto', 'primary', 'standby', 'off')]
+    [string]$DbMode = 'auto',
+    # 单端点探测超时（秒）
+    [int]$DbProbeTimeoutSec = 3
 )
 
 $ErrorActionPreference = 'Stop'
@@ -91,6 +104,200 @@ if (Test-Path $SharedInfraFile) {
             $v = $Matches[2].Trim().Trim('"').Trim("'")
             if ($v -and -not [Environment]::GetEnvironmentVariable($k, 'Process')) {
                 [Environment]::SetEnvironmentVariable($k, $v, 'Process')
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 共享库（PostgreSQL）启动期探测与主备切换（P0，2026-10-25）
+#
+# 口径：
+#   1) 配置文件（.env / .env.shared-infra）**保持主用地址不变**；备用仅在启动期以
+#      **子进程环境变量覆盖**生效，不改写任何配置文件；主用恢复后重启即自动回主用。
+#   2) 每次 start/startcheck/monitor 前**必探测**；`-Action dbcheck` 为只探测入口。
+#   3) 探测判据：`pg_isready`（首选，含服务端握手）→ 不可用/失败回落 **TCP 连通**。
+#   4) 失败策略：主备均不可达 ⇒ **不启动任何服务**（退出码 2），避免「半启动」。
+#   5) 日志/证据：只记录主机、端口、判定与耗时；DSN **一律脱敏**（口令→***）。
+# ---------------------------------------------------------------------------
+$ProjectRoot = Split-Path $PSScriptRoot -Parent
+
+function Test-PostgresEndpoint {
+    param([string]$TargetHost, [int]$TargetPort, [int]$TimeoutSec = 3)
+
+    $startedAt = Get-Date
+    $pgIsReady = 'D:\PostgreSQL\17\bin\pg_isready.exe'
+    if (Test-Path $pgIsReady) {
+        try {
+            & $pgIsReady -h $TargetHost -p $TargetPort -t $TimeoutSec *> $null
+            $exitCode = $LASTEXITCODE
+            return @{
+                Healthy   = ($exitCode -eq 0)
+                Method    = 'pg_isready'
+                LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
+            }
+        } catch {
+            # 回落 TCP 探测（pg_isready 缺失/异常不作为不可达依据）
+        }
+    }
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $task = $client.ConnectAsync($TargetHost, $TargetPort)
+        $connected = $task.Wait([TimeSpan]::FromSeconds($TimeoutSec)) -and $client.Connected
+        $client.Close()
+        return @{
+            Healthy   = [bool]$connected
+            Method    = 'tcp'
+            LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
+        }
+    } catch {
+        return @{
+            Healthy   = $false
+            Method    = 'tcp'
+            LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
+        }
+    }
+}
+
+function Get-EnvFileValue {
+    param([string]$Path, [string]$Key)
+    if (-not (Test-Path $Path)) { return '' }
+    # 显式 UTF-8 读取：PS 5.1 的 Get-Content 默认按 ANSI 解码，
+    # 遇含中文注释的 .env 会出现行错位/乱码（实测 OpenLLM .env 行号偏移）。
+    try {
+        $lines = [System.IO.File]::ReadAllLines($Path, [System.Text.Encoding]::UTF8)
+    } catch {
+        return ''
+    }
+    $prefix = $Key + '='
+    foreach ($line in $lines) {
+        $trimmed = $line.Trim()
+        if ($trimmed.StartsWith($prefix, [System.StringComparison]::Ordinal)) {
+            return $trimmed.Substring($prefix.Length).Trim().Trim('"').Trim("'")
+        }
+    }
+    return ''
+}
+
+function Set-UrlHostPort {
+    param([string]$Url, [string]$TargetHost, [int]$TargetPort)
+    if (-not $Url) { return $Url }
+    return [regex]::Replace($Url, '@[^/:@]+:\d+', ("@{0}:{1}" -f $TargetHost, $TargetPort))
+}
+
+function Hide-DsnSecret {
+    param([string]$Value)
+    if (-not $Value) { return '' }
+    return ($Value -replace '://([^:/@]+):[^@]*@', '://$1:***@')
+}
+
+$script:DbResolution = @{
+    Ok            = $true
+    RequestedMode = $DbMode
+    Mode          = 'off'
+    Reason        = '探测关闭（-DbMode off）'
+    Primary       = @{}
+    Standby       = @{}
+}
+$script:DbOverrides = @{}
+$script:DbAppliedEndpoints = @{}
+
+if ($DbMode -ne 'off') {
+    $primaryHost = $env:POSTGRES_HOST
+    $primaryPort = if ($env:POSTGRES_PORT) { [int]$env:POSTGRES_PORT } else { 5432 }
+    if (-not $primaryHost -and $env:POSTGRES_URL) {
+        $match = [regex]::Match($env:POSTGRES_URL, '@([^/:@]+):(\d+)/')
+        if ($match.Success) {
+            $primaryHost = $match.Groups[1].Value
+            $primaryPort = [int]$match.Groups[2].Value
+        }
+    }
+    $standbyHost = if ($env:OPENBASE_PG_STANDBY_HOST) { $env:OPENBASE_PG_STANDBY_HOST } else { '127.0.0.1' }
+    # 备用端口默认 5432（PG 规范端口）；不沿用主用端口，避免主用自定义端口时误指向
+    $standbyPort = if ($env:OPENBASE_PG_STANDBY_PORT) { [int]$env:OPENBASE_PG_STANDBY_PORT } else { 5432 }
+
+    $primaryProbe = if ($primaryHost) {
+        Test-PostgresEndpoint -TargetHost $primaryHost -TargetPort $primaryPort -TimeoutSec $DbProbeTimeoutSec
+    } else {
+        @{ Healthy = $false; Method = 'none'; LatencyMs = 0 }
+    }
+    $standbyProbe = Test-PostgresEndpoint -TargetHost $standbyHost -TargetPort $standbyPort -TimeoutSec $DbProbeTimeoutSec
+
+    $resolvedMode = $null
+    $reason = ''
+    switch ($DbMode) {
+        'primary' {
+            $resolvedMode = if ($primaryProbe.Healthy) { 'primary' } else { '' }
+            $reason = '强制主用（-DbMode primary）'
+        }
+        'standby' {
+            $resolvedMode = if ($standbyProbe.Healthy) { 'standby' } else { '' }
+            $reason = '强制备用（-DbMode standby）'
+        }
+        default {
+            if ($primaryProbe.Healthy) {
+                $resolvedMode = 'primary'
+                $reason = '主用可达'
+            } elseif ($standbyProbe.Healthy) {
+                $resolvedMode = 'standby'
+                $reason = '主用不可达，切备用'
+            } else {
+                $resolvedMode = ''
+                $reason = '主备均不可达'
+            }
+        }
+    }
+
+    if (-not $resolvedMode) {
+        $script:DbResolution = @{
+            Ok            = $false
+            RequestedMode = $DbMode
+            Mode          = 'unavailable'
+            Reason        = $reason
+            Primary       = @{ Host = $primaryHost; Port = $primaryPort } + $primaryProbe
+            Standby       = @{ Host = $standbyHost; Port = $standbyPort } + $standbyProbe
+        }
+    } else {
+        $script:DbResolution = @{
+            Ok            = $true
+            RequestedMode = $DbMode
+            Mode          = $resolvedMode
+            Reason        = $reason
+            Primary       = @{ Host = $primaryHost; Port = $primaryPort } + $primaryProbe
+            Standby       = @{ Host = $standbyHost; Port = $standbyPort } + $standbyProbe
+        }
+
+        if ($resolvedMode -eq 'standby') {
+            # 共享键：OpenBase（POSTGRES_URL）与 DPS（定义期读取 $env:POSTGRES_URL）随之切换
+            $standbyUrl = if ($env:OPENBASE_PG_STANDBY_URL) {
+                $env:OPENBASE_PG_STANDBY_URL
+            } else {
+                Set-UrlHostPort -Url $env:POSTGRES_URL -TargetHost $standbyHost -TargetPort $standbyPort
+            }
+            $env:POSTGRES_HOST = $standbyHost
+            $env:POSTGRES_PORT = [string]$standbyPort
+            if ($standbyUrl) { $env:POSTGRES_URL = $standbyUrl }
+
+            # OpenBase 若在 .env 显式声明 OPENBASE_DB_URL，同等替换（settings 优先级最高）
+            $openbaseDbUrl = Get-EnvFileValue -Path (Join-Path $ProjectRoot '.env') -Key 'OPENBASE_DB_URL'
+            if ($openbaseDbUrl) {
+                $env:OPENBASE_DB_URL = Set-UrlHostPort -Url $openbaseDbUrl -TargetHost $standbyHost -TargetPort $standbyPort
+            }
+
+            # 各仓自有 .env 的数据库键（保留各自 scheme/凭据/库名，仅替换主机端口）
+            $openllmDbUrl = Get-EnvFileValue -Path 'D:\Trae CN\myproject\Dev\OpenLLM\backend\.env' -Key 'DATABASE_URL'
+            $openragDbUrl = Get-EnvFileValue -Path 'D:\Trae CN\myproject\Dev\OpenRAG\.env' -Key 'OPENRAG_DATABASE_URL'
+            $script:DbOverrides = @{
+                openllm    = @{ DATABASE_URL = (Set-UrlHostPort -Url $openllmDbUrl -TargetHost $standbyHost -TargetPort $standbyPort) }
+                openrag    = @{ OPENRAG_DATABASE_URL = (Set-UrlHostPort -Url $openragDbUrl -TargetHost $standbyHost -TargetPort $standbyPort) }
+                openmemory = @{ OPENMEMORY_DB__HOST = $standbyHost; OPENMEMORY_DB__PORT = [string]$standbyPort }
+            }
+            $script:DbAppliedEndpoints = @{
+                openbase   = (Hide-DsnSecret $env:POSTGRES_URL)
+                dps        = (Hide-DsnSecret $env:POSTGRES_URL)
+                openllm    = (Hide-DsnSecret $script:DbOverrides.openllm.DATABASE_URL)
+                openrag    = (Hide-DsnSecret $script:DbOverrides.openrag.OPENRAG_DATABASE_URL)
+                openmemory = ("{0}:{1}" -f $standbyHost, $standbyPort)
             }
         }
     }
@@ -334,6 +541,17 @@ $services = @(
         )
     }
 )
+
+# 备用库通道：把覆盖键合并进各服务 Env（启动时随子进程环境生效；不改写 .env）
+if ($script:DbOverrides.Count -gt 0) {
+    foreach ($svc in $services) {
+        if (-not $script:DbOverrides.ContainsKey($svc.Name)) { continue }
+        if (-not $svc.Env) { $svc.Env = @{} }
+        foreach ($key in $script:DbOverrides[$svc.Name].Keys) {
+            $svc.Env[$key] = $script:DbOverrides[$svc.Name][$key]
+        }
+    }
+}
 
 # ---------------------------------------------------------------------------
 # 工具函数
@@ -619,8 +837,94 @@ function Get-TopoOrder {
 # Action 分发
 # ---------------------------------------------------------------------------
 
+function Write-DbEvidence {
+    param([string]$ActionName)
+    $evidenceDir = if ($env:OPENBASE_EVIDENCE_ROOT) {
+        $env:OPENBASE_EVIDENCE_ROOT
+    } else {
+        Join-Path $ProjectRoot 'doc\test\evidence\ops'
+    }
+    New-Item -ItemType Directory -Force -Path $evidenceDir | Out-Null
+    $path = Join-Path $evidenceDir ("db-startup-probe-{0}.json" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    $payload = [ordered]@{
+        schema_version    = 1
+        tool              = 'service-orchestrator.ps1'
+        action            = $ActionName
+        generated_at      = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
+        requested_mode    = $script:DbResolution.RequestedMode
+        resolved_mode     = $script:DbResolution.Mode
+        ok                = $script:DbResolution.Ok
+        reason            = $script:DbResolution.Reason
+        primary           = $script:DbResolution.Primary
+        standby           = $script:DbResolution.Standby
+        override_services = @($script:DbOverrides.Keys | Sort-Object)
+        applied_endpoints = $script:DbAppliedEndpoints
+        note              = '仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env'
+    }
+    ($payload | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $path -Encoding UTF8
+    return $path
+}
+
+function Get-DbSummary {
+    $p = $script:DbResolution.Primary
+    $s = $script:DbResolution.Standby
+    return ("共享库探测：primary={0}:{1} healthy={2}（{3}，{4}ms）/ standby={5}:{6} healthy={7}（{8}，{9}ms）⇒ mode={10}（{11}）" -f `
+        $p.Host, $p.Port, $p.Healthy, $p.Method, $p.LatencyMs, `
+        $s.Host, $s.Port, $s.Healthy, $s.Method, $s.LatencyMs, `
+        $script:DbResolution.Mode, $script:DbResolution.Reason)
+}
+
+function Assert-DbReadyOrExit {
+    param([string]$ActionName)
+
+    if ($DbMode -eq 'off') {
+        Write-Log 'WARN' '共享库启动探测已关闭（-DbMode off），按配置文件地址启动'
+        return
+    }
+    $evidence = Write-DbEvidence -ActionName $ActionName
+    if ($script:DbResolution.Ok) {
+        Write-Log 'INFO' (Get-DbSummary)
+        if ($script:DbResolution.Mode -eq 'standby') {
+            Write-Log 'WARN' ("备用库通道已启用（启动期环境覆盖，不改写 .env），覆盖服务：{0}" -f `
+                ((@($script:DbOverrides.Keys) | Sort-Object) -join ','))
+        }
+        Write-Log 'INFO' "共享库探测证据：$evidence"
+        return
+    }
+    Write-Log 'ERROR' (Get-DbSummary)
+    Write-Log 'ERROR' "共享库探测证据：$evidence"
+    if ($script:DbResolution.RequestedMode -in @('primary', 'standby')) {
+        Write-Log 'ERROR' ("强制模式（{0}）目标不可达，拒绝启动任何服务（退出码 2）" -f $script:DbResolution.RequestedMode)
+    } else {
+        Write-Log 'ERROR' '主备均不可达，拒绝启动任何服务（退出码 2）；请先恢复主用或启动备用基础设施'
+    }
+    exit 2
+}
+
+function Invoke-DbCheck {
+    if ($DbMode -eq 'off') {
+        Write-Log 'WARN' '共享库启动探测已关闭（-DbMode off）'
+        return 0
+    }
+    $evidence = Write-DbEvidence -ActionName 'dbcheck'
+    Write-Host (Get-DbSummary)
+    if ($script:DbAppliedEndpoints.Count -gt 0) {
+        Write-Host '  备用通道生效目标（口令已脱敏）：'
+        foreach ($key in ($script:DbAppliedEndpoints.Keys | Sort-Object)) {
+            Write-Host ("    {0,-11} → {1}" -f $key, $script:DbAppliedEndpoints[$key])
+        }
+    }
+    Write-Host ("  证据：{0}" -f $evidence)
+    if (-not $script:DbResolution.Ok) {
+        Write-Log 'ERROR' '主备均不可达（dbcheck 判定失败）'
+        return 2
+    }
+    return 0
+}
+
 function Invoke-Start {
     param([switch]$WithCheck)
+    Assert-DbReadyOrExit -ActionName 'start'
     $targets = if ($Only.Count -gt 0) { $Only } else { ($services | ForEach-Object { $_.Name }) }
     $topo = Get-TopoOrder | Where-Object { $targets -contains $_ }
     Write-Log 'INFO' ("一键启动开始，服务拓扑序：{0}" -f ($topo -join ' → '))
@@ -638,6 +942,7 @@ function Invoke-Start {
 }
 
 function Invoke-Monitor {
+    Assert-DbReadyOrExit -ActionName 'monitor'
     Write-Log 'INFO' ("监控模式启动：Interval={0}s，MaxRestarts={1}/服务" -f $Interval, $MaxRestarts)
     $restartCount = @{}
     while ($true) {
@@ -886,4 +1191,5 @@ switch ($Action) {
     'checkall'   { Invoke-CheckAll }
     'namecheck'  { Invoke-NameCheck }
     'stop'       { Invoke-Stop }
+    'dbcheck'    { exit (Invoke-DbCheck) }
 }

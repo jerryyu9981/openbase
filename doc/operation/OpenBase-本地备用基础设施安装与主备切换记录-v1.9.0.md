@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.8.1 |
+| 文档版本 | v1.9.0 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -25,6 +25,7 @@
 | v1.7.0 | 2026-10-21 | 研发 | 新增 §14 LLM 对话链路走查：以标准库实现 OpenAI 兼容 mock（端口 8025）并接入启动脚本；provider `api_base_url` 指向 mock；`llm-proxy/chat` 与 `chat/stream` 均实测通过（非流式 200、流式 18 个 SSE 事件） |
 | v1.8.0 | 2026-10-21 | 研发 | 新增 §15 局域网 Ollama 与远程 DeepSeek 接入：注入 2 个 provider + 6 条模型；DeepSeek 改为本地反代（8026）从进程环境注入 Key、库内不存明文；OpenLLM 适配器超时改为读 `provider.config.timeout`，OpenBase 上游超时放宽至 300s；`DEFAULT_LLM_MODEL` 对齐 `qwen2.5:0.5b` 并重启 |
 | v1.8.1 | 2026-10-21 | 研发 | DeepSeek Key 经密钥文件（`%USERPROFILE%\.openbase\deepseek_api_key.txt`）配置完成，反代 `key_configured=true`；`deepseek-chat` 真实调用通过（200，12.3s，64 tokens） |
+| v1.9.0 | 2026-10-25 | 研发 | **启动期主备探测固化为受管入口**：`scripts/service-orchestrator.ps1` 新增 `-DbMode auto/primary/standby/off` 与 `-Action dbcheck`；每次 start/startcheck/monitor 前探测主用 PostgreSQL，异常自动切本机 `127.0.0.1:5432`；主备均不可达拒绝启动（退出码 2）；覆盖通过子进程环境变量（不改写 `.env`），证据落 `doc/test/evidence/ops/**`；新增 §16（含实测矩阵与边界），§4 入口同步 |
 
 ## 1. 背景与定位
 
@@ -94,22 +95,31 @@ powershell -NoProfile -ExecutionPolicy Bypass -File D:\infra\start-infra.ps1
 # 停止备用基础设施
 powershell -NoProfile -ExecutionPolicy Bypass -File D:\infra\stop-infra.ps1
 
-# 启动七个应用服务（auto：探测主用 5432/6380/6333，通则主用，不通自动切备用）
-powershell -NoProfile -ExecutionPolicy Bypass -File doc\tmp\start-all-services.ps1
+# 启动七个应用服务（受管入口；默认 -DbMode auto：探测主用 PostgreSQL，异常自动切本机 127.0.0.1:5432）
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\service-orchestrator.ps1 -Action start
+
+# 仅探测共享库主备（不启动任何服务）
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\service-orchestrator.ps1 -Action dbcheck
 ```
 
-- 启动横幅会打印实际生效模式：`infra mode: local (primary=192.168.0.151, fallback=127.0.0.1)`。
-- 工程内 `doc/tmp/start-local-infra.ps1` 为薄封装，事实源为 `D:\infra\start-infra.ps1`。
-- 备用覆盖仅作用于子进程环境变量，不改写任何 `.env`；主用恢复后直接重启即自动回切。
+- 启动横幅/日志会打印实际生效模式：`共享库探测：primary=…/standby=127.0.0.1:5432 … ⇒ mode=primary|standby`。
+- 工程内 `doc/tmp/start-local-infra.ps1` 为备用基础设施启动的薄封装，事实源为 `D:\infra\start-infra.ps1`。
+- 备用覆盖仅作用于**子进程环境变量**，不改写任何 `.env`；主用恢复后重启即自动回主用。
+- **历史说明**：早期临时入口 `doc/tmp/start-all-services.ps1` 已废弃，能力于 v1.9.0 固化进
+  `scripts/service-orchestrator.ps1`（详见 §16）。
 
-备用模式覆盖的键：
+PostgreSQL 备用模式覆盖的键（P0，v1.9.0）：
 
-| 服务 | 覆盖键 |
-|---|---|
-| openllm | `DATABASE_URL`、`REDIS_URL` |
-| openrag | `OPENRAG_DATABASE_URL`、`OPENRAG_QDRANT_URL`、`OPENRAG_QDRANT_GRPC_URL` |
-| openmemory | `OPENMEMORY_DB__*`、`OPENMEMORY_CACHE__*`、`OPENMEMORY_VECTOR__*`、`OPENMEMORY_GRAPH__URI` |
-| openbase | `OPENBASE_REDIS_URL` |
+| 服务 | 覆盖键 | 值来源 |
+|---|---|---|
+| openbase | `POSTGRES_HOST` / `POSTGRES_PORT` / `POSTGRES_URL`（及 `OPENBASE_DB_URL` 若声明） | `.env.shared-infra` 主用 DSN 仅替换主机端口 |
+| dps | 同上（定义期读取 `$env:POSTGRES_URL`） | 同上 |
+| openllm | `DATABASE_URL` | 各仓 `.env` 原值仅替换主机端口（保留 scheme/凭据/库名） |
+| openrag | `OPENRAG_DATABASE_URL` | 同上 |
+| openmemory | `OPENMEMORY_DB__HOST` / `OPENMEMORY_DB__PORT` | 备用主机与端口 |
+
+> Redis / Qdrant / Neo4j / MinIO 的备用覆盖暂**未**纳入 P0（见 §16.5 后续阶段），仍按原方式由
+> `D:\infra\start-infra.ps1` 启动 + 手工确认；P0 只解决「共享数据库（PostgreSQL）」的启动期主备。
 
 ## 5. 本次整理记录（v1.2.0）
 
@@ -539,3 +549,61 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 - DeepSeek 未配置 Key 前只提供"模型可见/可选"，真实调用会快速失败。
 - 反代仅监听回环地址，密钥既不入库也不入仓库；`api_key_ref` 保持 NULL 是刻意的安全约束。
 - **`model` 字段不要省略**：`/api/v1/llm-proxy/chat` 只带 `messages` 不带 `model` 时，网关按组件路由契约要求 `query`，返回 400 `4003`；请显式传 `model`（如 `qwen2.5:0.5b`）或 `auto`。
+
+## 16. 启动期自动探测与主备切换（P0 落地，2026-10-25）
+
+### 16.1 需求与口径
+
+- **要求**：每次启动服务前先检测**主用共享库**（PostgreSQL `192.168.0.151:5432`）状态；异常则切换到**备用库通道**（本机 `127.0.0.1:5432`）。
+- **单一决策点**：`scripts/service-orchestrator.ps1`（受管编排入口）；`start` / `startcheck` / `monitor` 启动前**必探测**。
+- **不改配置**：`.env` / `.env.shared-infra` 永远保持主用地址；备用仅以**子进程环境变量**覆盖，主用恢复后重启自动回主用。
+- **不半启动**：主备均不可达 ⇒ **拒绝启动任何服务**（退出码 2）。
+
+### 16.2 参数与判定
+
+| 参数 | 取值 | 说明 |
+|---|---|---|
+| `-DbMode` | `auto`（默认）/ `primary` / `standby` / `off` | auto=主用优先、异常切备用；primary/standby=强制；off=不探测（兼容旧行为） |
+| `-DbProbeTimeoutSec` | 默认 `3` | 单端点探测超时（秒） |
+| `-Action dbcheck` | —— | **仅探测**：打印判定 + 脱敏目标 + 证据路径，不启动/停止任何服务 |
+
+判定顺序：`pg_isready`（首选，含服务端握手）→ 失败回落 **TCP 连通**；
+主机端口来源：主用取 `POSTGRES_HOST`/`POSTGRES_PORT`（或从 `POSTGRES_URL` 解析），
+备用默认 `127.0.0.1:5432`，可用 `OPENBASE_PG_STANDBY_HOST` / `OPENBASE_PG_STANDBY_PORT` 覆盖，
+备用 DSN 可用 `OPENBASE_PG_STANDBY_URL` 整体覆盖（凭据与主用不同时）。
+
+### 16.3 备用通道生效目标（仅替换主机端口，保留各仓 scheme/凭据/库名）
+
+| 服务 | 生效方式 |
+|---|---|
+| openbase / dps | `POSTGRES_*` 覆盖 + （如声明）`OPENBASE_DB_URL` 替换 |
+| openllm | 注入 `DATABASE_URL`（读其 `.env` 原值替换 `@host:port`） |
+| openrag | 注入 `OPENRAG_DATABASE_URL`（同上，保留 `postgresql+asyncpg://`） |
+| openmemory | 注入 `OPENMEMORY_DB__HOST` / `OPENMEMORY_DB__PORT` |
+
+日志与证据中的 DSN **一律脱敏**（`://user:***@host:port/db`），不落明文口令。
+
+### 16.4 实测矩阵（2026-10-25，本机）
+
+| 场景 | 命令 | 判定 | 退出码 | 证据 |
+|---|---|---|:--:|---|
+| 主用可达 | `-Action dbcheck` | `mode=primary`（主用 `pg_isready` 1173ms） | 0 | `db-startup-probe-20261025-020157.json` |
+| 强制备用 | `-Action dbcheck -DbMode standby` | `mode=standby`；5 个服务目标均指向 `127.0.0.1:5432`（口令脱敏） | 0 | `db-startup-probe-20261025-020449.json` |
+| **主用异常自动切备用** | 预置 `POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=1` 模拟主用不可达 | `primary healthy=false` → **自动切 standby**，5 个服务目标指向 `127.0.0.1:5432` | 0 | `db-startup-probe-20261025-020926.json` |
+| 强制备用目标不可达 | `-DbMode standby` + `OPENBASE_PG_STANDBY_PORT=1` | `mode=unavailable`；**未启动任何服务**（8000 无监听） | **2** | `db-startup-probe-20261025-020822.json` |
+
+### 16.5 边界与后续阶段
+
+| # | 事项 | 当前 | 后续 |
+|:-:|---|---|---|
+| 1 | 仅启动期判定 | 启动时一次探测；运行期不再切换 | **P1**：`monitor` 周期复检 + 主用恢复提示（不自动回切运行中服务，避免连接池漂移） |
+| 2 | 仅 PostgreSQL | Redis/Qdrant/Neo4j/MinIO 仍手工/`start-infra.ps1` | **P1**：按同法纳管（Redis 备用口令需从 `D:\infra\redis8\redis-6380.conf` 读取，非 `.env`） |
+| 3 | 绕过编排直启 | 直接 `uvicorn` 不走探测（预期行为） | **P2**：应用内启动自检开关（`OPENBASE_DB_STARTUP_PROBE=warn|require|off`，默认 warn） |
+| 4 | 数据一致性 | 备用库为主用**手工复刻**（UUID 必须一致，见 §12） | **P2**：评估逻辑复制/备份恢复，明确 RPO/RTO 与切回校验 |
+| 5 | 写入语义 | 切备用后照常读写（备用可写） | **P2**：如需「主用只读、备用可写」双活语义，单独立项评审 |
+
+### 16.6 故障排查
+
+- 探测通过但服务连不上：确认被探测端口与目标服务 DSN 一致（`dbcheck` 输出会列出 5 个生效目标）。
+- `.env` 含中文时行号错位：脚本已改为按 **UTF-8** 显式读取（PS 5.1 `Get-Content` 默认 ANSI 会导致解析偏差）。
+- 停止后端口仍监听：以 `Get-NetTCPConnection -LocalPort <port> -State Listen` 复核并重试 `-Action stop`（见 S2 报告 D-04）。
