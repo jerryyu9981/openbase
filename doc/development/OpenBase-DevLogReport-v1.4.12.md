@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.12**（缺陷修复：服务 Key 身份判定回归 D-03） |
 | 文档 | 开发记录报告（Step 3 产出，增量修复型） |
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.1.1 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-24 |
 | 编制 | 研发（AI 辅助） |
@@ -16,6 +16,7 @@
 
 | 版本 | 日期 | 编制人 | 修订内容 |
 |------|------|--------|---------|
+| v1.1.1 | 2026-10-24 | 研发（AI 辅助） | 版本载体对齐：`openbase-ui/package-lock.json` 根版本 1.3.0 → 1.4.12（两处），消除与 `package.json` 的矛盾；§1.6 记录；§2 补前端全量 370 passed |
 | v1.1.0 | 2026-10-24 | 研发（AI 辅助） | 同版本技术债清理：`ApiKeyStore.verify` / `require_api_key` 凭据面剔除存储内部字段 `key_hash`（TDD 2 例）；§2 增补回归；§4 遗留 1 关闭 |
 | v1.0.0 | 2026-10-24 | 研发（AI 辅助） | 首次产出：D-03 根因、修复实现、断言修正、定向与全量回归证据、影响面与回滚 |
 
@@ -70,6 +71,10 @@
 
 **结果**：`require_api_key` 返回 `{id, name, scope, created, revoked, auth_method}`，不含 `key_hash`；TDD 2 例（`test_api_key_store_verify_excludes_key_hash` 含副本语义、`test_require_api_key_credential_excludes_key_hash`）。
 
+### 1.6 版本载体对齐（v1.1.1）
+
+`openbase-ui/package-lock.json` 的根版本仍停留在 **1.3.0**（第 3 行与 `packages[""]` 第 9 行两处），与 `package.json` 的 1.4.12 矛盾——`npm install` 会静默改写并产生无关 diff。已同步为 **1.4.12**。产品版本三处锚点（`pyproject.toml` / `openbase/__init__.py` / `openbase-ui/package.json`）不变。
+
 ## 2. 验证
 
 | 项 | 命令 | 结果 |
@@ -81,6 +86,7 @@
 | 全量（除 S7 门禁自检） | `pytest tests --ignore=tests/test_s7_t6_gate.py` | **1295 passed / 4 skipped / 6 failed** |
 | 6 例失败隔离复跑 | `pytest tests/test_tenant_admin.py tests/test_users_admin.py` | **12 passed**（共享 PG 瞬态，非回归） |
 | S7 门禁自检 | `pytest tests/test_s7_t6_gate.py` | **16 passed**（129s） |
+| 前端全量（v1.1.1） | `npm run test`（openbase-ui） | **370 passed / 39 files**（140s） |
 
 有效基线：**1311 passed / 4 skipped / 0 功能失败**；6 例失败全部为 `asyncpg connection was closed in the middle of operation` / `TimeoutError`，隔离复跑通过。
 
