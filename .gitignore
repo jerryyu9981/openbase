@@ -7,6 +7,9 @@
 secrets.*
 .ssh/
 
+# ---- 本地基础设施（二进制/数据，不入库）----
+.infra/
+
 # ---- Python ----
 __pycache__/
 *.py[cod]

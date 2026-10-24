@@ -1,0 +1,566 @@
+{
+  "schema": "openbase-ui-e2e-all-services/v1.1.0",
+  "base_url": "http://127.0.0.1:5173",
+  "token_source": "OPENBASE_ACCESS_TOKEN",
+  "shots_dir": "",
+  "interact": true,
+  "started_at": "2026-10-22T17:12:36.008Z",
+  "services": {
+    "dps": {
+      "total": 14,
+      "pass": 11,
+      "fail": 3,
+      "pages": [
+        {
+          "path": "/portrait/overview",
+          "url": "http://127.0.0.1:5173/portrait/overview",
+          "nav_status": 200,
+          "final_path": "/portrait/overview",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "数据总览"
+        },
+        {
+          "path": "/portrait/list",
+          "url": "http://127.0.0.1:5173/portrait/list",
+          "nav_status": 200,
+          "final_path": "/portrait/list",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "画像查询",
+              "api": [],
+              "nav": true
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "画像列表"
+        },
+        {
+          "path": "/portrait/search",
+          "url": "http://127.0.0.1:5173/portrait/search",
+          "nav_status": 200,
+          "final_path": "/portrait/search",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "画像搜索"
+        },
+        {
+          "path": "/portrait/tags",
+          "url": "http://127.0.0.1:5173/portrait/tags",
+          "nav_status": 200,
+          "final_path": "/portrait/tags",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 503,
+              "url": "/api/v1/dps-proxy/tags/categories"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 503,
+                  "url": "/api/v1/dps-proxy/tags/categories"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/tags/categories",
+              "status": 503
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://127.0.0.1:5173/api/v1/dps-proxy/tags/categories → 503",
+          "title": "标签管理"
+        },
+        {
+          "path": "/portrait/rules",
+          "url": "http://127.0.0.1:5173/portrait/rules",
+          "nav_status": 200,
+          "final_path": "/portrait/rules",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "画像规则",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "执行任务",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "规则引擎"
+        },
+        {
+          "path": "/portrait/dps/templates",
+          "url": "http://127.0.0.1:5173/portrait/dps/templates",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/templates",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 503,
+              "url": "/api/v1/dps-proxy/templates"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 503,
+                  "url": "/api/v1/dps-proxy/templates"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/templates",
+              "status": 503
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://127.0.0.1:5173/api/v1/dps-proxy/templates → 503",
+          "title": "模板族管理"
+        },
+        {
+          "path": "/portrait/dps/templates/new",
+          "url": "http://127.0.0.1:5173/portrait/dps/templates/new",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/templates/new",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "画像模板新建"
+        },
+        {
+          "path": "/portrait/dps/template-packages",
+          "url": "http://127.0.0.1:5173/portrait/dps/template-packages",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/template-packages",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "导出",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "导入",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模板包导出/导入"
+        },
+        {
+          "path": "/portrait/dps/lineage",
+          "url": "http://127.0.0.1:5173/portrait/dps/lineage",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/lineage",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "标签血缘反查"
+        },
+        {
+          "path": "/portrait/dps/measures",
+          "url": "http://127.0.0.1:5173/portrait/dps/measures",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/measures",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询建议",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "措施建议"
+        },
+        {
+          "path": "/portrait/dps/scoring-types",
+          "url": "http://127.0.0.1:5173/portrait/dps/scoring-types",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/scoring-types",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 503,
+              "url": "/api/v1/dps-proxy/scoring-types"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 503,
+                  "url": "/api/v1/dps-proxy/scoring-types"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/scoring-types",
+              "status": 503
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://127.0.0.1:5173/api/v1/dps-proxy/scoring-types → 503",
+          "title": "评分类型"
+        },
+        {
+          "path": "/portrait/dps/annotation-adapters",
+          "url": "http://127.0.0.1:5173/portrait/dps/annotation-adapters",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/annotation-adapters",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "AI 标注候选与复核"
+        },
+        {
+          "path": "/portrait/dps/annotation-templates",
+          "url": "http://127.0.0.1:5173/portrait/dps/annotation-templates",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/annotation-templates",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "标注模板管理"
+        },
+        {
+          "path": "/portrait/dps/tags",
+          "url": "http://127.0.0.1:5173/portrait/dps/tags",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/tags",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "标签体系查看"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total": 14,
+    "pass": 11,
+    "fail": 3,
+    "api_errors": 3
+  },
+  "finished_at": "2026-10-22T17:13:14.121Z"
+}
