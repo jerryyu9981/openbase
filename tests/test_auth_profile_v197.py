@@ -8,8 +8,8 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from openbase.core.deps.auth import get_current_user
 from openbase.core.db.session import get_db
+from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import ErrorCode, install_exception_handlers
 from openbase.core.models import User
 from openbase.modules.auth import hash_password, router, verify_password

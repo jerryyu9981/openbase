@@ -60,7 +60,7 @@ def test_scanner_flags_bom_python_source(tmp_path):
 def test_scanner_exempts_powershell_bom(tmp_path):
     """负控：`.ps1` 带 BOM 属**期望**行为 → 不得判违规（PowerShell 5.1 兼容）"""
     (tmp_path / "bom_probe.ps1").write_bytes(
-        b"\xef\xbb\xbf" + "Write-Host '探针'\n".encode("utf-8")
+        b"\xef\xbb\xbf" + "Write-Host '探针'\n".encode()
     )
 
     report = _load_scanner().scan(roots=[tmp_path])

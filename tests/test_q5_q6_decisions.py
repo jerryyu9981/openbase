@@ -12,6 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from openbase.core.errors import BaseError
 from openbase.modules.protocol_headers import (
     HEADER_PROXY_SOURCE,
     HEADER_SUBJECT_ID,
@@ -22,7 +23,6 @@ from openbase.modules.protocol_headers import (
     inbound_identity_headers_present,
     validate_header_value,
 )
-from openbase.core.errors import BaseError
 from openbase.settings import Settings, validate_production_login_tenant_policy
 
 _STRONG_SECRET = "q5-" + "x" * 40
