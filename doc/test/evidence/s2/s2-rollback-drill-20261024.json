@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "task": "XR-OPS-06/S2",
+  "title": "三级回滚演练（开关级 L1 / 通道级 L2 / 版本级 L3）",
+  "generated_at": "2026-10-24T18:10:00+0800",
+  "commit": "648872afeef3e5f47f73bbcb2647b9df6f071130",
+  "execution_environment": {
+    "host": "Windows（本机开发面，无生产部署面）",
+    "python": "D:\\PostgreSQL\\17\\pgAdmin 4\\python\\python.exe（3.13，经 doc/tmp/pyrun.py 注入依赖）",
+    "openllm_tests_env": "DATABASE_URL=sqlite:///:memory:（仅规避本机 psycopg 驱动缺失，不触库）",
+    "note": "禁伪造：生产实机段一律 PENDING，不填 PASS"
+  },
+  "status": "PENDING",
+  "exit_code": 2,
+  "reason": "离线可判定面 11 项全部 PASS；生产实机段 3 项需 OPS 运行态与注故障窗口，保持 PENDING",
+  "summary": {
+    "pass": 11,
+    "pending": 3,
+    "fail": 0
+  },
+  "levels": [
+    {
+      "level": "L1",
+      "name": "开关级回退（生产门禁组）",
+      "checks": [
+        {
+          "id": "S2-L1-1",
+          "name": "OpenLLM 生产门禁组：任一开关回落即拒绝启动，全开则通过",
+          "status": "PASS",
+          "method": "pytest tests/unit/test_production_gate_tenant_isolation.py + test_c4_production_enforce_gate.py + test_f12_startup_gate_runtime.py",
+          "result": "15 passed",
+          "covers": ["ENFORCE_INBOUND_IDENTITY_HEADERS", "RBAC_PERMISSION_ENFORCE", "TENANT_SCOPE_ENFORCE", "TENANT_HEADER_CONSISTENCY_ENFORCE", "QUOTA_MISSING_FAIL_CLOSED"],
+          "evidence": "doc/test/evidence/s2/l1-20261024/openllm-gates.txt"
+        },
+        {
+          "id": "S2-L1-2",
+          "name": "OpenBase 生产门禁：token 版本强校验 / DB 降级策略 / 行缺失策略 / 登录租户策略",
+          "status": "PASS",
+          "method": "pytest tests/test_b4_security_hardening.py tests/test_q5_q6_decisions.py -k \"production or tenant\"",
+          "result": "14 passed, 23 deselected",
+          "evidence": "doc/test/evidence/s2/l1-20261024/openbase-gates.txt"
+        },
+        {
+          "id": "S2-L1-3",
+          "name": "OpenMemory 租户强制段：生产 M2 未开启 require_tenant_scope 拒绝装配",
+          "status": "PASS",
+          "method": "pytest tests/unit/test_production_tenant_scope_gate.py",
+          "result": "7 passed",
+          "evidence": "doc/test/evidence/s2/l1-20261024/openmemory-gate.txt"
+        },
+        {
+          "id": "S2-L1-4",
+          "name": "配置载体的开关值可双向核验（--env-file 覆盖生效）",
+          "status": "PASS",
+          "method": "同一开关在演练 env 与开发 .env 两侧取值比对",
+          "result": "rehearsal PASS / local FAIL（缺口证据）",
+          "evidence": "doc/test/evidence/release/switch-envfile-rehearsal-20261024.json + switch-envfile-local-20261024.json"
+        },
+        {
+          "id": "S2-L1-5",
+          "name": "生产实机：备份 .env → 置回上线前值 → 受管编排重启 → /health 验证 → 恢复",
+          "status": "PENDING",
+          "reason": "本机无生产部署面与故障注入窗口；须按《主备双通道生产上线回滚方案》§4.1 经 scripts/service-orchestrator.ps1 执行并回填",
+          "evidence": "（待 OPS 回填）"
+        }
+      ]
+    },
+    {
+      "level": "L2",
+      "name": "通道级回退（主通道 designation）",
+      "checks": [
+        {
+          "id": "S2-L2-1",
+          "name": "B 断 → A 接管（真实 ChannelStateManager 驱动）",
+          "status": "PASS",
+          "result": "route b→a；写路径仅 A 允许、经 B 写被拒",
+          "evidence": "doc/test/evidence/s2/l2-1-20261024/failover-drill.json（S7-T3-1）"
+        },
+        {
+          "id": "S2-L2-2",
+          "name": "A 断 → B 维持（备不可用不影响主）",
+          "status": "PASS",
+          "result": "route b→b；auto_failover=false",
+          "evidence": "doc/test/evidence/s2/l2-1-20261024/failover-drill.json（S7-T3-2）"
+        },
+        {
+          "id": "S2-L2-3",
+          "name": "单主路径（禁双主双写）",
+          "status": "PASS",
+          "result": "initial/after-failover/after-switch-back 采样均 paths 长度 1",
+          "evidence": "doc/test/evidence/s2/l2-1-20261024/drill-report.md"
+        },
+        {
+          "id": "S2-L2-4",
+          "name": "回切链路与报告字段齐备（审计留痕 6 动作）",
+          "status": "PASS",
+          "result": "switch_back=true；审计动作 failover_b_to_a/recover_b/drill_window_open/drill_verified/drill_window_elapsed/switch_back_to_b，缺失 0",
+          "evidence": "doc/test/evidence/s2/l2-1-20261024/drill-report.md"
+        },
+        {
+          "id": "S2-L2-5",
+          "name": "生产运行态：按 channel_report 复位并验证写路径恢复（V2/V3）",
+          "status": "PENDING",
+          "reason": "需真实通道运行态与 /openllm/v1/health 快照；本机无部署面",
+          "evidence": "（待 OPS 回填）"
+        }
+      ]
+    },
+    {
+      "level": "L3",
+      "name": "版本级回退",
+      "checks": [
+        {
+          "id": "S2-L3-1",
+          "name": "回退目标可定位（双通道批次前基线 + 最近发布标签）",
+          "status": "PASS",
+          "result": "基线 e2c4f25（2026-10-15）；标签 v1.4.10 = 2c45a32（2026-10-02）",
+          "evidence": "doc/test/evidence/s2/l3-20261024/version-rollback.txt"
+        },
+        {
+          "id": "S2-L3-2",
+          "name": "回退动作可执行（git worktree 检出基线，无冲突）",
+          "status": "PASS",
+          "result": "detached HEAD e2c4f25 检出 1896 文件成功；演练后已清理工作树",
+          "evidence": "doc/test/evidence/s2/l3-20261024/version-rollback.txt"
+        },
+        {
+          "id": "S2-L3-3",
+          "name": "纯代码回滚判定（无迁移脚本变更）",
+          "status": "PASS",
+          "result": "diff e2c4f25..HEAD 命中 migration 关键字者均为证据 JSON，无迁移脚本",
+          "evidence": "doc/test/evidence/s2/l3-20261024/version-rollback.txt"
+        },
+        {
+          "id": "S2-L3-4",
+          "name": "回退后校验能力可用（verify_release 判定函数）",
+          "status": "PASS",
+          "result": "tests/test_release_verify.py 18 passed",
+          "evidence": "doc/test/evidence/s2/l3-20261024/verify-release-tool.txt"
+        },
+        {
+          "id": "S2-L3-5",
+          "name": "生产实机：镜像回切 + 回滚后 15 分钟内 verify_release.py 无 FAIL",
+          "status": "PENDING",
+          "reason": "需生产镜像与运行面；本机无部署面",
+          "evidence": "（待 OPS 回填）"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "D-01",
+      "severity": "中",
+      "title": "旧基线版本号三处不统一",
+      "detail": "回退目标 e2c4f25（及更早基线）pyproject/openbase.__version__ = 1.0.0、openbase-ui/package.json = 1.3.0；三处统一始于 1ba1445（v1.12.0 起 1.4.11）。L3 回退后版本自检会报不一致。",
+      "action": "回退后必须人工核对「实际部署镜像版本 vs 代码声明版本」，并在回退记录中注明，不以此判定回退失败"
+    },
+    {
+      "id": "D-02",
+      "severity": "低",
+      "title": "L2 演练器跨仓运行时受宿主配置面影响",
+      "detail": "OpenLLM Settings 以 cwd 相对路径读 .env 且 extra=forbid；在 OpenBase 仓根驱动会误读本仓 .env 而装配失败。已在 scripts/drill_l2_1_failover.py 中切至 OpenLLM 仓根后再驱动（main 内 chdir + finally 复原）。",
+      "action": "已修复（scripts/drill_l2_1_failover.py）；OpenLLM 侧 fail-open 契约（build 先于门控）可另行评估"
+    }
+  ]
+}

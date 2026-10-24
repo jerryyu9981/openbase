@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -341,7 +342,15 @@ def main() -> int:
         print("=== S7-T3 L2-1 ===\n  status=PENDING exit=2（状态机不可用）")
         return 2
 
-    checks, artifacts = run_drill(backend)
+    # OpenLLM `Settings` 以 cwd 相对路径读取 `.env`（`env_file=".env"` + `extra=forbid`）：
+    # 在 OpenBase 仓根下运行会误读本仓 `.env`，其 OPENBASE_* 键未在 OpenLLM 模型声明
+    # ⇒ 装配期 ValidationError。切至 OpenLLM 仓根后再驱动，保证读的是它自己的配置。
+    previous_cwd = Path.cwd()
+    os.chdir(backend)
+    try:
+        checks, artifacts = run_drill(backend)
+    finally:
+        os.chdir(previous_cwd)
     statuses = [item["status"] for item in checks]
     if "FAIL" in statuses:
         overall, exit_code = "FAIL", 1

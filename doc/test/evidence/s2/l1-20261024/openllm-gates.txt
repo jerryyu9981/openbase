@@ -1,0 +1,51 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Trae CN\myproject\Dev\OpenLLM\backend
+configfile: pytest.ini
+plugins: anyio-4.15.1, platformdirs-4.13.0, asyncio-1.4.0, cov-7.1.0, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 15 items
+
+tests\unit\test_production_gate_tenant_isolation.py ......               [ 40%]
+tests\unit\test_c4_production_enforce_gate.py ...                        [ 60%]
+tests\unit\test_f12_startup_gate_runtime.py ......                       [100%]
+
+============================== warnings summary ===============================
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\db\session.py:54: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\semantic_routing.py:123: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.14/migration/
+    messages: List[str] = Field(..., min_items=1, max_items=100, description="消息列表")
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\api\semantic_routing.py:123: PydanticDeprecatedSince20: `max_items` is deprecated and will be removed, use `max_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.14/migration/
+    messages: List[str] = Field(..., min_items=1, max_items=100, description="消息列表")
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:9: UserWarning: Field name "schema" in "StructuredGenerateRequest" shadows an attribute in parent "BaseModel"
+    class StructuredGenerateRequest(BaseModel):
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:32: UserWarning: Field name "schema" in "SchemaInfo" shadows an attribute in parent "BaseModel"
+    class SchemaInfo(BaseModel):
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:45: UserWarning: Field name "schema" in "SchemaDetailResponse" shadows an attribute in parent "BaseModel"
+    class SchemaDetailResponse(BaseModel):
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:55: UserWarning: Field name "schema" in "ValidateOutputRequest" shadows an attribute in parent "BaseModel"
+    class ValidateOutputRequest(BaseModel):
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:76: UserWarning: Field name "schema" in "CustomSchemaCreate" shadows an attribute in parent "BaseModel"
+    class CustomSchemaCreate(BaseModel):
+
+tests/unit/test_f12_startup_gate_runtime.py::test_startup_propagates_gate_failure
+  D:\Trae CN\myproject\Dev\OpenLLM\backend\app\schemas\structured_output.py:84: UserWarning: Field name "schema" in "CustomSchemaResponse" shadows an attribute in parent "BaseModel"
+    class CustomSchemaResponse(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 15 passed, 9 warnings in 19.92s =======================

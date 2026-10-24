@@ -1,0 +1,42 @@
+﻿S2-L3 版本级回退演练（本机可执行面）
+执行时间：2026-10-24（Asia/Shanghai）
+仓库：D:\Trae CN\myproject\Dev\OpenBase
+
+== 当前 HEAD ==
+648872afeef3e5f47f73bbcb2647b9df6f071130 2026-10-24 17:32:59 +0800
+docs(ops): 生产 OpenMemory 开关下发单与 env-file 演练证据（XR-OPS-07）
+
+== 回退目标（双通道批次前基线）==
+e2c4f25c6449731fb85ed8fd429d8f424ff15b47 2026-10-15 23:05:13 +0800
+docs(mt-auth): 续接指南 v1.0.12 状态回写——§4.1/§4.3/§7.1 滞后状态对齐台账 v1.16.33
+
+== 备查：最近正式发布标签 ==
+v1.4.10 => 2c45a32fa6a65957ef9efcc23351f22f7d4f99a9 2026-10-02 13:50:47 +0800
+release(v1.4.10): Step 5 部署与运维闭环（Dev 发布）
+
+== 回退动作可执行性（git worktree 检出演练）==
+git worktree add --detach doc/tmp/rollback-drill-prebatch e2c4f25
+结果：Preparing worktree (detached HEAD e2c4f25) → 1896 文件检出 → HEAD is now at e2c4f25
+worktree HEAD: e2c4f25c6449731fb85ed8fd429d8f424ff15b47
+worktree 内校验入口存在：scripts/verify_release.py = True
+（演练后已 git worktree remove --force，无残留工作树）
+
+== 回退后版本文件（观测 D-01：旧基线版本号不统一）==
+e2c4f25 pyproject[version = "1.0.0"] openbase/__init__[__version__ = "1.0.0"] ui["version": "1.3.0"]
+bec0c87 pyproject[version = "1.0.0"] openbase/__init__[__version__ = "1.0.0"] ui["version": "1.3.0"]
+3b25326 pyproject[version = "1.0.0"] openbase/__init__[__version__ = "1.0.0"] ui["version": "1.2.0"]
+1ba1445 pyproject[version = "1.4.11"] openbase/__init__[__version__ = "1.4.11"] ui["version": "1.4.11"]（v1.12.0 起三处统一）
+
+== 回退是否涉及数据面结构变更 ==
+git diff --name-only e2c4f25..HEAD | 匹配 migration|alembic|schema
+命中项全部为 doc/test/evidence/s7/g5/*.json（迁移演练证据，非迁移脚本）
+=> 本批为纯代码/配置回滚，无迁移回退步骤
+
+== 回退前后差异规模 ==
+git diff --shortstat e2c4f25..HEAD
+401 files changed, 46566 insertions(+), 5894 deletions(-)
+
+== 回退后校验能力（当前版本）==
+python -S -B doc/tmp/pyrun.py pytest tests/test_release_verify.py
+18 passed in 0.73s
+（回退后 15 分钟内的 verify_release.py 实机校验需运行面，本轮本机无部署面 → 待 OPS）
