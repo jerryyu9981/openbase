@@ -557,7 +557,9 @@ def require_api_key(
         if store_instance.verify(key) is not None:
             raise BaseError(ErrorCode.PERM_API_KEY_SCOPE, "api key scope mismatch")
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "invalid api key")
-    return credential
+    # 认证方式显式标记（与 identity_context 的 auth_method 取值域一致）：
+    # 服务 Key 记录自带稳定 id（uuid），调用方不得以「有无 id」推断认证通道。
+    return {**credential, "auth_method": "service-key"}
 
 
 async def get_proxy_identity(

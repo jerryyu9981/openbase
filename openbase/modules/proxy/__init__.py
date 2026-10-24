@@ -130,8 +130,18 @@ _WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 
 def _is_service_key_identity(identity: dict) -> bool:
-    """判定 /proxy 通道认证结果是否为 ob_k_ 服务 Key（含 scope/name，无主体 id）."""
-    return bool(identity) and "scope" in identity and "id" not in identity
+    """判定 /proxy 通道认证结果是否为 ob_k_ 服务 Key.
+
+    判据以**认证方式标记**为准（``auth_method == "service-key"``）：v1.9.2 起服务 Key
+    记录带稳定 ``id``（uuid，用于按 id 吊销），此前「无主体 id」的启发式判据会把
+    服务 Key 误判为用户身份 ⇒ 出站把 Key 记录 id 当 X-User-ID（D-03 回归）。
+    兼容旧形态：显式凭据 dict（含 ``scope`` 且无 ``id``）仍判为服务 Key。
+    """
+    if not identity:
+        return False
+    if identity.get("auth_method") == "service-key":
+        return True
+    return "scope" in identity and "id" not in identity
 
 
 def _resolve_service_account_subject(identity: dict) -> dict | None:

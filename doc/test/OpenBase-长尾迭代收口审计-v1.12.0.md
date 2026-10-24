@@ -4,7 +4,7 @@
 |------|------|
 | 项目名称 | OpenBase（开放底座） |
 | 审计对象 | v1.12.0 长尾建设迭代（A~E 五批） |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 审计日期 | 2026-10-24 |
 | 审计人 | 研发（AI 辅助） |
@@ -20,14 +20,15 @@
 - A~E 五批共 **11 个事项**全部闭环，需求 → 设计 → 实现 → 测试 → 提交可逐项追溯（§2）。
 - 前端全量 **370/370**、`vue-tsc` 0 错误；OpenBase `ruff` 0 错误；编码契约 0 违规；生产开关矩阵 **9/9 PASS**。
 - 后端全量 **1321 例**分三段执行：主体 1148 例全通过；尾部 161 例（159 passed / 4 skipped / 0 failed）；S7 门禁自检批次受共享 PG 连接中断影响（1 fail + 11 errors），另有 1 例出站主体映射用例受本机配置影响。两处失败均与 v1.12.0 改动无文件交集（§4.2），需在健康 PG + 生产等同配置下复跑作为放行前置。
-- 版本单一事实源已收敛：`pyproject.toml`、`openbase/__init__.py`、`openbase-ui/package.json` 统一为产品版本 **1.4.11**（§3）。
+- **v1.1.0 复跑修正**：上述 2 项放行前置已复跑并定位为**同一代码缺陷 D-03**（服务 Key 身份判定回归：Key 记录带稳定 `id` 后「无 id」启发式判据失效），**非 PG / 配置问题**。修复后：定向 47 passed；全量（除 S7 门禁自检）**1295 passed / 4 skipped / 6 failed**（6 例均为共享 PG 瞬态，隔离复跑 12 passed）；S7 门禁自检 **16 passed** ⇒ 有效基线 **1311 passed / 4 skipped / 0 功能失败**。产品版本因缺陷修复升至 **1.4.12**（见《OpenBase-DevLogReport-v1.4.12》）。
+- 版本单一事实源已收敛：`pyproject.toml`、`openbase/__init__.py`、`openbase-ui/package.json` 统一为产品版本 **1.4.12**（D-03 修复后升修订号；§3）。
 - 三远程（origin / backup / github）HEAD 一致。
 
 **放行前置（条件）**：
 
-1. 在健康 PG 上复跑 `tests/test_verdict_k03.py::test_t2_6_unregistered_service_key_write_403`；
-2. 以生产等同 `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 复跑 `tests/test_service_agent_outbound.py::test_obk_service_account_mapped_outbound_headers`；
-3. OPS 遗留：生产 `.env` 下发 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=true` 并核验；XR-OPS-06 S2 三级回滚演练。
+1. ~~在健康 PG 上复跑 `tests/test_verdict_k03.py::test_t2_6_unregistered_service_key_write_403`~~ → **已闭环（v1.1.0）**：根因为 D-03，修复后通过；
+2. ~~以生产等同 `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 复跑 `tests/test_service_agent_outbound.py::test_obk_service_account_mapped_outbound_headers`~~ → **已闭环（v1.1.0）**：根因为 D-03（映射本身无需外部配置），修复后通过；
+3. OPS 遗留：生产 `.env` 下发 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=true` 并核验；XR-OPS-06 S2 三级回滚演练（离线段已闭环，实机段待 OPS）。
 
 ---
 
@@ -52,9 +53,9 @@
 
 | 载体 | 审计前 | 审计后 | 说明 |
 |------|--------|--------|------|
-| `pyproject.toml` | 1.0.0 | **1.4.11** | 产品版本单一事实源 |
-| `openbase/__init__.py::__version__` | 1.0.0 | **1.4.11** | `/health` 与 OpenAPI 版本随之统一 |
-| `openbase-ui/package.json` | 1.3.0 | **1.4.11** | 与后端/文档一致 |
+| `pyproject.toml` | 1.0.0 | **1.4.12** | 产品版本单一事实源（v1.0.0 → 1.4.11；v1.1.0 D-03 修复升修订号） |
+| `openbase/__init__.py::__version__` | 1.0.0 | **1.4.12** | `/health` 与 OpenAPI 版本随之统一 |
+| `openbase-ui/package.json` | 1.3.0 | **1.4.12** | 与后端/文档一致 |
 | 模块级 `__init__.__version__` | 各自独立 | 保持不变 | `test_grayscale` 明确「模块独立版本字段」，不属于产品版本 |
 | 文档 | DevLogReport v2.24.0 / 计划 v1.11.0 / 缺口 v1.17.0 / 前端设计 v1.27.0 | 同左（本审计新增 §2.34） | 阶段命名 S/P/Phase 口径一致 |
 
@@ -79,15 +80,16 @@
 | 三仓码值相关 | 各自 pytest | OpenLLM **45** / OpenRAG **48** / OpenMemory **35 passed** |
 | 三远程 | `git ls-remote` × 3（四仓） | HEAD 一致 |
 
-### 4.2 未通过项归因（非本次改动）
+### 4.2 未通过项归因（v1.1.0 已定位并修复）
 
-| 用例 | 现象 | 根因 | 处置 |
+| 用例 | 现象 | 根因（v1.1.0 修正） | 处置 |
 |------|------|------|------|
-| `test_verdict_k03.py::test_t2_6_unregistered_service_key_write_403` | 期望 403，实际 502 | 共享 PG 连接中断（日志：`asyncpg.Error: connection was closed`）→ 服务键登记降级 → 写门禁未命中 | 健康 PG 复跑；已登记为放行前置 |
-| `test_s7_t6_gate.py`（11 errors + 1 fail） | RA-06「fail-closed 子批」exit=1 | 同一 PG 问题导致上述用例失败，门禁聚合随之 FAIL | 随上项复跑后重跑 `gate_aggregate.py` |
-| `test_service_agent_outbound.py::test_obk_service_account_mapped_outbound_headers` | 期望 `5001`，实际 UUID | 本机未配置生产等同 `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` | 以生产等同配置复跑；已登记为放行前置 |
+| `test_verdict_k03.py::test_t2_6_unregistered_service_key_write_403` | 期望 403，实际 502 | **D-03 服务 Key 身份判定回归**：v1.9.2 给 Key 记录加稳定 `id` 后，「无主体 id 即服务 Key」的启发式判据恒为假 ⇒ 未识别服务 Key ⇒ 写门禁不触发、放行转发。初版归因「PG 抖动」**被复跑证伪**（PG 中断仅是当时伴随现象） | **已修复**（`require_api_key` 标 `auth_method=service-key`；`_is_service_key_identity` 标记优先）；定向 47 passed |
+| `test_s7_t6_gate.py`（11 errors + 1 fail） | RA-06「fail-closed 子批」exit=1 | 聚合门禁中嵌套上述 K03 用例，随其失败而 FAIL | **已复跑 16 passed**（129s），RA-06 子批复绿 |
+| `test_service_agent_outbound.py::test_obk_service_account_mapped_outbound_headers` | 期望 `5001`，实际 UUID | **同一 D-03**：服务 Key 被误判为 JWT 主体，出站 `X-User-ID` 写成 Key 记录 `id`；初版归因「未配置映射」**被证伪**（用例内自带映射） | **已修复**；同时修正陈旧断言（来源按目标系统发布 → `openbase-rag-proxy`） |
+| `test_tenant_admin.py` 2 例 / `test_users_admin.py` 4 例（v1.1.0 全量新增） | 期望 2xx，实际连接中断 / 超时 | 共享 PG 瞬态（`asyncpg connection was closed`） | 隔离复跑 **12 passed**，非回归 |
 
-> 三项均落在 v1.12.0 **未改动**的文件（`identity/verification`、`test_verdict_k03`、`service_account` 映射），不构成功能回归；S7 B 面 2 项（SMOKE-S0-S6、K07-SYS-1）按门禁设计为 `PENDING`，需联调窗口执行。
+> D-03 由**本轮修复**引入改动（`openbase/core/deps/auth.py`、`openbase/modules/proxy/__init__.py`），已附回归证据；其余失败均为共享 PG 瞬态且隔离复跑通过。S7 B 面 2 项（SMOKE-S0-S6、K07-SYS-1）按门禁设计为 `PENDING`，需联调窗口执行。
 
 ---
 
@@ -98,8 +100,9 @@
 | 1 | OpenRAG / OpenMemory「码 → 真实 UUID」 | 能力缺口 | 租户主数据接入后由既有入口注入 resolver |
 | 2 | OpenLLM 写路径仍 UUID-only | 范围限定 | 如需放宽，单独评审写面语义 |
 | 3 | 生产 `.env` 下发 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=true` | OPS | 下发后以 `--env-file` 核验并回填执行记录 §5 |
-| 4 | XR-OPS-06 S2 三级回滚演练 | OPS | 开关/通道/版本三级演练完成并留证 |
+| 4 | ~~XR-OPS-06 S2 三级回滚演练~~ | OPS | **离线段已闭环（11 PASS / 3 PENDING / 0 FAIL）**；实机段 4 项待 OPS（见《OpenBase-S2-三级回滚演练报告-v1.0.0》§8） |
 | 5 | S7 门禁 B 面（冒烟 S0-S6 / K07-SYS-1） | 联调 | 真实四仓运行态窗口执行 |
+| 6 | `require_api_key` 凭据 dict 仍含 `key_hash` | 技术债 | 收窄为显式白名单字段（见《DevLogReport-v1.4.12》§4） |
 
 ---
 
@@ -107,4 +110,5 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.1.0 | 2026-10-24 | 研发（AI 辅助） | **放行前置复跑与修正**：2 项红灯定位为同一缺陷 **D-03**（服务 Key 身份判定回归，非 PG/配置），修复并附定向 47 + 全量 1295 + 门禁 16 的回归证据；更正 §4.2 归因表、放行前置 1/2 标记闭环；产品版本升 **1.4.12**（新增《DevLogReport-v1.4.12》）；§5 补记 `key_hash` 技术债。 |
 | v1.0.0 | 2026-10-24 | 研发（AI 辅助） | 初始创建：A~E 五批 11 项追溯矩阵、版本三处统一至 1.4.11、全量验证汇总与 3 项环境/配置失败归因；结论「通过（有条件）」并登记 5 项遗留。 |

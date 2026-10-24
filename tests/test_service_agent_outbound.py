@@ -33,7 +33,6 @@ from openbase.modules.protocol_headers import (
     HEADER_USER_ID,
     HEADER_USER_ROLE,
     PROXY_SOURCE_DPS,
-    PROXY_SOURCE_GENERIC,
     PROXY_SOURCE_LLM,
     PROXY_SOURCE_MEMORY,
     PROXY_SOURCE_RAG,
@@ -641,5 +640,7 @@ def test_obk_service_account_mapped_outbound_headers(
     assert outbound_headers.get(HEADER_TENANT_ID) == "acme"
     assert outbound_headers.get(HEADER_ORG_ID) == "acme"
     assert outbound_headers.get(HEADER_USER_ROLE) == "viewer"
-    assert outbound_headers.get(HEADER_PROXY_SOURCE) == PROXY_SOURCE_GENERIC
+    # 来源按**被代理系统**发布（`_TARGET_SYSTEM_BY_PROXY`：openrag → rag-proxy），
+    # 以便 OpenRAG 的 TRUSTED_PROXY_SOURCES（`openbase-rag-proxy`）采信身份头。
+    assert outbound_headers.get(HEADER_PROXY_SOURCE) == PROXY_SOURCE_RAG
     assert HEADER_REQUEST_ID in outbound_headers
