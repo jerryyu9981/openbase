@@ -1,0 +1,54 @@
+﻿{
+    "schema_version":  1,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "monitor-recheck",
+    "generated_at":  "2026-10-25T02:45:59+08:00",
+    "current_mode":  "standby",
+    "desired_mode":  "primary",
+    "notice":  "主用共享库已恢复（192.168.0.151:5432），当前运行在备用通道；回切需在维护窗口重启编排（不自动回切）",
+    "primary":  {
+                    "Port":  5432,
+                    "Host":  "192.168.0.151",
+                    "Healthy":  true,
+                    "LatencyMs":  103,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  5432,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  true,
+                    "LatencyMs":  189,
+                    "Method":  "pg_isready"
+                },
+    "dependencies":  {
+                         "redis":  {
+                                       "Port":  6380,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  55,
+                                       "Method":  "tcp"
+                                   },
+                         "qdrant":  {
+                                        "Port":  6333,
+                                        "Host":  "192.168.0.151",
+                                        "Healthy":  true,
+                                        "LatencyMs":  3,
+                                        "Method":  "tcp"
+                                    },
+                         "neo4j":  {
+                                       "Port":  7687,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  3,
+                                       "Method":  "tcp"
+                                   },
+                         "minio":  {
+                                       "Port":  9000,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  2,
+                                       "Method":  "tcp"
+                                   }
+                     },
+    "note":  "周期复检只提示、不自动回切运行中服务（避免连接池漂移）；回切需重启编排"
+}

@@ -10,10 +10,12 @@
 - 主备均不可达 ⇒ 退出码 2，且**不启动任何服务**；
 - 证据落 `doc/test/evidence/ops/**`，DSN 一律脱敏。
 
-本文件分两层：
+本文件分三层：
 1) 静态契约（无需 PowerShell/数据库）：标记、默认值、编码读取方式、文档登记；
 2) 行为契约（需 Windows PowerShell）：`-DbMode off` 直接放行；强制备用指向不可达端口时
-   退出码 2 且不监听 8000。行为用例用临时 LogRoot/EvidenceRoot，避免污染仓库。
+   退出码 2 且不监听 8000。行为用例用临时 LogRoot/EvidenceRoot，避免污染仓库；
+3) Phase 2（P1，2026-10-25）：`dbcheck -Json` 机器可读输出、monitor 周期复检
+   （主用恢复只提示不回切）、公共设施探测仅提示不阻断。
 """
 
 from __future__ import annotations
@@ -21,14 +23,16 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import socket
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
-OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.9.0.md"
+OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.10.0.md"
 
 POWERSHELL = shutil.which("powershell") or (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -114,12 +118,21 @@ def test_env_file_read_uses_utf8_explicitly() -> None:
 
 
 def test_operation_doc_records_startup_failover() -> None:
-    """运维记录升 v1.9.0 并登记 §16（启动期自动探测与主备切换）。"""
+    """运维记录升 v1.10.0 并登记 §16（启动期自动探测；§16.7 周期复检与公共设施探测）。"""
     assert OPERATION_DOC.exists(), f"缺少运维记录: {OPERATION_DOC}"
     text = OPERATION_DOC.read_text(encoding="utf-8-sig")
-    assert "v1.9.0" in text
+    assert "v1.10.0" in text
     assert "## 16. 启动期自动探测与主备切换" in text
-    for marker in ("-Action dbcheck", "-DbMode", "127.0.0.1:5432", "退出码 2"):
+    assert "### 16.7 周期复检与公共设施探测" in text
+    for marker in (
+        "-Action dbcheck",
+        "-DbMode",
+        "127.0.0.1:5432",
+        "退出码 2",
+        "-DbRecheckSec",
+        "db-monitor-recheck-",
+        "不自动回切",
+    ):
         assert marker in text, f"运维记录缺少: {marker}"
 
 
@@ -232,3 +245,164 @@ def test_standby_unreachable_blocks_startup(tmp_path: Path) -> None:
     assert payload["ok"] is False
     assert payload["resolved_mode"] == "unavailable"
     assert "***" not in json.dumps(payload.get("primary", {}))
+
+
+# ---------------------------------------------------------------------------
+# 3. Phase 2（P1）：JSON 输出 / 周期复检 / 公共设施探测
+# ---------------------------------------------------------------------------
+
+
+def test_phase2_contract_declared() -> None:
+    """Phase 2 契约标记齐备（JSON 输出、复检间隔、公共设施探测、复检证据）。"""
+    text = _text()
+    for marker in (
+        "[switch]$Json",
+        "[int]$DbRecheckSec = 0",
+        "Invoke-DbChannelRecheck",
+        "Test-TcpEndpoint",
+        "Get-InfraTargets",
+        "dependencies",
+        "db-monitor-recheck-",
+        "不自动回切",
+    ):
+        assert marker in text, f"缺少 Phase 2 契约标记: {marker}"
+
+
+def test_infra_probe_is_advisory_only() -> None:
+    """公共设施探测只提示不阻断（PG 为唯一硬门禁），且仅在可启动动作下执行。"""
+    text = _text()
+    assert "不阻断启动" in text
+    assert "@('start', 'startcheck', 'monitor', 'dbcheck')" in text
+
+
+def test_monitor_recheck_default_interval_at_least_60s() -> None:
+    """周期复检默认不小于 60s（避免探测拖慢自愈循环），且可显式缩短。"""
+    text = _text()
+    assert "[Math]::Max(60, $Interval)" in text
+    assert "if ($DbRecheckSec -gt 0)" in text
+
+
+def _port_open(host: str, port: int, timeout: float = 2.0) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+@needs_powershell
+def test_dbcheck_json_off_mode(tmp_path: Path) -> None:
+    """`dbcheck -Json -DbMode off` ⇒ 退出码 0，stdout 为纯 JSON（resolved_mode=off）。"""
+    completed = _run(tmp_path, "-Action", "dbcheck", "-DbMode", "off", "-Json")
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    payload = json.loads(completed.stdout.strip())
+    assert payload["ok"] is True
+    assert payload["resolved_mode"] == "off"
+
+
+@needs_powershell
+def test_dbcheck_json_reports_unavailable_and_dependencies(tmp_path: Path) -> None:
+    """强制备用但不可达 ⇒ 退出码 2；stdout 为纯 JSON，含 dependencies 字段。"""
+    env = _base_env(tmp_path)
+    env["OPENBASE_PG_STANDBY_PORT"] = "1"
+    completed = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(ORCHESTRATOR),
+            "-Action",
+            "dbcheck",
+            "-DbMode",
+            "standby",
+            "-Json",
+            "-DbProbeTimeoutSec",
+            "1",
+            "-LogRoot",
+            str(tmp_path / "logs"),
+            "-ServiceLogRoot",
+            str(tmp_path / "svc-logs"),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        timeout=120,
+    )
+    assert completed.returncode == 2, completed.stdout + completed.stderr
+    payload = json.loads(completed.stdout.strip())
+    assert payload["ok"] is False
+    assert payload["resolved_mode"] == "unavailable"
+    assert "dependencies" in payload
+    assert payload["evidence_path"]
+
+
+@needs_powershell
+def test_monitor_recheck_notices_primary_recovery(tmp_path: Path) -> None:
+    """monitor 周期复检：运行在备用通道且主用恢复 ⇒ 仅提示 + 落证据，不启动任何服务。"""
+    if not _port_open("127.0.0.1", 5432):
+        pytest.skip("本机备用库 127.0.0.1:5432 不可达，跳过周期复检用例")
+    if not _port_open("192.168.0.151", 5432):
+        pytest.skip("主用共享库 192.168.0.151:5432 不可达，跳过主用恢复提示用例")
+    assert POWERSHELL is not None
+
+    proc = subprocess.Popen(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(ORCHESTRATOR),
+            "-Action",
+            "monitor",
+            "-Only",
+            "__none__",          # 不匹配任何服务 ⇒ 不启动、不重启
+            "-Interval",
+            "1",
+            "-DbRecheckSec",
+            "1",
+            "-DbMode",
+            "standby",
+            "-LogRoot",
+            str(tmp_path / "logs"),
+            "-ServiceLogRoot",
+            str(tmp_path / "svc-logs"),
+        ],
+        cwd=ROOT,
+        env=_base_env(tmp_path),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    evidence: list[Path] = []
+    try:
+        deadline = time.time() + 60
+        while time.time() < deadline:
+            evidence = list((tmp_path / "evidence").glob("db-monitor-recheck-*.json"))
+            if evidence:
+                break
+            time.sleep(0.5)
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=10)
+
+    assert evidence, "monitor 未产生周期复检证据（db-monitor-recheck-*.json）"
+    payload = json.loads(evidence[0].read_text(encoding="utf-8-sig"))
+    assert payload["action"] == "monitor-recheck"
+    assert payload["current_mode"] == "standby"
+    assert payload["desired_mode"] == "primary"
+    assert "主用共享库已恢复" in payload["notice"]
+    # 只提示不回切：`-Only __none__` 下不应产生任何服务日志目录
+    svc_log_root = tmp_path / "svc-logs"
+    assert not svc_log_root.exists() or not any(svc_log_root.iterdir())

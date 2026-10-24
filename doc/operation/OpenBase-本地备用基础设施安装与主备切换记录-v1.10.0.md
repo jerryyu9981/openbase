@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.9.0 |
+| 文档版本 | v1.10.0 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -26,6 +26,7 @@
 | v1.8.0 | 2026-10-21 | 研发 | 新增 §15 局域网 Ollama 与远程 DeepSeek 接入：注入 2 个 provider + 6 条模型；DeepSeek 改为本地反代（8026）从进程环境注入 Key、库内不存明文；OpenLLM 适配器超时改为读 `provider.config.timeout`，OpenBase 上游超时放宽至 300s；`DEFAULT_LLM_MODEL` 对齐 `qwen2.5:0.5b` 并重启 |
 | v1.8.1 | 2026-10-21 | 研发 | DeepSeek Key 经密钥文件（`%USERPROFILE%\.openbase\deepseek_api_key.txt`）配置完成，反代 `key_configured=true`；`deepseek-chat` 真实调用通过（200，12.3s，64 tokens） |
 | v1.9.0 | 2026-10-25 | 研发 | **启动期主备探测固化为受管入口**：`scripts/service-orchestrator.ps1` 新增 `-DbMode auto/primary/standby/off` 与 `-Action dbcheck`；每次 start/startcheck/monitor 前探测主用 PostgreSQL，异常自动切本机 `127.0.0.1:5432`；主备均不可达拒绝启动（退出码 2）；覆盖通过子进程环境变量（不改写 `.env`），证据落 `doc/test/evidence/ops/**`；新增 §16（含实测矩阵与边界），§4 入口同步 |
+| v1.10.0 | 2026-10-25 | 研发 | **P1 落地**：① `monitor` 周期复检（默认 ≥60s，`-DbRecheckSec` 可缩短）——主用恢复/失联**只提示不回切**，证据 `db-monitor-recheck-*.json`；② Redis/Qdrant/Neo4j/MinIO 同批 TCP 探测，**仅提示不阻断**（PG 为唯一硬门禁），纳入证据 `dependencies`；③ `dbcheck -Json` 机器可读输出（schema v2）；新增 §16.7，§16.2/§16.5 同步 |
 
 ## 1. 背景与定位
 
@@ -555,6 +556,7 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 ### 16.1 需求与口径
 
 - **要求**：每次启动服务前先检测**主用共享库**（PostgreSQL `192.168.0.151:5432`）状态；异常则切换到**备用库通道**（本机 `127.0.0.1:5432`）。
+- **口径确认（2026-10-25）**：「备用库通道」= **本机 `127.0.0.1` 上的数据库**（本机 PostgreSQL，默认端口 5432），不含局域网其他主机。
 - **单一决策点**：`scripts/service-orchestrator.ps1`（受管编排入口）；`start` / `startcheck` / `monitor` 启动前**必探测**。
 - **不改配置**：`.env` / `.env.shared-infra` 永远保持主用地址；备用仅以**子进程环境变量**覆盖，主用恢复后重启自动回主用。
 - **不半启动**：主备均不可达 ⇒ **拒绝启动任何服务**（退出码 2）。
@@ -565,12 +567,17 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 |---|---|---|
 | `-DbMode` | `auto`（默认）/ `primary` / `standby` / `off` | auto=主用优先、异常切备用；primary/standby=强制；off=不探测（兼容旧行为） |
 | `-DbProbeTimeoutSec` | 默认 `3` | 单端点探测超时（秒） |
-| `-Action dbcheck` | —— | **仅探测**：打印判定 + 脱敏目标 + 证据路径，不启动/停止任何服务 |
+| `-Json` | 开关，仅配 `-Action dbcheck` | 输出机器可读 JSON（schema v2，含 `dependencies` / `evidence_path`），供脚本/流水线消费；stdout 不含人类摘要 |
+| `-DbRecheckSec` | 默认 `0`（自动） | monitor 周期复检间隔；0 时取 `max(60, -Interval)`，仅供联调缩短 |
+| `-Action dbcheck` | —— | **仅探测**：打印判定 + 脱敏目标 + 公共设施状态 + 证据路径，不启动/停止任何服务 |
 
 判定顺序：`pg_isready`（首选，含服务端握手）→ 失败回落 **TCP 连通**；
 主机端口来源：主用取 `POSTGRES_HOST`/`POSTGRES_PORT`（或从 `POSTGRES_URL` 解析），
 备用默认 `127.0.0.1:5432`，可用 `OPENBASE_PG_STANDBY_HOST` / `OPENBASE_PG_STANDBY_PORT` 覆盖，
 备用 DSN 可用 `OPENBASE_PG_STANDBY_URL` 整体覆盖（凭据与主用不同时）。
+
+证据文件命名：`db-startup-probe-<yyyyMMdd-HHmmss>-<action>.json`（启动期判定，schema v2）、
+`db-monitor-recheck-<yyyyMMdd-HHmmss>.json`（monitor 周期复检，schema v1）。
 
 ### 16.3 备用通道生效目标（仅替换主机端口，保留各仓 scheme/凭据/库名）
 
@@ -596,8 +603,8 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 
 | # | 事项 | 当前 | 后续 |
 |:-:|---|---|---|
-| 1 | 仅启动期判定 | 启动时一次探测；运行期不再切换 | **P1**：`monitor` 周期复检 + 主用恢复提示（不自动回切运行中服务，避免连接池漂移） |
-| 2 | 仅 PostgreSQL | Redis/Qdrant/Neo4j/MinIO 仍手工/`start-infra.ps1` | **P1**：按同法纳管（Redis 备用口令需从 `D:\infra\redis8\redis-6380.conf` 读取，非 `.env`） |
+| 1 | 启动期 vs 运行期 | 启动期判定 + **monitor 周期复检**（P1 已交付）；复检只提示不回切 | **P2**：应用内启动自检（见 #3） |
+| 2 | 纳管范围 | PostgreSQL 为**硬门禁**；Redis/Qdrant/Neo4j/MinIO 已纳管**探测**（仅提示，P1 已交付） | **P2**：四类设施自动切本机备用（Redis 口令需从 `D:\infra\redis8\redis-6380.conf` 读取，非 `.env`） |
 | 3 | 绕过编排直启 | 直接 `uvicorn` 不走探测（预期行为） | **P2**：应用内启动自检开关（`OPENBASE_DB_STARTUP_PROBE=warn|require|off`，默认 warn） |
 | 4 | 数据一致性 | 备用库为主用**手工复刻**（UUID 必须一致，见 §12） | **P2**：评估逻辑复制/备份恢复，明确 RPO/RTO 与切回校验 |
 | 5 | 写入语义 | 切备用后照常读写（备用可写） | **P2**：如需「主用只读、备用可写」双活语义，单独立项评审 |
@@ -607,3 +614,40 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 - 探测通过但服务连不上：确认被探测端口与目标服务 DSN 一致（`dbcheck` 输出会列出 5 个生效目标）。
 - `.env` 含中文时行号错位：脚本已改为按 **UTF-8** 显式读取（PS 5.1 `Get-Content` 默认 ANSI 会导致解析偏差）。
 - 停止后端口仍监听：以 `Get-NetTCPConnection -LocalPort <port> -State Listen` 复核并重试 `-Action stop`（见 S2 报告 D-04）。
+
+### 16.7 周期复检与公共设施探测（P1 落地，2026-10-25）
+
+#### 16.7.1 monitor 周期复检（只提示，不回切）
+
+| 运行态 | 复检发现 | 行为 |
+|---|---|---|
+| 备用通道（standby） | 主用**已恢复** | `INFO` 提示「主用共享库已恢复…回切需在维护窗口重启编排」，落 `db-monitor-recheck-*.json` |
+| 备用通道（standby） | 主用与备用**同时失联** | `ERROR` 提示立即恢复主用或本机备用，落证据 |
+| 主用通道（primary） | 主用**失联** | `ERROR` 提示「连接池仍指向主用，建议重启编排进入备用通道」，落证据 |
+| 主用通道（primary） | 主用正常 | 静默（不写日志、不落证据） |
+
+约束：**不自动回切、不重启任何服务**（运行中连接池指向已解析端点，热切换会导致连接漂移）；
+同一提示文本仅记录一次（状态变化才再次落证据），避免每分钟刷盘。
+
+#### 16.7.2 公共设施探测（仅提示，不阻断）
+
+- 探测对象：`redis`（`REDIS_HOST`/`REDIS_PORT`，默认 6380）、`qdrant`（`QDRANT_*`，6333）、
+  `neo4j`（`NEO4J_HOST`/`NEO4J_BOLT_PORT`，7687）、`minio`（`MINIO_*`，9000）；取值来源为
+  进程环境（`.env.shared-infra` 已注入）。
+- 判定：TCP 连通（超时同 `-DbProbeTimeoutSec`）。
+- 策略：**不参与启动门禁**——PG 是唯一硬门禁；四类设施不可达时 `WARN` 并提示
+  `D:\infra\start-infra.ps1`，避免「主库可用但 Qdrant 抖动」导致整体拒启。
+- 结果纳入证据 `dependencies` 字段（`dbcheck -Json` 可直接消费）。
+- **不自动切换**：这四类设施的备用口令不在 `.env`（Redis 在 `D:\infra\redis8\redis-6380.conf`），
+  启动期自动注入凭据的风险高于收益 → 由人工启动本机备用（P2 再评估）。
+
+#### 16.7.3 实测（2026-10-25，本机）
+
+| 场景 | 命令 | 结果 | 证据 |
+|---|---|---|---|
+| 主用可达 + 四设施全绿 | `-Action dbcheck` | `mode=primary`；redis/qdrant/neo4j/minio 均 `ok`（2~55ms） | `db-startup-probe-20261025-024459-dbcheck.json` |
+| JSON 消费 | `-Action dbcheck -Json` | stdout 为纯 JSON（schema v2），`dependencies` 四键齐全，`evidence_path` 指向证据 | `db-startup-probe-20261025-024508-dbcheck.json` |
+| **备用通道下主用恢复** | `-Action monitor -DbMode standby -Only __none__ -DbRecheckSec 1` | 复检 `current=standby / desired=primary`，提示「主用共享库已恢复」，**未启动任何服务** | `db-monitor-recheck-20261025-024559.json`、`db-startup-probe-20261025-024558-monitor.json` |
+
+守门用例：`tests/test_orchestrator_db_failover.py` 共 **15 例**（静态契约 10 + 行为契约 5），
+其中 `test_monitor_recheck_notices_primary_recovery` 在主用或本机备用不可达时显式 `skip`（不伪造通过）。

@@ -24,12 +24,19 @@
 #   .\scripts\service-orchestrator.ps1 -Action start -ServiceLogRoot D:\tmp\svc-logs   # 覆盖服务日志采集根目录
 #   .\scripts\service-orchestrator.ps1 -Action namecheck        # 采集文件命名实测（不改动任何服务）
 #   .\scripts\service-orchestrator.ps1 -Action dbcheck           # 仅探测共享库主备（不启动任何服务）
+#   .\scripts\service-orchestrator.ps1 -Action dbcheck -Json     # 机器可读输出（供脚本/流水线消费）
 #   .\scripts\service-orchestrator.ps1 -Action start -DbMode standby   # 强制走备用库通道
 #
 # 共享库（PostgreSQL）启动期主备（P0，2026-10-25）：
 #   - 每次 start/startcheck/monitor 前必探测主用；`-DbMode auto`（默认）异常自动切备用；
 #     `-DbMode primary|standby|off` 可强制/关闭。备用以**子进程环境覆盖**生效，不改写 `.env`；
 #     主备均不可达 ⇒ 拒绝启动（退出码 2）。探测/覆盖/耗时写 `doc/test/evidence/ops/`。
+#
+# 主备周期复检与公共设施探测（P1，2026-10-25）：
+#   - monitor 每 ≥60s（可用 `-DbRecheckSec` 缩短）复检一次：主用恢复/失联只**提示**，
+#     **不自动回切**运行中服务（避免连接池漂移），回切需重启编排；
+#   - Redis/Qdrant/Neo4j/MinIO 同批 TCP 探测，仅提示不阻断（PG 为唯一硬门禁），
+#     端点取自 `.env.shared-infra`（`REDIS_HOST` / `QDRANT_HOST` / `NEO4J_HOST` / `MINIO_HOST`）。
 #
 # 环境要求：Windows PowerShell 5+；各服务 Python 依赖已安装（各项目自有环境）
 #
@@ -70,7 +77,11 @@ param(
     [ValidateSet('auto', 'primary', 'standby', 'off')]
     [string]$DbMode = 'auto',
     # 单端点探测超时（秒）
-    [int]$DbProbeTimeoutSec = 3
+    [int]$DbProbeTimeoutSec = 3,
+    # 仅 dbcheck：输出机器可读 JSON（供脚本/流水线消费，不打印人类摘要）
+    [switch]$Json,
+    # monitor 周期复检间隔（秒）；0 = 自动推算（不小于 60s），仅供联调缩短
+    [int]$DbRecheckSec = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -122,23 +133,12 @@ if (Test-Path $SharedInfraFile) {
 # ---------------------------------------------------------------------------
 $ProjectRoot = Split-Path $PSScriptRoot -Parent
 
-function Test-PostgresEndpoint {
+function Test-TcpEndpoint {
     param([string]$TargetHost, [int]$TargetPort, [int]$TimeoutSec = 3)
 
     $startedAt = Get-Date
-    $pgIsReady = 'D:\PostgreSQL\17\bin\pg_isready.exe'
-    if (Test-Path $pgIsReady) {
-        try {
-            & $pgIsReady -h $TargetHost -p $TargetPort -t $TimeoutSec *> $null
-            $exitCode = $LASTEXITCODE
-            return @{
-                Healthy   = ($exitCode -eq 0)
-                Method    = 'pg_isready'
-                LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
-            }
-        } catch {
-            # 回落 TCP 探测（pg_isready 缺失/异常不作为不可达依据）
-        }
+    if (-not $TargetHost -or $TargetPort -le 0) {
+        return @{ Healthy = $false; Method = 'none'; LatencyMs = 0 }
     }
     try {
         $client = New-Object System.Net.Sockets.TcpClient
@@ -157,6 +157,30 @@ function Test-PostgresEndpoint {
             LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
         }
     }
+}
+
+function Test-PostgresEndpoint {
+    param([string]$TargetHost, [int]$TargetPort, [int]$TimeoutSec = 3)
+
+    $startedAt = Get-Date
+    $pgIsReady = 'D:\PostgreSQL\17\bin\pg_isready.exe'
+    if (Test-Path $pgIsReady) {
+        try {
+            & $pgIsReady -h $TargetHost -p $TargetPort -t $TimeoutSec *> $null
+            $exitCode = $LASTEXITCODE
+            return @{
+                Healthy   = ($exitCode -eq 0)
+                Method    = 'pg_isready'
+                LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
+            }
+        } catch {
+            # 回落 TCP 探测（pg_isready 缺失/异常不作为不可达依据）
+        }
+    }
+    if (-not $TargetHost) {
+        return @{ Healthy = $false; Method = 'none'; LatencyMs = 0 }
+    }
+    return (Test-TcpEndpoint -TargetHost $TargetHost -TargetPort $TargetPort -TimeoutSec $TimeoutSec)
 }
 
 function Get-EnvFileValue {
@@ -201,6 +225,48 @@ $script:DbResolution = @{
 }
 $script:DbOverrides = @{}
 $script:DbAppliedEndpoints = @{}
+$script:InfraTargets = [ordered]@{}
+$script:InfraStatus = [ordered]@{}
+
+# 公共基础设施（Redis/Qdrant/Neo4j/MinIO）探测目标：取自进程环境（.env.shared-infra 已注入）
+function Get-InfraTargets {
+    $candidates = [ordered]@{
+        redis  = @{ Host = $env:REDIS_HOST;  Port = if ($env:REDIS_PORT) { [int]$env:REDIS_PORT } else { 6380 } }
+        qdrant = @{ Host = $env:QDRANT_HOST; Port = if ($env:QDRANT_PORT) { [int]$env:QDRANT_PORT } else { 6333 } }
+        neo4j  = @{ Host = $env:NEO4J_HOST;  Port = if ($env:NEO4J_BOLT_PORT) { [int]$env:NEO4J_BOLT_PORT } else { 7687 } }
+        minio  = @{ Host = $env:MINIO_HOST;  Port = if ($env:MINIO_PORT) { [int]$env:MINIO_PORT } else { 9000 } }
+    }
+    $result = [ordered]@{}
+    foreach ($name in $candidates.Keys) {
+        if ($candidates[$name].Host) { $result[$name] = $candidates[$name] }
+    }
+    return $result
+}
+
+function Invoke-InfraProbe {
+    $result = [ordered]@{}
+    foreach ($name in $script:InfraTargets.Keys) {
+        $target = $script:InfraTargets[$name]
+        $probe = Test-TcpEndpoint -TargetHost $target.Host -TargetPort $target.Port -TimeoutSec $DbProbeTimeoutSec
+        $result[$name] = @{ Host = $target.Host; Port = $target.Port } + $probe
+    }
+    $script:InfraStatus = $result
+    return $result
+}
+
+function Get-InfraSummary {
+    if ($script:InfraStatus.Count -eq 0) { return '' }
+    $parts = foreach ($name in $script:InfraStatus.Keys) {
+        $item = $script:InfraStatus[$name]
+        $state = if ($item.Healthy) { 'ok' } else { 'DOWN' }
+        ("{0}={1}:{2} {3}({4}ms)" -f $name, $item.Host, $item.Port, $state, $item.LatencyMs)
+    }
+    return ('公共设施探测：' + ($parts -join ' / '))
+}
+
+function Get-InfraDownNames {
+    return @($script:InfraStatus.Keys | Where-Object { -not $script:InfraStatus[$_].Healthy })
+}
 
 if ($DbMode -ne 'off') {
     $primaryHost = $env:POSTGRES_HOST
@@ -215,6 +281,10 @@ if ($DbMode -ne 'off') {
     $standbyHost = if ($env:OPENBASE_PG_STANDBY_HOST) { $env:OPENBASE_PG_STANDBY_HOST } else { '127.0.0.1' }
     # 备用端口默认 5432（PG 规范端口）；不沿用主用端口，避免主用自定义端口时误指向
     $standbyPort = if ($env:OPENBASE_PG_STANDBY_PORT) { [int]$env:OPENBASE_PG_STANDBY_PORT } else { 5432 }
+
+    # 捕获两侧端点：切备用后 $env:POSTGRES_* 已被改写，周期复检必须用初始快照
+    $script:DbPrimaryEndpoint = @{ Host = $primaryHost; Port = $primaryPort }
+    $script:DbStandbyEndpoint = @{ Host = $standbyHost; Port = $standbyPort }
 
     $primaryProbe = if ($primaryHost) {
         Test-PostgresEndpoint -TargetHost $primaryHost -TargetPort $primaryPort -TimeoutSec $DbProbeTimeoutSec
@@ -301,6 +371,21 @@ if ($DbMode -ne 'off') {
             }
         }
     }
+}
+
+# ---------------------------------------------------------------------------
+# 公共基础设施探测（P1，2026-10-25）
+#
+# 口径：
+#   1) 只**探测与提示**，不自动切换：这四类设施的口令不在 .env（Redis 口令在
+#      D:\infra\redis8\redis-6380.conf），启动期自动注入凭据风险高于收益 → 提示人工启动本机备用；
+#   2) 不参与启动门禁：共享库（PostgreSQL）是唯一硬门禁，避免「主库可用但 Qdrant 抖动」整体拒启；
+#   3) 仅在 start / startcheck / monitor / dbcheck 时探测（status / stop 不探测，避免拖慢）。
+# ---------------------------------------------------------------------------
+$script:InfraTargets = Get-InfraTargets
+$script:DbMonitorState = @{ LastMode = $script:DbResolution.Mode; LastNotice = '' }
+if ($DbMode -ne 'off' -and $Action -in @('start', 'startcheck', 'monitor', 'dbcheck')) {
+    Invoke-InfraProbe | Out-Null
 }
 
 # ---------------------------------------------------------------------------
@@ -837,17 +922,22 @@ function Get-TopoOrder {
 # Action 分发
 # ---------------------------------------------------------------------------
 
-function Write-DbEvidence {
+function Get-EvidenceDir {
+    if ($env:OPENBASE_EVIDENCE_ROOT) { return $env:OPENBASE_EVIDENCE_ROOT }
+    return (Join-Path $ProjectRoot 'doc\test\evidence\ops')
+}
+
+function New-EvidencePath {
     param([string]$ActionName)
-    $evidenceDir = if ($env:OPENBASE_EVIDENCE_ROOT) {
-        $env:OPENBASE_EVIDENCE_ROOT
-    } else {
-        Join-Path $ProjectRoot 'doc\test\evidence\ops'
-    }
+    $evidenceDir = Get-EvidenceDir
     New-Item -ItemType Directory -Force -Path $evidenceDir | Out-Null
-    $path = Join-Path $evidenceDir ("db-startup-probe-{0}.json" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
-    $payload = [ordered]@{
-        schema_version    = 1
+    return (Join-Path $evidenceDir ("db-startup-probe-{0}-{1}.json" -f (Get-Date -Format 'yyyyMMdd-HHmmss'), $ActionName))
+}
+
+function New-DbEvidencePayload {
+    param([string]$ActionName)
+    return [ordered]@{
+        schema_version    = 2
         tool              = 'service-orchestrator.ps1'
         action            = $ActionName
         generated_at      = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
@@ -857,11 +947,42 @@ function Write-DbEvidence {
         reason            = $script:DbResolution.Reason
         primary           = $script:DbResolution.Primary
         standby           = $script:DbResolution.Standby
+        # 公共设施仅探测提示，不参与门禁（PG 为唯一硬门禁）
+        dependencies      = $script:InfraStatus
         override_services = @($script:DbOverrides.Keys | Sort-Object)
         applied_endpoints = $script:DbAppliedEndpoints
         note              = '仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env'
     }
-    ($payload | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $path -Encoding UTF8
+}
+
+function Write-DbEvidence {
+    param([string]$ActionName)
+    $path = New-EvidencePath -ActionName $ActionName
+    $payload = New-DbEvidencePayload -ActionName $ActionName
+    ($payload | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $path -Encoding UTF8
+    return $path
+}
+
+function Write-DbRecheckEvidence {
+    param([string]$CurrentMode, [string]$DesiredMode, $PrimaryProbe, $StandbyProbe, [string]$Notice)
+
+    $evidenceDir = Get-EvidenceDir
+    New-Item -ItemType Directory -Force -Path $evidenceDir | Out-Null
+    $path = Join-Path $evidenceDir ("db-monitor-recheck-{0}.json" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    $payload = [ordered]@{
+        schema_version = 1
+        tool           = 'service-orchestrator.ps1'
+        action         = 'monitor-recheck'
+        generated_at   = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
+        current_mode   = $CurrentMode
+        desired_mode   = $DesiredMode
+        notice         = $Notice
+        primary        = $PrimaryProbe
+        standby        = $StandbyProbe
+        dependencies   = $script:InfraStatus
+        note           = '周期复检只提示、不自动回切运行中服务（避免连接池漂移）；回切需重启编排'
+    }
+    ($payload | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $path -Encoding UTF8
     return $path
 }
 
@@ -888,6 +1009,12 @@ function Assert-DbReadyOrExit {
             Write-Log 'WARN' ("备用库通道已启用（启动期环境覆盖，不改写 .env），覆盖服务：{0}" -f `
                 ((@($script:DbOverrides.Keys) | Sort-Object) -join ','))
         }
+        $infraSummary = Get-InfraSummary
+        if ($infraSummary) { Write-Log 'INFO' $infraSummary }
+        $infraDown = Get-InfraDownNames
+        if ($infraDown.Count -gt 0) {
+            Write-Log 'WARN' ("公共设施不可达：{0}（不阻断启动；可执行 D:\infra\start-infra.ps1 启动本机备用）" -f ($infraDown -join ','))
+        }
         Write-Log 'INFO' "共享库探测证据：$evidence"
         return
     }
@@ -901,13 +1028,79 @@ function Assert-DbReadyOrExit {
     exit 2
 }
 
+function Invoke-DbChannelRecheck {
+    # 周期复检（monitor）：只判定 + 提示，**不自动回切**运行中服务。
+    if ($DbMode -eq 'off') { return }
+
+    $primary = $script:DbPrimaryEndpoint
+    $standby = $script:DbStandbyEndpoint
+    $primaryProbe = Test-PostgresEndpoint -TargetHost $primary.Host -TargetPort $primary.Port -TimeoutSec $DbProbeTimeoutSec
+    $standbyProbe = Test-PostgresEndpoint -TargetHost $standby.Host -TargetPort $standby.Port -TimeoutSec $DbProbeTimeoutSec
+
+    $desiredMode = if ($primaryProbe.Healthy) { 'primary' } elseif ($standbyProbe.Healthy) { 'standby' } else { 'unavailable' }
+    $currentMode = $script:DbResolution.Mode
+
+    $notice = ''
+    $level = 'WARN'
+    if ($currentMode -eq 'standby' -and $primaryProbe.Healthy) {
+        $notice = ("主用共享库已恢复（{0}:{1}），当前运行在备用通道；回切需在维护窗口重启编排（不自动回切）" -f $primary.Host, $primary.Port)
+        $level = 'INFO'
+    } elseif ($currentMode -eq 'standby' -and -not $standbyProbe.Healthy) {
+        $notice = ("备用库通道亦不可达（primary healthy=false / standby {0}:{1} healthy=false），请立即恢复主用或本机备用" -f $standby.Host, $standby.Port)
+        $level = 'ERROR'
+    } elseif ($currentMode -eq 'primary' -and -not $primaryProbe.Healthy) {
+        $notice = ("主用共享库失联（{0}:{1}），当前连接池仍指向主用；建议重启编排进入备用通道（standby healthy={2}）" -f `
+            $primary.Host, $primary.Port, $standbyProbe.Healthy)
+        $level = 'ERROR'
+    }
+
+    if (-not $notice) {
+        $script:DbMonitorState.LastNotice = ''
+        return
+    }
+    if ($script:DbMonitorState.LastNotice -eq $notice) { return }
+    $script:DbMonitorState.LastNotice = $notice
+    Write-Log $level $notice
+    $evidence = Write-DbRecheckEvidence -CurrentMode $currentMode -DesiredMode $desiredMode `
+        -PrimaryProbe (@{ Host = $primary.Host; Port = $primary.Port } + $primaryProbe) `
+        -StandbyProbe (@{ Host = $standby.Host; Port = $standby.Port } + $standbyProbe) `
+        -Notice $notice
+    Write-Log 'INFO' "周期复检证据：$evidence"
+}
+
 function Invoke-DbCheck {
+    param([switch]$AsJson)
+
     if ($DbMode -eq 'off') {
-        Write-Log 'WARN' '共享库启动探测已关闭（-DbMode off）'
+        if (-not $AsJson) { Write-Log 'WARN' '共享库启动探测已关闭（-DbMode off）' }
+        if ($AsJson) {
+            $offPayload = [ordered]@{
+                schema_version = 2
+                action         = 'dbcheck'
+                ok             = $true
+                requested_mode = $DbMode
+                resolved_mode  = 'off'
+                reason         = '探测关闭（-DbMode off）'
+            }
+            Write-Host ($offPayload | ConvertTo-Json -Depth 4)
+        }
         return 0
     }
     $evidence = Write-DbEvidence -ActionName 'dbcheck'
+    if ($AsJson) {
+        $payload = New-DbEvidencePayload -ActionName 'dbcheck'
+        $payload['evidence_path'] = $evidence
+        Write-Host ($payload | ConvertTo-Json -Depth 6)
+        if (-not $script:DbResolution.Ok) { return 2 }
+        return 0
+    }
     Write-Host (Get-DbSummary)
+    $infraSummary = Get-InfraSummary
+    if ($infraSummary) { Write-Host $infraSummary }
+    $infraDown = Get-InfraDownNames
+    if ($infraDown.Count -gt 0) {
+        Write-Host ("  公共设施不可达：{0}（不阻断启动；可执行 D:\infra\start-infra.ps1）" -f ($infraDown -join ','))
+    }
     if ($script:DbAppliedEndpoints.Count -gt 0) {
         Write-Host '  备用通道生效目标（口令已脱敏）：'
         foreach ($key in ($script:DbAppliedEndpoints.Keys | Sort-Object)) {
@@ -943,9 +1136,15 @@ function Invoke-Start {
 
 function Invoke-Monitor {
     Assert-DbReadyOrExit -ActionName 'monitor'
-    Write-Log 'INFO' ("监控模式启动：Interval={0}s，MaxRestarts={1}/服务" -f $Interval, $MaxRestarts)
+    $recheckEvery = if ($DbRecheckSec -gt 0) { $DbRecheckSec } else { [Math]::Max(60, $Interval) }
+    Write-Log 'INFO' ("监控模式启动：Interval={0}s，MaxRestarts={1}/服务，共享库周期复检={2}s" -f $Interval, $MaxRestarts, $recheckEvery)
     $restartCount = @{}
+    $nextRecheckAt = (Get-Date).AddSeconds($recheckEvery)
     while ($true) {
+        if ((Get-Date) -ge $nextRecheckAt) {
+            Invoke-DbChannelRecheck
+            $nextRecheckAt = (Get-Date).AddSeconds($recheckEvery)
+        }
         foreach ($svc in $services) {
             if ($Only.Count -gt 0 -and $Only -notcontains $svc.Name) { continue }
             $healthy = Test-Health $svc
@@ -1191,5 +1390,5 @@ switch ($Action) {
     'checkall'   { Invoke-CheckAll }
     'namecheck'  { Invoke-NameCheck }
     'stop'       { Invoke-Stop }
-    'dbcheck'    { exit (Invoke-DbCheck) }
+    'dbcheck'    { exit (Invoke-DbCheck -AsJson:$Json) }
 }

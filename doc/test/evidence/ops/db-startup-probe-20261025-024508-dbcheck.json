@@ -1,0 +1,61 @@
+﻿{
+    "schema_version":  2,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "dbcheck",
+    "generated_at":  "2026-10-25T02:45:08+08:00",
+    "requested_mode":  "auto",
+    "resolved_mode":  "primary",
+    "ok":  true,
+    "reason":  "主用可达",
+    "primary":  {
+                    "Port":  5432,
+                    "Host":  "192.168.0.151",
+                    "Healthy":  true,
+                    "LatencyMs":  112,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  5432,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  true,
+                    "LatencyMs":  164,
+                    "Method":  "pg_isready"
+                },
+    "dependencies":  {
+                         "redis":  {
+                                       "Port":  6380,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  54,
+                                       "Method":  "tcp"
+                                   },
+                         "qdrant":  {
+                                        "Port":  6333,
+                                        "Host":  "192.168.0.151",
+                                        "Healthy":  true,
+                                        "LatencyMs":  5,
+                                        "Method":  "tcp"
+                                    },
+                         "neo4j":  {
+                                       "Port":  7687,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  3,
+                                       "Method":  "tcp"
+                                   },
+                         "minio":  {
+                                       "Port":  9000,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  2,
+                                       "Method":  "tcp"
+                                   }
+                     },
+    "override_services":  [
+
+                          ],
+    "applied_endpoints":  {
+
+                          },
+    "note":  "仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env"
+}

@@ -1,0 +1,67 @@
+﻿{
+    "schema_version":  2,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "monitor",
+    "generated_at":  "2026-10-25T02:45:58+08:00",
+    "requested_mode":  "standby",
+    "resolved_mode":  "standby",
+    "ok":  true,
+    "reason":  "强制备用（-DbMode standby）",
+    "primary":  {
+                    "Port":  5432,
+                    "Host":  "192.168.0.151",
+                    "Healthy":  true,
+                    "LatencyMs":  145,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  5432,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  true,
+                    "LatencyMs":  187,
+                    "Method":  "pg_isready"
+                },
+    "dependencies":  {
+                         "redis":  {
+                                       "Port":  6380,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  55,
+                                       "Method":  "tcp"
+                                   },
+                         "qdrant":  {
+                                        "Port":  6333,
+                                        "Host":  "192.168.0.151",
+                                        "Healthy":  true,
+                                        "LatencyMs":  3,
+                                        "Method":  "tcp"
+                                    },
+                         "neo4j":  {
+                                       "Port":  7687,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  3,
+                                       "Method":  "tcp"
+                                   },
+                         "minio":  {
+                                       "Port":  9000,
+                                       "Host":  "192.168.0.151",
+                                       "Healthy":  true,
+                                       "LatencyMs":  2,
+                                       "Method":  "tcp"
+                                   }
+                     },
+    "override_services":  [
+                              "openllm",
+                              "openmemory",
+                              "openrag"
+                          ],
+    "applied_endpoints":  {
+                              "openllm":  "postgresql://nuct:***@127.0.0.1:5432/nuct",
+                              "openmemory":  "127.0.0.1:5432",
+                              "openrag":  "postgresql+asyncpg://nuct:***@127.0.0.1:5432/nuct",
+                              "openbase":  "postgresql://nuct:***@127.0.0.1:5432/nuct",
+                              "dps":  "postgresql://nuct:***@127.0.0.1:5432/nuct"
+                          },
+    "note":  "仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env"
+}
