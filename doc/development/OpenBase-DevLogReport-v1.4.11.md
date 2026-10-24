@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.22.0 |
+| 文档版本 | v2.23.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-24 |
 | 编制 | 研发（AI 辅助） |
@@ -1146,6 +1146,36 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 > 环境说明：DPS 全量首跑使用 pgAdmin CPython 3.13，因长时间回归后子进程无法再启动出现 11 例失败；改用 OpenRAG `.venv3`（CPython 3.11.9）+ `doc/tmp/run_dps_pytest311.py`，并以 shim 提供裸 `python`/`python3`、`pip --target DPS/.venv/libs311` 补齐 `pyjwt/bcrypt/mccabe` 后复跑全部通过。首跑失败已逐项归因：版本/BOM 为编辑窗口内产生（已清理），CI 脚本缺 `python` 与 smoke 超时随 shim 消除，`test_s5_t6_event_consumer` 隔离复跑通过。
 
+### 2.32 v1.12.0 长尾建设 D 批执行记录（2026-10-24）
+
+**范围**：XR-GOV-01 / C1-d「码 ↔ UUID 双形态」——按 OpenLLM → OpenRAG → OpenMemory 顺序派单、三仓各自复制纯函数并接入租户解析入口。
+
+**1. 派单与回执**
+
+产出《OpenBase-C1d-码值双形态派单与回执-v1.0.0》（能力契约、分仓接入点、验收判据、未闭环解冻条件）。
+
+**2. 三仓落地**
+
+| 仓 | 副本模块 | 接入点 | 新增用例 | 提交 |
+|----|----------|--------|----------|------|
+| OpenLLM | `backend/app/identity/code_normalize.py` | `GET /api/v1/tenants/{tenant_id}`：租户码或 UUID（canonical 小写）→ 库内租户行；未知码 404 | 纯函数 7 + 端点 3 | `de4c7e5` |
+| OpenRAG | `src/openrag/identity/code_normalize.py` | `identity/tenant_registry.resolve_tenant_code`：UUID 形态规范化后进入四态裁定，未登记 fail-closed | 10 | `d5ea6a8` |
+| OpenMemory | `src/openmemory/identity/code_normalize.py` | `identity/inbound_gate`：新增 `normalize_tenant_code` 单一入口，`identity_scope`/`trusted_tenant_code` 统一调用 | 12 | `9920e70` |
+
+**3. 验证**
+
+| 仓 | 用例 | 结果 |
+|----|------|------|
+| OpenLLM | `test_r13_code_normalize_v1120.py` / `test_tenants_api.py` | **7 passed** / **38 passed** |
+| OpenRAG | `test_r13_code_normalize.py` / `test_c1b_tenant_registry.py` / 生产门禁与跨仓隔离 | **10** / **21** / **17 passed** |
+| OpenMemory | `test_r13_code_normalize.py` / `test_default_tenant_fallback_d8.py` / `test_s2_t9_audit_identity.py` | **12** / **7** / **16 passed** |
+
+**4. 未闭环**
+
+OpenRAG / OpenMemory 无租户主数据，仅实现 UUID 形态规范化 + 未登记 fail-closed；「码 → 真实 UUID」需主数据接入后由既有入口注入 resolver（解冻条件已登记）。OpenLLM 仅读明细路径支持双形态，写路径保持 UUID-only。
+
+> 环境说明：pgAdmin CPython 3.13 自本日起自动 `site` 初始化挂起，OpenLLM 用例改以 `-S`（跳过 site，由运行器显式注入路径）+ `DATABASE_URL=sqlite:///:memory:` 运行；OpenRAG/OpenMemory 使用 `.venv3`（CPython 3.11.9）。提交因本机 `git commit` 挂起，改用 `commit-tree + update-ref`（消息经 UTF-8 文件传入）完成，提交内容与常规提交等价。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -1235,6 +1265,7 @@ API 层落点：`openbase-ui/src/core/api/governance.ts` 扩展 `localModelsApi`
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.23.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.32：**v1.12.0 长尾建设 D 批**——XR-GOV-01/C1-d 三仓派单与回执（OpenLLM 租户码/UUID 双形态、OpenRAG 注册表 UUID 规范化、OpenMemory 域解析统一规范化）；新增 32 例、相关回归全通过；产出派单回执文档并登记 3 项未闭环。 |
 | v2.22.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.31：**v1.12.0 长尾建设 C 批**——DPS 新增 `GET /api/v2/metrics`（60s QPS / CPU / 内存 / uptime / requests_total）与 `runtime_metric:read` 权限点，版本升至 2.13.0；OpenBase 代理扩权三个只读端点并重写画像监控页。验证：DPS 18 例 + 全量 1840 passed、OpenBase 26 例、前端 366/366、`vue-tsc`/`ruff` 0 错误。 |
 | v2.21.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.30：**v1.12.0 长尾建设 B 批**——XR-LLM-06 工作空间按用户名邀请（OpenLLM schema/路由解析 + 前端成员弹窗）；用户名不存在 404、双给冲突 400；后端 9 例 + 回归 34 例、前端新增 3 例、全量 363/363、`vue-tsc` 0 错误。 |
 | v2.20.0 | 2026-10-23 | 研发（AI 辅助） | 新增 §2.29：**v1.12.0 长尾建设 A 批**——OB-03 新增全局调用记录端点与 `AppCallsView`；OB-04 知识库控制台接 `rag-proxy` 真实链路；XR-LLM-03 报表趋势接三聚合源；XR-DPS-05 阻塞于 XR-DPS-04。验证：后端 6 例、前端新增 7 例、前端全量 360/360、`vue-tsc` 0 错误。 |

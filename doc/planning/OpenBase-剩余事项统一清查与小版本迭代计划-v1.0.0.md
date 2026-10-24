@@ -81,7 +81,7 @@
 | XR-DPS-03 | 画像数据权限 / 接口限流 / API 管理端点 | DPS | 缺口 §4.1 #9/#13/#41 | 三页无端点 | P3 | v1.11.0 | **裁定：只读建设 / 写冻结**（`/rate-limits/status`、`/api-registry`、`/error-codes`、`/permissions/roles` 只读接线；写面 410）→ v1.12.0 | 三页 0 mock、只读可见 |
 | XR-DPS-04 | DPS 运行态指标端点（QPS/CPU/内存） | DPS | XR-DPS-01 拆分 | 监控页无指标 | P2 | v1.11.0 | **✅ 已闭环（v1.12.0）**：`GET /api/v2/metrics`（7 字段，60s 滑窗）+ `runtime_metric:read` 权限点 + 类级守门；DPS 2.13.0，全量 1840 passed | 端点 200、权限点可达、DPS 全量回归通过 |
 | XR-DPS-05 | OpenBase 代理扩权 + 画像监控页接线 | OpenBase | XR-DPS-01 拆分 | `dps-proxy` 仅映射 `/api/v2/portrait/*` | P2 | v1.11.0 | **✅ 已闭环（v1.12.0）**：代理允许清单新增 `/metrics`、`/rate-limits/status`、`/alerts/rules` 三个只读路由；画像监控页四源真实接线，前端 366/366 | 页面 0 mock、只读规则与指标可见 |
-| XR-GOV-01 | C1-d 码值规范化（码 ↔ UUID 双形态） | 三仓 | C1 派单 | 多形态码值未统一 | P2 | ~~v1.10.2~~ → v1.12.0 | **裁定：建设（派单）**：OpenBase 能力已入库（11 例）；OpenLLM/OpenRAG/OpenMemory 零命中未采纳 → 按 LL→RAG→Memory 派单并回执 | 三仓回执 + 回归 |
+| XR-GOV-01 | C1-d 码值规范化（码 ↔ UUID 双形态） | 三仓 | C1 派单 | 多形态码值未统一 | P2 | ~~v1.10.2~~ → v1.12.0 | **✅ 已闭环（v1.12.0 D 批）**：三仓各复制纯函数并接入——OpenLLM 租户明细（码/UUID，新增 10 例）、OpenRAG 注册表 UUID 规范化（10 例）、OpenMemory 域解析统一规范化（12 例）；派单回执见《OpenBase-C1d-码值双形态派单与回执-v1.0.0》 | 三仓回执 + 回归 |
 | XR-MEM-01 | OpenMemory `default` 兜底退役 | OpenMemory | 组织事实源收敛 D4 | 过渡期兜底长期存在 | P2 | v1.11.0 | **✅ 已闭环（2026-10-12，台账滞后）**：P4 以空策略矩阵 fail-closed 启动，不再自动创建 `{"default":{"enabled":true}}`（`68701e9`+`26dc728`，全量 1366 passed） | 无 `default` 回退；AC 通过 |
 
 ### 3.3 运维 / QA / 发布收口
@@ -190,14 +190,14 @@
 | 本期代码改动 | 无（门禁仅要求书面裁定；建设项按纪律进入下一版本） |
 
 
-### v1.12.0 —— 长尾建设 A/B/C 批（P2/P3）
+### v1.12.0 —— 长尾建设 A/B/C/D 批（P2/P3）
 
 | 项 | 内容 |
 |----|------|
-| 目标 | 落地裁定中「本仓低风险」三项，并清理对应 mock 页面；B 批完成 OpenLLM 用户名邀请小改；C 批完成 DPS 指标端点到代理与页面 |
-| 范围 | A 批：OB-03、OB-04、XR-LLM-03（报表趋势）；B 批：XR-LLM-06；C 批：XR-DPS-04 → XR-DPS-05 |
-| 门禁 | 三页 0 mock；后端用例通过；DPS 全量不劣于基线；前端全量不劣于基线 |
-| 回滚 | 页面级回退到占位/只读提示；端点下线无数据依赖；成员邀请可回退为 UUID 输入（旧字段仍兼容）；DPS 指标端点可下线且不写库 |
+| 目标 | 落地裁定中「本仓低风险」三项，并清理对应 mock 页面；B 批完成 OpenLLM 用户名邀请小改；C 批完成 DPS 指标端点到代理与页面；D 批完成三仓码值双形态 |
+| 范围 | A 批：OB-03、OB-04、XR-LLM-03（报表趋势）；B 批：XR-LLM-06；C 批：XR-DPS-04 → XR-DPS-05；D 批：XR-GOV-01（C1-d） |
+| 门禁 | 三页 0 mock；后端用例通过；DPS 全量不劣于基线；前端全量不劣于基线；三仓回执可核 |
+| 回滚 | 页面级回退到占位/只读提示；端点下线无数据依赖；成员邀请可回退为 UUID 输入（旧字段仍兼容）；DPS 指标端点可下线且不写库；三仓码值副本可回退为原解析路径 |
 
 | 执行状态（2026-10-24） | 结论 |
 |------------------------|------|
@@ -207,7 +207,8 @@
 | XR-LLM-06（B 批） | **✅ 已闭环**：`POST /workspaces/{id}/members` 支持 `username`（二选一必填；不存在 404 `BIZ_NOT_FOUND`；双给冲突 400 `PARAM_INVALID`）；成员弹窗改用户名输入；后端 9 例、前端 3 例 |
 | XR-DPS-04（C 批） | **✅ 已闭环**：DPS `GET /api/v2/metrics`（7 字段，60s 滑窗 QPS）+ `runtime_metric:read` 权限点 + `PATH_RESOURCE_MAP` 归一；DPS 2.13.0；新增 18 例 |
 | XR-DPS-05（C 批） | **✅ 已闭环**：`dps-proxy` 新增 `/metrics`、`/rate-limits/status`、`/alerts/rules` 只读路由（无写方法）；画像监控页四源真实接线；代理 4 例、前端 3 例 |
-| 验证 | DPS 全量 **1840 passed / 3 skipped / 1 xfailed / 1 xpassed，0 failed**；OpenBase 代理 **26 passed**；前端全量 **366/366**（38 文件）、`vue-tsc`/`ruff` 0 错误 |
+| XR-GOV-01（D 批） | **✅ 已闭环**：三仓复制纯函数并接入——OpenLLM 租户明细双形态（10 例）、OpenRAG 注册表 UUID 规范化（10 例）、OpenMemory 域解析统一规范化（12 例）；派单回执文档已归档；RAG/OM 码→UUID 待主数据接入（已登记解冻条件） |
+| 验证 | DPS 全量 **1840 passed / 3 skipped / 1 xfailed / 1 xpassed，0 failed**；OpenBase 代理 **26 passed**；前端全量 **366/366**（38 文件）；三仓码值相关 **OpenLLM 45 / OpenRAG 48 / OpenMemory 35 passed**；`vue-tsc`/`ruff` 0 错误 |
 
 
 ---
@@ -264,6 +265,7 @@ v1.10.2 ──→ v1.11.0（长尾裁定需治理口径稳定）
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.10.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 D 批执行回填**：XR-GOV-01/C1-d 三仓派单与回执闭环（OpenLLM 10 例 / OpenRAG 10 例 / OpenMemory 12 例）；产出《OpenBase-C1d-码值双形态派单与回执-v1.0.0》，登记 RAG/OM 码→UUID 解冻条件。 |
 | v1.9.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 C 批执行回填**：XR-DPS-04（`GET /api/v2/metrics` + `runtime_metric:read`，DPS 2.13.0）与 XR-DPS-05（代理三只读路由 + 画像监控页）闭环；DPS 全量 1840 passed，前端 366/366。 |
 | v1.8.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 B 批执行回填**：XR-LLM-06 用户名邀请闭环（OpenLLM 后端 schema/路由 + 前端成员弹窗）；前端全量 363/363。 |
 | v1.7.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.12.0 A 批执行回填**：OB-03（全局调用记录端点 + 页面）、OB-04（知识库控制台真实链路）、XR-LLM-03 报表趋势均闭环；XR-DPS-05 阻塞于 04；前端全量 360/360。 |

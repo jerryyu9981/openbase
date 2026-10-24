@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端 |
-| 文档版本 | v1.15.0 |
+| 文档版本 | v1.16.0 |
 | 状态 | **[Review]** |
 | 适用范围 | 统一前端 `openbase-ui`（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五服务页面） |
 | 作者 | FA-OpenBase-Dev |
@@ -288,6 +288,7 @@ node doc\tmp\audit_summary.mjs doc\test\evidence\s6\ui-func-audit-v190.json doc\
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.16.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 D 批回填**：C1-d 码值双形态三仓接入（OpenLLM 租户明细 / OpenRAG 注册表 / OpenMemory 域解析），各仓新增单测并回归；RAG/OM 码→UUID 需主数据接入，已登记解冻条件。 |
 | v1.15.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 C 批回填**：DPS 运行态指标端点（`GET /api/v2/metrics`）与 OpenBase 代理三只读路由闭环，画像监控页由「仅健康」→ 指标/限流/告警只读视图（0 mock）。 |
 | v1.14.0 | 2026-10-24 | FA-OpenBase-Dev | **v1.12.0 B 批回填**：工作空间成员邀请由「仅 UUID」→「用户名 / UUID 二选一」，对应缺口（成员管理可用性）闭环。 |
 | v1.13.0 | 2026-10-23 | FA-OpenBase-Dev | **v1.12.0 A 批回填**：应用调用记录、知识库 API 控制台、报表趋势三页由 mock → 真实并标闭环。 |
