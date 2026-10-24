@@ -322,21 +322,62 @@ def _overall_status(checks: list[dict[str, Any]]) -> str:
     return "PENDING"
 
 
-def build_report(args: argparse.Namespace) -> dict[str, Any]:
-    """构造 L2-2 终验证据（分项失败不伪造，如实登记；无真实环境一律 PENDING）."""
-    matrix = _load_matrix(args.matrix)
-    reconcile = _k07_exempt_reconcile()
-    evidence = _load_l2_2_evidence()
-    checks = [
-        _check_matrix_coverage(matrix),
-        _check_k07_exempt(reconcile),
-        _check_read_path(args.base_url, args.check_read_ab, evidence["read"]),
-        _check_write_path(
-            args.base_url, args.check_write_ab, args.k14, evidence
-        ),
+_DRY_RUN_REASON = "dry-run：不加载真实运行态证据、不作断言（禁伪造 PASS）"
+
+#: 干跑检查清单（断言编号与 §5.2 一致；干跑一律 PENDING + 原因）
+_DRY_RUN_CHECKS: tuple[tuple[str, str], ...] = (
+    ("S7-T4-1", "通道覆盖矩阵（每子系统 × A/B × 状态/头语义）行全覆盖、缺口 0"),
+    ("S7-T4-2", "管理面/探活 A 直连豁免行显式标注（与 K07 端点矩阵对账）"),
+    ("S7-T4-3", "读路径 B 主全绿 + A 备 covered（同读请求经 A/B 返回一致、四头一致）"),
+    ("S7-T4-4", "写路径 A/B 等价用例绿 + K14 幂等（重放不双写、DB 行数不变）"),
+)
+
+
+def _dry_run_checks() -> list[dict[str, Any]]:
+    """干跑检查项：一律 PENDING（不读真实证据，避免历史 PASS 被误当本轮结论）."""
+    return [
+        {
+            "id": check_id,
+            "name": name,
+            "execution_face": "B",
+            "status": "PENDING",
+            "reason": _DRY_RUN_REASON,
+        }
+        for check_id, name in _DRY_RUN_CHECKS
     ]
-    status = _overall_status(checks)
-    exit_code = {"PASS": EXIT_PASS, "FAIL": EXIT_FAIL, "PENDING": EXIT_PENDING}[status]
+
+
+def build_report(args: argparse.Namespace) -> dict[str, Any]:
+    """构造 L2-2 终验证据（分项失败不伪造，如实登记；无真实环境一律 PENDING）.
+
+    干跑（``--dry-run``）**不进入判据计算**：不加载 matrix 基座/K07 对账/真实证据，
+    四项检查一律 PENDING —— 否则联调窗口留下的历史 PASS 会被干跑误读为本轮结论。
+    """
+    dry_run = bool(args.dry_run)
+    matrix = (
+        {"loaded": False, "rows": [], "reason": _DRY_RUN_REASON}
+        if dry_run
+        else _load_matrix(args.matrix)
+    )
+    reconcile = {} if dry_run else _k07_exempt_reconcile()
+    evidence = {} if dry_run else _load_l2_2_evidence()
+    checks = (
+        _dry_run_checks()
+        if dry_run
+        else [
+            _check_matrix_coverage(matrix),
+            _check_k07_exempt(reconcile),
+            _check_read_path(args.base_url, args.check_read_ab, evidence["read"]),
+            _check_write_path(
+                args.base_url, args.check_write_ab, args.k14, evidence
+            ),
+        ]
+    )
+    if dry_run:
+        status, exit_code = "PENDING", EXIT_PENDING
+    else:
+        status = _overall_status(checks)
+        exit_code = {"PASS": EXIT_PASS, "FAIL": EXIT_FAIL, "PENDING": EXIT_PENDING}[status]
     head = _git_head()
     return {
         "schema_version": SCHEMA_VERSION,
@@ -344,14 +385,14 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         "task": "S7-T4",
         "evidence_ref": EVIDENCE_REF,
         "title": "S7-T4 L2-2 通道矩阵终验",
-        "mode": "dry-run" if args.dry_run else "run",
+        "mode": "dry-run" if dry_run else "run",
         "status": status,
         "exit_code": exit_code,
         "execution_face": "B",
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "commit": head[:7],
         "openbase_commit": head,
-        "reason": (
+        "reason": _DRY_RUN_REASON if dry_run else (
             "真实运行态证据已纳入判据（read/write/K14）：S7-T4-1/3/4 可 PASS；"
             "S7-T4-2 的 A 直连豁免行**人工双签/审批**仍待联调窗口，故整体保持 PENDING"
             if any(item["id"] != "S7-T4-2" and item["status"] == "PASS" for item in checks)
@@ -365,7 +406,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
             "header_semantics": list(_header_semantics()),
             "planned_rows": _planned_matrix_rows(),
         },
-        "k07_reconcile": reconcile,
+        "k07_reconcile": {"dry_run": True} if dry_run else reconcile,
         "checks": checks,
         "pending_items": [
             {
