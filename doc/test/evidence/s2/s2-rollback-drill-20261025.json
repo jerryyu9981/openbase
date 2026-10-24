@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task": "XR-OPS-06/S2",
+  "title": "三级回滚演练（开关级 L1 / 通道级 L2 / 版本级 L3）— v1.1.0 补录",
+  "generated_at": "2026-10-25T01:15:00+0800",
+  "commit": "a50015b666ae8bdae299a12b25db41b7a9b1bcfd",
+  "supersedes": "doc/test/evidence/s2/s2-rollback-drill-20261024.json",
+  "execution_environment": {
+    "host": "Windows（本机开发面；生产部署面不可用）",
+    "python": "D:\\PostgreSQL\\17\\pgAdmin 4\\python\\python.exe（3.13，经 doc/tmp/pyrun.py 注入依赖）",
+    "infra_probe": "PG 192.168.0.151:5432 ✓ / Redis 192.168.0.151:6380 ✓ / Qdrant 192.168.0.151:6333 ✓ / Neo4j 192.168.0.151:7687 ✓",
+    "orchestrator_prereq": ".venv\\shim 前置 PATH + OPENBASE_PY_DEPS/OPENBASE_PY_ROOT（否则子进程 No module named uvicorn）",
+    "note": "禁伪造：生产实机段一律 PENDING；启停全程经 service-orchestrator，未裸露 Stop-Process"
+  },
+  "status": "PENDING",
+  "exit_code": 2,
+  "reason": "离线与本地活实例段 14 项 PASS；生产实机段 3 项（L1-5b / L2-5 / L3-5b）需 OPS 部署面，保持 PENDING",
+  "summary": {
+    "pass": 14,
+    "pending": 3,
+    "fail": 0
+  },
+  "checks": [
+    {"id": "S2-L1-1", "status": "PASS", "result": "OpenLLM 生产门禁组 15 passed", "evidence": "doc/test/evidence/s2/l1-20261024/openllm-gates.txt"},
+    {"id": "S2-L1-2", "status": "PASS", "result": "OpenBase 生产门禁 14 passed / 23 deselected", "evidence": "doc/test/evidence/s2/l1-20261024/openbase-gates.txt"},
+    {"id": "S2-L1-3", "status": "PASS", "result": "OpenMemory 强制段 7 passed", "evidence": "doc/test/evidence/s2/l1-20261024/openmemory-gate.txt"},
+    {"id": "S2-L1-4", "status": "PASS", "result": "--env-file 双向核验：演练 PASS / 开发 .env FAIL", "evidence": "doc/test/evidence/release/switch-envfile-rehearsal-20261024.json + switch-envfile-local-20261024.json"},
+    {"id": "S2-L1-5a", "status": "PASS", "result": "进程级双向：门禁回落 exit=1（拒绝启动）/ 置真 exit=0", "evidence": "doc/test/evidence/s2/l1-20261024/prod-gate-process.txt"},
+    {"id": "S2-L1-5b", "status": "PENDING", "result": "生产 .env 置回 + 受管重启 + /health（需部署面）", "evidence": "（待 OPS 回填）"},
+    {"id": "S2-L2-1", "status": "PASS", "result": "B 断 → A 接管（真实 ChannelStateManager）", "evidence": "doc/test/evidence/s2/l2-1-20261024/failover-drill.json"},
+    {"id": "S2-L2-2", "status": "PASS", "result": "A 断 → B 维持", "evidence": "doc/test/evidence/s2/l2-1-20261024/failover-drill.json"},
+    {"id": "S2-L2-3", "status": "PASS", "result": "单主路径（三段采样均长度 1）", "evidence": "doc/test/evidence/s2/l2-1-20261024/drill-report.md"},
+    {"id": "S2-L2-4", "status": "PASS", "result": "回切链路 + 审计 6 动作齐全", "evidence": "doc/test/evidence/s2/l2-1-20261024/drill-report.md"},
+    {"id": "S2-L2-5", "status": "PENDING", "result": "生产通道复位 + 写路径恢复；本机 OpenLLM 因 psycopg pq wrapper 缺失无法拉起", "evidence": "（待 OPS 回填）"},
+    {"id": "S2-L3-1", "status": "PASS", "result": "回退目标可定位：e2c4f25（批次前）/ v1.4.10=2c45a32", "evidence": "doc/test/evidence/s2/l3-20261024/version-rollback.txt"},
+    {"id": "S2-L3-2", "status": "PASS", "result": "worktree 检出基线成功（1896 文件），已清理", "evidence": "doc/test/evidence/s2/l3-20261024/version-rollback.txt"},
+    {"id": "S2-L3-3", "status": "PASS", "result": "纯代码回滚（无迁移脚本）", "evidence": "doc/test/evidence/s2/l3-20261024/version-rollback.txt"},
+    {"id": "S2-L3-4", "status": "PASS", "result": "verify_release 判定函数 18 passed", "evidence": "doc/test/evidence/s2/l3-20261024/verify-release-tool.txt"},
+    {"id": "S2-L3-5a", "status": "PASS", "result": "活实例 verify_release：PASS 7 / WARN 0 / FAIL 0 / INFO 3，exit=0，info.version=1.4.12", "evidence": "doc/test/evidence/s2/l3-20261024/verify-release-live.txt"},
+    {"id": "S2-L3-5b", "status": "PENDING", "result": "生产镜像回切 + 回滚后 15 分钟校验（需部署面）", "evidence": "（待 OPS 回填）"}
+  ],
+  "live_instance": {
+    "action": "service-orchestrator.ps1 -Action start -Only openbase → stop",
+    "cold_start_seconds": 7,
+    "health": "200 {\"status\":\"ok\"}",
+    "version_reported": "1.4.12",
+    "evidence": "doc/test/evidence/s2/l1-20261024/managed-restart.txt"
+  },
+  "findings": [
+    {"id": "D-01", "severity": "中", "title": "旧基线版本号三处不统一", "action": "L3 回退后人工核对镜像版本与代码声明版本"},
+    {"id": "D-02", "severity": "低", "title": "L2 演练器跨仓配置面约束", "action": "已修复（切至 OpenLLM 仓根驱动）"},
+    {"id": "D-04", "severity": "高", "title": "受管编排 stop 首次不生效（PID 记录与实际监听进程错位）", "action": "stop 后以端口核对为准，仍监听则重试；不得裸 Stop-Process；建议编排侧记录真实监听 PID"},
+    {"id": "D-05", "severity": "低", "title": "本机启用编排需 shim + OPENBASE_PY_DEPS/PY_ROOT", "action": "执行单写明前置（环境限制，非服务缺陷）"}
+  ]
+}

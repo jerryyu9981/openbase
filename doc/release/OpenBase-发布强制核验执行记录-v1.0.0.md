@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |------|------|
-| 文档版本 | v1.3.0 |
+| 文档版本 | v1.4.0 |
 | 状态 | [Review]（待 OPS 复核签字） |
 | 日期 | 2026-10-24 |
 | 执行人 | 研发（AI 辅助） |
@@ -18,7 +18,7 @@
 | S4 发布强制核验（仓库侧） | **已执行且全绿**：`9 项 / PASS 9 / FAIL 0`（矩阵 v1.1.0 + 脚本 + 15 例单测） |
 | XR-OPS-07（初版登记为 P1 阻断） | **已闭环**：经根因复核为**门禁语义误判**（模板开发默认值被当作生产值），非 OpenMemory 配置缺陷 |
 | 生产下发核验 | **下发单已就绪（待 OPS 执行）**：《OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0》（编号 XR-OPS-07-ENV-001）已给出备份/覆盖/`--env-file` 核验/重启/回滚/回执步骤；本地演练 **PASS**，本机开发 `.env` 实测 **FAIL（未下发）** 作为缺口证据 |
-| S2 回滚演练 | **离线段已演练（2026-10-24）**：L1/L2/L3 共 `11 PASS / 3 PENDING / 0 FAIL`（PENDING 均为需生产运行态/注故障窗口的实机段）；详见《OpenBase-S2-三级回滚演练报告-v1.0.0》与 `doc/test/evidence/s2/**` |
+| S2 回滚演练 | **离线段 + 本地活实例段已演练（2026-10-25）**：L1/L2/L3 共 `14 PASS / 3 PENDING / 0 FAIL`（3 项 PENDING 均为需生产部署面的实机段）；详见《OpenBase-S2-三级回滚演练报告-v1.1.0》与 `doc/test/evidence/s2/**` |
 
 > 判定：仓库侧核验能力就绪且矩阵全绿；**生产发布仍以 OPS 的 `--env-file` 核验结果为准**（本记录不代替生产环境核验）。
 
@@ -70,24 +70,25 @@ python scripts/verify_production_switches.py --env-file <目标环境 .env> --re
 | 闭环动作 | 矩阵升 v1.1.0 引入 `documented_override` + `runtime_gate`；门禁新增「生产覆盖注释存在性」与「运行期守卫存在性」两项机械校验（移除注释或守卫 → 立即 FAIL） |
 | 残余要求 | 生产 `.env` 必须 `OPENMEMORY_IDENTITY_REQUIRE_TENANT_SCOPE=true`，由 OPS 以 `--env-file` 核验并回填本节。**当前状态：待 OPS 执行**；下发单 `XR-OPS-07-ENV-001` 已就绪；本地演练 PASS（`switch-envfile-rehearsal-20261024.json`），开发 `.env` 未下发 FAIL（`switch-envfile-local-20261024.json`） |
 
-## 6. S2 回滚演练（离线段已执行，实机段待 OPS）
+## 6. S2 回滚演练（离线段 + 本地活实例段已执行，生产实机段待 OPS）
 
-依据《OpenBase-主备双通道生产上线回滚方案-v1.0.0》§3~§6 执行，报告：《OpenBase-S2-三级回滚演练报告-v1.0.0》。
+依据《OpenBase-主备双通道生产上线回滚方案-v1.0.0》§3~§6 执行，报告：《OpenBase-S2-三级回滚演练报告-v1.1.0》。
 
-| 级别 | 离线段（本机可判定） | 实机段（待 OPS） |
+| 级别 | 已执行（离线 + 本地活实例） | 实机段（待 OPS） |
 |:----:|---------------------|------------------|
-| L1 开关级 | **PASS**：OpenLLM 生产门禁组 15 例、OpenBase 生产门禁 14 例、OpenMemory 强制段 7 例，均验证「开关回落 → 拒绝启动 / 置真 → 可装配」；`--env-file` 双向核验 PASS | 备份 `.env` → 置回 → `service-orchestrator.ps1` 重启 → `/health` → 恢复 |
-| L2 通道级 | **PASS**：真实 `ChannelStateManager` 驱动 B→A 接管、A 断维持、单主路径、回切与审计 6 动作（`failover-drill.json` 退出码 0） | 按 `channel_report` 复位并验证写路径恢复（V2/V3） |
-| L3 版本级 | **PASS**：回退目标定位（`e2c4f25` / `v1.4.10`）、worktree 检出可执行、纯代码回滚（无迁移）、`verify_release` 单测 18 passed | 镜像回切 + 回滚后 15 分钟内 `verify_release.py` 无 FAIL |
+| L1 开关级 | **PASS**：OpenLLM 生产门禁组 15 例、OpenBase 生产门禁 14 例、OpenMemory 强制段 7 例；`--env-file` 双向核验；**进程级双向**（门禁回落 exit=1 拒绝启动 / 置真 exit=0）；受管编排冷启动 7s + `/health` 200 | 生产 `.env` 置回 → 受管重启 → `/health` → 恢复（stop 后须核对端口，见 D-04） |
+| L2 通道级 | **PASS**：真实 `ChannelStateManager` 驱动 B→A 接管、A 断维持、单主路径、回切与审计 6 动作 | 按 `channel_report` 复位并验证写路径恢复（V2/V3）；本机 OpenLLM 因 `psycopg` 缺失无法拉起 |
+| L3 版本级 | **PASS**：回退目标定位（`e2c4f25` / `v1.4.10`）、worktree 检出、纯代码回滚、`verify_release` 18 例；**活实例 `verify_release`** `PASS 7 / FAIL 0`（`info.version=1.4.12`） | 生产镜像回切 + 回滚后 15 分钟内 `verify_release.py` 无 FAIL |
 
-登记发现：**D-01** 旧基线版本号三处不统一（`pyproject`/`__init__` 1.0.0、UI 1.3.0；三处统一始于 `1ba1445`）⇒ L3 回退后须人工核对「部署镜像版本 vs 代码声明版本」；**D-02** L2 演练器跨仓配置面约束已修复（`scripts/drill_l2_1_failover.py` 切至 OpenLLM 仓根后驱动）。
+登记发现：**D-01** 旧基线版本号三处不统一（L3 回退后须人工核对）；**D-02** L2 演练器跨仓配置面约束（已修复）；**D-04（高）** 受管编排 `stop` 首次因 PID 记录与实际监听进程错位未生效 ⇒ 回滚步骤须以端口核对为准，不得裸 `Stop-Process`；**D-05** 本机编排需 shim + `OPENBASE_PY_DEPS/PY_ROOT`。
 
-> 生产实机段共 4 项，本环境无部署面，**不填 PASS**；回填后本记录升版并转 [Approved]。
+> 生产实机段共 3 项（L1-5b / L2-5 / L3-5b）+ 1 项配置下发，本环境无部署面，**不填 PASS**；回填后本记录升版并转 [Approved]。
 
 ## 7. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.4.0 | 2026-10-25 | 研发（AI 辅助） | **S2 本地活实例段补录**：L1 进程级双向（拒绝/放行）+ 受管编排启停（冷启动 7s、`/health` 200）、L3 活实例 `verify_release`（PASS 7 / FAIL 0）；结论升为 `14 PASS / 3 PENDING / 0 FAIL`；登记 D-04（stop 首次未生效，须端口核对）、D-05（本机编排前置） |
 | v1.3.0 | 2026-10-24 | 研发（AI 辅助） | **S2 离线段演练回填**：L1/L2/L3 `11 PASS / 3 PENDING / 0 FAIL`；新增《OpenBase-S2-三级回滚演练报告-v1.0.0》与 `doc/test/evidence/s2/**`；登记 D-01（旧基线版本号不统一）、D-02（L2 演练器跨仓配置面约束，已修复）；生产实机段 4 项待 OPS |
 | v1.2.0 | 2026-10-24 | 研发（AI 辅助） | **OPS 配置下发就绪**：新增《生产环境配置下发单-XR-OPS-07-v1.0.0》（备份/覆盖/`--env-file` 核验/重启/回滚/回执）；本地演练 PASS、开发 `.env` 未下发 FAIL 证据归档；生产执行仍待 OPS 回填 |
 | v1.1.0 | 2026-10-23 | 研发（AI 辅助） | **XR-OPS-07 闭环**：矩阵升 v1.1.0（`documented_override` + `runtime_gate`），修正「模板默认值≠生产值」判据错误；复跑 9/9 PASS；补生产 `--env-file` 核验要求与根因说明 |

@@ -1,0 +1,40 @@
+S2-L1 受管编排重启与健康核验（本地开发面实测）
+执行时间：2026-10-25 01:02~01:12（Asia/Shanghai）
+仓库：D:\Trae CN\myproject\Dev\OpenBase　HEAD=a50015b
+
+前置：宿主 PATH 无 python ⇒ 前置 `.venv\shim`（裸 `python` 命令）+ 注入
+      OPENBASE_PY_DEPS/OPENBASE_PY_ROOT（sitecustomize 门控注入依赖与源码根）。
+基础设施探测：PG 192.168.0.151:5432 ✓ / Redis 192.168.0.151:6380 ✓ /
+      Qdrant 192.168.0.151:6333 ✓ / Neo4j 192.168.0.151:7687 ✓（四仓运行态服务未启动）。
+
+== 1) 首次启动（依赖缺失，失败）==
+scripts/service-orchestrator.ps1 -Action start -Only openbase
+结果：进程提前退出；stderr：`No module named uvicorn`
+归因：未注入 OPENBASE_PY_DEPS ⇒ shim python 未见 `.venv` 依赖（环境问题，非服务缺陷）。
+
+== 2) 注入依赖后启动（成功）==
+scripts/service-orchestrator.ps1 -Action start -Only openbase -HealthTimeout 90
+结果：
+  01:03:56 启动 openbase（python -m uvicorn openbase.demo_app:app --host 127.0.0.1 --port 8000）
+  01:04:03 健康检查通过 ✅（冷启动 7s）
+  软依赖告警：openllm/openrag/openmemory/dps 未健康（soft，不阻断）
+  服务日志：env=dev、version=a50015b、"Application startup complete"
+
+== 3) 健康与回滚后校验（活实例）==
+GET http://127.0.0.1:8000/health → 200 {"status":"ok"}
+python ... scripts.verify_release --base-url http://127.0.0.1:8000 → 退出码 0
+  汇总：PASS 7 / WARN 0 / FAIL 0 / INFO 3
+  #1 后端健康 200；#2/#3 鉴权门禁 401 AUTH_401；#4 参数契约 400 PARAM_400；
+  #5 /docs 200；#6 OpenAPI paths=155；#7 info.version='1.4.12'；
+  #10 本地发布基线 project.version=1.4.10 / lastRelease=v1.4.10（发布基线口径）
+
+== 4) 受管停止（发现 D-04：首次 stop 未生效）==
+第 1 次 `-Action stop`：日志称「openbase 已停止（PID 296）」但端口 8000 仍监听
+  → Get-NetTCPConnection 显示实际监听 PID=34120（uvicorn 真实进程；PID 文件记录陈旧）
+第 2 次 `-Action stop -Only openbase`：日志「openbase 已停止（PID 34120，端口 8000）」
+复核：8000 无监听（无裸 Stop-Process 介入）
+
+判定：
+  - 受管入口启停可用，但 **stop 必须复核端口占用**，首次可能因 PID 记录陈旧而不生效；
+  - 冷启动 7s、/health 200、verify_release 0 FAIL —— 回滚后 15 分钟校验链路具备可执行性；
+  - 生产部署面重启/校验仍待 OPS。
