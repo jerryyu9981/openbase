@@ -533,13 +533,17 @@ async def dps_health(
 
 
 # ---------------------------------------------------------------------------
-# v1.12.0（XR-DPS-05）：运行态观测只读扩权（依赖 DPS XR-DPS-04 `GET /api/v2/metrics`）
+# v1.12.0（XR-DPS-05 / XR-DPS-03）：运行态观测与治理只读扩权
 #
-# 允许清单**仅**包含三个只读端点：
-#   GET /api/v2/metrics            运行态指标（QPS/CPU/内存/uptime/requests_total）
-#   GET /api/v2/rate-limits/status 限流只读指标
-#   GET /api/v2/alerts/rules       告警规则只读
-# 不提供任何写方法代理；上游 401/403 语义保真透传（本仓不做权限判定）。
+# 允许清单**仅**包含六个只读端点（均无写方法）：
+#   GET /api/v2/metrics              运行态指标（QPS/CPU/内存/uptime/requests_total）
+#   GET /api/v2/rate-limits/status   限流只读指标
+#   GET /api/v2/alerts/rules         告警规则只读
+#   GET /api/v2/api-registry         API 注册表只读
+#   GET /api/v2/error-codes          错误码只读
+#   GET /api/v2/permissions/roles    角色权限只读
+# 上游写面已按 ADR-290-01 收口为 410；本仓不提供任何写方法代理，也不做权限判定
+# （401/403 语义保真透传）。
 # ---------------------------------------------------------------------------
 
 
@@ -577,6 +581,51 @@ async def dps_alert_rules(
     headers = _build_identity_headers(_user, request)
     return await _forward(
         "GET", "/api/v2/alerts/rules",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/api-registry")
+async def dps_api_registry(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """DPS API 注册表只读（GET /api/v2/api-registry；查询参数原样透传）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", "/api/v2/api-registry",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/error-codes")
+async def dps_error_codes(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """DPS 错误码只读（GET /api/v2/error-codes；查询参数原样透传）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", "/api/v2/error-codes",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/permissions/roles")
+async def dps_permission_roles(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """DPS 角色权限只读（GET /api/v2/permissions/roles；上游带 Deprecation/Sunset 头）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", "/api/v2/permissions/roles",
         params=_forward_query_params(request),
         headers=headers,
         request=request,

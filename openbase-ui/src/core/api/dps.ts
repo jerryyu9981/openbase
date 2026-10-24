@@ -285,6 +285,40 @@ export interface DpsAlertRule {
   [key: string]: unknown
 }
 
+/** API 注册表只读（上游 `GET /api/v2/api-registry`） */
+export interface DpsApiRegistryEntry {
+  endpoint?: string
+  method?: string
+  version?: string | number
+  status?: string
+  sunset_date?: string | null
+  description?: string | null
+  created_at?: string
+  updated_at?: string
+  [key: string]: unknown
+}
+
+/** 错误码只读（上游 `GET /api/v2/error-codes`） */
+export interface DpsErrorCode {
+  code?: string
+  http_status?: number
+  message?: string
+  description?: string | null
+  category?: string
+  is_builtin?: boolean | number
+  [key: string]: unknown
+}
+
+/** 角色权限只读（上游 `GET /api/v2/permissions/roles`） */
+export interface DpsRole {
+  id?: number
+  name?: string
+  description?: string | null
+  permissions?: string | string[] | null
+  is_builtin?: boolean | number
+  [key: string]: unknown
+}
+
 export const dpsApi = {
   /** 画像列表（GET /api/v1/dps-proxy/portraits） */
   async listPortraits(params?: { page?: number; page_size?: number }): Promise<{ items: DpsPortrait[]; total?: number }> {
@@ -372,6 +406,30 @@ export const dpsApi = {
   /** 告警规则只读（GET /dps-proxy/alerts/rules） */
   async getAlertRules(): Promise<DpsAlertRule[]> {
     const { data } = await http.get<{ code: number; data: DpsAlertRule[] }>('/dps-proxy/alerts/rules')
+    return data.data
+  },
+
+  /** API 注册表只读（GET /dps-proxy/api-registry；支持 version/status 透传） */
+  async getApiRegistry(params?: { version?: string; status?: string }): Promise<DpsApiRegistryEntry[]> {
+    const { data } = await http.get<{ code: number; data: DpsApiRegistryEntry[] }>(
+      '/dps-proxy/api-registry',
+      { params },
+    )
+    return data.data
+  },
+
+  /** 错误码只读（GET /dps-proxy/error-codes；支持 category 透传） */
+  async getErrorCodes(params?: { category?: string }): Promise<DpsErrorCode[]> {
+    const { data } = await http.get<{ code: number; data: DpsErrorCode[] }>(
+      '/dps-proxy/error-codes',
+      { params },
+    )
+    return data.data
+  },
+
+  /** 角色权限只读（GET /dps-proxy/permissions/roles；上游写面已 410 收口） */
+  async getPermissionRoles(): Promise<DpsRole[]> {
+    const { data } = await http.get<{ code: number; data: DpsRole[] }>('/dps-proxy/permissions/roles')
     return data.data
   },
 

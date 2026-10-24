@@ -5,7 +5,7 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase` 后端 ＋ `openbase-ui` 前端） |
 | 版本号 | **v1.4.11**（统一前端信息架构 ＋ 首屏/接口耗时治理） |
 | 文档 | 开发记录报告（Step 3 产出） |
-| 文档版本 | v2.23.0 |
+| 文档版本 | v2.24.0 |
 | 状态 | **[Review]**（待人工批准） |
 | 日期 | 2026-10-24 |
 | 编制 | 研发（AI 辅助） |
@@ -1176,6 +1176,39 @@ OpenRAG / OpenMemory 无租户主数据，仅实现 UUID 形态规范化 + 未�
 
 > 环境说明：pgAdmin CPython 3.13 自本日起自动 `site` 初始化挂起，OpenLLM 用例改以 `-S`（跳过 site，由运行器显式注入路径）+ `DATABASE_URL=sqlite:///:memory:` 运行；OpenRAG/OpenMemory 使用 `.venv3`（CPython 3.11.9）。提交因本机 `git commit` 挂起，改用 `commit-tree + update-ref`（消息经 UTF-8 文件传入）完成，提交内容与常规提交等价。
 
+### 2.33 v1.12.0 长尾建设 E 批执行记录（2026-10-24）
+
+**范围**：XR-LLM-08（插件/工具口径标注）、XR-DPS-02（移除规则引擎 mock）、XR-DPS-03（治理只读视图）。
+
+**1. 后端（OpenBase dps-proxy）**
+
+| 项 | 内容 |
+|----|------|
+| 只读扩权 | 在既有 3 个只读端点基础上新增 `GET /api-registry`、`GET /error-codes`、`GET /permissions/roles`（合计 6 个只读） |
+| 边界 | 不注册任何写方法；查询参数原样透传；上游 401/403 语义保真 |
+| 用例 | `tests/test_dps_proxy.py` **32 passed**（新增 3 例 + 六路由 GET-only 守门） |
+
+**2. 前端（OpenBase）**
+
+| 页面 | 变更 |
+|------|------|
+| 插件管理 | 工具表新增「来源」列：`plugin_id`/`plugin_name` 不在插件列表 → **运行期内建**，否则「插件注册」；卡片内附口径说明（XR-LLM-08，不改后端） |
+| 画像数据权限 | 重写为只读：`/dps-proxy/permissions/roles` + 权限明细抽屉；移除新建/删除/矩阵保存/租户开关等 mock 写动作（XR-DPS-02/03） |
+| 画像接口限流 | 重写为只读：`/dps-proxy/rate-limits/status`（tenant_id 透传）；移除规则增删改、熔断恢复等 mock 动作 |
+| 画像 API 管理 | 重写为只读：`/dps-proxy/api-registry` + 错误码抽屉 `/dps-proxy/error-codes`；移除新增/调试假响应/版本时间线；导出改为基于真实注册表 |
+
+**3. 验证**
+
+| 项 | 命令/方式 | 结果 |
+|----|-----------|------|
+| 后端代理用例 | `pytest tests/test_dps_proxy.py` | **32 passed** |
+| 静态 | `ruff check openbase/modules/dps_proxy tests/test_dps_proxy.py` | 通过 |
+| 前端新用例 | `vitest run tests/r12-dps-readonly-v1120.spec.ts` | **4 passed** |
+| 前端全量 | `vitest run` | **370 passed / 39 files**（基线 366 + 4） |
+| 类型 | `vue-tsc --noEmit` | **0 error** |
+
+> 环境说明：本机负载导致全量首跑出现 `dps-ui-v1410` P-08 的 5s 超时；该文件隔离复跑 **14 passed**，随后全量复跑 **370/370** 通过（超时为负载抖动，非功能回归）。
+
 ---
 
 ## 3. 后端接口耗时排查（阶段二核心）
@@ -1265,6 +1298,7 @@ OpenRAG / OpenMemory 无租户主数据，仅实现 UUID 形态规范化 + 未�
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v2.24.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.33：**v1.12.0 长尾建设 E 批**——插件工具来源标注（XR-LLM-08）；画像数据权限/接口限流/API 管理三页只读真实化（XR-DPS-02/03），dps-proxy 只读端点扩至 6 个。验证：后端 32 例、前端新增 4 例、全量 370/370、`vue-tsc`/`ruff` 0 错误。 |
 | v2.23.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.32：**v1.12.0 长尾建设 D 批**——XR-GOV-01/C1-d 三仓派单与回执（OpenLLM 租户码/UUID 双形态、OpenRAG 注册表 UUID 规范化、OpenMemory 域解析统一规范化）；新增 32 例、相关回归全通过；产出派单回执文档并登记 3 项未闭环。 |
 | v2.22.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.31：**v1.12.0 长尾建设 C 批**——DPS 新增 `GET /api/v2/metrics`（60s QPS / CPU / 内存 / uptime / requests_total）与 `runtime_metric:read` 权限点，版本升至 2.13.0；OpenBase 代理扩权三个只读端点并重写画像监控页。验证：DPS 18 例 + 全量 1840 passed、OpenBase 26 例、前端 366/366、`vue-tsc`/`ruff` 0 错误。 |
 | v2.21.0 | 2026-10-24 | 研发（AI 辅助） | 新增 §2.30：**v1.12.0 长尾建设 B 批**——XR-LLM-06 工作空间按用户名邀请（OpenLLM schema/路由解析 + 前端成员弹窗）；用户名不存在 404、双给冲突 400；后端 9 例 + 回归 34 例、前端新增 3 例、全量 363/363、`vue-tsc` 0 错误。 |

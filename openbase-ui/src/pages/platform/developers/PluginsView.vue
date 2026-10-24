@@ -94,10 +94,19 @@
     </div>
 
     <el-card class="mt-16" header="可用工具" data-test="plugin-tools-card">
+      <div class="tool-hint" data-test="plugin-tools-hint">
+        「运行期内建」= 运行时注册表中的内建工具（未落 plugin 表）；「插件注册」= 由已启用插件元数据提供。
+      </div>
       <div v-loading="toolsLoading">
         <el-empty v-if="!tools.length" description="暂无可用工具" :image-size="60" data-test="plugin-tools-empty" />
         <el-table v-else :data="tools" stripe data-test="plugin-tools-table">
           <el-table-column prop="plugin_name" label="所属插件" width="160" />
+          <el-table-column label="来源" width="120">
+            <template #default="{ row }">
+              <el-tag v-if="isRuntimeTool(row)" size="small" type="warning" data-test="tool-runtime-tag">运行期内建</el-tag>
+              <el-tag v-else size="small" type="info">插件注册</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="tool_name" label="工具" width="200" />
           <el-table-column label="描述" min-width="260" show-overflow-tooltip>
             <template #default="{ row }">{{ row.description || '—' }}</template>
@@ -149,7 +158,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   pluginsApi,
@@ -183,6 +192,21 @@ function typeLabel(value: string): string {
 function toolCount(plugin: LlmPlugin): number {
   const defs = (plugin.metadata_?.tools ?? []) as unknown[]
   return Array.isArray(defs) ? defs.length : 0
+}
+
+/**
+ * XR-LLM-08（口径说明，不改后端）：`/plugins/tools` 合并「运行时注册表」与
+ * 「DB 插件元数据」两种来源。凡 plugin_id / plugin_name 不在当前插件列表中者，
+ * 即运行时注册表内建工具 → 标注「运行期内建」。
+ */
+const dbPluginIds = computed(() => new Set(plugins.value.map((item) => String(item.id))))
+const dbPluginNames = computed(() => new Set(plugins.value.map((item) => item.name)))
+
+function isRuntimeTool(tool: LlmAvailableTool): boolean {
+  return (
+    !dbPluginIds.value.has(String(tool.plugin_id))
+    && !dbPluginNames.value.has(tool.plugin_name)
+  )
 }
 
 function messageOf(error: unknown, fallback: string): string {
@@ -299,4 +323,5 @@ onMounted(() => {
 .mt-16 { margin-top: 16px; }
 .plugin-name { font-weight: 500; }
 .plugin-code { color: var(--ob-text-secondary); font-size: 12px; }
+.tool-hint { margin-bottom: 12px; color: var(--ob-text-secondary); font-size: 12px; }
 </style>

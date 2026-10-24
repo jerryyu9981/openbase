@@ -582,6 +582,9 @@ OBSERVABILITY_ROUTES = [
     ("/metrics", "/api/v2/metrics"),
     ("/rate-limits/status", "/api/v2/rate-limits/status"),
     ("/alerts/rules", "/api/v2/alerts/rules"),
+    ("/api-registry", "/api/v2/api-registry"),
+    ("/error-codes", "/api/v2/error-codes"),
+    ("/permissions/roles", "/api/v2/permissions/roles"),
 ]
 
 
@@ -669,3 +672,72 @@ def test_alert_rules_proxy_preserves_upstream_error(client: TestClient) -> None:
     assert body["code"] == 403
     assert body["message"] == "forbidden"
     assert body["data"] is None
+
+
+def test_api_registry_proxy_passes_filters(client: TestClient) -> None:
+    """API 注册表只读代理：version/status 参数透传，数据原样返回."""
+    token = _token_with_identity()
+    entries = [
+        {
+            "endpoint": "/api/v2/portrait/list",
+            "method": "GET",
+            "version": "v2",
+            "status": "active",
+            "sunset_date": None,
+            "description": "画像列表",
+        }
+    ]
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": entries}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/api-registry?version=v2&status=active",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == entries
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/api-registry"
+    assert call["params"] == {"version": "v2", "status": "active"}
+
+
+def test_error_codes_proxy_passes_category(client: TestClient) -> None:
+    """错误码只读代理：category 参数透传."""
+    token = _token_with_identity()
+    codes = [{"code": "PARAM_400", "http_status": 400, "message": "参数校验失败", "category": "param"}]
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": codes}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/error-codes?category=param",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == codes
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/error-codes"
+    assert call["params"] == {"category": "param"}
+
+
+def test_permission_roles_proxy_returns_readonly_roles(client: TestClient) -> None:
+    """角色权限只读代理：上游角色列表原样返回（仅 GET）."""
+    token = _token_with_identity()
+    roles = [{"id": 1, "name": "super_admin", "permissions": '["*"]', "is_builtin": 1}]
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": roles}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/permissions/roles",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == roles
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "GET"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/permissions/roles"
