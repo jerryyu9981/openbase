@@ -1222,6 +1222,8 @@ function Get-PythonCandidates {
     }
 
     if ($name -eq 'openbase') { $candidates += 'D:\venvs\openbase\Scripts\python.exe' }
+    if ($name -eq 'openllm') { $candidates += 'D:\venvs\openllm\Scripts\python.exe' }
+    if ($name -eq 'openmemory') { $candidates += 'D:\venvs\openmemory\Scripts\python.exe' }
     if ($name -eq 'openrag') { $candidates += 'D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe' }
     $candidates += 'D:\Python\python.exe'
     $candidates += 'D:\PostgreSQL\17\pgAdmin 4\python\python.exe'

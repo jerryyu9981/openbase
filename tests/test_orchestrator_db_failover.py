@@ -36,7 +36,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
 PROBE_SCRIPT = ROOT / "scripts" / "infra_probe.py"
-OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.13.0.md"
+OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.14.0.md"
 
 POWERSHELL = shutil.which("powershell") or (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -122,15 +122,16 @@ def test_env_file_read_uses_utf8_explicitly() -> None:
 
 
 def test_operation_doc_records_startup_failover() -> None:
-    """运维记录升 v1.13.0 并登记 §16 / §16.7 / §16.8 / §16.9 / §16.10。"""
+    """运维记录升 v1.14.0 并登记 §16 / §16.7~§16.11。"""
     assert OPERATION_DOC.exists(), f"缺少运维记录: {OPERATION_DOC}"
     text = OPERATION_DOC.read_text(encoding="utf-8-sig")
-    assert "v1.13.0" in text
+    assert "v1.14.0" in text
     assert "## 16. 启动期自动探测与主备切换" in text
     assert "### 16.7 周期复检与公共设施探测" in text
     assert "### 16.8 数据面探针与四设施切换" in text
     assert "### 16.9 每次启动前的数据库校验" in text
     assert "### 16.10 解释器解析与运行环境自检" in text
+    assert "### 16.11 三仓专用 venv 与上游依赖缺口" in text
     for marker in (
         "-Action dbcheck",
         "-DbMode",
@@ -484,6 +485,8 @@ def test_python_runtime_resolution_declared() -> None:
         "启动前运行环境校验失败",
         "解释器：",
         "D:\\venvs\\openbase",
+        "D:\\venvs\\openllm",
+        "D:\\venvs\\openmemory",
     ):
         assert marker in text, f"缺少解释器解析契约: {marker}"
 

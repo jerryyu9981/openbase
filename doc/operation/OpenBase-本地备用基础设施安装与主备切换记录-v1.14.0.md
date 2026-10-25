@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.13.0 |
+| 文档版本 | v1.14.0 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -30,6 +30,7 @@
 | v1.11.0 | 2026-10-25 | 研发 | **P0 数据面探针 + 四设施切换（用户决策）**：新增 `scripts/infra_probe.py`（stdlib，不含第三方依赖）——PG `select 1`、Redis `PING+DBSIZE`、Qdrant `GET /collections`、Neo4j `RETURN 1`、MinIO `health/ready`；探测由 TCP 升级为**数据面**（探针不可用显式回落 TCP 并记 degraded）；**主用数据面不通即切备用**（PG 硬门禁 + 四设施覆盖：Redis/Qdrant/Neo4j/MinIO 的共享键与各仓自有键）；**数据面同步问题暂时挂起**，切换强制 WARN 留痕；证据 schema v3（新增 `data_plane`）；新增 §16.8，守门用例 15 → **20 例** |
 | v1.12.0 | 2026-10-25 | 研发 | **每次启动服务前校验数据库（用户决策）**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`——全量启动、`-Only` 单服务、monitor 自愈重启**一律先校验**该服务依赖（pg/redis/qdrant/neo4j）；当前通道共享库不可用 ⇒ **拒绝启动该服务**，其它设施 DOWN ⇒ WARN 不阻断；`-ProbeTtlSec`（默认 60s）内复用探测结果、过期按需重探；新增 §16.9，守门用例 20 → **21 例** |
 | v1.13.0 | 2026-10-25 | 研发 | **D-05 解除：解释器解析与运行环境自检**。系统 Python 3.12.10（`D:\Python`）已安装，新建专用 venv `D:\venvs\openbase`（`pip install -e .` 全依赖）；`Start-Service` 新增候选链解析（`OPENBASE_<SVC>_PYTHON` → `-PythonHome` → `OPENBASE_PYTHON` → 各仓 venv → 系统 Python → 3.13 桥接 → PATH），每个候选做 `import uvicorn` 自检，全部失败给出可读错误并拒绝该服务；实测单服务启动成功（PID 9100、健康检查 3s、stop 后端口释放）；新增 §16.10，守门用例 21 → **23 例** |
+| v1.14.0 | 2026-10-25 | 研发 | **OpenLLM / OpenMemory 专用 venv 落地**（`D:\venvs\openllm`、`D:\venvs\openmemory`），候选链同步补入；OpenLLM 实测启动 + `/health` 200，OpenMemory 依赖导入通过；记录上游 requirements 缺口（`python_requires` 非法行、`httpx==0.26` 与 `mcp>=1.0` 冲突、缺 `psycopg/pyjwt/numpy/qdrant-client/OTel gRPC`）与本机补丁（`bcrypt<5`、`qdrant-client==1.7.3`）；登记「OpenLLM 冷启动 >60s 触发健康等待告警」；新增 §16.11 |
 
 ## 1. 背景与定位
 
@@ -803,10 +804,62 @@ Python，唯一解释器是 pgAdmin 内嵌 3.13（不注册 PATH），因此 `St
 
 #### 16.10.4 边界
 
-- 其他仓（OpenLLM / OpenMemory）尚未建立系统 Python 的专用 venv，仍按各自既有环境或兜底链解析；
-  `D:\uv` 目录当前为空（未安装 uv 可执行），uv 管理属后续固化项；
+- OpenLLM / OpenMemory 的专用 venv 已在 v1.14.0 补齐（见 §16.11）；`D:\uv` 仍为空目录（uv 未安装），
+  uv 管理属后续固化项；
 - 解释器解析结果在**同一编排进程内缓存**，进程重启后重新自检；
 - 该自检只验证 `import uvicorn`，不校验业务依赖完整性；业务级失败仍以服务健康检查为准。
+
+### 16.11 三仓专用 venv 与上游依赖缺口（2026-10-25）
+
+#### 16.11.1 已建立的解释器环境
+
+| 服务 | 解释器 | 依据 | 验证 |
+|---|---|---|---|
+| openbase | `D:\venvs\openbase\Scripts\python.exe`（3.12.10） | `pip install -e .`（pyproject 全依赖） | `import uvicorn, fastapi, pydantic, openbase.demo_app` 通过；启动健康 3s |
+| openllm | `D:\venvs\openllm\Scripts\python.exe`（3.12.10） | `requirements.txt`（过滤非法行后） | `import main` 通过；**启动后 `/health` 200** |
+| openmemory | `D:\venvs\openmemory\Scripts\python.exe`（3.12.10） | `pip install -e .`（pyproject，含 torch 2.14 / sentence-transformers 3.4） | `import uvicorn, openmemory` 通过 |
+| openrag | `D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe`（3.11.9） | 各仓既有环境 | 既有基线 |
+
+候选链已按上表补入（`Get-PythonCandidates`），顺序仍为：服务级 env → `-PythonHome` → 全局 env → 各仓 venv → 系统 Python → 3.13 桥接 → PATH。
+
+#### 16.11.2 OpenLLM 上游 requirements 缺口（本次逐项踩到）
+
+| # | 现象 | 处置（本机，不改上游仓库） |
+|:-:|---|---|
+| 1 | `python_requires>=3.10` 是非法依赖行 → `ResolutionImpossible` | 本地生成**临时过滤副本**（剔除该行，未入库）后安装 |
+| 2 | `httpx==0.26.0` 与 `mcp>=1.0`（要求 httpx≥0.27）冲突 | 放宽为 `httpx>=0.27,<1.0` |
+| 3 | 同上导致 pydantic 版本过旧 | 放宽为 `pydantic>=2.7,<3`、`pydantic-settings>=2.2,<3` |
+| 4 | 代码导入 `jwt` 但 requirements 只有 `python-jose` | 追加 `pyjwt` |
+| 5 | `DATABASE_URL` 用 `postgresql+psycopg://`，但只装了 `psycopg2-binary` | 追加 `psycopg[binary]>=3.1` |
+| 6 | `vector_store.py` 需要 `numpy` / `qdrant-client`，requirements 未列 | 追加 `numpy`、`qdrant-client==1.7.3` |
+| 7 | `app/core/otel.py` 需要 OTLP **gRPC** 导出器 | 追加 `opentelemetry-exporter-otlp-proto-grpc` |
+| 8 | 未锁 `bcrypt`，pip 装了 5.0.0（与 passlib 1.7.4 不兼容） | 锁 `bcrypt>=4,<5`（实际 4.3.0） |
+
+> 建议由 OpenLLM 仓在下个版本修正 requirements（上述 8 项均有明确改法），本仓仅做本机环境落地。
+
+#### 16.11.3 OpenMemory 版本约束冲突
+
+- `openmemory 7.3.2` 声明 `qdrant-client>=1.9.0`；
+- 但共享 Qdrant 服务端是 **1.7.4**，新客户端（1.19/1.20）无法解析其响应（既有实测结论）；
+- 本机选择 **`qdrant-client==1.7.3`**（pip 会给出 constraint 警告，运行期以服务端兼容性优先）。
+
+#### 16.11.4 实测（2026-10-25）
+
+| 场景 | 结果 |
+|---|---|
+| `-Action start -Only openllm` | 解释器 `D:\venvs\openllm\Scripts\python.exe` → 进程创建 → **`/health` 返回 200** |
+| 冷启动耗时 | **>60s**（首次导入 torch/transformers 等），编排记录 `健康检查超时（已等待 62s/60s）` 但进程实际健康 |
+| `-Action stop` | openllm 正常停止；8000 / 8001 均 `RELEASED` |
+| OpenMemory | 依赖导入通过；未做完整启动（需 Qdrant/Redis 备用与模型预热） |
+
+#### 16.11.5 新增观察项（待处理）
+
+| # | 事项 | 现状 | 建议 |
+|:-:|---|---|---|
+| 1 | OpenLLM 冷启动 >60s | 首次启动触发健康等待告警（服务实际可用） | 为 openllm 增加服务级 `HealthWait`（如 180s），与 openmemory 一致 |
+| 2 | `D:\uv` 目录为空 | 未安装 uv 可执行 | 若要 uv 管理，先安装 `uv.exe`，再以 `uv venv` 重建三仓环境 |
+| 3 | requirements 上游缺陷 | 见 §16.11.2 八项 | 由 OpenLLM 仓修正后再回归 |
+
 
 
 
