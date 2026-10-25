@@ -35,8 +35,15 @@
 # 主备周期复检与公共设施探测（P1，2026-10-25）：
 #   - monitor 每 ≥60s（可用 `-DbRecheckSec` 缩短）复检一次：主用恢复/失联只**提示**，
 #     **不自动回切**运行中服务（避免连接池漂移），回切需重启编排；
-#   - Redis/Qdrant/Neo4j/MinIO 同批 TCP 探测，仅提示不阻断（PG 为唯一硬门禁），
+#   - Redis/Qdrant/Neo4j/MinIO 同批探测，仅提示不阻断（PG 为唯一硬门禁），
 #     端点取自 `.env.shared-infra`（`REDIS_HOST` / `QDRANT_HOST` / `NEO4J_HOST` / `MINIO_HOST`）。
+#
+# 数据面探针与四设施切换（2026-10-25，用户决策）：
+#   - 判定升级为**数据面**（`scripts/infra_probe.py`，stdlib）：PG `select 1`、Redis `PING+DBSIZE`、
+#     Qdrant `GET /collections`、Neo4j `RETURN 1`、MinIO `health/ready`；探针不可用时显式回落 TCP；
+#   - **主用数据面不通即切备用**：PG 为硬门禁（双不可达 exit 2）；四设施切本机备用并 WARN；
+#   - **数据面同步问题暂时挂起**：切备用后数据可能为空或落后，切换必然留痕告警；
+#   - 备用端点：`127.0.0.1` + 各规范端口，可用 `OPENBASE_*_STANDBY_PORT` 覆盖。
 #
 # 环境要求：Windows PowerShell 5+；各服务 Python 依赖已安装（各项目自有环境）
 #
@@ -81,7 +88,10 @@ param(
     # 仅 dbcheck：输出机器可读 JSON（供脚本/流水线消费，不打印人类摘要）
     [switch]$Json,
     # monitor 周期复检间隔（秒）；0 = 自动推算（不小于 60s），仅供联调缩短
-    [int]$DbRecheckSec = 0
+    [int]$DbRecheckSec = 0,
+    # 探测层级：auto=优先数据面（探针不可用时回落 TCP）；data=仅数据面；tcp=仅端口/握手
+    [ValidateSet('auto', 'data', 'tcp')]
+    [string]$ProbeLevel = 'auto'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -219,7 +229,7 @@ $script:DbResolution = @{
     Ok            = $true
     RequestedMode = $DbMode
     Mode          = 'off'
-    Reason        = '探测关闭（-DbMode off）'
+    Reason        = '未探测（当前动作不探测基础设施）'
     Primary       = @{}
     Standby       = @{}
 }
@@ -228,47 +238,308 @@ $script:DbAppliedEndpoints = @{}
 $script:InfraTargets = [ordered]@{}
 $script:InfraStatus = [ordered]@{}
 
-# 公共基础设施（Redis/Qdrant/Neo4j/MinIO）探测目标：取自进程环境（.env.shared-infra 已注入）
+# ---------------------------------------------------------------------------
+# 数据面探针基础设施（2026-10-25）
+#
+# 编排侧只做三件事：组装 spec（**不含明文口令**，只给环境变量名）→ 调 stdlib 探针脚本 →
+# 读回每个目标的判定。脚本/解释器不可用时显式降级为 TCP（写入 degraded，不静默）。
+# ---------------------------------------------------------------------------
+$script:ProbeScript = Join-Path $ProjectRoot 'scripts\infra_probe.py'
+$script:ProbeResults = @{}
+$script:ProbeMode = 'tcp'
+$script:ProbeNotes = @()
+$script:InfraSwitched = @()
+$script:InfraApplied = @{}
+$script:InfraStatus = [ordered]@{}
+
+function Get-ProbePython {
+    $candidates = @()
+    if ($env:OPENBASE_PROBE_PYTHON) { $candidates += $env:OPENBASE_PROBE_PYTHON }
+    $candidates += (Join-Path $ProjectRoot '.venv\shim\python.exe')
+    $candidates += 'D:\PostgreSQL\17\pgAdmin 4\python\python.exe'
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) { return $candidate }
+    }
+    $command = Get-Command python -ErrorAction SilentlyContinue
+    if ($command) { return $command.Source }
+    return ''
+}
+
+# 公共设施端点：主用取进程环境（.env.shared-infra 已注入），备用=本机 + 各规范端口
 function Get-InfraTargets {
+    $standbyHost = if ($env:OPENBASE_INFRA_STANDBY_HOST) { $env:OPENBASE_INFRA_STANDBY_HOST } else { '127.0.0.1' }
+    $redisPort = if ($env:OPENBASE_REDIS_STANDBY_PORT) { [int]$env:OPENBASE_REDIS_STANDBY_PORT } else { 6380 }
+    $qdrantPort = if ($env:OPENBASE_QDRANT_STANDBY_PORT) { [int]$env:OPENBASE_QDRANT_STANDBY_PORT } else { 6333 }
+    $qdrantGrpcPort = if ($env:OPENBASE_QDRANT_STANDBY_GRPC_PORT) { [int]$env:OPENBASE_QDRANT_STANDBY_GRPC_PORT } else { 6334 }
+    $neo4jHttpPort = if ($env:NEO4J_HTTP_PORT) { [int]$env:NEO4J_HTTP_PORT } else { 7474 }
+    $neo4jBoltPort = if ($env:NEO4J_BOLT_PORT) { [int]$env:NEO4J_BOLT_PORT } else { 7687 }
+    $neo4jStandbyHttp = if ($env:OPENBASE_NEO4J_STANDBY_HTTP_PORT) { [int]$env:OPENBASE_NEO4J_STANDBY_HTTP_PORT } else { 7474 }
+    $neo4jStandbyBolt = if ($env:OPENBASE_NEO4J_STANDBY_BOLT_PORT) { [int]$env:OPENBASE_NEO4J_STANDBY_BOLT_PORT } else { 7687 }
+    $minioPort = if ($env:OPENBASE_MINIO_STANDBY_PORT) { [int]$env:OPENBASE_MINIO_STANDBY_PORT } else { 9000 }
+
     $candidates = [ordered]@{
-        redis  = @{ Host = $env:REDIS_HOST;  Port = if ($env:REDIS_PORT) { [int]$env:REDIS_PORT } else { 6380 } }
-        qdrant = @{ Host = $env:QDRANT_HOST; Port = if ($env:QDRANT_PORT) { [int]$env:QDRANT_PORT } else { 6333 } }
-        neo4j  = @{ Host = $env:NEO4J_HOST;  Port = if ($env:NEO4J_BOLT_PORT) { [int]$env:NEO4J_BOLT_PORT } else { 7687 } }
-        minio  = @{ Host = $env:MINIO_HOST;  Port = if ($env:MINIO_PORT) { [int]$env:MINIO_PORT } else { 9000 } }
+        redis  = @{
+            Primary  = @{ Host = $env:REDIS_HOST; Port = if ($env:REDIS_PORT) { [int]$env:REDIS_PORT } else { 6380 } }
+            Standby  = @{ Host = $standbyHost; Port = $redisPort }
+            GrpcPort = 0; HttpPort = 0; StandbyHttpPort = 0
+        }
+        qdrant = @{
+            Primary  = @{ Host = $env:QDRANT_HOST; Port = if ($env:QDRANT_PORT) { [int]$env:QDRANT_PORT } else { 6333 } }
+            Standby  = @{ Host = $standbyHost; Port = $qdrantPort }
+            GrpcPort = $qdrantGrpcPort; HttpPort = 0; StandbyHttpPort = 0
+        }
+        neo4j  = @{
+            Primary  = @{ Host = $env:NEO4J_HOST; Port = $neo4jBoltPort }
+            Standby  = @{ Host = $standbyHost; Port = $neo4jStandbyBolt }
+            GrpcPort = 0; HttpPort = $neo4jHttpPort; StandbyHttpPort = $neo4jStandbyHttp
+        }
+        minio  = @{
+            Primary  = @{ Host = $env:MINIO_HOST; Port = if ($env:MINIO_PORT) { [int]$env:MINIO_PORT } else { 9000 } }
+            Standby  = @{ Host = $standbyHost; Port = $minioPort }
+            GrpcPort = 0; HttpPort = 0; StandbyHttpPort = 0
+        }
     }
     $result = [ordered]@{}
     foreach ($name in $candidates.Keys) {
-        if ($candidates[$name].Host) { $result[$name] = $candidates[$name] }
+        if ($candidates[$name].Primary.Host) { $result[$name] = $candidates[$name] }
     }
     return $result
 }
 
-function Invoke-InfraProbe {
-    $result = [ordered]@{}
-    foreach ($name in $script:InfraTargets.Keys) {
-        $target = $script:InfraTargets[$name]
-        $probe = Test-TcpEndpoint -TargetHost $target.Host -TargetPort $target.Port -TimeoutSec $DbProbeTimeoutSec
-        $result[$name] = @{ Host = $target.Host; Port = $target.Port } + $probe
+function New-InfraProbeSpec {
+    param(
+        [string]$PgPrimaryHost,
+        [int]$PgPrimaryPort,
+        [string]$PgStandbyHost,
+        [int]$PgStandbyPort,
+        [hashtable]$Endpoints
+    )
+
+    $targets = [ordered]@{
+        pg = [ordered]@{
+            primary = @{ host = $PgPrimaryHost; port = $PgPrimaryPort; user_env = 'POSTGRES_USER'; password_env = 'POSTGRES_PASSWORD'; database_env = 'POSTGRES_DB' }
+            standby = @{ host = $PgStandbyHost; port = $PgStandbyPort; user_env = 'POSTGRES_USER'; password_env = 'POSTGRES_PASSWORD'; database_env = 'POSTGRES_DB' }
+        }
     }
-    $script:InfraStatus = $result
-    return $result
+    foreach ($name in @('redis', 'qdrant', 'neo4j', 'minio')) {
+        $entry = $Endpoints[$name]
+        if (-not $entry) { continue }
+        $sides = [ordered]@{}
+        foreach ($side in @('Primary', 'Standby')) {
+            $endpoint = $entry[$side]
+            if (-not $endpoint -or -not $endpoint.Host) { continue }
+            $sideKey = $side.ToLower()
+            if ($name -eq 'redis') {
+                # 缺少口令时不猜：该目标回落 TCP，并在证据里留 degraded 说明
+                if (-not $env:REDIS_PASSWORD) {
+                    $script:ProbeNotes += ("redis.{0}: 缺少 REDIS_PASSWORD，该目标回落 TCP" -f $sideKey)
+                    continue
+                }
+                $sides[$sideKey] = @{ host = $endpoint.Host; port = $endpoint.Port; password_env = 'REDIS_PASSWORD' }
+            } elseif ($name -eq 'qdrant') {
+                $item = @{ url = ("http://{0}:{1}" -f $endpoint.Host, $endpoint.Port) }
+                if ($env:QDRANT_API_KEY) { $item['api_key_env'] = 'QDRANT_API_KEY' }
+                $sides[$sideKey] = $item
+            } elseif ($name -eq 'neo4j') {
+                if (-not $env:NEO4J_PASSWORD) {
+                    $script:ProbeNotes += ("neo4j.{0}: 缺少 NEO4J_PASSWORD，该目标回落 TCP" -f $sideKey)
+                    continue
+                }
+                $httpPort = if ($side -eq 'Primary') { $entry.HttpPort } else { $entry.StandbyHttpPort }
+                $sides[$sideKey] = @{ host = $endpoint.Host; http_port = $httpPort; user_env = 'NEO4J_USER'; password_env = 'NEO4J_PASSWORD' }
+            } else {
+                $sides[$sideKey] = @{ host = $endpoint.Host; port = $endpoint.Port }
+            }
+        }
+        if ($sides.Count -gt 0) { $targets[$name] = $sides }
+    }
+    return [ordered]@{
+        timeout_sec = $DbProbeTimeoutSec
+        psql        = 'D:\PostgreSQL\17\bin\psql.exe'
+        targets     = $targets
+    }
+}
+
+function Invoke-DataPlaneProbe {
+    param($Spec)
+
+    if ($ProbeLevel -eq 'tcp') { return $null }
+    if (-not (Test-Path $script:ProbeScript)) {
+        $script:ProbeNotes += '探针脚本缺失，回落 TCP'
+        return $null
+    }
+    $python = Get-ProbePython
+    if (-not $python) {
+        $script:ProbeNotes += '未找到 Python 解释器，回落 TCP'
+        return $null
+    }
+
+    $tempRoot = [System.IO.Path]::GetTempPath()
+    $token = [guid]::NewGuid().ToString('N')
+    $specPath = Join-Path $tempRoot ("openbase-probe-{0}.spec.json" -f $token)
+    $outPath = Join-Path $tempRoot ("openbase-probe-{0}.out.json" -f $token)
+    try {
+        ($Spec | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $specPath -Encoding UTF8
+        & $python -S -B $script:ProbeScript --spec $specPath --out $outPath *> $null
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $outPath)) {
+            $script:ProbeNotes += ("探针执行失败（退出码 {0}），回落 TCP" -f $LASTEXITCODE)
+            return $null
+        }
+        $payload = Get-Content -LiteralPath $outPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $results = @{}
+        foreach ($property in $payload.targets.PSObject.Properties) {
+            $value = $property.Value
+            $results[$property.Name] = @{
+                Ok        = [bool]$value.ok
+                Layer     = [string]$value.layer
+                LatencyMs = [int]$value.latency_ms
+                Detail    = [string]$value.detail
+                Extra     = $value.extra
+            }
+        }
+        $script:ProbeResults = $results
+        $script:ProbeMode = [string]$payload.probe_mode
+        foreach ($note in @($payload.degraded)) {
+            if ($note) { $script:ProbeNotes += [string]$note }
+        }
+        return $payload
+    } catch {
+        $script:ProbeNotes += ("探针异常：{0}，回落 TCP" -f $_.Exception.Message)
+        return $null
+    } finally {
+        Remove-Item -LiteralPath $specPath, $outPath -ErrorAction SilentlyContinue
+    }
+}
+
+function Get-TargetHealth {
+    param([string]$Key, [string]$TargetHost, [int]$TargetPort, [switch]$Postgres)
+
+    $result = $script:ProbeResults[$Key]
+    if ($result) {
+        if ($result.Ok) {
+            return @{ Healthy = $true; Method = 'data-plane'; LatencyMs = $result.LatencyMs; Detail = $result.Detail }
+        }
+        if ($result.Layer -eq 'data-plane') {
+            # 数据面明确失败：不再回落（避免把「能握手但不可用」判成健康）
+            return @{ Healthy = $false; Method = 'data-plane'; LatencyMs = $result.LatencyMs; Detail = $result.Detail }
+        }
+    }
+    if ($ProbeLevel -eq 'data') {
+        return @{ Healthy = $false; Method = 'data-plane'; LatencyMs = 0; Detail = '数据面探针不可用（-ProbeLevel data）' }
+    }
+    if ($Postgres) {
+        return (Test-PostgresEndpoint -TargetHost $TargetHost -TargetPort $TargetPort -TimeoutSec $DbProbeTimeoutSec)
+    }
+    return (Test-TcpEndpoint -TargetHost $TargetHost -TargetPort $TargetPort -TimeoutSec $DbProbeTimeoutSec)
+}
+
+# 主用不可用 → 把该设施指向本机备用（进程环境覆盖，子进程继承；不改写任何 .env）
+function Set-InfraStandbyOverrides {
+    param([string]$Name, $Entry)
+
+    $standbyHost = $Entry.Standby.Host
+    $standbyPort = [int]$Entry.Standby.Port
+    $applied = @()
+    if ($Name -eq 'redis') {
+        $env:REDIS_HOST = $standbyHost
+        $env:REDIS_PORT = [string]$standbyPort
+        $applied += @('REDIS_HOST', 'REDIS_PORT')
+        if ($env:REDIS_URL) {
+            $env:REDIS_URL = Set-UrlHostPort -Url $env:REDIS_URL -TargetHost $standbyHost -TargetPort $standbyPort
+            $applied += 'REDIS_URL'
+        }
+        if ($env:OPENBASE_REDIS_URL) {
+            $env:OPENBASE_REDIS_URL = Set-UrlHostPort -Url $env:OPENBASE_REDIS_URL -TargetHost $standbyHost -TargetPort $standbyPort
+            $applied += 'OPENBASE_REDIS_URL'
+        }
+        if ($env:OPENMEMORY_CACHE__HOST) {
+            $env:OPENMEMORY_CACHE__HOST = $standbyHost
+            $env:OPENMEMORY_CACHE__PORT = [string]$standbyPort
+            $applied += @('OPENMEMORY_CACHE__HOST', 'OPENMEMORY_CACHE__PORT')
+        }
+        if ($env:OPENRAG_REDIS_URL -and $env:OPENRAG_REDIS_ENABLED -eq 'true') {
+            $env:OPENRAG_REDIS_URL = Set-UrlHostPort -Url $env:OPENRAG_REDIS_URL -TargetHost $standbyHost -TargetPort $standbyPort
+            $applied += 'OPENRAG_REDIS_URL'
+        }
+    } elseif ($Name -eq 'qdrant') {
+        $grpcPort = if ($Entry.GrpcPort) { [int]$Entry.GrpcPort } else { 6334 }
+        $env:QDRANT_HOST = $standbyHost
+        $env:QDRANT_PORT = [string]$standbyPort
+        $env:QDRANT_GRPC_PORT = [string]$grpcPort
+        $env:QDRANT_URL = ("http://{0}:{1}" -f $standbyHost, $standbyPort)
+        $env:OPENRAG_QDRANT_URL = $env:QDRANT_URL
+        $env:OPENRAG_QDRANT_GRPC_URL = ("{0}:{1}" -f $standbyHost, $grpcPort)
+        $applied += @('QDRANT_HOST', 'QDRANT_PORT', 'QDRANT_GRPC_PORT', 'QDRANT_URL', 'OPENRAG_QDRANT_URL', 'OPENRAG_QDRANT_GRPC_URL')
+        if ($env:OPENMEMORY_VECTOR__HOST) {
+            $env:OPENMEMORY_VECTOR__HOST = $standbyHost
+            $env:OPENMEMORY_VECTOR__PORT = [string]$standbyPort
+            $applied += @('OPENMEMORY_VECTOR__HOST', 'OPENMEMORY_VECTOR__PORT')
+        }
+    } elseif ($Name -eq 'neo4j') {
+        $env:NEO4J_HOST = $standbyHost
+        $env:NEO4J_BOLT_PORT = [string]$standbyPort
+        $env:NEO4J_URI = ("bolt://{0}:{1}" -f $standbyHost, $standbyPort)
+        $applied += @('NEO4J_HOST', 'NEO4J_BOLT_PORT', 'NEO4J_URI')
+        if ($env:OPENMEMORY_GRAPH__URI) {
+            $env:OPENMEMORY_GRAPH__URI = $env:NEO4J_URI
+            $applied += 'OPENMEMORY_GRAPH__URI'
+        }
+    } elseif ($Name -eq 'minio') {
+        $env:MINIO_HOST = $standbyHost
+        $env:MINIO_PORT = [string]$standbyPort
+        $env:MINIO_ENDPOINT = ("http://{0}:{1}" -f $standbyHost, $standbyPort)
+        $applied += @('MINIO_HOST', 'MINIO_PORT', 'MINIO_ENDPOINT')
+    }
+    return @($applied)
+}
+
+function Invoke-InfraProbe {
+    $status = [ordered]@{}
+    foreach ($name in $script:InfraTargets.Keys) {
+        $entry = $script:InfraTargets[$name]
+        $primary = Get-TargetHealth -Key ("{0}.primary" -f $name) -TargetHost $entry.Primary.Host -TargetPort $entry.Primary.Port
+        $standby = Get-TargetHealth -Key ("{0}.standby" -f $name) -TargetHost $entry.Standby.Host -TargetPort $entry.Standby.Port
+
+        $switched = $false
+        if (-not $primary.Healthy -and $standby.Healthy) {
+            $applied = Set-InfraStandbyOverrides -Name $name -Entry $entry
+            $script:InfraSwitched += $name
+            $script:InfraApplied[$name] = @($applied)
+            $switched = $true
+        }
+
+        $status[$name] = @{
+            Host           = if ($switched) { $entry.Standby.Host } else { $entry.Primary.Host }
+            Port           = if ($switched) { $entry.Standby.Port } else { $entry.Primary.Port }
+            Healthy        = if ($switched) { [bool]$standby.Healthy } else { [bool]$primary.Healthy }
+            Layer          = if ($switched) { $standby.Method } else { $primary.Method }
+            LatencyMs      = if ($switched) { $standby.LatencyMs } else { $primary.LatencyMs }
+            Detail         = if ($switched) { '主用不可用，已切备用' } else { $primary.Detail }
+            Switched       = $switched
+            PrimaryHealthy = [bool]$primary.Healthy
+            StandbyHealthy = [bool]$standby.Healthy
+        }
+    }
+    $script:InfraStatus = $status
+    return $status
 }
 
 function Get-InfraSummary {
     if ($script:InfraStatus.Count -eq 0) { return '' }
     $parts = foreach ($name in $script:InfraStatus.Keys) {
         $item = $script:InfraStatus[$name]
-        $state = if ($item.Healthy) { 'ok' } else { 'DOWN' }
-        ("{0}={1}:{2} {3}({4}ms)" -f $name, $item.Host, $item.Port, $state, $item.LatencyMs)
+        $state = if ($item.Healthy) { if ($item.Switched) { 'ok(备用)' } else { 'ok' } } else { 'DOWN' }
+        ("{0}={1}:{2} {3}[{4}]" -f $name, $item.Host, $item.Port, $state, $item.Layer)
     }
-    return ('公共设施探测：' + ($parts -join ' / '))
+    return ('公共设施探测（{0}）：' -f $script:ProbeMode) + ($parts -join ' / ')
 }
 
 function Get-InfraDownNames {
     return @($script:InfraStatus.Keys | Where-Object { -not $script:InfraStatus[$_].Healthy })
 }
 
-if ($DbMode -ne 'off') {
+# 仅在需要门禁/报告的动作上探测：status/stop/checkall/namecheck 不做探测（避免无谓等待）
+if ($DbMode -ne 'off' -and $Action -in @('start', 'startcheck', 'monitor', 'dbcheck')) {
     $primaryHost = $env:POSTGRES_HOST
     $primaryPort = if ($env:POSTGRES_PORT) { [int]$env:POSTGRES_PORT } else { 5432 }
     if (-not $primaryHost -and $env:POSTGRES_URL) {
@@ -285,13 +556,19 @@ if ($DbMode -ne 'off') {
     # 捕获两侧端点：切备用后 $env:POSTGRES_* 已被改写，周期复检必须用初始快照
     $script:DbPrimaryEndpoint = @{ Host = $primaryHost; Port = $primaryPort }
     $script:DbStandbyEndpoint = @{ Host = $standbyHost; Port = $standbyPort }
+    $script:InfraTargets = Get-InfraTargets
+
+    # 一次数据面探测覆盖 5 类 × 主备两端；脚本不可用时自动回落 TCP（证据含 degraded）
+    $probeSpec = New-InfraProbeSpec -PgPrimaryHost $primaryHost -PgPrimaryPort $primaryPort `
+        -PgStandbyHost $standbyHost -PgStandbyPort $standbyPort -Endpoints $script:InfraTargets
+    Invoke-DataPlaneProbe -Spec $probeSpec | Out-Null
 
     $primaryProbe = if ($primaryHost) {
-        Test-PostgresEndpoint -TargetHost $primaryHost -TargetPort $primaryPort -TimeoutSec $DbProbeTimeoutSec
+        Get-TargetHealth -Key 'pg.primary' -TargetHost $primaryHost -TargetPort $primaryPort -Postgres
     } else {
-        @{ Healthy = $false; Method = 'none'; LatencyMs = 0 }
+        @{ Healthy = $false; Method = 'none'; LatencyMs = 0; Detail = '未配置主机' }
     }
-    $standbyProbe = Test-PostgresEndpoint -TargetHost $standbyHost -TargetPort $standbyPort -TimeoutSec $DbProbeTimeoutSec
+    $standbyProbe = Get-TargetHealth -Key 'pg.standby' -TargetHost $standbyHost -TargetPort $standbyPort -Postgres
 
     $resolvedMode = $null
     $reason = ''
@@ -371,22 +648,21 @@ if ($DbMode -ne 'off') {
             }
         }
     }
+
+    # -----------------------------------------------------------------------
+    # 四设施：主用数据面不通 ⇒ 切备用（用户决策 2026-10-25）
+    #
+    # 口径：
+    #   1) 只对**有消费方**的设施做覆盖（redis/qdrant/neo4j/minio 的共享键 + 各仓自有键）；
+    #   2) 数据面同步问题**暂时挂起**：备用数据可能为空或落后，切换必须 WARN 留痕；
+    #   3) 不参与启动门禁（PG 是唯一硬门禁），但切换后仍不可用则保留 DOWN 状态供 dbcheck 呈现。
+    # -----------------------------------------------------------------------
+    if ($Action -in @('start', 'startcheck', 'monitor', 'dbcheck')) {
+        Invoke-InfraProbe | Out-Null
+    }
 }
 
-# ---------------------------------------------------------------------------
-# 公共基础设施探测（P1，2026-10-25）
-#
-# 口径：
-#   1) 只**探测与提示**，不自动切换：这四类设施的口令不在 .env（Redis 口令在
-#      D:\infra\redis8\redis-6380.conf），启动期自动注入凭据风险高于收益 → 提示人工启动本机备用；
-#   2) 不参与启动门禁：共享库（PostgreSQL）是唯一硬门禁，避免「主库可用但 Qdrant 抖动」整体拒启；
-#   3) 仅在 start / startcheck / monitor / dbcheck 时探测（status / stop 不探测，避免拖慢）。
-# ---------------------------------------------------------------------------
-$script:InfraTargets = Get-InfraTargets
 $script:DbMonitorState = @{ LastMode = $script:DbResolution.Mode; LastNotice = '' }
-if ($DbMode -ne 'off' -and $Action -in @('start', 'startcheck', 'monitor', 'dbcheck')) {
-    Invoke-InfraProbe | Out-Null
-}
 
 # ---------------------------------------------------------------------------
 # 服务定义表（名称/端口/启动命令/健康检查候选端点/依赖/依赖类型）
@@ -937,7 +1213,7 @@ function New-EvidencePath {
 function New-DbEvidencePayload {
     param([string]$ActionName)
     return [ordered]@{
-        schema_version    = 2
+        schema_version    = 3
         tool              = 'service-orchestrator.ps1'
         action            = $ActionName
         generated_at      = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
@@ -947,11 +1223,19 @@ function New-DbEvidencePayload {
         reason            = $script:DbResolution.Reason
         primary           = $script:DbResolution.Primary
         standby           = $script:DbResolution.Standby
-        # 公共设施仅探测提示，不参与门禁（PG 为唯一硬门禁）
+        # 数据面探针原始结果（每目标 ok/layer/detail）+ 已切换设施 + 降级说明
+        data_plane        = [ordered]@{
+            probe_mode = $script:ProbeMode
+            switched   = @($script:InfraSwitched)
+            applied    = $script:InfraApplied
+            degraded   = @($script:ProbeNotes)
+            targets    = $script:ProbeResults
+        }
+        # 公共设施判定结果（PG 为唯一硬门禁；四设施仅告警/切换）
         dependencies      = $script:InfraStatus
         override_services = @($script:DbOverrides.Keys | Sort-Object)
         applied_endpoints = $script:DbAppliedEndpoints
-        note              = '仅记录主机/端口/判定/耗时；DSN 一律脱敏（口令→***）；不改写任何 .env'
+        note              = '数据面探针（PG select 1 / Redis PING+DBSIZE / Qdrant collections / Neo4j RETURN 1 / MinIO ready）；DSN 脱敏；不改写 .env；切备用的数据同步问题暂时挂起'
     }
 }
 
@@ -1011,9 +1295,16 @@ function Assert-DbReadyOrExit {
         }
         $infraSummary = Get-InfraSummary
         if ($infraSummary) { Write-Log 'INFO' $infraSummary }
+        $infraSwitched = @($script:InfraSwitched)
+        if ($infraSwitched.Count -gt 0) {
+            Write-Log 'WARN' ("公共设施已切备用：{0}（数据面同步问题暂时挂起——备用数据可能为空或落后，请人工核对）" -f ($infraSwitched -join ','))
+        }
         $infraDown = Get-InfraDownNames
         if ($infraDown.Count -gt 0) {
             Write-Log 'WARN' ("公共设施不可达：{0}（不阻断启动；可执行 D:\infra\start-infra.ps1 启动本机备用）" -f ($infraDown -join ','))
+        }
+        if ($script:ProbeMode -ne 'data-plane' -and @($script:ProbeNotes).Count -gt 0) {
+            Write-Log 'WARN' ("数据面探针降级为 {0}：{1}" -f $script:ProbeMode, ((@($script:ProbeNotes) | Select-Object -First 3) -join '；'))
         }
         Write-Log 'INFO' "共享库探测证据：$evidence"
         return
@@ -1034,8 +1325,14 @@ function Invoke-DbChannelRecheck {
 
     $primary = $script:DbPrimaryEndpoint
     $standby = $script:DbStandbyEndpoint
-    $primaryProbe = Test-PostgresEndpoint -TargetHost $primary.Host -TargetPort $primary.Port -TimeoutSec $DbProbeTimeoutSec
-    $standbyProbe = Test-PostgresEndpoint -TargetHost $standby.Host -TargetPort $standby.Port -TimeoutSec $DbProbeTimeoutSec
+
+    # 复检同样走数据面（只探 PG 两端，避免每分钟把四设施也打一遍）
+    $pgSpec = New-InfraProbeSpec -PgPrimaryHost $primary.Host -PgPrimaryPort $primary.Port `
+        -PgStandbyHost $standby.Host -PgStandbyPort $standby.Port -Endpoints @{}
+    Invoke-DataPlaneProbe -Spec $pgSpec | Out-Null
+
+    $primaryProbe = Get-TargetHealth -Key 'pg.primary' -TargetHost $primary.Host -TargetPort $primary.Port -Postgres
+    $standbyProbe = Get-TargetHealth -Key 'pg.standby' -TargetHost $standby.Host -TargetPort $standby.Port -Postgres
 
     $desiredMode = if ($primaryProbe.Healthy) { 'primary' } elseif ($standbyProbe.Healthy) { 'standby' } else { 'unavailable' }
     $currentMode = $script:DbResolution.Mode
@@ -1075,14 +1372,15 @@ function Invoke-DbCheck {
         if (-not $AsJson) { Write-Log 'WARN' '共享库启动探测已关闭（-DbMode off）' }
         if ($AsJson) {
             $offPayload = [ordered]@{
-                schema_version = 2
+                schema_version = 3
                 action         = 'dbcheck'
                 ok             = $true
                 requested_mode = $DbMode
                 resolved_mode  = 'off'
                 reason         = '探测关闭（-DbMode off）'
+                data_plane     = [ordered]@{ probe_mode = 'off'; switched = @(); degraded = @(); targets = @{} }
             }
-            Write-Host ($offPayload | ConvertTo-Json -Depth 4)
+            Write-Host ($offPayload | ConvertTo-Json -Depth 5)
         }
         return 0
     }
@@ -1090,16 +1388,27 @@ function Invoke-DbCheck {
     if ($AsJson) {
         $payload = New-DbEvidencePayload -ActionName 'dbcheck'
         $payload['evidence_path'] = $evidence
-        Write-Host ($payload | ConvertTo-Json -Depth 6)
+        Write-Host ($payload | ConvertTo-Json -Depth 8)
         if (-not $script:DbResolution.Ok) { return 2 }
         return 0
     }
     Write-Host (Get-DbSummary)
     $infraSummary = Get-InfraSummary
     if ($infraSummary) { Write-Host $infraSummary }
+    $infraSwitched = @($script:InfraSwitched)
+    if ($infraSwitched.Count -gt 0) {
+        Write-Host ("  公共设施已切备用：{0}（数据面同步挂起，备用数据可能为空或落后）" -f ($infraSwitched -join ','))
+        foreach ($name in $infraSwitched) {
+            $keys = @($script:InfraApplied[$name])
+            if ($keys.Count -gt 0) { Write-Host ("    {0,-7} 覆盖键：{1}" -f $name, ($keys -join ',')) }
+        }
+    }
     $infraDown = Get-InfraDownNames
     if ($infraDown.Count -gt 0) {
         Write-Host ("  公共设施不可达：{0}（不阻断启动；可执行 D:\infra\start-infra.ps1）" -f ($infraDown -join ','))
+    }
+    if ($script:ProbeMode -ne 'data-plane' -and @($script:ProbeNotes).Count -gt 0) {
+        Write-Host ("  数据面探针降级为 {0}：{1}" -f $script:ProbeMode, ((@($script:ProbeNotes) | Select-Object -First 3) -join '；'))
     }
     if ($script:DbAppliedEndpoints.Count -gt 0) {
         Write-Host '  备用通道生效目标（口令已脱敏）：'

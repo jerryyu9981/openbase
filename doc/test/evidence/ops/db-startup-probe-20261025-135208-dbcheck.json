@@ -1,0 +1,92 @@
+﻿{
+    "schema_version":  3,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "dbcheck",
+    "generated_at":  "2026-10-25T13:52:08+08:00",
+    "requested_mode":  "auto",
+    "resolved_mode":  "primary",
+    "ok":  true,
+    "reason":  "主用可达",
+    "primary":  {
+                    "Port":  5432,
+                    "Host":  "192.168.0.151",
+                    "Healthy":  true,
+                    "LatencyMs":  377,
+                    "Method":  "pg_isready"
+                },
+    "standby":  {
+                    "Port":  5432,
+                    "Host":  "127.0.0.1",
+                    "Healthy":  true,
+                    "LatencyMs":  229,
+                    "Method":  "pg_isready"
+                },
+    "data_plane":  {
+                       "probe_mode":  "tcp",
+                       "switched":  [
+
+                                    ],
+                       "applied":  {
+
+                                   },
+                       "degraded":  [
+
+                                    ],
+                       "targets":  {
+
+                                   }
+                   },
+    "dependencies":  {
+                         "redis":  {
+                                       "Layer":  "tcp",
+                                       "PrimaryHealthy":  true,
+                                       "LatencyMs":  99,
+                                       "StandbyHealthy":  false,
+                                       "Switched":  false,
+                                       "Host":  "192.168.0.151",
+                                       "Detail":  null,
+                                       "Port":  6380,
+                                       "Healthy":  true
+                                   },
+                         "qdrant":  {
+                                        "Layer":  "tcp",
+                                        "PrimaryHealthy":  true,
+                                        "LatencyMs":  2,
+                                        "StandbyHealthy":  false,
+                                        "Switched":  false,
+                                        "Host":  "192.168.0.151",
+                                        "Detail":  null,
+                                        "Port":  6333,
+                                        "Healthy":  true
+                                    },
+                         "neo4j":  {
+                                       "Layer":  "tcp",
+                                       "PrimaryHealthy":  true,
+                                       "LatencyMs":  2,
+                                       "StandbyHealthy":  true,
+                                       "Switched":  false,
+                                       "Host":  "192.168.0.151",
+                                       "Detail":  null,
+                                       "Port":  7687,
+                                       "Healthy":  true
+                                   },
+                         "minio":  {
+                                       "Layer":  "tcp",
+                                       "PrimaryHealthy":  true,
+                                       "LatencyMs":  2,
+                                       "StandbyHealthy":  true,
+                                       "Switched":  false,
+                                       "Host":  "192.168.0.151",
+                                       "Detail":  null,
+                                       "Port":  9000,
+                                       "Healthy":  true
+                                   }
+                     },
+    "override_services":  [
+
+                          ],
+    "applied_endpoints":  {
+
+                          },
+    "note":  "数据面探针（PG select 1 / Redis PING+DBSIZE / Qdrant collections / Neo4j RETURN 1 / MinIO ready）；DSN 脱敏；不改写 .env；切备用的数据同步问题暂时挂起"
+}

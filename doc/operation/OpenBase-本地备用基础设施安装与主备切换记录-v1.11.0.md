@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.10.0 |
+| 文档版本 | v1.11.0 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -27,6 +27,7 @@
 | v1.8.1 | 2026-10-21 | 研发 | DeepSeek Key 经密钥文件（`%USERPROFILE%\.openbase\deepseek_api_key.txt`）配置完成，反代 `key_configured=true`；`deepseek-chat` 真实调用通过（200，12.3s，64 tokens） |
 | v1.9.0 | 2026-10-25 | 研发 | **启动期主备探测固化为受管入口**：`scripts/service-orchestrator.ps1` 新增 `-DbMode auto/primary/standby/off` 与 `-Action dbcheck`；每次 start/startcheck/monitor 前探测主用 PostgreSQL，异常自动切本机 `127.0.0.1:5432`；主备均不可达拒绝启动（退出码 2）；覆盖通过子进程环境变量（不改写 `.env`），证据落 `doc/test/evidence/ops/**`；新增 §16（含实测矩阵与边界），§4 入口同步 |
 | v1.10.0 | 2026-10-25 | 研发 | **P1 落地**：① `monitor` 周期复检（默认 ≥60s，`-DbRecheckSec` 可缩短）——主用恢复/失联**只提示不回切**，证据 `db-monitor-recheck-*.json`；② Redis/Qdrant/Neo4j/MinIO 同批 TCP 探测，**仅提示不阻断**（PG 为唯一硬门禁），纳入证据 `dependencies`；③ `dbcheck -Json` 机器可读输出（schema v2）；新增 §16.7，§16.2/§16.5 同步 |
+| v1.11.0 | 2026-10-25 | 研发 | **P0 数据面探针 + 四设施切换（用户决策）**：新增 `scripts/infra_probe.py`（stdlib，不含第三方依赖）——PG `select 1`、Redis `PING+DBSIZE`、Qdrant `GET /collections`、Neo4j `RETURN 1`、MinIO `health/ready`；探测由 TCP 升级为**数据面**（探针不可用显式回落 TCP 并记 degraded）；**主用数据面不通即切备用**（PG 硬门禁 + 四设施覆盖：Redis/Qdrant/Neo4j/MinIO 的共享键与各仓自有键）；**数据面同步问题暂时挂起**，切换强制 WARN 留痕；证据 schema v3（新增 `data_plane`）；新增 §16.8，守门用例 15 → **20 例** |
 
 ## 1. 背景与定位
 
@@ -567,7 +568,7 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 |---|---|---|
 | `-DbMode` | `auto`（默认）/ `primary` / `standby` / `off` | auto=主用优先、异常切备用；primary/standby=强制；off=不探测（兼容旧行为） |
 | `-DbProbeTimeoutSec` | 默认 `3` | 单端点探测超时（秒） |
-| `-Json` | 开关，仅配 `-Action dbcheck` | 输出机器可读 JSON（schema v2，含 `dependencies` / `evidence_path`），供脚本/流水线消费；stdout 不含人类摘要 |
+| `-Json` | 开关，仅配 `-Action dbcheck` | 输出机器可读 JSON（schema v3，含 `data_plane` / `dependencies` / `evidence_path`），供脚本/流水线消费；stdout 不含人类摘要 |
 | `-DbRecheckSec` | 默认 `0`（自动） | monitor 周期复检间隔；0 时取 `max(60, -Interval)`，仅供联调缩短 |
 | `-Action dbcheck` | —— | **仅探测**：打印判定 + 脱敏目标 + 公共设施状态 + 证据路径，不启动/停止任何服务 |
 
@@ -604,7 +605,7 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 | # | 事项 | 当前 | 后续 |
 |:-:|---|---|---|
 | 1 | 启动期 vs 运行期 | 启动期判定 + **monitor 周期复检**（P1 已交付）；复检只提示不回切 | **P2**：应用内启动自检（见 #3） |
-| 2 | 纳管范围 | PostgreSQL 为**硬门禁**；Redis/Qdrant/Neo4j/MinIO 已纳管**探测**（仅提示，P1 已交付） | **P2**：四类设施自动切本机备用（Redis 口令需从 `D:\infra\redis8\redis-6380.conf` 读取，非 `.env`） |
+| 2 | 纳管范围 | PostgreSQL 为**硬门禁**；Redis/Qdrant/Neo4j/MinIO 已纳管**数据面探测并在主用不通时切备用**（P0 已交付，见 §16.8；数据同步挂起） | 数据同步与回切（Phase 4） |
 | 3 | 绕过编排直启 | 直接 `uvicorn` 不走探测（预期行为） | **P2**：应用内启动自检开关（`OPENBASE_DB_STARTUP_PROBE=warn|require|off`，默认 warn） |
 | 4 | 数据一致性 | 备用库为主用**手工复刻**（UUID 必须一致，见 §12） | **P2**：评估逻辑复制/备份恢复，明确 RPO/RTO 与切回校验 |
 | 5 | 写入语义 | 切备用后照常读写（备用可写） | **P2**：如需「主用只读、备用可写」双活语义，单独立项评审 |
@@ -638,8 +639,8 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 - 策略：**不参与启动门禁**——PG 是唯一硬门禁；四类设施不可达时 `WARN` 并提示
   `D:\infra\start-infra.ps1`，避免「主库可用但 Qdrant 抖动」导致整体拒启。
 - 结果纳入证据 `dependencies` 字段（`dbcheck -Json` 可直接消费）。
-- **不自动切换**：这四类设施的备用口令不在 `.env`（Redis 在 `D:\infra\redis8\redis-6380.conf`），
-  启动期自动注入凭据的风险高于收益 → 由人工启动本机备用（P2 再评估）。
+- **v1.11.0 起行为变更**：主用数据面不通且备用可用时**自动切备用**（覆盖各仓环境键），
+  数据同步仍挂起 → 见 §16.8；本节「仅提示不阻断」仅描述**不阻断启动**这一层语义。
 
 #### 16.7.3 实测（2026-10-25，本机）
 
@@ -649,5 +650,78 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 | JSON 消费 | `-Action dbcheck -Json` | stdout 为纯 JSON（schema v2），`dependencies` 四键齐全，`evidence_path` 指向证据 | `db-startup-probe-20261025-024508-dbcheck.json` |
 | **备用通道下主用恢复** | `-Action monitor -DbMode standby -Only __none__ -DbRecheckSec 1` | 复检 `current=standby / desired=primary`，提示「主用共享库已恢复」，**未启动任何服务** | `db-monitor-recheck-20261025-024559.json`、`db-startup-probe-20261025-024558-monitor.json` |
 
-守门用例：`tests/test_orchestrator_db_failover.py` 共 **15 例**（静态契约 10 + 行为契约 5），
-其中 `test_monitor_recheck_notices_primary_recovery` 在主用或本机备用不可达时显式 `skip`（不伪造通过）。
+守门用例：`tests/test_orchestrator_db_failover.py` 共 **20 例**（静态契约 12 + 行为契约 8），
+其中 `test_monitor_recheck_notices_primary_recovery` / `test_primary_infrastructure_outage_switches_to_standby`
+在对应备用实例不可达时显式 `skip`（不伪造通过）。
+
+### 16.8 数据面探针与四设施切换（P0，2026-10-25 用户决策）
+
+#### 16.8.1 判定升级：从「端口通」到「真的能用」
+
+| 设施 | 数据面判据 | 说明 |
+|---|---|---|
+| PostgreSQL | `psql -c "select 1" -c "show server_version"` | 覆盖 TCP + 认证 + 库存在 + 可执行查询；口令经 `PGPASSWORD` 传递，不上命令行 |
+| Redis | `AUTH`（可选）→ `PING` → `DBSIZE` → `INFO replication` | 能读 keyspace；记录 `role` / `master_link_status` |
+| Qdrant | `GET /collections` | 能读集合元数据；返回集合数 |
+| Neo4j | `POST /db/<db>/tx/commit` 执行 `RETURN 1 AS ok` | 覆盖认证 + 库可用 + 可执行查询 |
+| MinIO | `GET /minio/health/ready` | 服务端就绪（含磁盘/集群状态）；桶与对象列表需 `mc` |
+
+实现：`scripts/infra_probe.py`（**stdlib-only**，不引入 redis/qdrant/psycopg/minio 依赖）；
+编排侧只组装 spec（**spec 不含明文口令，只写环境变量名**）→ 执行 → 读回 JSON。
+
+| 参数 | 取值 | 说明 |
+|---|---|---|
+| `-ProbeLevel` | `auto`（默认）/ `data` / `tcp` | auto=优先数据面、探针不可用回落 TCP；data=仅数据面（失败即判不可用）；tcp=仅端口/`pg_isready` |
+| 证据 `probe_mode` | `data-plane` / `partial` / `tcp` | `partial` 表示部分目标回落；回落原因写入 `data_plane.degraded` |
+
+#### 16.8.2 切换规则（主用不通即切备用）
+
+| 对象 | 规则 | 阻断启动 |
+|---|---|:---:|
+| PostgreSQL | 主用数据面不通且备用数据面可用 ⇒ `mode=standby`（5 个服务按各自 DSN 换主机端口） | 是（双不可达 exit 2） |
+| Redis / Qdrant / Neo4j / MinIO | 主用数据面不通且备用数据面可用 ⇒ **该设施切本机备用**并覆盖以下键 | 否（仅 WARN） |
+| 任意设施 | 主用不通且备用也不通 ⇒ 保持 `DOWN`，提示 `D:\infra\start-infra.ps1` | 否（PG 除外） |
+
+覆盖键（仅替换主机/端口/URL，保留 scheme、凭据、库名；**不改写任何 `.env`**）：
+
+| 设施 | 覆盖键 |
+|---|---|
+| Redis | `REDIS_HOST/PORT/URL`、`OPENBASE_REDIS_URL`、`OPENMEMORY_CACHE__HOST/PORT`、`OPENRAG_REDIS_URL`（仅 `OPENRAG_REDIS_ENABLED=true`） |
+| Qdrant | `QDRANT_HOST/PORT/GRPC_PORT/URL`、`OPENRAG_QDRANT_URL`、`OPENRAG_QDRANT_GRPC_URL`、`OPENMEMORY_VECTOR__HOST/PORT` |
+| Neo4j | `NEO4J_HOST/BOLT_PORT/URI`、`OPENMEMORY_GRAPH__URI` |
+| MinIO | `MINIO_HOST/PORT/ENDPOINT`（当前无服务消费方，先覆盖备后用） |
+
+备用端点：`127.0.0.1` + 各规范端口（Redis 6380 / Qdrant 6333+6334 / Neo4j 7474+7687 / MinIO 9000），
+可用 `OPENBASE_INFRA_STANDBY_HOST`、`OPENBASE_REDIS_STANDBY_PORT`、`OPENBASE_QDRANT_STANDBY_PORT(_GRPC)`、
+`OPENBASE_NEO4J_STANDBY_HTTP_PORT`、`OPENBASE_NEO4J_STANDBY_BOLT_PORT`、`OPENBASE_MINIO_STANDBY_PORT` 覆盖。
+
+#### 16.8.3 数据面同步：**暂时挂起（用户决策 2026-10-25）**
+
+- 本阶段只做「探测 + 切换 + 留痕」，**不做数据同步**；
+- 切到备用后备用数据可能为空或落后，因此切换必然输出
+  `WARN 公共设施已切备用：…（数据面同步问题暂时挂起——备用数据可能为空或落后，请人工核对）`；
+- 各设施的主备版本基线（2026-10-25 实测）：PG 14.23（Alpine）→ 17.10（Windows）、
+  Redis 7.4.9 → 8.10.2、Qdrant 1.7.4 → 1.7.4、Neo4j 5.17.0（community）→ 5.26.16、MinIO 主用版本待取；
+- 同步方案与 RPO/RTO 见全栈计划 §7.0 Phase 4（待评审），本文件不承诺数据一致性。
+
+#### 16.8.4 实测（2026-10-25，本机）
+
+| 场景 | 命令 | 结果 | 证据 |
+|---|---|---|---|
+| 主用全绿（数据面） | `-Action dbcheck` | `mode=primary`；五项目标均 `data-plane`（PG 2.2s / 四设施 2~350ms） | `db-startup-probe-20261025-125145-dbcheck.json` |
+| **主用 PG 不通 ⇒ 切备用库** | 预置 `POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=1` | `mode=standby`；5 服务目标指向 `127.0.0.1:5432` | 本轮实测（JSON 断言 `resolved_mode=standby`） |
+| **主用 MinIO 不通 ⇒ 四设施切换** | 预置 `MINIO_HOST=127.0.0.1 MINIO_PORT=1` | `minio` 切至 `127.0.0.1:9000`，覆盖 `MINIO_HOST/MINIO_PORT/MINIO_ENDPOINT`，`switched=[minio]` | 同上（`data_plane.switched`） |
+| 主用与备用均不可达 | `-DbMode standby` + `OPENBASE_PG_STANDBY_PORT=1` | `mode=unavailable`，**exit 2** | `db-startup-probe-20261025-134928-dbcheck.json` |
+| 主用 Redis 不通且备用未起 | 预置 `REDIS_HOST=127.0.0.1 REDIS_PORT=1` | `redis DOWN`，不切换，提示 `start-infra.ps1` | `db-startup-probe-20261025-134936-dbcheck.json` |
+| 仅端口判定（兼容） | `-Action dbcheck -ProbeLevel tcp` | 回落 `pg_isready`/TCP，`probe_mode=tcp` | `db-startup-probe-20261025-135208-dbcheck.json` |
+
+#### 16.8.5 已知边界
+
+| # | 事项 | 现状 | 后续 |
+|:-:|---|---|---|
+| 1 | 数据同步 | **挂起**：切备用后数据可能为空/落后 | Phase 4：按设施选型（PG dump/restore 或逻辑复制、Redis REPLICAOF、Qdrant snapshot、MinIO mirror、Neo4j dump/load） |
+| 2 | 回切 | 需重启编排；切换期间写入备用的数据不合并回主用 | Phase 4 与数据同步一并定义 |
+| 3 | Chroma | 未纳管（主用 8001 / 备用 8005） | 端口差异需单独处理 |
+| 4 | 探测开销 | PG 每次启动多约 2s（psql 子进程）；`dbcheck` 全量约 8s | 可复用常驻探针或连接池化，暂不优化 |
+| 5 | `status` 耗时 | `Get-NetTCPConnection` 单次约 2.7s（既有实现，非本轮引入） | 后续可改用 `IPGlobalProperties` 批量读取 |
+

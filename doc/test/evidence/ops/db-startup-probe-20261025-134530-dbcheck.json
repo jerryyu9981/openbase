@@ -1,0 +1,196 @@
+﻿{
+    "schema_version":  3,
+    "tool":  "service-orchestrator.ps1",
+    "action":  "dbcheck",
+    "generated_at":  "2026-10-25T13:45:30+08:00",
+    "requested_mode":  "auto",
+    "resolved_mode":  "standby",
+    "ok":  true,
+    "reason":  "主用不可达，切备用",
+    "primary":  {
+                    "Method":  "data-plane",
+                    "LatencyMs":  2654,
+                    "Healthy":  false,
+                    "Host":  "127.0.0.1",
+                    "Port":  1,
+                    "Detail":  "psql: ����: ���ӵ�\"127.0.0.1\"�ϵķ��������˿�1ʧ�ܣ�Connection refused (0x0000274D/10061)"
+                },
+    "standby":  {
+                    "Method":  "data-plane",
+                    "LatencyMs":  366,
+                    "Healthy":  true,
+                    "Host":  "127.0.0.1",
+                    "Port":  5432,
+                    "Detail":  "select 1 ok"
+                },
+    "data_plane":  {
+                       "probe_mode":  "data-plane",
+                       "switched":  [
+                                        "minio"
+                                    ],
+                       "applied":  {
+                                       "minio":  [
+                                                     "MINIO_HOST",
+                                                     "MINIO_PORT",
+                                                     "MINIO_ENDPOINT"
+                                                 ]
+                                   },
+                       "degraded":  [
+
+                                    ],
+                       "targets":  {
+                                       "redis.standby":  {
+                                                             "Detail":  "[WinError 10061] 由于目标计算机积极拒绝，无法连接。",
+                                                             "Ok":  false,
+                                                             "Layer":  "data-plane",
+                                                             "LatencyMs":  2120,
+                                                             "Extra":  {
+
+                                                                       }
+                                                         },
+                                       "minio.standby":  {
+                                                             "Detail":  "health/ready ok",
+                                                             "Ok":  true,
+                                                             "Layer":  "data-plane",
+                                                             "LatencyMs":  57,
+                                                             "Extra":  {
+                                                                           "note":  "就绪探针；桶/对象列表需 mc"
+                                                                       }
+                                                         },
+                                       "redis.primary":  {
+                                                             "Detail":  "PING+DBSIZE ok",
+                                                             "Ok":  true,
+                                                             "Layer":  "data-plane",
+                                                             "LatencyMs":  224,
+                                                             "Extra":  {
+                                                                           "keys":  2,
+                                                                           "role":  "master",
+                                                                           "master_link_status":  ""
+                                                                       }
+                                                         },
+                                       "pg.standby":  {
+                                                          "Detail":  "select 1 ok",
+                                                          "Ok":  true,
+                                                          "Layer":  "data-plane",
+                                                          "LatencyMs":  366,
+                                                          "Extra":  {
+                                                                        "server_version":  "17.10"
+                                                                    }
+                                                      },
+                                       "qdrant.primary":  {
+                                                              "Detail":  "GET /collections ok",
+                                                              "Ok":  true,
+                                                              "Layer":  "data-plane",
+                                                              "LatencyMs":  743,
+                                                              "Extra":  {
+                                                                            "collections":  69,
+                                                                            "version_hint":  ""
+                                                                        }
+                                                          },
+                                       "neo4j.standby":  {
+                                                             "Detail":  "timed out",
+                                                             "Ok":  false,
+                                                             "Layer":  "data-plane",
+                                                             "LatencyMs":  3027,
+                                                             "Extra":  {
+
+                                                                       }
+                                                         },
+                                       "minio.primary":  {
+                                                             "Detail":  "\u003curlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。\u003e",
+                                                             "Ok":  false,
+                                                             "Layer":  "data-plane",
+                                                             "LatencyMs":  2041,
+                                                             "Extra":  {
+
+                                                                       }
+                                                         },
+                                       "qdrant.standby":  {
+                                                              "Detail":  "\u003curlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。\u003e",
+                                                              "Ok":  false,
+                                                              "Layer":  "data-plane",
+                                                              "LatencyMs":  2066,
+                                                              "Extra":  {
+
+                                                                        }
+                                                          },
+                                       "neo4j.primary":  {
+                                                             "Detail":  "RETURN 1 ok",
+                                                             "Ok":  true,
+                                                             "Layer":  "data-plane",
+                                                             "LatencyMs":  17,
+                                                             "Extra":  {
+                                                                           "rows":  1
+                                                                       }
+                                                         },
+                                       "pg.primary":  {
+                                                          "Detail":  "psql: ����: ���ӵ�\"127.0.0.1\"�ϵķ��������˿�1ʧ�ܣ�Connection refused (0x0000274D/10061)",
+                                                          "Ok":  false,
+                                                          "Layer":  "data-plane",
+                                                          "LatencyMs":  2654,
+                                                          "Extra":  {
+
+                                                                    }
+                                                      }
+                                   }
+                   },
+    "dependencies":  {
+                         "redis":  {
+                                       "Layer":  "data-plane",
+                                       "PrimaryHealthy":  true,
+                                       "LatencyMs":  224,
+                                       "StandbyHealthy":  false,
+                                       "Switched":  false,
+                                       "Host":  "192.168.0.151",
+                                       "Detail":  "PING+DBSIZE ok",
+                                       "Port":  6380,
+                                       "Healthy":  true
+                                   },
+                         "qdrant":  {
+                                        "Layer":  "data-plane",
+                                        "PrimaryHealthy":  true,
+                                        "LatencyMs":  743,
+                                        "StandbyHealthy":  false,
+                                        "Switched":  false,
+                                        "Host":  "192.168.0.151",
+                                        "Detail":  "GET /collections ok",
+                                        "Port":  6333,
+                                        "Healthy":  true
+                                    },
+                         "neo4j":  {
+                                       "Layer":  "data-plane",
+                                       "PrimaryHealthy":  true,
+                                       "LatencyMs":  17,
+                                       "StandbyHealthy":  false,
+                                       "Switched":  false,
+                                       "Host":  "192.168.0.151",
+                                       "Detail":  "RETURN 1 ok",
+                                       "Port":  7687,
+                                       "Healthy":  true
+                                   },
+                         "minio":  {
+                                       "Layer":  "data-plane",
+                                       "PrimaryHealthy":  false,
+                                       "LatencyMs":  57,
+                                       "StandbyHealthy":  true,
+                                       "Switched":  true,
+                                       "Host":  "127.0.0.1",
+                                       "Detail":  "主用不可用，已切备用",
+                                       "Port":  9000,
+                                       "Healthy":  true
+                                   }
+                     },
+    "override_services":  [
+                              "openllm",
+                              "openmemory",
+                              "openrag"
+                          ],
+    "applied_endpoints":  {
+                              "openllm":  "postgresql://nuct:***@127.0.0.1:5432/nuct",
+                              "openmemory":  "127.0.0.1:5432",
+                              "openrag":  "postgresql+asyncpg://nuct:***@127.0.0.1:5432/nuct",
+                              "openbase":  "postgresql://nuct:***@127.0.0.1:5432/nuct",
+                              "dps":  "postgresql://nuct:***@127.0.0.1:5432/nuct"
+                          },
+    "note":  "数据面探针（PG select 1 / Redis PING+DBSIZE / Qdrant collections / Neo4j RETURN 1 / MinIO ready）；DSN 脱敏；不改写 .env；切备用的数据同步问题暂时挂起"
+}

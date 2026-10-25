@@ -15,7 +15,9 @@
 2) 行为契约（需 Windows PowerShell）：`-DbMode off` 直接放行；强制备用指向不可达端口时
    退出码 2 且不监听 8000。行为用例用临时 LogRoot/EvidenceRoot，避免污染仓库；
 3) Phase 2（P1，2026-10-25）：`dbcheck -Json` 机器可读输出、monitor 周期复检
-   （主用恢复只提示不回切）、公共设施探测仅提示不阻断。
+   （主用恢复只提示不回切）、公共设施探测仅提示不阻断；
+4) Phase 3（P0，2026-10-25，用户决策）：判定升级为**数据面探针**
+   （`scripts/infra_probe.py`），主用不通即切备用（含四设施），数据面同步问题挂起并告警。
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -32,7 +35,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
-OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.10.0.md"
+PROBE_SCRIPT = ROOT / "scripts" / "infra_probe.py"
+OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.11.0.md"
 
 POWERSHELL = shutil.which("powershell") or (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -118,20 +122,23 @@ def test_env_file_read_uses_utf8_explicitly() -> None:
 
 
 def test_operation_doc_records_startup_failover() -> None:
-    """运维记录升 v1.10.0 并登记 §16（启动期自动探测；§16.7 周期复检与公共设施探测）。"""
+    """运维记录升 v1.11.0 并登记 §16 / §16.7 / §16.8（数据面探针与四设施切换）。"""
     assert OPERATION_DOC.exists(), f"缺少运维记录: {OPERATION_DOC}"
     text = OPERATION_DOC.read_text(encoding="utf-8-sig")
-    assert "v1.10.0" in text
+    assert "v1.11.0" in text
     assert "## 16. 启动期自动探测与主备切换" in text
     assert "### 16.7 周期复检与公共设施探测" in text
+    assert "### 16.8 数据面探针与四设施切换" in text
     for marker in (
         "-Action dbcheck",
         "-DbMode",
         "127.0.0.1:5432",
         "退出码 2",
         "-DbRecheckSec",
+        "-ProbeLevel",
         "db-monitor-recheck-",
         "不自动回切",
+        "数据面同步",
     ):
         assert marker in text, f"运维记录缺少: {marker}"
 
@@ -338,6 +345,7 @@ def test_dbcheck_json_reports_unavailable_and_dependencies(tmp_path: Path) -> No
     assert payload["ok"] is False
     assert payload["resolved_mode"] == "unavailable"
     assert "dependencies" in payload
+    assert "data_plane" in payload
     assert payload["evidence_path"]
 
 
@@ -406,3 +414,141 @@ def test_monitor_recheck_notices_primary_recovery(tmp_path: Path) -> None:
     # 只提示不回切：`-Only __none__` 下不应产生任何服务日志目录
     svc_log_root = tmp_path / "svc-logs"
     assert not svc_log_root.exists() or not any(svc_log_root.iterdir())
+
+
+# ---------------------------------------------------------------------------
+# 4. Phase 3（P0）：数据面探针 + 主用不通切备用（含四设施）
+# ---------------------------------------------------------------------------
+
+
+def test_data_plane_contract_declared() -> None:
+    """编排侧数据面契约标记齐备（探针脚本、层级开关、切换函数、证据字段）。"""
+    text = _text()
+    for marker in (
+        "scripts\\infra_probe.py",
+        "[string]$ProbeLevel = 'auto'",
+        "Get-ProbePython",
+        "New-InfraProbeSpec",
+        "Invoke-DataPlaneProbe",
+        "Set-InfraStandbyOverrides",
+        "OPENBASE_INFRA_STANDBY_HOST",
+        "data_plane",
+        "数据面同步问题暂时挂起",
+    ):
+        assert marker in text, f"缺少数据面契约标记: {marker}"
+
+
+def test_probe_script_is_stdlib_only() -> None:
+    """探针脚本不得引入第三方依赖（本机 .venv 不保证有 redis/qdrant/psycopg）。"""
+    text = PROBE_SCRIPT.read_text(encoding="utf-8")
+    for banned in ("import requests", "import redis", "import qdrant_client", "import psycopg", "import minio"):
+        assert banned not in text, f"探针脚本不得依赖: {banned}"
+    assert "def main(" in text
+
+
+def _run_probe(tmp_path: Path, spec: dict, env: dict[str, str] | None = None) -> tuple[dict, str]:
+    spec_path = tmp_path / "spec.json"
+    out_path = tmp_path / "out.json"
+    spec_path.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, "-S", "-B", str(PROBE_SCRIPT), "--spec", str(spec_path), "--out", str(out_path)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env={**os.environ, **(env or {})},
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    raw = out_path.read_text(encoding="utf-8")
+    return json.loads(raw), raw
+
+
+def test_probe_reports_closed_ports_as_unhealthy(tmp_path: Path) -> None:
+    """全端点不可达 ⇒ 全部 ok=false；psql 缺失时 PG 明确降级为 TCP 并写入 degraded。"""
+    spec = {
+        "timeout_sec": 1,
+        "psql": str(tmp_path / "missing-psql.exe"),
+        "targets": {
+            "pg": {"primary": {"host": "127.0.0.1", "port": 1, "user": "u", "password": "p", "database": "d"}},
+            "redis": {"primary": {"host": "127.0.0.1", "port": 1, "password": ""}},
+            "qdrant": {"primary": {"url": "http://127.0.0.1:1"}},
+            "neo4j": {"primary": {"host": "127.0.0.1", "http_port": 1, "user": "u", "password": "p"}},
+            "minio": {"primary": {"host": "127.0.0.1", "port": 1}},
+        },
+    }
+    payload, _ = _run_probe(tmp_path, spec)
+    assert payload["schema_version"] == 1
+    assert set(payload["targets"]) == {
+        "pg.primary",
+        "redis.primary",
+        "qdrant.primary",
+        "neo4j.primary",
+        "minio.primary",
+    }
+    assert all(entry["ok"] is False for entry in payload["targets"].values())
+    assert payload["targets"]["pg.primary"]["layer"] == "tcp"
+    assert any(item.startswith("pg.primary") for item in payload["degraded"])
+
+
+def test_probe_never_emits_credentials(tmp_path: Path) -> None:
+    """口令只经环境变量读取，输出中不得出现明文。"""
+    secret = "SuperSecret-9f3c"
+    spec = {
+        "timeout_sec": 1,
+        "targets": {
+            "redis": {"primary": {"host": "127.0.0.1", "port": 1, "password_env": "PROBE_TEST_SECRET"}},
+        },
+    }
+    payload, raw = _run_probe(tmp_path, spec, env={"PROBE_TEST_SECRET": secret})
+    assert secret not in raw
+    assert payload["targets"]["redis.primary"]["ok"] is False
+
+
+@needs_powershell
+def test_primary_infrastructure_outage_switches_to_standby(tmp_path: Path) -> None:
+    """主用设施数据面不通 ⇒ 切本机备用、覆盖环境键并留痕（以 MinIO 为主备均在线的实例）。"""
+    if not _port_open("127.0.0.1", 9000):
+        pytest.skip("本机备用 MinIO 127.0.0.1:9000 未运行，跳过切换用例")
+    assert POWERSHELL is not None
+
+    env = _base_env(tmp_path)
+    env["MINIO_HOST"] = "127.0.0.1"
+    env["MINIO_PORT"] = "1"          # 主用数据面不可达（连接拒绝）
+    completed = subprocess.run(
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(ORCHESTRATOR),
+            "-Action",
+            "dbcheck",
+            "-Json",
+            "-DbProbeTimeoutSec",
+            "1",
+            "-LogRoot",
+            str(tmp_path / "logs"),
+            "-ServiceLogRoot",
+            str(tmp_path / "svc-logs"),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        timeout=180,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    payload = json.loads(completed.stdout.strip())
+
+    minio = payload["dependencies"]["minio"]
+    assert minio["Switched"] is True
+    assert minio["Host"] == "127.0.0.1"
+    assert int(minio["Port"]) == 9000
+    assert "minio" in payload["data_plane"]["switched"]
+    assert "MINIO_HOST" in payload["data_plane"]["applied"]["minio"]
+    assert payload["data_plane"]["probe_mode"] == "data-plane"
+
