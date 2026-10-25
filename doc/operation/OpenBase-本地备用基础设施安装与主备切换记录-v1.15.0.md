@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.14.0 |
+| 文档版本 | v1.15.0 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -30,7 +30,8 @@
 | v1.11.0 | 2026-10-25 | 研发 | **P0 数据面探针 + 四设施切换（用户决策）**：新增 `scripts/infra_probe.py`（stdlib，不含第三方依赖）——PG `select 1`、Redis `PING+DBSIZE`、Qdrant `GET /collections`、Neo4j `RETURN 1`、MinIO `health/ready`；探测由 TCP 升级为**数据面**（探针不可用显式回落 TCP 并记 degraded）；**主用数据面不通即切备用**（PG 硬门禁 + 四设施覆盖：Redis/Qdrant/Neo4j/MinIO 的共享键与各仓自有键）；**数据面同步问题暂时挂起**，切换强制 WARN 留痕；证据 schema v3（新增 `data_plane`）；新增 §16.8，守门用例 15 → **20 例** |
 | v1.12.0 | 2026-10-25 | 研发 | **每次启动服务前校验数据库（用户决策）**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`——全量启动、`-Only` 单服务、monitor 自愈重启**一律先校验**该服务依赖（pg/redis/qdrant/neo4j）；当前通道共享库不可用 ⇒ **拒绝启动该服务**，其它设施 DOWN ⇒ WARN 不阻断；`-ProbeTtlSec`（默认 60s）内复用探测结果、过期按需重探；新增 §16.9，守门用例 20 → **21 例** |
 | v1.13.0 | 2026-10-25 | 研发 | **D-05 解除：解释器解析与运行环境自检**。系统 Python 3.12.10（`D:\Python`）已安装，新建专用 venv `D:\venvs\openbase`（`pip install -e .` 全依赖）；`Start-Service` 新增候选链解析（`OPENBASE_<SVC>_PYTHON` → `-PythonHome` → `OPENBASE_PYTHON` → 各仓 venv → 系统 Python → 3.13 桥接 → PATH），每个候选做 `import uvicorn` 自检，全部失败给出可读错误并拒绝该服务；实测单服务启动成功（PID 9100、健康检查 3s、stop 后端口释放）；新增 §16.10，守门用例 21 → **23 例** |
-| v1.14.0 | 2026-10-25 | 研发 | **OpenLLM / OpenMemory 专用 venv 落地**（`D:\venvs\openllm`、`D:\venvs\openmemory`），候选链同步补入；OpenLLM 实测启动 + `/health` 200，OpenMemory 依赖导入通过；记录上游 requirements 缺口（`python_requires` 非法行、`httpx==0.26` 与 `mcp>=1.0` 冲突、缺 `psycopg/pyjwt/numpy/qdrant-client/OTel gRPC`）与本机补丁（`bcrypt<5`、`qdrant-client==1.7.3`）；登记「OpenLLM 冷启动 >60s 触发健康等待告警」；新增 §16.11 |
+| v1.14.0 | 2026-10-25 | 研发 | **OpenLLM / OpenMemory 专用 venv 落地**（`D:\venvs\openllm`、`D:\venvs\openmemory`），候选链同步补入；OpenLLM 实测启动 + `/health` 200，OpenMemory 依赖导入通过；记录上游 requirements 缺口（`python_requires` 非法行、`httpx==0.26` 与 `mcp>=1.0` 冲突、缺 `psycopg/pyjwt/numpy/qdrant-client/OTel gRPC`）与本机补丁（`bcrypt<5`、`qdrant-client==1.7.3`）；新增 §16.11 |
+| v1.15.0 | 2026-10-25 | 研发 | **全栈 7 服务一次启动成功**：修复 oidc-idp 解释器自检（pgAdmin 桥接需门控环境）、frontend 启动方式（`npm.cmd` 在 WMI 下静默退出 → 直调 `node + vite.js`）；openllm/openrag 冷启动 >60s → 服务级 `HealthWait=180`，frontend `HealthWait=120`；dps 运行时确定为 OpenRAG `.venv3`（依赖经 `cross-libs.pth` 注入）；全量检查 **27 PASS / 0 FAIL / 0 SKIP**；新增 §16.12 |
 
 ## 1. 背景与定位
 
@@ -859,6 +860,46 @@ Python，唯一解释器是 pgAdmin 内嵌 3.13（不注册 PATH），因此 `St
 | 1 | OpenLLM 冷启动 >60s | 首次启动触发健康等待告警（服务实际可用） | 为 openllm 增加服务级 `HealthWait`（如 180s），与 openmemory 一致 |
 | 2 | `D:\uv` 目录为空 | 未安装 uv 可执行 | 若要 uv 管理，先安装 `uv.exe`，再以 `uv venv` 重建三仓环境 |
 | 3 | requirements 上游缺陷 | 见 §16.11.2 八项 | 由 OpenLLM 仓修正后再回归 |
+
+### 16.12 全栈 7 服务启动实测（2026-10-25，人工走查前置）
+
+#### 16.12.1 启动结果
+
+| 服务 | 端口 | 解释器/运行时 | 冷启动 | 结果 |
+|---|---:|:---:|---:|---|
+| openllm | 8001 | `D:\venvs\openllm\Scripts\python.exe` | 91s | ✅ |
+| openrag | 8010 | `D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe` | >62s | ✅（`/api/v1/system/health` 200） |
+| openmemory | 8020 | `D:\venvs\openmemory\Scripts\python.exe` | 113s | ✅ |
+| oidc-idp | 8090 | pgAdmin 3.13 + `.venv` 桥接 | 41s | ✅ |
+| dps | 8030 | OpenRAG `.venv3`（依赖经 `cross-libs.pth`） | 34s | ✅ |
+| openbase | 8000 | `D:\venvs\openbase\Scripts\python.exe` | 60s | ✅ |
+| frontend | 5173 | `node + node_modules\vite\bin\vite.js` | 65s | ✅ |
+
+全量检查（`-Action checkall`）：**27 PASS / 0 FAIL / 0 SKIP**，证据
+`doc/test/evidence/ops/checkall-20261025-2253.txt`。
+
+#### 16.12.2 本轮修复的三个启动缺陷
+
+| # | 现象 | 根因 | 修复 |
+|:-:|---|---|---|
+| 1 | oidc-idp 报「未找到可用 Python」 | 候选自检 `import uvicorn` 在 pgAdmin 桥接上执行时**未注入门控环境**，必然失败（选择后才注入，鸡生蛋） | `Test-PythonRuntime` 对 `*pgAdmin*` 先设 `OPENBASE_PY_DEPS/ROOT` 再自检 |
+| 2 | frontend `npm.cmd run dev` 静默退出（exit 1，无错误输出） | npm 11 + WMI/Start-Process 组合下 `npm.cmd` 无法正常拉起子进程 | 改为直调 `node node_modules\vite\bin\vite.js --host 127.0.0.1 --port 5173` |
+| 3 | openllm/openrag/frontend 健康等待超时（服务实际可用） | 全局 `HealthTimeout=60s` 短于真实冷启动 | 服务级 `HealthWait`：openllm 180 / openrag 180 / frontend 120（openmemory 300 既有） |
+
+#### 16.12.3 人工走查入口
+
+| 目标 | 地址 |
+|---|---|
+| 统一前端 | `http://127.0.0.1:5173/`（登录 `admin / admin123`，走查环境默认账号） |
+| OpenBase API 文档 | `http://127.0.0.1:8000/docs` |
+| OpenLLM 健康/状态 | `http://127.0.0.1:8001/health`、`/api/v1/status` |
+| OpenRAG 健康 | `http://127.0.0.1:8010/api/v1/system/health` |
+| OpenMemory 健康 | `http://127.0.0.1:8020/health` |
+| DPS 存活 | `http://127.0.0.1:8030/health/liveness` |
+| 本地 OIDC IdP | `http://127.0.0.1:8090/.well-known/openid-configuration` |
+
+停止：`.\scripts\service-orchestrator.ps1 -Action stop`（停止后以 `Get-NetTCPConnection` 核对端口，见 D-04）。
+
 
 
 

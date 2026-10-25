@@ -784,6 +784,8 @@ $services = @(
     @{
         Name    = 'openllm'
         Port    = 8001
+        # 冷启动（首次导入 torch/transformers 等）实测 >60s，健康等待放宽到 180s
+        HealthWait = 180
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenLLM\backend'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8001')
@@ -815,6 +817,8 @@ $services = @(
     @{
         Name    = 'openrag'
         Port    = 8010
+        # 冷启动实测 >60s（加载嵌入/索引组件），健康等待放宽到 180s
+        HealthWait = 180
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenRAG'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'openrag.main:app', '--app-dir', 'src', '--host', '127.0.0.1', '--port', '8010')
@@ -995,9 +999,12 @@ $services = @(
     @{
         Name    = 'frontend'
         Port    = 5173
+        # 冷启动实测约 26s（vite 依赖预构建），健康等待放宽到 120s
+        HealthWait = 120
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenBase\openbase-ui'
-        Command = 'npm.cmd'   # Windows 下 npm 为 npm.cmd（Start-Process 需带扩展名）
-        Args    = @('run', 'dev')
+        # 直调 vite（node + vite.js）：`npm.cmd run dev` 在 WMI/Start-Process 下会静默退出（实测 exit 1）
+        Command = 'node'
+        Args    = @('node_modules\vite\bin\vite.js', '--host', '127.0.0.1', '--port', '5173')
         # 走查 v1.0.0 提示项修复：以 WMI 脱离当前会话启动，规避沙箱 Job Object
         # kill-on-close 导致子进程（vite）随编排器会话结束被回收。
         Detach  = $true
@@ -1197,6 +1204,11 @@ function Test-PythonRuntime {
     param([string]$Exe, [string]$ImportName = 'uvicorn')
 
     if (-not $Exe -or -not (Test-Path $Exe)) { return $false }
+    # pgAdmin 内嵌 3.13 必须带门控环境才看得到 `.venv` 依赖（否则自检必然失败）
+    if ($Exe -like '*pgAdmin*') {
+        $env:OPENBASE_PY_DEPS = Join-Path $ProjectRoot '.venv'
+        $env:OPENBASE_PY_ROOT = $ProjectRoot
+    }
     try {
         & $Exe -c "import $ImportName" *> $null
         return ($LASTEXITCODE -eq 0)
@@ -1225,6 +1237,8 @@ function Get-PythonCandidates {
     if ($name -eq 'openllm') { $candidates += 'D:\venvs\openllm\Scripts\python.exe' }
     if ($name -eq 'openmemory') { $candidates += 'D:\venvs\openmemory\Scripts\python.exe' }
     if ($name -eq 'openrag') { $candidates += 'D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe' }
+    # DPS 的依赖在 `.venv\libs`（由 OpenRAG .venv3 的 cross-libs.pth 注入），运行时即 OpenRAG 的 3.11
+    if ($name -eq 'dps') { $candidates += 'D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe' }
     $candidates += 'D:\Python\python.exe'
     $candidates += 'D:\PostgreSQL\17\pgAdmin 4\python\python.exe'
 

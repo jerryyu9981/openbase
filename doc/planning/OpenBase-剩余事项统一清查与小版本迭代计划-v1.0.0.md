@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | OpenBase（开放底座）统一前端及五系统协同 |
-| 文档版本 | v1.22.0 |
+| 文档版本 | v1.23.0 |
 | 状态 | **[Review]**（待人工批准后进入执行） |
 | 适用范围 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五系统 + 运维/QA 收口项 |
 | 作者 | FA-OpenBase-Dev |
@@ -272,6 +272,7 @@ v1.10.2 ──→ v1.11.0（长尾裁定需治理口径稳定）
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |------|------|--------|----------|
+| v1.23.0 | 2026-10-25 | FA-OpenBase-Dev | **全栈 7 服务一次启动成功**（checkall 27 PASS / 0 FAIL / 0 SKIP）：修复 oidc-idp 解释器自检（pgAdmin 桥接门控）、frontend `npm.cmd` 静默退出（改直调 vite）、openllm/openrag/frontend 冷启动 `HealthWait`；dps 运行时定为 OpenRAG `.venv3`；**B2 前置具备**；运维记录升 v1.15.0（§16.12）、全栈计划升 v1.7.0。 |
 | v1.22.0 | 2026-10-25 | FA-OpenBase-Dev | **B4 进一步收敛**：OpenLLM/OpenMemory 专用 venv 落地（`D:\venvs\openllm`、`D:\venvs\openmemory`），编排候选链补入；OpenLLM 实测启动 + `/health` 200（冷启动 >60s 触发等待告警）；记录 OpenLLM requirements 八项缺口与本机补丁、OpenMemory `qdrant-client` 约束冲突；剩余 uv 安装 / 上游修正 / HealthWait；运维记录升 v1.14.0（§16.11）、全栈计划升 v1.6.0。 |
 | v1.21.0 | 2026-10-25 | FA-OpenBase-Dev | **D-05 解除（B4 部分闭环）**：系统 Python 3.12.10 + 专用 venv `D:\venvs\openbase`；编排新增解释器候选链与 `import uvicorn` 自检（`OPENBASE_<SVC>_PYTHON` / `-PythonHome` / `OPENBASE_PYTHON` / 各仓 venv / 系统 Python / 3.13 桥接 / PATH），失败可读报错并拒绝该服务；实测单服务启动成功（PID 9100、健康 3s、stop 后端口释放）；守门 21 → 23 例；运维记录升 v1.13.0（§16.10）、全栈计划升 v1.5.0。 |
 | v1.20.0 | 2026-10-25 | FA-OpenBase-Dev | **每次启动服务前校验数据库（用户决策）**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`，全量 / `-Only` 单服务 / monitor 自愈均按服务依赖（pg/redis/qdrant/neo4j）校验；当前通道共享库不可用即拒绝该服务启动，其它设施 DOWN 仅 WARN；`-ProbeTtlSec`（60s）内复用探测且分批结果合并；守门 20 → 21 例；运维记录升 v1.12.0（§16.9）、全栈计划升 v1.4.0。 |

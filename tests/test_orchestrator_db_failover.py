@@ -36,7 +36,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
 PROBE_SCRIPT = ROOT / "scripts" / "infra_probe.py"
-OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.14.0.md"
+OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.15.0.md"
 
 POWERSHELL = shutil.which("powershell") or (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -122,16 +122,17 @@ def test_env_file_read_uses_utf8_explicitly() -> None:
 
 
 def test_operation_doc_records_startup_failover() -> None:
-    """运维记录升 v1.14.0 并登记 §16 / §16.7~§16.11。"""
+    """运维记录升 v1.15.0 并登记 §16 / §16.7~§16.12。"""
     assert OPERATION_DOC.exists(), f"缺少运维记录: {OPERATION_DOC}"
     text = OPERATION_DOC.read_text(encoding="utf-8-sig")
-    assert "v1.14.0" in text
+    assert "v1.15.0" in text
     assert "## 16. 启动期自动探测与主备切换" in text
     assert "### 16.7 周期复检与公共设施探测" in text
     assert "### 16.8 数据面探针与四设施切换" in text
     assert "### 16.9 每次启动前的数据库校验" in text
     assert "### 16.10 解释器解析与运行环境自检" in text
     assert "### 16.11 三仓专用 venv 与上游依赖缺口" in text
+    assert "### 16.12 全栈 7 服务启动实测" in text
     for marker in (
         "-Action dbcheck",
         "-DbMode",
@@ -205,6 +206,7 @@ def test_standby_unreachable_blocks_startup(tmp_path: Path) -> None:
     assert POWERSHELL is not None
     env = _base_env(tmp_path)
     env["OPENBASE_PG_STANDBY_PORT"] = "1"
+    was_listening = _port_open("127.0.0.1", 8000)
     completed = subprocess.run(
         [
             POWERSHELL,
@@ -237,21 +239,9 @@ def test_standby_unreachable_blocks_startup(tmp_path: Path) -> None:
     assert completed.returncode == 2, completed.stdout + completed.stderr
     assert "拒绝启动" in (completed.stdout + completed.stderr)
 
-    probe = subprocess.run(
-        [
-            POWERSHELL,
-            "-NoProfile",
-            "-Command",
-            "(Test-NetConnection -ComputerName 127.0.0.1 -Port 8000 -InformationLevel Quiet) -as [string]",
-        ],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        env=env,
-        timeout=60,
-    )
-    assert "True" not in probe.stdout, "共享库不可达时不应启动任何服务（8000 不应监听）"
+    # 走查环境可能已整体在跑：只在 8000 原本未监听时断言「未启动任何服务」
+    if not was_listening:
+        assert not _port_open("127.0.0.1", 8000), "共享库不可达时不应启动任何服务（8000 不应监听）"
 
     evidence = list((tmp_path / "evidence").glob("db-startup-probe-*.json"))
     assert evidence, "缺少共享库探测证据 JSON"
@@ -487,6 +477,13 @@ def test_python_runtime_resolution_declared() -> None:
         "D:\\venvs\\openbase",
         "D:\\venvs\\openllm",
         "D:\\venvs\\openmemory",
+        # openllm/openrag 冷启动 >60s → 服务级健康等待 180s
+        "HealthWait = 180",
+        # frontend 直调 vite（npm.cmd 在 WMI 下静默退出）
+        "node_modules\\vite\\bin\\vite.js",
+        "HealthWait = 120",
+        # dps 复用 OpenRAG .venv3（3.11），依赖经 cross-libs.pth 注入
+        "if ($name -eq 'dps')",
     ):
         assert marker in text, f"缺少解释器解析契约: {marker}"
 

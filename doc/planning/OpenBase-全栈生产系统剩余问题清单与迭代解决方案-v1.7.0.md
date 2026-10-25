@@ -1,22 +1,23 @@
-# OpenBase-全栈生产系统剩余问题清单与迭代解决方案-v1.6.0
+# OpenBase-全栈生产系统剩余问题清单与迭代解决方案-v1.7.0
 
 | 项目 | 内容 |
 |------|------|
 | 文档名称 | 全栈生产系统剩余问题清单与迭代解决方案（OpenBase 主仓 + 四仓 + 运维面） |
-| 文档编号 | OB-PLAN-REMAIN-FULLSTACK-v1.6.0 |
-| 版本 | **v1.6.0** |
+| 文档编号 | OB-PLAN-REMAIN-FULLSTACK-v1.7.0 |
+| 版本 | **v1.7.0** |
 | 状态 | **[Review]**（待人工批准后排期执行） |
 | 编制日期 | 2026-10-25 |
 | 编制人 | FA-OpenBase-Dev（AI 辅助） |
-| 代码基线 | `4d1f23f`（产品版本 **1.4.12**） |
-| 上游依据 | 《OpenBase-剩余事项统一清查与小版本迭代计划-v1.0.0》v1.22.0；《OpenBase-长尾迭代收口审计-v1.12.0》v1.3.0；《OpenBase-S2-三级回滚演练报告-v1.1.0》；《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》；《OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0》（XR-OPS-07-ENV-001）；《OpenBase-主备双通道生产上线回滚方案-v1.0.0》 |
+| 代码基线 | `f808603`（产品版本 **1.4.12**） |
+| 上游依据 | 《OpenBase-剩余事项统一清查与小版本迭代计划-v1.0.0》v1.23.0；《OpenBase-长尾迭代收口审计-v1.12.0》v1.3.0；《OpenBase-S2-三级回滚演练报告-v1.1.0》；《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》；《OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0》（XR-OPS-07-ENV-001）；《OpenBase-主备双通道生产上线回滚方案-v1.0.0》 |
 | 口径 | 仅登记**尚未闭环**项；已闭环项不重复排期（见各上游文档「已闭环基线」） |
 
 ## 修订历史
 
 | 版本 | 日期 | 编制人 | 修订内容 |
 |------|------|--------|---------|
-| v1.6.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **B4 进一步收敛**：OpenLLM/OpenMemory 专用 venv 落地（`D:\venvs\openllm`、`D:\venvs\openmemory`），候选链补入；OpenLLM 实测启动 + `/health` 200（冷启动 >60s 触发等待告警）；记录 OpenLLM requirements 八项缺口与本机补丁、OpenMemory `qdrant-client` 约束冲突；剩余：uv 安装、上游 requirements 修正、openllm 服务级 HealthWait |
+| v1.7.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **全栈 7 服务一次启动成功**（27 PASS / 0 FAIL / 0 SKIP）：修复 oidc-idp 解释器自检、frontend `npm.cmd` 静默退出（改直调 vite）、三服务冷启动 `HealthWait`；dps 运行时确定为 OpenRAG `.venv3`；**B2（S7 门禁 B 面）四仓运行态已具备，可进入执行** |
+| v1.6.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **B4 进一步收敛**：OpenLLM/OpenMemory 专用 venv 落地，候选链补入；OpenLLM 实测启动 + `/health` 200；记录 OpenLLM requirements 八项缺口与本机补丁、OpenMemory `qdrant-client` 约束冲突 |
 | v1.5.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **B4 部分闭环（D-05 解除）**：系统 Python 3.12.10 + 专用 venv `D:\venvs\openbase`（全依赖）；编排新增解释器解析链与 `import uvicorn` 自检，失败给出可读错误并拒绝该服务；实测单服务启动成功（PID 9100、健康检查 3s、stop 后端口释放）；守门 21 → **23 例** |
 | v1.4.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **每次启动服务前校验数据库**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`（全量 / `-Only` 单服务 / monitor 自愈一致）；按服务依赖校验 pg/redis/qdrant/neo4j；当前通道共享库不可用 ⇒ 拒绝该服务；`-ProbeTtlSec` 内复用探测；守门 20 → **21 例**（运维记录 v1.12.0 §16.9） |
 | v1.3.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **A8 Phase 3（P0 子集）已交付**：判定升级为数据面探针（`scripts/infra_probe.py`，stdlib）；**主用不通即切备用**（PG 硬门禁 + Redis/Qdrant/Neo4j/MinIO 覆盖）；数据面同步**暂时挂起**并强制告警；证据 schema v3；守门用例 15 → **20 例**。原 Phase 3 拆分为 Phase 3（已交付）与 **Phase 4（数据同步/回切，挂起）** |
@@ -63,7 +64,7 @@
 | ID | 事项 | 优先级 | 现状 | 处置方案 | 验收判据 |
 |:--:|------|:------:|------|---------|---------|
 | B1 | **D-04 编排 PID 记录与真实监听进程错位**：`service-orchestrator.ps1 -Action stop` 首次按 PID 记录停止未生效（PID 296 包装进程 vs 真实 uvicorn 34120） | **P0（运维正确性）** | 已登记（S2 报告 v1.1.0 D-04） | ① `start` 时以**端口反查真实监听 PID** 记录（`Get-NetTCPConnection -State Listen`）；② `stop` 增加「PID 未命中 → 端口兜底」；③ 停止后输出端口核对结果；④ 补单测/集成测（对假进程表 stub）；⑤ 运维手册与回滚方案同步「以端口核对为准」 | `stop` 一次即停净（端口无监听）；连续 3 次启停无残留；单测覆盖 PID 命中/未命中两分支 |
-| B2 | **S7 门禁 B 面**：SMOKE-S0-S6、K07-SYS-1 | P1 | 需真实四仓运行态；本机四仓未运行、OpenLLM 因 `psycopg` 缺失不可启动 | 联调窗口内启动四仓（含 OIDC IdP）后执行 `scripts/gate_aggregate.py`，回填 `doc/test/evidence/s7/gate/**` | 冒烟与 K07 矩阵由 PENDING 转 PASS（或附可解释原因） |
+| B2 | **S7 门禁 B 面**：SMOKE-S0-S6、K07-SYS-1 | P1 | 🟡 **前置已具备（2026-10-25）**：全栈 7 服务一次启动成功、`checkall` 27 PASS / 0 FAIL；尚待执行 `gate_aggregate.py` 并回填证据 | 执行 `scripts/gate_aggregate.py`，回填 `doc/test/evidence/s7/gate/**` | 冒烟与 K07 矩阵由 PENDING 转 PASS（或附可解释原因） |
 | B3 | **github 补推** | P1 | ✅ **已闭环（2026-10-25）**：`4cfa4e7` / `c187348` / `40364ff` / `4d3847b` 已推送，三远程 HEAD 一致（`4d3847b`） | 后续网络异常时按同法重试并 `ls-remote` 核对 | origin/backup/github 三者 HEAD 相同 |
 | B4 | **运行期依赖与环境固化**（XR-OPS-02 剩余）：OpenLLM 缺 `prometheus_client`/OTel gRPC 子包、宿主 Python 缺 `psycopg` pq wrapper、编排裸 `python` 需 shim | P1 | 🟡 **大部分闭环（2026-10-25）**：三仓专用 venv 就绪（openbase/openllm/openmemory，系统 Python 3.12.10），编排解释器解析链 + `import uvicorn` 自检；OpenLLM 启动 `/health` 200；**剩余**：`D:\uv` 装 uv、OpenLLM requirements 8 项上游修正（见运维记录 §16.11.2）、openllm 冷启动 `HealthWait` | ① 上游 requirements 修正并回归；② 编排扩展依赖自检到各仓业务模块；③ 文档化 `OPENBASE_PYTHON` / `-PythonHome` 用法 | 干净环境按文档一次启动成功；依赖自检失败可读报错 |
 
