@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.12.0 |
+| 文档版本 | v1.13.0 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -29,6 +29,7 @@
 | v1.10.0 | 2026-10-25 | 研发 | **P1 落地**：① `monitor` 周期复检（默认 ≥60s，`-DbRecheckSec` 可缩短）——主用恢复/失联**只提示不回切**，证据 `db-monitor-recheck-*.json`；② Redis/Qdrant/Neo4j/MinIO 同批 TCP 探测，**仅提示不阻断**（PG 为唯一硬门禁），纳入证据 `dependencies`；③ `dbcheck -Json` 机器可读输出（schema v2）；新增 §16.7，§16.2/§16.5 同步 |
 | v1.11.0 | 2026-10-25 | 研发 | **P0 数据面探针 + 四设施切换（用户决策）**：新增 `scripts/infra_probe.py`（stdlib，不含第三方依赖）——PG `select 1`、Redis `PING+DBSIZE`、Qdrant `GET /collections`、Neo4j `RETURN 1`、MinIO `health/ready`；探测由 TCP 升级为**数据面**（探针不可用显式回落 TCP 并记 degraded）；**主用数据面不通即切备用**（PG 硬门禁 + 四设施覆盖：Redis/Qdrant/Neo4j/MinIO 的共享键与各仓自有键）；**数据面同步问题暂时挂起**，切换强制 WARN 留痕；证据 schema v3（新增 `data_plane`）；新增 §16.8，守门用例 15 → **20 例** |
 | v1.12.0 | 2026-10-25 | 研发 | **每次启动服务前校验数据库（用户决策）**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`——全量启动、`-Only` 单服务、monitor 自愈重启**一律先校验**该服务依赖（pg/redis/qdrant/neo4j）；当前通道共享库不可用 ⇒ **拒绝启动该服务**，其它设施 DOWN ⇒ WARN 不阻断；`-ProbeTtlSec`（默认 60s）内复用探测结果、过期按需重探；新增 §16.9，守门用例 20 → **21 例** |
+| v1.13.0 | 2026-10-25 | 研发 | **D-05 解除：解释器解析与运行环境自检**。系统 Python 3.12.10（`D:\Python`）已安装，新建专用 venv `D:\venvs\openbase`（`pip install -e .` 全依赖）；`Start-Service` 新增候选链解析（`OPENBASE_<SVC>_PYTHON` → `-PythonHome` → `OPENBASE_PYTHON` → 各仓 venv → 系统 Python → 3.13 桥接 → PATH），每个候选做 `import uvicorn` 自检，全部失败给出可读错误并拒绝该服务；实测单服务启动成功（PID 9100、健康检查 3s、stop 后端口释放）；新增 §16.10，守门用例 21 → **23 例** |
 
 ## 1. 背景与定位
 
@@ -768,5 +769,44 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 - `frontend` 不直连数据库，不做校验（其可用性取决于 OpenBase）；
 - 绕过编排直接 `uvicorn` 仍不触发（Phase 4 的应用内自检）；
 - 备用设施未启动时，该校验只会 `WARN` 对应设施，不会阻断服务启动。
+
+### 16.10 解释器解析与运行环境自检（D-05 解除，2026-10-25）
+
+#### 16.10.1 背景
+
+编排的 6 个 Python 服务原先统一使用 `Command = 'python'`，依赖 PATH 解析；本机从未安装系统级
+Python，唯一解释器是 pgAdmin 内嵌 3.13（不注册 PATH），因此 `Start-Process` 直接报
+`The system cannot find the file specified`（D-05）。
+
+#### 16.10.2 处置
+
+| 项 | 内容 |
+|---|---|
+| 系统 Python | `D:\Python\python.exe` → **3.12.10**（完整安装） |
+| 专用 venv | `D:\venvs\openbase\Scripts\python.exe`，由 `python -m venv` + `pip install -e .` 生成（含 fastapi/uvicorn/pydantic/sqlalchemy 等全部运行期依赖） |
+| 解析顺序 | `OPENBASE_<SVC>_PYTHON` → `-PythonHome`（exe/目录）→ `OPENBASE_PYTHON` → 各仓默认 venv（openbase=`D:\venvs\openbase`、openrag=`.venv3`）→ 系统 Python → pgAdmin 3.13 桥接（自动注入 `OPENBASE_PY_DEPS`/`OPENBASE_PY_ROOT`）→ PATH 上的 python |
+| 自检 | 每个候选执行 `python -c "import uvicorn"`，**全部失败**时输出 `启动前运行环境校验失败：未找到可用 Python…` 并拒绝该服务启动 |
+| 生效范围 | 全量启动 / `-Only` 单服务 / monitor 自愈重启（统一 `Start-Service`） |
+
+**ABI 说明（关键）**：既有 `.venv` 内的 `_pydantic_core.cp313-win_amd64.pyd` 是 **cp313** 产物，
+系统 3.12 即使加 `PYTHONPATH=.venv` 也会在 `import pydantic` 处失败（已实测）。
+因此必须**用系统 Python 新建 venv**，不能复用 3.13 的 `.venv`；3.13 桥接仅作为最后兜底。
+
+#### 16.10.3 实测（2026-10-25）
+
+| 场景 | 命令 | 结果 |
+|---|---|---|
+| 依赖导入自检 | `D:\venvs\openbase\Scripts\python.exe -c "import uvicorn, fastapi, pydantic"` | 通过（Python 3.12.10 / uvicorn 0.54.0 / pydantic 2.14.1） |
+| **单服务启动** | `-Action start -Only openbase` | `解释器：D:\venvs\openbase\Scripts\python.exe` → 进程 PID 9100 → **健康检查 3s 通过**（8000） |
+| 停止与端口核对 | `-Action stop` | 停止完成；8000 **已释放** |
+| 反例（预期失败） | 系统 3.12 + `PYTHONPATH=.venv` | `import pydantic` 失败（cp313 ABI 不兼容），故不作为候选 |
+
+#### 16.10.4 边界
+
+- 其他仓（OpenLLM / OpenMemory）尚未建立系统 Python 的专用 venv，仍按各自既有环境或兜底链解析；
+  `D:\uv` 目录当前为空（未安装 uv 可执行），uv 管理属后续固化项；
+- 解释器解析结果在**同一编排进程内缓存**，进程重启后重新自检；
+- 该自检只验证 `import uvicorn`，不校验业务依赖完整性；业务级失败仍以服务健康检查为准。
+
 
 

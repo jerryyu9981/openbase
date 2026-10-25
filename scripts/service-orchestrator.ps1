@@ -99,7 +99,9 @@ param(
     [ValidateSet('auto', 'data', 'tcp')]
     [string]$ProbeLevel = 'auto',
     # 单服务启动前数据面校验的复用窗口（秒）：窗口内复用上次探测结果，过期则按需重探
-    [int]$ProbeTtlSec = 60
+    [int]$ProbeTtlSec = 60,
+    # 服务解释器覆盖（exe 或目录）；不设则按候选链逐个 import 自检（见 Get-PythonCandidates）
+    [string]$PythonHome = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -1175,6 +1177,83 @@ function Start-DetachedProcess {
     return [int]$result.ProcessId
 }
 
+# ---------------------------------------------------------------------------
+# 服务解释器解析（2026-10-25，消 D-05「宿主缺少裸 python」）
+#
+# 解析顺序（每个候选都做 import 自检，避免"能启动但缺依赖"）：
+#   1) OPENBASE_<SVC>_PYTHON（服务级覆盖，如 OPENBASE_OPENMEMORY_PYTHON）
+#   2) -PythonHome（全局覆盖；可为 exe 或目录）
+#   3) OPENBASE_PYTHON（全局环境变量）
+#   4) 各仓默认 venv（openbase: D:\venvs\openbase；openrag: .venv3）
+#   5) 系统 Python（D:\Python\python.exe，需自检通过）
+#   6) 现有 3.13 桥接（pgAdmin python + `.venv`，经 OPENBASE_PY_DEPS/ROOT 门控 sitecustomize）
+#   7) PATH 上的 python
+# 关键：pgAdmin 内嵌 3.13 与系统 3.12 不能共用同一个 `.venv`（`.pyd` 是 cp313 ABI），
+#       所以 4) 必须是**用系统 Python 新建的 venv**，不能直接给 3.12 加 `PYTHONPATH=.venv`。
+# ---------------------------------------------------------------------------
+$script:ResolvedPython = @{}
+
+function Test-PythonRuntime {
+    param([string]$Exe, [string]$ImportName = 'uvicorn')
+
+    if (-not $Exe -or -not (Test-Path $Exe)) { return $false }
+    try {
+        & $Exe -c "import $ImportName" *> $null
+        return ($LASTEXITCODE -eq 0)
+    } catch {
+        return $false
+    }
+}
+
+function Get-PythonCandidates {
+    param([hashtable]$Svc)
+
+    $name = [string]$Svc.Name
+    $envKey = 'OPENBASE_{0}_PYTHON' -f $name.ToUpper().Replace('-', '_')
+    $candidates = @()
+    foreach ($value in @(
+            [Environment]::GetEnvironmentVariable($envKey, 'Process'),
+            $PythonHome,
+            $env:OPENBASE_PYTHON
+        )) {
+        if (-not $value) { continue }
+        $exe = if (Test-Path $value -PathType Container) { Join-Path $value 'python.exe' } else { $value }
+        $candidates += $exe
+    }
+
+    if ($name -eq 'openbase') { $candidates += 'D:\venvs\openbase\Scripts\python.exe' }
+    if ($name -eq 'openrag') { $candidates += 'D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe' }
+    $candidates += 'D:\Python\python.exe'
+    $candidates += 'D:\PostgreSQL\17\pgAdmin 4\python\python.exe'
+
+    $command = Get-Command python -ErrorAction SilentlyContinue
+    if ($command) { $candidates += $command.Source }
+    return @($candidates | Where-Object { $_ } | Select-Object -Unique)
+}
+
+function Get-ServicePython {
+    param([hashtable]$Svc)
+
+    $name = [string]$Svc.Name
+    if ($script:ResolvedPython.ContainsKey($name)) { return $script:ResolvedPython[$name] }
+
+    foreach ($exe in Get-PythonCandidates -Svc $Svc) {
+        if (-not (Test-Path $exe)) { continue }
+        if (-not (Test-PythonRuntime -Exe $exe)) { continue }
+
+        $env = @{}
+        # pgAdmin 内嵌解释器必须靠门控 sitecustomize 才能看到 `.venv` 依赖
+        if ($exe -like '*pgAdmin*') {
+            $env['OPENBASE_PY_DEPS'] = Join-Path $ProjectRoot '.venv'
+            $env['OPENBASE_PY_ROOT'] = $ProjectRoot
+        }
+        $result = @{ Exe = $exe; Env = $env }
+        $script:ResolvedPython[$name] = $result
+        return $result
+    }
+    return $null
+}
+
 function Start-Service {
     param([hashtable]$Svc, [switch]$FromMonitor)
     # 1) 端口预检：端口被其他进程占用（非本服务记录 PID）→ 拒绝启动
@@ -1205,7 +1284,20 @@ function Start-Service {
             Write-Log 'WARN' ("{0} 依赖 {1} 未健康（软依赖，继续尝试启动）" -f $Svc.Name, $depName)
         }
     }
-    # 4) 设置环境变量（Start-Process 继承启动瞬间环境，串行启动无污染）
+    # 4) 解释器解析（仅 python 类服务）：自检失败即拒绝启动，替代裸 `python` 的隐式失败
+    if ($Svc.Command -eq 'python') {
+        $resolved = Get-ServicePython -Svc $Svc
+        if (-not $resolved) {
+            $envHint = 'OPENBASE_{0}_PYTHON' -f ([string]$Svc.Name).ToUpper().Replace('-', '_')
+            Write-Log 'ERROR' ("{0} 启动前运行环境校验失败：未找到可用 Python（已尝试 {1} / -PythonHome / OPENBASE_PYTHON / 各仓 venv / 系统 Python / 3.13 桥接）" -f $Svc.Name, $envHint)
+            return $false
+        }
+        $Svc.Command = $resolved.Exe
+        if (-not $Svc.Env) { $Svc.Env = @{} }
+        foreach ($key in $resolved.Env.Keys) { $Svc.Env[$key] = $resolved.Env[$key] }
+        Write-Log 'INFO' ("{0} 解释器：{1}" -f $Svc.Name, $resolved.Exe)
+    }
+    # 5) 设置环境变量（Start-Process 继承启动瞬间环境，串行启动无污染）
     $oldEnv = @{}
     foreach ($key in $Svc.Env.Keys) {
         $oldEnv[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')

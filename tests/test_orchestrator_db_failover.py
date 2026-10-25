@@ -36,7 +36,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
 PROBE_SCRIPT = ROOT / "scripts" / "infra_probe.py"
-OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.12.0.md"
+OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.13.0.md"
 
 POWERSHELL = shutil.which("powershell") or (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -122,14 +122,15 @@ def test_env_file_read_uses_utf8_explicitly() -> None:
 
 
 def test_operation_doc_records_startup_failover() -> None:
-    """运维记录升 v1.12.0 并登记 §16 / §16.7 / §16.8 / §16.9。"""
+    """运维记录升 v1.13.0 并登记 §16 / §16.7 / §16.8 / §16.9 / §16.10。"""
     assert OPERATION_DOC.exists(), f"缺少运维记录: {OPERATION_DOC}"
     text = OPERATION_DOC.read_text(encoding="utf-8-sig")
-    assert "v1.12.0" in text
+    assert "v1.13.0" in text
     assert "## 16. 启动期自动探测与主备切换" in text
     assert "### 16.7 周期复检与公共设施探测" in text
     assert "### 16.8 数据面探针与四设施切换" in text
     assert "### 16.9 每次启动前的数据库校验" in text
+    assert "### 16.10 解释器解析与运行环境自检" in text
     for marker in (
         "-Action dbcheck",
         "-DbMode",
@@ -142,6 +143,8 @@ def test_operation_doc_records_startup_failover() -> None:
         "不自动回切",
         "数据面同步",
         "启动前数据面校验",
+        "D:\\venvs\\openbase",
+        "OPENBASE_PY_DEPS",
     ):
         assert marker in text, f"运维记录缺少: {marker}"
 
@@ -467,6 +470,41 @@ def test_every_service_start_checks_data_plane() -> None:
     # 共享库不可用必须拒绝该服务启动（不能静默继续）
     assert "启动前数据面校验失败" in text
     assert "拒绝启动该服务" in text
+
+
+def test_python_runtime_resolution_declared() -> None:
+    """D-05 修复：解释器按候选链自检选择，失败给出可读错误（不再报"找不到文件"）。"""
+    text = _text()
+    for marker in (
+        "Get-ServicePython",
+        "Get-PythonCandidates",
+        "Test-PythonRuntime",
+        "[string]$PythonHome = ''",
+        "OPENBASE_PYTHON",
+        "启动前运行环境校验失败",
+        "解释器：",
+        "D:\\venvs\\openbase",
+    ):
+        assert marker in text, f"缺少解释器解析契约: {marker}"
+
+    # OpenBase 专用 venv 必须优先于系统 Python（系统 3.12 与 .venv 的 cp313 ABI 不兼容）
+    assert text.index("D:\\venvs\\openbase") < text.index("'D:\\Python\\python.exe'")
+
+
+def test_system_python_venv_is_usable() -> None:
+    """系统 Python 3.12 + 专用 venv 可导入运行期依赖（未创建时跳过，不伪造通过）。"""
+    venv_python = Path(r"D:\venvs\openbase\Scripts\python.exe")
+    if not venv_python.exists():
+        pytest.skip("D:\\venvs\\openbase 未创建，跳过解释器自检用例")
+    completed = subprocess.run(
+        [str(venv_python), "-c", "import uvicorn, fastapi, pydantic"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_probe_script_is_stdlib_only() -> None:
