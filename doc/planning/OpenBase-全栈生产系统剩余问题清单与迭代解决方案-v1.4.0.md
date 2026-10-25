@@ -1,21 +1,22 @@
-# OpenBase-全栈生产系统剩余问题清单与迭代解决方案-v1.3.0
+# OpenBase-全栈生产系统剩余问题清单与迭代解决方案-v1.4.0
 
 | 项目 | 内容 |
 |------|------|
 | 文档名称 | 全栈生产系统剩余问题清单与迭代解决方案（OpenBase 主仓 + 四仓 + 运维面） |
-| 文档编号 | OB-PLAN-REMAIN-FULLSTACK-v1.3.0 |
-| 版本 | **v1.3.0** |
+| 文档编号 | OB-PLAN-REMAIN-FULLSTACK-v1.4.0 |
+| 版本 | **v1.4.0** |
 | 状态 | **[Review]**（待人工批准后排期执行） |
 | 编制日期 | 2026-10-25 |
 | 编制人 | FA-OpenBase-Dev（AI 辅助） |
-| 代码基线 | `c2a8223`（产品版本 **1.4.12**） |
-| 上游依据 | 《OpenBase-剩余事项统一清查与小版本迭代计划-v1.0.0》v1.19.0；《OpenBase-长尾迭代收口审计-v1.12.0》v1.3.0；《OpenBase-S2-三级回滚演练报告-v1.1.0》；《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》；《OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0》（XR-OPS-07-ENV-001）；《OpenBase-主备双通道生产上线回滚方案-v1.0.0》 |
+| 代码基线 | `366a200`（产品版本 **1.4.12**） |
+| 上游依据 | 《OpenBase-剩余事项统一清查与小版本迭代计划-v1.0.0》v1.20.0；《OpenBase-长尾迭代收口审计-v1.12.0》v1.3.0；《OpenBase-S2-三级回滚演练报告-v1.1.0》；《OpenBase-主备双通道生产上线必办事项清单-v2.2.0》；《OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0》（XR-OPS-07-ENV-001）；《OpenBase-主备双通道生产上线回滚方案-v1.0.0》 |
 | 口径 | 仅登记**尚未闭环**项；已闭环项不重复排期（见各上游文档「已闭环基线」） |
 
 ## 修订历史
 
 | 版本 | 日期 | 编制人 | 修订内容 |
 |------|------|--------|---------|
+| v1.4.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **每次启动服务前校验数据库**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`（全量 / `-Only` 单服务 / monitor 自愈一致）；按服务依赖校验 pg/redis/qdrant/neo4j；当前通道共享库不可用 ⇒ 拒绝该服务；`-ProbeTtlSec` 内复用探测；守门 20 → **21 例**（运维记录 v1.12.0 §16.9） |
 | v1.3.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **A8 Phase 3（P0 子集）已交付**：判定升级为数据面探针（`scripts/infra_probe.py`，stdlib）；**主用不通即切备用**（PG 硬门禁 + Redis/Qdrant/Neo4j/MinIO 覆盖）；数据面同步**暂时挂起**并强制告警；证据 schema v3；守门用例 15 → **20 例**。原 Phase 3 拆分为 Phase 3（已交付）与 **Phase 4（数据同步/回切，挂起）** |
 | v1.2.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **A8 Phase 2（P1）已交付**：monitor 周期复检（≥60s，主用恢复/失联只提示不回切）+ Redis/Qdrant/Neo4j/MinIO 纳管探测（仅提示不阻断）+ `dbcheck -Json`（schema v2）；守门用例 9 → **15 例**；§7.0 状态与附录来源同步（运维记录 v1.10.0 §16.7） |
 | v1.1.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | 新增 **A8 共享库主备启动探测**（P0 Phase 1 已交付：受管入口启动前探测主用 PostgreSQL，异常自动切本机 `127.0.0.1:5432`，双不可达拒绝启动；单测 9 例）；补齐 §7.0 三阶段优先迭代（运行期复检/多组件纳管/HA 与切回），汇总项由 17 增至 **18** |
@@ -51,7 +52,7 @@
 | A5 | **G7 端到端转发复核**：OpenBase B 通道按 `X-Tenant-ID` 选租户级 Key 的真实转发 | OB/LL | 🟡 代码 + `.env` 注入完成、进程内选择 PASS；**端到端复核因共享 PG 中断未完成** | 真实 `/openllm/v1/writeback` 三路经 OpenBase 转发 `accepted=true` 并留证 | 清单 v2.2.0 G7；台账 XR-OPS-04 |
 | A6 | **XR-OPS-04 生产 Key 注入/轮换 + DPS 码表登记** | OPS/研发 | 未启动 | 密钥注入与轮换记录归档；DPS 码表（org/tenant）登记可查 | 台账 XR-OPS-04 |
 | A7 | **生产发布门禁执行**：`scripts/verify_release.py --base-url <生产>` | OPS/OB | 工具就绪（本地活实例 PASS 7 / FAIL 0） | 生产实例 0 FAIL（WARN/INFO 允许）方可切流 | 执行记录 v1.4.0 §2 |
-| A8 | **共享库主备启动探测（本机备用库通道）**：每次启动前探测主用 PostgreSQL，异常切本机 `127.0.0.1:5432`，双不可达拒绝启动 | OB | ✅ **Phase 1/2/3 已交付**：`-DbMode` + `-Action dbcheck` + 前置门禁 + 5 服务覆盖（环境变量）；**Phase 2**：monitor 周期复检、四设施纳管、`dbcheck -Json`；**Phase 3（P0）**：判定升级为**数据面探针**（`infra_probe.py`：PG select 1 / Redis PING+DBSIZE / Qdrant collections / Neo4j RETURN 1 / MinIO ready），**主用不通即切备用（含四设施覆盖）**，数据同步挂起并强制告警；证据 schema v3；守门用例 20 例 | 主用数据面可用→primary；主用不通→自动切备用且留痕；双不可达→exit 2 且不启动；探针不可用→显式回落 TCP（degraded） | 运维记录 v1.11.0 §16 / §16.7 / §16.8 |
+| A8 | **共享库主备启动探测（本机备用库通道）**：每次启动前探测主用 PostgreSQL，异常切本机 `127.0.0.1:5432`，双不可达拒绝启动 | OB | ✅ **Phase 1/2/3 已交付**：`-DbMode` + `-Action dbcheck` + 前置门禁 + 5 服务覆盖；**Phase 3（P0）**：数据面探针（`infra_probe.py`）、主用不通即切备用（含四设施）、数据同步挂起告警、证据 schema v3；**另：每次启动服务前（全量/`-Only`/monitor 自愈）按服务依赖校验数据库，当前通道共享库不可用则拒绝该服务启动**；守门用例 21 例 | 主用数据面可用→primary；主用不通→自动切备用且留痕；双不可达→exit 2；单服务启动前校验可见且 PG 不可用即拒启 | 运维记录 v1.12.0 §16.8 / §16.9 |
 
 > A1~A3 为同一批 `.env` 下发动作（可一次窗口完成，分别留回执）；A4 依赖 A1/A2 已下发；A5 依赖共享 PG 健康；A7 为最终放行闸门。
 
@@ -90,7 +91,7 @@
 |:----:|------|:----:|------|
 | **Phase 1（P0）** | 受管入口启动前探测主用 PostgreSQL（`pg_isready` → TCP 回落）；异常自动切本机 `127.0.0.1:5432`；5 个服务按各自 DSN 仅替换主机端口；双不可达拒绝启动（退出码 2）；`-Action dbcheck` 只探测；证据 JSON（脱敏）+ 结构日志；单测 9 例 | ✅ **已交付** | 主用可达→primary；主用异常→standby（5 目标均 127.0.0.1）；双不可达→exit 2 且 8000 无监听 |
 | **Phase 2（P1）** | ① `monitor` 周期复检（默认 ≥60s，`-DbRecheckSec` 可缩短；主用恢复/失联**只提示不回切**，证据 `db-monitor-recheck-*.json`）；② Redis/Qdrant/Neo4j/MinIO 纳管**探测**（TCP，仅提示不阻断，PG 为唯一硬门禁）；③ `dbcheck -Json`（schema v2，含 `dependencies` / `evidence_path`）；守门用例 9 → 15 例 | ✅ **已交付** | 主用恢复可见提示且**未重启任何服务**；四设施状态入证据；JSON stdout 可直接解析 |
-| **Phase 3（P0 子集，用户决策 2026-10-25）** | ① 判定升级为**数据面探针**（`scripts/infra_probe.py`，stdlib）：PG `select 1` / Redis `PING+DBSIZE` / Qdrant `GET /collections` / Neo4j `RETURN 1` / MinIO `health/ready`；② 探针不可用时**显式回落 TCP** 并记 `degraded`；③ **主用数据面不通即切备用**：PG 硬门禁 + Redis/Qdrant/Neo4j/MinIO 覆盖（共享键 + 各仓自有键）；④ 证据 schema v3（`data_plane`）；守门用例 15 → 20 例 | ✅ **已交付** | 五目标 `data-plane` 判定；主用不通→切备用并 WARN 留痕；双不可达→exit 2；`-ProbeLevel tcp` 兼容旧行为 |
+| **Phase 3（P0 子集，用户决策 2026-10-25）** | ① 判定升级为**数据面探针**（`scripts/infra_probe.py`，stdlib）：PG `select 1` / Redis `PING+DBSIZE` / Qdrant `GET /collections` / Neo4j `RETURN 1` / MinIO `health/ready`；② 探针不可用时**显式回落 TCP** 并记 `degraded`；③ **主用数据面不通即切备用**：PG 硬门禁 + Redis/Qdrant/Neo4j/MinIO 覆盖；④ **每次启动服务前按依赖校验**（全量/`-Only`/monitor 自愈，`-ProbeTtlSec` 内复用）；⑤ 证据 schema v3（`data_plane`）；守门用例 15 → 21 例 | ✅ **已交付** | 五目标 `data-plane` 判定；主用不通→切备用并 WARN 留痕；双不可达→exit 2；单服务启动前校验可见、PG 不可用即拒启；`-ProbeLevel tcp` 兼容旧行为 |
 | **Phase 4（P2，数据同步，挂起）** | ① 按设施选型同步：PG `pg_dump/pg_restore`（或主用改 `wal_level=logical` 后逻辑复制）、Redis `REPLICAOF`、Qdrant snapshot 恢复、MinIO `mc mirror`、Neo4j `dump/load`；② 定义 RPO/RTO 与回切合并策略；③ 应用内启动自检开关（`OPENBASE_DB_STARTUP_PROBE=warn|require|off`）；④ Chroma 纳管；⑤ 双活/只读语义单独立项 | **挂起（用户决策）** | 切换后数据可用性达标；回切前后一致性核验通过 |
 
 > Phase 3 的边界：**数据面同步问题暂时挂起**——切到备用后数据可能为空或落后，切换必然 WARN 留痕；
@@ -175,7 +176,7 @@ C1              <- 依赖目标侧主数据；C2 <- 依赖评审结论
 | A4 | S2 三级回滚演练报告 v1.1.0 §8（L1-5b / L2-5 / L3-5b） |
 | A5/A6 | 必办事项清单 v2.2.0 G7；台账 XR-OPS-04 |
 | A7 | 发布强制核验执行记录 v1.4.0 §2（`verify_release.py`） |
-| A8 | 《OpenBase-本地备用基础设施安装与主备切换记录-v1.11.0》§16 / §16.7 / §16.8；`scripts/service-orchestrator.ps1`；`scripts/infra_probe.py`；`tests/test_orchestrator_db_failover.py`（20 例） |
+| A8 | 《OpenBase-本地备用基础设施安装与主备切换记录-v1.12.0》§16 / §16.8 / §16.9；`scripts/service-orchestrator.ps1`；`scripts/infra_probe.py`；`tests/test_orchestrator_db_failover.py`（21 例） |
 | B1 | S2 报告 v1.1.0 §7（D-04） |
 | B2 | 收口审计 v1.3.0 §5#5；S7 门禁 16 例守门用例 |
 | B3 | 本会话推送记录（`4cfa4e7` / `c187348` / `40364ff` / `4d3847b` 已推，三远程一致） |

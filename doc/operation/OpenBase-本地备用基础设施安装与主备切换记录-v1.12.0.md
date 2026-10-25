@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.11.0 |
+| 文档版本 | v1.12.0 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -28,6 +28,7 @@
 | v1.9.0 | 2026-10-25 | 研发 | **启动期主备探测固化为受管入口**：`scripts/service-orchestrator.ps1` 新增 `-DbMode auto/primary/standby/off` 与 `-Action dbcheck`；每次 start/startcheck/monitor 前探测主用 PostgreSQL，异常自动切本机 `127.0.0.1:5432`；主备均不可达拒绝启动（退出码 2）；覆盖通过子进程环境变量（不改写 `.env`），证据落 `doc/test/evidence/ops/**`；新增 §16（含实测矩阵与边界），§4 入口同步 |
 | v1.10.0 | 2026-10-25 | 研发 | **P1 落地**：① `monitor` 周期复检（默认 ≥60s，`-DbRecheckSec` 可缩短）——主用恢复/失联**只提示不回切**，证据 `db-monitor-recheck-*.json`；② Redis/Qdrant/Neo4j/MinIO 同批 TCP 探测，**仅提示不阻断**（PG 为唯一硬门禁），纳入证据 `dependencies`；③ `dbcheck -Json` 机器可读输出（schema v2）；新增 §16.7，§16.2/§16.5 同步 |
 | v1.11.0 | 2026-10-25 | 研发 | **P0 数据面探针 + 四设施切换（用户决策）**：新增 `scripts/infra_probe.py`（stdlib，不含第三方依赖）——PG `select 1`、Redis `PING+DBSIZE`、Qdrant `GET /collections`、Neo4j `RETURN 1`、MinIO `health/ready`；探测由 TCP 升级为**数据面**（探针不可用显式回落 TCP 并记 degraded）；**主用数据面不通即切备用**（PG 硬门禁 + 四设施覆盖：Redis/Qdrant/Neo4j/MinIO 的共享键与各仓自有键）；**数据面同步问题暂时挂起**，切换强制 WARN 留痕；证据 schema v3（新增 `data_plane`）；新增 §16.8，守门用例 15 → **20 例** |
+| v1.12.0 | 2026-10-25 | 研发 | **每次启动服务前校验数据库（用户决策）**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`——全量启动、`-Only` 单服务、monitor 自愈重启**一律先校验**该服务依赖（pg/redis/qdrant/neo4j）；当前通道共享库不可用 ⇒ **拒绝启动该服务**，其它设施 DOWN ⇒ WARN 不阻断；`-ProbeTtlSec`（默认 60s）内复用探测结果、过期按需重探；新增 §16.9，守门用例 20 → **21 例** |
 
 ## 1. 背景与定位
 
@@ -724,4 +725,48 @@ Set-Content -Path "$env:USERPROFILE\.openbase\deepseek_api_key.txt" -Value "sk-.
 | 3 | Chroma | 未纳管（主用 8001 / 备用 8005） | 端口差异需单独处理 |
 | 4 | 探测开销 | PG 每次启动多约 2s（psql 子进程）；`dbcheck` 全量约 8s | 可复用常驻探针或连接池化，暂不优化 |
 | 5 | `status` 耗时 | `Get-NetTCPConnection` 单次约 2.7s（既有实现，非本轮引入） | 后续可改用 `IPGlobalProperties` 批量读取 |
+
+### 16.9 每次启动前的数据库校验（P0，2026-10-25 用户决策）
+
+#### 16.9.1 触发范围
+
+| 入口 | 是否校验 | 说明 |
+|---|:---:|---|
+| `-Action start`（全量） | ✅ | 全局门禁 + **每个服务**启动前各校验一次 |
+| `-Action start -Only <svc>`（单服务） | ✅ | 与全量走同一 `Start-Service` 入口 |
+| `-Action startcheck` | ✅ | 启动段同 `start` |
+| `-Action monitor`（自愈重启） | ✅ | 每次真正拉起服务前都校验（结果按 TTL 复用） |
+| `-Action dbcheck` / `status` / `stop` | —— | 只探测/只读，不启动服务 |
+
+#### 16.9.2 按服务依赖校验
+
+| 服务 | 校验的设施 |
+|---|---|
+| openbase | PostgreSQL、Redis |
+| openllm | PostgreSQL、Redis |
+| openrag | PostgreSQL、Qdrant |
+| openmemory | PostgreSQL、Redis、Qdrant、Neo4j |
+| dps | PostgreSQL |
+| frontend | 无（经 OpenBase 转发，不直连数据库） |
+
+#### 16.9.3 判定与处置
+
+1. **当前通道的共享库**（primary 或已切的 standby）数据面不可用 ⇒ **拒绝启动该服务**（`ERROR`，返回 false，不影响其它服务）；
+2. 其它设施数据面不可用 ⇒ `WARN` 但不阻断（与「PG 是唯一硬门禁」一致）；
+3. 所有校验结果写编排日志：`<svc> 启动前数据面校验：pg=ok(primary,data-plane) / redis=ok`；
+4. **TTL 复用**：`-ProbeTtlSec`（默认 60s）内复用上次探测结果，过期则按该服务依赖按需重探（分批探测结果**合并**，不会冲掉其它设施）。
+
+#### 16.9.4 实测（2026-10-25）
+
+- 命令：`-Action start -Only openbase`
+- 日志：`2026-10-25 14:38:04 [INFO] openbase 启动前数据面校验：pg=ok(primary,data-plane) / redis=ok`
+- 说明：该校验发生在**依赖健康检查与进程拉起之前**；本次拉起阶段因宿主缺少裸 `python`
+  （既有问题 **D-05**，见全栈计划 B4）失败，与数据库校验无关。
+
+#### 16.9.5 边界
+
+- `frontend` 不直连数据库，不做校验（其可用性取决于 OpenBase）；
+- 绕过编排直接 `uvicorn` 仍不触发（Phase 4 的应用内自检）；
+- 备用设施未启动时，该校验只会 `WARN` 对应设施，不会阻断服务启动。
+
 

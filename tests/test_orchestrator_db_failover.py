@@ -36,7 +36,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
 PROBE_SCRIPT = ROOT / "scripts" / "infra_probe.py"
-OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.11.0.md"
+OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.12.0.md"
 
 POWERSHELL = shutil.which("powershell") or (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -122,13 +122,14 @@ def test_env_file_read_uses_utf8_explicitly() -> None:
 
 
 def test_operation_doc_records_startup_failover() -> None:
-    """运维记录升 v1.11.0 并登记 §16 / §16.7 / §16.8（数据面探针与四设施切换）。"""
+    """运维记录升 v1.12.0 并登记 §16 / §16.7 / §16.8 / §16.9。"""
     assert OPERATION_DOC.exists(), f"缺少运维记录: {OPERATION_DOC}"
     text = OPERATION_DOC.read_text(encoding="utf-8-sig")
-    assert "v1.11.0" in text
+    assert "v1.12.0" in text
     assert "## 16. 启动期自动探测与主备切换" in text
     assert "### 16.7 周期复检与公共设施探测" in text
     assert "### 16.8 数据面探针与四设施切换" in text
+    assert "### 16.9 每次启动前的数据库校验" in text
     for marker in (
         "-Action dbcheck",
         "-DbMode",
@@ -136,9 +137,11 @@ def test_operation_doc_records_startup_failover() -> None:
         "退出码 2",
         "-DbRecheckSec",
         "-ProbeLevel",
+        "-ProbeTtlSec",
         "db-monitor-recheck-",
         "不自动回切",
         "数据面同步",
+        "启动前数据面校验",
     ):
         assert marker in text, f"运维记录缺少: {marker}"
 
@@ -434,8 +437,36 @@ def test_data_plane_contract_declared() -> None:
         "OPENBASE_INFRA_STANDBY_HOST",
         "data_plane",
         "数据面同步问题暂时挂起",
+        "Assert-ServiceDataPlane",
+        "Get-ServiceInfraDeps",
+        "Update-DataPlaneProbe",
+        "[int]$ProbeTtlSec = 60",
     ):
         assert marker in text, f"缺少数据面契约标记: {marker}"
+
+
+def test_every_service_start_checks_data_plane() -> None:
+    """每次真正启动服务前都做数据面校验（全量 / -Only 单服务 / monitor 自愈统一入口）。"""
+    text = _text()
+    start_idx = text.index("function Start-Service")
+    check_idx = text.index("if (-not (Assert-ServiceDataPlane -Svc $Svc))", start_idx)
+    dep_idx = text.index("# 3) 依赖健康检查", start_idx)
+    assert check_idx < dep_idx, "数据面校验必须早于依赖健康检查"
+
+    # 服务 → 设施依赖映射必须覆盖全部带数据库依赖的服务
+    for mapping in (
+        "openbase   = @('pg', 'redis')",
+        "dps        = @('pg')",
+        "openllm    = @('pg', 'redis')",
+        "openrag    = @('pg', 'qdrant')",
+        "openmemory = @('pg', 'redis', 'qdrant', 'neo4j')",
+        "frontend   = @()",
+    ):
+        assert mapping in text, f"缺少服务依赖映射: {mapping}"
+
+    # 共享库不可用必须拒绝该服务启动（不能静默继续）
+    assert "启动前数据面校验失败" in text
+    assert "拒绝启动该服务" in text
 
 
 def test_probe_script_is_stdlib_only() -> None:

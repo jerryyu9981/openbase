@@ -45,6 +45,12 @@
 #   - **数据面同步问题暂时挂起**：切备用后数据可能为空或落后，切换必然留痕告警；
 #   - 备用端点：`127.0.0.1` + 各规范端口，可用 `OPENBASE_*_STANDBY_PORT` 覆盖。
 #
+# 每次启动前的数据面校验（2026-10-25）：
+#   - **全量启动、单服务启动（-Only）、monitor 自愈重启**统一走 `Assert-ServiceDataPlane`；
+#   - 按服务依赖校验（openbase/openllm=pg+redis、openrag=pg+qdrant、openmemory=pg+redis+qdrant+neo4j、
+#     dps=pg、frontend 无依赖）；共享库（当前通道）不可用 ⇒ 拒绝该服务启动；其它设施 DOWN ⇒ WARN 不阻断；
+#   - `-ProbeTtlSec`（默认 60s）内复用上次探测结果，过期则按服务依赖按需重探。
+#
 # 环境要求：Windows PowerShell 5+；各服务 Python 依赖已安装（各项目自有环境）
 #
 # 服务日志采集（C-6，消 G-2）：
@@ -91,7 +97,9 @@ param(
     [int]$DbRecheckSec = 0,
     # 探测层级：auto=优先数据面（探针不可用时回落 TCP）；data=仅数据面；tcp=仅端口/握手
     [ValidateSet('auto', 'data', 'tcp')]
-    [string]$ProbeLevel = 'auto'
+    [string]$ProbeLevel = 'auto',
+    # 单服务启动前数据面校验的复用窗口（秒）：窗口内复用上次探测结果，过期则按需重探
+    [int]$ProbeTtlSec = 60
 )
 
 $ErrorActionPreference = 'Stop'
@@ -246,6 +254,7 @@ $script:InfraStatus = [ordered]@{}
 # ---------------------------------------------------------------------------
 $script:ProbeScript = Join-Path $ProjectRoot 'scripts\infra_probe.py'
 $script:ProbeResults = @{}
+$script:ProbeStamps = @{}
 $script:ProbeMode = 'tcp'
 $script:ProbeNotes = @()
 $script:InfraSwitched = @()
@@ -312,7 +321,9 @@ function New-InfraProbeSpec {
         [int]$PgPrimaryPort,
         [string]$PgStandbyHost,
         [int]$PgStandbyPort,
-        [hashtable]$Endpoints
+        [hashtable]$Endpoints,
+        # 需要纳管进 spec 的设施（默认四类；单服务校验只取该服务依赖的子集）
+        [string[]]$Include = @('redis', 'qdrant', 'neo4j', 'minio')
     )
 
     $targets = [ordered]@{
@@ -321,7 +332,7 @@ function New-InfraProbeSpec {
             standby = @{ host = $PgStandbyHost; port = $PgStandbyPort; user_env = 'POSTGRES_USER'; password_env = 'POSTGRES_PASSWORD'; database_env = 'POSTGRES_DB' }
         }
     }
-    foreach ($name in @('redis', 'qdrant', 'neo4j', 'minio')) {
+    foreach ($name in $Include) {
         $entry = $Endpoints[$name]
         if (-not $entry) { continue }
         $sides = [ordered]@{}
@@ -397,8 +408,13 @@ function Invoke-DataPlaneProbe {
                 Extra     = $value.extra
             }
         }
-        $script:ProbeResults = $results
-        $script:ProbeMode = [string]$payload.probe_mode
+        # 合并结果（支持分批探测：monitor 只探 PG 时不得冲掉四设施结果）
+        $probeAt = Get-Date
+        foreach ($key in $results.Keys) {
+            $script:ProbeResults[$key] = $results[$key]
+            $script:ProbeStamps[$key] = $probeAt
+        }
+        if ($payload.probe_mode) { $script:ProbeMode = [string]$payload.probe_mode }
         foreach ($note in @($payload.degraded)) {
             if ($note) { $script:ProbeNotes += [string]$note }
         }
@@ -431,6 +447,100 @@ function Get-TargetHealth {
         return (Test-PostgresEndpoint -TargetHost $TargetHost -TargetPort $TargetPort -TimeoutSec $DbProbeTimeoutSec)
     }
     return (Test-TcpEndpoint -TargetHost $TargetHost -TargetPort $TargetPort -TimeoutSec $DbProbeTimeoutSec)
+}
+
+# 服务 → 基础设施依赖（单服务启动前按此校验；无依赖的服务不校验）
+function Get-ServiceInfraDeps {
+    param([hashtable]$Svc)
+
+    $map = @{
+        openbase   = @('pg', 'redis')
+        dps        = @('pg')
+        openllm    = @('pg', 'redis')
+        openrag    = @('pg', 'qdrant')
+        openmemory = @('pg', 'redis', 'qdrant', 'neo4j')
+        frontend   = @()
+    }
+    $name = [string]$Svc.Name
+    if ($map.ContainsKey($name)) { return @($map[$name]) }
+    return @()
+}
+
+# 按需刷新数据面探测（窗口内复用；monitor 自愈重启前也会走这里）
+function Update-DataPlaneProbe {
+    param([string[]]$Needed = @('pg'))
+
+    if ($DbMode -eq 'off') { return }
+    if (-not $script:DbPrimaryEndpoint -or -not $script:DbStandbyEndpoint) { return }
+
+    $stale = @()
+    foreach ($name in $Needed) {
+        $keys = if ($name -eq 'pg') {
+            @('pg.primary', 'pg.standby')
+        } else {
+            @(("{0}.primary" -f $name), ("{0}.standby" -f $name))
+        }
+        foreach ($key in $keys) {
+            $stamp = $script:ProbeStamps[$key]
+            if (-not $stamp -or ((Get-Date) - $stamp).TotalSeconds -ge $ProbeTtlSec) {
+                $stale += $name
+                break
+            }
+        }
+    }
+    if ($stale.Count -eq 0) { return }
+
+    $include = @($Needed | Where-Object { $_ -ne 'pg' } | Select-Object -Unique)
+    $spec = New-InfraProbeSpec -PgPrimaryHost $script:DbPrimaryEndpoint.Host -PgPrimaryPort $script:DbPrimaryEndpoint.Port `
+        -PgStandbyHost $script:DbStandbyEndpoint.Host -PgStandbyPort $script:DbStandbyEndpoint.Port `
+        -Endpoints $script:InfraTargets -Include $include
+    Invoke-DataPlaneProbe -Spec $spec | Out-Null
+}
+
+# 单服务启动前的数据面校验：共享库不可用 → 拒绝该服务；其它设施不可用 → WARN 但不阻断
+function Assert-ServiceDataPlane {
+    param([hashtable]$Svc)
+
+    if ($DbMode -eq 'off') { return $true }
+    $deps = Get-ServiceInfraDeps -Svc $Svc
+    if ($deps.Count -eq 0) { return $true }
+
+    Update-DataPlaneProbe -Needed $deps
+
+    $parts = @()
+    $pgBlocked = $false
+    foreach ($name in $deps) {
+        if ($name -eq 'pg') {
+            $channel = if ($script:DbResolution.Mode -eq 'standby') { 'standby' } else { 'primary' }
+            $endpoint = if ($channel -eq 'standby') { $script:DbStandbyEndpoint } else { $script:DbPrimaryEndpoint }
+            $health = Get-TargetHealth -Key ("pg.{0}" -f $channel) -TargetHost $endpoint.Host `
+                -TargetPort $endpoint.Port -Postgres
+            if ($health.Healthy) {
+                $parts += ("pg=ok({0},{1})" -f $channel, $health.Method)
+            } else {
+                $parts += ("pg=DOWN({0})" -f $channel)
+                $pgBlocked = $true
+            }
+            continue
+        }
+        $item = $script:InfraStatus[$name]
+        if (-not $item) { $parts += ("{0}=n/a" -f $name); continue }
+        if ($item.Healthy) {
+            $state = if ($item.Switched) { 'ok(备用)' } else { 'ok' }
+            $parts += ("{0}={1}" -f $name, $state)
+        } else {
+            $parts += ("{0}=DOWN" -f $name)
+            Write-Log 'WARN' ("{0} 启动前数据面校验：{1} 不可达（不阻断该服务启动，功能可能降级）" -f $Svc.Name, $name)
+        }
+    }
+
+    if ($pgBlocked) {
+        Write-Log 'ERROR' ("{0} 启动前数据面校验失败：当前通道共享库不可用，拒绝启动该服务（{1}）" -f `
+                $Svc.Name, ($parts -join ' / '))
+        return $false
+    }
+    Write-Log 'INFO' ("{0} 启动前数据面校验：{1}" -f $Svc.Name, ($parts -join ' / '))
+    return $true
 }
 
 # 主用不可用 → 把该设施指向本机备用（进程环境覆盖，子进程继承；不改写任何 .env）
@@ -1078,7 +1188,11 @@ function Start-Service {
         Write-Log 'INFO' ("{0} 已在运行（PID {1}，端口 {2}）" -f $Svc.Name, $portPid, $Svc.Port)
         return $true
     }
-    # 2) 依赖健康检查
+    # 2) 数据库/基础设施数据面校验（每次真正启动服务前都执行；start 全量/单服务与 monitor 自愈一致）
+    if (-not (Assert-ServiceDataPlane -Svc $Svc)) {
+        return $false
+    }
+    # 3) 依赖健康检查
     foreach ($depName in $Svc.Depends) {
         $dep = Get-ServiceDef $depName
         if (-not $dep) { continue }
@@ -1091,7 +1205,7 @@ function Start-Service {
             Write-Log 'WARN' ("{0} 依赖 {1} 未健康（软依赖，继续尝试启动）" -f $Svc.Name, $depName)
         }
     }
-    # 3) 设置环境变量（Start-Process 继承启动瞬间环境，串行启动无污染）
+    # 4) 设置环境变量（Start-Process 继承启动瞬间环境，串行启动无污染）
     $oldEnv = @{}
     foreach ($key in $Svc.Env.Keys) {
         $oldEnv[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
