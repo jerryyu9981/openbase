@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.15.0 |
+| 文档版本 | v1.15.1 |
 | 文档状态 | [Approved] |
 | 适用环境 | 本机联调环境（Windows，D 盘） |
 | 主用基础设施 | 局域网 `192.168.0.151` |
@@ -32,6 +32,7 @@
 | v1.13.0 | 2026-10-25 | 研发 | **D-05 解除：解释器解析与运行环境自检**。系统 Python 3.12.10（`D:\Python`）已安装，新建专用 venv `D:\venvs\openbase`（`pip install -e .` 全依赖）；`Start-Service` 新增候选链解析（`OPENBASE_<SVC>_PYTHON` → `-PythonHome` → `OPENBASE_PYTHON` → 各仓 venv → 系统 Python → 3.13 桥接 → PATH），每个候选做 `import uvicorn` 自检，全部失败给出可读错误并拒绝该服务；实测单服务启动成功（PID 9100、健康检查 3s、stop 后端口释放）；新增 §16.10，守门用例 21 → **23 例** |
 | v1.14.0 | 2026-10-25 | 研发 | **OpenLLM / OpenMemory 专用 venv 落地**（`D:\venvs\openllm`、`D:\venvs\openmemory`），候选链同步补入；OpenLLM 实测启动 + `/health` 200，OpenMemory 依赖导入通过；记录上游 requirements 缺口（`python_requires` 非法行、`httpx==0.26` 与 `mcp>=1.0` 冲突、缺 `psycopg/pyjwt/numpy/qdrant-client/OTel gRPC`）与本机补丁（`bcrypt<5`、`qdrant-client==1.7.3`）；新增 §16.11 |
 | v1.15.0 | 2026-10-25 | 研发 | **全栈 7 服务一次启动成功**：修复 oidc-idp 解释器自检（pgAdmin 桥接需门控环境）、frontend 启动方式（`npm.cmd` 在 WMI 下静默退出 → 直调 `node + vite.js`）；openllm/openrag 冷启动 >60s → 服务级 `HealthWait=180`，frontend `HealthWait=120`；dps 运行时确定为 OpenRAG `.venv3`（依赖经 `cross-libs.pth` 注入）；全量检查 **27 PASS / 0 FAIL / 0 SKIP**；新增 §16.12 |
+| v1.15.1 | 2026-10-26 | 研发 | **前端全页面走查（77 页）驱动的三项修复**：① 恢复 `.env` 中被 2026-10-21 轮换写坏、OpenLLM 未登记的 `OPENBASE_LLM_API_KEY`（SHA-256 与库内 `openbase-gateway-v143` 一致），租户映射改回 `tenant-1`；② 编排器**全服务脱离会话启动**并**白名单传递进程环境**（WMI 子进程不继承调用方环境 → 丢 `POSTGRES_URL` → openbase 退化内存模式，库依赖接口全 500）；③ 健康检查通过后落盘**真实监听 PID**（`stop` 不再留孤儿）。新增 §16.13；守门用例 23 → **24 例** |
 
 ## 1. 背景与定位
 
@@ -899,6 +900,34 @@ Python，唯一解释器是 pgAdmin 内嵌 3.13（不注册 PATH），因此 `St
 | 本地 OIDC IdP | `http://127.0.0.1:8090/.well-known/openid-configuration` |
 
 停止：`.\scripts\service-orchestrator.ps1 -Action stop`（停止后以 `Get-NetTCPConnection` 核对端口，见 D-04）。
+
+### 16.13 前端全页面走查（77 页）驱动的三项修复（2026-10-26）
+
+走查口径与逐页结果见 `doc/test/OpenBase-前端全页面走查清单-v1.0.0.md`；终轮证据
+`doc/test/evidence/s6/ui-walkthrough-20261026-r4.json`（**PASS 77 / FAIL 0，api 失败 0 次**）。
+
+#### 16.13.1 修复项
+
+| # | 现象 | 根因 | 修复 | 验证 |
+|:-:|---|---|---|---|
+| 1 | 告警中心 / 工具调用 / Prompt 实验 **401**（`无效的API密钥`） | 2026-10-21 轮换把 `.env` 的 `OPENBASE_LLM_API_KEY` 换成 OpenLLM 库内**不存在**的 Key；租户映射键误写为 `demo`（真实 claim 为 `tenant-1`） | 恢复 `sk-openllm-b16f68…`（SHA-256 与库内 `openbase-gateway-v143` 一致，`is_active=t`、`permissions=["*"]`）；租户映射改回 `tenant-1` | `alerts` / `alerts/rules` / `tool-calls` / `prompt-experiments` / `providers` 全部 **200** |
+| 2 | 服务健康检查通过后数秒消失（前端全站 502/503） | 编排器仅 `frontend` 声明 `Detach`，其余走 `Start-Process`，随启动会话被 Job Object 回收 | 全部 7 个服务统一 `Detach = $true`（WMI 脱离会话） | `-Action start -Only openbase` 后进程存活，端口保持监听 |
+| 3 | 脱离启动后**所有库依赖接口 500**（`/auth/me`、`/users`、`/tenants`） | WMI `Win32_Process.Create` 子进程**不继承**调用方进程环境 → `.env.shared-infra` 注入的 `POSTGRES_URL` 丢失 → `demo_app` 回退内存模式 | `Start-DetachedProcess` 白名单传递环境（系统必需键 + `POSTGRES_/REDIS_/QDRANT_/NEO4J_/MINIO_/SQLITE_/OLLAMA_` + 各仓前缀），再以 `$Svc.Env` 覆盖；不整份快照（命令行超限时 WMI 返回 8） | `/auth/me`、`/users`、`/proxy/openllm/*` 全部 **200** |
+| 4 | （D-04 残留）`stop` 只杀包装进程，python 孤儿仍占用端口 | `start` 落盘的是包装 powershell PID | 健康检查通过后按端口反查真实监听 PID 并落盘（`Get-PortPid` + `Save-Pid`） | 落盘 PID 与端口占用进程一致；`stop` 后端口释放 |
+
+#### 16.13.2 守门用例
+
+`tests/test_orchestrator_db_failover.py` 新增
+`test_all_services_detach_and_record_listening_pid`：断言 7 个服务均声明 `Detach`、健康检查后按端口反查 PID、
+环境快照语句存在。全文件 **24 例全部通过**。
+
+#### 16.13.3 教训（写入工程约定）
+
+1. **静默 `except ImportError: continue` 会让整片路由消失**，只在前端表现为 404 —— 装配期必须留痕（DEF-WT-01）。
+2. **密钥轮换必须同步校验目标系统登记状态**（SHA-256 比对），并保留上一版备份文件以便回滚（DEF-WT-02）。
+3. **WMI 脱离启动 = 环境隔离**：任何依赖进程环境注入的配置都必须在启动脚本内显式传递（DEF-WT-03）。
+4. 走查前必须**先刷新登录态**（`expires_in=7200`），过期 token 会被误判为「全页失败」。
+
 
 
 

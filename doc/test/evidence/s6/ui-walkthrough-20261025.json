@@ -1,0 +1,4749 @@
+{
+  "schema": "openbase-ui-e2e-all-services/v1.1.0",
+  "base_url": "http://127.0.0.1:5173",
+  "token_source": "OPENBASE_ACCESS_TOKEN",
+  "shots_dir": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025",
+  "interact": true,
+  "started_at": "2026-10-25T16:10:46.665Z",
+  "services": {
+    "openbase": {
+      "total": 44,
+      "pass": 20,
+      "fail": 24,
+      "pages": [
+        {
+          "path": "/dashboard",
+          "url": "http://127.0.0.1:5173/dashboard",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/dashboard?time_range=24h",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\dashboard.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "仪表盘"
+        },
+        {
+          "path": "/platform/identity/tenants",
+          "url": "http://127.0.0.1:5173/platform/identity/tenants",
+          "nav_status": 200,
+          "final_path": "/platform/identity/tenants",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-tenants.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "租户管理"
+        },
+        {
+          "path": "/platform/identity/roles",
+          "url": "http://127.0.0.1:5173/platform/identity/roles",
+          "nav_status": 200,
+          "final_path": "/platform/identity/roles",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/roles"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/roles"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/roles"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/roles?limit=200",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/roles?limit=200",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-roles.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "角色与权限"
+        },
+        {
+          "path": "/platform/identity/org",
+          "url": "http://127.0.0.1:5173/platform/identity/org",
+          "nav_status": 200,
+          "final_path": "/platform/identity/org",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/users"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-org.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "组织/团队/用户"
+        },
+        {
+          "path": "/platform/identity/workspaces",
+          "url": "http://127.0.0.1:5173/platform/identity/workspaces",
+          "nav_status": 200,
+          "final_path": "/platform/identity/workspaces",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/workspaces"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/workspaces"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/workspaces"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/workspaces?limit=200",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/workspaces?limit=200",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-workspaces.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "工作空间"
+        },
+        {
+          "path": "/platform/identity/users",
+          "url": "http://127.0.0.1:5173/platform/identity/users",
+          "nav_status": 200,
+          "final_path": "/platform/identity/users",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/users"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/users"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-users.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "用户管理"
+        },
+        {
+          "path": "/platform/identity/memory-admin",
+          "url": "http://127.0.0.1:5173/platform/identity/memory-admin",
+          "nav_status": 200,
+          "final_path": "/platform/identity/memory-admin",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/memories"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/monitor"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/monitor"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/memories"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "记忆概览",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "运行监控",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/memory-proxy/monitor"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "记忆维护",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/memory-proxy/memories"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/monitor?range=24h",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/monitor?range=24h",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-memory-admin.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "记忆管理席位"
+        },
+        {
+          "path": "/platform/identity/auth-ext",
+          "url": "http://127.0.0.1:5173/platform/identity/auth-ext",
+          "nav_status": 200,
+          "final_path": "/platform/identity/auth-ext",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "注册",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "找回密码",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置密码",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-auth-ext.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "注册/找回密码"
+        },
+        {
+          "path": "/platform/identity/dps-permissions",
+          "url": "http://127.0.0.1:5173/platform/identity/dps-permissions",
+          "nav_status": 200,
+          "final_path": "/platform/identity/dps-permissions",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/permissions/roles"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/permissions/roles"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/permissions/roles"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/permissions/roles",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/permissions/roles",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-identity-dps-permissions.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "画像数据权限"
+        },
+        {
+          "path": "/platform/config/general",
+          "url": "http://127.0.0.1:5173/platform/config/general",
+          "nav_status": 200,
+          "final_path": "/platform/config/general",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/configs"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/configs"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/configs"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-config-general.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "全局配置"
+        },
+        {
+          "path": "/platform/config/modules",
+          "url": "http://127.0.0.1:5173/platform/config/modules",
+          "nav_status": 200,
+          "final_path": "/platform/config/modules",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/modules"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-config-modules.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模块开关"
+        },
+        {
+          "path": "/platform/config/api-keys",
+          "url": "http://127.0.0.1:5173/platform/config/api-keys",
+          "nav_status": 200,
+          "final_path": "/platform/config/api-keys",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/api-keys"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/api-keys"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/auth/api-keys"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "详情",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-config-api-keys.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "API 密钥"
+        },
+        {
+          "path": "/platform/config/rate-limits",
+          "url": "http://127.0.0.1:5173/platform/config/rate-limits",
+          "nav_status": 200,
+          "final_path": "/platform/config/rate-limits",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/rate-limits/status"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/rate-limits/status"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/rate-limits/status"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/rate-limits/status",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/rate-limits/status",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-config-rate-limits.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "画像接口限流"
+        },
+        {
+          "path": "/platform/observability/logs",
+          "url": "http://127.0.0.1:5173/platform/observability/logs",
+          "nav_status": 200,
+          "final_path": "/platform/observability/logs",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/logs/search"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/logs/facets"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/logs/search"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/logs/facets"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/logs/search"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/logs/facets"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "检索",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/logs/search"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/logs/facets"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/logs/search"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/logs/search"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/logs/facets"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-logs.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "日志中心"
+        },
+        {
+          "path": "/platform/observability/test-records",
+          "url": "http://127.0.0.1:5173/platform/observability/test-records",
+          "nav_status": 200,
+          "final_path": "/platform/observability/test-records",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/test-runs"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/test-runs/run-20261025-2358/summary"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/test-runs"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新轮次",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/test-runs"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-test-records.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "测试记录"
+        },
+        {
+          "path": "/platform/observability/monitoring",
+          "url": "http://127.0.0.1:5173/platform/observability/monitoring",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/dashboard?time_range=6h",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/alerts?status=firing&page=1&page_size=10",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-monitoring.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "统一监控"
+        },
+        {
+          "path": "/platform/observability/monitoring/costs",
+          "url": "http://127.0.0.1:5173/platform/observability/monitoring/costs",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/costs",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/budgets"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/costs?dimension%5B%5D=model&dimension%5B%5D=provider&dimension%5B%5D=user&time_range=7d",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/budgets?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/costs?dimension%5B%5D=model&dimension%5B%5D=provider&dimension%5B%5D=user&time_range=7d",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/budgets?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-monitoring-costs.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "成本分析"
+        },
+        {
+          "path": "/platform/observability/monitoring/alerts",
+          "url": "http://127.0.0.1:5173/platform/observability/monitoring/alerts",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/alerts",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts/rules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts/rules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "告警规则",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "告警历史",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/alerts/rules"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/alerts"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/alerts/rules?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/alerts?page=1&page_size=20",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/alerts/rules?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/alerts?page=1&page_size=20",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-monitoring-alerts.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "告警中心"
+        },
+        {
+          "path": "/platform/observability/monitoring/traces",
+          "url": "http://127.0.0.1:5173/platform/observability/monitoring/traces",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/traces",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics?time_range=24h",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/traces?page=1&page_size=20",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/traces?page=1&page_size=20",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics?time_range=24h",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-monitoring-traces.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "链路追踪"
+        },
+        {
+          "path": "/platform/observability/monitoring/budgets",
+          "url": "http://127.0.0.1:5173/platform/observability/monitoring/budgets",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/budgets",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/budgets"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/budgets?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/budgets?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-monitoring-budgets.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "预算管理"
+        },
+        {
+          "path": "/platform/observability/gpu",
+          "url": "http://127.0.0.1:5173/platform/observability/gpu",
+          "nav_status": 200,
+          "final_path": "/platform/observability/gpu",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models/gpu-info",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models/gpu-info",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-gpu.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "GPU 资源"
+        },
+        {
+          "path": "/platform/observability/usage",
+          "url": "http://127.0.0.1:5173/platform/observability/usage",
+          "nav_status": 200,
+          "final_path": "/platform/observability/usage",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/summary"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/detail"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/summary"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/detail"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/summary"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/detail"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/summary?period=daily&group_by=day&start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/trends?dimension=time&period=day&start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/detail?start_date=2026-09-27&end_date=2026-10-26&skip=0&limit=200",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/summary?period=daily&group_by=day&start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/trends?dimension=time&period=day&start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/detail?start_date=2026-09-27&end_date=2026-10-26&skip=0&limit=200",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-usage.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "用量统计"
+        },
+        {
+          "path": "/platform/observability/billing",
+          "url": "http://127.0.0.1:5173/platform/observability/billing",
+          "nav_status": 200,
+          "final_path": "/platform/observability/billing",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/usage/statistics"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/quotas"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/bills"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/usage/statistics"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/quotas"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/bills"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/billing/usage/statistics"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/billing/quotas"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/billing/bills"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/billing/usage/statistics?start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/billing/quotas",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/billing/bills",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/trends?dimension=time&period=day&start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/billing/usage/statistics?start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/billing/quotas",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/billing/bills",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/trends?dimension=time&period=day&start_date=2026-09-27&end_date=2026-10-26",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-billing.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "计费"
+        },
+        {
+          "path": "/platform/observability/service-discovery",
+          "url": "http://127.0.0.1:5173/platform/observability/service-discovery",
+          "nav_status": 200,
+          "final_path": "/platform/observability/service-discovery",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/services"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/services"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/gateway/ping"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/services"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "连通性检测",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/gateway/ping"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/services",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/services",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/gateway/ping",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-service-discovery.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "服务发现与编排"
+        },
+        {
+          "path": "/platform/observability/gateway-test",
+          "url": "http://127.0.0.1:5173/platform/observability/gateway-test",
+          "nav_status": 200,
+          "final_path": "/platform/observability/gateway-test",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-gateway-test.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "聚合网关测试"
+        },
+        {
+          "path": "/platform/observability/app-calls",
+          "url": "http://127.0.0.1:5173/platform/observability/app-calls",
+          "nav_status": 200,
+          "final_path": "/platform/observability/app-calls",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps/calls"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps/calls"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/ai-apps/calls"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-app-calls.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "应用调用记录"
+        },
+        {
+          "path": "/platform/observability/dps-monitor",
+          "url": "http://127.0.0.1:5173/platform/observability/dps-monitor",
+          "nav_status": 200,
+          "final_path": "/platform/observability/dps-monitor",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/health"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/metrics"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/rate-limits/status"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/alerts/rules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/health"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/metrics"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/rate-limits/status"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/alerts/rules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/health"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/metrics"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/rate-limits/status"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/alerts/rules"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/health",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/metrics",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/rate-limits/status",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/alerts/rules",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/health",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/metrics",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/rate-limits/status",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/alerts/rules",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-observability-dps-monitor.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "画像系统监控"
+        },
+        {
+          "path": "/platform/governance/providers",
+          "url": "http://127.0.0.1:5173/platform/governance/providers",
+          "nav_status": 200,
+          "final_path": "/platform/governance/providers",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/providers"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/providers"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/providers"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/providers",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/providers",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-providers.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "提供商管理"
+        },
+        {
+          "path": "/platform/governance/model-categories",
+          "url": "http://127.0.0.1:5173/platform/governance/model-categories",
+          "nav_status": 200,
+          "final_path": "/platform/governance/model-categories",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/model-categories/tree"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/model-categories/tree"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/model-categories/tree"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/model-categories/tree",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/model-categories/tree",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-model-categories.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "模型分类"
+        },
+        {
+          "path": "/platform/governance/routing",
+          "url": "http://127.0.0.1:5173/platform/governance/routing",
+          "nav_status": 200,
+          "final_path": "/platform/governance/routing",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/routing/semantic"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "路由策略",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "熔断器",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/routing/semantic?limit=200",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/routing/circuit-breakers?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/routing/circuit-breakers?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-routing.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "路由策略"
+        },
+        {
+          "path": "/platform/governance/circuit-breakers",
+          "url": "http://127.0.0.1:5173/platform/governance/circuit-breakers",
+          "nav_status": 200,
+          "final_path": "/platform/governance/circuit-breakers",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/routing/semantic"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "路由策略",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "熔断器",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/routing/semantic?limit=200",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/routing/circuit-breakers?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/routing/circuit-breakers?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-circuit-breakers.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "熔断器"
+        },
+        {
+          "path": "/platform/governance/deploy",
+          "url": "http://127.0.0.1:5173/platform/governance/deploy",
+          "nav_status": 200,
+          "final_path": "/platform/governance/deploy",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-deploy.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模型部署"
+        },
+        {
+          "path": "/platform/governance/downloads",
+          "url": "http://127.0.0.1:5173/platform/governance/downloads",
+          "nav_status": 200,
+          "final_path": "/platform/governance/downloads",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-downloads.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "下载管理"
+        },
+        {
+          "path": "/platform/governance/tool-calls",
+          "url": "http://127.0.0.1:5173/platform/governance/tool-calls",
+          "nav_status": 200,
+          "final_path": "/platform/governance/tool-calls",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/tool-calls"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/tool-calls"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/tool-calls"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/tool-calls"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/tool-calls"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/tool-calls?skip=0&limit=20",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/tool-calls?skip=0&limit=20",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/tool-calls?skip=0&limit=20",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-tool-calls.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "工具调用监控"
+        },
+        {
+          "path": "/platform/governance/ab-tests",
+          "url": "http://127.0.0.1:5173/platform/governance/ab-tests",
+          "nav_status": 200,
+          "final_path": "/platform/governance/ab-tests",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-ab-tests.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "A/B 测试"
+        },
+        {
+          "path": "/platform/governance/prompt-templates",
+          "url": "http://127.0.0.1:5173/platform/governance/prompt-templates",
+          "nav_status": 200,
+          "final_path": "/platform/governance/prompt-templates",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-prompt-templates.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "Prompt 模板"
+        },
+        {
+          "path": "/platform/governance/prompt-experiments",
+          "url": "http://127.0.0.1:5173/platform/governance/prompt-experiments",
+          "nav_status": 200,
+          "final_path": "/platform/governance/prompt-experiments",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-governance-prompt-experiments.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "Prompt 实验"
+        },
+        {
+          "path": "/platform/developers/docs",
+          "url": "http://127.0.0.1:5173/platform/developers/docs",
+          "nav_status": 200,
+          "final_path": "/platform/developers/docs",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-developers-docs.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "文档中心"
+        },
+        {
+          "path": "/platform/developers/edgerouter",
+          "url": "http://127.0.0.1:5173/platform/developers/edgerouter",
+          "nav_status": 200,
+          "final_path": "/platform/developers/edgerouter",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/status"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/organizations"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/health"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/adapters"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/organizations"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/adapters"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/audit/logs"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/audit/logs"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "概览",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "组织管理",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/organizations"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "配额管理",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "适配器管理",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/adapters"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "路由审计",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/audit/logs"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/audit/logs"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/status",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/organizations",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/health",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/adapters",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/organizations",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/adapters",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/audit/logs?page=1&page_size=20",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/edge/audit/logs?page=1&page_size=20",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-developers-edgerouter.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "EdgeRouter 与适配器"
+        },
+        {
+          "path": "/platform/developers/plugins",
+          "url": "http://127.0.0.1:5173/platform/developers/plugins",
+          "nav_status": 200,
+          "final_path": "/platform/developers/plugins",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/plugins"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/plugins/tools"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/plugins"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/plugins"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/plugins?limit=200",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/plugins/tools",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/plugins?limit=200",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-developers-plugins.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "插件管理"
+        },
+        {
+          "path": "/platform/developers/dps-api",
+          "url": "http://127.0.0.1:5173/platform/developers/dps-api",
+          "nav_status": 200,
+          "final_path": "/platform/developers/dps-api",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-developers-dps-api.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "画像 API 管理"
+        },
+        {
+          "path": "/platform/developers/knowledge-admin",
+          "url": "http://127.0.0.1:5173/platform/developers/knowledge-admin",
+          "nav_status": 200,
+          "final_path": "/platform/developers/knowledge-admin",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-developers-knowledge-admin.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "知识库管理后台"
+        },
+        {
+          "path": "/platform/developers/knowledge-console",
+          "url": "http://127.0.0.1:5173/platform/developers/knowledge-console",
+          "nav_status": 200,
+          "final_path": "/platform/developers/knowledge-console",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/rag-proxy/collections"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/rag-proxy/health"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "概览",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "API 调试器",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "接口文档",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "性能监控",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/rag-proxy/health",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\platform-developers-knowledge-console.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "知识库 API 控制台"
+        },
+        {
+          "path": "/personal/settings",
+          "url": "http://127.0.0.1:5173/personal/settings",
+          "nav_status": 200,
+          "final_path": "/personal/settings",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\personal-settings.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "个人设置"
+        }
+      ]
+    },
+    "openllm": {
+      "total": 11,
+      "pass": 3,
+      "fail": 8,
+      "pages": [
+        {
+          "path": "/openllm/models",
+          "url": "http://127.0.0.1:5173/openllm/models",
+          "nav_status": 200,
+          "final_path": "/openllm/models",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/llm-proxy/models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-models.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "模型管理"
+        },
+        {
+          "path": "/openllm/models/local",
+          "url": "http://127.0.0.1:5173/openllm/models/local",
+          "nav_status": 200,
+          "final_path": "/openllm/models/local",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/available"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models/gpu-info",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/local-models/available",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-models-local.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "本地模型"
+        },
+        {
+          "path": "/openllm/models/comparison",
+          "url": "http://127.0.0.1:5173/openllm/models/comparison",
+          "nav_status": 200,
+          "final_path": "/openllm/models/comparison",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/open-models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/open-models?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-models-comparison.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "模型对比"
+        },
+        {
+          "path": "/openllm/models/market",
+          "url": "http://127.0.0.1:5173/openllm/models/market",
+          "nav_status": 200,
+          "final_path": "/openllm/models/market",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/open-models"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/open-models"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/open-models"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/open-models?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/open-models?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-models-market.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "开源模型市场"
+        },
+        {
+          "path": "/openllm/favorites",
+          "url": "http://127.0.0.1:5173/openllm/favorites",
+          "nav_status": 200,
+          "final_path": "/openllm/favorites",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/models/favorites"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/models/favorite-folders"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "默认收藏 (0)",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/models/favorites"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/models/favorite-folders"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/models/favorites",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/models/favorite-folders",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-favorites.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "我的收藏"
+        },
+        {
+          "path": "/openllm/apps",
+          "url": "http://127.0.0.1:5173/openllm/apps",
+          "nav_status": 200,
+          "final_path": "/openllm/apps",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-apps.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "AI 应用"
+        },
+        {
+          "path": "/openllm/apps/new",
+          "url": "http://127.0.0.1:5173/openllm/apps/new",
+          "nav_status": 200,
+          "final_path": "/openllm/apps/new",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-apps-new.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "创建应用"
+        },
+        {
+          "path": "/openllm/playground",
+          "url": "http://127.0.0.1:5173/openllm/playground",
+          "nav_status": 200,
+          "final_path": "/openllm/playground",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/llm-proxy/models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-playground.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "Playground"
+        },
+        {
+          "path": "/openllm/conversations",
+          "url": "http://127.0.0.1:5173/openllm/conversations",
+          "nav_status": 200,
+          "final_path": "/openllm/conversations",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/llm-proxy/conversations"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/llm-proxy/models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/llm-proxy/conversations?skip=0&limit=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/llm-proxy/models",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-conversations.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "对话管理"
+        },
+        {
+          "path": "/openllm/recommend",
+          "url": "http://127.0.0.1:5173/openllm/recommend",
+          "nav_status": 200,
+          "final_path": "/openllm/recommend",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "检索",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-recommend.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模型对比推荐"
+        },
+        {
+          "path": "/openllm/reports-trend",
+          "url": "http://127.0.0.1:5173/openllm/reports-trend",
+          "nav_status": 200,
+          "final_path": "/openllm/reports-trend",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/dashboard?time_range=30d",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/costs?dimension%5B%5D=user&time_range=30d",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/trends?dimension=date&period=day",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/dashboard?time_range=30d",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/monitoring/costs?dimension%5B%5D=user&time_range=30d",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/proxy/openllm/api/v1/usage/trends?dimension=date&period=day",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\openllm-reports-trend.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "报表趋势"
+        }
+      ]
+    },
+    "openrag": {
+      "total": 2,
+      "pass": 0,
+      "fail": 2,
+      "pages": [
+        {
+          "path": "/knowledge/list",
+          "url": "http://127.0.0.1:5173/knowledge/list",
+          "nav_status": 200,
+          "final_path": "/knowledge/list",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/rag-proxy/collections"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\knowledge-list.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "知识库"
+        },
+        {
+          "path": "/knowledge/chat",
+          "url": "http://127.0.0.1:5173/knowledge/chat",
+          "nav_status": 200,
+          "final_path": "/knowledge/chat",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/rag-proxy/collections"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/rag-proxy/collections"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新列表",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/rag-proxy/collections"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/rag-proxy/collections?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\knowledge-chat.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "RAG 对话"
+        }
+      ]
+    },
+    "openmemory": {
+      "total": 6,
+      "pass": 2,
+      "fail": 4,
+      "pages": [
+        {
+          "path": "/memory/list",
+          "url": "http://127.0.0.1:5173/memory/list",
+          "nav_status": 200,
+          "final_path": "/memory/list",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/memories"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/memories?page=1&page_size=10",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\memory-list.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "记忆列表"
+        },
+        {
+          "path": "/memory/search",
+          "url": "http://127.0.0.1:5173/memory/search",
+          "nav_status": 200,
+          "final_path": "/memory/search",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "搜索",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\memory-search.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "记忆搜索"
+        },
+        {
+          "path": "/memory/sessions",
+          "url": "http://127.0.0.1:5173/memory/sessions",
+          "nav_status": 200,
+          "final_path": "/memory/sessions",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/sessions"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/sessions",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\memory-sessions.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "会话管理"
+        },
+        {
+          "path": "/memory/graph",
+          "url": "http://127.0.0.1:5173/memory/graph",
+          "nav_status": 200,
+          "final_path": "/memory/graph",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/graph/overview"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/graph/overview"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新图谱",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/memory-proxy/graph/overview"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/graph/overview?limit=120",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/graph/overview?limit=120",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\memory-graph.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "记忆图谱"
+        },
+        {
+          "path": "/memory/decay",
+          "url": "http://127.0.0.1:5173/memory/decay",
+          "nav_status": 200,
+          "final_path": "/memory/decay",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/memory-proxy/decay/config"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/memory-proxy/decay/config",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\memory-decay.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "衰减配置"
+        },
+        {
+          "path": "/memory/write",
+          "url": "http://127.0.0.1:5173/memory/write",
+          "nav_status": 200,
+          "final_path": "/memory/write",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\memory-write.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "写入记忆"
+        }
+      ]
+    },
+    "dps": {
+      "total": 14,
+      "pass": 5,
+      "fail": 9,
+      "pages": [
+        {
+          "path": "/portrait/overview",
+          "url": "http://127.0.0.1:5173/portrait/overview",
+          "nav_status": 200,
+          "final_path": "/portrait/overview",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/reports/overview"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/portraits"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/reports/overview"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/portraits"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "重新加载",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/reports/overview"
+                },
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/portraits"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/reports/overview",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/portraits?page=1&page_size=5",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/reports/overview",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/portraits?page=1&page_size=5",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-overview.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "数据总览"
+        },
+        {
+          "path": "/portrait/list",
+          "url": "http://127.0.0.1:5173/portrait/list",
+          "nav_status": 200,
+          "final_path": "/portrait/list",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/portraits"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/health"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/reports/overview"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/portraits?page=1&page_size=20",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/health",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/reports/overview",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-list.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "画像列表"
+        },
+        {
+          "path": "/portrait/search",
+          "url": "http://127.0.0.1:5173/portrait/search",
+          "nav_status": 200,
+          "final_path": "/portrait/search",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/portraits"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/portraits"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/portraits?page=1&page_size=100",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-search.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "画像搜索"
+        },
+        {
+          "path": "/portrait/tags",
+          "url": "http://127.0.0.1:5173/portrait/tags",
+          "nav_status": 200,
+          "final_path": "/portrait/tags",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/tags/categories"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/tags/categories"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/tags/categories"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/tags/categories",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/tags/categories",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-tags.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "标签管理"
+        },
+        {
+          "path": "/portrait/rules",
+          "url": "http://127.0.0.1:5173/portrait/rules",
+          "nav_status": 200,
+          "final_path": "/portrait/rules",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "画像规则",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "执行任务",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-rules.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "规则引擎"
+        },
+        {
+          "path": "/portrait/dps/templates",
+          "url": "http://127.0.0.1:5173/portrait/dps/templates",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/templates",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/templates"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/templates"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/templates"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/templates"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/templates"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/templates",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/templates",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/templates",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-templates.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "模板族管理"
+        },
+        {
+          "path": "/portrait/dps/templates/new",
+          "url": "http://127.0.0.1:5173/portrait/dps/templates/new",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/templates/new",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/templates"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/templates",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-templates-new.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "画像模板新建"
+        },
+        {
+          "path": "/portrait/dps/template-packages",
+          "url": "http://127.0.0.1:5173/portrait/dps/template-packages",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/template-packages",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "导出",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "导入",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-template-packages.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模板包导出/导入"
+        },
+        {
+          "path": "/portrait/dps/lineage",
+          "url": "http://127.0.0.1:5173/portrait/dps/lineage",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/lineage",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-lineage.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "标签血缘反查"
+        },
+        {
+          "path": "/portrait/dps/measures",
+          "url": "http://127.0.0.1:5173/portrait/dps/measures",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/measures",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询建议",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-measures.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "措施建议"
+        },
+        {
+          "path": "/portrait/dps/scoring-types",
+          "url": "http://127.0.0.1:5173/portrait/dps/scoring-types",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/scoring-types",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/scoring-types"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/scoring-types"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/scoring-types"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/scoring-types",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/scoring-types",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-scoring-types.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "评分类型"
+        },
+        {
+          "path": "/portrait/dps/annotation-adapters",
+          "url": "http://127.0.0.1:5173/portrait/dps/annotation-adapters",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/annotation-adapters",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-annotation-adapters.png",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "AI 标注候选与复核"
+        },
+        {
+          "path": "/portrait/dps/annotation-templates",
+          "url": "http://127.0.0.1:5173/portrait/dps/annotation-templates",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/annotation-templates",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/annotation-templates"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/annotation-templates"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/annotation-templates"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 404,
+                  "url": "/api/v1/dps-proxy/annotation-templates"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/annotation-templates",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/annotation-templates",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/annotation-templates",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-annotation-templates.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "标注模板管理"
+        },
+        {
+          "path": "/portrait/dps/tags",
+          "url": "http://127.0.0.1:5173/portrait/dps/tags",
+          "nav_status": 200,
+          "final_path": "/portrait/dps/tags",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/labels"
+            },
+            {
+              "method": "GET",
+              "status": 404,
+              "url": "/api/v1/dps-proxy/tags/categories"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/labels?action=list",
+              "status": 404
+            },
+            {
+              "method": "GET",
+              "url": "http://127.0.0.1:5173/api/v1/dps-proxy/tags/categories",
+              "status": 404
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 404 (Not Found)",
+            "Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261025\\portrait-dps-tags.png",
+          "result": "FAIL",
+          "detail": "console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "title": "标签体系查看"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total": 77,
+    "pass": 30,
+    "fail": 47,
+    "api_errors": 134
+  },
+  "finished_at": "2026-10-25T16:15:49.814Z"
+}

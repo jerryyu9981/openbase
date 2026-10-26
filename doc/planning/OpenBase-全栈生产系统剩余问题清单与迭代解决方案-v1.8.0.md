@@ -1,10 +1,10 @@
-# OpenBase-全栈生产系统剩余问题清单与迭代解决方案-v1.7.0
+# OpenBase-全栈生产系统剩余问题清单与迭代解决方案-v1.8.0
 
 | 项目 | 内容 |
 |------|------|
 | 文档名称 | 全栈生产系统剩余问题清单与迭代解决方案（OpenBase 主仓 + 四仓 + 运维面） |
-| 文档编号 | OB-PLAN-REMAIN-FULLSTACK-v1.7.0 |
-| 版本 | **v1.7.0** |
+| 文档编号 | OB-PLAN-REMAIN-FULLSTACK-v1.8.0 |
+| 版本 | **v1.8.0** |
 | 状态 | **[Review]**（待人工批准后排期执行） |
 | 编制日期 | 2026-10-25 |
 | 编制人 | FA-OpenBase-Dev（AI 辅助） |
@@ -17,6 +17,7 @@
 | 版本 | 日期 | 编制人 | 修订内容 |
 |------|------|--------|---------|
 | v1.7.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **全栈 7 服务一次启动成功**（27 PASS / 0 FAIL / 0 SKIP）：修复 oidc-idp 解释器自检、frontend `npm.cmd` 静默退出（改直调 vite）、三服务冷启动 `HealthWait`；dps 运行时确定为 OpenRAG `.venv3`；**B2（S7 门禁 B 面）四仓运行态已具备，可进入执行** |
+| v1.8.0 | 2026-10-26 | FA-OpenBase-Dev（AI 辅助） | **B1（D-04）闭环**：`start` 健康通过后按端口反查真实监听 PID 落盘、`stop` 端口兜底与结果回显（单测覆盖）；同批修复「服务被会话回收」（全服务 WMI 脱离启动）与「脱离启动丢失 `POSTGRES_URL`」（白名单传递进程环境）；驱动源为**前端全页面走查 77 页**（终轮 PASS 77 / FAIL 0，见 `doc/test/OpenBase-前端全页面走查清单-v1.0.0.md`） |
 | v1.6.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **B4 进一步收敛**：OpenLLM/OpenMemory 专用 venv 落地，候选链补入；OpenLLM 实测启动 + `/health` 200；记录 OpenLLM requirements 八项缺口与本机补丁、OpenMemory `qdrant-client` 约束冲突 |
 | v1.5.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **B4 部分闭环（D-05 解除）**：系统 Python 3.12.10 + 专用 venv `D:\venvs\openbase`（全依赖）；编排新增解释器解析链与 `import uvicorn` 自检，失败给出可读错误并拒绝该服务；实测单服务启动成功（PID 9100、健康检查 3s、stop 后端口释放）；守门 21 → **23 例** |
 | v1.4.0 | 2026-10-25 | FA-OpenBase-Dev（AI 辅助） | **每次启动服务前校验数据库**：`Start-Service` 统一入口新增 `Assert-ServiceDataPlane`（全量 / `-Only` 单服务 / monitor 自愈一致）；按服务依赖校验 pg/redis/qdrant/neo4j；当前通道共享库不可用 ⇒ 拒绝该服务；`-ProbeTtlSec` 内复用探测；守门 20 → **21 例**（运维记录 v1.12.0 §16.9） |
@@ -39,7 +40,7 @@
 | 类别 | 数量 | 其中 P0 | 说明 |
 |------|:----:|:------:|------|
 | A 生产阻断（Go/No-Go） | 8 | 7 | A1~A7 依赖生产部署面或共享 PG；**A8 已交付 Phase 1/2/3**（数据同步 Phase 4 挂起） |
-| B 本仓工程项 | 4 | 1 | 1 项代码修复（D-04）、1 项联调窗口、1 项环境固化；**B3 推送已闭环** |
+| B 本仓工程项 | 4 | 0 | **B1 已闭环（2026-10-26，D-04）**、B2 前置具备待执行、B3 推送已闭环、B4 大部分闭环 |
 | C 跨仓能力/契约 | 2 | 0 | 均需目标侧主数据或跨仓契约评审 |
 | D 冻结/不建设 | 4 | 0 | 已书面裁定，仅登记解冻条件 |
 | **合计** | **18** | **8** | —— |
@@ -63,12 +64,12 @@
 
 | ID | 事项 | 优先级 | 现状 | 处置方案 | 验收判据 |
 |:--:|------|:------:|------|---------|---------|
-| B1 | **D-04 编排 PID 记录与真实监听进程错位**：`service-orchestrator.ps1 -Action stop` 首次按 PID 记录停止未生效（PID 296 包装进程 vs 真实 uvicorn 34120） | **P0（运维正确性）** | 已登记（S2 报告 v1.1.0 D-04） | ① `start` 时以**端口反查真实监听 PID** 记录（`Get-NetTCPConnection -State Listen`）；② `stop` 增加「PID 未命中 → 端口兜底」；③ 停止后输出端口核对结果；④ 补单测/集成测（对假进程表 stub）；⑤ 运维手册与回滚方案同步「以端口核对为准」 | `stop` 一次即停净（端口无监听）；连续 3 次启停无残留；单测覆盖 PID 命中/未命中两分支 |
+| B1 | **D-04 编排 PID 记录与真实监听进程错位**：`service-orchestrator.ps1 -Action stop` 首次按 PID 记录停止未生效（PID 296 包装进程 vs 真实 uvicorn 34120） | **P0（运维正确性）** | ✅ **已闭环（2026-10-26）**：`start` 健康检查通过后按端口反查真实监听 PID 并落盘；全部服务改 WMI 脱离启动（避免会话回收）并白名单传递进程环境（避免丢 `POSTGRES_URL`）；`stop` 保留「PID 未命中 → 端口兜底」+ 结果回显；新增单测 `test_all_services_detach_and_record_listening_pid`（全文件 24 例通过） | 已完成（见左列） | `stop` 一次即停净（端口无监听）；落盘 PID = 端口占用进程；单测覆盖 |
 | B2 | **S7 门禁 B 面**：SMOKE-S0-S6、K07-SYS-1 | P1 | 🟡 **前置已具备（2026-10-25）**：全栈 7 服务一次启动成功、`checkall` 27 PASS / 0 FAIL；尚待执行 `gate_aggregate.py` 并回填证据 | 执行 `scripts/gate_aggregate.py`，回填 `doc/test/evidence/s7/gate/**` | 冒烟与 K07 矩阵由 PENDING 转 PASS（或附可解释原因） |
 | B3 | **github 补推** | P1 | ✅ **已闭环（2026-10-25）**：`4cfa4e7` / `c187348` / `40364ff` / `4d3847b` 已推送，三远程 HEAD 一致（`4d3847b`） | 后续网络异常时按同法重试并 `ls-remote` 核对 | origin/backup/github 三者 HEAD 相同 |
 | B4 | **运行期依赖与环境固化**（XR-OPS-02 剩余）：OpenLLM 缺 `prometheus_client`/OTel gRPC 子包、宿主 Python 缺 `psycopg` pq wrapper、编排裸 `python` 需 shim | P1 | 🟡 **大部分闭环（2026-10-25）**：三仓专用 venv 就绪（openbase/openllm/openmemory，系统 Python 3.12.10），编排解释器解析链 + `import uvicorn` 自检；OpenLLM 启动 `/health` 200；**剩余**：`D:\uv` 装 uv、OpenLLM requirements 8 项上游修正（见运维记录 §16.11.2）、openllm 冷启动 `HealthWait` | ① 上游 requirements 修正并回归；② 编排扩展依赖自检到各仓业务模块；③ 文档化 `OPENBASE_PYTHON` / `-PythonHome` 用法 | 干净环境按文档一次启动成功；依赖自检失败可读报错 |
 
-> 说明：B1 是**唯一需要改代码**的本仓项，且直接关系回滚动作正确性，建议优先于其它迭代项。
+> 说明：B1 已于 2026-10-26 闭环（原「唯一需要改代码」的本仓 P0 项）；本仓剩余可执行项为 B2（门禁 B 面）与 B4 收尾（uv / OpenLLM requirements 上游修正）。
 
 ## 5. C 类：跨仓能力与契约
 

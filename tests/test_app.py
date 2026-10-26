@@ -121,3 +121,19 @@ def test_storage_upload_flow():
     # 元数据可查
     detail = client.get(f"/api/v1/files/{body['id']}")
     assert detail.status_code == 200
+
+
+def test_proxy_modules_mount_their_routers() -> None:
+    """启用代理模块后必须真实挂载路由。
+
+    回归背景（2026-10-25 前端走查）：`httpx` 仅声明在 dev extra，运行态缺失时
+    `import openbase.modules.proxy` 抛 ImportError 被静默跳过 → 前端所有
+    `*-proxy/*` 调用 404（47/77 页面失败）。httpx 已提升为运行期依赖。
+    """
+    settings = Settings()
+    for module in ("auth", "proxy", "llm_proxy", "rag_proxy", "dps_proxy"):
+        settings.enable_module(module)
+    app = init_app(settings)
+    paths = set(app.openapi()["paths"].keys())
+    for prefix in ("/api/v1/memory-proxy", "/api/v1/llm-proxy", "/api/v1/rag-proxy", "/api/v1/dps-proxy"):
+        assert any(path.startswith(prefix) for path in paths), f"{prefix} 路由未挂载"

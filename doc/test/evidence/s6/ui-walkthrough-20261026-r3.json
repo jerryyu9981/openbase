@@ -1,0 +1,4082 @@
+{
+  "schema": "openbase-ui-e2e-all-services/v1.1.0",
+  "base_url": "http://localhost:5173",
+  "token_source": "OPENBASE_ACCESS_TOKEN",
+  "shots_dir": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3",
+  "interact": true,
+  "started_at": "2026-10-25T23:27:52.600Z",
+  "services": {
+    "openbase": {
+      "total": 44,
+      "pass": 0,
+      "fail": 44,
+      "pages": [
+        {
+          "path": "/dashboard",
+          "url": "http://localhost:5173/dashboard",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\dashboard.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "仪表盘"
+        },
+        {
+          "path": "/platform/identity/tenants",
+          "url": "http://localhost:5173/platform/identity/tenants",
+          "nav_status": 200,
+          "final_path": "/platform/identity/tenants",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-tenants.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "租户管理"
+        },
+        {
+          "path": "/platform/identity/roles",
+          "url": "http://localhost:5173/platform/identity/roles",
+          "nav_status": 200,
+          "final_path": "/platform/identity/roles",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-roles.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "角色与权限"
+        },
+        {
+          "path": "/platform/identity/org",
+          "url": "http://localhost:5173/platform/identity/org",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-org.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "组织/团队/用户"
+        },
+        {
+          "path": "/platform/identity/workspaces",
+          "url": "http://localhost:5173/platform/identity/workspaces",
+          "nav_status": 200,
+          "final_path": "/platform/identity/workspaces",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/workspaces"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/workspaces"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/workspaces"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/workspaces"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-workspaces.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "工作空间"
+        },
+        {
+          "path": "/platform/identity/users",
+          "url": "http://localhost:5173/platform/identity/users",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-users.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "用户管理"
+        },
+        {
+          "path": "/platform/identity/memory-admin",
+          "url": "http://localhost:5173/platform/identity/memory-admin",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-memory-admin.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "记忆管理席位"
+        },
+        {
+          "path": "/platform/identity/auth-ext",
+          "url": "http://localhost:5173/platform/identity/auth-ext",
+          "nav_status": 200,
+          "final_path": "/platform/identity/auth-ext",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "注册",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "找回密码",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "重置密码",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-auth-ext.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "注册/找回密码"
+        },
+        {
+          "path": "/platform/identity/dps-permissions",
+          "url": "http://localhost:5173/platform/identity/dps-permissions",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-identity-dps-permissions.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "画像数据权限"
+        },
+        {
+          "path": "/platform/config/general",
+          "url": "http://localhost:5173/platform/config/general",
+          "nav_status": 200,
+          "final_path": "/platform/config/general",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/configs"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/configs"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/configs"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-config-general.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "全局配置"
+        },
+        {
+          "path": "/platform/config/modules",
+          "url": "http://localhost:5173/platform/config/modules",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-config-modules.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "模块开关"
+        },
+        {
+          "path": "/platform/config/api-keys",
+          "url": "http://localhost:5173/platform/config/api-keys",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-config-api-keys.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "API 密钥"
+        },
+        {
+          "path": "/platform/config/rate-limits",
+          "url": "http://localhost:5173/platform/config/rate-limits",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-config-rate-limits.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "画像接口限流"
+        },
+        {
+          "path": "/platform/observability/logs",
+          "url": "http://localhost:5173/platform/observability/logs",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-logs.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "日志中心"
+        },
+        {
+          "path": "/platform/observability/test-records",
+          "url": "http://localhost:5173/platform/observability/test-records",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-test-records.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "测试记录"
+        },
+        {
+          "path": "/platform/observability/monitoring",
+          "url": "http://localhost:5173/platform/observability/monitoring",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-monitoring.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "统一监控"
+        },
+        {
+          "path": "/platform/observability/monitoring/costs",
+          "url": "http://localhost:5173/platform/observability/monitoring/costs",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/costs",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/budgets"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/costs"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-monitoring-costs.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "成本分析"
+        },
+        {
+          "path": "/platform/observability/monitoring/alerts",
+          "url": "http://localhost:5173/platform/observability/monitoring/alerts",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/alerts",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts/rules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts/rules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/alerts"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "告警规则",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/alerts"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/alerts/rules"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "告警历史",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-monitoring-alerts.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "告警中心"
+        },
+        {
+          "path": "/platform/observability/monitoring/traces",
+          "url": "http://localhost:5173/platform/observability/monitoring/traces",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/traces",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/monitoring/traces"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-monitoring-traces.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "链路追踪"
+        },
+        {
+          "path": "/platform/observability/monitoring/budgets",
+          "url": "http://localhost:5173/platform/observability/monitoring/budgets",
+          "nav_status": 200,
+          "final_path": "/platform/observability/monitoring/budgets",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/budgets"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/budgets"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-monitoring-budgets.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "预算管理"
+        },
+        {
+          "path": "/platform/observability/gpu",
+          "url": "http://localhost:5173/platform/observability/gpu",
+          "nav_status": 200,
+          "final_path": "/platform/observability/gpu",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-gpu.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "GPU 资源"
+        },
+        {
+          "path": "/platform/observability/usage",
+          "url": "http://localhost:5173/platform/observability/usage",
+          "nav_status": 200,
+          "final_path": "/platform/observability/usage",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/summary"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/detail"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/summary"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/detail"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "查询",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/summary"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/detail"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/summary"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-usage.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "用量统计"
+        },
+        {
+          "path": "/platform/observability/billing",
+          "url": "http://localhost:5173/platform/observability/billing",
+          "nav_status": 200,
+          "final_path": "/platform/observability/billing",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/usage/statistics"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/quotas"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/billing/bills"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/billing/usage/statistics"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/billing/quotas"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/billing/bills"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/usage/trends"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-billing.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "计费"
+        },
+        {
+          "path": "/platform/observability/service-discovery",
+          "url": "http://localhost:5173/platform/observability/service-discovery",
+          "nav_status": 200,
+          "final_path": "/platform/observability/service-discovery",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 403,
+              "url": "/api/v1/services"
+            },
+            {
+              "method": "GET",
+              "status": 403,
+              "url": "/api/v1/services"
+            },
+            {
+              "method": "GET",
+              "status": 403,
+              "url": "/api/v1/gateway/ping"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 403,
+                  "url": "/api/v1/services"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "连通性检测",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 403,
+                  "url": "/api/v1/gateway/ping"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/services",
+              "status": 403
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/services",
+              "status": 403
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/gateway/ping",
+              "status": 403
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+            "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-service-discovery.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "服务发现与编排"
+        },
+        {
+          "path": "/platform/observability/gateway-test",
+          "url": "http://localhost:5173/platform/observability/gateway-test",
+          "nav_status": 200,
+          "final_path": "/platform/observability/gateway-test",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "重置",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-gateway-test.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "聚合网关测试"
+        },
+        {
+          "path": "/platform/observability/app-calls",
+          "url": "http://localhost:5173/platform/observability/app-calls",
+          "nav_status": 200,
+          "final_path": "/platform/observability/app-calls",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps/calls"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps/calls"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/ai-apps/calls"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-app-calls.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "应用调用记录"
+        },
+        {
+          "path": "/platform/observability/dps-monitor",
+          "url": "http://localhost:5173/platform/observability/dps-monitor",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-observability-dps-monitor.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "画像系统监控"
+        },
+        {
+          "path": "/platform/governance/providers",
+          "url": "http://localhost:5173/platform/governance/providers",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-providers.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "提供商管理"
+        },
+        {
+          "path": "/platform/governance/model-categories",
+          "url": "http://localhost:5173/platform/governance/model-categories",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-model-categories.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "模型分类"
+        },
+        {
+          "path": "/platform/governance/routing",
+          "url": "http://localhost:5173/platform/governance/routing",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-routing.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "路由策略"
+        },
+        {
+          "path": "/platform/governance/circuit-breakers",
+          "url": "http://localhost:5173/platform/governance/circuit-breakers",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-circuit-breakers.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "熔断器"
+        },
+        {
+          "path": "/platform/governance/deploy",
+          "url": "http://localhost:5173/platform/governance/deploy",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-deploy.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "模型部署"
+        },
+        {
+          "path": "/platform/governance/downloads",
+          "url": "http://localhost:5173/platform/governance/downloads",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-downloads.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "下载管理"
+        },
+        {
+          "path": "/platform/governance/tool-calls",
+          "url": "http://localhost:5173/platform/governance/tool-calls",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-tool-calls.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "工具调用监控"
+        },
+        {
+          "path": "/platform/governance/ab-tests",
+          "url": "http://localhost:5173/platform/governance/ab-tests",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-ab-tests.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "A/B 测试"
+        },
+        {
+          "path": "/platform/governance/prompt-templates",
+          "url": "http://localhost:5173/platform/governance/prompt-templates",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-prompt-templates.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "Prompt 模板"
+        },
+        {
+          "path": "/platform/governance/prompt-experiments",
+          "url": "http://localhost:5173/platform/governance/prompt-experiments",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-governance-prompt-experiments.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "Prompt 实验"
+        },
+        {
+          "path": "/platform/developers/docs",
+          "url": "http://localhost:5173/platform/developers/docs",
+          "nav_status": 200,
+          "final_path": "/platform/developers/docs",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-developers-docs.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "文档中心"
+        },
+        {
+          "path": "/platform/developers/edgerouter",
+          "url": "http://localhost:5173/platform/developers/edgerouter",
+          "nav_status": 200,
+          "final_path": "/platform/developers/edgerouter",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/health"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/status"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/adapters"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/organizations"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/organizations"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/audit/logs"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/edge/audit/logs"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "tab",
+              "label": "概览",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/health"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/status"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/adapters"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/organizations"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "组织管理",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/organizations"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "配额管理",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "适配器管理",
+              "api": [],
+              "nav": false
+            },
+            {
+              "kind": "tab",
+              "label": "路由审计",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/edge/audit/logs"
+                }
+              ],
+              "nav": false
+            },
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-developers-edgerouter.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "EdgeRouter 与适配器"
+        },
+        {
+          "path": "/platform/developers/plugins",
+          "url": "http://localhost:5173/platform/developers/plugins",
+          "nav_status": 200,
+          "final_path": "/platform/developers/plugins",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/plugins/tools"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/plugins"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/plugins"
+            }
+          ],
+          "interactions": [
+            {
+              "kind": "button",
+              "label": "刷新",
+              "api": [
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/plugins/tools"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/plugins"
+                },
+                {
+                  "method": "GET",
+                  "status": 200,
+                  "url": "/api/v1/proxy/openllm/api/v1/plugins"
+                }
+              ],
+              "nav": false
+            }
+          ],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-developers-plugins.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "插件管理"
+        },
+        {
+          "path": "/platform/developers/dps-api",
+          "url": "http://localhost:5173/platform/developers/dps-api",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-developers-dps-api.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "画像 API 管理"
+        },
+        {
+          "path": "/platform/developers/knowledge-admin",
+          "url": "http://localhost:5173/platform/developers/knowledge-admin",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-developers-knowledge-admin.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "知识库管理后台"
+        },
+        {
+          "path": "/platform/developers/knowledge-console",
+          "url": "http://localhost:5173/platform/developers/knowledge-console",
+          "nav_status": 200,
+          "final_path": "/forbidden",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\platform-developers-knowledge-console.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "知识库 API 控制台"
+        },
+        {
+          "path": "/personal/settings",
+          "url": "http://localhost:5173/personal/settings",
+          "nav_status": 200,
+          "final_path": "/personal/settings",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/notification-preferences"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/notification-preferences",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\personal-settings.png",
+          "result": "FAIL",
+          "detail": "api 5xx: GET http://localhost:5173/api/v1/auth/me → 500",
+          "title": "个人设置"
+        }
+      ]
+    },
+    "openllm": {
+      "total": 11,
+      "pass": 0,
+      "fail": 11,
+      "pages": [
+        {
+          "path": "/openllm/models",
+          "url": "http://localhost:5173/openllm/models",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/models\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/models\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-models.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "模型管理"
+        },
+        {
+          "path": "/openllm/models/local",
+          "url": "http://localhost:5173/openllm/models/local",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/models/local\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/models/local\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-models-local.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "本地模型"
+        },
+        {
+          "path": "/openllm/models/comparison",
+          "url": "http://localhost:5173/openllm/models/comparison",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/models/comparison\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/models/comparison\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-models-comparison.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "模型对比"
+        },
+        {
+          "path": "/openllm/models/market",
+          "url": "http://localhost:5173/openllm/models/market",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/models/market\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/models/market\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-models-market.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "开源模型市场"
+        },
+        {
+          "path": "/openllm/favorites",
+          "url": "http://localhost:5173/openllm/favorites",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/favorites\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/favorites\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-favorites.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "我的收藏"
+        },
+        {
+          "path": "/openllm/apps",
+          "url": "http://localhost:5173/openllm/apps",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/apps\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/apps\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-apps.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "AI 应用"
+        },
+        {
+          "path": "/openllm/apps/new",
+          "url": "http://localhost:5173/openllm/apps/new",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/apps/new\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/apps/new\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-apps-new.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "创建应用"
+        },
+        {
+          "path": "/openllm/playground",
+          "url": "http://localhost:5173/openllm/playground",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/playground\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/playground\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-playground.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "Playground"
+        },
+        {
+          "path": "/openllm/conversations",
+          "url": "http://localhost:5173/openllm/conversations",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/conversations\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/conversations\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-conversations.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "对话管理"
+        },
+        {
+          "path": "/openllm/recommend",
+          "url": "http://localhost:5173/openllm/recommend",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/recommend\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/recommend\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-recommend.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "模型对比推荐"
+        },
+        {
+          "path": "/openllm/reports-trend",
+          "url": "http://localhost:5173/openllm/reports-trend",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/openllm/reports-trend\"",
+            "[Vue Router warn]: No match found for location with path \"/openllm/reports-trend\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\openllm-reports-trend.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "报表趋势"
+        }
+      ]
+    },
+    "openrag": {
+      "total": 2,
+      "pass": 0,
+      "fail": 2,
+      "pages": [
+        {
+          "path": "/knowledge/list",
+          "url": "http://localhost:5173/knowledge/list",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/knowledge/list\"",
+            "[Vue Router warn]: No match found for location with path \"/knowledge/list\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\knowledge-list.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "知识库"
+        },
+        {
+          "path": "/knowledge/chat",
+          "url": "http://localhost:5173/knowledge/chat",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/knowledge/chat\"",
+            "[Vue Router warn]: No match found for location with path \"/knowledge/chat\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\knowledge-chat.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "RAG 对话"
+        }
+      ]
+    },
+    "openmemory": {
+      "total": 6,
+      "pass": 0,
+      "fail": 6,
+      "pages": [
+        {
+          "path": "/memory/list",
+          "url": "http://localhost:5173/memory/list",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/memory/list\"",
+            "[Vue Router warn]: No match found for location with path \"/memory/list\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\memory-list.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "记忆列表"
+        },
+        {
+          "path": "/memory/search",
+          "url": "http://localhost:5173/memory/search",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/memory/search\"",
+            "[Vue Router warn]: No match found for location with path \"/memory/search\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\memory-search.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "记忆搜索"
+        },
+        {
+          "path": "/memory/sessions",
+          "url": "http://localhost:5173/memory/sessions",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/memory/sessions\"",
+            "[Vue Router warn]: No match found for location with path \"/memory/sessions\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\memory-sessions.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "会话管理"
+        },
+        {
+          "path": "/memory/graph",
+          "url": "http://localhost:5173/memory/graph",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/memory/graph\"",
+            "[Vue Router warn]: No match found for location with path \"/memory/graph\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\memory-graph.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "记忆图谱"
+        },
+        {
+          "path": "/memory/decay",
+          "url": "http://localhost:5173/memory/decay",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/memory/decay\"",
+            "[Vue Router warn]: No match found for location with path \"/memory/decay\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\memory-decay.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "衰减配置"
+        },
+        {
+          "path": "/memory/write",
+          "url": "http://localhost:5173/memory/write",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/memory/write\"",
+            "[Vue Router warn]: No match found for location with path \"/memory/write\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\memory-write.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "写入记忆"
+        }
+      ]
+    },
+    "dps": {
+      "total": 14,
+      "pass": 0,
+      "fail": 14,
+      "pages": [
+        {
+          "path": "/portrait/overview",
+          "url": "http://localhost:5173/portrait/overview",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/overview\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/overview\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-overview.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "数据总览"
+        },
+        {
+          "path": "/portrait/list",
+          "url": "http://localhost:5173/portrait/list",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/list\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/list\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-list.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "画像列表"
+        },
+        {
+          "path": "/portrait/search",
+          "url": "http://localhost:5173/portrait/search",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/search\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/search\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-search.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "画像搜索"
+        },
+        {
+          "path": "/portrait/tags",
+          "url": "http://localhost:5173/portrait/tags",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/tags\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/tags\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-tags.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "标签管理"
+        },
+        {
+          "path": "/portrait/rules",
+          "url": "http://localhost:5173/portrait/rules",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/rules\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/rules\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-rules.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "规则引擎"
+        },
+        {
+          "path": "/portrait/dps/templates",
+          "url": "http://localhost:5173/portrait/dps/templates",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/templates\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/templates\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-templates.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "模板族管理"
+        },
+        {
+          "path": "/portrait/dps/templates/new",
+          "url": "http://localhost:5173/portrait/dps/templates/new",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/templates/new\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/templates/new\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-templates-new.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "画像模板新建"
+        },
+        {
+          "path": "/portrait/dps/template-packages",
+          "url": "http://localhost:5173/portrait/dps/template-packages",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/template-packages\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/template-packages\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-template-packages.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "模板包导出/导入"
+        },
+        {
+          "path": "/portrait/dps/lineage",
+          "url": "http://localhost:5173/portrait/dps/lineage",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/lineage\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/lineage\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-lineage.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "标签血缘反查"
+        },
+        {
+          "path": "/portrait/dps/measures",
+          "url": "http://localhost:5173/portrait/dps/measures",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/measures\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/measures\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-measures.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "措施建议"
+        },
+        {
+          "path": "/portrait/dps/scoring-types",
+          "url": "http://localhost:5173/portrait/dps/scoring-types",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/scoring-types\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/scoring-types\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-scoring-types.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "评分类型"
+        },
+        {
+          "path": "/portrait/dps/annotation-adapters",
+          "url": "http://localhost:5173/portrait/dps/annotation-adapters",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/annotation-adapters\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/annotation-adapters\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-annotation-adapters.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "AI 标注候选与复核"
+        },
+        {
+          "path": "/portrait/dps/annotation-templates",
+          "url": "http://localhost:5173/portrait/dps/annotation-templates",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/annotation-templates\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/annotation-templates\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-annotation-templates.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "标注模板管理"
+        },
+        {
+          "path": "/portrait/dps/tags",
+          "url": "http://localhost:5173/portrait/dps/tags",
+          "nav_status": 200,
+          "final_path": "/dashboard",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 500,
+              "url": "/api/v1/users"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/auth/me",
+              "status": 500
+            },
+            {
+              "method": "GET",
+              "url": "http://localhost:5173/api/v1/users",
+              "status": 500
+            }
+          ],
+          "console_errors": [
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+            "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+          ],
+          "console_warns": [
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/tags\"",
+            "[Vue Router warn]: No match found for location with path \"/portrait/dps/tags\""
+          ],
+          "page_errors": [],
+          "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\ui-walkthrough-20261026-r3\\portrait-dps-tags.png",
+          "result": "FAIL",
+          "detail": "被模块守卫退回 /dashboard（权限或路由未装载）",
+          "title": "标签体系查看"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total": 77,
+    "pass": 0,
+    "fail": 77,
+    "api_errors": 115
+  },
+  "finished_at": "2026-10-25T23:30:41.184Z"
+}

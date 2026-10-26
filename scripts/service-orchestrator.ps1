@@ -784,6 +784,9 @@ $services = @(
     @{
         Name    = 'openllm'
         Port    = 8001
+        # 全服务统一脱离会话启动（WMI）：Start-Process 的子进程随启动它的
+        # 终端/编排会话结束被回收（实测 openbase 起好后立即消失），因此不再按服务区分。
+        Detach  = $true
         # 冷启动（首次导入 torch/transformers 等）实测 >60s，健康等待放宽到 180s
         HealthWait = 180
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenLLM\backend'
@@ -817,6 +820,7 @@ $services = @(
     @{
         Name    = 'openrag'
         Port    = 8010
+        Detach  = $true
         # 冷启动实测 >60s（加载嵌入/索引组件），健康等待放宽到 180s
         HealthWait = 180
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenRAG'
@@ -860,6 +864,7 @@ $services = @(
     @{
         Name    = 'openmemory'
         Port    = 8020
+        Detach  = $true
         # 服务级健康等待窗口（秒）：本服务 /health 需在四后端初始化（Qdrant/PG/Redis/Neo4j）
         # 与 CPU 模型预热（CLIP ViT-B/32 + faster-whisper base/int8）之后才可用。
         # 冷启动实测 48s / 55s / 125s / 137s（2026-09-20 四次样本），全局默认 60s 窗口会误报超时。
@@ -906,6 +911,7 @@ $services = @(
     @{
         Name    = 'oidc-idp'
         Port    = 8090
+        Detach  = $true
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenBase'
         Command = 'python'
         # 本地标准 OIDC IdP（scripts/oidc-idp/idp_server.py，开发/联调用，OB-AUTH-OIDC）
@@ -924,6 +930,7 @@ $services = @(
     @{
         Name    = 'dps'
         Port    = 8030
+        Detach  = $true
         Cwd     = 'D:\Trae CN\myproject\Dev\DPS'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'rest_api.app:app', '--app-dir', 'src', '--host', '127.0.0.1', '--port', '8030')
@@ -956,6 +963,9 @@ $services = @(
     @{
         Name    = 'openbase'
         Port    = 8000
+        Detach  = $true
+        # 冷启动实测 >60s（PG 建表 + 迁移 + 种子），健康等待放宽到 180s
+        HealthWait = 180
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenBase'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'openbase.demo_app:app', '--host', '127.0.0.1', '--port', '8000')
@@ -1165,8 +1175,37 @@ function Remove-Pid {
 function Start-DetachedProcess {
     # 走查 v1.0.0 提示项修复：以 WMI Win32_Process.Create + -EncodedCommand 脱离当前会话启动，
     # 规避沙箱 Job Object kill-on-close（子进程随编排器会话结束被回收）。返回新进程 PID。
+    #
+    # 环境继承（2026-10-26 修复）：WMI 创建的子进程**不继承**调用方进程环境，
+    # 若不显式传递，`.env.shared-infra` 注入的 POSTGRES_URL/REDIS_URL 等全部丢失
+    # （实测 openbase 退化为内存模式：`/auth/me`、`/api/v1/users` 全部 500）。
+    # 不能整份快照：环境过大时 Win32_Process.Create 返回 8（命令行超限），
+    # 故只白名单传递「系统运行必需 + 共享基础设施 + 各仓前缀」键；`$Svc.Env` 仍可覆盖。
     param([hashtable]$Svc, [hashtable]$LogTarget)
     $lines = @("Set-Location '$($Svc.Cwd)'")
+    $fixedKeys = @(
+        'PATH', 'PATHEXT', 'SystemRoot', 'SystemDrive', 'windir', 'TEMP', 'TMP', 'COMSPEC',
+        'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PROGRAMDATA', 'PROGRAMFILES', 'HOMEDRIVE',
+        'HOMEPATH', 'NUMBER_OF_PROCESSORS', 'OS', 'PROCESSOR_ARCHITECTURE', 'COMPUTERNAME', 'USERNAME'
+    )
+    $prefixes = @(
+        'POSTGRES_', 'REDIS_', 'QDRANT_', 'NEO4J_', 'MINIO_', 'SQLITE_', 'OLLAMA_',
+        'OPENBASE_', 'OPENMEMORY_', 'OPENRAG_', 'OPENLLM_', 'DPS_', 'PYTHON', 'VIRTUAL_ENV'
+    )
+    $snapshot = [Environment]::GetEnvironmentVariables('Process')
+    foreach ($entry in $snapshot.GetEnumerator()) {
+        $name = [string]$entry.Key
+        if (-not $name) { continue }
+        $matched = ($fixedKeys -contains $name)
+        if (-not $matched) {
+            foreach ($prefix in $prefixes) {
+                if ($name.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) { $matched = $true; break }
+            }
+        }
+        if (-not $matched) { continue }
+        $val = ([string]$entry.Value) -replace "'", "''"
+        $lines += "`$env:$name = '$val'"
+    }
     foreach ($key in $Svc.Env.Keys) {
         $val = ([string]$Svc.Env[$key]) -replace "'", "''"
         $lines += "`$env:$key = '$val'"
@@ -1346,6 +1385,13 @@ function Start-Service {
         while ((Get-Date) -lt $deadline) {
             Start-Sleep -Seconds 2
             if (Test-Health $Svc) {
+                # 记录**真实监听进程** PID（D-04）：脱离会话启动时 `$launchedPid` 是包装
+                # powershell，直接落它会令 `stop` 只杀包装、留下占用端口的 python 孤儿。
+                $listenPid = Get-PortPid $Svc.Port
+                if ($listenPid) {
+                    Save-Pid $Svc.Name ([int]$listenPid)
+                    $launchedPid = [int]$listenPid
+                }
                 Write-Log 'INFO' ("{0} 健康检查通过 ✅（PID {1}，端口 {2}，冷启动耗时 {3}s）" -f $Svc.Name, $launchedPid, $Svc.Port, [int]$stopwatch.Elapsed.TotalSeconds)
                 return $true
             }

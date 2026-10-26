@@ -36,7 +36,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 ORCHESTRATOR = ROOT / "scripts" / "service-orchestrator.ps1"
 PROBE_SCRIPT = ROOT / "scripts" / "infra_probe.py"
-OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.15.0.md"
+OPERATION_DOC = ROOT / "doc" / "operation" / "OpenBase-本地备用基础设施安装与主备切换记录-v1.15.1.md"
 
 POWERSHELL = shutil.which("powershell") or (
     r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
@@ -461,6 +461,27 @@ def test_every_service_start_checks_data_plane() -> None:
     # 共享库不可用必须拒绝该服务启动（不能静默继续）
     assert "启动前数据面校验失败" in text
     assert "拒绝启动该服务" in text
+
+
+def test_all_services_detach_and_record_listening_pid() -> None:
+    """D-04：全部服务脱离会话启动，且 start 落盘的是**真实监听 PID**。
+
+    回归背景（2026-10-26 前端走查）：仅 `frontend` 声明 `Detach = $true`，其余服务走
+    `Start-Process`——启动它的终端/编排会话一结束，服务就被 Job Object 回收（实测
+    openbase 健康检查通过后数秒内消失，前端全站 502/503）。另：脱离启动时记录的 PID
+    是包装 powershell，`stop` 只杀包装会留下占用端口的 python 孤儿。
+    """
+    text = _text()
+    service_names = ("openllm", "openrag", "openmemory", "oidc-idp", "dps", "openbase", "frontend")
+    for name in service_names:
+        block_start = text.index(f"Name    = '{name}'")
+        block_end = text.index("Desc    =", block_start)
+        assert "Detach" in text[block_start:block_end], f"{name} 缺少 Detach（会被会话回收）"
+    # 健康检查通过后按端口反查监听 PID 并落盘
+    assert "Get-PortPid $Svc.Port" in text
+    assert "Save-Pid $Svc.Name ([int]$listenPid)" in text
+    # WMI 子进程不继承调用方环境 → 必须显式快照传入（否则丢失 POSTGRES_URL）
+    assert "[Environment]::GetEnvironmentVariables('Process')" in text
 
 
 def test_python_runtime_resolution_declared() -> None:

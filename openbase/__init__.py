@@ -13,6 +13,8 @@ OpenBase 是四系统（OpenLLM / OpenRAG / OpenMemory / DPS）及未来类似�
     app = init_app(settings)
 """
 
+import logging
+
 from openbase.settings import Settings, get_settings
 
 settings = get_settings()
@@ -70,8 +72,12 @@ def init_app(settings: Settings) -> object:
             extra_routers = getattr(module, "extra_routers", None) or []
             for extra_router in extra_routers:
                 app.include_router(extra_router)
-        except ImportError:
-            # 模块存在但未实现时跳过，不阻塞装配
+        except ImportError as exc:
+            # 模块存在但依赖未安装时跳过，不阻塞装配；但必须留痕，
+            # 否则整片路由缺失（如 proxy 家族）只会表现为前端 404，难以定位。
+            logging.getLogger(__name__).warning(
+                "module %s skipped (import failed): %s", module_name, exc
+            )
             continue
 
     return app
