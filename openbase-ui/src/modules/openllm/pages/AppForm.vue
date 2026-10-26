@@ -36,6 +36,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
 import type { ApiSuccess } from '@/core/api/http'
+import { describeError } from '@/core/api/error'
 
 const route = useRoute()
 const router = useRouter()
@@ -63,9 +64,11 @@ async function save() {
     }
     ElMessage.success('保存成功')
     router.push('/openllm/apps')
-  } catch {
-    ElMessage.success('保存成功（演示）')
-    router.push('/openllm/apps')
+  } catch (error) {
+    // OBS-02 深走查缺陷修复（2026-10-26）：此前 catch 内提示「保存成功（演示）」并跳转，
+    // 接口失败时形成假成功、用户以为已保存。失败必须显式报错并停留在表单。
+    const presentation = describeError(error)
+    ElMessage.error(presentation.detail || presentation.title || '保存失败，请稍后重试')
   } finally {
     submitting.value = false
   }

@@ -1,0 +1,424 @@
+{
+  "schema": "obs02-manual-walkthrough/v1",
+  "base_url": "http://localhost:5173",
+  "started_at": "2026-10-26T14:36:01.923Z",
+  "cases": [
+    {
+      "id": "A1",
+      "page": "/openllm/models/local",
+      "title": "本地模型 · 加载与模型仓库弹窗",
+      "steps": [
+        "打开页面",
+        "等待列表/GPU 接口",
+        "点击「模型仓库」"
+      ],
+      "expect": "页面正常渲染；「模型仓库」弹窗可打开并展示 available 清单",
+      "allowed_statuses": [],
+      "observed": {
+        "dialog_visible": true,
+        "repo_rows": 0
+      },
+      "error": "",
+      "final_path": "/openllm/models/local",
+      "console_errors": [],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        }
+      ],
+      "duration_ms": 20825,
+      "verdict": "PASS"
+    },
+    {
+      "id": "A2",
+      "page": "/openllm/models/local",
+      "title": "本地模型 · GPU 调度弹窗",
+      "steps": [
+        "打开页面",
+        "点击「GPU 调度」"
+      ],
+      "expect": "GPU 调度弹窗打开；无 GPU 时展示「未检测到可用 GPU」空态（信息态）",
+      "allowed_statuses": [],
+      "observed": {
+        "dialog_visible": true,
+        "dialog_text": "GPU 调度\n设备\n\t\n利用率\n\t\n显存\n\t\n分配模型\n暂无数据\n\n未检测到可用 GPU\n\n关闭"
+      },
+      "error": "",
+      "final_path": "/openllm/models/local",
+      "console_errors": [],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        }
+      ],
+      "duration_ms": 14664,
+      "verdict": "PASS"
+    },
+    {
+      "id": "B1",
+      "page": "/portrait/dps/lineage",
+      "title": "标签血缘 · 不存在的 tag_code",
+      "steps": [
+        "打开页面",
+        "输入 tag_code=__not_exist__",
+        "点击「反查」"
+      ],
+      "expect": "404 呈现为「未找到该标签的谱系」空态，不呈现为错误告警",
+      "allowed_statuses": [
+        404
+      ],
+      "observed": {
+        "not_found_empty": true,
+        "error_alert": false
+      },
+      "error": "",
+      "final_path": "/portrait/dps/lineage",
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 404,
+          "method": "GET",
+          "url": "/api/v1/dps-proxy/lineage/tags/__not_exist__"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/dps-proxy/lineage/impact"
+        }
+      ],
+      "duration_ms": 17584,
+      "verdict": "PASS(预期 404)"
+    },
+    {
+      "id": "B2",
+      "page": "/portrait/dps/lineage",
+      "title": "标签血缘 · 空输入边界",
+      "steps": [
+        "打开页面",
+        "不输入 tag_code",
+        "点击「反查」"
+      ],
+      "expect": "空输入点击反查不发请求、不报错（前端早退）",
+      "allowed_statuses": [],
+      "observed": {
+        "new_api_calls": 0
+      },
+      "error": "",
+      "final_path": "/portrait/dps/lineage",
+      "console_errors": [],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        }
+      ],
+      "duration_ms": 12314,
+      "verdict": "PASS"
+    },
+    {
+      "id": "B3",
+      "page": "/portrait/dps/lineage",
+      "title": "标签血缘 · 口径（basis）展开",
+      "steps": [
+        "打开页面",
+        "输入 tag_code=service:channel",
+        "反查",
+        "点击「口径」"
+      ],
+      "expect": "口径可展开且文案含三层维度说明；标签数为 0 时强制展开",
+      "allowed_statuses": [
+        404
+      ],
+      "observed": {
+        "basis_content": false,
+        "not_found_empty": true,
+        "sources_rows": 0,
+        "blocked": true
+      },
+      "error": "",
+      "final_path": "/portrait/dps/lineage",
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 404,
+          "method": "GET",
+          "url": "/api/v1/dps-proxy/lineage/tags/service%3Achannel"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/dps-proxy/lineage/impact"
+        }
+      ],
+      "duration_ms": 18720,
+      "verdict": "BLOCKED(缺少业务数据，待人工造数后复验)"
+    },
+    {
+      "id": "C1",
+      "page": "/portrait/dps/annotation-adapters",
+      "title": "AI 标注候选 · 空输入校验",
+      "steps": [
+        "打开页面",
+        "不填模板/文本",
+        "点击「生成 AI 候选」"
+      ],
+      "expect": "空输入 → 提示「请填写标注模板与待标注文本」，不发写请求",
+      "allowed_statuses": [],
+      "observed": {
+        "toast": "请填写标注模板与待标注文本",
+        "new_api_calls": 0
+      },
+      "error": "",
+      "final_path": "/portrait/dps/annotation-adapters",
+      "console_errors": [],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        }
+      ],
+      "duration_ms": 12356,
+      "verdict": "PASS"
+    },
+    {
+      "id": "C2",
+      "page": "/portrait/dps/annotation-adapters",
+      "title": "AI 标注候选 · 生成候选（写）",
+      "steps": [
+        "打开页面",
+        "填 标注模板=e2e_demo / 文本",
+        "点击「生成 AI 候选」"
+      ],
+      "expect": "能力未启用 → 403 信息态（零写入）；启用时返回候选并进入列表",
+      "allowed_statuses": [
+        403,
+        503
+      ],
+      "observed": {
+        "toast": "",
+        "capability_disabled": true,
+        "adapter_unavailable": false,
+        "error_alert": false,
+        "candidate_rows": 0
+      },
+      "error": "",
+      "final_path": "/portrait/dps/annotation-adapters",
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 403,
+          "method": "POST",
+          "url": "/api/v1/dps-proxy/annotation-adapters/stub-v1/generate"
+        }
+      ],
+      "duration_ms": 17484,
+      "verdict": "PASS(预期 403)"
+    },
+    {
+      "id": "D1",
+      "page": "/openllm/apps/new",
+      "title": "AI 应用新建 · 空表单校验",
+      "steps": [
+        "打开页面",
+        "不填名称/模型",
+        "点击「保存」"
+      ],
+      "expect": "空表单 → 提示「请填写应用名称与模型」，不发请求、不跳转",
+      "allowed_statuses": [],
+      "observed": {
+        "toast": "请填写应用名称与模型",
+        "new_api_calls": 0,
+        "final_path": "/openllm/apps/new"
+      },
+      "error": "",
+      "final_path": "/openllm/apps/new",
+      "console_errors": [],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        }
+      ],
+      "duration_ms": 11991,
+      "verdict": "PASS"
+    },
+    {
+      "id": "D2",
+      "page": "/openllm/apps/new",
+      "title": "AI 应用新建 · 正常提交（写）",
+      "steps": [
+        "打开页面",
+        "填名称=OBS02-走查临时应用 / 模型=qwen2.5:0.5b",
+        "点击「保存」"
+      ],
+      "expect": "应真实创建并提示「保存成功」→ 跳转 /openllm/apps；失败必须提示错误（不得提示成功）",
+      "allowed_statuses": [],
+      "observed": {
+        "toast": "",
+        "final_path": "/openllm/apps"
+      },
+      "error": "",
+      "final_path": "/openllm/apps",
+      "console_errors": [],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "POST",
+          "url": "/api/v1/ai-apps"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/ai-apps"
+        }
+      ],
+      "duration_ms": 17524,
+      "verdict": "PASS"
+    },
+    {
+      "id": "D3",
+      "page": "/openllm/apps/new",
+      "title": "AI 应用新建 · 取消返回",
+      "steps": [
+        "打开页面",
+        "点击「取消」"
+      ],
+      "expect": "取消返回上一页（应用列表）",
+      "allowed_statuses": [],
+      "observed": {
+        "final_path": "/openllm/apps"
+      },
+      "error": "",
+      "final_path": "/openllm/apps",
+      "console_errors": [],
+      "console_warns": [],
+      "page_errors": [],
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/modules"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/auth/me"
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "url": "/api/v1/ai-apps"
+        }
+      ],
+      "duration_ms": 11953,
+      "verdict": "PASS"
+    }
+  ],
+  "finished_at": "2026-10-26T14:38:37.383Z"
+}

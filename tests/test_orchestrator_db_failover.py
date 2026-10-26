@@ -480,6 +480,10 @@ def test_all_services_detach_and_record_listening_pid() -> None:
     # 健康检查通过后按端口反查监听 PID 并落盘
     assert "Get-PortPid $Svc.Port" in text
     assert "Save-Pid $Svc.Name ([int]$listenPid)" in text
+    # 健康超时路径同样落盘（否则 stop 只杀包装进程，留下占用端口的孤儿）
+    assert "Get-PortPid $Svc.Port" in text and "$listenPidOnTimeout" in text
+    # stop 同时杀「记录 PID」与「端口占用 PID」
+    assert "$targets -notcontains [int]$portPid" in text
     # WMI 子进程不继承调用方环境 → 必须显式快照传入（否则丢失 POSTGRES_URL）
     assert "[Environment]::GetEnvironmentVariables('Process')" in text
 

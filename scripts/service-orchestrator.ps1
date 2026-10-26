@@ -1401,6 +1401,10 @@ function Start-Service {
                 return $false
             }
         }
+        # 健康超时也要落盘真实监听 PID：否则进程稍后才就绪时，`stop` 只会杀掉包装
+        # powershell（D-04 同族缺陷，实测 openllm/openrag 健康超时后端口仍在监听）。
+        $listenPidOnTimeout = Get-PortPid $Svc.Port
+        if ($listenPidOnTimeout) { Save-Pid $Svc.Name ([int]$listenPidOnTimeout) }
         Write-Log 'WARN' ("{0} 健康检查超时（进程仍在，PID {1}，已等待 {2}s/{3}s）" -f $Svc.Name, $launchedPid, [int]$stopwatch.Elapsed.TotalSeconds, $wait)
         return $false
     }
@@ -1413,14 +1417,18 @@ function Start-Service {
 
 function Stop-Service {
     param([hashtable]$Svc)
+    # 同时处理「记录的 PID」与「端口占用 PID」：脱离启动时记录值可能是包装 powershell，
+    # 只杀包装会留下占用端口的孤儿（实测 openllm/openrag 健康超时场景）。两处都杀才闭环。
+    $targets = @()
     $pidToKill = Get-LastPid $Svc.Name
+    if ($pidToKill -and (Get-Process -Id $pidToKill -ErrorAction SilentlyContinue)) { $targets += [int]$pidToKill }
     $portPid = Get-PortPid $Svc.Port
-    $target = $null
-    if ($pidToKill -and (Get-Process -Id $pidToKill -ErrorAction SilentlyContinue)) { $target = $pidToKill }
-    elseif ($portPid) { $target = $portPid }
-    if ($target) {
-        Stop-Process -Id $target -Force -ErrorAction SilentlyContinue
-        Write-Log 'INFO' ("{0} 已停止（PID {1}，端口 {2}）" -f $Svc.Name, $target, $Svc.Port)
+    if ($portPid -and ($targets -notcontains [int]$portPid)) { $targets += [int]$portPid }
+    if ($targets.Count -gt 0) {
+        foreach ($target in $targets) {
+            Stop-Process -Id $target -Force -ErrorAction SilentlyContinue
+        }
+        Write-Log 'INFO' ("{0} 已停止（PID {1}，端口 {2}）" -f $Svc.Name, ($targets -join ','), $Svc.Port)
         Remove-Pid $Svc.Name
     }
     else {
