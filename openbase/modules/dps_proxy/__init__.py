@@ -1104,7 +1104,58 @@ async def dps_annotation_template_delete(
     )
 
 
-# ---- 动态段 5：AI 标注候选生成（#9）--------------------------------------
+# ---- 动态段 6：标注复核（单条 / 批量，OBS-02-DEF-02，2026-10-26）-----------
+
+
+@router.post("/annotations/batch-review")
+async def dps_annotations_batch_review(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """批量复核（POST；上游 ``/api/v2/portrait/annotations/batch-review``）.
+
+    请求体 ``{"items":[{annotation_id,status,current_status?,comment?}]}`` 原样透传；
+    上游逐条返回成功/失败（单条失败不影响其余条目），语义保真。
+
+    背景（OBS-02 深走查）：此前 dps-proxy 未登记任何标注复核路由，前端
+    ``/dps-proxy/annotations/...`` 一律 404，「提交复核结果」与逐条通过/驳回均未生效。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path("/annotations/batch-review"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/annotations/{annotation_id}/review")
+async def dps_annotation_review(
+    annotation_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注复核状态流转（POST；上游 ``/api/v2/portrait/annotations/{id}/review``）.
+
+    请求体 ``status``/``action``/``current_status``/``comment``/``annotation_template``/
+    ``fields`` 原样透传；上游 404（标注不存在）／409（流转非法或未复核候选进入
+    标签·画像路径）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/annotations/{annotation_id}/review"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+
+# ---- 动态段 7：AI 标注候选生成（#9）--------------------------------------
 
 
 @router.post("/annotation-adapters/{adapter_id}/generate")

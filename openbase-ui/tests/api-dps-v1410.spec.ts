@@ -201,10 +201,29 @@ describe('dpsApi｜跨上游协作（非 22 端点）', () => {
     expect(result.choices?.[0].message?.content).toBe('建议通过')
   })
 
-  it('复核提交走 DPS 既有 review 端点', async () => {
+  it('复核提交走 DPS 既有 review 端点（OBS-02：字段对齐 DPS 原生 status）', async () => {
     mocks.post.mockResolvedValueOnce(ok({ id: 'ann-9', review_status: 'approved' }))
-    await dpsApi.submitReview('ann-9', { review_status: 'approved' })
-    expect(mocks.post).toHaveBeenCalledWith('/dps-proxy/annotations/ann-9/review', { review_status: 'approved' })
+    await dpsApi.submitReview('ann-9', { review_status: 'approved', comment: 'ok' })
+    expect(mocks.post).toHaveBeenCalledWith('/dps-proxy/annotations/ann-9/review', {
+      current_status: 'pending',
+      status: 'approved',
+      comment: 'ok',
+    })
+  })
+
+  it('批量复核走 dps-proxy batch-review（OBS02-DEF-02）', async () => {
+    mocks.post.mockResolvedValueOnce(ok({ total: 2, succeeded: 2, failed: 0, items: [] }))
+    const result = await dpsApi.batchReviewAnnotations([
+      { annotation_id: 'ann-1', status: 'approved', current_status: 'pending' },
+      { annotation_id: 'ann-2', status: 'rejected', current_status: 'pending' },
+    ])
+    expect(mocks.post).toHaveBeenCalledWith('/dps-proxy/annotations/batch-review', {
+      items: [
+        { annotation_id: 'ann-1', status: 'approved', current_status: 'pending' },
+        { annotation_id: 'ann-2', status: 'rejected', current_status: 'pending' },
+      ],
+    })
+    expect(result.succeeded).toBe(2)
   })
 })
 

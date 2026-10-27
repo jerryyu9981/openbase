@@ -741,3 +741,60 @@ def test_permission_roles_proxy_returns_readonly_roles(client: TestClient) -> No
     call = client.fake.request_calls[0]  # type: ignore[attr-defined]
     assert call["method"] == "GET"
     assert call["url"] == f"{UPSTREAM_BASE}/api/v2/permissions/roles"
+
+
+# ---------------------------------------------------------------------------
+# OBS-02-DEF-02（2026-10-26）：标注复核单条 / 批量转发
+# ---------------------------------------------------------------------------
+
+
+def test_annotation_review_single_forwarded(client: TestClient) -> None:
+    """逐条复核 → 上游 ``/portrait/annotations/{id}/review``，请求体原样透传."""
+    token = _token_with_identity()
+    body = {"status": "approved", "current_status": "pending", "comment": "ok"}
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            200,
+            {"code": 200, "message": "success", "data": {"annotation_id": "ann-1", "status": "approved"}},
+        ),
+    ])
+
+    resp = client.post(
+        "/api/v1/dps-proxy/annotations/ann-1/review",
+        json=body,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "POST"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/annotations/ann-1/review"
+    assert call["json"] == body
+
+
+def test_annotation_batch_review_forwarded(client: TestClient) -> None:
+    """批量复核 → 上游 ``/portrait/annotations/batch-review``（静态段先于动态段）."""
+    token = _token_with_identity()
+    body = {
+        "items": [
+            {"annotation_id": "ann-1", "status": "approved", "current_status": "pending"},
+            {"annotation_id": "ann-2", "status": "rejected", "current_status": "pending"},
+        ]
+    }
+    upstream = {"total": 2, "succeeded": 1, "failed": 1, "items": []}
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": upstream}),
+    ])
+
+    resp = client.post(
+        "/api/v1/dps-proxy/annotations/batch-review",
+        json=body,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == upstream
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "POST"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/annotations/batch-review"
+    assert call["json"] == body

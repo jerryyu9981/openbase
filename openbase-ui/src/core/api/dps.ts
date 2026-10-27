@@ -592,12 +592,56 @@ export const dpsApi = {
     return data.data
   },
 
-  /** 复核提交（DPS 既有端点 POST /portrait/annotations/{id}/review；409 = 未复核候选不得进入标签/画像路径） */
+  /**
+   * 复核提交（DPS 既有端点 POST /portrait/annotations/{id}/review）
+   *
+   * 契约对齐（OBS-02 深走查修复，2026-10-26）：DPS 端点读取 `status`/`action`，
+   * 此前前端发送 `review_status` → 后端判定为「不支持的操作」→ 409，逐条复核实际未生效。
+   * 此处统一映射为 DPS 原生字段，并显式带 `current_status`（默认 pending）。
+   * 409 = 未复核候选不得进入标签/画像路径。
+   */
   async submitReview(annotationId: string, body: DpsReviewSubmitRequest): Promise<Record<string, unknown>> {
     const { data } = await http.post<ApiSuccess<Record<string, unknown>>>(
       `/dps-proxy/annotations/${encodeURIComponent(annotationId)}/review`,
-      body,
+      {
+        current_status: 'pending',
+        status: body.review_status,
+        comment: body.comment,
+      },
     )
     return data.data
   },
+
+  /** 批量复核（DPS POST /portrait/annotations/batch-review，OBS-02-DEF-02） */
+  async batchReviewAnnotations(items: DpsBatchReviewItem[]): Promise<DpsBatchReviewResult> {
+    const { data } = await http.post<ApiSuccess<DpsBatchReviewResult>>(
+      '/dps-proxy/annotations/batch-review',
+      { items },
+    )
+    return data.data
+  },
+}
+
+/** 批量复核请求条目（逐条复用单条复核语义） */
+export interface DpsBatchReviewItem {
+  annotation_id: string
+  status: 'approved' | 'rejected'
+  current_status?: string
+  comment?: string
+}
+
+/** 批量复核单条结果（单条失败不影响其余条目） */
+export interface DpsBatchReviewItemResult {
+  annotation_id?: string | null
+  ok: boolean
+  status?: string | number
+  error?: unknown
+}
+
+/** 批量复核汇总结果 */
+export interface DpsBatchReviewResult {
+  total: number
+  succeeded: number
+  failed: number
+  items: DpsBatchReviewItemResult[]
 }

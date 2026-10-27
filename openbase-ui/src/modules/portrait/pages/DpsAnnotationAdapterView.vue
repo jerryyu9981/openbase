@@ -73,7 +73,7 @@
       </el-alert>
 
       <div class="page-toolbar">
-        <el-button type="primary" data-test="adapter-submit" @click="submitAll">提交复核结果</el-button>
+        <el-button type="primary" data-test="adapter-submit" :loading="submitting" @click="submitAll">提交复核结果</el-button>
         <span class="muted sm">（{{ pendingCount }} 条未复核）</span>
       </div>
     </template>
@@ -93,6 +93,7 @@ const adapterId = ref('stub-v1')
 const annotationTemplate = ref('')
 const text = ref('')
 const generating = ref(false)
+const submitting = ref(false)
 const assistingId = ref('')
 const candidates = ref<Candidate[]>([])
 const assistSuggestion = ref('')
@@ -164,12 +165,43 @@ async function review(candidateId: string, reviewStatus: 'approved' | 'rejected'
   }
 }
 
+/** 仅已落库（服务端 UUID）的候选可提交；`cand-N` 为无 id 时的前端占位，提交必然 404 */
+function isServerId(candidateId: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidateId)
+}
+
 async function submitAll() {
   if (pendingCount.value > 0) {
     ElMessage.warning('存在未复核候选，不得进入标签/画像路径')
     return
   }
-  ElMessage.success('复核结果已提交')
+  const items = candidates.value
+    .filter((item) => isServerId(item.id))
+    .map((item) => ({
+      annotation_id: item.id,
+      status: (item.review_status === 'rejected' ? 'rejected' : 'approved') as 'approved' | 'rejected',
+      current_status: 'pending',
+    }))
+  if (items.length === 0) {
+    ElMessage.warning('暂无可提交的已落库候选')
+    return
+  }
+  submitting.value = true
+  error.value = null
+  try {
+    // OBS-02-DEF-02 修复（2026-10-26）：原实现只弹提示、无任何后端动作；
+    // 现调用 DPS 批量复核端点，按实际成功/失败数如实反馈。
+    const result = await dpsApi.batchReviewAnnotations(items)
+    if (result.failed > 0) {
+      ElMessage.warning(`复核结果已提交：成功 ${result.succeeded} / 失败 ${result.failed}`)
+    } else {
+      ElMessage.success(`复核结果已提交（${result.succeeded} 条）`)
+    }
+  } catch (caught) {
+    error.value = describeDpsError(caught)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

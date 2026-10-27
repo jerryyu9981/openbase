@@ -90,7 +90,10 @@ param(
     [ValidateSet('auto', 'primary', 'standby', 'off')]
     [string]$DbMode = 'auto',
     # 单端点探测超时（秒）
-    [int]$DbProbeTimeoutSec = 3,
+    # 2026-10-26 由 3s 调整为 10s（OBS02-OBS-01）：跨网主用库（192.168.0.151）实测
+    # `select 1` 2.1s、Redis 2.5s、Qdrant 4.8s，3s 阈值在抖动时会把主用误判为不可用并
+    # 切到备用库（备用库数据落后：api_keys 2 vs 17），表现为「登录成功但数据缺失/401」。
+    [int]$DbProbeTimeoutSec = 10,
     # 仅 dbcheck：输出机器可读 JSON（供脚本/流水线消费，不打印人类摘要）
     [switch]$Json,
     # monitor 周期复检间隔（秒）；0 = 自动推算（不小于 60s），仅供联调缩短
