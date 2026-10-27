@@ -1,0 +1,3550 @@
+{
+  "schema": "deep-walkthrough/v1",
+  "base_url": "http://localhost:5173",
+  "finished_at": "2026-10-27T10:28:30.848Z",
+  "results": [
+    {
+      "service": "openbase",
+      "path": "/dashboard",
+      "title": "",
+      "nav": 200,
+      "final": "/dashboard",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/users",
+          "hasData": "{\"kind\":\"array\",\"count\":107}",
+          "bytes": 15791
+        },
+        {
+          "status": 502,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard",
+          "hasData": null
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+      ],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-dashboard.png",
+      "verdict": "FAIL(5xx)",
+      "note": "",
+      "duration": 38968
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/tenants",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/tenants",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/tenants",
+          "hasData": "{\"kind\":\"array\",\"count\":19}",
+          "bytes": 2172
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-tenants.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 36977
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/roles",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/roles",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/roles",
+          "hasData": "{\"kind\":\"array\",\"count\":5}",
+          "bytes": 1573
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/roles",
+          "hasData": "{\"kind\":\"array\",\"count\":5}",
+          "bytes": 1573
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-roles.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 40321
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/org",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/org",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/users",
+          "hasData": "{\"kind\":\"array\",\"count\":107}",
+          "bytes": 15791
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-org.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 47710
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/workspaces",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/workspaces",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/workspaces",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/workspaces",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-workspaces.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39496
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/users",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/users",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/users",
+          "hasData": "{\"kind\":\"array\",\"count\":107}",
+          "bytes": 15791
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/users",
+          "hasData": "{\"kind\":\"array\",\"count\":107}",
+          "bytes": 15791
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-users.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 48074
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/memory-admin",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/memory-admin",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-memory-admin.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36056
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/auth-ext",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/auth-ext",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-auth-ext.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 35823
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/identity/dps-permissions",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/identity/dps-permissions",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/permissions/roles",
+          "hasData": "{\"kind\":\"array\",\"count\":6}",
+          "bytes": 2001
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/permissions/roles",
+          "hasData": "{\"kind\":\"array\",\"count\":6}",
+          "bytes": 2001
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-identity-dps-permissions.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 39627
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/config/general",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/config/general",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/configs",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":7}",
+          "bytes": 480
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/configs",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":7}",
+          "bytes": 480
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-config-general.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 40133
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/config/modules",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/config/modules",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-config-modules.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 39523
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/config/api-keys",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/config/api-keys",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/api-keys",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/api-keys",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-config-api-keys.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40117
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/config/rate-limits",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/config/rate-limits",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/rate-limits/status",
+          "hasData": "{\"kind\":\"array\",\"count\":81}",
+          "bytes": 13649
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-config-rate-limits.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 40606
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/logs",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/logs",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/logs/search",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":20}",
+          "bytes": 7173
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/logs/facets",
+          "hasData": "{\"kind\":\"object\",\"keys\":4}",
+          "bytes": 336
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/logs/search",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":20}",
+          "bytes": 7183
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/logs/facets",
+          "hasData": "{\"kind\":\"object\",\"keys\":4}",
+          "bytes": 336
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/logs/search",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":20}",
+          "bytes": 7193
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "检索",
+        "重置"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-logs.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 44317
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/test-records",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/test-records",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/test-runs",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 81
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/test-runs",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 81
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新轮次"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-test-records.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39874
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/monitoring",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/monitoring",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 1598
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/alerts",
+          "hasData": "{\"kind\":\"object\",\"key\":\"alerts\",\"count\":0}",
+          "bytes": 47
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-monitoring.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 36395
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/monitoring/costs",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/monitoring/costs",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/costs",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 152
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/costs/optimization-suggestions",
+          "hasData": "{\"kind\":\"object\",\"total\":0,\"keys\":3}",
+          "bytes": 72
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/budgets",
+          "hasData": "{\"kind\":\"object\",\"total\":0,\"keys\":4}",
+          "bytes": 48
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-monitoring-costs.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40120
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/monitoring/alerts",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/monitoring/alerts",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/alerts",
+          "hasData": "{\"kind\":\"object\",\"key\":\"alerts\",\"count\":0}",
+          "bytes": 47
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/alerts/rules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"rules\",\"count\":4}",
+          "bytes": 1692
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/alerts/rules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"rules\",\"count\":4}",
+          "bytes": 1692
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/alerts",
+          "hasData": "{\"kind\":\"object\",\"key\":\"alerts\",\"count\":0}",
+          "bytes": 47
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-monitoring-alerts.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 40444
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/monitoring/traces",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/monitoring/traces",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics",
+          "hasData": "{\"kind\":\"object\",\"keys\":8}",
+          "bytes": 142
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/traces",
+          "hasData": "{\"kind\":\"object\",\"total\":0,\"keys\":4}",
+          "bytes": 47
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/traces/statistics",
+          "hasData": "{\"kind\":\"object\",\"keys\":8}",
+          "bytes": 142
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/traces",
+          "hasData": "{\"kind\":\"object\",\"total\":0,\"keys\":4}",
+          "bytes": 47
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-monitoring-traces.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40861
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/monitoring/budgets",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/monitoring/budgets",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/budgets",
+          "hasData": "{\"kind\":\"object\",\"total\":0,\"keys\":4}",
+          "bytes": 48
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/budgets",
+          "hasData": "{\"kind\":\"object\",\"total\":0,\"keys\":4}",
+          "bytes": 48
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-monitoring-budgets.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 42620
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/gpu",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/gpu",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status",
+          "hasData": "{\"kind\":\"object\",\"key\":\"gpus\",\"count\":0}",
+          "bytes": 64
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info",
+          "hasData": "{\"kind\":\"object\",\"keys\":2}",
+          "bytes": 415
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-gpu.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39588
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/usage",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/usage",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/usage/summary",
+          "hasData": "{\"kind\":\"object\",\"keys\":13}",
+          "bytes": 268
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/usage/trends",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 3646
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/usage/detail",
+          "hasData": "{\"kind\":\"object\",\"key\":\"records\",\"count\":100}",
+          "bytes": 68510
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-usage.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 40679
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/billing",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/billing",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/billing/quotas",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/billing/usage/statistics",
+          "hasData": "{\"kind\":\"object\",\"keys\":6}",
+          "bytes": 131
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/usage/trends",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 3646
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/billing/bills",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-billing.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40504
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/service-discovery",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/service-discovery",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/services",
+          "hasData": "{\"kind\":\"object\",\"keys\":1}",
+          "bytes": 909
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/services",
+          "hasData": "{\"kind\":\"object\",\"keys\":1}",
+          "bytes": 908
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新",
+        "连通性检测"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-service-discovery.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 43608
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/gateway-test",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/gateway-test",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "重置"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-gateway-test.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 39731
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/app-calls",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/app-calls",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/ai-apps",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 55
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/ai-apps/calls",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 79
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/ai-apps/calls",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 79
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-app-calls.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39447
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/observability/dps-monitor",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/observability/dps-monitor",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/metrics",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 256
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-observability-dps-monitor.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39825
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/providers",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/providers",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers",
+          "hasData": "{\"kind\":\"array\",\"count\":7}",
+          "bytes": 2773
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/e66554cf-884d-433c-9fd7-0e20426b905c/models",
+          "hasData": "{\"kind\":\"array\",\"count\":2}",
+          "bytes": 1315
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/ab9883b1-c703-469e-ba36-b1dca72b9b78/models",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/15b739da-612e-43a1-9d71-2dc27f330351/models",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/73557d15-7a9d-47eb-b0b3-0d2dcace1ddc/models",
+          "hasData": "{\"kind\":\"array\",\"count\":1}",
+          "bytes": 708
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/7514983c-4d91-4f8f-9152-a8d2450a261e/models",
+          "hasData": "{\"kind\":\"array\",\"count\":1}",
+          "bytes": 753
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/e2a47638-213d-4f4c-aeed-5cb65b08a80a/models",
+          "hasData": "{\"kind\":\"array\",\"count\":5}",
+          "bytes": 3362
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/a90a3c17-2822-4418-b985-6cf9b2429e5f/models",
+          "hasData": "{\"kind\":\"array\",\"count\":6}",
+          "bytes": 4011
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers",
+          "hasData": "{\"kind\":\"array\",\"count\":7}",
+          "bytes": 2773
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/providers/e66554cf-884d-433c-9fd7-0e20426b905c/models",
+          "hasData": "{\"kind\":\"array\",\"count\":2}",
+          "bytes": 1315
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-providers.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 39918
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/model-categories",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/model-categories",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/model-categories/tree",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 12
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/model-categories/tree",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 12
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-model-categories.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39959
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/routing",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/routing",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/semantic",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/semantic",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-routing.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39399
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/circuit-breakers",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/circuit-breakers",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/circuit-breakers",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/semantic",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/semantic",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-circuit-breakers.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40202
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/deploy",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/deploy",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/open-models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/open-models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-deploy.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40212
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/downloads",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/downloads",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/open-models/downloads",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/open-models/downloads",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-downloads.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40223
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/tool-calls",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/tool-calls",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/tool-calls",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/tool-calls",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/tool-calls",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询",
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-tool-calls.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 43298
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/ab-tests",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/ab-tests",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/ab-tests",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/routing/ab-tests",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-ab-tests.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39556
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/prompt-templates",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/prompt-templates",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/prompt-templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 2226
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/prompt-templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 2226
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-prompt-templates.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 40027
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/governance/prompt-experiments",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/governance/prompt-experiments",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/prompt-experiments",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/prompt-experiments",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-governance-prompt-experiments.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40535
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/developers/docs",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/developers/docs",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-developers-docs.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36338
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/developers/edgerouter",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/developers/edgerouter",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/edge/health",
+          "hasData": "{\"kind\":\"object\",\"keys\":3}",
+          "bytes": 159
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/edge/status",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 275
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/edge/adapters",
+          "hasData": "{\"kind\":\"object\",\"keys\":2}",
+          "bytes": 383
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/edge/organizations",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-developers-edgerouter.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 35975
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/developers/plugins",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/developers/plugins",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/plugins",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/plugins/tools",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":1}",
+          "bytes": 260
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/plugins",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 22
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-developers-plugins.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 39765
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/developers/dps-api",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/developers/dps-api",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/api-registry",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 87
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/api-registry",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 87
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-developers-dps-api.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39890
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/developers/knowledge-admin",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/developers/knowledge-admin",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":14}",
+          "bytes": 6213
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/health",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 415
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":14}",
+          "bytes": 6213
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/health",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 415
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections/da895245-4c1a-45a5-99b9-c4751cde0161",
+          "hasData": "{\"kind\":\"object\",\"keys\":16}",
+          "bytes": 540
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新",
+        "详情"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-developers-knowledge-admin.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 43683
+    },
+    {
+      "service": "openbase",
+      "path": "/platform/developers/knowledge-console",
+      "title": "",
+      "nav": 200,
+      "final": "/platform/developers/knowledge-console",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-platform-developers-knowledge-console.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36193
+    },
+    {
+      "service": "openbase",
+      "path": "/personal/settings",
+      "title": "",
+      "nav": 200,
+      "final": "/personal/settings",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/notification-preferences",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 118
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openbase-personal-settings.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 35880
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/models",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/models",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"models\",\"count\":6}",
+          "bytes": 605
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "详情",
+        "详情"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-models.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 43141
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/models/local",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/models/local",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/local-models",
+          "hasData": "{\"kind\":\"array\",\"count\":4}",
+          "bytes": 1529
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/local-models/available",
+          "hasData": "{\"kind\":\"object\",\"key\":\"models\",\"count\":43}",
+          "bytes": 15232
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/local-models/gpu-allocation/status",
+          "hasData": "{\"kind\":\"object\",\"key\":\"gpus\",\"count\":0}",
+          "bytes": 64
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/local-models/gpu-info",
+          "hasData": "{\"kind\":\"object\",\"keys\":2}",
+          "bytes": 415
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-models-local.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 35929
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/models/comparison",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/models/comparison",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/open-models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-models-comparison.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 36260
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/models/market",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/models/market",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/open-models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/open-models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 46
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-models-market.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39467
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/favorites",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/favorites",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/models/favorite-folders",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 12
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/models/favorites",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 2
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-favorites.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 35985
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/apps",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/apps",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/ai-apps",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 55
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-apps.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 35904
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/apps/new",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/apps/new",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-apps-new.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36154
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/playground",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/playground",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"models\",\"count\":6}",
+          "bytes": 605
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-playground.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 35913
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/conversations",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/conversations",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/models",
+          "hasData": "{\"kind\":\"object\",\"key\":\"models\",\"count\":6}",
+          "bytes": 605
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/conversations",
+          "hasData": "{\"kind\":\"array\",\"count\":18}",
+          "bytes": 3597
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-conversations.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 35895
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/recommend",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/recommend",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "检索"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-recommend.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 39700
+    },
+    {
+      "service": "openllm",
+      "path": "/openllm/reports-trend",
+      "title": "",
+      "nav": 200,
+      "final": "/openllm/reports-trend",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/dashboard",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 3028
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/monitoring/costs",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 152
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/proxy/openllm/api/v1/usage/trends",
+          "hasData": "{\"kind\":\"object\",\"keys\":5}",
+          "bytes": 3646
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openllm-openllm-reports-trend.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40265
+    },
+    {
+      "service": "openrag",
+      "path": "/knowledge/list",
+      "title": "",
+      "nav": 200,
+      "final": "/knowledge/list",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":14}",
+          "bytes": 6214
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":14}",
+          "bytes": 6214
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openrag-knowledge-list.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 40019
+    },
+    {
+      "service": "openrag",
+      "path": "/knowledge/chat",
+      "title": "",
+      "nav": 200,
+      "final": "/knowledge/chat",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":14}",
+          "bytes": 6214
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":14}",
+          "bytes": 6214
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新列表"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openrag-knowledge-chat.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 39693
+    },
+    {
+      "service": "openmemory",
+      "path": "/memory/list",
+      "title": "",
+      "nav": 200,
+      "final": "/memory/list",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/memories",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 131
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openmemory-memory-list.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 35759
+    },
+    {
+      "service": "openmemory",
+      "path": "/memory/search",
+      "title": "",
+      "nav": 200,
+      "final": "/memory/search",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "搜索"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openmemory-memory-search.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 39483
+    },
+    {
+      "service": "openmemory",
+      "path": "/memory/sessions",
+      "title": "",
+      "nav": 200,
+      "final": "/memory/sessions",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/sessions",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 87
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/sessions",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 87
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openmemory-memory-sessions.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39847
+    },
+    {
+      "service": "openmemory",
+      "path": "/memory/graph",
+      "title": "",
+      "nav": 200,
+      "final": "/memory/graph",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/graph/overview",
+          "hasData": "{\"kind\":\"object\",\"keys\":3}",
+          "bytes": 197
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新图谱"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openmemory-memory-graph.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39452
+    },
+    {
+      "service": "openmemory",
+      "path": "/memory/decay",
+      "title": "",
+      "nav": 200,
+      "final": "/memory/decay",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/decay/config",
+          "hasData": "{\"kind\":\"object\",\"keys\":11}",
+          "bytes": 323
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/decay/config",
+          "hasData": "{\"kind\":\"object\",\"keys\":11}",
+          "bytes": 323
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "重置"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openmemory-memory-decay.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39531
+    },
+    {
+      "service": "openmemory",
+      "path": "/memory/write",
+      "title": "",
+      "nav": 200,
+      "final": "/memory/write",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "重置"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\openmemory-memory-write.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 40008
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/overview",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/overview",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 3670
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/reports/overview",
+          "hasData": "{\"kind\":\"object\",\"keys\":11}",
+          "bytes": 1363
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-overview.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 35739
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/list",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/search",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":18}",
+          "bytes": 12890
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/health",
+          "hasData": "{\"kind\":\"object\",\"keys\":6}",
+          "bytes": 279
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/reports/overview",
+          "hasData": "{\"kind\":\"object\",\"keys\":11}",
+          "bytes": 1363
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "画像查询"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-list.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 39440
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/search",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/search",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":18}",
+          "bytes": 12891
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询",
+        "重置"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-search.png",
+      "verdict": "PASS(real-data)",
+      "note": "",
+      "duration": 43857
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/tags",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/tags",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/tags/categories",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 131
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/tags/categories",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 131
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "刷新"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-tags.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 39890
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/rules",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/rules",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-rules.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36400
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/templates",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/templates",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 107
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 107
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 107
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询",
+        "重置"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-templates.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 44149
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/templates/new",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/templates/new",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 107
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-templates-new.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 36457
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/template-packages",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/template-packages",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-template-packages.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36289
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/lineage",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/lineage",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-lineage.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36173
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/measures",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/measures",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询建议"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-measures.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 39464
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/scoring-types",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/scoring-types",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/scoring-types",
+          "hasData": "{\"kind\":\"object\",\"keys\":2}",
+          "bytes": 218
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/scoring-types",
+          "hasData": "{\"kind\":\"object\",\"keys\":2}",
+          "bytes": 218
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-scoring-types.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 40210
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/annotation-adapters",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/annotation-adapters",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-annotation-adapters.png",
+      "verdict": "PASS(no-data-api)",
+      "note": "",
+      "duration": 36137
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/annotation-templates",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/annotation-templates",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/annotation-templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 107
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/annotation-templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 107
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/annotation-templates",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 107
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [
+        "查询",
+        "重置"
+      ],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-annotation-templates.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 43465
+    },
+    {
+      "service": "dps",
+      "path": "/portrait/dps/tags",
+      "title": "",
+      "nav": 200,
+      "final": "/portrait/dps/tags",
+      "fallback": 0,
+      "api": [
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":5}",
+          "bytes": 869
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "hasData": "{\"kind\":\"object\",\"keys\":7}",
+          "bytes": 112
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/tags/categories",
+          "hasData": "{\"kind\":\"object\",\"key\":\"items\",\"count\":0}",
+          "bytes": 131
+        },
+        {
+          "status": 200,
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/labels",
+          "hasData": "{\"kind\":\"array\",\"count\":0}",
+          "bytes": 87
+        }
+      ],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "clicks": [],
+      "shot": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\doc\\test\\evidence\\deep-20261027\\dps-portrait-dps-tags.png",
+      "verdict": "PASS(api-ok-empty)",
+      "note": "",
+      "duration": 36455
+    }
+  ]
+}

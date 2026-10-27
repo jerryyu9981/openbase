@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "task": "OBS-02 深走查遗留复验",
+  "executed_at": "2026-10-27T15:10:00+08:00",
+  "environment": {
+    "openbase": "http://127.0.0.1:8000",
+    "dps": "http://127.0.0.1:8030",
+    "frontend": "http://127.0.0.1:5173",
+    "db_mode": "primary (192.168.0.151:5432, data-plane)"
+  },
+  "items": {
+    "OBS02-DEF-02": {
+      "status": "FIXED",
+      "changes": [
+        "OpenBase dps_proxy: 新增 POST /annotations/{id}/review 与 POST /annotations/batch-review（原样透传上游）",
+        "openbase-ui dpsApi: 单条复核字段改为 status/current_status（原 review_status 致 DPS 409）；新增 batchReviewAnnotations",
+        "DpsAnnotationAdapterView.submitAll: 由仅弹提示改为调用批量端点，按实际成功/失败数反馈"
+      ],
+      "verification": {
+        "batch_review": {
+          "http": 200,
+          "total": 2,
+          "succeeded": 2,
+          "failed": 0
+        },
+        "single_review": {
+          "http": 200,
+          "review_persisted": true
+        },
+        "db_persisted": [
+          {"review_status": "approved", "review_comment": "batch-ok"},
+          {"review_status": "rejected", "review_comment": "batch-no"},
+          {"review_status": "approved", "review_comment": "single-ok"}
+        ],
+        "cleanup": "临时标注行已删除"
+      }
+    },
+    "OBS02-DEF-03": {
+      "status": "FIXED",
+      "title": "DPS annotation 复核在 PostgreSQL 上恒 500（timestamptz 绑定字符串）",
+      "root_cause": "annotation_template_engine.review_annotation 将 datetime.isoformat() 传给 asyncpg；pg 列 updated_at 为 timestamptz，asyncpg 只接受 datetime 实例",
+      "fix": "review_annotation / annotation_template 创建与更新 / create_structured_annotation 统一改传 datetime 对象",
+      "verification": {
+        "e2e_before": "batch succeeded=0 failed=2，单条 500（expected datetime）",
+        "e2e_after": "batch succeeded=2 failed=0；单条 200 且 review_persisted=true",
+        "regression": "src/tests/test_obs02_annotation_timestamp_param.py 1 passed；test_v2_10_annotation_chain.py 30 passed（合计 31 passed）"
+      }
+    },
+    "OBS02-OBS-01": {
+      "status": "FIXED",
+      "change": "service-orchestrator.ps1 默认 DbProbeTimeoutSec 3 → 10（可由 -DbProbeTimeoutSec 覆盖）",
+      "rationale": "跨网主用库 data-plane 实测 2.1~6.1s，3s 会把主用误判为不可用并切备用（备用库数据落后）",
+      "verification": {
+        "default_start": "mode=primary，dps/openbase 均连主用库",
+        "evidence": "doc/test/evidence/ops/db-startup-probe-20261027-145341-start.json"
+      }
+    },
+    "B3": {
+      "status": "PASS_DATA_PLANE",
+      "seed": {
+        "tag_code": "service:channel",
+        "annotation_id": "aaaaaaaa-1111-4111-8111-111111111111",
+        "tenant_id": "20000000-0000-0000-0000-000000000001",
+        "source": "manual_annotation"
+      },
+      "verification": {
+        "tag_sources_http": 200,
+        "sources_count": 1,
+        "impact_http": 200,
+        "impact_tag_count": 1,
+        "impact_profile_count": 1
+      },
+      "ui_note": "浏览器可视复验（口径卡展开/导出按钮）受本机 Playwright 启动超时限制未完成；组件渲染条件 sources.length>0 已满足，待浏览器工具恢复补截图"
+    }
+  },
+  "cleanup": {
+    "temp_annotations": "已删除",
+    "b3_lineage_seed": "保留（作为 B3 人工复验最小数据）"
+  }
+}
