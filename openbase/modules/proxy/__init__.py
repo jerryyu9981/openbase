@@ -9,6 +9,7 @@ system 映射与 base_url 可通过 config 模块配置覆盖（默认指向 Dev
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -77,8 +78,56 @@ def _resolve_base_url(system: str) -> str:
     return PROXY_SYSTEMS[system]["base_url"]
 
 
-def _timeout(system: str) -> float:
-    return PROXY_SYSTEMS[system]["timeout"]
+# DW-01（2026-10-28）：只读聚合端点放宽超时 + 传输级失败重试 1 次。
+# 依据：全页面走查中 `/dashboard` 的 `monitoring/dashboard` 出现 1 次 502，
+# 单跑 200（1.3~3.9s），属并发/链路抖动下的上游读超时。
+SLOW_PATH_HINTS: tuple[str, ...] = (
+    "/monitoring/dashboard",
+    "/billing/v2/cost-analysis",
+    "/monitoring/usage",
+    "/usage/summary",
+)
+SLOW_PATH_TIMEOUT = 30.0
+_RETRYABLE_METHODS = frozenset({"GET", "HEAD"})
+RETRY_BACKOFF_SEC = 0.2
+
+
+def _timeout(system: str, path: str = "") -> float:
+    """上游超时：慢聚合端点单独放宽（DW-01，2026-10-28）.
+
+    `monitoring/dashboard`、成本/用量聚合需跨多表统计，并发或冷启期实测可达 4s+；
+    全局 10s 在链路抖动时仍偶发 ReadError → 前端 502。仅对**只读聚合**放宽到 30s，
+    其余端点保持 10s，避免把故障拖成全站等待。
+    """
+    base = PROXY_SYSTEMS[system]["timeout"]
+    if any(hint in path for hint in SLOW_PATH_HINTS):
+        return max(base, SLOW_PATH_TIMEOUT)
+    return base
+
+
+async def _request_upstream(
+    client: httpx.AsyncClient,
+    method: str,
+    url: str,
+    headers: dict[str, str],
+    body: bytes | None,
+) -> httpx.Response:
+    """上游请求，GET/HEAD 传输级失败重试 1 次（DW-01）.
+
+    跨网链路抖动会让只读聚合接口偶发 ReadError/RemoteProtocolError，重试一次通常即可
+    恢复；写请求不重试，避免产生重复副作用。
+    """
+    try:
+        return await client.request(method, url, headers=headers, content=body)
+    except httpx.TransportError as exc:
+        if method not in _RETRYABLE_METHODS:
+            raise
+        logger.info(
+            "proxy upstream retry",
+            extra={"method": method, "url": url, "error": str(exc)},
+        )
+        await asyncio.sleep(RETRY_BACKOFF_SEC)
+        return await client.request(method, url, headers=headers, content=body)
 
 
 # 通用代理的出站目标系统（v1.9.0）：按被代理系统取对应来源常量，
@@ -367,9 +416,9 @@ async def proxy(
     # C-16：上游耗时与专段观测（成功/业务错误/异常三路径共用同一结构，不新增日志点）
     upstream_start = time.perf_counter()
     try:
-        async with httpx.AsyncClient(timeout=_timeout(system)) as client:
-            upstream = await client.request(
-                method, target_url, headers=headers, content=body,
+        async with httpx.AsyncClient(timeout=_timeout(system, path)) as client:
+            upstream = await _request_upstream(
+                client, method, target_url, headers, body,
             )
     except httpx.HTTPError as exc:
         unreachable = publish_upstream_response(

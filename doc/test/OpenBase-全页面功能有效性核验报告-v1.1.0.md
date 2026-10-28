@@ -3,12 +3,12 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | TEST-DEEP-20261027 |
-| 版本 | v1.0.0 |
+| 版本 | v1.1.0 |
 | 状态 | [Final] |
 | 环境 | 本地全栈：OpenBase 8000 / OpenLLM 8001 / OpenRAG 8010 / OpenMemory 8020 / DPS 8030 / OIDC 8090 / 前端 5173；共享 PG 主用 `192.168.0.151:5432` |
-| 执行日期 | 2026-10-27 |
+| 执行日期 | 2026-10-27（首轮 77 页核验）/ 2026-10-28（三项关注项复核与修复验证） |
 | 口径 | 逐页「渲染 + 安全交互 + 逐接口数据有效性」，不只看是否白屏 |
-| 证据 | `doc/test/evidence/s6/deep-walkthrough-20261027.json`（77 页逐页接口明细）<br>`doc/test/evidence/deep-20261027/`（77 张截图 + `B3-with-data.png`、`annotation-submit.png`） |
+| 证据 | `doc/test/evidence/s6/deep-walkthrough-20261027.json`（77 页逐页接口明细）<br>`doc/test/evidence/deep-20261027/`（77 张截图 + `B3-with-data.png`、`annotation-submit.png`）<br>复核证据：`doc/test/evidence/manual/dw-recheck-20261028.json`（DW-01 16 次调用明细 + DW-03 五页判定）、`doc/test/evidence/deep-20261028/`（5 张有数据态截图） |
 
 ---
 
@@ -23,6 +23,14 @@
 | `PASS(no-data-api)` | 15 | 页面本身不自动取数（纯表单/静态文档/需点击才触发），交互已验证 |
 | `FAIL(5xx)` | 1 | `/dashboard` 的 `monitoring/dashboard` 偶发 502（复跑 200） |
 | 合计 | **77** | 无 4xx 契约错误、无 console error、无渲染兜底 |
+
+**v1.1.0 复核结论（2026-10-28）：三项关注项已全部闭环**
+
+| 项 | 复核结论 | 处置 |
+|---|---|---|
+| DW-01 | ✅ 已修复并线上验证：`monitoring/dashboard` 串行 10 次 + 6 路并发共 **16/16 全部 200**（串行 357~437ms，并发峰值 2247ms） | 代理对只读聚合端点放宽至 30s + GET/HEAD 传输级重试 1 次（`openbase/modules/proxy/__init__.py`），3 条回归用例通过 |
+| DW-02 | ✅ 非配置缺陷：主用库连接/查询实测 82~585ms，首轮 7.9s 为跨网链路瞬态；探针 10s 阈值已覆盖 | 维持 10s，不做代码变更；跨网抖动属环境属性 |
+| DW-03 | ✅ 已按业务场景造数并复验：5 页由 `PASS(api-ok-empty)` 转为 `PASS(real-data)`（行数 1/1/1/2/1） | 造数 5 项；同时发现并修复 OpenLLM「创建 Prompt 实验 500」两处真实缺陷（详见 §8.3） |
 
 **关键修复带来的实效**（本轮同时完成）：
 
@@ -174,6 +182,8 @@
 判定依据：接口 **200**、返回结构完整（含 `total=0` / 空数组 / 指标全 0），未出现 4xx/5xx。
 若要转为"真实数据"，需按各页业务造数（如预算、A/B 实验、工具调用、标注模板等）。
 
+> v1.1.0 更新：其中 `workspaces`、`monitoring/budgets`、`ab-tests`、`prompt-experiments`、`api-keys` 5 页已造数并复验为 `PASS(real-data)`（见 §8.3），空数据页由 38 页降为 33 页。
+
 ## 7. 不自动取数的 15 页（交互已逐一触发）
 
 | 页面 | 原因 |
@@ -189,16 +199,60 @@
 | `/portrait/dps/lineage` | 需输入 tag_code 后点「反查」（已单独复验，见 §3） |
 | `/platform/identity/memory-admin` | 5s 窗口内未观察到 memory-proxy 调用（服务较慢），历史轮次见过 3 次调用 |
 
-## 8. 需关注项
+## 8. 需关注项（v1.1.0 复核结论）
 
-| 编号 | 级别 | 现象 | 归因 / 建议 |
+首轮登记 3 项，复核后 **3 项全部闭环**（1 项代码修复、1 项确认为环境瞬态、1 项造数并顺带修复 2 处真实缺陷）。
+
+| 编号 | 级别 | 现象 | v1.1.0 结论 |
 |---|---|---|---|
-| DW-01 | P3 | `/dashboard` 的 `GET /proxy/openllm/api/v1/monitoring/dashboard` 出现 **1 次 502** | 代理超时 10s；该聚合接口在并发/冷启期可达 4s+，偶发被重置。单跑 200（1.3~3.9s）。建议对该聚合端点单独放宽或加重试 |
-| DW-02 | P3 | 主用库延迟波动大（0.3~7.9s） | 探针已提到 10s，避免误切；业务侧慢查询仍会影响首屏 |
-| DW-03 | — | 38 页空数据 | 环境数据缺失，非功能缺陷；建议按业务场景造数后再做一轮"有数据态"回归 |
+| DW-01 | P3 | `/dashboard` 的 `GET /proxy/openllm/api/v1/monitoring/dashboard` 出现 **1 次 502** | 已修复（§8.1） |
+| DW-02 | P3 | 主用库延迟波动大（0.3~7.9s） | 确认为跨网链路瞬态，无需改代码（§8.2） |
+| DW-03 | — | 38 页空数据 | 抽 5 页造数复验为 real-data，并发现 2 处真实缺陷已修复（§8.3） |
+
+### 8.1 DW-01 代理偶发 502：已修复
+
+- **归因**：代理全局超时 10s；`monitoring/dashboard` 属跨多表只读聚合，冷启/并发下实测可达 4s+，跨网链路抖动时会被上游重置（`httpx` 传输级异常）→ 前端 502。
+- **修复**（`openbase/modules/proxy/__init__.py`）：
+  1. 只读聚合端点（`/monitoring/dashboard`、`/billing/v2/cost-analysis`、`/monitoring/usage`、`/usage/summary`）超时由 10s 放宽到 **30s**（`SLOW_PATH_HINTS` / `SLOW_PATH_TIMEOUT`），其余端点维持 10s，避免故障拖成全站等待；
+  2. 新增 `_request_upstream`：**仅 GET/HEAD** 遇 `httpx.TransportError` 重试 1 次（退避 0.2s），写请求不重试，避免重复副作用。
+- **验证**：
+  - 回归用例 `tests/test_proxy_resilience.py`（慢路径 30s / GET 重试 1 次 / POST 不重试）**3 passed**；
+  - 热加载后线上复验：串行 10 次 + 6 路并发共 **16/16 = 200**，串行 357~437ms、并发 1875~2247ms，远低于 30s 阈值；
+  - `ruff check` 0 错误。
+- **残余风险**：30s 仅覆盖只读聚合；若上游长时间不可用，前端仍会在 30s 后收到 502（符合预期，不掩盖故障）。
+
+### 8.2 DW-02 主用库延迟波动：确认为环境瞬态
+
+- 复核方式：同一连接内 `select 1` 计时，单次与 5 次聚合各测 3 轮：单次 150~585ms、5 次 158~183ms；服务重启期探针 82~107ms。
+- 结论：首轮 7.9s 为跨网链路瞬时抖动，**非配置或代码缺陷**；编排器探针已由 3s 提到 10s，足以覆盖正常波动且不误切备用库（备用库 api_keys 仅 2 条 vs 主用 17 条，误切会改变业务数据面）。
+- 处置：不改代码；跨网抖动属环境属性，如需进一步收敛应由网络/数据面同步方案解决（历史遗留 XR-OPS-09）。
+
+### 8.3 DW-03 空数据页：抽 5 页造数复验 + 顺带修复 2 处真实缺陷
+
+造数（均为标注「全页面功能核验造数（DW-03），可删除」的最小业务对象）：
+
+| 页面 | 造数对象 | 复验结果 |
+|---|---|---|
+| `/platform/identity/workspaces` | 工作空间 `E2E 核验工作空间` | `PASS(real-data)`，列表 1 行 |
+| `/platform/observability/monitoring/budgets` | 月度预算 `E2E 核验月度预算`（global / 100 USD / monthly） | `PASS(real-data)`，列表 1 行 |
+| `/platform/governance/ab-tests` | 路由 A/B `E2E 核验路由 A/B` | `PASS(real-data)`，列表 1 行 |
+| `/platform/governance/prompt-experiments` | Prompt 实验 `E2E 核验 Prompt 实验`（2 variants） | `PASS(real-data)`，列表 2 行 |
+| `/platform/config/api-keys` | 服务 Key `E2E 核验 Key` | `PASS(real-data)`，列表 1 行 |
+
+**造数过程中发现并修复的 OpenLLM 真实缺陷（`backend/app/api/prompt_experiments.py`）**：
+
+1. `variables: list = Field(default=list)`：Pydantic v2 不再把可调用对象当默认工厂，`list` **类型对象**被写入字段值，`json.dumps` 抛 `TypeError: Object of type type is not JSON serializable` → 创建实验 500。改为 `Field(default_factory=list)`。
+2. `ResponseValidationError: 5 validation errors`：ORM 返回 UUID / JSON 字符串 / datetime 与响应模型的 str/list/dict 不匹配 → 新增 `_serialize_experiment`，`list/create/get` 三个端点统一显式转换。
+
+修复后实测：`create 201`、`list 200`（返回 2 条，含 variants）。
+
+**注意（数据易失性）**：`/platform/config/api-keys` 的服务 Key 由 `ApiKeyStore` **进程内内存**保存（源码注释即声明「内存存储 + 哈希保存」），OpenBase 重启后列表清空、旧 Key 失效。因此该页"有数据"需在进程存活期内复验；这属既有设计，不在本轮修复范围，但在生产接入前需评估持久化方案。
+
+**造数清理**：以上 5 项可直接删除（名称/描述均含「E2E 核验」前缀，或含「DW-03」标记）；B3 谱系复验所造 2 条 `tag_lineage` + 1 条标注亦同属测试数据。
 
 ## 9. 修订历史
 
 | 版本 | 日期 | 执行人 | 说明 |
 |---|---|---|---|
 | v1.0.0 | 2026-10-27 | FA-OpenBase-Dev（AI 辅助） | 首版：77 页功能有效性核验（23 真实数据 / 38 空数据 / 15 不自动取数 / 1 偶发 502）；批量复核与谱系链路实测；探针阈值与 B3 复验结论 |
+| v1.1.0 | 2026-10-28 | FA-OpenBase-Dev（AI 辅助） | 三项关注项闭环：DW-01 代理慢聚合端点 30s + GET 重试（3 条回归用例 + 线上 16/16 通过）；DW-02 确认为跨网链路瞬态并留存实测数据；DW-03 造数 5 页由空数据转为 real-data，顺带修复 OpenLLM Prompt 实验创建 500 两处缺陷；补充 api-keys 内存存储易失性说明与造数清理口径 |
