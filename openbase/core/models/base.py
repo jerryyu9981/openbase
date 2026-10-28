@@ -142,7 +142,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
 class AgentApiKey(Base, TimestampMixin):
     """agent 服务密钥表（U1 T1，设计草案 §3.2：sk-agent-*、哈希存储、多密钥可轮换/吊销）.
 
-    明文密钥仅生成响应展示一次；服务端只存 sha256 key_hash（与 ApiKeyStore._hash 同构）。
+    明文密钥仅生成响应展示一次；服务端只存 sha256 key_hash（与 ServiceKeyService 同构）。
     agent_id → users.id（subject_type=agent 主体行），不新增独立 agents 表。
     """
 
@@ -170,6 +170,40 @@ class AgentApiKey(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
     created_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+
+
+class ServiceApiKey(Base, TimestampMixin):
+    """服务级 API Key 表（ob_k_*；v1.5 服务 Key 接 DB 持久化，替代内存态 ApiKeyStore）.
+
+    背景：v1.4.1 服务 Key 为进程内内存存储（登记 P2 债务），OpenBase 重启即全部失效；
+    本表将签发记录持久化。明文密钥仅在创建响应展示一次，服务端只存 sha256 ``key_hash``。
+    ``scope`` 为 JSON：``{"system": [...], "tenants": [...]}``（``*`` 表示全量）；
+    ``status`` = active/revoked（吊销即时失效）。
+    """
+
+    __tablename__ = "service_api_keys"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    key_id: Mapped[str] = mapped_column(
+        String(32),
+        unique=True,
+        nullable=False,
+        index=True,
+        comment="对外稳定标识（uuid hex，列表可回显、支持按 id 吊销）",
+    )
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    key_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, index=True, comment="sha256(明文)"
+    )
+    scope: Mapped[dict] = mapped_column(JSON, nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="active", comment="active/revoked"
+    )
+    created_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    revoked_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class OutboxEvent(Base, TimestampMixin):

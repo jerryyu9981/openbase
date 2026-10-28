@@ -24,9 +24,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -235,7 +238,15 @@ def _parse_pytest_counts(output: str) -> dict[str, int]:
 
 
 def _run_pytest_files(files: tuple[str, ...] | list[str]) -> dict[str, Any]:
-    """子进程运行给定 pytest 选择器；返回退出码/用例数/选择器（禁伪造：真实运行）."""
+    """子进程运行给定 pytest 选择器；返回退出码/用例数/选择器（禁伪造：真实运行）.
+
+    子进程环境隔离（2026-10-28 全量套件门禁连带失败根因）：
+    1) ``TMP/TEMP/TMPDIR`` 指向独立临时目录——全量套件进程仍持有各测试模块的
+       SQLite 文件句柄，子进程复用同一 ``%TEMP%`` 会因 ``unlink`` 失败/文件锁
+       产生 collection error（双租户隔离、吊销即时性表现为 exit=1 cases=0）；
+    2) ``OPENBASE_DB_URL`` 固定为不可达 DSN——RA-06 选择器按「沙箱无真实 PG」
+       设计（如 fail-closed / 降级语义用例），父进程注入真实库会让其断言语义漂移。
+    """
     selectors = [str(path) for path in files]
     command = [
         sys.executable,
@@ -248,14 +259,22 @@ def _run_pytest_files(files: tuple[str, ...] | list[str]) -> dict[str, Any]:
         "addopts=",
         "--tb=no",
     ]
-    result = subprocess.run(
-        command,
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    env = os.environ.copy()
+    env["OPENBASE_DB_URL"] = "postgresql+asyncpg://no-db-user:no-pass@127.0.0.1:1/no_db"
+    isolated_temp = tempfile.mkdtemp(prefix="gate-pytest-")
+    env["TMP"] = env["TEMP"] = env["TMPDIR"] = isolated_temp
+    try:
+        result = subprocess.run(
+            command,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+        )
+    finally:
+        shutil.rmtree(isolated_temp, ignore_errors=True)
     output = (result.stdout or "") + (result.stderr or "")
     counts = _parse_pytest_counts(output)
     failed_nodes = re.findall(r"(?m)^FAILED\s+(\S+)", output)

@@ -14,7 +14,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from openbase.demo_app import app
-from openbase.modules.auth.api_keys import ApiKeyStore
 from openbase.modules.auth.jwt import create_access_token
 from openbase.modules.config import ConfigStore
 from openbase.modules.testing import TestRecordService
@@ -141,34 +140,29 @@ def test_test_runs_list_requires_permission() -> None:
 # ---- 服务 Key id 化吊销 ----
 
 
-def test_api_key_list_exposes_id_and_revoke_by_id() -> None:
+def test_api_key_list_exposes_id_and_revoke_by_id(api_key_client) -> None:
     name = f"r2-key-{uuid.uuid4().hex[:6]}"
-    created = client.post("/api/v1/auth/api-keys", json={"name": name}, headers=admin_headers)
+    created = api_key_client.post("/api/v1/auth/api-keys", json={"name": name})
     assert created.status_code == 200, created.text
     created_body = created.json()
     assert created_body["key"].startswith("ob_k_")
     assert created_body["id"], "创建响应应回显稳定 id"
 
-    listed = client.get("/api/v1/auth/api-keys", headers=admin_headers).json()
+    listed = api_key_client.get("/api/v1/auth/api-keys").json()
     record = next(item for item in listed if item["name"] == name)
     assert record["id"] == created_body["id"]
     assert record["revoked"] is False
     assert "key" not in record or record["key"] is None
 
-    revoked = client.delete(f"/api/v1/auth/api-keys/by-id/{record['id']}", headers=admin_headers)
+    revoked = api_key_client.delete(f"/api/v1/auth/api-keys/by-id/{record['id']}")
     assert revoked.status_code == 200, revoked.text
     assert revoked.json()["revoked"] == record["id"]
 
-    after = client.get("/api/v1/auth/api-keys", headers=admin_headers).json()
+    after = api_key_client.get("/api/v1/auth/api-keys").json()
     assert next(item for item in after if item["id"] == record["id"])["revoked"] is True
 
 
-def test_api_key_revoke_by_unknown_id_returns_404() -> None:
-    resp = client.delete("/api/v1/auth/api-keys/by-id/no-such-id", headers=admin_headers)
+def test_api_key_revoke_by_unknown_id_returns_404(api_key_client) -> None:
+    resp = api_key_client.delete("/api/v1/auth/api-keys/by-id/no-such-id")
     assert resp.status_code == 404, resp.text
     assert resp.json()["code"] == "BIZ_404"
-
-
-def test_api_key_store_revoke_by_id_returns_false_when_missing() -> None:
-    store = ApiKeyStore()
-    assert store.revoke_by_id("missing") is False

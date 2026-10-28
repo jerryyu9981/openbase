@@ -1,26 +1,56 @@
 """测试 v1.4.1 R-367 AC-367-2：/proxy 通道 JWT 优先 + 服务 Key 回退双通道认证（HTTP 层）."""
 
+import asyncio
+import tempfile
 import uuid
+from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from openbase import init_app
+from openbase.core.db.session import get_engine, init_db
+from openbase.core.models import Base
 from openbase.modules.auth import UserService
 from openbase.settings import Settings
 
+_DB_PATH = Path(tempfile.gettempdir()) / "openbase_test_proxy_auth.db"
+
 
 def build_test_app() -> TestClient:
-    """构造启用 auth + proxy 的测试应用."""
+    """构造启用 auth + proxy 的测试应用（服务 Key 落 SQLite，不依赖外部 PG）."""
     settings = Settings()
     for module in ("auth", "proxy", "audit", "tenant", "config"):
         settings.enable_module(module)
     UserService.seed_memory_user("admin", "admin123")
     UserService.seed_memory_user("viewer", "viewer123")
+
+    Base.metadata.schema = None
+    for table in Base.metadata.tables.values():
+        table.schema = None
+    if _DB_PATH.exists():
+        _DB_PATH.unlink()
+    init_db(f"sqlite+aiosqlite:///{_DB_PATH}", schema=None)
+
+    async def _create_schema() -> None:
+        async with get_engine().begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+    asyncio.run(_create_schema())
     app = init_app(settings)
     return TestClient(app)
 
 
-client = build_test_app()
+client: TestClient | None = None
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _proxy_auth_app() -> TestClient:
+    """模块级应用装配（延迟到首用例，避免 import 期污染全局 engine 单例）."""
+    global client
+    client = build_test_app()
+    yield client
+    client = None
 
 
 def _token(username: str, password: str) -> str:

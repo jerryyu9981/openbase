@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
-from openbase.core.deps.auth import get_api_key_store, get_current_user
+from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import NotificationPreference, Role, User, user_role
 from openbase.modules.auth.jwt import (
@@ -24,6 +24,7 @@ from openbase.modules.auth.jwt import (
     issue_token_pair,
 )
 from openbase.modules.auth.rbac import PermissionService, has_permission
+from openbase.modules.auth.service_keys import ServiceKeyService, public_record
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
     SUBJECT_TYPE_AGENT,
@@ -758,22 +759,24 @@ async def create_api_key(
     """签发服务级 API Key（需 auth:api-keys:manage）.
 
     返回明文 Key（仅此一次）；scope 限定可访问系统与租户。
+    v1.5：签发记录落 ``service_api_keys`` 表，重启后仍有效（原内存态失效缺陷修复）。
     """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
-    store = get_api_key_store()
-    raw_key = store.create(
+    raw_key, record = await ServiceKeyService.issue(
+        session,
         name=payload.name,
         scope=payload.scope,
         description=payload.description,
+        created_by=int(user["id"]) if str(user.get("id", "")).isdigit() else None,
     )
-    record = store.list_keys()[-1]
+    await session.commit()
     return ApiKeyOut(
-        id=record.get("id", ""),
-        name=record["name"],
-        scope=record["scope"],
-        description=record["description"],
-        created=record["created"],
-        revoked=record["revoked"],
+        id=record.key_id,
+        name=record.name,
+        scope=record.scope,
+        description=record.description,
+        created=record.created_at.timestamp(),
+        revoked=False,
         key=raw_key,
     )
 
@@ -785,18 +788,8 @@ async def list_api_keys(
 ) -> list[ApiKeyOut]:
     """服务 Key 列表（不回显明文，需 auth:api-keys:view）."""
     await _check_api_key_permission(user, session, "auth:api-keys:view")
-    store = get_api_key_store()
-    return [
-        ApiKeyOut(
-            id=record.get("id", ""),
-            name=record["name"],
-            scope=record["scope"],
-            description=record["description"],
-            created=record["created"],
-            revoked=record["revoked"],
-        )
-        for record in store.list_keys()
-    ]
+    records = await ServiceKeyService.list_keys(session)
+    return [ApiKeyOut(**public_record(record)) for record in records]
 
 
 @router.delete("/api-keys/by-id/{key_id}", response_model=dict[str, str])
@@ -811,8 +804,9 @@ async def revoke_api_key_by_id(
     以兼容既有调用方。
     """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
-    if not get_api_key_store().revoke_by_id(key_id):
+    if not await ServiceKeyService.revoke_by_id(session, key_id):
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"api key not found: {key_id}")
+    await session.commit()
     return {"revoked": key_id}
 
 
@@ -824,7 +818,8 @@ async def revoke_api_key(
 ) -> dict[str, str]:
     """吊销服务 Key（需 auth:api-keys:manage）."""
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
-    get_api_key_store().revoke(raw_key)
+    await ServiceKeyService.revoke_by_raw(session, raw_key)
+    await session.commit()
     return {"revoked": raw_key}
 
 

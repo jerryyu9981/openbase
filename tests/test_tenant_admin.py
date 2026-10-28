@@ -11,6 +11,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from openbase import init_app
@@ -77,7 +78,23 @@ def _build_app() -> TestClient:
     return TestClient(app)
 
 
-client = _build_app()
+client: TestClient | None = None
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _tenant_admin_app() -> TestClient:
+    """模块级应用装配（延迟到首用例，避免 import 期污染全局 engine 单例）.
+
+    背景（2026-10-28 全量复跑 10 项失败排查）：本文件此前在 import 期
+    ``client = _build_app()``，而 pytest 先收集全部模块再执行用例——后续模块的
+    fixture/teardown 可能重建全局 engine，导致本文件用例命中非 SQLite 库
+    （``connection was closed in the middle of operation``）。与
+    ``tests/test_identity_t3.py`` 同口径改为延迟装配。
+    """
+    global client
+    client = _build_app()
+    yield client
+    client = None
 
 
 def _token(username: str, password: str) -> str:

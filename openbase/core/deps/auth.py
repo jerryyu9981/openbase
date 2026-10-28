@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import Depends, Request
 from fastapi.responses import JSONResponse
@@ -15,9 +15,6 @@ from starlette.responses import Response
 
 from openbase.core.db.session import get_db
 from openbase.core.errors import BaseError, ErrorCode
-
-if TYPE_CHECKING:
-    from openbase.modules.auth.api_keys import ApiKeyStore
 
 logger = logging.getLogger("openbase.auth")
 
@@ -30,20 +27,6 @@ __all__ = [
     "get_proxy_identity",
     "AuthMiddleware",
 ]
-
-# 服务 Key 存储全局单例（v1.4.1 R-367）
-# 延迟导入 ApiKeyStore：打破 deps.auth ↔ modules.auth 循环导入（TD-新增-009 相关）
-_api_key_store: ApiKeyStore | None = None
-
-
-def get_api_key_store() -> ApiKeyStore:
-    """获取全局 ApiKeyStore 单例."""
-    global _api_key_store
-    if _api_key_store is None:
-        from openbase.modules.auth.api_keys import ApiKeyStore
-
-        _api_key_store = ApiKeyStore()
-    return _api_key_store
 
 
 def _mark_identity_headers_ignored(request: Request) -> None:
@@ -508,29 +491,30 @@ def get_identity_context(request: Request) -> IdentityContext:
 
 # ---- v1.4.1 服务级 API Key 认证（R-367/368，对齐完整方案 2.5/2.7） ----
 
-def require_api_key(
-    x_api_key: str | None = None,
-    request: Request | None = None,
-    store: ApiKeyStore | None = None,
+async def require_api_key(
+    request: Request,
+    session: AsyncSession,
 ) -> dict:
     """服务级 API Key 认证（网关 /proxy 双通道：JWT 优先 + Key 回退）.
 
     从 X-API-Key 头或 Authorization: Bearer <key> 提取 Key；
     校验有效性 + scope（system 从请求路径提取）。
 
+    v1.5：校验改查 ``service_api_keys`` 表（原内存态 ApiKeyStore 重启即失效），
+    因此依赖增加 ``session``。
+
     Args:
-        x_api_key: 显式传入的 Key（测试用）。
         request: FastAPI 请求（提取 X-API-Key 头与路径 system）。
-        store: ApiKeyStore 实例（缺省全局单例）。
+        session: 数据库会话。
 
     Returns:
-        通过返回凭据 dict（name/scope）。
+        通过返回凭据 dict（id/name/scope/description/created/revoked/auth_method）。
 
     Raises:
         BaseError: Key 无效 → AUTH_API_KEY_INVALID(401)；越 scope → PERM_API_KEY_SCOPE(403)。
     """
-    key = x_api_key or (request.headers.get("X-API-Key") if request else None)
-    if not key and request is not None:
+    key = request.headers.get("X-API-Key")
+    if not key:
         authorization = request.headers.get("Authorization", "")
         if authorization.startswith("Bearer "):
             candidate = authorization.removeprefix("Bearer ").strip()
@@ -540,23 +524,20 @@ def require_api_key(
     if not key:
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "missing api key")
 
-    store_instance = store or get_api_key_store()
     # 从路径提取 system（/api/v1/proxy/{system}/...）
     system: str | None = None
-    if request is not None:
-        path = request.url.path
-        parts = path.split("/")
-        if len(parts) >= 5 and parts[1] == "api" and parts[3] == "proxy":
-            system = parts[4]
+    path = request.url.path
+    parts = path.split("/")
+    if len(parts) >= 5 and parts[1] == "api" and parts[3] == "proxy":
+        system = parts[4]
 
-    credential = store_instance.verify(key, system=system)
+    from openbase.modules.auth.service_keys import ServiceKeyService, scope_allows
+
+    credential = await ServiceKeyService.lookup(session, key)
     if credential is None:
-        if system is not None and store_instance.verify(key) is None:
-            raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "invalid api key")
-        # Key 有效但 scope 不匹配
-        if store_instance.verify(key) is not None:
-            raise BaseError(ErrorCode.PERM_API_KEY_SCOPE, "api key scope mismatch")
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "invalid api key")
+    if not scope_allows(credential["scope"], system, None):
+        raise BaseError(ErrorCode.PERM_API_KEY_SCOPE, "api key scope mismatch")
     # 认证方式显式标记（与 identity_context 的 auth_method 取值域一致）：
     # 服务 Key 记录自带稳定 id（uuid），调用方不得以「有无 id」推断认证通道。
     return {**credential, "auth_method": "service-key"}
@@ -578,5 +559,5 @@ async def get_proxy_identity(
     authorization = request.headers.get("Authorization", "")
     bearer = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""
     if x_api_key or (bearer and bearer.startswith("ob_k_")):
-        return require_api_key(request=request)
+        return await require_api_key(request=request, session=session)
     return await get_current_user(request, session)

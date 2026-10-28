@@ -1,10 +1,17 @@
 """测试 v1.4.1 A 类补足（R-367~370）.
 
-覆盖：① ApiKeyStore 签发/校验/吊销；② require_api_key 认证与 scope 校验；
-③ get_identity_context 四维身份头解析；④ 审计上下文注入 tenant_id/user_id。
+覆盖：① ServiceKeyService 签发/校验/吊销（v1.5 起 DB 持久化，替代内存态 ApiKeyStore）；
+② require_api_key 认证与 scope 校验；③ get_identity_context 四维身份头解析；
+④ 审计上下文注入 tenant_id/user_id。
 """
 
+import asyncio
+import tempfile
+import uuid
+from pathlib import Path
+
 import pytest
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from openbase.core.errors import ErrorCode
 from openbase.core.errors.codes import ERROR_HTTP_MAP
@@ -23,51 +30,92 @@ def test_api_key_error_http_map() -> None:
     assert ERROR_HTTP_MAP[ErrorCode.PERM_API_KEY_SCOPE] == 403
 
 
-# ---- 2. ApiKeyStore ----
+# ---- 2. ServiceKeyService（DB 持久化）----
 
-def test_api_key_store_create_verify_revoke() -> None:
+_DB_PATH = Path(tempfile.gettempdir()) / (
+    f"openbase_test_service_keys_{uuid.uuid4().hex[:8]}.db"
+)
+
+
+def _clear_metadata_schema() -> None:
+    """SQLite 无 schema 概念：建表前置空（与 tests/test_tenant_admin.py 同口径）."""
+    from openbase.core.models import Base
+
+    Base.metadata.schema = None
+    for table in Base.metadata.tables.values():
+        table.schema = None
+
+
+async def _create_schema(engine) -> None:
+    from openbase.core.models import Base
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+@pytest.fixture(scope="module")
+def key_engine():
+    """文件型 SQLite 引擎（跨 session 共享，用于验证"重启后仍在"）."""
+    _clear_metadata_schema()
+    if _DB_PATH.exists():
+        _DB_PATH.unlink()
+    engine = create_async_engine(f"sqlite+aiosqlite:///{_DB_PATH}")
+    asyncio.run(_create_schema(engine))
+    yield engine
+    asyncio.run(engine.dispose())
+
+
+@pytest.fixture()
+async def session(key_engine):
+    factory = async_sessionmaker(key_engine, expire_on_commit=False)
+    async with factory() as db_session:
+        yield db_session
+
+
+async def test_service_key_issue_verify_revoke(session) -> None:
     """签发/校验/吊销闭环."""
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    key = store.create("gateway-agent", scope={"system": ["openllm"], "tenants": ["*"]})
-    assert key.startswith("ob_k_")
+    raw_key, record = await ServiceKeyService.issue(
+        session, name="gateway-agent", scope={"system": ["openllm"], "tenants": ["*"]}
+    )
+    assert raw_key.startswith("ob_k_")
+    assert record.key_id
 
     # 校验通过
-    assert store.verify(key) is not None
+    assert await ServiceKeyService.verify(session, raw_key) is not None
 
     # 吊销后校验失败
-    store.revoke(key)
-    assert store.verify(key) is None
+    assert await ServiceKeyService.revoke_by_raw(session, raw_key) is True
+    assert await ServiceKeyService.verify(session, raw_key) is None
 
 
-def test_api_key_store_rejects_unknown_key() -> None:
+async def test_service_key_rejects_unknown_key(session) -> None:
     """未知 Key 校验失败."""
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    assert store.verify("ob_k_unknown") is None
-
-
-def test_api_key_store_list() -> None:
-    """列表返回签发记录（不含明文 Key）."""
-    from openbase.modules.auth.api_keys import ApiKeyStore
-
-    store = ApiKeyStore()
-    key = store.create("ops-agent")
-    records = store.list_keys()
-    assert len(records) == 1
-    assert records[0]["name"] == "ops-agent"
-    assert "key" not in records[0] or records[0]["key"] != key  # 不回显明文
+    assert await ServiceKeyService.verify(session, "ob_k_unknown") is None
 
 
-def test_api_key_store_verify_excludes_key_hash() -> None:
-    """verify 返回的凭据不得携带存储内部字段 key_hash，且为副本（防调用方改坏存储）."""
-    from openbase.modules.auth.api_keys import ApiKeyStore
+async def test_service_key_list_excludes_secret(session) -> None:
+    """列表返回签发记录（不含明文 Key / 哈希）."""
+    from openbase.modules.auth.service_keys import ServiceKeyService, public_record
 
-    store = ApiKeyStore()
-    key = store.create("svc", scope={"system": ["*"], "tenants": ["*"]})
-    record = store.verify(key)
+    raw_key, _ = await ServiceKeyService.issue(session, name="ops-agent")
+    records = [public_record(item) for item in await ServiceKeyService.list_keys(session)]
+    target = next(item for item in records if item["name"] == "ops-agent")
+    assert "key" not in target and "key_hash" not in target
+    assert raw_key not in str(records)  # 明文不外泄
+
+
+async def test_service_key_lookup_excludes_key_hash(session) -> None:
+    """lookup 返回的凭据不得携带 key_hash，且为副本（防调用方改坏记录）."""
+    from openbase.modules.auth.service_keys import ServiceKeyService
+
+    raw_key, _ = await ServiceKeyService.issue(
+        session, name="svc", scope={"system": ["*"], "tenants": ["*"]}
+    )
+    record = await ServiceKeyService.lookup(session, raw_key)
     assert record is not None
     assert "key_hash" not in record
     assert record["name"] == "svc"
@@ -76,23 +124,58 @@ def test_api_key_store_verify_excludes_key_hash() -> None:
 
     # 副本语义：改写返回 dict 不得影响存储内记录
     record["name"] = "tampered"
-    refreshed = store.verify(key)
+    refreshed = await ServiceKeyService.lookup(session, raw_key)
     assert refreshed is not None and refreshed["name"] == "svc"
 
 
-def test_api_key_scope_check() -> None:
+async def test_service_key_scope_check(session) -> None:
     """scope 校验：越系统/越租户拒绝."""
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    key = store.create("llm-only", scope={"system": ["openllm"], "tenants": ["tenant_a"]})
+    raw_key, _ = await ServiceKeyService.issue(
+        session, name="llm-only", scope={"system": ["openllm"], "tenants": ["tenant_a"]}
+    )
 
-    assert store.verify(key, system="openllm", tenant_id="tenant_a") is not None
-    assert store.verify(key, system="openrag", tenant_id="tenant_a") is None  # 越系统
-    assert store.verify(key, system="openllm", tenant_id="tenant_b") is None  # 越租户
+    assert await ServiceKeyService.verify(
+        session, raw_key, system="openllm", tenant_id="tenant_a"
+    ) is not None
+    assert await ServiceKeyService.verify(
+        session, raw_key, system="openrag", tenant_id="tenant_a"
+    ) is None  # 越系统
+    assert await ServiceKeyService.verify(
+        session, raw_key, system="openllm", tenant_id="tenant_b"
+    ) is None  # 越租户
+
+
+async def test_service_key_survives_new_session(key_engine) -> None:
+    """持久化回归（v1.5）：写入后由新 session（等价进程重启）仍可校验与列出.
+
+    这是本轮修复的根因用例：原 ApiKeyStore 为进程内字典，重启即全部失效。
+    """
+    from openbase.modules.auth.service_keys import ServiceKeyService
+
+    factory = async_sessionmaker(key_engine, expire_on_commit=False)
+    async with factory() as first:
+        raw_key, record = await ServiceKeyService.issue(first, name="restart-probe")
+        await first.commit()
+        key_id = record.key_id
+
+    async with factory() as second:
+        credential = await ServiceKeyService.verify(second, raw_key)
+        assert credential is not None and credential["id"] == key_id
+        listed = [item.key_id for item in await ServiceKeyService.list_keys(second)]
+        assert key_id in listed
+
+    async with factory() as third:
+        assert await ServiceKeyService.revoke_by_id(third, key_id) is True
+        await third.commit()
+
+    async with factory() as fourth:
+        assert await ServiceKeyService.verify(fourth, raw_key) is None
 
 
 # ---- 3. require_api_key 依赖（HTTP 层） ----
+
 
 class _FakeRequest:
     """基础请求桩（headers）."""
@@ -114,99 +197,110 @@ class _FakeKeyRequest(_FakeRequest):
         self.url = _FakeUrl(path)
 
 
-def test_require_api_key_accepts_valid_key() -> None:
+async def test_require_api_key_accepts_valid_key(session) -> None:
     """有效 Key 认证通过并返回凭据."""
     from openbase.core.deps.auth import require_api_key
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    key = store.create("svc", scope={"system": ["*"], "tenants": ["*"]})
+    raw_key, _ = await ServiceKeyService.issue(
+        session, name="svc", scope={"system": ["*"], "tenants": ["*"]}
+    )
 
-    request = _FakeKeyRequest({"X-API-Key": key})
-    credential = require_api_key(request=request, store=store)
+    credential = await require_api_key(
+        request=_FakeKeyRequest({"X-API-Key": raw_key}), session=session
+    )
     assert credential is not None
     assert credential["name"] == "svc"
 
 
-def test_require_api_key_credential_excludes_key_hash() -> None:
+async def test_require_api_key_credential_excludes_key_hash(session) -> None:
     """require_api_key 凭据仅暴露认证所需字段（无 key_hash），并带认证方式标记."""
     from openbase.core.deps.auth import require_api_key
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    key = store.create("svc", scope={"system": ["*"], "tenants": ["*"]})
-    credential = require_api_key(request=_FakeKeyRequest({"X-API-Key": key}), store=store)
+    raw_key, _ = await ServiceKeyService.issue(
+        session, name="svc", scope={"system": ["*"], "tenants": ["*"]}
+    )
+    credential = await require_api_key(
+        request=_FakeKeyRequest({"X-API-Key": raw_key}), session=session
+    )
     assert "key_hash" not in credential
     assert credential["auth_method"] == "service-key"
     assert credential["name"] == "svc"
 
 
-def test_require_api_key_rejects_invalid() -> None:
+async def test_require_api_key_rejects_invalid(session) -> None:
     """无效 Key → AUTH_API_KEY_INVALID."""
     from openbase.core.deps.auth import require_api_key
     from openbase.core.errors import BaseError
-    from openbase.modules.auth.api_keys import ApiKeyStore
 
-    store = ApiKeyStore()
-    request = _FakeKeyRequest({"X-API-Key": "ob_k_unknown"})
     with pytest.raises(BaseError) as exc_info:
-        require_api_key(request=request, store=store)
+        await require_api_key(
+            request=_FakeKeyRequest({"X-API-Key": "ob_k_unknown"}), session=session
+        )
     assert exc_info.value.code == ErrorCode.AUTH_API_KEY_INVALID
 
 
-def test_require_api_key_rejects_scope_mismatch() -> None:
+async def test_require_api_key_rejects_scope_mismatch(session) -> None:
     """scope 不匹配 → PERM_API_KEY_SCOPE."""
     from openbase.core.deps.auth import require_api_key
     from openbase.core.errors import BaseError
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    key = store.create("llm-only", scope={"system": ["openllm"], "tenants": ["*"]})
+    raw_key, _ = await ServiceKeyService.issue(
+        session, name="llm-only", scope={"system": ["openllm"], "tenants": ["*"]}
+    )
 
     # 请求路径指向 openrag（越 scope）
-    request = _FakeKeyRequest({"X-API-Key": key}, path="/api/v1/proxy/openrag/search")
     with pytest.raises(BaseError) as exc_info:
-        require_api_key(request=request, store=store)
+        await require_api_key(
+            request=_FakeKeyRequest(
+                {"X-API-Key": raw_key}, path="/api/v1/proxy/openrag/search"
+            ),
+            session=session,
+        )
     assert exc_info.value.code == ErrorCode.PERM_API_KEY_SCOPE
 
 
-def test_require_api_key_missing_key() -> None:
+async def test_require_api_key_missing_key(session) -> None:
     """缺 Key → AUTH_API_KEY_INVALID."""
     from openbase.core.deps.auth import require_api_key
     from openbase.core.errors import BaseError
-    from openbase.modules.auth.api_keys import ApiKeyStore
 
-    store = ApiKeyStore()
-    request = _FakeKeyRequest({})
     with pytest.raises(BaseError) as exc_info:
-        require_api_key(request=request, store=store)
+        await require_api_key(request=_FakeKeyRequest({}), session=session)
     assert exc_info.value.code == ErrorCode.AUTH_API_KEY_INVALID
 
 
-def test_require_api_key_accepts_bearer_key() -> None:
+async def test_require_api_key_accepts_bearer_key(session) -> None:
     """Authorization: Bearer <key>（非 jwt 前缀）视为服务 Key."""
     from openbase.core.deps.auth import require_api_key
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    key = store.create("svc-bearer", scope={"system": ["*"], "tenants": ["*"]})
+    raw_key, _ = await ServiceKeyService.issue(
+        session, name="svc-bearer", scope={"system": ["*"], "tenants": ["*"]}
+    )
 
-    request = _FakeKeyRequest({"Authorization": f"Bearer {key}"})
-    credential = require_api_key(request=request, store=store)
+    credential = await require_api_key(
+        request=_FakeKeyRequest({"Authorization": f"Bearer {raw_key}"}), session=session
+    )
     assert credential["name"] == "svc-bearer"
 
 
-def test_require_api_key_x_api_key_header() -> None:
+async def test_require_api_key_x_api_key_header(session) -> None:
     """X-API-Key 头认证通过（非 proxy 路径时 system=None 不校验 scope）."""
     from openbase.core.deps.auth import require_api_key
-    from openbase.modules.auth.api_keys import ApiKeyStore
+    from openbase.modules.auth.service_keys import ServiceKeyService
 
-    store = ApiKeyStore()
-    key = store.create("svc", scope={"system": ["openllm"], "tenants": ["*"]})
+    raw_key, _ = await ServiceKeyService.issue(
+        session, name="svc", scope={"system": ["openllm"], "tenants": ["*"]}
+    )
 
     # 非 proxy 路径（system=None，scope 校验跳过 system）
-    request = _FakeKeyRequest({"X-API-Key": key}, path="/api/v1/items")
-    credential = require_api_key(request=request, store=store)
+    credential = await require_api_key(
+        request=_FakeKeyRequest({"X-API-Key": raw_key}, path="/api/v1/items"),
+        session=session,
+    )
     assert credential["name"] == "svc"
 
 

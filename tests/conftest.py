@@ -92,3 +92,57 @@ def isolate_identity_cache() -> None:
     _clear_identity_cache_keys()
     yield
 
+
+@pytest.fixture()
+def api_key_client(tmp_path):
+    """最小 auth 应用 + SQLite：服务 Key 端点回归不依赖外部 PG.
+
+    背景（2026-10-28）：服务 Key 由内存态改为 ``service_api_keys`` 表持久化后，
+    原先基于 ``openbase.demo_app.app`` 的端点用例会经 ``get_db`` 连接共享 PG，
+    跨网抖动时表现为 ``connection was closed in the middle of operation``。
+    该 fixture 只挂载 auth 路由并覆写 ``get_db``/``get_current_user``，
+    保证服务 Key 用例与外部数据面解耦（建表仍走真实 ``Base.metadata``）。
+    """
+    import asyncio
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from openbase.core.db.session import get_db
+    from openbase.core.deps.auth import get_current_user
+    from openbase.core.errors import install_exception_handlers
+    from openbase.core.models import Base
+    from openbase.modules.auth import router as auth_router
+
+    Base.metadata.schema = None
+    for table in Base.metadata.tables.values():
+        table.schema = None
+
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'api_keys.db'}")
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def _create_schema() -> None:
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+    asyncio.run(_create_schema())
+
+    async def _override_get_db():
+        async with factory() as session:
+            yield session
+
+    app = FastAPI()
+    app.include_router(auth_router)
+    # 统一错误契约（{code,message,detail,request_id}）：BaseError → 对应 HTTP 状态
+    install_exception_handlers(app)
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = lambda: {
+        "id": "1",
+        "username": "admin",
+        "permissions": ["*"],
+    }
+    client = TestClient(app)
+    yield client
+    asyncio.run(engine.dispose())
+

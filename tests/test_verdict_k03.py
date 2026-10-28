@@ -294,13 +294,33 @@ def test_t2_7_sk_agent_db_down_fail_closed() -> None:
 
 
 def _proxy_app(monkeypatch: pytest.MonkeyPatch, **overrides: Any) -> TestClient:
+    """装配 auth+proxy 应用；服务 Key 落临时 SQLite（v1.5 起需 DB，不依赖外部 PG）."""
+    import asyncio
+    import tempfile
+    import uuid
+    from pathlib import Path
+
     from openbase import init_app
+    from openbase.core.db.session import get_engine, init_db
+    from openbase.core.models import Base
     from openbase.modules.auth import UserService
 
     settings = _apply_settings(monkeypatch, **overrides)
     for module_name in ("auth", "proxy", "audit", "tenant", "config"):
         settings.enable_module(module_name)
     UserService.seed_memory_user("admin", "admin123")
+
+    Base.metadata.schema = None
+    for table in Base.metadata.tables.values():
+        table.schema = None
+    db_path = Path(tempfile.gettempdir()) / f"openbase_test_k03_{uuid.uuid4().hex[:8]}.db"
+    init_db(f"sqlite+aiosqlite:///{db_path}", schema=None)
+
+    async def _create_schema() -> None:
+        async with get_engine().begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+    asyncio.run(_create_schema())
     app = init_app(settings)
     return TestClient(app)
 
@@ -356,29 +376,16 @@ def test_t2_6_whitelisted_write_allowed_with_bypass_audit(
         ]
     )
     client = _proxy_app(monkeypatch, k03_bypass_whitelist=whitelist)
-    # 隔离审计 DB 写入（本用例只验证白名单放行语义；审计落库由 test_t2_10 覆盖）
-    class _NoopSession:
-        def add(self, _record: Any) -> None:
-            return None
+    # 隔离审计落库（本用例只验证白名单放行语义；审计记录函数本身由 test_t2_10 覆盖）。
+    # v1.5 起服务 Key 走 DB，不能再把全局 get_session_factory 换成 Noop 假会话
+    # （会被 api-keys 端点复用而 flush 失败），改为直接替换审计记录函数。
+    audited: list[dict[str, Any]] = []
 
-        async def commit(self) -> None:
-            return None
-
-        async def rollback(self) -> None:
-            return None
-
-    class _SessionFactory:
-        def __call__(self) -> _SessionFactory:
-            return self
-
-        async def __aenter__(self) -> _NoopSession:
-            return _NoopSession()
-
-        async def __aexit__(self, *_args: Any) -> bool:
-            return False
+    async def _record_spy(_session: Any, **kwargs: Any) -> None:
+        audited.append(kwargs)
 
     monkeypatch.setattr(
-        "openbase.core.db.session.get_session_factory", lambda: _SessionFactory()
+        "openbase.modules.proxy._record_k03_bypass_audit", _record_spy
     )
     token = _admin_token(client)
     key = _create_service_key(client, token)
@@ -389,6 +396,8 @@ def test_t2_6_whitelisted_write_allowed_with_bypass_audit(
     )
     # 白名单内 → 不被 403（上游不可达时按既有 SYS_502 语义；DB 审计失败降级 WARN）
     assert resp.status_code != 403, resp.text
+    assert audited and audited[0]["system"] == "openllm"
+    assert audited[0]["entry"]["id"] == "wb-001"
     # 真实环境上游可达时响应为透明包装体，可能不含 code 字段；
     # 仅在含 code 时校验其非 PERM_SERVICE_KEY_WRITE_DENIED（非 403 语义已由上一断言覆盖）
     body = resp.json()

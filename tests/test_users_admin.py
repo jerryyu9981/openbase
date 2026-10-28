@@ -11,6 +11,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from jose import jwt as jose_jwt
 
@@ -86,7 +87,21 @@ def _build_app() -> TestClient:
     return TestClient(app)
 
 
-client = _build_app()
+client: TestClient | None = None
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _users_admin_app() -> TestClient:
+    """模块级应用装配（延迟到首用例，避免 import 期污染全局 engine 单例）.
+
+    背景同 ``tests/test_tenant_admin.py``：import 期装配会被后续模块的
+    fixture/teardown 覆盖全局 engine，导致命中非 SQLite 库而报
+    ``connection was closed in the middle of operation``。
+    """
+    global client
+    client = _build_app()
+    yield client
+    client = None
 
 
 def _token(username: str, password: str) -> str:

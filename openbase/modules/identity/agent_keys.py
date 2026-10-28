@@ -2,7 +2,8 @@
 
 - 前缀 `sk-agent-*`（可辨识），服务端只存 sha256 `key_hash`（明文仅生成响应展示一次）；
 - 多密钥并存、可轮换（新签）、可吊销（revoked_at 语义以 status=revoked 表达，即时失效）；
-- 与既有 `ApiKeyStore`（ob_k_*，内存态）不重叠：sk-agent-* 为 DB 持久化的主体化凭据面。
+- 与既有服务 Key（`ob_k_*`，v1.5 起由 `service_api_keys` 表持久化）不重叠：
+  sk-agent-* 为 DB 持久化的主体化凭据面。
 """
 
 from __future__ import annotations
