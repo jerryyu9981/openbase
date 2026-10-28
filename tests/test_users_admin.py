@@ -14,9 +14,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from jose import jwt as jose_jwt
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from openbase import init_app
-from openbase.core.db.session import init_db
+from openbase.core.db.session import get_engine, get_session_factory, init_db
 from openbase.core.models import Base, Role, User, user_role
 from openbase.modules.auth import hash_password
 from openbase.modules.users import ALLOWED_ROLES
@@ -24,8 +25,13 @@ from openbase.settings import Settings
 
 _DB_PATH = Path(tempfile.gettempdir()) / "openbase_test_users_v142.db"
 
+# 本模块专用 SQLite 会话工厂（与全局单例解耦；见模块级 fixture 说明）
+_session_factory: async_sessionmaker | None = None
+
 
 def _build_app() -> TestClient:
+    global _session_factory
+
     settings = Settings()
     for module in ("auth", "tenant", "users", "audit", "config", "org", "dict", "storage", "notify"):
         settings.enable_module(module)
@@ -35,10 +41,9 @@ def _build_app() -> TestClient:
     if _DB_PATH.exists():
         _DB_PATH.unlink()
     init_db(f"sqlite+aiosqlite:///{_DB_PATH}", schema=None)
+    _session_factory = get_session_factory()
 
     async def _create_tables() -> None:
-        from openbase.core.db.session import get_engine
-
         engine = get_engine()
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -46,9 +51,8 @@ def _build_app() -> TestClient:
     asyncio.run(_create_tables())
 
     async def _seed() -> None:
-        from openbase.core.db.session import get_session_factory
-
-        async with get_session_factory()() as session:  # type: ignore[call-arg]
+        assert _session_factory is not None
+        async with _session_factory() as session:  # type: ignore[call-arg]
             # 角色种子与生产保持一致（SEEDED_ROLE_CODES 五码），覆盖 org_member 回归场景
             from openbase.core.db.init import SEEDED_ROLE_CODES
 
@@ -92,16 +96,29 @@ client: TestClient | None = None
 
 @pytest.fixture(scope="module", autouse=True)
 def _users_admin_app() -> TestClient:
-    """模块级应用装配（延迟到首用例，避免 import 期污染全局 engine 单例）.
+    """模块级应用装配 + 全局 DB 工厂硬隔离（避免命中跨网 PG）.
 
-    背景同 ``tests/test_tenant_admin.py``：import 期装配会被后续模块的
-    fixture/teardown 覆盖全局 engine，导致命中非 SQLite 库而报
-    ``connection was closed in the middle of operation``。
+    根因同 ``tests/test_tenant_admin.py``：`AuthMiddleware`/`get_db` 在请求期才取
+    全局 `get_session_factory()`，若全局已被其他模块重建为跨网 PG，则用例随机报
+    ``connection was closed in the middle of operation``。此处延迟装配并把全局工厂
+    固定为专用 SQLite，模块结束后恢复并复位单例。
     """
     global client
+
+    from conftest import reset_db_singletons
+
+    import openbase.core.db.session as session_module
+
     client = _build_app()
-    yield client
-    client = None
+    assert _session_factory is not None
+    patch = pytest.MonkeyPatch()
+    patch.setattr(session_module, "get_session_factory", lambda: _session_factory)
+    try:
+        yield client
+    finally:
+        patch.undo()
+        client = None
+        reset_db_singletons()
 
 
 def _token(username: str, password: str) -> str:
