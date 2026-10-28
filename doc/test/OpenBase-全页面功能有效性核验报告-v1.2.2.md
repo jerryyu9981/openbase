@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | TEST-DEEP-20261027 |
-| 版本 | v1.2.1 |
+| 版本 | v1.2.2 |
 | 状态 | [Final] |
 | 环境 | 本地全栈：OpenBase 8000 / OpenLLM 8001 / OpenRAG 8010 / OpenMemory 8020 / DPS 8030 / OIDC 8090 / 前端 5173；共享 PG 主用 `192.168.0.151:5432` |
 | 执行日期 | 2026-10-27（首轮 77 页核验）/ 2026-10-28（三项关注项复核与修复验证 + 服务 Key 持久化与全量测试修复） |
@@ -283,9 +283,20 @@ v1.2.0 起签发记录落 `service_api_keys` 表（详见 §9.1），重启与�
 | 其他受影响用例 | `test_storage_s3` **9 passed**（原缺 `boto3` 依赖，已补装）；`test_log_reserved_keys` + `test_r2_lists_v192` 通过 |
 | 门禁聚合 | `tests/test_s7_t6_gate.py` **16 passed**（RA-06 五项 19/21/12/13/17 例全 PASS）；全量套件内该文件同样 PASS（此前 10 项 E 已消失） |
 | 静态检查 | `ruff check openbase tests` 0 错误 |
-| 残余（非本轮引入） | 单进程全量跑仍可见 3~4 项**环境/顺序依赖**失败：`test_app::test_org_department_flow`/`test_config_rollback_flow`（真实 PG 已积累历史测试数据，用例期望空表）、`test_demo_app_starts_and_falls_back`（有真实库时 `_DB_READY=True`，用例按"降级"断言）、`test_proxy_target_system_v190`（真实库存在租户级 LLM Key 时优先命中 DB）。三者单独运行均通过，属既有用例的"沙箱/空库假设"；官方回归入口为 `scripts/run_tests.ps1`（按文件分组子进程），未在本轮扩大修复范围 |
+| 残余（v1.2.2 已收口） | 原 3~4 项"沙箱/空库假设"失败已改为确定性用例，见 §9.4：`test_app` 部门/配置流程、`test_demo_app_starts_and_falls_back`、`test_proxy_target_system_v190` 均在「真实 PG」与「无环境变量」两种跑法下通过。仍属环境类的仅剩 `test_orchestrator_db_failover::test_monitor_recheck_notices_primary_recovery`（依赖编排器 monitor 周期复检证据 json，属运行态证据类，非代码缺陷） |
 
 > 说明：本文的"全量套件"指单进程 `python -m pytest tests`；项目标准回归为 `scripts/run_tests.ps1`（ruff + 按 6 文件分组子进程），两者在跨文件全局状态上的隔离强度不同。
+
+### 9.4 既有「沙箱/空库假设」用例收口（v1.2.2）
+
+| 用例 | 原问题 | 修复 |
+|---|---|---|
+| `test_app::test_org_department_flow`、`test_config_rollback_flow` | 断言空库初始计数（部门树 1 个、配置版本 2 条）；连共享 PG 时历史测试数据累积 → `assert 4 == 1` / `assert 6 == 2` | 新增**函数级 autouse fixture**：每个用例建独立空 SQLite 库并把全局 `get_session_factory` 固定到它，用例结束复位（`reset_db_singletons`） |
+| `test_demo_app_starts_and_falls_back` | 断言 import 期 `_DB_READY is False`；全量套件中 `openbase.demo_app` 已被更早模块导入并成功连库（`_DB_READY=True`）→ 结果随环境漂移 | `demo_app` 抽出 `_fallback_to_memory()`；用例改为直接驱动 `_try_database_init()` 的失败分支并断言降级种子，不再依赖 import 时序与外部库可用性 |
+| `test_proxy_target_system_v190::test_inject_credentials_for_openllm` | 只桩了 proxy 模块的 `get_settings`；`_select_llm_api_key` 在 `llm_proxy` 模块内读自己的 `get_settings().llm_api_keys_by_tenant`，而 `.env` 注入了租户级 Key 映射 → 返回 `sk-openllm-*` 而非默认 Key | 新增 `_stub_settings()`，同时桩 proxy 与 llm_proxy 两个 settings 入口；两个用例共用 |
+
+**验证**：上述 5 个文件（`test_app` / `test_demo_app` / `test_proxy_target_system_v190` / `test_tenant_admin` / `test_users_admin`）在
+①「`.env.shared-infra` 真实 PG」与 ②「无数据库环境变量」两种跑法下均 **32 passed**；`test_r2_lists_v192` + `test_log_reserved_keys` 13 passed；`ruff check openbase tests` 0 错误。
 
 ## 10. 修订历史
 
@@ -295,3 +306,4 @@ v1.2.0 起签发记录落 `service_api_keys` 表（详见 §9.1），重启与�
 | v1.1.0 | 2026-10-28 | FA-OpenBase-Dev（AI 辅助） | 三项关注项闭环：DW-01 代理慢聚合端点 30s + GET 重试（3 条回归用例 + 线上 16/16 通过）；DW-02 确认为跨网链路瞬态并留存实测数据；DW-03 造数 5 页由空数据转为 real-data，顺带修复 OpenLLM Prompt 实验创建 500 两处缺陷；补充 api-keys 内存存储易失性说明与造数清理口径 |
 | v1.2.0 | 2026-10-28 | FA-OpenBase-Dev（AI 辅助） | 清偿两项工程债：① 服务 Key 由进程内内存改为 `service_api_keys` 表持久化（重启/多进程可用，响应契约不变，新增持久化回归用例 + 重启 E2E 验证）；② 修复全量 pytest 的 10 项连带失败：`test_tenant_admin`/`test_users_admin` 改延迟装配、门禁子进程隔离 TEMP 与 DB 语义、服务 Key 相关用例改临时 SQLite 装配、补装 `boto3`；门禁聚合恢复 PASS，残余 3~4 项既有沙箱假设失败已如实登记 |
 | v1.2.1 | 2026-10-28 | FA-OpenBase-Dev（AI 辅助） | 加固 `test_tenant_admin`/`test_users_admin` 的跨网 PG 断连问题：模块期间把全局 `get_session_factory` 固定为专用 SQLite 工厂（覆盖中间件/依赖请求期取工厂），模块结束复位；验证「PG 不可达」与「跨模块已初始化真实 PG」两种场景均通过 |
+| v1.2.2 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 收口既有「沙箱/空库假设」用例：`test_app` 部门/配置流程改每用例独立空 SQLite；`demo_app` 抽出 `_fallback_to_memory()` 并改为确定性驱动降级分支；`test_proxy_target_system_v190` 同时桩 proxy 与 llm_proxy 的 settings（消除 `.env` 租户 Key 映射干扰）。相关 5 文件在「真实 PG / 无环境变量」两种跑法下均 32 passed |

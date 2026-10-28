@@ -121,11 +121,15 @@ def _try_database_init() -> bool:
         return False
 
 
-_DB_READY = _try_database_init()
-if not _DB_READY:
-    # 降级：内存演示用户
+def _fallback_to_memory() -> None:
+    """数据库不可用时的降级装配：种子内存演示用户（可被测试确定性调用）."""
     UserService.seed_memory_user("admin", "admin123")
     logger.info("fallback: memory demo user seeded (admin/admin123)")
+
+
+_DB_READY = _try_database_init()
+if not _DB_READY:
+    _fallback_to_memory()
 
 app = init_app(settings)
 

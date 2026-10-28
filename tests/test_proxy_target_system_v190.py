@@ -109,9 +109,24 @@ class _StubSettings:
     llm_api_keys_by_tenant = ""
 
 
+def _stub_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """同时替换 proxy 与 llm_proxy 两个模块的 settings 入口.
+
+    背景（2026-10-29）：``_inject_upstream_credentials`` 先取 proxy 模块的
+    ``get_settings().llm_api_key`` 作为默认值，再交 ``_select_llm_api_key``；
+    后者在 ``openbase.modules.llm_proxy`` 内读取**自己模块**的 ``get_settings()``
+    的 ``llm_api_keys_by_tenant``。只替换 proxy 模块时，若环境注入了租户级 Key
+    映射（``OPENBASE_LLM_API_KEYS_BY_TENANT``），实际会返回租户 Key 而非默认值。
+    """
+    monkeypatch.setattr(proxy_module, "get_settings", lambda: _StubSettings())
+    monkeypatch.setattr(
+        "openbase.modules.llm_proxy.get_settings", lambda: _StubSettings()
+    )
+
+
 def test_inject_credentials_for_openllm(monkeypatch: pytest.MonkeyPatch) -> None:
     """openllm → 注入 Authorization: Bearer <OpenLLM API Key>."""
-    monkeypatch.setattr(proxy_module, "get_settings", lambda: _StubSettings())
+    _stub_settings(monkeypatch)
     headers = proxy_module._inject_upstream_credentials(
         "openllm", {HEADER_TENANT_ID: "tenant-1", "Accept": "application/json"}
     )
@@ -120,7 +135,7 @@ def test_inject_credentials_for_openllm(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_inject_credentials_skipped_for_other_systems(monkeypatch: pytest.MonkeyPatch) -> None:
     """非 openllm 系统不注入凭据，避免越权携带 OpenLLM Key."""
-    monkeypatch.setattr(proxy_module, "get_settings", lambda: _StubSettings())
+    _stub_settings(monkeypatch)
     for system in ("openrag", "openmemory", "dps"):
         headers = proxy_module._inject_upstream_credentials(system, {"Accept": "application/json"})
         assert "Authorization" not in headers

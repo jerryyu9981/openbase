@@ -1,9 +1,46 @@
 """init_app 装配 + 核心模块集成冒烟测试."""
 
+import asyncio
+
+import pytest
 from fastapi.testclient import TestClient
 
 from openbase import init_app
 from openbase.settings import Settings
+
+
+@pytest.fixture(autouse=True)
+def _isolated_sqlite_db(tmp_path, monkeypatch):
+    """每个用例独立空 SQLite：消除对共享 PG 历史数据的依赖.
+
+    背景（2026-10-29）：`test_org_department_flow` / `test_config_rollback_flow`
+    断言空库下的初始状态（部门树 1 个、配置版本 2 条）。此前随环境连接共享 PG，
+    历史测试数据累积后计数漂移（`assert 4 == 1` / `assert 6 == 2`）。
+    本 fixture 为每个用例建全新 SQLite 并把全局工厂固定到它，用例结束复位。
+    """
+    from conftest import reset_db_singletons
+
+    import openbase.core.db.session as session_module
+    from openbase.core.db.session import get_engine, get_session_factory, init_db
+    from openbase.core.models import Base
+
+    Base.metadata.schema = None
+    for table in Base.metadata.tables.values():
+        table.schema = None
+    init_db(f"sqlite+aiosqlite:///{tmp_path / 'test_app.db'}", schema=None)
+
+    async def _create_schema() -> None:
+        async with get_engine().begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+
+    asyncio.run(_create_schema())
+    monkeypatch.setattr(
+        session_module, "get_session_factory", lambda: get_session_factory()
+    )
+    try:
+        yield
+    finally:
+        reset_db_singletons()
 
 
 def build_test_app() -> TestClient:
