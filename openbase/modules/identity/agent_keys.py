@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import AgentApiKey, Role, User, user_role
+from openbase.core.models import AgentApiKey, AuditLog, Role, User, user_role
 from openbase.modules.identity.state_machine import SUBJECT_TYPE_AGENT
 
 logger = logging.getLogger("openbase.identity.agent_keys")
@@ -26,6 +26,32 @@ logger = logging.getLogger("openbase.identity.agent_keys")
 AGENT_KEY_PREFIX = "sk-agent-"
 AGENT_KEY_STATUS_ACTIVE = "active"
 AGENT_KEY_STATUS_REVOKED = "revoked"
+
+# E0-4（R4/P0-4）：agent Key 生命周期审计动作码（审计表 action 列）
+ACTION_AGENT_KEY_ISSUE = "identity.agent_key.issue"
+ACTION_AGENT_KEY_REVOKE = "identity.agent_key.revoke"
+AUDIT_RESOURCE_AGENT_KEY = "agent_api_keys"
+
+
+def _audit_request_id(request_id: str | None) -> str:
+    """审计记录 request_id（未透传时生成内部标识；列不可空）."""
+    return request_id or f"internal-{secrets.token_hex(6)}"
+
+
+def _audit_detail(
+    record: AgentApiKey,
+    operator_id: int | None,
+    request_id: str | None,
+) -> dict[str, Any]:
+    """审计明细（仅元数据；禁止明文/哈希）."""
+    return {
+        "key_id": record.id,
+        "agent_id": record.agent_id,
+        "name": record.name,
+        "key_suffix": record.key_suffix,
+        "operator_id": operator_id,
+        "request_id": request_id,
+    }
 
 
 def agent_key_hash(raw_key: str) -> str:
@@ -54,8 +80,12 @@ class AgentKeyService:
         name: str | None = None,
         expires_at: dt.datetime | None = None,
         created_by: int | None = None,
+        request_id: str | None = None,
     ) -> tuple[str, AgentApiKey]:
         """签发新 sk-agent-* 密钥，返回明文（仅此一次）+ 落库记录.
+
+        E0-4（R4/P0-4）：同一事务内写 ``AuditLog``（key_id/agent_id/name/
+        key_suffix/操作人/request_id；**不含明文与哈希**）。
 
         Returns:
             (raw_key, record)；raw_key 仅在此返回，服务端不落明文。
@@ -73,7 +103,26 @@ class AgentKeyService:
         )
         session.add(record)
         await session.flush()
+        session.add(
+            AuditLog(
+                user_id=created_by,
+                action=ACTION_AGENT_KEY_ISSUE,
+                resource=AUDIT_RESOURCE_AGENT_KEY,
+                resource_id=str(record.id),
+                request_id=_audit_request_id(request_id),
+                detail=_audit_detail(record, created_by, request_id),
+            )
+        )
+        await session.flush()
         logger.info("agent api key issued", extra={"agent_id": agent_id, "key_id": record.id})
+        # E0-1（边缘设备身份化）：终端应按设备签发独立 sk-agent-* 凭据并设置有效期；
+        # 未设置 expires_at 时给出运维提示（不阻断签发，便于存量流程平滑）。
+        if expires_at is None:
+            logger.warning(
+                "agent api key issued without expires_at; "
+                "edge device credentials should set expiry and never share service keys",
+                extra={"agent_id": agent_id, "key_id": record.id},
+            )
         return raw_key, record
 
     @classmethod
@@ -83,12 +132,32 @@ class AgentKeyService:
         *,
         agent_id: int,
         key_id: int,
+        operator_id: int | None = None,
+        request_id: str | None = None,
     ) -> AgentApiKey:
-        """吊销单条密钥（即时失效：校验按 status/expires 拒绝）."""
+        """吊销单条密钥（即时失效：校验按 status/expires 拒绝）.
+
+        E0-4（R4/P0-4）：同一事务内写 ``AuditLog``（不含明文）。
+        """
         record = await cls._get_key(session, agent_id=agent_id, key_id=key_id)
         record.status = AGENT_KEY_STATUS_REVOKED
+        session.add(
+            AuditLog(
+                user_id=operator_id,
+                action=ACTION_AGENT_KEY_REVOKE,
+                resource=AUDIT_RESOURCE_AGENT_KEY,
+                resource_id=str(record.id),
+                request_id=_audit_request_id(request_id),
+                detail=_audit_detail(record, operator_id, request_id),
+            )
+        )
         await session.flush()
         logger.info("agent api key revoked", extra={"agent_id": agent_id, "key_id": key_id})
+        # E0-7（一键吊销）：吊销即失效（校验按 status 拒绝），并清理该主体可能存在的
+        # principal 快照缓存，确保在线 ≤60s 内不因缓存残留继续放行。
+        from openbase.modules.identity.verification import invalidate_principal_cache
+
+        invalidate_principal_cache(agent_id)
         return record
 
     @classmethod
@@ -156,14 +225,13 @@ async def resolve_agent_principal(session: AsyncSession, raw_key: str) -> dict[s
 
     assert_principal_active(user.status_state)
 
-    record.last_used_at = _now()
     role_result = await session.execute(
         select(Role.code)
         .join(user_role, user_role.c.role_id == Role.id)
         .where(user_role.c.user_id == user.id)
     )
     role_codes = list(role_result.scalars().all())
-    return {
+    principal = {
         "id": user.id,
         "username": user.username,
         "display_name": user.display_name,
@@ -177,3 +245,19 @@ async def resolve_agent_principal(session: AsyncSession, raw_key: str) -> dict[s
         "permissions": [],
         "auth_method": "sk-agent",
     }
+    # E0-7（P0-7）：last_used_at 必须提交才可见（get_db 请求会话关闭即回滚）。
+    # 先组装返回体再提交，避免 expire_on_commit=True 的会话在提交后触发异步懒加载；
+    # 使用痕迹写入失败不影响本次认证（尽力而为 + WARN 留痕）。
+    record.last_used_at = _now()
+    try:
+        await session.commit()
+    except Exception as exc:  # noqa: BLE001 - 使用痕迹落库失败不阻断认证
+        try:
+            await session.rollback()
+        except Exception:  # noqa: BLE001 - rollback 失败仅记录
+            pass
+        logger.warning(
+            "agent key last_used_at persist failed",
+            extra={"agent_id": user.id, "key_id": record.id, "error": str(exc) or exc.__class__.__name__},
+        )
+    return principal

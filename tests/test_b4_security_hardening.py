@@ -639,3 +639,119 @@ def test_b4_22_row_missing_policy_source_and_reject_derivation() -> None:
     explicit = Settings(jwt_secret=_SECRET, principal_row_missing_policy="reject")
     assert explicit.principal_row_missing_policy_source == "explicit_reject"
     assert explicit.principal_row_missing_reject is True
+
+
+# ---------------------------------------------------------------------------
+# E0-6（边缘离线宽限）：DB 不可达时按「最近成功校验」标记裁定读写
+# ---------------------------------------------------------------------------
+
+
+def _install_verified_marker(
+    monkeypatch: pytest.MonkeyPatch, subject: str, verified_at: float | None
+) -> None:
+    """桩 Redis 缓存并写入最近成功校验标记（None = 无标记）."""
+    store: dict[str, Any] = {}
+
+    def _cache_get(key: str) -> Any:
+        return store.get(key)
+
+    def _cache_set(key: str, value: Any, ttl: int = 60) -> bool:
+        store[key] = value
+        return True
+
+    def _cache_delete(*keys: str) -> bool:
+        for key in keys:
+            store.pop(key, None)
+        return True
+
+    monkeypatch.setattr(verification_module.cache_client, "cache_get", _cache_get)
+    monkeypatch.setattr(verification_module.cache_client, "cache_set", _cache_set)
+    monkeypatch.setattr(verification_module.cache_client, "cache_delete", _cache_delete)
+    if verified_at is not None:
+        store[f"{verification_module.PRINCIPAL_VERIFIED_AT_PREFIX}{subject}"] = {
+            "verified_at": verified_at
+        }
+
+
+def test_e0_6_db_down_within_grace_allows_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DB 不可达 + 最近成功校验在宽限期内 → 放行并留痕 offline_grace."""
+    import time as _time
+
+    _apply_settings(monkeypatch, principal_offline_grace_hours=72)
+    _install_verified_marker(monkeypatch, "42", _time.time() - 3600)
+
+    async def _run() -> tuple[Any, dict[str, Any] | None]:
+        result = await verification_module.verify_principal(
+            _DownSession(), {"sub": "42", "tvn": 0}, request_method="POST"
+        )
+        return result, verification_module.consume_degraded_verify_trace()
+
+    result, trace = asyncio.run(_run())
+    assert result is None
+    assert trace is not None and trace["reason"] == "db_unavailable_offline_grace"
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["db_degraded_policy_allow"] == 1
+    assert metrics["db_degraded_denied"] == 0
+
+
+def test_e0_6_db_down_grace_expired_write_denied(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DB 不可达 + 宽限超期 + 写操作 → 503 fail-closed（offline_grace_expired）."""
+    import time as _time
+
+    _apply_settings(monkeypatch, principal_offline_grace_hours=72)
+    _install_verified_marker(monkeypatch, "42", _time.time() - 73 * 3600)
+
+    with pytest.raises(BaseError) as exc_info:
+        asyncio.run(
+            verification_module.verify_principal(
+                _DownSession(), {"sub": "42", "tvn": 0}, request_method="PATCH"
+            )
+        )
+    assert exc_info.value.code == ErrorCode.SYS_SOURCE_UNAVAILABLE
+    assert exc_info.value.detail["reason"] == "offline_grace_expired"
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["db_degraded_denied"] == 1
+    assert metrics["db_degraded_policy_allow"] == 0
+
+
+def test_e0_6_db_down_grace_expired_read_degraded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DB 不可达 + 宽限超期 + 只读请求 → 降级放行（留痕 offline_grace_readonly）."""
+    import time as _time
+
+    _apply_settings(monkeypatch, principal_offline_grace_hours=72)
+    _install_verified_marker(monkeypatch, "42", _time.time() - 73 * 3600)
+
+    async def _run() -> tuple[Any, dict[str, Any] | None]:
+        result = await verification_module.verify_principal(
+            _DownSession(), {"sub": "42", "tvn": 0}, request_method="GET"
+        )
+        return result, verification_module.consume_degraded_verify_trace()
+
+    result, trace = asyncio.run(_run())
+    assert result is None
+    assert trace is not None
+    assert trace["reason"] == "db_unavailable_offline_grace_readonly"
+
+
+def test_e0_6_no_marker_keeps_existing_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """无「最近成功校验」标记（从未在线校验/缓存不可用）→ 沿用既有环境策略."""
+    _apply_settings(monkeypatch)
+    _install_verified_marker(monkeypatch, "42", None)
+
+    result = asyncio.run(
+        verification_module.verify_principal(
+            _DownSession(), {"sub": "42", "tvn": 0}, request_method="POST"
+        )
+    )
+    assert result is None
+    metrics = verification_module.get_verdict_metrics()
+    assert metrics["db_degraded_policy_allow"] == 1
+
+
+def test_e0_6_cache_ttl_and_grace_settings_defaults() -> None:
+    """默认：快照缓存 TTL 900s（15 分钟）、离线宽限 72 小时（边缘场景口径）."""
+    settings = Settings(jwt_secret=_SECRET)
+    assert settings.principal_cache_ttl_seconds == 900
+    assert settings.principal_offline_grace_hours == 72

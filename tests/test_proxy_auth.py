@@ -124,3 +124,70 @@ def test_proxy_jwt_authenticates() -> None:
     assert resp.status_code not in (401, 403), resp.text
     body = resp.json()
     assert not str(body.get("code", "")).startswith(("AUTH", "PERM"))
+
+
+# ---- E0-3（R2）：服务 Key 租户 scope 生效 ----
+
+def _tenant_token(tenant_code: str) -> str:
+    """签发携带 tenant_code 的访问 Token（仅用于租户声明，签名有效）."""
+    from openbase.modules.auth.jwt import create_access_token
+
+    return create_access_token("admin", username="admin", tenant_code=tenant_code)
+
+
+def test_tenant_scoped_key_requires_tenant_declaration() -> None:
+    """租户受限 Key 未声明租户 → 403（tenant_required，不得静默放行）."""
+    admin_token = _token("admin", "admin123")
+    key = _create_key(
+        admin_token, "svc-site-a", {"system": ["openllm"], "tenants": ["site-a"]}
+    )
+
+    resp = client.get("/api/v1/proxy/openllm/chat", headers={"X-API-Key": key})
+    assert resp.status_code == 403, resp.text
+    assert resp.json()["code"] == "PERM_API_KEY_SCOPE"
+    assert resp.json()["detail"]["reason"] == "tenant_required"
+
+
+def test_tenant_scoped_key_rejects_cross_tenant() -> None:
+    """跨站点：Key scope=site-a，声明 site-b → 403."""
+    admin_token = _token("admin", "admin123")
+    key = _create_key(
+        admin_token, "svc-site-a-x", {"system": ["openllm"], "tenants": ["site-a"]}
+    )
+
+    resp = client.get(
+        "/api/v1/proxy/openllm/chat",
+        headers={"X-API-Key": key, "Authorization": f"Bearer {_tenant_token('site-b')}"},
+    )
+    assert resp.status_code == 403, resp.text
+    assert resp.json()["code"] == "PERM_API_KEY_SCOPE"
+
+
+def test_tenant_scoped_key_allows_matching_tenant() -> None:
+    """同站点：Key scope=site-a，声明 site-a → 认证通过（非 401/403）."""
+    admin_token = _token("admin", "admin123")
+    key = _create_key(
+        admin_token, "svc-site-a-ok", {"system": ["openllm"], "tenants": ["site-a"]}
+    )
+
+    resp = client.get(
+        "/api/v1/proxy/openllm/chat",
+        headers={"X-API-Key": key, "Authorization": f"Bearer {_tenant_token('site-a')}"},
+    )
+    assert resp.status_code not in (401, 403), resp.text
+
+
+def test_untrusted_tenant_header_is_not_trusted() -> None:
+    """非受信来源自带 X-Tenant-Id 不采信 → 仍按「未声明租户」拒绝."""
+    admin_token = _token("admin", "admin123")
+    key = _create_key(
+        admin_token, "svc-site-a-hdr", {"system": ["openllm"], "tenants": ["site-a"]}
+    )
+
+    resp = client.get(
+        "/api/v1/proxy/openllm/chat",
+        headers={"X-API-Key": key, "X-Tenant-Id": "site-a"},
+    )
+    assert resp.status_code == 403, resp.text
+    assert resp.json()["code"] == "PERM_API_KEY_SCOPE"
+    assert resp.json()["detail"]["reason"] == "tenant_required"

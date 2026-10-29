@@ -338,6 +338,14 @@ class Settings(BaseSettings):
     # 约束（fail-fast）：production 下**不得**为 "allow"（避免误配回退 fail-open），
     # 否则拒绝启动（见 `_validate_principal_row_missing_policy`）。
     principal_row_missing_policy: str = ""
+    # E0-6（边缘离线宽限，AI 边缘终端场景）：本地主体快照缓存 TTL（秒，默认 900 =
+    # 15 分钟），减少终端每请求回源控制面；Redis 不可用视为未命中直读 DB（不变）。
+    principal_cache_ttl_seconds: int = 900
+    # E0-6：离线最长宽限（小时，默认 72）。DB 不可达时的裁定顺序（兼容既有策略）：
+    # 委托 → 显式白名单 → reject 策略（仍 fail-closed）→ 宽限判定 → 环境/策略 allow。
+    # 宽限判定基于「最近一次成功校验」时间标记：宽限期内放行（留痕 offline_grace）；
+    # 超期后**写操作 fail-closed**（503），只读请求降级放行（留痕 offline_grace_readonly）。
+    principal_offline_grace_hours: int = 72
     # bcrypt 成本因子（默认 12 ≈ 400-600ms；并发敏感场景可调低至 10 ≈ 200ms）
     bcrypt_rounds: int = 12
     # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）

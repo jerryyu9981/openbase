@@ -144,7 +144,7 @@ def test_module_service_fallback():
 # ---- auth /me 端点（v1.2.0 登录链路修复回归） ----
 
 def test_auth_me_returns_wildcard_for_admin():
-    """admin 用户 me 返回通配权限（DB RBAC 未就绪时兜底）."""
+    """内置 admin 角色 me 返回通配权限（E0-5：显式超管权限点，DB RBAC 未就绪时兜底）."""
     from openbase.core.db.session import get_db
     from openbase.modules.auth import router as auth_router
 
@@ -161,7 +161,10 @@ def test_auth_me_returns_wildcard_for_admin():
     app.include_router(auth_router)
     app.dependency_overrides[get_db] = lambda: FakeSession()
     client = TestClient(app)
-    token = create_access_token("1", username="admin", tenant_id="openbase")
+    # E0-5：超管身份来自 role/system:superadmin 权限点（不再按用户名硬编码）
+    token = create_access_token(
+        "1", username="admin", tenant_id="openbase", extra={"role": "admin"}
+    )
     resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
     body = resp.json()

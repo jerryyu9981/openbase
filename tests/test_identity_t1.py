@@ -421,6 +421,88 @@ def test_t1_6_rotate_and_revoke_agent_key() -> None:
     assert len(listed) == 2
 
 
+# ---- E0-4 / E0-7（R4 审计落库 + last_used_at 提交）----
+
+
+def test_e0_4_agent_key_lifecycle_writes_audit() -> None:
+    """签发/吊销 agent Key 均写 AuditLog（含 key_id/agent_id/操作人；不含明文与哈希）."""
+    admin_headers = _admin_headers()
+    created = _create_agent(admin_headers, display_name="Audit Agent")
+    agent_id = created["agent_id"]
+    key_id = created["api_key"]["id"]
+    raw_key = created["api_key"]["raw_key"]
+
+    rows = _rows(
+        "SELECT action, resource, resource_id, request_id, detail FROM audit_logs "
+        f"WHERE resource = 'agent_api_keys' AND resource_id = '{key_id}'"
+    )
+    issue_rows = [row for row in rows if row[0] == "identity.agent_key.issue"]
+    assert len(issue_rows) == 1, rows
+    _action, resource, resource_id, request_id, detail = issue_rows[0]
+    assert resource == "agent_api_keys"
+    assert str(resource_id) == str(key_id)
+    assert request_id
+    assert raw_key not in (detail or "")
+    assert hashlib.sha256(raw_key.encode("utf-8")).hexdigest() not in (detail or "")
+    assert f'"agent_id": {agent_id}' in (detail or "")
+
+    revoke_resp = client.delete(
+        f"/api/v1/identity/agents/{agent_id}/keys/{key_id}", headers=admin_headers
+    )
+    assert revoke_resp.status_code == 200, revoke_resp.text
+    rows = _rows(
+        "SELECT action, detail FROM audit_logs "
+        f"WHERE resource = 'agent_api_keys' AND resource_id = '{key_id}'"
+    )
+    revoke_rows = [row for row in rows if row[0] == "identity.agent_key.revoke"]
+    assert len(revoke_rows) == 1, rows
+    assert raw_key not in (revoke_rows[0][1] or "")
+
+
+def test_e0_7_agent_key_last_used_at_is_persisted() -> None:
+    """sk-agent 认证成功后 last_used_at 落库（请求会话关闭不回滚）."""
+    created = _create_agent(_admin_headers())
+    key_id = created["api_key"]["id"]
+    raw_key = created["api_key"]["raw_key"]
+
+    before = _rows(f"SELECT last_used_at FROM agent_api_keys WHERE id = {key_id}")
+    assert before and before[0][0] is None
+
+    resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {raw_key}"})
+    assert resp.status_code == 200, resp.text
+
+    after = _rows(f"SELECT last_used_at FROM agent_api_keys WHERE id = {key_id}")
+    assert after and after[0][0] is not None
+
+
+def test_e0_1_device_credential_expiry_and_guidance(caplog) -> None:
+    """设备身份化：sk-agent 支持 expires_at；未设有效期签发给出运维提示（E0-1）."""
+    import datetime as dt
+    import logging
+
+    admin_headers = _admin_headers()
+    with caplog.at_level(logging.WARNING, logger="openbase.identity.agent_keys"):
+        created = _create_agent(admin_headers)
+    assert any(
+        "without expires_at" in record.getMessage() for record in caplog.records
+    ), "未设有效期的设备凭据签发必须给出运维提示"
+
+    agent_id = created["agent_id"]
+    expires = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=30)).isoformat()
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="openbase.identity.agent_keys"):
+        resp = client.post(
+            f"/api/v1/identity/agents/{agent_id}/keys",
+            json={"name": "device-expiring", "expires_at": expires},
+            headers=admin_headers,
+        )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["expires_at"] is not None
+    assert not any(
+        "without expires_at" in record.getMessage() for record in caplog.records
+    )
+
+
 # ---- T1-7 / T1-8（迁移幂等与存量回填）----
 
 _LEGACY_USERS_DDL = """

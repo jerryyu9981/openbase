@@ -166,7 +166,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         session_factory = get_session_factory()
         async with session_factory() as session:
             snapshot = await principal_verification.verify_principal(
-                session, payload, request_id=request_id
+                session,
+                payload,
+                request_id=request_id,
+                request_method=request.method,
             )
         _annotate_degraded_verify(request, principal_verification)
         # v1.4.11 性能：标注已完成门禁的主体，供 get_current_user 复用，
@@ -320,7 +323,10 @@ async def get_current_user(
     # （如 PUBLIC_PREFIXES 中的 /proxy）仍在此处执行完整校验。
     if getattr(request.state, "verified_principal_subject", None) != str(user_id):
         await principal_verification.verify_principal(
-            session, payload, request_id=getattr(request.state, "request_id", None)
+            session,
+            payload,
+            request_id=getattr(request.state, "request_id", None),
+            request_method=request.method,
         )
         _annotate_degraded_verify(request, principal_verification)
 
@@ -498,7 +504,8 @@ async def require_api_key(
     """服务级 API Key 认证（网关 /proxy 双通道：JWT 优先 + Key 回退）.
 
     从 X-API-Key 头或 Authorization: Bearer <key> 提取 Key；
-    校验有效性 + scope（system 从请求路径提取）。
+    校验有效性 + scope（system 从请求路径提取，租户从受信 ``X-Tenant-Id``
+    或 JWT ``tenant_code`` 解析——E0-3/R2）。
 
     v1.5：校验改查 ``service_api_keys`` 表（原内存态 ApiKeyStore 重启即失效），
     因此依赖增加 ``session``。
@@ -533,14 +540,27 @@ async def require_api_key(
 
     from openbase.modules.auth.service_keys import ServiceKeyService, scope_allows
 
+    tenant_id = await get_current_tenant(request)
     credential = await ServiceKeyService.lookup(session, key)
     if credential is None:
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "invalid api key")
-    if not scope_allows(credential["scope"], system, None):
+    if not scope_allows(credential["scope"], system, tenant_id):
         raise BaseError(ErrorCode.PERM_API_KEY_SCOPE, "api key scope mismatch")
+    # 租户受限 Key 必须能确定当前租户，否则「不声明租户」即可绕过站点隔离。
+    scope_tenants = (credential.get("scope") or {}).get("tenants") or ["*"]
+    if tenant_id is None and "*" not in scope_tenants:
+        raise BaseError(
+            ErrorCode.PERM_API_KEY_SCOPE,
+            "api key scope mismatch",
+            detail={"reason": "tenant_required", "system": system},
+        )
     # 认证方式显式标记（与 identity_context 的 auth_method 取值域一致）：
     # 服务 Key 记录自带稳定 id（uuid），调用方不得以「有无 id」推断认证通道。
-    return {**credential, "auth_method": "service-key"}
+    return {
+        **credential,
+        "auth_method": "service-key",
+        "tenant_id": tenant_id,
+    }
 
 
 async def get_proxy_identity(

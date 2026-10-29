@@ -20,7 +20,27 @@ from openbase.core.models import Permission, Role, role_permission, user_role
 
 logger = logging.getLogger("openbase.auth.rbac")
 
-__all__ = ["require_permission", "has_permission", "PermissionStore", "PermissionService"]
+__all__ = [
+    "BUILTIN_ROLE_PERMISSIONS",
+    "SUPERADMIN_PERMISSION",
+    "ensure_user_permission",
+    "has_permission",
+    "is_superadmin",
+    "require_permission",
+    "resolve_user_permissions",
+    "PermissionStore",
+    "PermissionService",
+]
+
+# E0-5（R5/P0-5）：显式超管权限点。取代 ``username == "admin"`` 硬编码通配：
+# 管理面统一按权限点判定，超管身份来自角色/权限矩阵（可审计、可改名、可多管理员）。
+SUPERADMIN_PERMISSION = "system:superadmin"
+
+# 内置角色锚点：DB 权限矩阵不可用（内存降级/未初始化库）时，按 JWT ``role`` claim
+# 映射显式权限点。admin 是内置系统角色（DB 种子中持 ``*``），此处保持等价语义。
+BUILTIN_ROLE_PERMISSIONS: dict[str, list[str]] = {
+    "admin": [SUPERADMIN_PERMISSION],
+}
 
 
 class PermissionStore:
@@ -165,3 +185,45 @@ def has_permission(permissions: list[str], code: str) -> bool:
         是否授权。
     """
     return "*" in permissions or code in permissions
+
+
+def is_superadmin(permissions: list[str] | None) -> bool:
+    """是否持显式超管权限点（``system:superadmin`` 或通配 ``*``）."""
+    granted = permissions or []
+    return SUPERADMIN_PERMISSION in granted or "*" in granted
+
+
+async def resolve_user_permissions(
+    session: AsyncSession, user: dict
+) -> list[str]:
+    """汇总当前主体权限点（E0-5）：payload 透传 + DB 矩阵 + 内置角色锚点兜底.
+
+    优先级：payload ``permissions`` claim 与 DB 权限矩阵并集（去重保序）；
+    两者皆空（内存降级 / 库未初始化）时按 JWT ``role`` claim 映射内置角色权限
+    （仅内置 admin → ``system:superadmin``），保证内置管理员在新口径下仍可用。
+    """
+    payload_permissions = list(user.get("permissions") or [])
+    db_permissions = await PermissionService.permissions_for_with_fallback(
+        session, str(user.get("id", ""))
+    )
+    merged = list(dict.fromkeys([*payload_permissions, *db_permissions]))
+    if merged:
+        return merged
+    return list(BUILTIN_ROLE_PERMISSIONS.get(str(user.get("role") or ""), []))
+
+
+async def ensure_user_permission(
+    session: AsyncSession,
+    user: dict,
+    permission_code: str,
+    error_code: ErrorCode = ErrorCode.PERM_FORBIDDEN,
+) -> dict:
+    """统一权限门禁：超管权限点/通配放行，否则按权限码判定.
+
+    Raises:
+        BaseError: 未授权 → ``error_code``（默认 PERM_FORBIDDEN）。
+    """
+    permissions = await resolve_user_permissions(session, user)
+    if is_superadmin(permissions) or has_permission(permissions, permission_code):
+        return user
+    raise BaseError(error_code, f"missing permission: {permission_code}")

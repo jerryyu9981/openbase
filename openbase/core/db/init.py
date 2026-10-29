@@ -125,6 +125,26 @@ async def init_database(engine: AsyncEngine, schema: str = "openbase") -> None:
                 f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
             )
         )
+        # E0-5（R5/P0-5）：显式超管权限点种子 + 授予内置 admin 角色（幂等）。
+        # 取代应用层 username=="admin" 硬编码通配；admin 仍可用，但走 RBAC 显式权限。
+        await conn.execute(
+            text(
+                f"INSERT INTO {schema}.permissions "
+                "(code, name, module, type, created_at, updated_at) "
+                "SELECT 'system:superadmin', '内置超管', 'system', 1, now(), now() "
+                f"WHERE NOT EXISTS (SELECT 1 FROM {schema}.permissions "
+                "WHERE code = 'system:superadmin')"
+            )
+        )
+        await conn.execute(
+            text(
+                f"INSERT INTO {schema}.role_permission (role_id, permission_id) "
+                f"SELECT r.id, p.id FROM {schema}.roles r, {schema}.permissions p "
+                f"WHERE r.code = 'admin' AND p.code = 'system:superadmin' "
+                f"AND NOT EXISTS (SELECT 1 FROM {schema}.role_permission rp "
+                f"WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
+            )
+        )
         # v1.4.6+（统一前端模块查看权限点种子）：openllm/openrag/openmemory/dps/gateway。
         # 根因修复（走查发现 ①/网关权限缺失）：此前仅 admin 角色拥有 '*' 通配，
         # OIDC/本地非 admin 用户（含 org_admin）经 user→role→permission 链查询为空

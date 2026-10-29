@@ -2,7 +2,7 @@
 
 提供用户创建/列表/详情/启停/角色分配管理 API（/api/v1/users），数据落库
 （users 表 + user_role 关联），向后兼容既有 login/refresh/me 链路。
-权限：admin 通配放行 + RBAC 兜底（PermissionService 模式）。
+权限：显式超管权限点（system:superadmin / *）+ RBAC 兜底（E0-5）。
 """
 
 from __future__ import annotations
@@ -19,7 +19,6 @@ from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, User, user_role
 from openbase.modules.auth import hash_password, resolve_tenant_code
-from openbase.modules.auth.rbac import PermissionService, has_permission
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
     STATUS_STATE_PROVISIONED,
@@ -91,36 +90,22 @@ async def _require_user_manage(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> dict:
-    """用户管理权限校验（admin 通配放行 + RBAC 兜底）."""
-    if user.get("username") == "admin":
-        return user
-    payload_permissions: list[str] = user.get("permissions") or []
-    if has_permission(payload_permissions, USER_MANAGE_PERMISSION):
-        return user
-    db_permissions = await PermissionService.permissions_for_with_fallback(
-        session, str(user["id"])
-    )
-    if has_permission(db_permissions, USER_MANAGE_PERMISSION):
-        return user
-    raise BaseError(ErrorCode.PERM_FORBIDDEN, f"missing permission: {USER_MANAGE_PERMISSION}")
+    """用户管理权限校验（E0-5：显式超管权限点 + RBAC，无用户名硬编码）."""
+    from openbase.modules.auth.rbac import ensure_user_permission
+
+    await ensure_user_permission(session, user, USER_MANAGE_PERMISSION)
+    return user
 
 
 async def _require_user_view(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> dict:
-    """用户查看权限校验（admin 通配放行 + RBAC 兜底）."""
-    if user.get("username") == "admin":
-        return user
-    payload_permissions: list[str] = user.get("permissions") or []
-    if has_permission(payload_permissions, USER_VIEW_PERMISSION):
-        return user
-    db_permissions = await PermissionService.permissions_for_with_fallback(
-        session, str(user["id"])
-    )
-    if has_permission(db_permissions, USER_VIEW_PERMISSION):
-        return user
-    raise BaseError(ErrorCode.PERM_FORBIDDEN, f"missing permission: {USER_VIEW_PERMISSION}")
+    """用户查看权限校验（E0-5：显式超管权限点 + RBAC，无用户名硬编码）."""
+    from openbase.modules.auth.rbac import ensure_user_permission
+
+    await ensure_user_permission(session, user, USER_VIEW_PERMISSION)
+    return user
 
 
 # ---- Service 辅助 ----

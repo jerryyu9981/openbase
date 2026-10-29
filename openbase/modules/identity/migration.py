@@ -38,6 +38,12 @@ _IDENTITY_PERMISSIONS: tuple[tuple[str, str], ...] = (
     ("identity:purge", "数据清除"),
 )
 
+# E0-5（R5/P0-5）：显式超管权限点种子（取代 username=="admin" 硬编码通配）。
+# 仅登记权限行并授予内置 admin 角色（admin 角色已持 '*'，此处显式化便于交付审计）。
+_SYSTEM_PERMISSIONS: tuple[tuple[str, str], ...] = (
+    ("system:superadmin", "内置超管"),
+)
+
 
 def _qualify(schema: str | None, table: str) -> str:
     return f'"{schema}".{table}' if schema else table
@@ -138,6 +144,27 @@ async def apply_identity_migration(
                 ).bindparams(code=code, name=name)
             )
             summary["permissions_seeded"] += max(int(result.rowcount or 0), 0)
+
+        # 5) E0-5：显式超管权限点种子 + 授予内置 admin 角色（幂等）
+        for code, name in _SYSTEM_PERMISSIONS:
+            result = await conn.execute(
+                text(
+                    f"INSERT INTO {permissions_ref} (code, name, module, type, created_at, updated_at) "
+                    "SELECT :code, :name, 'system', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
+                    f"WHERE NOT EXISTS (SELECT 1 FROM {permissions_ref} WHERE code = :code)"
+                ).bindparams(code=code, name=name)
+            )
+            summary["permissions_seeded"] += max(int(result.rowcount or 0), 0)
+        await conn.execute(
+            text(
+                f"INSERT INTO {_qualify(schema, 'role_permission')} "
+                "(role_id, permission_id) "
+                f"SELECT r.id, p.id FROM {_qualify(schema, 'roles')} r, {permissions_ref} p "
+                "WHERE r.code = 'admin' AND p.code = 'system:superadmin' "
+                f"AND NOT EXISTS (SELECT 1 FROM {_qualify(schema, 'role_permission')} rp "
+                "WHERE rp.role_id = r.id AND rp.permission_id = p.id)"
+            )
+        )
 
     logger.info(
         "identity migration applied",

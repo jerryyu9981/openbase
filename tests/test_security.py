@@ -60,3 +60,43 @@ def test_unknown_route_with_token_404():
     client = _build(login=True)
     resp = client.get("/api/v1/not-exist")
     assert resp.status_code == 404
+
+
+# ---- E0-5（R5/P0-5）：超管判定改为显式权限点，不再按用户名 ----
+
+
+class _NoDbSession:
+    """DB 不可用会话桩：权限查询异常 → 回退内存 PermissionStore（空）."""
+
+    async def execute(self, _statement):  # noqa: ANN001 - 桩方法
+        raise RuntimeError("database unavailable")
+
+
+def _permission_granted(user: dict, permission_code: str = "tenant:manage") -> bool:
+    """调用统一权限门禁，返回是否放行."""
+    import asyncio
+
+    from openbase.core.errors import BaseError
+    from openbase.modules.auth.rbac import ensure_user_permission
+
+    async def _run() -> bool:
+        try:
+            await ensure_user_permission(_NoDbSession(), user, permission_code)
+        except BaseError:
+            return False
+        return True
+
+    return asyncio.run(_run())
+
+
+def test_superadmin_permission_point_replaces_username_hardcode():
+    """用户名 admin 不再自动放行；超管来自 system:superadmin / * / 内置 admin 角色."""
+    base = {"id": 1, "permissions": [], "role": "viewer"}
+    # 仅用户名 admin（无权限点、非 admin 角色）→ 拒绝（原有硬编码已被移除）
+    assert _permission_granted({**base, "username": "admin"}) is False
+    # 显式超管权限点 → 放行（任意用户名）
+    assert _permission_granted({**base, "username": "ops-a", "permissions": ["system:superadmin"]}) is True
+    # 持有目标权限点 → 放行
+    assert _permission_granted({**base, "username": "ops-b", "permissions": ["tenant:manage"]}) is True
+    # 内存降级（DB 无矩阵）：内置 admin 角色锚点 → 放行（改名/多管理员场景不再失效）
+    assert _permission_granted({**base, "username": "renamed-admin", "role": "admin"}) is True

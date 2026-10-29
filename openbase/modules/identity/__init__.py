@@ -22,7 +22,7 @@ import datetime as dt
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +31,6 @@ from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import AgentApiKey, OutboxEvent
-from openbase.modules.auth.rbac import PermissionService, has_permission
 from openbase.modules.identity.agent_keys import AgentKeyService
 from openbase.modules.identity.agents import (
     DEFAULT_AGENT_ROLE,
@@ -133,18 +132,11 @@ def _subject_id(user: dict) -> int | None:
 async def _check_permission(
     user: dict, session: AsyncSession, permission_code: str
 ) -> dict:
-    """identity 域权限校验（admin 通配放行 + payload/DB RBAC 兜底）."""
-    if user.get("username") == "admin":
-        return user
-    payload_permissions: list[str] = user.get("permissions") or []
-    if has_permission(payload_permissions, permission_code):
-        return user
-    db_permissions = await PermissionService.permissions_for_with_fallback(
-        session, str(user["id"])
-    )
-    if has_permission(db_permissions, permission_code):
-        return user
-    raise BaseError(ErrorCode.PERM_FORBIDDEN, f"missing permission: {permission_code}")
+    """identity 域权限校验（E0-5：显式超管权限点 + payload/DB RBAC，无用户名硬编码）."""
+    from openbase.modules.auth.rbac import ensure_user_permission
+
+    await ensure_user_permission(session, user, permission_code)
+    return user
 
 
 async def _require_identity_manage(
@@ -253,6 +245,7 @@ def _key_out(record: AgentApiKey, raw_key: str | None = None) -> AgentKeyOut:
 @router.post("/agents", response_model=AgentCreated)
 async def create_agent(
     payload: AgentCreateRequest,
+    request: Request,
     user: dict = Depends(_require_identity_manage),
     session: AsyncSession = Depends(get_db),
 ) -> AgentCreated:
@@ -271,6 +264,7 @@ async def create_agent(
         agent_id=agent.id,
         name=payload.key_name or payload.display_name,
         created_by=operator,
+        request_id=getattr(request.state, "request_id", None),
     )
     await session.commit()
     await session.refresh(agent)
@@ -308,6 +302,7 @@ async def list_agent_keys(
 async def issue_agent_key(
     agent_id: int,
     payload: AgentApiKeyCreateRequest,
+    request: Request,
     user: dict = Depends(_require_identity_manage),
     session: AsyncSession = Depends(get_db),
 ) -> AgentKeyOut:
@@ -319,6 +314,7 @@ async def issue_agent_key(
         name=payload.name or "rotated",
         expires_at=payload.expires_at,
         created_by=_subject_id(user),
+        request_id=getattr(request.state, "request_id", None),
     )
     await session.commit()
     return _key_out(record, raw_key)
@@ -328,12 +324,19 @@ async def issue_agent_key(
 async def revoke_agent_key(
     agent_id: int,
     key_id: int,
+    request: Request,
     user: dict = Depends(_require_identity_manage),
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """吊销单条 agent 密钥（即时失效：后续该校验 401）."""
+    """吊销单条 agent 密钥（即时失效：后续该校验 401；E0-4 审计落库）."""
     await ensure_agent_subject(session, agent_id)
-    record = await AgentKeyService.revoke_key(session, agent_id=agent_id, key_id=key_id)
+    record = await AgentKeyService.revoke_key(
+        session,
+        agent_id=agent_id,
+        key_id=key_id,
+        operator_id=_subject_id(user),
+        request_id=getattr(request.state, "request_id", None),
+    )
     await session.commit()
     logger.info(
         "identity agent key revoked",

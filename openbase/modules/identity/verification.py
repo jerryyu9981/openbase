@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from contextvars import ContextVar
 from typing import Any
 
@@ -56,9 +57,15 @@ from openbase.modules.identity.state_machine import (
 
 logger = logging.getLogger("openbase.identity.verification")
 
-# principal 快照缓存 TTL（设计 §12.1 风险 2：≤60s 兜底）
+# principal 快照缓存 TTL（默认兜底 60s；E0-6 起取 settings.principal_cache_ttl_seconds，
+# 边缘场景默认 900s；Redis 不可用视为未命中直读 DB）
 PRINCIPAL_CACHE_TTL_SECONDS = 60
 PRINCIPAL_CACHE_PREFIX = "principal:"
+
+# E0-6（边缘离线宽限）：最近一次「成功校验」时间标记（Redis，TTL = 宽限时长）。
+# 仅 DB 不可达时用于判定宽限窗口；写操作超期 fail-closed，只读降级放行。
+PRINCIPAL_VERIFIED_AT_PREFIX = "principal_verified_at:"
+PROTECTED_WRITE_METHODS: frozenset[str] = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 # P2-1 T2 WARN 指标计数（§5.1 D-V1/D-V2/T2-1/T2-9：verify-env 报告对账项）
 # B4 安全收紧：`db_degraded` 现统计「DB 降级且无委托」的全部裁定（放行 + 拒绝），
@@ -168,14 +175,73 @@ def _principal_cache_key(subject_id: int) -> str:
 
 
 def invalidate_principal_cache(subject_id: int, username: str | None = None) -> None:
-    """失效 principal/user 缓存键（状态/版本变更后调用，Redis 不可用静默降级）."""
+    """失效 principal/user/最近校验标记缓存键（状态/版本变更后调用，Redis 不可用静默降级）."""
     try:
-        keys = [_principal_cache_key(subject_id)]
+        keys = [
+            _principal_cache_key(subject_id),
+            f"{PRINCIPAL_VERIFIED_AT_PREFIX}{subject_id}",
+        ]
         if username:
             keys.append(f"user:{username}")
         cache_client.cache_delete(*keys)
     except Exception as exc:  # noqa: BLE001 - 缓存降级不阻断状态迁移/认证
         logger.debug("principal cache invalidate skipped: %s", exc)
+
+
+def _cache_ttl_seconds() -> int:
+    """principal 快照缓存 TTL（E0-6：settings 可配，缺省兜底常量）."""
+    from openbase.settings import get_settings
+
+    try:
+        configured = int(getattr(get_settings(), "principal_cache_ttl_seconds", 0) or 0)
+    except (TypeError, ValueError):
+        configured = 0
+    return configured if configured > 0 else PRINCIPAL_CACHE_TTL_SECONDS
+
+
+def _grace_seconds() -> int:
+    """离线宽限窗口（秒）；0 表示关闭宽限（等价立即超期）."""
+    from openbase.settings import get_settings
+
+    try:
+        hours = int(getattr(get_settings(), "principal_offline_grace_hours", 0) or 0)
+    except (TypeError, ValueError):
+        hours = 0
+    return max(hours, 0) * 3600
+
+
+def _mark_principal_verified(subject_text: str) -> None:
+    """记录「最近一次成功校验」时间标记（Redis TTL = 宽限窗口；失败静默）."""
+    try:
+        cache_client.cache_set(
+            f"{PRINCIPAL_VERIFIED_AT_PREFIX}{subject_text}",
+            {"verified_at": time.time()},
+            ttl=max(_grace_seconds(), 60),
+        )
+    except Exception:  # noqa: BLE001 - 标记写入失败不阻断认证
+        logger.debug("principal verified marker skipped", extra={"subject": subject_text})
+
+
+def offline_grace_state(subject_text: str) -> str | None:
+    """离线宽限窗口状态：``within`` / ``expired`` / ``None``（无标记或 Redis 不可用）.
+
+    Returns:
+        - ``within``：最近一次成功校验在宽限窗口内；
+        - ``expired``：已超期（写操作应 fail-closed，只读降级放行）；
+        - ``None``：无标记（从未成功校验）或缓存不可用 → 调用方沿用既有策略裁定。
+    """
+    try:
+        marker = cache_client.cache_get(f"{PRINCIPAL_VERIFIED_AT_PREFIX}{subject_text}")
+    except Exception:  # noqa: BLE001 - Redis 不可用视同无标记
+        return None
+    verified_at = marker.get("verified_at") if isinstance(marker, dict) else marker
+    try:
+        verified_ts = float(verified_at)
+    except (TypeError, ValueError):
+        return None
+    if _grace_seconds() <= 0:
+        return "expired"
+    return "within" if (time.time() - verified_ts) <= _grace_seconds() else "expired"
 
 
 def _cache_get_snapshot(subject_id: int) -> dict[str, Any] | None:
@@ -192,12 +258,12 @@ def _cache_get_snapshot(subject_id: int) -> dict[str, Any] | None:
 
 
 def _cache_set_snapshot(subject_id: int, snapshot: dict[str, Any]) -> None:
-    """写 principal 快照缓存（TTL 60s）."""
+    """写 principal 快照缓存（E0-6：TTL 取自 settings，默认 900s）."""
     try:
         cache_client.cache_set(
             _principal_cache_key(subject_id),
             snapshot,
-            ttl=PRINCIPAL_CACHE_TTL_SECONDS,
+            ttl=_cache_ttl_seconds(),
         )
     except Exception:  # noqa: BLE001 - Redis 不可用静默跳过
         logger.debug("principal cache set skipped: %s", subject_id)
@@ -274,6 +340,8 @@ async def load_principal_snapshot(
         "tenant_code": user.tenant_code,
     }
     _cache_set_snapshot(subject_id, snapshot)
+    # E0-6：记录「最近一次成功校验」时间，供 DB 不可达时判定离线宽限窗口
+    _mark_principal_verified(str(subject_id))
     return snapshot
 
 
@@ -289,6 +357,7 @@ async def verify_principal(
     payload: dict[str, Any],
     *,
     request_id: str | None = None,
+    request_method: str | None = None,
 ) -> dict[str, Any] | None:
     """共享主体验证器：主体存在 + 状态 active +（开关开时）tvn 与版本一致.
 
@@ -299,6 +368,8 @@ async def verify_principal(
         session: 数据库会话。
         payload: 已验签解码的 access JWT payload。
         request_id: 请求关联 id（可选；用于拒绝/白名单放行留痕，缺省不附）。
+        request_method: HTTP 方法（可选；E0-6 离线宽限用于区分读写——超期后写操作
+            fail-closed、只读降级放行；缺省时不做宽限判定，沿用既有策略）。
 
     Returns:
         主体快照 dict（本地主体校验通过）；以下情形返回 None（调用方放行）：
@@ -400,13 +471,43 @@ async def verify_principal(
             ) from exc
         # 非生产（或显式 policy=allow）兼容放行：**仍 WARN + 留痕**（不得静默）。
         _metric_increment("db_degraded")
-        _metric_increment("db_degraded_policy_allow")
         policy_source = settings.principal_db_degraded_policy_source
-        reason = (
-            "db_unavailable_policy_allow"
-            if policy_source == "explicit_allow"
-            else "db_unavailable_env_allow"
-        )
+        # E0-6（边缘离线宽限）：调用方提供请求方法时，按「最近成功校验」标记裁定；
+        # 超期后写操作 fail-closed（503），只读请求降级放行（留痕 offline_grace_readonly）。
+        # 未提供请求方法（内部调用/纯函数用例）→ 不做宽限判定，沿用既有策略口径。
+        request_method_text = (request_method or "").upper()
+        grace_state = offline_grace_state(subject_text) if request_method_text else None
+        if request_method_text in PROTECTED_WRITE_METHODS and grace_state == "expired":
+            _metric_increment("db_degraded_denied")
+            logger.error(
+                "principal verify db degraded; offline grace expired (write denied)",
+                extra={
+                    "subject": subject_text,
+                    "reason": "offline_grace_expired",
+                    "request_id": request_id,
+                    "request_method": request_method_text,
+                    "decision": "deny",
+                },
+            )
+            raise BaseError(
+                ErrorCode.SYS_SOURCE_UNAVAILABLE,
+                "principal verification unavailable: offline grace expired",
+                detail={
+                    "subject": subject_text,
+                    "reason": "offline_grace_expired",
+                },
+            ) from exc
+        _metric_increment("db_degraded_policy_allow")
+        if grace_state == "within":
+            reason = "db_unavailable_offline_grace"
+        elif grace_state == "expired":
+            reason = "db_unavailable_offline_grace_readonly"
+        else:
+            reason = (
+                "db_unavailable_policy_allow"
+                if policy_source == "explicit_allow"
+                else "db_unavailable_env_allow"
+            )
         _record_degraded_verify_trace(subject_text, request_id, reason)
         logger.warning(
             "principal verify db degraded; environment/policy allow pass-through",
@@ -485,15 +586,44 @@ async def verify_principal(
                 "principal verification failed: principal row missing",
                 detail={"subject": subject_text, "reason": "row_missing"},
             )
+        # E0-6（边缘离线宽限）：行缺失 + 宽限超期 + 写操作 → fail-closed（只读降级放行）。
+        request_method_text = (request_method or "").upper()
+        grace_state = offline_grace_state(subject_text) if request_method_text else None
+        if request_method_text in PROTECTED_WRITE_METHODS and grace_state == "expired":
+            _metric_increment("row_missing")
+            _metric_increment("row_missing_denied")
+            logger.error(
+                "principal row missing; offline grace expired (write denied)",
+                extra={
+                    "subject": subject_text,
+                    "reason": "offline_grace_expired",
+                    "request_id": request_id,
+                    "request_method": request_method_text,
+                    "decision": "deny",
+                },
+            )
+            raise BaseError(
+                ErrorCode.AUTH_PRINCIPAL_DISABLED,
+                "principal verification failed: offline grace expired",
+                detail={
+                    "subject": subject_text,
+                    "reason": "offline_grace_expired",
+                },
+            )
         # 非生产（或显式 policy=allow）兼容放行：**仍 WARN + 留痕**（不得静默）。
         _metric_increment("row_missing")
         _metric_increment("row_missing_policy_allow")
         policy_source = settings.principal_row_missing_policy_source
-        reason = (
-            "row_missing_policy_allow"
-            if policy_source == "explicit_allow"
-            else "row_missing_env_allow"
-        )
+        if grace_state == "within":
+            reason = "row_missing_offline_grace"
+        elif grace_state == "expired":
+            reason = "row_missing_offline_grace_readonly"
+        else:
+            reason = (
+                "row_missing_policy_allow"
+                if policy_source == "explicit_allow"
+                else "row_missing_env_allow"
+            )
         _record_degraded_verify_trace(subject_text, request_id, reason)
         logger.warning(
             "principal row missing; environment/policy allow pass-through",
@@ -535,11 +665,14 @@ async def verify_principal(
 
 __all__ = [
     "PRINCIPAL_CACHE_TTL_SECONDS",
+    "PRINCIPAL_VERIFIED_AT_PREFIX",
+    "PROTECTED_WRITE_METHODS",
     "assert_principal_active",
     "consume_degraded_allowlist_trace",
     "consume_degraded_verify_trace",
     "get_verdict_metrics",
     "invalidate_principal_cache",
     "load_principal_snapshot",
+    "offline_grace_state",
     "verify_principal",
 ]

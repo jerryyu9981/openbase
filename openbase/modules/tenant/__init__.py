@@ -213,44 +213,22 @@ async def _require_tenant_manage(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> dict:
-    """租户管理权限校验（admin 通配放行 + RBAC 兜底）."""
-    from openbase.modules.auth.rbac import PermissionService, has_permission
+    """租户管理权限校验（E0-5：显式超管权限点 + RBAC，无用户名硬编码）."""
+    from openbase.modules.auth.rbac import ensure_user_permission
 
-    if user.get("username") == "admin":
-        return user
-    payload_permissions: list[str] = user.get("permissions") or []
-    if has_permission(payload_permissions, "tenant:manage"):
-        return user
-    db_permissions = await PermissionService.permissions_for_with_fallback(
-        session, str(user["id"])
-    )
-    if has_permission(db_permissions, "tenant:manage"):
-        return user
-    from openbase.core.errors import BaseError, ErrorCode
-
-    raise BaseError(ErrorCode.PERM_FORBIDDEN, "missing permission: tenant:manage")
+    await ensure_user_permission(session, user, "tenant:manage")
+    return user
 
 
 async def _require_tenant_view(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> dict:
-    """租户查看权限校验（admin 通配放行 + RBAC 兜底）."""
-    from openbase.modules.auth.rbac import PermissionService, has_permission
+    """租户查看权限校验（E0-5：显式超管权限点 + RBAC，无用户名硬编码）."""
+    from openbase.modules.auth.rbac import ensure_user_permission
 
-    if user.get("username") == "admin":
-        return user
-    payload_permissions: list[str] = user.get("permissions") or []
-    if has_permission(payload_permissions, "tenant:view"):
-        return user
-    db_permissions = await PermissionService.permissions_for_with_fallback(
-        session, str(user["id"])
-    )
-    if has_permission(db_permissions, "tenant:view"):
-        return user
-    from openbase.core.errors import BaseError, ErrorCode
-
-    raise BaseError(ErrorCode.PERM_FORBIDDEN, "missing permission: tenant:view")
+    await ensure_user_permission(session, user, "tenant:view")
+    return user
 
 
 def _tenant_to_out(tenant) -> dict:

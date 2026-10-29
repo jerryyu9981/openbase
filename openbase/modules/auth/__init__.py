@@ -10,7 +10,7 @@ import asyncio
 import logging
 import re
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +23,6 @@ from openbase.modules.auth.jwt import (
     decode_refresh_token,
     issue_token_pair,
 )
-from openbase.modules.auth.rbac import PermissionService, has_permission
 from openbase.modules.auth.service_keys import ServiceKeyService, public_record
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
@@ -500,11 +499,11 @@ async def _load_profile_user(session: AsyncSession, user_id: int | str) -> User 
 
 async def _build_me_response(session: AsyncSession, user: dict) -> MeResponse:
     """构建 /auth/me 响应（权限 + 资料字段）."""
-    from openbase.modules.auth.rbac import PermissionService
+    from openbase.modules.auth.rbac import is_superadmin, resolve_user_permissions
 
-    permissions = await PermissionService.permissions_for_with_fallback(session, str(user["id"]))
-    # 系统管理员（admin）兜底通配权限：数据库 RBAC 关联未就绪时保证全模块可见
-    if user.get("username") == "admin" and "*" not in permissions:
+    permissions = await resolve_user_permissions(session, user)
+    # E0-5（R5）：超管（system:superadmin / * 通配）兜底通配，前端全模块可见
+    if is_superadmin(permissions) and "*" not in permissions:
         permissions = ["*", *permissions]
     row = await _load_profile_user(session, user["id"])
     return MeResponse(
@@ -728,7 +727,7 @@ AUTH_API_KEY_PERMISSIONS = ("auth:api-keys:manage", "auth:api-keys:view")
 async def _check_api_key_permission(
     user: dict, session: AsyncSession, permission_code: str
 ) -> None:
-    """服务 Key 权限校验（admin 通配放行 + RBAC 兜底）.
+    """服务 Key 权限校验（E0-5：显式超管权限点 + RBAC，无用户名硬编码）.
 
     Args:
         user: 当前用户（get_current_user 结果）。
@@ -738,21 +737,20 @@ async def _check_api_key_permission(
     Raises:
         BaseError: 无权限 → AUTH_FORBIDDEN。
     """
-    if user.get("username") == "admin":
-        return
-    payload_permissions: list[str] = user.get("permissions") or []
-    if has_permission(payload_permissions, permission_code):
-        return
-    db_permissions = await PermissionService.permissions_for_with_fallback(
-        session, str(user["id"])
+    from openbase.modules.auth.rbac import ensure_user_permission
+
+    await ensure_user_permission(
+        session,
+        user,
+        permission_code,
+        error_code=ErrorCode.AUTH_FORBIDDEN,
     )
-    if not has_permission(db_permissions, permission_code):
-        raise BaseError(ErrorCode.AUTH_FORBIDDEN, f"missing permission: {permission_code}")
 
 
 @router.post("/api-keys", response_model=ApiKeyOut)
 async def create_api_key(
     payload: ApiKeyCreate,
+    request: Request,
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> ApiKeyOut:
@@ -760,6 +758,7 @@ async def create_api_key(
 
     返回明文 Key（仅此一次）；scope 限定可访问系统与租户。
     v1.5：签发记录落 ``service_api_keys`` 表，重启后仍有效（原内存态失效缺陷修复）。
+    E0-4：同事务写审计（key_id/name/scope/操作人/request_id）。
     """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
     raw_key, record = await ServiceKeyService.issue(
@@ -768,6 +767,7 @@ async def create_api_key(
         scope=payload.scope,
         description=payload.description,
         created_by=int(user["id"]) if str(user.get("id", "")).isdigit() else None,
+        request_id=getattr(request.state, "request_id", None),
     )
     await session.commit()
     return ApiKeyOut(
@@ -795,6 +795,7 @@ async def list_api_keys(
 @router.delete("/api-keys/by-id/{key_id}", response_model=dict[str, str])
 async def revoke_api_key_by_id(
     key_id: str,
+    request: Request,
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
@@ -802,9 +803,16 @@ async def revoke_api_key_by_id(
 
     列表已回显 ``id``，前端无需持有明文即可吊销；保留原「按明文 Key」端点
     以兼容既有调用方。
+    E0-4：同事务写审计（操作人/request_id；不含明文）。
     """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
-    if not await ServiceKeyService.revoke_by_id(session, key_id):
+    operator_id = int(user["id"]) if str(user.get("id", "")).isdigit() else None
+    if not await ServiceKeyService.revoke_by_id(
+        session,
+        key_id,
+        operator_id=operator_id,
+        request_id=getattr(request.state, "request_id", None),
+    ):
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"api key not found: {key_id}")
     await session.commit()
     return {"revoked": key_id}
@@ -813,12 +821,22 @@ async def revoke_api_key_by_id(
 @router.delete("/api-keys/{raw_key}", response_model=dict[str, str])
 async def revoke_api_key(
     raw_key: str,
+    request: Request,
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    """吊销服务 Key（需 auth:api-keys:manage）."""
+    """吊销服务 Key（需 auth:api-keys:manage）.
+
+    E0-4：同事务写审计（操作人/request_id；不含明文）。
+    """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
-    await ServiceKeyService.revoke_by_raw(session, raw_key)
+    operator_id = int(user["id"]) if str(user.get("id", "")).isdigit() else None
+    await ServiceKeyService.revoke_by_raw(
+        session,
+        raw_key,
+        operator_id=operator_id,
+        request_id=getattr(request.state, "request_id", None),
+    )
     await session.commit()
     return {"revoked": raw_key}
 

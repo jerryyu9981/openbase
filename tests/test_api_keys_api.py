@@ -1,6 +1,8 @@
 """测试 v1.4.1 服务 Key 签发 API 层（R-367 补充：POST/GET/DELETE /api/v1/auth/api-keys）."""
 
 import asyncio
+import json
+import sqlite3
 import tempfile
 import uuid
 from pathlib import Path
@@ -121,3 +123,57 @@ def test_api_key_permission_required() -> None:
 def test_api_key_list_requires_auth() -> None:
     """未登录列表 → 401."""
     assert client.get("/api/v1/auth/api-keys").status_code == 401
+
+
+# ---- E0-4（R4/P0-4）：服务 Key 签发/吊销审计落库 ----
+
+
+def _audit_rows(key_id: str) -> list[tuple]:
+    conn = sqlite3.connect(_DB_PATH)
+    try:
+        return conn.execute(
+            "SELECT action, resource, resource_id, request_id, detail FROM audit_logs "
+            "WHERE resource = 'service_api_keys' AND resource_id = ?",
+            (key_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def test_api_key_lifecycle_writes_audit_without_plaintext() -> None:
+    """签发与吊销均写 AuditLog（key_id/name/scope/操作人/request_id；不含明文）。"""
+    admin_token = _token("admin", "admin123")
+    name = _unique("svc-audit")
+
+    create_resp = client.post(
+        "/api/v1/auth/api-keys",
+        json={"name": name, "scope": {"system": ["openllm"], "tenants": ["*"]}},
+        headers=_auth(admin_token),
+    )
+    assert create_resp.status_code == 200, create_resp.text
+    body = create_resp.json()
+    key_id = body["id"]
+    raw_key = body["key"]
+
+    rows = _audit_rows(key_id)
+    issue_rows = [row for row in rows if row[0] == "auth.service_key.issue"]
+    assert len(issue_rows) == 1, rows
+    _action, resource, resource_id, request_id, detail = issue_rows[0]
+    assert resource == "service_api_keys"
+    assert str(resource_id) == key_id
+    assert request_id
+    assert raw_key not in (detail or "")
+    detail_obj = json.loads(detail)
+    assert detail_obj["key_id"] == key_id
+    assert detail_obj["name"] == name
+    assert detail_obj["scope"]["system"] == ["openllm"]
+
+    revoke_resp = client.delete(
+        f"/api/v1/auth/api-keys/by-id/{key_id}", headers=_auth(admin_token)
+    )
+    assert revoke_resp.status_code == 200, revoke_resp.text
+
+    rows = _audit_rows(key_id)
+    revoke_rows = [row for row in rows if row[0] == "auth.service_key.revoke"]
+    assert len(revoke_rows) == 1, rows
+    assert raw_key not in (revoke_rows[0][4] or "")

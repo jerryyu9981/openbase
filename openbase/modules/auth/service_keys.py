@@ -21,13 +21,35 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from openbase.core.models import ServiceApiKey
+from openbase.core.models import AuditLog, ServiceApiKey
 
 logger = logging.getLogger("openbase.auth.service_keys")
 
 SERVICE_KEY_PREFIX = "ob_k_"
 SERVICE_KEY_STATUS_ACTIVE = "active"
 SERVICE_KEY_STATUS_REVOKED = "revoked"
+
+# E0-4（R4/P0-4）：Key 生命周期审计动作码（审计表 action 列）
+ACTION_SERVICE_KEY_ISSUE = "auth.service_key.issue"
+ACTION_SERVICE_KEY_REVOKE = "auth.service_key.revoke"
+AUDIT_RESOURCE_SERVICE_KEY = "service_api_keys"
+
+
+def _audit_request_id(request_id: str | None) -> str:
+    """审计记录 request_id（未透传时生成内部标识；列不可空）."""
+    return request_id or f"internal-{uuid.uuid4().hex[:12]}"
+
+
+def _audit_detail(record: ServiceApiKey, operator_id: int | None, request_id: str | None) -> dict[str, Any]:
+    """审计明细（仅元数据；禁止明文/哈希）."""
+    return {
+        "key_id": record.key_id,
+        "name": record.name,
+        "scope": record.scope,
+        "operator_id": operator_id,
+        "request_id": request_id,
+    }
+
 
 DEFAULT_SCOPE: dict[str, list[str]] = {"system": ["*"], "tenants": ["*"]}
 
@@ -73,8 +95,12 @@ class ServiceKeyService:
         scope: dict[str, Any] | None = None,
         description: str | None = None,
         created_by: int | None = None,
+        request_id: str | None = None,
     ) -> tuple[str, ServiceApiKey]:
         """签发服务 Key，返回明文（仅此一次）+ 落库记录.
+
+        E0-4（R4/P0-4）：同一事务内写 ``AuditLog``（key_id/name/scope/操作人/
+        request_id；**不含明文与哈希**）。
 
         Returns:
             (raw_key, record)；明文不落库、不落日志。
@@ -91,6 +117,17 @@ class ServiceKeyService:
         )
         session.add(record)
         await session.flush()
+        session.add(
+            AuditLog(
+                user_id=created_by,
+                action=ACTION_SERVICE_KEY_ISSUE,
+                resource=AUDIT_RESOURCE_SERVICE_KEY,
+                resource_id=record.key_id,
+                request_id=_audit_request_id(request_id),
+                detail=_audit_detail(record, created_by, request_id),
+            )
+        )
+        await session.flush()
         logger.info(
             "service api key issued",
             extra={"api_key_name": name, "api_key_id": record.key_id},
@@ -104,7 +141,14 @@ class ServiceKeyService:
         return list(result.scalars().all())
 
     @classmethod
-    async def revoke_by_id(cls, session: AsyncSession, key_id: str) -> bool:
+    async def revoke_by_id(
+        cls,
+        session: AsyncSession,
+        key_id: str,
+        *,
+        operator_id: int | None = None,
+        request_id: str | None = None,
+    ) -> bool:
         """按稳定标识吊销；未命中返回 False（路由层转 404）."""
         result = await session.execute(
             select(ServiceApiKey).where(ServiceApiKey.key_id == key_id)
@@ -112,12 +156,24 @@ class ServiceKeyService:
         record = result.scalar_one_or_none()
         if record is None:
             return False
-        cls._mark_revoked(record)
+        cls._mark_revoked(
+            session,
+            record,
+            operator_id=operator_id,
+            request_id=request_id,
+        )
         await session.flush()
         return True
 
     @classmethod
-    async def revoke_by_raw(cls, session: AsyncSession, raw_key: str) -> bool:
+    async def revoke_by_raw(
+        cls,
+        session: AsyncSession,
+        raw_key: str,
+        *,
+        operator_id: int | None = None,
+        request_id: str | None = None,
+    ) -> bool:
         """按明文吊销（兼容历史接口 `DELETE /api/v1/auth/api-keys/{raw_key}`）."""
         result = await session.execute(
             select(ServiceApiKey).where(
@@ -127,7 +183,12 @@ class ServiceKeyService:
         record = result.scalar_one_or_none()
         if record is None:
             return False
-        cls._mark_revoked(record)
+        cls._mark_revoked(
+            session,
+            record,
+            operator_id=operator_id,
+            request_id=request_id,
+        )
         await session.flush()
         return True
 
@@ -164,9 +225,25 @@ class ServiceKeyService:
         return public_record(record)
 
     @staticmethod
-    def _mark_revoked(record: ServiceApiKey) -> None:
+    def _mark_revoked(
+        session: AsyncSession,
+        record: ServiceApiKey,
+        *,
+        operator_id: int | None = None,
+        request_id: str | None = None,
+    ) -> None:
         record.status = SERVICE_KEY_STATUS_REVOKED
         record.revoked_at = dt.datetime.now(dt.timezone.utc)
+        session.add(
+            AuditLog(
+                user_id=operator_id,
+                action=ACTION_SERVICE_KEY_REVOKE,
+                resource=AUDIT_RESOURCE_SERVICE_KEY,
+                resource_id=record.key_id,
+                request_id=_audit_request_id(request_id),
+                detail=_audit_detail(record, operator_id, request_id),
+            )
+        )
         logger.info(
             "service api key revoked",
             extra={"api_key_name": record.name, "api_key_id": record.key_id},
