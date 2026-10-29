@@ -371,6 +371,19 @@ class Settings(BaseSettings):
     # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）
     mcp_api_keys: str = "dev-mcp-key"
 
+    # ---- E1-7（§10.3-4）服务 Key 异常检测与告警（进程内窗口，不依赖 Redis/后台线程） ----
+    key_anomaly_enabled: bool = True
+    # IP 观察窗口（秒）：窗口内不同 IP 数超阈值 → multi_ip
+    key_anomaly_window_seconds: int = 900
+    # 同一 Key 窗口内允许的不同 IP 数（0 = 关闭该判定）
+    key_anomaly_max_ips: int = 3
+    # 单分钟内调用量上限（0 = 关闭 rate_spike 判定）
+    key_anomaly_rate_per_minute: int = 600
+    # 同类告警冷却（秒），避免日志/审计洪泛
+    key_anomaly_alert_cooldown_seconds: int = 300
+    # 是否采信 X-Forwarded-For（默认不采信：客户端可伪造，误告警；反代部署再显式开启）
+    key_anomaly_trust_forwarded_for: bool = False
+
     # ---- OIDC 统一认证（OB-AUTH-OIDC，默认关闭，不影响现有本地认证） ----
     oidc_enabled: bool = False
     oidc_discovery_url: str = ""  # IdP discovery 端点（.well-known/openid-configuration）
@@ -667,6 +680,33 @@ class Settings(BaseSettings):
             ValueError: JSON 非法、结构不符或密钥含空白/控制字符。
         """
         parse_llm_api_keys_by_tenant(self.llm_api_keys_by_tenant)
+        return self
+
+    @model_validator(mode="after")
+    def _validate_mcp_edge_configuration(self) -> Settings:
+        """E1-6/E1-7 门禁：MCP 边缘凭证与异常检测参数（fail-fast）.
+
+        语义：
+        - production 下**禁止**沿用内置联调静态 Key ``dev-mcp-key``（生产误用等于
+          公开凭证）；空值允许（表示关闭静态 Key 通道，仅走服务 Key / JWT）；
+        - 异常检测参数必须为正（窗口/冷却），阈值 0 表示关闭该维度（允许）。
+
+        Raises:
+            ValueError: 生产沿用内置默认 Key，或异常检测参数非法。
+        """
+        if self.env == "production":
+            keys = [item.strip() for item in (self.mcp_api_keys or "").split(",") if item.strip()]
+            if "dev-mcp-key" in keys:
+                raise ValueError(
+                    "生产环境禁止使用内置默认 MCP 静态 Key（dev-mcp-key）；"
+                    "请配置 OPENBASE_MCP_API_KEYS 或留空仅走服务 Key/JWT（fail-closed）"
+                )
+        if int(self.key_anomaly_window_seconds) <= 0:
+            raise ValueError("OPENBASE_KEY_ANOMALY_WINDOW_SECONDS 必须为正整数")
+        if int(self.key_anomaly_alert_cooldown_seconds) <= 0:
+            raise ValueError("OPENBASE_KEY_ANOMALY_ALERT_COOLDOWN_SECONDS 必须为正整数")
+        if int(self.key_anomaly_max_ips) < 0 or int(self.key_anomaly_rate_per_minute) < 0:
+            raise ValueError("异常检测阈值不得为负（0 表示关闭该维度）")
         return self
 
     def enable_module(self, name: str) -> None:

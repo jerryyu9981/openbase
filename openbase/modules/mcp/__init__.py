@@ -10,31 +10,19 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.modules.mcp.credentials import (
+    MCPCredential,
+    allows_tool,
+    filter_tools,
+    require_mcp_credential,
+)
 
 logger = logging.getLogger("openbase.mcp")
 
 router = APIRouter(prefix="/mcp", tags=["mcp"])
-
-
-async def _require_mcp_key(request: Request) -> None:
-    """MCP 服务级 API Key 鉴权（双接口体系 D-002，SR-008）.
-
-    校验 X-API-Key 请求头是否在配置的 mcp_api_keys 中；
-    未配置 key 时禁止工具调用（安全默认）。
-    """
-    from openbase.settings import get_settings
-
-    keys = [
-        k.strip()
-        for k in get_settings().mcp_api_keys.split(",")
-        if k.strip()
-    ]
-    provided = request.headers.get("X-API-Key", "")
-    if not keys or provided not in keys:
-        raise BaseError(ErrorCode.AUTH_UNAUTHORIZED, "invalid or missing mcp api key")
 
 # FastMCP 实例（懒初始化）
 _fastmcp = None
@@ -107,11 +95,18 @@ class MCPServer:
 
     # ---- 协议处理 ----
 
-    async def handle_request(self, request: dict[str, Any]) -> dict[str, Any]:
+    async def handle_request(
+        self,
+        request: dict[str, Any],
+        *,
+        allowed_tools: frozenset[str] | None = None,
+    ) -> dict[str, Any]:
         """处理 MCP 请求并返回响应.
 
         Args:
             request: MCP 请求字典（{method, params, id}）。
+            allowed_tools: 工具级白名单（``None`` 不限定；来自 ``scope.tools``），
+                协议层二次校验，防止绕过 HTTP 适配层直接调用。
 
         Returns:
             MCP 响应字典（JSON-RPC 风格）。
@@ -121,12 +116,14 @@ class MCPServer:
         if handler is None:
             return {"error": f"Unknown method: {method}", "code": -32601}
         try:
-            return await handler(request)
+            return await handler(request, allowed_tools)
         except Exception as exc:  # noqa: BLE001
             logger.exception("mcp request failed", extra={"method": method})
             return {"error": str(exc), "code": -32000}
 
-    async def _handle_initialize(self, request: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_initialize(
+        self, request: dict[str, Any], allowed_tools: frozenset[str] | None
+    ) -> dict[str, Any]:
         """initialize 握手：返回协议版本与能力声明."""
         return {
             "protocolVersion": self.PROTOCOL_VERSION,
@@ -134,18 +131,32 @@ class MCPServer:
             "serverInfo": {"name": self.name, "version": self.version},
         }
 
-    async def _handle_tools_list(self, request: dict[str, Any]) -> dict[str, Any]:
-        """tools/list：返回工具清单（可缓存）."""
-        return {"tools": self.list_tools()}
+    async def _handle_tools_list(
+        self, request: dict[str, Any], allowed_tools: frozenset[str] | None
+    ) -> dict[str, Any]:
+        """tools/list：返回工具清单（按 ``scope.tools`` 过滤）."""
+        tools = self.list_tools()
+        if allowed_tools is not None:
+            tools = [tool for tool in tools if tool["name"] in allowed_tools]
+        return {"tools": tools}
 
-    async def _handle_tools_call(self, request: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_tools_call(
+        self, request: dict[str, Any], allowed_tools: frozenset[str] | None
+    ) -> dict[str, Any]:
         """tools/call：调用工具并返回结果.
 
         执行注册工具函数；函数在 registry 中为可调用对象时实际执行。
+        工具不在 ``scope.tools`` 白名单时拒绝（协议层二次校验）。
         """
         params = request.get("params", {})
         tool_name = params.get("name", "")
         arguments = params.get("arguments", {})
+        if allowed_tools is not None and tool_name not in allowed_tools:
+            return {
+                "content": [{"type": "text", "text": f"Tool '{tool_name}' not allowed by scope.tools"}],
+                "isError": True,
+                "code": -32001,
+            }
         tool_def = self._tools.get(tool_name)
         if tool_def is None:
             return {"content": [{"type": "text", "text": f"Tool '{tool_name}' not found"}], "isError": True}
@@ -262,21 +273,34 @@ def register_tool(name: str, description: str = "") -> Callable[..., Any]:
     return decorator
 
 
-@router.get("/tools/list", dependencies=[Depends(_require_mcp_key)])
-async def list_tools() -> dict:
-    """工具清单（可缓存，对齐 2026-07 MCP 规范）.
+@router.get("/tools/list")
+async def list_tools(
+    credential: MCPCredential = Depends(require_mcp_credential),
+) -> dict:
+    """工具清单（按凭证 ``scope.tools`` 过滤）.
 
     Returns:
         {"tools": [{name, description, input_schema}, ...]}
     """
-    return {"tools": get_mcp_server().list_tools()}
+    return {"tools": filter_tools(credential, get_mcp_server().list_tools())}
 
 
-@router.post("/tools/call", dependencies=[Depends(_require_mcp_key)])
-async def call_tool(payload: dict) -> dict:
+@router.post("/tools/call")
+async def call_tool(
+    payload: dict,
+    credential: MCPCredential = Depends(require_mcp_credential),
+) -> dict:
     """工具调用（HTTP 适配层，对接 MCPServer 协议处理）."""
+    tool_name = str(payload.get("name", ""))
+    if not allows_tool(credential, tool_name):
+        raise BaseError(
+            ErrorCode.PERM_API_KEY_SCOPE,
+            "tool not allowed by scope.tools",
+            detail={"tool": tool_name},
+        )
+    allowed_tools = None if credential.tools is None else frozenset(credential.tools)
     return await get_mcp_server().handle_request(
-        {"method": "tools/call", "params": payload}
+        {"method": "tools/call", "params": payload}, allowed_tools=allowed_tools
     )
 
 

@@ -585,6 +585,28 @@ async def require_api_key(
         time.time() - float(last_used_at) >= SERVICE_KEY_TOUCH_INTERVAL_SECONDS
     ):
         await ServiceKeyService.touch_last_used(session, credential["id"])
+    # E1-7（§10.3-4）：异常检测（同 Key 多 IP / 网段跳变 / 调用量突增）。
+    # 只告警不阻断认证；检测或落库失败一律降级为 WARN，不影响可用性。
+    try:
+        from openbase.modules.auth.key_anomaly import (
+            get_tracker,
+            report_anomalies,
+            resolve_client_ip,
+        )
+
+        anomalies = get_tracker().observe(credential["id"], resolve_client_ip(request))
+        if anomalies:
+            await report_anomalies(
+                session,
+                credential=credential,
+                anomalies=anomalies,
+                request_id=getattr(request.state, "request_id", None),
+            )
+    except Exception as exc:  # noqa: BLE001 - 异常检测失败不阻断认证
+        logger.warning(
+            "service key anomaly detection failed",
+            extra={"key_id": credential.get("id"), "error": str(exc) or exc.__class__.__name__},
+        )
     return {
         **credential,
         "auth_method": "service-key",
