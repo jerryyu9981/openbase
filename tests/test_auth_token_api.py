@@ -202,6 +202,14 @@ def test_revocations_snapshot_shape_and_incremental_cursor() -> None:
     }
     assert isinstance(body["subjects"], list)
     assert body["next_since"] >= body["since"]
+    # 游标回退 1ms：同一毫秒多行更新不漏读（宁可重复由消费端幂等覆盖）
+    marks = [
+        entry["updated_at"]
+        for entry in (*body["subjects"], *body["service_keys"], *body["agent_keys"])
+        if entry.get("updated_at") is not None
+    ]
+    if marks:
+        assert body["next_since"] <= max(marks)
 
     incremental = client.get(
         f"/api/v1/auth/revocations?since={body['next_since']}", headers=headers

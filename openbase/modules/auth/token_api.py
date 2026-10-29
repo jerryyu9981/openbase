@@ -38,6 +38,9 @@ _TOKEN_TYPE_BY_HINT = {
     "refresh_token": "refresh",
 }
 
+# 吊销增量游标回退（秒）：覆盖同一毫秒内多行更新的边界，消费端按主键幂等去重
+_CURSOR_OVERLAP_SECONDS = 0.001
+
 
 class IntrospectRequest(BaseModel):
     """内省请求体（RFC 7662 字段子集）."""
@@ -243,9 +246,16 @@ async def list_revocations(
         for entry in (*subjects, *service_keys, *agent_keys)
         if entry["updated_at"] is not None
     ]
+    since_value = float(since) if since is not None else 0.0
+    if updated_marks:
+        # 游标回退 1ms：同一毫秒内批量更新的多行若恰好取到最大值，下次 `> since`
+        # 会漏读其余行；回退重叠由消费端按主键幂等覆盖（宁可重复不可漏吊销）。
+        next_since = max(max(updated_marks) - _CURSOR_OVERLAP_SECONDS, since_value)
+    else:
+        next_since = since_value
     return {
-        "since": float(since) if since is not None else 0.0,
-        "next_since": max(updated_marks) if updated_marks else float(since or 0.0),
+        "since": since_value,
+        "next_since": next_since,
         "generated_at": time.time(),
         "limit": take,
         "subjects": subjects,

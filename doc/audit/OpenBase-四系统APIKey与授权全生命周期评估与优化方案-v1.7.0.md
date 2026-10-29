@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.6.1 |
+| 版本 | v1.7.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -530,6 +530,25 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 网关删除已冗余的二次回落（能力下沉后单一入口）。
 - 验证：`tests/unit/edgerouter/test_jwt_handler.py` 新增 4 项、`tests/unit/security/test_openbase_jwt.py` 新增 3 项；auth_service / 网关 / jwt_redis 回归 95 项通过；`test_gateway_401_format.py` 7 项仍为基线既有不一致。
 
+### 10.11 E1-5C 实施结果（v1.7.0，2026-10-30）
+
+> 范围（按 §10.3 E1 计划顺序推进）：**吊销增量同步**在四仓落地 + 控制面游标语义修复。MCP 边缘凭证、设备配额与异常告警仍为 E1 后续项。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| 游标语义修复 | `next_since` 回退 1ms（同一毫秒内多行更新的边界不漏读；重复由消费端按主键幂等覆盖） | OpenBase `modules/auth/token_api.py` | `tests/test_auth_token_api.py::test_revocations_snapshot_shape_and_incremental_cursor`（新增不变量断言） |
+| OpenLLM 吊销对齐 | `subject_revoked()`：状态非 `active` 或快照 `token_version` 高于令牌 `tvn` → 拒绝；同步失败沿用旧快照（离线可用）；`OPENBASE_REVOCATION_STRICT` 严格模式 | `app/security/openbase_jwt.py`、`app/core/config.py` | `tests/unit/security/test_openbase_jwt.py`（+4 项，合计 19 项） |
+| OpenMemory 吊销对齐 | `OpenBaseRevocationSync`（实例级，网关配置驱动）；RS256 分流后判定 | `gateway/openbase_jwks.py`、`gateway/gateway.py`、`utils/config.py`、`api/server.py` | `tests/unit/test_gateway_openbase_jwks.py`（+3 项，合计 11 项） |
+| OpenRAG 吊销对齐 | `OpenBaseRevocationSync` 注入 `OpenBaseJwtVerifier`，验签后判定 | `api/middleware/openbase_jwt.py`、`config/settings.py`、`main.py` | `tests/unit/api/test_openbase_jwt_bearer.py`（+3 项，合计 14 项） |
+| DPS 吊销对齐 | 模块级吊销快照 + `verify_for_local` 判定；新增 4 项 `DPS_OPENBASE_*` 配置 | `identity/openbase_jwt.py`、`config.py`、`doc/release/DPS-环境配置说明-v2.8.0.md` | `src/tests/test_e15b_openbase_jwt.py`（+3 项，合计 12 项；IAM 回归 12 项） |
+
+**统一判定口径**：状态非 `active` → 拒绝；快照 `token_version` > 令牌 `tvn` → 拒绝（降权即时生效）；快照未命中 → 默认放行（边缘离线可用，短 TTL 令牌兜底），`*_REVOCATION_STRICT=true` 时拒绝。
+
+**残余**
+
+- 下游同步为**请求触发的惰性拉取**（按间隔节流），无独立后台线程：无流量时不同步；如需空闲期收敛，后续补调度任务。
+- E1 §10.3 第 3/4 条（MCP 边缘凭证与工具级 `scope.tools`、设备配额与异常告警）以及 R6 下游信任白名单 fail-closed、R7/R8 静态 Key 收敛仍待排期。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -543,3 +562,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.5.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.9「E1-5A 实施结果」：按裁定路径 A 落地控制面非对称签名 —— RS256 签发（kid/iss/aud）+ 多 kid JWKS + 算法白名单双验签（HS256 存量过渡）+ `GET /.well-known/jwks.json` + `POST /api/v1/auth/introspect` + `GET /api/v1/auth/revocations` 增量；新增 RS256 配置门禁与 `jwt_require_rs256` 启动检查；登记兼容策略与残余（E1-5B 下游逐仓接入本轮不做） |
 | v1.6.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.10「E1-5B 实施结果」：OpenLLM / OpenMemory / OpenRAG / DPS 四仓接入 OpenBase RS256/JWKS 本地验签（统一契约：kid 选择、未知 kid 强制刷新、iss/aud/exp 强校验、主体映射 fail-closed、默认留空不启用），各仓保留 HS256 存量通道；登记双验签过渡、内省/吊销增量未接入下游、部署编排边界与「用户令牌直连映射」待裁定项 |
 | v1.6.1 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | §10.10 补充「OpenLLM 验签入口收口」：新增 `auth_service.verify_bearer_token` 统一入口覆盖 HTTP 依赖与 WebSocket；RS256 分支下沉 `JWTHandler.verify_token`（`/api/v1/auth/verify`、edge router 同步生效）；refresh 链拒绝 OpenBase 令牌换发；删除网关冗余二次回落；登记新增 7 项用例与回归结果 |
+| v1.7.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.11「E1-5C 实施结果」：吊销增量同步在四仓落地（状态/版本判定、同步失败沿用旧快照、严格模式开关），控制面 `next_since` 回退 1ms 修复同毫秒漏读；登记惰性同步（无后台线程）与 E1 剩余项（MCP 边缘凭证、配额告警、R6/R7/R8） |
