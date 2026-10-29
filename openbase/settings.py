@@ -301,6 +301,22 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_seconds: int = 7200
     refresh_expire_seconds: int = 604800
+
+    # ---- E1-5A 非对称签名（RS256 + JWKS 发布 / 内省 / 吊销增量） ----
+    # 配置 `jwt_rsa_private_key_path` 即启用 RS256 签发（PEM 文件只读挂载，禁止内联私钥）。
+    # 未配置时维持既有 HS256（存量兼容：E1-5A 控制面先行，下游逐仓灰度见 E1-5B）。
+    jwt_rsa_private_key_path: str = ""
+    # 新签发 token 的 kid（启用 RS256 时必填；JWKS 以该 kid 发布派生公钥）
+    jwt_signing_kid: str = ""
+    jwt_issuer: str = "openbase"
+    jwt_audience: str = "openbase-api"
+    # JWKS 额外公钥登记（JSON：{"<kid>": "<PEM 文本>" 或 "@<公钥文件路径>"}）：
+    # 用于双验签过渡期声明历史/对端 kid；配置私钥时其派生公钥总以 jwt_signing_kid 发布。
+    jwt_jwks_public_keys: str = ""
+    # 生产门禁（两段式发布第二段）：True 时缺 RS256 私钥/签名 kid 一律拒绝启动。
+    jwt_require_rs256: bool = False
+    # GET /api/v1/auth/revocations 单页上限（下游增量拉取吊销快照）
+    jwt_revocations_page_limit: int = 500
     # U1 T3（K04，方案 a token 版本号）：token 版本强校验开关（两段式发布第二段，
     # 设计草案 §5.1/§12.1 风险 1/§6.2）。默认 False：版本强校验关闭，存量 v0 / 落后
     # tvn 过渡窗口不误杀；每请求主体状态校验不依赖本开关（默认即生效）。第二段置 True。
@@ -520,6 +536,43 @@ class Settings(BaseSettings):
             logger.warning(
                 "OPENBASE_JWT_SECRET 未配置：签发将失败（fail-closed）；请配置随机密钥"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_rs256_configuration(self) -> Settings:
+        """E1-5A 非对称签名配置门禁（fail-fast，禁静默降级）.
+
+        语义：
+        - ``jwt_require_rs256=True``（生产第二段门禁）时，缺私钥路径或签名 kid 即拒绝启动；
+        - 配置私钥路径时必须同时配置 kid，且文件可读、为合法 RSA PEM 私钥；
+        - ``jwt_jwks_public_keys`` 必须为合法 JSON 且每个公钥可解析；
+        - 吊销增量单页上限必须为正整数。
+
+        Raises:
+            ValueError: 上述任一约束不满足（含 JwtKeyConfigError 子类）。
+        """
+        from openbase.core.security.jwt_keys import (
+            load_key_material,
+            parse_public_keys_map,
+        )
+
+        key_path = (self.jwt_rsa_private_key_path or "").strip()
+        signing_kid = (self.jwt_signing_kid or "").strip()
+        if self.jwt_require_rs256 and (not key_path or not signing_kid):
+            raise ValueError(
+                "生产/门禁要求 RS256：必须同时配置 OPENBASE_JWT_RSA_PRIVATE_KEY_PATH "
+                "与 OPENBASE_JWT_SIGNING_KID，否则拒绝启动（fail-closed）"
+            )
+        if key_path:
+            if not signing_kid:
+                raise ValueError(
+                    "配置 OPENBASE_JWT_RSA_PRIVATE_KEY_PATH 时必须配置 "
+                    "OPENBASE_JWT_SIGNING_KID（JWKS/验签以 kid 选择公钥）"
+                )
+            load_key_material(key_path)
+        parse_public_keys_map(self.jwt_jwks_public_keys)
+        if int(self.jwt_revocations_page_limit) <= 0:
+            raise ValueError("OPENBASE_JWT_REVOCATIONS_PAGE_LIMIT 必须为正整数")
         return self
 
     @model_validator(mode="after")

@@ -4,6 +4,10 @@ U1 T2（RA-02/OB-4）：签发侧收敛为单一签发器 ``issue_token_pair`` �
 login/refresh/OIDC bound/直签共用同一路径（同一 tenant_code/sub_type/tvn/role 注入，
 禁止双路径分叉）；access/refresh token 增量携带 tenant_code/sub_type/tvn 等全量 claim
 （兼容：新参数全部可选，既有调用方/存量 v0 令牌形态不变）。
+
+E1-5A（非对称签名）：配置 ``jwt_rsa_private_key_path`` 后新签发一律 RS256（kid 头 +
+iss/aud claim），验签算法白名单 ``{RS256, jwt_algorithm}``；RS256 以内置 JWKS
+（多 kid）选公钥，HS256 回落 ``jwt_secret``/``jwt_secret_previous``（存量双验签过渡）。
 """
 
 from __future__ import annotations
@@ -13,6 +17,12 @@ from typing import Any
 
 from jose import JWTError, jwt
 
+from openbase.core.security.jwt_keys import (
+    RSA_ALGORITHM,
+    build_jwks,
+    load_key_material,
+    public_pem_for_kid,
+)
 from openbase.settings import get_settings
 
 # 与 openbase/modules/identity/state_machine.py 内联同值（避免顶层循环导入）
@@ -42,6 +52,81 @@ def _verify_secrets() -> list[str]:
     settings = get_settings()
     secrets = [s for s in (settings.jwt_secret or "", settings.jwt_secret_previous or "")]
     return secrets or [""]
+
+
+def _signing_material() -> tuple[str, str] | None:
+    """RS256 签发材料 ``(kid, private_pem)``；未配置私钥路径 → None（回落 HS256）."""
+    settings = get_settings()
+    key_path = (settings.jwt_rsa_private_key_path or "").strip()
+    if not key_path:
+        return None
+    signing_kid = (settings.jwt_signing_kid or "").strip()
+    return signing_kid, load_key_material(key_path)["private_pem"]
+
+
+def _encode(claims: dict[str, Any]) -> str:
+    """统一签发入口：RS256 注入 iss/aud（kid 头）；未配置 PEM 时保持 HS256 存量形态."""
+    settings = get_settings()
+    payload = dict(claims)
+    material = _signing_material()
+    if material is not None:
+        # 非对称签发通道一律携带标准 claim（验签侧强校验，见 _decode_rs256）；
+        # HS256 存量通道不注入 iss/aud，避免破坏既有直接解码方（过渡期零影响）。
+        if settings.jwt_issuer:
+            payload.setdefault("iss", settings.jwt_issuer)
+        if settings.jwt_audience:
+            payload.setdefault("aud", settings.jwt_audience)
+        signing_kid, private_pem = material
+        return jwt.encode(
+            payload, private_pem, algorithm=RSA_ALGORITHM, headers={"kid": signing_kid}
+        )
+    return jwt.encode(payload, _sign_secret(), algorithm=settings.jwt_algorithm)
+
+
+def jwks_document() -> dict[str, Any]:
+    """当前 JWKS 文档（公开端点发布；未配置 RS256 时 keys 为空列表）."""
+    settings = get_settings()
+    return build_jwks(
+        private_key_path=(settings.jwt_rsa_private_key_path or "").strip(),
+        signing_kid=(settings.jwt_signing_kid or "").strip(),
+        extra_public_keys_raw=settings.jwt_jwks_public_keys,
+    )
+
+
+def _audience_matches(claim_value: Any, expected: str) -> bool:
+    """aud 可能是字符串或数组；任一命中即为通过."""
+    if isinstance(claim_value, (list, tuple)):
+        return expected in [str(item) for item in claim_value]
+    return str(claim_value) == expected
+
+
+def _decode_rs256(token: str, kid: str | None) -> dict[str, Any] | None:
+    """以内置 JWKS（多 kid）验签 RS256；缺失 iss/aud 一律拒绝（fail-closed）."""
+    settings = get_settings()
+    public_pem = public_pem_for_kid(
+        kid,
+        private_key_path=(settings.jwt_rsa_private_key_path or "").strip(),
+        signing_kid=(settings.jwt_signing_kid or "").strip(),
+        extra_public_keys_raw=settings.jwt_jwks_public_keys,
+    )
+    if public_pem is None:
+        return None
+    try:
+        payload = jwt.decode(
+            token,
+            public_pem,
+            algorithms=[RSA_ALGORITHM],
+            options={"verify_aud": False, "verify_iss": False},
+        )
+    except JWTError:
+        return None
+    if settings.jwt_issuer and payload.get("iss") != settings.jwt_issuer:
+        return None
+    if settings.jwt_audience and not _audience_matches(
+        payload.get("aud"), settings.jwt_audience
+    ):
+        return None
+    return payload
 
 
 def create_access_token(
@@ -86,7 +171,7 @@ def create_access_token(
         claims["tenant_code"] = tenant_code
     if extra:
         claims.update(extra)
-    return jwt.encode(claims, _sign_secret(), algorithm=settings.jwt_algorithm)
+    return _encode(claims)
 
 
 def create_refresh_token(
@@ -135,7 +220,7 @@ def create_refresh_token(
         claims["role"] = role
     if extra:
         claims.update(extra)
-    return jwt.encode(claims, _sign_secret(), algorithm=settings.jwt_algorithm)
+    return _encode(claims)
 
 
 def issue_token_pair(
@@ -203,20 +288,42 @@ def issue_token_pair(
 
 
 def _decode_any(token: str) -> dict[str, Any] | None:
-    """以当前密钥或旧密钥（轮换宽限）验签解码.
+    """按 alg 白名单验签解码（RS256 走内置 JWKS；HS256 走密钥列表宽限）.
+
+    算法白名单 = ``{RS256, settings.jwt_algorithm}``：杜绝 ``alg=none`` 及以
+    HMAC 密钥验 RS256 的算法混淆攻击。
 
     Returns:
         payload；签名/算法/过期无效返回 None。
     """
     settings = get_settings()
+    try:
+        header = jwt.get_unverified_header(token)
+    except (JWTError, ValueError):
+        return None
+    algorithm = str(header.get("alg") or "")
+    if algorithm not in {RSA_ALGORITHM, settings.jwt_algorithm}:
+        return None
+    if algorithm == RSA_ALGORITHM:
+        return _decode_rs256(token, header.get("kid"))
     for secret in _verify_secrets():
         try:
-            return jwt.decode(
-                token, secret, algorithms=[settings.jwt_algorithm]
-            )
+            return jwt.decode(token, secret, algorithms=[settings.jwt_algorithm])
         except JWTError:
             continue
     return None
+
+
+def decode_any_token(token: str) -> dict[str, Any] | None:
+    """验签解码（不校验 token 类型；内省端点用）.
+
+    Args:
+        token: JWT 字符串。
+
+    Returns:
+        payload；无效/过期返回 None。
+    """
+    return _decode_any(token)
 
 
 def decode_access_token(token: str) -> dict[str, Any] | None:

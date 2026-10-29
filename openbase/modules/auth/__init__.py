@@ -44,6 +44,14 @@ try:
 except ImportError:  # 依赖缺失时降级，不阻塞 auth 模块装配
     extra_routers = []
 
+# E1-5A：令牌服务面（JWKS 发布 / 内省 / 吊销增量）独立前缀挂载
+try:
+    from openbase.modules.auth.token_api import router as token_api_router
+
+    extra_routers.append(token_api_router)
+except ImportError:  # 依赖缺失时降级（不影响既有 auth 路由）
+    logging.getLogger(__name__).warning("auth token_api router skipped (import failed)")
+
 
 # ---- Schemas ----
 

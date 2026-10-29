@@ -85,7 +85,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     """统一鉴权中间件：管理接口必须携带有效 JWT（SR-001）.
 
     白名单路径（公开）：/health、/audit/health、/docs、/openapi.json、
-    /redoc、/api/v1/auth/login、/api/v1/auth/refresh、/observability/status。
+    /redoc、/api/v1/auth/login、/api/v1/auth/refresh、/observability/status、
+    /.well-known（E1-5A JWKS）、/api/v1/auth/introspect|revocations（端点层服务 Key 鉴权）。
     其余路径均要求 Authorization: Bearer <token>，无效时返回统一 401 错误格式。
     """
 
@@ -105,6 +106,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/mcp/tools",
         # v1.4.1 R-367 AC-367-2：/proxy 通道由端点层做 JWT 优先 + 服务 Key 回退双通道认证
         "/api/v1/proxy",
+        # E1-5A：JWKS 发布公开（签名公钥本即公开信息）
+        "/.well-known",
+        # E1-5A：内省/吊销增量由端点层做服务 Key 鉴权（同 /proxy 双通道范式）
+        "/api/v1/auth/introspect",
+        "/api/v1/auth/revocations",
     )
 
     async def dispatch(

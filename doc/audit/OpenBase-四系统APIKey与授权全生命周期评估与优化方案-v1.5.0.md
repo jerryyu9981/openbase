@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.4.0 |
+| 版本 | v1.5.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -475,6 +475,28 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - Key 事件为 outbox 主通道（pending → dispatcher 投递 → published），`GET /identity/events` 仅返回 published 事件。
 - 未纳入本轮：非对称签名 JWT/JWKS/自省/吊销列表（E1-5，建议单独排期）；下游静态 Key 收敛（R7/R8）、OM 轮换修复（R7）、设备配额与异常告警仍在 E1/E2 后续项。
 
+### 10.9 E1-5A 实施结果（v1.5.0，2026-10-29）
+
+> 范围裁定（人工确认）：**路径 A —— 控制面先行**。本轮只做 OpenBase 控制面（E1-5A），下游 OpenLLM → OpenMemory → OpenRAG/DPS 的逐仓接入为 **E1-5B**，本轮不做。
+> 密钥形态裁定：**PEM 文件只读挂载 + 双验签过渡**。私钥经 `OPENBASE_JWT_RSA_PRIVATE_KEY_PATH` 挂载（禁止内联），新签发一律 RS256，存量 HS256 双验签过渡。
+
+| # | E1-5A 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|---|
+| 1 | RS256 签发 | 配置私钥后新签发一律 RS256（`kid` 头 + `iss`/`aud` claim）；未配置时保持原 HS256 形态（**HS256 不注入 iss/aud**，避免破坏既有直接解码方） | `core/security/jwt_keys.py`、`modules/auth/jwt.py`、`settings.py` | `tests/test_jwt_rs256.py::test_rs256_signing_carries_kid_and_standard_claims`、`::test_rs256_roundtrip_access_and_refresh_types` |
+| 2 | 多 kid 验签 / 算法白名单 | 验签算法白名单 `{RS256, jwt_algorithm}`（拒绝 `alg=none`、拒绝算法混淆）；RS256 按 `kid` 选内置 JWKS 公钥，未知 kid fail-closed；HS256 回落 `jwt_secret`/`jwt_secret_previous` 宽限 | `modules/auth/jwt.py`、`core/security/jwt_keys.py` | `::test_rs256_rejects_unknown_kid`、`::test_hs256_token_cannot_pass_as_rs256`、`::test_legacy_hs256_token_still_verifies_during_transition` |
+| 3 | JWKS 发布 | 新增公开端点 `GET /.well-known/jwks.json`（仅公钥分量 kty/n/e，`use=sig`），签发公钥由私钥派生自动发布；`jwt_jwks_public_keys` 可登记历史/过渡 kid 公钥（JSON 或 `@文件`），支持平滑换钥 | `modules/auth/token_api.py`、`core/deps/auth.py`、`core/security/jwt_keys.py` | `tests/test_jwt_rs256.py::test_jwks_document_exposes_public_material_only`、`::test_extra_public_key_registered_and_verifiable`、`tests/test_auth_token_api.py::test_jwks_is_public_and_exposes_rs256_key` |
+| 4 | 令牌内省 | 新增 `POST /api/v1/auth/introspect`（RFC 7662 语义）：服务 Key 鉴权（scope `system` 含 `auth`/`*`）+ 验签 + 主体状态/token 版本核查；无效/过期/类型不符返回 `active=false` 与 `reason`，**不做结果缓存**（吊销必须即时可见） | `modules/auth/token_api.py`、`core/deps/auth.py` | `tests/test_auth_token_api.py::test_introspect_reports_active_token`、`::test_introspect_verifies_principal_state_and_token_version`、`::test_introspect_token_type_mismatch` |
+| 5 | 吊销增量 | 新增 `GET /api/v1/auth/revocations?since=&limit=`（服务 Key 鉴权）：按各表 `updated_at` 升序增量下发主体 `token_version`/状态、服务 Key、agent Key 变化，返回 `next_since` 游标；单页上限 `jwt_revocations_page_limit`（默认 500） | `modules/auth/token_api.py`、`settings.py` | `tests/test_auth_token_api.py::test_revocations_snapshot_shape_and_incremental_cursor`、`::test_revocations_requires_service_key` |
+| 6 | 配置门禁 | 新增 `jwt_rsa_private_key_path`/`jwt_signing_kid`/`jwt_issuer`/`jwt_audience`/`jwt_jwks_public_keys`/`jwt_require_rs256`/`jwt_revocations_page_limit`；配私钥必填 kid 且文件须可解析为 RSA 私钥；`jwt_require_rs256=true` 缺配置即拒绝启动 | `settings.py`、`core/security/jwt_keys.py` | `tests/test_jwt_rs256.py::test_require_rs256_without_key_rejected`、`::test_private_key_without_kid_rejected`、`::test_missing_private_key_file_rejected`、`::test_invalid_extra_public_keys_rejected`、`::test_revocations_page_limit_must_be_positive` |
+
+**兼容与残余**
+
+- 过渡策略：本轮不改变默认行为 —— 未配置 PEM 时 HS256 签发/验签与升级前完全一致（存量令牌与既有直接解码方零影响）；配置 PEM 后新签发 RS256，同时仍接受 HS256 存量令牌。
+- 双验签窗口收口：确认全量令牌换发后可移除 `jwt_secret*` 与 `jwt_jwks_public_keys` 中的历史 kid，并将 `jwt_require_rs256` 置 true（生产第二段门禁）。
+- 换钥流程：替换 PEM 文件即生效（按 `mtime` 缓存失效，无需重启）；旧 kid 公钥在 JWKS 保留至存量令牌过期。
+- **未纳入本轮（E1-5B，下游逐仓灰度）**：OpenLLM / OpenMemory / OpenRAG / DPS 的 JWKS 拉取与本地验签、内省/吊销增量对齐、部署编排（环境变量与 PEM 挂载）。
+- 内省无缓存属有意取舍：高频批量场景应调用 revocations 增量对齐，避免逐令牌读库。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -485,3 +507,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.2.1 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.6「R / P / E 三套编号关系与追溯矩阵」：明确 R=风险台账、P=通用修复排期、E=边缘场景执行计划，同一风险只修一次；逐条给出风险到 E0/E1/E2/暂缓的映射 |
 | v1.3.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.7「E0 实施结果」：七项轻量落地逐条记录落点与回归证据（E0-2 OpenLLM 移除 `X-User-Role` 回退；E0-3 服务 Key 租户 scope；E0-4 Key 生命周期审计落库；E0-5 `system:superadmin` 显式超管；E0-6 离线宽限 72h/缓存 900s；E0-7 last_used 提交与吊销缓存清理；E0-1 设备凭据有效期提示），并登记行为差异、残余（E1）与环境提示 |
 | v1.4.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.8「E1 实施结果（第 1~4 项）」：`ob_k_` 默认 90 天到期 + 轮换端点（宽限 24h）+ 认证记录 last_used；Key 生命周期事件（service_key.*/agent_key.*）入 outbox 并随 `/identity/events` 下发；到期时间 UTC 归一；列表按租户过滤（服务 Key/用户/租户/agent）与低成本项（明文吊销不回显、路径段白名单、掩码补裸键）；登记兼容策略与残余（E1-5 JWKS/自省单独排期） |
+| v1.5.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.9「E1-5A 实施结果」：按裁定路径 A 落地控制面非对称签名 —— RS256 签发（kid/iss/aud）+ 多 kid JWKS + 算法白名单双验签（HS256 存量过渡）+ `GET /.well-known/jwks.json` + `POST /api/v1/auth/introspect` + `GET /api/v1/auth/revocations` 增量；新增 RS256 配置门禁与 `jwt_require_rs256` 启动检查；登记兼容策略与残余（E1-5B 下游逐仓接入本轮不做） |
