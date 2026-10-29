@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.3.0 |
+| 版本 | v1.4.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -456,6 +456,25 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 未纳入本轮（按矩阵留 E1）：`ob_k_` 过期/轮换（R9）、吊销事件联动下游（R10）、agent Key `expires_at` 时区归一（R12）、列表租户过滤（R3）、明文吊销回显/前缀匹配/掩码键（R13/R14/R15）等。
 - 环境提示：OpenLLM 本机 venv 的 `httpx` 需为 `0.26.0`（`requirements.txt` 钉版）否则 `starlette.TestClient` 端点用例不可执行；本轮已按钉版恢复该 venv 依赖。
 
+### 10.8 E1 实施结果（v1.4.0，2026-10-29）
+
+> 范围：E1 第 1~4 项（过期/轮换、Key 事件化、到期时区归一、列表租户过滤与低成本项）。第 5 项（非对称签名 JWT + JWKS + 自省/吊销列表）改动面大，单独评估后再排期。
+
+| # | E1 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|---|
+| 1 | `ob_k_` 过期/轮换（R9） | 新增 `expires_at`/`last_used_at`/`rotated_from`/`tenant_code` 列（存量库幂等 ALTER）；签发默认 90 天（`service_key_ttl_days`）；新增 `POST /auth/api-keys/{key_id}/rotate`（旧 Key 宽限 24h 默认、可覆盖，到期自动失效，双 Key 零中断）；校验按到期拒绝，认证通过记录 `last_used_at` | `core/models/base.py`、`identity/migration.py`、`modules/auth/service_keys.py`、`modules/auth/__init__.py`、`core/deps/auth.py`、`settings.py` | `tests/test_api_keys_api.py::test_e1_1_*`、`tests/test_proxy_auth.py::test_expired_api_key_rejected_at_proxy`、`::test_rotated_key_grace_zero_switches_immediately` |
+| 2 | Key 事件化（R10） | 新增 `service_key.issued/rotated/revoked`、`agent_key.issued/revoked` 事件类型（与 user.* 分集，`ALL_VALID_EVENT_TYPES` 统一校验），签发/吊销/轮换同事务写 outbox，随 `GET /identity/events` 下发（下游可做缓存失效/告警）；载荷仅元数据（key_id/kind/name/scope），不含明文与哈希 | `identity/events.py`、`modules/auth/service_keys.py`、`identity/agent_keys.py` | `tests/test_api_keys_api.py::test_e1_2_service_key_events_enqueued`、`tests/test_identity_t1.py::test_e1_2_agent_key_events_enqueued` |
+| 3 | 到期时区归一（R12/P0-8） | 新增 `core/timeutil.py`（`utc_now`/`as_utc`）；agent Key 与 service Key 的 `expires_at` 写入归一为 UTC aware、比较前归一，消除 SQLite naive/aware `TypeError` | `core/timeutil.py`、`identity/agent_keys.py`、`modules/auth/service_keys.py` | `tests/test_identity_t1.py::test_e1_3_expired_agent_key_rejected` |
+| 4a | 列表租户过滤（R3） | 新增 `tenant_filter_code`（超管=None 不过滤 / 无绑定="" 不可见）；服务 Key 列表按归属租户过滤；用户/租户列表按调用方租户过滤；agent Key 读/写/吊销按租户隔离（跨租户 404，不泄露存在性） | `modules/auth/rbac.py`、`modules/auth/__init__.py`、`modules/users/__init__.py`、`modules/tenant/__init__.py`、`identity/agents.py`、`identity/__init__.py` | `tests/test_api_keys_api.py::test_e1_4_service_key_list_tenant_filter`、`tests/test_tenant_admin.py::test_e1_4_*`、`tests/test_security.py::test_e1_4_tenant_filter_code_semantics` |
+| 4b | 低成本项（R13/R14/R15） | 明文吊销不回显明文（仅稳定 id）、未命中 404；`PUBLIC_PREFIXES` 改为路径段匹配（相似前缀不再误放行）；脱敏器补齐裸键 `key`/`raw_key`/`secret`（精确匹配，不误伤 `key_id`） | `modules/auth/__init__.py`、`core/deps/auth.py`、`core/mask.py` | `tests/test_api_keys_api.py::test_e1_4_revoke_by_raw_no_plaintext_echo_and_404`、`tests/test_security.py::test_e1_4_public_prefix_requires_path_segment`、`tests/test_mask.py::test_e1_4_exact_bare_key_names_are_masked` |
+
+**兼容与残余**
+
+- 存量 `ob_k_` 无到期时间（NULL）= 不过期，避免升级即全量失效；新签发默认 90 天，轮换可逐步收敛。
+- 轮换宽限 24h 为默认值，可按 Key 传 `grace_hours`（0 = 立即切换）；旧 Key 到期时间只收紧不延长。
+- Key 事件为 outbox 主通道（pending → dispatcher 投递 → published），`GET /identity/events` 仅返回 published 事件。
+- 未纳入本轮：非对称签名 JWT/JWKS/自省/吊销列表（E1-5，建议单独排期）；下游静态 Key 收敛（R7/R8）、OM 轮换修复（R7）、设备配额与异常告警仍在 E1/E2 后续项。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -465,3 +484,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.2.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 明确适用场景为 **AI 边缘终端**：新增 §10 附录 A（场景约束、E0/E1/E2 轻量落地、离线宽限与一键吊销、政务强合规项暂缓及启用触发条件）；不改动既有风险清单与 P0 项 |
 | v1.2.1 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.6「R / P / E 三套编号关系与追溯矩阵」：明确 R=风险台账、P=通用修复排期、E=边缘场景执行计划，同一风险只修一次；逐条给出风险到 E0/E1/E2/暂缓的映射 |
 | v1.3.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.7「E0 实施结果」：七项轻量落地逐条记录落点与回归证据（E0-2 OpenLLM 移除 `X-User-Role` 回退；E0-3 服务 Key 租户 scope；E0-4 Key 生命周期审计落库；E0-5 `system:superadmin` 显式超管；E0-6 离线宽限 72h/缓存 900s；E0-7 last_used 提交与吊销缓存清理；E0-1 设备凭据有效期提示），并登记行为差异、残余（E1）与环境提示 |
+| v1.4.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.8「E1 实施结果（第 1~4 项）」：`ob_k_` 默认 90 天到期 + 轮换端点（宽限 24h）+ 认证记录 last_used；Key 生命周期事件（service_key.*/agent_key.*）入 outbox 并随 `/identity/events` 下发；到期时间 UTC 归一；列表按租户过滤（服务 Key/用户/租户/agent）与低成本项（明文吊销不回显、路径段白名单、掩码补裸键）；登记兼容策略与残余（E1-5 JWKS/自省单独排期） |

@@ -96,10 +96,21 @@ async def create_agent_subject(
     return agent
 
 
-async def ensure_agent_subject(session: AsyncSession, agent_id: int) -> User:
-    """确认主体存在且为 agent（否则 404）."""
+async def ensure_agent_subject(
+    session: AsyncSession, agent_id: int, *, tenant_code: str | None = None
+) -> User:
+    """确认主体存在且为 agent（否则 404；E1-4/R3 非超管按租户隔离）.
+
+    Args:
+        session: 数据库会话。
+        agent_id: 主体 id。
+        tenant_code: 调用方生效租户（None=超管不过滤；""=无租户绑定 → 一律 404）；
+            跨租户访问返回 404（不泄露他租户主体存在性）。
+    """
     row = await session.get(User, agent_id)
     if row is None or row.subject_type != SUBJECT_TYPE_AGENT:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"agent subject not found: {agent_id}")
+    if tenant_code is not None and (row.tenant_code or "") != tenant_code:
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"agent subject not found: {agent_id}")
     return row
 

@@ -100,3 +100,57 @@ def test_superadmin_permission_point_replaces_username_hardcode():
     assert _permission_granted({**base, "username": "ops-b", "permissions": ["tenant:manage"]}) is True
     # 内存降级（DB 无矩阵）：内置 admin 角色锚点 → 放行（改名/多管理员场景不再失效）
     assert _permission_granted({**base, "username": "renamed-admin", "role": "admin"}) is True
+
+
+# ---- E1-4（R14/R3）：白名单路径段匹配 + 列表租户过滤键 ----
+
+
+def test_e1_4_public_prefix_requires_path_segment():
+    """PUBLIC_PREFIXES 按路径段匹配：相似前缀（/healthz、/login-x）不再被误放行."""
+    from openbase.core.deps.auth import AuthMiddleware
+
+    assert AuthMiddleware._is_public_path("/health") is True
+    assert AuthMiddleware._is_public_path("/health/live") is True
+    assert AuthMiddleware._is_public_path("/healthz") is False
+    assert AuthMiddleware._is_public_path("/api/v1/auth/login") is True
+    assert AuthMiddleware._is_public_path("/api/v1/auth/login-extra") is False
+    assert AuthMiddleware._is_public_path("/api/v1/proxy/openllm/chat") is True
+    assert AuthMiddleware._is_public_path("/api/v1/proxyz/openllm") is False
+
+
+def test_e1_4_tenant_filter_code_semantics():
+    """租户过滤键：超管 None（不过滤）/ 有绑定返回租户码 / 无绑定空串（不可见）."""
+    import asyncio
+
+    from openbase.modules.auth.rbac import tenant_filter_code
+
+    session = _NoDbSession()
+
+    async def _resolve(user: dict) -> str | None:
+        return await tenant_filter_code(session, user)
+
+    assert (
+        asyncio.run(
+            _resolve({"id": 1, "permissions": ["system:superadmin"], "role": "admin"})
+        )
+        is None
+    )
+    assert (
+        asyncio.run(
+            _resolve(
+                {
+                    "id": 2,
+                    "permissions": ["tenant:view"],
+                    "role": "viewer",
+                    "tenant_code": "site-a",
+                }
+            )
+        )
+        == "site-a"
+    )
+    assert (
+        asyncio.run(
+            _resolve({"id": 3, "permissions": ["tenant:view"], "role": "viewer"})
+        )
+        == ""
+    )

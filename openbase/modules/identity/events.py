@@ -30,10 +30,30 @@ EVENT_USER_SUSPENDED = "user.suspended"
 EVENT_USER_RESTORED = "user.restored"
 EVENT_USER_DEACTIVATED = "user.deactivated"
 
+# ---- E1-2（R10/P1-3）：Key 生命周期事件（下游可据此做缓存失效/告警） ----
+EVENT_SERVICE_KEY_ISSUED = "service_key.issued"
+EVENT_SERVICE_KEY_ROTATED = "service_key.rotated"
+EVENT_SERVICE_KEY_REVOKED = "service_key.revoked"
+EVENT_AGENT_KEY_ISSUED = "agent_key.issued"
+EVENT_AGENT_KEY_REVOKED = "agent_key.revoked"
+
 # 合法事件类型集合（schema v1 校验；purge 不对外广播，故不含 user.purged）
 VALID_EVENT_TYPES = frozenset(
     {EVENT_USER_PROVISIONED, EVENT_USER_SUSPENDED, EVENT_USER_RESTORED, EVENT_USER_DEACTIVATED}
 )
+
+# Key 事件类型（与主体生命周期事件分开：既有消费端契约测试按 VALID_EVENT_TYPES 校验
+# user.* 全集，故不改变该集合；校验入口接受两者并集）
+KEY_EVENT_TYPES = frozenset(
+    {
+        EVENT_SERVICE_KEY_ISSUED,
+        EVENT_SERVICE_KEY_ROTATED,
+        EVENT_SERVICE_KEY_REVOKED,
+        EVENT_AGENT_KEY_ISSUED,
+        EVENT_AGENT_KEY_REVOKED,
+    }
+)
+ALL_VALID_EVENT_TYPES = VALID_EVENT_TYPES | KEY_EVENT_TYPES
 
 EVENT_SCHEMA_VERSION = 1
 EVENT_SOURCE = "openbase"
@@ -101,11 +121,11 @@ def validate_event_payload(payload: dict) -> dict:
             detail={"missing": missing},
         )
     event_type = payload.get("event_type")
-    if event_type not in VALID_EVENT_TYPES:
+    if event_type not in ALL_VALID_EVENT_TYPES:
         raise BaseError(
             ErrorCode.PARAM_INVALID,
             f"unknown event_type: {event_type}",
-            detail={"allowed": sorted(VALID_EVENT_TYPES)},
+            detail={"allowed": sorted(ALL_VALID_EVENT_TYPES)},
         )
     if payload.get("schema_version") != EVENT_SCHEMA_VERSION:
         raise BaseError(
@@ -286,12 +306,113 @@ async def enqueue_lifecycle_event(
     return record
 
 
+async def enqueue_key_event(
+    session: AsyncSession,
+    *,
+    event_type: str,
+    key_kind: str,
+    key_id: str,
+    key_name: str | None,
+    subject_id: int,
+    subject_type: str,
+    tenant_code: str | None,
+    previous_state: str,
+    current_state: str,
+    reason: str,
+    operator: int | None = None,
+    request_id: str | None = None,
+    scope: dict | None = None,
+    extra: dict | None = None,
+) -> OutboxEvent:
+    """在同一 DB 事务内写 Key 生命周期事件（E1-2/R10，schema v1 兼容）.
+
+    与 :func:`enqueue_lifecycle_event` 共用 outbox 主通道与投递器；载荷在 schema v1
+    必填字段外增加 ``key`` 元数据块（key_id/key_kind/name/scope），**不含明文与哈希**，
+    供下游做缓存失效/告警（禁止把 Key 事件当作凭据分发通道）。
+
+    Args:
+        session: 数据库会话（提交由调用方负责，保证与 Key 变更同事务）。
+        event_type: ``service_key.*`` / ``agent_key.*``。
+        key_kind: ``service`` / ``agent``。
+        key_id: Key 稳定标识（服务 Key=key_id；agent Key=自增 id 字符串）。
+        key_name: Key 名称（可空）。
+        subject_id: 归属主体 id（agent→agent_id；service→操作者 id 或 0）。
+        subject_type: 主体类型（``agent`` / ``user`` / ``service``）。
+        tenant_code: 归属租户码（可空）。
+        previous_state: 变更前状态（``none``/``active``/``revoked``）。
+        current_state: 变更后状态。
+        reason: 变更原因（issue/rotate/revoke）。
+        operator: 操作者 id（可空）。
+        request_id: 请求关联 id（可空）。
+        scope: Key scope（仅 service_key 有；agent Key 为空）。
+        extra: 附加业务字段（如 rotated_from / old_key_id）。
+
+    Returns:
+        已写入（未提交）的 OutboxEvent 行。
+    """
+    event_id = uuid.uuid4().hex
+    payload: dict = {
+        "event_id": event_id,
+        "event_type": event_type,
+        "occurred_at": _now_iso(),
+        "source": EVENT_SOURCE,
+        "request_id": request_id,
+        "subject": {
+            "subject_id": subject_id,
+            "subject_type": subject_type,
+        },
+        "tenant_code": tenant_code,
+        "role_codes": [],
+        "previous_state": previous_state,
+        "current_state": current_state,
+        "reason": reason,
+        "schema_version": EVENT_SCHEMA_VERSION,
+        "key": {
+            "key_id": key_id,
+            "key_kind": key_kind,
+            "name": key_name,
+            "scope": scope,
+        },
+        "operator": operator,
+    }
+    if extra:
+        payload.update(extra)
+    validate_event_payload(payload)
+    record = OutboxEvent(
+        event_id=event_id,
+        event_type=event_type,
+        payload=payload,
+        status=EVENT_STATUS_PENDING,
+        publish_attempts=0,
+    )
+    session.add(record)
+    await session.flush()
+    logger.info(
+        "key event enqueued",
+        extra={
+            "event_id": event_id,
+            "event_type": event_type,
+            "key_kind": key_kind,
+            "key_id": key_id,
+            "operator": operator,
+        },
+    )
+    return record
+
+
 __all__ = [
     "EVENT_USER_PROVISIONED",
     "EVENT_USER_SUSPENDED",
     "EVENT_USER_RESTORED",
     "EVENT_USER_DEACTIVATED",
+    "EVENT_SERVICE_KEY_ISSUED",
+    "EVENT_SERVICE_KEY_ROTATED",
+    "EVENT_SERVICE_KEY_REVOKED",
+    "EVENT_AGENT_KEY_ISSUED",
+    "EVENT_AGENT_KEY_REVOKED",
     "VALID_EVENT_TYPES",
+    "KEY_EVENT_TYPES",
+    "ALL_VALID_EVENT_TYPES",
     "EVENT_SCHEMA_VERSION",
     "EVENT_SOURCE",
     "EVENT_STATUS_PENDING",
@@ -300,6 +421,7 @@ __all__ = [
     "EVENT_CHANNEL",
     "EVENTS_PAGE_DEFAULT_LIMIT",
     "EVENTS_PAGE_MAX_LIMIT",
+    "enqueue_key_event",
     "event_type_for_transition",
     "enqueue_lifecycle_event",
     "list_published_events_page",

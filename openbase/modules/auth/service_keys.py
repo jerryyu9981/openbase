@@ -21,17 +21,23 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import AuditLog, ServiceApiKey
+from openbase.core.timeutil import as_utc, utc_now
 
 logger = logging.getLogger("openbase.auth.service_keys")
 
 SERVICE_KEY_PREFIX = "ob_k_"
 SERVICE_KEY_STATUS_ACTIVE = "active"
 SERVICE_KEY_STATUS_REVOKED = "revoked"
+# E1-1：last_used_at 写入节流（同一 Key 60s 内重复校验不重复落库，降低边缘写放大）
+SERVICE_KEY_TOUCH_INTERVAL_SECONDS = 60
 
 # E0-4（R4/P0-4）：Key 生命周期审计动作码（审计表 action 列）
 ACTION_SERVICE_KEY_ISSUE = "auth.service_key.issue"
 ACTION_SERVICE_KEY_REVOKE = "auth.service_key.revoke"
+# E1-1（R9/P1-2）：轮换审计动作码
+ACTION_SERVICE_KEY_ROTATE = "auth.service_key.rotate"
 AUDIT_RESOURCE_SERVICE_KEY = "service_api_keys"
 
 
@@ -42,10 +48,13 @@ def _audit_request_id(request_id: str | None) -> str:
 
 def _audit_detail(record: ServiceApiKey, operator_id: int | None, request_id: str | None) -> dict[str, Any]:
     """审计明细（仅元数据；禁止明文/哈希）."""
+    expires_at = as_utc(record.expires_at)
     return {
         "key_id": record.key_id,
         "name": record.name,
         "scope": record.scope,
+        "tenant_code": record.tenant_code,
+        "expires_at": expires_at.isoformat() if expires_at else None,
         "operator_id": operator_id,
         "request_id": request_id,
     }
@@ -60,7 +69,9 @@ def service_key_hash(raw_key: str) -> str:
 
 
 def public_record(record: ServiceApiKey) -> dict[str, Any]:
-    """对外记录（不回显明文与哈希；`created` 沿用历史 float 契约）."""
+    """对外记录（不回显明文与哈希；时间沿用历史 float 契约）."""
+    expires_at = as_utc(record.expires_at)
+    last_used_at = as_utc(record.last_used_at)
     return {
         "id": record.key_id,
         "name": record.name,
@@ -68,7 +79,36 @@ def public_record(record: ServiceApiKey) -> dict[str, Any]:
         "description": record.description,
         "created": record.created_at.timestamp() if record.created_at else 0.0,
         "revoked": record.status == SERVICE_KEY_STATUS_REVOKED,
+        # E1-1：过期/最近使用/轮换来源/归属租户（仅元数据）
+        "expires_at": expires_at.timestamp() if expires_at else None,
+        "last_used_at": last_used_at.timestamp() if last_used_at else None,
+        "rotated_from": record.rotated_from,
+        "tenant_code": record.tenant_code,
     }
+
+
+def _default_expires_at() -> dt.datetime | None:
+    """默认有效期（E1-1：settings.service_key_ttl_days，0 = 不过期）."""
+    from openbase.settings import get_settings
+
+    try:
+        ttl_days = int(getattr(get_settings(), "service_key_ttl_days", 0) or 0)
+    except (TypeError, ValueError):
+        ttl_days = 0
+    if ttl_days <= 0:
+        return None
+    return utc_now() + dt.timedelta(days=ttl_days)
+
+
+def _rotate_grace_hours() -> int:
+    """轮换宽限期（小时；settings.service_key_rotate_grace_hours，负值按 0 处理）."""
+    from openbase.settings import get_settings
+
+    try:
+        hours = int(getattr(get_settings(), "service_key_rotate_grace_hours", 0) or 0)
+    except (TypeError, ValueError):
+        hours = 0
+    return max(hours, 0)
 
 
 def scope_allows(scope: dict[str, Any] | None, system: str | None, tenant_id: str | None) -> bool:
@@ -84,7 +124,7 @@ def scope_allows(scope: dict[str, Any] | None, system: str | None, tenant_id: st
 
 
 class ServiceKeyService:
-    """服务 Key 生命周期操作（发放/校验/吊销/列表）."""
+    """服务 Key 生命周期操作（发放/校验/轮换/吊销/列表）."""
 
     @classmethod
     async def issue(
@@ -96,11 +136,16 @@ class ServiceKeyService:
         description: str | None = None,
         created_by: int | None = None,
         request_id: str | None = None,
+        expires_at: dt.datetime | None = None,
+        rotated_from: str | None = None,
+        tenant_code: str | None = None,
     ) -> tuple[str, ServiceApiKey]:
         """签发服务 Key，返回明文（仅此一次）+ 落库记录.
 
         E0-4（R4/P0-4）：同一事务内写 ``AuditLog``（key_id/name/scope/操作人/
-        request_id；**不含明文与哈希**）。
+        request_id；**不含明文与哈希**）。E1-1（R9）：默认有效期
+        ``settings.service_key_ttl_days``（90 天，0=不过期）；E1-2（R10）：同事务写
+        ``service_key.issued`` 事件到 outbox。
 
         Returns:
             (raw_key, record)；明文不落库、不落日志。
@@ -114,6 +159,9 @@ class ServiceKeyService:
             description=description or "",
             status=SERVICE_KEY_STATUS_ACTIVE,
             created_by=created_by,
+            expires_at=as_utc(expires_at) if expires_at is not None else _default_expires_at(),
+            rotated_from=rotated_from,
+            tenant_code=tenant_code,
         )
         session.add(record)
         await session.flush()
@@ -127,6 +175,16 @@ class ServiceKeyService:
                 detail=_audit_detail(record, created_by, request_id),
             )
         )
+        await cls._emit_event(
+            session,
+            "service_key.issued",
+            record,
+            previous_state="none",
+            current_state="active",
+            reason="issue",
+            operator_id=created_by,
+            request_id=request_id,
+        )
         await session.flush()
         logger.info(
             "service api key issued",
@@ -135,10 +193,104 @@ class ServiceKeyService:
         return raw_key, record
 
     @classmethod
-    async def list_keys(cls, session: AsyncSession) -> list[ServiceApiKey]:
-        """列出全部签发记录（按创建顺序）."""
-        result = await session.execute(select(ServiceApiKey).order_by(ServiceApiKey.id))
+    async def list_keys(
+        cls, session: AsyncSession, *, tenant_code: str | None = None
+    ) -> list[ServiceApiKey]:
+        """列出签发记录（按创建顺序；E1-4/R3：非超管按归属租户过滤）."""
+        statement = select(ServiceApiKey).order_by(ServiceApiKey.id)
+        if tenant_code is not None:
+            statement = statement.where(ServiceApiKey.tenant_code == tenant_code)
+        result = await session.execute(statement)
         return list(result.scalars().all())
+
+    @classmethod
+    async def rotate(
+        cls,
+        session: AsyncSession,
+        key_id: str,
+        *,
+        operator_id: int | None = None,
+        request_id: str | None = None,
+        grace_hours: int | None = None,
+        expires_at: dt.datetime | None = None,
+        tenant_code: str | None = None,
+    ) -> tuple[str, ServiceApiKey, ServiceApiKey] | None:
+        """轮换服务 Key（E1-1/R9）：签发新 Key + 旧 Key 进入宽限期后自动失效.
+
+        旧 Key 不立即吊销（双 Key 并存零中断），到期时间被收紧为
+        ``min(原到期, now + grace)``；宽限期默认 ``settings.service_key_rotate_grace_hours``。
+
+        Returns:
+            (new_raw_key, new_record, old_record)；未命中返回 None；
+            旧 Key 非 active → BIZ_CONFLICT。
+        """
+        result = await session.execute(
+            select(ServiceApiKey).where(ServiceApiKey.key_id == key_id)
+        )
+        old_record = result.scalar_one_or_none()
+        if old_record is None:
+            return None
+        if old_record.status != SERVICE_KEY_STATUS_ACTIVE:
+            raise BaseError(ErrorCode.BIZ_CONFLICT, "api key is not active; rotate rejected")
+
+        grace = _rotate_grace_hours() if grace_hours is None else max(int(grace_hours), 0)
+        grace_expiry = utc_now() + dt.timedelta(hours=grace)
+        current_expiry = as_utc(old_record.expires_at)
+        old_record.expires_at = (
+            min(current_expiry, grace_expiry) if current_expiry else grace_expiry
+        )
+
+        raw_key, new_record = await cls.issue(
+            session,
+            name=old_record.name,
+            scope=old_record.scope,
+            description=old_record.description,
+            created_by=operator_id,
+            request_id=request_id,
+            expires_at=expires_at,
+            rotated_from=old_record.key_id,
+            tenant_code=(
+                old_record.tenant_code if tenant_code is None else tenant_code
+            ),
+        )
+        session.add(
+            AuditLog(
+                user_id=operator_id,
+                action=ACTION_SERVICE_KEY_ROTATE,
+                resource=AUDIT_RESOURCE_SERVICE_KEY,
+                resource_id=old_record.key_id,
+                request_id=_audit_request_id(request_id),
+                detail={
+                    "old_key_id": old_record.key_id,
+                    "new_key_id": new_record.key_id,
+                    "name": old_record.name,
+                    "grace_hours": grace,
+                    "operator_id": operator_id,
+                    "request_id": request_id,
+                },
+            )
+        )
+        await cls._emit_event(
+            session,
+            "service_key.rotated",
+            old_record,
+            previous_state="active",
+            current_state="rotated",
+            reason="rotate",
+            operator_id=operator_id,
+            request_id=request_id,
+            extra={"new_key_id": new_record.key_id},
+        )
+        await session.flush()
+        logger.info(
+            "service api key rotated",
+            extra={
+                "old_api_key_id": old_record.key_id,
+                "new_api_key_id": new_record.key_id,
+                "grace_hours": grace,
+            },
+        )
+        return raw_key, new_record, old_record
 
     @classmethod
     async def revoke_by_id(
@@ -148,22 +300,22 @@ class ServiceKeyService:
         *,
         operator_id: int | None = None,
         request_id: str | None = None,
-    ) -> bool:
-        """按稳定标识吊销；未命中返回 False（路由层转 404）."""
+    ) -> ServiceApiKey | None:
+        """按稳定标识吊销；未命中返回 None（路由层转 404）."""
         result = await session.execute(
             select(ServiceApiKey).where(ServiceApiKey.key_id == key_id)
         )
         record = result.scalar_one_or_none()
         if record is None:
-            return False
-        cls._mark_revoked(
+            return None
+        await cls._mark_revoked(
             session,
             record,
             operator_id=operator_id,
             request_id=request_id,
         )
         await session.flush()
-        return True
+        return record
 
     @classmethod
     async def revoke_by_raw(
@@ -173,7 +325,7 @@ class ServiceKeyService:
         *,
         operator_id: int | None = None,
         request_id: str | None = None,
-    ) -> bool:
+    ) -> ServiceApiKey | None:
         """按明文吊销（兼容历史接口 `DELETE /api/v1/auth/api-keys/{raw_key}`）."""
         result = await session.execute(
             select(ServiceApiKey).where(
@@ -182,15 +334,15 @@ class ServiceKeyService:
         )
         record = result.scalar_one_or_none()
         if record is None:
-            return False
-        cls._mark_revoked(
+            return None
+        await cls._mark_revoked(
             session,
             record,
             operator_id=operator_id,
             request_id=request_id,
         )
         await session.flush()
-        return True
+        return record
 
     @classmethod
     async def verify(
@@ -204,7 +356,7 @@ class ServiceKeyService:
         """校验 Key 有效性 + scope.
 
         Returns:
-            通过返回凭据 dict（不含 key_hash）；无效/吊销/越 scope 返回 None。
+            通过返回凭据 dict（不含 key_hash）；无效/吊销/过期/越 scope 返回 None。
         """
         credential = await cls.lookup(session, raw_key)
         if credential is None:
@@ -213,7 +365,7 @@ class ServiceKeyService:
 
     @classmethod
     async def lookup(cls, session: AsyncSession, raw_key: str) -> dict[str, Any] | None:
-        """按明文取有效凭据（仅校验存在性/吊销，不校验 scope）."""
+        """按明文取有效凭据（校验存在性/吊销/过期，不校验 scope）."""
         result = await session.execute(
             select(ServiceApiKey).where(
                 ServiceApiKey.key_hash == service_key_hash(raw_key)
@@ -222,18 +374,85 @@ class ServiceKeyService:
         record = result.scalar_one_or_none()
         if record is None or record.status != SERVICE_KEY_STATUS_ACTIVE:
             return None
+        expires_at = as_utc(record.expires_at)
+        if expires_at is not None and expires_at <= utc_now():
+            return None
         return public_record(record)
 
+    @classmethod
+    async def touch_last_used(cls, session: AsyncSession, key_id: str) -> None:
+        """记录最近一次校验通过时间（尽力而为；失败不阻断认证）.
+
+        使用痕迹属独立遥测写入，显式提交以免随请求会话关闭回滚；
+        单条 UPDATE 完成，避免先读后写。
+        """
+        from sqlalchemy import update
+
+        try:
+            await session.execute(
+                update(ServiceApiKey)
+                .where(ServiceApiKey.key_id == key_id)
+                .values(last_used_at=utc_now())
+            )
+            await session.commit()
+        except Exception as exc:  # noqa: BLE001 - 使用痕迹写入失败不阻断认证
+            try:
+                await session.rollback()
+            except Exception:  # noqa: BLE001 - rollback 失败仅记录
+                pass
+            logger.warning(
+                "service key last_used_at persist failed",
+                extra={"key_id": key_id, "error": str(exc) or exc.__class__.__name__},
+            )
+
     @staticmethod
-    def _mark_revoked(
+    async def _emit_event(
+        session: AsyncSession,
+        event_type: str,
+        record: ServiceApiKey,
+        *,
+        previous_state: str,
+        current_state: str,
+        reason: str,
+        operator_id: int | None,
+        request_id: str | None,
+        extra: dict | None = None,
+    ) -> None:
+        """写 Key 事件到 outbox（E1-2；局部导入避免 auth ↔ identity 循环依赖）."""
+        from openbase.modules.identity.events import enqueue_key_event
+
+        await enqueue_key_event(
+            session,
+            event_type=event_type,
+            key_kind="service",
+            key_id=record.key_id,
+            key_name=record.name,
+            subject_id=operator_id or 0,
+            subject_type="service",
+            tenant_code=record.tenant_code,
+            previous_state=previous_state,
+            current_state=current_state,
+            reason=reason,
+            operator=operator_id,
+            request_id=request_id,
+            scope=record.scope,
+            extra=extra,
+        )
+
+    @classmethod
+    async def _mark_revoked(
+        cls,
         session: AsyncSession,
         record: ServiceApiKey,
         *,
         operator_id: int | None = None,
         request_id: str | None = None,
     ) -> None:
+        """吊销并留痕（幂等：已吊销不重复写审计/事件）."""
+        if record.status == SERVICE_KEY_STATUS_REVOKED:
+            return
         record.status = SERVICE_KEY_STATUS_REVOKED
-        record.revoked_at = dt.datetime.now(dt.timezone.utc)
+        record.revoked_at = utc_now()
         session.add(
             AuditLog(
                 user_id=operator_id,
@@ -243,6 +462,16 @@ class ServiceKeyService:
                 request_id=_audit_request_id(request_id),
                 detail=_audit_detail(record, operator_id, request_id),
             )
+        )
+        await cls._emit_event(
+            session,
+            "service_key.revoked",
+            record,
+            previous_state="active",
+            current_state="revoked",
+            reason="revoke",
+            operator_id=operator_id,
+            request_id=request_id,
         )
         logger.info(
             "service api key revoked",

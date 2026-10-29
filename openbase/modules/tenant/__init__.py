@@ -281,12 +281,19 @@ async def list_tenants(
     user: dict = Depends(_require_tenant_view),
     session: AsyncSession = Depends(get_db),
 ) -> list[dict]:
-    """租户列表."""
+    """租户列表（E1-4/R3：非超管仅见自身租户）."""
     from sqlalchemy import select as sa_select
 
     from openbase.core.models import Tenant as TenantModel
+    from openbase.modules.auth.rbac import tenant_filter_code
 
-    result = await session.execute(sa_select(TenantModel).order_by(TenantModel.id))
+    tenant_code = await tenant_filter_code(session, user)
+    if tenant_code == "":
+        return []
+    statement = sa_select(TenantModel).order_by(TenantModel.id)
+    if tenant_code is not None:
+        statement = statement.where(TenantModel.code == tenant_code)
+    result = await session.execute(statement)
     return [_tenant_to_out(row) for row in result.scalars().all()]
 
 

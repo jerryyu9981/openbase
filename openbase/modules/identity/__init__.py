@@ -139,6 +139,13 @@ async def _check_permission(
     return user
 
 
+async def _agent_tenant_scope(session: AsyncSession, user: dict) -> str | None:
+    """agent 面租户隔离键（E1-4/R3：None=超管不过滤；""=无租户绑定）."""
+    from openbase.modules.auth.rbac import tenant_filter_code
+
+    return await tenant_filter_code(session, user)
+
+
 async def _require_identity_manage(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
@@ -292,8 +299,10 @@ async def list_agent_keys(
     user: dict = Depends(_require_identity_view),
     session: AsyncSession = Depends(get_db),
 ) -> list[AgentKeyOut]:
-    """agent 密钥列表（不回显明文，含已吊销记录）."""
-    await ensure_agent_subject(session, agent_id)
+    """agent 密钥列表（不回显明文，含已吊销记录；E1-4 非超管按租户隔离）."""
+    await ensure_agent_subject(
+        session, agent_id, tenant_code=await _agent_tenant_scope(session, user)
+    )
     records = await AgentKeyService.list_keys(session, agent_id=agent_id)
     return [_key_out(record) for record in records]
 
@@ -307,7 +316,9 @@ async def issue_agent_key(
     session: AsyncSession = Depends(get_db),
 ) -> AgentKeyOut:
     """为 agent 新增/轮换 sk-agent-* 密钥（多密钥并存；返回明文仅此一次）."""
-    await ensure_agent_subject(session, agent_id)
+    await ensure_agent_subject(
+        session, agent_id, tenant_code=await _agent_tenant_scope(session, user)
+    )
     raw_key, record = await AgentKeyService.issue_key(
         session,
         agent_id=agent_id,
@@ -329,7 +340,9 @@ async def revoke_agent_key(
     session: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """吊销单条 agent 密钥（即时失效：后续该校验 401；E0-4 审计落库）."""
-    await ensure_agent_subject(session, agent_id)
+    await ensure_agent_subject(
+        session, agent_id, tenant_code=await _agent_tenant_scope(session, user)
+    )
     record = await AgentKeyService.revoke_key(
         session,
         agent_id=agent_id,

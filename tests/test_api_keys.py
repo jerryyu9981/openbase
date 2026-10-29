@@ -85,8 +85,9 @@ async def test_service_key_issue_verify_revoke(session) -> None:
     # 校验通过
     assert await ServiceKeyService.verify(session, raw_key) is not None
 
-    # 吊销后校验失败
-    assert await ServiceKeyService.revoke_by_raw(session, raw_key) is True
+    # 吊销后校验失败（E1-1 起吊销返回记录对象；None 表示未命中）
+    revoked_record = await ServiceKeyService.revoke_by_raw(session, raw_key)
+    assert revoked_record is not None and revoked_record.key_id == record.key_id
     assert await ServiceKeyService.verify(session, raw_key) is None
 
 
@@ -167,7 +168,8 @@ async def test_service_key_survives_new_session(key_engine) -> None:
         assert key_id in listed
 
     async with factory() as third:
-        assert await ServiceKeyService.revoke_by_id(third, key_id) is True
+        revoked = await ServiceKeyService.revoke_by_id(third, key_id)
+        assert revoked is not None and revoked.key_id == key_id
         await third.commit()
 
     async with factory() as fourth:

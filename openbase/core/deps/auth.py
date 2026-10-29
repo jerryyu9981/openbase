@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -112,7 +113,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         call_next: RequestResponseEndpoint,
     ) -> Response:
         path = request.url.path
-        if path.startswith(self.PUBLIC_PREFIXES):
+        if self._is_public_path(path):
             return await call_next(request)
 
         # P2-1 T3（K02 OpenBase 试点，D-V5）：非公开路径认证前先做入站身份头来源校验
@@ -146,6 +147,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # 中间件不修改用户上下文（依赖层负责用户信息），此处仅做门禁
         return await call_next(request)
+
+    @classmethod
+    def _is_public_path(cls, path: str) -> bool:
+        """白名单路径判定（E1-4/R14：按路径段匹配，禁止裸前缀误放行）.
+
+        ``/health`` 只放行 ``/health`` 与 ``/health/...``，不会误放行
+        ``/healthcheck-admin`` 之类的相似前缀路径。
+        """
+        for prefix in cls.PUBLIC_PREFIXES:
+            if path == prefix or path.startswith(f"{prefix}/"):
+                return True
+        return False
 
     async def _verify_request_principal(
         self, request: Request, payload: dict
@@ -538,7 +551,11 @@ async def require_api_key(
     if len(parts) >= 5 and parts[1] == "api" and parts[3] == "proxy":
         system = parts[4]
 
-    from openbase.modules.auth.service_keys import ServiceKeyService, scope_allows
+    from openbase.modules.auth.service_keys import (
+        SERVICE_KEY_TOUCH_INTERVAL_SECONDS,
+        ServiceKeyService,
+        scope_allows,
+    )
 
     tenant_id = await get_current_tenant(request)
     credential = await ServiceKeyService.lookup(session, key)
@@ -556,6 +573,12 @@ async def require_api_key(
         )
     # 认证方式显式标记（与 identity_context 的 auth_method 取值域一致）：
     # 服务 Key 记录自带稳定 id（uuid），调用方不得以「有无 id」推断认证通道。
+    # E1-1：记录最近使用时间（60s 节流；独立提交，失败仅 WARN，不阻断认证）。
+    last_used_at = credential.get("last_used_at")
+    if last_used_at is None or (
+        time.time() - float(last_used_at) >= SERVICE_KEY_TOUCH_INTERVAL_SECONDS
+    ):
+        await ServiceKeyService.touch_last_used(session, credential["id"])
     return {
         **credential,
         "auth_method": "service-key",

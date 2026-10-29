@@ -348,6 +348,10 @@ class Settings(BaseSettings):
     principal_offline_grace_hours: int = 72
     # bcrypt 成本因子（默认 12 ≈ 400-600ms；并发敏感场景可调低至 10 ≈ 200ms）
     bcrypt_rounds: int = 12
+    # E1-1（R9/P1-1）：服务 Key（ob_k_）默认有效期（天，默认 90；0 = 不过期，仅过渡期可配）
+    service_key_ttl_days: int = 90
+    # E1-1：轮换时旧 Key 宽限期（小时，默认 24；期间新旧并存，到期旧 Key 自动失效）
+    service_key_rotate_grace_hours: int = 24
     # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）
     mcp_api_keys: str = "dev-mcp-key"
 

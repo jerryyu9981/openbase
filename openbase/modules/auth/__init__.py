@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
 import logging
 import re
 
@@ -706,6 +707,8 @@ class ApiKeyCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=64)
     scope: dict = Field(default_factory=lambda: {"system": ["*"], "tenants": ["*"]})
     description: str = Field("", max_length=200)
+    # E1-1（R9）：可选显式到期时间（缺省按 settings.service_key_ttl_days=90 天）
+    expires_at: dt.datetime | None = None
 
 
 class ApiKeyOut(BaseModel):
@@ -718,6 +721,18 @@ class ApiKeyOut(BaseModel):
     created: float
     revoked: bool = False
     key: str | None = None
+    # E1-1：过期/最近使用/轮换来源/归属租户（时间沿用 float 时间戳契约）
+    expires_at: float | None = None
+    last_used_at: float | None = None
+    rotated_from: str | None = None
+    tenant_code: str | None = None
+
+
+class ApiKeyRotateRequest(BaseModel):
+    """服务 Key 轮换请求（E1-1/R9）."""
+
+    grace_hours: int | None = Field(None, ge=0, le=24 * 30)
+    expires_at: dt.datetime | None = None
 
 
 # 服务 Key 权限点（auth:api-keys:manage/view）
@@ -747,6 +762,16 @@ async def _check_api_key_permission(
     )
 
 
+def _caller_tenant_code(user: dict, scope: dict) -> str | None:
+    """服务 Key 归属租户（E1-4a）：调用方租户优先；否则取 scope 唯一具名租户."""
+    tenant_code = user.get("tenant_code")
+    if tenant_code:
+        return str(tenant_code)
+    tenants = (scope or {}).get("tenants") or []
+    concrete = [str(item) for item in tenants if str(item) != "*"]
+    return concrete[0] if len(concrete) == 1 else None
+
+
 @router.post("/api-keys", response_model=ApiKeyOut)
 async def create_api_key(
     payload: ApiKeyCreate,
@@ -759,6 +784,7 @@ async def create_api_key(
     返回明文 Key（仅此一次）；scope 限定可访问系统与租户。
     v1.5：签发记录落 ``service_api_keys`` 表，重启后仍有效（原内存态失效缺陷修复）。
     E0-4：同事务写审计（key_id/name/scope/操作人/request_id）。
+    E1-1：默认 90 天到期（可显式指定 ``expires_at``）；E1-2：写 ``service_key.issued`` 事件。
     """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
     raw_key, record = await ServiceKeyService.issue(
@@ -768,17 +794,11 @@ async def create_api_key(
         description=payload.description,
         created_by=int(user["id"]) if str(user.get("id", "")).isdigit() else None,
         request_id=getattr(request.state, "request_id", None),
+        expires_at=payload.expires_at,
+        tenant_code=_caller_tenant_code(user, payload.scope),
     )
     await session.commit()
-    return ApiKeyOut(
-        id=record.key_id,
-        name=record.name,
-        scope=record.scope,
-        description=record.description,
-        created=record.created_at.timestamp(),
-        revoked=False,
-        key=raw_key,
-    )
+    return ApiKeyOut(**{**public_record(record), "key": raw_key})
 
 
 @router.get("/api-keys", response_model=list[ApiKeyOut])
@@ -786,10 +806,42 @@ async def list_api_keys(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> list[ApiKeyOut]:
-    """服务 Key 列表（不回显明文，需 auth:api-keys:view）."""
+    """服务 Key 列表（不回显明文，需 auth:api-keys:view；E1-4 非超管按归属租户过滤）."""
+    from openbase.modules.auth.rbac import tenant_filter_code
+
     await _check_api_key_permission(user, session, "auth:api-keys:view")
-    records = await ServiceKeyService.list_keys(session)
+    tenant_code = await tenant_filter_code(session, user)
+    records = await ServiceKeyService.list_keys(session, tenant_code=tenant_code)
     return [ApiKeyOut(**public_record(record)) for record in records]
+
+
+@router.post("/api-keys/{key_id}/rotate", response_model=ApiKeyOut)
+async def rotate_api_key(
+    key_id: str,
+    payload: ApiKeyRotateRequest,
+    request: Request,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ApiKeyOut:
+    """轮换服务 Key（E1-1/R9；需 auth:api-keys:manage）.
+
+    签发新 Key（明文仅此一次），旧 Key 进入宽限期（默认 24h，可经 ``grace_hours``
+    覆盖）后自动失效；新旧并存保证零中断。
+    """
+    await _check_api_key_permission(user, session, "auth:api-keys:manage")
+    result = await ServiceKeyService.rotate(
+        session,
+        key_id,
+        operator_id=int(user["id"]) if str(user.get("id", "")).isdigit() else None,
+        request_id=getattr(request.state, "request_id", None),
+        grace_hours=payload.grace_hours,
+        expires_at=payload.expires_at,
+    )
+    if result is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"api key not found: {key_id}")
+    raw_key, record, _old_record = result
+    await session.commit()
+    return ApiKeyOut(**{**public_record(record), "key": raw_key})
 
 
 @router.delete("/api-keys/by-id/{key_id}", response_model=dict[str, str])
@@ -807,12 +859,13 @@ async def revoke_api_key_by_id(
     """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
     operator_id = int(user["id"]) if str(user.get("id", "")).isdigit() else None
-    if not await ServiceKeyService.revoke_by_id(
+    record = await ServiceKeyService.revoke_by_id(
         session,
         key_id,
         operator_id=operator_id,
         request_id=getattr(request.state, "request_id", None),
-    ):
+    )
+    if record is None:
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"api key not found: {key_id}")
     await session.commit()
     return {"revoked": key_id}
@@ -828,17 +881,20 @@ async def revoke_api_key(
     """吊销服务 Key（需 auth:api-keys:manage）.
 
     E0-4：同事务写审计（操作人/request_id；不含明文）。
+    E1-4（R13）：响应不回显明文（仅回显稳定 id）；未命中 → 404。
     """
     await _check_api_key_permission(user, session, "auth:api-keys:manage")
     operator_id = int(user["id"]) if str(user.get("id", "")).isdigit() else None
-    await ServiceKeyService.revoke_by_raw(
+    record = await ServiceKeyService.revoke_by_raw(
         session,
         raw_key,
         operator_id=operator_id,
         request_id=getattr(request.state, "request_id", None),
     )
+    if record is None:
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, "api key not found")
     await session.commit()
-    return {"revoked": raw_key}
+    return {"revoked": record.key_id}
 
 
 __version__ = "1.1.0"

@@ -189,8 +189,16 @@ async def list_users(
     user: dict = Depends(_require_user_view),
     session: AsyncSession = Depends(get_db),
 ) -> list[UserOut]:
-    """用户列表（按 id 升序）."""
-    result = await session.execute(select(User).order_by(User.id))
+    """用户列表（按 id 升序；E1-4/R3：非超管按租户过滤）."""
+    from openbase.modules.auth.rbac import tenant_filter_code
+
+    tenant_code = await tenant_filter_code(session, user)
+    if tenant_code == "":
+        return []
+    statement = select(User).order_by(User.id)
+    if tenant_code is not None:
+        statement = statement.where(User.tenant_code == tenant_code)
+    result = await session.execute(statement)
     rows = result.scalars().all()
     out: list[UserOut] = []
     for row in rows:

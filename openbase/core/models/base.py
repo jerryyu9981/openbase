@@ -204,6 +204,19 @@ class ServiceApiKey(Base, TimestampMixin):
     revoked_at: Mapped[dt.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # E1-1（R9/P1-1）：过期与轮换语义（naive 时间统一按 UTC aware 解释）
+    expires_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, comment="到期时间（UTC；NULL=不过期，兼容存量）"
+    )
+    last_used_at: Mapped[dt.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, comment="最近一次校验通过时间"
+    )
+    rotated_from: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, comment="轮换前旧 Key 的 key_id（审计/追溯）"
+    )
+    tenant_code: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, comment="签发时归属租户（列表隔离用；NULL=平台级）"
+    )
 
 
 class OutboxEvent(Base, TimestampMixin):

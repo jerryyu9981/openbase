@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import AgentApiKey, AuditLog, Role, User, user_role
+from openbase.core.timeutil import as_utc, utc_now
 from openbase.modules.identity.state_machine import SUBJECT_TYPE_AGENT
 
 logger = logging.getLogger("openbase.identity.agent_keys")
@@ -64,10 +65,6 @@ def secrets_token_urlsafe() -> str:
     return secrets.token_urlsafe(24)
 
 
-def _now() -> dt.datetime:
-    return dt.datetime.now(dt.timezone.utc)
-
-
 class AgentKeyService:
     """agent 密钥生命周期操作（发放/轮换/吊销/列表/校验）."""
 
@@ -91,6 +88,7 @@ class AgentKeyService:
             (raw_key, record)；raw_key 仅在此返回，服务端不落明文。
         """
         raw_key = f"{AGENT_KEY_PREFIX}{secrets_token_urlsafe()}"
+        normalized_expires_at = as_utc(expires_at)
         record = AgentApiKey(
             agent_id=agent_id,
             key_prefix=AGENT_KEY_PREFIX,
@@ -98,7 +96,7 @@ class AgentKeyService:
             key_suffix=raw_key[-6:],
             name=name,
             status=AGENT_KEY_STATUS_ACTIVE,
-            expires_at=expires_at,
+            expires_at=normalized_expires_at,
             created_by=created_by,
         )
         session.add(record)
@@ -112,6 +110,16 @@ class AgentKeyService:
                 request_id=_audit_request_id(request_id),
                 detail=_audit_detail(record, created_by, request_id),
             )
+        )
+        await cls._emit_event(
+            session,
+            "agent_key.issued",
+            record,
+            previous_state="none",
+            current_state="active",
+            reason="issue",
+            operator_id=created_by,
+            request_id=request_id,
         )
         await session.flush()
         logger.info("agent api key issued", extra={"agent_id": agent_id, "key_id": record.id})
@@ -151,6 +159,16 @@ class AgentKeyService:
                 detail=_audit_detail(record, operator_id, request_id),
             )
         )
+        await cls._emit_event(
+            session,
+            "agent_key.revoked",
+            record,
+            previous_state="active",
+            current_state="revoked",
+            reason="revoke",
+            operator_id=operator_id,
+            request_id=request_id,
+        )
         await session.flush()
         logger.info("agent api key revoked", extra={"agent_id": agent_id, "key_id": key_id})
         # E0-7（一键吊销）：吊销即失效（校验按 status 拒绝），并清理该主体可能存在的
@@ -181,6 +199,38 @@ class AgentKeyService:
         if record is None:
             raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"agent api key not found: {key_id}")
         return record
+
+    @classmethod
+    async def _emit_event(
+        cls,
+        session: AsyncSession,
+        event_type: str,
+        record: AgentApiKey,
+        *,
+        previous_state: str,
+        current_state: str,
+        reason: str,
+        operator_id: int | None,
+        request_id: str | None,
+    ) -> None:
+        """写 agent Key 事件到 outbox（E1-2/R10；同事务，失败不阻断主流程）."""
+        from openbase.modules.identity.events import enqueue_key_event
+
+        await enqueue_key_event(
+            session,
+            event_type=event_type,
+            key_kind="agent",
+            key_id=str(record.id),
+            key_name=record.name,
+            subject_id=record.agent_id,
+            subject_type="agent",
+            tenant_code=None,
+            previous_state=previous_state,
+            current_state=current_state,
+            reason=reason,
+            operator=operator_id,
+            request_id=request_id,
+        )
 
 
 async def resolve_agent_principal(session: AsyncSession, raw_key: str) -> dict[str, Any]:
@@ -215,7 +265,9 @@ async def resolve_agent_principal(session: AsyncSession, raw_key: str) -> dict[s
 
     if record.status != AGENT_KEY_STATUS_ACTIVE:
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "agent api key revoked")
-    if record.expires_at is not None and record.expires_at < _now():
+    # E1-3（R12/P0-8）：SQLite/存量库可能返回 naive datetime，统一按 UTC 归一后比较
+    expires_at = as_utc(record.expires_at)
+    if expires_at is not None and expires_at < utc_now():
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "agent api key expired")
     if user.subject_type != SUBJECT_TYPE_AGENT:
         raise BaseError(ErrorCode.AUTH_API_KEY_INVALID, "api key not bound to agent subject")
@@ -248,7 +300,7 @@ async def resolve_agent_principal(session: AsyncSession, raw_key: str) -> dict[s
     # E0-7（P0-7）：last_used_at 必须提交才可见（get_db 请求会话关闭即回滚）。
     # 先组装返回体再提交，避免 expire_on_commit=True 的会话在提交后触发异步懒加载；
     # 使用痕迹写入失败不影响本次认证（尽力而为 + WARN 留痕）。
-    record.last_used_at = _now()
+    record.last_used_at = utc_now()
     try:
         await session.commit()
     except Exception as exc:  # noqa: BLE001 - 使用痕迹落库失败不阻断认证

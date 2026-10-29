@@ -177,3 +177,158 @@ def test_api_key_lifecycle_writes_audit_without_plaintext() -> None:
     revoke_rows = [row for row in rows if row[0] == "auth.service_key.revoke"]
     assert len(revoke_rows) == 1, rows
     assert raw_key not in (revoke_rows[0][4] or "")
+
+
+# ---- E1-1（R9）：服务 Key 默认有效期与轮换 ----
+
+
+def _list_records(token: str) -> list[dict]:
+    resp = client.get("/api/v1/auth/api-keys", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+def test_e1_1_api_key_default_expiry_and_rotate() -> None:
+    """默认 90 天到期；轮换签发新 Key（rotated_from），旧 Key 宽限期后自动失效."""
+    import time
+
+    admin_token = _token("admin", "admin123")
+    create = client.post(
+        "/api/v1/auth/api-keys",
+        json={"name": _unique("svc-rot"), "scope": {"system": ["*"], "tenants": ["*"]}},
+        headers=_auth(admin_token),
+    )
+    assert create.status_code == 200, create.text
+    body = create.json()
+    old_key_id = body["id"]
+    old_raw_key = body["key"]
+    assert body["expires_at"] is not None
+    assert body["expires_at"] > time.time() + 80 * 24 * 3600  # ≈90 天
+
+    rotate = client.post(
+        f"/api/v1/auth/api-keys/{old_key_id}/rotate",
+        json={"grace_hours": 0},
+        headers=_auth(admin_token),
+    )
+    assert rotate.status_code == 200, rotate.text
+    rotated = rotate.json()
+    assert rotated["id"] != old_key_id
+    assert rotated["rotated_from"] == old_key_id
+    assert rotated["key"].startswith("ob_k_")
+    assert rotated["key"] != old_raw_key
+
+    records = {row["id"]: row for row in _list_records(admin_token)}
+    assert records[old_key_id]["expires_at"] <= time.time()  # 宽限 0 → 立即过期
+    assert records[rotated["id"]]["revoked"] is False
+
+    # 轮换审计留痕
+    actions = {row[0] for row in _audit_rows(old_key_id)}
+    assert "auth.service_key.rotate" in actions
+
+
+def test_e1_1_rotate_unknown_key_404() -> None:
+    """轮换不存在的 Key → 404."""
+    admin_token = _token("admin", "admin123")
+    resp = client.post(
+        "/api/v1/auth/api-keys/not-exist-key/rotate",
+        json={},
+        headers=_auth(admin_token),
+    )
+    assert resp.status_code == 404
+    assert resp.json()["code"] == "BIZ_404"
+
+
+# ---- E1-4（R13/R14/R15）：吊销不回显明文 / 未命中 404 / 掩码键 ----
+
+
+def test_e1_4_revoke_by_raw_no_plaintext_echo_and_404() -> None:
+    """按明文吊销不再回显明文（仅稳定 id）；未命中 → 404."""
+    admin_token = _token("admin", "admin123")
+    create = client.post(
+        "/api/v1/auth/api-keys",
+        json={"name": _unique("svc-raw"), "scope": {"system": ["*"], "tenants": ["*"]}},
+        headers=_auth(admin_token),
+    )
+    assert create.status_code == 200, create.text
+    body = create.json()
+    raw_key = body["key"]
+    key_id = body["id"]
+
+    revoke = client.delete(f"/api/v1/auth/api-keys/{raw_key}", headers=_auth(admin_token))
+    assert revoke.status_code == 200, revoke.text
+    payload = revoke.json()
+    assert payload == {"revoked": key_id}
+    assert raw_key not in json.dumps(payload)
+
+    missing = client.delete(
+        f"/api/v1/auth/api-keys/{_unique('ob_k_unknown')}", headers=_auth(admin_token)
+    )
+    assert missing.status_code == 404
+    assert missing.json()["code"] == "BIZ_404"
+
+
+# ---- E1-2（R10）：Key 事件写入 outbox ----
+
+def test_e1_2_service_key_events_enqueued() -> None:
+    """签发/吊销服务 Key 同事务写 outbox 事件（service_key.issued/revoked）。"""
+    admin_token = _token("admin", "admin123")
+    create = client.post(
+        "/api/v1/auth/api-keys",
+        json={"name": _unique("svc-evt"), "scope": {"system": ["*"], "tenants": ["*"]}},
+        headers=_auth(admin_token),
+    )
+    assert create.status_code == 200, create.text
+    key_id = create.json()["id"]
+
+    conn = sqlite3.connect(_DB_PATH)
+    try:
+        issued = conn.execute(
+            "SELECT COUNT(*) FROM outbox_events WHERE event_type = 'service_key.issued' "
+            "AND payload LIKE ?",
+            (f"%{key_id}%",),
+        ).fetchone()[0]
+        assert issued >= 1
+
+        client.delete(f"/api/v1/auth/api-keys/by-id/{key_id}", headers=_auth(admin_token))
+        revoked = conn.execute(
+            "SELECT COUNT(*) FROM outbox_events WHERE event_type = 'service_key.revoked' "
+            "AND payload LIKE ?",
+            (f"%{key_id}%",),
+        ).fetchone()[0]
+        assert revoked >= 1
+    finally:
+        conn.close()
+
+
+def test_e1_4_service_key_list_tenant_filter() -> None:
+    """列表按归属租户过滤：单租户 scope 的 Key 归属该租户，平台级 Key 不泄漏给租户视角."""
+    admin_token = _token("admin", "admin123")
+    tenant_key = client.post(
+        "/api/v1/auth/api-keys",
+        json={"name": _unique("svc-site"), "scope": {"system": ["*"], "tenants": ["site-a"]}},
+        headers=_auth(admin_token),
+    ).json()
+    platform_key = client.post(
+        "/api/v1/auth/api-keys",
+        json={"name": _unique("svc-platform"), "scope": {"system": ["*"], "tenants": ["*"]}},
+        headers=_auth(admin_token),
+    ).json()
+
+    records = {row["id"]: row for row in _list_records(admin_token)}
+    assert records[tenant_key["id"]]["tenant_code"] == "site-a"
+    assert records[platform_key["id"]]["tenant_code"] is None
+
+    # 租户调用方（权限点透传 + tenant_code）只能看到归属本租户的 Key
+    from openbase.modules.auth.jwt import create_access_token
+
+    tenant_token = create_access_token(
+        "idp-api-key-viewer",
+        username="tenant-key-viewer",
+        tenant_code="site-a",
+        extra={"permissions": ["auth:api-keys:view"], "role": "viewer"},
+    )
+    tenant_view = client.get("/api/v1/auth/api-keys", headers=_auth(tenant_token))
+    assert tenant_view.status_code == 200, tenant_view.text
+    visible_ids = {row["id"] for row in tenant_view.json()}
+    assert tenant_key["id"] in visible_ids
+    assert platform_key["id"] not in visible_ids

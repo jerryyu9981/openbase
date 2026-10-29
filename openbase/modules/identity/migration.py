@@ -45,18 +45,27 @@ _SYSTEM_PERMISSIONS: tuple[tuple[str, str], ...] = (
 )
 
 
+# E1-1（R9/P1-1）：service_api_keys 过期/轮换增量列（幂等 ALTER，存量库补齐）
+_SERVICE_KEY_NEW_COLUMNS: dict[str, str] = {
+    "expires_at": "TIMESTAMP",
+    "last_used_at": "TIMESTAMP",
+    "rotated_from": "VARCHAR(32)",
+    "tenant_code": "VARCHAR(64)",
+}
+
+
 def _qualify(schema: str | None, table: str) -> str:
     return f'"{schema}".{table}' if schema else table
 
 
-def _users_columns(sync_conn: Any, schema: str | None) -> set[str]:
-    """读取 users 现有列名（缺表返回空集）. """
+def _table_columns(sync_conn: Any, table: str, schema: str | None) -> set[str]:
+    """读取表现有列名（缺表返回空集）. """
     from sqlalchemy import inspect
 
     inspector = inspect(sync_conn)
-    if not inspector.has_table("users", schema=schema):
+    if not inspector.has_table(table, schema=schema):
         return set()
-    return {col["name"] for col in inspector.get_columns("users", schema=schema)}
+    return {col["name"] for col in inspector.get_columns(table, schema=schema)}
 
 
 async def apply_identity_migration(
@@ -86,7 +95,7 @@ async def apply_identity_migration(
             await conn.execute(text("SET search_path TO public"))
 
         # 2) users 增量列（W1-4：ALTER ADD COLUMN，已存在则跳过）
-        existing = await conn.run_sync(_users_columns, schema)
+        existing = await conn.run_sync(_table_columns, "users", schema)
         for column_name, column_ddl in _USERS_NEW_COLUMNS.items():
             if column_name in existing:
                 continue
@@ -94,6 +103,22 @@ async def apply_identity_migration(
                 text(f"ALTER TABLE {users_ref} ADD COLUMN {column_name} {column_ddl}")
             )
             summary["columns_added"].append(column_name)
+
+        # 2b) E1-1：service_api_keys 过期/轮换增量列（存量库幂等补齐）
+        service_keys_ref = _qualify(schema, "service_api_keys")
+        existing_service_keys = await conn.run_sync(
+            _table_columns, "service_api_keys", schema
+        )
+        for column_name, column_ddl in _SERVICE_KEY_NEW_COLUMNS.items():
+            if column_name in existing_service_keys:
+                continue
+            await conn.execute(
+                text(
+                    f"ALTER TABLE {service_keys_ref} "
+                    f"ADD COLUMN {column_name} {column_ddl}"
+                )
+            )
+            summary["columns_added"].append(f"service_api_keys.{column_name}")
 
         # 3) 存量行回填（幂等：仅补 NULL；主键/FK 不动）
         await conn.execute(

@@ -23,6 +23,22 @@ from openbase.core.mask import (
 
 # ---- 凭据类 ----
 
+def test_e1_4_exact_bare_key_names_are_masked() -> None:
+    """E1-4/R15：裸键名 key/raw_key/secret 一并遮蔽，且不误伤 key_id 等元数据键."""
+    masked = mask_sensitive(
+        {
+            "key": "ob_k_plaintext",
+            "raw_key": "sk-agent-plaintext",
+            "secret": "s3cr3t",
+            "key_id": "abc123",
+        }
+    )
+    assert masked["key"] == MASKED
+    assert masked["raw_key"] == MASKED
+    assert masked["secret"] == MASKED
+    assert masked["key_id"] == "abc123"
+
+
 def test_sensitive_keys_are_masked() -> None:
     """凭据类键 → MASKED（含大小写与片段包含匹配）."""
     masked = mask_sensitive(

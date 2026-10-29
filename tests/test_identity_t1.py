@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import sqlite3
 import tempfile
 import uuid
@@ -501,6 +502,58 @@ def test_e0_1_device_credential_expiry_and_guidance(caplog) -> None:
     assert not any(
         "without expires_at" in record.getMessage() for record in caplog.records
     )
+
+
+# ---- E1-2 / E1-3（Key 事件 + 到期时区归一）----
+
+
+def test_e1_3_expired_agent_key_rejected() -> None:
+    """过期 agent Key → 401（SQLite naive 时间按 UTC 归一后仍正确判定）."""
+    import datetime as dt
+
+    admin_headers = _admin_headers()
+    created = _create_agent(admin_headers)
+    agent_id = created["agent_id"]
+    expired_at = (
+        dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=1)
+    ).isoformat()
+    issue = client.post(
+        f"/api/v1/identity/agents/{agent_id}/keys",
+        json={"name": "expired-device", "expires_at": expired_at},
+        headers=admin_headers,
+    )
+    assert issue.status_code == 200, issue.text
+    raw_key = issue.json()["raw_key"]
+
+    resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {raw_key}"})
+    assert resp.status_code == 401, resp.text
+    assert resp.json()["code"] == "AUTH_API_KEY_INVALID"
+
+
+def test_e1_2_agent_key_events_enqueued() -> None:
+    """agent Key 签发/吊销写 outbox（agent_key.issued / agent_key.revoked）."""
+    admin_headers = _admin_headers()
+    created = _create_agent(admin_headers)
+    agent_id = created["agent_id"]
+    key_id = created["api_key"]["id"]
+
+    issued = _rows(
+        "SELECT payload FROM outbox_events WHERE event_type = 'agent_key.issued'"
+    )
+    assert any(
+        json.loads(row[0])["key"]["key_id"] == str(key_id) for row in issued
+    ), "签发失败：未写入 agent_key.issued 事件"
+
+    revoke = client.delete(
+        f"/api/v1/identity/agents/{agent_id}/keys/{key_id}", headers=admin_headers
+    )
+    assert revoke.status_code == 200, revoke.text
+    revoked = _rows(
+        "SELECT payload FROM outbox_events WHERE event_type = 'agent_key.revoked'"
+    )
+    assert any(
+        json.loads(row[0])["key"]["key_id"] == str(key_id) for row in revoked
+    ), "吊销失败：未写入 agent_key.revoked 事件"
 
 
 # ---- T1-7 / T1-8（迁移幂等与存量回填）----

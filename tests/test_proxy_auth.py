@@ -191,3 +191,56 @@ def test_untrusted_tenant_header_is_not_trusted() -> None:
     assert resp.status_code == 403, resp.text
     assert resp.json()["code"] == "PERM_API_KEY_SCOPE"
     assert resp.json()["detail"]["reason"] == "tenant_required"
+
+
+# ---- E1-1（R9）：服务 Key 到期与轮换在数据面生效 ----
+
+
+def test_expired_api_key_rejected_at_proxy() -> None:
+    """已过期服务 Key → 401 AUTH_API_KEY_INVALID（到期即失效）."""
+    import datetime as dt
+
+    admin_token = _token("admin", "admin123")
+    expired_at = (
+        dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=5)
+    ).isoformat()
+    resp = client.post(
+        "/api/v1/auth/api-keys",
+        json={
+            "name": f"svc-expired-{uuid.uuid4().hex[:6]}",
+            "scope": {"system": ["*"], "tenants": ["*"]},
+            "expires_at": expired_at,
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    key = resp.json()["key"]
+
+    call = client.get("/api/v1/proxy/openllm/chat", headers={"X-API-Key": key})
+    assert call.status_code == 401, call.text
+    assert call.json()["code"] == "AUTH_API_KEY_INVALID"
+
+
+def test_rotated_key_grace_zero_switches_immediately() -> None:
+    """轮换宽限 0：新 Key 可用，旧 Key 立即失效（数据面）。"""
+    admin_token = _token("admin", "admin123")
+    old_key = _create_key(admin_token, "svc-rotate-old", {"system": ["*"], "tenants": ["*"]})
+
+    list_resp = client.get(
+        "/api/v1/auth/api-keys", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    old_key_id = next(
+        row["id"] for row in list_resp.json() if row["name"].startswith("svc-rotate-old-")
+    )
+    rotate = client.post(
+        f"/api/v1/auth/api-keys/{old_key_id}/rotate",
+        json={"grace_hours": 0},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert rotate.status_code == 200, rotate.text
+    new_key = rotate.json()["key"]
+
+    old_call = client.get("/api/v1/proxy/openllm/chat", headers={"X-API-Key": old_key})
+    assert old_call.status_code == 401, old_call.text
+    new_call = client.get("/api/v1/proxy/openllm/chat", headers={"X-API-Key": new_key})
+    assert new_call.status_code not in (401, 403), new_call.text

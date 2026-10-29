@@ -41,6 +41,7 @@ __all__ = [
     "MASKED",
     "MAX_DEPTH",
     "MAX_SUMMARY_BYTES",
+    "SENSITIVE_EXACT_KEYS",
     "SENSITIVE_KEY_FRAGMENTS",
     "digest_of",
     "mask_sensitive",
@@ -74,6 +75,14 @@ SENSITIVE_KEY_FRAGMENTS: tuple[str, ...] = (
     "jwt",
     "signature",
     "bearer",
+)
+
+# 敏感键精确匹配（E1-4/R15）：补齐裸键名 ``key``/``raw_key``/``secret``。
+# 采用精确匹配而非子串，避免把 ``key_id``/``monkey`` 等非凭据键误遮蔽。
+SENSITIVE_EXACT_KEYS: tuple[str, ...] = (
+    "key",
+    "raw_key",
+    "secret",
 )
 
 # 默认整体遮蔽的业务域（方案 §11.4：画像等个人隐私域）
@@ -175,9 +184,11 @@ def _mask_text(value: str) -> str:
 
 
 def _is_sensitive_key(key: str) -> bool:
-    """键名是否命中凭据类敏感片段（小写包含匹配）."""
+    """键名是否命中凭据类敏感键（精确键名优先，其余子串匹配）."""
     lowered = key.lower()
-    return any(fragment in lowered for fragment in SENSITIVE_KEY_FRAGMENTS)
+    return lowered in SENSITIVE_EXACT_KEYS or any(
+        fragment in lowered for fragment in SENSITIVE_KEY_FRAGMENTS
+    )
 
 
 def _is_redacted_domain(key: str) -> bool:

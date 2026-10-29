@@ -28,6 +28,7 @@ __all__ = [
     "is_superadmin",
     "require_permission",
     "resolve_user_permissions",
+    "tenant_filter_code",
     "PermissionStore",
     "PermissionService",
 ]
@@ -227,3 +228,18 @@ async def ensure_user_permission(
     if is_superadmin(permissions) or has_permission(permissions, permission_code):
         return user
     raise BaseError(error_code, f"missing permission: {permission_code}")
+
+
+async def tenant_filter_code(session: AsyncSession, user: dict) -> str | None:
+    """列表租户过滤键（E1-4a/R3）.
+
+    Returns:
+        ``None`` = 不过滤（显式超管，平台视角）；
+        ``""`` = 调用方无租户绑定（非超管 → 不应看到任何租户数据）；
+        其余 = 生效租户码（``tenant_code`` 优先，回退 ``tenant_id``）。
+    """
+    permissions = await resolve_user_permissions(session, user)
+    if is_superadmin(permissions):
+        return None
+    raw = user.get("tenant_code") or user.get("tenant_id")
+    return str(raw) if raw else ""

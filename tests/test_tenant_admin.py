@@ -226,3 +226,81 @@ def test_tenant_context_quota_compat() -> None:
     quota_resp = client.get("/api/v1/tenants/demo/quota", params={"resource": "users"}, headers=headers)
     assert quota_resp.status_code == 200
     assert "usage" in quota_resp.json()
+
+
+# ---- E1-4（R3）：列表租户隔离 ----
+
+
+def _tenant_scoped_token(tenant_code: str, permissions: list[str]) -> str:
+    """构造租户域调用方 JWT（非数字 sub → 无本地主体行，按 OIDC 直签放行）."""
+    from openbase.modules.auth.jwt import create_access_token
+
+    return create_access_token(
+        "idp-tenant-caller",
+        username="tenant-caller",
+        tenant_code=tenant_code,
+        extra={"permissions": permissions, "role": "viewer"},
+    )
+
+
+def test_e1_4_tenant_list_scoped_for_tenant_caller() -> None:
+    """非超管租户调用方仅见自身租户（超管仍见全部）."""
+    admin_headers = _auth(_token("admin", "admin123"))
+    code_a = _unique("scope-a")
+    code_b = _unique("scope-b")
+    for code in (code_a, code_b):
+        resp = client.post(
+            "/api/v1/tenants", json={"code": code, "name": code}, headers=admin_headers
+        )
+        assert resp.status_code == 200, resp.text
+
+    token = _tenant_scoped_token(code_a, ["tenant:view"])
+    resp = client.get("/api/v1/tenants", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    assert [item["code"] for item in resp.json()] == [code_a]
+
+    admin_codes = {item["code"] for item in client.get("/api/v1/tenants", headers=admin_headers).json()}
+    assert {code_a, code_b} <= admin_codes
+
+
+def test_e1_4_user_list_scoped_for_tenant_caller() -> None:
+    """用户列表按 tenant_code 隔离：租户调用方仅见本租户用户."""
+    admin_headers = _auth(_token("admin", "admin123"))
+    code_a = _unique("users-a")
+    code_b = _unique("users-b")
+    tenant_a = client.post(
+        "/api/v1/tenants", json={"code": code_a, "name": code_a}, headers=admin_headers
+    ).json()
+    tenant_b = client.post(
+        "/api/v1/tenants", json={"code": code_b, "name": code_b}, headers=admin_headers
+    ).json()
+
+    for username, display_name, tenant_id in (
+        (_unique("ua"), "Tenant A User", tenant_a["id"]),
+        (_unique("ub"), "Tenant B User", tenant_b["id"]),
+    ):
+        created = client.post(
+            "/api/v1/users",
+            json={
+                "username": username,
+                "password": "pass123",
+                "display_name": display_name,
+                "role": "viewer",
+                "tenant_id": tenant_id,
+            },
+            headers=admin_headers,
+        )
+        assert created.status_code == 200, created.text
+
+    token = _tenant_scoped_token(code_a, ["users:view"])
+    resp = client.get("/api/v1/users", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body, "租户 A 至少应看到本租户用户"
+    assert {row["display_name"] for row in body} == {"Tenant A User"}
+
+    admin_names = {
+        row["display_name"]
+        for row in client.get("/api/v1/users", headers=admin_headers).json()
+    }
+    assert {"Tenant A User", "Tenant B User"} <= admin_names
