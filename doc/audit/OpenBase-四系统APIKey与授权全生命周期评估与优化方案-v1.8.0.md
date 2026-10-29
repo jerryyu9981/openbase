@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.7.0 |
+| 版本 | v1.8.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -385,8 +385,8 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 - 非对称签名令牌（RS256；**国密 SM2 作为可插拔算法，政务交付再开启**）+ 边缘缓存 JWKS（`kid` 轮换）。
 - 吊销增量同步：`GET /auth/revocations?since=`，随 OTA/心跳拉取；站点网关缓存并广播给终端。
-- MCP 边缘服务：HTTP 走 Bearer、stdio 由宿主注入短期令牌；工具级 `scope.tools` 过滤。
-- 设备配额与异常告警（同一 Key 多 IP、异地登录、调用量突增）。
+- MCP 边缘服务：HTTP 走 Bearer、stdio 由宿主注入短期令牌；工具级 `scope.tools` 过滤。**（v1.8.0 已落地，见 §10.12）**
+- 设备配额与异常告警（同一 Key 多 IP、异地登录、调用量突增）。**（v1.8.0 已落地，见 §10.12）**
 
 ### 10.4 E2（按需）
 
@@ -547,7 +547,34 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 **残余**
 
 - 下游同步为**请求触发的惰性拉取**（按间隔节流），无独立后台线程：无流量时不同步；如需空闲期收敛，后续补调度任务。
-- E1 §10.3 第 3/4 条（MCP 边缘凭证与工具级 `scope.tools`、设备配额与异常告警）以及 R6 下游信任白名单 fail-closed、R7/R8 静态 Key 收敛仍待排期。
+- E1 §10.3 第 3/4 条（MCP 边缘凭证与工具级 `scope.tools`、设备配额与异常告警）以及 R6 下游信任白名单 fail-closed、R7/R8 静态 Key 收敛仍待排期。**（v1.8.0 已全部闭合，见 §10.12）**
+
+### 10.12 E1-6/E1-7 实施结果（v1.8.0，2026-10-30）
+
+> 范围（§10.3 第 3/4 条 + §10.6 中 R6/R7/R8 三项）：MCP 边缘凭证与工具级授权、Key 异常告警、四仓生产 fail-closed 门禁、OpenMemory 轮换闭环、OpenLLM Key 权限与配额生效。E2 与政务强合规项未动。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| E1-6 MCP 边缘凭证 | HTTP 通道三形态：静态 `X-API-Key`（存量兼容）→ 服务 Key `ob_k_*`（`scope.system` 含 `mcp`）→ 短期 JWT（`type=access`，`Authorization: Bearer`）；stdio 通道由宿主注入 `OPENBASE_MCP_TOKEN_FILE`（优先）或 `OPENBASE_MCP_TOKEN`，缺失/非 access/过期一律 401（fail-closed） | OpenBase `modules/mcp/credentials.py`（新）、`modules/mcp/__init__.py`、`modules/mcp/stdio.py`（新） | `tests/test_mcp_edge_credentials.py`（6 项）+ `test_three_modules.py` / `test_obs_mcp.py` 回归 25 项 |
+| E1-6 工具级授权 | `scope.tools` 白名单：`tools/list` 按白名单过滤；`tools/call` 二次校验——HTTP 层 403 `PERM_API_KEY_SCOPE`，JSON-RPC 层 `isError=true` + 协议码 `-32001`；`tools=None` 表示不限（静态 Key 存量语义），`*` 通配 | 同上 | 同上（含越权调用、system 不含 mcp、JWT scope 用例） |
+| E1-6 Key 异常告警 | 进程内窗口检测三类信号：`multi_ip`（窗口内不同 IP 数超阈值）、`ip_prefix_change`（IP 网段跳变，作为异地登录近似）、`rate_spike`（60s 调用量超阈值）；同类告警冷却抑制；**只告警不阻断认证**；落 `AuditLog`（`auth.service_key.anomaly`）+ 结构化 WARN，写库失败回滚且不影响请求 | OpenBase `modules/auth/key_anomaly.py`（新）、`core/deps/auth.py`、`settings.py`（6 项配置：开关/窗口 900s/多 IP 3/限速 600 rpm/冷却 300s/是否采信 XFF 默认 False） | `tests/test_key_anomaly.py`（7 项：网段归一、多 IP、网段跳变、突增+冷却、开关、审计写入、写入失败回滚）+ `test_rbac_deps` / `test_auth` / `test_inbound_header_gate` 回归 |
+| R6 四仓生产门禁 | 生产 profile 漏配即拒绝启动：OpenLLM `TRUSTED_PROXY_SOURCES` 非空；OpenRAG `enforce_inbound_identity_headers=true` + `trusted_proxy_sources` 非空 + `role_fail_closed=true`；DPS enforce 已开时 `TRUSTED_PROXY_SOURCES` 非空；OpenMemory 同款口径并入 `validate_gateway_security_policy` | OpenLLM `app/core/config.py`；OpenRAG `config/settings.py`、`main.py`；DPS `src/config.py`；OpenMemory `utils/config.py`、`api/server.py` | OpenLLM `tests/unit/test_r6_r8_api_key_failclosed.py`（23 项，含 R8）；OpenRAG `tests/unit/test_c4_production_gate.py`（11 项）；DPS `src/tests/test_r6_trusted_proxy_fail_closed.py`（5 项）+ `test_c4_production_gate.py`（6 项）；OpenMemory `tests/unit/test_gateway_openbase_jwks.py`（22 项） |
+| R7 OpenMemory 轮换闭环 | 轮换记录**摘要落盘**（仅 SHA-256，原子替换 + 0600 权限尽力设置），先落盘后提交内存状态（持久化失败不产生"假轮换"）；`rotated` 记录 5 分钟宽限期内仍可用；`verify_key()` 供路由 / API Key 中间件 / 网关同源校验；网关新增 `managed_api_key_validator` 注入；生产三拒绝（`allow_unverified_gateway_token`、`oidc_mode=gateway` 无验签材料、无 API Key） | OpenMemory `admin/service.py`、`admin/routes.py`、`api/server.py`、`gateway/gateway.py`、`utils/config.py`、`.env.example` | `tests/unit/test_gateway_openbase_jwks.py`（+8，合计 22 项） |
+| R8 OpenLLM Key 权限与配额 | 认证通过后写 `request.state.api_key`（id + permissions）；`rbac_guard.api_key_permissions/api_key_permits` 支持 `*`、精确码、`module:*`、read/write 粗粒度，作为**权限上限先于 `is_admin()` 放行**；`rate_limit` 按 Key 令牌桶（`rate_limit` 摘要缓存 300s、键 `requests_per_minute`、容量/填充 = rpm）覆盖用户级默认额度，超限 429 + `Retry-After` | OpenLLM `app/services/auth_service.py`、`app/identity/rbac_guard.py`、`app/middleware/rate_limit.py` | `tests/unit/test_r6_r8_api_key_failclosed.py`（23 项，与 R6 共用文件） |
+
+**统一口径**
+
+- 生产门禁一律在**装配期**抛出（`RuntimeError` / `ValueError`），拒绝以"仅 WARN"的形式带病启动；非生产行为不变。
+- 异常检测与配额缓存均为**单进程内存**实现，不做跨实例共享；失败路径统一降级（告警记录失败不影响认证，配额缓存未命中回退用户级默认）。
+- MCP 令牌只校验 `type=access` 且必须带 `exp`；不校验 `tvn`（终端离线宽限由令牌短 TTL 兜底）。
+
+**残余**
+
+- MCP 工具级权限**仅作用于 MCP 路由**（`/mcp/tools*`、`/mcp/json-rpc`）；OpenBase 其他管理端点不受 `scope.tools` 约束。静态 `settings.mcp_api_keys` 维持"不限工具"存量语义，未强制绑定 `scope.tools`。
+- 异常检测为进程内滑动窗口 + 冷却，**不跨实例、不持久化**；多实例部署需中心化聚合（与集中审计平台一并排期）。异地登录以 IP 网段跳变为近似，非地理定位；默认不采信 `X-Forwarded-For`，仅部署在受信代理后才可开启 `key_anomaly_trust_forwarded_for`。
+- OpenLLM Key 配额缓存为单进程内存，多进程各自计数；跨实例精确配额需 Redis 令牌桶（后续）。
+- OpenMemory 落盘只存摘要：进程重启后 `get_active_key()` 不再返回 active 明文（返回 `None`），运维须在轮换响应中即时登记新密钥。
+- 验证边界：OpenRAG 全量 pytest 因运行环境缺 `structlog` 无法收集，本仓门禁用「命名空间 stub 装载 `settings.py`」的等价断言验证（11 项通过），未伪造全量通过；OpenLLM 全量 unit 存在既有环境性失败（`SECRET_KEY` 空、PostgreSQL 5432 不可用等），均未命中本次改动路径。
 
 ## 11. 修订历史
 
@@ -563,3 +590,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.6.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.10「E1-5B 实施结果」：OpenLLM / OpenMemory / OpenRAG / DPS 四仓接入 OpenBase RS256/JWKS 本地验签（统一契约：kid 选择、未知 kid 强制刷新、iss/aud/exp 强校验、主体映射 fail-closed、默认留空不启用），各仓保留 HS256 存量通道；登记双验签过渡、内省/吊销增量未接入下游、部署编排边界与「用户令牌直连映射」待裁定项 |
 | v1.6.1 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | §10.10 补充「OpenLLM 验签入口收口」：新增 `auth_service.verify_bearer_token` 统一入口覆盖 HTTP 依赖与 WebSocket；RS256 分支下沉 `JWTHandler.verify_token`（`/api/v1/auth/verify`、edge router 同步生效）；refresh 链拒绝 OpenBase 令牌换发；删除网关冗余二次回落；登记新增 7 项用例与回归结果 |
 | v1.7.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.11「E1-5C 实施结果」：吊销增量同步在四仓落地（状态/版本判定、同步失败沿用旧快照、严格模式开关），控制面 `next_since` 回退 1ms 修复同毫秒漏读；登记惰性同步（无后台线程）与 E1 剩余项（MCP 边缘凭证、配额告警、R6/R7/R8） |
+| v1.8.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.12「E1-6/E1-7 实施结果」，闭合 E1 剩余项：MCP 边缘凭证三形态 + stdio 令牌注入 + 工具级 `scope.tools` 过滤；Key 异常告警（多 IP / 网段跳变 / 调用量突增，只告警不阻断，落审计）；R6 四仓生产 fail-closed 门禁（受信来源与角色口径漏配即拒启）；R7 OpenMemory 轮换闭环（摘要落盘 + 宽限期 + 网关同源校验 + 生产三拒绝）；R8 OpenLLM Key 权限上限与按 Key 配额限流；登记残余（单进程窗口/内存配额、MCP 工具级仅作用 MCP 路由、OpenRAG 全量收集受限） |
