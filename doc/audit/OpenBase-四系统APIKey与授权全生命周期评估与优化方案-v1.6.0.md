@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.5.0 |
+| 版本 | v1.6.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -497,6 +497,31 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - **未纳入本轮（E1-5B，下游逐仓灰度）**：OpenLLM / OpenMemory / OpenRAG / DPS 的 JWKS 拉取与本地验签、内省/吊销增量对齐、部署编排（环境变量与 PEM 挂载）。
 - 内省无缓存属有意取舍：高频批量场景应调用 revocations 增量对齐，避免逐令牌读库。
 
+### 10.10 E1-5B 实施结果（v1.6.0，2026-10-29）
+
+> 范围：E1-5A 交付的 JWKS / 内省 / 吊销增量在下游逐仓接入，按裁定顺序 **OpenLLM → OpenMemory → OpenRAG → DPS** 推进。四仓统一实现「本地验签 OpenBase RS256 令牌 + 保留本仓 HS256 存量通道」，配置默认留空 = 不启用（升级零行为变化）。
+
+| 仓库 | 落点 | 行为差异 | 验证证据 |
+|---|---|---|---|
+| OpenLLM | `backend/app/security/openbase_jwt.py`（新）；接入 `services/auth_service.get_current_user` 与 `/openllm` 网关 JWT 通道（`api/openllm_gateway.py`） | 本仓 HS256 优先，失败回落 OpenBase RS256；`sub` 需经 `OPENBASE_SUBJECT_MAP` 映射为本地 User UUID，未命中即 401（`OPENBASE_TRUST_LOCAL_SUBJECT` 仅同库部署开启）；PEM 私钥不落本仓（只验签） | `backend/tests/unit/security/test_openbase_jwt.py`（12 项）+ 既有 jwt/gateway/auth 单测回归（72 项通过；`test_gateway_401_format.py` 7 项为**基线既有**不一致，非本次改动） |
+| OpenMemory | `src/openmemory/gateway/openbase_jwks.py`（新）；`gateway/gateway.py::_decode_jwt` 分流；`utils/config.py` / `api/server.py` 配置透传 | RS256 优先于既有共享密钥通道；`tenant_code` 归一为 `tenant_id`；无本地用户映射（按 `sub` 隔离） | `tests/unit/test_gateway_openbase_jwks.py`（8 项）+ `test_gateway.py`（14 项） |
+| OpenRAG | `src/openrag/api/middleware/openbase_jwt.py`（新）；`api_key.py` 前置 Bearer 验签；`identity_gate.py` 派生 principal；`main.py` / `settings.py` 装配 | 新增可选 Bearer 通道（原仅 X-API-Key）；验签通过写 `jwt_principal` 并派生 `auth_method=jwt`，失败回落 X-API-Key；未配置时行为不变 | `tests/unit/api/test_openbase_jwt_bearer.py`（11 项）+ 既有 API Key 中间件（9 项） |
+| DPS | `src/identity/openbase_jwt.py`（新）；`rest_api/routes/routes_auth.py::_decode_token` 回落；`src/config.py` 新增 `DPS_OPENBASE_*` | 本仓 HS256 优先，OpenBase RS256 回落；`sub` 经 `DPS_OPENBASE_SUBJECT_MAP` 映射、`tenant_code` 归一为 `org_id`；不映射 `tvn → tv`（吊销以 OpenBase 为权威） | `src/tests/test_e15b_openbase_jwt.py`（9 项）+ IAM 会话版本/DB 用户回归（12 项） |
+
+**统一契约（四仓一致）**
+
+- 仅接管 `alg=RS256`；JWKS 按 `kid` 选公钥，未知 kid 强制刷新一次后拒绝；TTL 缓存默认 300s；`iss=openbase`、`aud=openbase-api`、`exp` 强校验（含 leeway）。
+- 配置缺失（JWKS URL 为空）= 通道关闭，行为与升级前完全一致。
+- 主体映射失败一律拒绝（fail-closed），不做"猜测式"用户名回退。
+- 日志只记录失败原因，不记录令牌内容。
+
+**兼容与残余**
+
+- 双验签过渡：四仓均保留各自 HS256 通道；待 OpenBase 全量 RS256 换发后可关闭 HS256 通道。
+- 内省/吊销增量：OpenBase 已提供 `POST /api/v1/auth/introspect` 与 `GET /api/v1/auth/revocations`；下游本轮**未**接入轮询（以离线验签 + 短 TTL 令牌为主，吊销由 OpenBase 侧即时生效兜底），后续按需接入。
+- 部署编排（PEM 只读挂载、下游 `*_OPENBASE_JWKS_URL` 注入、`*_SUBJECT_MAP` 映射）由部署配置执行；本轮仅在各仓 `.env.example` / 环境配置说明登记，OpenBase 仓内无统一 compose 文件。
+- 待裁定：OpenBase **终端用户**令牌直连下游的主体映射策略（显式映射表 vs 同库信任）；当前默认要求显式映射，未配置即拒绝。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -508,3 +533,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.3.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.7「E0 实施结果」：七项轻量落地逐条记录落点与回归证据（E0-2 OpenLLM 移除 `X-User-Role` 回退；E0-3 服务 Key 租户 scope；E0-4 Key 生命周期审计落库；E0-5 `system:superadmin` 显式超管；E0-6 离线宽限 72h/缓存 900s；E0-7 last_used 提交与吊销缓存清理；E0-1 设备凭据有效期提示），并登记行为差异、残余（E1）与环境提示 |
 | v1.4.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.8「E1 实施结果（第 1~4 项）」：`ob_k_` 默认 90 天到期 + 轮换端点（宽限 24h）+ 认证记录 last_used；Key 生命周期事件（service_key.*/agent_key.*）入 outbox 并随 `/identity/events` 下发；到期时间 UTC 归一；列表按租户过滤（服务 Key/用户/租户/agent）与低成本项（明文吊销不回显、路径段白名单、掩码补裸键）；登记兼容策略与残余（E1-5 JWKS/自省单独排期） |
 | v1.5.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.9「E1-5A 实施结果」：按裁定路径 A 落地控制面非对称签名 —— RS256 签发（kid/iss/aud）+ 多 kid JWKS + 算法白名单双验签（HS256 存量过渡）+ `GET /.well-known/jwks.json` + `POST /api/v1/auth/introspect` + `GET /api/v1/auth/revocations` 增量；新增 RS256 配置门禁与 `jwt_require_rs256` 启动检查；登记兼容策略与残余（E1-5B 下游逐仓接入本轮不做） |
+| v1.6.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.10「E1-5B 实施结果」：OpenLLM / OpenMemory / OpenRAG / DPS 四仓接入 OpenBase RS256/JWKS 本地验签（统一契约：kid 选择、未知 kid 强制刷新、iss/aud/exp 强校验、主体映射 fail-closed、默认留空不启用），各仓保留 HS256 存量通道；登记双验签过渡、内省/吊销增量未接入下游、部署编排边界与「用户令牌直连映射」待裁定项 |
