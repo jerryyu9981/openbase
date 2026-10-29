@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.6.0 |
+| 版本 | v1.6.1 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -522,6 +522,14 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 部署编排（PEM 只读挂载、下游 `*_OPENBASE_JWKS_URL` 注入、`*_SUBJECT_MAP` 映射）由部署配置执行；本轮仅在各仓 `.env.example` / 环境配置说明登记，OpenBase 仓内无统一 compose 文件。
 - 待裁定：OpenBase **终端用户**令牌直连下游的主体映射策略（显式映射表 vs 同库信任）；当前默认要求显式映射，未配置即拒绝。
 
+**补充（v1.6.1，2026-10-30）：OpenLLM 验签入口收口**
+
+- 新增 `services/auth_service.verify_bearer_token` 统一入口（本仓 HS256 优先 → 失败回落 OpenBase RS256/JWKS），`get_current_user` 与 WebSocket 认证改用该入口（原先仅 HTTP 依赖与服务网关两处覆盖）。
+- `edgerouter/auth/jwt_handler.py::verify_token` 增加 RS256 分支：`/api/v1/auth/verify`、edge router 自建 handler 同步获得 OpenBase 验签能力；HS256 路径逐字不变。
+- `refresh_token` 链保持只接受本仓 `type=refresh`，OpenBase 令牌（`type=access`）无法用于换发本仓 token（防越权）。
+- 网关删除已冗余的二次回落（能力下沉后单一入口）。
+- 验证：`tests/unit/edgerouter/test_jwt_handler.py` 新增 4 项、`tests/unit/security/test_openbase_jwt.py` 新增 3 项；auth_service / 网关 / jwt_redis 回归 95 项通过；`test_gateway_401_format.py` 7 项仍为基线既有不一致。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -534,3 +542,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.4.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.8「E1 实施结果（第 1~4 项）」：`ob_k_` 默认 90 天到期 + 轮换端点（宽限 24h）+ 认证记录 last_used；Key 生命周期事件（service_key.*/agent_key.*）入 outbox 并随 `/identity/events` 下发；到期时间 UTC 归一；列表按租户过滤（服务 Key/用户/租户/agent）与低成本项（明文吊销不回显、路径段白名单、掩码补裸键）；登记兼容策略与残余（E1-5 JWKS/自省单独排期） |
 | v1.5.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.9「E1-5A 实施结果」：按裁定路径 A 落地控制面非对称签名 —— RS256 签发（kid/iss/aud）+ 多 kid JWKS + 算法白名单双验签（HS256 存量过渡）+ `GET /.well-known/jwks.json` + `POST /api/v1/auth/introspect` + `GET /api/v1/auth/revocations` 增量；新增 RS256 配置门禁与 `jwt_require_rs256` 启动检查；登记兼容策略与残余（E1-5B 下游逐仓接入本轮不做） |
 | v1.6.0 | 2026-10-29 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.10「E1-5B 实施结果」：OpenLLM / OpenMemory / OpenRAG / DPS 四仓接入 OpenBase RS256/JWKS 本地验签（统一契约：kid 选择、未知 kid 强制刷新、iss/aud/exp 强校验、主体映射 fail-closed、默认留空不启用），各仓保留 HS256 存量通道；登记双验签过渡、内省/吊销增量未接入下游、部署编排边界与「用户令牌直连映射」待裁定项 |
+| v1.6.1 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | §10.10 补充「OpenLLM 验签入口收口」：新增 `auth_service.verify_bearer_token` 统一入口覆盖 HTTP 依赖与 WebSocket；RS256 分支下沉 `JWTHandler.verify_token`（`/api/v1/auth/verify`、edge router 同步生效）；refresh 链拒绝 OpenBase 令牌换发；删除网关冗余二次回落；登记新增 7 项用例与回归结果 |
