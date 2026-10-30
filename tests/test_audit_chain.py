@@ -1,19 +1,28 @@
 """E2 审计日志防篡改（链式哈希）测试.
 
 覆盖：连续插入成链 / 篡改中间行 / 删除中间行 / 遗留 NULL 行跳过 /
-同批次 flush 内成链 / 空表 / limit 截断 / 校验端点返回结构。
+同批次 flush 内成链 / 空表 / limit 截断 / 校验端点返回结构 /
+写入串行化锁（PG 取锁、非 PG 放行、取锁先于读末条哈希）。
 """
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime as dt
+from types import SimpleNamespace
 
 import pytest
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import create_engine, delete, insert, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session
 
-from openbase.core.db.audit_chain import verify_audit_chain
+from openbase.core.db import audit_chain
+from openbase.core.db.audit_chain import (
+    AUDIT_CHAIN_LOCK_KEY,
+    _acquire_write_lock,
+    verify_audit_chain,
+)
 from openbase.core.models import AuditLog, Base
 
 
@@ -186,6 +195,72 @@ async def test_verify_limit_caps_checked_rows(chain_engine) -> None:
     result = await _verify(chain_engine, limit=2)
     assert result["ok"] is True
     assert result["checked"] == 2
+
+
+def test_advisory_lock_skipped_on_sqlite_dialect(tmp_path) -> None:
+    """非 PostgreSQL 方言（SQLite 单写者）不取锁：返回 False 且不执行 SQL."""
+    engine = create_engine(f"sqlite:///{tmp_path / 'lock_noop.db'}")
+    with Session(engine) as session:
+        assert _acquire_write_lock(session) is False
+    engine.dispose()
+
+
+class _StubSession:
+    """最小会话桩：用于断言 PG 分支的 SQL 形态（不连真实数据库）."""
+
+    def __init__(self, dialect_name: str) -> None:
+        self._dialect_name = dialect_name
+        self.executed: list[tuple[str, dict]] = []
+        self.no_autoflush = contextlib.nullcontext()
+
+    def get_bind(self) -> SimpleNamespace:
+        return SimpleNamespace(dialect=SimpleNamespace(name=self._dialect_name))
+
+    def execute(self, statement, params=None):
+        self.executed.append((str(statement), dict(params or {})))
+        return None
+
+
+def test_advisory_lock_uses_parameterized_key_on_postgres() -> None:
+    """PostgreSQL 分支：执行 ``pg_advisory_xact_lock`` 且锁键为绑定参数（非拼接）."""
+    stub = _StubSession("postgresql")
+    assert _acquire_write_lock(stub) is True
+
+    assert len(stub.executed) == 1
+    sql_text, params = stub.executed[0]
+    assert "pg_advisory_xact_lock" in sql_text
+    assert ":lock_key" in sql_text
+    assert params == {"lock_key": AUDIT_CHAIN_LOCK_KEY}
+    assert str(AUDIT_CHAIN_LOCK_KEY) not in sql_text, "锁键不得内联进 SQL 文本"
+
+
+async def test_flush_hook_acquires_lock_before_reading_latest_hash(
+    chain_engine, monkeypatch
+) -> None:
+    """flush 钩子先取串行化锁、再读末条哈希（顺序即多实例安全前提）."""
+    order: list[str] = []
+    original_latest = audit_chain._latest_entry_hash
+
+    monkeypatch.setattr(
+        audit_chain,
+        "_acquire_write_lock",
+        lambda session: (order.append("lock"), True)[1],
+    )
+    monkeypatch.setattr(
+        audit_chain,
+        "_latest_entry_hash",
+        lambda session: (order.append("read_latest"), original_latest(session))[1],
+    )
+
+    factory = async_sessionmaker(chain_engine, expire_on_commit=False)
+    async with factory() as session:
+        session.add(
+            AuditLog(action="lock.order.action", request_id="req-lock-order")
+        )
+        await session.commit()
+
+    assert order == ["lock", "read_latest"]
+    assert (await _verify(chain_engine))["ok"] is True
 
 
 def test_chain_verify_endpoint_shape(tmp_path) -> None:

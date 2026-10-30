@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.9.0 |
+| 版本 | v1.10.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -391,7 +391,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 ### 10.4 E2（按需）
 
 - TPM/安全元件存私钥；固件与模型签名校验；远程擦除；安全启动。**（依赖终端宿主能力，未代码化；控制面吊销/封禁已具备，见 §10.13）**
-- 数据落盘加密（本地 SQLite/缓存）；日志防篡改（链式哈希）。**（日志链式哈希 v1.9.0 已落地；本地落盘加密依赖终端代理，见 §10.13）**
+- 数据落盘加密（本地 SQLite/缓存）；日志防篡改（链式哈希）。**（日志链式哈希 v1.9.0 已落地、多实例写入串行化 v1.10.0 已闭合；本地落盘加密依赖终端代理，见 §10.13）**
 
 ### 10.5 暂缓项（政务交付时再启用）
 
@@ -576,13 +576,14 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - OpenMemory 落盘只存摘要：进程重启后 `get_active_key()` 不再返回 active 明文（返回 `None`），运维须在轮换响应中即时登记新密钥。
 - 验证边界：OpenRAG 全量 pytest 因运行环境缺 `structlog` 无法收集，本仓门禁用「命名空间 stub 装载 `settings.py`」的等价断言验证（11 项通过），未伪造全量通过；OpenLLM 全量 unit 存在既有环境性失败（`SECRET_KEY` 空、PostgreSQL 5432 不可用等），均未命中本次改动路径。
 
-### 10.13 E2 实施结果（v1.9.0，2026-10-30）
+### 10.13 E2 实施结果（v1.9.0 / v1.10.0，2026-10-30）
 
 > 范围（§10.4 E2 + §10.6 中 R16/R17/R20）：审计日志链式哈希（防篡改）、MCP 静态 Key 去明文、OpenLLM 身份权威收敛。**硬件/终端宿主项（TPM、安全启动、固件与模型签名、本地落盘加密、远程擦除）未代码化**，理由与替代控制见文末。
 
 | 事项 | 实施内容 | 落点 | 验证证据 |
 |---|---|---|---|
 | 审计日志防篡改（链式哈希） | `AuditLog` 增 `prev_hash` / `entry_hash`（String(64)，可空）；新增 `before_flush` 监听器统一为全部 17 处插入点计算链式摘要（`entry_hash = sha256(prev_hash | canonical_payload)`）；规范化序列化（固定字段序 + `sort_keys` + 紧凑分隔符）；新增 `GET /api/v1/audit/chain/verify?limit=1..10000`（超管权限点 `system:superadmin`）返回 `ok/checked/first_broken_id/reason` | OpenBase `core/db/audit_chain.py`（新）、`core/models/base.py`、`core/models/__init__.py`、`modules/audit/__init__.py` | `tests/test_audit_chain.py`（8 项：连续链、篡改定位、删行断裂、遗留 NULL 行跳过、同批 flush 链、空表）+ 审计相关回归 53 项 + `test_api_keys/test_db_modules/test_app/test_logs_endpoints_api` 79 项 |
+| 审计链多实例写入串行化 | flush 前**先取 PostgreSQL 事务级 advisory lock**（`pg_advisory_xact_lock(:lock_key)`，锁键 `AUDIT_CHAIN_LOCK_KEY`，随事务提交/回滚自动释放），再读末条哈希并插入，使「读后写」在多实例/多进程下严格串行；非 PostgreSQL 方言（SQLite 单写者）不取锁直接放行；锁键为绑定参数，不拼接 SQL | OpenBase `core/db/audit_chain.py` | `tests/test_audit_chain.py`（新增 3 项：SQLite 放行、PG 分支参数化 SQL、flush 钩子「先锁后读」顺序）+ 审计链/审计相关/Key 相关回归 126 项 |
 | R16/R20 MCP 静态 Key 去明文 | 静态 Key 三来源：明文 `OPENBASE_MCP_API_KEYS`（**仅开发**）、摘要 `OPENBASE_MCP_API_KEY_HASHES`（SHA-256，生产推荐）、宿主注入文件 `OPENBASE_MCP_API_KEYS_FILE`（每行一个，`#` 注释，mtime 缓存 + 锁）；摘要比对用 `hmac.compare_digest`（不用 `in`）；**生产门禁三条**：禁止 `dev-mcp-key`、禁止任何明文 Key、摘要与文件至少其一 | OpenBase `settings.py`、`modules/mcp/credentials.py` | `tests/test_mcp_edge_credentials.py`（原 6 + 新增 6：摘要命中/错误 Key、文件注入与重载、文件不可读降级、生产拒绝明文、生产缺来源、摘要格式非法）+ `test_three_modules` / `test_obs_mcp` 回归 |
 | R17 OpenLLM 身份双主收敛 | 新增 `IDENTITY_AUTHORITY`（`local` 默认 / `openbase`）；`openbase` 下 `/auth/login`、`/auth/register`、`/auth/refresh`、`/auth/change-password` 一律 403（本地开户/口令登录/令牌换发关闭，身份唯一来源为 OpenBase JWT）；一致性门禁：`openbase` 必须配置 `OPENBASE_JWKS_URL`（与环境无关，杜绝切换后无身份来源）；默认 `local` 行为零变化 | OpenLLM `backend/app/core/config.py`、`backend/app/api/auth.py` | `backend/tests/unit/test_r17_identity_authority.py`（9 项）+ `test_auth_api.py` 24 项 + 配置/兼容门禁 67 项回归 |
 | 既有失败用例修正 | `tests/test_settings.py` 两条生产构造用例原即失败（生产默认 `dev-mcp-key` 触发 E1-6 门禁）；补显式 MCP 凭证来源后恢复绿色（断言意图不变） | OpenBase `tests/test_settings.py` | `tests/test_settings.py` 全通过 |
@@ -590,13 +591,14 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 **统一口径**
 
 - 链式哈希在 `Session.before_flush` 单点挂钩，插入点零改动；`id` 不参与哈希（自增主键写入前不可知），行序完整性由 `prev_hash` 链承担。
+- 多实例写入以 PostgreSQL 事务级 advisory lock 串行化（v1.10.0）：取锁 → 读末条哈希 → 插入在同一事务内完成，事务结束自动释放；锁粒度是「整条链」而非单表，审计写入本为低频事件，不构成吞吐瓶颈。SQLite 部署沿用单写者模型，不取锁。
 - 存量库兼容：启用前历史行两列为 NULL，校验时跳过；本仓无 alembic，生产升级需手工执行一次 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`（已写入模型注释与模块 docstring）。
 - 生产 MCP 门禁与既有 `dev-mcp-key` 拒绝口径叠加：生产要么只存摘要、要么用宿主注入文件，配置泄漏不再等于凭证泄漏。
 - 身份权威开关默认 `local`，升级零行为变化；切换 `openbase` 后本地身份表只停写不删，销户以 OpenBase 为准。
 
 **残余（未在本轮闭合）**
 
-- 审计链**多实例并发写入**为「读末条哈希 → 插入」语义，存在链分叉可能；单实例严格连续，多实例需 DB advisory lock 或单写队列（后续）。
+- ~~审计链**多实例并发写入**为「读末条哈希 → 插入」语义，存在链分叉可能~~ → **v1.10.0 已闭合**：PostgreSQL 事务级 advisory lock 串行化「读末条 + 插入」，多实例/多进程写入保持单链；非 PG（SQLite）依赖其单写者模型。仅余一项部署约束：同一链条的写入必须连接**同一 PostgreSQL 实例**（主备切换后新主已接管全链，链仍连续；跨库分片写入不适用本机制）。
 - 终端宿主项：TPM/安全元件存私钥、安全启动、固件与模型签名校验、终端本地 SQLite/缓存落盘加密、远程擦除——这些能力位于终端代理/宿主固件，不在本四仓代码范围。控制面已提供替代控制：主体吊销与封禁（E0-7/E1 Key 事件）、令牌短 TTL 与吊销增量同步（E1-5C）、JWKS 离线验签（E1-5B）；终端本地擦除需终端代理在下一次联网/OTA 时执行删除并上报。
 - MCP 静态 Key 文件为明文注入（0600），读取后仅进程内保存；如需 Root of Trust 级保护，仍依赖 E2 的 TPM 宿主项。
 - OpenLLM `local` 模式下本地 `users/tenants/teams` 仍为主数据（默认路径）；生产应采用 `openbase` 模式并在部署编排中固定该开关。
@@ -617,3 +619,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.7.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.11「E1-5C 实施结果」：吊销增量同步在四仓落地（状态/版本判定、同步失败沿用旧快照、严格模式开关），控制面 `next_since` 回退 1ms 修复同毫秒漏读；登记惰性同步（无后台线程）与 E1 剩余项（MCP 边缘凭证、配额告警、R6/R7/R8） |
 | v1.8.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.12「E1-6/E1-7 实施结果」，闭合 E1 剩余项：MCP 边缘凭证三形态 + stdio 令牌注入 + 工具级 `scope.tools` 过滤；Key 异常告警（多 IP / 网段跳变 / 调用量突增，只告警不阻断，落审计）；R6 四仓生产 fail-closed 门禁（受信来源与角色口径漏配即拒启）；R7 OpenMemory 轮换闭环（摘要落盘 + 宽限期 + 网关同源校验 + 生产三拒绝）；R8 OpenLLM Key 权限上限与按 Key 配额限流；登记残余（单进程窗口/内存配额、MCP 工具级仅作用 MCP 路由、OpenRAG 全量收集受限） |
 | v1.9.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.13「E2 实施结果」：审计日志链式哈希（`prev_hash`/`entry_hash` + `before_flush` 单点挂钩覆盖 17 处插入点 + 超管链校验端点）；R16/R20 MCP 静态 Key 去明文（摘要列表 / 宿主注入文件 + 生产三条门禁）；R17 OpenLLM 身份权威开关（`IDENTITY_AUTHORITY=openbase` 关闭本地开户/登录/换发并要求 JWKS）；修正 2 条既有 settings 用例；登记残余（多实例链分叉、TPM/安全启动/本地落盘加密/远程擦除依赖终端宿主） |
+| v1.10.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 闭合 §10.13 登记的审计链并发残余：flush 前先取 PostgreSQL 事务级 advisory lock（`pg_advisory_xact_lock`，锁键参数化绑定）再读末条哈希并插入，多实例写入串行不叉链；非 PG 方言放行；新增 3 项用例（SQLite 放行 / PG 参数化 SQL / 先锁后读顺序），审计链与审计/Key 相关回归 126 项通过；§10.4 E2 与 §10.13 残余同步标注 |

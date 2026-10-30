@@ -11,10 +11,11 @@
   ``entry_hash`` 不匹配。
 - 存量库兼容：启用前写入的历史行两列为 NULL（链前遗留），校验时跳过。
 
-并发限制（已知未闭合项）：链式计算是「先读末条哈希、再插入」的读后写语义，
-多进程/多实例并发写入时可能读到同一末条哈希而形成链分叉（fork）。单实例
-（uvicorn 单 worker / 审计落库 writer 单协程）下链严格连续；多实例部署需在 DB 侧
-以表级 advisory lock 或单写队列串行化补齐（见方案 §10.4 E2 遗留项）。
+并发控制（v1.10.0 闭合）：链式计算是「先读末条哈希、再插入」的读后写语义，多实例
+并发写入时可能读到同一末条哈希而形成链分叉（fork）。为此在 flush 前对写入会话加
+PostgreSQL **事务级** advisory lock（``pg_advisory_xact_lock``，随事务提交/回滚自动
+释放），使「读末条哈希 + 插入」在同一把锁下串行，多实例/多进程写入仍保持单链。
+非 PostgreSQL 方言（SQLite 为单写者模型）不取锁，直接放行。
 
 存量库 DDL（本仓无 alembic 目录，升级时手工执行一次，历史行 entry_hash 为 NULL
 不参与校验）：
@@ -30,7 +31,7 @@ import json
 import logging
 from typing import Any
 
-from sqlalchemy import event, select
+from sqlalchemy import event, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -40,6 +41,9 @@ logger = logging.getLogger("openbase.audit.chain")
 
 # 链校验分批大小（流式遍历，避免一次载入全表）
 VERIFY_BATCH_SIZE = 200
+
+# 链写入串行化锁键（PostgreSQL advisory lock，全实例取同一常量值；"AUDI" 助记）
+AUDIT_CHAIN_LOCK_KEY = 0x41554449
 
 # 参与哈希的稳定字段（顺序固定；JSON 亦按 sort_keys 序列化，双重保证可复现）
 STABLE_FIELD_NAMES: tuple[str, ...] = (
@@ -57,6 +61,7 @@ STABLE_FIELD_NAMES: tuple[str, ...] = (
 )
 
 __all__ = [
+    "AUDIT_CHAIN_LOCK_KEY",
     "STABLE_FIELD_NAMES",
     "VERIFY_BATCH_SIZE",
     "canonical_payload",
@@ -131,6 +136,34 @@ def compute_entry_hash(prev_hash: str | None, payload: str) -> str:
     return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
+def _acquire_write_lock(session: Session) -> bool:
+    """取链写入串行化锁（PostgreSQL 事务级 advisory lock）.
+
+    「读末条哈希 + 插入新行」必须在同一把锁内完成，否则多实例并发写入会读到
+    同一末条哈希而形成链分叉。``pg_advisory_xact_lock`` 随事务结束（commit /
+    rollback）自动释放，无需显式解锁，也不会跨请求泄漏。
+
+    非 PostgreSQL 方言（SQLite 单写者模型）不取锁，返回 ``False``。
+
+    Args:
+        session: 当前 flush 所在会话。
+
+    Returns:
+        是否实际取锁（PostgreSQL 为 True）。
+    """
+    bind = session.get_bind()
+    dialect_name = getattr(getattr(bind, "dialect", None), "name", "")
+    if dialect_name != "postgresql":
+        return False
+    # 参数化绑定锁键，不拼接 SQL
+    with session.no_autoflush:
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {"lock_key": AUDIT_CHAIN_LOCK_KEY},
+        )
+    return True
+
+
 def _latest_entry_hash(session: Session) -> str | None:
     """查询数据库中 id 最大的已落库记录的 ``entry_hash``.
 
@@ -153,11 +186,18 @@ def _assign_chain_hashes(
 
     按 ``session.new`` 的插入顺序逐条链接；批次首条接续库中末条哈希。
     已带 ``entry_hash`` 的行（幂等重放/人工导入）不重算，仅作为后续行的链头。
+
+    取锁顺序固定为「先取串行化锁、再读末条哈希」，保证多实例下读后写不被插入。
     """
     pending = [obj for obj in session.new if isinstance(obj, AuditLog)]
     if not pending:
         return
 
+    if _acquire_write_lock(session):
+        logger.debug(
+            "audit chain write serialized",
+            extra={"pending_records": len(pending)},
+        )
     previous_hash = _latest_entry_hash(session)
     for record in pending:
         if record.entry_hash is not None:
