@@ -67,3 +67,7 @@ __all__ = [
     "TimestampMixin",
     "SoftDeleteMixin",
 ]
+
+# E2 审计链（防篡改）：导入即注册 ``Session.before_flush`` 监听器，为所有写入路径
+# 统一计算 prev_hash/entry_hash。置于模型导入之后，避免 core.models ↔ core.db 循环导入。
+from openbase.core.db import audit_chain  # noqa: E402,F401  (审计链事件注册)

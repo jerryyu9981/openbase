@@ -129,7 +129,14 @@ def test_jwt_secret_production_strong_is_accepted():
     """production + ≥32 字符非弱值密钥 + 吊销强校验开启 → 通过校验."""
     strong = "".join(chr(ord("a") + index % 26) for index in range(48))
     assert (
-        Settings(env="production", jwt_secret=strong, enforce_token_version=True).env
+        Settings(
+            env="production",
+            jwt_secret=strong,
+            enforce_token_version=True,
+            # 生产门禁要求显式配置 MCP 静态凭证来源（不得沿用联调默认 Key）
+            mcp_api_keys="",
+            mcp_api_keys_file="mcp-keys.txt",
+        ).env
         == "production"
     )
 
@@ -229,6 +236,9 @@ def test_capture_switches_and_allowlist_parsing():
         capture_response=True,
         capture_upstream=True,
         capture_field_allowlist="",
+        # 生产门禁要求显式配置 MCP 静态凭证来源（不得沿用联调默认 Key）
+        mcp_api_keys="",
+        mcp_api_keys_file="mcp-keys.txt",
     )
     assert production.capture_field_allowlist_list == []
     assert production.capture_response_enabled is False

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,6 +23,32 @@ logger = logging.getLogger("openbase.settings")
 
 # 已知弱 JWT 密钥（占位/演示值；生产模式一律拒绝）
 WEAK_JWT_SECRETS = frozenset({"", "change-me-in-production", "test-jwt-secret-for-v680"})
+
+# 静态 MCP Key 摘要格式（SHA-256 十六进制、小写、64 位）
+_MCP_KEY_HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+
+
+def parse_mcp_api_key_hashes(raw: str | None) -> tuple[str, ...]:
+    """解析 ``OPENBASE_MCP_API_KEY_HASHES``（逗号分隔的 SHA-256 摘要）.
+
+    Args:
+        raw: 原始配置串（逗号分隔，允许空白与空项）。
+
+    Returns:
+        配置顺序的摘要元组（空配置返回空元组）。
+
+    Raises:
+        ValueError: 存在非 64 位小写十六进制的项（fail-fast，避免运行期静默失效）。
+    """
+    items = tuple(item.strip() for item in (raw or "").split(",") if item.strip())
+    for index, item in enumerate(items):
+        if not _MCP_KEY_HASH_PATTERN.match(item):
+            raise ValueError(
+                f"OPENBASE_MCP_API_KEY_HASHES 第 {index + 1} 项必须为 "
+                "64 位小写十六进制 SHA-256 摘要"
+            )
+    return items
+
 
 # 各下游目标的**保留租户码**集合（R-387 统一码空间收口：按目标登记，单一事实源）。
 # 只有声明了「保留码」语义的下游才非空；未声明者为空集（该目标接受任何非空码）。
@@ -368,8 +395,14 @@ class Settings(BaseSettings):
     service_key_ttl_days: int = 90
     # E1-1：轮换时旧 Key 宽限期（小时，默认 24；期间新旧并存，到期旧 Key 自动失效）
     service_key_rotate_grace_hours: int = 24
-    # MCP 服务级 API Key（逗号分隔；生产环境必须覆盖默认值）
+    # MCP 服务级 API Key（逗号分隔；**仅开发/联调**，生产禁止明文，见下方门禁）
     mcp_api_keys: str = "dev-mcp-key"
+    # R16/R20：静态 MCP Key 的 SHA-256 摘要列表（逗号分隔，64 位小写十六进制）。
+    # 生产推荐只存摘要：配置泄漏不等于凭证泄漏（摘要由明文 Key 做 sha256 得到）。
+    mcp_api_key_hashes: str = ""
+    # R16/R20：宿主注入的明文 Key 文件路径（每行一个 Key，忽略空行与 `#` 注释；建议 0600）。
+    # 用于避免明文 Key 进入环境变量/进程参数；生产与摘要列表至少配置其一。
+    mcp_api_keys_file: str = ""
 
     # ---- E1-7（§10.3-4）服务 Key 异常检测与告警（进程内窗口，不依赖 Redis/后台线程） ----
     key_anomaly_enabled: bool = True
@@ -684,22 +717,41 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_mcp_edge_configuration(self) -> Settings:
-        """E1-6/E1-7 门禁：MCP 边缘凭证与异常检测参数（fail-fast）.
+        """E1-6/E1-7/R16/R20 门禁：MCP 边缘凭证与异常检测参数（fail-fast）.
 
         语义：
         - production 下**禁止**沿用内置联调静态 Key ``dev-mcp-key``（生产误用等于
-          公开凭证）；空值允许（表示关闭静态 Key 通道，仅走服务 Key / JWT）；
+          公开凭证）；
+        - production 下**禁止任何明文静态 Key**（``OPENBASE_MCP_API_KEYS`` 视为仅开发）；
+          改用 ``OPENBASE_MCP_API_KEY_HASHES``（只存 SHA-256 摘要）或
+          ``OPENBASE_MCP_API_KEYS_FILE``（宿主注入密钥文件），使「配置泄漏 ≠ 凭证泄漏」；
+        - production 下摘要列表与密钥文件**至少配置其一**，否则拒绝启动；
+        - 摘要列表每项必须为 64 位小写十六进制（所有环境 fail-fast，避免运行期静默失效）；
         - 异常检测参数必须为正（窗口/冷却），阈值 0 表示关闭该维度（允许）。
 
         Raises:
-            ValueError: 生产沿用内置默认 Key，或异常检测参数非法。
+            ValueError: 生产配置明文 Key/缺静态凭证来源，摘要格式非法，或异常检测参数非法。
         """
+        hashes = parse_mcp_api_key_hashes(self.mcp_api_key_hashes)
         if self.env == "production":
             keys = [item.strip() for item in (self.mcp_api_keys or "").split(",") if item.strip()]
             if "dev-mcp-key" in keys:
                 raise ValueError(
                     "生产环境禁止使用内置默认 MCP 静态 Key（dev-mcp-key）；"
-                    "请配置 OPENBASE_MCP_API_KEYS 或留空仅走服务 Key/JWT（fail-closed）"
+                    "请改用 OPENBASE_MCP_API_KEY_HASHES（摘要）或 "
+                    "OPENBASE_MCP_API_KEYS_FILE（宿主注入文件）"
+                )
+            if keys:
+                raise ValueError(
+                    "生产环境禁止配置明文 MCP 静态 Key（OPENBASE_MCP_API_KEYS 仅限开发）；"
+                    "请改用 OPENBASE_MCP_API_KEY_HASHES（只存 SHA-256 摘要）"
+                    "或 OPENBASE_MCP_API_KEYS_FILE（宿主注入密钥文件）"
+                )
+            if not hashes and not (self.mcp_api_keys_file or "").strip():
+                raise ValueError(
+                    "生产 MCP 必须至少配置摘要列表或密钥文件之一"
+                    "（OPENBASE_MCP_API_KEY_HASHES / OPENBASE_MCP_API_KEYS_FILE），"
+                    "或改用 ob_k_ 服务 Key / 短期 JWT"
                 )
         if int(self.key_anomaly_window_seconds) <= 0:
             raise ValueError("OPENBASE_KEY_ANOMALY_WINDOW_SECONDS 必须为正整数")

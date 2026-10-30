@@ -17,12 +17,16 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Optional  # noqa: F401 - future annotations 字符串注解求值
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from openbase.core.db.session import get_db
 from openbase.core.deps.auth import IdentityContext  # noqa: F401 - build_audit_record 类型注解
+from openbase.core.errors import ErrorCode
 from openbase.core.mask import digest_of, observe_payload
+from openbase.modules.auth.rbac import SUPERADMIN_PERMISSION, require_permission
 from openbase.modules.protocol_headers.constants import (
     HEADER_TEST_CASE_ID,
     HEADER_TEST_RUN_ID,
@@ -1017,6 +1021,43 @@ async def audit_records(
         ``{"records": [...]}``（含 case_id/step_id/run_id/channel 字段）。
     """
     return {"records": AuditService.records(limit=limit, case_id=case_id, run_id=run_id)}
+
+
+@api_router.get(
+    "/audit/chain/verify",
+    dependencies=[
+        # E2 审计防篡改：链校验仅对超管开放（权限点 system:superadmin，与
+        # modules/auth/rbac.py 的超管权限点同源；全仓无 core.deps.rbac，故复用既有
+        # 管理端点的 require_permission 依赖写法，错误码沿用 PERM_403）。
+        Depends(require_permission(SUPERADMIN_PERMISSION, error_code=ErrorCode.PERM_403))
+    ],
+)
+async def audit_chain_verify(
+    request: Request,
+    limit: int = Query(1000, ge=1, le=10000),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """校验审计日志链式哈希完整性（E2 防篡改）.
+
+    Args:
+        request: 当前请求（取 request_id）。
+        limit: 最多校验条数（按 id 升序，1..10000）。
+        session: 异步会话（只读校验，不写库）。
+
+    Returns:
+        ``{"code": "OK", "message": "ok", "data": {"ok", "checked",
+        "first_broken_id", "reason", "request_id"}}``。
+    """
+    from openbase.core.db.audit_chain import verify_audit_chain
+
+    request_id = getattr(request.state, "request_id", None) or f"req-{uuid.uuid4().hex[:12]}"
+    result = await verify_audit_chain(session, limit=limit)
+    return {
+        "code": "OK",
+        "message": "ok",
+        "data": {**result, "request_id": request_id},
+    }
+
 
 async def query_audit_logs_by_case(
     session: Any,

@@ -1,5 +1,10 @@
 """E1-6 MCP 边缘凭证与工具级 ``scope.tools`` 过滤测试."""
 
+import hashlib
+import logging
+import os
+import time
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -148,4 +153,111 @@ def test_anomaly_settings_validation_rejects_negative():
     settings = Settings(env="development")
     settings.key_anomaly_window_seconds = 0
     with pytest.raises(ValueError, match="WINDOW_SECONDS"):
+        settings._validate_mcp_edge_configuration()
+
+
+def test_static_key_sha256_hash_allows_and_rejects_unknown(monkeypatch):
+    """R16/R20：摘要命中 → 200；错误 Key → 401（摘要比较分支生效）."""
+    from openbase.settings import get_settings
+
+    secret = "edge-static-secret"
+    settings = get_settings()
+    monkeypatch.setattr(settings, "mcp_api_keys", "")
+    monkeypatch.setattr(settings, "mcp_api_keys_file", "")
+    monkeypatch.setattr(
+        settings, "mcp_api_key_hashes", hashlib.sha256(secret.encode()).hexdigest()
+    )
+    client = _build_client()
+
+    allowed = client.get("/mcp/tools/list", headers={"X-API-Key": secret})
+    assert allowed.status_code == 200
+
+    denied = client.get("/mcp/tools/list", headers={"X-API-Key": "edge-static-wrong"})
+    assert denied.status_code == 401
+    assert denied.json()["code"] == ErrorCode.AUTH_UNAUTHORIZED.value
+
+
+def test_static_key_file_injection_allows_and_reloads(monkeypatch, tmp_path):
+    """R16/R20：宿主注入 Key 文件命中通过；mtime 变化后重载新 Key."""
+    from openbase.settings import get_settings
+
+    key_file = tmp_path / "mcp.keys"
+    key_file.write_text("# rotation-before\n\nfile-secret\n", encoding="utf-8")
+    settings = get_settings()
+    monkeypatch.setattr(settings, "mcp_api_keys", "")
+    monkeypatch.setattr(settings, "mcp_api_key_hashes", "")
+    monkeypatch.setattr(settings, "mcp_api_keys_file", str(key_file))
+    client = _build_client()
+
+    assert client.get("/mcp/tools/list", headers={"X-API-Key": "file-secret"}).status_code == 200
+    # 注释行不得被当成 Key
+    assert client.get("/mcp/tools/list", headers={"X-API-Key": "# rotation-before"}).status_code == 401
+
+    key_file.write_text("rotated-secret\n", encoding="utf-8")
+    future = time.time() + 5
+    os.utime(key_file, (future, future))
+    assert client.get(
+        "/mcp/tools/list", headers={"X-API-Key": "rotated-secret"}
+    ).status_code == 200
+    assert client.get("/mcp/tools/list", headers={"X-API-Key": "file-secret"}).status_code == 401
+
+
+def test_static_key_file_unreadable_warns_and_denies(monkeypatch, tmp_path, caplog):
+    """R16/R20：Key 文件不可读 → WARNING + 视为空集合（401，不抛 500）."""
+    from openbase.settings import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "mcp_api_keys", "")
+    monkeypatch.setattr(settings, "mcp_api_key_hashes", "")
+    monkeypatch.setattr(settings, "mcp_api_keys_file", str(tmp_path / "missing.keys"))
+    client = _build_client()
+
+    with caplog.at_level(logging.WARNING, logger="openbase.modules.mcp.credentials"):
+        resp = client.get("/mcp/tools/list", headers={"X-API-Key": "any-key"})
+    assert resp.status_code == 401
+    assert any("keys file" in record.message for record in caplog.records)
+
+
+def test_production_rejects_plaintext_static_key():
+    """R16/R20：生产即使非默认值也禁止任何明文静态 Key."""
+    from openbase.settings import Settings
+
+    settings = Settings(env="development")
+    settings.env = "production"
+    settings.mcp_api_keys = "prod-static-key"
+    settings.mcp_api_key_hashes = hashlib.sha256(b"prod-static-key").hexdigest()
+    with pytest.raises(ValueError, match="明文"):
+        settings._validate_mcp_edge_configuration()
+
+
+def test_production_requires_hash_or_key_file():
+    """R16/R20：生产缺摘要与密钥文件 → 拒绝启动；配置其一即通过."""
+    from openbase.settings import Settings
+
+    settings = Settings(env="development")
+    settings.env = "production"
+    settings.mcp_api_keys = ""
+    settings.mcp_api_key_hashes = ""
+    settings.mcp_api_keys_file = ""
+    with pytest.raises(ValueError, match="OPENBASE_MCP_API_KEY_HASHES"):
+        settings._validate_mcp_edge_configuration()
+
+    settings.mcp_api_key_hashes = hashlib.sha256(b"prod-key").hexdigest()
+    assert settings._validate_mcp_edge_configuration() is settings
+
+    settings.mcp_api_key_hashes = ""
+    settings.mcp_api_keys_file = "/run/secrets/mcp.keys"
+    assert settings._validate_mcp_edge_configuration() is settings
+
+
+def test_production_rejects_malformed_hash():
+    """R16/R20：摘要非 64 位小写十六进制 → 拒绝启动."""
+    from openbase.settings import Settings
+
+    settings = Settings(env="development")
+    settings.env = "production"
+    settings.mcp_api_keys = ""
+    settings.mcp_api_key_hashes = "deadbeef"
+    settings.mcp_api_keys_file = "/run/secrets/mcp.keys"
+    with pytest.raises(ValueError, match="64 位小写十六进制"):
         settings._validate_mcp_edge_configuration()

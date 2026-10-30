@@ -2,7 +2,9 @@
 
 三种接入形态收敛到同一份 :class:`MCPCredential`，供 HTTP 路由与 stdio 宿主共用：
 
-- **静态 Key**：``settings.mcp_api_keys``（联调/过渡形态，生产禁止内置默认值）；
+- **静态 Key**：三种来源（命中即不限定工具）——明文 ``settings.mcp_api_keys``
+  （仅开发/联调）、摘要 ``settings.mcp_api_key_hashes``（生产推荐，配置泄漏不等于凭证
+  泄漏）、宿主注入文件 ``settings.mcp_api_keys_file``（每行一个，忽略空行与 ``#``）；
 - **服务 Key**：``ob_k_*``（``X-API-Key`` 或 ``Authorization: Bearer``），按
   ``scope.system`` 含 ``mcp`` 校验，按 ``scope.tools`` 做工具级过滤；
 - **短期 JWT**：``Authorization: Bearer`` 或 stdio 宿主注入的
@@ -16,13 +18,20 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import logging
 import os
+import threading
 from dataclasses import dataclass
 from typing import Any
 
 from fastapi import Request
 
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.settings import parse_mcp_api_key_hashes
+
+logger = logging.getLogger("openbase.modules.mcp.credentials")
 
 # JWT/服务 Key 中工具白名单所在的键名（scope.tools；同时兼容顶层 tools claim）
 _MCP_TOOL_SCOPE_KEY = "tools"
@@ -135,18 +144,93 @@ def _jwt_credential(token: str, credential_type: str) -> MCPCredential:
     )
 
 
+# 宿主注入的明文静态 Key 文件缓存（path + mtime_ns 变化时重载；并发读用锁保护）
+_KEYS_FILE_LOCK = threading.Lock()
+_KEYS_FILE_CACHE: tuple[str, int, frozenset[str]] | None = None
+
+
 def _static_keys() -> list[str]:
-    """读取静态 MCP Key 清单（逗号分隔）."""
+    """读取明文静态 MCP Key 清单（逗号分隔；**仅开发/联调**，生产由门禁拒绝）."""
     from openbase.settings import get_settings
 
     return [item.strip() for item in get_settings().mcp_api_keys.split(",") if item.strip()]
 
 
+def _static_key_hashes() -> tuple[str, ...]:
+    """读取静态 MCP Key 的 SHA-256 摘要清单（配置格式已由 settings 门禁校验）."""
+    from openbase.settings import get_settings
+
+    return parse_mcp_api_key_hashes(get_settings().mcp_api_key_hashes)
+
+
+def _read_keys_file(file_path: str) -> frozenset[str]:
+    """读取宿主机注入的 Key 文件（每行一个，忽略空行与 ``#`` 注释）.
+
+    Raises:
+        OSError: 文件不可读（由调用方降级为空集合）。
+    """
+    with open(file_path, encoding="utf-8") as handle:
+        lines = handle.read().splitlines()
+    return frozenset(
+        line.strip() for line in lines if line.strip() and not line.strip().startswith("#")
+    )
+
+
+def _file_static_keys() -> frozenset[str]:
+    """读取并缓存宿主注入的 Key 文件（mtime 变化重载；不可读 → WARNING + 空集合）."""
+    from openbase.settings import get_settings
+
+    file_path = (get_settings().mcp_api_keys_file or "").strip()
+    if not file_path:
+        return frozenset()
+    global _KEYS_FILE_CACHE
+    with _KEYS_FILE_LOCK:
+        try:
+            modified_ns = os.stat(file_path).st_mtime_ns
+        except OSError as exc:
+            logger.warning(
+                "mcp api keys file stat failed, static keys from file disabled",
+                extra={"path": file_path, "error": str(exc)},
+            )
+            return frozenset()
+        if _KEYS_FILE_CACHE is not None:
+            cached_path, cached_mtime_ns, cached_keys = _KEYS_FILE_CACHE
+            if cached_path == file_path and cached_mtime_ns == modified_ns:
+                return cached_keys
+        try:
+            keys = _read_keys_file(file_path)
+        except OSError as exc:
+            logger.warning(
+                "mcp api keys file unreadable, static keys from file disabled",
+                extra={"path": file_path, "error": str(exc)},
+            )
+            return frozenset()
+        _KEYS_FILE_CACHE = (file_path, modified_ns, keys)
+        return keys
+
+
+def _matches_static_key(provided: str) -> bool:
+    """静态 Key 判定：明文（仅非生产）/摘要/宿主注入文件，均用常量时间比较."""
+    candidate = provided.encode("utf-8")
+    for key in _static_keys():
+        if hmac.compare_digest(candidate, key.encode("utf-8")):
+            return True
+    digest = hashlib.sha256(candidate).hexdigest().encode("ascii")
+    for expected in _static_key_hashes():
+        if hmac.compare_digest(digest, expected.encode("ascii")):
+            return True
+    for key in _file_static_keys():
+        if hmac.compare_digest(candidate, key.encode("utf-8")):
+            return True
+    return False
+
+
 async def require_mcp_credential(request: Request) -> MCPCredential:
     """FastAPI 依赖：解析并校验 MCP 调用凭证（fail-closed）.
 
-    解析顺序：静态 Key（``X-API-Key``）→ ``Authorization: Bearer`` 的
-    ``ob_k_*``（服务 Key）/ 其他（JWT）。缺凭证或全部不匹配 → 401。
+    解析顺序：静态 Key（``X-API-Key``；明文/摘要/宿主注入文件三种来源）→
+    ``Authorization: Bearer`` 的 ``ob_k_*``（服务 Key）/ 其他（JWT）。缺凭证或
+    全部不匹配 → 401。静态 Key 命中不限定工具（``tools=None``）。
 
     Raises:
         BaseError: AUTH_UNAUTHORIZED（缺/无效凭证）；PERM_API_KEY_SCOPE（服务 Key 越权）。
@@ -154,8 +238,7 @@ async def require_mcp_credential(request: Request) -> MCPCredential:
     from openbase.core.deps.auth import get_current_tenant
 
     provided = request.headers.get("X-API-Key", "")
-    static_keys = _static_keys()
-    if provided and static_keys and provided in static_keys:
+    if provided and _matches_static_key(provided):
         return MCPCredential(
             subject="static",
             credential_type=CREDENTIAL_TYPE_STATIC,
