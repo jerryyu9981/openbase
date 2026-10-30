@@ -52,6 +52,22 @@ try:
 except ImportError:  # 依赖缺失时降级（不影响既有 auth 路由）
     logging.getLogger(__name__).warning("auth token_api router skipped (import failed)")
 
+# E3-1：三权分立自检 + ABAC 试算（/api/v1/auth/access/*）
+try:
+    from openbase.modules.auth.access_api import router as access_api_router
+
+    extra_routers.append(access_api_router)
+except ImportError:  # 依赖缺失时降级（不影响既有 auth 路由）
+    logging.getLogger(__name__).warning("auth access_api router skipped (import failed)")
+
+# E3-4：统一 IdP Provider 登记视图（/api/v1/auth/idp/providers）
+try:
+    from openbase.modules.auth.idp_registry import router as idp_registry_router
+
+    extra_routers.append(idp_registry_router)
+except ImportError:  # 依赖缺失时降级（不影响既有 auth 路由）
+    logging.getLogger(__name__).warning("auth idp_registry router skipped (import failed)")
+
 
 # ---- Schemas ----
 

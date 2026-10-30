@@ -3,9 +3,9 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.10.0 |
+| 版本 | v1.11.0 |
 | 状态 | [Review] |
-| 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务强合规项暂缓 |
+| 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
 | 评估对象 | OpenBase（统一底座）、OpenLLM、OpenRAG、OpenMemory、DPS |
 | 评估方式 | 代码静态审计（AI 辅助），关键结论均附 `文件:行号`，可逐条复核；未做真实渗透测试 |
@@ -392,16 +392,20 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 - TPM/安全元件存私钥；固件与模型签名校验；远程擦除；安全启动。**（依赖终端宿主能力，未代码化；控制面吊销/封禁已具备，见 §10.13）**
 - 数据落盘加密（本地 SQLite/缓存）；日志防篡改（链式哈希）。**（日志链式哈希 v1.9.0 已落地、多实例写入串行化 v1.10.0 已闭合；本地落盘加密依赖终端代理，见 §10.13）**
+- 政务项原「暂缓」部分中纯软件可完成项（国密可插拔、统一 IdP 抽象、三权分立/ABAC、集中审计导出与留存）已作为 **E3 落地（v1.11.0，见 §10.14）**；硬件/密评/平台联调项仍暂缓（见 §10.5）。
 
-### 10.5 暂缓项（政务交付时再启用）
+### 10.5 政务项：E3 可软件落地部分（v1.11.0 已实施）
 
-| 项 | 暂缓原因 | 启用触发 |
-|---|---|---|
-| 国密算法与密评 | 需密码机与测评，成本高 | 政务项目立项/等保定级 |
-| 统一身份认证平台对接 | 当前无外部 IdP | 接入省级/部门统一认证 |
-| 三权分立 + ABAC | 边缘场景角色简单 | 多部门数据共享 |
-| 集中审计平台 / 留存≥6 个月 | 无独立审计系统 | 等保测评要求 |
-| 信创适配 / 异地灾备 | 非边缘首要矛盾 | 国产化目录/容灾要求 |
+原「暂缓项」按「纯软件可完成 / 依赖硬件或密评」二分重排。**可软件部分已作为 E3 落地**
+（见 §10.14），不再整体挂起；仍需硬件、密码机或第三方测评的部分继续保持暂缓。
+
+| 项 | 原暂缓原因 | E3 处理（v1.11.0） | 仍需暂缓的部分 |
+|---|---|---|---|
+| 国密算法 | 需密码机与密评 | **签名算法注册表可插拔**：HS256/RS256 已接线，SM2 登记为预留位；配置 SM2/未知算法即启动拒绝（fail-fast，禁静默降级） | 真实 SM2 签名原语接线（gmssl/密码机）与密评 |
+| 统一身份认证平台 | 当前无外部 IdP | **IdP Provider 抽象层**：多 Provider JSON 登记 + 启动门禁 + 只读视图（绝不下发 `client_secret`）；既有单 IdP `oidc_*` 行为不变 | 与省级/部门平台的实际联调与证书交换 |
+| 三权分立 + ABAC | 边缘场景角色简单 | **职责互斥校验 + ABAC 判定**：`system_admin`/`security_admin`/`audit_admin` 两两互斥（权限点基线不重叠）；ABAC deny-overrides、跨租户默认拒绝、无命中回落 RBAC；试算与职责清单端点 | 组织级角色授予流程改造与全量策略运营 |
+| 集中审计平台 / 留存 | 无独立审计系统 | **集中审计导出与留存**：NDJSON 流式导出（条数受配置上限约束，含链式哈希可离线复核）；按留存天数清理（默认 dry-run、删头不断链、`0` 表示未启用并拒绝清理） | 独立审计平台对接、等保测评要求的留存介质与异地备份 |
+| 信创适配 / 异地灾备 | 非边缘首要矛盾 | 未处理 | 国产化目录/容灾要求（依赖基础设施） |
 
 ### 10.6 三套编号的关系（R / P / E 追溯矩阵）
 
@@ -411,7 +415,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 |---|---|---|
 | **R1~R21** | **风险台账**（发现的问题/缺陷） | "系统现在有什么问题？" |
 | **P0 / P1 / P2** | **通用场景的修复排期**（企业/平台视角） | "这些问题按什么优先级修？" |
-| **E0 / E1 / E2** | **AI 边缘终端场景的执行计划**（对 P 的裁剪与重排） | "在当前交付形态下，先做什么、后做什么、什么暂缓？" |
+| **E0 / E1 / E2 / E3** | **AI 边缘终端场景的执行计划**（对 P 的裁剪与重排；E3 = 政务项中可纯软件落地部分） | "在当前交付形态下，先做什么、后做什么、什么暂缓？" |
 
 **三者不是三套工作**：同一风险只修一次；P 与 E 是同一批修复的两种排期视角，E 为最终执行口径（当前场景是边缘终端），P 保留为通用基线。
 
@@ -433,7 +437,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | R21 | claims 缓存导致降权延迟 | P2 | **E1** | 与吊销缓存同一机制 |
 | R20/R16 | MCP 凭证约定 / 明文 Key | P2 | **E2** | 与安全存储一起做；**v1.9.0 已闭合**（摘要/文件注入） |
 | R17 | OpenLLM 本地用户双主 | P1-7 | **E2** | 边缘可延后；**v1.9.0 已闭合**（身份权威开关） |
-| 政务合规项 | 国密密评 / 统一身份 / 三权分立 / 集中审计 / 信创灾备 | 不适用 | **暂缓** | 非 R 台账项，政务交付再启用 |
+| 政务合规项 | 国密密评 / 统一身份 / 三权分立 / 集中审计 / 信创灾备 | 不适用 | **E3（软件部分）/ 暂缓（硬件与密评）** | 非 R 台账项；可软件落地部分 v1.11.0 已实施，见 §10.14 |
 
 ### 10.7 E0 实施结果（v1.3.0，2026-10-29）
 
@@ -603,6 +607,44 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - MCP 静态 Key 文件为明文注入（0600），读取后仅进程内保存；如需 Root of Trust 级保护，仍依赖 E2 的 TPM 宿主项。
 - OpenLLM `local` 模式下本地 `users/tenants/teams` 仍为主数据（默认路径）；生产应采用 `openbase` 模式并在部署编排中固定该开关。
 
+### 10.14 E3 实施结果（v1.11.0，2026-10-30）
+
+> 范围（原 §10.5 暂缓项中**纯软件可完成**的部分）：三权分立 + ABAC、集中审计导出与留存、SM2 可插拔预留、统一 IdP Provider 抽象层。**不改动既有鉴权主路径**：`require_permission` / `ensure_user_permission` 行为不变，ABAC 以「试算 + 策略接入点」形态提供；单 IdP `oidc_*` 配置行为不变。需要密码机、密评、第三方平台联调、信创/灾备基础设施的部分仍暂缓（见 §10.5）。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| E3-1 三权分立 | 三职责 `system_admin` / `security_admin` / `audit_admin` 两两互斥；`conflicting_duty_pairs` 列冲突对、`assert_separation_of_duties` 冲突即抛 `SeparationOfDutiesError`（fail-closed）；三职责权限点基线互不重叠；`GET /api/v1/auth/access/duties` 暴露职责与基线（需 `security:admin` 或超管） | OpenBase `modules/auth/access_control.py`（新）、`modules/auth/access_api.py`（新）、`modules/auth/__init__.py`（挂载） | `tests/test_e3_governance.py`（冲突对/三职责互斥/基线不重叠/职责端点） |
+| E3-1 ABAC | 策略 JSON 数组（`OPENBASE_ABAC_POLICIES`）；规则字段 `effect/permission/roles/tenant/cross_tenant`；判定语义 **deny-overrides** → 跨租户默认拒绝（仅显式 `cross_tenant` 放行）→ allow → `not_applicable`（回落 RBAC）；非法 JSON/字段在**所有环境**启动拒绝；`POST /api/v1/auth/access/check` 试算并返回可解释 `reason` | 同上 + `settings.py`（`_validate_e3_governance_configuration`） | 同上（deny 覆盖、allow、无命中、跨租户默认拒绝/显式放行、角色与租户约束、试算端点、启动门禁） |
+| E3-2 集中审计导出 | `GET /api/v1/audit/export`：NDJSON 流式（`StreamingResponse`，按 `id` 升序逐行输出），参数 `since/until/limit`；单次条数上限取 `OPENBASE_AUDIT_EXPORT_MAX_ROWS`（默认 10000），超限返回 `PARAM_INVALID`；时间区间倒置拒绝；每行含 `prev_hash`/`entry_hash` 可离线复核；权限与链校验同源（`system:superadmin`） | OpenBase `modules/audit/__init__.py` + `settings.py` | `tests/test_e3_governance.py`（流式行序/`X-Row-Limit`/since 过滤/超限/区间倒置） |
+| E3-2 审计留存清理 | `POST /api/v1/audit/retention/purge`：`dry_run` 默认 `true`（只统计）；`OPENBASE_AUDIT_RETENTION_DAYS=0` 表示未启用并**拒绝**清理（`BIZ_CONFIG_CONFLICT`）；非 0 必须 ≥30 天（责任期下限，启动门禁）；删除仅针对 `created_at < cutoff` 的最旧头部行，**删头不断链**（链校验从剩余首行重新起算）；操作落结构化 INFO 日志 | 同上 + `settings.py` | 同上（未启用拒绝、dry-run 计数、真实删除、清理后 `verify_audit_chain` 仍 `ok`） |
+| E3-3 SM2 可插拔 | 签名算法注册表：`HS256`/`RS256` 可用、`SM2` 登记为预留不可用（需 `gmssl`/密码机原语）；`register_signature_algorithm` 支持显式 `replace`；启动门禁 `_validate_signature_algorithm`：未知算法或不可用算法（含 SM2）即拒绝启动，**绝不静默降级** | OpenBase `core/security/signature_algorithms.py`（新）、`settings.py` | 同上（注册表可用性、SM2 断言拒绝、未知算法、重复登记语义、settings 门禁） |
+| E3-4 IdP Provider 抽象 | `OPENBASE_IDP_PROVIDERS`（JSON 数组）登记多 Provider：`name/discovery_url/client_id/client_secret/redirect_uri/scopes/profile/claim_role/default_tenant`；启动门禁校验 JSON 合法、名称唯一、必填项齐全、`profile` ∈ {`generic`,`keycloak`}；`GET /api/v1/auth/idp/providers` 只读视图（登录用户可读），**绝不下发 `client_secret`**，仅暴露 `has_client_secret`；默认留空 = 仅既有单 IdP `oidc_*` | OpenBase `modules/auth/idp_registry.py`（新）、`modules/auth/__init__.py`（挂载）、`settings.py` | 同上（合法/非法解析、名称唯一、profile 校验、视图无密钥、端点无明文） |
+
+**新增配置项（均有默认值，缺省行为零变化）**
+
+| 配置 | 默认 | 语义 |
+|---|---|---|
+| `OPENBASE_ABAC_POLICIES` | 空 | ABAC 策略 JSON 数组；空 = 无属性策略（判定回落 RBAC） |
+| `OPENBASE_AUDIT_RETENTION_DAYS` | `0` | `0` = 不清理；非 0 必须 ≥30 |
+| `OPENBASE_AUDIT_EXPORT_MAX_ROWS` | `10000` | 单次导出条数上限（正整数） |
+| `OPENBASE_IDP_PROVIDERS` | 空 | 多 IdP Provider 登记 JSON 数组 |
+
+**统一口径**
+
+- ABAC 是**前置判定/试算**能力，不替代 RBAC：返回 `not_applicable` 时由 RBAC 继续判定；策略接入点可由后续管理面按需调用，本轮不改既有端点鉴权链。
+- 三权分立提供**校验函数与基线**，角色授予入口的强制调用属于组织流程改造（本轮未强制接入 `role:grant` 路径，避免改变既有行为）。
+- 审计导出/清理均走 `get_db` 请求级会话与 SQLAlchemy 参数化查询，不拼 SQL；清理为不可逆操作，默认 dry-run 且权限与链校验同源。
+- SM2 与 IdP 均为**登记层**：真实签名原语、外部平台联调、证书交换不在本仓代码范围，配置到即 fail-fast 而非假装可用。
+
+**残余（未在本轮闭合）**
+
+- SM2 **仅登记未接线**：`JWT` 签发/验签仍只有 HS256/RS256；启用国密需接入 `gmssl`/密码机原语并补标准映射（JWS 未定义 SM2）。
+- IdP Provider **仅登记与只读展示**：多 Provider 的登录路由选择、回调分流、租户映射仍走既有单 IdP `oidc_*` 流程；与省级平台的实际联调、证书轮换未做。
+- ABAC 策略**无管理写端点**（本轮只读试算/自检），策略变更走配置下发；策略规模增长后需要独立的策略 CRUD 与生效审计。
+- 三权分立**未强制接入角色授予路径**：`role:grant` 当前不调用 `assert_separation_of_duties`，组织侧需在授权流程中显式校验（后续可加管理面门禁）。
+- 留存清理为**同一数据库内的按时间删除**：跨库归档、对象存储冷备、审计介质合规留存（等保≥6 个月）仍需集中审计平台/基础设施配合。
+- 验证边界：E3 新增 4 个模块与审计导出/清理端点以**文件型 SQLite + 依赖覆写**验证（`tests/test_e3_governance.py` 23 项），未做真实 PG 多实例并发导出压测；本文件与相关回归（E3 新增 + `test_settings` + `test_audit_chain` 共 53 项，审计/鉴权相关回归 75 项）全部通过，ruff 0 错误。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -620,3 +662,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.8.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.12「E1-6/E1-7 实施结果」，闭合 E1 剩余项：MCP 边缘凭证三形态 + stdio 令牌注入 + 工具级 `scope.tools` 过滤；Key 异常告警（多 IP / 网段跳变 / 调用量突增，只告警不阻断，落审计）；R6 四仓生产 fail-closed 门禁（受信来源与角色口径漏配即拒启）；R7 OpenMemory 轮换闭环（摘要落盘 + 宽限期 + 网关同源校验 + 生产三拒绝）；R8 OpenLLM Key 权限上限与按 Key 配额限流；登记残余（单进程窗口/内存配额、MCP 工具级仅作用 MCP 路由、OpenRAG 全量收集受限） |
 | v1.9.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.13「E2 实施结果」：审计日志链式哈希（`prev_hash`/`entry_hash` + `before_flush` 单点挂钩覆盖 17 处插入点 + 超管链校验端点）；R16/R20 MCP 静态 Key 去明文（摘要列表 / 宿主注入文件 + 生产三条门禁）；R17 OpenLLM 身份权威开关（`IDENTITY_AUTHORITY=openbase` 关闭本地开户/登录/换发并要求 JWKS）；修正 2 条既有 settings 用例；登记残余（多实例链分叉、TPM/安全启动/本地落盘加密/远程擦除依赖终端宿主） |
 | v1.10.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 闭合 §10.13 登记的审计链并发残余：flush 前先取 PostgreSQL 事务级 advisory lock（`pg_advisory_xact_lock`，锁键参数化绑定）再读末条哈希并插入，多实例写入串行不叉链；非 PG 方言放行；新增 3 项用例（SQLite 放行 / PG 参数化 SQL / 先锁后读顺序），审计链与审计/Key 相关回归 126 项通过；§10.4 E2 与 §10.13 残余同步标注 |
+| v1.11.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.14「E3 实施结果」并重排 §10.5：政务暂缓项中**纯软件可完成**部分落地——E3-1 三权分立（三职责两两互斥 + 权限点基线不重叠）与 ABAC（deny-overrides / 跨租户默认拒绝 / 无命中回落 RBAC，试算与职责端点）；E3-2 审计 NDJSON 流式导出（条数上限 + 链式哈希可离线复核）与留存清理（默认 dry-run、`0` 未启用即拒绝、删头不断链）；E3-3 签名算法注册表（HS256/RS256 可用、SM2 预留不可用，配置即 fail-fast）；E3-4 统一 IdP Provider 多登记（启动门禁 + 只读视图不含 `client_secret`）；新增 4 配置项；残余（SM2 未接线、IdP 未切换多 Provider 流程、ABAC 无写端点、SoD 未强制接入授予路径、留存未接集中审计平台）与 SQLite 验证边界如实登记 |

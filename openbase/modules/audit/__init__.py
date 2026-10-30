@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import datetime as dt
+import json
 import logging
 import os
 import time
@@ -18,13 +20,14 @@ from dataclasses import dataclass, field
 from typing import Any, Optional  # noqa: F401 - future annotations 字符串注解求值
 
 from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import Response, StreamingResponse
 
 from openbase.core.db.session import get_db
 from openbase.core.deps.auth import IdentityContext  # noqa: F401 - build_audit_record 类型注解
-from openbase.core.errors import ErrorCode
+from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.mask import digest_of, observe_payload
 from openbase.modules.auth.rbac import SUPERADMIN_PERMISSION, require_permission
 from openbase.modules.protocol_headers.constants import (
@@ -1056,6 +1059,180 @@ async def audit_chain_verify(
         "code": "OK",
         "message": "ok",
         "data": {**result, "request_id": request_id},
+    }
+
+
+def _serialize_audit_row(row: Any) -> dict[str, Any]:
+    """审计行 → NDJSON 单行字典（时间统一 ISO-8601，便于外部归档）."""
+    return {
+        "id": row.id,
+        "user_id": row.user_id,
+        "tenant_id": row.tenant_id,
+        "action": row.action,
+        "resource": row.resource,
+        "resource_id": row.resource_id,
+        "ip": row.ip,
+        "user_agent": row.user_agent,
+        "request_id": row.request_id,
+        "detail": row.detail or {},
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "prev_hash": row.prev_hash,
+        "entry_hash": row.entry_hash,
+    }
+
+
+@api_router.get(
+    "/audit/export",
+    dependencies=[
+        # E3-2：集中审计导出与链校验同权（超管 system:superadmin，PERM_403）
+        Depends(require_permission(SUPERADMIN_PERMISSION, error_code=ErrorCode.PERM_403))
+    ],
+)
+async def audit_export(
+    request: Request,
+    since: dt.datetime | None = Query(None, description="起始时间（含，ISO-8601）"),
+    until: dt.datetime | None = Query(None, description="结束时间（含，ISO-8601）"),
+    limit: int | None = Query(None, ge=1, description="导出条数上限（默认取配置上限）"),
+    session: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """流式导出审计日志（NDJSON，E3-2 集中审计留存）.
+
+    按 ``id`` 升序逐行输出，单次条数受 ``OPENBASE_AUDIT_EXPORT_MAX_ROWS`` 约束，
+    **不一次拉全表**；输出字段含链式哈希（``prev_hash``/``entry_hash``），可离线复核。
+
+    Args:
+        request: 当前请求（取 request_id）。
+        since: 起始时间（含）；None 表示不限。
+        until: 结束时间（含）；None 表示不限。
+        limit: 条数上限；None 取配置上限，超过配置上限即拒绝。
+        session: 请求级异步会话（依赖注入，流式期间保持开启）。
+
+    Returns:
+        ``application/x-ndjson`` 流（每行一个审计记录 JSON）。
+
+    Raises:
+        BaseError: ``PARAM_INVALID``（limit 超限或时间区间倒置）。
+    """
+    from openbase.core.models import AuditLog
+
+    request_id = getattr(request.state, "request_id", None) or f"req-{uuid.uuid4().hex[:12]}"
+    max_rows = int(get_settings().audit_export_max_rows)
+    effective_limit = max_rows if limit is None else int(limit)
+    if effective_limit > max_rows:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            f"limit 不得超过 {max_rows}（OPENBASE_AUDIT_EXPORT_MAX_ROWS）",
+        )
+    if since is not None and until is not None and since > until:
+        raise BaseError(ErrorCode.PARAM_INVALID, "since 不得晚于 until")
+
+    statement = select(AuditLog).order_by(AuditLog.id.asc()).limit(effective_limit)
+    if since is not None:
+        statement = statement.where(AuditLog.created_at >= since)
+    if until is not None:
+        statement = statement.where(AuditLog.created_at <= until)
+
+    logger.info(
+        "audit.export",
+        extra={
+            "request_id": request_id,
+            "limit": effective_limit,
+            "since": since.isoformat() if since else None,
+            "until": until.isoformat() if until else None,
+        },
+    )
+
+    async def _iter_lines():
+        async for row in (await session.stream(statement)).scalars():
+            yield json.dumps(
+                _serialize_audit_row(row),
+                ensure_ascii=False,
+                sort_keys=True,
+                default=str,
+            ) + "\n"
+
+    return StreamingResponse(
+        _iter_lines(),
+        media_type="application/x-ndjson",
+        headers={"X-Request-ID": request_id, "X-Row-Limit": str(effective_limit)},
+    )
+
+
+@api_router.post(
+    "/audit/retention/purge",
+    dependencies=[
+        # E3-2：留存清理为不可逆操作，权限与链校验同源（超管，PERM_403）
+        Depends(require_permission(SUPERADMIN_PERMISSION, error_code=ErrorCode.PERM_403))
+    ],
+)
+async def audit_retention_purge(
+    request: Request,
+    dry_run: bool = Query(True, description="True 仅统计不删除（默认）；False 实际删除"),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """按留存天数清理过期审计日志（E3-2；删头不断链）.
+
+    ``OPENBASE_AUDIT_RETENTION_DAYS=0`` 表示未启用留存策略，此时**拒绝**执行清理
+    （避免误删责任期数据）。实际删除仅针对 ``created_at < cutoff`` 的**最旧头部行**，
+    链式哈希校验从剩余首行重新起算，故不破坏后续链条。
+
+    Args:
+        request: 当前请求（取 request_id）。
+        dry_run: 仅统计候选行（默认 True）；False 时执行删除并提交。
+        session: 请求级异步会话。
+
+    Returns:
+        ``{"code","message","data": {"dry_run","retention_days","cutoff",
+        "candidate_rows","deleted_rows","request_id"}}``。
+
+    Raises:
+        BaseError: ``BIZ_CONFIG_CONFLICT``（留存未启用）。
+    """
+    from openbase.core.models import AuditLog
+
+    request_id = getattr(request.state, "request_id", None) or f"req-{uuid.uuid4().hex[:12]}"
+    retention_days = int(get_settings().audit_retention_days)
+    if retention_days <= 0:
+        raise BaseError(
+            ErrorCode.BIZ_CONFIG_CONFLICT,
+            "未启用审计留存清理（OPENBASE_AUDIT_RETENTION_DAYS=0），拒绝执行",
+        )
+    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=retention_days)
+    count_statement = (
+        select(func.count()).select_from(AuditLog).where(AuditLog.created_at < cutoff)
+    )
+    candidate_rows = int((await session.execute(count_statement)).scalar_one())
+
+    deleted_rows = 0
+    if not dry_run and candidate_rows:
+        delete_result = await session.execute(
+            delete(AuditLog).where(AuditLog.created_at < cutoff)
+        )
+        await session.commit()
+        deleted_rows = int(delete_result.rowcount or 0)
+
+    logger.info(
+        "audit.retention.purge",
+        extra={
+            "request_id": request_id,
+            "dry_run": dry_run,
+            "retention_days": retention_days,
+            "cutoff": cutoff.isoformat(),
+            "candidate_rows": candidate_rows,
+            "deleted_rows": deleted_rows,
+        },
+    )
+    return {
+        "code": "OK",
+        "message": "ok",
+        "data": {
+            "dry_run": dry_run,
+            "retention_days": retention_days,
+            "cutoff": cutoff.isoformat(),
+            "candidate_rows": candidate_rows,
+            "deleted_rows": deleted_rows,
+            "request_id": request_id,
+        },
     }
 
 

@@ -344,6 +344,18 @@ class Settings(BaseSettings):
     jwt_require_rs256: bool = False
     # GET /api/v1/auth/revocations 单页上限（下游增量拉取吊销快照）
     jwt_revocations_page_limit: int = 500
+
+    # ---- E3 政务暂缓项的可软件部分 ----
+    # 三权分立 + ABAC：策略 JSON 数组（空 = 无属性策略，判定回落 RBAC）；
+    # 规则形如 {"effect":"allow|deny","permission":"user:list","roles":[...],
+    # "tenant":"acme","cross_tenant":false}。非法 JSON 在**所有环境**拒绝启动。
+    abac_policies: str = ""
+    # 集中审计留存：保留天数（0 = 不清理；非 0 必须 ≥30，避免误删责任期数据）
+    audit_retention_days: int = 0
+    # 审计导出单次上限（NDJSON 流式导出，防止一次拉全表）
+    audit_export_max_rows: int = 10000
+    # 统一 IdP Provider 登记（JSON 数组；空 = 仅既有单 IdP 的 oidc_* 配置）
+    idp_providers: str = ""
     # U1 T3（K04，方案 a token 版本号）：token 版本强校验开关（两段式发布第二段，
     # 设计草案 §5.1/§12.1 风险 1/§6.2）。默认 False：版本强校验关闭，存量 v0 / 落后
     # tvn 过渡窗口不误杀；每请求主体状态校验不依赖本开关（默认即生效）。第二段置 True。
@@ -619,6 +631,46 @@ class Settings(BaseSettings):
         parse_public_keys_map(self.jwt_jwks_public_keys)
         if int(self.jwt_revocations_page_limit) <= 0:
             raise ValueError("OPENBASE_JWT_REVOCATIONS_PAGE_LIMIT 必须为正整数")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_signature_algorithm(self) -> Settings:
+        """E3-3 签名算法门禁：未知或未接线算法一律拒绝启动（禁静默降级）.
+
+        ``jwt_algorithm`` 必须在注册表内且当前可用；``SM2`` 为预留位
+        （需 gmssl/密码机接线），配置即拒绝启动，避免以为已启用国密。
+        """
+        from openbase.core.security.signature_algorithms import (
+            assert_signature_algorithm_usable,
+        )
+
+        assert_signature_algorithm_usable(self.jwt_algorithm)
+        return self
+
+    @model_validator(mode="after")
+    def _validate_e3_governance_configuration(self) -> Settings:
+        """E3 治理配置门禁：ABAC 策略 / 留存天数 / 导出上限 / IdP Provider.
+
+        全部在**任何环境**按 fail-fast 校验（配置错误不带病启动）：
+
+        - ``abac_policies`` 必须是合法 JSON 数组且规则字段合法；
+        - ``audit_retention_days`` 为 0（不清理）或 ≥30（责任期下限）；
+        - ``audit_export_max_rows`` 必须为正整数；
+        - ``idp_providers`` 必须是合法 JSON 数组、名称唯一、必填项齐全。
+        """
+        from openbase.modules.auth.access_control import parse_abac_rules
+        from openbase.modules.auth.idp_registry import parse_idp_providers
+
+        parse_abac_rules(self.abac_policies)
+        retention_days = int(self.audit_retention_days)
+        if retention_days != 0 and retention_days < 30:
+            raise ValueError(
+                "OPENBASE_AUDIT_RETENTION_DAYS 必须为 0（不清理）或 ≥30 天，"
+                f"当前为 {retention_days}（低于责任期下限，拒绝启动）"
+            )
+        if int(self.audit_export_max_rows) <= 0:
+            raise ValueError("OPENBASE_AUDIT_EXPORT_MAX_ROWS 必须为正整数")
+        parse_idp_providers(self.idp_providers)
         return self
 
     @model_validator(mode="after")
