@@ -1,6 +1,7 @@
 """core/models：统一数据模型."""
 
 from openbase.core.models.base import (
+    AbacPolicyRule,
     AgentApiKey,
     AuditLog,
     Base,
@@ -51,6 +52,7 @@ __all__ = [
     "SubjectBlock",
     "Department",
     "AuditLog",
+    "AbacPolicyRule",
     "DictType",
     "DictItem",
     "ConfigKV",

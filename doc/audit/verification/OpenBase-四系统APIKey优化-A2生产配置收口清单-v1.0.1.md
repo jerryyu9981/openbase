@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.12.0.md`（§10.7~§10.15） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.13.0.md`（§10.7~§10.16） |
 | 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`（A1-01/02/04/11/12 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -16,6 +16,7 @@
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
 | v1.0.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 首版：将五仓「API Key 与授权」相关配置收敛为单一部署基线，给出 OpenBase 控制面基线矩阵、四仓镜像矩阵、11 项启动门禁、密钥管理、漂移自检与签核口径 |
+| v1.0.1 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.13.0（§10.16）：ABAC 除 `OPENBASE_ABAC_POLICIES` 配置基线外，新增运行期策略表与 `/api/v1/auth/access/policies` 写端点（判定为两者合并，缺省零行为变化）；关联方案版本号更新 |
 
 ---
 
@@ -98,7 +99,7 @@
 
 | 变量 | 默认 | 生产基线 | 缺失/违规后果 | 校验落点 |
 |---|---|---|---|---|
-| `OPENBASE_ABAC_POLICIES` | 空 | 空 = 无属性策略（回落 RBAC）；启用须合法 JSON 数组 | 非法 JSON/字段 → **所有环境拒绝启动** | `settings.py:651-675` |
+| `OPENBASE_ABAC_POLICIES` | 空 | 空 = 无属性策略（回落 RBAC）；启用须合法 JSON 数组。运行期新增策略走 `POST /api/v1/auth/access/policies`（`security:admin`，落 `abac_policy_rules` 表并同步审计），判定为「表内启用行 ∪ 本配置基线」，缺省零行为变化 | 非法 JSON/字段 → **所有环境拒绝启动** | `settings.py:651-675`；`modules/auth/abac_policy_store.py` |
 | `OPENBASE_AUDIT_RETENTION_DAYS` | `0` | `0`（不清理）或 **≥30** | 1~29 → 拒绝启动（避免误删责任期数据） | `settings.py:651-675` |
 | `OPENBASE_AUDIT_EXPORT_MAX_ROWS` | `10000` | 正整数（导出单次上限） | 非正 → 拒绝启动 | `settings.py:651-675` |
 | `OPENBASE_IDP_PROVIDERS` | 空 | 空 = 仅既有单 IdP；启用须合法 JSON 数组（名称唯一、必填齐全） | 非法 → 拒绝启动 | `settings.py:651-675` |

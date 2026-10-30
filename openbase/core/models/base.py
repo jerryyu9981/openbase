@@ -516,6 +516,37 @@ class AuditLog(Base):
     entry_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
+class AbacPolicyRule(Base):
+    """ABAC 属性策略规则（E3-1 运行期可管理，配置基线仅作只读兜底）.
+
+    判定语义与 ``OPENBASE_ABAC_POLICIES`` 完全一致（deny-overrides / 跨租户默认
+    拒绝 / 无命中 ``not_applicable`` 回落 RBAC）；本表只承载**运行期新增**的策略，
+    ``enabled=False`` 的行不参与判定。写入与 ``AuditLog`` 同事务，保证变更可追溯。
+    """
+
+    __tablename__ = "abac_policy_rules"
+
+    id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
+    # 策略名（唯一）：便于管理面定位与审计引用
+    name: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    effect: Mapped[str] = mapped_column(String(8), nullable=False)
+    permission: Mapped[str] = mapped_column(String(128), nullable=False, default="*")
+    roles: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    tenant: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    cross_tenant: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # 每次更新自增，供管理面做并发覆盖检测与变更追溯
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    updated_by: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, nullable=False
+    )
+    updated_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, onupdate=_now, nullable=False
+    )
+
+
 __all__ = [
     "Base",
     "User",
@@ -529,6 +560,7 @@ __all__ = [
     "Permission",
     "Tenant",
     "AuditLog",
+    "AbacPolicyRule",
     "user_role",
     "role_permission",
     "user_department",

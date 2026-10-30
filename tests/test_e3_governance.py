@@ -281,6 +281,158 @@ def test_access_endpoints_check_and_duties(sqlite_engine, monkeypatch) -> None:
         }
 
 
+# ---- E3-1 ABAC 策略 CRUD（ER-24 写端点）----
+
+
+def _access_app(sqlite_engine, monkeypatch, *, baseline: str = ""):
+    """最小应用：访问治理路由 + 配置基线桩 + 身份/会话覆写."""
+    import openbase.modules.auth.access_api as access_api
+    from openbase.modules.auth.access_api import router as access_router
+
+    factory = async_sessionmaker(sqlite_engine, expire_on_commit=False)
+    monkeypatch.setattr(
+        access_api, "get_settings", lambda: SimpleNamespace(abac_policies=baseline)
+    )
+    app = FastAPI()
+    app.include_router(access_router)
+    install_exception_handlers(app)
+    app.dependency_overrides[get_db] = _override_get_db(factory)
+    app.dependency_overrides[get_current_user] = _admin_identity
+    return app, factory
+
+
+def _audit_actions(factory) -> list[str]:
+    """读取审计动作名（升序）."""
+
+    async def _query() -> list[str]:
+        from sqlalchemy import select
+
+        async with factory() as session:
+            result = await session.execute(
+                select(AuditLog.action)
+                .where(AuditLog.resource == "abac_policy")
+                .order_by(AuditLog.id.asc())
+            )
+            return list(result.scalars().all())
+
+    return asyncio.run(_query())
+
+
+def test_abac_policy_crud_effective_and_audited(sqlite_engine, monkeypatch) -> None:
+    """新增即生效（与配置基线合并）、更新自增版本、删除失效，且全程审计留痕."""
+    app, factory = _access_app(sqlite_engine, monkeypatch)
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/v1/auth/access/policies",
+            json={
+                "name": "deny-key-issue",
+                "effect": "deny",
+                "permission": "key:issue",
+                "tenant": "acme",
+            },
+        )
+        assert created.status_code == 200, created.text
+        policy = created.json()["data"]
+        assert policy["version"] == 1
+        assert policy["enabled"] is True
+
+        # 新增即参与判定（主体租户命中 → deny）
+        denied = client.post(
+            "/api/v1/auth/access/check",
+            json={"permission": "key:issue", "resource_tenant": "", "roles": []},
+        )
+        assert denied.status_code == 200
+        # 主体无 tenant_code（覆写身份），故 tenant 约束不命中 → 回落 RBAC
+        assert denied.json()["decision"] == "not_applicable"
+
+        listed = client.get("/api/v1/auth/access/policies")
+        assert [row["name"] for row in listed.json()["data"]] == ["deny-key-issue"]
+
+        updated = client.put(
+            f"/api/v1/auth/access/policies/{policy['id']}",
+            json={
+                "name": "deny-key-issue",
+                "effect": "deny",
+                "permission": "key:issue",
+                "enabled": False,
+            },
+        )
+        assert updated.status_code == 200, updated.text
+        assert updated.json()["data"]["version"] == 2
+        assert updated.json()["data"]["enabled"] is False
+
+        # 停用后默认列表不含，且不参与判定
+        assert client.get("/api/v1/auth/access/policies").json()["data"] == []
+        assert len(
+            client.get(
+                "/api/v1/auth/access/policies", params={"include_disabled": True}
+            ).json()["data"]
+        ) == 1
+
+        removed = client.delete(f"/api/v1/auth/access/policies/{policy['id']}")
+        assert removed.status_code == 200, removed.text
+        assert client.get(
+            "/api/v1/auth/access/policies", params={"include_disabled": True}
+        ).json()["data"] == []
+
+        missing = client.delete(f"/api/v1/auth/access/policies/{policy['id']}")
+        assert missing.status_code == 404
+        assert missing.json()["code"] == "BIZ_404"
+
+    assert _audit_actions(factory) == [
+        "access.abac_policy.create",
+        "access.abac_policy.update",
+        "access.abac_policy.delete",
+    ]
+
+
+def test_abac_policy_deny_overrides_config_baseline(sqlite_engine, monkeypatch) -> None:
+    """DB 规则与配置基线合并判定：deny 覆盖 allow（语义与配置口径一致）."""
+    app, _ = _access_app(
+        sqlite_engine,
+        monkeypatch,
+        baseline='[{"effect":"allow","permission":"key:issue"}]',
+    )
+
+    with TestClient(app) as client:
+        allowed = client.post(
+            "/api/v1/auth/access/check", json={"permission": "key:issue"}
+        )
+        assert allowed.json()["decision"] == "allow"
+
+        client.post(
+            "/api/v1/auth/access/policies",
+            json={"name": "deny-key-issue", "effect": "deny", "permission": "key:issue"},
+        )
+        denied = client.post(
+            "/api/v1/auth/access/check", json={"permission": "key:issue"}
+        )
+        assert denied.json()["decision"] == "deny"
+        assert denied.json()["reason"] == "deny_rule_matched"
+
+
+def test_abac_policy_rejects_duplicate_name_and_invalid_effect(
+    sqlite_engine, monkeypatch
+) -> None:
+    """名称唯一（409）+ effect 非法（400 PARAM_INVALID，先于落库被拒绝）."""
+    app, _ = _access_app(sqlite_engine, monkeypatch)
+
+    with TestClient(app) as client:
+        payload = {"name": "dup-policy", "effect": "deny", "permission": "key:issue"}
+        assert client.post("/api/v1/auth/access/policies", json=payload).status_code == 200
+        conflict = client.post("/api/v1/auth/access/policies", json=payload)
+        assert conflict.status_code == 409
+        assert conflict.json()["code"] == "BIZ_CONFLICT"
+
+        invalid = client.post(
+            "/api/v1/auth/access/policies",
+            json={"name": "bad-effect", "effect": "audit", "permission": "key:issue"},
+        )
+        assert invalid.status_code == 400
+        assert invalid.json()["code"].startswith("PARAM_")
+
+
 # ---- E3-2 审计导出与留存 ----
 
 

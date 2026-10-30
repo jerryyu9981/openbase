@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.12.0 |
+| 版本 | v1.13.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -640,7 +640,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 - SM2 **仅登记未接线**：`JWT` 签发/验签仍只有 HS256/RS256；启用国密需接入 `gmssl`/密码机原语并补标准映射（JWS 未定义 SM2）。
 - IdP Provider **仅登记与只读展示**：多 Provider 的登录路由选择、回调分流、租户映射仍走既有单 IdP `oidc_*` 流程；与省级平台的实际联调、证书轮换未做。
-- ABAC 策略**无管理写端点**（本轮只读试算/自检），策略变更走配置下发；策略规模增长后需要独立的策略 CRUD 与生效审计。
+- ~~ABAC 策略**无管理写端点**（本轮只读试算/自检），策略变更走配置下发；策略规模增长后需要独立的策略 CRUD 与生效审计~~ → **v1.13.0 已闭合**（§10.16）：新增 `abac_policy_rules` 表与 `/api/v1/auth/access/policies` CRUD，写入与审计同事务；``OPENBASE_ABAC_POLICIES`` 配置基线保留为只读兜底，两者合并判定。
 - 三权分立**未强制接入角色授予路径**：`role:grant` 当前不调用 `assert_separation_of_duties`，组织侧需在授权流程中显式校验（后续可加管理面门禁）。
 - 留存清理为**同一数据库内的按时间删除**：跨库归档、对象存储冷备、审计介质合规留存（等保≥6 个月）仍需集中审计平台/基础设施配合。
 - 验证边界：E3 新增 4 个模块与审计导出/清理端点以**文件型 SQLite + 依赖覆写**验证（`tests/test_e3_governance.py` 23 项），未做真实 PG 多实例并发导出压测；本文件与相关回归（E3 新增 + `test_settings` + `test_audit_chain` 共 53 项，审计/鉴权相关回归 75 项）全部通过，ruff 0 错误。
@@ -665,6 +665,29 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 - 真实 PG 存量库升级仅以文件型 SQLite + FakeConn 语句断言验证，未做生产 PG 演练；该演练由 A1-12 验收项覆盖（预生产快照 → 启动即补列 → 链校验 `ok`）。
 
+### 10.16 ABAC 策略写端点（ER-24 闭合，v1.13.0，2026-10-30）
+
+> 目的：闭合 §10.14 登记的「ABAC 无管理写端点，策略变更只能走配置下发」残余。判定语义保持不变，新增的只是**运行期策略存储与变更留痕**。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| 策略持久化 | 新表 `abac_policy_rules`（`name` 唯一 / `effect` / `permission` / `roles` / `tenant` / `cross_tenant` / `enabled` / `version` / 操作人与时间戳）；`create_all` 幂等建表，随初始化链生效，无手工 DDL | `openbase/core/models/base.py`（`AbacPolicyRule`）、`openbase/core/models/__init__.py` | `tests/test_e3_governance.py`（建表后 CRUD 全链路） |
+| 合并判定 | `/check` 与判定层改为「DB 启用行 ∪ `OPENBASE_ABAC_POLICIES` 基线」；deny-overrides、跨租户默认拒绝、无命中 `not_applicable` 回落 RBAC 全部不变；`enabled=false` 不参与判定 | `openbase/modules/auth/abac_policy_store.py`（新）、`access_api.py` | 同上（deny 覆盖基线 allow；停用即失效） |
+| 写端点 | `GET/POST/PUT/DELETE /api/v1/auth/access/policies`：均需 `security:admin` 或超管；字段校验复用配置解析口径（`parse_abac_rules`）；名称重复 `BIZ_CONFLICT`、缺失 `BIZ_NOT_FOUND`、非法字段 `PARAM_INVALID`；更新时 `version` 自增 | `openbase/modules/auth/access_api.py` | 同上（CRUD、409/404/400、版本自增） |
+| 变更留痕 | 新增/更新/删除与 `AuditLog` 同事务提交（`access.abac_policy.create/update/delete`，`resource=abac_policy`），审计失败即整体回滚，不产生「策略已改无留痕」 | `abac_policy_store.py` | 同上（三类动作按序入库） |
+
+**统一口径**
+
+- **默认零行为变化**：表内无规则时判定结果与仅用配置完全一致；配置基线仍是启动期门禁来源，运行期策略不替代它。
+- 策略表只承载**运行期新增**规则，配置文件不做回写；两条路径同时存在时以判定语义（而非顺序）决定结果。
+- 每次变更都带操作人（非数字主体记 `None` 但审计仍留痕）与 `version`，便于管理面做覆盖检测与追溯。
+
+**残余**
+
+- 策略**变更审批流**（双人复核）未实现：当前仅单点授权 + 审计留痕，四眼原则需接入组织流程或后续审批端点。
+- 策略规模与命中性能未做压测：规则全量加载后线性判定，规则量级增长到千条以上需引入索引/缓存策略。
+- 验证边界：仍以文件型 SQLite + 依赖覆写验证（`tests/test_e3_governance.py` 新增 3 项），未做真实 PG 多实例并发写策略压测。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -684,3 +707,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.10.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 闭合 §10.13 登记的审计链并发残余：flush 前先取 PostgreSQL 事务级 advisory lock（`pg_advisory_xact_lock`，锁键参数化绑定）再读末条哈希并插入，多实例写入串行不叉链；非 PG 方言放行；新增 3 项用例（SQLite 放行 / PG 参数化 SQL / 先锁后读顺序），审计链与审计/Key 相关回归 126 项通过；§10.4 E2 与 §10.13 残余同步标注 |
 | v1.11.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.14「E3 实施结果」并重排 §10.5：政务暂缓项中**纯软件可完成**部分落地——E3-1 三权分立（三职责两两互斥 + 权限点基线不重叠）与 ABAC（deny-overrides / 跨租户默认拒绝 / 无命中回落 RBAC，试算与职责端点）；E3-2 审计 NDJSON 流式导出（条数上限 + 链式哈希可离线复核）与留存清理（默认 dry-run、`0` 未启用即拒绝、删头不断链）；E3-3 签名算法注册表（HS256/RS256 可用、SM2 预留不可用，配置即 fail-fast）；E3-4 统一 IdP Provider 多登记（启动门禁 + 只读视图不含 `client_secret`）；新增 4 配置项；残余（SM2 未接线、IdP 未切换多 Provider 流程、ABAC 无写端点、SoD 未强制接入授予路径、留存未接集中审计平台）与 SQLite 验证边界如实登记 |
 | v1.12.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.15「A3 存量迁移闭环」：初始化链 `apply_identity_migration` 幂等补齐 `audit_logs.prev_hash` / `entry_hash` 两列（`inspect` 列存在性判定 + PG schema 限定 ALTER），消除 §10.13 登记的「生产升级需手工 DDL」残余（ER-27）；同步改写模型注释与 §10.13 统一口径；新增 2 项用例（SQLite 存量库补列/重放幂等/历史行 NULL、PG schema 限定 SQL），`test_identity_t1` + `test_db_init` + `test_audit_chain` 全部通过，ruff 0 错误；修正 `test_identity_t6` 静态扫描的过期禁用词（E3-2 人工留存清理与 `audit_retention_days` 配置属显式端点，不属自动限期清除）；A1 验收清单升 v1.0.1（A1-12 改为「启动即补列」口径） |
+| v1.13.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.16「ABAC 策略写端点」并闭合 §10.14 登记的 ER-24：`abac_policy_rules` 表（名称唯一/启用开关/版本自增）+ `/api/v1/auth/access/policies` CRUD（`security:admin`，字段校验复用配置口径，409/404/400 三态）；`/check` 改为「DB 启用行 ∪ 配置基线」合并判定，deny-overrides 与跨租户默认拒绝语义不变、缺省零行为变化；写入与 `AuditLog` 同事务（`access.abac_policy.*`，审计失败即回滚）；新增 3 项用例，`test_e3_governance` 26 项与相关回归全通过，ruff 0 错误；登记残余（无审批流/无规则规模压测/SQLite 验证边界）；A2 清单升 v1.0.1（ABAC 增运行期策略说明） |
