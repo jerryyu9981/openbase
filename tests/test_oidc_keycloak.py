@@ -121,6 +121,10 @@ class KeycloakStyleIdp:
             form = await request.form()
             assert form.get("client_id") == self.client_id
             assert form.get("client_secret") == self.client_secret
+            # v1.14.0 nonce 校验：测试以 "mock-code.<nonce>" 传递授权请求下发的 nonce，
+            # mock IdP 原样回写 ID Token（真实 IdP 由授权会话保存并在签发时携带）
+            code = str(form.get("code") or "")
+            nonce = code.split(".", 1)[1] if "." in code else ""
             identity = {
                 "iss": self.issuer,
                 "sub": "kc-user-001",
@@ -131,6 +135,8 @@ class KeycloakStyleIdp:
                 "email": "kc-user@example.com",
                 "tenant_id": "default",
             }
+            if nonce:
+                identity["nonce"] = nonce
             # ID Token：无角色（Keycloak 默认不含）
             id_token = _sign(dict(identity), self._pem, self.kid)
             # access token：Keycloak 默认形状（realm_access 含默认伪角色在前）
@@ -196,10 +202,13 @@ def _enable_oidc(settings_module, kc_url: str, profile: str) -> None:
 
 def _run_callback(client, status: int = 200):
     """authorize → 模拟 IdP 302 回调 → 返回令牌响应. """
+    from urllib.parse import parse_qs, urlparse
+
     auth = client.get("/api/v1/auth/oidc/authorize").json()
     state = auth["state"]
+    nonce = parse_qs(urlparse(auth["authorize_url"]).query)["nonce"][0]
     resp = client.get(
-        f"http://testserver/api/v1/auth/oidc/callback?code=mock-code&state={state}"
+        f"http://testserver/api/v1/auth/oidc/callback?code=mock-code.{nonce}&state={state}"
     )
     assert resp.status_code == status, resp.text
     return resp.json()
@@ -312,8 +321,14 @@ def test_keycloak_profile_uses_id_token_roles_when_present(monkeypatch, kc_idp_u
         _enable_oidc(settings_module, kc_idp_url, "keycloak")
         s = settings_module._settings
 
-        async def _fake_exchange(self, code):  # noqa: ANN001
+        async def _fake_exchange(self, code, *, code_verifier=None):  # noqa: ANN001
             return {"id_token": "mock-id", "access_token": "mock-at"}
+
+        # 本用例只验证「角色来源」，nonce 校验由 test_oidc_hardening 覆盖；
+        # 桩 claims 无真实 nonce，故此处放行（不改变生产实现）。
+        monkeypatch.setattr(
+            oidc_module, "verify_id_token_nonce", lambda expected, claims: None
+        )
 
         # 打桩 parse_id_token：返回含平铺 roles 的 claims（模拟 Keycloak 已配置角色 mapper）
         oidc_module.OIDCClient.parse_id_token = (  # type: ignore[method-assign]

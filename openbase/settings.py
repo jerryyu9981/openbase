@@ -276,6 +276,18 @@ def _resolve_db_url() -> str:
     return url
 
 
+# OIDC ID Token 验签可用算法（python-jose 已接线；SM2 未接线不可用，
+# 配置为不可用算法时启动门禁直接拒绝，避免"以为已启用国密"）
+OIDC_ID_TOKEN_ALGORITHMS: tuple[str, ...] = (
+    "RS256",
+    "RS384",
+    "RS512",
+    "ES256",
+    "ES384",
+    "ES512",
+)
+
+
 def _resolve_redis_url() -> str:
     """解析 Redis 连接串：OPENBASE_REDIS_URL > REDIS_URL > 默认."""
     url = os.environ.get("OPENBASE_REDIS_URL") or os.environ.get("REDIS_URL", "")
@@ -446,6 +458,12 @@ class Settings(BaseSettings):
     oidc_profile: str = "generic"  # claims 适配 profile：generic（平铺 roles）| keycloak（realm_access/resource_access 嵌套聚合）
     oidc_keycloak_client_roles: bool = True  # keycloak：聚合 resource_access.<client_id>.roles（False 仅 realm 角色）
     oidc_frontend_redirect: str = "/auth/oidc/callback"  # 浏览器授权成功后 302 前端回调路由（同源，fragment 携带令牌）
+    # P1 安全硬化（v1.14.0）：state 一次性消费 TTL（多实例经 Redis 共享）
+    oidc_state_ttl_seconds: int = 600
+    # PKCE（RFC 7636 S256）：授权码流公开客户端必备，默认开启；不支持的 IdP 可显式关闭
+    oidc_pkce_enabled: bool = True
+    # ID Token 验签算法白名单（逗号分隔，须与 IdP discovery 声明取交集）
+    oidc_signing_algorithms: str = "RS256"
 
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row
@@ -671,6 +689,31 @@ class Settings(BaseSettings):
         if int(self.audit_export_max_rows) <= 0:
             raise ValueError("OPENBASE_AUDIT_EXPORT_MAX_ROWS 必须为正整数")
         parse_idp_providers(self.idp_providers)
+        return self
+
+    @model_validator(mode="after")
+    def _validate_oidc_hardening_configuration(self) -> Settings:
+        """OIDC P1 安全硬化配置门禁（任何环境 fail-fast）.
+
+        - ``oidc_state_ttl_seconds`` 必须为正整数（state 一次性消费的有效期）；
+        - ``oidc_signing_algorithms`` 至少一项，且必须全部在
+          :data:`OIDC_ID_TOKEN_ALGORITHMS` 内（未接线算法拒绝启动）。
+        """
+        if int(self.oidc_state_ttl_seconds) <= 0:
+            raise ValueError("OPENBASE_OIDC_STATE_TTL_SECONDS 必须为正整数")
+        algorithms = [
+            item.strip().upper()
+            for item in (self.oidc_signing_algorithms or "").split(",")
+            if item.strip()
+        ]
+        if not algorithms:
+            raise ValueError("OPENBASE_OIDC_SIGNING_ALGORITHMS 不能为空")
+        unsupported = sorted(set(algorithms) - set(OIDC_ID_TOKEN_ALGORITHMS))
+        if unsupported:
+            raise ValueError(
+                "OPENBASE_OIDC_SIGNING_ALGORITHMS 含未接线算法："
+                f"{','.join(unsupported)}；可用值：{','.join(OIDC_ID_TOKEN_ALGORITHMS)}"
+            )
         return self
 
     @model_validator(mode="after")

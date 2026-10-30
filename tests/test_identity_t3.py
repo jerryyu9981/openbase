@@ -416,12 +416,19 @@ def test_t3_3_oidc_relogin_rejected_after_deactivate(monkeypatch: pytest.MonkeyP
         "tenant_id": "acme",
         "extra": {"org_id": "acme", "role": "viewer"},
     }
-    oidc_module._state_store["t3-oidc-state"] = "pending"
+    from openbase.modules.auth.oidc_state import get_state_store
+
+    nonce = "t3-oidc-nonce"
+    # v1.14.0：state 改为一次性存储，须登记 nonce（callback 强校验 ID Token nonce）
+    get_state_store().issue("t3-oidc-state", {"nonce": nonce, "code_verifier": ""})
+    claims = dict(claims, nonce=nonce)
 
     class _FakeOidcClient:
         enabled = True
 
-        async def exchange_code(self, code: str) -> dict:
+        async def exchange_code(
+            self, code: str, *, code_verifier: str | None = None
+        ) -> dict:
             return {"id_token": "fake-id-token", "access_token": "fake-access"}
 
         def parse_id_token(self, id_token: str, access_token: str | None = None) -> dict:

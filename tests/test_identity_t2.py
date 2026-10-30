@@ -471,13 +471,21 @@ def _patch_oidc(
 ) -> None:
     """打桩 OIDC 客户端：跳过 HTTP 直达 callback 逻辑（state 已注入）. """
     import openbase.modules.auth.oidc as oidc_module
+    from openbase.modules.auth.oidc_state import get_state_store
 
-    oidc_module._state_store["t2-oidc-state"] = "pending"
+    # v1.14.0：state 改为一次性存储，须登记 nonce（callback 强校验 ID Token nonce）
+    nonce = "t2-oidc-nonce"
+    get_state_store().issue(
+        "t2-oidc-state", {"nonce": nonce, "code_verifier": ""}
+    )
+    claims = dict(claims, nonce=nonce)
 
     class _FakeOidcClient:
         enabled = True
 
-        async def exchange_code(self, code: str) -> dict:
+        async def exchange_code(
+            self, code: str, *, code_verifier: str | None = None
+        ) -> dict:
             return {"id_token": "fake-id-token", "access_token": "fake-access"}
 
         def parse_id_token(self, id_token: str, access_token: str | None = None) -> dict:

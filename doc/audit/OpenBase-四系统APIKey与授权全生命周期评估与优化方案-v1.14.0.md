@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.13.0 |
+| 版本 | v1.14.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -688,6 +688,41 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 策略规模与命中性能未做压测：规则全量加载后线性判定，规则量级增长到千条以上需引入索引/缓存策略。
 - 验证边界：仍以文件型 SQLite + 依赖覆写验证（`tests/test_e3_governance.py` 新增 3 项），未做真实 PG 多实例并发写策略压测。
 
+### 10.17 OIDC P1 安全硬化（v1.14.0，2026-10-30）
+
+> 目的：不改动 OIDC 主体流程（授权码交换 / JIT 建号 / 角色白名单 / 状态机拦截），补齐上线前必须解决的安全与多实例缺口：state 仅进程内存且无 TTL、缺少 nonce/PKCE、验签算法写死 `RS256`。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| state 一次性 + TTL | 新增 `OidcStateStore`：优先 Redis（`SET EX` 写入、`GETDEL` 原子消费）；Redis 不可用回退进程内字典（线程锁 + 到期清理 + 单次弹出）；state 缺失/过期/重复消费统一 400 | `openbase/modules/auth/oidc_state.py`（新）、`oidc.py` | `tests/test_oidc_hardening.py`（一次性消费、TTL 过期） |
+| nonce | authorize 下发 `nonce` 并与 state 同存；callback 校验 ID Token `nonce`，缺失或不一致 → 401 `AUTH_401_INVALID` | `oidc.py` | 同上（匹配/不匹配/缺失）+ `test_oidc_gateway` 全链路 |
+| PKCE | 默认开启 S256：authorize 携带 `code_challenge` / `code_challenge_method=S256`，callback 换 token 携带 `code_verifier`；`OPENBASE_OIDC_PKCE_ENABLED=false` 可对不支持 IdP 关闭 | `oidc.py`、`settings.py` | RFC 7636 附录 B 向量 + 两条全链路用例 |
+| 算法白名单 | `OPENBASE_OIDC_SIGNING_ALGORITHMS`（默认 `RS256`）与 discovery `id_token_signing_alg_values_supported` 取交集；无交集拒绝换取令牌，配置未接线算法（含 SM2）启动即拒绝 | `oidc.py`、`settings.py`（`OIDC_ID_TOKEN_ALGORITHMS` / `_validate_oidc_hardening_configuration`） | 同上（交集/无交集/启动门禁） |
+| 错误码统一 | OIDC 端点由 `HTTPException` 改为 `BaseError`：未启用 `BIZ_404`(404)、state/参数非法 `PARAM_INVALID`(400)、上游失败 `SYS_502`(502)，响应统一 `{code,message,detail,request_id}` | `oidc.py` | 同上（错误码与响应键集断言） |
+
+**新增配置（均有默认值，缺省行为零变化）**
+
+| 配置 | 默认 | 语义 |
+|---|---|---|
+| `OPENBASE_OIDC_STATE_TTL_SECONDS` | `600` | state 一次性消费有效期（正整数） |
+| `OPENBASE_OIDC_PKCE_ENABLED` | `true` | PKCE S256 开关（不支持 PKCE 的 IdP 可关闭） |
+| `OPENBASE_OIDC_SIGNING_ALGORITHMS` | `RS256` | ID Token 验签算法白名单（RS/ES 系列，逗号分隔，须与 IdP 声明取交集） |
+
+**统一口径**
+
+- 保留既有 `_bind_or_create_user` / `_ensure_roles` / 状态机拦截 / `issue_token_pair` 全部不变，只在外围增加校验，不重写 OIDC 主体。
+- Redis 不可用时 state 回退进程内：单实例可用；多实例回调可能落到未持有 state 的实例而失败（WARN 留痕），多实例部署须保证 Redis 可用。
+- nonce 为强制校验（授权请求下发即要求 ID Token 回写），不提供降级开关，避免静默失去重放防护。
+- 既有拟真回调用例（`test_identity_t2` T2-6 三项、`test_identity_t3` T3-3）同步适配一次性 state：改为 `get_state_store().issue(...)` 登记 nonce，桩 `exchange_code` 接受 `code_verifier` 关键字，断言目标（停用拦截 / claims 齐备）不变。
+
+**残余**
+
+- 多 Provider 登录路由仍未接入（仍走单 IdP `oidc_*`，见 §10.14）；本轮 state 外置与 provider 无关，后续可复用。
+- 签名算法仅覆盖 python-jose 已接线的 RS/ES 系列；SM2 仍未接线（见 E3-3）。
+- IdP 侧登出联动（`end_session` / back-channel logout）未实现，本地 refresh 令牌在 IdP 登出后仍有效至过期。
+- token endpoint 仅 `client_secret_post`，不支持 `client_secret_basic` / mTLS。
+- 验证边界：以 mock IdP + 文件型 SQLite 验证（新增 12 项，OIDC 相关共 30 项通过），未做真实 IdP 联调（由 A1 清单覆盖）。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -708,3 +743,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.11.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.14「E3 实施结果」并重排 §10.5：政务暂缓项中**纯软件可完成**部分落地——E3-1 三权分立（三职责两两互斥 + 权限点基线不重叠）与 ABAC（deny-overrides / 跨租户默认拒绝 / 无命中回落 RBAC，试算与职责端点）；E3-2 审计 NDJSON 流式导出（条数上限 + 链式哈希可离线复核）与留存清理（默认 dry-run、`0` 未启用即拒绝、删头不断链）；E3-3 签名算法注册表（HS256/RS256 可用、SM2 预留不可用，配置即 fail-fast）；E3-4 统一 IdP Provider 多登记（启动门禁 + 只读视图不含 `client_secret`）；新增 4 配置项；残余（SM2 未接线、IdP 未切换多 Provider 流程、ABAC 无写端点、SoD 未强制接入授予路径、留存未接集中审计平台）与 SQLite 验证边界如实登记 |
 | v1.12.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.15「A3 存量迁移闭环」：初始化链 `apply_identity_migration` 幂等补齐 `audit_logs.prev_hash` / `entry_hash` 两列（`inspect` 列存在性判定 + PG schema 限定 ALTER），消除 §10.13 登记的「生产升级需手工 DDL」残余（ER-27）；同步改写模型注释与 §10.13 统一口径；新增 2 项用例（SQLite 存量库补列/重放幂等/历史行 NULL、PG schema 限定 SQL），`test_identity_t1` + `test_db_init` + `test_audit_chain` 全部通过，ruff 0 错误；修正 `test_identity_t6` 静态扫描的过期禁用词（E3-2 人工留存清理与 `audit_retention_days` 配置属显式端点，不属自动限期清除）；A1 验收清单升 v1.0.1（A1-12 改为「启动即补列」口径） |
 | v1.13.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.16「ABAC 策略写端点」并闭合 §10.14 登记的 ER-24：`abac_policy_rules` 表（名称唯一/启用开关/版本自增）+ `/api/v1/auth/access/policies` CRUD（`security:admin`，字段校验复用配置口径，409/404/400 三态）；`/check` 改为「DB 启用行 ∪ 配置基线」合并判定，deny-overrides 与跨租户默认拒绝语义不变、缺省零行为变化；写入与 `AuditLog` 同事务（`access.abac_policy.*`，审计失败即回滚）；新增 3 项用例，`test_e3_governance` 26 项与相关回归全通过，ruff 0 错误；登记残余（无审批流/无规则规模压测/SQLite 验证边界）；A2 清单升 v1.0.1（ABAC 增运行期策略说明） |
+| v1.14.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.17「OIDC P1 安全硬化」：state 从进程内 dict 改为一次性存储（Redis 优先 + TTL + 锁，Redis 不可用回退内存）；授权码流补 nonce 校验与 PKCE S256（默认开启）；ID Token 验签算法由硬编码 RS256 改为配置白名单 ∩ IdP discovery 声明（未接线算法含 SM2 启动即拒绝）；OIDC 端点错误由 `HTTPException` 收敛为 `BaseError` 统一四键契约；新增 3 配置项与启动门禁；新增 12 项用例，OIDC 相关 30 项全部通过，ruff 0 错误；登记残余（多 Provider 路由未接、IdP 登出未联动、client_secret_basic/mTLS 未支持、真实 IdP 联调待 A1） |

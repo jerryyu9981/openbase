@@ -85,6 +85,10 @@ class MockIdp:
             assert form.get("client_id") == self.client_id
             assert form.get("client_secret") == self.client_secret
             header = {"alg": "RS256", "typ": "JWT", "kid": self.kid}
+            # v1.14.0 nonce 校验：测试以 "mock-code.<nonce>" 传递授权请求下发的 nonce，
+            # mock IdP 原样回写 ID Token（真实 IdP 由授权会话保存并在签发时携带）
+            code = str(form.get("code") or "")
+            nonce = code.split(".", 1)[1] if "." in code else ""
             payload = {
                 "iss": self.issuer,
                 "sub": "oidc-user-001",
@@ -96,6 +100,8 @@ class MockIdp:
                 "roles": ["org_admin"],
                 "tenant_id": "default",
             }
+            if nonce:
+                payload["nonce"] = nonce
             from jose import jwt as jose_jwt
 
             id_token = jose_jwt.encode(
@@ -180,6 +186,13 @@ def oidc_settings(monkeypatch):
     yield settings_module
     oidc_module._oidc_client = None
     settings_module._settings = None
+
+
+def _authorize_nonce(authorize_url: str) -> str:
+    """从授权 URL 提取 nonce（模拟 IdP 在 ID Token 中原样回写）."""
+    from urllib.parse import parse_qs, urlparse
+
+    return parse_qs(urlparse(authorize_url).query)["nonce"][0]
 
 
 def _apply_oidc_settings(settings_module, mock_idp_url) -> None:
@@ -274,9 +287,10 @@ def test_oidc_callback_full_flow(oidc_settings, mock_idp_url):
     # 1) authorize 获取 state + authorize_url
     auth = client.get("/api/v1/auth/oidc/authorize").json()
     state = auth["state"]
-    # 2) 模拟 IdP 302 回调
+    nonce = _authorize_nonce(auth["authorize_url"])
+    # 2) 模拟 IdP 302 回调（mock IdP 从 code 回写 nonce）
     redirect_uri = "http://testserver/api/v1/auth/oidc/callback"
-    resp = client.get(f"{redirect_uri}?code=mock-code&state={state}")
+    resp = client.get(f"{redirect_uri}?code=mock-code.{nonce}&state={state}")
     assert resp.status_code == 200, resp.text
     tokens = resp.json()
     assert tokens["access_token"]
@@ -318,9 +332,10 @@ def test_oidc_callback_html_accept_redirects_frontend(oidc_settings, mock_idp_ur
 
     auth = client.get("/api/v1/auth/oidc/authorize").json()
     state = auth["state"]
+    nonce = _authorize_nonce(auth["authorize_url"])
     redirect_uri = "http://testserver/api/v1/auth/oidc/callback"
     resp = client.get(
-        f"{redirect_uri}?code=mock-code&state={state}",
+        f"{redirect_uri}?code=mock-code.{nonce}&state={state}",
         headers={"Accept": "text/html,application/xhtml+xml"},
         follow_redirects=False,
     )

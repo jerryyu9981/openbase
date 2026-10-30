@@ -8,13 +8,16 @@ OpenBase 统一网关单点集成 OIDC：授权码流程对接外部 IdP，签�
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import logging
 import secrets
 import urllib.parse
+from collections.abc import Mapping
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from jose import JWTError
 from jose import jwt as jose_jwt
@@ -25,20 +28,60 @@ from openbase.core.db.session import get_db
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, Tenant, User, user_role
 from openbase.modules.auth.jwt import issue_token_pair
+from openbase.modules.auth.oidc_state import get_state_store
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
     SUBJECT_TYPE_USER,
 )
-from openbase.settings import get_settings
+from openbase.settings import OIDC_ID_TOKEN_ALGORITHMS, get_settings
 
 logger = logging.getLogger("openbase.auth.oidc")
-
-# 简单内存 state 存储（授权码流程 CSRF 防护；多实例部署可换 Redis）
-_state_store: dict[str, str] = {}
 
 
 class OIDCError(Exception):
     """OIDC 流程错误."""
+
+
+def _normalized_algorithms(raw: str) -> list[str]:
+    """配置串 → 算法名列表（大写、去重保序，空项忽略）."""
+    result: list[str] = []
+    for item in (raw or "").split(","):
+        name = item.strip().upper()
+        if name and name not in result:
+            result.append(name)
+    return result
+
+
+def resolve_id_token_algorithms(
+    configured: list[str], discovery: dict[str, Any]
+) -> list[str]:
+    """配置白名单 ∩ IdP discovery 声明（无交集即失败，禁静默降级）."""
+    declared = discovery.get("id_token_signing_alg_values_supported")
+    if isinstance(declared, list):
+        declared_names = {str(item).upper() for item in declared}
+    else:
+        declared_names = set(OIDC_ID_TOKEN_ALGORITHMS)
+    algorithms = [name for name in configured if name in declared_names]
+    if not algorithms:
+        raise OIDCError("no mutually supported id_token signing algorithm")
+    return algorithms
+
+
+def code_challenge_for(verifier: str) -> str:
+    """PKCE S256 challenge：base64url(sha256(verifier))，去填充."""
+    digest = hashlib.sha256(verifier.encode("ascii")).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+
+
+def verify_id_token_nonce(expected: str, claims: Mapping[str, Any]) -> None:
+    """校验 ID Token nonce（防重放）；不一致抛 AUTH_TOKEN_INVALID.
+
+    Raises:
+        BaseError: nonce 缺失或不匹配（HTTP 401 AUTH_401_INVALID）。
+    """
+    actual = claims.get("nonce")
+    if not expected or not secrets.compare_digest(str(actual or ""), str(expected)):
+        raise BaseError(ErrorCode.AUTH_TOKEN_INVALID, "oidc id_token nonce mismatch")
 
 
 class OIDCClient:
@@ -83,8 +126,16 @@ class OIDCClient:
         self._discovery = doc
         self._discovery_url = url
 
-    async def build_authorize_url(self, state: str) -> str:
-        """构造 IdP 授权端点 URL（302 重定向目标）. """
+    async def build_authorize_url(
+        self, state: str, *, nonce: str = "", code_challenge: str = ""
+    ) -> str:
+        """构造 IdP 授权端点 URL（302 重定向目标）.
+
+        Args:
+            state: CSRF 防护随机串。
+            nonce: ID Token 重放防护随机串（非空即下发）。
+            code_challenge: PKCE S256 challenge（非空即下发 S256 方法）。
+        """
         s = self._settings()
         await self._load_discovery()
         params = {
@@ -94,10 +145,22 @@ class OIDCClient:
             "scope": s.oidc_scopes,
             "state": state,
         }
+        if nonce:
+            params["nonce"] = nonce
+        if code_challenge:
+            params["code_challenge"] = code_challenge
+            params["code_challenge_method"] = "S256"
         return f"{self._authorization_endpoint}?{urllib.parse.urlencode(params)}"
 
-    async def exchange_code(self, code: str) -> dict[str, Any]:
-        """授权码换取令牌（token_endpoint），返回含 ID Token 的完整响应. """
+    async def exchange_code(
+        self, code: str, *, code_verifier: str | None = None
+    ) -> dict[str, Any]:
+        """授权码换取令牌（token_endpoint），返回含 ID Token 的完整响应.
+
+        Args:
+            code: IdP 回传的授权码。
+            code_verifier: PKCE 原始校验串（启用 PKCE 时必传）。
+        """
         s = self._settings()
         await self._load_discovery()
         payload = {
@@ -107,6 +170,8 @@ class OIDCClient:
             "client_id": s.oidc_client_id,
             "client_secret": s.oidc_client_secret,
         }
+        if code_verifier:
+            payload["code_verifier"] = code_verifier
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(self._token_endpoint, data=payload)
             resp.raise_for_status()
@@ -127,13 +192,17 @@ class OIDCClient:
         jwks_uri = self._discovery.get("jwks_uri")
         if not jwks_uri:
             raise OIDCError("discovery document missing jwks_uri")
+        algorithms = resolve_id_token_algorithms(
+            _normalized_algorithms(self._settings().oidc_signing_algorithms),
+            self._discovery,
+        )
         with httpx.Client(timeout=10.0) as client:
             jwks = client.get(jwks_uri).json()
         try:
             return jose_jwt.decode(
                 token,
                 jwks,
-                algorithms=["RS256"],
+                algorithms=algorithms,
                 audience=self._settings().oidc_client_id,
                 issuer=self._issuer or None,
                 access_token=access_token,
@@ -429,16 +498,31 @@ async def _bind_or_create_user(
 
 @router.get("/authorize")
 async def oidc_authorize() -> dict:
-    """发起 OIDC 授权码流程：返回 IdP 授权 URL（前端 302/跳转）. """
+    """发起 OIDC 授权码流程：返回 IdP 授权 URL（前端 302/跳转）.
+
+    v1.14.0：state / nonce / PKCE verifier 一次性登记（TTL + 多实例共享），
+    authorize URL 携带 ``nonce`` 与 ``code_challenge``（S256）。
+    """
     client = _get_oidc_client()
     if not client.enabled:
-        raise HTTPException(status_code=404, detail="OIDC not enabled")
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, "oidc not enabled")
+    settings = get_settings()
     state = secrets.token_urlsafe(32)
-    _state_store[state] = "pending"
+    nonce = secrets.token_urlsafe(24)
+    code_verifier = secrets.token_urlsafe(48) if settings.oidc_pkce_enabled else ""
+    get_state_store().issue(
+        state,
+        {"nonce": nonce, "code_verifier": code_verifier},
+        ttl_seconds=settings.oidc_state_ttl_seconds,
+    )
     try:
-        authorize_url = await client.build_authorize_url(state)
+        authorize_url = await client.build_authorize_url(
+            state,
+            nonce=nonce,
+            code_challenge=code_challenge_for(code_verifier) if code_verifier else "",
+        )
     except OIDCError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise BaseError(ErrorCode.SYS_UPSTREAM_ERROR, str(exc)) from exc
     return {"authorize_url": authorize_url, "state": state}
 
 
@@ -457,17 +541,20 @@ async def oidc_callback(
     DB 不可用时降级以 IdP sub 直签（网关可用性优先）。
     """
     if error:
-        raise HTTPException(status_code=400, detail=f"oidc error: {error}")
+        raise BaseError(ErrorCode.PARAM_INVALID, f"oidc error: {error}")
     if not code or not state:
-        raise HTTPException(status_code=400, detail="missing code or state")
-    if _state_store.pop(state, None) is None:
-        raise HTTPException(status_code=400, detail="invalid state")
+        raise BaseError(ErrorCode.PARAM_INVALID, "missing code or state")
+    stored = get_state_store().consume(state)
+    if stored is None:
+        raise BaseError(ErrorCode.PARAM_INVALID, "invalid or expired state")
 
     client = _get_oidc_client()
     if not client.enabled:
-        raise HTTPException(status_code=404, detail="OIDC not enabled")
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, "oidc not enabled")
     try:
-        token_resp = await client.exchange_code(code)
+        token_resp = await client.exchange_code(
+            code, code_verifier=stored.get("code_verifier") or None
+        )
         id_token = token_resp.get("id_token")
         if not id_token:
             raise OIDCError("token response missing id_token")
@@ -478,7 +565,9 @@ async def oidc_callback(
             "oidc code exchange or id_token parse failed",
             extra={"error": str(exc) or exc.__class__.__name__},
         )
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise BaseError(ErrorCode.SYS_UPSTREAM_ERROR, str(exc)) from exc
+    # v1.14.0：nonce 校验（防 ID Token 重放），与授权请求下发的 nonce 必须一致
+    verify_id_token_nonce(str(stored.get("nonce") or ""), claims)
 
     settings = get_settings()
     # v1.4.0 Keycloak profile：realm/client 角色默认仅进 access token（官方默认 mapper，
