@@ -734,3 +734,145 @@ def test_t1_7_regression_user_still_loginable_after_migration() -> None:
             "/api/v1/auth/login", json={"username": "legacy-active", "password": "secret123"}
         )
         assert resp.status_code == 200, resp.text
+
+
+# ---- A3（E2 审计链存量库幂等迁移：audit_logs 补 prev_hash / entry_hash）----
+
+_AUDIT_MIG_DB_PATH = Path(tempfile.gettempdir()) / "openbase_test_audit_chain_mig.db"
+
+# 启用链式哈希前的 audit_logs 形态（无 prev_hash / entry_hash 两列）
+_LEGACY_AUDIT_LOGS_DDL = """
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    tenant_id INTEGER,
+    action VARCHAR(128) NOT NULL,
+    resource VARCHAR(128),
+    resource_id VARCHAR(64),
+    ip VARCHAR(64),
+    user_agent VARCHAR(255),
+    request_id VARCHAR(64) NOT NULL,
+    detail JSON,
+    created_at DATETIME NOT NULL
+);
+"""
+
+
+def _build_legacy_audit_db(path: Path) -> None:
+    """构造存量库：audit_logs 无链式哈希两列 + 一条历史审计行."""
+    if path.exists():
+        path.unlink()
+
+    async def _setup() -> None:
+        from sqlalchemy import text
+
+        from openbase.core.db.session import get_engine, init_db
+
+        init_db(f"sqlite+aiosqlite:///{path}", schema=None)
+        engine = get_engine()
+        async with engine.begin() as conn:
+            await conn.execute(text(_LEGACY_AUDIT_LOGS_DDL))
+            await conn.execute(
+                text(
+                    "INSERT INTO audit_logs (user_id, tenant_id, action, resource, request_id, "
+                    "created_at) VALUES (1, 1, 'legacy.action', 'demo', 'req-legacy', "
+                    "CURRENT_TIMESTAMP)"
+                )
+            )
+        await engine.dispose()
+
+    asyncio.run(_setup())
+
+
+def test_audit_chain_migration_adds_columns_idempotently() -> None:
+    """存量 audit_logs 自动补两列；重放幂等，历史行保持 NULL（校验时跳过）."""
+    from openbase.modules.identity.migration import apply_identity_migration
+
+    _build_legacy_audit_db(_AUDIT_MIG_DB_PATH)
+
+    async def _run_migration() -> tuple[dict, dict]:
+        from openbase.core.db.session import get_engine
+        from openbase.core.db.session import init_db as _init_db
+
+        _init_db(f"sqlite+aiosqlite:///{_AUDIT_MIG_DB_PATH}", schema=None)
+        engine = get_engine()
+        try:
+            first = await apply_identity_migration(engine, schema=None)
+            second = await apply_identity_migration(engine, schema=None)
+            return first, second
+        finally:
+            await engine.dispose()
+
+    first, second = asyncio.run(_run_migration())
+
+    conn = sqlite3.connect(_AUDIT_MIG_DB_PATH)
+    try:
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(audit_logs)")}
+        assert {"prev_hash", "entry_hash"} <= cols, f"迁移未补列: {cols}"
+        assert conn.execute("SELECT COUNT(*) FROM audit_logs").fetchone()[0] == 1
+        legacy_row = conn.execute(
+            "SELECT prev_hash, entry_hash FROM audit_logs WHERE request_id = 'req-legacy'"
+        ).fetchone()
+        assert legacy_row == (None, None), "遗留行不得被回填，校验时按 NULL 跳过"
+    finally:
+        conn.close()
+
+    assert "audit_logs.prev_hash" in first["columns_added"]
+    assert "audit_logs.entry_hash" in first["columns_added"]
+    assert [
+        column for column in second["columns_added"] if column.startswith("audit_logs.")
+    ] == [], "迁移须幂等：第二次不得重复补列"
+
+
+def test_audit_chain_migration_pg_uses_qualified_alter() -> None:
+    """PG 分支 ALTER 语句须带 schema 限定（不改写既有 schema 隔离）."""
+    from openbase.modules.identity.migration import apply_identity_migration
+
+    class _FakeResult:
+        rowcount = 0
+
+    class _FakeConn:
+        def __init__(self) -> None:
+            self.statements: list[str] = []
+
+        async def execute(self, stmt):
+            self.statements.append(str(stmt))
+            return _FakeResult()
+
+        async def run_sync(self, fn, *args):
+            # 所有表均视为缺列（只断言 audit_logs 的 ALTER，其他表 ALTER 为噪声）
+            if getattr(fn, "__name__", "") == "_table_columns":
+                return set()
+            return None
+
+    class _FakeCtx:
+        def __init__(self, conn) -> None:
+            self.conn = conn
+
+        async def __aenter__(self):
+            return self.conn
+
+        async def __aexit__(self, *args):
+            return False
+
+    class _FakeEngine:
+        def __init__(self) -> None:
+            self.conn = _FakeConn()
+
+        def begin(self):
+            return _FakeCtx(self.conn)
+
+    engine = _FakeEngine()
+    summary = asyncio.run(apply_identity_migration(engine, schema="openbase"))
+
+    statements = engine.conn.statements
+    assert (
+        'ALTER TABLE "openbase".audit_logs ADD COLUMN prev_hash VARCHAR(64)'
+        in statements
+    )
+    assert (
+        'ALTER TABLE "openbase".audit_logs ADD COLUMN entry_hash VARCHAR(64)'
+        in statements
+    )
+    assert summary["columns_added"].count("audit_logs.prev_hash") == 1
+    assert summary["columns_added"].count("audit_logs.entry_hash") == 1

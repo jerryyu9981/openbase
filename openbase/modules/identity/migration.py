@@ -7,6 +7,8 @@
   token_version=0、tenant_code（tenant_id→tenants.code）、credential_type
   （oidc_identity 映射→oidc，其余→password）；
 - 新表（agent_api_keys 等）经 metadata.create_all 幂等创建；
+- service_api_keys 过期/轮换列（E1-1）与 audit_logs 链式哈希列 prev_hash/
+  entry_hash（E2）增量补齐（存量行保持 NULL，校验时跳过）；
 - identity:* 权限点幂等种子（WHERE NOT EXISTS）。
 """
 
@@ -51,6 +53,14 @@ _SERVICE_KEY_NEW_COLUMNS: dict[str, str] = {
     "last_used_at": "TIMESTAMP",
     "rotated_from": "VARCHAR(32)",
     "tenant_code": "VARCHAR(64)",
+}
+
+# E2 审计防篡改（链式哈希）：audit_logs 补 prev_hash / entry_hash 两列（幂等 ALTER）。
+# 两列可空（存量行保持 NULL = 启用链式哈希前的遗留行，校验时跳过），
+# 因此存量库补列后可立即启用校验而无需回填历史行。
+_AUDIT_CHAIN_NEW_COLUMNS: dict[str, str] = {
+    "prev_hash": "VARCHAR(64)",
+    "entry_hash": "VARCHAR(64)",
 }
 
 
@@ -119,6 +129,20 @@ async def apply_identity_migration(
                 )
             )
             summary["columns_added"].append(f"service_api_keys.{column_name}")
+
+        # 2c) E2 审计防篡改：audit_logs 链式哈希增量列（存量库幂等补齐）
+        audit_logs_ref = _qualify(schema, "audit_logs")
+        existing_audit_logs = await conn.run_sync(_table_columns, "audit_logs", schema)
+        for column_name, column_ddl in _AUDIT_CHAIN_NEW_COLUMNS.items():
+            if column_name in existing_audit_logs:
+                continue
+            await conn.execute(
+                text(
+                    f"ALTER TABLE {audit_logs_ref} "
+                    f"ADD COLUMN {column_name} {column_ddl}"
+                )
+            )
+            summary["columns_added"].append(f"audit_logs.{column_name}")
 
         # 3) 存量行回填（幂等：仅补 NULL；主键/FK 不动）
         await conn.execute(

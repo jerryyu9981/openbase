@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.11.0 |
+| 版本 | v1.12.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -596,7 +596,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 - 链式哈希在 `Session.before_flush` 单点挂钩，插入点零改动；`id` 不参与哈希（自增主键写入前不可知），行序完整性由 `prev_hash` 链承担。
 - 多实例写入以 PostgreSQL 事务级 advisory lock 串行化（v1.10.0）：取锁 → 读末条哈希 → 插入在同一事务内完成，事务结束自动释放；锁粒度是「整条链」而非单表，审计写入本为低频事件，不构成吞吐瓶颈。SQLite 部署沿用单写者模型，不取锁。
-- 存量库兼容：启用前历史行两列为 NULL，校验时跳过；本仓无 alembic，生产升级需手工执行一次 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`（已写入模型注释与模块 docstring）。
+- 存量库兼容：启用前历史行两列为 NULL，校验时跳过；两列由初始化链 `init_database` 末尾的幂等迁移自动补齐（v1.12.0 §10.15），生产升级无需手工执行 DDL。
 - 生产 MCP 门禁与既有 `dev-mcp-key` 拒绝口径叠加：生产要么只存摘要、要么用宿主注入文件，配置泄漏不再等于凭证泄漏。
 - 身份权威开关默认 `local`，升级零行为变化；切换 `openbase` 后本地身份表只停写不删，销户以 OpenBase 为准。
 
@@ -645,6 +645,26 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 留存清理为**同一数据库内的按时间删除**：跨库归档、对象存储冷备、审计介质合规留存（等保≥6 个月）仍需集中审计平台/基础设施配合。
 - 验证边界：E3 新增 4 个模块与审计导出/清理端点以**文件型 SQLite + 依赖覆写**验证（`tests/test_e3_governance.py` 23 项），未做真实 PG 多实例并发导出压测；本文件与相关回归（E3 新增 + `test_settings` + `test_audit_chain` 共 53 项，审计/鉴权相关回归 75 项）全部通过，ruff 0 错误。
 
+### 10.15 A3 存量迁移闭环（v1.12.0，2026-10-30）
+
+> 目的：闭合 §10.13 登记的「存量库 `audit_logs` 两列需手工执行 DDL」残余（ER-27），让生产升级路径不依赖人工 DDL，避免升级窗口漏执行导致链校验不可用。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| A3-1 幂等补列 | 初始化链末尾的 `apply_identity_migration` 新增 `audit_logs` 增量列补齐（`_AUDIT_CHAIN_NEW_COLUMNS`：`prev_hash` / `entry_hash`，`VARCHAR(64)` 可空）；以 `inspect.get_columns()` 判定列存在性，缺列才 `ALTER TABLE ... ADD COLUMN`，重放时 `columns_added` 为空 | `openbase/modules/identity/migration.py` | `tests/test_identity_t1.py`（存量库补列 + 重放幂等 + 历史行保持 NULL） |
+| A3-2 PG schema 限定 | 复用 `_qualify(schema, table)`，PG 语句为 `ALTER TABLE "openbase".audit_logs ADD COLUMN ...`，既有 schema 隔离与 SQLite（`schema=None`）分支不变 | 同上 | `tests/test_identity_t1.py`（FakeConn 断言带 schema 限定 SQL） |
+| A3-3 注释与初始化链同源 | `AuditLog` 模型注释由「手工 DDL」改为「初始化链自动补列」；迁移模块 docstring 登记新增列项 | `openbase/core/models/base.py`、`openbase/modules/identity/migration.py` | ruff 0 错误 + 相关回归全通过 |
+
+**统一口径**
+
+- 两列可空、存量行保持 NULL：链校验按「跳过 NULL」语义，升级后即可启用校验，无需回填历史数据（回填会破坏历史完整性语义）。
+- 迁移内联于 `init_database`（`create_tables → 基础种子 → apply_identity_migration`），应用启动与建库脚本共用同一入口，不存在「迁移需另行调用」的漂移。
+- 生产升级无需手工 DDL；若运维在不动应用的窗口预置同名列，迁移因列已存在而跳过，两种路径可安全共存。
+
+**残余**
+
+- 真实 PG 存量库升级仅以文件型 SQLite + FakeConn 语句断言验证，未做生产 PG 演练；该演练由 A1-12 验收项覆盖（预生产快照 → 启动即补列 → 链校验 `ok`）。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -663,3 +683,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.9.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.13「E2 实施结果」：审计日志链式哈希（`prev_hash`/`entry_hash` + `before_flush` 单点挂钩覆盖 17 处插入点 + 超管链校验端点）；R16/R20 MCP 静态 Key 去明文（摘要列表 / 宿主注入文件 + 生产三条门禁）；R17 OpenLLM 身份权威开关（`IDENTITY_AUTHORITY=openbase` 关闭本地开户/登录/换发并要求 JWKS）；修正 2 条既有 settings 用例；登记残余（多实例链分叉、TPM/安全启动/本地落盘加密/远程擦除依赖终端宿主） |
 | v1.10.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 闭合 §10.13 登记的审计链并发残余：flush 前先取 PostgreSQL 事务级 advisory lock（`pg_advisory_xact_lock`，锁键参数化绑定）再读末条哈希并插入，多实例写入串行不叉链；非 PG 方言放行；新增 3 项用例（SQLite 放行 / PG 参数化 SQL / 先锁后读顺序），审计链与审计/Key 相关回归 126 项通过；§10.4 E2 与 §10.13 残余同步标注 |
 | v1.11.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.14「E3 实施结果」并重排 §10.5：政务暂缓项中**纯软件可完成**部分落地——E3-1 三权分立（三职责两两互斥 + 权限点基线不重叠）与 ABAC（deny-overrides / 跨租户默认拒绝 / 无命中回落 RBAC，试算与职责端点）；E3-2 审计 NDJSON 流式导出（条数上限 + 链式哈希可离线复核）与留存清理（默认 dry-run、`0` 未启用即拒绝、删头不断链）；E3-3 签名算法注册表（HS256/RS256 可用、SM2 预留不可用，配置即 fail-fast）；E3-4 统一 IdP Provider 多登记（启动门禁 + 只读视图不含 `client_secret`）；新增 4 配置项；残余（SM2 未接线、IdP 未切换多 Provider 流程、ABAC 无写端点、SoD 未强制接入授予路径、留存未接集中审计平台）与 SQLite 验证边界如实登记 |
+| v1.12.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.15「A3 存量迁移闭环」：初始化链 `apply_identity_migration` 幂等补齐 `audit_logs.prev_hash` / `entry_hash` 两列（`inspect` 列存在性判定 + PG schema 限定 ALTER），消除 §10.13 登记的「生产升级需手工 DDL」残余（ER-27）；同步改写模型注释与 §10.13 统一口径；新增 2 项用例（SQLite 存量库补列/重放幂等/历史行 NULL、PG schema 限定 SQL），`test_identity_t1` + `test_db_init` + `test_audit_chain` 全部通过，ruff 0 错误；修正 `test_identity_t6` 静态扫描的过期禁用词（E3-2 人工留存清理与 `audit_retention_days` 配置属显式端点，不属自动限期清除）；A1 验收清单升 v1.0.1（A1-12 改为「启动即补列」口径） |

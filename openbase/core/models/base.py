@@ -509,9 +509,8 @@ class AuditLog(Base):
     )
     # E2 审计防篡改（链式哈希）：prev_hash = 上一条已哈希行的 entry_hash；
     # 两列由 ``openbase.core.db.audit_chain`` 的 before_flush 监听器统一赋值。
-    # 存量库（本仓无 alembic 目录）需手工执行一次 DDL：
-    #   ALTER TABLE openbase.audit_logs ADD COLUMN IF NOT EXISTS prev_hash varchar(64);
-    #   ALTER TABLE openbase.audit_logs ADD COLUMN IF NOT EXISTS entry_hash varchar(64);
+    # 存量库由初始化链 ``init_database`` 内联的幂等迁移
+    # （``openbase.modules.identity.migration``）自动补列，无需手工执行 DDL。
     # 历史行保持 NULL，表示「启用链式哈希前的遗留行」，校验时跳过。
     prev_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     entry_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)

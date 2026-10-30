@@ -368,13 +368,17 @@ def _source_root() -> Path:
 
 
 def test_t6_1_no_auto_retention_purge_path_static_scan() -> None:
-    """全仓静态扫描：0 条「按保留期限自动 purge」标识路径."""
+    """全仓静态扫描：0 条「按保留期限自动 purge」标识路径.
+
+    注：E3-2（v1.11.0）新增**人工触发**的留存清理端点与 `audit_retention_days`
+    配置项（默认 0 = 不清理），属显式 POST + 权限门禁，不构成自动限期清除；
+    故不再以 `retention_days` 作为禁用词（自动路径由其余 token 覆盖）。
+    """
     forbidden_tokens = (
         "auto_purge",
         "purge_expired",
         "purge_stale",
         "purge_retention",
-        "retention_days",
         "purge_deactivated_expired",
         "_schedule_purge",
     )

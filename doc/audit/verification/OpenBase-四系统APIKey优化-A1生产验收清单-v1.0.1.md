@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.11.0.md`（§10.7~§10.14） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.12.0.md`（§10.7~§10.15） |
 | 验收对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五仓（E0~E3 已实施项） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -15,6 +15,7 @@
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
 | v1.0.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 首版：把方案 §11 残余中的「已完成但未生产实测（V-01~V-07）」转化为可执行的 A1-01~A1-12 验收项，明确前置、步骤、通过标准、证据与签核门禁 |
+| v1.0.1 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.12.0（§10.15 A3）：A1-12 由「缺失即手工 DDL」改为「启动应用即自动补列」，手工幂等 DDL 降为不启动应用时的可选预置路径；关联方案版本号更新 |
 
 ---
 
@@ -357,13 +358,13 @@
 
 **步骤**：
 
-1. 校验列存在：
+1. 校验列存在（先启动一次应用，由初始化链幂等迁移自动补列；方案 v1.12.0 §10.15 A3）：
    ```sql
    SELECT column_name FROM information_schema.columns
    WHERE table_schema='openbase' AND table_name='audit_logs'
      AND column_name IN ('prev_hash','entry_hash');
    ```
-   若缺失，执行幂等 DDL：
+   若在不启动应用的窗口预置，可执行下方幂等 DDL（列已存在则无副作用；启动后迁移同样跳过）：
    ```sql
    ALTER TABLE openbase.audit_logs ADD COLUMN IF NOT EXISTS prev_hash varchar(64);
    ALTER TABLE openbase.audit_logs ADD COLUMN IF NOT EXISTS entry_hash varchar(64);
