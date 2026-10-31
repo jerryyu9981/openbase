@@ -514,6 +514,10 @@ class Settings(BaseSettings):
     # 规则形如 {"effect":"allow|deny","permission":"user:list","roles":[...],
     # "tenant":"acme","cross_tenant":false}。非法 JSON 在**所有环境**拒绝启动。
     abac_policies: str = ""
+    # G-03 规模/命中性能基线（WARN 阈值可配；不改变判定结果）：
+    # 规则数达到软上限时提示「需索引/缓存」，判定耗时达阈值时输出慢判定 WARN。
+    abac_rule_soft_limit: int = 1000
+    abac_evaluation_warn_ms: int = 50
     # 集中审计留存：保留天数（0 = 不清理；非 0 必须 ≥30，避免误删责任期数据）
     audit_retention_days: int = 0
     # 审计导出单次上限（NDJSON 流式导出，防止一次拉全表）
@@ -849,6 +853,7 @@ class Settings(BaseSettings):
         全部在**任何环境**按 fail-fast 校验（配置错误不带病启动）：
 
         - ``abac_policies`` 必须是合法 JSON 数组且规则字段合法；
+        - ``abac_rule_soft_limit`` / ``abac_evaluation_warn_ms`` 必须为正整数（G-03）；
         - ``audit_retention_days`` 为 0（不清理）或 ≥30（责任期下限）；
         - ``audit_export_max_rows`` 必须为正整数；
         - ``idp_providers`` 必须是合法 JSON 数组、名称唯一、必填项齐全。
@@ -857,6 +862,10 @@ class Settings(BaseSettings):
         from openbase.modules.auth.idp_registry import parse_idp_providers
 
         parse_abac_rules(self.abac_policies)
+        if int(self.abac_rule_soft_limit) <= 0:
+            raise ValueError("OPENBASE_ABAC_RULE_SOFT_LIMIT 必须为正整数")
+        if int(self.abac_evaluation_warn_ms) <= 0:
+            raise ValueError("OPENBASE_ABAC_EVALUATION_WARN_MS 必须为正整数")
         retention_days = int(self.audit_retention_days)
         if retention_days != 0 and retention_days < 30:
             raise ValueError(

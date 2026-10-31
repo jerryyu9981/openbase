@@ -50,6 +50,8 @@ class ErrorCode(str, Enum):
     # `PERM_403`（原 AUTH_403 实现偏离设计，裁定「仅对齐 v1.4.6 面」）。历史遗留
     # PERM_FORBIDDEN / AUTH_403 保持现状，记入技术债务总表。
     PERM_403 = "PERM_403"
+    # E3-1 三权分立（G-02）：同一主体授予互斥职责 → 409（fail-closed）
+    PERM_DUTY_CONFLICT = "PERM_DUTY_CONFLICT"
 
     # ---- P2-1 协议头/信任链（设计草案 §3.8 错误码表） ----
     # 非受信来源携带身份头（V-5 定案/D-V5）：门禁后入口校验 / 下游 K02 落地
@@ -128,6 +130,7 @@ ERROR_HTTP_MAP: dict[ErrorCode, int] = {
     ErrorCode.BIZ_AGGREGATE_PARTIAL_FAILURE: 200,
     ErrorCode.PERM_FORBIDDEN: 403,
     ErrorCode.PERM_403: 403,
+    ErrorCode.PERM_DUTY_CONFLICT: 409,
     # P2-1 协议头/信任链
     ErrorCode.PERM_UNTRUSTED_IDENTITY_HEADER: 403,
     ErrorCode.PERM_DELEGATION_VERIFY_UNAVAILABLE: 403,

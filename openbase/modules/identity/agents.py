@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, User, user_role
+from openbase.modules.auth.access_control import ensure_role_grant_allowed
 from openbase.modules.identity.state_machine import (
     CREDENTIAL_TYPE_API_KEY,
     STATUS_STATE_ACTIVE,
@@ -85,6 +86,7 @@ async def create_agent_subject(
     role_record = role_row.scalar_one_or_none()
     if role_record is None:
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"role not found: {role}")
+    ensure_role_grant_allowed([], [role_record.code], replace=True)
     await session.execute(
         user_role.insert().values(user_id=agent.id, role_id=role_record.id)
     )

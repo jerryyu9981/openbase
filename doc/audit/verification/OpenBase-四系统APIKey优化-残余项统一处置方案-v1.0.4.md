@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.3 |
+| 文档版本 | v1.0.4 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev / Pre-Pro / Pro |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.21.0.md`（§7.2/§7.3/§10.7~§10.24） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`、`...-A2生产配置收口清单-v1.0.9.md` |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.22.0.md`（§7.2/§7.3/§10.7~§10.25） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`、`...-A2生产配置收口清单-v1.1.0.md` |
 | 编号体系 | 见 §1.1（47 项台账为唯一执行主键；批次 `P1~P5`；旧分组 `A1~A5/B1~B5/C1~C6/D` 已废止） |
 | 覆盖对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -20,6 +20,7 @@
 | v1.0.1 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 应人工裁定（选项 A）：执行批次由 `B1~B5` 更名为 `P1~P5`（Phase），消除与早期对话处置分组 `A1~A5/B1~B5/C1~C6/D` 的撞名；新增 §1.1「编号体系对照」，明确 47 项台账为唯一执行主键、`P1~P5` 为唯一批次主键，旧分组编号仅作历史别名并停止引用 |
 | v1.0.2 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P1 批次（C-01~C-05）执行完成：新增 §3.1「P1 完成情况」逐项登记落点与验证证据（`tests/test_oidc_p1_residuals.py`）；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.20.0（新增 §10.23）、A2 升 v1.0.8（新增 SAN×4 与断言算法配置） |
 | v1.0.3 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P2 批次（C-06~C-10）执行完成：新增 §3.2「P2 完成情况」逐项登记落点与验证证据（`tests/test_p2_residuals.py` 20 passed）；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.21.0（新增 §10.24）、A2 升 v1.0.9（新增 `OPENBASE_MCP_API_KEY_TOOLS`） |
+| v1.0.4 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P3 批次（G-01~G-03）执行完成：新增 §4.1「P3 完成情况」逐项登记落点与验证证据（`tests/test_p3_governance.py` 8 passed，回归 127 passed）；G-01 经人工裁定采用 **B 口径（超管直改 + 事后审计）**，并在 §10 登记裁定结果；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.22.0（新增 §10.25）、A2 升 v1.1.0（新增两项 ABAC 基线） |
 
 ---
 
@@ -76,18 +77,18 @@
 |---|:--:|---|
 | 已完成 · P1 本仓代码 | 5 | C-01 SAN 预检、C-02 断言算法、C-03 `id_token_hint`、C-04 back-channel logout、C-05 Provider 级配置（证据见 §3.1） |
 | 已完成 · P2 本仓代码 | 5 | C-06 静态 MCP Key 工具白名单、C-07 异常跨实例聚合、C-08 到期提醒、C-09 Key 侧对账、C-10 角色契约端点（证据见 §3.2） |
-| 待执行 · 治理 | 3 | G-01 ABAC 双人复核、G-02 SoD 接入 `role:grant`、G-03 策略规模基线 |
+| 已完成 · P3 治理 | 3 | G-01 ABAC 变更事后审计、G-02 SoD 接入角色授予、G-03 策略规模/耗时基线（证据见 §4.1） |
 | 待执行 · 跨仓 | 6 | K-01 静态 Key 收敛、K-02 DPS 停用本地密码、K-03 下游审计补 `key_id`/`entry`、K-04 角色字典替换、K-05 配额/吊销同步增强、K-06 SSO 全覆盖 |
 | 待执行 · 部署/裁定 | 7 | D-01 A1 升版、D-02 A2 基线执行、D-03 双验签收口、D-04 存量 Key 到期收敛、D-05 主体映射裁定、D-06 编排与挂载、D-07 Provider 隔离约束 |
 | 待实测/联调 | 14 | V-01~V-12（对应 A1-01~A1-12，全部未执行）、V-13 真实 IdP 联调、V-14 跨仓生产实测 |
 | 暂缓 · 触发式 | 7 | P-01 SM2/密评、P-02 集中审计平台、P-03 信创灾备、P-04 终端宿主项、P-05 跨库分片审计链、P-06 KMS、P-07 省级 IdP 对接 |
 
-**结论**：待执行 16 项（G 3 + K 6 + D 7）、待实测 14 项、暂缓 7 项；C 类 10 项已全部闭合（P1 5 项 + P2 5 项），方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
+**结论**：待执行 13 项（K 6 + D 7）、待实测 14 项、暂缓 7 项；C 类 10 项（P1 5 项 + P2 5 项）与 G 类 3 项（P3）已全部闭合，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
 
 **立即可启动性**
 
-- **P1（C-01~C-05）已完成**（2026-10-31，见 §3.1）；**P2（C-06~C-10）已完成**（2026-10-31，见 §3.2）；P3 仅依赖 P1/P2 已合入。
-- **P4 依赖三项裁定（D-05/G-01/K-01）+ 联调环境 + 证据目录**；V-01~V-12 可先对 v1.21.0 现状并行取证。
+- **P1（C-01~C-05）已完成**（2026-10-31，见 §3.1）；**P2（C-06~C-10）已完成**（2026-10-31，见 §3.2）；**P3（G-01~G-03）已完成**（2026-10-31，见 §4.1）。
+- **P4 依赖剩余两项裁定（D-05/K-01；G-01 已于 2026-10-31 裁定为 B 口径）+ 联调环境 + 证据目录**；V-01~V-12 可先对 v1.22.0 现状并行取证。
 - **P5 全部为触发式**，不进入当前排期。
 
 ---
@@ -168,9 +169,33 @@
 
 | 编号 | 事项 | 来源 | 现状 | 处置建议 | 批次 |
 |---|---|---|---|---|---|
-| G-01 | ABAC 变更双人复核（四眼原则） | §10.16 残余 | 单点 `security:admin` 直改 + 审计 | 新增 `abac_policy_change_requests` 表与申请/审批端点：create/update/delete 默认走「申请 → 第二人 approve → 生效」；保留超管紧急直改并强制审计标记 `emergency=true`；审批人与申请人不得同一主体 | P3 |
-| G-02 | 三权分立强制接入角色授予 | §10.14 残余（ER-25） | 仅提供校验函数，`role:grant` 未调用 | `role:grant` 路径调用 `assert_separation_of_duties`，冲突返回 409 `PERM_DUTY_CONFLICT`；冲突对来自既有 `conflicting_duty_pairs` 基线 | P3 |
-| G-03 | ABAC 策略规模与命中性能基线 | §10.16 残余 | 全量线性判定，无压测 | 增加规则数上限告警与命中耗时结构化日志（WARN 阈值可配）；≥1000 条时输出「需索引/缓存」提示；不做压测基础设施改造 | P3 |
+| G-01 | ABAC 变更双人复核（四眼原则） | §10.16 残余 | 单点 `security:admin` 直改 + 审计 | 经人工裁定取 **B 口径**：不新增审批表/端点，保留超管直改；审计 detail 固定写入 `review_mode="post_audit"`，update/delete 附变更前快照 `previous`，并输出 WARN 提示事后复核 | P3 |
+| G-02 | 三权分立强制接入角色授予 | §10.14 残余（ER-25） | 曾仅提供校验函数，`role:grant` 未调用 | 新增 `ensure_role_grant_allowed`（按「结果角色集」判定，`replace=True` 取新授予集、`replace=False` 取既有 ∪ 新增）；接入 `role:grant` 相关路径（用户创建/改派、agent 创建、OIDC 增量映射），冲突抛 409 `PERM_DUTY_CONFLICT` | P3 |
+| G-03 | ABAC 策略规模与命中性能基线 | §10.16 残余 | 全量线性判定，无告警 | 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（默认 1000）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（默认 50）：超规则数或超耗时输出结构化 WARN（含「需索引/缓存」提示），不阻断判定；两项进启动门禁 | P3 |
+
+### 4.1 P3 完成情况（G-01~G-03，2026-10-31）
+
+| 编号 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| G-01 | 按裁定 B 落地「超管直改 + 事后审计」：新增常量 `ABAC_CHANGE_REVIEW_MODE="post_audit"`；审计 detail 固定写 `review_mode`，update/delete 附 `previous` 改前快照；策略 create/update/delete 提交后输出 `abac policy changed without dual review; post-audit required` WARN（仅标量 `policy_id`/`version`/`actor_id`，删除后不访问 ORM 实例） | `openbase/modules/auth/abac_policy_store.py` | `tests/test_p3_governance.py`（create/update/delete 审计标记与快照、3 条 WARN 捕获） |
+| G-02 | 新增 `ensure_role_grant_allowed(existing, granted, replace=)` 入口，复用 `conflicting_duty_pairs` 基线；冲突抛 `BaseError(PERM_DUTY_CONFLICT)`（HTTP 409）；接入 `create_user` / `assign_role` / `create_agent_subject`（单角色替换语义）与 OIDC 角色映射（增量并集语义） | `openbase/core/errors/codes.py`；`openbase/modules/auth/access_control.py`；`openbase/modules/users/__init__.py`；`openbase/modules/identity/agents.py`；`openbase/modules/auth/oidc.py` | 同测试文件（冲突抛错与 409 映射、并集新增冲突、`replace=True` 整改历史冲突） |
+| G-03 | `evaluate_abac` 增可选 `soft_limit` / `warn_ms`（默认惰性读 `get_settings()`，异常回退模块常量 1000/50）；`time.perf_counter` 计时，超规则数输出 `abac rule set exceeds soft limit; consider index/cache`，超耗时输出 `abac evaluation slow; consider index/cache`（extra 含 `elapsed_ms`/`rule_count`/阈值）；判定语义不变 | `openbase/settings.py`（两项字段 + `_validate_e3_governance_configuration` 非正拒启）；`openbase/modules/auth/access_control.py` | 同测试文件（超规则数告警、慢判定告警、阈值内静默、非正阈值拒启） |
+
+**批次门禁**
+
+| 项 | 结果 |
+|---|---|
+| 单测 | `python -m pytest tests/test_p3_governance.py` → 8 passed |
+| 回归 | `test_e3_governance` / `test_users_admin` / `test_settings` / `test_oidc_p1_residuals` / `test_identity_t5` / `test_p3_governance` / `test_p2_residuals` 合计 127 passed（275.72s） |
+| 静态检查 | 本环境未安装 `ruff`（`No module named ruff`），未能执行 `ruff check`；已按规则保持导入排序/行宽，待具备 ruff 的环境补跑 |
+| 零行为变化 | 两项 ABAC 阈值默认 1000/50 仅在超限时告警；`ensure_role_grant_allowed` 对既有单角色授予路径（`ALLOWED_ROLES` 不含职责码）恒不冲突；OIDC 白名单不含职责码，故增量映射不会新增拒绝 |
+| 安全 | WARN 与审计只记录策略标识、版本、操作者 id 与计数，不含策略全文或凭据；`PERM_DUTY_CONFLICT` 文案不含主体敏感信息 |
+
+**残余（P3 边界）**
+
+- G-01 为「事后审计」口径，**无审批前置**：双人复核依赖组织流程与审计消费端（人工 review 审计 `review_mode=post_audit` 记录），未实现强制第二人签字。
+- G-02 未覆盖跨仓授予路径（下游角色映射归 K-04）；如未来出现多角色批量授予 HTTP 端点，须按 `replace=False` 并集语义接入。
+- G-03 仅提供告警，不实现索引/缓存优化；真实规模压测归 P4 的 V 类实测。
 
 ---
 
@@ -248,7 +273,7 @@
 |---|---|---|---|---|
 | **P1** | C-01~C-05（OIDC 残余） | 无；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.23 OIDC 残余闭合」 | 已完成：`tests/test_oidc_p1_residuals.py` 39 passed；ruff 待具备环境补跑；A2 已同步新增配置；三远程推送 |
 | **P2** | C-06~C-10（MCP 白名单/跨实例/提醒/对账/角色契约） | P1；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.24 Key 生命周期残余闭合」 | 已完成：`tests/test_p2_residuals.py` 20 passed（回归 99 + 8）；ruff 待具备环境补跑；A2 已同步新增 `OPENBASE_MCP_API_KEY_TOOLS`；三远程推送 |
-| **P3** | G-01~G-03（治理） | P2 | 代码 + 单测 + 方案 §10.25 + A2 权限点登记 | 同上；ABAC 审批流需人工确认流程口径 |
+| **P3** | G-01~G-03（治理） | P2；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.25 P3 治理残余闭合」 | 已完成：`tests/test_p3_governance.py` 8 passed（回归 127 passed）；G-01 已裁定为 B 口径（事后审计）；ruff 待具备环境补跑；A2 已同步两项 ABAC 基线；三远程推送 |
 | **P4** | K-01~K-06、D-01~D-07、V-01~V-14 | P1~P3 冻结；D-05 已裁定；联调环境与证据目录就绪 | 四仓改动 + 生产验收证据 + A1 判定汇总 | 每仓 ruff/pytest 全绿；A1 P0 全 Pass；证据归档 `evidence/a1|a2/` |
 | **P5** | P-01~P-07 | 触发条件成立 | 单独立项 | 按触发方验收要求 |
 
@@ -279,10 +304,10 @@
 | 编号 | 事项 | 选项 | 影响 |
 |---|---|---|---|
 | D-05 | 终端用户令牌直连下游的主体映射 | **A：显式 `*_SUBJECT_MAP`（安全优先，运维成本高）** / B：同库部署信任 `sub`（成本低，依赖网络隔离） | 决定 K 类与 P4 编排口径；未裁定前下游按现状 fail-closed |
-| G-01 | ABAC 双人复核流程 | **A：申请-审批-生效（四眼，流程重）** / B：保留超管直改 + 事后审计（轻量） | 影响 P3 端点设计与组织流程 |
+| G-01 | ABAC 双人复核流程 | ~~A：申请-审批-生效（四眼，流程重）~~ / **B：保留超管直改 + 事后审计（轻量）** | **已于 2026-10-31 裁定为 B**：不新增审批表与端点；审计 detail 固定 `review_mode="post_audit"` + 改前快照，并输出 WARN；双人复核由组织流程消费审计记录完成 |
 | K-01 | 下游静态 Key 收敛节奏 | **A：一次性切主通道** / B：双通道并行一个发布窗口后关闭 | 影响 K 类批次内回滚策略 |
 
-> 以上三项在本方案中只登记，不预设结论；P1/P2 不依赖上述裁定，可在批准后立即启动。
+> 以上三项中 G-01 已于 2026-10-31 裁定为 B 口径并随 P3 落地；D-05 / K-01 仍只登记、不预设结论，待裁定时 P4 相应子项暂缓。P4 的其余子项（K-02~K-06、D-01~D-04/D-06/D-07、V 类）不依赖上述剩余裁定。
 
 ---
 
@@ -293,7 +318,7 @@
 | 跨仓改动面大 | K 类涉及四仓中间件与配置 | 分仓灰度、保留 bypass 开关、先补契约测试 |
 | 真实 IdP 不可控 | V-13 依赖外部环境与证书交换 | 先用 mock IdP 固化断言，再由联调窗口取证；Blocked 需写明解除条件 |
 | 多实例依赖 Redis | C-07/C-03/C-04 的共享状态 | Redis 不可用一律回退现有行为，不新增放行 |
-| A1 已知边界 | ER-25（SoD 未强制）、ER-10（惰性拉取）等 | 不把未实现项判为通过；G-02/K-05 闭合后更新边界 |
+| A1 已知边界 | ER-25（SoD 未强制）已由 P3 G-02 闭合；ER-10（惰性拉取）等仍在 | 不把未实现项判为通过；ER-25 更新为已闭合，K-05 闭合后再更新其余边界 |
 | 文档漂移 | A1/A2 版本滞后于方案 | D-01 先行升版；本文件为残余执行唯一台账 |
 
 **假设**：四仓可修改并可运行各自测试；生产拓扑满足 A1 §2.1（同 PG 双实例、Redis 可用、JWKS 可达）；证书与私钥可只读挂载。
@@ -306,6 +331,6 @@
 |---|---|---|---|---|
 | 方案评审（架构/安全） | | | | |
 | 批次执行批准（项目负责人） | | | | |
-| D-05/G-01/K-01 裁定人 | | | | |
+| D-05/G-01/K-01 裁定人 | | | | G-01 已裁定 B（2026-10-31），D-05/K-01 待裁定 |
 
 **批准后执行口径**：自 P1 起按 9.2 纪律连续推进，不再逐批重复询问；仅裁定项与高影响操作单独回问。

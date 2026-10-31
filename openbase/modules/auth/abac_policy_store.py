@@ -33,8 +33,12 @@ ACTION_ABAC_POLICY_CREATE = "access.abac_policy.create"
 ACTION_ABAC_POLICY_UPDATE = "access.abac_policy.update"
 ACTION_ABAC_POLICY_DELETE = "access.abac_policy.delete"
 AUDIT_RESOURCE_ABAC_POLICY = "abac_policy"
+# G-01（裁定 B：超管直改 + 事后审计）：变更不做前置双人复核，审计明细固定携带
+# 该标记与变更前快照，供事后复核与合规抽查。
+ABAC_CHANGE_REVIEW_MODE = "post_audit"
 
 __all__ = [
+    "ABAC_CHANGE_REVIEW_MODE",
     "ACTION_ABAC_POLICY_CREATE",
     "ACTION_ABAC_POLICY_DELETE",
     "ACTION_ABAC_POLICY_UPDATE",
@@ -77,8 +81,12 @@ def _rule_from_row(row: AbacPolicyRule) -> AbacRule:
     )
 
 
-def _audit_detail(row: AbacPolicyRule) -> dict[str, Any]:
-    """审计明细（策略不含密钥，可整体留痕；不含请求体原文）."""
+def _audit_detail(row: AbacPolicyRule, *, previous: dict[str, Any] | None = None) -> dict[str, Any]:
+    """审计明细（策略不含密钥，可整体留痕；不含请求体原文）.
+
+    G-01：固定携带 ``review_mode`` 与变更前快照 ``previous``（新增为 None），
+    使事后复核可还原「改前 → 改后」。
+    """
     return {
         "policy_id": row.id,
         "name": row.name,
@@ -89,6 +97,8 @@ def _audit_detail(row: AbacPolicyRule) -> dict[str, Any]:
         "cross_tenant": bool(row.cross_tenant),
         "enabled": bool(row.enabled),
         "version": row.version,
+        "review_mode": ABAC_CHANGE_REVIEW_MODE,
+        "previous": previous,
     }
 
 
@@ -150,6 +160,7 @@ def _append_audit(
     row: AbacPolicyRule,
     actor_id: int | None,
     request_id: str,
+    previous: dict[str, Any] | None = None,
 ) -> None:
     """同事务写入变更审计（失败即随事务回滚）."""
     session.add(
@@ -159,8 +170,23 @@ def _append_audit(
             resource=AUDIT_RESOURCE_ABAC_POLICY,
             resource_id=str(row.id),
             request_id=request_id,
-            detail=_audit_detail(row),
+            detail=_audit_detail(row, previous=previous),
         )
+    )
+
+
+def _warn_post_audit(
+    action: str, *, policy_id: int, version: int | None, actor_id: int | None
+) -> None:
+    """G-01 事后审计信号：直改即 WARN，供审计消费端聚合并触发复核."""
+    logger.warning(
+        "abac policy changed without dual review; post-audit required",
+        extra={
+            "action": action,
+            "policy_id": policy_id,
+            "version": version,
+            "operator": actor_id,
+        },
     )
 
 
@@ -198,6 +224,9 @@ async def create_policy_rule(
     )
     await session.commit()
     await session.refresh(row)
+    _warn_post_audit(
+        ACTION_ABAC_POLICY_CREATE, policy_id=row.id, version=row.version, actor_id=actor_id
+    )
     logger.info("abac policy created", extra={"policy_id": row.id, "name": name})
     return row
 
@@ -216,6 +245,7 @@ async def update_policy_rule(
     rule = validate_policy_payload(fields)
     row = await _require_policy(session, policy_id)
     await _ensure_name_available(session, name, exclude_id=policy_id)
+    previous_detail = _audit_detail(row)
     row.name = name
     row.effect = rule.effect
     row.permission = rule.permission
@@ -231,9 +261,13 @@ async def update_policy_rule(
         row=row,
         actor_id=actor_id,
         request_id=request_id,
+        previous=previous_detail,
     )
     await session.commit()
     await session.refresh(row)
+    _warn_post_audit(
+        ACTION_ABAC_POLICY_UPDATE, policy_id=policy_id, version=row.version, actor_id=actor_id
+    )
     logger.info("abac policy updated", extra={"policy_id": policy_id, "name": name})
     return row
 
@@ -247,13 +281,22 @@ async def delete_policy_rule(
 ) -> None:
     """删除策略（审计留痕先于删除生效，同事务）."""
     row = await _require_policy(session, policy_id)
+    previous_detail = _audit_detail(row)
+    previous_version = row.version
     _append_audit(
         session,
         action=ACTION_ABAC_POLICY_DELETE,
         row=row,
         actor_id=actor_id,
         request_id=request_id,
+        previous=previous_detail,
     )
     await session.delete(row)
     await session.commit()
+    _warn_post_audit(
+        ACTION_ABAC_POLICY_DELETE,
+        policy_id=policy_id,
+        version=previous_version,
+        actor_id=actor_id,
+    )
     logger.info("abac policy deleted", extra={"policy_id": policy_id})

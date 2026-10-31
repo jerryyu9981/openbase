@@ -580,6 +580,11 @@ async def _ensure_roles(session: Any, user_id: int, claims: dict[str, Any]) -> s
     )
     have_codes = set(existing.scalars().all())
 
+    # G-02：OIDC 角色映射为增量授予，按「既有 ∪ 映射」判定三权分立，冲突即拒绝。
+    from openbase.modules.auth.access_control import ensure_role_grant_allowed
+
+    ensure_role_grant_allowed(have_codes, want_codes, replace=False)
+
     bound_role: str | None = None
     for code in want_codes:
         if bound_role is None and code in have_codes:

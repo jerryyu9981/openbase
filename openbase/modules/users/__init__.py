@@ -19,6 +19,7 @@ from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, User, user_role
 from openbase.modules.auth import hash_password, resolve_tenant_code
+from openbase.modules.auth.access_control import ensure_role_grant_allowed
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
     STATUS_STATE_PROVISIONED,
@@ -176,6 +177,7 @@ async def create_user(
     await session.flush()
 
     role = await _resolve_role(session, payload.role)
+    ensure_role_grant_allowed([], [role.code], replace=True)
     await session.execute(user_role.insert().values(user_id=new_user.id, role_id=role.id))
     await session.commit()
     await session.refresh(new_user)
@@ -294,6 +296,7 @@ async def assign_role(
     if row is None:
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"user not found: {user_id}")
     role = await _resolve_role(session, payload.role)
+    ensure_role_grant_allowed([], [payload.role], replace=True)
     await session.execute(user_role.delete().where(user_role.c.user_id == user_id))
     await session.execute(user_role.insert().values(user_id=user_id, role_id=role.id))
     await session.commit()

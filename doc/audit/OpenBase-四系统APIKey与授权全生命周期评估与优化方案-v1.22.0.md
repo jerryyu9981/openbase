@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.21.0 |
+| 版本 | v1.22.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -947,6 +947,39 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 对账仅覆盖 Key 侧计数自洽，跨系统拒绝数比对依赖 K-03；对账尚未挂调度，按 D-06 编排项接入。
 - 角色契约的锚点来自仓库内配置文件，组织级角色字典同步仍归 P3 治理批次（G 类）。
 
+### 10.25 P3 治理残余闭合（G-01~G-03，v1.22.0，2026-10-31）
+
+> 目的：按《残余项统一处置方案 v1.0.4》§4.1 推进 P3 批次，闭合 §10.14、§10.16 登记的 3 项治理残余（ER-25 及 ABAC 复核/规模两项）。全部新增配置**缺省即零行为变化**，新增配置进启动门禁，新增错误码沿用统一四键契约。
+
+| 编号 | 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|---|
+| G-01 | ABAC 变更双人复核（裁定 B：事后审计） | 不新增审批表/端点，保留 `security:admin` 超管直改。审计 `detail` 固定写入 `review_mode="post_audit"`；update/delete 额外携带变更前快照 `previous`（policy_id/name/effect/permission/roles/tenant/cross_tenant/enabled/version），实现改前→改后可还原；变更提交后输出结构化 WARN `abac policy changed without dual review; post-audit required`（extra 仅 `policy_id`/`version`/`actor_id`/`action`），双人复核由组织流程消费审计记录完成 | `modules/auth/abac_policy_store.py`（`ABAC_CHANGE_REVIEW_MODE` / `_audit_detail` / `_append_audit` / `_warn_post_audit`） | `tests/test_p3_governance.py`（create/update/delete 三动作审计标记与快照、3 条 WARN 捕获） |
+| G-02 | 三权分立强制接入角色授予（ER-25） | 新增统一准入 `ensure_role_grant_allowed(existing_role_codes, granted_role_codes, *, replace=False)`：按「结果角色集」调用既有 `conflicting_duty_pairs`，冲突抛 `BaseError(PERM_DUTY_CONFLICT)`（HTTP 409），文案列出互斥对；`replace=True` 取新授予集（可整改历史冲突），`replace=False` 取既有 ∪ 新增（OIDC 增量映射语义）。接入四条授予路径：用户创建、用户改派、agent 创建（替换语义）、OIDC 角色映射（增量语义） | `core/errors/codes.py`（`PERM_DUTY_CONFLICT` + 409 映射）、`modules/auth/access_control.py`（`ensure_role_grant_allowed`）、`modules/users/__init__.py`、`modules/identity/agents.py`、`modules/auth/oidc.py` | 同文件（冲突抛错与 409 映射、并集新增冲突、`replace=True` 整改历史冲突，3 例） |
+| G-03 | ABAC 策略规模与命中性能基线 | `evaluate_abac` 新增可选 `soft_limit` / `warn_ms` 参数（缺省惰性读 `get_settings()`，读取异常回退模块常量 `1000` / `50`）；以 `time.perf_counter` 计时：生效规则数超阈值输出 WARN `abac rule set exceeds soft limit; consider index/cache`（extra `rule_count`/`soft_limit`），单次判定超阈值输出 WARN `abac evaluation slow; consider index/cache`（extra `elapsed_ms`/`rule_count`/`warn_ms`）；判定语义（deny-overrides / 跨租户默认拒绝 / 无命中回落 RBAC）完全不变，告警不阻断 | `settings.py`（`abac_rule_soft_limit` / `abac_evaluation_warn_ms` + `_validate_e3_governance_configuration` 非正拒启）、`modules/auth/access_control.py`（`DEFAULT_ABAC_RULE_SOFT_LIMIT` / `DEFAULT_ABAC_EVALUATION_WARN_MS` / `_abac_baseline_thresholds`） | 同文件（超规则数告警、慢判定告警、阈值内静默、非正阈值拒启，4 例） |
+
+**新增配置（缺省零行为变化）**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `OPENBASE_ABAC_RULE_SOFT_LIMIT` | `1000` | 生效规则数超阈值即 WARN（提示索引/缓存），不阻断判定；非正整数拒启 |
+| `OPENBASE_ABAC_EVALUATION_WARN_MS` | `50` | 单次判定耗时超阈值即 WARN，不阻断判定；非正整数拒启 |
+
+**验证与门禁结论**
+
+| 项 | 结果 |
+|---|---|
+| 用例 | `python -m pytest tests/test_p3_governance.py` → **8 passed** |
+| 回归 | `test_e3_governance` / `test_users_admin` / `test_settings` / `test_oidc_p1_residuals` / `test_identity_t5` / `test_p3_governance` / `test_p2_residuals` 合计 **127 passed**（275.72s） |
+| 静态检查 | 本环境未安装 `ruff`（`No module named ruff`），**待具备环境补跑**；已如实登记 |
+| 零行为变化 | 两项阈值默认 1000/50 仅在超限时告警；既定 HTTP 授予路径为单角色且 `ALLOWED_ROLES` 不含职责码，`ensure_role_grant_allowed` 恒不冲突；OIDC 白名单 `admin/org_admin/user/viewer` 不含职责码，增量映射不新增拒绝 |
+| 安全 | 审计与 WARN 仅记录策略标识/版本/操作者 id/计数，不含策略全文、凭据或证书；`PERM_DUTY_CONFLICT` 文案不含主体现有角色明细之外的信息 |
+
+**残余**
+
+- G-01 为事后审计口径，**无审批前置**：强制「第二人签字」需另建审批流（本次经裁定不建），现阶段依赖组织流程定期复核 `review_mode=post_audit` 审计记录。
+- G-02 只覆盖本仓授予路径；下游四仓的角色映射替换仍归 K-04。若未来新增多角色批量授予的 HTTP 端点，须按 `replace=False` 并集语义接入本准入。
+- G-03 仅提供告警，不做索引/缓存优化；真实规模下的判定耗时压测归 P4 的 V 类实测（V-12 等）。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -975,3 +1008,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.19.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.22「tls_client_auth 客户端认证」并闭合 §10.20 该项残余：认证方式追加 `tls_client_auth`（RFC 8705 §2.1 PKI 证书），与 `mtls` 共用传输装配（承载 `client_id`、不发 `client_secret`）；新增 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 启动期 subject DN 预检（分隔符空白/大小写不敏感，不匹配或非 PEM 拒启）；新增 5 项用例（载荷/传输选项、subject 匹配/不匹配、非 PEM 证书），OIDC 四套（含 settings/auth）57 项通过，ruff 0 错误；登记残余（SAN 型绑定本地预检未实现、真实双向 TLS 未联调） |
 | v1.20.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.23「OIDC 残余闭合（P1 批次 C-01~C-05）」，闭合 §10.22/§10.21/§10.19 登记的 5 项残余：C-01 `tls_client_auth` SAN 型绑定本地预检（新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS/_URI/_IP/_EMAIL`）；C-02 `private_key_jwt` 断言算法扩至 `RS256`/`ES256`/`ES384` 并校验私钥类型/曲线（新增 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM`）；C-03 回调保存 ID Token 并在登出透传 `id_token_hint`；C-04 新增 RFC 8471 `POST /api/v1/auth/oidc/backchannel-logout`（验签 + events/jti 一次性 + 404 语义）；C-05 Provider 级 PKCE/签名算法/认证方式覆盖与回落；新增 6 配置项全部缺省零行为变化并进启动门禁；`tests/test_oidc_p1_residuals.py` **39 passed**（本环境 ruff 未安装，待补跑）；同步升版《残余项统一处置方案 v1.0.2》与 A2 清单 v1.0.8 |
 | v1.21.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.24「Key 生命周期残余闭合（P2 批次 C-06~C-10）」，闭合 §10.12 与 §7.3 登记的 5 项残余：C-06 静态 MCP Key 工具白名单（`OPENBASE_MCP_API_KEY_TOOLS`，缺省不限工具）；C-07 Key 异常检测改 Redis 跨实例聚合（`INCR`/`SADD`/`SCARD` + 共享冷却，Redis 不可用回退进程内，仍只告警不阻断）；C-08 新增只读到期清单端点与 `service_key.expiring` 事件（Key+日去重）；C-09 Key 侧审计对账（`签发 = 有效 + 吊销 + 过期`，差异写审计告警）；C-10 新增 `GET /api/v1/auth/roles/contract` 统一角色字典契约端点；新增 1 配置项缺省零行为变化并进启动门禁；`tests/test_p2_residuals.py` **20 passed**（回归 99 + 8，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.3》与 A2 清单 v1.0.9 |
+| v1.22.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.25「P3 治理残余闭合（G-01~G-03）」，闭合 §10.14/§10.16 登记的 3 项治理残余：G-01 按人工裁定 B 落地「超管直改 + 事后审计」（审计 `review_mode=post_audit` + update/delete 改前快照 + WARN，不新增审批表/端点）；G-02 新增 `ensure_role_grant_allowed` 并接入用户创建/改派、agent 创建、OIDC 角色映射，冲突返回 409 `PERM_DUTY_CONFLICT`（闭合 ER-25）；G-03 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（1000）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（50），超规则数/超耗时输出结构化 WARN，判定语义不变；新增 2 配置项缺省零行为变化并进启动门禁；`tests/test_p3_governance.py` **8 passed**（回归 127 passed，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.4》与 A2 清单 v1.1.0 |

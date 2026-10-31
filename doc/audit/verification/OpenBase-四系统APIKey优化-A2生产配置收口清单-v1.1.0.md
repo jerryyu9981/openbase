@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.9 |
+| 文档版本 | v1.1.0 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.21.0.md`（§10.7~§10.24） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.22.0.md`（§10.7~§10.25） |
 | 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`（A1-01/02/04/11/12 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -25,6 +25,7 @@
 | v1.0.7 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.19.0（§10.22 tls_client_auth 客户端认证）：§2.5 新增 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 基线，`TOKEN_AUTH_METHOD` 可选值扩至五项，证书项适用方式扩为 `mtls` / `tls_client_auth`；§4 门禁 #6 增补证书非 PEM 与 subject 不匹配条件（总数仍 13 项）；§6.3 新增 subject 不匹配/非 PEM 负向样例；关联方案版本号更新 |
 | v1.0.8 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.20.0（§10.23 OIDC 残余闭合 P1 C-01~C-05）：§2.5 新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS` / `_URI` / `_IP` / `_EMAIL` 与 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM` 基线（全部缺省零行为变化）；§4 门禁 #6 增补 SAN 期望值不匹配与断言算法/私钥类型错配条件（总数仍 13 项）；§6.3 新增 SAN 不匹配、断言算法与私钥类型错配负向样例；关联方案与残余项方案版本号更新 |
 | v1.0.9 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.21.0（§10.24 Key 生命周期残余闭合 P2 C-06~C-10）：§2.4 新增 `OPENBASE_MCP_API_KEY_TOOLS` 基线（静态 Key 工具白名单 JSON，留空=不限工具，建议生产显式绑定或 `*`）；§4 门禁 #12 增补工具白名单结构校验条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
+| v1.1.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.22.0（§10.25 P3 治理残余闭合 G-01~G-03）：§2.5 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（默认 `1000`）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（默认 `50`）两项 ABAC 规模/性能基线（缺省零行为变化，仅告警）；§4 门禁 #4 增补「ABAC 阈值非正整数 → 拒绝启动」条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
 
 ---
 
@@ -108,7 +109,9 @@
 
 | 变量 | 默认 | 生产基线 | 缺失/违规后果 | 校验落点 |
 |---|---|---|---|---|
-| `OPENBASE_ABAC_POLICIES` | 空 | 空 = 无属性策略（回落 RBAC）；启用须合法 JSON 数组。运行期新增策略走 `POST /api/v1/auth/access/policies`（`security:admin`，落 `abac_policy_rules` 表并同步审计），判定为「表内启用行 ∪ 本配置基线」，缺省零行为变化 | 非法 JSON/字段 → **所有环境拒绝启动** | `settings.py:651-675`；`modules/auth/abac_policy_store.py` |
+| `OPENBASE_ABAC_POLICIES` | 空 | 空 = 无属性策略（回落 RBAC）；启用须合法 JSON 数组。运行期新增策略走 `POST /api/v1/auth/access/policies`（`security:admin`，落 `abac_policy_rules` 表并同步审计），判定为「表内启用行 ∪ 本配置基线」，缺省零行为变化；变更口径为**超管直改 + 事后审计**（审计 `detail.review_mode="post_audit"` 且 update/delete 携带变更前快照 `previous`，并输出 WARN） | 非法 JSON/字段 → **所有环境拒绝启动** | `settings.py:651-675`；`modules/auth/abac_policy_store.py` |
+| `OPENBASE_ABAC_RULE_SOFT_LIMIT` | `1000` | 保持 `1000`（生效规则数超阈值触发 WARN「consider index/cache」，不阻断判定） | 非正整数 → 拒绝启动；过低会频繁告警 | `settings.py`（`_validate_e3_governance_configuration`）；`modules/auth/access_control.py` |
+| `OPENBASE_ABAC_EVALUATION_WARN_MS` | `50` | 保持 `50`（单次判定耗时超阈值触发结构化 WARN，含 `elapsed_ms`/`rule_count`） | 非正整数 → 拒绝启动；过低会频繁告警 | `settings.py`（`_validate_e3_governance_configuration`）；`modules/auth/access_control.py` |
 | `OPENBASE_AUDIT_RETENTION_DAYS` | `0` | `0`（不清理）或 **≥30** | 1~29 → 拒绝启动（避免误删责任期数据） | `settings.py:651-675` |
 | `OPENBASE_AUDIT_EXPORT_MAX_ROWS` | `10000` | 正整数（导出单次上限） | 非正 → 拒绝启动 | `settings.py:651-675` |
 | `OPENBASE_IDP_PROVIDERS` | 空 | 空 = 仅既有单 IdP；启用须合法 JSON 数组（名称唯一、必填齐全）。已接入登录路由：`GET /api/v1/auth/oidc/authorize?provider=<name>` 按 Provider 声明发起授权，callback 依 state 记录的 Provider 还原客户端（未登记/未知 Provider → 400 `PARAM_INVALID`） | 非法 → 拒绝启动 | `settings.py:651-675`；`modules/auth/oidc.py` |
@@ -180,7 +183,7 @@ OpenBase 侧 13 项 `@model_validator(mode="after")` / 装配期门禁，按 `se
 | 1 | `_validate_jwt_secret` | 弱/占位/缺失 JWT 密钥 | 拒绝启动 |
 | 2 | `_validate_rs256_configuration` | `jwt_require_rs256=true` 但缺 PEM 或 kid；JWKS JSON 非法 | 拒绝启动 |
 | 3 | `_validate_signature_algorithm` | 算法未登记或不可用（含 SM2 预留） | 拒绝启动 |
-| 4 | `_validate_e3_governance_configuration` | ABAC/IdP JSON 非法；留存 1~29 天；导出上限非正 | 拒绝启动 |
+| 4 | `_validate_e3_governance_configuration` | ABAC/IdP JSON 非法；留存 1~29 天；导出上限非正；ABAC 规模/性能阈值非正整数 | 拒绝启动 |
 | 5 | `_validate_oidc_hardening_configuration` | OIDC state TTL 非正；验签算法为空或含未接线算法（如 `SM2`） | 拒绝启动（所有环境） |
 | 6 | `_validate_oidc_token_auth_configuration` | token 认证方式非法；`mtls` / `tls_client_auth` 缺证书或私钥路径、文件不存在；`tls_client_auth` 证书非 PEM、subject 与 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 不匹配、或任一 `_SAN_*` 期望值在证书 SAN 中不存在；`private_key_jwt` 缺断言私钥路径或文件不存在、私钥非 PEM、私钥类型/曲线与 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM` 错配 | 拒绝启动（所有环境） |
 | 7 | `_validate_production_token_version_enforcement` | 未开 `enforce_token_version` | 拒绝启动 |

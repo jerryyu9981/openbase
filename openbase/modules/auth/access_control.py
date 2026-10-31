@@ -14,10 +14,13 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
+
+from openbase.core.errors import BaseError, ErrorCode
 
 logger = logging.getLogger("openbase.auth.access_control")
 
@@ -49,6 +52,7 @@ __all__ = [
     "SeparationOfDutiesError",
     "assert_separation_of_duties",
     "conflicting_duty_pairs",
+    "ensure_role_grant_allowed",
     "evaluate_abac",
     "parse_abac_rules",
 ]
@@ -56,6 +60,11 @@ __all__ = [
 
 class SeparationOfDutiesError(ValueError):
     """三权分立违规：同一主体被同时授予互斥职责."""
+
+
+# G-03 规模/耗时基线默认值（settings 不可用时的确定性回退；生产由配置覆盖）
+DEFAULT_ABAC_RULE_SOFT_LIMIT = 1000
+DEFAULT_ABAC_EVALUATION_WARN_MS = 50
 
 
 def conflicting_duty_pairs(role_codes: Iterable[str]) -> list[tuple[str, str]]:
@@ -91,6 +100,39 @@ def assert_separation_of_duties(role_codes: Iterable[str]) -> None:
             "三权分立违规：同一主体不得兼任互斥职责 "
             + "、".join(f"{left}↔{right}" for left, right in conflicts)
         )
+
+
+def ensure_role_grant_allowed(
+    existing_role_codes: Iterable[str],
+    granted_role_codes: Iterable[str],
+    *,
+    replace: bool = False,
+) -> None:
+    """角色授予路径的三权分立强制入口（G-02）.
+
+    以「授予后的结果角色集」判定：``replace=True`` 表示授予会替换既有绑定
+    （结果集 = 新授予集，可据此整改历史冲突）；``replace=False`` 表示增量授予
+    （结果集 = 既有 ∪ 新授予）。冲突统一抛 ``PERM_DUTY_CONFLICT``（HTTP 409）。
+
+    Args:
+        existing_role_codes: 主体当前持有的角色码。
+        granted_role_codes: 本次拟授予的角色码。
+        replace: 是否为替换语义。
+
+    Raises:
+        BaseError: ``PERM_DUTY_CONFLICT``（存在互斥职责冲突）。
+    """
+    granted = tuple(granted_role_codes)
+    resulting = granted if replace else tuple(existing_role_codes) + granted
+    conflicts = conflicting_duty_pairs(resulting)
+    if not conflicts:
+        return
+    raise BaseError(
+        ErrorCode.PERM_DUTY_CONFLICT,
+        "三权分立违规：同一主体不得兼任互斥职责 "
+        + "、".join(f"{left}↔{right}" for left, right in conflicts),
+        detail={"conflicts": [list(pair) for pair in conflicts]},
+    )
 
 
 class AbacEffect(str, Enum):
@@ -185,6 +227,17 @@ def _permission_matches(rule: AbacRule, permission: str) -> bool:
     return rule.permission == "*" or rule.permission == permission
 
 
+def _abac_baseline_thresholds() -> tuple[int, int]:
+    """取 G-03 基线阈值（settings 不可用时回退模块默认）."""
+    try:
+        from openbase.settings import get_settings
+
+        settings = get_settings()
+        return int(settings.abac_rule_soft_limit), int(settings.abac_evaluation_warn_ms)
+    except Exception:  # noqa: BLE001 - 阈值读取失败不阻断判定
+        return DEFAULT_ABAC_RULE_SOFT_LIMIT, DEFAULT_ABAC_EVALUATION_WARN_MS
+
+
 def evaluate_abac(
     rules: Iterable[AbacRule],
     *,
@@ -192,8 +245,13 @@ def evaluate_abac(
     subject_tenant: str,
     resource_tenant: str,
     roles: Iterable[str] = (),
+    soft_limit: int | None = None,
+    warn_ms: int | None = None,
 ) -> AbacEvaluation:
     """按属性判定访问（deny-overrides + 跨租户默认拒绝）.
+
+    G-03：判定完成后按配置阈值输出结构化 WARN——规则数达软上限提示「需索引/缓存」，
+    判定耗时达阈值提示性能退化；告警不改变判定结果。
 
     Args:
         rules: 策略规则集合。
@@ -201,16 +259,20 @@ def evaluate_abac(
         subject_tenant: 主体租户码（空串表示无租户绑定）。
         resource_tenant: 资源租户码（空串表示平台级资源）。
         roles: 主体角色码集合。
+        soft_limit: 规则数软上限（None = 读配置，配置不可用回退 1000）。
+        warn_ms: 耗时告警阈值毫秒（None = 读配置，配置不可用回退 50）。
 
     Returns:
         :class:`AbacEvaluation`；``not_applicable`` 表示无策略命中，交由 RBAC 判定。
     """
+    started_at = time.perf_counter()
+    rule_set = tuple(rules)
     role_set = {role for role in roles if role}
     cross_tenant = bool(subject_tenant) and bool(resource_tenant) and subject_tenant != resource_tenant
 
     deny_matched = False
     allow_matched = False
-    for rule in rules:
+    for rule in rule_set:
         if not _permission_matches(rule, permission):
             continue
         if rule.tenant and rule.tenant != subject_tenant:
@@ -225,9 +287,31 @@ def evaluate_abac(
             allow_matched = True
 
     if deny_matched:
-        return AbacEvaluation(AbacEffect.DENY, "deny_rule_matched")
-    if cross_tenant and not allow_matched:
-        return AbacEvaluation(AbacEffect.DENY, "cross_tenant_without_allow")
-    if allow_matched:
-        return AbacEvaluation(AbacEffect.ALLOW, "allow_rule_matched")
-    return AbacEvaluation(AbacEffect.NOT_APPLICABLE, "no_policy_matched")
+        evaluation = AbacEvaluation(AbacEffect.DENY, "deny_rule_matched")
+    elif cross_tenant and not allow_matched:
+        evaluation = AbacEvaluation(AbacEffect.DENY, "cross_tenant_without_allow")
+    elif allow_matched:
+        evaluation = AbacEvaluation(AbacEffect.ALLOW, "allow_rule_matched")
+    else:
+        evaluation = AbacEvaluation(AbacEffect.NOT_APPLICABLE, "no_policy_matched")
+
+    configured_soft_limit, configured_warn_ms = _abac_baseline_thresholds()
+    resolved_soft_limit = configured_soft_limit if soft_limit is None else int(soft_limit)
+    resolved_warn_ms = configured_warn_ms if warn_ms is None else int(warn_ms)
+    rule_count = len(rule_set)
+    if resolved_soft_limit > 0 and rule_count >= resolved_soft_limit:
+        logger.warning(
+            "abac rule set exceeds soft limit; consider index/cache",
+            extra={"rule_count": rule_count, "soft_limit": resolved_soft_limit},
+        )
+    elapsed_ms = round((time.perf_counter() - started_at) * 1000, 3)
+    if resolved_warn_ms >= 0 and elapsed_ms >= resolved_warn_ms:
+        logger.warning(
+            "abac evaluation slow; consider index/cache",
+            extra={
+                "elapsed_ms": elapsed_ms,
+                "rule_count": rule_count,
+                "warn_ms": resolved_warn_ms,
+            },
+        )
+    return evaluation
