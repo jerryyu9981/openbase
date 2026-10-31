@@ -210,27 +210,70 @@ class OIDCClient:
             params["code_challenge_method"] = "S256"
         return f"{self._authorization_endpoint}?{urllib.parse.urlencode(params)}"
 
+    def token_auth_method(self) -> str:
+        """token 端点客户端认证方式（全局配置；Provider 模式共用）."""
+        return (self._settings().oidc_token_auth_method or "").strip().lower()
+
+    def token_request_options(self) -> dict[str, Any]:
+        """按认证方式装配 httpx 请求选项（Basic 头 / mTLS 证书）.
+
+        - ``client_secret_basic``：RFC 6749 §2.3.1，凭据经 HTTP Basic 头；
+        - ``mtls``：RFC 8705，客户端证书认证（``cert`` + 可选 ``verify``）；
+        - ``client_secret_post``：凭据放表单（默认，无需额外选项）。
+        """
+        method = self.token_auth_method()
+        if method == "client_secret_basic":
+            return {"auth": httpx.BasicAuth(self.client_id, self.client_secret)}
+        if method == "mtls":
+            settings = self._settings()
+            cert_path = (settings.oidc_client_cert_path or "").strip()
+            key_path = (settings.oidc_client_key_path or "").strip()
+            ca_path = (settings.oidc_client_ca_path or "").strip()
+            cert = (cert_path, key_path) if key_path else cert_path
+            return {"cert": cert, "verify": ca_path or True}
+        return {}
+
+    def token_payload(
+        self, code: str, *, code_verifier: str | None = None
+    ) -> dict[str, str]:
+        """token 端点表单载荷（按认证方式决定是否携带 client 凭据）.
+
+        Basic 模式凭据走 Authorization 头，表单不得重复携带（RFC 6749 §2.3.1）；
+        mTLS 模式仅带 ``client_id``（客户端已由证书认证）。
+        """
+        method = self.token_auth_method()
+        payload = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": self.redirect_uri,
+        }
+        if code_verifier:
+            payload["code_verifier"] = code_verifier
+        if method != "client_secret_basic":
+            payload["client_id"] = self.client_id
+        if method == "client_secret_post":
+            payload["client_secret"] = self.client_secret
+        return payload
+
     async def exchange_code(
         self, code: str, *, code_verifier: str | None = None
     ) -> dict[str, Any]:
         """授权码换取令牌（token_endpoint），返回含 ID Token 的完整响应.
+
+        客户端认证方式由 ``oidc_token_auth_method`` 决定（v1.17.0）：
+        ``client_secret_post``（默认）/ ``client_secret_basic`` / ``mtls``。
 
         Args:
             code: IdP 回传的授权码。
             code_verifier: PKCE 原始校验串（启用 PKCE 时必传）。
         """
         await self._load_discovery()
-        payload = {
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": self.redirect_uri,
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-        }
-        if code_verifier:
-            payload["code_verifier"] = code_verifier
+        payload = self.token_payload(code, code_verifier=code_verifier)
+        request_options = self.token_request_options()
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(self._token_endpoint, data=payload)
+            resp = await client.post(
+                self._token_endpoint, data=payload, **request_options
+            )
             resp.raise_for_status()
             return resp.json()
 

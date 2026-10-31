@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.16.0 |
+| 版本 | v1.17.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -720,7 +720,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 多 Provider 登录路由已由 §10.18（v1.15.0）接入（`provider` 查询参数 + state 携带 Provider）；单 IdP `oidc_*` 语义保持零变化。
 - 签名算法仅覆盖 python-jose 已接线的 RS/ES 系列；SM2 仍未接线（见 E3-3）。
 - IdP 侧登出已由 §10.19（v1.16.0）接入前端信道 `end_session`（本地 `token_version` 递增 + 可选登出 URL）；**back-channel logout（IdP 主动通知网关）仍未实现**。
-- token endpoint 仅 `client_secret_post`，不支持 `client_secret_basic` / mTLS。
+- token endpoint 认证方式已由 §10.20（v1.17.0）扩展为 `client_secret_post` / `client_secret_basic` / mTLS（默认 post，零行为变化）。
 - 验证边界：以 mock IdP + 文件型 SQLite 验证（新增 12 项，OIDC 相关共 30 项通过），未做真实 IdP 联调（由 A1 清单覆盖）。
 
 ### 10.18 多 Provider 登录路由（v1.15.0，2026-10-30）
@@ -779,6 +779,39 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 未保存 IdP 侧 `id_token_hint`，部分 IdP 可能要求该参数才能静默登出（如需可在前端回调时留存 ID Token 后透传）。
 - 验证边界：mock IdP 校验 URL 构造与本地吊销分支，未做真实 IdP 登出联调。
 
+### 10.20 token 端点认证方式扩展（v1.17.0，2026-10-31）
+
+> 目的：闭合 §10.17 登记的「token endpoint 仅 `client_secret_post`」残余——按 IdP 实际要求支持 HTTP Basic 与 mTLS 客户端认证，默认 post 保持零行为变化。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| 认证方式配置 | 新增 `OPENBASE_OIDC_TOKEN_AUTH_METHOD`（`client_secret_post` / `client_secret_basic` / `mtls`，默认 post），取值归一为小写 | `settings.py` | `tests/test_oidc_token_auth.py`（门禁用例） |
+| client_secret_basic | 凭据经 `Authorization: Basic`（httpx `BasicAuth`），表单**不重复**携带 `client_id` / `client_secret`（RFC 6749 §2.3.1） | `oidc.py`（`token_payload` / `token_request_options`） | 同上（载荷断言 + mock IdP 记录到 basic 全链路） |
+| mTLS | 客户端证书 / 私钥（PEM）经 httpx `cert` 装配，可选 CA 经 `verify`；表单仅带 `client_id`（RFC 8705） | `oidc.py`（`token_request_options`） | 同上（请求选项装配单元用例） |
+| 默认 post | 未配置时表单携带 `client_id` + `client_secret`，请求选项为空（既有行为完全不变） | `oidc.py` | 同上（默认 post 全链路） |
+| 启动门禁 | 方式非法 → 拒绝启动；mtls 缺证书/私钥路径或文件不存在 → 拒绝启动（含可选 CA 文件） | `settings.py`（`_validate_oidc_token_auth_configuration`） | 同上（4 项门禁用例） |
+
+**新增配置**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `OPENBASE_OIDC_TOKEN_AUTH_METHOD` | `client_secret_post` | token 端点客户端认证方式；`client_secret_basic` / `mtls` 按 IdP 要求选择 |
+| `OPENBASE_OIDC_CLIENT_CERT_PATH` | 空 | mTLS 客户端证书（PEM；证书与私钥合并为一个文件时只需本项） |
+| `OPENBASE_OIDC_CLIENT_KEY_PATH` | 空 | mTLS 客户端私钥（PEM） |
+| `OPENBASE_OIDC_CLIENT_CA_PATH` | 空 | 可选：校验 IdP token 端点的 CA 包（留空用系统默认信任库） |
+
+**统一口径**
+
+- 认证方式为**全局配置**（同一网关对所有 Provider 采用同一方式）；多 Provider 若需差异化认证，需后续在 Provider 声明中扩展字段。
+- mTLS 只覆盖 token 端点请求；授权端点为浏览器重定向，不参与双向 TLS。
+- `mtls` 的证书/私钥/CA 路径在启动时校验存在性，运行期不重复探测（挂载变更需重启）。
+
+**残余**
+
+- 未实现 `private_key_jwt`（RFC 7523）与 `tls_client_auth`（RFC 8705 的 subject 绑定变体）。
+- mTLS 未做真实双向 TLS 端到端联调（测试覆盖请求选项装配与启动门禁；链路验证依赖 A1 真实 IdP 联调）。
+- 验证边界：mock IdP 端口 9014，覆盖 post / basic 全链路；mTLS 为单元级验证。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -802,3 +835,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.14.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.17「OIDC P1 安全硬化」：state 从进程内 dict 改为一次性存储（Redis 优先 + TTL + 锁，Redis 不可用回退内存）；授权码流补 nonce 校验与 PKCE S256（默认开启）；ID Token 验签算法由硬编码 RS256 改为配置白名单 ∩ IdP discovery 声明（未接线算法含 SM2 启动即拒绝）；OIDC 端点错误由 `HTTPException` 收敛为 `BaseError` 统一四键契约；新增 3 配置项与启动门禁；新增 12 项用例，OIDC 相关 30 项全部通过，ruff 0 错误；登记残余（多 Provider 路由未接、IdP 登出未联动、client_secret_basic/mTLS 未支持、真实 IdP 联调待 A1） |
 | v1.15.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.18「多 Provider 登录路由」：`GET /auth/oidc/authorize` 支持 `provider` 参数，按 `OPENBASE_IDP_PROVIDERS` 声明构建/缓存 Provider 客户端；state 载荷记录 Provider 名，callback 依 state 还原客户端（profile/claim_role/default_tenant 取自 Provider）；未登记/未知 Provider 统一 400 `PARAM_INVALID`；不指定 provider 的单 IdP 路径零行为变化；新增 5 项用例，OIDC 三套用例全通过，ruff 0 错误 |
 | v1.16.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.19「IdP 登出联动」：`POST /auth/oidc/logout` 本地 `token_version` 递增即时吊销存量令牌，按 Provider/单 IdP discovery 返回 `end_session` 登出 URL（IdP 未声明/不可达则为 null，不回滚本地吊销）；未鉴权 401、未知 Provider 400、未启用 404 均在吊销前判定；新增 4 项用例（未鉴权 / 未知 Provider / Provider 登出 URL / 本地版本递增与直签主体跳过），`test_oidc_multi_provider` 9 项全通过，ruff 0 错误 |
+| v1.17.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.20「token 端点认证方式扩展」：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 支持 `client_secret_post`（默认）/ `client_secret_basic`（RFC 6749 §2.3.1，表单不重复携带凭据）/ `mtls`（RFC 8705，客户端证书 + 可选 CA）；新增 3 项 mTLS 证书路径配置与启动门禁（非法方式、缺路径、文件不存在均拒启）；新增 9 项用例（post/basic 载荷、mTLS 请求选项、post/basic 全链路、4 项门禁），OIDC 三套用例通过，ruff 0 错误 |

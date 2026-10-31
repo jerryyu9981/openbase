@@ -287,6 +287,14 @@ OIDC_ID_TOKEN_ALGORITHMS: tuple[str, ...] = (
     "ES512",
 )
 
+# token 端点客户端认证方式（RFC 6749 §2.3.1 / RFC 8705）：
+# client_secret_post（表单凭据，默认）| client_secret_basic（HTTP Basic）| mtls（双向 TLS）
+OIDC_TOKEN_AUTH_METHODS: tuple[str, ...] = (
+    "client_secret_post",
+    "client_secret_basic",
+    "mtls",
+)
+
 
 def _resolve_redis_url() -> str:
     """解析 Redis 连接串：OPENBASE_REDIS_URL > REDIS_URL > 默认."""
@@ -464,6 +472,12 @@ class Settings(BaseSettings):
     oidc_pkce_enabled: bool = True
     # ID Token 验签算法白名单（逗号分隔，须与 IdP discovery 声明取交集）
     oidc_signing_algorithms: str = "RS256"
+    # token 端点认证方式（v1.17.0）：client_secret_post | client_secret_basic | mtls
+    oidc_token_auth_method: str = "client_secret_post"
+    # mTLS（RFC 8705）：客户端证书/私钥（PEM，证书也可与私钥合并为一个文件）；CA 可选
+    oidc_client_cert_path: str = ""
+    oidc_client_key_path: str = ""
+    oidc_client_ca_path: str = ""
 
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row
@@ -714,6 +728,45 @@ class Settings(BaseSettings):
                 "OPENBASE_OIDC_SIGNING_ALGORITHMS 含未接线算法："
                 f"{','.join(unsupported)}；可用值：{','.join(OIDC_ID_TOKEN_ALGORITHMS)}"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_oidc_token_auth_configuration(self) -> Settings:
+        """token 端点客户端认证配置门禁（任何环境 fail-fast）.
+
+        - ``oidc_token_auth_method`` 必须为 :data:`OIDC_TOKEN_AUTH_METHODS` 之一，
+          统一归一为小写；
+        - ``mtls`` 必须配置客户端证书与私钥路径，且文件存在（缺配或路径错误即拒启，
+          避免运行期才发现 token 端点无法认证）；
+        - ``oidc_client_ca_path`` 可选，配置后文件必须存在。
+        """
+        method = (self.oidc_token_auth_method or "").strip().lower()
+        if method not in OIDC_TOKEN_AUTH_METHODS:
+            raise ValueError(
+                "OPENBASE_OIDC_TOKEN_AUTH_METHOD 取值非法："
+                f"{self.oidc_token_auth_method}；"
+                f"可用值：{','.join(OIDC_TOKEN_AUTH_METHODS)}"
+            )
+        self.oidc_token_auth_method = method
+        if method != "mtls":
+            return self
+        cert_path = (self.oidc_client_cert_path or "").strip()
+        key_path = (self.oidc_client_key_path or "").strip()
+        if not cert_path or not key_path:
+            raise ValueError(
+                "OIDC token 端点选择 mTLS 时必须配置 "
+                "OPENBASE_OIDC_CLIENT_CERT_PATH 与 OPENBASE_OIDC_CLIENT_KEY_PATH"
+            )
+        required_paths = [
+            ("OPENBASE_OIDC_CLIENT_CERT_PATH", cert_path),
+            ("OPENBASE_OIDC_CLIENT_KEY_PATH", key_path),
+        ]
+        ca_path = (self.oidc_client_ca_path or "").strip()
+        if ca_path:
+            required_paths.append(("OPENBASE_OIDC_CLIENT_CA_PATH", ca_path))
+        for env_name, path in required_paths:
+            if not os.path.exists(path):
+                raise ValueError(f"{env_name} 指向的文件不存在：{path}")
         return self
 
     @model_validator(mode="after")

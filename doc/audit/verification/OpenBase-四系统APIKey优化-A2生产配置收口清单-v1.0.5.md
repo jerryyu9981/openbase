@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.4 |
+| 文档版本 | v1.0.5 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.16.0.md`（§10.7~§10.19） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.17.0.md`（§10.7~§10.20） |
 | 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`（A1-01/02/04/11/12 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -20,6 +20,7 @@
 | v1.0.2 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.14.0（§10.17 OIDC P1 安全硬化）：§2.5 新增 `OPENBASE_OIDC_STATE_TTL_SECONDS` / `OPENBASE_OIDC_PKCE_ENABLED` / `OPENBASE_OIDC_SIGNING_ALGORITHMS` 三项基线；§4 启动门禁由 11 项增至 12 项（新增 OIDC 硬化门禁）；§6.3 增加算法白名单负向样例；关联方案版本号更新 |
 | v1.0.3 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.15.0（§10.18 多 Provider 登录路由）：`OPENBASE_IDP_PROVIDERS` 行补充登录路由接入说明（`authorize?provider=`、state 记录 Provider、未知 Provider 400），关联方案版本号更新 |
 | v1.0.4 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.16.0（§10.19 IdP 登出联动）：§2.5 新增「登出联动」行（强校验与 IdP `end_session_endpoint` 前置条件），关联方案版本号更新 |
+| v1.0.5 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.17.0（§10.20 token 端点认证方式扩展）：§2.5 新增 `OPENBASE_OIDC_TOKEN_AUTH_METHOD` 与 mTLS 证书三项基线；§4 启动门禁由 12 项增至 13 项（新增 token 认证门禁）；§6.3 增加 mTLS 缺证书路径负向样例；关联方案版本号更新 |
 
 ---
 
@@ -106,10 +107,12 @@
 | `OPENBASE_AUDIT_RETENTION_DAYS` | `0` | `0`（不清理）或 **≥30** | 1~29 → 拒绝启动（避免误删责任期数据） | `settings.py:651-675` |
 | `OPENBASE_AUDIT_EXPORT_MAX_ROWS` | `10000` | 正整数（导出单次上限） | 非正 → 拒绝启动 | `settings.py:651-675` |
 | `OPENBASE_IDP_PROVIDERS` | 空 | 空 = 仅既有单 IdP；启用须合法 JSON 数组（名称唯一、必填齐全）。已接入登录路由：`GET /api/v1/auth/oidc/authorize?provider=<name>` 按 Provider 声明发起授权，callback 依 state 记录的 Provider 还原客户端（未登记/未知 Provider → 400 `PARAM_INVALID`） | 非法 → 拒绝启动 | `settings.py:651-675`；`modules/auth/oidc.py` |
-| `OPENBASE_OIDC_ENABLED` 及 `OPENBASE_OIDC_*` | 关闭 / 见 `settings.py:444-461` | 按实际 IdP 填写；未映射租户默认 `tenant-1`（非保留码） | 保留码会导致下游 400 | `settings.py:444-461` |
-| `OPENBASE_OIDC_STATE_TTL_SECONDS` | `600` | 600（多实例经 Redis 共享一次性 state；Redis 不可用回退进程内） | 非正整数 → **所有环境拒绝启动** | `settings.py:462, 695-717` |
-| `OPENBASE_OIDC_PKCE_ENABLED` | `true` | `true`（授权码流 S256；IdP 不支持时方可显式关闭） | 关闭即失去授权码拦截防护（不阻断启动，须记录例外） | `settings.py:464` |
-| `OPENBASE_OIDC_SIGNING_ALGORITHMS` | `RS256` | `RS256`（须与 IdP discovery 声明取交集；交集为空即登录失败） | 空值 / 未接线算法（如 `SM2`）→ **所有环境拒绝启动** | `settings.py:466, 695-717` |
+| `OPENBASE_OIDC_ENABLED` 及 `OPENBASE_OIDC_*` | 关闭 / 见 `settings.py:452-471` | 按实际 IdP 填写；未映射租户默认 `tenant-1`（非保留码） | 保留码会导致下游 400 | `settings.py:452-471` |
+| `OPENBASE_OIDC_STATE_TTL_SECONDS` | `600` | 600（多实例经 Redis 共享一次性 state；Redis 不可用回退进程内） | 非正整数 → **所有环境拒绝启动** | `settings.py:470, 709-731` |
+| `OPENBASE_OIDC_PKCE_ENABLED` | `true` | `true`（授权码流 S256；IdP 不支持时方可显式关闭） | 关闭即失去授权码拦截防护（不阻断启动，须记录例外） | `settings.py:472` |
+| `OPENBASE_OIDC_SIGNING_ALGORITHMS` | `RS256` | `RS256`（须与 IdP discovery 声明取交集；交集为空即登录失败） | 空值 / 未接线算法（如 `SM2`）→ **所有环境拒绝启动** | `settings.py:474, 709-731` |
+| `OPENBASE_OIDC_TOKEN_AUTH_METHOD` | `client_secret_post` | 按 IdP 要求选择 `client_secret_post` / `client_secret_basic` / `mtls`（取值归一为小写；Provider 模式共用同一方式） | 非法值 → **所有环境拒绝启动** | `settings.py:476, 734-770` |
+| `OPENBASE_OIDC_CLIENT_CERT_PATH` / `_KEY_PATH` / `_CA_PATH` | 空 | 仅 `mtls` 必填证书与私钥（PEM 只读挂载，禁止入库/入日志）；CA 可选，留空用系统信任库 | `mtls` 缺证书/私钥路径或文件不存在 → **拒绝启动**；CA 配置后文件不存在 → 拒绝启动 | `settings.py:478-480, 734-770` |
 | 登出联动（无新增配置） | — | 生产须启用 `OPENBASE_ENFORCE_TOKEN_VERSION=true`（已为启动门禁），登出端点 `POST /api/v1/auth/oidc/logout` 的 `token_version` 递增才会即时吊销存量令牌；IdP 侧需在 discovery 声明 `end_session_endpoint` 才能返回登出 URL | 未启用强校验 → 登出仅清前端凭据（不作为启动门禁） | `modules/auth/oidc.py` |
 
 ### 2.6 上游代理与出站凭证（与 Key 授权直接相关）
@@ -161,7 +164,7 @@
 
 ## 4. 启动门禁清单（缺配即拒启）
 
-OpenBase 侧 12 项 `@model_validator(mode="after")` / 装配期门禁，按 `settings.py` 顺序：
+OpenBase 侧 13 项 `@model_validator(mode="after")` / 装配期门禁，按 `settings.py` 顺序：
 
 | # | 门禁方法 | 触发条件（生产） | 违规结果 |
 |---|---|---|---|
@@ -170,13 +173,14 @@ OpenBase 侧 12 项 `@model_validator(mode="after")` / 装配期门禁，按 `se
 | 3 | `_validate_signature_algorithm` | 算法未登记或不可用（含 SM2 预留） | 拒绝启动 |
 | 4 | `_validate_e3_governance_configuration` | ABAC/IdP JSON 非法；留存 1~29 天；导出上限非正 | 拒绝启动 |
 | 5 | `_validate_oidc_hardening_configuration` | OIDC state TTL 非正；验签算法为空或含未接线算法（如 `SM2`） | 拒绝启动（所有环境） |
-| 6 | `_validate_production_token_version_enforcement` | 未开 `enforce_token_version` | 拒绝启动 |
-| 7 | `_validate_principal_db_degraded_policy` | 策略为 `allow` 或取值非法 | 拒绝启动 |
-| 8 | `_validate_principal_row_missing_policy` | 同上 | 拒绝启动 |
-| 9 | `_validate_outbound_tenant_alignment` | 出站兜底码为空或命中目标保留码 | 拒绝启动 |
-| 10 | `_validate_llm_api_keys_by_tenant` | 映射 JSON 非法/密钥含控制字符 | 拒绝启动 |
-| 11 | `_validate_mcp_edge_configuration` | 明文/内置 MCP Key；摘要格式非法；摘要与文件均缺；异常参数非正 | 拒绝启动 |
-| 12 | `validate_production_login_tenant_policy` | 未开租户强绑定，或配置了显式兜底租户 | 拒绝启动 |
+| 6 | `_validate_oidc_token_auth_configuration` | token 认证方式非法；`mtls` 缺证书/私钥路径或文件不存在 | 拒绝启动（所有环境） |
+| 7 | `_validate_production_token_version_enforcement` | 未开 `enforce_token_version` | 拒绝启动 |
+| 8 | `_validate_principal_db_degraded_policy` | 策略为 `allow` 或取值非法 | 拒绝启动 |
+| 9 | `_validate_principal_row_missing_policy` | 同上 | 拒绝启动 |
+| 10 | `_validate_outbound_tenant_alignment` | 出站兜底码为空或命中目标保留码 | 拒绝启动 |
+| 11 | `_validate_llm_api_keys_by_tenant` | 映射 JSON 非法/密钥含控制字符 | 拒绝启动 |
+| 12 | `_validate_mcp_edge_configuration` | 明文/内置 MCP Key；摘要格式非法；摘要与文件均缺；异常参数非正 | 拒绝启动 |
+| 13 | `validate_production_login_tenant_policy` | 未开租户强绑定，或配置了显式兜底租户 | 拒绝启动 |
 
 四仓侧生产 fail-closed 门禁（受信来源与角色口径）按各仓配置：OpenRAG `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES` / `OPENRAG_IDENTITY_ROLE_FAIL_CLOSED`；OpenLLM `TRUSTED_PROXY_SOURCES` / `ENFORCE_INBOUND_IDENTITY_HEADERS`；OpenMemory / DPS 以各仓受信代理与角色映射配置为准，漏配即拒启或拒绝入站。
 
@@ -219,6 +223,8 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 - 生产置 `OPENBASE_OIDC_SIGNING_ALGORITHMS=SM2` → 必须**拒绝启动**（未接线算法）。
 - 生产置 `OPENBASE_DEFAULT_TENANT_CODE=<任意>` → 必须**拒绝启动**。
 - 生产置 `OPENBASE_AUDIT_RETENTION_DAYS=7` → 必须**拒绝启动**。
+- 生产置 `OPENBASE_OIDC_TOKEN_AUTH_METHOD=mtls` 但缺 `OPENBASE_OIDC_CLIENT_CERT_PATH` / `_KEY_PATH` → 必须**拒绝启动**。
+- 生产置 `OPENBASE_OIDC_TOKEN_AUTH_METHOD=private_key_jwt` → 必须**拒绝启动**（取值非法）。
 
 ---
 
@@ -227,7 +233,7 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 | 验收项 | 内容 | 判定 | 证据 |
 |---|---|---|---|
 | A2-01 | OpenBase 第 2 节基线逐项落地（秘密类仅记状态） | Pass/Fail | `a2-01.txt` |
-| A2-02 | 12 项启动门禁负向样例各命中一次（第 6.3 节） | Pass/Fail | `a2-02.txt` |
+| A2-02 | 13 项启动门禁负向样例各命中一次（第 6.3 节） | Pass/Fail | `a2-02.txt` |
 | A2-03 | JWKS 只发公钥、kid 一致（第 6.2 节） | Pass/Fail | `a2-03.txt` |
 | A2-04 | 四仓镜像矩阵齐备且 `iss/aud` 一致 | Pass/Fail | `a2-04.txt` |
 | A2-05 | 服务 Key 权限面最小化（`scope.system` 仅含 `auth`/`*` 必要项） | Pass/Fail | `a2-05.txt` |

@@ -45,6 +45,8 @@ class MockIdp:
         self.sub = sub
         self.tenant_id = tenant_id
         self.roles = roles if roles is not None else ["org_admin"]
+        # token 端点实际收到的客户端认证方式（post/basic），供认证方式用例断言
+        self.token_auth_calls: list[str] = []
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -104,6 +106,9 @@ class MockIdp:
 
                 decoded = base64.b64decode(authorization.split(" ", 1)[1]).decode()
                 client_id, client_secret = decoded.split(":", 1)
+                self.token_auth_calls.append("basic")
+            else:
+                self.token_auth_calls.append("post")
             assert client_id == self.client_id
             assert client_secret == self.client_secret
             header = {"alg": "RS256", "typ": "JWT", "kid": self.kid}
