@@ -31,6 +31,7 @@ from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, Tenant, User, user_role
 from openbase.modules.auth.idp_registry import IdpProviderConfig, parse_idp_providers
 from openbase.modules.auth.jwt import issue_token_pair
+from openbase.modules.auth.oidc_logout import DEFAULT_TTL_SECONDS, get_logout_store
 from openbase.modules.auth.oidc_state import get_state_store
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
@@ -48,6 +49,8 @@ logger = logging.getLogger("openbase.auth.oidc")
 CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 # 客户端断言有效期（秒）：仅用于单次 token 请求，短有效期即可
 CLIENT_ASSERTION_TTL_SECONDS = 300
+# RFC 8471 back-channel logout：events 声明的固定事件 URI
+BACKCHANNEL_LOGOUT_EVENT = "http://schemas.openid.net/event/backchannel-logout"
 
 
 class OIDCError(Exception):
@@ -174,6 +177,25 @@ class OIDCClient:
         return self._settings().oidc_default_tenant
 
     @property
+    def pkce_enabled(self) -> bool:
+        """PKCE 开关：Provider 声明优先，未声明回落全局（C-05）."""
+        if self._provider is not None and self._provider.pkce_enabled is not None:
+            return self._provider.pkce_enabled
+        return bool(self._settings().oidc_pkce_enabled)
+
+    @property
+    def signing_algorithms(self) -> str:
+        """ID Token 验签算法白名单：Provider 声明优先，未声明回落全局（C-05）."""
+        if self._provider is not None and self._provider.signing_algorithms:
+            return self._provider.signing_algorithms
+        return self._settings().oidc_signing_algorithms
+
+    @property
+    def issuer(self) -> str:
+        """IdP issuer（discovery 加载后可用；未加载为空串）."""
+        return self._issuer
+
+    @property
     def enabled(self) -> bool:
         # 全局 oidc_enabled 仍为总开关；Provider 模式再要求 discovery/client_id 齐备
         return bool(self._settings().oidc_enabled and self.discovery_url and self.client_id)
@@ -221,8 +243,16 @@ class OIDCClient:
         return f"{self._authorization_endpoint}?{urllib.parse.urlencode(params)}"
 
     def token_auth_method(self) -> str:
-        """token 端点客户端认证方式（全局配置；Provider 模式共用）."""
+        """token 端点客户端认证方式（Provider 声明优先，未声明回落全局）."""
+        if self._provider is not None and self._provider.token_auth_method:
+            return self._provider.token_auth_method
         return (self._settings().oidc_token_auth_method or "").strip().lower()
+
+    def assertion_algorithm(self) -> str:
+        """private_key_jwt 断言签名算法（C-02；门禁已校验私钥类型）."""
+        return (
+            self._settings().oidc_client_assertion_algorithm or "RS256"
+        ).strip().upper()
 
     def token_request_options(self) -> dict[str, Any]:
         """按认证方式装配 httpx 请求选项（Basic 头 / mTLS 证书）.
@@ -246,11 +276,12 @@ class OIDCClient:
         return {}
 
     def _build_client_assertion(self) -> str:
-        """构造 RFC 7523 §2.2 客户端断言（RS256 签名）.
+        """构造 RFC 7523 §2.2 客户端断言（按配置算法签名）.
 
         断言 ``iss`` / ``sub`` 均为 ``client_id``，受众取 discovery 声明的
         token 端点（未加载 discovery 时无法确定受众，直接报错）；带 ``jti``
-        与短有效期，满足一次性使用要求。
+        与短有效期，满足一次性使用要求。签名算法由
+        ``oidc_client_assertion_algorithm`` 决定（门禁已校验私钥类型/曲线）。
 
         Raises:
             OIDCError: discovery 未加载、未配置断言私钥路径。
@@ -264,6 +295,7 @@ class OIDCClient:
             raise OIDCError("client assertion private key path is not configured")
         with open(private_key_path, encoding="utf-8") as handle:
             private_key = handle.read()
+        algorithm = self.assertion_algorithm()
         issued_at = int(time.time())
         claims = {
             "iss": self.client_id,
@@ -273,11 +305,13 @@ class OIDCClient:
             "exp": issued_at + CLIENT_ASSERTION_TTL_SECONDS,
             "jti": secrets.token_urlsafe(16),
         }
-        headers = {"alg": "RS256", "typ": "JWT"}
+        headers = {"alg": algorithm, "typ": "JWT"}
         key_id = (settings.oidc_client_assertion_kid or "").strip()
         if key_id:
             headers["kid"] = key_id
-        return jose_jwt.encode(claims, private_key, algorithm="RS256", headers=headers)
+        return jose_jwt.encode(
+            claims, private_key, algorithm=algorithm, headers=headers
+        )
 
     def token_payload(
         self, code: str, *, code_verifier: str | None = None
@@ -346,7 +380,7 @@ class OIDCClient:
         if not jwks_uri:
             raise OIDCError("discovery document missing jwks_uri")
         algorithms = resolve_id_token_algorithms(
-            _normalized_algorithms(self._settings().oidc_signing_algorithms),
+            _normalized_algorithms(self.signing_algorithms),
             self._discovery,
         )
         with httpx.Client(timeout=10.0) as client:
@@ -377,11 +411,17 @@ class OIDCClient:
         """
         return self._verify_token(access_token)
 
-    async def build_logout_url(self, *, post_logout_redirect_uri: str = "") -> str | None:
+    async def build_logout_url(
+        self,
+        *,
+        post_logout_redirect_uri: str = "",
+        id_token_hint: str = "",
+    ) -> str | None:
         """构造 IdP 登出 URL（discovery ``end_session_endpoint``；未声明返回 None）.
 
         v1.16.0：本地已吊销（token_version 递增）后，前端可跳转该 URL 同时结束
         IdP 会话（前端信道/RP-Initiated Logout，IF-01 RFC 中的可选能力）。
+        C-03：``id_token_hint`` 为回调时保存的 ID Token（非空即透传）。
         """
         await self._load_discovery()
         endpoint = (self._discovery or {}).get("end_session_endpoint")
@@ -390,6 +430,8 @@ class OIDCClient:
         params: dict[str, str] = {"client_id": self.client_id}
         if post_logout_redirect_uri:
             params["post_logout_redirect_uri"] = post_logout_redirect_uri
+        if id_token_hint:
+            params["id_token_hint"] = id_token_hint
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
     def map_claims(self, claims: dict[str, Any]) -> dict[str, Any]:
@@ -713,7 +755,7 @@ async def oidc_authorize(provider: str | None = Query(default=None)) -> dict:
     settings = get_settings()
     state = secrets.token_urlsafe(32)
     nonce = secrets.token_urlsafe(24)
-    code_verifier = secrets.token_urlsafe(48) if settings.oidc_pkce_enabled else ""
+    code_verifier = secrets.token_urlsafe(48) if client.pkce_enabled else ""
     get_state_store().issue(
         state,
         {
@@ -846,6 +888,20 @@ async def oidc_callback(
         tenant_id = mapped["tenant_id"]
         raw_role = mapped["extra"].get("role") or "viewer"
 
+    # C-03：回调成功即保存 ID Token（登出透传 id_token_hint）；失败仅告警不阻断登录
+    try:
+        get_logout_store().save_id_token_hint(
+            client_id=client.client_id,
+            subject=str(subject),
+            issuer=client.issuer,
+            id_token=id_token,
+            sid=str(claims.get("sid") or ""),
+            idp_subject=str(claims.get("sub") or ""),
+            ttl_seconds=settings.refresh_expire_seconds,
+        )
+    except Exception:  # noqa: BLE001 - 登出联动为尽力而为
+        logger.warning("oidc id_token_hint persist skipped", exc_info=True)
+
     # U1 T2（RA-02/OB-4）：bound/直签共用同一签发器 issue_token_pair（草案 §6.1/§6.3）。
     # bound 路径以主体行冗余字段为准；直签（DB 降级）以 IdP claims code 原样透传。
     if subject_row is not None:
@@ -967,9 +1023,21 @@ async def oidc_logout(
     idp_logout_url: str | None = None
     if client is not None:
         try:
-            idp_logout_url = await client.build_logout_url(
-                post_logout_redirect_uri=(post_logout_redirect_uri or "").strip()
+            await client._load_discovery()
+            # C-03：取回调保存的 ID Token 作 id_token_hint（issuer 不一致视为未命中）
+            id_token_hint = get_logout_store().id_token_hint(
+                client_id=client.client_id,
+                subject=str(subject),
+                issuer=client.issuer,
             )
+            idp_logout_url = await client.build_logout_url(
+                post_logout_redirect_uri=(post_logout_redirect_uri or "").strip(),
+                id_token_hint=id_token_hint,
+            )
+            if id_token_hint:
+                get_logout_store().clear(
+                    client_id=client.client_id, subject=str(subject)
+                )
         except (OIDCError, httpx.HTTPError) as exc:
             # IdP 登出为尽力而为：本地吊销已生效，不得因 IdP 不可达而回滚登出
             logger.warning(
@@ -988,4 +1056,207 @@ async def oidc_logout(
         "logged_out": True,
         "token_version": token_version,
         "idp_logout_url": idp_logout_url,
+    }
+
+
+# ---- RFC 8471 back-channel logout（C-04） ----
+
+
+def _logout_candidates() -> list[OIDCClient]:
+    """back-channel logout 候选客户端：单 IdP（已启用）+ 全部已登记 Provider."""
+    settings = get_settings()
+    candidates: list[OIDCClient] = []
+    if settings.oidc_enabled and settings.oidc_discovery_url and settings.oidc_client_id:
+        candidates.append(_get_oidc_client())
+    for provider in _registered_providers():
+        candidates.append(_get_provider_client(provider.name))
+    return candidates
+
+
+def _audience_matches(audience: Any, client_id: str) -> bool:
+    """logout token 的 ``aud`` 是否指向指定客户端（支持字符串/数组）."""
+    if isinstance(audience, str):
+        return audience == client_id
+    if isinstance(audience, list):
+        return any(str(item) == client_id for item in audience)
+    return False
+
+
+def _logout_token_algorithms(client: OIDCClient) -> list[str]:
+    """登出 token 验签算法：IdP 声明 ∩ 客户端白名单（无交集即失败）."""
+    discovery = client._discovery or {}
+    declared = discovery.get("backchannel_logout_signing_alg_values_supported")
+    if not isinstance(declared, list) or not declared:
+        declared = discovery.get("id_token_signing_alg_values_supported")
+    if isinstance(declared, list) and declared:
+        candidates = [str(item).upper() for item in declared]
+    else:
+        candidates = list(OIDC_ID_TOKEN_ALGORITHMS)
+    configured = [
+        name
+        for name in _normalized_algorithms(client.signing_algorithms)
+        if name in OIDC_ID_TOKEN_ALGORITHMS
+    ]
+    algorithms = [name for name in candidates if name in configured]
+    if not algorithms:
+        raise OIDCError("no mutually supported logout token signing algorithm")
+    return algorithms
+
+
+def _verify_logout_token(client: OIDCClient, token: str) -> dict[str, Any]:
+    """按 IdP JWKS 验签登出 token（issuer/audience/exp 一并校验）."""
+    jwks_uri = (client._discovery or {}).get("jwks_uri")
+    if not jwks_uri:
+        raise OIDCError("discovery document missing jwks_uri")
+    algorithms = _logout_token_algorithms(client)
+    with httpx.Client(timeout=10.0) as http:
+        jwks = http.get(jwks_uri).json()
+    try:
+        return jose_jwt.decode(
+            token,
+            jwks,
+            algorithms=algorithms,
+            audience=client.client_id,
+            issuer=client.issuer or None,
+        )
+    except JWTError as exc:
+        raise OIDCError(f"logout token validation failed: {exc}") from exc
+
+
+def _validate_logout_claims(claims: dict[str, Any]) -> tuple[str, str]:
+    """RFC 8471 必填校验：events / 禁 nonce / jti / sub|sid.
+
+    Returns:
+        ``(jti, sid)``
+
+    Raises:
+        BaseError: 任一必填项缺失或非法（400 PARAM_INVALID）。
+    """
+    events = claims.get("events")
+    if not isinstance(events, dict) or BACKCHANNEL_LOGOUT_EVENT not in events:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID, "logout token missing backchannel logout event"
+        )
+    if "nonce" in claims:
+        raise BaseError(ErrorCode.PARAM_INVALID, "logout token must not contain nonce")
+    jti = str(claims.get("jti") or "").strip()
+    if not jti:
+        raise BaseError(ErrorCode.PARAM_INVALID, "logout token missing jti")
+    subject = str(claims.get("sub") or "").strip()
+    sid = str(claims.get("sid") or "").strip()
+    if not subject and not sid:
+        raise BaseError(ErrorCode.PARAM_INVALID, "logout token requires sub or sid")
+    return jti, sid
+
+
+async def _read_logout_token(request: Request) -> str:
+    """读取 ``logout_token``（form 或 JSON 载荷均可）；缺失即 400."""
+    content_type = request.headers.get("content-type", "").lower()
+    token = ""
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception:  # noqa: BLE001 - 非法 JSON 按缺失处理
+            payload = None
+        if isinstance(payload, dict):
+            token = str(payload.get("logout_token") or "")
+    else:
+        form = await request.form()
+        token = str(form.get("logout_token") or "")
+    token = token.strip()
+    if not token:
+        raise BaseError(ErrorCode.PARAM_INVALID, "missing logout_token")
+    return token
+
+
+@router.post("/backchannel-logout")
+async def oidc_backchannel_logout(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """RFC 8471 back-channel logout：IdP 服务端回调结束本地会话.
+
+    - 按 token 的 ``iss``/``aud`` 定位已登记客户端（无匹配或不支持 → 404）；
+    - 验签 + ``events``/``jti``/``sub|sid`` 校验（非法 → 400）；
+    - ``jti`` 一次性消费防重放；``sub``/``sid`` 映射统一主体后递增 token_version
+      （DB 不可达时 ``revoked=false``，不伪造成功）。
+    """
+    token = await _read_logout_token(request)
+    try:
+        unverified = jose_jwt.get_unverified_claims(token)
+    except JWTError as exc:
+        raise BaseError(ErrorCode.PARAM_INVALID, "logout token is not a valid JWT") from exc
+    if not isinstance(unverified, dict):
+        raise BaseError(ErrorCode.PARAM_INVALID, "logout token is not a valid JWT")
+
+    issuer = str(unverified.get("iss") or "")
+    audience = unverified.get("aud")
+    supported: list[OIDCClient] = []
+    for candidate in _logout_candidates():
+        try:
+            await candidate._load_discovery()
+        except (OIDCError, httpx.HTTPError) as exc:
+            logger.warning(
+                "oidc backchannel candidate discovery failed",
+                extra={
+                    "provider": candidate.provider_name,
+                    "error": str(exc) or exc.__class__.__name__,
+                },
+            )
+            continue
+        if candidate.issuer != issuer:
+            continue
+        if not _audience_matches(audience, candidate.client_id):
+            continue
+        if bool((candidate._discovery or {}).get("backchannel_logout_supported")):
+            supported.append(candidate)
+    if not supported:
+        raise BaseError(
+            ErrorCode.BIZ_NOT_FOUND,
+            "backchannel logout not supported by any registered idp",
+        )
+
+    client = supported[0]
+    try:
+        claims = _verify_logout_token(client, token)
+    except OIDCError as exc:
+        raise BaseError(ErrorCode.PARAM_INVALID, str(exc)) from exc
+    jti, sid = _validate_logout_claims(claims)
+
+    store = get_logout_store()
+    expires_at = float(claims.get("exp") or (time.time() + DEFAULT_TTL_SECONDS))
+    jti_ttl = max(int(expires_at - time.time()), 1) + DEFAULT_TTL_SECONDS
+    if not store.consume_jti(
+        client_id=client.client_id, jti=jti, ttl_seconds=jti_ttl
+    ):
+        raise BaseError(ErrorCode.PARAM_INVALID, "logout token jti already used")
+
+    claim_subject = str(claims.get("sub") or "").strip()
+    subject = ""
+    if claim_subject:
+        subject = (
+            store.subject_for_idp_sub(
+                client_id=client.client_id, idp_subject=claim_subject
+            )
+            or claim_subject
+        )
+    elif sid:
+        subject = store.subject_for_sid(client_id=client.client_id, sid=sid)
+
+    token_version: int | None = None
+    if subject:
+        token_version = await _revoke_local_tokens(session, subject)
+    logger.info(
+        "oidc backchannel logout processed",
+        extra={
+            "provider": client.provider_name,
+            "subject": subject,
+            "token_version": token_version,
+            "sid": bool(sid),
+        },
+    )
+    return {
+        "logged_out": True,
+        "revoked": token_version is not None,
+        "token_version": token_version,
     }

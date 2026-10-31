@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.19.0 |
+| 版本 | v1.20.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -869,9 +869,49 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 **残余**
 
-- 未实现 SAN 型绑定的本地预检（`tls_client_auth_san_dns/_uri/_ip/_email`，均属 IdP 侧登记字段）。
+- ~~未实现 SAN 型绑定的本地预检（`tls_client_auth_san_dns/_uri/_ip/_email`，均属 IdP 侧登记字段）。~~ → v1.20.0 §10.23 C-01 已闭合。
 - 未做真实双向 TLS 端到端联调（本地预检 + 传输选项断言为当前验证边界；真实链路依赖 A1 真实 IdP 联调）。
 - 验证边界：mock IdP 端口 9014，不承担 TLS 握手；`tls_client_auth` 为单元级验证。
+
+### 10.23 OIDC 残余闭合（P1 批次 C-01~C-05，v1.20.0，2026-10-31）
+
+> 目的：按《残余项统一处置方案 v1.0.2》§3.1 推进 P1 批次，闭合 §10.22/§10.21/§10.19 登记的 5 项 OIDC 残余。全部新增配置**缺省即零行为变化**，且均进入启动门禁。
+
+| 编号 | 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|---|
+| C-01 | `tls_client_auth` SAN 型绑定本地预检 | 新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS` / `_URI` / `_IP` / `_EMAIL` 四项期望值；配置后启动期解析证书 SAN 并逐项比对（DNS/EMAIL 大小写不敏感、IP 经 `ipaddress` 归一、URI 精确匹配；期望值须在对应类型 SAN 中存在，证书无 SAN 即拒启）；四项全空则跳过（IdP 侧仍为准） | `settings.py`（`_certificate_san_values` / `_san_value_matches` / `_load_client_certificate` / 门禁） | `tests/test_oidc_p1_residuals.py`（DNS 大小写命中、DNS/IP 不匹配拒启、四类 SAN 全命中、证书无 SAN 拒启、全空跳过，6 例） |
+| C-02 | `private_key_jwt` 断言算法扩展 | 新增 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM`（默认 `RS256`，可选 `ES256` / `ES384`）；启动期校验私钥类型与曲线（RS\* 须 RSA；ES256 须 EC P-256；ES384 须 EC P-384；非 PEM 不可解析即拒启）；断言 JWT header 按所选算法编码 | `settings.py`（`_assert_private_key_matches_algorithm` / `OIDC_CLIENT_ASSERTION_ALGORITHMS`）、`oidc.py`（`assertion_algorithm()` / `_build_client_assertion`） | 同文件（默认 RS256、HS256 拒启、RS256+EC 拒启、ES256+RSA 拒启、P-256/P-384 匹配与错配、非 PEM 拒启、断言算法落地，7 例） |
+| C-03 | 回调保存 ID Token 并在登出透传 | 授权码回调成功后按 `client_id + 主体 sub` 保存 ID Token（Redis 优先 + 进程内兜底，TTL 取 `refresh_expire_seconds`），并以 `sid` / IdP `sub` 建索引；RP-Initiated Logout 时读取并按 issuer 校验后作为 `id_token_hint` 透传，登出成功后清除 | `openbase/modules/auth/oidc_logout.py`（`OidcLogoutStore`）、`oidc.py`（`oidc_callback` / `build_logout_url` / `oidc_logout`） | 同文件（存储 roundtrip/issuer 校验/sid 索引/TTL=0、回调保存→登出带 hint→登出后清除，5 例） |
+| C-04 | back-channel logout 端点 | 新增 `POST /api/v1/auth/oidc/backchannel-logout`（RFC 8471）：按未验签 `iss`/`aud` 定位候选 IdP（无候选或 IdP 未声明支持 → 404 `BIZ_NOT_FOUND`），验签（算法取 discovery `backchannel_logout_signing_alg_values_supported` → 回退 ID Token 算法白名单），校验 `events` / 无 `nonce` / `jti` 一次性（Redis `set(nx)` + 进程内兜底）/ `sub` 或 `sid`；按 `sid`/IdP `sub` 映射本地主体并吊销其令牌，DB 不可达时如实返回 `revoked=false` | `openbase/modules/auth/oidc.py`（`_verify_logout_token` / `_validate_logout_claims` / `_read_logout_token` / 路由）、`oidc_logout.py`（`consume_jti` / `subject_for_sid` / `subject_for_idp_sub`） | 同文件（有效 200、JSON body、jti 重放 400、events/nonce/jti/sub\|sid 缺失 400、坏签名 400、IdP 不支持 404、未知 issuer 404、仅 sid、Provider 分支，10 例） |
+| C-05 | Provider 级 PKCE / 签名算法 / 认证方式 | `OPENBASE_IDP_PROVIDERS` 条目新增 `pkce_enabled` / `signing_algorithms` / `token_auth_method` 三字段（布尔型 PKCE、算法大写去重且须已接线、认证方式须在 `OIDC_TOKEN_AUTH_METHODS` 内），非法值构造即 `ValueError`；未声明字段回落全局配置；Provider 客户端按 dataclass 等值缓存失效 | `openbase/modules/auth/idp_registry.py`（`IdpProviderConfig` / `_normalized_signing_algorithms` / `public_provider_views`）、`oidc.py`（`OIDCClient` 覆盖与回落） | 同文件（解析/归一、非法值拒绝、覆盖与回落、缓存重建、PKCE 关闭不带 challenge，7 例；另加 4 例断言辅助 = 共 39 例通过） |
+
+**新增配置（缺省零行为变化）**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS` / `_URI` / `_IP` / `_EMAIL` | 空 | 可选：`tls_client_auth` 期望的证书 SAN 值；配置后启动期比对，任一不匹配即拒启；全空跳过本地预检 |
+| `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM` | `RS256` | `private_key_jwt` 断言签名算法，可选 `RS256` / `ES256` / `ES384`；与私钥类型/曲线错配或非 PEM 即拒启 |
+
+**门禁变化**
+
+- 启动门禁 #6（`_validate_oidc_token_auth_configuration`）在原「证书存在性 + subject 比对 + 私钥存在性」之上，追加 **SAN 逐项比对** 与 **断言算法枚举 + 私钥类型/曲线校验**；非法值仍为「所有环境拒绝启动」。
+- 断言算法与 ID Token 验签白名单解耦：前者只作用于客户端断言，后者仍由 `OPENBASE_OIDC_SIGNING_ALGORITHMS ∩ discovery` 决定。
+
+**验证与门禁结论**
+
+| 项 | 结果 |
+|---|---|
+| 用例 | `python -m pytest tests/test_oidc_p1_residuals.py` → **39 passed** |
+| 静态检查 | 本环境 `.venv-test` 未安装 `ruff`（`No module named ruff`），**待具备环境补跑**；已在此如实登记 |
+| 零行为变化 | 新增配置全部留空/默认时不改变既有链路（SAN 全空跳过、断言算法默认 RS256 等同 v1.18.0 行为、Provider 三字段留空回落全局） |
+| 安全 | 私钥/证书/ID Token 均不落日志；存储键前缀 `openbase:` 且 TTL 到期即失效；jti 一次性防重放 |
+| 降级 | Redis 不可用时登出存储与 jti 窗口回退进程内（单实例语义，跨实例依赖 Redis） |
+
+**残余**
+
+- 未做真实 IdP 的 SAN 绑定 / 断言算法 / back-channel logout 联调（归 A1 真实 IdP 联调项 V-13）。
+- 跨实例 back-channel 去重与 hint 共享依赖 Redis（单实例降级为进程内）。
+- C-03 的存储键采用「`client_id` + 统一主体 `sub`，issuer 内嵌 value」的等价实现，与《残余项统一处置方案》登记的 `issuer+sub+client_id` 键语义等价。
 
 ## 11. 修订历史
 
@@ -899,3 +939,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.17.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.20「token 端点认证方式扩展」：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 支持 `client_secret_post`（默认）/ `client_secret_basic`（RFC 6749 §2.3.1，表单不重复携带凭据）/ `mtls`（RFC 8705，客户端证书 + 可选 CA）；新增 3 项 mTLS 证书路径配置与启动门禁（非法方式、缺路径、文件不存在均拒启）；新增 9 项用例（post/basic 载荷、mTLS 请求选项、post/basic 全链路、4 项门禁），OIDC 三套用例通过，ruff 0 错误 |
 | v1.18.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.21「private_key_jwt 客户端断言」并闭合 §10.20 该项残余：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 追加 `private_key_jwt`（RFC 7523，`client_assertion_type` 固定 URN、RS256 断言 `iss`/`sub`=client_id、`aud`=token 端点、300s + `jti`）；新增 `OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH` 与可选 `_ASSERTION_KID`，缺私钥路径/文件不存在拒启；新增 5 项用例（断言 claims/header、mock IdP 验签全链路、3 项门禁），OIDC 四套用例（含 settings/auth）52 项通过，ruff 0 错误；登记残余（断言算法仅 RS256、真实 IdP 未联调） |
 | v1.19.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.22「tls_client_auth 客户端认证」并闭合 §10.20 该项残余：认证方式追加 `tls_client_auth`（RFC 8705 §2.1 PKI 证书），与 `mtls` 共用传输装配（承载 `client_id`、不发 `client_secret`）；新增 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 启动期 subject DN 预检（分隔符空白/大小写不敏感，不匹配或非 PEM 拒启）；新增 5 项用例（载荷/传输选项、subject 匹配/不匹配、非 PEM 证书），OIDC 四套（含 settings/auth）57 项通过，ruff 0 错误；登记残余（SAN 型绑定本地预检未实现、真实双向 TLS 未联调） |
+| v1.20.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.23「OIDC 残余闭合（P1 批次 C-01~C-05）」，闭合 §10.22/§10.21/§10.19 登记的 5 项残余：C-01 `tls_client_auth` SAN 型绑定本地预检（新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS/_URI/_IP/_EMAIL`）；C-02 `private_key_jwt` 断言算法扩至 `RS256`/`ES256`/`ES384` 并校验私钥类型/曲线（新增 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM`）；C-03 回调保存 ID Token 并在登出透传 `id_token_hint`；C-04 新增 RFC 8471 `POST /api/v1/auth/oidc/backchannel-logout`（验签 + events/jti 一次性 + 404 语义）；C-05 Provider 级 PKCE/签名算法/认证方式覆盖与回落；新增 6 配置项全部缺省零行为变化并进启动门禁；`tests/test_oidc_p1_residuals.py` **39 passed**（本环境 ruff 未安装，待补跑）；同步升版《残余项统一处置方案 v1.0.2》与 A2 清单 v1.0.8 |

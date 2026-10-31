@@ -20,7 +20,11 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from openbase.core.deps.auth import get_current_user
-from openbase.settings import get_settings
+from openbase.settings import (
+    OIDC_ID_TOKEN_ALGORITHMS,
+    OIDC_TOKEN_AUTH_METHODS,
+    get_settings,
+)
 
 IDP_PROFILE_GENERIC = "generic"
 IDP_PROFILE_KEYCLOAK = "keycloak"
@@ -54,6 +58,35 @@ class IdpProviderConfig:
     profile: str = IDP_PROFILE_GENERIC
     claim_role: str = "roles"
     default_tenant: str = "tenant-1"
+    # C-05：Provider 级覆盖（None/空串 = 回落全局配置）
+    pkce_enabled: bool | None = None
+    signing_algorithms: str = ""
+    token_auth_method: str = ""
+
+
+def _normalized_signing_algorithms(name: str, raw: Any) -> str:
+    """归一 Provider 声明的 ID Token 算法白名单（逗号分隔、大写、去重保序）.
+
+    空值表示未声明（回落全局）；含未接线算法即报错（fail-fast）。
+
+    Raises:
+        ValueError: 声明含未接线算法。
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return ""
+    algorithms: list[str] = []
+    for item in text.split(","):
+        algorithm = item.strip().upper()
+        if algorithm and algorithm not in algorithms:
+            algorithms.append(algorithm)
+    unsupported = sorted(set(algorithms) - set(OIDC_ID_TOKEN_ALGORITHMS))
+    if unsupported:
+        raise ValueError(
+            f"IdP Provider {name} 的 signing_algorithms 含未接线算法："
+            f"{','.join(unsupported)}；可用值：{','.join(OIDC_ID_TOKEN_ALGORITHMS)}"
+        )
+    return ",".join(algorithms)
 
 
 def _provider_from_object(raw: Any, index: int) -> IdpProviderConfig:
@@ -75,6 +108,22 @@ def _provider_from_object(raw: Any, index: int) -> IdpProviderConfig:
             f"IdP Provider {name} 的 profile 不受支持：{profile}"
             "（可选 generic / keycloak）"
         )
+    pkce_raw = raw.get("pkce_enabled")
+    if pkce_raw is None:
+        pkce_enabled: bool | None = None
+    elif isinstance(pkce_raw, bool):
+        pkce_enabled = pkce_raw
+    else:
+        raise ValueError(f"IdP Provider {name} 的 pkce_enabled 必须为布尔值")
+    signing_algorithms = _normalized_signing_algorithms(
+        name, raw.get("signing_algorithms")
+    )
+    token_auth_method = str(raw.get("token_auth_method") or "").strip().lower()
+    if token_auth_method and token_auth_method not in OIDC_TOKEN_AUTH_METHODS:
+        raise ValueError(
+            f"IdP Provider {name} 的 token_auth_method 取值非法：{token_auth_method}；"
+            f"可用值：{','.join(OIDC_TOKEN_AUTH_METHODS)}"
+        )
     return IdpProviderConfig(
         name=name,
         discovery_url=discovery_url,
@@ -85,6 +134,9 @@ def _provider_from_object(raw: Any, index: int) -> IdpProviderConfig:
         profile=profile,
         claim_role=str(raw.get("claim_role") or "roles"),
         default_tenant=str(raw.get("default_tenant") or "tenant-1"),
+        pkce_enabled=pkce_enabled,
+        signing_algorithms=signing_algorithms,
+        token_auth_method=token_auth_method,
     )
 
 
@@ -130,6 +182,9 @@ def public_provider_views(providers: tuple[IdpProviderConfig, ...]) -> list[dict
             "scopes": provider.scopes,
             "default_tenant": provider.default_tenant,
             "has_client_secret": bool(provider.client_secret),
+            "pkce_enabled": provider.pkce_enabled,
+            "signing_algorithms": provider.signing_algorithms,
+            "token_auth_method": provider.token_auth_method,
         }
         for provider in providers
     ]

@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import os
@@ -305,14 +306,18 @@ OIDC_CERTIFICATE_TOKEN_AUTH_METHODS: tuple[str, ...] = (
     "tls_client_auth",
 )
 
+# private_key_jwt 客户端断言可用签名算法（C-02，RFC 7523）：RS256 默认，
+# ES256/ES384 需 EC 私钥且曲线匹配（P-256 / P-384）；与 ID Token 算法白名单解耦
+OIDC_CLIENT_ASSERTION_ALGORITHMS: tuple[str, ...] = ("RS256", "ES256", "ES384")
+
 
 def _normalize_distinguished_name(value: str) -> str:
     """归一 RFC 4514 DN 字符串：去除分隔符两侧空白并统一大写（宽松比对）."""
     return re.sub(r"\s*([,=])\s*", r"\1", (value or "").strip()).upper()
 
 
-def _client_certificate_subject(cert_path: str) -> str:
-    """读取 PEM 客户端证书并返回 RFC 4514 格式的 subject DN.
+def _load_client_certificate(cert_path: str):
+    """读取 PEM 客户端证书并返回解析后的证书对象.
 
     Raises:
         ValueError: 文件不是可解析的 PEM 证书。
@@ -322,10 +327,77 @@ def _client_certificate_subject(cert_path: str) -> str:
     with open(cert_path, "rb") as handle:
         content = handle.read()
     try:
-        certificate = x509.load_pem_x509_certificate(content)
+        return x509.load_pem_x509_certificate(content)
     except ValueError as error:
         raise ValueError(f"客户端证书无法解析（需 PEM 格式）：{cert_path}") from error
-    return certificate.subject.rfc4514_string()
+
+
+def _certificate_san_values(certificate) -> dict[str, list[str]]:
+    """提取证书 SAN（DNS/URI/IP/EMAIL）；无 SAN 扩展时返回空列表."""
+    from cryptography import x509
+
+    try:
+        san = certificate.extensions.get_extension_for_class(
+            x509.SubjectAlternativeName
+        ).value
+    except x509.ExtensionNotFound:
+        return {"dns": [], "uri": [], "ip": [], "email": []}
+    return {
+        "dns": [str(item) for item in san.get_values_for_type(x509.DNSName)],
+        "uri": [
+            str(item)
+            for item in san.get_values_for_type(x509.UniformResourceIdentifier)
+        ],
+        "ip": [str(item) for item in san.get_values_for_type(x509.IPAddress)],
+        "email": [str(item) for item in san.get_values_for_type(x509.RFC822Name)],
+    }
+
+
+def _san_value_matches(kind: str, expected: str, actual: str) -> bool:
+    """SAN 单项比对：DNS/EMAIL 大小写不敏感，IP 归一化，URI 精确比对."""
+    expected_text = (expected or "").strip()
+    actual_text = (actual or "").strip()
+    if kind in ("dns", "email"):
+        return expected_text.casefold() == actual_text.casefold()
+    if kind == "ip":
+        try:
+            return ipaddress.ip_address(expected_text) == ipaddress.ip_address(
+                actual_text
+            )
+        except ValueError:
+            return False
+    return expected_text == actual_text
+
+
+def _assert_private_key_matches_algorithm(private_key_path: str, algorithm: str) -> None:
+    """校验断言私钥类型与算法匹配（RSA ↔ RS*，EC ↔ ES*，曲线对齐）.
+
+    Raises:
+        ValueError: 私钥不可解析或类型/曲线与算法不匹配。
+    """
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec, rsa
+
+    with open(private_key_path, "rb") as handle:
+        content = handle.read()
+    try:
+        private_key = serialization.load_pem_private_key(content, password=None)
+    except (TypeError, ValueError) as error:
+        raise ValueError(
+            "OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH 无法解析为 PEM 私钥："
+            f"{private_key_path}"
+        ) from error
+    if algorithm.startswith("ES"):
+        if not isinstance(private_key, ec.EllipticCurvePrivateKey):
+            raise ValueError(f"断言算法 {algorithm} 需要 EC 私钥，当前私钥类型不匹配")
+        expected_curve = ec.SECP256R1 if algorithm == "ES256" else ec.SECP384R1
+        if not isinstance(private_key.curve, expected_curve):
+            raise ValueError(
+                f"断言算法 {algorithm} 需要 {expected_curve.name.upper()} 曲线私钥"
+            )
+        return
+    if not isinstance(private_key, rsa.RSAPrivateKey):
+        raise ValueError(f"断言算法 {algorithm} 需要 RSA 私钥，当前私钥类型不匹配")
 
 
 def _resolve_redis_url() -> str:
@@ -515,9 +587,17 @@ class Settings(BaseSettings):
     # tls_client_auth：期望的客户端证书 subject DN（RFC 4514 字符串，如
     # "CN=openbase-gateway,O=Example"）；配置后启动期比对，不匹配即拒启
     oidc_client_cert_subject: str = ""
+    # C-01（RFC 8705 §2.1）SAN 型绑定预检：逗号分隔的期望值，配置后启动期
+    # 解析客户端证书 SAN 并比对，不匹配即拒启；留空跳过（IdP 侧仍为准）
+    oidc_client_cert_san_dns: str = ""
+    oidc_client_cert_san_uri: str = ""
+    oidc_client_cert_san_ip: str = ""
+    oidc_client_cert_san_email: str = ""
     # private_key_jwt（RFC 7523）：断言签名私钥（PEM）与可选 JWT header kid
     oidc_client_private_key_path: str = ""
     oidc_client_assertion_kid: str = ""
+    # C-02：断言签名算法（与 ID Token 算法白名单解耦）；门禁校验私钥类型匹配
+    oidc_client_assertion_algorithm: str = "RS256"
 
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row
@@ -780,7 +860,11 @@ class Settings(BaseSettings):
           （缺配或路径错误即拒启，避免运行期才发现 token 端点无法认证）；
         - ``tls_client_auth`` 配置了 ``oidc_client_cert_subject`` 时，启动期加载
           客户端证书并比对 subject DN（RFC 8705 §2.1 PKI 绑定），不匹配即拒启；
+        - 配置了 ``oidc_client_cert_san_*`` 时，启动期解析证书 SAN（DNS/URI/IP/EMAIL）
+          并逐项比对，不匹配即拒启（C-01；留空跳过，IdP 侧仍为准）；
         - ``private_key_jwt`` 必须配置断言签名私钥路径，且文件存在；
+          断言算法（``oidc_client_assertion_algorithm``）须已接线且私钥类型/曲线匹配
+          （C-02，RSA ↔ RS*，EC ↔ ES*）；
         - ``oidc_client_ca_path`` 可选，配置后文件必须存在。
         """
         method = (self.oidc_token_auth_method or "").strip().lower()
@@ -791,6 +875,16 @@ class Settings(BaseSettings):
                 f"可用值：{','.join(OIDC_TOKEN_AUTH_METHODS)}"
             )
         self.oidc_token_auth_method = method
+        assertion_algorithm = (
+            self.oidc_client_assertion_algorithm or ""
+        ).strip().upper()
+        if assertion_algorithm not in OIDC_CLIENT_ASSERTION_ALGORITHMS:
+            raise ValueError(
+                "OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM 取值非法："
+                f"{self.oidc_client_assertion_algorithm}；"
+                f"可用值：{','.join(OIDC_CLIENT_ASSERTION_ALGORITHMS)}"
+            )
+        self.oidc_client_assertion_algorithm = assertion_algorithm
         if method == "private_key_jwt":
             private_key_path = (self.oidc_client_private_key_path or "").strip()
             if not private_key_path:
@@ -803,6 +897,9 @@ class Settings(BaseSettings):
                     "OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH 指向的文件不存在："
                     f"{private_key_path}"
                 )
+            _assert_private_key_matches_algorithm(
+                private_key_path, assertion_algorithm
+            )
             return self
         if method not in OIDC_CERTIFICATE_TOKEN_AUTH_METHODS:
             return self
@@ -825,15 +922,49 @@ class Settings(BaseSettings):
             if not os.path.exists(path):
                 raise ValueError(f"{env_name} 指向的文件不存在：{path}")
         expected_subject = (self.oidc_client_cert_subject or "").strip()
-        if expected_subject:
-            actual_subject = _client_certificate_subject(cert_path)
-            if _normalize_distinguished_name(actual_subject) != (
-                _normalize_distinguished_name(expected_subject)
-            ):
-                raise ValueError(
-                    "OPENBASE_OIDC_CLIENT_CERT_SUBJECT 与客户端证书 subject 不匹配："
-                    f"期望 {expected_subject}，实际 {actual_subject}"
-                )
+        san_expectations = (
+            ("OPENBASE_OIDC_CLIENT_CERT_SAN_DNS", "dns", self.oidc_client_cert_san_dns),
+            ("OPENBASE_OIDC_CLIENT_CERT_SAN_URI", "uri", self.oidc_client_cert_san_uri),
+            ("OPENBASE_OIDC_CLIENT_CERT_SAN_IP", "ip", self.oidc_client_cert_san_ip),
+            (
+                "OPENBASE_OIDC_CLIENT_CERT_SAN_EMAIL",
+                "email",
+                self.oidc_client_cert_san_email,
+            ),
+        )
+        if expected_subject or any((raw or "").strip() for _, _, raw in san_expectations):
+            certificate = _load_client_certificate(cert_path)
+            if expected_subject:
+                actual_subject = certificate.subject.rfc4514_string()
+                if _normalize_distinguished_name(actual_subject) != (
+                    _normalize_distinguished_name(expected_subject)
+                ):
+                    raise ValueError(
+                        "OPENBASE_OIDC_CLIENT_CERT_SUBJECT 与客户端证书 subject 不匹配："
+                        f"期望 {expected_subject}，实际 {actual_subject}"
+                    )
+            actual_sans = _certificate_san_values(certificate)
+            for env_name, san_kind, raw in san_expectations:
+                expected_values = [
+                    item.strip() for item in (raw or "").split(",") if item.strip()
+                ]
+                if not expected_values:
+                    continue
+                actual_values = actual_sans.get(san_kind, [])
+                mismatched = [
+                    value
+                    for value in expected_values
+                    if not any(
+                        _san_value_matches(san_kind, value, actual)
+                        for actual in actual_values
+                    )
+                ]
+                if mismatched:
+                    raise ValueError(
+                        f"{env_name} 与客户端证书 SAN 不匹配："
+                        f"期望 {','.join(mismatched)}，"
+                        f"实际 {','.join(actual_values) or '(无)'}"
+                    )
         return self
 
     @model_validator(mode="after")

@@ -419,9 +419,18 @@ def test_gate_rejects_private_key_jwt_missing_file(settings_module, tmp_path):
 
 
 def test_gate_accepts_private_key_jwt_with_existing_file(settings_module, tmp_path):
-    """private_key_jwt 私钥文件存在 → 正常构造，方式归一为小写."""
+    """private_key_jwt 私钥文件存在且为 RSA PEM → 正常构造，方式归一为小写."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
     key_path = tmp_path / "client-assertion.key"
-    key_path.write_text("dummy")
+    key_path.write_bytes(
+        rsa.generate_private_key(public_exponent=65537, key_size=2048).private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    )
     s = settings_module.Settings(
         oidc_token_auth_method=" PRIVATE_KEY_JWT ",
         oidc_client_private_key_path=str(key_path),

@@ -38,6 +38,7 @@ class MockIdp:
         sub: str = "oidc-user-001",
         tenant_id: str = "default",
         roles: list[str] | None = None,
+        backchannel_logout_supported: bool = False,
     ) -> None:
         self.issuer = issuer
         self.client_id = client_id
@@ -45,6 +46,8 @@ class MockIdp:
         self.sub = sub
         self.tenant_id = tenant_id
         self.roles = roles if roles is not None else ["org_admin"]
+        # RFC 8471 back-channel logout：discovery 声明能力（默认不支持）
+        self.backchannel_logout_supported = backchannel_logout_supported
         # token 端点实际收到的客户端认证方式（post/basic/private_key_jwt），供认证方式用例断言
         self.token_auth_calls: list[str] = []
         from cryptography.hazmat.primitives import serialization
@@ -82,7 +85,7 @@ class MockIdp:
 
         @app.get("/.well-known/openid-configuration")
         async def discovery():
-            return {
+            document = {
                 "issuer": self.issuer,
                 "authorization_endpoint": f"{self.issuer}/authorize",
                 "token_endpoint": f"{self.issuer}/token",
@@ -92,6 +95,13 @@ class MockIdp:
                 "subject_types_supported": ["public"],
                 "id_token_signing_alg_values_supported": ["RS256"],
             }
+            if self.backchannel_logout_supported:
+                document["backchannel_logout_supported"] = True
+                document["backchannel_logout_session_supported"] = True
+                document[
+                    "backchannel_logout_signing_alg_values_supported"
+                ] = ["RS256"]
+            return document
 
         @app.get("/jwks")
         async def jwks():
