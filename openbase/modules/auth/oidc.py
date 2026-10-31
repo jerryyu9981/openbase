@@ -36,7 +36,11 @@ from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
     SUBJECT_TYPE_USER,
 )
-from openbase.settings import OIDC_ID_TOKEN_ALGORITHMS, get_settings
+from openbase.settings import (
+    OIDC_CERTIFICATE_TOKEN_AUTH_METHODS,
+    OIDC_ID_TOKEN_ALGORITHMS,
+    get_settings,
+)
 
 logger = logging.getLogger("openbase.auth.oidc")
 
@@ -224,13 +228,15 @@ class OIDCClient:
         """按认证方式装配 httpx 请求选项（Basic 头 / mTLS 证书）.
 
         - ``client_secret_basic``：RFC 6749 §2.3.1，凭据经 HTTP Basic 头；
-        - ``mtls``：RFC 8705，客户端证书认证（``cert`` + 可选 ``verify``）；
+        - ``mtls`` / ``tls_client_auth``：RFC 8705，客户端证书认证
+          （``cert`` + 可选 ``verify``）；两者传输装配相同，差异在 IdP 侧的
+          证书登记方式（自签公钥 vs PKI subject/SAN 绑定）；
         - ``client_secret_post`` / ``private_key_jwt``：认证材料均在表单，无额外选项。
         """
         method = self.token_auth_method()
         if method == "client_secret_basic":
             return {"auth": httpx.BasicAuth(self.client_id, self.client_secret)}
-        if method == "mtls":
+        if method in OIDC_CERTIFICATE_TOKEN_AUTH_METHODS:
             settings = self._settings()
             cert_path = (settings.oidc_client_cert_path or "").strip()
             key_path = (settings.oidc_client_key_path or "").strip()
@@ -279,7 +285,8 @@ class OIDCClient:
         """token 端点表单载荷（按认证方式决定是否携带 client 凭据）.
 
         Basic 模式凭据走 Authorization 头，表单不得重复携带（RFC 6749 §2.3.1）；
-        mTLS 模式仅带 ``client_id``（客户端已由证书认证）；
+        mTLS 族（``mtls`` / ``tls_client_auth``）仅带 ``client_id``（客户端已由
+        证书认证；RFC 8705 §2 要求携带 ``client_id`` 以便服务端定位客户端配置）；
         private_key_jwt 模式带 ``client_id`` + ``client_assertion_type`` +
         ``client_assertion``（RFC 7523）。
         """
@@ -305,9 +312,9 @@ class OIDCClient:
     ) -> dict[str, Any]:
         """授权码换取令牌（token_endpoint），返回含 ID Token 的完整响应.
 
-        客户端认证方式由 ``oidc_token_auth_method`` 决定（v1.17.0 / v1.18.0）：
+        客户端认证方式由 ``oidc_token_auth_method`` 决定（v1.17.0 / v1.18.0 / v1.19.0）：
         ``client_secret_post``（默认）/ ``client_secret_basic`` / ``mtls``
-        / ``private_key_jwt``。
+        / ``tls_client_auth`` / ``private_key_jwt``。
 
         Args:
             code: IdP 回传的授权码。

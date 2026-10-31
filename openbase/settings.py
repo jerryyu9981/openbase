@@ -289,13 +289,43 @@ OIDC_ID_TOKEN_ALGORITHMS: tuple[str, ...] = (
 
 # token 端点客户端认证方式（RFC 6749 §2.3.1 / RFC 8705 / RFC 7523）：
 # client_secret_post（表单凭据，默认）| client_secret_basic（HTTP Basic）
-# | mtls（双向 TLS）| private_key_jwt（JWT 客户端断言）
+# | mtls（自签证书双向 TLS）| tls_client_auth（PKI 证书 + subject 绑定）
+# | private_key_jwt（JWT 客户端断言）
 OIDC_TOKEN_AUTH_METHODS: tuple[str, ...] = (
     "client_secret_post",
     "client_secret_basic",
     "mtls",
+    "tls_client_auth",
     "private_key_jwt",
 )
+
+# 需要客户端证书的 token 端点认证方式（RFC 8705 mutual TLS 族）
+OIDC_CERTIFICATE_TOKEN_AUTH_METHODS: tuple[str, ...] = (
+    "mtls",
+    "tls_client_auth",
+)
+
+
+def _normalize_distinguished_name(value: str) -> str:
+    """归一 RFC 4514 DN 字符串：去除分隔符两侧空白并统一大写（宽松比对）."""
+    return re.sub(r"\s*([,=])\s*", r"\1", (value or "").strip()).upper()
+
+
+def _client_certificate_subject(cert_path: str) -> str:
+    """读取 PEM 客户端证书并返回 RFC 4514 格式的 subject DN.
+
+    Raises:
+        ValueError: 文件不是可解析的 PEM 证书。
+    """
+    from cryptography import x509
+
+    with open(cert_path, "rb") as handle:
+        content = handle.read()
+    try:
+        certificate = x509.load_pem_x509_certificate(content)
+    except ValueError as error:
+        raise ValueError(f"客户端证书无法解析（需 PEM 格式）：{cert_path}") from error
+    return certificate.subject.rfc4514_string()
 
 
 def _resolve_redis_url() -> str:
@@ -476,11 +506,15 @@ class Settings(BaseSettings):
     oidc_signing_algorithms: str = "RS256"
     # token 端点认证方式（v1.17.0）：client_secret_post | client_secret_basic | mtls
     # v1.18.0 追加 private_key_jwt（RFC 7523 JWT 客户端断言）
+    # v1.19.0 追加 tls_client_auth（RFC 8705 PKI 证书 + subject/SAN 绑定）
     oidc_token_auth_method: str = "client_secret_post"
     # mTLS（RFC 8705）：客户端证书/私钥（PEM，证书也可与私钥合并为一个文件）；CA 可选
     oidc_client_cert_path: str = ""
     oidc_client_key_path: str = ""
     oidc_client_ca_path: str = ""
+    # tls_client_auth：期望的客户端证书 subject DN（RFC 4514 字符串，如
+    # "CN=openbase-gateway,O=Example"）；配置后启动期比对，不匹配即拒启
+    oidc_client_cert_subject: str = ""
     # private_key_jwt（RFC 7523）：断言签名私钥（PEM）与可选 JWT header kid
     oidc_client_private_key_path: str = ""
     oidc_client_assertion_kid: str = ""
@@ -742,8 +776,10 @@ class Settings(BaseSettings):
 
         - ``oidc_token_auth_method`` 必须为 :data:`OIDC_TOKEN_AUTH_METHODS` 之一，
           统一归一为小写；
-        - ``mtls`` 必须配置客户端证书与私钥路径，且文件存在（缺配或路径错误即拒启，
-          避免运行期才发现 token 端点无法认证）；
+        - ``mtls`` / ``tls_client_auth`` 必须配置客户端证书与私钥路径，且文件存在
+          （缺配或路径错误即拒启，避免运行期才发现 token 端点无法认证）；
+        - ``tls_client_auth`` 配置了 ``oidc_client_cert_subject`` 时，启动期加载
+          客户端证书并比对 subject DN（RFC 8705 §2.1 PKI 绑定），不匹配即拒启；
         - ``private_key_jwt`` 必须配置断言签名私钥路径，且文件存在；
         - ``oidc_client_ca_path`` 可选，配置后文件必须存在。
         """
@@ -768,13 +804,14 @@ class Settings(BaseSettings):
                     f"{private_key_path}"
                 )
             return self
-        if method != "mtls":
+        if method not in OIDC_CERTIFICATE_TOKEN_AUTH_METHODS:
             return self
         cert_path = (self.oidc_client_cert_path or "").strip()
         key_path = (self.oidc_client_key_path or "").strip()
         if not cert_path or not key_path:
+            method_label = "mTLS" if method == "mtls" else "tls_client_auth"
             raise ValueError(
-                "OIDC token 端点选择 mTLS 时必须配置 "
+                f"OIDC token 端点选择 {method_label} 时必须配置 "
                 "OPENBASE_OIDC_CLIENT_CERT_PATH 与 OPENBASE_OIDC_CLIENT_KEY_PATH"
             )
         required_paths = [
@@ -787,6 +824,16 @@ class Settings(BaseSettings):
         for env_name, path in required_paths:
             if not os.path.exists(path):
                 raise ValueError(f"{env_name} 指向的文件不存在：{path}")
+        expected_subject = (self.oidc_client_cert_subject or "").strip()
+        if expected_subject:
+            actual_subject = _client_certificate_subject(cert_path)
+            if _normalize_distinguished_name(actual_subject) != (
+                _normalize_distinguished_name(expected_subject)
+            ):
+                raise ValueError(
+                    "OPENBASE_OIDC_CLIENT_CERT_SUBJECT 与客户端证书 subject 不匹配："
+                    f"期望 {expected_subject}，实际 {actual_subject}"
+                )
         return self
 
     @model_validator(mode="after")

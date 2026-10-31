@@ -1,10 +1,11 @@
-"""OIDC token 端点客户端认证方式测试（v1.17.0 / v1.18.0）.
+"""OIDC token 端点客户端认证方式测试（v1.17.0 / v1.18.0 / v1.19.0）.
 
-覆盖四种 RFC 约定的客户端认证方式：
+覆盖五种 RFC 约定的客户端认证方式：
 ``client_secret_post``（表单，默认）/ ``client_secret_basic``（RFC 6749 §2.3.1）
-/ ``mtls``（RFC 8705 双向 TLS 客户端证书）/ ``private_key_jwt``（RFC 7523
-JWT 客户端断言）；含载荷与请求选项装配、授权码全链路、以及启动门禁
-（非法方式 / 缺证书路径 / 缺断言私钥 / 路径不存在）。
+/ ``mtls``（RFC 8705 自签证书双向 TLS）/ ``tls_client_auth``（RFC 8705 PKI
+证书 + subject 绑定）/ ``private_key_jwt``（RFC 7523 JWT 客户端断言）；
+含载荷与请求选项装配、授权码全链路、以及启动门禁（非法方式 / 缺证书路径 /
+证书 subject 不匹配 / 缺断言私钥 / 路径不存在）。
 """
 from __future__ import annotations
 
@@ -183,6 +184,61 @@ def test_token_payload_mtls(settings_module, tmp_path):
     assert options["verify"] == str(ca)
 
 
+def _write_client_certificate(tmp_path, common_name: str = "openbase-gateway"):
+    """生成自签客户端证书（PEM 证书 + PKCS#8 私钥），返回路径二元组."""
+    import datetime
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    certificate = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(subject)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=1))
+        .sign(key, hashes.SHA256())
+    )
+    cert_path = tmp_path / "client.crt"
+    key_path = tmp_path / "client.key"
+    cert_path.write_bytes(certificate.public_bytes(serialization.Encoding.PEM))
+    key_path.write_bytes(
+        key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+    )
+    return cert_path, key_path
+
+
+def test_token_payload_tls_client_auth(settings_module, tmp_path):
+    """tls_client_auth：RFC 8705 PKI 方式，请求形态同 mTLS 族（携带 client_id）."""
+    cert = tmp_path / "client.pem"
+    key = tmp_path / "client.key"
+    for item in (cert, key):
+        item.write_text("dummy")
+    client = _client_for(
+        settings_module,
+        "tls_client_auth",
+        oidc_client_cert_path=str(cert),
+        oidc_client_key_path=str(key),
+    )
+    payload = client.token_payload("code-1")
+    assert payload["client_id"] == "unit-client"
+    assert "client_secret" not in payload
+    options = client.token_request_options()
+    assert options["cert"] == (str(cert), str(key))
+    assert options["verify"] is True
+
+
 def test_token_payload_private_key_jwt(settings_module, mock_idp, tmp_path):
     """private_key_jwt：表单带断言（RFC 7523），iss/sub=client_id、aud=token 端点."""
     from jose import jwt as jose_jwt
@@ -300,6 +356,51 @@ def test_gate_accepts_mtls_with_existing_files(settings_module, tmp_path):
         oidc_client_ca_path=str(ca),
     )
     assert s.oidc_token_auth_method == "mtls"
+
+
+def test_gate_rejects_tls_client_auth_without_cert(settings_module):
+    """tls_client_auth 缺客户端证书/私钥路径 → 拒绝启动."""
+    with pytest.raises(ValueError, match="tls_client_auth"):
+        settings_module.Settings(oidc_token_auth_method="tls_client_auth")
+
+
+def test_gate_accepts_tls_client_auth_with_matching_subject(settings_module, tmp_path):
+    """tls_client_auth 证书 subject 与配置一致 → 正常构造（方式归一为小写）."""
+    cert, key = _write_client_certificate(tmp_path, "openbase-gateway")
+    s = settings_module.Settings(
+        oidc_token_auth_method=" TLS_CLIENT_AUTH ",
+        oidc_client_cert_path=str(cert),
+        oidc_client_key_path=str(key),
+        oidc_client_cert_subject="CN=openbase-gateway",
+    )
+    assert s.oidc_token_auth_method == "tls_client_auth"
+
+
+def test_gate_rejects_tls_client_auth_subject_mismatch(settings_module, tmp_path):
+    """tls_client_auth 证书 subject 与配置不一致 → 拒绝启动（RFC 8705 §2.1 绑定）."""
+    cert, key = _write_client_certificate(tmp_path, "openbase-gateway")
+    with pytest.raises(ValueError, match="OPENBASE_OIDC_CLIENT_CERT_SUBJECT"):
+        settings_module.Settings(
+            oidc_token_auth_method="tls_client_auth",
+            oidc_client_cert_path=str(cert),
+            oidc_client_key_path=str(key),
+            oidc_client_cert_subject="CN=another-client",
+        )
+
+
+def test_gate_rejects_tls_client_auth_unparsable_cert(settings_module, tmp_path):
+    """tls_client_auth 证书文件非 PEM → 拒绝启动."""
+    cert = tmp_path / "client.crt"
+    key = tmp_path / "client.key"
+    cert.write_text("not-a-certificate")
+    key.write_text("dummy")
+    with pytest.raises(ValueError, match="无法解析"):
+        settings_module.Settings(
+            oidc_token_auth_method="tls_client_auth",
+            oidc_client_cert_path=str(cert),
+            oidc_client_key_path=str(key),
+            oidc_client_cert_subject="CN=openbase-gateway",
+        )
 
 
 def test_gate_rejects_private_key_jwt_without_key_path(settings_module):

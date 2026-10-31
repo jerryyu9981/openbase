@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.18.0 |
+| 版本 | v1.19.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -808,9 +808,9 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 **残余**
 
-- 未实现 `tls_client_auth`（RFC 8705 的 subject 绑定变体）。
+- `tls_client_auth` 已由 §10.22 闭合。
 - mTLS 未做真实双向 TLS 端到端联调（测试覆盖请求选项装配与启动门禁；链路验证依赖 A1 真实 IdP 联调）。
-- 验证边界：mock IdP 端口 9014，覆盖 post / basic 全链路；mTLS 为单元级验证。
+- 验证边界：mock IdP 端口 9014，覆盖 post / basic 全链路；mTLS 族为单元级验证。
 - `private_key_jwt` 已由 §10.21 闭合。
 
 ### 10.21 private_key_jwt 客户端断言（v1.18.0，2026-10-31）
@@ -844,6 +844,35 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 未做真实 IdP 的 `private_key_jwt` 联调（测试用 mock IdP 验签断言，链路验证依赖 A1 真实 IdP）。
 - 验证边界：mock IdP 端口 9014，断言签名与受众校验在全链路中执行。
 
+### 10.22 tls_client_auth 客户端认证（v1.19.0，2026-10-31）
+
+> 目的：闭合 §10.20 登记的「未实现 `tls_client_auth`」残余——RFC 8705 §2.1 的 PKI 证书方式：IdP 以证书 subject DN（或 SAN）绑定客户端身份，证书由受信 CA 签发，可在不修改 IdP 登记的前提下轮换证书（同一 subject）。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| 认证方式配置 | `OPENBASE_OIDC_TOKEN_AUTH_METHOD` 追加 `tls_client_auth`（取值仍归一为小写）；与 `mtls` 同属「需客户端证书」族（`OIDC_CERTIFICATE_TOKEN_AUTH_METHODS`） | `settings.py`（`OIDC_TOKEN_AUTH_METHODS` / `OIDC_CERTIFICATE_TOKEN_AUTH_METHODS`） | `tests/test_oidc_token_auth.py`（载荷/门禁用例） |
+| 传输装配 | 复用 mTLS 传输：httpx `cert`（证书+私钥）+ 可选 `verify`（CA）；请求形态按 RFC 8705 §2 携带 `client_id`、不发送 `client_secret` | `oidc.py`（`token_request_options` / `token_payload`） | 同上（请求选项与载荷断言） |
+| subject 绑定校验 | 新增 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT`（RFC 4514 DN 字符串）；配置后启动期加载证书并比对 subject（分隔符空白与大小写不敏感），不匹配即拒启 | `settings.py`（`_client_certificate_subject` / `_normalize_distinguished_name` / 门禁） | 同上（匹配通过、不匹配拒启、非 PEM 拒启） |
+| 启动门禁 | `tls_client_auth` 缺证书/私钥路径、文件不存在、证书不可解析、subject 不匹配 → 拒绝启动 | `settings.py`（`_validate_oidc_token_auth_configuration`） | 同上（4 项门禁用例） |
+
+**新增配置**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` | 空 | 可选：期望的客户端证书 subject DN（如 `CN=openbase-gateway,O=Example`）；留空则跳过本地比对（IdP 侧仍执行绑定） |
+
+**统一口径**
+
+- `mtls` 与 `tls_client_auth` 传输装配完全相同，差异在 IdP 的证书登记方式：`mtls` 对应自签证书/公钥登记（RFC 8705 §2.2 `self_signed_tls_client_auth` 族的传输侧），`tls_client_auth` 对应 PKI 证书 + subject/SAN 登记；二者均按 RFC 8705 §2 在表单携带 `client_id`。
+- subject 比对为**启动期本地预检**，用于提前暴露证书/配置错位；最终绑定仍以 IdP 校验为准（DN 规范化差异可能导致本地宽松通过，不影响 IdP 判定）。
+- 证书与私钥按 PEM 只读挂载，禁止入库/入日志；CA 留空时使用系统信任库。
+
+**残余**
+
+- 未实现 SAN 型绑定的本地预检（`tls_client_auth_san_dns/_uri/_ip/_email`，均属 IdP 侧登记字段）。
+- 未做真实双向 TLS 端到端联调（本地预检 + 传输选项断言为当前验证边界；真实链路依赖 A1 真实 IdP 联调）。
+- 验证边界：mock IdP 端口 9014，不承担 TLS 握手；`tls_client_auth` 为单元级验证。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -869,3 +898,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.16.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.19「IdP 登出联动」：`POST /auth/oidc/logout` 本地 `token_version` 递增即时吊销存量令牌，按 Provider/单 IdP discovery 返回 `end_session` 登出 URL（IdP 未声明/不可达则为 null，不回滚本地吊销）；未鉴权 401、未知 Provider 400、未启用 404 均在吊销前判定；新增 4 项用例（未鉴权 / 未知 Provider / Provider 登出 URL / 本地版本递增与直签主体跳过），`test_oidc_multi_provider` 9 项全通过，ruff 0 错误 |
 | v1.17.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.20「token 端点认证方式扩展」：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 支持 `client_secret_post`（默认）/ `client_secret_basic`（RFC 6749 §2.3.1，表单不重复携带凭据）/ `mtls`（RFC 8705，客户端证书 + 可选 CA）；新增 3 项 mTLS 证书路径配置与启动门禁（非法方式、缺路径、文件不存在均拒启）；新增 9 项用例（post/basic 载荷、mTLS 请求选项、post/basic 全链路、4 项门禁），OIDC 三套用例通过，ruff 0 错误 |
 | v1.18.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.21「private_key_jwt 客户端断言」并闭合 §10.20 该项残余：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 追加 `private_key_jwt`（RFC 7523，`client_assertion_type` 固定 URN、RS256 断言 `iss`/`sub`=client_id、`aud`=token 端点、300s + `jti`）；新增 `OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH` 与可选 `_ASSERTION_KID`，缺私钥路径/文件不存在拒启；新增 5 项用例（断言 claims/header、mock IdP 验签全链路、3 项门禁），OIDC 四套用例（含 settings/auth）52 项通过，ruff 0 错误；登记残余（断言算法仅 RS256、真实 IdP 未联调） |
+| v1.19.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.22「tls_client_auth 客户端认证」并闭合 §10.20 该项残余：认证方式追加 `tls_client_auth`（RFC 8705 §2.1 PKI 证书），与 `mtls` 共用传输装配（承载 `client_id`、不发 `client_secret`）；新增 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 启动期 subject DN 预检（分隔符空白/大小写不敏感，不匹配或非 PEM 拒启）；新增 5 项用例（载荷/传输选项、subject 匹配/不匹配、非 PEM 证书），OIDC 四套（含 settings/auth）57 项通过，ruff 0 错误；登记残余（SAN 型绑定本地预检未实现、真实双向 TLS 未联调） |
