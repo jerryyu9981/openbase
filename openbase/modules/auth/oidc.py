@@ -25,8 +25,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
+from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import Role, Tenant, User, user_role
+from openbase.modules.auth.idp_registry import IdpProviderConfig, parse_idp_providers
 from openbase.modules.auth.jwt import issue_token_pair
 from openbase.modules.auth.oidc_state import get_state_store
 from openbase.modules.identity.state_machine import (
@@ -90,9 +92,14 @@ class OIDCClient:
     每次操作读取最新全局 settings（get_settings），避免单例缓存旧配置。
     """
 
-    def __init__(self, settings=None) -> None:
+    def __init__(
+        self, settings=None, provider: IdpProviderConfig | None = None
+    ) -> None:
         # 显式注入的 settings 优先；None 时每次动态读取全局单例
         self._injected_settings = settings
+        # 多 Provider（v1.15.0）：非 None 时客户端字段取自 Provider 声明，
+        # 未声明的字段（PKCE/算法/Keycloak client 角色）仍读全局 settings
+        self._provider = provider
         self._discovery: dict[str, Any] | None = None
         self._discovery_url: str = ""  # 已缓存 discovery 的 URL 指纹
         self._authorization_endpoint = ""
@@ -103,15 +110,67 @@ class OIDCClient:
         return self._injected_settings or get_settings()
 
     @property
+    def provider_name(self) -> str:
+        """Provider 名称（单 IdP 模式为空串）."""
+        return self._provider.name if self._provider is not None else ""
+
+    @property
+    def discovery_url(self) -> str:
+        if self._provider is not None:
+            return self._provider.discovery_url
+        return self._settings().oidc_discovery_url
+
+    @property
+    def client_id(self) -> str:
+        if self._provider is not None:
+            return self._provider.client_id
+        return self._settings().oidc_client_id
+
+    @property
+    def client_secret(self) -> str:
+        if self._provider is not None:
+            return self._provider.client_secret
+        return self._settings().oidc_client_secret
+
+    @property
+    def redirect_uri(self) -> str:
+        # Provider 未显式声明回调时回退全局回调地址（所有回调仍落在同一网关端点）
+        if self._provider is not None and self._provider.redirect_uri:
+            return self._provider.redirect_uri
+        return self._settings().oidc_redirect_uri
+
+    @property
+    def scopes(self) -> str:
+        if self._provider is not None:
+            return self._provider.scopes
+        return self._settings().oidc_scopes
+
+    @property
+    def profile(self) -> str:
+        if self._provider is not None:
+            return self._provider.profile
+        return self._settings().oidc_profile
+
+    @property
+    def claim_role(self) -> str:
+        if self._provider is not None:
+            return self._provider.claim_role
+        return self._settings().oidc_claim_role
+
+    @property
+    def default_tenant(self) -> str:
+        if self._provider is not None:
+            return self._provider.default_tenant
+        return self._settings().oidc_default_tenant
+
+    @property
     def enabled(self) -> bool:
-        s = self._settings()
-        return bool(
-            s.oidc_enabled and s.oidc_discovery_url and s.oidc_client_id
-        )
+        # 全局 oidc_enabled 仍为总开关；Provider 模式再要求 discovery/client_id 齐备
+        return bool(self._settings().oidc_enabled and self.discovery_url and self.client_id)
 
     async def _load_discovery(self) -> None:
         """拉取并缓存 IdP discovery 文档（幂等；按 discovery URL 指纹失效）."""
-        url = self._settings().oidc_discovery_url
+        url = self.discovery_url
         if self._discovery is not None and self._discovery_url == url:
             return
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -136,13 +195,12 @@ class OIDCClient:
             nonce: ID Token 重放防护随机串（非空即下发）。
             code_challenge: PKCE S256 challenge（非空即下发 S256 方法）。
         """
-        s = self._settings()
         await self._load_discovery()
         params = {
             "response_type": "code",
-            "client_id": s.oidc_client_id,
-            "redirect_uri": s.oidc_redirect_uri,
-            "scope": s.oidc_scopes,
+            "client_id": self.client_id,
+            "redirect_uri": self.redirect_uri,
+            "scope": self.scopes,
             "state": state,
         }
         if nonce:
@@ -161,14 +219,13 @@ class OIDCClient:
             code: IdP 回传的授权码。
             code_verifier: PKCE 原始校验串（启用 PKCE 时必传）。
         """
-        s = self._settings()
         await self._load_discovery()
         payload = {
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": s.oidc_redirect_uri,
-            "client_id": s.oidc_client_id,
-            "client_secret": s.oidc_client_secret,
+            "redirect_uri": self.redirect_uri,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
         }
         if code_verifier:
             payload["code_verifier"] = code_verifier
@@ -203,7 +260,7 @@ class OIDCClient:
                 token,
                 jwks,
                 algorithms=algorithms,
-                audience=self._settings().oidc_client_id,
+                audience=self.client_id,
                 issuer=self._issuer or None,
                 access_token=access_token,
             )
@@ -224,17 +281,31 @@ class OIDCClient:
         """
         return self._verify_token(access_token)
 
+    async def build_logout_url(self, *, post_logout_redirect_uri: str = "") -> str | None:
+        """构造 IdP 登出 URL（discovery ``end_session_endpoint``；未声明返回 None）.
+
+        v1.16.0：本地已吊销（token_version 递增）后，前端可跳转该 URL 同时结束
+        IdP 会话（前端信道/RP-Initiated Logout，IF-01 RFC 中的可选能力）。
+        """
+        await self._load_discovery()
+        endpoint = (self._discovery or {}).get("end_session_endpoint")
+        if not endpoint:
+            return None
+        params: dict[str, str] = {"client_id": self.client_id}
+        if post_logout_redirect_uri:
+            params["post_logout_redirect_uri"] = post_logout_redirect_uri
+        return f"{endpoint}?{urllib.parse.urlencode(params)}"
+
     def map_claims(self, claims: dict[str, Any]) -> dict[str, Any]:
         """OIDC claims → 统一 JWT claims 映射（sub/org_id/role/租户）. """
-        s = self._settings()
         sub = str(claims.get("sub") or "oidc-anonymous")
         tenant = (
             claims.get("tenant_id")
             or claims.get("org")
             or claims.get("org_id")
-            or s.oidc_default_tenant
+            or self.default_tenant
         )
-        role_raw = claims.get(s.oidc_claim_role) or claims.get("role")
+        role_raw = claims.get(self.claim_role) or claims.get("role")
         if isinstance(role_raw, list):
             role = role_raw[0] if role_raw else "viewer"
         else:
@@ -248,6 +319,8 @@ class OIDCClient:
 
 
 _oidc_client: OIDCClient | None = None
+# 多 Provider 客户端缓存（键 = Provider 名；配置变更按 dataclass 等值失效）
+_provider_clients: dict[str, OIDCClient] = {}
 
 
 def _get_oidc_client() -> OIDCClient:
@@ -255,6 +328,39 @@ def _get_oidc_client() -> OIDCClient:
     if _oidc_client is None:
         _oidc_client = OIDCClient()
     return _oidc_client
+
+
+def _registered_providers() -> tuple[IdpProviderConfig, ...]:
+    """读取已登记 Provider（配置已在启动门禁校验，异常按系统错误处理）."""
+    try:
+        return parse_idp_providers(get_settings().idp_providers)
+    except ValueError as exc:
+        raise BaseError(
+            ErrorCode.SYS_INTERNAL_ERROR, f"invalid idp provider configuration: {exc}"
+        ) from exc
+
+
+def _get_provider_client(name: str) -> OIDCClient:
+    """按名称取 Provider 客户端（缓存；未登记/空登记 → 400 PARAM_INVALID）."""
+    providers = _registered_providers()
+    if not providers:
+        raise BaseError(ErrorCode.PARAM_INVALID, "no oidc provider registered")
+    provider = next((item for item in providers if item.name == name), None)
+    if provider is None:
+        raise BaseError(ErrorCode.PARAM_INVALID, f"unknown oidc provider: {name}")
+    cached = _provider_clients.get(name)
+    if cached is None or cached._provider != provider:
+        cached = OIDCClient(provider=provider)
+        _provider_clients[name] = cached
+    return cached
+
+
+def _resolve_oidc_client(provider: str | None) -> OIDCClient:
+    """按 ``provider`` 查询参数选择客户端（空/未指定 → 既有单 IdP 路径）."""
+    name = (provider or "").strip()
+    if not name:
+        return _get_oidc_client()
+    return _get_provider_client(name)
 
 
 router = APIRouter(prefix="/api/v1/auth/oidc", tags=["auth"])
@@ -497,13 +603,15 @@ async def _bind_or_create_user(
 
 
 @router.get("/authorize")
-async def oidc_authorize() -> dict:
+async def oidc_authorize(provider: str | None = Query(default=None)) -> dict:
     """发起 OIDC 授权码流程：返回 IdP 授权 URL（前端 302/跳转）.
 
     v1.14.0：state / nonce / PKCE verifier 一次性登记（TTL + 多实例共享），
     authorize URL 携带 ``nonce`` 与 ``code_challenge``（S256）。
+    v1.15.0：``provider`` 指定已登记 Provider（空/未指定保持单 IdP ``oidc_*`` 语义），
+    state 载荷同时记录 Provider 名，callback 据此还原对应客户端。
     """
-    client = _get_oidc_client()
+    client = _resolve_oidc_client(provider)
     if not client.enabled:
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, "oidc not enabled")
     settings = get_settings()
@@ -512,7 +620,11 @@ async def oidc_authorize() -> dict:
     code_verifier = secrets.token_urlsafe(48) if settings.oidc_pkce_enabled else ""
     get_state_store().issue(
         state,
-        {"nonce": nonce, "code_verifier": code_verifier},
+        {
+            "nonce": nonce,
+            "code_verifier": code_verifier,
+            "provider": client.provider_name,
+        },
         ttl_seconds=settings.oidc_state_ttl_seconds,
     )
     try:
@@ -523,7 +635,10 @@ async def oidc_authorize() -> dict:
         )
     except OIDCError as exc:
         raise BaseError(ErrorCode.SYS_UPSTREAM_ERROR, str(exc)) from exc
-    return {"authorize_url": authorize_url, "state": state}
+    response = {"authorize_url": authorize_url, "state": state}
+    if client.provider_name:
+        response["provider"] = client.provider_name
+    return response
 
 
 @router.get("/callback")
@@ -548,7 +663,8 @@ async def oidc_callback(
     if stored is None:
         raise BaseError(ErrorCode.PARAM_INVALID, "invalid or expired state")
 
-    client = _get_oidc_client()
+    # v1.15.0：state 记录 Provider 名 → 还原对应客户端（空 = 单 IdP 既有路径）
+    client = _resolve_oidc_client(str(stored.get("provider") or ""))
     if not client.enabled:
         raise BaseError(ErrorCode.BIZ_NOT_FOUND, "oidc not enabled")
     try:
@@ -572,9 +688,9 @@ async def oidc_callback(
     settings = get_settings()
     # v1.4.0 Keycloak profile：realm/client 角色默认仅进 access token（官方默认 mapper，
     # ID Token 不含角色）。ID Token 聚合为空时验签 access token 兜底，归一化写回 roles。
-    if settings.oidc_profile == "keycloak":
+    if client.profile == "keycloak":
         roles = _roles_from_keycloak(
-            claims, settings.oidc_client_id, settings.oidc_keycloak_client_roles
+            claims, client.client_id, settings.oidc_keycloak_client_roles
         )
         if not roles:
             access_token = token_resp.get("access_token")
@@ -589,7 +705,7 @@ async def oidc_callback(
                 else:
                     roles = _roles_from_keycloak(
                         at_claims,
-                        settings.oidc_client_id,
+                        client.client_id,
                         settings.oidc_keycloak_client_roles,
                     )
         if roles:
@@ -695,4 +811,85 @@ async def oidc_callback(
         "expires_in": settings.jwt_expire_seconds,
         "refresh_token": refresh,
         "refresh_expires_in": settings.refresh_expire_seconds,
+    }
+
+
+async def _revoke_local_tokens(session: AsyncSession, subject: Any) -> int | None:
+    """本地登出：主体 token_version 递增，使存量 access/refresh 立即失效.
+
+    Returns:
+        新 token_version；非本地主体（OIDC 直签字符串 sub）/行缺失/DB 不可达返回 None。
+    """
+    try:
+        subject_id = int(subject)
+    except (TypeError, ValueError):
+        return None
+    try:
+        user_row = await session.get(User, subject_id)
+        if user_row is None:
+            return None
+        user_row.token_version = (user_row.token_version or 0) + 1
+        await session.commit()
+        return user_row.token_version
+    except Exception:  # noqa: BLE001 - DB 不可达时无法吊销，仍允许前端清除本地令牌
+        logger.warning("oidc logout local revocation skipped", exc_info=True)
+        try:
+            await session.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        return None
+
+
+@router.post("/logout")
+async def oidc_logout(
+    session: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+    provider: str | None = Query(default=None),
+    post_logout_redirect_uri: str | None = Query(default=None),
+) -> dict:
+    """OIDC 登出（v1.16.0）：本地吊销 + 可选 IdP 会话登出 URL.
+
+    - 本地：主体 ``token_version`` 递增（存量 access/refresh 在强校验开启时立即失效）；
+    - IdP：``provider`` 指定时按其 discovery 的 ``end_session_endpoint`` 返回登出 URL，
+      未指定时在单 IdP ``oidc_*`` 已启用情形下复用同一能力；未声明则返回 null；
+    - 前端凭据清除（localStorage）由调用方负责；本端点不写服务端白名单黑名单。
+
+    Raises:
+        BaseError: ``provider`` 未登记（400 PARAM_INVALID）；指定 Provider 但 OIDC 未启用（404）。
+    """
+    subject = user.get("id") if isinstance(user, dict) else None
+    settings = get_settings()
+    client: OIDCClient | None = None
+    if (provider or "").strip():
+        # 先解析 Provider（未登记/未启用 → 直接报错，不产生「已吊销但未登出」半态）
+        client = _resolve_oidc_client(provider)
+        if not client.enabled:
+            raise BaseError(ErrorCode.BIZ_NOT_FOUND, "oidc not enabled")
+    elif settings.oidc_enabled and settings.oidc_discovery_url and settings.oidc_client_id:
+        client = _get_oidc_client()
+    token_version = await _revoke_local_tokens(session, subject)
+    idp_logout_url: str | None = None
+    if client is not None:
+        try:
+            idp_logout_url = await client.build_logout_url(
+                post_logout_redirect_uri=(post_logout_redirect_uri or "").strip()
+            )
+        except (OIDCError, httpx.HTTPError) as exc:
+            # IdP 登出为尽力而为：本地吊销已生效，不得因 IdP 不可达而回滚登出
+            logger.warning(
+                "oidc idp logout url unavailable",
+                extra={"error": str(exc) or exc.__class__.__name__},
+            )
+    logger.info(
+        "oidc logout completed",
+        extra={
+            "subject": str(subject),
+            "token_version": token_version,
+            "provider": client.provider_name if client is not None else "",
+        },
+    )
+    return {
+        "logged_out": True,
+        "token_version": token_version,
+        "idp_logout_url": idp_logout_url,
     }

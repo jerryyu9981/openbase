@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.14.0 |
+| 版本 | v1.16.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -717,11 +717,67 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 **残余**
 
-- 多 Provider 登录路由仍未接入（仍走单 IdP `oidc_*`，见 §10.14）；本轮 state 外置与 provider 无关，后续可复用。
+- 多 Provider 登录路由已由 §10.18（v1.15.0）接入（`provider` 查询参数 + state 携带 Provider）；单 IdP `oidc_*` 语义保持零变化。
 - 签名算法仅覆盖 python-jose 已接线的 RS/ES 系列；SM2 仍未接线（见 E3-3）。
-- IdP 侧登出联动（`end_session` / back-channel logout）未实现，本地 refresh 令牌在 IdP 登出后仍有效至过期。
+- IdP 侧登出已由 §10.19（v1.16.0）接入前端信道 `end_session`（本地 `token_version` 递增 + 可选登出 URL）；**back-channel logout（IdP 主动通知网关）仍未实现**。
 - token endpoint 仅 `client_secret_post`，不支持 `client_secret_basic` / mTLS。
 - 验证边界：以 mock IdP + 文件型 SQLite 验证（新增 12 项，OIDC 相关共 30 项通过），未做真实 IdP 联调（由 A1 清单覆盖）。
+
+### 10.18 多 Provider 登录路由（v1.15.0，2026-10-30）
+
+> 目的：把 E3-4 已登记的 `OPENBASE_IDP_PROVIDERS` 从「只读视图」推进到真实登录流程——同一网关可同时对接多个 IdP（政务统一身份平台 / 企业 IdP），而单 IdP `oidc_*` 路径零行为变化。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| authorize 选择 Provider | `GET /api/v1/auth/oidc/authorize` 新增可选 `provider` 查询参数；指定时按 Provider 声明的 discovery / client_id / secret / 回调 / scopes 构建授权 URL | `oidc.py`（`_resolve_oidc_client` / `_get_provider_client`） | `tests/test_oidc_multi_provider.py`（URL 端点与 client_id 断言） |
+| 客户端按需构建与缓存 | Provider 客户端按名称缓存；Provider 声明变更（dataclass 等值比较）即重建，避免缓存旧凭据 | `oidc.py`（`_provider_clients`） | 同上 |
+| state 携带 Provider | state 载荷新增 `provider` 名，与 nonce / code_verifier 同一生命周期（一次性 + TTL） | `oidc.py`、`oidc_state.py`（复用） | 同上（`consume` 断言 provider/nonce） |
+| callback 还原 Provider | 回调按 state 中的 Provider 还原客户端；profile / claim_role / default_tenant 取自 Provider 声明，JIT 绑定按 issuer 天然隔离不同 IdP 主体 | `oidc.py`（`oidc_callback`） | 同上（全链路 corp-idp → 统一 JWT claims + `/auth/me`） |
+| 未登记口径 | 指定 provider 但**未登记任何 Provider** → 400 `PARAM_INVALID`；名称未登记 → 400 `PARAM_INVALID`（不得静默回落单 IdP） | `oidc.py` | 同上（两条负向用例） |
+| 单 IdP 零变化 | 不传/传空 `provider` 仍走既有 `oidc_*` 单客户端路径（含 authorize 响应结构，仅在 Provider 模式追加 `provider` 字段） | `oidc.py` | 既有 `test_oidc_gateway.py` 全链路回归通过 |
+
+**新增配置**
+
+无新增配置项；复用 `OPENBASE_IDP_PROVIDERS`（JSON 数组，启动门禁见 §10.14 / E3-4）与既有 `OPENBASE_OIDC_*`（PKCE / 算法 / 前端回调等全局项仍由 `oidc_*` 控制）。
+
+**统一口径**
+
+- 全局 `oidc_enabled` 仍为 OIDC 功能总开关；Provider 模式在其之上再要求 discovery / client_id 齐备。
+- Provider 未声明 `redirect_uri` 时回退全局 `oidc_redirect_uri`（所有回调仍落在同一网关端点，state 决定实际 Provider）。
+- Provider 声明的 `client_secret` 仅存于配置，不下发只读视图（§10.14 `public_provider_views` 口径不变）。
+
+**残余**
+
+- Provider 区间主体隔离依赖 issuer（`OidcIdentity` 唯一键 `(issuer, sub)`）；同一 issuer 下多 client 仍视为同一身份空间，需 IdP 侧保证 issuer 唯一。
+- Provider 级 PKCE / 签名算法不支持独立配置（沿用全局 `oidc_pkce_enabled` / `oidc_signing_algorithms`）。
+- 验证边界：两个 mock IdP（9012/9013）+ 降级直签路径，未做真实政务/企业 IdP 双环境联调。
+
+### 10.19 IdP 登出联动（v1.16.0，2026-10-30）
+
+> 目的：闭合 §10.17 登记的「IdP 登出后本地 refresh 仍有效」残余——登出时本地即时吊销，并可按需返回 IdP `end_session` 地址，使浏览器会话与网关令牌同时结束。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| 登出端点 | 新增 `POST /api/v1/auth/oidc/logout`（需登录态）；可选 `provider` / `post_logout_redirect_uri` 查询参数 | `oidc.py`（`oidc_logout`） | `tests/test_oidc_multi_provider.py` |
+| 本地即时吊销 | 本地主体（数字 `sub`）`token_version += 1` 并提交；强校验开启后存量 access / refresh 立即失效；DB 不可达 / OIDC 直签字符串主体 → 跳过（返回 `token_version: null`，仍完成登出） | `oidc.py`（`_revoke_local_tokens`） | 同上（递增 / 非数字主体跳过） |
+| IdP 会话登出 | 取 discovery `end_session_endpoint` 拼接 `client_id`（可选 `post_logout_redirect_uri`）；IdP 未声明或不可达 → `idp_logout_url: null`（尽力而为，不回滚本地吊销） | `oidc.py`（`build_logout_url`） | 同上（Provider 登出 URL 断言） |
+| 错误口径 | 未登录 → 401；`provider` 未登记 → 400 `PARAM_INVALID`；指定 Provider 但 OIDC 未启用 → 404（均在吊销前判定，不产生半登出态） | `oidc.py` | 同上（未鉴权 / 未知 Provider） |
+
+**新增配置**
+
+无新增配置项（复用 `OPENBASE_IDP_PROVIDERS` 与 `OPENBASE_OIDC_*`）。
+
+**统一口径**
+
+- 前端凭据（localStorage）清除仍由调用方负责；本端点不维护服务端黑名单。
+- `token_version` 递增的即时失效效果依赖 `OPENBASE_ENFORCE_TOKEN_VERSION=true`（生产门禁已强制，见 A2 §2.3）；非生产未开启时新版令牌仍可续签，但旧 refresh 在主体版本校验路径下不再兼容。
+- 不实现 IdP 主动回调的 **back-channel logout**：需 IdP 侧配置 logout token 与网关回调端点，列为残余。
+
+**残余**
+
+- back-channel logout（IdP 主动通知）未实现，IdP 直接注销会话时网关侧令牌仍依赖本地登出或过期。
+- 未保存 IdP 侧 `id_token_hint`，部分 IdP 可能要求该参数才能静默登出（如需可在前端回调时留存 ID Token 后透传）。
+- 验证边界：mock IdP 校验 URL 构造与本地吊销分支，未做真实 IdP 登出联调。
 
 ## 11. 修订历史
 
@@ -744,3 +800,5 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.12.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.15「A3 存量迁移闭环」：初始化链 `apply_identity_migration` 幂等补齐 `audit_logs.prev_hash` / `entry_hash` 两列（`inspect` 列存在性判定 + PG schema 限定 ALTER），消除 §10.13 登记的「生产升级需手工 DDL」残余（ER-27）；同步改写模型注释与 §10.13 统一口径；新增 2 项用例（SQLite 存量库补列/重放幂等/历史行 NULL、PG schema 限定 SQL），`test_identity_t1` + `test_db_init` + `test_audit_chain` 全部通过，ruff 0 错误；修正 `test_identity_t6` 静态扫描的过期禁用词（E3-2 人工留存清理与 `audit_retention_days` 配置属显式端点，不属自动限期清除）；A1 验收清单升 v1.0.1（A1-12 改为「启动即补列」口径） |
 | v1.13.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.16「ABAC 策略写端点」并闭合 §10.14 登记的 ER-24：`abac_policy_rules` 表（名称唯一/启用开关/版本自增）+ `/api/v1/auth/access/policies` CRUD（`security:admin`，字段校验复用配置口径，409/404/400 三态）；`/check` 改为「DB 启用行 ∪ 配置基线」合并判定，deny-overrides 与跨租户默认拒绝语义不变、缺省零行为变化；写入与 `AuditLog` 同事务（`access.abac_policy.*`，审计失败即回滚）；新增 3 项用例，`test_e3_governance` 26 项与相关回归全通过，ruff 0 错误；登记残余（无审批流/无规则规模压测/SQLite 验证边界）；A2 清单升 v1.0.1（ABAC 增运行期策略说明） |
 | v1.14.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.17「OIDC P1 安全硬化」：state 从进程内 dict 改为一次性存储（Redis 优先 + TTL + 锁，Redis 不可用回退内存）；授权码流补 nonce 校验与 PKCE S256（默认开启）；ID Token 验签算法由硬编码 RS256 改为配置白名单 ∩ IdP discovery 声明（未接线算法含 SM2 启动即拒绝）；OIDC 端点错误由 `HTTPException` 收敛为 `BaseError` 统一四键契约；新增 3 配置项与启动门禁；新增 12 项用例，OIDC 相关 30 项全部通过，ruff 0 错误；登记残余（多 Provider 路由未接、IdP 登出未联动、client_secret_basic/mTLS 未支持、真实 IdP 联调待 A1） |
+| v1.15.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.18「多 Provider 登录路由」：`GET /auth/oidc/authorize` 支持 `provider` 参数，按 `OPENBASE_IDP_PROVIDERS` 声明构建/缓存 Provider 客户端；state 载荷记录 Provider 名，callback 依 state 还原客户端（profile/claim_role/default_tenant 取自 Provider）；未登记/未知 Provider 统一 400 `PARAM_INVALID`；不指定 provider 的单 IdP 路径零行为变化；新增 5 项用例，OIDC 三套用例全通过，ruff 0 错误 |
+| v1.16.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.19「IdP 登出联动」：`POST /auth/oidc/logout` 本地 `token_version` 递增即时吊销存量令牌，按 Provider/单 IdP discovery 返回 `end_session` 登出 URL（IdP 未声明/不可达则为 null，不回滚本地吊销）；未鉴权 401、未知 Provider 400、未启用 404 均在吊销前判定；新增 4 项用例（未鉴权 / 未知 Provider / Provider 登出 URL / 本地版本递增与直签主体跳过），`test_oidc_multi_provider` 9 项全通过，ruff 0 错误 |

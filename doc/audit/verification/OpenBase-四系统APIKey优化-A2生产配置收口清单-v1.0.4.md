@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.2 |
+| 文档版本 | v1.0.4 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.14.0.md`（§10.7~§10.17） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.16.0.md`（§10.7~§10.19） |
 | 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`（A1-01/02/04/11/12 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -18,6 +18,8 @@
 | v1.0.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 首版：将五仓「API Key 与授权」相关配置收敛为单一部署基线，给出 OpenBase 控制面基线矩阵、四仓镜像矩阵、11 项启动门禁、密钥管理、漂移自检与签核口径 |
 | v1.0.1 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.13.0（§10.16）：ABAC 除 `OPENBASE_ABAC_POLICIES` 配置基线外，新增运行期策略表与 `/api/v1/auth/access/policies` 写端点（判定为两者合并，缺省零行为变化）；关联方案版本号更新 |
 | v1.0.2 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.14.0（§10.17 OIDC P1 安全硬化）：§2.5 新增 `OPENBASE_OIDC_STATE_TTL_SECONDS` / `OPENBASE_OIDC_PKCE_ENABLED` / `OPENBASE_OIDC_SIGNING_ALGORITHMS` 三项基线；§4 启动门禁由 11 项增至 12 项（新增 OIDC 硬化门禁）；§6.3 增加算法白名单负向样例；关联方案版本号更新 |
+| v1.0.3 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.15.0（§10.18 多 Provider 登录路由）：`OPENBASE_IDP_PROVIDERS` 行补充登录路由接入说明（`authorize?provider=`、state 记录 Provider、未知 Provider 400），关联方案版本号更新 |
+| v1.0.4 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.16.0（§10.19 IdP 登出联动）：§2.5 新增「登出联动」行（强校验与 IdP `end_session_endpoint` 前置条件），关联方案版本号更新 |
 
 ---
 
@@ -103,11 +105,12 @@
 | `OPENBASE_ABAC_POLICIES` | 空 | 空 = 无属性策略（回落 RBAC）；启用须合法 JSON 数组。运行期新增策略走 `POST /api/v1/auth/access/policies`（`security:admin`，落 `abac_policy_rules` 表并同步审计），判定为「表内启用行 ∪ 本配置基线」，缺省零行为变化 | 非法 JSON/字段 → **所有环境拒绝启动** | `settings.py:651-675`；`modules/auth/abac_policy_store.py` |
 | `OPENBASE_AUDIT_RETENTION_DAYS` | `0` | `0`（不清理）或 **≥30** | 1~29 → 拒绝启动（避免误删责任期数据） | `settings.py:651-675` |
 | `OPENBASE_AUDIT_EXPORT_MAX_ROWS` | `10000` | 正整数（导出单次上限） | 非正 → 拒绝启动 | `settings.py:651-675` |
-| `OPENBASE_IDP_PROVIDERS` | 空 | 空 = 仅既有单 IdP；启用须合法 JSON 数组（名称唯一、必填齐全） | 非法 → 拒绝启动 | `settings.py:651-675` |
+| `OPENBASE_IDP_PROVIDERS` | 空 | 空 = 仅既有单 IdP；启用须合法 JSON 数组（名称唯一、必填齐全）。已接入登录路由：`GET /api/v1/auth/oidc/authorize?provider=<name>` 按 Provider 声明发起授权，callback 依 state 记录的 Provider 还原客户端（未登记/未知 Provider → 400 `PARAM_INVALID`） | 非法 → 拒绝启动 | `settings.py:651-675`；`modules/auth/oidc.py` |
 | `OPENBASE_OIDC_ENABLED` 及 `OPENBASE_OIDC_*` | 关闭 / 见 `settings.py:444-461` | 按实际 IdP 填写；未映射租户默认 `tenant-1`（非保留码） | 保留码会导致下游 400 | `settings.py:444-461` |
 | `OPENBASE_OIDC_STATE_TTL_SECONDS` | `600` | 600（多实例经 Redis 共享一次性 state；Redis 不可用回退进程内） | 非正整数 → **所有环境拒绝启动** | `settings.py:462, 695-717` |
 | `OPENBASE_OIDC_PKCE_ENABLED` | `true` | `true`（授权码流 S256；IdP 不支持时方可显式关闭） | 关闭即失去授权码拦截防护（不阻断启动，须记录例外） | `settings.py:464` |
 | `OPENBASE_OIDC_SIGNING_ALGORITHMS` | `RS256` | `RS256`（须与 IdP discovery 声明取交集；交集为空即登录失败） | 空值 / 未接线算法（如 `SM2`）→ **所有环境拒绝启动** | `settings.py:466, 695-717` |
+| 登出联动（无新增配置） | — | 生产须启用 `OPENBASE_ENFORCE_TOKEN_VERSION=true`（已为启动门禁），登出端点 `POST /api/v1/auth/oidc/logout` 的 `token_version` 递增才会即时吊销存量令牌；IdP 侧需在 discovery 声明 `end_session_endpoint` 才能返回登出 URL | 未启用强校验 → 登出仅清前端凭据（不作为启动门禁） | `modules/auth/oidc.py` |
 
 ### 2.6 上游代理与出站凭证（与 Key 授权直接相关）
 

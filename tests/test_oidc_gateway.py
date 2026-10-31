@@ -29,10 +29,22 @@ def _b64url(data: bytes) -> str:
 class MockIdp:
     """极简 mock IdP：RS256 签发 ID Token，校验 client_id/secret. """
 
-    def __init__(self, issuer: str, client_id: str, client_secret: str) -> None:
+    def __init__(
+        self,
+        issuer: str,
+        client_id: str,
+        client_secret: str,
+        *,
+        sub: str = "oidc-user-001",
+        tenant_id: str = "default",
+        roles: list[str] | None = None,
+    ) -> None:
         self.issuer = issuer
         self.client_id = client_id
         self.client_secret = client_secret
+        self.sub = sub
+        self.tenant_id = tenant_id
+        self.roles = roles if roles is not None else ["org_admin"]
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -69,6 +81,7 @@ class MockIdp:
                 "authorization_endpoint": f"{self.issuer}/authorize",
                 "token_endpoint": f"{self.issuer}/token",
                 "jwks_uri": f"{self.issuer}/jwks",
+                "end_session_endpoint": f"{self.issuer}/logout",
                 "response_types_supported": ["code"],
                 "subject_types_supported": ["public"],
                 "id_token_signing_alg_values_supported": ["RS256"],
@@ -80,10 +93,19 @@ class MockIdp:
 
         @app.post("/token")
         async def token(request: StarletteRequest):
-            # 宽松校验 client 凭据（集成说明约束生产必配）
+            # 宽松校验 client 凭据（集成说明约束生产必配）；同时接受
+            # client_secret_post（表单）与 client_secret_basic（Authorization 头）
             form = await request.form()
-            assert form.get("client_id") == self.client_id
-            assert form.get("client_secret") == self.client_secret
+            client_id = form.get("client_id")
+            client_secret = form.get("client_secret")
+            authorization = request.headers.get("authorization", "")
+            if authorization.lower().startswith("basic "):
+                import base64
+
+                decoded = base64.b64decode(authorization.split(" ", 1)[1]).decode()
+                client_id, client_secret = decoded.split(":", 1)
+            assert client_id == self.client_id
+            assert client_secret == self.client_secret
             header = {"alg": "RS256", "typ": "JWT", "kid": self.kid}
             # v1.14.0 nonce 校验：测试以 "mock-code.<nonce>" 传递授权请求下发的 nonce，
             # mock IdP 原样回写 ID Token（真实 IdP 由授权会话保存并在签发时携带）
@@ -91,14 +113,14 @@ class MockIdp:
             nonce = code.split(".", 1)[1] if "." in code else ""
             payload = {
                 "iss": self.issuer,
-                "sub": "oidc-user-001",
+                "sub": self.sub,
                 "aud": self.client_id,
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
-                "preferred_username": "oidc-user-001",
-                "email": "oidc-user-001@example.com",
-                "roles": ["org_admin"],
-                "tenant_id": "default",
+                "preferred_username": self.sub,
+                "email": f"{self.sub}@example.com",
+                "roles": list(self.roles),
+                "tenant_id": self.tenant_id,
             }
             if nonce:
                 payload["nonce"] = nonce
