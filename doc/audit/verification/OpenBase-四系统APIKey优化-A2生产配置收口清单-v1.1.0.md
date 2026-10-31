@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.1.1 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
 | 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.22.0.md`（§10.7~§10.25） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`（A1-01/02/04/11/12 为本清单的执行验收） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.0.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -26,6 +26,7 @@
 | v1.0.8 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.20.0（§10.23 OIDC 残余闭合 P1 C-01~C-05）：§2.5 新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS` / `_URI` / `_IP` / `_EMAIL` 与 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM` 基线（全部缺省零行为变化）；§4 门禁 #6 增补 SAN 期望值不匹配与断言算法/私钥类型错配条件（总数仍 13 项）；§6.3 新增 SAN 不匹配、断言算法与私钥类型错配负向样例；关联方案与残余项方案版本号更新 |
 | v1.0.9 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.21.0（§10.24 Key 生命周期残余闭合 P2 C-06~C-10）：§2.4 新增 `OPENBASE_MCP_API_KEY_TOOLS` 基线（静态 Key 工具白名单 JSON，留空=不限工具，建议生产显式绑定或 `*`）；§4 门禁 #12 增补工具白名单结构校验条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
 | v1.1.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.22.0（§10.25 P3 治理残余闭合 G-01~G-03）：§2.5 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（默认 `1000`）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（默认 `50`）两项 ABAC 规模/性能基线（缺省零行为变化，仅告警）；§4 门禁 #4 增补「ABAC 阈值非正整数 → 拒绝启动」条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
+| v1.1.1 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | D-01 联动：关联清单更新为《A1 生产验收清单 v1.1.0》（新增 A1-13 OIDC 专项、A1-14 跨仓实测为本清单执行验收）；正文基线与 13 项门禁未变，仅版本引用同步 |
 
 ---
 

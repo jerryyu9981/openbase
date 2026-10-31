@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.1 |
+| 文档版本 | v1.1.0 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.12.0.md`（§10.7~§10.15） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.22.0.md`（§10.7~§10.25） |
 | 验收对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五仓（E0~E3 已实施项） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -16,6 +16,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 首版：把方案 §11 残余中的「已完成但未生产实测（V-01~V-07）」转化为可执行的 A1-01~A1-12 验收项，明确前置、步骤、通过标准、证据与签核门禁 |
 | v1.0.1 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.12.0（§10.15 A3）：A1-12 由「缺失即手工 DDL」改为「启动应用即自动补列」，手工幂等 DDL 降为不启动应用时的可选预置路径；关联方案版本号更新 |
+| v1.1.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | D-01 升版收口：关联方案更新至 v1.22.0（§10.7~§10.25），覆盖 §10.17~§10.25 新增能力——新增 **A1-13 OIDC 登录安全硬化与登出联动**（对应 V-13：多 Provider 路由、PKCE/nonce、state TTL、五种 token 认证方式、SAN/subject 绑定、back-channel logout、`id_token_hint`）与 **A1-14 跨仓生产实测**（对应 V-14）；A1-08 增补 ABAC 变更事后审计（`review_mode=post_audit`）与 SoD 授予强制（409 `PERM_DUTY_CONFLICT`）判定；A1-11 负向启动补齐 ABAC 阈值非正、MCP 工具白名单、OIDC 六类门禁；§7 已知边界同步 ER-24/ER-25 已闭合 |
 
 ---
 
@@ -23,7 +24,7 @@
 
 本清单用于回答一个门禁问题：**E0~E3 的已实施能力，能否在真实生产拓扑下被证明有效？**
 
-覆盖方案 §11 中 V 类（已完成、仅有单测/SQLite/桩验证）的 7 组能力，并扩展为 12 个可执行验收项：
+覆盖方案 §11 中 V 类（已完成、仅有单测/SQLite/桩验证）的 7 组能力，并扩展为 14 个可执行验收项：
 
 | 验收项 | 对应残余 | 关键词 |
 |---|---|---|
@@ -39,8 +40,10 @@
 | A1-10 | V-05、ER-04 | 离线宽限与断网降级 |
 | A1-11 | V-06 | 四仓生产门禁负向启动 |
 | A1-12 | V-09、U-03 | 存量库迁移与数据核对 |
+| A1-13 | V-13 | OIDC 登录安全硬化与登出联动（真实 IdP） |
+| A1-14 | V-14 | 跨仓生产实测（JWKS 验签 / 吊销时延 / 门禁 / 审计字段） |
 
-**不在本清单范围**：多实例中心化配额/异常聚合（V-10，属 P1 排期）；SM2 真实签名、IdP 实际联调、集中审计平台、信创灾备、终端宿主项（TPM/安全启动/固件签名/本地落盘加密/远程擦除）——这些是 U 类未完成项，另行立项验收。
+**不在本清单范围**：多实例中心化配额/异常聚合已由 C-07 实现、其生产取证并入 A1-14；SM2 真实签名、集中审计平台、信创灾备、终端宿主项（TPM/安全启动/固件签名/本地落盘加密/远程擦除）——这些是 U 类未完成项（对应残余台账 P 类），另行立项验收。
 
 ---
 
@@ -63,6 +66,8 @@
 | 普通用户 JWT | 吊销收敛测试 | 可修改密码/可被禁用 |
 | ABAC 管理权限账号（`security:admin`） | `/auth/access/check`、`/auth/access/duties` | 生产权限矩阵真实授予 |
 | MCP 静态 Key（仅测试窗口） | MCP 兼容形态 | 测试后立即回收 |
+| IdP 测试客户端（OIDC） | A1-13 登录与登出联调 | 独立测试租户/client；`client_secret`、私钥、证书只登记「已配置/未配置」，禁止落证据文件 |
+| 三权分立职责账号（`system_admin` / `security_admin` / `audit_admin`） | A1-08 SoD 授予冲突判定 | 至少两个可授予账号，用于验证互斥职责叠加被拒（409 `PERM_DUTY_CONFLICT`） |
 
 ### 2.3 工具
 
@@ -98,6 +103,8 @@
 | A1-10 | 离线宽限与断网降级 | P1 | 宽限内放行、超期拒绝且留痕；Redis 缺失不新增放行 | `a1-10.txt` |
 | A1-11 | 生产门禁负向启动 | P0 | 每仓关键项漏配 → 拒绝启动（0 容忍） | `a1-11.txt` |
 | A1-12 | 存量迁移与核对 | P0 | 列存在、行数差可解释、链校验 `ok` | `a1-12.txt` |
+| A1-13 | OIDC 登录安全硬化与登出联动 | P0（启用 OIDC 时） | 多 Provider 路由正确；PKCE/nonce/state 一次性；五种 token 认证方式按配置生效；SAN/subject 绑定拒启；登出联动与 back-channel 生效 | `a1-13.json` |
+| A1-14 | 跨仓生产实测 | P1 | 四仓 JWKS 验签、吊销时延、门禁负向启动、审计字段与 V-02/V-04/V-11 同批取证一致 | `a1-14.csv` |
 
 **判定规则**：每项只允许 `Pass / Fail / Blocked` 三态；`Blocked` 必须写明阻塞原因与解除条件。P0 任一 `Fail` → 不允许上线；P1 `Fail` 需书面豁免并由项目负责人签字。
 
@@ -293,8 +300,11 @@
    ```
    断言响应全文不含 `client_secret` 与密钥原文，仅 `has_client_secret=true`。
 4. 真实权限矩阵：用**非** `security:admin` 用户调用上述接口 → 403；用真实授予用户 → 200。
+5. SoD 授予强制（G-02）：对同一账号先授予 `system_admin`，再授予 `audit_admin`（或 `security_admin`）→ 必须返回 **409 `PERM_DUTY_CONFLICT`**，错误体含 `conflicts` 明细；改用替换语义单角色授予可正常成功。
+6. ABAC 变更事后审计（G-01，裁定 B）：调用 `POST/PUT/DELETE /api/v1/auth/access/policies` 后查 `audit_logs`，确认 `detail.review_mode="post_audit"`；update/delete 的 `detail.previous` 含变更前快照；应用日志出现 `abac policy changed without dual review; post-audit required` WARN。
+7. ABAC 规模/耗时基线（G-03）：将 `OPENBASE_ABAC_RULE_SOFT_LIMIT` 临时调小（如 10）并保留 >10 条生效策略 → 日志出现 `abac rule set exceeds soft limit; consider index/cache`；验证后恢复默认 1000。
 
-**通过标准**：三端点按权限矩阵返回；ABAC 四种判定可解释；IdP 视图零密钥泄露；SoD 冲突规则在单测/管理中可被识别（接口层按现状不强制授予路径，ER-25 记为已知边界）。
+**通过标准**：三端点按权限矩阵返回；ABAC 四种判定可解释；IdP 视图零密钥泄露；SoD **已在授予路径强制**（互斥职责叠加返回 409，ER-25 已闭合）；ABAC 变更审计带 `post_audit` 标记与改前快照；ABAC 超规则数/超耗时可按阈值告警。
 
 **证据**：`a1-08.json`（三类响应脱敏副本）、403 用例。
 
@@ -340,7 +350,7 @@
 
 | 仓库 | 负向用例 |
 |---|---|
-| OpenBase | `OPENBASE_JWT_REQUIRE_RS256=true` 但缺 PEM/kid；`OPENBASE_JWT_ALGORITHM=SM2` 或未知算法；`OPENBASE_ABAC_POLICIES` 非法 JSON；`OPENBASE_AUDIT_RETENTION_DAYS=10`；`OPENBASE_IDP_PROVIDERS` 名称重复 |
+| OpenBase | `OPENBASE_JWT_REQUIRE_RS256=true` 但缺 PEM/kid；`OPENBASE_JWT_ALGORITHM=SM2` 或未知算法；`OPENBASE_ABAC_POLICIES` 非法 JSON；`OPENBASE_ABAC_RULE_SOFT_LIMIT=0` 或 `OPENBASE_ABAC_EVALUATION_WARN_MS=-1`；`OPENBASE_AUDIT_RETENTION_DAYS=10`；`OPENBASE_IDP_PROVIDERS` 名称重复；`OPENBASE_MCP_API_KEY_TOOLS` 非法 JSON/空数组；`OPENBASE_OIDC_STATE_TTL_SECONDS=0`；`OPENBASE_OIDC_SIGNING_ALGORITHMS` 含 `SM2`；`OPENBASE_OIDC_TOKEN_AUTH_METHOD=bogus`；`mtls` 缺证书路径；`tls_client_auth` subject 与证书不匹配 |
 | OpenLLM | 生产 profile 下 `TRUSTED_PROXY_SOURCES` 为空 |
 | OpenRAG | `enforce_inbound_identity_headers=false`、`trusted_proxy_sources` 为空、`role_fail_closed=false`（分别验证） |
 | DPS | 已开启 enforce 时 `TRUSTED_PROXY_SOURCES` 为空 |
@@ -380,6 +390,45 @@
 
 ---
 
+### A1-13 OIDC 登录安全硬化与登出联动（真实 IdP）
+
+**前置**：`OPENBASE_OIDC_ENABLED=true`；`OPENBASE_IDP_PROVIDERS` 登记至少 1 个真实 Provider（含名称唯一与必填项）；若使用多 Provider 需登记 2 个；证书/私钥/`client_secret` 只读挂载并只登记「已配置/未配置」。
+
+**步骤**：
+
+1. 多 Provider 路由：分别请求 `GET /api/v1/auth/oidc/authorize?provider=<name>`，断言 302 指向对应 IdP 授权端点；回调后主体与租户取自该 Provider 配置；请求未登记/未知 `provider` → 400 `PARAM_INVALID`。
+2. PKCE / nonce / state 一次性：`authorize` 响应含 `code_challenge`（S256）与 `nonce`；callback 校验 nonce 缺失/不匹配被拒；同一 state 二次回调被拒（Redis 一次性；Redis 不可用时单实例语义）。
+3. 五种 token 认证方式（按 IdP 支持逐项验证）：`client_secret_post`、`client_secret_basic`、`private_key_jwt`、`mtls`、`tls_client_auth`——分别确认 token 请求载荷/客户端证书/断言 `iss`/`sub`/`aud` 正确、登录成功，并记录各方式耗时。
+4. 证书绑定负向：`tls_client_auth` 的 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 与证书不匹配、任一 `_SAN_*` 期望值不在证书内、证书非 PEM → **拒绝启动**（对应 A1-11 门禁）。
+5. 登出联动：`POST /api/v1/auth/oidc/logout` → 本地 `token_version` 递增（旧令牌立即 401）；返回 `end_session` URL 且携带 `id_token_hint`（若登录时已保存）；IdP 未声明 `end_session_endpoint` 时为 `null` 且不回滚本地吊销。
+6. back-channel logout：`POST /api/v1/auth/oidc/backchannel-logout` 携带合法 logout token → 200 且目标主体存量令牌失效；`jti` 重放、`events`/`nonce`/`sub|sid` 缺失、签名错误 → 拒绝；IdP 未登记回调或不支持 → 404。
+7. 日志与响应脱敏：全程检查应用日志与错误响应不含 `client_secret`、私钥、证书原文、ID Token 全文。
+
+**通过标准**：Provider 路由与参数校验正确；PKCE/nonce/state 三重防护有效；五类认证方式按配置生效且回滚可切回 `client_secret_post`；证书绑定负向拒启；登出本地即时吊销 + IdP 登出 URL/`id_token_hint` 正确；back-channel 幂等防重放；全程无凭据泄露。
+
+**证据**：`a1-13.json`（各步骤状态码、脱敏后的 authorize URL 参数、认证方式对照表、负向启动日志片段）。
+
+---
+
+### A1-14 跨仓生产实测（OpenLLM / OpenRAG / OpenMemory / DPS）
+
+**前置**：四仓均为候选发布版本并记录 `git rev-parse HEAD`；OpenBase JWKS 可达；四仓 `*_OPENBASE_JWKS_URL` / 吊销同步 / 服务 Key 已按 A2 注入。
+
+**步骤**：
+
+1. 本地验签：用 A1-01 令牌分别请求四仓受保护接口 → 200；`aud` 篡改 / 过期 / 未映射主体 → 401（与 A1-02 同批取证）。
+2. 吊销收敛：禁用测试用户后记录四仓开始拒绝的时间；内省路径即时生效，惰性拉取路径记录实测间隔（≤60s 或书面放宽，ER-10）。
+3. 门禁负向启动：四仓按 A1-11 逐条构造缺配置并重启 → 拒绝启动，错误可定位到具体配置项。
+4. 审计字段：抽查四仓审计记录，断言含 `key_id` / `subject` / `tenant` / `entry=proxy|direct`（K-03 落地后生效；未落地仓判 `Blocked` 并注明依赖 K-03）。
+5. 身份权威与本地登录：生产固定 `IDENTITY_AUTHORITY=openbase`；验证本地密码登录/自签 JWT 通道已关闭（依赖 K-02/K-06 落地，未落地判 `Blocked`）。
+6. 跨实例能力（如启用）：C-07 异常聚合、C-08 到期事件去重、C-09 对账在多实例下的表现与 Redis 降级路径。
+
+**通过标准**：四仓验签与三类负向一致；吊销时延达标或有书面放宽；四仓门禁 0 容忍；审计字段齐全或明确 `Blocked`；身份权威固定为 OpenBase；Redis 降级不新增放行。
+
+**证据**：`a1-14.csv`（每仓 × 每项 `Pass/Fail/Blocked` + 证据文件名 + 版本 HEAD）。
+
+---
+
 ## 5. 证据与判定规范
 
 | 要求 | 说明 |
@@ -406,6 +455,7 @@
 
 - A1-04 的 60s 为**目标值**，惰性拉取实际间隔以各仓配置为准；超过目标需书面放宽并记录（ER-10）。
 - A1-05/A1-06 仅覆盖「同 PG 双实例」；跨库分片不适用（ER-18），如需分片另立设计。
-- A1-08 中 SoD **未强制接入 `role:grant`**（ER-25）、ABAC **无写端点**（ER-24），本清单只验收现有能力，不把未实现项判为通过。
-- SM2、IdP 实际联调、集中审计平台、信创灾备、终端宿主项不在本清单范围（U 类）。
-- 本清单通过后，建议将 V-01~V-07 在方案 v1.12.0 中由「未实测」改为「已实测（附证据编号）」。
+- A1-08 的两个原已知边界已闭合：ABAC 写端点由方案 v1.13.0（§10.16）提供，ER-24 关闭；SoD 授予强制由方案 v1.22.0（§10.25 G-02）提供，互斥职责叠加返回 409 `PERM_DUTY_CONFLICT`，ER-25 关闭。G-01 按裁定 B 为「超管直改 + 事后审计」，**不设审批前置**，本清单只验收审计标记与 WARN，不把「强制第二人签字」判为已实现。
+- A1-13/A1-14 依赖真实 IdP 环境与四仓联调窗口；缺环境时判 `Blocked` 并写明解除条件，不得以 mock 结果判 `Pass`。
+- SM2、集中审计平台、信创灾备、终端宿主项不在本清单范围（对应残余台账 P 类，触发式立项）。
+- 本清单通过后，建议将 V-01~V-14 在方案 v1.22.0 中由「未实测」改为「已实测（附证据编号）」。
