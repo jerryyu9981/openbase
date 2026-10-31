@@ -7,8 +7,9 @@
   用 IPv4 前两段 / IPv6 前四组作为"地域"替身，只用于告警不作为拒绝依据）；
 - ``rate_spike``：单位时间调用量突增（疑似脚本化滥用）。
 
-设计取舍：检测在**进程内**完成（锁保护、窗口裁剪），不引入 Redis/后台线程，
-符合边缘算力受限约束；告警落 ``AuditLog`` + 结构化 WARN 日志，同类告警按冷却
+设计取舍：检测优先在 **Redis 聚合**（跨实例共享计数/集合/冷却，多实例部署下
+同一 Key 的异常不再被分摊到单实例窗口），Redis 不可用或调用失败时**回退进程内**
+滑动窗口（保留原行为）；告警落 ``AuditLog`` + 结构化 WARN 日志，同类告警按冷却
 窗口抑制，避免日志洪泛。异常只告警、**不阻断**认证（可用性优先，处置由运维吊销
 Key 完成）。
 """
@@ -33,6 +34,8 @@ ACTION_SERVICE_KEY_ANOMALY = "auth.service_key.anomaly"
 _RESOURCE_SERVICE_KEY = "service_api_keys"
 _RATE_WINDOW_SECONDS = 60.0
 _MAX_TRACKED_KEYS = 10000
+# C-07（P2）：Redis 聚合键（键命名 openbase:{domain}:{key}）
+_REDIS_PREFIX = "openbase:key_anomaly"
 
 
 def resolve_client_ip(request: Request) -> str:
@@ -59,6 +62,60 @@ def ip_prefix(ip: str) -> str:
 def _anomaly(kind: str, key_id: str, ip: str, **detail: Any) -> dict[str, Any]:
     """构造一条告警（不含凭证明文）."""
     return {"kind": kind, "key_id": key_id, "ip": ip, "detail": detail}
+
+
+def _redis_cooldown_allows(client: Any, key_id: str, kind: str, cooldown: float) -> bool:
+    """跨实例冷却（``SET NX EX``）：首次告警返回 True，冷却窗口内返回 False."""
+    return bool(
+        client.set(
+            f"{_REDIS_PREFIX}:cool:{key_id}:{kind}",
+            "1",
+            nx=True,
+            ex=int(cooldown),
+        )
+    )
+
+
+def _observe_redis(
+    client: Any,
+    key_id: str,
+    ip: str,
+    *,
+    window: float,
+    cooldown: float,
+    max_ips: int,
+    rate_limit: int,
+) -> list[dict[str, Any]]:
+    """Redis 聚合观测（跨实例共享计数/集合/冷却；异常向上抛出由调用方回退）."""
+    alerts: list[dict[str, Any]] = []
+
+    def emit(kind: str, **detail: Any) -> None:
+        if _redis_cooldown_allows(client, key_id, kind, cooldown):
+            alerts.append(_anomaly(kind, key_id, ip, **detail))
+
+    rate_key = f"{_REDIS_PREFIX}:rate:{key_id}"
+    count = int(client.incr(rate_key))
+    if count == 1:
+        client.expire(rate_key, int(_RATE_WINDOW_SECONDS))
+    if rate_limit > 0 and count > rate_limit:
+        emit(KIND_RATE_SPIKE, count=count, window_seconds=int(_RATE_WINDOW_SECONDS))
+
+    if ip:
+        ips_key = f"{_REDIS_PREFIX}:ips:{key_id}"
+        previous = set(client.smembers(ips_key) or ())
+        previous_prefixes = {ip_prefix(item) for item in previous}
+        if previous and previous_prefixes and ip_prefix(ip) not in previous_prefixes:
+            emit(
+                KIND_IP_PREFIX_CHANGE,
+                previous_prefixes=sorted(previous_prefixes),
+                current_prefix=ip_prefix(ip),
+            )
+        client.sadd(ips_key, ip)
+        client.expire(ips_key, int(window))
+        distinct = int(client.scard(ips_key))
+        if max_ips > 0 and distinct > max_ips:
+            emit(KIND_MULTI_IP, distinct_ips=distinct, window_seconds=int(window))
+    return alerts
 
 
 class KeyAnomalyTracker:
@@ -95,6 +152,32 @@ class KeyAnomalyTracker:
         cooldown = max(float(settings.key_anomaly_alert_cooldown_seconds), 1.0)
         max_ips = int(settings.key_anomaly_max_ips)
         rate_limit = int(settings.key_anomaly_rate_per_minute)
+
+        # C-07（P2）：生产路径（未注入时间）优先 Redis 跨实例聚合；
+        # 注入 now 的调用为确定性单测/回放，固定走进程内窗口。
+        if now is None:
+            try:
+                from openbase.core.cache.redis_client import get_client
+
+                client = get_client()
+                if client is not None:
+                    return _observe_redis(
+                        client,
+                        key_id,
+                        ip,
+                        window=window,
+                        cooldown=cooldown,
+                        max_ips=max_ips,
+                        rate_limit=rate_limit,
+                    )
+            except Exception as exc:  # noqa: BLE001 - Redis 异常回退进程内，不阻断认证
+                logger.warning(
+                    "key anomaly redis aggregation failed; fallback to process window",
+                    extra={
+                        "key_id": key_id,
+                        "error": str(exc) or exc.__class__.__name__,
+                    },
+                )
 
         with self._lock:
             if key_id not in self._states and len(self._states) >= _MAX_TRACKED_KEYS:

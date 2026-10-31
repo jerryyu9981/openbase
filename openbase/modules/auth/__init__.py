@@ -11,7 +11,7 @@ import datetime as dt
 import logging
 import re
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +24,11 @@ from openbase.modules.auth.jwt import (
     decode_refresh_token,
     issue_token_pair,
 )
-from openbase.modules.auth.service_keys import ServiceKeyService, public_record
+from openbase.modules.auth.service_keys import (
+    SERVICE_KEY_EXPIRING_WITHIN_DAYS,
+    ServiceKeyService,
+    public_record,
+)
 from openbase.modules.identity.state_machine import (
     STATUS_STATE_ACTIVE,
     SUBJECT_TYPE_AGENT,
@@ -837,6 +841,44 @@ async def list_api_keys(
     tenant_code = await tenant_filter_code(session, user)
     records = await ServiceKeyService.list_keys(session, tenant_code=tenant_code)
     return [ApiKeyOut(**public_record(record)) for record in records]
+
+
+@router.get("/api-keys/expiring", response_model=list[ApiKeyOut])
+async def list_expiring_api_keys(
+    within_days: int = Query(SERVICE_KEY_EXPIRING_WITHIN_DAYS, ge=1, le=365),
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[ApiKeyOut]:
+    """到期提醒清单（C-08；只读，需 auth:api-keys:view）.
+
+    返回有效且 ``expires_at <= now + within_days``（缺省 7 天，含已过期）的 Key；
+    按调用方租户过滤。轮换复用既有 ``POST /api-keys/{key_id}/rotate``，本端点不新增
+    写路径；``service_key.expiring`` 事件由 :meth:`ServiceKeyService.emit_expiring_events`
+    在运维扫描任务中投递。
+    """
+    from openbase.modules.auth.rbac import tenant_filter_code
+
+    await _check_api_key_permission(user, session, "auth:api-keys:view")
+    tenant_code = await tenant_filter_code(session, user)
+    records = await ServiceKeyService.list_expiring(
+        session, within_days=within_days, tenant_code=tenant_code
+    )
+    return [ApiKeyOut(**public_record(record)) for record in records]
+
+
+@router.get("/roles/contract")
+async def roles_contract(
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """统一角色字典契约（C-10；登录可读，仅含角色码/档位/权限点元数据）."""
+    from openbase.modules.auth.role_contract import (
+        build_role_contract,
+        load_role_permissions,
+    )
+
+    role_permissions = await load_role_permissions(session)
+    return build_role_contract(role_permissions)
 
 
 @router.post("/api-keys/{key_id}/rotate", response_model=ApiKeyOut)

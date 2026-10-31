@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.8 |
+| 文档版本 | v1.0.9 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.20.0.md`（§10.7~§10.23） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.21.0.md`（§10.7~§10.24） |
 | 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`（A1-01/02/04/11/12 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -24,6 +24,7 @@
 | v1.0.6 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.18.0（§10.21 private_key_jwt 客户端断言）：§2.5 新增 `OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH` / `_ASSERTION_KID` 基线，`TOKEN_AUTH_METHOD` 可选值扩至四项；§4 门禁 #6 增补 private_key_jwt 缺私钥条件（总数仍 13 项）；§6.3 将原「private_key_jwt 取值非法」样例替换为「缺私钥路径拒启」并新增「未实现方式拒启」样例；关联方案版本号更新 |
 | v1.0.7 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.19.0（§10.22 tls_client_auth 客户端认证）：§2.5 新增 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 基线，`TOKEN_AUTH_METHOD` 可选值扩至五项，证书项适用方式扩为 `mtls` / `tls_client_auth`；§4 门禁 #6 增补证书非 PEM 与 subject 不匹配条件（总数仍 13 项）；§6.3 新增 subject 不匹配/非 PEM 负向样例；关联方案版本号更新 |
 | v1.0.8 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.20.0（§10.23 OIDC 残余闭合 P1 C-01~C-05）：§2.5 新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS` / `_URI` / `_IP` / `_EMAIL` 与 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM` 基线（全部缺省零行为变化）；§4 门禁 #6 增补 SAN 期望值不匹配与断言算法/私钥类型错配条件（总数仍 13 项）；§6.3 新增 SAN 不匹配、断言算法与私钥类型错配负向样例；关联方案与残余项方案版本号更新 |
+| v1.0.9 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.21.0（§10.24 Key 生命周期残余闭合 P2 C-06~C-10）：§2.4 新增 `OPENBASE_MCP_API_KEY_TOOLS` 基线（静态 Key 工具白名单 JSON，留空=不限工具，建议生产显式绑定或 `*`）；§4 门禁 #12 增补工具白名单结构校验条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
 
 ---
 
@@ -95,6 +96,7 @@
 | `OPENBASE_MCP_API_KEYS` | `dev-mcp-key` | 生产**必须为空**（明文仅开发） | 生产含内置/任何明文 Key → **拒绝启动** | `settings.py:771-807` |
 | `OPENBASE_MCP_API_KEY_HASHES` | 空 | 生产推荐：逗号分隔 SHA-256（64 位小写十六进制） | 格式非法 → 拒绝启动；与文件均缺 → 生产拒绝启动 | `settings.py:771-807` |
 | `OPENBASE_MCP_API_KEYS_FILE` | 空 | 生产可选：宿主注入明文 Key 文件（每行一个，建议 0600） | 不可读时降级为无 Key（日志/审计留痕） | `settings.py:771-807` |
+| `OPENBASE_MCP_API_KEY_TOOLS` | 空 | 生产建议：显式绑定工具白名单（JSON 对象，键=静态 Key 的 SHA-256 摘要或明文别名，值=工具名数组；`*` 表示全量） | 非法 JSON / 非对象 / 空键 / 空数组 / 非字符串项 → 拒绝启动；留空 = 全部静态 Key 保持「不限工具」 | `settings.py`（`parse_mcp_api_key_tools` + `_validate_mcp_edge_configuration`） |
 | `OPENBASE_KEY_ANOMALY_ENABLED` | `true` | `true`（只告警不阻断） | 关闭等于放弃多 IP/突增探测 | `settings.py:419-430` |
 | `OPENBASE_KEY_ANOMALY_WINDOW_SECONDS` | `900` | 正整数 | 非正 → 拒绝启动 | `settings.py:808-811` |
 | `OPENBASE_KEY_ANOMALY_MAX_IPS` | `3` | 3（`0` 关闭该维度） | 过高漏报 | `settings.py:423-424` |
@@ -186,7 +188,7 @@ OpenBase 侧 13 项 `@model_validator(mode="after")` / 装配期门禁，按 `se
 | 9 | `_validate_principal_row_missing_policy` | 同上 | 拒绝启动 |
 | 10 | `_validate_outbound_tenant_alignment` | 出站兜底码为空或命中目标保留码 | 拒绝启动 |
 | 11 | `_validate_llm_api_keys_by_tenant` | 映射 JSON 非法/密钥含控制字符 | 拒绝启动 |
-| 12 | `_validate_mcp_edge_configuration` | 明文/内置 MCP Key；摘要格式非法；摘要与文件均缺；异常参数非正 | 拒绝启动 |
+| 12 | `_validate_mcp_edge_configuration` | 明文/内置 MCP Key；摘要格式非法；摘要与文件均缺；异常参数非正；工具白名单 JSON 非法/非对象/空键/空数组/非字符串项 | 拒绝启动 |
 | 13 | `validate_production_login_tenant_policy` | 未开租户强绑定，或配置了显式兜底租户 | 拒绝启动 |
 
 四仓侧生产 fail-closed 门禁（受信来源与角色口径）按各仓配置：OpenRAG `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES` / `OPENRAG_IDENTITY_ROLE_FAIL_CLOSED`；OpenLLM `TRUSTED_PROXY_SOURCES` / `ENFORCE_INBOUND_IDENTITY_HEADERS`；OpenMemory / DPS 以各仓受信代理与角色映射配置为准，漏配即拒启或拒绝入站。

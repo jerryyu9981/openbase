@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.20.0 |
+| 版本 | v1.21.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -913,6 +913,40 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 跨实例 back-channel 去重与 hint 共享依赖 Redis（单实例降级为进程内）。
 - C-03 的存储键采用「`client_id` + 统一主体 `sub`，issuer 内嵌 value」的等价实现，与《残余项统一处置方案》登记的 `issuer+sub+client_id` 键语义等价。
 
+### 10.24 Key 生命周期残余闭合（P2 批次 C-06~C-10，v1.21.0，2026-10-31）
+
+> 目的：按《残余项统一处置方案 v1.0.3》§3.2 推进 P2 批次，闭合 §10.12、§7.3 登记的 5 项 Key/授权运维残余。全部新增配置**缺省即零行为变化**，新增配置进启动门禁，新增端点沿用统一 `BaseError` 错误契约。
+
+| 编号 | 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|---|
+| C-06 | 静态 MCP Key 工具白名单 | 新增 `OPENBASE_MCP_API_KEY_TOOLS`（JSON 对象：键 = 静态 Key 的 SHA-256 摘要或明文别名，值 = 工具名数组；显式 `*` 表示全量）；命中静态 Key 后凭证携带 `tools` 白名单，未命中映射保持「不限工具」；非法 JSON / 非对象 / 空键 / 空数组 / 非字符串项在启动期即拒启 | `settings.py`（`parse_mcp_api_key_tools` + `_validate_mcp_edge_configuration`）、`modules/mcp/credentials.py`（`_match_static_key` / `_static_key_tools`） | `tests/test_p2_residuals.py`（空值/非法参数化/归一、摘要命中、明文别名、无映射保持不限、`*` 通配，8 例） |
+| C-07 | Key 异常检测跨实例聚合 | 生产路径（`now is None`）优先 Redis 聚合：速率 `INCR` + 首次 `EXPIRE 60s`；IP 集合 `SADD` + `EXPIRE(window)` + `SCARD`/`SMEMBERS`；冷却键 `SET NX EX` 跨实例共享。Redis 不可达或调用异常时 WARN 并回退既有进程内滑动窗口；告警仍只告警不阻断 | `modules/auth/key_anomaly.py`（`_observe_redis` / `_redis_cooldown_allows` / `KeyAnomalyTracker.observe`） | 同文件（跨实例网段跳变 + 多 IP、跨实例速率突增、Redis 不可用回退、TTL 断言，4 例） |
+| C-08 | 到期提醒与只读清单 | 新增只读端点 `GET /api/v1/auth/api-keys/expiring?within_days=`（默认 7、范围 1~365；返回有效且到期 ≤N 天与已过期 Key，按租户过滤）；`ServiceKeyService.emit_expiring_events` 投递 `service_key.expiring` 事件（Key + 日期去重：Redis `SET NX EX` 36h，不可用回退进程内集合）；轮换复用既有端点，不新增写路径 | `modules/auth/service_keys.py`（`list_expiring` / `emit_expiring_events` / `_claim_expiring_notification`）、`modules/auth/__init__.py`（端点）、`modules/identity/events.py`（事件枚举） | 同文件（到期/已过期/远期/无到期/跨租户过滤、同日去重与 Outbox 载荷，6 例） |
+| C-09 | 审计对账（Key 侧） | `ServiceKeyService.reconcile` 统计签发/有效/吊销/过期四类计数，判定 `签发数 = 有效数 + 吊销数 + 过期数`；平衡 INFO、不平衡 ERROR，并写 `AuditLog(action=auth.service_key.reconcile)` 留痕；不做跨系统拒绝数比对（依赖 K-03） | `modules/auth/service_keys.py`（`reconcile` / `ACTION_SERVICE_KEY_RECONCILE`） | 同文件（平衡返回 balanced=True、置一条非终态制造不平衡返回 balanced=False 且审计落库，1 例） |
+| C-10 | 统一角色字典契约端点 | 新增只读端点 `GET /api/v1/auth/roles/contract`（登录可读）：输出 `schema_version` / `source` / `unknown_code_policy=fail-closed` / `tiers` / `anchors` / `canonical_role_codes` / `local_role_aliases` / `roles`（角色码、档位、是否已映射、权限点）；锚点优先读 `config/role_tier_anchors.json`，读失败回落内置基线；DB 不可达时仅返回 canonical 码仍可读；响应不含任何密钥/密码 | `modules/auth/role_contract.py`（`build_role_contract` / `load_role_permissions`）、`modules/auth/__init__.py`（端点） | 同文件（结构/档位/权限点、未知码 `tier=None,mapped=False`、无敏感字段、DB 回退，3 例） |
+
+**新增配置（缺省零行为变化）**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `OPENBASE_MCP_API_KEY_TOOLS` | 空 | 静态 MCP Key 工具白名单 JSON；空 = 全部静态 Key 保持「不限工具」；生产建议显式绑定工具数组或显式 `*`；非法结构启动即拒启 |
+
+**验证与门禁结论**
+
+| 项 | 结果 |
+|---|---|
+| 用例 | `python -m pytest tests/test_p2_residuals.py` → **20 passed** |
+| 回归 | Key 异常/API Key/Key API/MCP 凭证/观测 MCP/身份事件 7 套 **99 passed**；`test_identity_t5` **8 passed** |
+| 静态检查 | 本环境未安装 `ruff`（`No module named ruff`），**待具备环境补跑**；已如实登记 |
+| 零行为变化 | 白名单空 → `tools=None`；Redis 正常/异常两路径均保持「只告警不阻断」；到期清单与会话/对账均为只读；角色契约端点不新增写路径 |
+| 安全 | 白名单比对沿用常量时间比较；日志不含 Key 明文/摘要原文；对账审计仅落计数；契约响应不含密钥/密码 |
+
+**残余**
+
+- 跨实例异常聚合与到期去重依赖 Redis 可达；单实例降级为进程内语义（与 §11 风险口径一致）。
+- 对账仅覆盖 Key 侧计数自洽，跨系统拒绝数比对依赖 K-03；对账尚未挂调度，按 D-06 编排项接入。
+- 角色契约的锚点来自仓库内配置文件，组织级角色字典同步仍归 P3 治理批次（G 类）。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -940,3 +974,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.18.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.21「private_key_jwt 客户端断言」并闭合 §10.20 该项残余：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 追加 `private_key_jwt`（RFC 7523，`client_assertion_type` 固定 URN、RS256 断言 `iss`/`sub`=client_id、`aud`=token 端点、300s + `jti`）；新增 `OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH` 与可选 `_ASSERTION_KID`，缺私钥路径/文件不存在拒启；新增 5 项用例（断言 claims/header、mock IdP 验签全链路、3 项门禁），OIDC 四套用例（含 settings/auth）52 项通过，ruff 0 错误；登记残余（断言算法仅 RS256、真实 IdP 未联调） |
 | v1.19.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.22「tls_client_auth 客户端认证」并闭合 §10.20 该项残余：认证方式追加 `tls_client_auth`（RFC 8705 §2.1 PKI 证书），与 `mtls` 共用传输装配（承载 `client_id`、不发 `client_secret`）；新增 `OPENBASE_OIDC_CLIENT_CERT_SUBJECT` 启动期 subject DN 预检（分隔符空白/大小写不敏感，不匹配或非 PEM 拒启）；新增 5 项用例（载荷/传输选项、subject 匹配/不匹配、非 PEM 证书），OIDC 四套（含 settings/auth）57 项通过，ruff 0 错误；登记残余（SAN 型绑定本地预检未实现、真实双向 TLS 未联调） |
 | v1.20.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.23「OIDC 残余闭合（P1 批次 C-01~C-05）」，闭合 §10.22/§10.21/§10.19 登记的 5 项残余：C-01 `tls_client_auth` SAN 型绑定本地预检（新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS/_URI/_IP/_EMAIL`）；C-02 `private_key_jwt` 断言算法扩至 `RS256`/`ES256`/`ES384` 并校验私钥类型/曲线（新增 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM`）；C-03 回调保存 ID Token 并在登出透传 `id_token_hint`；C-04 新增 RFC 8471 `POST /api/v1/auth/oidc/backchannel-logout`（验签 + events/jti 一次性 + 404 语义）；C-05 Provider 级 PKCE/签名算法/认证方式覆盖与回落；新增 6 配置项全部缺省零行为变化并进启动门禁；`tests/test_oidc_p1_residuals.py` **39 passed**（本环境 ruff 未安装，待补跑）；同步升版《残余项统一处置方案 v1.0.2》与 A2 清单 v1.0.8 |
+| v1.21.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.24「Key 生命周期残余闭合（P2 批次 C-06~C-10）」，闭合 §10.12 与 §7.3 登记的 5 项残余：C-06 静态 MCP Key 工具白名单（`OPENBASE_MCP_API_KEY_TOOLS`，缺省不限工具）；C-07 Key 异常检测改 Redis 跨实例聚合（`INCR`/`SADD`/`SCARD` + 共享冷却，Redis 不可用回退进程内，仍只告警不阻断）；C-08 新增只读到期清单端点与 `service_key.expiring` 事件（Key+日去重）；C-09 Key 侧审计对账（`签发 = 有效 + 吊销 + 过期`，差异写审计告警）；C-10 新增 `GET /api/v1/auth/roles/contract` 统一角色字典契约端点；新增 1 配置项缺省零行为变化并进启动门禁；`tests/test_p2_residuals.py` **20 passed**（回归 99 + 8，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.3》与 A2 清单 v1.0.9 |

@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.2 |
+| 文档版本 | v1.0.3 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev / Pre-Pro / Pro |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.20.0.md`（§7.2/§7.3/§10.7~§10.23） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`、`...-A2生产配置收口清单-v1.0.8.md` |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.21.0.md`（§7.2/§7.3/§10.7~§10.24） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.0.1.md`、`...-A2生产配置收口清单-v1.0.9.md` |
 | 编号体系 | 见 §1.1（47 项台账为唯一执行主键；批次 `P1~P5`；旧分组 `A1~A5/B1~B5/C1~C6/D` 已废止） |
 | 覆盖对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -19,6 +19,7 @@
 | v1.0.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 首版：静态核对方案 v1.19.0 §10 各节残余、A1（12 项）与 A2（13 项门禁）清单，汇总为 C/G/K/D/V/P 六类统一台账共 47 项；按「本仓 OIDC 残余 → 本仓治理与跨实例 → 跨仓收敛 → 部署与实测 → 暂缓项」划分五批（原编号 `B1~B5`），逐项给出处置建议、验收标准与批次门禁 |
 | v1.0.1 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 应人工裁定（选项 A）：执行批次由 `B1~B5` 更名为 `P1~P5`（Phase），消除与早期对话处置分组 `A1~A5/B1~B5/C1~C6/D` 的撞名；新增 §1.1「编号体系对照」，明确 47 项台账为唯一执行主键、`P1~P5` 为唯一批次主键，旧分组编号仅作历史别名并停止引用 |
 | v1.0.2 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P1 批次（C-01~C-05）执行完成：新增 §3.1「P1 完成情况」逐项登记落点与验证证据（`tests/test_oidc_p1_residuals.py`）；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.20.0（新增 §10.23）、A2 升 v1.0.8（新增 SAN×4 与断言算法配置） |
+| v1.0.3 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P2 批次（C-06~C-10）执行完成：新增 §3.2「P2 完成情况」逐项登记落点与验证证据（`tests/test_p2_residuals.py` 20 passed）；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.21.0（新增 §10.24）、A2 升 v1.0.9（新增 `OPENBASE_MCP_API_KEY_TOOLS`） |
 
 ---
 
@@ -74,19 +75,19 @@
 | 状态 | 项数 | 编号与要点 |
 |---|:--:|---|
 | 已完成 · P1 本仓代码 | 5 | C-01 SAN 预检、C-02 断言算法、C-03 `id_token_hint`、C-04 back-channel logout、C-05 Provider 级配置（证据见 §3.1） |
-| 待执行 · 本仓代码 | 5 | C-06 静态 MCP Key 工具白名单、C-07 异常跨实例聚合、C-08 到期提醒、C-09 Key 侧对账、C-10 角色契约端点 |
+| 已完成 · P2 本仓代码 | 5 | C-06 静态 MCP Key 工具白名单、C-07 异常跨实例聚合、C-08 到期提醒、C-09 Key 侧对账、C-10 角色契约端点（证据见 §3.2） |
 | 待执行 · 治理 | 3 | G-01 ABAC 双人复核、G-02 SoD 接入 `role:grant`、G-03 策略规模基线 |
 | 待执行 · 跨仓 | 6 | K-01 静态 Key 收敛、K-02 DPS 停用本地密码、K-03 下游审计补 `key_id`/`entry`、K-04 角色字典替换、K-05 配额/吊销同步增强、K-06 SSO 全覆盖 |
 | 待执行 · 部署/裁定 | 7 | D-01 A1 升版、D-02 A2 基线执行、D-03 双验签收口、D-04 存量 Key 到期收敛、D-05 主体映射裁定、D-06 编排与挂载、D-07 Provider 隔离约束 |
 | 待实测/联调 | 14 | V-01~V-12（对应 A1-01~A1-12，全部未执行）、V-13 真实 IdP 联调、V-14 跨仓生产实测 |
 | 暂缓 · 触发式 | 7 | P-01 SM2/密评、P-02 集中审计平台、P-03 信创灾备、P-04 终端宿主项、P-05 跨库分片审计链、P-06 KMS、P-07 省级 IdP 对接 |
 
-**结论**：待执行 21 项（C 5 + G 3 + K 6 + D 7，P1 已完成 5 项）、待实测 14 项、暂缓 7 项，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
+**结论**：待执行 16 项（G 3 + K 6 + D 7）、待实测 14 项、暂缓 7 项；C 类 10 项已全部闭合（P1 5 项 + P2 5 项），方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
 
 **立即可启动性**
 
-- **P1（C-01~C-05）已完成**（2026-10-31，见 §3.1）；P2/P3 仅依赖 P1 已合入。
-- **P4 依赖三项裁定（D-05/G-01/K-01）+ 联调环境 + 证据目录**；V-01~V-12 可先对 v1.20.0 现状并行取证。
+- **P1（C-01~C-05）已完成**（2026-10-31，见 §3.1）；**P2（C-06~C-10）已完成**（2026-10-31，见 §3.2）；P3 仅依赖 P1/P2 已合入。
+- **P4 依赖三项裁定（D-05/G-01/K-01）+ 联调环境 + 证据目录**；V-01~V-12 可先对 v1.21.0 现状并行取证。
 - **P5 全部为触发式**，不进入当前排期。
 
 ---
@@ -133,6 +134,33 @@
 - 未做真实 IdP 的 SAN 绑定、ES256 断言与 back-channel 端到端联调（当前证据为 mock IdP 9015/9016 全链路 + 单元级证书/密钥校验）；真实链路归 V-13。
 - back-channel 的 `sid → 主体` 映射依赖同一登录链路写入的索引；跨实例需 Redis 可达，否则退化为单实例语义（与 §11 风险口径一致）。
 - C-03 键设计以「`client_id` + 统一主体 sub」为键、issuer 内嵌 value，等价实现方案登记的 `issuer+sub+client_id` 键，避免登出阶段无法重建 issuer 键。
+
+### 3.2 P2 完成情况（C-06~C-10，2026-10-31）
+
+| 编号 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| C-06 | 新增 `OPENBASE_MCP_API_KEY_TOOLS`（JSON：键=静态 Key 摘要/明文，值=工具名数组；显式 `*` 仍全量）；命中静态 Key 后凭证携带白名单，未配置映射保持「不限工具」 | `openbase/settings.py`（`parse_mcp_api_key_tools` + 门禁）；`openbase/modules/mcp/credentials.py`（`_match_static_key` / `_static_key_tools`） | `tests/test_p2_residuals.py`（空/非法/归一、摘要命中、明文别名、无映射保持不限、`*` 通配） |
+| C-07 | 异常检测优先 Redis 聚合（`INCR`+`EXPIRE` 速率、`SADD`+`SCARD`/`SMEMBERS` IP 集合、`SET NX EX` 冷却键共享）；Redis 不可达/调用失败回退进程内滑动窗口；仍只告警不阻断 | `openbase/modules/auth/key_anomaly.py`（`_observe_redis` / `_redis_cooldown_allows`） | 同文件（跨实例网段跳变+多 IP、跨实例速率突增、Redis 不可用回退、TTL 断言） |
+| C-08 | 新增只读端点 `GET /api/v1/auth/api-keys/expiring?within_days=`（有效且到期 ≤N 天，含已过期；按租户过滤）；`ServiceKeyService.emit_expiring_events` 投递 `service_key.expiring`（Key+日 去重：Redis `SET NX EX`，回退进程内集合）；轮换复用既有端点，不新增写路径 | `openbase/modules/auth/service_keys.py`（`list_expiring` / `emit_expiring_events`）；`openbase/modules/identity/events.py`（事件类型注册）；`openbase/modules/auth/__init__.py`（端点） | 同文件（到期/已过期/远期/无到期/跨租户过滤、事件去重与载荷 `key.key_id`） |
+| C-09 | 新增日对账 `ServiceKeyService.reconcile`：`签发数 = 有效数 + 吊销数 + 过期数`，差异写审计 `auth.service_key.reconcile` 并 ERROR 日志；仅本仓台账自洽，不做跨系统比对（下游归 K-03） | `openbase/modules/auth/service_keys.py`（`reconcile`） | 同文件（平衡快照计数、未登记状态造成不平衡时 `balanced=False` 且审计 detail 留痕） |
+| C-10 | 新增只读端点 `GET /api/v1/auth/roles/contract`（登录可读）：角色码/档位（`readonly<readwrite<manage`）/权限点/本地别名/未知码策略；档位与 canonical 码来自 `config/role_tier_anchors.json`（不可用回落内置基线），权限点来自 DB 只读查询（不可达返回空映射）；不含密钥/管理数据 | 新增 `openbase/modules/auth/role_contract.py`（`build_role_contract` / `load_role_permissions`）；`openbase/modules/auth/__init__.py`（端点） | 同文件（契约结构/档位/权限点/未知码 `tier=None`/无敏感字段、DB 读取回退） |
+
+**批次门禁**
+
+| 项 | 结果 |
+|---|---|
+| 单测 | `python -m pytest tests/test_p2_residuals.py` → 20 passed |
+| 回归 | `test_key_anomaly` / `test_api_keys` / `test_api_keys_api` / `test_mcp_edge_credentials` / `test_obs_mcp` / `test_identity_events_list` / `test_oidc_p1_residuals` 共 99 passed；`test_identity_t5` 8 passed |
+| 静态检查 | 本环境未安装 `ruff`（`No module named ruff`），未能执行 `ruff check`；已按规则保持导入排序/行宽，待具备 ruff 的环境补跑 |
+| 零行为变化 | `OPENBASE_MCP_API_KEY_TOOLS` 缺省空 = 不限工具；异常检测未注入时间时优先 Redis（不可用即回退原进程内逻辑）；到期清单/对账/契约端点均为只读或独立调用，不改变既有签发/校验/轮换语义 |
+| 安全 | 静态 Key 匹配仍为常量时间比较；工具白名单只输出工具名；契约端点不含密钥/令牌/用户数据；审计只记 Key 元数据与计数 |
+
+**残余（P2 边界）**
+
+- C-08 的 `service_key.expiring` 事件需由运维/调度器周期性调用 `emit_expiring_events`（本批未新增调度基础设施）；端点本身只读不投递事件。
+- C-09 对账同为可调用能力，未接入定时任务；差异告警依赖日志/审计消费端（P-02 集中审计平台为暂缓项）。
+- C-10 下游四仓替换各自硬编码角色映射归 K-04；本批只提供契约，不改下游。
+- C-07 跨实例语义依赖 Redis 可达；不可达时退化为单实例窗口（不新增放行，与 §11 风险口径一致）。
 
 ---
 
@@ -219,7 +247,7 @@
 | 批次 | 范围 | 前置 | 产出 | 门禁 |
 |---|---|---|---|---|
 | **P1** | C-01~C-05（OIDC 残余） | 无；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.23 OIDC 残余闭合」 | 已完成：`tests/test_oidc_p1_residuals.py` 39 passed；ruff 待具备环境补跑；A2 已同步新增配置；三远程推送 |
-| **P2** | C-06~C-10（MCP 白名单/跨实例/提醒/对账/角色契约） | P1 | 代码 + 单测 + 方案 §10.24 | 同上 |
+| **P2** | C-06~C-10（MCP 白名单/跨实例/提醒/对账/角色契约） | P1；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.24 Key 生命周期残余闭合」 | 已完成：`tests/test_p2_residuals.py` 20 passed（回归 99 + 8）；ruff 待具备环境补跑；A2 已同步新增 `OPENBASE_MCP_API_KEY_TOOLS`；三远程推送 |
 | **P3** | G-01~G-03（治理） | P2 | 代码 + 单测 + 方案 §10.25 + A2 权限点登记 | 同上；ABAC 审批流需人工确认流程口径 |
 | **P4** | K-01~K-06、D-01~D-07、V-01~V-14 | P1~P3 冻结；D-05 已裁定；联调环境与证据目录就绪 | 四仓改动 + 生产验收证据 + A1 判定汇总 | 每仓 ruff/pytest 全绿；A1 P0 全 Pass；证据归档 `evidence/a1|a2/` |
 | **P5** | P-01~P-07 | 触发条件成立 | 单独立项 | 按触发方验收要求 |

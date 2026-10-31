@@ -15,6 +15,7 @@ import datetime as dt
 import hashlib
 import logging
 import secrets
+import threading
 import uuid
 from typing import Any
 
@@ -38,7 +39,15 @@ ACTION_SERVICE_KEY_ISSUE = "auth.service_key.issue"
 ACTION_SERVICE_KEY_REVOKE = "auth.service_key.revoke"
 # E1-1（R9/P1-2）：轮换审计动作码
 ACTION_SERVICE_KEY_ROTATE = "auth.service_key.rotate"
+# C-09（P2）：Key 侧日对账审计动作码
+ACTION_SERVICE_KEY_RECONCILE = "auth.service_key.reconcile"
 AUDIT_RESOURCE_SERVICE_KEY = "service_api_keys"
+
+# C-08（P2）：到期提醒默认提前量（天）与事件去重窗口（Key+日，36h 覆盖跨时区重扫）
+SERVICE_KEY_EXPIRING_WITHIN_DAYS = 7
+_EXPIRING_DEDUPE_TTL_SECONDS = 36 * 3600
+_expiring_claimed_local: set[tuple[str, str]] = set()
+_expiring_claim_lock = threading.Lock()
 
 
 def _audit_request_id(request_id: str | None) -> str:
@@ -109,6 +118,32 @@ def _rotate_grace_hours() -> int:
     except (TypeError, ValueError):
         hours = 0
     return max(hours, 0)
+
+
+def _claim_expiring_notification(key_id: str, day: str) -> bool:
+    """抢占「Key + 日」到期提醒（C-08）：Redis ``SET NX EX``，不可用回退进程内."""
+    token = f"openbase:service_key:expiring:{key_id}:{day}"
+    try:
+        from openbase.core.cache.redis_client import get_client
+
+        client = get_client()
+        if client is not None:
+            return bool(
+                client.set(token, "1", nx=True, ex=_EXPIRING_DEDUPE_TTL_SECONDS)
+            )
+    except Exception as exc:  # noqa: BLE001 - Redis 异常回退进程内去重
+        logger.warning(
+            "expiring notification dedupe redis failed; fallback to process set",
+            extra={"key_id": key_id, "error": str(exc) or exc.__class__.__name__},
+        )
+    with _expiring_claim_lock:
+        marker = (key_id, day)
+        if marker in _expiring_claimed_local:
+            return False
+        if len(_expiring_claimed_local) >= 20000:
+            _expiring_claimed_local.clear()
+        _expiring_claimed_local.add(marker)
+        return True
 
 
 def scope_allows(scope: dict[str, Any] | None, system: str | None, tenant_id: str | None) -> bool:
@@ -202,6 +237,158 @@ class ServiceKeyService:
             statement = statement.where(ServiceApiKey.tenant_code == tenant_code)
         result = await session.execute(statement)
         return list(result.scalars().all())
+
+    @classmethod
+    async def list_expiring(
+        cls,
+        session: AsyncSession,
+        *,
+        within_days: int = SERVICE_KEY_EXPIRING_WITHIN_DAYS,
+        tenant_code: str | None = None,
+    ) -> list[ServiceApiKey]:
+        """到期清单（C-08）：有效且 ``expires_at <= now + within_days``（含已过期）.
+
+        只读；按租户过滤与列表端口径一致。时间比较在应用层完成（SQLite/存量库
+        naive datetime 归一后再比较，避免方言时区差异）。
+        """
+        deadline = utc_now() + dt.timedelta(days=max(int(within_days), 0))
+        statement = (
+            select(ServiceApiKey)
+            .where(
+                ServiceApiKey.status == SERVICE_KEY_STATUS_ACTIVE,
+                ServiceApiKey.expires_at.is_not(None),
+            )
+            .order_by(ServiceApiKey.expires_at)
+        )
+        if tenant_code is not None:
+            statement = statement.where(ServiceApiKey.tenant_code == tenant_code)
+        result = await session.execute(statement)
+        records = list(result.scalars().all())
+        return [
+            record
+            for record in records
+            if as_utc(record.expires_at) is not None
+            and as_utc(record.expires_at) <= deadline
+        ]
+
+    @classmethod
+    async def emit_expiring_events(
+        cls,
+        session: AsyncSession,
+        *,
+        within_days: int = SERVICE_KEY_EXPIRING_WITHIN_DAYS,
+        reference_time: dt.datetime | None = None,
+        request_id: str | None = None,
+    ) -> int:
+        """为到期/即将到期 Key 写入 ``service_key.expiring`` 事件（C-08）.
+
+        去重：同一 Key 同一日只投递一次（Redis ``SET NX EX`` 跨实例共享；
+        Redis 不可用回退进程内集合）。只提醒不阻断，不修改 Key 状态。
+
+        Returns:
+            本次实际新投递的事件数。
+        """
+        now = as_utc(reference_time) or utc_now()
+        day = now.date().isoformat()
+        records = await cls.list_expiring(session, within_days=within_days)
+        emitted = 0
+        for record in records:
+            if not _claim_expiring_notification(record.key_id, day):
+                continue
+            expires_at = as_utc(record.expires_at)
+            days_remaining = int(
+                (expires_at - now).total_seconds() // 86400
+            ) if expires_at else 0
+            await cls._emit_event(
+                session,
+                "service_key.expiring",
+                record,
+                previous_state="active",
+                current_state="active",
+                reason="expiring",
+                operator_id=None,
+                request_id=request_id,
+                extra={
+                    "days_remaining": days_remaining,
+                    "expires_at": expires_at.isoformat() if expires_at else None,
+                },
+            )
+            emitted += 1
+        if emitted:
+            await session.flush()
+        return emitted
+
+    @classmethod
+    async def reconcile(
+        cls,
+        session: AsyncSession,
+        *,
+        reference_time: dt.datetime | None = None,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Key 侧日对账（C-09）：``签发数 = 有效数 + 吊销数 + 过期数``.
+
+        差异写审计（``auth.service_key.reconcile``）并 WARN/ERROR 留痕；
+        仅本仓 Key 台账自洽校验，不做跨系统比对（下游拒绝数归 K-03）。
+
+        Returns:
+            计数快照（issued/active/revoked/expired/balanced/reference_time/audit）。
+        """
+        now = as_utc(reference_time) or utc_now()
+        result = await session.execute(select(ServiceApiKey))
+        records = list(result.scalars().all())
+        issued = len(records)
+        revoked = sum(
+            1 for record in records if record.status == SERVICE_KEY_STATUS_REVOKED
+        )
+        active = 0
+        expired = 0
+        for record in records:
+            if record.status != SERVICE_KEY_STATUS_ACTIVE:
+                continue
+            expires_at = as_utc(record.expires_at)
+            if expires_at is not None and expires_at <= now:
+                expired += 1
+            else:
+                active += 1
+        balanced = issued == active + revoked + expired
+        audit = AuditLog(
+            user_id=None,
+            action=ACTION_SERVICE_KEY_RECONCILE,
+            resource=AUDIT_RESOURCE_SERVICE_KEY,
+            resource_id="reconciliation",
+            request_id=_audit_request_id(request_id),
+            detail={
+                "issued": issued,
+                "active": active,
+                "revoked": revoked,
+                "expired": expired,
+                "balanced": balanced,
+                "reference_time": now.isoformat(),
+            },
+        )
+        session.add(audit)
+        await session.flush()
+        log = logger.info if balanced else logger.error
+        log(
+            "service api key reconciliation",
+            extra={
+                "issued": issued,
+                "active": active,
+                "revoked": revoked,
+                "expired": expired,
+                "balanced": balanced,
+            },
+        )
+        return {
+            "issued": issued,
+            "active": active,
+            "revoked": revoked,
+            "expired": expired,
+            "balanced": balanced,
+            "reference_time": now.isoformat(),
+            "audit": audit,
+        }
 
     @classmethod
     async def rotate(

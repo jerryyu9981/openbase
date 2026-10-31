@@ -34,6 +34,8 @@ EVENT_USER_DEACTIVATED = "user.deactivated"
 EVENT_SERVICE_KEY_ISSUED = "service_key.issued"
 EVENT_SERVICE_KEY_ROTATED = "service_key.rotated"
 EVENT_SERVICE_KEY_REVOKED = "service_key.revoked"
+# C-08（P2）：服务 Key 到期提醒事件（只提醒不阻断；下游可据此触发轮换）
+EVENT_SERVICE_KEY_EXPIRING = "service_key.expiring"
 EVENT_AGENT_KEY_ISSUED = "agent_key.issued"
 EVENT_AGENT_KEY_REVOKED = "agent_key.revoked"
 
@@ -49,6 +51,7 @@ KEY_EVENT_TYPES = frozenset(
         EVENT_SERVICE_KEY_ISSUED,
         EVENT_SERVICE_KEY_ROTATED,
         EVENT_SERVICE_KEY_REVOKED,
+        EVENT_SERVICE_KEY_EXPIRING,
         EVENT_AGENT_KEY_ISSUED,
         EVENT_AGENT_KEY_REVOKED,
     }

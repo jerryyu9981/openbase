@@ -29,7 +29,7 @@ from typing import Any
 from fastapi import Request
 
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.settings import parse_mcp_api_key_hashes
+from openbase.settings import parse_mcp_api_key_hashes, parse_mcp_api_key_tools
 
 logger = logging.getLogger("openbase.modules.mcp.credentials")
 
@@ -209,20 +209,32 @@ def _file_static_keys() -> frozenset[str]:
         return keys
 
 
-def _matches_static_key(provided: str) -> bool:
-    """静态 Key 判定：明文（仅非生产）/摘要/宿主注入文件，均用常量时间比较."""
+def _match_static_key(provided: str) -> str | None:
+    """静态 Key 判定并返回命中标识（明文文本或 SHA-256 摘要；常量时间比较）.
+
+    标识用于查 ``OPENBASE_MCP_API_KEY_TOOLS`` 映射（摘要/明文两种键形态）。
+    """
     candidate = provided.encode("utf-8")
     for key in _static_keys():
         if hmac.compare_digest(candidate, key.encode("utf-8")):
-            return True
+            return key
     digest = hashlib.sha256(candidate).hexdigest().encode("ascii")
+    digest_text = digest.decode("ascii")
     for expected in _static_key_hashes():
         if hmac.compare_digest(digest, expected.encode("ascii")):
-            return True
+            return digest_text
     for key in _file_static_keys():
         if hmac.compare_digest(candidate, key.encode("utf-8")):
-            return True
-    return False
+            return key
+    return None
+
+
+def _static_key_tools(identifier: str) -> tuple[str, ...] | None:
+    """按命中标识解析静态 Key 工具白名单（未配置 → None = 不限工具）."""
+    from openbase.settings import get_settings
+
+    mapping = parse_mcp_api_key_tools(get_settings().mcp_api_key_tools)
+    return mapping.get(identifier)
 
 
 async def require_mcp_credential(request: Request) -> MCPCredential:
@@ -230,7 +242,8 @@ async def require_mcp_credential(request: Request) -> MCPCredential:
 
     解析顺序：静态 Key（``X-API-Key``；明文/摘要/宿主注入文件三种来源）→
     ``Authorization: Bearer`` 的 ``ob_k_*``（服务 Key）/ 其他（JWT）。缺凭证或
-    全部不匹配 → 401。静态 Key 命中不限定工具（``tools=None``）。
+    全部不匹配 → 401。静态 Key 命中后按 ``OPENBASE_MCP_API_KEY_TOOLS`` 收窄工具
+    （未配置映射则保持不限工具）。
 
     Raises:
         BaseError: AUTH_UNAUTHORIZED（缺/无效凭证）；PERM_API_KEY_SCOPE（服务 Key 越权）。
@@ -238,12 +251,15 @@ async def require_mcp_credential(request: Request) -> MCPCredential:
     from openbase.core.deps.auth import get_current_tenant
 
     provided = request.headers.get("X-API-Key", "")
-    if provided and _matches_static_key(provided):
-        return MCPCredential(
-            subject="static",
-            credential_type=CREDENTIAL_TYPE_STATIC,
-            tenant_code=request.headers.get("X-Tenant-Id"),
-        )
+    if provided:
+        identifier = _match_static_key(provided)
+        if identifier is not None:
+            return MCPCredential(
+                subject="static",
+                credential_type=CREDENTIAL_TYPE_STATIC,
+                tenant_code=request.headers.get("X-Tenant-Id"),
+                tools=_static_key_tools(identifier),
+            )
 
     authorization = request.headers.get("Authorization", "")
     bearer = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""

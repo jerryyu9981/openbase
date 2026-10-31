@@ -29,6 +29,46 @@ WEAK_JWT_SECRETS = frozenset({"", "change-me-in-production", "test-jwt-secret-fo
 _MCP_KEY_HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
+def parse_mcp_api_key_tools(raw: str | None) -> dict[str, tuple[str, ...]]:
+    """解析 ``OPENBASE_MCP_API_KEY_TOOLS``（静态 Key → 工具白名单，JSON）.
+
+    映射键为静态 Key 的**摘要**（64 位小写十六进制，按 sha256 命中）或**明文 Key
+    文本**（开发/联调场景），值为非空工具名数组（``*`` 表示该 Key 仍不限工具）。
+
+    Args:
+        raw: JSON 字符串；空/None → 返回空映射（缺省「不限工具」，零行为变化）。
+
+    Returns:
+        {标识: (工具名, ...)}。
+
+    Raises:
+        ValueError: JSON 非法、结构不符或值为空/含非字符串项（fail-fast）。
+    """
+    text = (raw or "").strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"OPENBASE_MCP_API_KEY_TOOLS 不是合法 JSON：{exc}") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("OPENBASE_MCP_API_KEY_TOOLS 顶层必须是对象")
+    result: dict[str, tuple[str, ...]] = {}
+    for identifier, tools in parsed.items():
+        if not isinstance(identifier, str) or not identifier.strip():
+            raise ValueError("OPENBASE_MCP_API_KEY_TOOLS 的键必须是非空字符串")
+        if not isinstance(tools, list) or not tools:
+            raise ValueError(
+                f"OPENBASE_MCP_API_KEY_TOOLS[{identifier}] 必须是非空字符串数组"
+            )
+        if not all(isinstance(item, str) and item.strip() for item in tools):
+            raise ValueError(
+                f"OPENBASE_MCP_API_KEY_TOOLS[{identifier}] 必须是非空字符串数组"
+            )
+        result[identifier.strip()] = tuple(item.strip() for item in tools)
+    return result
+
+
 def parse_mcp_api_key_hashes(raw: str | None) -> tuple[str, ...]:
     """解析 ``OPENBASE_MCP_API_KEY_HASHES``（逗号分隔的 SHA-256 摘要）.
 
@@ -539,6 +579,9 @@ class Settings(BaseSettings):
     # R16/R20：宿主注入的明文 Key 文件路径（每行一个 Key，忽略空行与 `#` 注释；建议 0600）。
     # 用于避免明文 Key 进入环境变量/进程参数；生产与摘要列表至少配置其一。
     mcp_api_keys_file: str = ""
+    # C-06（P2）：静态 Key → 工具白名单映射（JSON；键为摘要或明文 Key，值为工具名数组）。
+    # 缺省空 = 保持「不限工具」语义（零行为变化）；显式 ``*`` 表示该 Key 仍全量可用。
+    mcp_api_key_tools: str = ""
 
     # ---- E1-7（§10.3-4）服务 Key 异常检测与告警（进程内窗口，不依赖 Redis/后台线程） ----
     key_anomaly_enabled: bool = True
@@ -1079,6 +1122,8 @@ class Settings(BaseSettings):
             ValueError: 生产配置明文 Key/缺静态凭证来源，摘要格式非法，或异常检测参数非法。
         """
         hashes = parse_mcp_api_key_hashes(self.mcp_api_key_hashes)
+        # C-06（P2）：静态 Key 工具白名单结构门禁（空 = 不限工具，零行为变化）
+        parse_mcp_api_key_tools(self.mcp_api_key_tools)
         if self.env == "production":
             keys = [item.strip() for item in (self.mcp_api_keys or "").split(",") if item.strip()]
             if "dev-mcp-key" in keys:
