@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.5 |
+| 文档版本 | v1.0.6 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev / Pre-Pro / Pro |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.22.0.md`（§7.2/§7.3/§10.7~§10.25） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.0.md`、`...-A2生产配置收口清单-v1.1.1.md` |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.23.0.md`（§7.2/§7.3/§10.7~§10.26） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.1.md`、`...-A2生产配置收口清单-v1.1.2.md` |
 | 编号体系 | 见 §1.1（47 项台账为唯一执行主键；批次 `P1~P5`；旧分组 `A1~A5/B1~B5/C1~C6/D` 已废止） |
 | 覆盖对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -22,6 +22,7 @@
 | v1.0.3 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P2 批次（C-06~C-10）执行完成：新增 §3.2「P2 完成情况」逐项登记落点与验证证据（`tests/test_p2_residuals.py` 20 passed）；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.21.0（新增 §10.24）、A2 升 v1.0.9（新增 `OPENBASE_MCP_API_KEY_TOOLS`） |
 | v1.0.4 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P3 批次（G-01~G-03）执行完成：新增 §4.1「P3 完成情况」逐项登记落点与验证证据（`tests/test_p3_governance.py` 8 passed，回归 127 passed）；G-01 经人工裁定采用 **B 口径（超管直改 + 事后审计）**，并在 §10 登记裁定结果；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.22.0（新增 §10.25）、A2 升 v1.1.0（新增两项 ABAC 基线） |
 | v1.0.5 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 启动：完成前置项 **D-01**（A1 清单升 v1.1.0，新增 A1-13 OIDC 专项、A1-14 跨仓实测，关联方案 v1.22.0，并同步 A1-08/A1-11 判定与 §7 边界）；§2.1 速览与 §6 D-01 状态同步；关联清单更新为 A1 v1.1.0 / A2 v1.1.1。D-05/K-01 仍待裁定 |
+| v1.0.6 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 批 A 执行：**裁定落定** D-05=**A（显式 `*_SUBJECT_MAP` 主体映射）**、K-01=**B（双通道并行一个发布窗口后关闭静态 Key 主通道）**；**K-03** 四仓审计补 `key_id`/`subject`/`tenant`/`entry`（OpenLLM 106 passed、OpenRAG 54 passed、OpenMemory 48 passed、DPS 72 passed）；**K-04** OpenRAG/OpenMemory 消费角色契约（契约优先 + 本地回落）、DPS 双链分别回落，各仓新增单测；新增 §5.1「P4 批 A 完成情况」、§10 登记裁定、§9.1 批次表与 §2.1 速览同步；关联方案升 v1.23.0（新增 §10.26）、A2 升 v1.1.2（新增三仓契约地址配置项）、A1 升 v1.1.1（关联方案引用同步） |
 
 ---
 
@@ -32,7 +33,7 @@
 **范围划定**
 
 - 纳入：方案 v1.19.0 中登记为残余/未实现/待裁定/未联调的事项；A1-01~A1-12 全部未执行项；A2 生产基线与 13 项启动门禁的未执行核对；§7.2/§7.3 中尚无实施记录的 P1/P2 事项。
-- 需人工裁定的 3 项（D-05 主体映射策略、G-01 ABAC 复核流程、K-01 静态 Key 收敛节奏）只登记现状与选项，不预设结论，裁定后进入对应批次。
+- 需人工裁定的 3 项（D-05 主体映射策略、G-01 ABAC 复核流程、K-01 静态 Key 收敛节奏）**已全部裁定**：G-01=B（2026-10-31）、D-05=A、K-01=B（2026-11-01）；裁定结果见 §10，并按裁定进入对应批次执行。
 
 **核对方式与边界**
 
@@ -66,11 +67,11 @@
 | **C** | 本仓代码能力缺口（单仓可闭合） | 10 | P1 / P2 |
 | **G** | 治理与流程（本仓可提供能力，落地依赖组织） | 3 | P3 |
 | **K** | 跨仓收敛（四仓改造） | 6 | P4 |
-| **D** | 部署与运维收口（配置/密钥/裁定） | 7 | P4（D-05 需裁定） |
+| **D** | 部署与运维收口（配置/密钥/裁定） | 7 | P4（D-05 已裁定 A） |
 | **V** | 已完成、未做生产实测或真实联调 | 14 | P4（V-01~V-12 可先行） |
 | **P** | 暂缓（依赖硬件/密评/基础设施/外部平台） | 7 | P5（按触发条件） |
 
-合计 47 项（C10 + G3 + K6 + D7 + V14 + P7）；其中 3 项（D-05 / G-01 / K-01）需人工裁定后方可执行，其余可在批准后按批次启动。
+合计 47 项（C10 + G3 + K6 + D7 + V14 + P7）；其中 3 项裁定项（D-05 / G-01 / K-01）**已于 2026-10-31 与 2026-11-01 全部裁定**（G-01=B、D-05=A、K-01=B，见 §10），不再阻塞批次推进。
 
 ### 2.1 未完成项速览（直接回答「还有哪些未完成」）
 
@@ -80,17 +81,18 @@
 | 已完成 · P2 本仓代码 | 5 | C-06 静态 MCP Key 工具白名单、C-07 异常跨实例聚合、C-08 到期提醒、C-09 Key 侧对账、C-10 角色契约端点（证据见 §3.2） |
 | 已完成 · P3 治理 | 3 | G-01 ABAC 变更事后审计、G-02 SoD 接入角色授予、G-03 策略规模/耗时基线（证据见 §4.1） |
 | 已完成 · P4 前置 | 1 | D-01 A1 清单升 v1.1.0（2026-11-01，新增 A1-13 OIDC 专项 / A1-14 跨仓实测，关联方案 v1.22.0） |
-| 待执行 · 跨仓 | 6 | K-01 静态 Key 收敛、K-02 DPS 停用本地密码、K-03 下游审计补 `key_id`/`entry`、K-04 角色字典替换、K-05 配额/吊销同步增强、K-06 SSO 全覆盖 |
-| 待执行 · 部署/裁定 | 6 | D-02 A2 基线执行、D-03 双验签收口、D-04 存量 Key 到期收敛、D-05 主体映射裁定、D-06 编排与挂载、D-07 Provider 隔离约束 |
+| 已完成 · P4 批 A | 2 | K-03 四仓审计补 `key_id`/`subject`/`tenant`/`entry`、K-04 OpenRAG/OpenMemory/DPS 消费角色契约（契约优先 + 本地回落）（证据见 §5.1） |
+| 待执行 · 跨仓 | 4 | K-01 静态 Key 双通道收口（已裁定 B）、K-02 DPS 停用本地密码、K-05 配额/吊销同步增强、K-06 SSO 全覆盖 |
+| 待执行 · 部署/裁定 | 6 | D-02 A2 基线执行、D-03 双验签收口、D-04 存量 Key 到期收敛、D-05 显式主体映射落部署编排（已裁定 A）、D-06 编排与挂载、D-07 Provider 隔离约束 |
 | 待实测/联调 | 14 | V-01~V-12（对应 A1-01~A1-12，全部未执行）、V-13 真实 IdP 联调、V-14 跨仓生产实测 |
 | 暂缓 · 触发式 | 7 | P-01 SM2/密评、P-02 集中审计平台、P-03 信创灾备、P-04 终端宿主项、P-05 跨库分片审计链、P-06 KMS、P-07 省级 IdP 对接 |
 
-**结论**：待执行 12 项（K 6 + D 6）、待实测 14 项、暂缓 7 项；C 类 10 项（P1 5 项 + P2 5 项）、G 类 3 项（P3）与 D-01 前置项已闭合，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
+**结论**：待执行 10 项（K 4 + D 6）、待实测 14 项、暂缓 7 项；C 类 10 项（P1 5 项 + P2 5 项）、G 类 3 项（P3）、D-01 前置项与 P4 批 A（K-03/K-04）已闭合，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
 
 **立即可启动性**
 
 - **P1（C-01~C-05）已完成**（2026-10-31，见 §3.1）；**P2（C-06~C-10）已完成**（2026-10-31，见 §3.2）；**P3（G-01~G-03）已完成**（2026-10-31，见 §4.1）。
-- **P4 已启动**：D-01（A1 升版）于 2026-11-01 完成；其余子项依赖剩余两项裁定（D-05/K-01）+ 联调环境 + 证据目录；V-01~V-12 可先对 v1.22.0 现状并行取证。
+- **P4 已启动**：D-01（A1 升版）与批 A（K-03/K-04）于 2026-11-01 完成（见 §5.1）；两项裁定已落定（D-05=A、K-01=B），批 B（K-02/K-06）可立即启动；批 C（K-01/K-05、D-02~D-07）依赖联调环境与证据目录；V-01~V-12 可先对现状并行取证。
 - **P5 全部为触发式**，不进入当前排期。
 
 ---
@@ -203,16 +205,48 @@
 
 ## 5. K 类：跨仓收敛（OpenLLM / OpenRAG / OpenMemory / DPS）
 
-> 执行前须逐仓核对当前实现，本表结论以方案无实施记录为依据。
+> 执行前须逐仓核对当前实现。K-03/K-04 已于 2026-11-01 完成四仓/三仓逐仓核对与落地（见 §5.1）；K-01/K-02/K-05/K-06 仍以方案无实施记录为依据，执行前须再核对。
 
 | 编号 | 事项 | 来源 | 现状 | 处置建议 | 批次 |
 |---|---|---|---|---|---|
-| K-01 | 下游静态 Key 收敛为应急 bypass | §7.2 P1-6 | 仅完成生产 fail-closed 门禁，静态 Key 仍为主通道 | 三仓默认关闭静态 Key 通道，仅保留应急开关（必须配置过期与审计）；切 OpenBase JWKS/服务 Key 为主通道 | P4 |
-| K-02 | DPS 停用本地密码登录 | §7.2 P1-6 | 仍保留本地密码与自签 JWT | 默认关闭本地密码登录，改 JWKS 验签 + 自省；保留迁移期开关与回滚路径 | P4 |
-| K-03 | 下游审计补 `key_id`/`entry` | §7.2 P1-8 | 方案无实施记录（待核对） | 四仓审计记录 `key_id`/`subject`/`tenant`/`entry=proxy\|direct`（不含明文）；OpenLLM 优先 | P4 |
-| K-04 | 统一角色字典下游替换 | §7.3 P2-1 | 下游三份硬编码映射（RAG `role_gate`、OM `role_map`、DPS `ROLE_TO_ANCHOR`） | 消费 C-10 发布的角色码契约（单一 JSON schema），删除硬编码；保留映射表为过渡 | P4 |
-| K-05 | 下游配额/吊销同步增强 | §10.10/§10.11/§10.12 残余 | 配额单进程；吊销惰性拉取无调度；内省未接入 | OpenLLM 配额改 Redis 令牌桶；四仓可选后台调度（空闲期收敛）；按需接入内省，不作为常规路径 | P4 |
-| K-06 | SSO 全覆盖（删除本地密码） | §7.3 P2-6 | OpenLLM 有 `IDENTITY_AUTHORITY` 开关；DPS 未覆盖 | 与 K-02 合并推进；生产固定 `openbase` 模式，本地身份表停写不删 | P4（随 K-02） |
+| K-01 | 下游静态 Key 收敛为应急 bypass | §7.2 P1-6 | 仅完成生产 fail-closed 门禁，静态 Key 仍为主通道 | 经人工裁定取 **B 口径**：双通道并行一个发布窗口后关闭静态 Key 主通道；三仓默认保持双通道，窗口结束默认关闭静态 Key 通道、仅保留带过期与审计的应急开关；切 OpenBase JWKS/服务 Key 为主通道 | P4（已裁定，批 C） |
+| K-02 | DPS 停用本地密码登录 | §7.2 P1-6 | 仍保留本地密码与自签 JWT | 默认关闭本地密码登录，改 JWKS 验签 + 自省；保留迁移期开关与回滚路径 | P4（批 B） |
+| K-03 | 下游审计补 `key_id`/`subject`/`tenant`/`entry` | §7.2 P1-8 | **已完成（2026-11-01）**：四仓审计 identity 由 6 核心键扩展为 10 键，`key_id=sha256(credential)[:12]`（不含明文）、`entry=proxy\|direct`，受信代理链自动判 `proxy` | 四仓审计记录 `key_id`/`subject`/`tenant`/`entry=proxy\|direct`（不含明文）；OpenLLM 优先 | P4（批 A，已完成） |
+| K-04 | 统一角色字典下游替换 | §7.3 P2-1 | **已完成（2026-11-01）**：OpenRAG/OpenMemory/DPS 消费 `GET /api/v1/auth/roles/contract`（契约优先 + 本地映射回落，契约地址为空即关闭=零行为变化）；DPS 双链分别回落不互读 | 消费 C-10 发布的角色码契约（单一 JSON schema），删除硬编码；保留映射表为过渡 | P4（批 A，已完成） |
+| K-05 | 下游配额/吊销同步增强 | §10.10/§10.11/§10.12 残余 | 配额单进程；吊销惰性拉取无调度；内省未接入 | OpenLLM 配额改 Redis 令牌桶；四仓可选后台调度（空闲期收敛）；按需接入内省，不作为常规路径 | P4（批 C） |
+| K-06 | SSO 全覆盖（删除本地密码） | §7.3 P2-6 | OpenLLM 有 `IDENTITY_AUTHORITY` 开关；DPS 未覆盖 | 与 K-02 合并推进；生产固定 `openbase` 模式，本地身份表停写不删 | P4（批 B，随 K-02） |
+
+### 5.1 P4 批 A 完成情况（K-03 / K-04，2026-11-01）
+
+**裁定前置**：D-05=**A（显式 `*_SUBJECT_MAP` 主体映射）**、K-01=**B（双通道并行一个发布窗口后关闭静态 Key 主通道）**（见 §10）。批 A 只做 K-03/K-04，不触碰静态 Key 通道与主体映射部署。
+
+| 编号 | 仓 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|---|
+| K-03 | OpenLLM | `IdentityState` 增 `key_id`/`entry`（`proxy`/`direct` 常量）；`to_dict()` 输出；受信头解析固定 `entry=proxy`；`audit_identity` 核心键 6 → 10（`key_id`/`subject`/`tenant`/`entry`）；`attach_api_key_context(state, request)` 由审计中间件接入成功/失败记录 | `backend/app/identity/identity_context.py`、`backend/app/identity/audit_identity.py`、`backend/app/middleware/audit.py` | 新增 `backend/tests/unit/test_k03_audit_key_identity.py`（9 用例）；`test_s4_t10_audit_chain.py`、`test_s4_t2_identity_base.py` 断言同步为 10 键；定向回归 106 passed |
+| K-03 | OpenRAG | `api_key.py` 新增 `credential_fingerprint(credential)=sha256[:12]`；JWT 分支 `api_key_entry="direct"`；API Key 通过后落 `api_key_id`（摘要）与 `api_key_entry`（bypass 直连=`direct`，受信代理=`proxy`）；`IdentityContext`/`identity_to_dict`/审计 identity 输出四键；`identity_gate._attach_auth_context` 统一三处注入 | `src/openrag/api/middleware/api_key.py`、`src/openrag/identity/context.py`、`src/openrag/identity/audit_identity.py`、`src/openrag/api/middleware/identity_gate.py` | 新增 `tests/unit/test_k03_k04_audit_contract.py`；定向回归 54 passed |
+| K-03 | OpenMemory | 审计 identity 核心键 6 + `AUDIT_AUTH_KEYS` 4 = 10，`subject/tenant` 取 effective 回落 principal，`entry` 非 `proxy/direct` 归一为 `direct`；`IdentityState`/`build_identity_state` 增 `key_id`/`entry`；`server.api_key_middleware` 认证通过落 `request.state.api_key_id`；`identity_gate._attach_auth_context` 受信链判 `proxy` | `src/openmemory/identity/audit_identity.py`、`src/openmemory/identity/inbound_gate.py`、`src/openmemory/api/middleware/identity_gate.py`、`src/openmemory/api/server.py` | 新增 `tests/unit/test_k03_k04_audit_contract.py`（含 TestClient：受信 gate→`entry=proxy`、本地 gate→`entry=direct`）；定向回归 48 passed |
+| K-03 | DPS | `build_audit_identity_block` 输出 10 键；`IdentityState` 增 `key_id`/`entry`；`identity_gate_middleware` 收口处 `_attach_auth_context`（取 `HEADER_API_KEY` 摘要，`proxy_source/proxy_chain` 非空判 `proxy`） | `src/identity/audit_identity.py`、`src/identity/inbound_gate.py`、`src/middleware/identity_gate_middleware.py` | 新增 `src/tests/test_k03_k04_audit_contract.py`（`_attach_auth_context` 直接单测 + 双链契约）；定向回归 72 passed |
+| K-04 | OpenRAG | `role_map` 增契约层（`_CONTRACT_ENV`/`_CONTRACT_SCHEMA_VERSION=1`/TTL 300s/`_http_get_json`/`_normalize_contract`/`load_role_contract`/`apply_role_contract`/`reset_role_contract`），`interpret_openbase_role` 改用 `_active_role_tier()`（契约优先、未知码回落本地 `ROLE_TIER`）；`settings.IdentityTrustConfig.role_contract_url`（env `OPENRAG_IDENTITY_ROLE_CONTRACT_URL`，空=关闭）；`role_gate.__init__` 装载契约 | `src/openrag/identity/role_map.py`、`src/openrag/config/settings.py`、`src/openrag/api/middleware/role_gate.py` | 同测试文件；`test_s3_t9_role_mapping.py` 回归；定向 54 passed |
+| K-04 | OpenMemory | `role_map` 同构契约层，`_TIER_BY_NAME={"readonly":READ,"readwrite":READWRITE,"manage":MANAGE}`；`IdentityTrustConfig.role_contract_url`（env 前缀 `OPENMEMORY_IDENTITY_`）；`identity_gate.__init__` 装载契约 | `src/openmemory/identity/role_map.py`、`src/openmemory/utils/config.py`、`src/openmemory/api/middleware/identity_gate.py` | 同测试文件（editor 未知码 403 等）；定向 48 passed |
+| K-04 | DPS | `role_map` 契约层 `_contract_anchor(role_code)`；`resolve_role_anchor` = 契约锚点 or `ROLE_TO_ANCHOR`；`local_role_anchor` = 契约锚点 or `LOCAL_ROLE_TO_ANCHOR`（**两表互不读取**）；`config.identity_role_contract_url`（env `IDENTITY_ROLE_CONTRACT_URL`）；`rest_api.app.register_s5_middleware` 装载契约 | `src/identity/role_map.py`、`src/config.py`、`src/rest_api/app.py` | 同测试文件（受信链与本地链分别回落）；定向 72 passed |
+
+**批次门禁**
+
+| 项 | 结果 |
+|---|---|
+| 单测 | OpenLLM 定向回归 106 passed；OpenRAG 定向回归 54 passed；OpenMemory 定向回归 48 passed；DPS 定向回归 72 passed（解释器统一为 OpenRAG 自带 `.venv`，Python 3.11.9 / pytest 9.1.1） |
+| 零行为变化 | 契约地址为空 = 契约关闭，角色判定逐码回落本地映射（OpenRAG 有专门用例实证）；审计新增 4 键为**纯追加**，不改变既有 6 键语义；`entry` 缺省归一 `direct`，无代理链时与原行为一致 |
+| 安全 | `key_id` 为 `sha256(credential)[:12]` 摘要，四仓**均不记录密钥明文/令牌全文**；契约端点只含角色码/档位/权限点，不含密钥与管理数据 |
+| 跨仓一致性 | 四仓审计 identity 键名与语义完全对齐（`key_id`/`subject`/`tenant`/`entry`）；三仓契约装载实现同构（同常量、同 TTL、同回落），便于后续统一运维 |
+| 静态检查 | 本环境未安装 `ruff`（`No module named ruff`），`ruff check` 待具备环境补跑；已按规则保持导入排序/行宽 |
+| 完整测试套件 | **未全量运行**：四仓全量套件依赖 `psycopg`/`numpy`/`jinja2` 等本机缺失依赖，本批以「定向用例 + 相关既有回归」为证据，如实登记 |
+
+**残余（批 A 边界）**
+
+- K-04 仅完成「消费契约 + 本地回落」；**硬编码映射表未删除**（作为过渡与回落基线保留），删除需等 D-05=A 部署编排与契约可用性验证后另行验收。
+- 契约装载为**启动期一次装载 + TTL 缓存**，未实现热更新推送；契约变更需重启或等待缓存过期（TTL 300s 仅作用于显式 `force` 之外的取回节流，实际装载点仍为启动）。
+- K-03 审计键落库依赖各仓既有审计写入路径可达；跨实例聚合与下游拒绝数对账仍归 K-05 / C-09 边界。
+- 静态 Key 通道（K-01）、DPS 本地密码停用（K-02/K-06）**本批未触碰**，按裁定 B 留待批 B/批 C 的双通道窗口执行。
 
 ---
 
@@ -224,7 +258,7 @@
 | D-02 | A2 基线执行与漂移自检 | A2 v1.0.7 §6 | 清单已齐，未在生产逐项执行 | 按 A2 §2/§3 逐项核对存在性（秘密只记「已配置/未配置」），执行 §6.2 端点核对与 §6.3 负向启动 | P4 |
 | D-03 | 双验签窗口收口 | §10.9 残余 | HS256 通道仍在；`jwt_require_rs256` 未置 true | 全量令牌 RS256 换发后：移除 `jwt_secret*` 与历史 kid、置 `jwt_require_rs256=true`、负向验证 HS256 令牌被拒 | P4 |
 | D-04 | 存量 `ob_k_` 到期收敛 | A1-12 步骤 3、ER-01 | 存量 Key `expires_at IS NULL`（不过期） | 导出存量清单 → 按业务分批设置到期或轮换（复用 C-08 清单端点）；批次与通知窗口由业务确认 | P4 |
-| D-05 | 终端用户令牌直连下游主体映射策略 | §10.10「待裁定」 | 默认显式映射，未配置即拒绝 | **需人工裁定**：A=显式映射表（安全优先，运维成本高）/ B=同库部署信任 `sub`（成本低，依赖网络隔离）；裁定后再落部署编排 | P4 前置（需裁定） |
+| D-05 | 终端用户令牌直连下游主体映射策略 | §10.10「待裁定」 | **已裁定 A（2026-11-01）**：采用显式 `*_SUBJECT_MAP` 主体映射（安全优先）；未配置映射仍 fail-closed | 按裁定 A 落部署编排：四仓注入显式主体映射表，未映射主体拒绝；映射变更留审计 | P4（已裁定，批 C） |
 | D-06 | 部署编排与秘密挂载 | §10.10/§10.20/§10.21/§10.22 | 仅仓内 `.env.example` 登记，无统一编排 | 编排固化：RS256 PEM、OIDC 客户端证书/私钥/CA、断言私钥只读挂载（0600）；下游注入 JWKS/吊销/服务 Key；固定 `IDENTITY_AUTHORITY=openbase` | P4 |
 | D-07 | 多 Provider 主体隔离约束 | §10.18 残余 | 依赖 IdP 保证 issuer 唯一 | 纳入部署检查项：同 issuer 多 client 视为同一身份空间；登记 Provider 前核对 issuer 唯一性 | P4 |
 
@@ -276,7 +310,7 @@
 | **P1** | C-01~C-05（OIDC 残余） | 无；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.23 OIDC 残余闭合」 | 已完成：`tests/test_oidc_p1_residuals.py` 39 passed；ruff 待具备环境补跑；A2 已同步新增配置；三远程推送 |
 | **P2** | C-06~C-10（MCP 白名单/跨实例/提醒/对账/角色契约） | P1；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.24 Key 生命周期残余闭合」 | 已完成：`tests/test_p2_residuals.py` 20 passed（回归 99 + 8）；ruff 待具备环境补跑；A2 已同步新增 `OPENBASE_MCP_API_KEY_TOOLS`；三远程推送 |
 | **P3** | G-01~G-03（治理） | P2；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.25 P3 治理残余闭合」 | 已完成：`tests/test_p3_governance.py` 8 passed（回归 127 passed）；G-01 已裁定为 B 口径（事后审计）；ruff 待具备环境补跑；A2 已同步两项 ABAC 基线；三远程推送 |
-| **P4** | K-01~K-06、D-01~D-07、V-01~V-14 | P1~P3 冻结；D-01 已完成；D-05/K-01 待裁定；联调环境与证据目录就绪 | 四仓改动 + 生产验收证据 + A1 判定汇总 | 每仓 ruff/pytest 全绿；A1 P0 全 Pass；证据归档 `evidence/a1|a2/` |
+| **P4** | K-01~K-06、D-01~D-07、V-01~V-14 | P1~P3 冻结；D-01 已完成；**裁定全部落定**（D-05=A / K-01=B，2026-11-01）；批 A（K-03/K-04）已完成；联调环境与证据目录就绪 | 四仓改动 + 生产验收证据 + A1 判定汇总 | 批 A 已完成：四仓定向回归 106/54/48/72 passed；后续每仓 ruff/pytest 全绿；A1 P0 全 Pass；证据归档 `evidence/a1\|a2/` |
 | **P5** | P-01~P-07 | 触发条件成立 | 单独立项 | 按触发方验收要求 |
 
 **可并行性**
@@ -305,11 +339,11 @@
 
 | 编号 | 事项 | 选项 | 影响 |
 |---|---|---|---|
-| D-05 | 终端用户令牌直连下游的主体映射 | **A：显式 `*_SUBJECT_MAP`（安全优先，运维成本高）** / B：同库部署信任 `sub`（成本低，依赖网络隔离） | 决定 K 类与 P4 编排口径；未裁定前下游按现状 fail-closed |
+| D-05 | 终端用户令牌直连下游的主体映射 | ~~A：显式 `*_SUBJECT_MAP`（安全优先，运维成本高）~~ / ~~B：同库部署信任 `sub`（成本低，依赖网络隔离）~~ | **已于 2026-11-01 裁定为 A**：采用显式 `*_SUBJECT_MAP` 主体映射（安全优先）；未配置映射一律 fail-closed；按裁定落部署编排 |
 | G-01 | ABAC 双人复核流程 | ~~A：申请-审批-生效（四眼，流程重）~~ / **B：保留超管直改 + 事后审计（轻量）** | **已于 2026-10-31 裁定为 B**：不新增审批表与端点；审计 detail 固定 `review_mode="post_audit"` + 改前快照，并输出 WARN；双人复核由组织流程消费审计记录完成 |
-| K-01 | 下游静态 Key 收敛节奏 | **A：一次性切主通道** / B：双通道并行一个发布窗口后关闭 | 影响 K 类批次内回滚策略 |
+| K-01 | 下游静态 Key 收敛节奏 | ~~A：一次性切主通道~~ / **B：双通道并行一个发布窗口后关闭** | **已于 2026-11-01 裁定为 B**：三仓保持双通道并行一个发布窗口，窗口结束默认关闭静态 Key 主通道、仅保留带过期与审计的应急开关 |
 
-> 以上三项中 G-01 已于 2026-10-31 裁定为 B 口径并随 P3 落地；D-05 / K-01 仍只登记、不预设结论，待裁定时 P4 相应子项暂缓。P4 的其余子项（K-02~K-06、D-01~D-04/D-06/D-07、V 类）不依赖上述剩余裁定。
+> 三项裁定**已全部落定**：G-01=B（2026-10-31，已随 P3 落地）、D-05=A、K-01=B（2026-11-01）。批 A（K-03/K-04）已按裁定先行完成；D-05=A 与 K-01=B 的执行分别归批 C（部署编排与静态 Key 通道收口）。
 
 ---
 
@@ -333,6 +367,6 @@
 |---|---|---|---|---|
 | 方案评审（架构/安全） | | | | |
 | 批次执行批准（项目负责人） | | | | |
-| D-05/G-01/K-01 裁定人 | | | | G-01 已裁定 B（2026-10-31），D-05/K-01 待裁定 |
+| D-05/G-01/K-01 裁定人 | | | | G-01 已裁定 B（2026-10-31）；D-05 已裁定 A、K-01 已裁定 B（2026-11-01，用户裁定） |
 
 **批准后执行口径**：自 P1 起按 9.2 纪律连续推进，不再逐批重复询问；仅裁定项与高影响操作单独回问。

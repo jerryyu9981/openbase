@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.22.0 |
+| 版本 | v1.23.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -980,6 +980,59 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - G-02 只覆盖本仓授予路径；下游四仓的角色映射替换仍归 K-04。若未来新增多角色批量授予的 HTTP 端点，须按 `replace=False` 并集语义接入本准入。
 - G-03 仅提供告警，不做索引/缓存优化；真实规模下的判定耗时压测归 P4 的 V 类实测（V-12 等）。
 
+### 10.26 P4 批 A：K-03/K-04 跨仓落地（v1.23.0，2026-11-01）
+
+> 目的：按《残余项统一处置方案 v1.0.6》§5.1 推进 P4 批 A，落地 §7.2 P1-8 的「下游审计补 Key 身份」与 §7.3 P2-1 的「统一角色字典下游替换」。**裁定前置**：D-05=**A（显式 `*_SUBJECT_MAP` 主体映射，安全优先）**、K-01=**B（双通道并行一个发布窗口后关闭静态 Key 主通道）**。全部改动**缺省零行为变化**：契约地址为空 = 契约关闭，审计新增键为纯追加。
+
+**K-03 四仓审计补 Key 身份（6 核心键 → 10 键）**
+
+| 仓 | 实施内容 | 落点 |
+|---|---|---|
+| OpenLLM | `IdentityState` 增 `key_id`/`entry`（`ENTRY_PROXY="proxy"` / `ENTRY_DIRECT="direct"`），`to_dict()` 输出；受信代理头解析固定 `entry=proxy`；`IDENTITY_CORE_KEYS` 6 → `IDENTITY_DETAIL_KEYS` 10（`key_id`/`subject`/`tenant`/`entry`）；新增 `attach_api_key_context(state, request)` 由审计中间件在成功与失败路径调用 | `backend/app/identity/identity_context.py`、`backend/app/identity/audit_identity.py`、`backend/app/middleware/audit.py` |
+| OpenRAG | `api_key.py` 新增 `credential_fingerprint(credential) = sha256(credential)[:12]`；JWT 分支 `api_key_entry="direct"`；API Key 通过后落 `api_key_id`（摘要）与 `api_key_entry`（bypass 直连=`direct`、受信代理=`proxy`）；`IdentityContext`/`identity_to_dict` 与审计 identity 输出四键；`identity_gate._attach_auth_context` 统一三处注入 | `src/openrag/api/middleware/api_key.py`、`src/openrag/identity/context.py`、`src/openrag/identity/audit_identity.py`、`src/openrag/api/middleware/identity_gate.py` |
+| OpenMemory | 审计 identity 键集 6 + `AUDIT_AUTH_KEYS` 4；`subject`/`tenant` 取 effective 回落 principal；`entry` 非 `proxy`/`direct` 归一 `direct`；`IdentityState`/`build_identity_state` 增 `key_id`/`entry`；`api_key_middleware` 认证通过落 `request.state.api_key_id`；`identity_gate._attach_auth_context` 受信链判 `proxy` | `src/openmemory/identity/audit_identity.py`、`src/openmemory/identity/inbound_gate.py`、`src/openmemory/api/middleware/identity_gate.py`、`src/openmemory/api/server.py` |
+| DPS | `build_audit_identity_block` 输出 10 键；`IdentityState` 增 `key_id`/`entry`；`identity_gate_middleware` 收口处 `_attach_auth_context`（取 `HEADER_API_KEY` 摘要、`proxy_source`/`proxy_chain` 非空判 `proxy`） | `src/identity/audit_identity.py`、`src/identity/inbound_gate.py`、`src/middleware/identity_gate_middleware.py` |
+
+**口径**：`key_id` 一律为 `sha256(credential)[:12]` **摘要**，四仓**均不记录密钥明文或令牌全文**；`entry` 区分「经受信代理/编排（`proxy`）」与「本地/旁路直连（`direct`）」，为 C-09 对账与后续 K-01 收口提供区分依据。
+
+**K-04 三仓消费角色契约（契约优先 + 本地回落）**
+
+| 仓 | 实施内容 | 配置项 | 落点 |
+|---|---|---|---|
+| OpenRAG | `role_map` 新增契约层（`_CONTRACT_SCHEMA_VERSION=1`、TTL 300s、`_http_get_json`、`_normalize_contract`、`load_role_contract` / `apply_role_contract` / `reset_role_contract`）；`interpret_openbase_role` 改用 `_active_role_tier()`：契约命中优先、未知码回落本地 `ROLE_TIER` | `OPENRAG_IDENTITY_ROLE_CONTRACT_URL`（空=关闭） | `src/openrag/identity/role_map.py`、`src/openrag/config/settings.py`、`src/openrag/api/middleware/role_gate.py` |
+| OpenMemory | 同构契约层，档位名映射 `readonly→READ` / `readwrite→READWRITE` / `manage→MANAGE`；启动期装载契约 | `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL`（空=关闭） | `src/openmemory/identity/role_map.py`、`src/openmemory/utils/config.py`、`src/openmemory/api/middleware/identity_gate.py` |
+| DPS | 契约层 `_contract_anchor(role_code)`；`resolve_role_anchor` = 契约锚点 or `ROLE_TO_ANCHOR`；`local_role_anchor` = 契约锚点 or `LOCAL_ROLE_TO_ANCHOR`（**受信链与本地链两表互不读取**，保持既有不变量）；`register_s5_middleware` 装载契约 | `IDENTITY_ROLE_CONTRACT_URL`（空=关闭） | `src/identity/role_map.py`、`src/config.py`、`src/rest_api/app.py` |
+
+**契约来源**：OpenBase `GET /api/v1/auth/roles/contract`（C-10，§10.24），返回 `schema_version=1` / `tiers.order` / `anchor`（角色→档位）/ `roles`。三仓装载失败仅输出 WARN 并回落本地映射，**不阻断启动、不新增放行**。
+
+**新增配置（缺省零行为变化）**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `OPENRAG_IDENTITY_ROLE_CONTRACT_URL` | `""` | 空 = 契约关闭，保持本地 `ROLE_TIER` 逐码映射 |
+| `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL` | `""` | 空 = 契约关闭，保持本地角色档位映射 |
+| `IDENTITY_ROLE_CONTRACT_URL` | `""` | 空 = 契约关闭，保持本地双链映射 |
+
+**验证与门禁结论**
+
+| 项 | 结果 |
+|---|---|
+| OpenLLM | 新增 `backend/tests/unit/test_k03_audit_key_identity.py`（9 用例）；既有 `test_s4_t10_audit_chain.py`、`test_s4_t2_identity_base.py` 断言同步 10 键；定向回归 **106 passed** |
+| OpenRAG | 新增 `tests/unit/test_k03_k04_audit_contract.py`；`test_s3_t9_role_mapping.py` 回归；定向 **54 passed**（含「空 URL = 契约关闭」专门用例） |
+| OpenMemory | 新增 `tests/unit/test_k03_k04_audit_contract.py`（含 TestClient：受信 gate→`entry=proxy`、本地 gate→`entry=direct`、未知角色码 403）；定向 **48 passed** |
+| DPS | 新增 `src/tests/test_k03_k04_audit_contract.py`（`_attach_auth_context` 直接单测 + 双链分别回落）；定向 **72 passed** |
+| 静态检查 | 本环境未安装 `ruff`（`No module named ruff`），**待具备环境补跑**；已如实登记 |
+| 全量套件 | 四仓全量套件依赖 `psycopg`/`numpy`/`jinja2` 等本机缺失依赖，**未全量运行**；本批以「定向用例 + 相关既有回归」为证据 |
+| 零行为变化 | 三个契约地址默认空 → 角色判定完全沿用本地映射；审计新增 4 键为纯追加，既有 6 键语义不变；`entry` 缺省归 `direct` |
+| 安全 | `key_id` 仅存摘要；契约响应不含密钥/令牌/用户数据；日志与审计不含凭据明文 |
+
+**残余**
+
+- K-04 硬编码映射表**作为过渡与回落基线保留**，未删除；删除须在 D-05=A 部署编排与契约可用性验证后另行验收。
+- 契约装载为**启动期装载**（TTL 缓存用于取回节流），未实现配置热更新推送；契约变更需重启生效。
+- 静态 Key 通道收口（K-01=B 双通道窗口）与 DPS 本地密码停用（K-02/K-06）**本批未触碰**，留待批 B/批 C。
+- 跨实例异常聚合与下游拒绝数对账仍归 K-05 / C-09 边界。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -1009,3 +1062,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.20.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.23「OIDC 残余闭合（P1 批次 C-01~C-05）」，闭合 §10.22/§10.21/§10.19 登记的 5 项残余：C-01 `tls_client_auth` SAN 型绑定本地预检（新增 `OPENBASE_OIDC_CLIENT_CERT_SAN_DNS/_URI/_IP/_EMAIL`）；C-02 `private_key_jwt` 断言算法扩至 `RS256`/`ES256`/`ES384` 并校验私钥类型/曲线（新增 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM`）；C-03 回调保存 ID Token 并在登出透传 `id_token_hint`；C-04 新增 RFC 8471 `POST /api/v1/auth/oidc/backchannel-logout`（验签 + events/jti 一次性 + 404 语义）；C-05 Provider 级 PKCE/签名算法/认证方式覆盖与回落；新增 6 配置项全部缺省零行为变化并进启动门禁；`tests/test_oidc_p1_residuals.py` **39 passed**（本环境 ruff 未安装，待补跑）；同步升版《残余项统一处置方案 v1.0.2》与 A2 清单 v1.0.8 |
 | v1.21.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.24「Key 生命周期残余闭合（P2 批次 C-06~C-10）」，闭合 §10.12 与 §7.3 登记的 5 项残余：C-06 静态 MCP Key 工具白名单（`OPENBASE_MCP_API_KEY_TOOLS`，缺省不限工具）；C-07 Key 异常检测改 Redis 跨实例聚合（`INCR`/`SADD`/`SCARD` + 共享冷却，Redis 不可用回退进程内，仍只告警不阻断）；C-08 新增只读到期清单端点与 `service_key.expiring` 事件（Key+日去重）；C-09 Key 侧审计对账（`签发 = 有效 + 吊销 + 过期`，差异写审计告警）；C-10 新增 `GET /api/v1/auth/roles/contract` 统一角色字典契约端点；新增 1 配置项缺省零行为变化并进启动门禁；`tests/test_p2_residuals.py` **20 passed**（回归 99 + 8，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.3》与 A2 清单 v1.0.9 |
 | v1.22.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.25「P3 治理残余闭合（G-01~G-03）」，闭合 §10.14/§10.16 登记的 3 项治理残余：G-01 按人工裁定 B 落地「超管直改 + 事后审计」（审计 `review_mode=post_audit` + update/delete 改前快照 + WARN，不新增审批表/端点）；G-02 新增 `ensure_role_grant_allowed` 并接入用户创建/改派、agent 创建、OIDC 角色映射，冲突返回 409 `PERM_DUTY_CONFLICT`（闭合 ER-25）；G-03 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（1000）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（50），超规则数/超耗时输出结构化 WARN，判定语义不变；新增 2 配置项缺省零行为变化并进启动门禁；`tests/test_p3_governance.py` **8 passed**（回归 127 passed，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.4》与 A2 清单 v1.1.0 |
+| v1.23.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.26「P4 批 A：K-03/K-04 跨仓落地」并登记两项裁定：**D-05=A（显式 `*_SUBJECT_MAP` 主体映射，安全优先）**、**K-01=B（双通道并行一个发布窗口后关闭静态 Key 主通道）**。K-03 四仓审计 identity 由 6 核心键扩为 10 键（`key_id`/`subject`/`tenant`/`entry`，`key_id=sha256[:12]` 摘要、`entry=proxy\|direct`），OpenLLM 106 / OpenRAG 54 / OpenMemory 48 / DPS 72 passed；K-04 OpenRAG/OpenMemory/DPS 消费 `GET /api/v1/auth/roles/contract`（契约优先 + 本地映射回落，DPS 双链互不读取），新增 `OPENRAG_IDENTITY_ROLE_CONTRACT_URL` / `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL` / `IDENTITY_ROLE_CONTRACT_URL` 三项默认空（零行为变化），各仓新增单测；本环境 ruff 未安装、全量套件因缺依赖未运行，均如实登记；同步升版《残余项统一处置方案 v1.0.6》与 A2 清单 v1.1.2 |

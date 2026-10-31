@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.1 |
+| 文档版本 | v1.1.2 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.22.0.md`（§10.7~§10.25） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.0.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.23.0.md`（§10.7~§10.26） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.1.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -27,6 +27,7 @@
 | v1.0.9 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.21.0（§10.24 Key 生命周期残余闭合 P2 C-06~C-10）：§2.4 新增 `OPENBASE_MCP_API_KEY_TOOLS` 基线（静态 Key 工具白名单 JSON，留空=不限工具，建议生产显式绑定或 `*`）；§4 门禁 #12 增补工具白名单结构校验条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
 | v1.1.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.22.0（§10.25 P3 治理残余闭合 G-01~G-03）：§2.5 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（默认 `1000`）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（默认 `50`）两项 ABAC 规模/性能基线（缺省零行为变化，仅告警）；§4 门禁 #4 增补「ABAC 阈值非正整数 → 拒绝启动」条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
 | v1.1.1 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | D-01 联动：关联清单更新为《A1 生产验收清单 v1.1.0》（新增 A1-13 OIDC 专项、A1-14 跨仓实测为本清单执行验收）；正文基线与 13 项门禁未变，仅版本引用同步 |
+| v1.1.2 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.23.0（§10.26 P4 批 A K-03/K-04）：§3 四仓镜像矩阵新增三项角色字典契约地址基线 —— OpenRAG `OPENRAG_IDENTITY_ROLE_CONTRACT_URL`、OpenMemory `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL`、DPS `IDENTITY_ROLE_CONTRACT_URL`（全部默认空 = 契约关闭，保持本地映射，零行为变化）；同时修正文件名与内部版本号一致为 v1.1.2（此前文件名滞留 v1.1.0、内部版本已为 v1.1.1）；13 项启动门禁未变 |
 
 ---
 
@@ -160,18 +161,21 @@
 | OpenRAG | `OPENRAG_API_OPENBASE_REVOCATIONS_URL` / `_SERVICE_KEY` | 空 / 空 | 同上（服务 Key 同源） | `.env.example:118-119` |
 | OpenRAG | `OPENRAG_API_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 同上 | `.env.example:120-121` |
 | OpenRAG | `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES` / `OPENRAG_IDENTITY_ROLE_FAIL_CLOSED` | `[]` / `true` | 生产必须登记受信来源并保持 fail-closed | `.env.example:134, 138` |
+| OpenRAG | `OPENRAG_IDENTITY_ROLE_CONTRACT_URL` | 空 | K-04：OpenBase `GET /api/v1/auth/roles/contract` 地址；空=契约关闭（保持本地 `ROLE_TIER` 逐码映射）；装载失败 WARN 并回落 | `src/openrag/config/settings.py`（`IdentityTrustConfig.role_contract_url`） |
 | OpenMemory | `OPENMEMORY_GATEWAY_JWKS_URL` | 空 | OpenBase JWKS 地址 | `.env.example:15` |
 | OpenMemory | `OPENMEMORY_GATEWAY_JWKS_CACHE_TTL_SECONDS` / `_TIMEOUT_SECONDS` | `300` / `3.0` | 同上 | `.env.example:16-17` |
 | OpenMemory | `OPENMEMORY_GATEWAY_JWT_ISSUER` / `_AUDIENCE` / `_LEEWAY_SECONDS` | `openbase` / `openbase-api` / `30` | 同上 | `.env.example:18-20` |
 | OpenMemory | `OPENMEMORY_GATEWAY_REVOCATIONS_URL` / `_SERVICE_KEY` | 空 / 空 | 同上 | `.env.example:23-24` |
 | OpenMemory | `OPENMEMORY_GATEWAY_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 同上 | `.env.example:25-26` |
 | OpenMemory | `OPENMEMORY_GATEWAY_OIDC_MODE` / `ALLOW_UNVERIFIED_GATEWAY_TOKEN` | `local` / `false` | 生产保持 `false`（来源未验签令牌一律拒绝） | `.env.example:33-34` |
+| OpenMemory | `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL` | 空 | K-04：角色字典契约地址；空=契约关闭（保持本地角色档位映射）；装载失败 WARN 并回落 | `src/openmemory/utils/config.py`（`IdentityTrustConfig.role_contract_url`） |
 | DPS | `DPS_OPENBASE_JWKS_URL` | 空 | OpenBase JWKS 地址 | `src/config.py:197` |
 | DPS | `DPS_OPENBASE_JWKS_CACHE_TTL_SECONDS` / `_TIMEOUT_SECONDS` | `300` / `3.0` | 同上 | `src/config.py:198-199` |
 | DPS | `DPS_OPENBASE_JWT_ISSUER` / `_AUDIENCE` / `_LEEWAY_SECONDS` | `openbase` / `openbase-api` / `30` | 同上 | `src/config.py:200-202` |
 | DPS | `DPS_OPENBASE_SUBJECT_MAP` / `_TRUST_LOCAL_SUBJECT` | 空 / `false` | 未命中映射即拒绝；仅同库部署可开 `trust` | `src/config.py:203-205` |
 | DPS | `DPS_OPENBASE_REVOCATIONS_URL` / `_SERVICE_KEY` | 空 / 空 | 同上 | `src/config.py:208-209` |
 | DPS | `DPS_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 同上 | `src/config.py:211-214` |
+| DPS | `IDENTITY_ROLE_CONTRACT_URL` | 空 | K-04：角色字典契约地址；空=契约关闭（保持本地双链映射，受信链与本地链两表互不读取）；装载失败 WARN 并回落 | `src/config.py`（`identity_role_contract_url`）、`src/identity/role_map.py` |
 
 ---
 
@@ -217,7 +221,7 @@ OpenBase 侧 13 项 `@model_validator(mode="after")` / 装配期门禁，按 `se
 **6.1 变量存在性核对**（逐条对照第 2、3 节，结果存 `evidence/a2/`）：
 
 - OpenBase：确认第 2 节所有「生产基线」非空项已注入；秘密类只记录「已配置/未配置」，不记录值。
-- 四仓：确认 JWKS 地址、吊销地址、服务 Key、`IDENTITY_AUTHORITY`/受信来源四项齐备。
+- 四仓：确认 JWKS 地址、吊销地址、服务 Key、`IDENTITY_AUTHORITY`/受信来源四项齐备；启用角色字典契约时确认 `*_ROLE_CONTRACT_URL` 指向 OpenBase 契约端点且可回退（未启用则保持本地映射）。
 
 **6.2 端点可达与内容核对**：
 
