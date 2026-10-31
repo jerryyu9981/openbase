@@ -45,7 +45,7 @@ class MockIdp:
         self.sub = sub
         self.tenant_id = tenant_id
         self.roles = roles if roles is not None else ["org_admin"]
-        # token 端点实际收到的客户端认证方式（post/basic），供认证方式用例断言
+        # token 端点实际收到的客户端认证方式（post/basic/private_key_jwt），供认证方式用例断言
         self.token_auth_calls: list[str] = []
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import rsa
@@ -58,6 +58,10 @@ class MockIdp:
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
+        )
+        self._public_pem = self.public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
         # JWK（仅保留 n/e 与 kid）
         numbers = self.public_key.public_numbers()
@@ -96,12 +100,31 @@ class MockIdp:
         @app.post("/token")
         async def token(request: StarletteRequest):
             # 宽松校验 client 凭据（集成说明约束生产必配）；同时接受
-            # client_secret_post（表单）与 client_secret_basic（Authorization 头）
+            # client_secret_post（表单）/ client_secret_basic（Authorization 头）
+            # / private_key_jwt（RFC 7523 客户端断言）
             form = await request.form()
             client_id = form.get("client_id")
             client_secret = form.get("client_secret")
+            client_assertion = form.get("client_assertion")
             authorization = request.headers.get("authorization", "")
-            if authorization.lower().startswith("basic "):
+            if client_assertion:
+                from jose import jwt as jose_jwt
+
+                assert form.get("client_assertion_type") == (
+                    "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+                )
+                claims = jose_jwt.decode(
+                    str(client_assertion),
+                    self._public_pem,
+                    algorithms=["RS256"],
+                    options={"verify_aud": False},
+                )
+                client_id = claims["iss"]
+                assert claims["sub"] == self.client_id
+                assert claims["aud"] == f"{self.issuer}/token"
+                client_secret = self.client_secret
+                self.token_auth_calls.append("private_key_jwt")
+            elif authorization.lower().startswith("basic "):
                 import base64
 
                 decoded = base64.b64decode(authorization.split(" ", 1)[1]).decode()

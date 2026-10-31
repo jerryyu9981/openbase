@@ -12,6 +12,7 @@ import base64
 import hashlib
 import logging
 import secrets
+import time
 import urllib.parse
 from collections.abc import Mapping
 from typing import Any
@@ -38,6 +39,11 @@ from openbase.modules.identity.state_machine import (
 from openbase.settings import OIDC_ID_TOKEN_ALGORITHMS, get_settings
 
 logger = logging.getLogger("openbase.auth.oidc")
+
+# RFC 7523 §2.2：private_key_jwt 的 client_assertion_type 固定 URN
+CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+# 客户端断言有效期（秒）：仅用于单次 token 请求，短有效期即可
+CLIENT_ASSERTION_TTL_SECONDS = 300
 
 
 class OIDCError(Exception):
@@ -219,7 +225,7 @@ class OIDCClient:
 
         - ``client_secret_basic``：RFC 6749 §2.3.1，凭据经 HTTP Basic 头；
         - ``mtls``：RFC 8705，客户端证书认证（``cert`` + 可选 ``verify``）；
-        - ``client_secret_post``：凭据放表单（默认，无需额外选项）。
+        - ``client_secret_post`` / ``private_key_jwt``：认证材料均在表单，无额外选项。
         """
         method = self.token_auth_method()
         if method == "client_secret_basic":
@@ -233,13 +239,49 @@ class OIDCClient:
             return {"cert": cert, "verify": ca_path or True}
         return {}
 
+    def _build_client_assertion(self) -> str:
+        """构造 RFC 7523 §2.2 客户端断言（RS256 签名）.
+
+        断言 ``iss`` / ``sub`` 均为 ``client_id``，受众取 discovery 声明的
+        token 端点（未加载 discovery 时无法确定受众，直接报错）；带 ``jti``
+        与短有效期，满足一次性使用要求。
+
+        Raises:
+            OIDCError: discovery 未加载、未配置断言私钥路径。
+        """
+        token_endpoint = self._token_endpoint
+        if not token_endpoint:
+            raise OIDCError("client assertion requires discovery token endpoint")
+        settings = self._settings()
+        private_key_path = (settings.oidc_client_private_key_path or "").strip()
+        if not private_key_path:
+            raise OIDCError("client assertion private key path is not configured")
+        with open(private_key_path, encoding="utf-8") as handle:
+            private_key = handle.read()
+        issued_at = int(time.time())
+        claims = {
+            "iss": self.client_id,
+            "sub": self.client_id,
+            "aud": token_endpoint,
+            "iat": issued_at,
+            "exp": issued_at + CLIENT_ASSERTION_TTL_SECONDS,
+            "jti": secrets.token_urlsafe(16),
+        }
+        headers = {"alg": "RS256", "typ": "JWT"}
+        key_id = (settings.oidc_client_assertion_kid or "").strip()
+        if key_id:
+            headers["kid"] = key_id
+        return jose_jwt.encode(claims, private_key, algorithm="RS256", headers=headers)
+
     def token_payload(
         self, code: str, *, code_verifier: str | None = None
     ) -> dict[str, str]:
         """token 端点表单载荷（按认证方式决定是否携带 client 凭据）.
 
         Basic 模式凭据走 Authorization 头，表单不得重复携带（RFC 6749 §2.3.1）；
-        mTLS 模式仅带 ``client_id``（客户端已由证书认证）。
+        mTLS 模式仅带 ``client_id``（客户端已由证书认证）；
+        private_key_jwt 模式带 ``client_id`` + ``client_assertion_type`` +
+        ``client_assertion``（RFC 7523）。
         """
         method = self.token_auth_method()
         payload = {
@@ -253,6 +295,9 @@ class OIDCClient:
             payload["client_id"] = self.client_id
         if method == "client_secret_post":
             payload["client_secret"] = self.client_secret
+        elif method == "private_key_jwt":
+            payload["client_assertion_type"] = CLIENT_ASSERTION_TYPE
+            payload["client_assertion"] = self._build_client_assertion()
         return payload
 
     async def exchange_code(
@@ -260,8 +305,9 @@ class OIDCClient:
     ) -> dict[str, Any]:
         """授权码换取令牌（token_endpoint），返回含 ID Token 的完整响应.
 
-        客户端认证方式由 ``oidc_token_auth_method`` 决定（v1.17.0）：
-        ``client_secret_post``（默认）/ ``client_secret_basic`` / ``mtls``。
+        客户端认证方式由 ``oidc_token_auth_method`` 决定（v1.17.0 / v1.18.0）：
+        ``client_secret_post``（默认）/ ``client_secret_basic`` / ``mtls``
+        / ``private_key_jwt``。
 
         Args:
             code: IdP 回传的授权码。

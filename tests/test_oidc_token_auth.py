@@ -1,12 +1,14 @@
-"""OIDC token 端点客户端认证方式测试（v1.17.0）.
+"""OIDC token 端点客户端认证方式测试（v1.17.0 / v1.18.0）.
 
-覆盖三种 RFC 约定的客户端认证方式：
+覆盖四种 RFC 约定的客户端认证方式：
 ``client_secret_post``（表单，默认）/ ``client_secret_basic``（RFC 6749 §2.3.1）
-/ ``mtls``（RFC 8705 双向 TLS 客户端证书）；含载荷与请求选项装配、授权码
-全链路、以及启动门禁（非法方式 / 缺证书路径 / 路径不存在）。
+/ ``mtls``（RFC 8705 双向 TLS 客户端证书）/ ``private_key_jwt``（RFC 7523
+JWT 客户端断言）；含载荷与请求选项装配、授权码全链路、以及启动门禁
+（非法方式 / 缺证书路径 / 缺断言私钥 / 路径不存在）。
 """
 from __future__ import annotations
 
+import asyncio
 import threading
 import time
 import urllib.request
@@ -17,7 +19,11 @@ from fastapi.testclient import TestClient
 from test_oidc_gateway import MockIdp, _authorize_nonce
 
 from openbase import init_app
-from openbase.modules.auth.oidc import OIDCClient
+from openbase.modules.auth.oidc import (
+    CLIENT_ASSERTION_TTL_SECONDS,
+    CLIENT_ASSERTION_TYPE,
+    OIDCClient,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -90,7 +96,7 @@ def settings_module(monkeypatch):
     module._settings = None
 
 
-def _build_app(settings_module, idp, *, token_auth_method: str):
+def _build_app(settings_module, idp, *, token_auth_method: str, **overrides):
     """构造启用 OIDC 的 Settings 并装配应用（显式覆盖 .env 值）."""
     s = settings_module.Settings()
     s.enable_module("auth")
@@ -101,6 +107,8 @@ def _build_app(settings_module, idp, *, token_auth_method: str):
     s.oidc_redirect_uri = "http://testserver/api/v1/auth/oidc/callback"
     s.oidc_token_auth_method = token_auth_method
     s.idp_providers = ""
+    for field_name, value in overrides.items():
+        setattr(s, field_name, value)
     settings_module._settings = s
     return s, TestClient(init_app(s))
 
@@ -175,6 +183,42 @@ def test_token_payload_mtls(settings_module, tmp_path):
     assert options["verify"] == str(ca)
 
 
+def test_token_payload_private_key_jwt(settings_module, mock_idp, tmp_path):
+    """private_key_jwt：表单带断言（RFC 7523），iss/sub=client_id、aud=token 端点."""
+    from jose import jwt as jose_jwt
+
+    key_path = tmp_path / "client-assertion.key"
+    key_path.write_bytes(mock_idp._pem)
+    client = _client_for(
+        settings_module,
+        "private_key_jwt",
+        oidc_discovery_url=f"{mock_idp.issuer}/.well-known/openid-configuration",
+        oidc_client_private_key_path=str(key_path),
+        oidc_client_assertion_kid="assertion-kid-1",
+    )
+    # 断言受众取 discovery 的 token 端点，须先加载 discovery
+    asyncio.run(client._load_discovery())
+    payload = client.token_payload("code-1")
+    assert payload["client_id"] == "unit-client"
+    assert "client_secret" not in payload
+    assert payload["client_assertion_type"] == CLIENT_ASSERTION_TYPE
+    claims = jose_jwt.decode(
+        payload["client_assertion"],
+        mock_idp._public_pem,
+        algorithms=["RS256"],
+        options={"verify_aud": False},
+    )
+    header = jose_jwt.get_unverified_header(payload["client_assertion"])
+    assert header["alg"] == "RS256"
+    assert header["kid"] == "assertion-kid-1"
+    assert claims["iss"] == "unit-client"
+    assert claims["sub"] == "unit-client"
+    assert claims["aud"] == f"{mock_idp.issuer}/token"
+    assert claims["exp"] - claims["iat"] == CLIENT_ASSERTION_TTL_SECONDS
+    assert claims["jti"]
+    assert client.token_request_options() == {}
+
+
 # ---------------------------------------------------------------------------
 # 授权码全链路（post / basic）
 # ---------------------------------------------------------------------------
@@ -200,15 +244,30 @@ def test_exchange_code_basic_authentication(settings_module, mock_idp):
     assert mock_idp.token_auth_calls[-1] == "basic"
 
 
+def test_exchange_code_private_key_jwt(settings_module, mock_idp, tmp_path):
+    """配置 private_key_jwt：token 端点校验客户端断言，全链路仍签发成功."""
+    key_path = tmp_path / "client-assertion.key"
+    key_path.write_bytes(mock_idp._pem)
+    _s, client = _build_app(
+        settings_module,
+        mock_idp,
+        token_auth_method="private_key_jwt",
+        oidc_client_private_key_path=str(key_path),
+    )
+    tokens = _login(client)
+    assert tokens["access_token"]
+    assert mock_idp.token_auth_calls[-1] == "private_key_jwt"
+
+
 # ---------------------------------------------------------------------------
 # 启动门禁
 # ---------------------------------------------------------------------------
 
 
 def test_gate_rejects_unknown_token_auth_method(settings_module):
-    """非法认证方式 → 拒绝启动."""
+    """未实现的认证方式（如 client_secret_jwt）→ 拒绝启动."""
     with pytest.raises(ValueError, match="OPENBASE_OIDC_TOKEN_AUTH_METHOD"):
-        settings_module.Settings(oidc_token_auth_method="private_key_jwt")
+        settings_module.Settings(oidc_token_auth_method="client_secret_jwt")
 
 
 def test_gate_rejects_mtls_without_cert_paths(settings_module):
@@ -241,3 +300,29 @@ def test_gate_accepts_mtls_with_existing_files(settings_module, tmp_path):
         oidc_client_ca_path=str(ca),
     )
     assert s.oidc_token_auth_method == "mtls"
+
+
+def test_gate_rejects_private_key_jwt_without_key_path(settings_module):
+    """private_key_jwt 缺断言私钥路径 → 拒绝启动."""
+    with pytest.raises(ValueError, match="OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH"):
+        settings_module.Settings(oidc_token_auth_method="private_key_jwt")
+
+
+def test_gate_rejects_private_key_jwt_missing_file(settings_module, tmp_path):
+    """private_key_jwt 断言私钥路径不存在 → 拒绝启动."""
+    with pytest.raises(ValueError, match="不存在"):
+        settings_module.Settings(
+            oidc_token_auth_method="private_key_jwt",
+            oidc_client_private_key_path=str(tmp_path / "absent.key"),
+        )
+
+
+def test_gate_accepts_private_key_jwt_with_existing_file(settings_module, tmp_path):
+    """private_key_jwt 私钥文件存在 → 正常构造，方式归一为小写."""
+    key_path = tmp_path / "client-assertion.key"
+    key_path.write_text("dummy")
+    s = settings_module.Settings(
+        oidc_token_auth_method=" PRIVATE_KEY_JWT ",
+        oidc_client_private_key_path=str(key_path),
+    )
+    assert s.oidc_token_auth_method == "private_key_jwt"

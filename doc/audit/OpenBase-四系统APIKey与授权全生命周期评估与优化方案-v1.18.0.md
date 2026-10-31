@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.17.0 |
+| 版本 | v1.18.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -808,9 +808,41 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 
 **残余**
 
-- 未实现 `private_key_jwt`（RFC 7523）与 `tls_client_auth`（RFC 8705 的 subject 绑定变体）。
+- 未实现 `tls_client_auth`（RFC 8705 的 subject 绑定变体）。
 - mTLS 未做真实双向 TLS 端到端联调（测试覆盖请求选项装配与启动门禁；链路验证依赖 A1 真实 IdP 联调）。
 - 验证边界：mock IdP 端口 9014，覆盖 post / basic 全链路；mTLS 为单元级验证。
+- `private_key_jwt` 已由 §10.21 闭合。
+
+### 10.21 private_key_jwt 客户端断言（v1.18.0，2026-10-31）
+
+> 目的：闭合 §10.20 登记的「未实现 `private_key_jwt`」残余——面向仅接受 RFC 7523 JWT 客户端断言、不支持共享密钥的 IdP，默认配置与其他方式零行为变化。
+
+| 事项 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|
+| 认证方式配置 | `OPENBASE_OIDC_TOKEN_AUTH_METHOD` 追加 `private_key_jwt`（取值仍归一为小写） | `settings.py`（`OIDC_TOKEN_AUTH_METHODS`） | `tests/test_oidc_token_auth.py`（门禁用例） |
+| 客户端断言 | 表单携带 `client_id` + `client_assertion_type`（固定 URN `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`）+ `client_assertion`；断言 RS256 签名，`iss`/`sub` = `client_id`，`aud` = discovery 的 token 端点，带 `iat`/`exp`（300s）与 `jti` | `oidc.py`（`_build_client_assertion` / `token_payload`） | 同上（断言 claims/header 解码校验 + mock IdP 断言验签全链路） |
+| 签名私钥 | `OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH`（PEM 只读挂载，禁止入库/入日志）；可选 `OPENBASE_OIDC_CLIENT_ASSERTION_KID` 写入 JWT header `kid`（multi-key IdP 轮换用） | `settings.py` / `oidc.py` | 同上（header `kid` 断言） |
+| 请求选项 | 认证材料全部在表单，httpx 请求选项为空（与默认 post 同） | `oidc.py`（`token_request_options`） | 同上 |
+| 启动门禁 | `private_key_jwt` 缺私钥路径或文件不存在 → 拒绝启动 | `settings.py`（`_validate_oidc_token_auth_configuration`） | 同上（3 项门禁用例，含大写/带空白归一） |
+
+**新增配置**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH` | 空 | `private_key_jwt` 必填：断言签名私钥（PEM，只读挂载） |
+| `OPENBASE_OIDC_CLIENT_ASSERTION_KID` | 空 | 可选：写入断言 JWT header 的 `kid`（留空不带） |
+
+**统一口径**
+
+- 断言算法固定 `RS256`（与 IdP 公钥登记一致；不引入额外算法配置，避免与 ID Token 算法白名单混淆）。
+- 断言每次 token 请求现签现用，`jti` 随机、有效期 300s；私钥每次读取文件，不常驻内存（挂载轮换无需重启即可生效）。
+- 该方式不发送 `client_secret`；IdP 必须登记本客户端公钥。
+
+**残余**
+
+- 断言算法不支持 ES256 等非 RSA 曲线（如需按 IdP 要求扩展，再增配置项）。
+- 未做真实 IdP 的 `private_key_jwt` 联调（测试用 mock IdP 验签断言，链路验证依赖 A1 真实 IdP）。
+- 验证边界：mock IdP 端口 9014，断言签名与受众校验在全链路中执行。
 
 ## 11. 修订历史
 
@@ -836,3 +868,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.15.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.18「多 Provider 登录路由」：`GET /auth/oidc/authorize` 支持 `provider` 参数，按 `OPENBASE_IDP_PROVIDERS` 声明构建/缓存 Provider 客户端；state 载荷记录 Provider 名，callback 依 state 还原客户端（profile/claim_role/default_tenant 取自 Provider）；未登记/未知 Provider 统一 400 `PARAM_INVALID`；不指定 provider 的单 IdP 路径零行为变化；新增 5 项用例，OIDC 三套用例全通过，ruff 0 错误 |
 | v1.16.0 | 2026-10-30 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.19「IdP 登出联动」：`POST /auth/oidc/logout` 本地 `token_version` 递增即时吊销存量令牌，按 Provider/单 IdP discovery 返回 `end_session` 登出 URL（IdP 未声明/不可达则为 null，不回滚本地吊销）；未鉴权 401、未知 Provider 400、未启用 404 均在吊销前判定；新增 4 项用例（未鉴权 / 未知 Provider / Provider 登出 URL / 本地版本递增与直签主体跳过），`test_oidc_multi_provider` 9 项全通过，ruff 0 错误 |
 | v1.17.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.20「token 端点认证方式扩展」：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 支持 `client_secret_post`（默认）/ `client_secret_basic`（RFC 6749 §2.3.1，表单不重复携带凭据）/ `mtls`（RFC 8705，客户端证书 + 可选 CA）；新增 3 项 mTLS 证书路径配置与启动门禁（非法方式、缺路径、文件不存在均拒启）；新增 9 项用例（post/basic 载荷、mTLS 请求选项、post/basic 全链路、4 项门禁），OIDC 三套用例通过，ruff 0 错误 |
+| v1.18.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.21「private_key_jwt 客户端断言」并闭合 §10.20 该项残余：`OPENBASE_OIDC_TOKEN_AUTH_METHOD` 追加 `private_key_jwt`（RFC 7523，`client_assertion_type` 固定 URN、RS256 断言 `iss`/`sub`=client_id、`aud`=token 端点、300s + `jti`）；新增 `OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH` 与可选 `_ASSERTION_KID`，缺私钥路径/文件不存在拒启；新增 5 项用例（断言 claims/header、mock IdP 验签全链路、3 项门禁），OIDC 四套用例（含 settings/auth）52 项通过，ruff 0 错误；登记残余（断言算法仅 RS256、真实 IdP 未联调） |

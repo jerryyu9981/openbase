@@ -287,12 +287,14 @@ OIDC_ID_TOKEN_ALGORITHMS: tuple[str, ...] = (
     "ES512",
 )
 
-# token 端点客户端认证方式（RFC 6749 §2.3.1 / RFC 8705）：
-# client_secret_post（表单凭据，默认）| client_secret_basic（HTTP Basic）| mtls（双向 TLS）
+# token 端点客户端认证方式（RFC 6749 §2.3.1 / RFC 8705 / RFC 7523）：
+# client_secret_post（表单凭据，默认）| client_secret_basic（HTTP Basic）
+# | mtls（双向 TLS）| private_key_jwt（JWT 客户端断言）
 OIDC_TOKEN_AUTH_METHODS: tuple[str, ...] = (
     "client_secret_post",
     "client_secret_basic",
     "mtls",
+    "private_key_jwt",
 )
 
 
@@ -473,11 +475,15 @@ class Settings(BaseSettings):
     # ID Token 验签算法白名单（逗号分隔，须与 IdP discovery 声明取交集）
     oidc_signing_algorithms: str = "RS256"
     # token 端点认证方式（v1.17.0）：client_secret_post | client_secret_basic | mtls
+    # v1.18.0 追加 private_key_jwt（RFC 7523 JWT 客户端断言）
     oidc_token_auth_method: str = "client_secret_post"
     # mTLS（RFC 8705）：客户端证书/私钥（PEM，证书也可与私钥合并为一个文件）；CA 可选
     oidc_client_cert_path: str = ""
     oidc_client_key_path: str = ""
     oidc_client_ca_path: str = ""
+    # private_key_jwt（RFC 7523）：断言签名私钥（PEM）与可选 JWT header kid
+    oidc_client_private_key_path: str = ""
+    oidc_client_assertion_kid: str = ""
 
     # ---- 多租户 ----
     tenant_mode: str = "schema"  # schema | row
@@ -738,6 +744,7 @@ class Settings(BaseSettings):
           统一归一为小写；
         - ``mtls`` 必须配置客户端证书与私钥路径，且文件存在（缺配或路径错误即拒启，
           避免运行期才发现 token 端点无法认证）；
+        - ``private_key_jwt`` 必须配置断言签名私钥路径，且文件存在；
         - ``oidc_client_ca_path`` 可选，配置后文件必须存在。
         """
         method = (self.oidc_token_auth_method or "").strip().lower()
@@ -748,6 +755,19 @@ class Settings(BaseSettings):
                 f"可用值：{','.join(OIDC_TOKEN_AUTH_METHODS)}"
             )
         self.oidc_token_auth_method = method
+        if method == "private_key_jwt":
+            private_key_path = (self.oidc_client_private_key_path or "").strip()
+            if not private_key_path:
+                raise ValueError(
+                    "OIDC token 端点选择 private_key_jwt 时必须配置 "
+                    "OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH"
+                )
+            if not os.path.exists(private_key_path):
+                raise ValueError(
+                    "OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH 指向的文件不存在："
+                    f"{private_key_path}"
+                )
+            return self
         if method != "mtls":
             return self
         cert_path = (self.oidc_client_cert_path or "").strip()
