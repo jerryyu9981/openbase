@@ -1,0 +1,61 @@
+﻿{
+    "OpenBase":  {
+                     "template":  "d:\\Trae CN\\myproject\\Dev\\OpenBase\\.env.shared-infra",
+                     "template_exists":  true,
+                     "keys":  {
+                                  "OPENBASE_JWT_RSA_PRIVATE_KEY_PATH":  "缺失",
+                                  "OPENBASE_JWT_SIGNING_KID":  "缺失",
+                                  "OPENBASE_JWT_REQUIRE_RS256":  "缺失",
+                                  "OPENBASE_JWT_ISSUER":  "缺失",
+                                  "OPENBASE_IDP_PROVIDERS":  "缺失",
+                                  "OPENBASE_MCP_API_KEY_HASHES":  "缺失",
+                                  "OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP":  "缺失"
+                              }
+                 },
+    "OpenLLM":  {
+                    "template":  "d:\\Trae CN\\myproject\\Dev\\OpenLLM\\.env.example",
+                    "template_exists":  true,
+                    "keys":  {
+                                 "OPENBASE_JWKS_URL":  "存在",
+                                 "OPENBASE_JWT_ISSUER":  "存在",
+                                 "OPENBASE_REVOCATIONS_URL":  "存在",
+                                 "OPENBASE_SERVICE_KEY":  "存在",
+                                 "OPENBASE_SUBJECT_MAP":  "存在"
+                             }
+                },
+    "OpenRAG":  {
+                    "template":  "d:\\Trae CN\\myproject\\Dev\\OpenRAG\\.env.example",
+                    "template_exists":  true,
+                    "keys":  {
+                                 "OPENRAG_API_OPENBASE_JWKS_URL":  "存在",
+                                 "OPENRAG_API_OPENBASE_JWT_ISSUER":  "存在",
+                                 "OPENRAG_API_OPENBASE_REVOCATIONS_URL":  "存在",
+                                 "OPENRAG_API_OPENBASE_SERVICE_KEY":  "存在",
+                                 "OPENRAG_API_STATIC_KEY_CHANNEL":  "缺失"
+                             }
+                },
+    "OpenMemory":  {
+                       "template":  "d:\\Trae CN\\myproject\\Dev\\OpenMemory\\.env.example",
+                       "template_exists":  true,
+                       "keys":  {
+                                    "OPENMEMORY_GATEWAY_JWKS_URL":  "存在",
+                                    "OPENMEMORY_GATEWAY_JWT_ISSUER":  "存在",
+                                    "OPENMEMORY_GATEWAY_REVOCATIONS_URL":  "存在",
+                                    "OPENMEMORY_GATEWAY_SERVICE_KEY":  "存在",
+                                    "OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL":  "缺失"
+                                }
+                   },
+    "DPS":  {
+                "template":  "d:\\Trae CN\\myproject\\Dev\\DPS\\doc\\release\\DPS-环境配置说明-v2.8.0.md",
+                "template_exists":  true,
+                "keys":  {
+                             "DPS_OPENBASE_JWKS_URL":  "存在",
+                             "DPS_OPENBASE_JWT_ISSUER":  "存在",
+                             "DPS_OPENBASE_REVOCATIONS_URL":  "存在",
+                             "DPS_OPENBASE_SERVICE_KEY":  "存在",
+                             "DPS_OPENBASE_SUBJECT_MAP":  "存在",
+                             "DPS_IDENTITY_AUTHORITY":  "缺失",
+                             "STATIC_KEY_CHANNEL":  "缺失"
+                         }
+            }
+}

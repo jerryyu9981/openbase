@@ -1,0 +1,17 @@
+﻿{
+    "checks":  [
+                   {
+                       "case":  "同名 Provider",
+                       "rejected":  true,
+                       "detail":  "OPENBASE_IDP_PROVIDERS 的 Provider name 必须唯一"
+                   },
+                   {
+                       "case":  "两 Provider 不同 name/client（可登记）",
+                       "rejected":  false,
+                       "detail":  "登记成功，count=2；issuer 字段由 discovery 运行期解析，静态配置无 issuer 键"
+                   }
+               ],
+    "issuer_field_in_config":  false,
+    "issuer_source":  "discovery 文档运行期解析（oidc.py:212 self._issuer = doc.get(\u0027issuer\u0027,\u0027\u0027)）",
+    "note":  "静态登记门禁只保证 name 唯一；同 issuer 多 client 的判重为运行期/部署口径——须在 Provider 登记前逐个读取 discovery 的 issuer 并判重（同 issuer 视为同一身份空间，back-channel 登出按 issuer+aud 定位，命中多个时取首个）。"
+}

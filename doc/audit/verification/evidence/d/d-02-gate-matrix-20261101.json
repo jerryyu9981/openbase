@@ -1,0 +1,114 @@
+﻿{
+    "checked_at":  "2026-11-01T20:14:11+08:00",
+    "forward_baseline":  {
+                             "ok":  true,
+                             "detail":  "生产合规基线构造成功（13 项门禁全部放行）"
+                         },
+    "gate_cases":  [
+                       {
+                           "gate":  "#1 _validate_jwt_secret",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OPENBASE_JWT_SECRET 必须为强随机密钥（≥32 字符，禁止占位/演示值）；可用 python scripts/gen_jwt_secret.py 生成 [type=value_error, input_val"
+                       },
+                       {
+                           "gate":  "#2 _validate_rs256_configuration",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, 生产/门禁要求 RS256：必须同时配置 OPENBASE_JWT_RSA_PRIVATE_KEY_PATH 与 OPENBASE_JWT_SIGNING_KID，否则拒绝启动（fail-closed） [type=value"
+                       },
+                       {
+                           "gate":  "#3 _validate_signature_algorithm",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, 签名算法 SM2 当前不可用：国密 SM2 预留：需 gmssl/密码机提供签名原语并在政务交付时接线 [type=value_error, input_value={\u0027redis_url\u0027: \u0027redis://:!...\u0027,"
+                       },
+                       {
+                           "gate":  "#4 _validate_e3_governance_configuration",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OPENBASE_AUDIT_RETENTION_DAYS 必须为 0（不清理）或 ≥30 天，当前为 7（低于责任期下限，拒绝启动） [type=value_error, input_value={\u0027redis_url\u0027: "
+                       },
+                       {
+                           "gate":  "#5 _validate_oidc_hardening_configuration",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OPENBASE_OIDC_SIGNING_ALGORITHMS 含未接线算法：SM2；可用值：RS256,RS384,RS512,ES256,ES384,ES512 [type=value_error, input_valu"
+                       },
+                       {
+                           "gate":  "#6 _validate_oidc_token_auth_configuration",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OPENBASE_OIDC_TOKEN_AUTH_METHOD 取值非法：client_secret_jwt；可用值：client_secret_post,client_secret_basic,mtls,tls_client"
+                       },
+                       {
+                           "gate":  "#6a _validate_oidc_token_auth_configuration(mtls缺证书)",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OIDC token 端点选择 mTLS 时必须配置 OPENBASE_OIDC_CLIENT_CERT_PATH 与 OPENBASE_OIDC_CLIENT_KEY_PATH [type=value_error, inpu"
+                       },
+                       {
+                           "gate":  "#6b _validate_oidc_token_auth_configuration(private_key_jwt缺私钥)",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OIDC token 端点选择 private_key_jwt 时必须配置 OPENBASE_OIDC_CLIENT_PRIVATE_KEY_PATH [type=value_error, input_value={\u0027redi"
+                       },
+                       {
+                           "gate":  "#6c _validate_oidc_token_auth_configuration(证书非PEM)",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OIDC token 端点选择 tls_client_auth 时必须配置 OPENBASE_OIDC_CLIENT_CERT_PATH 与 OPENBASE_OIDC_CLIENT_KEY_PATH [type=value_"
+                       },
+                       {
+                           "gate":  "#6d _validate_oidc_token_auth_configuration(SAN不匹配)",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OIDC token 端点选择 tls_client_auth 时必须配置 OPENBASE_OIDC_CLIENT_CERT_PATH 与 OPENBASE_OIDC_CLIENT_KEY_PATH [type=value_"
+                       },
+                       {
+                           "gate":  "#7 _validate_production_token_version_enforcement",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, 生产环境必须启用 OPENBASE_ENFORCE_TOKEN_VERSION=true（token 吊销强校验），否则拒绝启动（fail-closed）；非生产环境可维持默认关闭 [type=value_error, inp"
+                       },
+                       {
+                           "gate":  "#8 _validate_principal_db_degraded_policy",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, 生产环境不得将 OPENBASE_PRINCIPAL_DB_DEGRADED_POLICY 设为 allow（会使 DB 不可达时回退 fail-open）；生产须为 reject 或留空（按环境推导为 reject） [ty"
+                       },
+                       {
+                           "gate":  "#9 _validate_principal_row_missing_policy",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, 生产环境不得将 OPENBASE_PRINCIPAL_ROW_MISSING_POLICY 设为 allow（会使行缺失 token 回退 fail-open）；生产须为 reject 或留空（按环境推导为 reject） ["
+                       },
+                       {
+                           "gate":  "#10 _validate_outbound_tenant_alignment",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, 目标 rag 的 default_tenant_code \u0027default\u0027 命中其保留码 [\u0027default\u0027, \u0027openrag-local\u0027]；请改用该目标可接受的码值 [type=value_error, input_"
+                       },
+                       {
+                           "gate":  "#11 _validate_llm_api_keys_by_tenant",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, OPENBASE_LLM_API_KEYS_BY_TENANT 不是合法 JSON：Expecting property name enclosed in double quotes: line 1 column 2 (cha"
+                       },
+                       {
+                           "gate":  "#12 _validate_mcp_edge_configuration",
+                           "expected":  "ValueError",
+                           "rejected":  true,
+                           "detail":  "1 validation error for Settings\n  Value error, 生产环境禁止使用内置默认 MCP 静态 Key（dev-mcp-key）；请改用 OPENBASE_MCP_API_KEY_HASHES（摘要）或 OPENBASE_MCP_API_KEYS_FILE（宿主注入文件） [typ"
+                       },
+                       {
+                           "gate":  "#13 validate_production_login_tenant_policy",
+                           "expected":  "RuntimeError",
+                           "rejected":  true,
+                           "detail":  "生产环境必须启用 OPENBASE_REQUIRE_TENANT_ON_LOGIN=true（登录租户绑定强校验），否则拒绝启动（fail-closed）；非生产环境可维持默认关闭"
+                       }
+                   ],
+    "gate_cases_total":  17,
+    "gate_cases_rejected":  17,
+    "verdict":  "PASS"
+}

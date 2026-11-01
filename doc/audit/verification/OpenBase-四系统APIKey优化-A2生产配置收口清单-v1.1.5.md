@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.4 |
+| 文档版本 | v1.1.5 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.25.0.md`（§10.7~§10.28） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.3.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.26.0.md`（§10.7~§10.29） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.3.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收）、`...-D类部署取证执行记录-v1.0.0.md`（D-02/D-06 的本清单取证结果） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -30,6 +30,7 @@
 | v1.1.2 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.23.0（§10.26 P4 批 A K-03/K-04）：§3 四仓镜像矩阵新增三项角色字典契约地址基线 —— OpenRAG `OPENRAG_IDENTITY_ROLE_CONTRACT_URL`、OpenMemory `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL`、DPS `IDENTITY_ROLE_CONTRACT_URL`（全部默认空 = 契约关闭，保持本地映射，零行为变化）；同时修正文件名与内部版本号一致为 v1.1.2（此前文件名滞留 v1.1.0、内部版本已为 v1.1.1）；13 项启动门禁未变 |
 | v1.1.3 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.24.0（§10.27 P4 批 B K-02/K-06）：§3 四仓镜像矩阵 DPS 段新增 `IDENTITY_AUTHORITY` 基线（默认 `local` = 迁移期零行为变化；**生产固定 `openbase`**：停用本地密码登录 403 `AUTH_LOCAL_LOGIN_DISABLED`、仅受理 OpenBase RS256/JWKS、本地身份表停写不删；非法值归一 `local`；回滚改回 `local` 即恢复）；13 项启动门禁未变（生产负向启动取证归 D-02/D-06） |
 | v1.1.4 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.25.0（§10.28 P4 批 C K-01/K-05/D-03）：§3 四仓镜像矩阵新增 **K-01** 三仓静态 Key 通道基线（OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL` / OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` / DPS `DPS_STATIC_KEY_CHANNEL`，默认 `dual`；`closed` 时关闭静态 Key 主通道、仅 `*_EMERGENCY_BYPASS_KEY` + `*_EMERGENCY_BYPASS_EXPIRES_AT` 应急放行，缺配/非法拒启）；新增 **K-05** OpenLLM 配额基线（`QUOTA_ALGORITHM` 默认 `window`、`QUOTA_BUCKET_CAPACITY` / `QUOTA_BUCKET_REFILL_PER_SECOND`）与四仓后台吊销同步开关（`*_REVOCATION_BACKGROUND_SYNC_ENABLED` 默认 `false`）；§2.2 `OPENBASE_JWT_REQUIRE_RS256` 行补充 **D-03 收口语义**（置 true 后白名单收敛 `{RS256}`、要求 kid、忽略历史 kid、禁止 HS256 签发）；§6.1 增补 K-01/K-05 变量核对；§8 已知边界更新为「惰性拉取 + 可选后台调度」；13 项启动门禁总数未变（K-01 各仓新增门禁单列于 §3） |
+| v1.1.5 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.26.0（§10.29 P4 批 D 部署取证）：新增 §6.4「D 类取证联动」——D-02 13 项门禁负向矩阵本地 **17/17 命中**、正向基线放行、门禁单测 **108 passed**（真实重启与 §6.2 端点核对仍 ⛔ Blocked）；D-06 五仓键名核对发现 **4 处模板漂移**（本清单 OpenBase 生产基线 7 键、OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL`、OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL`、DPS 说明 `DPS_IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`），列为发布窗口前必补项；D-07 issuer 判重列为登记前置检查；§7 A2-02 证据补充 D-02 本地矩阵；13 项启动门禁总数与基线口径未变 |
 
 ---
 
@@ -265,6 +266,17 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 - 生产置 `OPENBASE_OIDC_CLIENT_ASSERTION_ALGORITHM=ES256` 但私钥为 RSA（或私钥非 PEM）→ 必须**拒绝启动**。
 - 生产置 `OPENBASE_OIDC_TOKEN_AUTH_METHOD=client_secret_jwt`（未实现方式）→ 必须**拒绝启动**（取值非法）。
 
+**6.4 D 类取证联动（2026-11-01）**
+
+| 项 | 本地取证结果 | 生产待办 |
+|---|---|---|
+| 13 项启动门禁负向矩阵（§6.3 同源） | ✅ **17/17 命中**（#6 token 认证拆 5 情形）；✅ 生产合规基线 13 项全放行；✅ 门禁单测 **108 passed** | ⛔ 真实重启两向验证待部署环境启停权限；解除条件见执行记录 §2.1 |
+| §6.2 JWKS/吊销/内省端点核对 | ⛔ **Blocked**（本机无运行实例、无生产会话） | 获得会话后按 §6.2 命令逐项核对并归档 `evidence/a2/` |
+| 五仓部署键名存在性（§6.1） | ⛔ **4 处模板漂移**：① 本清单 OpenBase 生产基线 7 键未注入 `.env.shared-infra`；② OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL` 未进模板；③ OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` 未进模板；④ DPS 环境配置说明缺 `DPS_IDENTITY_AUTHORITY` / `STATIC_KEY_CHANNEL` | 发布窗口前补齐模板与说明，再按 §6.1 复核 |
+| 多 Provider issuer 唯一性（登记前置） | ✅ Provider name 唯一性门禁生效；ℹ️ issuer 为 discovery 运行期解析（配置层无该字段） | ⛔ issuer 判重待可达 IdP；同 issuer 多 client 仅一个承担 back-channel |
+
+证据：`doc/audit/verification/evidence/d/d-02-gate-matrix-20261101.json`、`d-06-template-key-check-20261101.json`、`d-07-issuer-uniqueness-20261101.json`；执行方式与阻塞解除条件见 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md`。
+
 ---
 
 ## 7. 验收项与签核
@@ -272,7 +284,7 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 | 验收项 | 内容 | 判定 | 证据 |
 |---|---|---|---|
 | A2-01 | OpenBase 第 2 节基线逐项落地（秘密类仅记状态） | Pass/Fail | `a2-01.txt` |
-| A2-02 | 13 项启动门禁负向样例各命中一次（第 6.3 节） | Pass/Fail | `a2-02.txt` |
+| A2-02 | 13 项启动门禁负向样例各命中一次（第 6.3 节） | Pass/Fail | `a2-02.txt`（生产重启）；本地构造期矩阵见 `evidence/d/d-02-gate-matrix-20261101.json`（17/17） |
 | A2-03 | JWKS 只发公钥、kid 一致（第 6.2 节） | Pass/Fail | `a2-03.txt` |
 | A2-04 | 四仓镜像矩阵齐备且 `iss/aud` 一致 | Pass/Fail | `a2-04.txt` |
 | A2-05 | 服务 Key 权限面最小化（`scope.system` 仅含 `auth`/`*` 必要项） | Pass/Fail | `a2-05.txt` |
