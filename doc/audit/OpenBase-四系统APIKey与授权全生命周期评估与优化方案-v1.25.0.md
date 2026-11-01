@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.24.0 |
+| 版本 | v1.25.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -1080,6 +1080,64 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - `IDENTITY_AUTHORITY` 生产负向启动取证归 D-02/D-06（批 C）；A2 v1.1.3 已登记为基线项。
 - 静态 Key 双通道窗口收口（K-01）、配额/吊销同步增强（K-05）与 D-02~D-07 **本批未触碰**，留待批 C。
 
+### 10.28 P4 批 C：K-01/K-05 跨仓收口与 D-03 双验签收口（v1.25.0，2026-11-01）
+
+> 目的：按《残余项统一处置方案 v1.0.8》§5.3 推进 P4 批 C，落地 K-01「下游静态 Key 收敛为应急 bypass」、K-05「配额/吊销同步增强」与 D-03「JWT 双验签窗口收口」。**设计要点**：K-01 沿用批 B 的「单一开关 + fail-safe 归一」范式；K-05 新算法与新调度全部**缺省关闭**；D-03 由既有 `jwt_require_rs256` 开关驱动，置 true 即 fail-closed。
+
+**K-01 三仓静态 Key 通道（单开关 + 应急 bypass）**
+
+| 项 | 内容 |
+|---|---|
+| 开关 | `STATIC_KEY_CHANNEL`：`dual`（代码默认，既有静态 Key 主通道不变）/ `closed`（关闭静态 Key 主通道）；非法值归一 `dual` |
+| 关闭态行为 | 静态 Key 主通道拒绝，错误码 `AUTH_STATIC_KEY_CHANNEL_CLOSED`（OpenRAG 对外 `AUTH-STATIC-KEY-CHANNEL-CLOSED`）；主通道切 OpenBase JWKS / 服务 Key |
+| 应急 bypass | 必须同时配置 `EMERGENCY_BYPASS_KEY` 与 `EMERGENCY_BYPASS_EXPIRES_AT`（ISO-8601，naive 视为 UTC）；缺一或非法即启动门禁 `ValueError` 拒启；过期后不再放行 |
+| 审计 | 每次 bypass 放行只记录 `key_id = sha256(credential)[:12]`，不含密钥明文 |
+
+| 仓 | 落点 | 证据 |
+|---|---|---|
+| OpenRAG | `src/openrag/security/static_key_channel.py`（新建）、`api/middleware/api_key.py`、`main.py` | `tests/unit/test_k01_static_key_channel.py` **15 例**；K-01+K-05 合并定向 **21 passed** |
+| OpenMemory | `src/openmemory/security/static_key_channel.py`（新建）、`gateway/gateway.py`（含 `_audit_emergency_bypass`） | `tests/unit/test_k01_static_key_channel.py` **8 例**；合并定向 **19 passed** |
+| DPS | `src/identity/static_key_channel.py`（新建）、`src/middleware/identity_gate_middleware.py`、`src/identity/error_codes.py`（新增 `AUTH_STATIC_KEY_CHANNEL_CLOSED`） | `src/tests/test_k01_static_key_channel.py`；合并定向 **33 passed** |
+
+**K-05 配额令牌桶（OpenLLM）与四仓后台吊销同步**
+
+| 项 | 内容 | 默认 | 落点 |
+|---|---|---|---|
+| `QUOTA_ALGORITHM` | `window`（既有窗口算法）/ `token_bucket`（Redis Lua 原子令牌桶）；非法归一 `window` | `window` | `backend/app/core/config.py` |
+| `QUOTA_BUCKET_CAPACITY` | 令牌桶容量 | `1000` | 同上 |
+| `QUOTA_BUCKET_REFILL_PER_SECOND` | 每秒补充速率 | `1000.0` | 同上 |
+| 令牌桶实现 | `TokenBucketLimiter.allow() -> (allowed, remaining)`；键前缀 `quota_bucket:`、TTL 3600s；Redis 不可用回退进程内 | — | `backend/app/services/quota_token_bucket.py`（新建）、`backend/app/edgerouter/middleware/quota.py`（`_dispatch_with_token_bucket`，超限 429 + `remaining`） |
+| 四仓后台吊销同步 | `RevocationBackgroundSync`（守护线程、`start()`/`stop()` 幂等、回调异常仅 WARN）；与请求路径共用 `sync_if_due()` 间隔判定 | 各仓 `*_REVOCATION_BACKGROUND_SYNC_ENABLED=false` | OpenRAG `security/revocation_background.py` + `api/middleware/openbase_jwt.py` + `config/settings.py` + `main.py`；OpenMemory `security/revocation_background.py` + `gateway/openbase_jwks.py` + `gateway/gateway.py` + `utils/config.py` + `api/server.py`；DPS `identity/revocation_background.py` + `identity/openbase_jwt.py` + `config.py` + `rest_api/app.py`；OpenLLM `app/security/revocation_background.py` + `openbase_jwt.py` + `core/config.py` + `main.py` |
+
+**D-03 双验签收口（OpenBase）**
+
+| 项 | 内容 |
+|---|---|
+| 触发条件 | 既有配置 `jwt_require_rs256=true`（缺省 `false`，零行为变化） |
+| 签发 | `_encode` 在 require_rs256 且无 RS256 材料时直接 `ValueError`，**禁止 HS256 签发** |
+| 验签（RS256） | `_decode_rs256` 要求 kid 头；`extra_public_keys_raw` 置空（**忽略历史 kid** `jwt_jwks_public_keys`） |
+| 验签（通用） | `_decode_any` 在 require_rs256 时**仅接受 `RS256`**，HS256 令牌被拒 |
+| 落点 | `openbase/modules/auth/jwt.py` |
+| 证据 | `tests/test_jwt_rs256.py` 追加 `_configure_closure(**overrides)` 与 5 个收口用例；该文件专项 **22 passed** |
+
+**验证与门禁结论**
+
+| 项 | 结果 |
+|---|---|
+| 单测 | OpenRAG 21 / OpenMemory 19 / DPS 33 passed（OpenRAG 自带 `.venv`，Python 3.11.9 / pytest 9.1.1）；OpenLLM 后台 7 passed + 令牌桶 11 passed（`--confcutdir`/`--noconftest` 规避本机 `psycopg` 冲突）；OpenBase D-03 专项 22 passed（临时环境 Python 3.12.10 / pytest 9.2.0） |
+| 零行为变化 | `STATIC_KEY_CHANNEL=dual`、`QUOTA_ALGORITHM=window`、四仓后台开关 `false`、`jwt_require_rs256=false` 均为缺省值，既有行为不变 |
+| 安全 | bypass 与静态 Key 审计只落 `sha256[:12]`；后台同步日志不含令牌与吊销清单全文；D-03 收口后 HS256 无法签发/验签 |
+| 可回退 | 各开关改回缺省值即恢复原通道，无需数据迁移 |
+| 静态检查 | 本轮改动文件 `ruff check openbase/modules/auth/jwt.py tests/test_jwt_rs256.py` → `All checks passed!`；全量 ruff 仍有 7 处既有测试文件告警（非本轮引入） |
+| 全量套件 | OpenBase 全量 60 例中 1 例既有失败（`test_jwt_secrets.py::test_production_accepts_strong_secret`，Settings 构造期既有门禁报错，与本轮无关）；四仓以定向用例 + 相关既有回归为证据 |
+
+**残余**
+
+- K-05 **内省未接入**：主路径仍为 RS256/JWKS + 吊销增量同步；内省按「按需接入，不作为常规路径」留待后续。
+- K-01 三仓代码具备 `closed` 能力但**默认仍为 `dual`**；实际切换属部署动作（D-02/D-06），需按发布窗口执行。
+- D-03 仅完成**代码侧收口能力**；生产置 `jwt_require_rs256=true` 须在全量令牌 RS256 换发完成后执行，负向取证归 A1-01（V-01）。
+- D-02/D-04/D-05/D-06/D-07 为部署编排与环境取证，本批未触碰。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -1111,3 +1169,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.22.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.25「P3 治理残余闭合（G-01~G-03）」，闭合 §10.14/§10.16 登记的 3 项治理残余：G-01 按人工裁定 B 落地「超管直改 + 事后审计」（审计 `review_mode=post_audit` + update/delete 改前快照 + WARN，不新增审批表/端点）；G-02 新增 `ensure_role_grant_allowed` 并接入用户创建/改派、agent 创建、OIDC 角色映射，冲突返回 409 `PERM_DUTY_CONFLICT`（闭合 ER-25）；G-03 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（1000）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（50），超规则数/超耗时输出结构化 WARN，判定语义不变；新增 2 配置项缺省零行为变化并进启动门禁；`tests/test_p3_governance.py` **8 passed**（回归 127 passed，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.4》与 A2 清单 v1.1.0 |
 | v1.23.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.26「P4 批 A：K-03/K-04 跨仓落地」并登记两项裁定：**D-05=A（显式 `*_SUBJECT_MAP` 主体映射，安全优先）**、**K-01=B（双通道并行一个发布窗口后关闭静态 Key 主通道）**。K-03 四仓审计 identity 由 6 核心键扩为 10 键（`key_id`/`subject`/`tenant`/`entry`，`key_id=sha256[:12]` 摘要、`entry=proxy\|direct`），OpenLLM 106 / OpenRAG 54 / OpenMemory 48 / DPS 72 passed；K-04 OpenRAG/OpenMemory/DPS 消费 `GET /api/v1/auth/roles/contract`（契约优先 + 本地映射回落，DPS 双链互不读取），新增 `OPENRAG_IDENTITY_ROLE_CONTRACT_URL` / `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL` / `IDENTITY_ROLE_CONTRACT_URL` 三项默认空（零行为变化），各仓新增单测；本环境 ruff 未安装、全量套件因缺依赖未运行，均如实登记；同步升版《残余项统一处置方案 v1.0.6》与 A2 清单 v1.1.2 |
 | v1.24.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.27「P4 批 B：K-02/K-06 DPS 身份权威模式落地」。引入单一开关 `IDENTITY_AUTHORITY`（`local` 迁移期默认 / `openbase` 生产固定，非法值归一 `local`）：**K-02** `openbase` 模式停用本地密码登录（`403 AUTH_LOCAL_LOGIN_DISABLED`，保留端点给出明确错误码）、本仓 HS256 令牌不再受理（仅 OpenBase RS256/JWKS，`local` 模式保持 HS256 优先 + OpenBase 回落）；**K-06** 同步落地，`openbase` 模式启动期跳过演示用户种子、`upsert_local_user` 不产生任何 SQL，本地身份表**停写不删**（回滚改回 `local` 即恢复，无需数据迁移）。新增 `src/identity/authority.py` 与 `src/tests/test_k02_k06_identity_authority.py`（**14 passed**），定向回归 **57 passed**、登录依赖回归 **83 passed**；两个新增文件 ruff 全过，既有大文件存量告警非本批引入、全量套件因缺依赖未运行，均如实登记；登记残余（自省归 K-05、负向启动取证归 D-02/D-06）；同步升版《残余项统一处置方案 v1.0.7》、A2 清单 v1.1.3、A1 清单 v1.1.2 |
+| v1.25.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.28「P4 批 C：K-01/K-05 跨仓收口与 D-03 双验签收口」。**K-01** OpenRAG/OpenMemory/DPS 落地 `STATIC_KEY_CHANNEL`（`dual` 默认 / `closed`）+ 应急 bypass（`EMERGENCY_BYPASS_KEY` + `EMERGENCY_BYPASS_EXPIRES_AT`，缺配/非法拒启，放行只落 `sha256[:12]`），关闭态错误码 `AUTH_STATIC_KEY_CHANNEL_CLOSED`；**K-05** OpenLLM 新增 Redis Lua 原子令牌桶（`QUOTA_ALGORITHM=token_bucket` 可选，默认 `window`，Redis 不可用回退进程内；`QUOTA_BUCKET_CAPACITY=1000`、`QUOTA_BUCKET_REFILL_PER_SECOND=1000.0`）与四仓可选后台吊销同步（`RevocationBackgroundSync` 守护线程、幂等 start/stop、默认 `false`）；**D-03** OpenBase `jwt_require_rs256=true` 时白名单收敛 `{RS256}`、要求 kid、忽略历史 kid、禁止 HS256 签发。测试证据：OpenRAG 21 / OpenMemory 19 / DPS 33 / OpenLLM 18（7+11）/ OpenBase D-03 22 passed；改动文件 ruff 全过（全量 ruff 7 处既有告警、全量 pytest 1 例既有失败，均如实登记）；同步升版《残余项统一处置方案 v1.0.8》、A2 清单 v1.1.4、A1 清单 v1.1.3 |

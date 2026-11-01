@@ -65,10 +65,18 @@ def _signing_material() -> tuple[str, str] | None:
 
 
 def _encode(claims: dict[str, Any]) -> str:
-    """统一签发入口：RS256 注入 iss/aud（kid 头）；未配置 PEM 时保持 HS256 存量形态."""
+    """统一签发入口：RS256 注入 iss/aud（kid 头）；未配置 PEM 时保持 HS256 存量形态.
+
+    D-03 收口：``jwt_require_rs256=True`` 时禁止 HS256 签发（fail-closed）；
+    启动门禁已保证该模式下私钥路径与签名 kid 存在，此处为防御性兜底。
+    """
     settings = get_settings()
     payload = dict(claims)
     material = _signing_material()
+    if material is None and settings.jwt_require_rs256:
+        raise ValueError(
+            "jwt_require_rs256 已启用但未配置 RSA 私钥路径，拒绝 HS256 签发（fail-closed）"
+        )
     if material is not None:
         # 非对称签发通道一律携带标准 claim（验签侧强校验，见 _decode_rs256）；
         # HS256 存量通道不注入 iss/aud，避免破坏既有直接解码方（过渡期零影响）。
@@ -101,13 +109,21 @@ def _audience_matches(claim_value: Any, expected: str) -> bool:
 
 
 def _decode_rs256(token: str, kid: str | None) -> dict[str, Any] | None:
-    """以内置 JWKS（多 kid）验签 RS256；缺失 iss/aud 一律拒绝（fail-closed）."""
+    """以内置 JWKS（多 kid）验签 RS256；缺失 iss/aud 一律拒绝（fail-closed）.
+
+    D-03 收口：``jwt_require_rs256=True`` 时只接受当前签名 kid（历史 kid 公钥
+    视同移除），且令牌必须携带 kid 头，杜绝旧密钥签发的存量令牌继续生效。
+    """
     settings = get_settings()
+    require_rs256 = bool(settings.jwt_require_rs256)
+    if require_rs256 and not kid:
+        return None
+    extra_public_keys_raw = "" if require_rs256 else settings.jwt_jwks_public_keys
     public_pem = public_pem_for_kid(
         kid,
         private_key_path=(settings.jwt_rsa_private_key_path or "").strip(),
         signing_kid=(settings.jwt_signing_kid or "").strip(),
-        extra_public_keys_raw=settings.jwt_jwks_public_keys,
+        extra_public_keys_raw=extra_public_keys_raw,
     )
     if public_pem is None:
         return None
@@ -293,6 +309,9 @@ def _decode_any(token: str) -> dict[str, Any] | None:
     算法白名单 = ``{RS256, settings.jwt_algorithm}``：杜绝 ``alg=none`` 及以
     HMAC 密钥验 RS256 的算法混淆攻击。
 
+    D-03 收口：``jwt_require_rs256=True`` 时白名单收敛为 ``{RS256}``，HS256 存量
+    令牌一律拒绝（不再回落 ``jwt_secret`` / ``jwt_secret_previous``）。
+
     Returns:
         payload；签名/算法/过期无效返回 None。
     """
@@ -302,6 +321,10 @@ def _decode_any(token: str) -> dict[str, Any] | None:
     except (JWTError, ValueError):
         return None
     algorithm = str(header.get("alg") or "")
+    if settings.jwt_require_rs256:
+        if algorithm != RSA_ALGORITHM:
+            return None
+        return _decode_rs256(token, header.get("kid"))
     if algorithm not in {RSA_ALGORITHM, settings.jwt_algorithm}:
         return None
     if algorithm == RSA_ALGORITHM:

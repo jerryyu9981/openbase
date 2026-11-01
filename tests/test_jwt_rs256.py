@@ -302,3 +302,69 @@ def test_require_rs256_satisfied_starts() -> None:
         jwt_signing_kid=KID,
     )
     assert settings.jwt_signing_kid == KID
+
+
+# ---------------------------------------------------------------------------
+# D-03 双验签收口（jwt_require_rs256=True 时仅 RS256）
+# ---------------------------------------------------------------------------
+
+
+def _configure_closure(**overrides) -> object:
+    """开启 D-03 收口开关（要求 RS256 私钥 + 签名 kid 已配置）."""
+    values: dict[str, object] = {"jwt_require_rs256": True}
+    values.update(overrides)
+    return _configure(**values)
+
+
+def test_require_rs256_rejects_legacy_hs256_token() -> None:
+    """收口后存量 HS256 令牌（当前密钥）一律拒绝."""
+    _configure_closure()
+    legacy = jose_jwt.encode({"sub": "5", "type": "access"}, STRONG, algorithm="HS256")
+    assert decode_access_token(legacy) is None
+    assert decode_refresh_token(legacy) is None
+
+
+def test_require_rs256_rejects_previous_secret_token() -> None:
+    """收口后轮换宽限密钥（jwt_secret_previous）同样不再受理."""
+    _configure_closure(jwt_secret_previous=PREVIOUS)
+    legacy = jose_jwt.encode({"sub": "6", "type": "access"}, PREVIOUS, algorithm="HS256")
+    assert decode_access_token(legacy) is None
+
+
+def test_require_rs256_rejects_historical_kid() -> None:
+    """收口后历史 kid 公钥视同移除：旧 kid 签名拒绝，当前 kid 仍通过."""
+    extra_map = json.dumps({"ob-2025z": OLD_PUBLIC_PATH.read_text(encoding="utf-8")})
+    _configure_closure(jwt_jwks_public_keys=extra_map)
+    historical = jose_jwt.encode(
+        {"sub": "8", "type": "access", "iss": "openbase", "aud": "openbase-api"},
+        OLD_PRIVATE_PATH.read_text(encoding="utf-8"),
+        algorithm="RS256",
+        headers={"kid": "ob-2025z"},
+    )
+    assert decode_access_token(historical) is None
+    assert decode_access_token(create_access_token("9")) is not None
+
+
+def test_require_rs256_rejects_token_without_kid() -> None:
+    """收口后必须携带 kid 头（无 kid 的 RS256 令牌拒绝）."""
+    _configure_closure()
+    token = jose_jwt.encode(
+        {"sub": "10", "type": "access", "iss": "openbase", "aud": "openbase-api"},
+        PRIVATE_PATH.read_text(encoding="utf-8"),
+        algorithm="RS256",
+    )
+    assert decode_access_token(token) is None
+
+
+def test_require_rs256_hs256_signing_is_fail_closed() -> None:
+    """收口模式下无 RSA 私钥时禁止 HS256 签发（防御性兜底）."""
+    settings_module = _settings_module()
+    settings = settings_module.Settings(
+        env="development", jwt_secret=STRONG, jwt_require_rs256=True,
+        jwt_rsa_private_key_path=str(PRIVATE_PATH), jwt_signing_kid=KID,
+    )
+    settings_module._settings = settings
+    # 运行期私钥路径被清空（模拟配置漂移）→ 签发必须 fail-closed
+    settings.jwt_rsa_private_key_path = ""
+    with pytest.raises(ValueError):
+        create_access_token("11")

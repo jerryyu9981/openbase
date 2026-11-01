@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.3 |
+| 文档版本 | v1.1.4 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.24.0.md`（§10.7~§10.27） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.2.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.25.0.md`（§10.7~§10.28） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.3.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -29,6 +29,7 @@
 | v1.1.1 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | D-01 联动：关联清单更新为《A1 生产验收清单 v1.1.0》（新增 A1-13 OIDC 专项、A1-14 跨仓实测为本清单执行验收）；正文基线与 13 项门禁未变，仅版本引用同步 |
 | v1.1.2 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.23.0（§10.26 P4 批 A K-03/K-04）：§3 四仓镜像矩阵新增三项角色字典契约地址基线 —— OpenRAG `OPENRAG_IDENTITY_ROLE_CONTRACT_URL`、OpenMemory `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL`、DPS `IDENTITY_ROLE_CONTRACT_URL`（全部默认空 = 契约关闭，保持本地映射，零行为变化）；同时修正文件名与内部版本号一致为 v1.1.2（此前文件名滞留 v1.1.0、内部版本已为 v1.1.1）；13 项启动门禁未变 |
 | v1.1.3 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.24.0（§10.27 P4 批 B K-02/K-06）：§3 四仓镜像矩阵 DPS 段新增 `IDENTITY_AUTHORITY` 基线（默认 `local` = 迁移期零行为变化；**生产固定 `openbase`**：停用本地密码登录 403 `AUTH_LOCAL_LOGIN_DISABLED`、仅受理 OpenBase RS256/JWKS、本地身份表停写不删；非法值归一 `local`；回滚改回 `local` 即恢复）；13 项启动门禁未变（生产负向启动取证归 D-02/D-06） |
+| v1.1.4 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.25.0（§10.28 P4 批 C K-01/K-05/D-03）：§3 四仓镜像矩阵新增 **K-01** 三仓静态 Key 通道基线（OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL` / OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` / DPS `DPS_STATIC_KEY_CHANNEL`，默认 `dual`；`closed` 时关闭静态 Key 主通道、仅 `*_EMERGENCY_BYPASS_KEY` + `*_EMERGENCY_BYPASS_EXPIRES_AT` 应急放行，缺配/非法拒启）；新增 **K-05** OpenLLM 配额基线（`QUOTA_ALGORITHM` 默认 `window`、`QUOTA_BUCKET_CAPACITY` / `QUOTA_BUCKET_REFILL_PER_SECOND`）与四仓后台吊销同步开关（`*_REVOCATION_BACKGROUND_SYNC_ENABLED` 默认 `false`）；§2.2 `OPENBASE_JWT_REQUIRE_RS256` 行补充 **D-03 收口语义**（置 true 后白名单收敛 `{RS256}`、要求 kid、忽略历史 kid、禁止 HS256 签发）；§6.1 增补 K-01/K-05 变量核对；§8 已知边界更新为「惰性拉取 + 可选后台调度」；13 项启动门禁总数未变（K-01 各仓新增门禁单列于 §3） |
 
 ---
 
@@ -64,7 +65,7 @@
 
 | 变量 | 默认 | 生产基线 | 缺失/违规后果 | 校验落点 |
 |---|---|---|---|---|
-| `OPENBASE_JWT_REQUIRE_RS256` | `false` | **`true`** | 缺 RS256 私钥/kid 仍可启动 → 签发退回 HS256（下游无法只验公钥） | `settings.py:600-634` |
+| `OPENBASE_JWT_REQUIRE_RS256` | `false` | **`true`**（须在全量令牌 RS256 换发完成后置位，见 D-03） | 缺 RS256 私钥/kid 仍可启动 → 签发退回 HS256（下游无法只验公钥）；置 true 后：验签白名单收敛 `{RS256}`、要求 `kid` 头、忽略 `OPENBASE_JWT_JWKS_PUBLIC_KEYS` 历史 kid、无 RS256 材料时 HS256 **禁止签发**（`ValueError`） | `settings.py:600-634`；`modules/auth/jwt.py`（`_encode`/`_decode_rs256`/`_decode_any`） |
 | `OPENBASE_JWT_RSA_PRIVATE_KEY_PATH` | 空 | PEM **只读挂载**（0600）；禁止内联私钥 | 置 `require_rs256=true` 而缺失 → **拒绝启动** | `settings.py:600-634` |
 | `OPENBASE_JWT_SIGNING_KID` | 空 | 与新签发令牌 `kid` 一致；`JWKS` 以该 kid 发布 | 配私钥但缺 kid → 拒绝启动；换钥时新旧 kid 需并存过渡 | `settings.py:600-634` |
 | `OPENBASE_JWT_ALGORITHM` | `HS256` | `RS256`（须在签名算法注册表内且可用） | 未知算法或不可用算法（含 `SM2` 预留）→ 拒绝启动 | `settings.py:637-649` |
@@ -156,11 +157,17 @@
 | OpenLLM | `OPENBASE_REVOCATIONS_URL` / `OPENBASE_SERVICE_KEY` | 空 / 空 | 吊销端点 + 服务 Key（`X-API-Key`，`scope.system` 含 `auth`） | `config.py:64-71` |
 | OpenLLM | `OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 60；严格模式按离线容忍度裁定 | `config.py:72-78` |
 | OpenLLM | `IDENTITY_AUTHORITY` | `local` | 生产建议 `openbase`（关闭本地开户/登录/换发） | `config.py:84-87, 1046-1049` |
+| OpenLLM | `OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | `false` | K-05：可选后台吊销同步（守护线程，幂等 start/stop；仅配置吊销端点且显式置 `true` 才起线程）；开启后与请求路径共用同一间隔判定 | `backend/app/core/config.py`、`backend/app/security/revocation_background.py` |
+| OpenLLM | `QUOTA_ALGORITHM` | `window` | K-05：`window`=既有窗口算法（默认零行为变化）/ `token_bucket`=Redis Lua 原子令牌桶（Redis 不可用回退进程内）；非法值归一 `window` | `backend/app/core/config.py`（`QUOTA_ALGORITHM`）、`backend/app/edgerouter/middleware/quota.py` |
+| OpenLLM | `QUOTA_BUCKET_CAPACITY` / `QUOTA_BUCKET_REFILL_PER_SECOND` | `1000` / `1000.0` | 仅 `QUOTA_ALGORITHM=token_bucket` 生效：容量须正、补充速率须非负，违规拒启 | `backend/app/core/config.py`、`backend/app/services/quota_token_bucket.py` |
 | OpenRAG | `OPENRAG_API_OPENBASE_JWKS_URL` | 空 | OpenBase JWKS 地址 | `.env.example:110` |
 | OpenRAG | `OPENRAG_API_OPENBASE_JWKS_CACHE_TTL_SECONDS` / `_TIMEOUT_SECONDS` | `300` / `3.0` | 同上 | `.env.example:111-112` |
 | OpenRAG | `OPENRAG_API_OPENBASE_JWT_ISSUER` / `_AUDIENCE` / `_LEEWAY_SECONDS` | `openbase` / `openbase-api` / `30` | 同上 | `.env.example:113-115` |
 | OpenRAG | `OPENRAG_API_OPENBASE_REVOCATIONS_URL` / `_SERVICE_KEY` | 空 / 空 | 同上（服务 Key 同源） | `.env.example:118-119` |
 | OpenRAG | `OPENRAG_API_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 同上 | `.env.example:120-121` |
+| OpenRAG | `OPENRAG_API_STATIC_KEY_CHANNEL` | `dual` | K-01：`dual`=双通道（默认，既有静态 Key 主通道不变）/ `closed`=关闭静态 Key 主通道（仅应急 bypass 放行）；非法值归一 `dual` | `src/openrag/config/settings.py`（`APIConfig`）、`src/openrag/security/static_key_channel.py` |
+| OpenRAG | `OPENRAG_API_EMERGENCY_BYPASS_KEY` / `_EMERGENCY_BYPASS_EXPIRES_AT` | 空 / 空 | 仅 `closed` 使用：两值必须同时配置且过期时间为 ISO-8601（naive 视为 UTC），缺一/非法 → **拒绝启动**；放行只落 `sha256[:12]` 摘要审计 | `src/openrag/security/static_key_channel.py`、`src/openrag/main.py` |
+| OpenRAG | `OPENRAG_API_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | `false` | K-05：可选后台吊销同步（守护线程，幂等 start/stop；仅配置吊销端点且显式置 `true` 才起线程） | `src/openrag/config/settings.py`、`src/openrag/security/revocation_background.py` |
 | OpenRAG | `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES` / `OPENRAG_IDENTITY_ROLE_FAIL_CLOSED` | `[]` / `true` | 生产必须登记受信来源并保持 fail-closed | `.env.example:134, 138` |
 | OpenRAG | `OPENRAG_IDENTITY_ROLE_CONTRACT_URL` | 空 | K-04：OpenBase `GET /api/v1/auth/roles/contract` 地址；空=契约关闭（保持本地 `ROLE_TIER` 逐码映射）；装载失败 WARN 并回落 | `src/openrag/config/settings.py`（`IdentityTrustConfig.role_contract_url`） |
 | OpenMemory | `OPENMEMORY_GATEWAY_JWKS_URL` | 空 | OpenBase JWKS 地址 | `.env.example:15` |
@@ -170,6 +177,9 @@
 | OpenMemory | `OPENMEMORY_GATEWAY_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 同上 | `.env.example:25-26` |
 | OpenMemory | `OPENMEMORY_GATEWAY_OIDC_MODE` / `ALLOW_UNVERIFIED_GATEWAY_TOKEN` | `local` / `false` | 生产保持 `false`（来源未验签令牌一律拒绝） | `.env.example:33-34` |
 | OpenMemory | `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL` | 空 | K-04：角色字典契约地址；空=契约关闭（保持本地角色档位映射）；装载失败 WARN 并回落 | `src/openmemory/utils/config.py`（`IdentityTrustConfig.role_contract_url`） |
+| OpenMemory | `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` | `dual` | K-01：`dual`=双通道（默认）/ `closed`=关闭静态 Key 主通道（仅应急 bypass 放行）；非法值归一 `dual` | `src/openmemory/utils/config.py`（`GatewayConfig`）、`src/openmemory/security/static_key_channel.py` |
+| OpenMemory | `OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_KEY` / `_EMERGENCY_BYPASS_EXPIRES_AT` | 空 / 空 | 仅 `closed` 使用：两值必须同时配置且过期时间为 ISO-8601（naive 视为 UTC），缺一/非法 → **拒绝启动**；放行只落 `sha256[:12]` 摘要审计 | `src/openmemory/security/static_key_channel.py`、`src/openmemory/gateway/gateway.py` |
+| OpenMemory | `OPENMEMORY_GATEWAY_REVOCATION_BACKGROUND_SYNC_ENABLED` | `false` | K-05：可选后台吊销同步（守护线程，幂等 start/stop；仅配置吊销端点且显式置 `true` 才起线程） | `src/openmemory/utils/config.py`、`src/openmemory/security/revocation_background.py` |
 | DPS | `DPS_OPENBASE_JWKS_URL` | 空 | OpenBase JWKS 地址 | `src/config.py:197` |
 | DPS | `DPS_OPENBASE_JWKS_CACHE_TTL_SECONDS` / `_TIMEOUT_SECONDS` | `300` / `3.0` | 同上 | `src/config.py:198-199` |
 | DPS | `DPS_OPENBASE_JWT_ISSUER` / `_AUDIENCE` / `_LEEWAY_SECONDS` | `openbase` / `openbase-api` / `30` | 同上 | `src/config.py:200-202` |
@@ -178,6 +188,9 @@
 | DPS | `DPS_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 同上 | `src/config.py:211-214` |
 | DPS | `IDENTITY_ROLE_CONTRACT_URL` | 空 | K-04：角色字典契约地址；空=契约关闭（保持本地双链映射，受信链与本地链两表互不读取）；装载失败 WARN 并回落 | `src/config.py`（`identity_role_contract_url`）、`src/identity/role_map.py` |
 | DPS | `IDENTITY_AUTHORITY` | `local` | K-02/K-06：身份权威模式；`local`=迁移期（保留本仓 HS256 令牌 + 本地密码登录 + 本地身份表写入）；**生产固定 `openbase`**（仅受理 OpenBase RS256/JWKS、停用本地密码登录返回 403 `AUTH_LOCAL_LOGIN_DISABLED`、本地身份表停写不删）；非法值归一 `local`（fail-safe）；回滚改回 `local` 即恢复 | `src/config.py`（`identity_authority`）、`src/identity/authority.py` |
+| DPS | `STATIC_KEY_CHANNEL` | `dual` | K-01：`dual`=双通道（默认）/ `closed`=关闭静态 Key 主通道（返回 `AUTH_STATIC_KEY_CHANNEL_CLOSED`，仅应急 bypass 放行）；非法值归一 `dual` | `src/config.py`（`static_key_channel`）、`src/identity/static_key_channel.py`、`src/middleware/identity_gate_middleware.py` |
+| DPS | `EMERGENCY_BYPASS_KEY` / `EMERGENCY_BYPASS_EXPIRES_AT` | 空 / 空 | 仅 `closed` 使用：两值必须同时配置且过期时间为 ISO-8601（naive 视为 UTC），缺一/非法 → **拒绝启动**；放行只落 `sha256[:12]` 摘要审计 | `src/identity/static_key_channel.py` |
+| DPS | `DPS_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | `false` | K-05：可选后台吊销同步（守护线程，幂等 start/stop；仅配置吊销端点且显式置 `true` 才起线程；`lifespan` 启动/关闭） | `src/config.py`、`src/identity/revocation_background.py`、`src/rest_api/app.py` |
 
 ---
 
@@ -203,6 +216,8 @@ OpenBase 侧 13 项 `@model_validator(mode="after")` / 装配期门禁，按 `se
 
 四仓侧生产 fail-closed 门禁（受信来源与角色口径）按各仓配置：OpenRAG `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES` / `OPENRAG_IDENTITY_ROLE_FAIL_CLOSED`；OpenLLM `TRUSTED_PROXY_SOURCES` / `ENFORCE_INBOUND_IDENTITY_HEADERS`；OpenMemory / DPS 以各仓受信代理与角色映射配置为准，漏配即拒启或拒绝入站。
 
+四仓新增门禁（批 C）：**K-01** `STATIC_KEY_CHANNEL=closed` 时 `EMERGENCY_BYPASS_KEY` 与 `EMERGENCY_BYPASS_EXPIRES_AT` 缺一或过期时间非法 → 拒绝启动（OpenRAG/OpenMemory/DPS）；**K-05** `QUOTA_BUCKET_CAPACITY<=0` 或 `QUOTA_BUCKET_REFILL_PER_SECOND<0` → 拒绝启动（OpenLLM）。
+
 ---
 
 ## 5. 密钥与秘密管理
@@ -224,6 +239,7 @@ OpenBase 侧 13 项 `@model_validator(mode="after")` / 装配期门禁，按 `se
 
 - OpenBase：确认第 2 节所有「生产基线」非空项已注入；秘密类只记录「已配置/未配置」，不记录值。
 - 四仓：确认 JWKS 地址、吊销地址、服务 Key、`IDENTITY_AUTHORITY`/受信来源四项齐备；启用角色字典契约时确认 `*_ROLE_CONTRACT_URL` 指向 OpenBase 契约端点且可回退（未启用则保持本地映射）。
+- 批 C 新增项：确认各仓 `*_STATIC_KEY_CHANNEL` 取值（`dual` / `closed`）与发布窗口一致，`closed` 时 `*_EMERGENCY_BYPASS_KEY` / `*_EMERGENCY_BYPASS_EXPIRES_AT` 已配置且过期时间在未来；确认 OpenLLM `QUOTA_ALGORITHM` 与令牌桶参数；确认四仓 `*_REVOCATION_BACKGROUND_SYNC_ENABLED` 与 A1-04 时延取证口径一致。
 
 **6.2 端点可达与内容核对**：
 
@@ -271,7 +287,7 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 ## 8. 已知边界
 
 - 本清单只覆盖**配置口径**，不代表配置已生效：实际生效需配合 A1 清单在生产拓扑执行（尤其 A1-01/02/04/11/12）。
-- 四仓 JWKS/吊销为**惰性拉取**（无后台线程，请求触发同步），配置正确不等于收敛时延达标，时延验收见 A1-04。
+- 四仓 JWKS/吊销默认仍为**惰性拉取**（请求触发同步）；批 C 已提供**可选**后台调度（`*_REVOCATION_BACKGROUND_SYNC_ENABLED=true`，守护线程），开启后时延口径与 A1-04 需分别记录；配置正确不等于收敛时延达标。
 - OpenLLM 的 `.env.example` 未逐项列出 OpenBase 验签变量，以 `backend/app/core/config.py` 字段名为准；部署编排必须显式注入，不能依赖默认空值。
 - 留存清理、审计导出为**人工端点**（默认 dry-run / 显式 POST），不构成自动限期清除；平台级集中审计与介质归档仍待基础设施。
 - 配置项校验落点行号以当前分支为准，升级后需重新核对；本清单随方案版本同步升版。
