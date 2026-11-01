@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.9 |
+| 文档版本 | v1.1.0 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev / Pre-Pro / Pro |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.26.0.md`（§7.2/§7.3/§10.7~§10.29） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.3.md`、`...-A2生产配置收口清单-v1.1.5.md`、`...-D类部署取证执行记录-v1.0.0.md` |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.27.0.md`（§7.2/§7.3/§10.7~§10.30） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.4.md`、`...-A2生产配置收口清单-v1.1.6.md`、`...-D类部署取证执行记录-v1.0.1.md`、`...-残余项分批推进方案-v1.1.0.md` |
 | 编号体系 | 见 §1.1（47 项台账为唯一执行主键；批次 `P1~P5`；旧分组 `A1~A5/B1~B5/C1~C6/D` 已废止） |
 | 覆盖对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -26,6 +26,7 @@
 | v1.0.7 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 批 B 执行：**K-02** DPS 引入 `IDENTITY_AUTHORITY`（`local` 迁移期默认 / `openbase` 生产固定），`openbase` 模式停用本地密码登录（`403 AUTH_LOCAL_LOGIN_DISABLED`）、本仓 HS256 令牌不再受理（仅 OpenBase RS256/JWKS）；**K-06** 同步落地，`openbase` 模式下本地身份表**停写不删**（启动期演示种子跳过、`upsert_local_user` 直接返回）；新增 `src/identity/authority.py` 与 14 项单测，DPS 定向回归 57 passed（另 83 passed 登录依赖回归）；新增 §5.2「P4 批 B 完成情况」，§2.1 速览、§5 K-02/K-06 现状、§9.1 批次表同步；关联方案升 v1.24.0（新增 §10.27）、A2 升 v1.1.3（新增 DPS `IDENTITY_AUTHORITY` 基线）、A1 升 v1.1.2（关联引用同步） |
 | v1.0.8 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 批 C 执行（C-1 + C-2 + D-03 收口）：**K-01** 三仓（OpenRAG/OpenMemory/DPS）静态 Key 收敛为「双通道默认 + `closed` 主通道关闭 + 应急 bypass（必带过期 + 审计摘要）」；**K-05** OpenLLM 配额 Redis Lua 原子令牌桶（`QUOTA_ALGORITHM=token_bucket` 可选，默认 `window` 零行为变化）+ 四仓可选后台吊销同步（守护线程、幂等 start/stop、默认关闭）；**D-03** OpenBase JWT 双验签收口（`jwt_require_rs256=true` 时白名单收敛 `{RS256}`、要求 kid、忽略历史 kid、禁止 HS256 签发）；新增 §5.3「P4 批 C 完成情况」，§2.1 速览、§5 K-01/K-05 现状、§6 D-03 状态、§9.1 批次表同步；关联方案升 v1.25.0（新增 §10.28）、A2 升 v1.1.4（新增 K-01/K-05/D-03 配置基线）、A1 升 v1.1.3（关联引用同步） |
 | v1.0.9 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 批 D 部署取证执行：**D-02** 13 项启动门禁负向矩阵本地 **17/17 命中**（#6 拆 5 情形）且生产正向基线放行、门禁定向回归 108 passed；**D-07** Provider 名称唯一性门禁实测通过，issuer 唯一性确认为运行期/discovery 口径；**D-06** 五仓部署键名核对发现 4 处模板漂移（OpenBase 生产基线 7 键未注入、OpenRAG/OpenMemory `*_STATIC_KEY_CHANNEL` 与 DPS `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL` 未登记）；**D-05** 产出显式主体映射注入模板（实现层收敛为 OpenLLM/DPS 两仓，OpenRAG/OpenMemory 走 `sub` 直通）；**D-04** 产出导出 + 分批收敛 SQL。生产重启、端点核对、注入与 Key 收敛一律 ⛔ Blocked（无运行实例/凭据/生产主机访问权）。新增 §5.4「P4 批 D 完成情况」、§2.1 速览与 §6 D 行状态、§9.1 批次表同步；关联方案升 v1.26.0（新增 §10.29）、A2 升 v1.1.5；新增执行记录 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md` 与证据 `evidence/d/` |
+| v1.1.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E 批执行（本机原生、无 Docker）：**E1** 零环境模板收口 **5/5 Pass**——D-06 登记的 4 处模板漂移全部补齐（OpenBase `.env.shared-infra` 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明升 v2.8.3 新增 §2.5/§2.6），并勘正 DPS 键名笔误（实际为 `IDENTITY_AUTHORITY` / `STATIC_KEY_CHANNEL`，**无 `DPS_` 前缀**，源码 `DPS/src/config.py:200,296`）；**E2** 本机原生取证——D-02 重启两向（缺私钥 exit=1 拒启 / 恢复后 `/health` 200）、A2-01/02/03/06 本机口径通过，A2-04/05 与 V 类如实标 ⛔ Blocked；SQLite 初始化因 PG 专用 SQL 失败回退内存已如实登记；新增 §5.4「E 批联动」；关联方案升 v1.27.0（新增 §10.30）、A2 升 v1.1.6、A1 升 v1.1.4、D 类执行记录升 v1.0.1、新增分批推进方案 v1.1.0 |
 
 ---
 
@@ -88,10 +89,11 @@
 | 已完成 · P4 批 B | 2 | K-02 DPS 停用本地密码登录（`IDENTITY_AUTHORITY=openbase`）、K-06 SSO 全覆盖（openbase 模式本地身份表停写不删）（证据见 §5.2） |
 | 已完成 · P4 批 C | 2 + 1 | K-01 三仓静态 Key 双通道收口（`closed` + 应急 bypass）、K-05 配额令牌桶 + 四仓后台吊销同步（证据见 §5.3）；D-03 双验签收口（OpenBase `jwt_require_rs256=true` 白名单收敛 `{RS256}`） |
 | 已完成 · P4 批 D 取证 | 5 | D-02 13 项门禁负向矩阵（17/17）+ 正向基线、D-04 导出/分批 SQL、D-05 主体映射注入模板、D-06 五仓键名核对、D-07 Provider 名称唯一性（证据见 §5.4）；**生产重启/端点核对/注入/Key 收敛均 ⛔ Blocked**（无运行实例、无凭据、无生产主机访问权） |
+| 已完成 · E 批（本机原生） | 2 | E1 零环境模板收口 5/5（4 处模板漂移全部补齐 + DPS 键名勘误）、E2 本机原生取证（D-02 重启两向 + A2-01/02/03/06 本机口径；无 Docker）；A2-04/05 与 V 类仍 ⛔ Blocked（证据见 §5.4） |
 | 待实测/联调 | 14 | V-01~V-12（对应 A1-01~A1-12，全部未执行）、V-13 真实 IdP 联调、V-14 跨仓生产实测 |
 | 暂缓 · 触发式 | 7 | P-01 SM2/密评、P-02 集中审计平台、P-03 信创灾备、P-04 终端宿主项、P-05 跨库分片审计链、P-06 KMS、P-07 省级 IdP 对接 |
 
-**结论**：待生产执行 4 项（D-02 重启与端点核对、D-04 Key 收敛、D-05 映射注入、D-06 挂载）、待实测 14 项、暂缓 7 项；C 类 10 项（P1 5 项 + P2 5 项）、G 类 3 项（P3）、D-01 前置项、P4 批 A/批 B/批 C（K-01/K-02/K-03/K-04/K-05/K-06 与 D-03）与**批 D 本地取证（D-02/D-04/D-05/D-06/D-07）**已闭合，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**；批 D 剩余部分全部为环境/权限阻塞，无代码缺口。
+**结论**：待生产执行 4 项（D-02 重启与端点核对、D-04 Key 收敛、D-05 映射注入、D-06 挂载）、待实测 14 项、暂缓 7 项；C 类 10 项（P1 5 项 + P2 5 项）、G 类 3 项（P3）、D-01 前置项、P4 批 A/批 B/批 C（K-01/K-02/K-03/K-04/K-05/K-06 与 D-03）与**批 D 本地取证（D-02/D-04/D-05/D-06/D-07）**、**E 批本机原生取证（E1/E2）**已闭合，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**；批 D 剩余部分全部为环境/权限阻塞，无代码缺口。E3（生产 `.env` 注入与秘密挂载）、E4（跨仓实测）、E5（生产拓扑实测）仍 ⛔ Blocked，解除条件见《残余项分批推进方案 v1.1.0》§6~§8。
 
 **立即可启动性**
 
@@ -333,13 +335,13 @@
 - 只做**取证与编排**，不改业务代码、不改四仓默认值（D-05 仅出模板、D-04 仅出 SQL）。
 - 秘密类只记「键名是否存在」，不记值；证书/私钥/令牌原文一律不落证据。
 - 判定只允许 `Pass / Blocked`；本机缺失能力（docker、应用实例、本地 Redis、生产主机访问权）一律标 ⛔，不以「本地不可测」推断「生产已通过」。
-- 执行记录：`OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md`；证据目录：`doc/audit/verification/evidence/d/`。
+- 执行记录：`OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.1.md`；证据目录：`doc/audit/verification/evidence/d/`、`evidence/a2/`。
 
 | 编号 | 实施内容 | 结果 | 证据 |
 |---|---|---|---|
 | D-02 | 生产合规基线 + 逐门禁违规构造 `Settings` 并断言拒绝启动；核对 13 项门禁实现位置；门禁相关单测回归 | ✅ 负向 **17/17 命中**（#6 OIDC token 认证拆 5 情形）；✅ 正向基线 13 项全放行；✅ 门禁单测 **108 passed**（进度 100%、退出码 0）；⛔ 真实重启与 JWKS/吊销端点核对 **Blocked**（本机无运行实例、无生产会话） | `evidence/d/d-02-gate-matrix-20261101.json` |
 | D-07 | `OPENBASE_IDP_PROVIDERS` 名称唯一性门禁实测 + 两 Provider 合法登记；核对 issuer 字段与 back-channel 定位口径 | ✅ 同名 Provider 拒启（`Provider name 必须唯一`）、不同 name/client 登记 `count=2`；ℹ️ 配置层无 issuer 字段（discovery 运行期解析 `oidc.py:212`）；⛔ issuer 判重 **Blocked**（本机无可达 IdP） | `evidence/d/d-07-issuer-uniqueness-20261101.json` |
-| D-06 | 五仓部署键名存在性核对（只记键名与「存在/缺失」） | ⛔ **4 处模板漂移**：OpenBase `.env.shared-infra` 生产基线 7 键缺失、OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL` 与 OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` 未进模板、DPS 环境配置说明缺 `DPS_IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`；秘密挂载 **Blocked**（无部署主机） | `evidence/d/d-06-template-key-check-20261101.json` |
+| D-06 | 五仓部署键名存在性核对（只记键名与「存在/缺失」） | ✅ **E1 已全部补齐（2026-11-02）**：4 处模板漂移收口（OpenBase `.env.shared-infra` 7 键、OpenRAG/OpenMemory 各 3 键、DPS 说明 v2.8.3 §2.5/§2.6）；DPS 键名勘正为 `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`（无 `DPS_` 前缀）；秘密挂载仍 **Blocked**（无部署主机） | `evidence/d/d-06-template-key-check-20261101.json` + `evidence/a2/a2-e1-template-drift-20261102.json` |
 | D-05 | 按裁定 A 产出显式主体映射注入模板；核定适用范围（OpenLLM `OPENBASE_SUBJECT_MAP` / DPS `DPS_OPENBASE_SUBJECT_MAP` 有映射表；OpenRAG/OpenMemory 走 `sub` 直通 + 受信来源校验） | ✅ 模板与变更审计口径已出，未映射即拒绝行为已核对；⛔ 生产注入 **Blocked**（无生产主机访问权） | `evidence/d/d-05-subject-map-injection-20261101.md` |
 | D-04 | 只读导出（显式列、不含 `key_hash`）+ 按租户分批参数化 UPDATE + 每批复核 + 执行记录表 | ✅ SQL 与分批计划就绪（按 `scope.tenants` 分组、≤200 行/批、通过标准 `expires_at IS NULL` 剩余 0 或随发布单豁免）；⛔ 执行 **Blocked**（本地 PG 为 `scram-sha-256` 且无凭据/无 `POSTGRES_URL`，生产需 DBA 会话与变更单） | `evidence/d/d-04-expired-key-convergence-20261101.sql` |
 
@@ -355,11 +357,23 @@
 
 **残余（批 D 边界，均为环境阻塞）**
 
-- D-02 剩余部分：Dev 全栈或生产环境下的**真实重启**两向验证、A2 §6.2 JWKS/吊销/内省端点核对。
+- D-02 剩余部分：**生产**拓扑下的真实重启两向验证、A2 §6.2 JWKS/吊销/内省端点核对（本机原生两向已完成，见 §5.5）。
 - D-04：生产 DBA 会话 + 变更单后按 SQL 分批收敛并回填执行记录；无法收敛的存量 Key 逐条登记豁免原因与批准人。
 - D-05：生产注入显式主体映射并做「映射放行 / 未映射拒绝」两向冒烟。
-- D-06：发布窗口前补齐 4 处模板漂移，并按 A2 §5 完成只读挂载（0600）取证。
+- D-06：模板漂移已由 E1 补齐；仅剩生产 `.env` 真实注入与 A2 §5 只读挂载（0600）取证。
 - D-07：登记 Provider 前逐个取 `discovery` 的 `issuer` 判重，同 issuer 多 client 只允许一个承担 back-channel，清单随发布单归档。
+
+### 5.5 E 批联动（2026-11-02，本机原生 / 无 Docker）
+
+| 批次 | 内容 | 结果 | 证据 |
+|---|---|---|---|
+| E1 | 零环境模板收口（4 处漂移 + DPS 键名勘误） | ✅ **5/5 Pass** | `evidence/a2/a2-e1-template-drift-20261102.json` |
+| E2 | 本机原生（uvicorn 单进程 + 生产形态环境）取证 | ✅ D-02 两向（缺 PEM `exit=1` / 恢复后 `/health` 200）、A2-01/02/03/06 本机口径通过；⛔ A2-04/05、V 类仍 Blocked；ℹ️ SQLite 因 PG 专用 SQL 失败自动回退内存 | `evidence/a2/a2-e2-native-20261102.json`、`a2-d02-negative-e2native-20261102.json` |
+| E3 | 生产 `.env` 注入 + 秘密只读挂载 | ⛔ Blocked（无生产主机） | 解除条件：获得部署主机与启停权限 |
+| E4 | 跨仓实测（四仓验签/吊销/门禁/审计字段） | ⛔ Blocked（无四仓生产部署） | 解除条件：四仓生产拓扑就绪 |
+| E5 | 生产拓扑实测（多实例/共享 PG/Redis/真实 IdP） | ⛔ Blocked（无生产会话） | 解除条件：生产会话与账号授权 |
+
+执行依据与判定边界见 `OpenBase-四系统APIKey优化-残余项分批推进方案-v1.1.0.md` §4~§9。
 
 ---
 
@@ -424,6 +438,7 @@
 | **P2** | C-06~C-10（MCP 白名单/跨实例/提醒/对账/角色契约） | P1；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.24 Key 生命周期残余闭合」 | 已完成：`tests/test_p2_residuals.py` 20 passed（回归 99 + 8）；ruff 待具备环境补跑；A2 已同步新增 `OPENBASE_MCP_API_KEY_TOOLS`；三远程推送 |
 | **P3** | G-01~G-03（治理） | P2；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.25 P3 治理残余闭合」 | 已完成：`tests/test_p3_governance.py` 8 passed（回归 127 passed）；G-01 已裁定为 B 口径（事后审计）；ruff 待具备环境补跑；A2 已同步两项 ABAC 基线；三远程推送 |
 | **P4** | K-01~K-06、D-01~D-07、V-01~V-14 | P1~P3 冻结；D-01 已完成；**裁定全部落定**（D-05=A / K-01=B，2026-11-01）；批 A（K-03/K-04）、批 B（K-02/K-06）、批 C（K-01/K-05/D-03 代码收口）、**批 D（D-02/D-04/D-05/D-06/D-07 本地取证）**已完成；剩余为 V 类实测与批 D 的生产侧动作（重启/端点/注入/Key 收敛/挂载），依赖联调环境与凭据 | 四仓改动 + 生产验收证据 + A1 判定汇总 | 批 A：四仓定向回归 106/54/48/72 passed；批 B：DPS 新增 14 passed、定向 57 passed、登录依赖 83 passed；批 C：OpenRAG 21 / OpenMemory 19 / DPS 33 / OpenLLM 18 / OpenBase 22 passed；批 D：门禁负向 17/17、门禁单测 108 passed、D-06 键名核对 5 仓、D-04 收敛 SQL 就绪；后续每仓 ruff/pytest 全绿；A1 P0 全 Pass；证据归档 `evidence/a1\|a2\|d/` |
+| **E**（残余收口） | E1 模板补齐、E2 本机原生取证、E3 生产注入/挂载、E4 跨仓实测、E5 生产拓扑实测（详见《残余项分批推进方案 v1.1.0》） | P4 静态取证完成；E1/E2 已执行（2026-11-02，**无 Docker**）；E3~E5 依赖生产主机/四仓部署/真实 IdP | E1 5/5 Pass + E2 本机口径证据 | E1 四仓键名复核全存在；E2 拒绝启动 exit=1、`/health` 200、JWKS 仅公钥、端点无凭证 401、日志无秘密；A2-04/05 与 V 类仍 ⛔ Blocked 并写明解除条件 |
 | **P5** | P-01~P-07 | 触发条件成立 | 单独立项 | 按触发方验收要求 |
 
 **可并行性**

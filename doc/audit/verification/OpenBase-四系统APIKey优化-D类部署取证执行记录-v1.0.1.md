@@ -2,12 +2,13 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev（本机）/ Pre-Pro / Pro |
-| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.0.9.md`（§6 D 行、§5.4） |
-| 关联清单 | `...-A2生产配置收口清单-v1.1.5.md`（§4 门禁、§6 漂移自检、§7 验收项） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.26.0.md`（§10.29） |
+| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.1.0.md`（§6 D 行、§5.4） |
+| 关联清单 | `...-A2生产配置收口清单-v1.1.6.md`（§4 门禁、§6 漂移自检、§7 验收项） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.27.0.md`（§10.29~§10.30） |
+| 关联批次 | `...-残余项分批推进方案-v1.1.0.md`（E1 模板补齐 / E2 本机原生取证，见本文 §5） |
 | 覆盖对象 | D-02 / D-04 / D-05 / D-06 / D-07（P4 批 D 全部 5 项） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -16,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.1 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E 批联动：**E1** D-06 登记的 4 处模板漂移全部补齐（OpenBase `.env.shared-infra` 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明 v2.8.3 新增 §2.5/§2.6）；**勘误**：DPS 键名为 `IDENTITY_AUTHORITY`（不带 `DPS_` 前缀，源码 `DPS/src/config.py:200`），§2.3 原表「`DPS_IDENTITY_AUTHORITY`」为登记笔误（证据 JSON 原件不改动，以本节勘误为准）；**E2** 本机原生（无 Docker）完成 D-02 重启两向验证（缺私钥拒启 exit=1 / 恢复后启动 200）与 A2 §6.2 端点核对；关联文档版本同步 |
 | v1.0.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 首版：登记 P4 批 D 五项部署取证的执行方式、本地实测结果、阻塞原因与解除条件；D-02 13 项启动门禁负向矩阵本地全部命中（17 例，含 #6 五个子情形），D-07 Provider 名称唯一性本地实测通过、issuer 唯一性为部署口径；D-06 四仓部署键名核对发现 4 处缺项（OpenBase 生产基线未注入、OpenRAG/OpenMemory 新增 `STATIC_KEY_CHANNEL` 未进模板、DPS 说明缺 `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`）；D-04 生产执行 Blocked（无生产主机访问权 + 本机 PG 无凭据），已产出导出/分批收敛 SQL；证据落 `evidence/d/` |
 
 ---
@@ -78,14 +80,14 @@
 
 | 核对项 | 结果 | 证据 |
 |---|---|---|
-| OpenBase 生产基线键（RS256 私钥路径/kid/require、issuer、IdP 登记、MCP 摘要、服务账号主体映射） | ⛔ `.env.shared-infra` 中 **7 个键均缺失** → 生产基线尚未注入 | `evidence/d/d-06-template-key-check-20261101.json` |
+| OpenBase 生产基线键（RS256 私钥路径/kid/require、issuer、IdP 登记、MCP 摘要、服务账号主体映射） | ✅ **E1 已补齐**：`.env.shared-infra` 追加 7 键（注释形态，真实值由 OPS 注入；该文件不被 git 跟踪） | `evidence/d/d-06-template-key-check-20261101.json`（原核对快照）+ `evidence/a2/a2-e1-template-drift-20261102.json` |
 | OpenLLM 模板（JWKS/issuer/吊销/服务 Key/主体映射） | ✅ 5/5 存在 | 同上 |
-| OpenRAG 模板（JWKS/issuer/吊销/服务 Key） | ✅ 4/4 存在；⛔ `OPENRAG_API_STATIC_KEY_CHANNEL`（K-01 新增）**未进模板** | 同上 |
-| OpenMemory 模板（JWKS/issuer/吊销/服务 Key） | ✅ 4/4 存在；⛔ `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL`（K-01 新增）**未进模板** | 同上 |
-| DPS 环境配置说明（JWKS/issuer/吊销/服务 Key/主体映射） | ✅ 5/5 存在；⛔ `DPS_IDENTITY_AUTHORITY`（K-02 新增）与 `STATIC_KEY_CHANNEL`（K-01 新增）**未进说明** | 同上 |
+| OpenRAG 模板（JWKS/issuer/吊销/服务 Key） | ✅ 4/4 存在；✅ **E1 已补齐** `OPENRAG_API_STATIC_KEY_CHANNEL` + 应急 bypass 两键（`.env.example`） | 同上 |
+| OpenMemory 模板（JWKS/issuer/吊销/服务 Key） | ✅ 4/4 存在；✅ **E1 已补齐** `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` + 应急 bypass 两键（`.env.example`） | 同上 |
+| DPS 环境配置说明（JWKS/issuer/吊销/服务 Key/主体映射） | ✅ 5/5 存在；✅ **E1 已补齐** §2.5 `IDENTITY_AUTHORITY`（生产 `openbase`，**无 `DPS_` 前缀**）与 §2.6 `STATIC_KEY_CHANNEL` + 应急 bypass 两键（说明升 v2.8.3） | 同上 |
 | 秘密挂载形态（PEM 只读 0600、证书/私钥路径、CA） | ⛔ **Blocked**：无部署主机；口径按 A2 §5 留档（私钥 PEM 只读挂载 0600，禁止内联 env） | 解除条件：获得部署主机后按 A2 §5 逐项挂载并记录挂载权限 |
 
-**D-06 缺项处置**：以上 4 处属**模板/说明漂移**（代码已支持、文档未登记），归入发布窗口前必须补齐的部署编排清单；本记录只登记缺项，不修改各仓默认值或模板文件（避免与发布窗口变更冲突）。
+**D-06 缺项处置**：以上 4 处属**模板/说明漂移**（代码已支持、文档未登记），已由 E1（2026-11-02）全部补齐（见 `evidence/a2/a2-e1-template-drift-20261102.json`）；本记录原表保留 2026-11-01 的缺项快照以便追溯，补齐后的状态以本节 ✅ 标记为准。生产 `.env` 真实注入与秘密只读挂载仍归 E3 窗口。
 
 ### 2.4 D-05 显式主体映射部署编排（模板已出 / 注入 Blocked）
 
@@ -120,6 +122,9 @@
 | `d-06-template-key-check-20261101.json` | D-05 / D-06 | 五仓部署键名存在性（只记键名与「存在/缺失」） |
 | `d-04-expired-key-convergence-20261101.sql` | D-04 | 导出 + 分批收敛 + 复核 SQL |
 | `d-05-subject-map-injection-20261101.md` | D-05 | 主体映射注入模板、约束、变更审计口径 |
+| `evidence/a2/a2-e1-template-drift-20261102.json` | D-06 / E1 | E1 补齐后四仓模板/说明键名存在性复核（只记键名与「存在/缺失」） |
+| `evidence/a2/a2-d02-negative-e2native-20261102.json` | D-02 / E2 | 私钥缺失时本机原生启动拒绝（exit=1，含拒绝原因摘要） |
+| `evidence/a2/a2-e2-native-20261102.json` | D-02 / A2-03 / A2-06 / E2 | 生产形态原生实例启动、`/health`、JWKS（仅公钥/kid 一致）、内省与吊销端点无凭证拒绝、日志秘密扫描 |
 
 ---
 
@@ -127,10 +132,44 @@
 
 | 编号 | 判定 | 说明 |
 |---|---|---|
-| D-02 | **Pass（本地口径）/ ⛔ 生产重启与端点核对 Blocked** | 13 项门禁负向矩阵 17/17 命中，正向基线放行；真实重启与 JWKS/吊销端点核对待部署环境 |
+| D-02 | **Pass（本地口径）/ ⛔ 生产重启与端点核对 Blocked** | 13 项门禁负向矩阵 17/17 命中，正向基线放行；E2 已完成本机原生重启两向验证与 A2 §6.2 端点核对；生产拓扑重启仍待部署环境 |
 | D-04 | ⛔ **Blocked** | SQL 与分批计划已就绪，待生产 DBA 会话 |
 | D-05 | **Pass（编排口径）/ ⛔ 注入 Blocked** | 适用范围收敛为两仓映射 + 两仓直通，模板与审计口径已定 |
-| D-06 | **部分 Pass（键名核对）/ ⛔ 挂载与注入 Blocked** | 发现 4 处模板/说明漂移需在发布窗口前补齐 |
+| D-06 | **Pass（模板/说明补齐，E1）/ ⛔ 生产注入与挂载 Blocked** | 4 处模板/说明漂移已全部补齐；生产 `.env` 注入与只读挂载归 E3 |
 | D-07 | **部分 Pass** | 名称唯一性门禁生效；issuer 判重为登记前置部署动作 |
 
-**未闭环项全部为环境/权限阻塞，无代码缺口**；解除条件统一为「获得生产（或 Dev 全栈）会话与启停权限」。下一轮推进建议：先在 Dev 全栈（docker + 本地 Redis）补做真实重启、JWKS/吊销端点与挂载权限取证，再随生产窗口执行 D-04 分批收敛与 D-05/D-06 注入。
+**未闭环项全部为环境/权限阻塞，无代码缺口**；解除条件统一为「获得生产（或 Dev 全栈）会话与启停权限」。
+
+---
+
+## 5. E 批联动（2026-11-02）
+
+> 依据《残余项分批推进方案 v1.1.0》§4（E1）与 §5（E2），**本轮不使用 Docker**：以本机原生进程（`uvicorn` 单进程）+ 生产形态环境变量完成取证；凡需共享 PG/Redis、多实例、真实 IdP 或跨仓生产部署者一律 ⛔ Blocked。
+
+### 5.1 E1（零环境模板补齐）— 5/5 Pass
+
+| 编号 | 动作 | 结果 |
+|---|---|---|
+| E1-① | OpenBase `.env.shared-infra` 追加生产基线 7 键（注释形态） | ✅ 7 键存在（该文件不被 git 跟踪，真实值由 OPS 注入） |
+| E1-② | OpenRAG `.env.example` 追加 K-01 三键 | ✅ 3 键存在 |
+| E1-③ | OpenMemory `.env.example` 追加 K-01 三键 | ✅ 3 键存在 |
+| E1-④ | DPS 环境配置说明新增 §2.5/§2.6（`IDENTITY_AUTHORITY` / `STATIC_KEY_CHANNEL` + 应急 bypass 两键），升 v2.8.3 | ✅ 键名与 `DPS/src/config.py:200,296` 一致 |
+| E1-⑤ | A2 清单修正 DPS 键名前缀笔误（`DPS_IDENTITY_AUTHORITY`/`DPS_STATIC_KEY_CHANNEL` → `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`） | ✅ 见 A2 v1.1.6 |
+
+证据：`evidence/a2/a2-e1-template-drift-20261102.json`（四仓键名复核，按 `d-06` 同源清单逐项 grep）。
+
+### 5.2 E2（本机原生，无 Docker）
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| D-02 负向：私钥 PEM 缺失 → 启动拒绝 | ✅ **拒绝启动**（`exit=1`，`JWT RSA 私钥文件不存在或不可读`） | `a2-d02-negative-e2native-20261102.json` |
+| D-02 正向：恢复 PEM → 生产形态启动 | ✅ 启动成功，`/health` 200 | `a2-e2-native-20261102.json` |
+| A2-01 生产基线（13 项门禁） | ✅ 本机生产形态全放行（`OPENBASE_ENV=production` + 私钥/kid/require/issuer/租户/主体策略/MCP 摘要齐备） | 同上 |
+| A2-03 JWKS | ✅ 200，`key_count=1`、`kty=RSA`、`kid=e2-native-kid`、无任何私钥字段 | 同上 |
+| A2-02 端点鉴权 | ✅ 内省无凭证 401、吊销增量（`since=0`/缺省）无凭证 401 | 同上 |
+| A2-06 秘密不落日志 | ✅ 进程日志无 `PRIVATE KEY` 头、无 JWT 密钥原文 | 同上 |
+| A2-04 / A2-05 | ⛔ **Blocked**：需四仓生产部署与真实服务 Key 权限面取样 | 解除条件：E4 跨仓实测 |
+| V-01/02/03/05/06/07/09/13/14 等 A1 实测项 | ⛔ **Blocked**：需共享 PG/Redis、多实例、四仓联调或真实 IdP | 解除条件见《分批推进方案》§5 E2 判定边界 |
+| 数据库形态 | ℹ️ 本机 SQLite 初始化因 PG 专用 SQL（schema/`setval`）失败 → 自动回退内存（日志 `database init failed, fallback to memory`），故本机不覆盖 DB 相关语义 | 同上 |
+
+**E2 判定边界**：以上 ✅ 仅为 `Pass（本机口径）`，不替代生产实测。

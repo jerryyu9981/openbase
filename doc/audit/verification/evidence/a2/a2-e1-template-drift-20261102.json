@@ -1,0 +1,45 @@
+{
+  "checked_at": "2026-11-02",
+  "scope": "E1 模板补齐复核（只记键名）",
+  "OpenBase(.env.shared-infra)": {
+    "file": "D:/Trae CN/myproject/Dev/OpenBase/.env.shared-infra",
+    "file_exists": true,
+    "keys": {
+      "OPENBASE_JWT_RSA_PRIVATE_KEY_PATH": "存在",
+      "OPENBASE_JWT_SIGNING_KID": "存在",
+      "OPENBASE_JWT_REQUIRE_RS256": "存在",
+      "OPENBASE_JWT_ISSUER": "存在",
+      "OPENBASE_IDP_PROVIDERS": "存在",
+      "OPENBASE_MCP_API_KEY_HASHES": "存在",
+      "OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP": "存在"
+    }
+  },
+  "OpenRAG(.env.example)": {
+    "file": "D:/Trae CN/myproject/Dev/OpenRAG/.env.example",
+    "file_exists": true,
+    "keys": {
+      "OPENRAG_API_STATIC_KEY_CHANNEL": "存在",
+      "OPENRAG_API_EMERGENCY_BYPASS_KEY": "存在",
+      "OPENRAG_API_EMERGENCY_BYPASS_EXPIRES_AT": "存在"
+    }
+  },
+  "OpenMemory(.env.example)": {
+    "file": "D:/Trae CN/myproject/Dev/OpenMemory/.env.example",
+    "file_exists": true,
+    "keys": {
+      "OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL": "存在",
+      "OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_KEY": "存在",
+      "OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_EXPIRES_AT": "存在"
+    }
+  },
+  "DPS(环境配置说明-v2.8.0)": {
+    "file": "D:/Trae CN/myproject/Dev/DPS/doc/release/DPS-环境配置说明-v2.8.0.md",
+    "file_exists": true,
+    "keys": {
+      "IDENTITY_AUTHORITY": "存在",
+      "STATIC_KEY_CHANNEL": "存在",
+      "EMERGENCY_BYPASS_KEY": "存在",
+      "EMERGENCY_BYPASS_EXPIRES_AT": "存在"
+    }
+  }
+}

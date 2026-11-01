@@ -1,0 +1,39 @@
+{
+  "base_url": "http://127.0.0.1:18002",
+  "pid": 37620,
+  "started": true,
+  "health": {
+    "status_code": 200,
+    "body": "{\"status\":\"ok\"}"
+  },
+  "jwks": {
+    "status_code": 200,
+    "key_count": 1,
+    "kty": [
+      "RSA"
+    ],
+    "kids": [
+      "e2-native-kid"
+    ],
+    "public_only": true,
+    "private_fields": []
+  },
+  "introspect_without_credential": {
+    "status_code": 401,
+    "rejected": true
+  },
+  "revocations_since_zero": {
+    "status_code": 401,
+    "rejected": true
+  },
+  "revocations_default": {
+    "status_code": 401,
+    "rejected": true
+  },
+  "log_hygiene": {
+    "pem_header_present": false,
+    "jwt_secret_present": false,
+    "log_lines": 22
+  },
+  "process_exit_code": 1
+}

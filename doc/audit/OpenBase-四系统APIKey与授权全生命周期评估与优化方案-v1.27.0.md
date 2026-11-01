@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.26.0 |
+| 版本 | v1.27.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -1157,19 +1157,49 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | ① | OpenBase | `.env.shared-infra` 生产基线 7 键（RS256 私钥路径/kid/require、issuer、IdP 登记、MCP 摘要、服务账号主体映射）均未注入 | 生产基线缺失，启动门禁将拒启 |
 | ② | OpenRAG | `OPENRAG_API_STATIC_KEY_CHANNEL`（K-01 新增）未进 `.env.example` | 窗口切 `closed` 无模板可依 |
 | ③ | OpenMemory | `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL`（K-01 新增）未进 `.env.example` | 同上 |
-| ④ | DPS | `DPS_IDENTITY_AUTHORITY`（K-02 新增）与 `STATIC_KEY_CHANNEL`（K-01 新增）未进环境配置说明 | 生产身份权威与通道切换无文档依据 |
+| ④ | DPS | `IDENTITY_AUTHORITY`（K-02 新增，**无 `DPS_` 前缀**，源码 `src/config.py:200`）与 `STATIC_KEY_CHANNEL`（K-01 新增，源码 `src/config.py:296`）未进环境配置说明 | 生产身份权威与通道切换无文档依据 |
 
 **D-07 登记口径**：issuer 由 discovery 运行期解析，配置层不设字段；登记 Provider 前须逐个取 `discovery` 的 `issuer` 判重，同一 issuer 多 client 视为**同一身份空间**，仅一个 Provider 承担 back-channel 登出（否则按 `iss`+`aud` 命中多个时取首个，见 `oidc.py:1197-1224`），清单随发布单归档。
 
-**残余（均为环境/权限阻塞，无代码缺口）**
+**残余（均为环境/权限阻塞，无代码缺口；状态更新见 §10.30）**
 
-- D-02：真实重启两向验证与 JWKS/吊销/内省端点核对，待 Dev 全栈或生产启停权限。
+- D-02：**生产**拓扑真实重启两向验证与 JWKS/吊销/内省端点核对（本机原生两向已完成，见 §10.30）。
 - D-04：生产 DBA 会话 + 变更单后分批收敛并回填执行记录；无法收敛者逐条登记豁免与批准人。
 - D-05：生产注入后做「映射放行 / 未映射拒绝」两向冒烟。
-- D-06：补齐 4 处模板漂移并按 A2 §5 完成只读挂载（0600）取证。
+- D-06：4 处模板漂移已由 §10.30 E1 补齐；仅剩生产 `.env` 真实注入与 A2 §5 只读挂载（0600）取证。
 - D-07：登记前 issuer 判重并随发布单归档。
 
-执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md`。
+执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.1.md`。
+
+### 10.30 E 批：本机原生取证与模板收口（v1.27.0，2026-11-02）
+
+> 依据《残余项分批推进方案 v1.1.0》E1/E2 执行。**约束**：本轮**不使用 Docker**（电脑资源有限），以本机原生进程（`uvicorn` 单进程）+ 生产形态环境变量取证；凡需共享 PG/Redis、多实例、真实 IdP 或跨仓生产部署者一律 ⛔ Blocked。
+
+**E1 零环境模板收口：5/5 Pass**
+
+| 编号 | 动作 | 结果 |
+|---|---|---|
+| E1-① | OpenBase `.env.shared-infra` 追加生产基线 7 键（注释形态） | ✅ 7 键存在（该文件不被 git 跟踪，真实值由 OPS 注入） |
+| E1-② | OpenRAG `.env.example` 追加 K-01 三键 | ✅ 3 键存在 |
+| E1-③ | OpenMemory `.env.example` 追加 K-01 三键 | ✅ 3 键存在 |
+| E1-④ | DPS 环境配置说明新增 §2.5/§2.6，升 v2.8.3 | ✅ 键名与 `DPS/src/config.py:200,296` 一致 |
+| E1-⑤ | A2 清单修正 DPS 键名前缀笔误 | ✅ 见 A2 v1.1.6 |
+
+**E2 本机原生取证（无 Docker）**
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| D-02 负向：私钥 PEM 缺失 → 启动拒绝 | ✅ `exit=1`，报错 `JWT RSA 私钥文件不存在或不可读` | `evidence/a2/a2-d02-negative-e2native-20261102.json` |
+| D-02 正向：恢复 PEM → 生产形态启动 | ✅ 启动成功，`/health` 200 | `evidence/a2/a2-e2-native-20261102.json` |
+| A2-01 生产基线（13 项门禁） | ✅ 本机生产形态全放行 | 同上 |
+| A2-03 JWKS | ✅ `key_count=1`、`kty=RSA`、`kid=e2-native-kid`、无私钥字段 | 同上 |
+| A2-02 端点鉴权 | ✅ 内省/吊销增量无凭证均 401 | 同上 |
+| A2-06 秘密不落日志 | ✅ 无 `PRIVATE KEY` 头、无 JWT 密钥原文 | 同上 |
+| A2-04 / A2-05 | ⛔ Blocked：需四仓生产部署与真实服务 Key 权限面 | 解除条件：E4 跨仓实测 |
+| V 类实测项 | ⛔ Blocked：需共享 PG/Redis、多实例、四仓联调或真实 IdP | 解除条件见《分批推进方案》§5 |
+| 数据库形态 | ℹ️ 本机 SQLite 因 PG 专用 SQL（schema/`setval`）失败 → 自动回退内存，本机不覆盖 DB 语义 | 同上 |
+
+**判定边界**：以上 ✅ 仅为 `Pass（本机口径）`，不替代生产实测；E3（生产注入/挂载）、E4（跨仓实测）、E5（生产拓扑实测）仍 ⛔ Blocked。
 
 ## 11. 修订历史
 
@@ -1204,3 +1234,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.24.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.27「P4 批 B：K-02/K-06 DPS 身份权威模式落地」。引入单一开关 `IDENTITY_AUTHORITY`（`local` 迁移期默认 / `openbase` 生产固定，非法值归一 `local`）：**K-02** `openbase` 模式停用本地密码登录（`403 AUTH_LOCAL_LOGIN_DISABLED`，保留端点给出明确错误码）、本仓 HS256 令牌不再受理（仅 OpenBase RS256/JWKS，`local` 模式保持 HS256 优先 + OpenBase 回落）；**K-06** 同步落地，`openbase` 模式启动期跳过演示用户种子、`upsert_local_user` 不产生任何 SQL，本地身份表**停写不删**（回滚改回 `local` 即恢复，无需数据迁移）。新增 `src/identity/authority.py` 与 `src/tests/test_k02_k06_identity_authority.py`（**14 passed**），定向回归 **57 passed**、登录依赖回归 **83 passed**；两个新增文件 ruff 全过，既有大文件存量告警非本批引入、全量套件因缺依赖未运行，均如实登记；登记残余（自省归 K-05、负向启动取证归 D-02/D-06）；同步升版《残余项统一处置方案 v1.0.7》、A2 清单 v1.1.3、A1 清单 v1.1.2 |
 | v1.25.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.28「P4 批 C：K-01/K-05 跨仓收口与 D-03 双验签收口」。**K-01** OpenRAG/OpenMemory/DPS 落地 `STATIC_KEY_CHANNEL`（`dual` 默认 / `closed`）+ 应急 bypass（`EMERGENCY_BYPASS_KEY` + `EMERGENCY_BYPASS_EXPIRES_AT`，缺配/非法拒启，放行只落 `sha256[:12]`），关闭态错误码 `AUTH_STATIC_KEY_CHANNEL_CLOSED`；**K-05** OpenLLM 新增 Redis Lua 原子令牌桶（`QUOTA_ALGORITHM=token_bucket` 可选，默认 `window`，Redis 不可用回退进程内；`QUOTA_BUCKET_CAPACITY=1000`、`QUOTA_BUCKET_REFILL_PER_SECOND=1000.0`）与四仓可选后台吊销同步（`RevocationBackgroundSync` 守护线程、幂等 start/stop、默认 `false`）；**D-03** OpenBase `jwt_require_rs256=true` 时白名单收敛 `{RS256}`、要求 kid、忽略历史 kid、禁止 HS256 签发。测试证据：OpenRAG 21 / OpenMemory 19 / DPS 33 / OpenLLM 18（7+11）/ OpenBase D-03 22 passed；改动文件 ruff 全过（全量 ruff 7 处既有告警、全量 pytest 1 例既有失败，均如实登记）；同步升版《残余项统一处置方案 v1.0.8》、A2 清单 v1.1.4、A1 清单 v1.1.3 |
 | v1.26.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.29「P4 批 D：部署取证与编排口径」。**D-02** 13 项启动门禁负向矩阵本地 **17/17 命中**（#6 token 认证拆 5 情形）、生产合规基线 13 项全放行、门禁单测 **108 passed**，真实重启与 A2 §6.2 端点核对 ⛔ Blocked；**D-07** Provider name 唯一性门禁生效（同名拒启）、两 Provider 合法登记 `count=2`，issuer 确认为 discovery 运行期解析（配置层无字段），issuer 判重列为登记前置部署检查；**D-06** 五仓键名核对发现 **4 处模板漂移**（OpenBase 生产基线 7 键未注入、OpenRAG/OpenMemory `*_STATIC_KEY_CHANNEL` 未进模板、DPS 说明缺 `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`），秘密挂载 Blocked；**D-05** 按裁定 A 产出显式主体映射注入模板并核定适用范围（OpenLLM/DPS 两仓映射 + OpenRAG/OpenMemory `sub` 直通），注入 Blocked；**D-04** 产出只读导出 + 按租户分批参数化收敛 SQL（不含 `key_hash`）与每批复核，执行 Blocked（无 DBA 会话）。本批不改代码与默认值；新增执行记录 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md` 与证据 `evidence/d/`（5 份）；同步升版《残余项统一处置方案 v1.0.9》、A2 清单 v1.1.5 |
+| v1.27.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.30「E 批：本机原生取证与模板收口」。**E1** 零环境模板收口 **5/5 Pass**：OpenBase `.env.shared-infra` 生产基线 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明升 v2.8.3（新增 §2.5 `IDENTITY_AUTHORITY` / §2.6 `STATIC_KEY_CHANNEL` + 应急 bypass 两键），并勘正 §10.29 中 `DPS_IDENTITY_AUTHORITY` 笔误为 `IDENTITY_AUTHORITY`（无 `DPS_` 前缀，`DPS/src/config.py:200`）；**E2** 本机原生（**无 Docker**，`uvicorn` 单进程）完成 D-02 重启两向（缺 PEM `exit=1` 拒启 / 恢复后 `/health` 200）、A2-01/02/03/06 本机口径通过（JWKS 仅公钥且 kid 一致、端点无凭证 401、日志无秘密），A2-04/05 与 V 类如实标 ⛔ Blocked；SQLite 因 PG 专用 SQL 失败自动回退内存已登记；E3/E4/E5 仍 ⛔ Blocked 并写明解除条件；同步升版《残余项统一处置方案 v1.1.0》、D 类执行记录 v1.0.1、A2 清单 v1.1.6、A1 清单 v1.1.4，新增《残余项分批推进方案 v1.1.0》 |

@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.5 |
+| 文档版本 | v1.1.6 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.26.0.md`（§10.7~§10.29） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.3.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收）、`...-D类部署取证执行记录-v1.0.0.md`（D-02/D-06 的本清单取证结果） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.27.0.md`（§10.7~§10.30） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.4.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收）、`...-D类部署取证执行记录-v1.0.1.md`（D-02/D-06 的本清单取证结果） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -31,6 +31,7 @@
 | v1.1.3 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.24.0（§10.27 P4 批 B K-02/K-06）：§3 四仓镜像矩阵 DPS 段新增 `IDENTITY_AUTHORITY` 基线（默认 `local` = 迁移期零行为变化；**生产固定 `openbase`**：停用本地密码登录 403 `AUTH_LOCAL_LOGIN_DISABLED`、仅受理 OpenBase RS256/JWKS、本地身份表停写不删；非法值归一 `local`；回滚改回 `local` 即恢复）；13 项启动门禁未变（生产负向启动取证归 D-02/D-06） |
 | v1.1.4 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.25.0（§10.28 P4 批 C K-01/K-05/D-03）：§3 四仓镜像矩阵新增 **K-01** 三仓静态 Key 通道基线（OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL` / OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` / DPS `DPS_STATIC_KEY_CHANNEL`，默认 `dual`；`closed` 时关闭静态 Key 主通道、仅 `*_EMERGENCY_BYPASS_KEY` + `*_EMERGENCY_BYPASS_EXPIRES_AT` 应急放行，缺配/非法拒启）；新增 **K-05** OpenLLM 配额基线（`QUOTA_ALGORITHM` 默认 `window`、`QUOTA_BUCKET_CAPACITY` / `QUOTA_BUCKET_REFILL_PER_SECOND`）与四仓后台吊销同步开关（`*_REVOCATION_BACKGROUND_SYNC_ENABLED` 默认 `false`）；§2.2 `OPENBASE_JWT_REQUIRE_RS256` 行补充 **D-03 收口语义**（置 true 后白名单收敛 `{RS256}`、要求 kid、忽略历史 kid、禁止 HS256 签发）；§6.1 增补 K-01/K-05 变量核对；§8 已知边界更新为「惰性拉取 + 可选后台调度」；13 项启动门禁总数未变（K-01 各仓新增门禁单列于 §3） |
 | v1.1.5 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.26.0（§10.29 P4 批 D 部署取证）：新增 §6.4「D 类取证联动」——D-02 13 项门禁负向矩阵本地 **17/17 命中**、正向基线放行、门禁单测 **108 passed**（真实重启与 §6.2 端点核对仍 ⛔ Blocked）；D-06 五仓键名核对发现 **4 处模板漂移**（本清单 OpenBase 生产基线 7 键、OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL`、OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL`、DPS 说明 `DPS_IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`），列为发布窗口前必补项；D-07 issuer 判重列为登记前置检查；§7 A2-02 证据补充 D-02 本地矩阵；13 项启动门禁总数与基线口径未变 |
+| v1.1.6 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E 批联动（方案 v1.27.0 §10.30）：**E1 模板收口**——v1.1.5 登记的 4 处模板漂移已全部补齐（OpenBase `.env.shared-infra` 生产基线 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明 v2.8.3 新增 §2.5/§2.6）；**键名勘误**：DPS 两键无 `DPS_` 前缀，实际为 `IDENTITY_AUTHORITY`（`DPS/src/config.py:200`）与 `STATIC_KEY_CHANNEL`（`DPS/src/config.py:296`），v1.1.4/v1.1.5 中的 `DPS_STATIC_KEY_CHANNEL` / `DPS_IDENTITY_AUTHORITY` 为笔误（历史行保留原文以便追溯）；**E2 本机原生（无 Docker）** 补充 A2-01/02/03/06 本机口径证据；关联方案与关联清单版本同步 |
 
 ---
 
@@ -272,10 +273,10 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 |---|---|---|
 | 13 项启动门禁负向矩阵（§6.3 同源） | ✅ **17/17 命中**（#6 token 认证拆 5 情形）；✅ 生产合规基线 13 项全放行；✅ 门禁单测 **108 passed** | ⛔ 真实重启两向验证待部署环境启停权限；解除条件见执行记录 §2.1 |
 | §6.2 JWKS/吊销/内省端点核对 | ⛔ **Blocked**（本机无运行实例、无生产会话） | 获得会话后按 §6.2 命令逐项核对并归档 `evidence/a2/` |
-| 五仓部署键名存在性（§6.1） | ⛔ **4 处模板漂移**：① 本清单 OpenBase 生产基线 7 键未注入 `.env.shared-infra`；② OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL` 未进模板；③ OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` 未进模板；④ DPS 环境配置说明缺 `DPS_IDENTITY_AUTHORITY` / `STATIC_KEY_CHANNEL` | 发布窗口前补齐模板与说明，再按 §6.1 复核 |
+| 五仓部署键名存在性（§6.1） | ✅ **E1 已全部补齐（2026-11-02）**：v1.1.5 登记的 4 处漂移均已收口——① OpenBase `.env.shared-infra` 已补生产基线 7 键（该文件不被 git 跟踪，真实值由 OPS 注入）；② OpenRAG `.env.example` 已补 `OPENRAG_API_STATIC_KEY_CHANNEL` + 应急 bypass 两键；③ OpenMemory `.env.example` 已补 `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` + 应急 bypass 两键；④ DPS 环境配置说明 v2.8.3 已新增 §2.5 `IDENTITY_AUTHORITY` / §2.6 `STATIC_KEY_CHANNEL` + 应急 bypass 两键（**无 `DPS_` 前缀**，勘正 v1.1.5 笔误） | 生产 `.env` 真实注入与秘密只读挂载仍归 E3 发布窗口 |
 | 多 Provider issuer 唯一性（登记前置） | ✅ Provider name 唯一性门禁生效；ℹ️ issuer 为 discovery 运行期解析（配置层无该字段） | ⛔ issuer 判重待可达 IdP；同 issuer 多 client 仅一个承担 back-channel |
 
-证据：`doc/audit/verification/evidence/d/d-02-gate-matrix-20261101.json`、`d-06-template-key-check-20261101.json`、`d-07-issuer-uniqueness-20261101.json`；执行方式与阻塞解除条件见 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md`。
+证据：`doc/audit/verification/evidence/d/d-02-gate-matrix-20261101.json`、`d-06-template-key-check-20261101.json`、`d-07-issuer-uniqueness-20261101.json`；E1/E2 证据 `evidence/a2/a2-e1-template-drift-20261102.json`、`a2-e2-native-20261102.json`、`a2-d02-negative-e2native-20261102.json`；执行方式与阻塞解除条件见 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.1.md` §5。
 
 ---
 
@@ -283,12 +284,12 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 
 | 验收项 | 内容 | 判定 | 证据 |
 |---|---|---|---|
-| A2-01 | OpenBase 第 2 节基线逐项落地（秘密类仅记状态） | Pass/Fail | `a2-01.txt` |
-| A2-02 | 13 项启动门禁负向样例各命中一次（第 6.3 节） | Pass/Fail | `a2-02.txt`（生产重启）；本地构造期矩阵见 `evidence/d/d-02-gate-matrix-20261101.json`（17/17） |
-| A2-03 | JWKS 只发公钥、kid 一致（第 6.2 节） | Pass/Fail | `a2-03.txt` |
-| A2-04 | 四仓镜像矩阵齐备且 `iss/aud` 一致 | Pass/Fail | `a2-04.txt` |
-| A2-05 | 服务 Key 权限面最小化（`scope.system` 仅含 `auth`/`*` 必要项） | Pass/Fail | `a2-05.txt` |
-| A2-06 | 秘密未落 git/日志/文档（抽样核查） | Pass/Fail | `a2-06.txt` |
+| A2-01 | OpenBase 第 2 节基线逐项落地（秘密类仅记状态） | Pass/Fail | `a2-01.txt`（生产）；本机生产形态基线放行见 `evidence/a2/a2-e2-native-20261102.json` |
+| A2-02 | 13 项启动门禁负向样例各命中一次（第 6.3 节） | Pass/Fail | `a2-02.txt`（生产重启）；本地构造期矩阵见 `evidence/d/d-02-gate-matrix-20261101.json`（17/17）；本机原生重启拒绝见 `evidence/a2/a2-d02-negative-e2native-20261102.json` |
+| A2-03 | JWKS 只发公钥、kid 一致（第 6.2 节） | Pass/Fail | `a2-03.txt`（生产）；本机口径见 `evidence/a2/a2-e2-native-20261102.json`（`key_count=1`、`kty=RSA`、`kid` 一致、无私钥字段） |
+| A2-04 | 四仓镜像矩阵齐备且 `iss/aud` 一致 | Pass/Fail | `a2-04.txt`（生产；本机不具备四仓部署 → Blocked） |
+| A2-05 | 服务 Key 权限面最小化（`scope.system` 仅含 `auth`/`*` 必要项） | Pass/Fail | `a2-05.txt`（生产；本机无真实服务 Key 权限面 → Blocked） |
+| A2-06 | 秘密未落 git/日志/文档（抽样核查） | Pass/Fail | `a2-06.txt`（生产）；本机日志扫描见 `evidence/a2/a2-e2-native-20261102.json`（无 PEM 头、无 JWT 密钥原文） |
 
 **判定规则**：每项仅 `Pass / Fail / Blocked`；P0（A2-01/02/03）任一 `Fail` 不得上线；`Blocked` 须写明原因与解除条件。
 
