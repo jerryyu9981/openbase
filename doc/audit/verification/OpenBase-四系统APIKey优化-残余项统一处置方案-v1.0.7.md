@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.6 |
+| 文档版本 | v1.0.7 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev / Pre-Pro / Pro |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.23.0.md`（§7.2/§7.3/§10.7~§10.26） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.1.md`、`...-A2生产配置收口清单-v1.1.2.md` |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.24.0.md`（§7.2/§7.3/§10.7~§10.27） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.2.md`、`...-A2生产配置收口清单-v1.1.3.md` |
 | 编号体系 | 见 §1.1（47 项台账为唯一执行主键；批次 `P1~P5`；旧分组 `A1~A5/B1~B5/C1~C6/D` 已废止） |
 | 覆盖对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
@@ -23,6 +23,7 @@
 | v1.0.4 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | P3 批次（G-01~G-03）执行完成：新增 §4.1「P3 完成情况」逐项登记落点与验证证据（`tests/test_p3_governance.py` 8 passed，回归 127 passed）；G-01 经人工裁定采用 **B 口径（超管直改 + 事后审计）**，并在 §10 登记裁定结果；§2.1 速览与 §9.1 批次表同步状态；关联方案升 v1.22.0（新增 §10.25）、A2 升 v1.1.0（新增两项 ABAC 基线） |
 | v1.0.5 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 启动：完成前置项 **D-01**（A1 清单升 v1.1.0，新增 A1-13 OIDC 专项、A1-14 跨仓实测，关联方案 v1.22.0，并同步 A1-08/A1-11 判定与 §7 边界）；§2.1 速览与 §6 D-01 状态同步；关联清单更新为 A1 v1.1.0 / A2 v1.1.1。D-05/K-01 仍待裁定 |
 | v1.0.6 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 批 A 执行：**裁定落定** D-05=**A（显式 `*_SUBJECT_MAP` 主体映射）**、K-01=**B（双通道并行一个发布窗口后关闭静态 Key 主通道）**；**K-03** 四仓审计补 `key_id`/`subject`/`tenant`/`entry`（OpenLLM 106 passed、OpenRAG 54 passed、OpenMemory 48 passed、DPS 72 passed）；**K-04** OpenRAG/OpenMemory 消费角色契约（契约优先 + 本地回落）、DPS 双链分别回落，各仓新增单测；新增 §5.1「P4 批 A 完成情况」、§10 登记裁定、§9.1 批次表与 §2.1 速览同步；关联方案升 v1.23.0（新增 §10.26）、A2 升 v1.1.2（新增三仓契约地址配置项）、A1 升 v1.1.1（关联方案引用同步） |
+| v1.0.7 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | P4 批 B 执行：**K-02** DPS 引入 `IDENTITY_AUTHORITY`（`local` 迁移期默认 / `openbase` 生产固定），`openbase` 模式停用本地密码登录（`403 AUTH_LOCAL_LOGIN_DISABLED`）、本仓 HS256 令牌不再受理（仅 OpenBase RS256/JWKS）；**K-06** 同步落地，`openbase` 模式下本地身份表**停写不删**（启动期演示种子跳过、`upsert_local_user` 直接返回）；新增 `src/identity/authority.py` 与 14 项单测，DPS 定向回归 57 passed（另 83 passed 登录依赖回归）；新增 §5.2「P4 批 B 完成情况」，§2.1 速览、§5 K-02/K-06 现状、§9.1 批次表同步；关联方案升 v1.24.0（新增 §10.27）、A2 升 v1.1.3（新增 DPS `IDENTITY_AUTHORITY` 基线）、A1 升 v1.1.2（关联引用同步） |
 
 ---
 
@@ -82,17 +83,18 @@
 | 已完成 · P3 治理 | 3 | G-01 ABAC 变更事后审计、G-02 SoD 接入角色授予、G-03 策略规模/耗时基线（证据见 §4.1） |
 | 已完成 · P4 前置 | 1 | D-01 A1 清单升 v1.1.0（2026-11-01，新增 A1-13 OIDC 专项 / A1-14 跨仓实测，关联方案 v1.22.0） |
 | 已完成 · P4 批 A | 2 | K-03 四仓审计补 `key_id`/`subject`/`tenant`/`entry`、K-04 OpenRAG/OpenMemory/DPS 消费角色契约（契约优先 + 本地回落）（证据见 §5.1） |
-| 待执行 · 跨仓 | 4 | K-01 静态 Key 双通道收口（已裁定 B）、K-02 DPS 停用本地密码、K-05 配额/吊销同步增强、K-06 SSO 全覆盖 |
+| 已完成 · P4 批 B | 2 | K-02 DPS 停用本地密码登录（`IDENTITY_AUTHORITY=openbase`）、K-06 SSO 全覆盖（openbase 模式本地身份表停写不删）（证据见 §5.2） |
+| 待执行 · 跨仓 | 2 | K-01 静态 Key 双通道收口（已裁定 B）、K-05 配额/吊销同步增强 |
 | 待执行 · 部署/裁定 | 6 | D-02 A2 基线执行、D-03 双验签收口、D-04 存量 Key 到期收敛、D-05 显式主体映射落部署编排（已裁定 A）、D-06 编排与挂载、D-07 Provider 隔离约束 |
 | 待实测/联调 | 14 | V-01~V-12（对应 A1-01~A1-12，全部未执行）、V-13 真实 IdP 联调、V-14 跨仓生产实测 |
 | 暂缓 · 触发式 | 7 | P-01 SM2/密评、P-02 集中审计平台、P-03 信创灾备、P-04 终端宿主项、P-05 跨库分片审计链、P-06 KMS、P-07 省级 IdP 对接 |
 
-**结论**：待执行 10 项（K 4 + D 6）、待实测 14 项、暂缓 7 项；C 类 10 项（P1 5 项 + P2 5 项）、G 类 3 项（P3）、D-01 前置项与 P4 批 A（K-03/K-04）已闭合，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
+**结论**：待执行 8 项（K 2 + D 6）、待实测 14 项、暂缓 7 项；C 类 10 项（P1 5 项 + P2 5 项）、G 类 3 项（P3）、D-01 前置项与 P4 批 A/批 B（K-02/K-03/K-04/K-06）已闭合，方案 §10 与 A1/A2 中**不存在未归类、未排期的悬空项**。
 
 **立即可启动性**
 
 - **P1（C-01~C-05）已完成**（2026-10-31，见 §3.1）；**P2（C-06~C-10）已完成**（2026-10-31，见 §3.2）；**P3（G-01~G-03）已完成**（2026-10-31，见 §4.1）。
-- **P4 已启动**：D-01（A1 升版）与批 A（K-03/K-04）于 2026-11-01 完成（见 §5.1）；两项裁定已落定（D-05=A、K-01=B），批 B（K-02/K-06）可立即启动；批 C（K-01/K-05、D-02~D-07）依赖联调环境与证据目录；V-01~V-12 可先对现状并行取证。
+- **P4 已推进至批 B**：D-01（A1 升版）与批 A（K-03/K-04）于 2026-11-01 完成（见 §5.1）；批 B（K-02/K-06）于 2026-11-01 完成（见 §5.2）；两项裁定已落定（D-05=A、K-01=B），批 C（K-01/K-05、D-02~D-07）依赖联调环境与证据目录；V-01~V-12 可先对现状并行取证。
 - **P5 全部为触发式**，不进入当前排期。
 
 ---
@@ -210,11 +212,11 @@
 | 编号 | 事项 | 来源 | 现状 | 处置建议 | 批次 |
 |---|---|---|---|---|---|
 | K-01 | 下游静态 Key 收敛为应急 bypass | §7.2 P1-6 | 仅完成生产 fail-closed 门禁，静态 Key 仍为主通道 | 经人工裁定取 **B 口径**：双通道并行一个发布窗口后关闭静态 Key 主通道；三仓默认保持双通道，窗口结束默认关闭静态 Key 通道、仅保留带过期与审计的应急开关；切 OpenBase JWKS/服务 Key 为主通道 | P4（已裁定，批 C） |
-| K-02 | DPS 停用本地密码登录 | §7.2 P1-6 | 仍保留本地密码与自签 JWT | 默认关闭本地密码登录，改 JWKS 验签 + 自省；保留迁移期开关与回滚路径 | P4（批 B） |
+| K-02 | DPS 停用本地密码登录 | §7.2 P1-6 | **已完成（2026-11-01）**：新增 `IDENTITY_AUTHORITY`（`local` 迁移期默认 / `openbase` 生产固定）；openbase 模式本地 `/login` 返回 `403 AUTH_LOCAL_LOGIN_DISABLED`，本仓 HS256 令牌不再受理（仅 OpenBase RS256/JWKS） | 默认关闭本地密码登录，改 JWKS 验签 + 自省；保留迁移期开关与回滚路径 | P4（批 B，已完成） |
 | K-03 | 下游审计补 `key_id`/`subject`/`tenant`/`entry` | §7.2 P1-8 | **已完成（2026-11-01）**：四仓审计 identity 由 6 核心键扩展为 10 键，`key_id=sha256(credential)[:12]`（不含明文）、`entry=proxy\|direct`，受信代理链自动判 `proxy` | 四仓审计记录 `key_id`/`subject`/`tenant`/`entry=proxy\|direct`（不含明文）；OpenLLM 优先 | P4（批 A，已完成） |
 | K-04 | 统一角色字典下游替换 | §7.3 P2-1 | **已完成（2026-11-01）**：OpenRAG/OpenMemory/DPS 消费 `GET /api/v1/auth/roles/contract`（契约优先 + 本地映射回落，契约地址为空即关闭=零行为变化）；DPS 双链分别回落不互读 | 消费 C-10 发布的角色码契约（单一 JSON schema），删除硬编码；保留映射表为过渡 | P4（批 A，已完成） |
 | K-05 | 下游配额/吊销同步增强 | §10.10/§10.11/§10.12 残余 | 配额单进程；吊销惰性拉取无调度；内省未接入 | OpenLLM 配额改 Redis 令牌桶；四仓可选后台调度（空闲期收敛）；按需接入内省，不作为常规路径 | P4（批 C） |
-| K-06 | SSO 全覆盖（删除本地密码） | §7.3 P2-6 | OpenLLM 有 `IDENTITY_AUTHORITY` 开关；DPS 未覆盖 | 与 K-02 合并推进；生产固定 `openbase` 模式，本地身份表停写不删 | P4（批 B，随 K-02） |
+| K-06 | SSO 全覆盖（删除本地密码） | §7.3 P2-6 | **已完成（2026-11-01）**：DPS 补 `IDENTITY_AUTHORITY`；openbase 模式启动期跳过演示种子、`upsert_local_user` 停写，既有本地身份表数据保留不删 | 与 K-02 合并推进；生产固定 `openbase` 模式，本地身份表停写不删 | P4（批 B，已完成） |
 
 ### 5.1 P4 批 A 完成情况（K-03 / K-04，2026-11-01）
 
@@ -247,6 +249,44 @@
 - 契约装载为**启动期一次装载 + TTL 缓存**，未实现热更新推送；契约变更需重启或等待缓存过期（TTL 300s 仅作用于显式 `force` 之外的取回节流，实际装载点仍为启动）。
 - K-03 审计键落库依赖各仓既有审计写入路径可达；跨实例聚合与下游拒绝数对账仍归 K-05 / C-09 边界。
 - 静态 Key 通道（K-01）、DPS 本地密码停用（K-02/K-06）**本批未触碰**，按裁定 B 留待批 B/批 C 的双通道窗口执行。
+
+### 5.2 P4 批 B 完成情况（K-02 / K-06，2026-11-01）
+
+**设计口径**：单一开关 `IDENTITY_AUTHORITY` 统一表达「谁签发身份」，避免两个独立开关产生非法组合。
+
+| 取值 | 语义 | 使用场景 |
+|---|---|---|
+| `local`（代码默认） | 保留本仓 HS256 自签令牌 + 本地密码登录 + 本地身份表写入 | 迁移期，**零行为变化**，既有测试与演示用户不受影响 |
+| `openbase` | 仅受理 OpenBase RS256/JWKS 令牌；停用本地密码登录；本地身份表停写不删 | 生产固定态（K-02 + K-06 目标态） |
+
+非法取值（空串、未知值、大小写/空格变体外的其他值）一律归一为 `local`（fail-safe，见 `src/identity/authority.py`）。
+
+| 编号 | 仓 | 实施内容 | 落点 | 验证证据 |
+|---|---|---|---|---|
+| K-02/K-06 | DPS | 新建权威模式解析模块：`current_authority()`（非法值归一 `local`）、`is_openbase_authority()`、`local_password_login_enabled()`；四处复用同一解析点 | `src/identity/authority.py`（新建） | `src/tests/test_k02_k06_identity_authority.py`（默认 `local`、非法值回落、`OPENBASE`/空格归一） |
+| K-02 | DPS | 新增配置 `identity_authority`（env `IDENTITY_AUTHORITY`，默认 `local`），登记迁移期/生产态与回滚路径 | `src/config.py` | 同上（`settings` 缺省读为 `local`） |
+| K-02 | DPS | `POST /auth/login` 在空用户名/密码校验之后拦截：`openbase` 返回 `403 {code:"AUTH_LOCAL_LOGIN_DISABLED", message:"本地密码登录已停用，请通过 OpenBase SSO 获取令牌", request_id}`；保留端点以便客户端拿到明确错误码而非 404 | `src/rest_api/routes/routes_auth.py`（`api_login`） | 同上（`openbase` 403 含错误码/`request_id`；`local` 下 admin/admin123 仍登录成功） |
+| K-02 | DPS | `_decode_token` 改为双向语义：`openbase` 跳过 HS256、仅走 `verify_openbase_token_for_local`（RS256/JWKS），失败 401；`local` 保持 HS256 优先 + OpenBase 回落（与既有行为一致） | `src/rest_api/routes/routes_auth.py`（`_decode_token`） | 同上（`openbase` 拒本地 HS256、接受 RS256；`local` 仍受理 HS256） |
+| K-06 | DPS | 启动期装配 `_assemble_db_users`：仍 `set_auth_store(permission_engine)`（读取与 `token_version` 不受影响），`openbase` 模式跳过 `BUILTIN_USERS` 演示种子并记 INFO（停写不删） | `src/rest_api/app.py` | 同上（`openbase` 不调用 `upsert_local_user` 且仍 `set_auth_store`；`local` 调用次数 = `len(BUILTIN_USERS)`） |
+| K-06 | DPS | `PermissionEngine.upsert_local_user` 兜底：`openbase` 模式直接返回、不产生任何 SQL（覆盖绕过启动装配的其他调用方） | `src/engines/permission_engine.py` | 同上（`openbase` 零 SQL；`local` 有 INSERT） |
+
+**批次门禁**
+
+| 项 | 结果 |
+|---|---|
+| 单测 | 新增 `src/tests/test_k02_k06_identity_authority.py` **14 passed**；定向回归 **57 passed**（`test_auth_v280`、`test_iam_q1_db_users`、`test_e15b_openbase_jwt`、本批新用例、`test_k03_k04_audit_contract`）；登录依赖回归 **83 passed**（`test_s5_t1_identity_gate`、`test_tenant_hardening_d9_d14`、`test_v280_specialty`、`test_v280_uat`）（解释器统一为 OpenRAG 自带 `.venv`，Python 3.11.9 / pytest 9.1.1） |
+| 零行为变化 | 代码默认 `local`：登录、令牌解码、演示用户种子、本地身份表写入**全部保持原行为**；仅在生产显式设置 `IDENTITY_AUTHORITY=openbase` 时切换 |
+| 可回退 | 回滚只需将 `IDENTITY_AUTHORITY` 改回 `local`（或删除该变量），本地身份表数据**未被删除**，立即恢复本地密码登录与写入 |
+| 安全 | 停用路径不记录用户名/密码明文；`AUTH_LOCAL_LOGIN_DISABLED` 仅在 `openbase` 模式出现，不泄露本地用户是否存在；令牌解析失败统一 401 通用文案 |
+| 静态检查 | `ruff check src/identity/authority.py src/tests/test_k02_k06_identity_authority.py` → `All checks passed!`；`routes_auth.py`/`app.py`/`permission_engine.py` 为既有大文件，存在历史 `UP035/UP006/UP045` 等存量告警（非本批引入），本批未做大范围改写 |
+| 完整测试套件 | **未全量运行**：受本机缺失依赖限制，以「新增用例 + 定向回归 + 登录依赖回归」为证据，如实登记 |
+
+**残余（批 B 边界）**
+
+- **自省（introspection）未接入**：本批验签主路径为 OpenBase RS256/JWKS + 既有吊销增量同步；内省按残余项 K-05「按需接入，不作为常规路径」留待批 C。
+- 本地身份表**数据保留不删**：`openbase` 模式仅停写，回滚无需数据迁移；表结构不清理。
+- `IDENTITY_AUTHORITY` 尚未进入 A2 生产门禁的负向启动用例；A2 v1.1.3 已登记为基线项，负向取证归 D-02/D-06（批 C）。
+- 静态 Key 双通道窗口收口（K-01）、配额/吊销同步增强（K-05）与 D-02~D-07 **本批未触碰**，按裁定 B 留待批 C。
 
 ---
 
@@ -310,7 +350,7 @@
 | **P1** | C-01~C-05（OIDC 残余） | 无；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.23 OIDC 残余闭合」 | 已完成：`tests/test_oidc_p1_residuals.py` 39 passed；ruff 待具备环境补跑；A2 已同步新增配置；三远程推送 |
 | **P2** | C-06~C-10（MCP 白名单/跨实例/提醒/对账/角色契约） | P1；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.24 Key 生命周期残余闭合」 | 已完成：`tests/test_p2_residuals.py` 20 passed（回归 99 + 8）；ruff 待具备环境补跑；A2 已同步新增 `OPENBASE_MCP_API_KEY_TOOLS`；三远程推送 |
 | **P3** | G-01~G-03（治理） | P2；已执行（2026-10-31） | 代码 + 单测 + 方案「§10.25 P3 治理残余闭合」 | 已完成：`tests/test_p3_governance.py` 8 passed（回归 127 passed）；G-01 已裁定为 B 口径（事后审计）；ruff 待具备环境补跑；A2 已同步两项 ABAC 基线；三远程推送 |
-| **P4** | K-01~K-06、D-01~D-07、V-01~V-14 | P1~P3 冻结；D-01 已完成；**裁定全部落定**（D-05=A / K-01=B，2026-11-01）；批 A（K-03/K-04）已完成；联调环境与证据目录就绪 | 四仓改动 + 生产验收证据 + A1 判定汇总 | 批 A 已完成：四仓定向回归 106/54/48/72 passed；后续每仓 ruff/pytest 全绿；A1 P0 全 Pass；证据归档 `evidence/a1\|a2/` |
+| **P4** | K-01~K-06、D-01~D-07、V-01~V-14 | P1~P3 冻结；D-01 已完成；**裁定全部落定**（D-05=A / K-01=B，2026-11-01）；批 A（K-03/K-04）、批 B（K-02/K-06）已完成；联调环境与证据目录就绪 | 四仓改动 + 生产验收证据 + A1 判定汇总 | 批 A 已完成：四仓定向回归 106/54/48/72 passed；批 B 已完成：DPS 新增 14 passed、定向 57 passed、登录依赖 83 passed；后续每仓 ruff/pytest 全绿；A1 P0 全 Pass；证据归档 `evidence/a1\|a2/` |
 | **P5** | P-01~P-07 | 触发条件成立 | 单独立项 | 按触发方验收要求 |
 
 **可并行性**

@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.2 |
+| 文档版本 | v1.1.3 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.23.0.md`（§10.7~§10.26） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.1.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.24.0.md`（§10.7~§10.27） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.2.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -28,6 +28,7 @@
 | v1.1.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.22.0（§10.25 P3 治理残余闭合 G-01~G-03）：§2.5 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（默认 `1000`）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（默认 `50`）两项 ABAC 规模/性能基线（缺省零行为变化，仅告警）；§4 门禁 #4 增补「ABAC 阈值非正整数 → 拒绝启动」条件（总数仍 13 项）；关联方案与残余项方案版本号更新 |
 | v1.1.1 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | D-01 联动：关联清单更新为《A1 生产验收清单 v1.1.0》（新增 A1-13 OIDC 专项、A1-14 跨仓实测为本清单执行验收）；正文基线与 13 项门禁未变，仅版本引用同步 |
 | v1.1.2 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.23.0（§10.26 P4 批 A K-03/K-04）：§3 四仓镜像矩阵新增三项角色字典契约地址基线 —— OpenRAG `OPENRAG_IDENTITY_ROLE_CONTRACT_URL`、OpenMemory `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL`、DPS `IDENTITY_ROLE_CONTRACT_URL`（全部默认空 = 契约关闭，保持本地映射，零行为变化）；同时修正文件名与内部版本号一致为 v1.1.2（此前文件名滞留 v1.1.0、内部版本已为 v1.1.1）；13 项启动门禁未变 |
+| v1.1.3 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.24.0（§10.27 P4 批 B K-02/K-06）：§3 四仓镜像矩阵 DPS 段新增 `IDENTITY_AUTHORITY` 基线（默认 `local` = 迁移期零行为变化；**生产固定 `openbase`**：停用本地密码登录 403 `AUTH_LOCAL_LOGIN_DISABLED`、仅受理 OpenBase RS256/JWKS、本地身份表停写不删；非法值归一 `local`；回滚改回 `local` 即恢复）；13 项启动门禁未变（生产负向启动取证归 D-02/D-06） |
 
 ---
 
@@ -176,6 +177,7 @@
 | DPS | `DPS_OPENBASE_REVOCATIONS_URL` / `_SERVICE_KEY` | 空 / 空 | 同上 | `src/config.py:208-209` |
 | DPS | `DPS_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 同上 | `src/config.py:211-214` |
 | DPS | `IDENTITY_ROLE_CONTRACT_URL` | 空 | K-04：角色字典契约地址；空=契约关闭（保持本地双链映射，受信链与本地链两表互不读取）；装载失败 WARN 并回落 | `src/config.py`（`identity_role_contract_url`）、`src/identity/role_map.py` |
+| DPS | `IDENTITY_AUTHORITY` | `local` | K-02/K-06：身份权威模式；`local`=迁移期（保留本仓 HS256 令牌 + 本地密码登录 + 本地身份表写入）；**生产固定 `openbase`**（仅受理 OpenBase RS256/JWKS、停用本地密码登录返回 403 `AUTH_LOCAL_LOGIN_DISABLED`、本地身份表停写不删）；非法值归一 `local`（fail-safe）；回滚改回 `local` 即恢复 | `src/config.py`（`identity_authority`）、`src/identity/authority.py` |
 
 ---
 

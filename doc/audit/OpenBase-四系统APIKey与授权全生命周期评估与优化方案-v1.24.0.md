@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.23.0 |
+| 版本 | v1.24.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -1033,6 +1033,53 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - 静态 Key 通道收口（K-01=B 双通道窗口）与 DPS 本地密码停用（K-02/K-06）**本批未触碰**，留待批 B/批 C。
 - 跨实例异常聚合与下游拒绝数对账仍归 K-05 / C-09 边界。
 
+### 10.27 P4 批 B：K-02/K-06 DPS 身份权威模式落地（v1.24.0，2026-11-01）
+
+> 目的：按《残余项统一处置方案 v1.0.7》§5.2 推进 P4 批 B，落地 §7.3 P2-6 的「SSO 全覆盖（删除本地密码）」与 K-02「下游停用本地密码、改 OpenBase 验签」。**设计要点**：用**单一开关** `IDENTITY_AUTHORITY` 表达「谁签发身份」，避免两个独立开关产生非法组合。
+
+| 取值 | 语义 | 使用场景 |
+|---|---|---|
+| `local`（代码默认） | 保留本仓 HS256 自签令牌 + 本地密码登录 + 本地身份表写入 | 迁移期，**零行为变化**，既有测试与演示用户不受影响 |
+| `openbase` | 仅受理 OpenBase RS256/JWKS 令牌；停用本地密码登录；本地身份表**停写不删** | 生产固定态（K-02 + K-06 目标态） |
+
+非法取值（空串、未知值）一律归一 `local`（fail-safe，见 `src/identity/authority.py`）。
+
+**DPS 实施内容**
+
+| 编号 | 实施内容 | 落点 |
+|---|---|---|
+| K-02/K-06 | 新建权威模式解析模块 `current_authority()` / `is_openbase_authority()` / `local_password_login_enabled()`，登录路由、令牌解码、启动装配、用户写入四处复用同一解析点 | `src/identity/authority.py`（新建） |
+| K-02 | 新增配置 `identity_authority`（env `IDENTITY_AUTHORITY`，默认 `local`），登记迁移期/生产态与回滚路径 | `src/config.py` |
+| K-02 | `POST /auth/login` 在空用户名/密码校验之后拦截：`openbase` 返回 `403 {code:"AUTH_LOCAL_LOGIN_DISABLED", message:"本地密码登录已停用，请通过 OpenBase SSO 获取令牌", request_id}`；保留端点以便客户端拿到明确错误码而非 404 | `src/rest_api/routes/routes_auth.py`（`api_login`） |
+| K-02 | `_decode_token` 双向语义：`openbase` 跳过 HS256、仅走 `verify_openbase_token_for_local`（RS256/JWKS），失败 401；`local` 保持 HS256 优先 + OpenBase 回落 | `src/rest_api/routes/routes_auth.py`（`_decode_token`） |
+| K-06 | 启动期 `_assemble_db_users`：仍 `set_auth_store(permission_engine)`（读取与 `token_version` 不受影响），`openbase` 跳过 `BUILTIN_USERS` 演示种子并记 INFO | `src/rest_api/app.py` |
+| K-06 | `PermissionEngine.upsert_local_user` 兜底：`openbase` 直接返回、不产生任何 SQL（覆盖绕过启动装配的其他调用方） | `src/engines/permission_engine.py` |
+
+**新增配置（缺省零行为变化）**
+
+| 项 | 默认 | 说明 |
+|---|---|---|
+| `IDENTITY_AUTHORITY` | `local` | 生产固定 `openbase`；回滚改回 `local` 即恢复本地密码登录与写入，本地身份表数据不删 |
+
+**验证与门禁结论**
+
+| 项 | 结果 |
+|---|---|
+| 单测 | 新增 `src/tests/test_k02_k06_identity_authority.py` **14 passed**（权威模式归一 3 例、`openbase` 登录 403、`local` 登录成功、`openbase` 拒 HS256 收 RS256、`local` 仍收 HS256、`upsert_local_user` 零 SQL/有 INSERT、`_assemble_db_users` 跳过/不跳过种子） |
+| 定向回归 | **57 passed**（`test_auth_v280`、`test_iam_q1_db_users`、`test_e15b_openbase_jwt`、本批新用例、`test_k03_k04_audit_contract`）；登录依赖回归 **83 passed**（`test_s5_t1_identity_gate`、`test_tenant_hardening_d9_d14`、`test_v280_specialty`、`test_v280_uat`） |
+| 零行为变化 | 代码默认 `local`：登录、令牌解码、演示用户种子、本地身份表写入全部保持原行为 |
+| 可回退 | 改回 `IDENTITY_AUTHORITY=local`（或删除变量）即恢复；本地身份表**数据保留**，无需迁移 |
+| 安全 | 停用路径不记录用户名/密码明文；`AUTH_LOCAL_LOGIN_DISABLED` 不泄露本地用户是否存在；令牌解析失败统一 401 通用文案 |
+| 静态检查 | 两个新增文件 `ruff check` → `All checks passed!`；`routes_auth.py`/`app.py`/`permission_engine.py` 存在历史 `UP035/UP006/UP045` 等存量告警（非本批引入），本批未做大范围改写 |
+| 全量套件 | 受本机缺失依赖限制**未全量运行**，以「新增用例 + 定向回归 + 登录依赖回归」为证据 |
+
+**残余**
+
+- **自省（introspection）未接入**：验签主路径为 OpenBase RS256/JWKS + 既有吊销增量同步；内省按 K-05「按需接入，不作为常规路径」留待批 C。
+- 本地身份表**停写不删**：`openbase` 模式仅停止写入，表结构与存量数据保留，回滚无需数据迁移。
+- `IDENTITY_AUTHORITY` 生产负向启动取证归 D-02/D-06（批 C）；A2 v1.1.3 已登记为基线项。
+- 静态 Key 双通道窗口收口（K-01）、配额/吊销同步增强（K-05）与 D-02~D-07 **本批未触碰**，留待批 C。
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -1063,3 +1110,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.21.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.24「Key 生命周期残余闭合（P2 批次 C-06~C-10）」，闭合 §10.12 与 §7.3 登记的 5 项残余：C-06 静态 MCP Key 工具白名单（`OPENBASE_MCP_API_KEY_TOOLS`，缺省不限工具）；C-07 Key 异常检测改 Redis 跨实例聚合（`INCR`/`SADD`/`SCARD` + 共享冷却，Redis 不可用回退进程内，仍只告警不阻断）；C-08 新增只读到期清单端点与 `service_key.expiring` 事件（Key+日去重）；C-09 Key 侧审计对账（`签发 = 有效 + 吊销 + 过期`，差异写审计告警）；C-10 新增 `GET /api/v1/auth/roles/contract` 统一角色字典契约端点；新增 1 配置项缺省零行为变化并进启动门禁；`tests/test_p2_residuals.py` **20 passed**（回归 99 + 8，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.3》与 A2 清单 v1.0.9 |
 | v1.22.0 | 2026-10-31 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.25「P3 治理残余闭合（G-01~G-03）」，闭合 §10.14/§10.16 登记的 3 项治理残余：G-01 按人工裁定 B 落地「超管直改 + 事后审计」（审计 `review_mode=post_audit` + update/delete 改前快照 + WARN，不新增审批表/端点）；G-02 新增 `ensure_role_grant_allowed` 并接入用户创建/改派、agent 创建、OIDC 角色映射，冲突返回 409 `PERM_DUTY_CONFLICT`（闭合 ER-25）；G-03 新增 `OPENBASE_ABAC_RULE_SOFT_LIMIT`（1000）与 `OPENBASE_ABAC_EVALUATION_WARN_MS`（50），超规则数/超耗时输出结构化 WARN，判定语义不变；新增 2 配置项缺省零行为变化并进启动门禁；`tests/test_p3_governance.py` **8 passed**（回归 127 passed，本环境 ruff 未安装待补跑）；同步升版《残余项统一处置方案 v1.0.4》与 A2 清单 v1.1.0 |
 | v1.23.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.26「P4 批 A：K-03/K-04 跨仓落地」并登记两项裁定：**D-05=A（显式 `*_SUBJECT_MAP` 主体映射，安全优先）**、**K-01=B（双通道并行一个发布窗口后关闭静态 Key 主通道）**。K-03 四仓审计 identity 由 6 核心键扩为 10 键（`key_id`/`subject`/`tenant`/`entry`，`key_id=sha256[:12]` 摘要、`entry=proxy\|direct`），OpenLLM 106 / OpenRAG 54 / OpenMemory 48 / DPS 72 passed；K-04 OpenRAG/OpenMemory/DPS 消费 `GET /api/v1/auth/roles/contract`（契约优先 + 本地映射回落，DPS 双链互不读取），新增 `OPENRAG_IDENTITY_ROLE_CONTRACT_URL` / `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL` / `IDENTITY_ROLE_CONTRACT_URL` 三项默认空（零行为变化），各仓新增单测；本环境 ruff 未安装、全量套件因缺依赖未运行，均如实登记；同步升版《残余项统一处置方案 v1.0.6》与 A2 清单 v1.1.2 |
+| v1.24.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.27「P4 批 B：K-02/K-06 DPS 身份权威模式落地」。引入单一开关 `IDENTITY_AUTHORITY`（`local` 迁移期默认 / `openbase` 生产固定，非法值归一 `local`）：**K-02** `openbase` 模式停用本地密码登录（`403 AUTH_LOCAL_LOGIN_DISABLED`，保留端点给出明确错误码）、本仓 HS256 令牌不再受理（仅 OpenBase RS256/JWKS，`local` 模式保持 HS256 优先 + OpenBase 回落）；**K-06** 同步落地，`openbase` 模式启动期跳过演示用户种子、`upsert_local_user` 不产生任何 SQL，本地身份表**停写不删**（回滚改回 `local` 即恢复，无需数据迁移）。新增 `src/identity/authority.py` 与 `src/tests/test_k02_k06_identity_authority.py`（**14 passed**），定向回归 **57 passed**、登录依赖回归 **83 passed**；两个新增文件 ruff 全过，既有大文件存量告警非本批引入、全量套件因缺依赖未运行，均如实登记；登记残余（自省归 K-05、负向启动取证归 D-02/D-06）；同步升版《残余项统一处置方案 v1.0.7》、A2 清单 v1.1.3、A1 清单 v1.1.2 |
