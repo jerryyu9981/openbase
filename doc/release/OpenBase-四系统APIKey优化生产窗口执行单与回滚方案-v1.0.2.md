@@ -1,12 +1,12 @@
-# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.0
+# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.2
 
 | 项 | 内容 |
 |---|---|
 | 项目名称 | OpenBase（开放底座）四系统 API Key 与授权治理 |
 | 下发单编号 | **XR-OPS-08-APIKEY-001** |
-| 文档版本 | v1.0.1 |
-| 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已执行，阶段 1~6 待 OPS 生产窗口** |
-| 执行进度 | 阶段 0（执行前检查）本机已完成并留痕于 §8；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
+| 文档版本 | v1.0.2 |
+| 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已闭合（F0-4/F0-5 Fail 已整改为 Pass），阶段 1~6 待 OPS 生产窗口** |
+| 执行进度 | 阶段 0（执行前检查）已完成：RF-01（共享 PG 补列）与 RF-02（Redis 前缀登记）于 2026-11-03 闭合；RF-03 / RF-04 依赖生产 `.env` 与真实秘密取值，仍 ⛔ Blocked；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
 | 创建日期 | 2026-11-03 |
 | 编制 | FA-OpenBase-Dev（AI 辅助） |
 | 执行方 | OPS（生产环境）+ 生产 DBA（仅 P-01） |
@@ -110,15 +110,19 @@ SELECT count(*) AS remaining_without_expiry FROM openbase.service_api_keys WHERE
 
 ### 3.4 Redis 隔离登记（共享 Redis，防止跨仓串键）
 
-| 仓 | DB index | key 前缀 | 承载用途 |
-|---|---|---|---|
-| OpenBase | 待填 | `openbase:` | OIDC state / 异常聚合 / 令牌桶（如启用） |
-| OpenLLM | 待填 | `openllm:` | `QUOTA_ALGORITHM=token_bucket` 令牌桶 |
-| OpenRAG | 待填 | `openrag:` | 缓存/限流（如启用） |
-| OpenMemory | 待填 | `openmemory:` | 缓存/限流（如启用） |
-| DPS | 待填 | `dps:` | 缓存/限流（如启用） |
+| 仓 | DB index | key 前缀（代码实测，2026-11-03） | 承载用途 | 证据位置 |
+|---|---|---|---|---|
+| OpenBase | `0` | `openbase:` | OIDC state / id_token_hint / logout sid·sub·jti / key_anomaly / identity:events / notify / service_key:expiring | `openbase/modules/auth/oidc_state.py`、`oidc_logout.py`、`key_anomaly.py`、`openbase/modules/identity/events.py`、`openbase/modules/notify/__init__.py`、`openbase/modules/auth/service_keys.py` |
+| OpenLLM | `0` | `openllm:semantic_cache`、`quota:`、`quota_usage:`、`quota_bucket:` | 语义缓存 / 配额窗口 / 配额用量 / 令牌桶 | `backend/app/core/semantic_cache.py`、`backend/app/edgerouter/middleware/quota.py`、`backend/app/services/quota_token_bucket.py` |
+| OpenRAG | `0` | `blocklist:` | 身份事件 blocklist 缓存（`blocklist:{subject_type}:{subject_id}`） | `src/openrag/identity/blocklist.py` |
+| OpenMemory | `0` | `om:`（`om:session` / `om:cache` / `om:result` / `om:sessmeta`） | 会话 / 缓存 / 检索结果 / 会话元数据 | `src/openmemory/storage/cache_store.py` |
+| DPS | `0` | `dps:`（`CACHE_KEY_PREFIX` 默认）、`dps:rl:` | 画像/查询/统计缓存、限流 | `src/config.py`、`src/cache.py`、`src/engines/rate_limit_engine.py` |
 
-> 若发现两仓使用同一 DB index 且前缀未隔离 → **暂停窗口**，先修正前缀，不得带冲突执行。
+**登记结论（RF-02）**：五仓 token 前缀互不重合，**无跨仓串键冲突**，窗口可继续。
+
+**残余风险（非阻断，不在本次窗口改代码）**：
+1. OpenLLM 的 `quota:` / `quota_usage:` / `quota_bucket:` 与 OpenRAG 的 `blocklist:` **未带仓名命名空间**，后续新增使用方存在撞键风险；建议在各自下一版本加 `openllm:` / `openrag:` 前缀。
+2. 五仓共用 `db=0`，运维禁用 `FLUSHDB` / `FLUSHALL` / `KEYS`，只允许按已登记前缀 `SCAN` 定点清理。
 
 ### 3.5 秘密状态登记（只记状态，不记值）
 
@@ -457,13 +461,15 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 | F0-1 五仓版本快照 | **Pass** | 五仓 HEAD 已记录（见 8.2） |
 | F0-2 配置键存在性 | **Pass（含 4 项发现）** | 生产基线多以「注释态」驻留模板，DPS 18 键全部缺失（见 8.3） |
 | F0-3 共享 PG 可达 | **Pass** | `192.168.0.151:5432/nuct` TCP 可达 |
-| F0-4 共享 PG 列结构 | **Fail** | `openbase.service_api_keys` 缺 `expires_at` / `last_used_at` / `rotated_from` / `tenant_code`，基线无法导出（见 8.4） |
-| F0-5 共享 Redis 隔离 | **Fail（需前缀确认）** | 五仓均指向同一实例 `db=0`，隔离仅靠 key 前缀（见 8.4） |
+| F0-4 共享 PG 列结构 | **Pass（整改后复核）** | 2026-11-03 已定向补齐四列（RF-01），基线复验 `verdict=BASELINE_CAPTURED`（见 8.4） |
+| F0-5 共享 Redis 隔离 | **Pass（已登记）** | 五仓均 `db=0`；key 前缀已逐仓登记且无重合（RF-02，见 §3.4） |
 | F0-6 PEM `0600` 只读挂载 | **Blocked** | Windows 无 POSIX mode，须在 Linux 生产主机核验 |
 | F0-7 共享网关 / 共享 IdP | **Blocked** | 生产地址未下发，无真实 IdP |
 | F0-8 DBA 会话 / 变更单 | **Blocked** | 未提供 |
 
-**结论**：阶段 0 出现 **2 项 Fail（F0-4 / F0-5）**，按 §3 纪律**不得进入阶段 1**，须先闭合 RF-01 / RF-02。
+**结论**：阶段 0 原 **2 项 Fail（F0-4 / F0-5）已于 2026-11-03 整改闭合为 Pass**，阶段 0 判定由 Fail 转为 **Pass（5 通过 / 3 生产侧 Blocked）**。F0-6 / F0-7 / F0-8 属生产侧能力（PEM 权限、网关/IdP 地址、DBA 会话），**不推翻阶段 0 结论，但阻断阶段 1 与阶段 3 的实际执行**。
+
+> **口径声明**：RF-01 本次执行对象为**共享测试实例**（`environment=shared-postgresql (test instance; NOT production)`）。生产实例须由生产 DBA 以同一幂等 DDL 复核执行并重跑基线，**不得以测试实例结果替代生产验证**。
 
 ### 8.2 五仓版本快照
 
@@ -498,8 +504,8 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 
 | 组件 | 探测 | 结果 | 判定 |
 |---|---|---|---|
-| 共享 PG | `192.168.0.151:5432/nuct` | TCP 可达；`openbase` schema 存在、`service_api_keys` 存在；列：`id, key_id, name, key_hash, scope, description, status, created_by, revoked_at, created_at, updated_at`；行数 `total=0` | **Fail**：缺 `expires_at` / `last_used_at` / `rotated_from` / `tenant_code`，D-04 无法导出基线 |
-| 共享 Redis | `192.168.0.151:6380` | TCP 可达；五仓 `REDIS_URL` 均 `db=0` | **Fail（需前缀确认）**：同库同实例，隔离只靠 key 前缀；须登记 §3.4 并禁止 `FLUSHDB` |
+| 共享 PG | `192.168.0.151:5432/nuct` | TCP 可达；`openbase` schema 与 `service_api_keys` 存在；整改后 15 列（含 `expires_at` / `last_used_at` / `rotated_from` / `tenant_code`）；行数 `total=0`；DDL 以 `lock_timeout=3s` / `statement_timeout=30s` 执行 | **Pass**：RF-01 定向补列（`ADD COLUMN IF NOT EXISTS`，未执行 `Base.metadata.create_all`），基线复验 `BASELINE_CAPTURED` |
+| 共享 Redis | `192.168.0.151:6380` | TCP 可达；五仓 `REDIS_URL` 均 `db=0` | **Pass（已登记）**：前缀见表下补充与 §3.4，五仓无重合；禁止 `FLUSHDB` / `FLUSHALL` / `KEYS` |
 | 共享网关 | — | 未配置 | Blocked |
 | 共享 IdP | — | 未配置 | Blocked |
 | 共享 PEM 挂载 | — | Windows 无 POSIX mode | Blocked |
@@ -508,26 +514,29 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 
 ### 8.5 整改项（进入阶段 1 前必须闭合）
 
-| 编号 | 整改内容 | 责任方 | 验证判据 |
-|---|---|---|---|
-| **RF-01** | 在共享 PG 执行幂等增量迁移（`openbase/modules/identity/migration.py`），补齐 `service_api_keys` 四列 | 生产 DBA | 重跑 P-01 基线，`verdict=BASELINE_CAPTURED`，`baseline_remaining_without_expiry` 可读 |
-| **RF-02** | 逐仓登记 Redis key 前缀（§3.4）；若两仓同前缀则暂停窗口 | OPS | §3.4 五仓行全部填写，且无前缀冲突 |
-| **RF-03** | DPS `.env` 生成 18 键生产基线（含应急 bypass 两键与到期时间） | OPS + 研发 | 键存在性 `present=18`、无重复 |
-| **RF-04** | 四仓把注释态键转为有效值并唯一性校验 | OPS | 各仓 `commented=0`，`duplicate=0` |
+| 编号 | 整改内容 | 责任方 | 状态 | 验证判据 / 结果 |
+|---|---|---|---|---|
+| **RF-01** | 共享 PG 补齐 `service_api_keys` 四列（幂等 DDL） | 生产 DBA | ✅ **已闭合（测试实例，2026-11-03）**；生产实例待 DBA 复核 | 定向 DDL `ADD COLUMN IF NOT EXISTS`×4，`added_columns=[expires_at,last_used_at,rotated_from,tenant_code]`；复跑 P-01 基线 `verdict=BASELINE_CAPTURED`、`baseline_remaining_without_expiry=0` |
+| **RF-02** | 逐仓登记 Redis key 前缀（§3.4） | OPS | ✅ **已闭合（2026-11-03）** | §3.4 五仓 DB index 与前缀全部补齐；前缀互不重合，无冲突；残余命名空间风险已登记为非阻断 |
+| **RF-03** | DPS `.env` 生成 18 键生产基线（含应急 bypass 两键与到期时间） | OPS + 研发 | ⛔ **Blocked** | 需生产 `.env` 与真实取值（秘密不落库、不入 git）；判据 `present=18` 且无重复 |
+| **RF-04** | 四仓把注释态键转为有效值并唯一性校验 | OPS | ⛔ **Blocked** | 同上，需生产主机窗口；判据各仓 `commented=0`、`duplicate=0` |
 
 ### 8.6 证据文件
 
 | 证据 | 路径 | 说明 |
 |---|---|---|
 | 阶段 0 前置检查 | `doc/audit/verification/evidence/xr-ops-08/xr08-stage0-precheck-20261103.json` | 五仓 HEAD、9+15+17+17+18 键存在性、PG/Redis 可达与 DB index、Blocked 清单 |
-| P-01 只读基线 | `doc/audit/verification/evidence/xr-ops-08/xr08-p01-baseline-20261103.json` | 只读事务、`statement_timeout=5s`；仅聚合计数与列名，不含 `key_hash`/明文；`verdict=SCHEMA_DRIFT_MISSING_COLUMNS` |
+| RF-01 补列执行 | `doc/audit/verification/evidence/xr-ops-08/xr08-rf01-migration-20261103.json` | 定向 DDL×4（`ADD COLUMN IF NOT EXISTS`）、`lock_timeout=3s`、`statement_timeout=30s`；仅列名、DDL 与行数，`verdict=COLUMNS_READY` |
+| P-01 基线（迁移前） | `doc/audit/verification/evidence/xr-ops-08/xr08-p01-baseline-20261103-pre-migration.json` | 只读事务、`statement_timeout=5s`；`verdict=SCHEMA_DRIFT_MISSING_COLUMNS`（整改前对照，留存） |
+| P-01 基线（迁移后） | `doc/audit/verification/evidence/xr-ops-08/xr08-p01-baseline-20261103-post-migration.json` | 只读事务、`statement_timeout=5s`；15 列、`missing_required_columns=[]`、`verdict=BASELINE_CAPTURED`、`baseline_remaining_without_expiry=0` |
 
-> 两份证据均不含密钥/令牌/密码原文；连接串 userinfo 已剥离。
+> 三份证据均不含密钥/令牌/密码原文；连接串 userinfo 已剥离；不含 `key_hash` 取值与任何行级数据（表内 `total=0`，仅列名与聚合计数）。
 
 ## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.2 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 整改闭环：**RF-01** 在共享测试 PG 定向补齐 `service_api_keys` 四列（`ADD COLUMN IF NOT EXISTS`，未执行 `create_all`，`lock_timeout=3s`/`statement_timeout=30s`），P-01 基线复验 `BASELINE_CAPTURED`；**RF-02** 按代码实测逐仓登记 Redis 前缀（§3.4），五仓无重合、无串键冲突，并登记两项非阻断命名空间风险；§8.1 F0-4/F0-5 由 Fail 转 Pass（阶段 0 判定 5 Pass + 3 生产侧 Blocked）、新增测试/生产口径声明；§8.4 更新 PG/Redis 判定；§8.5 增「状态」列并回填 RF-01/RF-02 已闭合、RF-03/RF-04 仍 Blocked；§8.6 补 3 份证据（RF-01 执行 + 迁移前/后基线） |
 | v1.0.1 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 执行回填：状态转 [Approved]；新增 §8（门禁判定 F0-1~F0-8、五仓 HEAD、键存在性含 DPS 18 键全缺、共享 PG 可达但缺 4 列、共享 Redis 五仓同 `db=0`、整改项 RF-01~RF-04、两份脱敏证据）；§3.3 与阶段 3 前置补「列结构门禁」；§2 共享 PG 约束补第 ⑥ 条；章节号顺延（修订历史 §9、依据 §10） |
 | v1.0.0 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 初始创建：将 E 批遗留的 8 项生产前置 Blocked（D-04 / D-05 / D-06 / K-01 / A1-04 / A1-14 / A2-04 / A2-05 / V-04 / V-13 / D-07）整理为发布单格式；按五仓**共享基础设施**口径（共享 PG / Redis / 网关 / IdP / PEM 挂载 / 服务 Key）明确约束、执行顺序与逐项回滚口径；状态待人工批准与 OPS 执行 |
 

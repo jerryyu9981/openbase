@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "order_id": "XR-OPS-08-APIKEY-001",
+  "stage": "rf-01-service-key-columns",
+  "executed_at": "2026-11-03T03:36:06+08:00",
+  "environment": "shared-postgresql (test instance; NOT production)",
+  "dsn_masked": "postgresql://<masked>@192.168.0.151:5432/nuct",
+  "host": "192.168.0.151",
+  "target": "openbase.service_api_keys",
+  "guardrails": {
+    "lock_timeout": "3s",
+    "statement_timeout": "30s",
+    "scope": "ALTER ADD COLUMN ONLY",
+    "create_all": false
+  },
+  "before_columns": [
+    "id",
+    "key_id",
+    "name",
+    "key_hash",
+    "scope",
+    "description",
+    "status",
+    "created_by",
+    "revoked_at",
+    "created_at",
+    "updated_at"
+  ],
+  "added_columns": [
+    "expires_at",
+    "last_used_at",
+    "rotated_from",
+    "tenant_code"
+  ],
+  "ddl": [
+    "ALTER TABLE \"openbase\".\"service_api_keys\" ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP",
+    "ALTER TABLE \"openbase\".\"service_api_keys\" ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMP",
+    "ALTER TABLE \"openbase\".\"service_api_keys\" ADD COLUMN IF NOT EXISTS rotated_from VARCHAR(32)",
+    "ALTER TABLE \"openbase\".\"service_api_keys\" ADD COLUMN IF NOT EXISTS tenant_code VARCHAR(64)"
+  ],
+  "after_columns": [
+    "id",
+    "key_id",
+    "name",
+    "key_hash",
+    "scope",
+    "description",
+    "status",
+    "created_by",
+    "revoked_at",
+    "created_at",
+    "updated_at",
+    "expires_at",
+    "last_used_at",
+    "rotated_from",
+    "tenant_code"
+  ],
+  "rows_total": 0,
+  "verdict": "COLUMNS_READY",
+  "remaining_missing": []
+}
