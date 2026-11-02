@@ -1,0 +1,763 @@
+﻿{
+    "schema_version":  2,
+    "order_id":  "XR-OPS-08-APIKEY-001",
+    "stage":  "stage-0-precheck",
+    "executed_at":  "2026-11-03T02:51:47+08:00",
+    "executed_by":  "FA-OpenBase-Dev (AI assisted)",
+    "environment":  "local-workstation; production hosts unreachable",
+    "scope":  "Stage 0: five-repo HEAD, config key presence/commented state, shared PG/Redis reachability, Redis DB-index isolation",
+    "repos":  [
+                  {
+                      "repo":  "OpenBase",
+                      "head":  "cf5c68bcea7d64686eeb114c190b7a3787a0aa0f",
+                      "env_files":  ".env,.env.shared-infra",
+                      "keys":  [
+                                   {
+                                       "key":  "OPENBASE_JWT_RSA_PRIVATE_KEY_PATH",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWT_SIGNING_KID",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWT_REQUIRE_RS256",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWT_ISSUER",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_ENFORCE_TOKEN_VERSION",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_OIDC_STATE_TTL_SECONDS",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_MCP_API_KEY_HASHES",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_IDP_PROVIDERS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   }
+                               ],
+                      "summary":  {
+                                      "present":  0,
+                                      "commented":  7,
+                                      "absent":  2,
+                                      "duplicate":  0,
+                                      "total":  9,
+                                      "duplicate_keys":  ""
+                                  },
+                      "postgres_url":  {
+                                           "source":  ".env.shared-infra",
+                                           "host":  "192.168.0.151",
+                                           "port":  "5432",
+                                           "database":  "nuct"
+                                       },
+                      "redis_url":  {
+                                        "source":  ".env.shared-infra",
+                                        "host":  "192.168.0.151",
+                                        "port":  "6380",
+                                        "db_index":  "0"
+                                    }
+                  },
+                  {
+                      "repo":  "OpenLLM",
+                      "head":  "b525b21746f3b7cea000f3ffe452aaf9308b076d",
+                      "env_files":  ".env.example,.env.shared-infra,.env.shared-infra.example",
+                      "keys":  [
+                                   {
+                                       "key":  "OPENBASE_JWKS_URL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWKS_CACHE_TTL_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWKS_TIMEOUT_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWT_ISSUER",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWT_AUDIENCE",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_JWT_LEEWAY_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_REVOCATIONS_URL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_SERVICE_KEY",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_REVOCATION_STRICT",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_SUBJECT_MAP",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_TRUST_LOCAL_SUBJECT",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "IDENTITY_AUTHORITY",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "QUOTA_ALGORITHM",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   }
+                               ],
+                      "summary":  {
+                                      "present":  0,
+                                      "commented":  12,
+                                      "absent":  3,
+                                      "duplicate":  0,
+                                      "total":  15,
+                                      "duplicate_keys":  ""
+                                  },
+                      "postgres_url":  {
+                                           "source":  ".env.shared-infra",
+                                           "host":  "192.168.0.151",
+                                           "port":  "5432",
+                                           "database":  "nuct"
+                                       },
+                      "redis_url":  {
+                                        "source":  ".env.shared-infra",
+                                        "host":  "192.168.0.151",
+                                        "port":  "6380",
+                                        "db_index":  "0"
+                                    }
+                  },
+                  {
+                      "repo":  "OpenRAG",
+                      "head":  "9ccbe82ed1ca18bb03c7e544f3d14fbd30adb3db",
+                      "env_files":  ".env,.env.e2e,.env.e2e.example,.env.example,.env.shared-infra,.env.shared-infra.example",
+                      "keys":  [
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_JWKS_URL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_JWKS_CACHE_TTL_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_JWKS_TIMEOUT_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_JWT_ISSUER",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_JWT_AUDIENCE",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_JWT_LEEWAY_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_REVOCATIONS_URL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_SERVICE_KEY",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_REVOCATION_STRICT",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_STATIC_KEY_CHANNEL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_EMERGENCY_BYPASS_KEY",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_EMERGENCY_BYPASS_EXPIRES_AT",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES",
+                                       "status":  "present",
+                                       "active_lines":  2,
+                                       "commented_lines":  0,
+                                       "files":  ".env,.env.example"
+                                   },
+                                   {
+                                       "key":  "OPENRAG_IDENTITY_ROLE_FAIL_CLOSED",
+                                       "status":  "present",
+                                       "active_lines":  1,
+                                       "commented_lines":  0,
+                                       "files":  ".env.example"
+                                   },
+                                   {
+                                       "key":  "OPENRAG_IDENTITY_ROLE_CONTRACT_URL",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENRAG_API_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   }
+                               ],
+                      "summary":  {
+                                      "present":  2,
+                                      "commented":  13,
+                                      "absent":  2,
+                                      "duplicate":  0,
+                                      "total":  17,
+                                      "duplicate_keys":  ""
+                                  },
+                      "postgres_url":  {
+                                           "source":  ".env.shared-infra",
+                                           "host":  "192.168.0.151",
+                                           "port":  "5432",
+                                           "database":  "nuct"
+                                       },
+                      "redis_url":  {
+                                        "source":  ".env.shared-infra",
+                                        "host":  "192.168.0.151",
+                                        "port":  "6380",
+                                        "db_index":  "0"
+                                    }
+                  },
+                  {
+                      "repo":  "OpenMemory",
+                      "head":  "5e90353744206229b6f45132c39fa6e3fb08d1fc",
+                      "env_files":  ".env,.env.example,.env.shared-infra",
+                      "keys":  [
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_JWKS_URL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_JWKS_CACHE_TTL_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_JWKS_TIMEOUT_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_JWT_ISSUER",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_JWT_AUDIENCE",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_JWT_LEEWAY_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_REVOCATIONS_URL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_SERVICE_KEY",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_REVOCATION_SYNC_INTERVAL_SECONDS",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_REVOCATION_STRICT",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_OIDC_MODE",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "ALLOW_UNVERIFIED_GATEWAY_TOKEN",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_KEY",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_EXPIRES_AT",
+                                       "status":  "commented",
+                                       "active_lines":  0,
+                                       "commented_lines":  1,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "OPENMEMORY_GATEWAY_REVOCATION_BACKGROUND_SYNC_ENABLED",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   }
+                               ],
+                      "summary":  {
+                                      "present":  0,
+                                      "commented":  14,
+                                      "absent":  3,
+                                      "duplicate":  0,
+                                      "total":  17,
+                                      "duplicate_keys":  ""
+                                  },
+                      "postgres_url":  {
+                                           "source":  ".env",
+                                           "host":  "192.168.0.151",
+                                           "port":  "5432",
+                                           "database":  "nuct"
+                                       },
+                      "redis_url":  {
+                                        "source":  ".env",
+                                        "host":  "192.168.0.151",
+                                        "port":  "6380",
+                                        "db_index":  "0"
+                                    }
+                  },
+                  {
+                      "repo":  "DPS",
+                      "head":  "df5ac6af7531586c2940cc3fe3bc8775d88ea624",
+                      "env_files":  ".env-tracking-policy.md,.env.shared-infra",
+                      "keys":  [
+                                   {
+                                       "key":  "DPS_OPENBASE_JWKS_URL",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_JWKS_CACHE_TTL_SECONDS",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_JWKS_TIMEOUT_SECONDS",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_JWT_ISSUER",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_JWT_AUDIENCE",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_JWT_LEEWAY_SECONDS",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_REVOCATIONS_URL",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_SERVICE_KEY",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_REVOCATION_STRICT",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_SUBJECT_MAP",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_TRUST_LOCAL_SUBJECT",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "IDENTITY_AUTHORITY",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "STATIC_KEY_CHANNEL",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "EMERGENCY_BYPASS_KEY",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "EMERGENCY_BYPASS_EXPIRES_AT",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "IDENTITY_ROLE_CONTRACT_URL",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   },
+                                   {
+                                       "key":  "DPS_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED",
+                                       "status":  "absent",
+                                       "active_lines":  0,
+                                       "commented_lines":  0,
+                                       "files":  ""
+                                   }
+                               ],
+                      "summary":  {
+                                      "present":  0,
+                                      "commented":  0,
+                                      "absent":  18,
+                                      "duplicate":  0,
+                                      "total":  18,
+                                      "duplicate_keys":  ""
+                                  },
+                      "postgres_url":  {
+                                           "source":  ".env.shared-infra",
+                                           "host":  "192.168.0.151",
+                                           "port":  "5432",
+                                           "database":  "nuct"
+                                       },
+                      "redis_url":  {
+                                        "source":  ".env.shared-infra",
+                                        "host":  "192.168.0.151",
+                                        "port":  "6380",
+                                        "db_index":  "0"
+                                    }
+                  }
+              ],
+    "shared_infra":  {
+                         "postgres":  {
+                                          "source_file":  ".env.shared-infra",
+                                          "host":  "192.168.0.151",
+                                          "port":  "5432",
+                                          "database":  "nuct",
+                                          "tcp":  "reachable",
+                                          "schema_target":  "openbase (P-01 restricted to this schema)"
+                                      },
+                         "redis":  {
+                                       "source_file":  ".env.shared-infra",
+                                       "host":  "192.168.0.151",
+                                       "port":  "6380",
+                                       "db_index":  "0",
+                                       "tcp":  "reachable",
+                                       "isolation":  [
+                                                         {
+                                                             "repo":  "OpenBase",
+                                                             "host":  "192.168.0.151",
+                                                             "port":  "6380",
+                                                             "db_index":  "0"
+                                                         },
+                                                         {
+                                                             "repo":  "OpenLLM",
+                                                             "host":  "192.168.0.151",
+                                                             "port":  "6380",
+                                                             "db_index":  "0"
+                                                         },
+                                                         {
+                                                             "repo":  "OpenRAG",
+                                                             "host":  "192.168.0.151",
+                                                             "port":  "6380",
+                                                             "db_index":  "0"
+                                                         },
+                                                         {
+                                                             "repo":  "OpenMemory",
+                                                             "host":  "192.168.0.151",
+                                                             "port":  "6380",
+                                                             "db_index":  "0"
+                                                         },
+                                                         {
+                                                             "repo":  "DPS",
+                                                             "host":  "192.168.0.151",
+                                                             "port":  "6380",
+                                                             "db_index":  "0"
+                                                         }
+                                                     ],
+                                       "isolation_verdict":  "shared_db_index_needs_prefix_check: 0"
+                                   },
+                         "gateway":  {
+                                         "state":  "not_configured",
+                                         "note":  "production gateway not provided; deferred to production window"
+                                     },
+                         "idp":  {
+                                     "state":  "not_configured",
+                                     "note":  "real IdP not provided; D-07 issuer dedupe deferred to P-08"
+                                 },
+                         "pem_mount":  {
+                                           "state":  "blocked",
+                                           "note":  "POSIX 0600 read-only mount cannot be verified on Windows"
+                                       }
+                     },
+    "blocked":  [
+                    {
+                        "item":  "P-01",
+                        "reason":  "no production DBA session or change ticket"
+                    },
+                    {
+                        "item":  "P-02",
+                        "reason":  "no production host access to inject maps and restart"
+                    },
+                    {
+                        "item":  "P-03",
+                        "reason":  "no deployment host; PEM 0600 mount unverifiable on Windows"
+                    },
+                    {
+                        "item":  "P-04",
+                        "reason":  "dual-channel observation window not started"
+                    },
+                    {
+                        "item":  "P-05/P-06/P-07/P-08",
+                        "reason":  "three repos\u0027 full services not started, no real service-key permission surface, no reachable IdP"
+                    }
+                ],
+    "secrets_policy":  "key names and presence only; connection userinfo stripped; no secrets/tokens/passwords recorded"
+}

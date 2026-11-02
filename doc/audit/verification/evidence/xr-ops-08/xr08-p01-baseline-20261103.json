@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "order_id": "XR-OPS-08-APIKEY-001",
+  "stage": "p01-precheck-readonly",
+  "executed_at": "2026-11-03T02:59:16+08:00",
+  "environment": "shared-postgresql (test instance; NOT production)",
+  "dsn_masked": "postgresql://<masked>@192.168.0.151:5432/nuct",
+  "host": "192.168.0.151",
+  "readonly": true,
+  "schema_probe": {
+    "database": "nuct",
+    "openbase_schema_exists": true,
+    "service_api_keys_exists": true,
+    "columns": [
+      "id",
+      "key_id",
+      "name",
+      "key_hash",
+      "scope",
+      "description",
+      "status",
+      "created_by",
+      "revoked_at",
+      "created_at",
+      "updated_at"
+    ],
+    "missing_required_columns": [
+      "expires_at",
+      "last_used_at",
+      "rotated_from",
+      "tenant_code"
+    ]
+  },
+  "counts": {
+    "total": 0,
+    "active": 0,
+    "revoked": 0
+  },
+  "verdict": "SCHEMA_DRIFT_MISSING_COLUMNS"
+}

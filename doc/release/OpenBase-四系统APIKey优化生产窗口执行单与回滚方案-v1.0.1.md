@@ -4,8 +4,9 @@
 |---|---|
 | 项目名称 | OpenBase（开放底座）四系统 API Key 与授权治理 |
 | 下发单编号 | **XR-OPS-08-APIKEY-001** |
-| 文档版本 | v1.0.0 |
-| 状态 | **[Draft] 待人工批准 + OPS 生产执行**（本环境无生产主机访问权，不代替生产执行） |
+| 文档版本 | v1.0.1 |
+| 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已执行，阶段 1~6 待 OPS 生产窗口** |
+| 执行进度 | 阶段 0（执行前检查）本机已完成并留痕于 §8；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
 | 创建日期 | 2026-11-03 |
 | 编制 | FA-OpenBase-Dev（AI 辅助） |
 | 执行方 | OPS（生产环境）+ 生产 DBA（仅 P-01） |
@@ -44,7 +45,7 @@
 
 | 共享组件 | 本单承载项 | 约束（必须遵守） | 执行纪律 | 回滚影响面 |
 |---|---|---|---|---|
-| **共享 PostgreSQL**（OpenBase 控制面库 `schema=openbase`，表 `service_api_keys`） | P-01 | ① 只操作 `openbase` schema，禁止跨 schema DDL/DML；② 单批 ≤200 行、单租户批次；③ 必须设 `lock_timeout`/`statement_timeout`，禁止长事务；④ 禁止 `SELECT *`、禁止全表 `UPDATE`；⑤ 到期时间为 `NULL` 的存量行才可收敛 | 生产 DBA 会话 + 变更单 + 执行前原值快照 + 每批复核 + 回填执行记录表 | 反向 `UPDATE … SET expires_at = NULL` 仅限快照 `key_id` 清单；不涉及其他 schema，不触发跨仓重启 |
+| **共享 PostgreSQL**（OpenBase 控制面库 `schema=openbase`，表 `service_api_keys`） | P-01 | ① 只操作 `openbase` schema，禁止跨 schema DDL/DML；② 单批 ≤200 行、单租户批次；③ 必须设 `lock_timeout`/`statement_timeout`，禁止长事务；④ 禁止 `SELECT *`、禁止全表 `UPDATE`；⑤ 到期时间为 `NULL` 的存量行才可收敛；⑥ 列结构须与模型一致（`expires_at` / `last_used_at` / `rotated_from` / `tenant_code`），缺失列时禁止直接收敛（见 §8.4 / RF-01） | 生产 DBA 会话 + 变更单 + 执行前原值快照 + 每批复核 + 回填执行记录表 | 反向 `UPDATE … SET expires_at = NULL` 仅限快照 `key_id` 清单；不涉及其他 schema，不触发跨仓重启 |
 | **共享 Redis**（多实例 OIDC state / 配额令牌桶 / 异常聚合） | P-02、P-03、P-05 | ① 每仓固定独立 DB index + key 前缀隔离（登记于 §3.4）；② 禁止 `FLUSHDB` / `FLUSHALL` / `KEYS`；③ 必须区分「Redis 可用 → 多实例共享」与「Redis 不可用 → 进程内回退」两种语义；④ `QUOTA_ALGORITHM=token_bucket` 依赖 Redis Lua 原子性，切换前确认数据库索引 | 变更前后各采样一次 Redis 连接与 DB index；禁止清库；幂等键保留 TTL | Redis 侧无需回滚（无本单写入）；若出现跨仓 key 冲突，按 key 前缀定位并只删本仓前缀 |
 | **共享网关/反向代理**（JWKS、吊销、内省统一出口） | P-03、P-05、P-06、P-07 | ① 四仓 `*_JWKS_URL` / `*_REVOCATIONS_URL` 必须走网关域名，不得直连容器名；② 网关超时必须 **≥3s**（下游默认 `*_TIMEOUT_SECONDS=3.0`，本机曾用 120s 修正，生产须与网关对齐）；③ 网关需放行 `/.well-known/jwks.json`、`GET /api/v1/auth/revocations`、`POST /api/v1/auth/introspect`；④ 网关 5xx 会导致下游 JWKS 缓存陈旧，必须记录刷新失败告警 | 变更前用网关路径（非直连）验证三条端点；变更后核对网关错误率与超时计数 | 网关无配置变更；若超时/路由异常，回滚到上一版下游 `.env` 的 URL 取值 |
 | **共享 IdP**（多 Provider 登记） | P-03、P-08 | ① 登记前逐 Provider 取 `discovery.issuer` 并**判重**（D-07）；② 同一 issuer 多 client 视为同一身份空间，仅允许一个 Provider 承担 back-channel 登出（`oidc.py:1197-1224` 取首条存在歧义）；③ state 一次性依赖共享 Redis，TTL 见 `OPENBASE_OIDC_STATE_TTL_SECONDS` | issuer 清单随本单归档（只记 issuer，不记 `client_secret`） | 回滚登记即撤下新增 Provider；已签发的本地 `token_version` 吊销不回滚 |
@@ -99,6 +100,8 @@ SELECT id, key_id, name, status, scope -> 'tenants' AS scope_tenants,
 ```
 
 产出：`doc/audit/verification/evidence/p01/p01-key-snapshot-<YYYYMMDD>.csv`（**不含** `key_hash`/明文）。
+> **列结构门禁**：若 `service_api_keys` 缺 `expires_at`（或 `last_used_at` / `rotated_from` / `tenant_code`），立即停止，先执行幂等增量迁移（`openbase/modules/identity/migration.py`，见 RF-01），**不得跳过快照直接收敛**。
+
 同时记录基线计数：
 
 ```sql
@@ -231,7 +234,7 @@ done
 
 ### 阶段 3 —— P-01 存量 `ob_k_*` 到期收敛（共享 PG）
 
-**前置**：阶段 1、阶段 2 通过；服务 Key 已按轮换方案签发并在四下游验证可用；DBA 会话 + 变更单到位。
+**前置**：阶段 1、阶段 2 通过；服务 Key 已按轮换方案签发并在四下游验证可用；DBA 会话 + 变更单到位；**共享 PG 列结构核对通过**（`service_api_keys` 含 `expires_at` / `last_used_at` / `rotated_from` / `tenant_code`，缺失则先执行幂等迁移，见 RF-01）。
 
 **操作（按 `d-04-expired-key-convergence-20261101.sql` 口径，分三批）**：
 
@@ -443,15 +446,94 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 
 ---
 
-## 8. 修订历史
+## 8. 阶段 0 执行结果（本机口径，已执行 2026-11-03）
+
+> 本机无生产主机访问权；本节只覆盖**阶段 0 执行前检查**，不构成生产放行，也不替代 §4 阶段 1~6。
+
+### 8.1 门禁判定
+
+| 门禁 | 判定 | 说明 |
+|---|---|---|
+| F0-1 五仓版本快照 | **Pass** | 五仓 HEAD 已记录（见 8.2） |
+| F0-2 配置键存在性 | **Pass（含 4 项发现）** | 生产基线多以「注释态」驻留模板，DPS 18 键全部缺失（见 8.3） |
+| F0-3 共享 PG 可达 | **Pass** | `192.168.0.151:5432/nuct` TCP 可达 |
+| F0-4 共享 PG 列结构 | **Fail** | `openbase.service_api_keys` 缺 `expires_at` / `last_used_at` / `rotated_from` / `tenant_code`，基线无法导出（见 8.4） |
+| F0-5 共享 Redis 隔离 | **Fail（需前缀确认）** | 五仓均指向同一实例 `db=0`，隔离仅靠 key 前缀（见 8.4） |
+| F0-6 PEM `0600` 只读挂载 | **Blocked** | Windows 无 POSIX mode，须在 Linux 生产主机核验 |
+| F0-7 共享网关 / 共享 IdP | **Blocked** | 生产地址未下发，无真实 IdP |
+| F0-8 DBA 会话 / 变更单 | **Blocked** | 未提供 |
+
+**结论**：阶段 0 出现 **2 项 Fail（F0-4 / F0-5）**，按 §3 纪律**不得进入阶段 1**，须先闭合 RF-01 / RF-02。
+
+### 8.2 五仓版本快照
+
+| 仓 | HEAD | 说明 |
+|---|---|---|
+| OpenBase | `cf5c68bcea7d` | 本单所在提交 |
+| OpenLLM | `b525b21746f3` | 工作区未变更 |
+| OpenRAG | `9ccbe82ed1ca` | 工作区未变更 |
+| OpenMemory | `5e9035374420` | 工作区未变更 |
+| DPS | `df5ac6af7531` | 工作区未变更 |
+
+### 8.3 配置键存在性（只记状态，不记值）
+
+> 状态口径：`present` = 所在文件存在有效键行；`commented` = 仅以注释模板形式存在（不生效）；`absent` = 模板与环境文件中均无。
+
+| 仓 | 受检键 | present | commented | absent | 关键缺失项 |
+|---|---|---|---|---|---|
+| OpenBase | 9 | 0 | 7 | 2 | `OPENBASE_ENFORCE_TOKEN_VERSION`、`OPENBASE_OIDC_STATE_TTL_SECONDS` |
+| OpenLLM | 15 | 0 | 12 | 3 | `IDENTITY_AUTHORITY`、`OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED`、`QUOTA_ALGORITHM` |
+| OpenRAG | 17 | 2 | 13 | 2 | `OPENRAG_IDENTITY_ROLE_CONTRACT_URL`、`OPENRAG_API_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` |
+| OpenMemory | 17 | 0 | 14 | 3 | `ALLOW_UNVERIFIED_GATEWAY_TOKEN`、`OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL`、`OPENMEMORY_GATEWAY_REVOCATION_BACKGROUND_SYNC_ENABLED` |
+| DPS | 18 | 0 | 0 | **18** | 全部（含 `IDENTITY_AUTHORITY`、`STATIC_KEY_CHANNEL`、`EMERGENCY_BYPASS_KEY`、`EMERGENCY_BYPASS_EXPIRES_AT`） |
+
+**发现**：
+
+1. **DPS 零模板键** —— 18 键在 `.env` / `.env.shared-infra` / 配置说明中均无有效行，全部依赖 `config.py` 缺省（`IDENTITY_AUTHORITY=local`、`STATIC_KEY_CHANNEL=dual`），与生产目标相反；P-03 必须在 DPS 显式新增 18 键。
+2. **四仓生产基线为「注释态」** —— OpenBase 7 / OpenLLM 12 / OpenRAG 13 / OpenMemory 14 键仅存在于模板注释中，需在窗口内转为有效值并做唯一性校验。
+3. **OpenRAG 仅 2 键已生效** —— `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES`（`.env`）与 `OPENRAG_IDENTITY_ROLE_FAIL_CLOSED`（模板），其余待下发。
+4. **未发现同文件重复键**（跨文件重复不计为冲突，避免误报）。
+
+### 8.4 共享基础设施探测结果
+
+| 组件 | 探测 | 结果 | 判定 |
+|---|---|---|---|
+| 共享 PG | `192.168.0.151:5432/nuct` | TCP 可达；`openbase` schema 存在、`service_api_keys` 存在；列：`id, key_id, name, key_hash, scope, description, status, created_by, revoked_at, created_at, updated_at`；行数 `total=0` | **Fail**：缺 `expires_at` / `last_used_at` / `rotated_from` / `tenant_code`，D-04 无法导出基线 |
+| 共享 Redis | `192.168.0.151:6380` | TCP 可达；五仓 `REDIS_URL` 均 `db=0` | **Fail（需前缀确认）**：同库同实例，隔离只靠 key 前缀；须登记 §3.4 并禁止 `FLUSHDB` |
+| 共享网关 | — | 未配置 | Blocked |
+| 共享 IdP | — | 未配置 | Blocked |
+| 共享 PEM 挂载 | — | Windows 无 POSIX mode | Blocked |
+
+> 注：上表 PG/Redis 为**共享测试实例**，非生产；生产窗口须以相同方法复核，且 PG 以 `verdict=BASELINE_CAPTURED` 为放行条件。
+
+### 8.5 整改项（进入阶段 1 前必须闭合）
+
+| 编号 | 整改内容 | 责任方 | 验证判据 |
+|---|---|---|---|
+| **RF-01** | 在共享 PG 执行幂等增量迁移（`openbase/modules/identity/migration.py`），补齐 `service_api_keys` 四列 | 生产 DBA | 重跑 P-01 基线，`verdict=BASELINE_CAPTURED`，`baseline_remaining_without_expiry` 可读 |
+| **RF-02** | 逐仓登记 Redis key 前缀（§3.4）；若两仓同前缀则暂停窗口 | OPS | §3.4 五仓行全部填写，且无前缀冲突 |
+| **RF-03** | DPS `.env` 生成 18 键生产基线（含应急 bypass 两键与到期时间） | OPS + 研发 | 键存在性 `present=18`、无重复 |
+| **RF-04** | 四仓把注释态键转为有效值并唯一性校验 | OPS | 各仓 `commented=0`，`duplicate=0` |
+
+### 8.6 证据文件
+
+| 证据 | 路径 | 说明 |
+|---|---|---|
+| 阶段 0 前置检查 | `doc/audit/verification/evidence/xr-ops-08/xr08-stage0-precheck-20261103.json` | 五仓 HEAD、9+15+17+17+18 键存在性、PG/Redis 可达与 DB index、Blocked 清单 |
+| P-01 只读基线 | `doc/audit/verification/evidence/xr-ops-08/xr08-p01-baseline-20261103.json` | 只读事务、`statement_timeout=5s`；仅聚合计数与列名，不含 `key_hash`/明文；`verdict=SCHEMA_DRIFT_MISSING_COLUMNS` |
+
+> 两份证据均不含密钥/令牌/密码原文；连接串 userinfo 已剥离。
+
+## 9. 修订历史
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.1 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 执行回填：状态转 [Approved]；新增 §8（门禁判定 F0-1~F0-8、五仓 HEAD、键存在性含 DPS 18 键全缺、共享 PG 可达但缺 4 列、共享 Redis 五仓同 `db=0`、整改项 RF-01~RF-04、两份脱敏证据）；§3.3 与阶段 3 前置补「列结构门禁」；§2 共享 PG 约束补第 ⑥ 条；章节号顺延（修订历史 §9、依据 §10） |
 | v1.0.0 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 初始创建：将 E 批遗留的 8 项生产前置 Blocked（D-04 / D-05 / D-06 / K-01 / A1-04 / A1-14 / A2-04 / A2-05 / V-04 / V-13 / D-07）整理为发布单格式；按五仓**共享基础设施**口径（共享 PG / Redis / 网关 / IdP / PEM 挂载 / 服务 Key）明确约束、执行顺序与逐项回滚口径；状态待人工批准与 OPS 执行 |
 
 ---
 
-## 9. 依据与证据索引
+## 10. 依据与证据索引
 
 | 类型 | 文件 | 用途 |
 |---|---|---|
@@ -464,4 +546,4 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 | 批次总结 | `doc/audit/verification/OpenBase-四系统APIKey优化-E3批次执行总结报告-v1.2.1.md` | 42 项判定（34 Pass + 8 Blocked）与 §12 E4 |
 | 格式范本 | `doc/release/OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0.md` | 备份 / 覆盖 / 核验 / 重启 / 回滚 / 回执结构 |
 | 整体回滚 | `doc/release/OpenBase-主备双通道生产上线回滚方案-v1.0.0.md` | 双通道回滚总口径 |
-| 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4}/` | 本机口径佐证（不替代生产实测） |
+| 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4,xr-ops-08}/` | 本机口径佐证（不替代生产实测）；`xr-ops-08` 为本单阶段 0 证据 |
