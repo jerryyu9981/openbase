@@ -2,10 +2,10 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.6 |
+| 文档版本 | v1.1.7 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.29.0.md`（§10.7~§10.32） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.30.0.md`（§10.7~§10.33） |
 | 验收对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五仓（E0~E3 已实施项） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -23,6 +23,7 @@
 | v1.1.4 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.27.0（§10.30 E 批本机原生取证）：仅更新关联方案引用至 `v1.27.0`（§10.7~§10.30），A1-01~A1-14 验收项与判定口径**未变**；E2 本机原生（无 Docker）已对 A1-01 的「生产形态启动 + 13 项门禁放行」、A1-02 的「JWKS 仅公钥」、A1-11 的「负向拒启」提供本机口径证据，**不替代生产实测**；V 类仍待生产拓扑 |
 | v1.1.5 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.28.0（§10.31 E3 本机生产形态）：关联方案引用更新至 `v1.28.0`（§10.7~§10.31），A1-01~A1-14 验收项与判定口径**未变**；E3 已对 A1-01（RS256 强制 + HS256 令牌 401 + 缺材料拒启）、A1-02（JWKS 仅 RSA 公钥且 kid 一致）、A1-11（D-03/D-06 与 DPS K-01 负向拒启）提供本机生产形态证据 `evidence/e3/e3-native-20261102.json`，**不替代生产实测**；V 类与 A1-14 仍待生产拓扑 |
 | v1.1.6 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.29.0（§10.32 E3b OpenLLM R17）：关联方案引用更新至 `v1.29.0`（§10.7~§10.32），A1-01~A1-14 验收项与判定口径**未变**；E3b 为 A1-11「四仓生产门禁负向启动」补 OpenLLM 本机进程级证据（缺 JWKS 拒启 `exit=3`、非法取值拒启 `exit=1`、`openbase` 本地登录 403、`local` 对照 401），证据 `evidence/e3/e3b-openllm-20261102.json`，**不替代生产实测** |
+| v1.1.7 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.30.0（§10.33 E3c）：关联方案引用更新至 `v1.30.0`（§10.7~§10.33），A1-01~A1-14 验收项与判定口径**未变**；E3c 为 **A1-11** 补 OpenLLM 生产 ENV 全套门禁证据（16 例矩阵 C01 放行 + C02~C16 逐一拒绝、豁免行 `EXEMPT_OK`、合规启动 `GATES_OK` + `/health` 200 + 本地登录 401）与 **A1-02/A1-11** 补「OpenLLM 接受 OpenBase RS256 令牌」证据（`/api/v1/auth/me` **200**、四类负向 401），证据 `evidence/e3/e3c-openllm-20261102.json`（9804 B，SHA-256 `E67F523E…6B3823`），**不替代生产实测** |
 
 ---
 
@@ -107,7 +108,7 @@
 | A1-08 | E3 真实权限矩阵 | P1 | SoD 冲突被识别；ABAC 命中/拒绝可解释；IdP 视图无密钥 | `a1-08.json` |
 | A1-09 | MCP 凭证与工具授权 | P1 | 三形态可鉴权；越权调用 403/`-32001`；缺失令牌 401 | `a1-09.txt` |
 | A1-10 | 离线宽限与断网降级 | P1 | 宽限内放行、超期拒绝且留痕；Redis 缺失不新增放行 | `a1-10.txt` |
-| A1-11 | 生产门禁负向启动 | P0 | 每仓关键项漏配 → 拒绝启动（0 容忍） | `a1-11.txt`；本机生产形态佐证 `evidence/e3/e3-native-20261102.json`；OpenLLM R17 佐证 `evidence/e3/e3b-openllm-20261102.json` |
+| A1-11 | 生产门禁负向启动 | P0 | 每仓关键项漏配 → 拒绝启动（0 容忍） | `a1-11.txt`；本机生产形态佐证 `evidence/e3/e3-native-20261102.json`；OpenLLM R17 佐证 `evidence/e3/e3b-openllm-20261102.json`；OpenLLM 生产 ENV 全套门禁 + 令牌受理佐证 `evidence/e3/e3c-openllm-20261102.json` |
 | A1-12 | 存量迁移与核对 | P0 | 列存在、行数差可解释、链校验 `ok` | `a1-12.txt` |
 | A1-13 | OIDC 登录安全硬化与登出联动 | P0（启用 OIDC 时） | 多 Provider 路由正确；PKCE/nonce/state 一次性；五种 token 认证方式按配置生效；SAN/subject 绑定拒启；登出联动与 back-channel 生效 | `a1-13.json` |
 | A1-14 | 跨仓生产实测 | P1 | 四仓 JWKS 验签、吊销时延、门禁负向启动、审计字段与 V-02/V-04/V-11 同批取证一致 | `a1-14.csv` |
@@ -357,14 +358,14 @@
 | 仓库 | 负向用例 |
 |---|---|
 | OpenBase | `OPENBASE_JWT_REQUIRE_RS256=true` 但缺 PEM/kid；`OPENBASE_JWT_ALGORITHM=SM2` 或未知算法；`OPENBASE_ABAC_POLICIES` 非法 JSON；`OPENBASE_ABAC_RULE_SOFT_LIMIT=0` 或 `OPENBASE_ABAC_EVALUATION_WARN_MS=-1`；`OPENBASE_AUDIT_RETENTION_DAYS=10`；`OPENBASE_IDP_PROVIDERS` 名称重复；`OPENBASE_MCP_API_KEY_TOOLS` 非法 JSON/空数组；`OPENBASE_OIDC_STATE_TTL_SECONDS=0`；`OPENBASE_OIDC_SIGNING_ALGORITHMS` 含 `SM2`；`OPENBASE_OIDC_TOKEN_AUTH_METHOD=bogus`；`mtls` 缺证书路径；`tls_client_auth` subject 与证书不匹配 |
-| OpenLLM | 生产 profile 下 `TRUSTED_PROXY_SOURCES` 为空 |
+| OpenLLM | 生产 profile 下 `TRUSTED_PROXY_SOURCES` 为空；`IDENTITY_AUTHORITY=openbase` 缺 `OPENBASE_JWKS_URL` 或取值非法 |
 | OpenRAG | `enforce_inbound_identity_headers=false`、`trusted_proxy_sources` 为空、`role_fail_closed=false`（分别验证） |
 | DPS | 已开启 enforce 时 `TRUSTED_PROXY_SOURCES` 为空 |
 | OpenMemory | 网关安全策略缺项（同款口径） |
 
 **通过标准**：每条用例均启动失败且错误信息可定位到具体配置项；恢复正确配置后可正常启动。
 
-**证据**：`a1-11.txt`（每仓每条用例的退出码与错误行）。
+**证据**：`a1-11.txt`（每仓每条用例的退出码与错误行）。本机佐证：OpenBase/DPS/OpenRAG/OpenMemory 见 `evidence/e3/e3-native-20261102.json`；OpenLLM R17 见 `evidence/e3/e3b-openllm-20261102.json`；OpenLLM 生产 ENV 全套门禁（16 例 C01 放行 + C02~C16 拒绝、`EXEMPT_OK`、`GATES_OK`、`/health` 200、本地登录 401）与 OpenBase RS256 令牌受理（`/api/v1/auth/me` 200 + 四类负向 401）见 `evidence/e3/e3c-openllm-20261102.json`。
 
 ---
 

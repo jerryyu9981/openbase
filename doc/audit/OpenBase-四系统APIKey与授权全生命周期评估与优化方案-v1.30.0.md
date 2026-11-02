@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.29.0 |
+| 版本 | v1.30.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -436,7 +436,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | R11/R12 | `last_used` 未落库 / 时区比较 | P2 / P0-8 | **E1** | 随设备身份一起修 |
 | R21 | claims 缓存导致降权延迟 | P2 | **E1** | 与吊销缓存同一机制 |
 | R20/R16 | MCP 凭证约定 / 明文 Key | P2 | **E2** | 与安全存储一起做；**v1.9.0 已闭合**（摘要/文件注入） |
-| R17 | OpenLLM 本地用户双主 | P1-7 | **E2** | 边缘可延后；**v1.9.0 已闭合**（身份权威开关）；v1.29.0 补齐本机进程级两向取证（见 §10.32） |
+| R17 | OpenLLM 本地用户双主 | P1-7 | **E2** | 边缘可延后；**v1.9.0 已闭合**（身份权威开关）；v1.29.0 补齐本机进程级两向取证（§10.32），v1.30.0 补齐 OpenBase RS256 令牌受理与生产 ENV 门禁冒烟（§10.33）；吊销增量仍归 E4 |
 | 政务合规项 | 国密密评 / 统一身份 / 三权分立 / 集中审计 / 信创灾备 | 不适用 | **E3（软件部分）/ 暂缓（硬件与密评）** | 非 R 台账项；可软件落地部分 v1.11.0 已实施，见 §10.14 |
 
 ### 10.7 E0 实施结果（v1.3.0，2026-10-29）
@@ -1169,7 +1169,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - D-06：4 处模板漂移已由 §10.30 E1 补齐；仅剩生产 `.env` 真实注入与 A2 §5 只读挂载（0600）取证。
 - D-07：登记前 issuer 判重并随发布单归档。
 
-执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.3.md`。
+执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.4.md`。
 
 ### 10.30 E 批：本机原生取证与模板收口（v1.27.0，2026-11-02）
 
@@ -1237,12 +1237,52 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | N2 非法取值负向 | ✅ `exit=1`（12.5s） | `IDENTITY_AUTHORITY=openid` → pydantic `ValidationError`「仅允许 'local' 或 'openbase'（R17）」 |
 | P1 `openbase` 正向 | ✅ `/health` **200**；登录 **403** | `{"detail":"身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）"}`；服务端审计同记 403 |
 | P2 `local` 对照 | ✅ `/health` **200**；登录 **401** | `{"detail":"用户名或密码错误"}`，响应**不含** R17 文案（门禁可开可关） |
-| 生产 ENV 全套门禁 | ⛔ **Blocked** | `SECRET_KEY`/入站身份头/RBAC 强制期/租户隔离/豁免行加固需生产 `.env` 与共享中间件 |
-| OpenLLM 接受 OpenBase 令牌 | ⛔ **Blocked** | 需 OpenBase JWKS 可达 + `OPENBASE_SUBJECT_MAP` 映射与吊销同步（E4） |
+| 生产 ENV 全套门禁 | ✅ 已于 §10.33 闭合（本机生产基线） | 16 例矩阵 C01 放行 + C02~C16 逐项拒绝、`EXEMPT_OK`、`GATES_OK`、`/health` 200 |
+| OpenLLM 接受 OpenBase 令牌 | ✅ 已于 §10.33 闭合（本机口径） | RS256 令牌 `/auth/me` **200**；四类负向 401；吊销增量仍归 E4 ⛔ Blocked |
 
 **判定边界**：R17 门禁与 ENV 无关（`OpenLLM/backend/app/core/config.py:1073` 注释），development ENV 下取证不削弱结论；N1/N2 为 `lifespan=on` 真实启动，P1/P2 为 `lifespan=off` 的真实 uvicorn 进程（仅跳过插件发现/EdgeRouter/回写恢复等重型自检，路由与鉴权代码路径不变）。**不以本机结果替代生产实测。**
 
 **联动升版**：`残余项统一处置方案 v1.3.0`（§5 K 类补充、§5.5 E3b 行）、`残余项分批推进方案 v1.3.0`（§9.3/§9.5/§9.6）、`D 类部署取证执行记录 v1.0.3`（§5.4）、`A1 生产验收清单 v1.1.6`（A1-11 证据补充）、`A2 生产配置收口清单 v1.1.8`、`E3 批次执行总结报告 v1.1.0`（§10）。
+
+
+### 10.33 E3c：E3b 两项 Blocked 的具体解决（v1.30.0，2026-11-02）
+
+> 意图：把 §10.32 表格中最后两项 ⛔ **Blocked**（「生产 ENV 全套门禁」与「OpenLLM 接受 OpenBase 令牌」）在本机口径落到实处，而不是继续以「需生产环境」为由挂账。执行方式：**本机原生 `uvicorn` + SQLite（无 Docker）**，OpenBase 与 OpenLLM 双进程并起；证据 `doc/audit/verification/evidence/e3/e3c-openllm-20261102.json`（**9804 B**，SHA-256 `E67F523E830DF1E3DAFC8FF76CEA846A05201BBFC2A27289E9E860A7496B3823`，已脱敏：不含令牌、私钥、密钥明文）。
+
+**A. `openllm_openbase_token_accept` —— OpenBase RS256 令牌在 OpenLLM 端被接受**
+
+| 用例 | 结果 | 说明 |
+|---|---|---|
+| 生效配置核对 | ✅ `EFFECTIVE authority=openbase jwks_configured=1 subject_map_configured=1 trust_local_subject=0` | 仅布尔/枚举标记，不含映射值 |
+| OpenBase 签发 | ✅ `alg=RS256`、`kid=e3c-kid`、`iss=openbase`、`aud=openbase-api`、`type=access`、`sub="1"` | `/well-known/jwks.json` 200，`key_count=1`、`kty=[RSA]`、`private_fields=[]` |
+| 正向放行 | ✅ `GET /api/v1/auth/me` → **200**（1123 ms） | 返回 `username=e3c-openbase-user`，即 `OPENBASE_SUBJECT_MAP {"1" → 本地 UUID}` 命中的本地用户 |
+| 负向：未知 kid | ✅ **401** | WARN「未知 kid：'unknown-kid'」 |
+| 负向：错误签名 | ✅ **401** | WARN「Signature verification failed」 |
+| 负向：主体未映射 | ✅ **401** | WARN「主体未映射到本地用户」（`OPENBASE_SUBJECT_MAP` 未命中即拒） |
+| 负向：已过期 | ✅ **401** | WARN「Signature has expired」 |
+
+**B. `openllm_prod_env_smoke` —— 生产 ENV 全套启动门禁**
+
+| 用例 | 结果 | 说明 |
+|---|---|---|
+| 门禁矩阵 C01 | ✅ 合规基线**放行** | 生产基线全部门禁变量齐备 |
+| 门禁矩阵 C02~C16 | ✅ **15/15 逐项拒绝**且消息逐字命中 | 缺 `SECRET_KEY` / 入站身份头未强制 / 代理白名单空 / RBAC 未强制 / 租户三项 / 配额 fail-closed / 豁免行 H1/H5/H6/H7 / Metrics H3 / Health H4 / 文档 H2 / R17 |
+| `gate_matrix_all_verdict_ok` | ✅ `true` | 16 例同进程逐例求值 |
+| 豁免行启动断言 | ✅ `EXEMPT_OK`（routes=5） | `assert_exempt_routes_registered(app)` 通过 |
+| 生产 ENV 合规启动 | ✅ `GATES_OK` | `assert_startup_gates()` + `validate_production_hardening()` 同源求值 |
+| 运行期 | ✅ `/health` **200** | `status=healthy`、`version=2.19.1` |
+| 本地身份通道关闭 | ✅ 本地登录 **401**「用户名或密码错误」 | `IDENTITY_AUTHORITY=local` 下 R17 不影响本地登录；生产拓扑下按 §3 基线切 `openbase` 即 403 |
+
+**判定边界**（不改写为 Pass 的部分，如实 ⛔ Blocked）：
+
+1. `openllm_openbase_revocation_sync`（吊销增量联动：`OPENBASE_REVOCATIONS_URL` + 服务 Key + 主体状态变更）—— 归 **E4 跨仓实测**，本机未取证。
+2. 生产拓扑实测 —— 本机为单进程 + SQLite，OpenBase 以 `development` ENV + RS256 私钥挂载运行、OpenLLM 门禁矩阵以 `production` ENV 独立求值，**不替代**共享 PG/Redis、多实例与真实网关的 E5 实测。
+3. OpenLLM 保留本仓 HS256 验签通道（E1-5B 双验签过渡），本项只判定 OpenBase RS256 **放行**与 RS256 **fail-closed**。
+4. SQLite 下 `postgresql.UUID(as_uuid=True)` 与 `CompatibleUUID` 跨进程格式不一致，两进程均须执行 `init_db()` 完成类型替换（生产以 PG 原生 UUID 为准，属测具差异而非代码缺陷）。
+
+**排障留痕**（避免后来者重踩）：首两轮正向请求持续 401 且服务端**无任何日志**。根因是取具脚本构造了 `env` 却把 `{}` 传给启动函数，OpenLLM 实际以默认 `local` 权威运行、`OPENBASE_JWKS_URL` 为空，命中 `verify_token` 首行 `if not _jwks_url(): return None` **静默返回**。修复后日志出现 `EFFECTIVE authority=openbase jwks_configured=1`，正向 200。该静默分支本身建议在 E4 评估是否补 WARN（本项不改代码）。
+
+**联动升版**：`E3 批次执行总结报告 v1.2.0`（§11）、`残余项分批推进方案 v1.4.0`（§9.7，§9.5 两行 Blocked 改 Pass）、`残余项统一处置方案 v1.4.0`（§5.5 E3c 行）、`D 类部署取证执行记录 v1.0.4`（§5.5）、`A1 生产验收清单 v1.1.7`（A1-11）、`A2 生产配置收口清单 v1.1.9`（§6.4）。
 
 
 ## 11. 修订历史
@@ -1281,3 +1321,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.27.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.30「E 批：本机原生取证与模板收口」。**E1** 零环境模板收口 **5/5 Pass**：OpenBase `.env.shared-infra` 生产基线 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明升 v2.8.3（新增 §2.5 `IDENTITY_AUTHORITY` / §2.6 `STATIC_KEY_CHANNEL` + 应急 bypass 两键），并勘正 §10.29 中 `DPS_IDENTITY_AUTHORITY` 笔误为 `IDENTITY_AUTHORITY`（无 `DPS_` 前缀，`DPS/src/config.py:200`）；**E2** 本机原生（**无 Docker**，`uvicorn` 单进程）完成 D-02 重启两向（缺 PEM `exit=1` 拒启 / 恢复后 `/health` 200）、A2-01/02/03/06 本机口径通过（JWKS 仅公钥且 kid 一致、端点无凭证 401、日志无秘密），A2-04/05 与 V 类如实标 ⛔ Blocked；SQLite 因 PG 专用 SQL 失败自动回退内存已登记；E3/E4/E5 仍 ⛔ Blocked 并写明解除条件；同步升版《残余项统一处置方案 v1.1.0》、D 类执行记录 v1.0.1、A2 清单 v1.1.6、A1 清单 v1.1.4，新增《残余项分批推进方案 v1.1.0》 |
 | v1.28.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.31「E3 本机生产形态：门禁与两向语义」。按「凡启动服务即可验证的项一次性实施」完成：**OpenBase** D-03（`jwt_require_rs256=true` 启动 200 + JWKS 仅 RSA 公钥；HS256 令牌 401 `AUTH_401`；缺 RS256 材料 `exit=1`）、D-05（`OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 解析并放行）、D-06（MCP 摘要/密钥文件两形态启动 200；生产明文 Key `exit=1`）；**DPS** K-01（`closed` 非应急 Key 401 `AUTH_STATIC_KEY_CHANNEL_CLOSED`；应急 bypass 放行且审计仅摘要；缺过期 `exit=1`）、K-02（`IDENTITY_AUTHORITY=openbase` 本地登录 403 `AUTH_LOCAL_LOGIN_DISABLED`）；**OpenRAG/OpenMemory** K-01 策略层 **8/8**，整服务因本机缺重依赖 ⛔ Blocked。证据 `evidence/e3/e3-native-20261102.json`（已脱敏）；真实生产注入/0600 挂载/DBA 收敛/A2-04/05/V 类仍 ⛔ Blocked 并写明解除条件（见《分批推进方案 v1.2.0》§9.5）。同步升版《残余项统一处置方案 v1.2.0》、D 类执行记录 v1.0.2、A2 清单 v1.1.7、A1 清单 v1.1.5、分批推进方案 v1.2.0 |
 | v1.29.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.32「E3b：OpenLLM R17 身份权威进程级两向」。补齐 E3 未覆盖的 OpenLLM 唯一「启动即可验」空白：**N1** `IDENTITY_AUTHORITY=openbase` 缺 `OPENBASE_JWKS_URL` → `exit=3` 拒启（`ValueError ...（R17）`）；**N2** 非法值 `openid` → `exit=1`（pydantic `ValidationError`）；**P1** `openbase` 正向 `/health` 200、本地登录 **403** 含 R17 文案；**P2** `local` 对照登录 **401**「用户名或密码错误」且无 R17 文案。证据 `evidence/e3/e3b-openllm-20261102.json`（SHA-256 `370DAA5C...D5C61`，7628 B）；生产 ENV 全门禁与 OpenBase 令牌放行仍 ⛔ Blocked。§10.6 R17 行同步补证；同步升版《残余项统一处置方案 v1.3.0》《残余项分批推进方案 v1.3.0》、D 类执行记录 v1.0.3、A2 清单 v1.1.8、E3 批次执行总结报告 v1.1.0 |
+| v1.30.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.33「E3c：E3b 两项 Blocked 的具体解决」。**A. `openllm_openbase_token_accept` 闭合**：OpenBase 在线签出 RS256（`kid=e3c-kid`、`iss=openbase`、`aud=openbase-api`、`type=access`）→ OpenLLM JWKS 200 拉取 → `OPENBASE_SUBJECT_MAP` 映射命中 → `/api/v1/auth/me` **200**（`username=e3c-openbase-user`）；四类负向（未知 kid / 错误签名 / 主体未映射 / 已过期）全部 **401** 且各落 WARN 文案。**B. `openllm_prod_env_smoke` 闭合**：门禁矩阵 C01 放行 + C02~C16 **15/15 逐项拒绝**、`gate_matrix_all_verdict_ok=true`；豁免行启动断言 `EXEMPT_OK`（routes=5）；生产 ENV 合规启动 `GATES_OK` + `/health` **200** + 本地登录 **401**。证据 `evidence/e3/e3c-openllm-20261102.json`（**9804 B**，SHA-256 `E67F523E...6B3823`）。`openllm_openbase_revocation_sync`（归 E4）与生产拓扑（E5）仍 ⛔ Blocked；登记「生效环境变量未透传导致 RS256 静默 401」的排障留痕。同步升版《E3 批次执行总结报告 v1.2.0》《残余项分批推进方案 v1.4.0》《残余项统一处置方案 v1.4.0》、D 类执行记录 v1.0.4、A1 清单 v1.1.7、A2 清单 v1.1.9 |

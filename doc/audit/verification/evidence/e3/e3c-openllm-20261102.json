@@ -1,0 +1,215 @@
+{
+  "generated_at": "2026-11-02T13:01:31.063977+00:00",
+  "scope": "E3c 未闭合项具体解决（无 Docker，原生 uvicorn + SQLite）",
+  "environment": {
+    "python": "3.12.10",
+    "interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+    "backend": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+    "database_url_scheme": "sqlite",
+    "note": "本机冷启动 import 约 35s / init_db 约 66s / import main 约 104s，门禁矩阵用同进程逐例求值"
+  },
+  "openbase_issuer": {
+    "started": true,
+    "attempts": 1,
+    "elapsed_seconds": 170.6,
+    "log": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\e3c-openllm\\openbase.log",
+    "health_status": 200,
+    "jwks": {
+      "status_code": 200,
+      "key_count": 1,
+      "kty": [
+        "RSA"
+      ],
+      "kids": [
+        "e3c-kid"
+      ],
+      "private_fields": []
+    },
+    "login": {
+      "login_status": 200,
+      "token_issued": true,
+      "header_alg": "RS256",
+      "header_kid": "e3c-kid",
+      "claims_iss": "openbase",
+      "claims_aud": "openbase-api",
+      "claims_type": "access",
+      "claims_exp_present": true,
+      "subject_is_numeric": true,
+      "subject_value": "1",
+      "token_length": 633
+    }
+  },
+  "db_prepare": {
+    "exit_code": 0,
+    "ready": true,
+    "stderr_tail": []
+  },
+  "token_accept": {
+    "started": true,
+    "health_status": 200,
+    "effective_config": "EFFECTIVE authority=openbase jwks_configured=1 subject_map_configured=1 trust_local_subject=0 env=development",
+    "log": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\e3c-openllm\\openllm-18032.log",
+    "startup_mode": "lifespan=off + bootstrap 显式 init_db()（与 main.py:153 生产初始化同源）",
+    "subject_map": "OpenBase 数字主体 id → 本地 UUID（显式映射，未命中即拒绝）",
+    "positive": {
+      "status_code": 200,
+      "accepted": true,
+      "username_is_local_user": true,
+      "body_prefix": "{\"id\":\"1c8753f7-2d44-4ce0-ab4d-2163bd28f80d\",\"username\":\"e3c-openbase-user\",\"email\":\"e3c-openbase@example.invalid\",\"phone\":null,\"avatar_url\":null,\"status\":\"active\",\"role\":\"member\","
+    },
+    "negative_status_codes": {
+      "unknown_kid": 401,
+      "wrong_signature": 401,
+      "unmapped_subject": 401,
+      "expired": 401
+    },
+    "negative_all_rejected": true,
+    "mapped_local_user_id_prefix": "1c8753f7",
+    "process_exit_code": 1
+  },
+  "prod_env_smoke": {
+    "gate_matrix": [
+      {
+        "case": "C01_compliant",
+        "expected": "pass",
+        "passed": true,
+        "message": "",
+        "verdict_ok": true
+      },
+      {
+        "case": "C02_missing_secret_key",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须设置 SECRET_KEY 环境变量。请通过 .env 文件或环境变量设置一个安全的随机密钥。",
+        "verdict_ok": true
+      },
+      {
+        "case": "C03_inbound_identity_not_enforced",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须开启 ENFORCE_INBOUND_IDENTITY_HEADERS=true（协议头规范 v1.1 §4.1 生产门禁）：过渡期「忽略+标注+WARN」不得带入生产。",
+        "verdict_ok": true
+      },
+      {
+        "case": "C04_trusted_proxy_empty",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须配置非空的 TRUSTED_PROXY_SOURCES（身份头可信来源白名单，逗号分隔；独立部署无 OpenBase 时按部署拓扑填写网关标识或来源 IP）。白名单为空会导致身份头恒不采信（R6 漏配即降级），禁止启动。",
+        "verdict_ok": true
+      },
+      {
+        "case": "C05_rbac_not_enforced",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须开启 RBAC_PERMISSION_ENFORCE=true 且将退役面模块纳入 RBAC_PERMISSION_ENFORCE_MODULES（空=全部模块）——users 端点旧管理硬门已退役（B1 D4 phase 4），其余 12 模块旧管理硬门亦已退役（phase 5），缺少强制期的模块: （未开启强制期）；否则这些端点将在无保护状态下暴露。",
+        "verdict_ok": true
+      },
+      {
+        "case": "C06_tenant_scope_not_enforced",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须开启 TENANT_SCOPE_ENFORCE=true（跨仓租户隔离裁定 A）：缺租户标识不得在生产静默通过（C1-c 缺租户标识强制段）。",
+        "verdict_ok": true
+      },
+      {
+        "case": "C07_tenant_header_consistency_not_enforced",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须开启 TENANT_HEADER_CONSISTENCY_ENFORCE=true（跨仓租户隔离裁定 A）：受信来源 + API Key 通道的 X-Tenant-ID 必须与 API Key 归属租户一致（D20）。",
+        "verdict_ok": true
+      },
+      {
+        "case": "C08_quota_missing_fail_open",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须开启 QUOTA_MISSING_FAIL_CLOSED=true（跨仓租户隔离裁定 A）：无配额记录不得在生产 fail-open 放行（D17）。",
+        "verdict_ok": true
+      },
+      {
+        "case": "C09_exempt_match_mode_prefix",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须设置 OPENLLM_EXEMPT_MATCH_MODE=exact（H1）",
+        "verdict_ok": true
+      },
+      {
+        "case": "C10_exempt_assert_off",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须设置 OPENLLM_EXEMPT_ASSERT_ON_STARTUP=true（H1/H6）",
+        "verdict_ok": true
+      },
+      {
+        "case": "C11_exempt_expiry_off",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须设置 OPENLLM_EXEMPT_EXPIRY_ENFORCE=true（H7）",
+        "verdict_ok": true
+      },
+      {
+        "case": "C12_exempt_audit_off",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须设置 OPENLLM_EXEMPT_AUDIT_ENABLED=true（H5）",
+        "verdict_ok": true
+      },
+      {
+        "case": "C13_metrics_auth_none",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须设置 OPENLLM_METRICS_AUTH_MODE=token 或 trusted-source（H3）",
+        "verdict_ok": true
+      },
+      {
+        "case": "C14_health_detail_all",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境必须设置 OPENLLM_HEALTH_DETAIL_MODE=trusted-only（H4）",
+        "verdict_ok": true
+      },
+      {
+        "case": "C15_debug_on",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: 生产环境禁止 DEBUG=true 或 OPENAPI_PUBLIC=true（H2：文档/Schema 必须关闭）",
+        "verdict_ok": true
+      },
+      {
+        "case": "C16_openbase_without_jwks",
+        "expected": "reject",
+        "passed": false,
+        "message": "ValueError: IDENTITY_AUTHORITY=openbase 必须同时配置 OPENBASE_JWKS_URL（R17）：身份权威切到 openbase 后本地身份通道已关闭，无 JWKS 则无任何可验证身份来源。",
+        "verdict_ok": true
+      }
+    ],
+    "gate_matrix_all_verdict_ok": true,
+    "gate_matrix_exit_code": 0,
+    "gate_matrix_message_tail": [],
+    "exempt_assert": {
+      "mode": "与合规启动同一进程（import main 后先断言再起 uvicorn）",
+      "ok": true,
+      "line": "EXEMPT_OK"
+    },
+    "compliant_startup": {
+      "started": true,
+      "env_mode": "production（生产基线全部门禁变量）",
+      "startup_mode": "lifespan=off + bootstrap 显式 init_db() + 显式求值 assert_startup_gates()/validate_production_hardening()（与 lifespan 同源）",
+      "gates_line": "GATES_OK",
+      "production_gates_passed": true,
+      "health_status": 200,
+      "health_body_prefix": "{\"status\":\"healthy\",\"version\":\"2.19.1\",\"details\":{\"postgresql\":\"healthy\",\"redis\":\"healthy\"},\"metrics\":{\"uptime_seconds\":",
+      "local_login_status": 401,
+      "local_login_body_prefix": "{\"detail\":\"用户名或密码错误\"}",
+      "local_login_rejected": true,
+      "log": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\e3c-openllm\\openllm-18033.log",
+      "process_exit_code": 1
+    }
+  },
+  "boundaries": {
+    "revocation_sync": "吊销增量联动（OPENBASE_REVOCATIONS_URL + service key + 主体状态变更）未在本机取证，归 E4 跨仓实测",
+    "hs256_channel": "OpenLLM 按 E1-5B 保留本仓 HS256 验签通道（双验签过渡），本项只判定 OpenBase RS256 放行与 RS256 fail-closed",
+    "production_parity": "OpenBase 签发侧以 development ENV + RS256 私钥挂载运行；OpenLLM 门禁矩阵以 production ENV 独立求值，均不替代生产拓扑实测",
+    "openbase_sqlite": "OpenBase 在 SQLite 下不支持 CREATE SCHEMA → demo_app 退回内存演示用户（admin/admin123）；RS256 签发与 JWKS 发布不依赖该 schema，故不影响本项判定",
+    "sqlite_uuid": "OpenLLM 生产以 Postgres 原生 UUID 为准（两进程绑定/存储天然一致）；本机 SQLite 需两进程都执行 init_db() 完成 CompatibleUUID 类型替换，否则原生 postgresql.UUID（32 位 hex）与 CompatibleUUID（36 位带连字符）跨进程不一致，属测具差异而非代码缺陷"
+  }
+}
