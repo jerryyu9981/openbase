@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.27.0 |
+| 版本 | v1.28.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -1169,7 +1169,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - D-06：4 处模板漂移已由 §10.30 E1 补齐；仅剩生产 `.env` 真实注入与 A2 §5 只读挂载（0600）取证。
 - D-07：登记前 issuer 判重并随发布单归档。
 
-执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.1.md`。
+执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.2.md`。
 
 ### 10.30 E 批：本机原生取证与模板收口（v1.27.0，2026-11-02）
 
@@ -1199,7 +1199,33 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | V 类实测项 | ⛔ Blocked：需共享 PG/Redis、多实例、四仓联调或真实 IdP | 解除条件见《分批推进方案》§5 |
 | 数据库形态 | ℹ️ 本机 SQLite 因 PG 专用 SQL（schema/`setval`）失败 → 自动回退内存，本机不覆盖 DB 语义 | 同上 |
 
-**判定边界**：以上 ✅ 仅为 `Pass（本机口径）`，不替代生产实测；E3（生产注入/挂载）、E4（跨仓实测）、E5（生产拓扑实测）仍 ⛔ Blocked。
+**判定边界**：以上 ✅ 仅为 `Pass（本机口径）`，不替代生产实测；E3（生产注入/挂载）、E4（跨仓实测）、E5（生产拓扑实测）仍 ⛔ Blocked；其中 E3 的「本机生产形态」部分已于 §10.31 执行完成。
+
+### 10.31 E3 本机生产形态：门禁与两向语义（v1.28.0，2026-11-02）
+
+> 意图：把「**凡启动服务即可验证**」的残余项一次性实施，而不是继续停在构造期断言。执行方式：本机原生 `uvicorn`（OpenBase/DPS）+ 生产形态环境变量 + SQLite（无 Docker）；证据 `doc/audit/verification/evidence/e3/e3-native-20261102.json`（已脱敏：不含 PEM、令牌、密钥明文与 Redis 片段）。
+
+| 用例 | 结果 | 说明 |
+|---|---|---|
+| OpenBase D-03 正向 | ✅ 生产配置 `jwt_require_rs256=true` + PEM 私钥 + kid 启动 **200** | JWKS `key_count=1`、`kty=[RSA]`、`kids=[e3-native-kid]`、`private_fields=[]` |
+| OpenBase D-03 负向（HS256） | ✅ HS256 令牌访问 `/api/v1/auth/me` → **401** `AUTH_401 invalid or expired token` | 白名单收敛 `{RS256}` 生效 |
+| OpenBase D-03 负向（缺材料） | ✅ 缺私钥路径/kid → **拒绝启动** `exit=1` | 生产必须 RS256 材料 |
+| OpenBase D-05 | ✅ `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 单条映射解析并启动放行 | `settings_probe.map_entries=1` |
+| OpenBase D-06 正向 | ✅ 生产配 MCP 摘要启动 200；配 `OPENBASE_MCP_API_KEYS_FILE` 启动 200 | `mcp_hashes_configured=true` |
+| OpenBase D-06 负向 | ✅ 生产配明文 `OPENBASE_MCP_API_KEYS` → **拒绝启动** `exit=1` | 生产禁止明文静态 Key |
+| OpenBase D-06 负向 | ⛔ PEM 只读挂载 0600 **Blocked** | Windows 无 POSIX mode 可核验 |
+| DPS K-01 | ✅ `STATIC_KEY_CHANNEL=closed` 时非应急静态 Key → **401** `AUTH_STATIC_KEY_CHANNEL_CLOSED` | 服务启动成功 |
+| DPS K-01（应急） | ✅ bypass 带未来过期时间放行；✅ 审计含事件且**无明文 Key** | 错误码转为业务侧「缺少组织或租户标识」 |
+| DPS K-01 负向 | ✅ bypass 缺过期时间 → **拒绝启动** `exit=1` | `K-01 启动门禁：应急通道必须有明确过期时间` |
+| DPS K-02 | ✅ `IDENTITY_AUTHORITY=openbase` 本地密码登录 → **403** `AUTH_LOCAL_LOGIN_DISABLED` | 本地身份权威已停用 |
+| OpenRAG K-01 | ✅ 静态 Key 通道策略层门禁 **8/8** | `validate_static_key_channel` 全断言 |
+| OpenMemory K-01 | ✅ 静态 Key 通道策略层门禁 **8/8** | 同上 |
+| OpenRAG / OpenMemory 整服务 | ⛔ **Blocked** | 本机缺重依赖（aiohttp/qdrant-client/faiss/sentence-transformers 等），OpenRAG 原生导入崩溃 `0xC0000005` |
+
+**判定边界**：✅ 一律为 `Pass（本机生产形态）`——验证代码门禁与两向语义；真实生产 `.env` 注入、PEM 0600 挂载、共享 PG/Redis、多实例、四仓联调与真实 IdP（E4/E5 与 V 类）仍 ⛔ Blocked，解除条件见《残余项分批推进方案 v1.2.0》§9.5。**不以本机结果替代生产实测。**
+
+**联动升版**：`残余项统一处置方案 v1.2.0`、`D 类部署取证执行记录 v1.0.2`、`A2 生产配置收口清单 v1.1.7`、`A1 生产验收清单 v1.1.5`、`残余项分批推进方案 v1.2.0`。
+
 
 ## 11. 修订历史
 
@@ -1235,3 +1261,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.25.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.28「P4 批 C：K-01/K-05 跨仓收口与 D-03 双验签收口」。**K-01** OpenRAG/OpenMemory/DPS 落地 `STATIC_KEY_CHANNEL`（`dual` 默认 / `closed`）+ 应急 bypass（`EMERGENCY_BYPASS_KEY` + `EMERGENCY_BYPASS_EXPIRES_AT`，缺配/非法拒启，放行只落 `sha256[:12]`），关闭态错误码 `AUTH_STATIC_KEY_CHANNEL_CLOSED`；**K-05** OpenLLM 新增 Redis Lua 原子令牌桶（`QUOTA_ALGORITHM=token_bucket` 可选，默认 `window`，Redis 不可用回退进程内；`QUOTA_BUCKET_CAPACITY=1000`、`QUOTA_BUCKET_REFILL_PER_SECOND=1000.0`）与四仓可选后台吊销同步（`RevocationBackgroundSync` 守护线程、幂等 start/stop、默认 `false`）；**D-03** OpenBase `jwt_require_rs256=true` 时白名单收敛 `{RS256}`、要求 kid、忽略历史 kid、禁止 HS256 签发。测试证据：OpenRAG 21 / OpenMemory 19 / DPS 33 / OpenLLM 18（7+11）/ OpenBase D-03 22 passed；改动文件 ruff 全过（全量 ruff 7 处既有告警、全量 pytest 1 例既有失败，均如实登记）；同步升版《残余项统一处置方案 v1.0.8》、A2 清单 v1.1.4、A1 清单 v1.1.3 |
 | v1.26.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.29「P4 批 D：部署取证与编排口径」。**D-02** 13 项启动门禁负向矩阵本地 **17/17 命中**（#6 token 认证拆 5 情形）、生产合规基线 13 项全放行、门禁单测 **108 passed**，真实重启与 A2 §6.2 端点核对 ⛔ Blocked；**D-07** Provider name 唯一性门禁生效（同名拒启）、两 Provider 合法登记 `count=2`，issuer 确认为 discovery 运行期解析（配置层无字段），issuer 判重列为登记前置部署检查；**D-06** 五仓键名核对发现 **4 处模板漂移**（OpenBase 生产基线 7 键未注入、OpenRAG/OpenMemory `*_STATIC_KEY_CHANNEL` 未进模板、DPS 说明缺 `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`），秘密挂载 Blocked；**D-05** 按裁定 A 产出显式主体映射注入模板并核定适用范围（OpenLLM/DPS 两仓映射 + OpenRAG/OpenMemory `sub` 直通），注入 Blocked；**D-04** 产出只读导出 + 按租户分批参数化收敛 SQL（不含 `key_hash`）与每批复核，执行 Blocked（无 DBA 会话）。本批不改代码与默认值；新增执行记录 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md` 与证据 `evidence/d/`（5 份）；同步升版《残余项统一处置方案 v1.0.9》、A2 清单 v1.1.5 |
 | v1.27.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.30「E 批：本机原生取证与模板收口」。**E1** 零环境模板收口 **5/5 Pass**：OpenBase `.env.shared-infra` 生产基线 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明升 v2.8.3（新增 §2.5 `IDENTITY_AUTHORITY` / §2.6 `STATIC_KEY_CHANNEL` + 应急 bypass 两键），并勘正 §10.29 中 `DPS_IDENTITY_AUTHORITY` 笔误为 `IDENTITY_AUTHORITY`（无 `DPS_` 前缀，`DPS/src/config.py:200`）；**E2** 本机原生（**无 Docker**，`uvicorn` 单进程）完成 D-02 重启两向（缺 PEM `exit=1` 拒启 / 恢复后 `/health` 200）、A2-01/02/03/06 本机口径通过（JWKS 仅公钥且 kid 一致、端点无凭证 401、日志无秘密），A2-04/05 与 V 类如实标 ⛔ Blocked；SQLite 因 PG 专用 SQL 失败自动回退内存已登记；E3/E4/E5 仍 ⛔ Blocked 并写明解除条件；同步升版《残余项统一处置方案 v1.1.0》、D 类执行记录 v1.0.1、A2 清单 v1.1.6、A1 清单 v1.1.4，新增《残余项分批推进方案 v1.1.0》 |
+| v1.28.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.31「E3 本机生产形态：门禁与两向语义」。按「凡启动服务即可验证的项一次性实施」完成：**OpenBase** D-03（`jwt_require_rs256=true` 启动 200 + JWKS 仅 RSA 公钥；HS256 令牌 401 `AUTH_401`；缺 RS256 材料 `exit=1`）、D-05（`OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 解析并放行）、D-06（MCP 摘要/密钥文件两形态启动 200；生产明文 Key `exit=1`）；**DPS** K-01（`closed` 非应急 Key 401 `AUTH_STATIC_KEY_CHANNEL_CLOSED`；应急 bypass 放行且审计仅摘要；缺过期 `exit=1`）、K-02（`IDENTITY_AUTHORITY=openbase` 本地登录 403 `AUTH_LOCAL_LOGIN_DISABLED`）；**OpenRAG/OpenMemory** K-01 策略层 **8/8**，整服务因本机缺重依赖 ⛔ Blocked。证据 `evidence/e3/e3-native-20261102.json`（已脱敏）；真实生产注入/0600 挂载/DBA 收敛/A2-04/05/V 类仍 ⛔ Blocked 并写明解除条件（见《分批推进方案 v1.2.0》§9.5）。同步升版《残余项统一处置方案 v1.2.0》、D 类执行记录 v1.0.2、A2 清单 v1.1.7、A1 清单 v1.1.5、分批推进方案 v1.2.0 |

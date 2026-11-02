@@ -2,13 +2,13 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.1 |
+| 文档版本 | v1.0.2 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev（本机）/ Pre-Pro / Pro |
-| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.1.0.md`（§6 D 行、§5.4） |
-| 关联清单 | `...-A2生产配置收口清单-v1.1.6.md`（§4 门禁、§6 漂移自检、§7 验收项） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.27.0.md`（§10.29~§10.30） |
-| 关联批次 | `...-残余项分批推进方案-v1.1.0.md`（E1 模板补齐 / E2 本机原生取证，见本文 §5） |
+| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.2.0.md`（§6 D 行、§5.4/§5.5） |
+| 关联清单 | `...-A2生产配置收口清单-v1.1.7.md`（§4 门禁、§6 漂移自检、§7 验收项） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.28.0.md`（§10.29~§10.31） |
+| 关联批次 | `...-残余项分批推进方案-v1.2.0.md`（E1 模板补齐 / E2 本机原生取证 / E3 本机生产形态，见本文 §5） |
 | 覆盖对象 | D-02 / D-04 / D-05 / D-06 / D-07（P4 批 D 全部 5 项） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.2 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3 本机生产形态联动：新增 §5.3 逐项登记 OpenBase D-03/D-05/D-06 两向、DPS K-01/K-02 两向、OpenRAG/OpenMemory K-01 策略层 **8/8** 的取证结果（证据 `evidence/e3/e3-native-20261102.json`）；§3 证据清单补 e3 条目、§4 结论同步 D-05/D-06 判定（本机生产形态 Pass / 真实生产仍 Blocked）；同步关联方案 v1.28.0（§10.31）、关联台账 v1.2.0、A2 v1.1.7、A1 v1.1.5、分批推进方案 v1.2.0 |
 | v1.0.1 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E 批联动：**E1** D-06 登记的 4 处模板漂移全部补齐（OpenBase `.env.shared-infra` 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明 v2.8.3 新增 §2.5/§2.6）；**勘误**：DPS 键名为 `IDENTITY_AUTHORITY`（不带 `DPS_` 前缀，源码 `DPS/src/config.py:200`），§2.3 原表「`DPS_IDENTITY_AUTHORITY`」为登记笔误（证据 JSON 原件不改动，以本节勘误为准）；**E2** 本机原生（无 Docker）完成 D-02 重启两向验证（缺私钥拒启 exit=1 / 恢复后启动 200）与 A2 §6.2 端点核对；关联文档版本同步 |
 | v1.0.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 首版：登记 P4 批 D 五项部署取证的执行方式、本地实测结果、阻塞原因与解除条件；D-02 13 项启动门禁负向矩阵本地全部命中（17 例，含 #6 五个子情形），D-07 Provider 名称唯一性本地实测通过、issuer 唯一性为部署口径；D-06 四仓部署键名核对发现 4 处缺项（OpenBase 生产基线未注入、OpenRAG/OpenMemory 新增 `STATIC_KEY_CHANNEL` 未进模板、DPS 说明缺 `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`）；D-04 生产执行 Blocked（无生产主机访问权 + 本机 PG 无凭据），已产出导出/分批收敛 SQL；证据落 `evidence/d/` |
 
@@ -125,6 +126,7 @@
 | `evidence/a2/a2-e1-template-drift-20261102.json` | D-06 / E1 | E1 补齐后四仓模板/说明键名存在性复核（只记键名与「存在/缺失」） |
 | `evidence/a2/a2-d02-negative-e2native-20261102.json` | D-02 / E2 | 私钥缺失时本机原生启动拒绝（exit=1，含拒绝原因摘要） |
 | `evidence/a2/a2-e2-native-20261102.json` | D-02 / A2-03 / A2-06 / E2 | 生产形态原生实例启动、`/health`、JWKS（仅公钥/kid 一致）、内省与吊销端点无凭证拒绝、日志秘密扫描 |
+| `evidence/e3/e3-native-20261102.json` | D-03 / D-05 / D-06 / K-01 / K-02 / E3 | 四仓本机生产形态取证：OpenBase 启动/JWKS/HS256 拒签/缺 RS256 拒启/明文 Key 拒启/密钥文件放行/映射解析；DPS `closed` 拒静态 Key、应急 bypass 放行+审计仅摘要、缺过期拒启、K-02 本地登录 403；OpenRAG/OpenMemory K-01 策略层 8/8（已脱敏） |
 
 ---
 
@@ -132,10 +134,10 @@
 
 | 编号 | 判定 | 说明 |
 |---|---|---|
-| D-02 | **Pass（本地口径）/ ⛔ 生产重启与端点核对 Blocked** | 13 项门禁负向矩阵 17/17 命中，正向基线放行；E2 已完成本机原生重启两向验证与 A2 §6.2 端点核对；生产拓扑重启仍待部署环境 |
+| D-02 | **Pass（本地口径）/ ⛔ 生产重启与端点核对 Blocked** | 13 项门禁负向矩阵 17/17 命中，正向基线放行；E2/E3 已完成本机原生与生产形态重启两向验证及 A2 §6.2 端点核对；生产拓扑重启仍待部署环境 |
 | D-04 | ⛔ **Blocked** | SQL 与分批计划已就绪，待生产 DBA 会话 |
-| D-05 | **Pass（编排口径）/ ⛔ 注入 Blocked** | 适用范围收敛为两仓映射 + 两仓直通，模板与审计口径已定 |
-| D-06 | **Pass（模板/说明补齐，E1）/ ⛔ 生产注入与挂载 Blocked** | 4 处模板/说明漂移已全部补齐；生产 `.env` 注入与只读挂载归 E3 |
+| D-05 | **Pass（编排口径 + E3 解析口径）/ ⛔ 生产注入 Blocked** | 适用范围收敛为两仓映射 + 两仓直通，模板与审计口径已定；E3 已验证 `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 单条映射解析与启动放行 |
+| D-06 | **Pass（模板/说明补齐 + E3 摘要/密钥文件两形态）/ ⛔ 生产注入与 0600 挂载 Blocked** | 4 处模板/说明漂移已全部补齐；E3 已验证生产摘要/密钥文件两形态放行、生产明文 Key 拒启；生产 `.env` 注入与 PEM 0600 只读挂载归真实生产窗口 |
 | D-07 | **部分 Pass** | 名称唯一性门禁生效；issuer 判重为登记前置部署动作 |
 
 **未闭环项全部为环境/权限阻塞，无代码缺口**；解除条件统一为「获得生产（或 Dev 全栈）会话与启停权限」。
@@ -144,7 +146,7 @@
 
 ## 5. E 批联动（2026-11-02）
 
-> 依据《残余项分批推进方案 v1.1.0》§4（E1）与 §5（E2），**本轮不使用 Docker**：以本机原生进程（`uvicorn` 单进程）+ 生产形态环境变量完成取证；凡需共享 PG/Redis、多实例、真实 IdP 或跨仓生产部署者一律 ⛔ Blocked。
+> 依据《残余项分批推进方案 v1.2.0》§4（E1）、§5（E2）与 §9（E3），**本轮不使用 Docker**：以本机原生进程（`uvicorn` 单进程）+ 生产形态环境变量完成取证；凡需共享 PG/Redis、多实例、真实 IdP 或跨仓生产部署者一律 ⛔ Blocked。
 
 ### 5.1 E1（零环境模板补齐）— 5/5 Pass
 
@@ -173,3 +175,32 @@
 | 数据库形态 | ℹ️ 本机 SQLite 初始化因 PG 专用 SQL（schema/`setval`）失败 → 自动回退内存（日志 `database init failed, fallback to memory`），故本机不覆盖 DB 相关语义 | 同上 |
 
 **E2 判定边界**：以上 ✅ 仅为 `Pass（本机口径）`，不替代生产实测。
+
+### 5.3 E3（本机生产形态两向，2026-11-02）
+
+> 目的：把「**凡启动服务即可验证**」的门禁与两向语义一次性跑通（对应台账 D-03/D-05/D-06 与 K-01/K-02）。执行方式：本机原生 `uvicorn` + SQLite（`OPENBASE_ENV=production` / DPS 生产形态环境变量），**无 Docker**；证据 `evidence/e3/e3-native-20261102.json`。
+
+| 编号 | 用例 | 结果 | 证据字段 |
+|---|---|---|---|
+| D-03 正向 | 生产配置 `jwt_require_rs256=true` + PEM 私钥 + kid 启动 | ✅ 启动 200；JWKS `key_count=1`、`kty=[RSA]`、`kids=[e3-native-kid]`、`private_fields=[]` | `openbase_positive` |
+| D-03 负向 | HS256 令牌访问 `/api/v1/auth/me` | ✅ **401** `AUTH_401 invalid or expired token`（白名单收敛生效） | `openbase_positive.hs256_negative` |
+| D-03 负向 | 缺 RS256 私钥路径/kid 时启动 | ✅ **拒绝启动** `exit=1`（生产要求 RS256 材料） | `d03_negative_missing_rs256_key` |
+| D-05 | `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 单条映射 | ✅ 解析成功并在生产启动放行（`map_entries=1`） | `openbase_positive.settings_probe` |
+| D-06 正向 | 生产配 MCP 摘要启动 | ✅ 200（`mcp_hashes_configured=true`） | `openbase_positive.settings_probe` |
+| D-06 正向 | 生产配 `OPENBASE_MCP_API_KEYS_FILE` 启动 | ✅ 200 | `d06_positive_keys_file` |
+| D-06 负向 | 生产配明文 `OPENBASE_MCP_API_KEYS` | ✅ **拒绝启动** `exit=1`（生产禁止明文静态 Key） | `d06_negative_plaintext_key` |
+| D-06 负向 | PEM 只读挂载 0600 | ⛔ **Blocked**：Windows 无 POSIX mode 可核验 | `d06_permission_0600` |
+| K-01 | DPS `STATIC_KEY_CHANNEL=closed`，非应急静态 Key 访问 | ✅ **401** `AUTH_STATIC_KEY_CHANNEL_CLOSED`（服务启动成功） | `k01_closed_reject` |
+| K-01 | DPS `closed` + 应急 bypass（带未来过期时间） | ✅ 放行（错误码由 `CLOSED` 转为业务侧「缺少组织或租户标识」）；✅ 审计含事件且**无明文 Key** | `k01_emergency_bypass.audit` |
+| K-01 负向 | 应急 bypass 缺过期时间 | ✅ **拒绝启动** `exit=1`（`K-01 启动门禁：应急通道必须有明确过期时间`） | `k01_negative_missing_expiry` |
+| K-02 | DPS `IDENTITY_AUTHORITY=openbase`，本地密码登录 | ✅ **403** 含 `AUTH_LOCAL_LOGIN_DISABLED` | `k02_openbase_authority` |
+| K-01（OpenRAG） | 静态 Key 通道策略层门禁（`dual`/`closed`/非法归一/缺过期拒启） | ✅ **8/8 断言 true** | `rag_gate_check` |
+| K-01（OpenMemory） | 静态 Key 通道策略层门禁 | ✅ **8/8 断言 true** | `memory_gate_check` |
+| OpenRAG 整服务启动 | 需 aiohttp/qdrant-client/faiss/sentence-transformers 等重依赖 | ⛔ **Blocked**（本机缺依赖；原生导入崩溃 `0xC0000005`） | `blocked_production_items` |
+| OpenMemory 整服务启动 | 快速 API 可导入，但完整服务依赖本机缺失 | ⛔ **Blocked** | `blocked_production_items` |
+
+**E3 判定边界**
+
+- ✅ 一律为 `Pass（本机生产形态）`：验证的是**代码门禁与两向语义**，不替代真实生产主机、共享 PG/Redis、多实例与真实 IdP 实测（E4/E5 仍 ⛔ Blocked）。
+- 逐项结果与 Blocked 解除条件见《残余项分批推进方案 v1.2.0》§9.4/§9.5。
+

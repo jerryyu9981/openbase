@@ -2,12 +2,12 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.2.0 |
 | 文档状态 | [Review] |
 | 适用环境 | 本机（无 Docker）/ Dev 原生进程 / Pre-Pro / Pro |
-| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.1.0.md`（§2.1/§5.4/§6/§7/§8/§9.1） |
-| 关联清单 | `...-A1生产验收清单-v1.1.4.md`、`...-A2生产配置收口清单-v1.1.6.md` |
-| 关联记录 | `...-D类部署取证执行记录-v1.0.1.md`（§5 E 批联动） |
+| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.2.0.md`（§2.1/§5.4/§5.5/§6/§7/§8/§9.1） |
+| 关联清单 | `...-A1生产验收清单-v1.1.5.md`、`...-A2生产配置收口清单-v1.1.7.md` |
+| 关联记录 | `...-D类部署取证执行记录-v1.0.2.md`（§5 E 批联动） |
 | 约束 | **本轮不使用 Docker**（电脑资源有限）；环境取证以原生进程 + SQLite/本机依赖为限 |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -16,6 +16,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.2.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E3 本机生产形态执行（真实生产仍 Blocked）**：以原生 `uvicorn` 单进程（无 Docker）完成 OpenBase D-03/D-05/D-06 两向（RS256 强制生效且 HS256 令牌 401、主体映射解析 1 条、MCP 摘要/密钥文件启动放行、明文 Key 与缺 RS256 材料拒启）、DPS K-01/K-02 两向（`closed` 非应急 Key 401 `AUTH_STATIC_KEY_CHANNEL_CLOSED`、应急 bypass 放行且审计只落摘要、缺过期时间拒启、`IDENTITY_AUTHORITY=openbase` 本地登录 403 `AUTH_LOCAL_LOGIN_DISABLED`）、OpenRAG/OpenMemory K-01 门禁级 8 项策略全通过；OpenRAG/OpenMemory 整服务启动因本机缺重依赖（OpenRAG 导入原生崩溃）如实 ⛔ Blocked；新增 §9.4/§9.5，更新 §9.3 |
 | v1.1.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E1 执行完成（5/5 Pass）**：四仓模板/说明漂移全部补齐（OpenBase `.env.shared-infra` 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明 v2.8.3 新增 §2.5/§2.6），并修正 A2 中 DPS 键名前缀笔误；**E2 执行完成（本机口径 Pass）**：以原生 `uvicorn` 单进程（无 Docker）完成 D-02 重启两向验证、A2-01 基线、A2-03 JWKS、A2-02 端点鉴权、A2-06 日志卫生；A2-04/A2-05 与 V 类实测项按 §5 判定边界标 ⛔ Blocked；新增 §9 执行结果 |
 | v1.0.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 首版：把残余项按「环境依赖」而非编号分为 E1（零环境）/ E2（本机原生）/ E3（生产窗口）/ E4（跨仓与外部 IdP）/ E5（触发式暂缓）五批；明确 D-04→K-01→D-03 串行约束与「不使用 Docker」的 E2 替代路径 |
 
@@ -125,7 +126,7 @@
 
 ## 9. 执行结果（2026-11-02）
 
-> 本轮严格**不使用 Docker**；E3/E4/E5 未启动（依赖生产会话、DBA 变更单、可达 IdP），仅登记解除条件。
+> 本轮严格**不使用 Docker**；E3 已做「本机生产形态」取证，真实生产切换、E4/E5 未启动（依赖生产会话、DBA 变更单、可达 IdP），仅登记解除条件。
 
 ### 9.1 E1（零环境）— 5/5 Pass
 
@@ -137,7 +138,7 @@
 | E1-④ | ✅ Pass | DPS 环境配置说明升 v2.8.3，新增 §2.5/§2.6；键名与 `DPS/src/config.py:200,296` 一致（均无 `DPS_` 前缀） |
 | E1-⑤ | ✅ Pass | A2 升 v1.1.6，修正 `DPS_IDENTITY_AUTHORITY`/`DPS_STATIC_KEY_CHANNEL` 笔误 |
 
-证据：`doc/audit/verification/evidence/a2/a2-e1-template-drift-20261102.json`；执行细节见《D 类部署取证执行记录 v1.0.1》§5.1。
+证据：`doc/audit/verification/evidence/a2/a2-e1-template-drift-20261102.json`；执行细节见《D 类部署取证执行记录 v1.0.2》§5.1。
 
 ### 9.2 E2（本机原生，无 Docker）
 
@@ -152,7 +153,7 @@
 | A2-06 秘密卫生 | ✅ Pass（本机） | 进程日志无 PEM 头、无 JWT 密钥原文 |
 | V-01/02/03/05/06/07/09/13/14 | ⛔ Blocked | 需共享 PG/Redis、多实例、四仓联调或真实 IdP |
 
-证据：`evidence/a2/a2-d02-negative-e2native-20261102.json`、`evidence/a2/a2-e2-native-20261102.json`；执行细节见《D 类部署取证执行记录 v1.0.1》§5.2。
+证据：`evidence/a2/a2-d02-negative-e2native-20261102.json`、`evidence/a2/a2-e2-native-20261102.json`；执行细节见《D 类部署取证执行记录 v1.0.2》§5.2。
 
 **E2 限制如实登记**：本机 SQLite 初始化因 PG 专用 SQL（schema/`setval`）失败，应用自动回退内存模式，故本机结论**不覆盖** DB 相关语义；多实例审计链（V-05）与共享 Redis 场景不适用。
 
@@ -160,6 +161,39 @@
 
 | 批次 | 状态 | 解除条件 |
 |---|---|---|
-| E3 生产窗口 | ⛔ 未启动 | 生产会话 + DBA 变更单 + 业务窗口；顺序见 §6 |
+| E3 生产窗口 | ⚠ 本机生产形态已执行（§9.4）；**真实生产切换 ⛔ Blocked** | 生产会话 + DBA 变更单 + 业务窗口；顺序见 §6 |
 | E4 跨仓与外部 | ⛔ 未启动 | 可达 IdP + 四仓生产部署 |
 | E5 触发式暂缓 | ⏸ 不启动 | 密评/KMS/信创/审计平台立项 |
+
+### 9.4 E3 本机生产形态结果（2026-11-02）
+
+> 执行方式：`tmp/e3-native/run_e3.py`，原生 `uvicorn` 单进程 + SQLite（DPS `SQLITE_FALLBACK=true`）；本机无 Docker。证据：`evidence/e3/e3-native-20261102.json`。
+
+| 系统 | 事项 | 判定 | 关键观测 |
+|---|---|---|---|
+| OpenBase | D-03 `jwt_require_rs256=true` 正向 | ✅ Pass（本机） | 生产形态启动 200；JWKS 单 RSA 公钥、`kid=e3-native-kid`、无私钥字段；HS256 令牌访问 `/api/v1/auth/me` → **401** `AUTH_401 invalid or expired token` |
+| OpenBase | D-03 负向（缺 RS256 材料） | ✅ Pass（本机） | `jwt_require_rs256=true` 且私钥路径/kid 为空 → `exit=1`，报错 `生产/门禁要求 RS256：必须同时配置 ... 否则拒绝启动` |
+| OpenBase | D-05 主体映射 | ✅ Pass（配置口径） | `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 解析 **1 条**；出站映射两向需真实下游代理，⛔ 留待 E4 |
+| OpenBase | D-06 MCP 摘要/密钥文件 | ✅ Pass（本机） | 摘要模式启动 200；密钥文件模式启动 200；生产配置明文 `OPENBASE_MCP_API_KEYS` → `exit=1`（`生产环境禁止配置明文 MCP 静态 Key`） |
+| OpenBase | D-06 只读挂载 0600 | ⛔ Blocked | Windows 本机无 POSIX mode，需主机侧挂载操作 |
+| DPS | K-01 `closed` 非应急 Key | ✅ Pass（本机） | `GET /api/v2/profiles` + 非应急 `X-API-Key` → **401** `AUTH_STATIC_KEY_CHANNEL_CLOSED` |
+| DPS | K-01 应急 bypass | ✅ Pass（本机） | 关闭态 + 应急 Key（未来过期）→ 不再返回关闭码；审计日志 `static_key_emergency_bypass` 出现，日志内**无明文 Key** |
+| DPS | K-01 负向（缺过期时间） | ✅ Pass（本机） | 配应急 Key 但 `EMERGENCY_BYPASS_EXPIRES_AT` 为空 → `exit=1`，报错 `K-01 启动门禁：应急通道必须有明确过期时间` |
+| DPS | K-02 `IDENTITY_AUTHORITY=openbase` | ✅ Pass（本机） | `POST /api/v1/auth/login` → **403**，响应含 `AUTH_LOCAL_LOGIN_DISABLED`；`/health/liveness` 200 |
+| OpenRAG | K-01 策略（门禁级） | ✅ Pass（模块级 8/8） | dual 主通道启用、closed 关闭、非法值归一 dual、应急有效期/过期/错 Key 判定、缺过期拒启、closed+bypass 策略 |
+| OpenRAG | 整服务启动 | ⛔ Blocked | 本机缺 aiohttp/qdrant-client/faiss/sentence-transformers，导入期原生崩溃（`0xC0000005`） |
+| OpenMemory | K-01 策略（门禁级） | ✅ Pass（模块级 8/8） | 同 OpenRAG 八项全通过 |
+| OpenMemory | 整服务启动 | ⛔ Blocked | 缺 qdrant-client/neo4j/sentence-transformers/openai 等重依赖，且需 PG/Redis 共享态 |
+
+### 9.5 判定边界与 Blocked 解除条件
+
+| 项 | 状态 | 解除条件 |
+|---|---|---|
+| D-04 存量 Key 收敛 | ⛔ Blocked | 生产 DBA 会话 + 变更单，按 `evidence/d/d-04-expired-key-convergence-20261101.sql` 分批执行 |
+| D-05 出站映射两向冒烟 | ⛔ Blocked | 真实下游代理可达后做「映射放行 / 未映射拒绝」 |
+| D-06 只读挂载 0600 | ⛔ Blocked | 生产主机侧挂载（PEM 0600、禁内联 env） |
+| A2-04 四仓镜像矩阵 `iss/aud` | ⛔ Blocked | 四仓同时可达（OpenRAG/OpenMemory 本机不可启动） |
+| A2-05 服务 Key 权限面最小化 | ⛔ Blocked | 真实服务 Key 注册表取样 |
+| V-04/V-05/V-13 | ⛔ Blocked | 共享 PG/Redis 多实例 + 可达真实 IdP |
+
+**结论**：凡「启动服务即可验证」的门禁与两向语义，已在本机生产形态全部跑通（OpenBase / DPS / OpenRAG+OpenMemory 策略层）；剩余 Blocked 项均需**生产主机、DBA 变更单、共享中间件或真实 IdP**，不属代码缺口。
