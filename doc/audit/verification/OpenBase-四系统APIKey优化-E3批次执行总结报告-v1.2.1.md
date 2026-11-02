@@ -2,15 +2,15 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.2.0 |
+| 文档版本 | v1.2.1 |
 | 文档状态 | [Review] |
 | 适用环境 | 本机（Windows / 无 Docker）/ Pre-Pro / Pro（仅语义对齐） |
-| 关联批次 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项分批推进方案-v1.4.0.md`（§9.3 / §9.4 / §9.5 / §9.6 / §9.7） |
-| 关联记录 | `...-D类部署取证执行记录-v1.0.4.md`（§5.3 E3 逐项登记、§5.4 E3b 逐项登记、§5.5 E3c 逐项登记） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.30.0.md`（§10.31 / §10.32 / §10.33） |
-| 关联台账 | `...-残余项统一处置方案-v1.4.0.md`（§2.1 / §5.5 / §6） |
-| 关联清单 | `...-A1生产验收清单-v1.1.7.md`、`...-A2生产配置收口清单-v1.1.9.md` |
-| 证据文件 | `doc/audit/verification/evidence/e3/e3-native-20261102.json`（7447 B，SHA-256 `18224176AB92FDA0DA913BF83910A04DBCBC1680A4658B3EEF601D773CC94550`）；`.../e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5CA97D342E8FBD4401C1C1EF460091509DB3F5323DE39B1C7EA92D5C61`）；`.../e3/e3c-openllm-20261102.json`（9804 B，SHA-256 `E67F523E830DF1E3DAFC8FF76CEA846A05201BBFC2A27289E9E860A7496B3823`） |
+| 关联批次 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项分批推进方案-v1.5.0.md`（§9.3 / §9.4 / §9.5 / §9.6 / §9.7 / §9.8） |
+| 关联记录 | `...-D类部署取证执行记录-v1.0.5.md`（§5.3 E3 逐项登记、§5.4 E3b 逐项登记、§5.5 E3c 逐项登记、§5.6 E4 逐项登记） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.31.0.md`（§10.31 / §10.32 / §10.33 / §10.34） |
+| 关联台账 | `...-残余项统一处置方案-v1.5.0.md`（§2.1 / §5.5 / §6） |
+| 关联清单 | `...-A1生产验收清单-v1.1.8.md`、`...-A2生产配置收口清单-v1.2.0.md` |
+| 证据文件 | `doc/audit/verification/evidence/e3/e3-native-20261102.json`（7447 B，SHA-256 `18224176AB92FDA0DA913BF83910A04DBCBC1680A4658B3EEF601D773CC94550`）；`.../e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5CA97D342E8FBD4401C1C1EF460091509DB3F5323DE39B1C7EA92D5C61`）；`.../e3/e3c-openllm-20261102.json`（9804 B，SHA-256 `E67F523E830DF1E3DAFC8FF76CEA846A05201BBFC2A27289E9E860A7496B3823`）；`.../e4/e4-revocation-20261102.json`（3793 B，SHA-256 `886DB360C3BE0F77BD9E7F6732131702565ABE25F1CD73570D1B5B750EC1F242`） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
 
@@ -18,6 +18,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.2.1 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | **E4 补充：跨仓吊销增量闭合**：`openllm_openbase_revocation_sync` 由 ⛔ Blocked 改 ✅ Pass。OpenBase 服务 Key 签发 **200**、吊销端点三态 **401/401/200**、登出后 `token_version` **0→1**、增量 `since/next_since` 命中；**OpenLLM 整进程两向**（P1 开同步旧令牌 **401** + WARN「OpenBase 主体已吊销（吊销增量）」，P2 关同步同一令牌 **200**）；**DPS / OpenRAG / OpenMemory 同步模块级两向**（`revoked_old=true`、`revoked_new=false`）。§1 判定合计 33 Pass + 1 服务级 Blocked → **34 Pass + 8 生产前置 Blocked**；§10.2/§11.2 C1 行改 ✅；新增 §12；三仓整服务启动与生产拓扑仍 ⛔ Blocked；证据 `evidence/e4/e4-revocation-20261102.json`（3793 B，SHA-256 `886DB360…C1F242`） |
 | v1.2.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E3c 补充：E3b 两项 Blocked 的具体解决**：`openllm_openbase_token_accept` —— OpenBase RS256 令牌在 OpenLLM `/api/v1/auth/me` **200**（`OPENBASE_SUBJECT_MAP` 命中 `e3c-openbase-user`），四类负向全部 **401**；`openllm_prod_env_smoke` —— 门禁矩阵 C01 放行 + C02~C16 **15/15 拒绝**、`EXEMPT_OK`（routes=5）、生产 ENV 合规启动 `GATES_OK`、`/health` **200**、本地登录 **401**；新增 §11，同步 §1 摘要与 §10.2 两行状态；吊销增量（E4）与生产拓扑（E5）仍 ⛔ Blocked；证据 `evidence/e3/e3c-openllm-20261102.json`（9804 B，SHA-256 `E67F523E…6B3823`） |
 | v1.1.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E3b 补充：OpenLLM R17 身份权威进程级两向**：N1（`openbase` 缺 `OPENBASE_JWKS_URL`）拒启 `exit=3`（176.3s）、N2（非法取值 `openid`）拒启 `exit=1`（12.5s）、P1（`openbase` 正向）`/health` 200 + 本地登录 **403** 含 R17 文案、P2（`local` 对照）登录 **401** 无 R17 文案；新增 §10，同步 §1 摘要与 §7 联动；生产 ENV 全套门禁与 OpenBase 令牌放行仍 ⛔ Blocked；证据 `evidence/e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5C…D5C61`） |
 | v1.0.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 首版：汇总 E3「本机生产形态」批次的目标、环境、用例矩阵、逐系统结果、Blocked 解除条件、判定边界、文档联动与复现方式；结论为 27 项 Pass / 3 项服务级 Blocked / 6 项生产前置 Blocked，真实生产实测仍 ⛔ Blocked |
@@ -30,9 +31,9 @@
 
 | 维度 | 结果 |
 |---|---|
-| 判定项合计 | **42**（33 Pass + 1 服务级 Blocked（`openllm_openbase_revocation_sync`）+ 8 生产前置 Blocked；E3b 的 4 Pass + 2 Blocked 中两项已由 E3c 闭合为 Pass） |
+| 判定项合计 | **42**（**34 Pass** + 8 生产前置 Blocked；原「1 服务级 Blocked（`openllm_openbase_revocation_sync`）」已由 E4 闭合为 Pass） |
 | OpenLLM（E3b 补充） | R17 进程级两向全部命中（N1/N2 拒启、P1 403 含 R17、P2 401 无 R17，4 Pass） |
-| OpenLLM（E3c 补充） | `openllm_openbase_token_accept` **Pass**（RS256 `/auth/me` 200 + 四类负向 401）；`openllm_prod_env_smoke` **Pass**（C01 放行 + C02~C16 拒绝、`EXEMPT_OK`、`GATES_OK`、`/health` 200、本地登录 401）；吊销增量 ⛔ Blocked（归 E4） |
+| OpenLLM（E3c 补充） | `openllm_openbase_token_accept` **Pass**（RS256 `/auth/me` 200 + 四类负向 401）；`openllm_prod_env_smoke` **Pass**（C01 放行 + C02~C16 拒绝、`EXEMPT_OK`、`GATES_OK`、`/health` 200、本地登录 401）；吊销增量 ✅ 已由 E4 闭合（见 §12） |
 | OpenBase | D-03 / D-05 / D-06 两向全部命中（7 Pass，1 Blocked：PEM 0600） |
 | DPS | K-01 / K-02 两向全部命中（4 Pass） |
 | OpenRAG / OpenMemory | K-01 门禁级策略 **8/8 + 8/8** 断言通过；整服务启动 ⛔ Blocked |
@@ -261,7 +262,7 @@
 | P1 | `openbase` 正向（`lifespan=off`） | ✅ Pass：`/health` 200；`/api/v1/auth/login` **403** 含「身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）」；注册 422 |
 | P2 | `local` 对照（`lifespan=off`） | ✅ Pass：`/health` 200；登录 **401**「用户名或密码错误」，**不含** R17 文案 |
 | 生产 ENV 全套门禁 | 需生产 ENV + 可达 JWKS | ✅ 已于 §11 闭合（`openllm_prod_env_smoke`） |
-| OpenLLM 接受 OpenBase 令牌 | 需真实令牌 + JWKS | ✅ 已于 §11 闭合（`openllm_openbase_token_accept`）；吊销增量仍归 E4 ⛔ Blocked |
+| OpenLLM 接受 OpenBase 令牌 | 需真实令牌 + JWKS | ✅ 已于 §11 闭合（`openllm_openbase_token_accept`）；吊销增量 ✅ 已于 §12 闭合（E4） |
 
 ### 10.3 判定边界
 
@@ -305,7 +306,7 @@
 | B4 | 生产 ENV 合规启动 | ✅ `GATES_OK`（`assert_startup_gates()` + `validate_production_hardening()`） |
 | B5 | 运行期健康 | ✅ `/health` **200**，`status=healthy`、`version=2.19.1` |
 | B6 | 本地身份通道 | ✅ 本地登录 **401**「用户名或密码错误」 |
-| C1 | 吊销增量联动 | ⛔ Blocked（`openllm_openbase_revocation_sync`，归 E4 跨仓实测） |
+| C1 | 吊销增量联动 | ✅ 已由 E4 闭合（见 §12）：OpenLLM 整进程两向 Pass，DPS/OpenRAG/OpenMemory 同步模块级两向 Pass |
 | C2 | 生产拓扑实测 | ⛔ Blocked（共享 PG/Redis、多实例、真实网关，归 E5） |
 
 ### 11.3 判定边界
@@ -326,3 +327,46 @@
 - 《残余项统一处置方案 v1.4.0》§5.5（E3c 行）。
 - 《D 类部署取证执行记录 v1.0.4》§5.5（E3c 逐项登记）。
 - 《A1 生产验收清单 v1.1.7》A1-11、《A2 生产配置收口清单 v1.1.9》§6.4。
+
+---
+
+## 12. E4 补充：跨仓吊销增量两向（2026-11-03）
+
+> **背景**：§11.2 C1 原判 ⛔ Blocked（`openllm_openbase_revocation_sync`）。按用户指令「请开始处理 E4 跨仓实测的吊销增量项」，以**本机原生进程 + SQLite（无 Docker）**完成取证；证据 `evidence/e4/e4-revocation-20261102.json`（**3793 B**，SHA-256 `886DB360C3BE0F77BD9E7F6732131702565ABE25F1CD73570D1B5B750EC1F242`，已脱敏：仅 `key_id`，无令牌/服务 Key/私钥原文）。
+
+### 12.1 前提修正（本机 SQLite 兼容装配）
+
+- 现象：首轮 OpenBase 服务 Key 签发 **500 SYS_500**（`no such table: openbase.service_api_keys`）。
+- 根因链：`core/db/session.py::init_db` 给全部表设 `table.schema="openbase"` → `core/db/init.py::create_tables` 执行 PG 专用 `CREATE SCHEMA`/`SET search_path` → SQLite 抛 `OperationalError` → `demo_app._try_database_init()` 捕获后 `_fallback_to_memory()` → 内存态无 `service_api_keys` 表。
+- 处置：取证入口在导入 `demo_app` **前**替换两个钩子——`init_db` 强制 `schema=None`；`init_database` 改为 `Base.metadata.create_all` + 幂等种子（`admin` 用户 / `admin` 角色 / `*` 权限 / 关联表）。**产品源码零改动**，仅取证脚本 `tmp/e4-revocation/serve_openbase.py` 生效。
+
+### 12.2 逐项结果
+
+| 编号 | 用例 | 结果 |
+|---|---|---|
+| E4-A1 | OpenBase 服务 Key 签发 | ✅ **200**（`key_id=e8ad157890ac4ba3bcd27b30be9e6602`） |
+| E4-A2 | 吊销端点鉴权三态 | ✅ 无 Key **401** / 错误 Key **401** / 正确 Key **200** |
+| E4-A3 | 基线主体快照 | ✅ `token_version=0` |
+| E4-A4 | 登出吊销（`POST /api/v1/auth/oidc/logout`） | ✅ `token_version` **0→1** |
+| E4-A5 | 增量拉取（`since`/`next_since`） | ✅ 命中被吊销主体，`updated_at` 单调 |
+| E4-B1 | OpenLLM 整进程 P1（开同步，间隔 1s） | ✅ 旧令牌 **401**；日志 `WARNING ... OpenBase 主体已吊销（吊销增量）` |
+| E4-B2 | OpenLLM 整进程 P2（关同步） | ✅ 同一令牌 **200**（对照成立） |
+| E4-C1 | DPS 同步模块级 | ✅ `enabled=true`、`revoked_old=true`、`revoked_new=false` |
+| E4-C2 | OpenRAG 同步模块级 | ✅ 同上 |
+| E4-C3 | OpenMemory 同步模块级 | ✅ 同上 |
+| E4-D1 | 三仓整服务启动 | ⛔ Blocked（本机缺原生扩展/GPU/外部中间件） |
+| E4-D2 | 生产拓扑与收敛时延 | ⛔ Blocked（共享 PG/Redis、多实例、真实网关；A1-04 需生产实测） |
+
+### 12.3 判定边界
+
+1. E4-B1/B2 为 **整进程两向**（OpenLLM 真实进程 + 真实令牌 + 真实吊销端点），结论口径为「本机生产形态」。
+2. E4-C1~C3 为 **同步模块级两向**（直接构造同步器与存储），**不替代**三仓整服务启动实测。
+3. 生产收敛时延（吊销到下游拒绝的 P95）未测，归 E5 / A1-04；不得以本机间隔 1s 的结果推断生产 SLO。
+4. 排障留痕（4 条）：同步器默认 3s 超时导致首轮 `revoked_old=false`（已以 120s 超时复现修正）；OpenRAG 包初始化导入重型依赖致原生崩溃（已以命名空间包 + `spec_from_file_location` 直接加载目标文件）；OpenLLM 日志为 JSON 行且中文 `\uXXXX` 转义（须 `json.loads` 后匹配）；E4 脚本曾被并发运行两次致证据二次覆盖（已清理旧日志/DB 后单实例重跑）。
+
+### 12.4 联动
+
+- 《评估与优化方案 v1.31.0》§10.34（权威登记）、§10.33 Blocked 项标注闭合。
+- 《残余项分批推进方案 v1.5.0》§9.8（新增）+ §9.5/§9.6/§9.7 相关行改 Pass。
+- 《残余项统一处置方案 v1.5.0》§2.1 / §5.5（E4 行）。
+- 《D 类部署取证执行记录 v1.0.5》§5.6（E4 逐项登记）。

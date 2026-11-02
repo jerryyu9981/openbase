@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.9 |
+| 文档版本 | v1.2.0 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.30.0.md`（§10.7~§10.33） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.7.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收）、`...-D类部署取证执行记录-v1.0.4.md`（D-02/D-03/D-05/D-06 的本清单取证结果，含 E3 本机生产形态、E3b OpenLLM R17 与 E3c OpenLLM 令牌受理/生产 ENV 门禁） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.31.0.md`（§10.7~§10.34） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.8.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收）、`...-D类部署取证执行记录-v1.0.5.md`（D-02/D-03/D-05/D-06 的本清单取证结果，含 E3 本机生产形态、E3b OpenLLM R17、E3c OpenLLM 令牌受理/生产 ENV 门禁与 E4 跨仓吊销增量） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -35,6 +35,7 @@
 | v1.1.7 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3 本机生产形态联动：补充 A2-01（生产基线 13 项门禁放行）、A2-03（JWKS 仅 RSA 公钥、kid 一致）、A2-06（日志无秘密）本机生产形态证据 `evidence/e3/e3-native-20261102.json`；A2-04/A2-05 仍 ⛔ Blocked（需四仓生产部署与真实服务 Key 权限面），已登记 E3 复测结论与解除条件；同步关联方案 v1.28.0（§10.31）、关联台账 v1.2.0、A1 清单 v1.1.5、D 类执行记录 v1.0.2、分批推进方案 v1.2.0 |
 | v1.1.8 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3b 联动：§3 OpenLLM `IDENTITY_AUTHORITY` 行补证据口径（`openbase` 下本地登录 **403** 含 R17、`local` 对照 **401** 无 R17、`openbase` 缺 `OPENBASE_JWKS_URL` **拒启 `exit=3`**、非法取值 **拒启 `exit=1`**）；§6.4 新增 OpenLLM R17 取证行；证据 `evidence/e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5C…D5C61`）；生产 ENV 全套门禁与 OpenBase 令牌放行仍 ⛔ Blocked；同步关联方案 v1.29.0（§10.32）、关联台账 v1.3.0、D 类执行记录 v1.0.3、分批推进方案 v1.3.0、E3 批次总结报告 v1.1.0 |
 | v1.1.9 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3c 联动（方案 v1.30.0 §10.33）：§3 OpenLLM `IDENTITY_AUTHORITY` 行补令牌受理口径（生产 ENV 启动后 OpenBase RS256 令牌 `/api/v1/auth/me` **200**、四类负向 **401**、生效配置 `authority=openbase / jwks_configured=1 / subject_map_configured=1`）；§6.4 新增 E3c 两行（生产 ENV 全套门禁、OpenBase 令牌受理）；证据 `evidence/e3/e3c-openllm-20261102.json`（9804 B，SHA-256 `E67F523E…6B3823`）；吊销增量（E4）与生产拓扑（E5）仍 ⛔ Blocked；同步关联方案 v1.30.0（§10.33）、关联台账 v1.4.0、A1 清单 v1.1.7、D 类执行记录 v1.0.4、分批推进方案 v1.4.0、E3 批次总结报告 v1.2.0 |
+| v1.2.0 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | E4 联动（方案 v1.31.0 §10.34）：§3 新增「E4 取证补充」——四仓吊销同步键在本机口径生效（吊销端点三态 **401/401/200**、`token_version` **0→1**、增量命中；OpenLLM 整进程两向旧令牌 **401** / 关同步对照 **200**；DPS/OpenRAG/OpenMemory `revoked_old=true`、`revoked_new=false`）；§6.4 新增 E4 行；§7 A2-04 解除条件由「E4 四仓生产拓扑就绪」细化为「E5 生产拓扑 + 四仓整服务」，A2-06 证据补 e4；证据 `evidence/e4/e4-revocation-20261102.json`（3793 B，SHA-256 `886DB360…C1F242`）；生产收敛时延与整服务启动仍 ⛔ Blocked；同步关联方案 v1.31.0（§10.34）、关联台账 v1.5.0、A1 清单 v1.1.8、D 类执行记录 v1.0.5、分批推进方案 v1.5.0、E3 批次总结报告 v1.2.1 |
 
 ---
 
@@ -197,6 +198,8 @@
 | DPS | `EMERGENCY_BYPASS_KEY` / `EMERGENCY_BYPASS_EXPIRES_AT` | 空 / 空 | 仅 `closed` 使用：两值必须同时配置且过期时间为 ISO-8601（naive 视为 UTC），缺一/非法 → **拒绝启动**；放行只落 `sha256[:12]` 摘要审计 | `src/identity/static_key_channel.py` |
 | DPS | `DPS_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | `false` | K-05：可选后台吊销同步（守护线程，幂等 start/stop；仅配置吊销端点且显式置 `true` 才起线程；`lifespan` 启动/关闭） | `src/config.py`、`src/identity/revocation_background.py`、`src/rest_api/app.py` |
 
+> **E4 取证补充（2026-11-03）**：本节四仓吊销同步键已在**本机口径**验证生效——OpenBase 吊销端点三态 **401/401/200**、登出后 `token_version` **0→1**、增量 `since/next_since` 命中；OpenLLM 整进程两向（开同步旧令牌 **401** / 关同步对照 **200**）；DPS/OpenRAG/OpenMemory 同步模块级两向（`enabled=true`、`revoked_old=true`、`revoked_new=false`）。证据 `evidence/e4/e4-revocation-20261102.json`；**生产收敛时延与整服务启动仍 ⛔ Blocked**（归 E5 / A1-04）。
+
 ---
 
 ## 4. 启动门禁清单（缺配即拒启）
@@ -280,9 +283,10 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 | 多 Provider issuer 唯一性（登记前置） | ✅ Provider name 唯一性门禁生效；ℹ️ issuer 为 discovery 运行期解析（配置层无该字段） | ⛔ issuer 判重待可达 IdP；同 issuer 多 client 仅一个承担 back-channel |
 | OpenLLM R17 身份权威（§3 `IDENTITY_AUTHORITY`） | ✅ E3b 本机进程级两向：缺 JWKS 拒启 `exit=3`（176.3s）、非法取值拒启 `exit=1`、`openbase` 登录 **403** 含 R17、`local` 对照 **401** 无 R17 | ⛔ 生产拓扑切换待部署窗口；解除条件=生产主机启停权限 |
 | OpenLLM 生产 ENV 全套门禁（E3c） | ✅ 生产 ENV 下门禁矩阵 **16 例**：C01 合规放行 + C02~C16 逐一拒绝（消息逐字命中）；豁免行 `EXEMPT_OK`（routes=5）；合规启动 `GATES_OK` + `/health` **200** + 本地登录 **401** | ⛔ 生产拓扑重启与主机侧豁免行核对待部署窗口；解除条件=生产启停权限 + 发布单 |
-| OpenLLM 接受 OpenBase RS256 令牌（E3c） | ✅ OpenBase 在线签发（`kid=e3c-kid`、`iss=openbase`、`aud=openbase-api`、`type=access`）→ OpenLLM JWKS **200** → `OPENBASE_SUBJECT_MAP` 命中 → `/api/v1/auth/me` **200**；四类负向 **401**（未知 kid / 错误签名 / 主体未映射 / 已过期），服务端各落 WARN | ⛔ 真实生产主体映射与吊销增量（E4）；解除条件=生产注入 + 可达四仓 + 吊销同步实测 |
+| OpenLLM 接受 OpenBase RS256 令牌（E3c） | ✅ OpenBase 在线签发（`kid=e3c-kid`、`iss=openbase`、`aud=openbase-api`、`type=access`）→ OpenLLM JWKS **200** → `OPENBASE_SUBJECT_MAP` 命中 → `/api/v1/auth/me` **200**；四类负向 **401**（未知 kid / 错误签名 / 主体未映射 / 已过期），服务端各落 WARN | ⛔ 真实生产主体映射待生产注入；吊销增量 ✅ 已由 E4 闭合（本机口径） |
+| 跨仓吊销增量（E4） | ✅ OpenBase 服务 Key 签发 **200**、吊销端点三态 **401/401/200**、`token_version` **0→1**、增量 `since/next_since` 命中；OpenLLM **整进程**两向（P1 旧令牌 **401** + WARN / P2 对照 **200**）；DPS/OpenRAG/OpenMemory **同步模块级**两向（`revoked_old=true`、`revoked_new=false`） | ⛔ 三仓整服务启动与生产收敛时延待生产拓扑；解除条件=四仓生产部署 + A1-04 实测 |
 
-证据：`doc/audit/verification/evidence/d/d-02-gate-matrix-20261101.json`、`d-06-template-key-check-20261101.json`、`d-07-issuer-uniqueness-20261101.json`；E1/E2/E3/E3b/E3c 证据 `evidence/a2/a2-e1-template-drift-20261102.json`、`a2-e2-native-20261102.json`、`a2-d02-negative-e2native-20261102.json`、`evidence/e3/e3-native-20261102.json`、`evidence/e3/e3b-openllm-20261102.json`、`evidence/e3/e3c-openllm-20261102.json`；执行方式与阻塞解除条件见 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.4.md` §5。
+证据：`doc/audit/verification/evidence/d/d-02-gate-matrix-20261101.json`、`d-06-template-key-check-20261101.json`、`d-07-issuer-uniqueness-20261101.json`；E1/E2/E3/E3b/E3c 证据 `evidence/a2/a2-e1-template-drift-20261102.json`、`a2-e2-native-20261102.json`、`a2-d02-negative-e2native-20261102.json`、`evidence/e3/e3-native-20261102.json`、`evidence/e3/e3b-openllm-20261102.json`、`evidence/e3/e3c-openllm-20261102.json`；E4 证据 `evidence/e4/e4-revocation-20261102.json`；执行方式与阻塞解除条件见 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.5.md` §5。
 
 ---
 
@@ -293,9 +297,9 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 | A2-01 | OpenBase 第 2 节基线逐项落地（秘密类仅记状态） | Pass/Fail | `a2-01.txt`（生产）；本机生产形态基线放行见 `evidence/a2/a2-e2-native-20261102.json`、`evidence/e3/e3-native-20261102.json`（`env=production`、13 项门禁放行）与 `evidence/e3/e3c-openllm-20261102.json`（OpenLLM 生产 ENV `GATES_OK` + 豁免行 `EXEMPT_OK`） |
 | A2-02 | 13 项启动门禁负向样例各命中一次（第 6.3 节） | Pass/Fail | `a2-02.txt`（生产重启）；本地构造期矩阵见 `evidence/d/d-02-gate-matrix-20261101.json`（17/17）；本机原生重启拒绝见 `evidence/a2/a2-d02-negative-e2native-20261102.json`、`evidence/e3/e3-native-20261102.json`（D-03 缺 RS256 / D-06 明文 Key 均 `exit=1`）与 `evidence/e3/e3c-openllm-20261102.json`（OpenLLM C02~C16 逐一拒绝） |
 | A2-03 | JWKS 只发公钥、kid 一致（第 6.2 节） | Pass/Fail | `a2-03.txt`（生产）；本机口径见 `evidence/a2/a2-e2-native-20261102.json`、`evidence/e3/e3-native-20261102.json`（`key_count=1`、`kty=RSA`、`kid` 一致、`private_fields=[]`）与 `evidence/e3/e3c-openllm-20261102.json`（OpenLLM 跨进程拉取 JWKS 200） |
-| A2-04 | 四仓镜像矩阵齐备且 `iss/aud` 一致 | Pass/Fail | `a2-04.txt`（生产；本机不具备四仓部署 → **Blocked**；E3 复测仍 Blocked，解除条件=E4 四仓生产拓扑就绪） |
-| A2-05 | 服务 Key 权限面最小化（`scope.system` 仅含 `auth`/`*` 必要项） | Pass/Fail | `a2-05.txt`（生产；本机无真实服务 Key 权限面 → **Blocked**；E3 复测仍 Blocked，解除条件=生产服务 Key 权限面取样） |
-| A2-06 | 秘密未落 git/日志/文档（抽样核查） | Pass/Fail | `a2-06.txt`（生产）；本机日志扫描见 `evidence/a2/a2-e2-native-20261102.json` 与 `evidence/e3/e3-native-20261102.json`（无 PEM 头、无 JWT 密钥原文、audit 无明文 Key） |
+| A2-04 | 四仓镜像矩阵齐备且 `iss/aud` 一致 | Pass/Fail | `a2-04.txt`（生产；本机不具备四仓部署 → **Blocked**；E3/E4 复测仍 Blocked，解除条件=E5 生产拓扑 + 四仓整服务可达） |
+| A2-05 | 服务 Key 权限面最小化（`scope.system` 仅含 `auth`/`*` 必要项） | Pass/Fail | `a2-05.txt`（生产；本机无真实服务 Key 权限面 → **Blocked**；E3/E4 复测仍 Blocked，解除条件=生产服务 Key 权限面取样） |
+| A2-06 | 秘密未落 git/日志/文档（抽样核查） | Pass/Fail | `a2-06.txt`（生产）；本机日志扫描见 `evidence/a2/a2-e2-native-20261102.json` 与 `evidence/e3/e3-native-20261102.json`（无 PEM 头、无 JWT 密钥原文、audit 无明文 Key）；E4 证据已脱敏（仅 `key_id`，无令牌/服务 Key 原文）见 `evidence/e4/e4-revocation-20261102.json` |
 
 **判定规则**：每项仅 `Pass / Fail / Blocked`；P0（A2-01/02/03）任一 `Fail` 不得上线；`Blocked` 须写明原因与解除条件。
 

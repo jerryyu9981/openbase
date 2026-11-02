@@ -2,13 +2,13 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.4.0 |
+| 文档版本 | v1.5.0 |
 | 文档状态 | [Review] |
 | 适用环境 | 本机（无 Docker）/ Dev 原生进程 / Pre-Pro / Pro |
-| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.4.0.md`（§2.1/§5.4/§5.5/§6/§7/§8/§9.1） |
-| 关联清单 | `...-A1生产验收清单-v1.1.7.md`、`...-A2生产配置收口清单-v1.1.9.md` |
-| 关联记录 | `...-D类部署取证执行记录-v1.0.4.md`（§5 E 批联动） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.30.0.md`（§10.31/§10.32/§10.33） |
+| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.5.0.md`（§2.1/§5.4/§5.5/§6/§7/§8/§9.1） |
+| 关联清单 | `...-A1生产验收清单-v1.1.8.md`、`...-A2生产配置收口清单-v1.2.0.md` |
+| 关联记录 | `...-D类部署取证执行记录-v1.0.5.md`（§5 E 批联动） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.31.0.md`（§10.31/§10.32/§10.33/§10.34） |
 | 约束 | **本轮不使用 Docker**（电脑资源有限）；环境取证以原生进程 + SQLite/本机依赖为限 |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.5.0 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | **E4：跨仓吊销增量实测完成**：新增 §9.8；`§9.5` 吊销增量行、`§9.6` OpenBase 令牌行、`§9.7` C1 行由 ⛔ Blocked 改 ✅ Pass。OpenBase 服务 Key 签发 200、吊销端点三态（401/401/200）、登出后 `token_version` 0→1、增量 `since/next_since` 命中；**OpenLLM 整进程两向** P1 旧令牌 **401**（WARN「OpenBase 主体已吊销（吊销增量）」）/ P2 对照 **200**；**DPS/OpenRAG/OpenMemory 同步模块级** `enabled=true`、`revoked_old=true`、`revoked_new=false`。三仓整服务启动与生产拓扑/收敛时延仍 ⛔ Blocked（归 E5 / A1-04）。证据 `evidence/e4/e4-revocation-20261102.json`（3793 B，SHA-256 `886DB360…C1F242`）；登记 4 条排障留痕（同步器 3 s 超时、OpenRAG 包初始化原生崩溃、JSON 日志转义、脚本并发争用） |
 | v1.4.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E3c：E3b 两项 Blocked 的具体解决完成**：`openllm_openbase_token_accept` —— OpenBase RS256 令牌在 OpenLLM `/api/v1/auth/me` **200**（`OPENBASE_SUBJECT_MAP` 命中 `e3c-openbase-user`），未知 kid / 错误签名 / 主体未映射 / 已过期四类 **401**；`openllm_prod_env_smoke` —— 门禁矩阵 C01 放行 + C02~C16 **15/15 拒绝**、豁免行 `EXEMPT_OK`（routes=5）、生产 ENV 合规启动 `GATES_OK`、`/health` **200**、本地登录 **401**；新增 §9.7，§9.5 两行 Blocked 改 Pass；吊销增量（E4）与生产拓扑（E5）仍 ⛔ Blocked；证据 `evidence/e3/e3c-openllm-20261102.json`（9804 B，SHA-256 `E67F523E…6B3823`） |
 | v1.3.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E3b OpenLLM R17 两向取证完成**：原生 `uvicorn` + SQLite（ENV=development）下，N1 `IDENTITY_AUTHORITY=openbase` 缺 `OPENBASE_JWKS_URL` → 启动门禁拒启 `exit=3`（`ValueError ...（R17）`）；N2 非法取值 `openid` → pydantic `ValidationError` 拒启 `exit=1`；P1 `openbase` 正向 `/health` 200、`/api/v1/auth/login` **403** 且响应含 R17 文案；P2 `local` 对照登录 **401**「用户名或密码错误」且不含 R17 文案（门禁可开可关）；新增 §9.6，更新 §9.3、§9.5；生产 ENV 全门禁与 OpenBase 令牌放行仍 ⛔ Blocked |
 | v1.2.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E3 本机生产形态执行（真实生产仍 Blocked）**：以原生 `uvicorn` 单进程（无 Docker）完成 OpenBase D-03/D-05/D-06 两向（RS256 强制生效且 HS256 令牌 401、主体映射解析 1 条、MCP 摘要/密钥文件启动放行、明文 Key 与缺 RS256 材料拒启）、DPS K-01/K-02 两向（`closed` 非应急 Key 401 `AUTH_STATIC_KEY_CHANNEL_CLOSED`、应急 bypass 放行且审计只落摘要、缺过期时间拒启、`IDENTITY_AUTHORITY=openbase` 本地登录 403 `AUTH_LOCAL_LOGIN_DISABLED`）、OpenRAG/OpenMemory K-01 门禁级 8 项策略全通过；OpenRAG/OpenMemory 整服务启动因本机缺重依赖（OpenRAG 导入原生崩溃）如实 ⛔ Blocked；新增 §9.4/§9.5，更新 §9.3 |
@@ -200,7 +201,7 @@
 | A2-05 服务 Key 权限面最小化 | ⛔ Blocked | 真实服务 Key 注册表取样 |
 | V-04/V-05/V-13 | ⛔ Blocked | 共享 PG/Redis 多实例 + 可达真实 IdP |
 | OpenLLM 生产 ENV 全门禁 | ✅ Pass（本机生产基线，见 §9.7） | 已于 E3c 闭合：16 例矩阵 C01 放行 + C02~C16 拒绝、`EXEMPT_OK`、`GATES_OK`、`/health` 200 |
-| OpenLLM 接受 OpenBase 令牌 | ✅ Pass（本机口径，见 §9.7）；吊销增量 ⛔ Blocked | E3c 已闭合 RS256 受理与四类负向；`openllm_openbase_revocation_sync` 归 E4 |
+| OpenLLM 接受 OpenBase 令牌 | ✅ Pass（本机口径，见 §9.7）；吊销增量 ✅ Pass（见 §9.8） | E3c 已闭合 RS256 受理与四类负向；E4 已闭合吊销增量（整进程两向 + 三仓模块级两向） |
 
 **结论**：凡「启动服务即可验证」的门禁与两向语义，已在本机生产形态全部跑通（OpenBase / OpenLLM / DPS / OpenRAG+OpenMemory 策略层）；剩余 Blocked 项均需**生产主机、DBA 变更单、共享中间件、四仓联调或真实 IdP**，不属代码缺口。
 
@@ -216,7 +217,7 @@
 | P1 | `openbase` 正向：`/health` 与本地登录 | ✅ Pass | `/health` **200**；`POST /api/v1/auth/login` → **403**，响应 `{"detail":"身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）"}`；服务端审计同记 403 |
 | P2 | `local` 对照：本地登录可达 | ✅ Pass | `/health` **200**；登录 → **401** `{"detail":"用户名或密码错误"}`，响应**不含** R17 文案（门禁可开可关） |
 | — | 生产 ENV 全套启动门禁（`SECRET_KEY`/入站身份头/RBAC/租户隔离/豁免行加固） | ✅ Pass（已由 §9.7 E3c 闭合） | 生产基线门禁矩阵 16 例逐例求值 + 合规启动 `GATES_OK` |
-| — | OpenBase RS256 令牌在 OpenLLM 放行 | ✅ Pass（已由 §9.7 E3c 闭合）；吊销增量 ⛔ Blocked | RS256 `/api/v1/auth/me` 200 + 四类负向 401；`openllm_openbase_revocation_sync` 归 E4 |
+| — | OpenBase RS256 令牌在 OpenLLM 放行 | ✅ Pass（已由 §9.7 E3c 闭合）；吊销增量已由 §9.8 E4 闭合 | RS256 `/api/v1/auth/me` 200 + 四类负向 401；吊销后旧令牌 401、对照实例 200 |
 
 **方法边界（如实声明）**
 
@@ -244,7 +245,7 @@
 | B4 | 生产 ENV 合规启动 | ✅ Pass | `GATES_OK`（`assert_startup_gates()` + `validate_production_hardening()`） |
 | B5 | 运行期健康 | ✅ Pass | `/health` **200**，`status=healthy`、`version=2.19.1` |
 | B6 | 本地身份通道 | ✅ Pass | 本地登录 **401**「用户名或密码错误」 |
-| C1 | 吊销增量联动 | ⛔ Blocked | `openllm_openbase_revocation_sync`：`OPENBASE_REVOCATIONS_URL` + 服务 Key + 主体状态变更，归 E4 |
+| C1 | 吊销增量联动 | ✅ Pass（见 §9.8） | E4 已闭合：OpenLLM 整进程两向（P1 旧令牌 **401** + WARN「OpenBase 主体已吊销（吊销增量）」/ P2 对照 **200**）；DPS/OpenRAG/OpenMemory 模块级 `revoked_old=true`、`revoked_new=false` |
 | C2 | 生产拓扑实测 | ⛔ Blocked | 共享 PG/Redis、多实例、真实网关，归 E5 |
 
 **方法边界（如实声明）**
@@ -253,3 +254,31 @@
 - `openllm_prod_env_smoke` 为 `Pass（本机生产基线）`：门禁矩阵与合规启动均以 `production` ENV 独立求值，**不替代**真实生产 `.env` 注入与共享中间件实测。
 - 启动方式为 `lifespan=off` 真实 uvicorn 进程 + bootstrap 显式 `init_db()` 与显式门禁求值（与 `main.py` 生产初始化同源）；两进程均执行 `init_db()` 完成 SQLite `CompatibleUUID` 替换，生产以 PG 原生 UUID 为准。
 - 排障留痕：首两轮正向 401 且服务端无日志，根因是取具脚本未把 OpenBase 相关 `env` 透传给启动函数，OpenLLM 以默认 `local` 权威运行、`OPENBASE_JWKS_URL` 为空，命中 `verify_token` 首行 `if not _jwks_url(): return None` 静默返回；修复透传后日志出现 `EFFECTIVE authority=openbase jwks_configured=1`。该静默分支是否补 WARN 建议在 E4 评估，本批不改代码。
+
+### 9.8 E4：跨仓吊销增量实测（2026-11-03）
+
+> 背景：§9.5/§9.6/§9.7 中最后一处代码级 Blocked 项 `openllm_openbase_revocation_sync` 一直挂账。本批按用户指令「处理 E4 跨仓实测的吊销增量项」，以**本机原生 `uvicorn` + SQLite（无 Docker）**完成：OpenBase 作为签发与吊销源，OpenLLM 起主实例（开同步）与对照实例（关同步），DPS/OpenRAG/OpenMemory 取同步模块级两向。证据 `doc/audit/verification/evidence/e4/e4-revocation-20261102.json`（**3793 B**，SHA-256 `886DB360C3BE0F77BD9E7F6732131702565ABE25F1CD73570D1B5B750EC1F242`）。
+
+**前提修正**：本机首次运行服务 Key 签发 500（`no such table: openbase.service_api_keys`）。根因是 `init_db` 给全部表绑定 `schema="openbase"`、`create_tables` 执行 PG 专用 `CREATE SCHEMA`/`SET search_path`，在 SQLite 上抛错后 `demo_app._try_database_init()` 捕获并 `_fallback_to_memory()`，持久化表未建。取证入口 `tmp/e4-revocation/serve_openbase.py` 在导入 `demo_app` 前替换 `init_db`（强制 `schema=None`）与 `init_database`（`create_all` + 种子），**产品源码零改动**，HTTP 面仍走真实代码路径。
+
+| 编号 | 用例 | 判定 | 关键观测 |
+|---|---|---|---|
+| E4-A1 | 服务 Key 签发 | ✅ Pass | **200**，`key_id=e8ad157890ac4ba3bcd27b30be9e6602`，`scope={system:[auth],tenants:[*]}` |
+| E4-A2 | 吊销端点鉴权三态 | ✅ Pass | 无 Key **401**、错 Key **401**、正 Key **200** |
+| E4-A3 | 基线快照 | ✅ Pass | `token_version=0`、`status=active`，返回 `next_since` |
+| E4-A4 | 吊销动作 | ✅ Pass | `POST /api/v1/auth/oidc/logout` **200**，`token_version` **0→1** |
+| E4-A5 | 增量语义 | ✅ Pass | `since=<基线 next_since>` 命中该主体且 `token_version=1`，`next_since` 前进 |
+| E4-B1 | OpenLLM 主实例（开同步） | ✅ Pass | 旧令牌 `GET /api/v1/auth/me` → **401**；日志 `WARNING app.security.openbase_jwt OpenBase 主体已吊销（吊销增量）` |
+| E4-B2 | OpenLLM 对照实例（关同步） | ✅ Pass | 同一令牌 → **200**（`username=e3c-openbase-user`），证明拒绝来自增量同步 |
+| E4-C1 | DPS 同步模块 | ✅ Pass | `enabled=true`、`revoked_old=true`、`revoked_new=false` |
+| E4-C2 | OpenRAG 同步模块 | ✅ Pass | `enabled=true`、`revoked_old=true`、`revoked_new=false` |
+| E4-C3 | OpenMemory 同步模块 | ✅ Pass | `enabled=true`、`revoked_old=true`、`revoked_new=false` |
+| E4-D1 | 三仓整服务启动 | ⛔ Blocked | 本机受原生扩展/GPU/外部中间件限制未起，归 E5 |
+| E4-D2 | 生产拓扑与收敛时延 | ⛔ Blocked | 共享 PG/Redis、多实例、真实网关；A1-04 最坏收敛时延需生产实测 |
+
+**方法边界（如实声明）**
+
+- OpenLLM 为**整进程两向**：两实例各用独立 SQLite 库与同一本地用户 UUID，`OPENBASE_SUBJECT_MAP` 一致；P1 注入 `OPENBASE_REVOCATIONS_URL`/`OPENBASE_SERVICE_KEY`、间隔 1 s，P2 不注入，故状态码差异只能来自吊销增量。
+- DPS/OpenRAG/OpenMemory 为**同步模块级两向**：直接从真实 OpenBase 吊销端点拉取增量后判定；不是整服务、不是 HTTP 端到端。
+- 收敛时延以 1 s 间隔 + 2.5 s 等待观测，属功能可用性判定，不替代生产时延实测。
+- 排障留痕 4 条：① 三仓首轮 `revoked_old=false/false` 是同步器 httpx 默认 3 s 超时低于本机端点冷启动响应（放大至 120 s 后正确）；② OpenRAG 首轮 `exit=3221225477`（`openrag/__init__.py` 导入重型 Agent 依赖在本机原生扩展崩溃），改为命名空间包 + 直接加载目标文件（同一份代码）后通过；③ OpenLLM 日志为 JSON 行且中文以 `\uXXXX` 转义，须先 `json.loads` 再匹配；④ 同一脚本并发运行会争用端口与证据文件。

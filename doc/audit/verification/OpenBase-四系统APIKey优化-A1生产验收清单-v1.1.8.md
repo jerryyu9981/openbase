@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.7 |
+| 文档版本 | v1.1.8 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.30.0.md`（§10.7~§10.33） |
-| 验收对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五仓（E0~E3 已实施项） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.31.0.md`（§10.7~§10.34） |
+| 验收对象 | OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS 五仓（E0~E4 已实施项） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
 
@@ -24,6 +24,7 @@
 | v1.1.5 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.28.0（§10.31 E3 本机生产形态）：关联方案引用更新至 `v1.28.0`（§10.7~§10.31），A1-01~A1-14 验收项与判定口径**未变**；E3 已对 A1-01（RS256 强制 + HS256 令牌 401 + 缺材料拒启）、A1-02（JWKS 仅 RSA 公钥且 kid 一致）、A1-11（D-03/D-06 与 DPS K-01 负向拒启）提供本机生产形态证据 `evidence/e3/e3-native-20261102.json`，**不替代生产实测**；V 类与 A1-14 仍待生产拓扑 |
 | v1.1.6 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.29.0（§10.32 E3b OpenLLM R17）：关联方案引用更新至 `v1.29.0`（§10.7~§10.32），A1-01~A1-14 验收项与判定口径**未变**；E3b 为 A1-11「四仓生产门禁负向启动」补 OpenLLM 本机进程级证据（缺 JWKS 拒启 `exit=3`、非法取值拒启 `exit=1`、`openbase` 本地登录 403、`local` 对照 401），证据 `evidence/e3/e3b-openllm-20261102.json`，**不替代生产实测** |
 | v1.1.7 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.30.0（§10.33 E3c）：关联方案引用更新至 `v1.30.0`（§10.7~§10.33），A1-01~A1-14 验收项与判定口径**未变**；E3c 为 **A1-11** 补 OpenLLM 生产 ENV 全套门禁证据（16 例矩阵 C01 放行 + C02~C16 逐一拒绝、豁免行 `EXEMPT_OK`、合规启动 `GATES_OK` + `/health` 200 + 本地登录 401）与 **A1-02/A1-11** 补「OpenLLM 接受 OpenBase RS256 令牌」证据（`/api/v1/auth/me` **200**、四类负向 401），证据 `evidence/e3/e3c-openllm-20261102.json`（9804 B，SHA-256 `E67F523E…6B3823`），**不替代生产实测** |
+| v1.1.8 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.31.0（§10.34 E4）：关联方案引用更新至 `v1.31.0`（§10.7~§10.34），A1-01~A1-14 验收项与判定口径**未变**；E4 为 **A1-04 / A1-14** 补「跨仓吊销增量」本机口径证据——OpenLLM 整进程两向（旧令牌 401 / 关闭同步对照 200）、DPS/OpenRAG/OpenMemory 同步模块级两向（`revoked_old=true`、`revoked_new=false`），证据 `evidence/e4/e4-revocation-20261102.json`（3793 B，SHA-256 `886DB360…C1F242`）；**生产收敛时延（A1-04 的 60s 目标）仍 ⛔ Blocked**，需真实生产拓扑 |
 
 ---
 
@@ -208,6 +209,8 @@
 - 严格模式（`*_REVOCATION_STRICT=true`）下快照未命中应拒绝（按仓验证）。
 
 **证据**：`a1-04.csv`、内省前后 JSON、revocations 快照片段（脱敏）。
+
+> **本机口径佐证（E4，2026-11-03）**：`evidence/e4/e4-revocation-20261102.json` 已证 OpenBase 吊销端点三态（401/401/200）、登出后 `token_version` 0→1、增量 `since/next_since` 命中；OpenLLM 整进程两向（开同步旧令牌 401 / 关同步对照 200）与 DPS/OpenRAG/OpenMemory 同步模块级两向（`revoked_old=true`、`revoked_new=false`）。**仅闭合「机制可用」**；本节要求的**生产收敛时延（≤60s 或书面放宽）仍 ⛔ Blocked**，须生产拓扑实测后方可签核。
 
 ---
 
@@ -433,6 +436,8 @@
 **通过标准**：四仓验签与三类负向一致；吊销时延达标或有书面放宽；四仓门禁 0 容忍；审计字段齐全或明确 `Blocked`；身份权威固定为 OpenBase；Redis 降级不新增放行。
 
 **证据**：`a1-14.csv`（每仓 × 每项 `Pass/Fail/Blocked` + 证据文件名 + 版本 HEAD）。
+
+> **本机口径佐证（E4，2026-11-03）**：`evidence/e4/e4-revocation-20261102.json` 已对第 2 步「吊销收敛」提供**模块级**两向（三仓 `enabled=true`、`revoked_old=true`、`revoked_new=false`）与 OpenLLM **整进程**两向；但四仓**整服务启动**（本机缺原生扩展/GPU/外部中间件）与**生产收敛时延**仍 ⛔ Blocked，本节判定仍以生产实测为准。
 
 ---
 

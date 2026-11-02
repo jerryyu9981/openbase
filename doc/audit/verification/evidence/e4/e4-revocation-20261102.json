@@ -1,0 +1,147 @@
+{
+  "openbase_startup": {
+    "started": true,
+    "attempts": 1,
+    "elapsed_seconds": 293.1,
+    "log": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\e4-revocation\\openbase.log"
+  },
+  "login": {
+    "status_code": 200,
+    "token_issued": true,
+    "header_kid": "e3c-kid",
+    "subject_is_numeric": true,
+    "body_prefix": ""
+  },
+  "token_claims": {
+    "sub": "1",
+    "tvn": 0,
+    "type": "access",
+    "iss": "openbase",
+    "aud": "openbase-api"
+  },
+  "service_key_issue": {
+    "status_code": 200,
+    "key_id": "e8ad157890ac4ba3bcd27b30be9e6602",
+    "scope": {
+      "system": [
+        "auth"
+      ],
+      "tenants": [
+        "*"
+      ]
+    },
+    "expires_at_present": true,
+    "body_prefix": ""
+  },
+  "revocations_auth": {
+    "without_key": 401,
+    "invalid_key": 401,
+    "with_key": 200
+  },
+  "snapshot_before": {
+    "subject": {
+      "status": "active",
+      "token_version": 0,
+      "updated_at": 1793609663.651907
+    },
+    "next_since": 1793609741.512748,
+    "subject_count": 1
+  },
+  "local_user_prepare": {
+    "primary": {
+      "exit_code": 0,
+      "ready": true,
+      "stderr_tail": []
+    },
+    "control": {
+      "exit_code": 0,
+      "ready": true,
+      "stderr_tail": []
+    }
+  },
+  "primary_startup": true,
+  "primary_baseline": {
+    "status_code": 200,
+    "accepted": true,
+    "username": "e3c-openbase-user",
+    "body_prefix": ""
+  },
+  "primary_effective_config": "EFFECTIVE authority=openbase jwks_configured=1 subject_map_configured=1 trust_local_subject=0 env=development",
+  "logout": {
+    "status_code": 200,
+    "token_version": 1,
+    "body_prefix": ""
+  },
+  "revocations_delta": {
+    "status_code": 200,
+    "subject": {
+      "status": "active",
+      "token_version": 1,
+      "updated_at": 1793611177.143891
+    },
+    "subject_count": 1,
+    "next_since": 1793611177.1428912
+  },
+  "primary_after_revocation": {
+    "status_code": 401,
+    "accepted": false,
+    "username": null,
+    "body_prefix": "{\"detail\":\"无法验证凭据\"}"
+  },
+  "primary_revocation_logs": [
+    "WARNING app.security.openbase_jwt  OpenBase 主体已吊销（吊销增量）"
+  ],
+  "primary_revocation_verdict": "PASS",
+  "control_startup": true,
+  "control_after_revocation": {
+    "status_code": 200,
+    "accepted": true,
+    "username": "e3c-openbase-user",
+    "body_prefix": ""
+  },
+  "control_verdict": "PASS",
+  "cross_repo_modules": {
+    "dps": {
+      "probe": "dps",
+      "exit_code": 0,
+      "result": {
+        "enabled": true,
+        "revoked_old": true,
+        "revoked_new": false
+      }
+    },
+    "openrag": {
+      "probe": "openrag",
+      "exit_code": 0,
+      "result": {
+        "enabled": true,
+        "revoked_old": true,
+        "revoked_new": false
+      }
+    },
+    "openmemory": {
+      "probe": "openmemory",
+      "exit_code": 0,
+      "result": {
+        "enabled": true,
+        "revoked_old": true,
+        "revoked_new": false
+      }
+    }
+  },
+  "boundaries": [
+    "本机原生进程 + SQLite；非生产拓扑、无共享 PG/Redis、无多实例",
+    "吊销来源为本机 OpenBase /api/v1/auth/revocations 的 User.updated_at 增量",
+    "OpenLLM 为整进程两向；DPS/OpenRAG/OpenMemory 为同步模块级（整服务启动仍受本机依赖限制）",
+    "不记录令牌/服务 Key 原文与主体映射值，仅记状态码与配置布尔"
+  ],
+  "generated_at": "2026-11-03T01:37:11+08:00",
+  "probe_rerun": {
+    "reason": "首次探针超时 3s 过短 / OpenRAG 包初始化原生崩溃 / 日志行首匹配失效",
+    "snapshot": {
+      "status_code": 200,
+      "subject_count": 1,
+      "token_version": 1
+    }
+  }
+}
