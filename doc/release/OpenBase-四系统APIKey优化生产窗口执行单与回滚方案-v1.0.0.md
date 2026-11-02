@@ -1,0 +1,467 @@
+# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.0
+
+| 项 | 内容 |
+|---|---|
+| 项目名称 | OpenBase（开放底座）四系统 API Key 与授权治理 |
+| 下发单编号 | **XR-OPS-08-APIKEY-001** |
+| 文档版本 | v1.0.0 |
+| 状态 | **[Draft] 待人工批准 + OPS 生产执行**（本环境无生产主机访问权，不代替生产执行） |
+| 创建日期 | 2026-11-03 |
+| 编制 | FA-OpenBase-Dev（AI 辅助） |
+| 执行方 | OPS（生产环境）+ 生产 DBA（仅 P-01） |
+| 上游依据 | 《OpenBase-四系统APIKey优化-残余项统一处置方案-v1.5.0》§5.5/§5.6/§6；《…-残余项分批推进方案-v1.5.0》§9.8；《…-A1生产验收清单-v1.1.8》A1-04/A1-12/A1-14；《…-A2生产配置收口清单-v1.2.0》§3/§4/§5/§6/§7 |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.31.0.md`（§10.7~§10.34） |
+| 格式范本 | `doc/release/OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0.md` |
+| 整体回滚参照 | `doc/release/OpenBase-主备双通道生产上线回滚方案-v1.0.0.md` |
+| 唯一事实源 | 本单（执行口径）；配置键名以 A2 v1.2.0 §3 为准；状态判定以 A1 v1.1.8 / A2 v1.2.0 §7 为准 |
+| 共享基础设施 | **五仓共享 PG、共享 Redis、共享网关/反向代理、共享 IdP、共享密钥挂载路径、共享服务 Key** —— 见 §2 |
+
+> **本单性质**：E 批 42 项判定为 **34 Pass + 8 生产前置 Blocked**（见 E3 批次总结报告 v1.2.1 §1）。本单只承载这 **8 项 Blocked** 的生产执行与回滚口径，不重复已闭合的 C/G/K 类代码项，也不替代 E5 生产拓扑实测。
+
+---
+
+## 1. 范围与 8 项清单
+
+| # | 发布任务 | 台账编号 | 类型 | 目标系统 | 前置依赖 | 当前判定 |
+|---|---|---|---|---|---|---|
+| P-01 | 存量 `ob_k_*` 服务 Key 到期收敛 | D-04 / A1-12 步骤3 / ER-01 | 生产动作（数据） | OpenBase 控制面（**共享 PG**） | P-03 完成 + 服务 Key 轮换完成 | ⛔ Blocked（待 DBA 会话 + 变更单） |
+| P-02 | 显式主体映射注入 | D-05 | 生产动作（配置） | OpenLLM / DPS / OpenBase 服务账号 | P-03 完成 | ⛔ Blocked（无生产主机访问权） |
+| P-03 | 生产 `.env` 注入 + PEM 0600 只读挂载 | D-06 / A2-01 | 生产动作（配置/密钥） | OpenBase + 四下游 | 无（窗口起点） | ⛔ Blocked（无部署主机） |
+| P-04 | 三仓 `STATIC_KEY_CHANNEL` `dual`→`closed` | K-01（裁定 B） | 生产动作（配置） | OpenRAG / OpenMemory / DPS | P-01~P-03 完成 + 双通道观察窗口结束 + §4 阶段 4 实测通过 | ⛔ Blocked（窗口未到关闭时点） |
+| P-05 | 吊销收敛时延实测（≤60s 或书面放宽） | A1-04 / V-04 | 生产实测 | 四仓 | P-03 + P-02 | ⛔ Blocked（无生产拓扑） |
+| P-06 | 跨仓整服务实测（验签/吊销/门禁/审计字段） | A1-14 / V-14 | 生产实测 | 四仓 | P-03 + P-02 | ⛔ Blocked（三仓整服务未启） |
+| P-07 | 四仓镜像矩阵 + 服务 Key 权限面最小化 | A2-04 / A2-05 | 生产实测 | 四仓 | P-03 | ⛔ Blocked（无真实服务 Key 权限面） |
+| P-08 | 跨仓时延 / 真实 IdP 联调 / issuer 判重 | V-04 / V-13 / D-07 | 生产实测 | OpenBase + 真实 IdP | P-03 | ⛔ Blocked（无可达 IdP） |
+
+**执行顺序（刚性）**：P-03 → P-02 → P-01 → 阶段 4（P-05/P-06/P-07/P-08 同批取证）→ P-04 → 阶段 6 放行。
+**禁止**：P-04 不得在 P-05/P-06 之前执行；P-01 不得在 P-03 之前执行；任何阶段跳过 §3 备份与快照即视为门禁不通过。
+
+---
+
+## 2. 共享基础设施影响面与前置约束
+
+> 五仓共用同一套基础设施。**任一项变更的影响面不限于本仓**，因此本单所有动作按「影响面最小化 → 单仓先验 → 同批推广 → 观察窗口 → 收口」推进；每阶段结束必须确认共享组件无异常指标。
+
+| 共享组件 | 本单承载项 | 约束（必须遵守） | 执行纪律 | 回滚影响面 |
+|---|---|---|---|---|
+| **共享 PostgreSQL**（OpenBase 控制面库 `schema=openbase`，表 `service_api_keys`） | P-01 | ① 只操作 `openbase` schema，禁止跨 schema DDL/DML；② 单批 ≤200 行、单租户批次；③ 必须设 `lock_timeout`/`statement_timeout`，禁止长事务；④ 禁止 `SELECT *`、禁止全表 `UPDATE`；⑤ 到期时间为 `NULL` 的存量行才可收敛 | 生产 DBA 会话 + 变更单 + 执行前原值快照 + 每批复核 + 回填执行记录表 | 反向 `UPDATE … SET expires_at = NULL` 仅限快照 `key_id` 清单；不涉及其他 schema，不触发跨仓重启 |
+| **共享 Redis**（多实例 OIDC state / 配额令牌桶 / 异常聚合） | P-02、P-03、P-05 | ① 每仓固定独立 DB index + key 前缀隔离（登记于 §3.4）；② 禁止 `FLUSHDB` / `FLUSHALL` / `KEYS`；③ 必须区分「Redis 可用 → 多实例共享」与「Redis 不可用 → 进程内回退」两种语义；④ `QUOTA_ALGORITHM=token_bucket` 依赖 Redis Lua 原子性，切换前确认数据库索引 | 变更前后各采样一次 Redis 连接与 DB index；禁止清库；幂等键保留 TTL | Redis 侧无需回滚（无本单写入）；若出现跨仓 key 冲突，按 key 前缀定位并只删本仓前缀 |
+| **共享网关/反向代理**（JWKS、吊销、内省统一出口） | P-03、P-05、P-06、P-07 | ① 四仓 `*_JWKS_URL` / `*_REVOCATIONS_URL` 必须走网关域名，不得直连容器名；② 网关超时必须 **≥3s**（下游默认 `*_TIMEOUT_SECONDS=3.0`，本机曾用 120s 修正，生产须与网关对齐）；③ 网关需放行 `/.well-known/jwks.json`、`GET /api/v1/auth/revocations`、`POST /api/v1/auth/introspect`；④ 网关 5xx 会导致下游 JWKS 缓存陈旧，必须记录刷新失败告警 | 变更前用网关路径（非直连）验证三条端点；变更后核对网关错误率与超时计数 | 网关无配置变更；若超时/路由异常，回滚到上一版下游 `.env` 的 URL 取值 |
+| **共享 IdP**（多 Provider 登记） | P-03、P-08 | ① 登记前逐 Provider 取 `discovery.issuer` 并**判重**（D-07）；② 同一 issuer 多 client 视为同一身份空间，仅允许一个 Provider 承担 back-channel 登出（`oidc.py:1197-1224` 取首条存在歧义）；③ state 一次性依赖共享 Redis，TTL 见 `OPENBASE_OIDC_STATE_TTL_SECONDS` | issuer 清单随本单归档（只记 issuer，不记 `client_secret`） | 回滚登记即撤下新增 Provider；已签发的本地 `token_version` 吊销不回滚 |
+| **共享密钥挂载路径**（RS256 私钥 PEM） | P-03 | ① 私钥只读挂载、POSIX `0600`、属主为服务运行账号；② 禁止内联 PEM 到环境变量；③ 四仓共用同一宿主挂载目录时，只给 OpenBase 挂私钥，下游只取 JWKS（不挂私钥）；④ 挂载变更后必须重启并做负向验证（移走路径 → 拒启） | 记录挂载绝对路径 + 权限 + 属主（只记状态，不记内容） | 恢复上一版挂载路径 + `.env` 备份 + 重启；若私钥缺失，OpenBase 会 **拒绝启动**（fail-closed），不得带病放行 |
+| **共享服务 Key**（`ob_k_*`，`scope.system` 含 `auth`，四仓同源） | P-01、P-03、P-07 | ① **同一把服务 Key 被多个下游消费**：收敛/轮换必须「先签新 → 下游全量替换并验证 → 再收敛旧」；② 服务 Key 明文不落日志/文档/git；③ 权限面最小化：`scope.system` 仅保留 `auth` 必要项；④ 收敛 `expires_at` 必须留过渡期（不得早于执行时点，建议 ≥7 天至轮换窗口结束） | 每仓 `*_OPENBASE_SERVICE_KEY` 同批替换；替换后逐仓验证吊销端点 200 | 回滚 = 下游恢复旧 Key（因旧 Key 仅设到期未立即吊销，过渡期内仍可用）；一旦旧 Key 已到期，回滚路径只剩重新签发 |
+
+### 2.1 共享基础设施前置确认（阶段 0 必做）
+
+| 项 | 确认内容 | 记录方式 |
+|---|---|---|
+| 共享 PG | 实例地址、库名、schema `openbase` 可写、当前 `service_api_keys` 中 `expires_at IS NULL` 行数 | 只记主机/库/计数，不记凭据 |
+| 共享 Redis | 各仓使用的 DB index 与 key 前缀；`REDIS_URL` 是否与四仓一致 | 只记 index/前缀与可达状态 |
+| 共享网关 | JWKS/吊销/内省三条路径经网关返回码；网关超时配置值 | 状态码 + 超时秒数 |
+| 共享 IdP | 已登记 Provider 名称清单与 `discovery.issuer` 清单（判重结果） | issuer 清单（不含 secret） |
+| 共享 PEM 挂载 | 宿主绝对路径、`0600`、属主；是否只读挂载 | 路径 + 权限 + 属主 |
+| 共享服务 Key | 当前在用 `key_id`（非明文）、`scope.system` 取值、各仓引用同一把的确认 | `key_id` + scope 列表 |
+
+---
+
+## 3. 执行前检查（窗口起点，缺一不可）
+
+### 3.1 窗口与授权
+
+```bash
+# 1) 记录五仓候选发布版本（与 A1-14 前置一致）
+for repo in OpenBase OpenLLM OpenRAG OpenMemory DPS; do
+  echo "== $repo =="; git -C "<$repo 生产检出目录>" rev-parse HEAD
+done
+
+# 2) 确认变更单号与回滚窗口（手工填写，随本单归档）
+#    变更单号：__________   回滚窗口：__________   执行人：__________
+```
+
+### 3.2 配置文件备份（逐仓，必须先备份再改）
+
+```bash
+# 每个仓的部署目录执行一次
+cp .env ".env.bak-xrops08-$(date +%Y%m%d-%H%M%S)"
+# 共享基础设施文件（若被服务编排加载）
+cp .env.shared-infra ".env.shared-infra.bak-xrops08-$(date +%Y%m%d-%H%M%S)"
+```
+
+### 3.3 数据快照（P-01 前置，共享 PG）
+
+```sql
+-- 只读导出，不含 key_hash / 明文；用于回滚定位
+SELECT id, key_id, name, status, scope -> 'tenants' AS scope_tenants,
+       expires_at, revoked_at, last_used_at, created_at
+  FROM openbase.service_api_keys
+ WHERE expires_at IS NULL
+ ORDER BY created_at ASC, id ASC;
+```
+
+产出：`doc/audit/verification/evidence/p01/p01-key-snapshot-<YYYYMMDD>.csv`（**不含** `key_hash`/明文）。
+同时记录基线计数：
+
+```sql
+SELECT count(*) AS remaining_without_expiry FROM openbase.service_api_keys WHERE expires_at IS NULL;
+```
+
+### 3.4 Redis 隔离登记（共享 Redis，防止跨仓串键）
+
+| 仓 | DB index | key 前缀 | 承载用途 |
+|---|---|---|---|
+| OpenBase | 待填 | `openbase:` | OIDC state / 异常聚合 / 令牌桶（如启用） |
+| OpenLLM | 待填 | `openllm:` | `QUOTA_ALGORITHM=token_bucket` 令牌桶 |
+| OpenRAG | 待填 | `openrag:` | 缓存/限流（如启用） |
+| OpenMemory | 待填 | `openmemory:` | 缓存/限流（如启用） |
+| DPS | 待填 | `dps:` | 缓存/限流（如启用） |
+
+> 若发现两仓使用同一 DB index 且前缀未隔离 → **暂停窗口**，先修正前缀，不得带冲突执行。
+
+### 3.5 秘密状态登记（只记状态，不记值）
+
+| 秘密 | 形态要求 | 状态（已配置/未配置） | 位置 |
+|---|---|---|---|
+| `OPENBASE_JWT_RSA_PRIVATE_KEY_PATH` | PEM 只读挂载 `0600` |  | 宿主绝对路径 |
+| `OPENBASE_JWT_SIGNING_KID` | 与 JWKS `kid` 一致 |  | `.env` |
+| `OPENBASE_JWT_REQUIRE_RS256` | `true` |  | `.env` |
+| `OPENBASE_IDP_PROVIDERS` | JSON 数组，name 唯一 |  | `.env` |
+| `OPENBASE_MCP_API_KEY_HASHES` / `_FILE` | 摘要或宿主文件 |  | `.env` / 文件 |
+| `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` | JSON 映射 |  | `.env` |
+| 四仓 `*_OPENBASE_SERVICE_KEY` | `X-API-Key`，`scope.system` 含 `auth` |  | `.env` |
+
+---
+
+## 4. 分阶段执行
+
+> 每阶段结束必须「执行 → 核对 → 留痕 → 门禁判定」，判定仅允许 `Pass / Fail / Blocked`；`Fail` 立即进入 §5 回滚，不得进入下一阶段。
+
+### 阶段 1 —— P-03 生产 `.env` 注入 + PEM 0600 只读挂载
+
+**前置**：§3.1~§3.3 完成；密钥已由密钥管理下发。
+
+**操作**：
+
+1. 挂载私钥（只读、`0600`、属主=服务运行账号），仅 OpenBase 挂私钥，下游只取 JWKS：
+
+```bash
+install -m 600 -o <服务账号> -g <服务组> "<密钥管理下发的私钥>" "<挂载绝对路径>/openbase-rs256.pem"
+# 校验：权限与只读
+stat -c '%a %U:%G %n' "<挂载绝对路径>/openbase-rs256.pem"
+```
+
+2. OpenBase `.env` 注入生产基线（秘密类只回填引用路径，不写明文 PEM）：
+
+```bash
+# 键存在 → 覆盖；不存在 → 追加；每键必须唯一
+set_kv() {
+  key="$1"; val="$2"; f="$3"
+  if grep -q "^${key}=" "$f"; then
+    sed -i "s|^${key}=.*|${key}=${val}|" "$f"
+  else
+    printf '\n%s=%s\n' "$key" "$val" >> "$f"
+  fi
+}
+set_kv OPENBASE_JWT_RSA_PRIVATE_KEY_PATH "<挂载绝对路径>/openbase-rs256.pem" .env
+set_kv OPENBASE_JWT_SIGNING_KID "<kid>" .env
+set_kv OPENBASE_JWT_REQUIRE_RS256 true .env
+set_kv OPENBASE_JWT_ISSUER openbase .env
+set_kv OPENBASE_ENFORCE_TOKEN_VERSION true .env
+set_kv OPENBASE_OIDC_STATE_TTL_SECONDS "<正整数>" .env
+set_kv OPENBASE_MCP_API_KEY_HASHES "<摘要列表>" .env        # 或改用 _FILE
+set_kv OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP "<映射 JSON>" .env
+set_kv OPENBASE_IDP_PROVIDERS "<Provider JSON 数组>" .env
+
+# 唯一性校验（每键必须为 1）
+for k in OPENBASE_JWT_RSA_PRIVATE_KEY_PATH OPENBASE_JWT_SIGNING_KID OPENBASE_JWT_REQUIRE_RS256 \
+         OPENBASE_JWT_ISSUER OPENBASE_ENFORCE_TOKEN_VERSION OPENBASE_OIDC_STATE_TTL_SECONDS; do
+  printf '%s=%s\n' "$k" "$(grep -c "^${k}=" .env)"
+done
+```
+
+3. 四下游 `.env` 按 A2 v1.2.0 §3 **逐仓**注入（键名以 §3 原文为准，DPS 的 `IDENTITY_AUTHORITY` / `STATIC_KEY_CHANNEL` **无 `DPS_` 前缀**）：
+
+| 仓 | 本阶段必须齐备的键（生产基线） |
+|---|---|
+| OpenLLM | `OPENBASE_JWKS_URL`、`OPENBASE_JWKS_CACHE_TTL_SECONDS`/`_TIMEOUT_SECONDS`(300/3.0)、`OPENBASE_JWT_ISSUER`/`_AUDIENCE`/`_LEEWAY_SECONDS`(openbase/openbase-api/30)、`OPENBASE_REVOCATIONS_URL`/`OPENBASE_SERVICE_KEY`、`OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS`/`_STRICT`(60/false)、`IDENTITY_AUTHORITY`（生产 `openbase`）、`OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED`（按 A1-04 口径）、`QUOTA_ALGORITHM` + 令牌桶参数（如启用） |
+| OpenRAG | `OPENRAG_API_OPENBASE_JWKS_URL`、`_JWKS_CACHE_TTL_SECONDS`/`_TIMEOUT_SECONDS`、`_JWT_ISSUER`/`_AUDIENCE`/`_LEEWAY_SECONDS`、`OPENRAG_API_OPENBASE_REVOCATIONS_URL`/`_SERVICE_KEY`、`_REVOCATION_SYNC_INTERVAL_SECONDS`/`_STRICT`、`OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES`、`OPENRAG_IDENTITY_ROLE_FAIL_CLOSED=true`、`OPENRAG_IDENTITY_ROLE_CONTRACT_URL`（如启用）、`OPENRAG_API_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` |
+| OpenMemory | `OPENMEMORY_GATEWAY_JWKS_URL`、`_JWKS_CACHE_TTL_SECONDS`/`_TIMEOUT_SECONDS`、`_JWT_ISSUER`/`_AUDIENCE`/`_LEEWAY_SECONDS`、`OPENMEMORY_GATEWAY_REVOCATIONS_URL`/`_SERVICE_KEY`、`_REVOCATION_SYNC_INTERVAL_SECONDS`/`_STRICT`、`OPENMEMORY_GATEWAY_OIDC_MODE`/`ALLOW_UNVERIFIED_GATEWAY_TOKEN=false`、`OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL`（如启用）、`OPENMEMORY_GATEWAY_REVOCATION_BACKGROUND_SYNC_ENABLED` |
+| DPS | `DPS_OPENBASE_JWKS_URL`、`_JWKS_CACHE_TTL_SECONDS`/`_TIMEOUT_SECONDS`、`_JWT_ISSUER`/`_AUDIENCE`/`_LEEWAY_SECONDS`、`DPS_OPENBASE_REVOCATIONS_URL`/`_SERVICE_KEY`、`_REVOCATION_SYNC_INTERVAL_SECONDS`/`_STRICT`、`IDENTITY_AUTHORITY`（生产 `openbase`）、`IDENTITY_ROLE_CONTRACT_URL`（如启用）、`DPS_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` |
+
+> 本阶段**不**改 `STATIC_KEY_CHANNEL`（保持 `dual`，归阶段 5）。
+
+**通过判据**：
+
+- OpenBase 生产门禁 13 项放行、进程启动成功、`/health` 200；
+- 负向三连（移走 PEM → 拒启；置明文 `OPENBASE_MCP_API_KEYS` → 拒启；`OPENBASE_JWT_REQUIRE_RS256=false` → 拒启）各命中一次，恢复后 200；
+- JWKS 仅发 RSA 公钥且 `kid` 与 `OPENBASE_JWT_SIGNING_KID` 一致；
+- 四下游 `/health` 200 且启动日志无「未配置 JWKS/吊销」致命项；
+- `stat` 输出显示 `0600` 且只读；
+- 日志抽样无 PEM 头、无服务 Key 明文、无 `client_secret`。
+
+**回滚**：见 §5 `R-03`。
+
+---
+
+### 阶段 2 —— P-02 显式主体映射注入
+
+**前置**：阶段 1 通过；OpenLLM/DPS 目标用户已在本仓存在（未建用户先建后映射）。
+
+**操作**：
+
+```jsonc
+// OpenLLM：OPENBASE_SUBJECT_MAP
+{"<openbase-sub>": "<openllm-local-user-id>"}
+// DPS：DPS_OPENBASE_SUBJECT_MAP
+{"<openbase-sub>": "<dps-local-user-id>"}
+// OpenBase 控制面：OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP（机器主体）
+{"<idp-sub>": "<openbase-service-account-subject>"}
+```
+
+约束（D-05 模板原文）：仅 RS256 / `IDENTITY_AUTHORITY=openbase` 生效时注入；键为归一 `sub`（禁止邮箱/显示名）；值为本仓已存在用户；映射表随本单下发，禁止入 git/日志/监控标签。
+
+**通过判据（两向各一次）**：
+
+- 映射主体登录成功（四仓受保护接口 200）；
+- 未映射主体被拒绝（401，OpenLLM/DPS 各命中一次）；
+- 变更留痕记录「变更人 / 时间 / 新增或删除条数」（不记录主体明文列表）。
+
+**回滚**：见 §5 `R-02`。**禁止**以「清空映射」作为回滚手段（会导致全量拒绝）。
+
+---
+
+### 阶段 3 —— P-01 存量 `ob_k_*` 到期收敛（共享 PG）
+
+**前置**：阶段 1、阶段 2 通过；服务 Key 已按轮换方案签发并在四下游验证可用；DBA 会话 + 变更单到位。
+
+**操作（按 `d-04-expired-key-convergence-20261101.sql` 口径，分三批）**：
+
+```sql
+-- 会话级保护（共享 PG，避免长事务影响其他仓）
+SET lock_timeout = '3s';
+SET statement_timeout = '30s';
+
+-- 分批收敛：单租户 + 创建时间截止点 + 单批 ≤200 行
+-- batch_expires_at 必须晚于执行时点（过渡期 ≥7 天）
+UPDATE openbase.service_api_keys
+   SET expires_at = :batch_expires_at, updated_at = now()
+ WHERE expires_at IS NULL
+   AND status = 'active'
+   AND created_at < :batch_cutoff
+   AND scope -> 'tenants' @> jsonb_build_array(:tenant_code);
+
+-- 每批复核
+SELECT count(*) AS remaining_without_expiry FROM openbase.service_api_keys WHERE expires_at IS NULL;
+```
+
+执行记录表（每批一行，随本单归档）：
+
+| 批次 | 租户码 | 行数 | 截止点 | 到期时间 | 执行人 | 复核结果 | 证据文件 |
+|---|---|---|---|---|---|---|---|
+| B1 | | | | | | | |
+| B2 | | | | | | | |
+| B3 | | | | | | | |
+| 豁免 | | | | | | | |
+
+**通过判据**：
+
+- 每批 `remaining_without_expiry` 单调下降，最终为 `0` 或「仅剩已登记豁免行」；
+- 四下游使用当前服务 Key 调用吊销端点全部 200（证明未被误伤）；
+- `GET /api/v1/auth/service-keys` 到期清单可见（C-08 口径）；
+- 执行记录表 8 列全部回填。
+
+**回滚**：见 §5 `R-01`。
+
+---
+
+### 阶段 4 —— P-05 / P-06 / P-07 / P-08 生产实测（同批取证，`dual` 态）
+
+> 四项同批执行、共用同一窗口，避免配置漂移导致结论对不上；**全部在 `STATIC_KEY_CHANNEL=dual` 状态下取证**（`closed` 归阶段 5，其回归归阶段 6）。
+
+**P-05 吊销收敛时延（A1-04 / V-04）**
+
+1. 测试用户登录取令牌 → 四仓各请求一次 → 200；
+2. 内省确认 `active=true`：
+
+```bash
+curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
+  -H "X-API-Key: $SVC_KEY" -H "Content-Type: application/json" \
+  -d "{\"token\":\"$TOKEN\"}" | jq '{active,reason,token_version}'
+```
+
+3. 触发吊销（改密或管理面禁用）；
+4. 再次内省 → **立即** `active=false`；
+5. 以 5~10s 间隔轮询四仓至首次 401/403，记录 CSV：`repo,start_ts,first_reject_ts,latency_s,interval_config`；
+6. 记录 `GET /api/v1/auth/revocations?since=<游标>&limit=500` 输出，确认目标 `token_version` 已下发。
+
+**通过判据**：内省即时反映；四仓在「配置节流间隔 + 一次请求」内拒绝；>60s 须提交 ER-10 放宽申请；严格模式快照未命中应拒绝。证据 `a1-04.csv` + 内省前后 JSON（脱敏）。
+
+**P-06 跨仓整服务实测（A1-14 / V-14）**
+
+1. 本地验签：同一令牌请求四仓受保护接口 → 200；`aud` 篡改 / 过期 / 未映射主体 → 401；
+2. 吊销收敛（复用 P-05 数据）；
+3. 门禁负向启动：四仓按 A1-11 逐条构造缺配置并重启 → 拒绝启动，错误可定位到具体配置项；
+4. 审计字段抽查：含 `key_id` / `subject` / `tenant` / `entry=proxy|direct`；
+5. 身份权威：确认 `IDENTITY_AUTHORITY=openbase`，本地密码登录与自签 JWT 通道关闭（DPS 403 `AUTH_LOCAL_LOGIN_DISABLED`，OpenLLM 403 含 R17）；
+6. 跨实例能力（如启用）：C-07 异常聚合 / C-08 到期去重 / C-09 对账在共享 Redis 下的表现与降级路径。
+
+**P-07 镜像矩阵 + 权限面（A2-04 / A2-05）**
+
+- 四仓逐键核对 A2 §3 是否齐备且 `iss/aud` 一致（只记「存在/缺失」与取值类别，不记秘密）；
+- 服务 Key 权限面取样：`scope.system` 仅保留 `auth` 必要项，禁止 `*` 泛化（如必须保留 `*` 需书面豁免并签字）。
+
+**P-08 真实 IdP / issuer 判重（V-13 / D-07）**
+
+1. 逐 Provider 访问 `discovery_url` 取 `issuer`，形成清单并判重；
+2. 同一 issuer 多 client → 仅登记一个承担 back-channel，其余标注「不声明 back-channel」；
+3. 多 Provider 路由、PKCE/nonce/state、五种 token 认证方式、登出联动、back-channel 防重放（按 A1-13 步骤）；
+4. 全程日志与响应脱敏检查。
+
+**阶段 4 统一通过判据**：P-05~P-08 各项均 `Pass`（或 `Blocked` 且写明解除条件）；任一项 `Fail` → 停止推进、进入 §5 回滚。
+
+---
+
+### 阶段 5 —— P-04 三仓 `STATIC_KEY_CHANNEL` `dual`→`closed`
+
+**前置（全部满足才可执行）**：
+
+- 阶段 1~4 全部 `Pass`；
+- 三仓已按裁定 B 完成**一个完整发布窗口的双通道并行观察**（观察期内静态 Key 通道调用量已归零或仅应急调用）；
+- 三仓应急 bypass 两键已配置且到期时间在未来（`closed` 缺一即拒启）：
+
+| 仓 | 通道键 | 应急键 |
+|---|---|---|
+| OpenRAG | `OPENRAG_API_STATIC_KEY_CHANNEL=closed` | `OPENRAG_API_EMERGENCY_BYPASS_KEY` / `OPENRAG_API_EMERGENCY_BYPASS_EXPIRES_AT` |
+| OpenMemory | `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL=closed` | `OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_KEY` / `_EXPIRES_AT` |
+| DPS | `STATIC_KEY_CHANNEL=closed`（**无 `DPS_` 前缀**） | `EMERGENCY_BYPASS_KEY` / `EMERGENCY_BYPASS_EXPIRES_AT`（**无 `DPS_` 前缀**） |
+
+**操作**：逐仓改值 → 重启 → 验证。**逐仓串行**，每仓通过后进入下一仓（禁止三仓同时改值重启）。
+
+**通过判据（每仓）**：
+
+- 静态 Key 主通道请求被拒（DPS 返回 `AUTH_STATIC_KEY_CHANNEL_CLOSED`）；
+- 应急 bypass 放行成功，且审计仅落 `sha256[:12]` 摘要；
+- 缺失/过期 bypass → 拒绝启动（负向一次）；
+- 服务 Key（OpenBase 颁发）通道不受影响（提供者与静态 Key 通道分离）；
+- `/health` 200，网关错误率无抬升。
+
+**回滚**：见 §5 `R-04`。
+
+---
+
+### 阶段 6 —— 放行门禁
+
+| 门禁 | 判据 |
+|---|---|
+| G1 配置门禁 | A2-01/02/03 全 `Pass`；13 项启动门禁放行记录在案 |
+| G2 验收门禁 | P-05/P-06/P-07/P-08 全 `Pass`（`Blocked` 项须书面豁免并签字） |
+| G3 收口门禁 | P-01 执行记录回填完毕；P-04 三仓 `closed` 且回归通过 |
+| G4 安全门禁 | A2-06 `Pass`：证据与日志无 PEM/令牌/服务 Key 明文 |
+| G5 留痕门禁 | 本单执行回执（§6）8 项字段完整；证据文件归档至 `evidence/` |
+
+**任一 G 不通过 → 不得宣布放行**，按 §5 回滚到对应阶段。
+
+---
+
+## 5. 回滚口径
+
+### 5.1 逐项回滚
+
+| 编号 | 对应项 | 触发条件 | 回滚动作 | 回滚后核验 | 影响面 |
+|---|---|---|---|---|---|
+| **R-01** | P-01 | 收敛后四下游出现 401 / 到期时间误设为过去 / 批量行数超预期 | 按 §3.3 快照 `key_id` 清单反向：`UPDATE openbase.service_api_keys SET expires_at = NULL, updated_at = now() WHERE key_id IN (<快照清单>) AND expires_at = :batch_expires_at;` **逐批执行**，禁止无条件全表置 NULL | `remaining_without_expiry` 恢复至基线计数；四下游吊销端点 200 | 共享 PG：仅 `openbase` schema；不涉及其他仓数据 |
+| **R-02** | P-02 | 映射注入后出现大面积 401 / 映射值指向不存在用户 | **恢复上一版映射快照**（阶段 0 已备份的 `<仓>.env`），重启该仓；**禁止**清空映射 | 映射主体 200、未映射主体 401 两向重验 | 单仓配置；不影响其他仓 |
+| **R-03** | P-03 | 启动失败 / 门禁拒启 / JWKS 或吊销端点不可达 / 秘密泄露迹象 | 恢复 `.env` 与 `.env.shared-infra` 备份 → 恢复上一版挂载路径 → 重启；先回滚下游、再回滚 OpenBase | 各仓 `/health` 200；OpenBase 门禁恢复原状态；负向用例不再触发 | **共享网关与共享 PEM**：下游 URL 回滚需同批执行，避免一半新一半旧 |
+| **R-04** | P-04 | `closed` 后静态 Key 合法调用被误拒 / 应急 bypass 失效 / 服务不可用 | 改回 `dual` 并重启该仓（`OPENRAG_API_STATIC_KEY_CHANNEL` / `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` / `STATIC_KEY_CHANNEL` = `dual`） | 静态 Key 请求恢复正常；`/health` 200；bypass 两键保留不删 | 单仓；应急 bypass 保留以便再次收口 |
+| **R-05** | P-05~P-08 实测 | 实测判定 `Fail` | 不改生产配置，只回退「结论」：标记 `Fail`、登记缺陷与复测条件；若 `Fail` 由阶段 1~5 变更引起，按对应项回滚 | 复测通过后方可继续 | 仅结论面；不产生生产变更 |
+
+### 5.2 整体回滚顺序（逆向执行，禁止跳步）
+
+```
+阶段 6 放行 → 停止
+阶段 5 P-04  → R-04（三仓逐个改回 dual + 重启）
+阶段 4 实测  → R-05（结论回退）
+阶段 3 P-01  → R-01（按快照逐批恢复 expires_at = NULL）
+阶段 2 P-02  → R-02（恢复映射快照）
+阶段 1 P-03  → R-03（恢复 .env 与挂载路径，下游先行、OpenBase 后行）
+```
+
+**共享基础设施回滚纪律**：
+
+1. **下游先行**：四下游 `.env` 先回滚并确认可用，再回滚 OpenBase 控制面，避免「上游换新钥、下游仍旧钥」的中间态。
+2. **服务 Key 过渡**：P-01 只设到期不立即吊销，因此 R-01 在过渡期内可行；一旦旧 Key 已到期，只能新签，不得依赖回滚。
+3. **Redis / 网关不改动**：本单不写 Redis、不改网关配置；若出现异常，按 §3.4 前缀定位，禁止 `FLUSHDB`。
+4. **IdP 不回滚已吊销令牌**：`token_version` 递增不可逆，回滚仅撤下新增 Provider 登记。
+5. **回滚后必须重跑**：§4 阶段 1 的负向三连 + 阶段 5 的 bypass 两向 + `/health`，全部通过才算回滚成功。
+
+---
+
+## 6. 执行回执（OPS 填写）
+
+| 项 | 填写 |
+|---|---|
+| 执行人 / 时间 / 变更单号 |  |
+| 五仓 `rev-parse HEAD` |  |
+| 各仓 `.env` 备份路径（含共享基础设施文件） |  |
+| 共享 PG 基线计数 → 收敛后计数 |  |
+| P-03：PEM 挂载绝对路径 / `stat` 权限 |  |
+| P-03：OpenBase 门禁 13 项结果 + 负向三连退出码 |  |
+| P-03：JWKS `kid` 与签名 `kid` 一致性 |  |
+| P-02：两向冒烟结果（映射 200 / 未映射 401） |  |
+| P-01：批次执行记录表（B1~B3 + 豁免） |  |
+| P-05：`a1-04.csv` 路径与最大时延 |  |
+| P-06：四仓 200/401 矩阵与审计字段抽查 |  |
+| P-07：矩阵齐备性 + 服务 Key `scope.system` 取样 |  |
+| P-08：issuer 清单与判重结论 |  |
+| P-04：三仓 `closed` 后静态 Key 拒绝 + bypass 放行 + 摘要审计 |  |
+| 共享 Redis 采样（DB index / 前缀 / 可达） |  |
+| 共享网关三条路径状态码 + 超时值 |  |
+| 证据归档路径 |  |
+| 回滚是否触发 / 触发项 / 回滚结果 |  |
+
+---
+
+## 7. 风险与禁止项
+
+| 风险 | 影响 | 缓解 |
+|---|---|---|
+| 共享 PG 长事务锁表 | 其他仓读写被阻塞 | `lock_timeout=3s` / `statement_timeout=30s`；单批 ≤200 行；避开业务高峰 |
+| 共享服务 Key 被多处消费 | 收敛即可能全下游 401 | 先签新 → 全量替换 → 验证 → 再收敛；到期留 ≥7 天过渡 |
+| 共享网关超时 < 3s | JWKS/吊销拉取失败，验签降级 | 网关超时必须 ≥3s；变更前用网关路径验证 |
+| 共享 Redis 串键 / 降级 | 多实例 state 失效、配额漂移 | DB index + key 前缀隔离；禁 `FLUSHDB`；记录降级路径 |
+| 共享 IdP 同 issuer 多 client | back-channel 登出定位歧义 | 登记前 issuer 判重；仅一个 Provider 承担 back-channel |
+| 共享 PEM 挂载权限放大 | 私钥泄露 | 只读 `0600`、指定属主、仅 OpenBase 挂载；抽样扫描日志 |
+
+**禁止项**：
+
+1. 禁止在未备份的情况下改任何 `.env`（含 `.env.shared-infra`）。
+2. 禁止在 P-03 之前执行 P-01（服务 Key 尚未就绪）。
+3. 禁止在 P-05/P-06 通过前执行 P-04（静态 Key 通道先关会导致取证失真）。
+4. 禁止 `FLUSHDB`/`FLUSHALL`/`KEYS`；禁止在共享 PG 上跨 schema 操作或无条件全表 `UPDATE`。
+5. 禁止把私钥 PEM、服务 Key 明文、`client_secret`、令牌全文写入本单、日志、证据或 git。
+6. 禁止以「清空主体映射」作为回滚手段。
+7. 禁止把本机（SQLite / 无 Docker / 单进程）结果当作生产实测结论。
+
+---
+
+## 8. 修订历史
+
+| 版本 | 日期 | 修改人 | 修改摘要 |
+|---|---|---|---|
+| v1.0.0 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 初始创建：将 E 批遗留的 8 项生产前置 Blocked（D-04 / D-05 / D-06 / K-01 / A1-04 / A1-14 / A2-04 / A2-05 / V-04 / V-13 / D-07）整理为发布单格式；按五仓**共享基础设施**口径（共享 PG / Redis / 网关 / IdP / PEM 挂载 / 服务 Key）明确约束、执行顺序与逐项回滚口径；状态待人工批准与 OPS 执行 |
+
+---
+
+## 9. 依据与证据索引
+
+| 类型 | 文件 | 用途 |
+|---|---|---|
+| 评估方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.31.0.md` | §10.7~§10.34 能力基线 |
+| 处置台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.5.0.md` | 47 项主键与 P4/E 批状态 |
+| 分批推进 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项分批推进方案-v1.5.0.md` | §9.8 E4 收口与批次边界 |
+| 生产验收 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.8.md` | A1-04 / A1-11 / A1-12 / A1-13 / A1-14 |
+| 配置收口 | `doc/audit/verification/OpenBase-四系统APIKey优化-A2生产配置收口清单-v1.2.0.md` | §3 键名权威、§4 门禁、§5 秘密、§6 自检、§7 判定 |
+| 部署取证 | `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.5.md` | D-04 SQL / D-05 模板 / D-06 挂载 / D-07 issuer |
+| 批次总结 | `doc/audit/verification/OpenBase-四系统APIKey优化-E3批次执行总结报告-v1.2.1.md` | 42 项判定（34 Pass + 8 Blocked）与 §12 E4 |
+| 格式范本 | `doc/release/OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0.md` | 备份 / 覆盖 / 核验 / 重启 / 回滚 / 回执结构 |
+| 整体回滚 | `doc/release/OpenBase-主备双通道生产上线回滚方案-v1.0.0.md` | 双通道回滚总口径 |
+| 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4}/` | 本机口径佐证（不替代生产实测） |
