@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | AUDIT-AUTH-20261029 |
-| 版本 | v1.28.0 |
+| 版本 | v1.29.0 |
 | 状态 | [Review] |
 | 适用场景 | **AI 边缘终端为主**（多终端、算力/存储受限、网络间歇、本地推理、现场物理暴露）；政务项中纯软件部分已实施（E3），硬件/密评项暂缓 |
 | 适用环境 | Dev（本地全栈）／Pro（共享 PG 主备 + Redis） |
@@ -436,7 +436,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | R11/R12 | `last_used` 未落库 / 时区比较 | P2 / P0-8 | **E1** | 随设备身份一起修 |
 | R21 | claims 缓存导致降权延迟 | P2 | **E1** | 与吊销缓存同一机制 |
 | R20/R16 | MCP 凭证约定 / 明文 Key | P2 | **E2** | 与安全存储一起做；**v1.9.0 已闭合**（摘要/文件注入） |
-| R17 | OpenLLM 本地用户双主 | P1-7 | **E2** | 边缘可延后；**v1.9.0 已闭合**（身份权威开关） |
+| R17 | OpenLLM 本地用户双主 | P1-7 | **E2** | 边缘可延后；**v1.9.0 已闭合**（身份权威开关）；v1.29.0 补齐本机进程级两向取证（见 §10.32） |
 | 政务合规项 | 国密密评 / 统一身份 / 三权分立 / 集中审计 / 信创灾备 | 不适用 | **E3（软件部分）/ 暂缓（硬件与密评）** | 非 R 台账项；可软件落地部分 v1.11.0 已实施，见 §10.14 |
 
 ### 10.7 E0 实施结果（v1.3.0，2026-10-29）
@@ -1169,7 +1169,7 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 - D-06：4 处模板漂移已由 §10.30 E1 补齐；仅剩生产 `.env` 真实注入与 A2 §5 只读挂载（0600）取证。
 - D-07：登记前 issuer 判重并随发布单归档。
 
-执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.2.md`。
+执行方式、本机环境实测与逐项阻塞解除条件见 `doc/audit/verification/OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.3.md`。
 
 ### 10.30 E 批：本机原生取证与模板收口（v1.27.0，2026-11-02）
 
@@ -1227,6 +1227,24 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 **联动升版**：`残余项统一处置方案 v1.2.0`、`D 类部署取证执行记录 v1.0.2`、`A2 生产配置收口清单 v1.1.7`、`A1 生产验收清单 v1.1.5`、`残余项分批推进方案 v1.2.0`。
 
 
+### 10.32 E3b：OpenLLM R17 身份权威进程级两向（v1.29.0，2026-11-02）
+
+> 意图：补齐 E3 未覆盖的 OpenLLM 唯一“启动即可验”空白——R17 此前仅有单测，缺 DPS K-02 同级的真实进程两向。执行方式：**本机原生 `uvicorn` + SQLite（无 Docker，ENV=development）**；证据 `doc/audit/verification/evidence/e3/e3b-openllm-20261102.json`（SHA-256 `370DAA5CA97D342E8FBD4401C1C1EF460091509DB3F5323DE39B1C7EA92D5C61`，7628 B）。
+
+| 用例 | 结果 | 说明 |
+|---|---|---|
+| N1 启动门禁负向 | ✅ `exit=3`（176.3s） | `IDENTITY_AUTHORITY=openbase` 且 `OPENBASE_JWKS_URL` 为空 → `assert_startup_gates()` → `ValueError: ... 必须同时配置 OPENBASE_JWKS_URL（R17）` + `Application startup failed` |
+| N2 非法取值负向 | ✅ `exit=1`（12.5s） | `IDENTITY_AUTHORITY=openid` → pydantic `ValidationError`「仅允许 'local' 或 'openbase'（R17）」 |
+| P1 `openbase` 正向 | ✅ `/health` **200**；登录 **403** | `{"detail":"身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）"}`；服务端审计同记 403 |
+| P2 `local` 对照 | ✅ `/health` **200**；登录 **401** | `{"detail":"用户名或密码错误"}`，响应**不含** R17 文案（门禁可开可关） |
+| 生产 ENV 全套门禁 | ⛔ **Blocked** | `SECRET_KEY`/入站身份头/RBAC 强制期/租户隔离/豁免行加固需生产 `.env` 与共享中间件 |
+| OpenLLM 接受 OpenBase 令牌 | ⛔ **Blocked** | 需 OpenBase JWKS 可达 + `OPENBASE_SUBJECT_MAP` 映射与吊销同步（E4） |
+
+**判定边界**：R17 门禁与 ENV 无关（`OpenLLM/backend/app/core/config.py:1073` 注释），development ENV 下取证不削弱结论；N1/N2 为 `lifespan=on` 真实启动，P1/P2 为 `lifespan=off` 的真实 uvicorn 进程（仅跳过插件发现/EdgeRouter/回写恢复等重型自检，路由与鉴权代码路径不变）。**不以本机结果替代生产实测。**
+
+**联动升版**：`残余项统一处置方案 v1.3.0`（§5 K 类补充、§5.5 E3b 行）、`残余项分批推进方案 v1.3.0`（§9.3/§9.5/§9.6）、`D 类部署取证执行记录 v1.0.3`（§5.4）、`A1 生产验收清单 v1.1.6`（A1-11 证据补充）、`A2 生产配置收口清单 v1.1.8`、`E3 批次执行总结报告 v1.1.0`（§10）。
+
+
 ## 11. 修订历史
 
 | 版本 | 日期 | 作者 | 说明 |
@@ -1262,3 +1280,4 @@ MCP 侧补充：工具级权限（`tools/list` 过滤、`tools/call` 二次校�
 | v1.26.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.29「P4 批 D：部署取证与编排口径」。**D-02** 13 项启动门禁负向矩阵本地 **17/17 命中**（#6 token 认证拆 5 情形）、生产合规基线 13 项全放行、门禁单测 **108 passed**，真实重启与 A2 §6.2 端点核对 ⛔ Blocked；**D-07** Provider name 唯一性门禁生效（同名拒启）、两 Provider 合法登记 `count=2`，issuer 确认为 discovery 运行期解析（配置层无字段），issuer 判重列为登记前置部署检查；**D-06** 五仓键名核对发现 **4 处模板漂移**（OpenBase 生产基线 7 键未注入、OpenRAG/OpenMemory `*_STATIC_KEY_CHANNEL` 未进模板、DPS 说明缺 `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`），秘密挂载 Blocked；**D-05** 按裁定 A 产出显式主体映射注入模板并核定适用范围（OpenLLM/DPS 两仓映射 + OpenRAG/OpenMemory `sub` 直通），注入 Blocked；**D-04** 产出只读导出 + 按租户分批参数化收敛 SQL（不含 `key_hash`）与每批复核，执行 Blocked（无 DBA 会话）。本批不改代码与默认值；新增执行记录 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.0.md` 与证据 `evidence/d/`（5 份）；同步升版《残余项统一处置方案 v1.0.9》、A2 清单 v1.1.5 |
 | v1.27.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.30「E 批：本机原生取证与模板收口」。**E1** 零环境模板收口 **5/5 Pass**：OpenBase `.env.shared-infra` 生产基线 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明升 v2.8.3（新增 §2.5 `IDENTITY_AUTHORITY` / §2.6 `STATIC_KEY_CHANNEL` + 应急 bypass 两键），并勘正 §10.29 中 `DPS_IDENTITY_AUTHORITY` 笔误为 `IDENTITY_AUTHORITY`（无 `DPS_` 前缀，`DPS/src/config.py:200`）；**E2** 本机原生（**无 Docker**，`uvicorn` 单进程）完成 D-02 重启两向（缺 PEM `exit=1` 拒启 / 恢复后 `/health` 200）、A2-01/02/03/06 本机口径通过（JWKS 仅公钥且 kid 一致、端点无凭证 401、日志无秘密），A2-04/05 与 V 类如实标 ⛔ Blocked；SQLite 因 PG 专用 SQL 失败自动回退内存已登记；E3/E4/E5 仍 ⛔ Blocked 并写明解除条件；同步升版《残余项统一处置方案 v1.1.0》、D 类执行记录 v1.0.1、A2 清单 v1.1.6、A1 清单 v1.1.4，新增《残余项分批推进方案 v1.1.0》 |
 | v1.28.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.31「E3 本机生产形态：门禁与两向语义」。按「凡启动服务即可验证的项一次性实施」完成：**OpenBase** D-03（`jwt_require_rs256=true` 启动 200 + JWKS 仅 RSA 公钥；HS256 令牌 401 `AUTH_401`；缺 RS256 材料 `exit=1`）、D-05（`OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 解析并放行）、D-06（MCP 摘要/密钥文件两形态启动 200；生产明文 Key `exit=1`）；**DPS** K-01（`closed` 非应急 Key 401 `AUTH_STATIC_KEY_CHANNEL_CLOSED`；应急 bypass 放行且审计仅摘要；缺过期 `exit=1`）、K-02（`IDENTITY_AUTHORITY=openbase` 本地登录 403 `AUTH_LOCAL_LOGIN_DISABLED`）；**OpenRAG/OpenMemory** K-01 策略层 **8/8**，整服务因本机缺重依赖 ⛔ Blocked。证据 `evidence/e3/e3-native-20261102.json`（已脱敏）；真实生产注入/0600 挂载/DBA 收敛/A2-04/05/V 类仍 ⛔ Blocked 并写明解除条件（见《分批推进方案 v1.2.0》§9.5）。同步升版《残余项统一处置方案 v1.2.0》、D 类执行记录 v1.0.2、A2 清单 v1.1.7、A1 清单 v1.1.5、分批推进方案 v1.2.0 |
+| v1.29.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 新增 §10.32「E3b：OpenLLM R17 身份权威进程级两向」。补齐 E3 未覆盖的 OpenLLM 唯一「启动即可验」空白：**N1** `IDENTITY_AUTHORITY=openbase` 缺 `OPENBASE_JWKS_URL` → `exit=3` 拒启（`ValueError ...（R17）`）；**N2** 非法值 `openid` → `exit=1`（pydantic `ValidationError`）；**P1** `openbase` 正向 `/health` 200、本地登录 **403** 含 R17 文案；**P2** `local` 对照登录 **401**「用户名或密码错误」且无 R17 文案。证据 `evidence/e3/e3b-openllm-20261102.json`（SHA-256 `370DAA5C...D5C61`，7628 B）；生产 ENV 全门禁与 OpenBase 令牌放行仍 ⛔ Blocked。§10.6 R17 行同步补证；同步升版《残余项统一处置方案 v1.3.0》《残余项分批推进方案 v1.3.0》、D 类执行记录 v1.0.3、A2 清单 v1.1.8、E3 批次执行总结报告 v1.1.0 |

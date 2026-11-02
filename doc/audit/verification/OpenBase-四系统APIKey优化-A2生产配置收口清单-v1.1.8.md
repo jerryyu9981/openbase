@@ -2,11 +2,11 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.1.7 |
+| 文档版本 | v1.1.8 |
 | 文档状态 | [Review] |
 | 适用环境 | 生产环境（Pro）/ 准生产（Pre-Pro） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.28.0.md`（§10.7~§10.31） |
-| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.5.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收）、`...-D类部署取证执行记录-v1.0.2.md`（D-02/D-03/D-05/D-06 的本清单取证结果，含 E3 本机生产形态） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.29.0.md`（§10.7~§10.32） |
+| 关联清单 | `doc/audit/verification/OpenBase-四系统APIKey优化-A1生产验收清单-v1.1.6.md`（A1-01/02/04/11/12/13/14 为本清单的执行验收）、`...-D类部署取证执行记录-v1.0.3.md`（D-02/D-03/D-05/D-06 的本清单取证结果，含 E3 本机生产形态与 E3b OpenLLM R17） |
 | 适用对象 | OpenBase（控制面，唯一事实源）/ OpenLLM / OpenRAG / OpenMemory / DPS（下游消费方） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
@@ -33,6 +33,7 @@
 | v1.1.5 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 同步方案 v1.26.0（§10.29 P4 批 D 部署取证）：新增 §6.4「D 类取证联动」——D-02 13 项门禁负向矩阵本地 **17/17 命中**、正向基线放行、门禁单测 **108 passed**（真实重启与 §6.2 端点核对仍 ⛔ Blocked）；D-06 五仓键名核对发现 **4 处模板漂移**（本清单 OpenBase 生产基线 7 键、OpenRAG `OPENRAG_API_STATIC_KEY_CHANNEL`、OpenMemory `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL`、DPS 说明 `DPS_IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`），列为发布窗口前必补项；D-07 issuer 判重列为登记前置检查；§7 A2-02 证据补充 D-02 本地矩阵；13 项启动门禁总数与基线口径未变 |
 | v1.1.6 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E 批联动（方案 v1.27.0 §10.30）：**E1 模板收口**——v1.1.5 登记的 4 处模板漂移已全部补齐（OpenBase `.env.shared-infra` 生产基线 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明 v2.8.3 新增 §2.5/§2.6）；**键名勘误**：DPS 两键无 `DPS_` 前缀，实际为 `IDENTITY_AUTHORITY`（`DPS/src/config.py:200`）与 `STATIC_KEY_CHANNEL`（`DPS/src/config.py:296`），v1.1.4/v1.1.5 中的 `DPS_STATIC_KEY_CHANNEL` / `DPS_IDENTITY_AUTHORITY` 为笔误（历史行保留原文以便追溯）；**E2 本机原生（无 Docker）** 补充 A2-01/02/03/06 本机口径证据；关联方案与关联清单版本同步 |
 | v1.1.7 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3 本机生产形态联动：补充 A2-01（生产基线 13 项门禁放行）、A2-03（JWKS 仅 RSA 公钥、kid 一致）、A2-06（日志无秘密）本机生产形态证据 `evidence/e3/e3-native-20261102.json`；A2-04/A2-05 仍 ⛔ Blocked（需四仓生产部署与真实服务 Key 权限面），已登记 E3 复测结论与解除条件；同步关联方案 v1.28.0（§10.31）、关联台账 v1.2.0、A1 清单 v1.1.5、D 类执行记录 v1.0.2、分批推进方案 v1.2.0 |
+| v1.1.8 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3b 联动：§3 OpenLLM `IDENTITY_AUTHORITY` 行补证据口径（`openbase` 下本地登录 **403** 含 R17、`local` 对照 **401** 无 R17、`openbase` 缺 `OPENBASE_JWKS_URL` **拒启 `exit=3`**、非法取值 **拒启 `exit=1`**）；§6.4 新增 OpenLLM R17 取证行；证据 `evidence/e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5C…D5C61`）；生产 ENV 全套门禁与 OpenBase 令牌放行仍 ⛔ Blocked；同步关联方案 v1.29.0（§10.32）、关联台账 v1.3.0、D 类执行记录 v1.0.3、分批推进方案 v1.3.0、E3 批次总结报告 v1.1.0 |
 
 ---
 
@@ -159,7 +160,7 @@
 | OpenLLM | `OPENBASE_SUBJECT_MAP` / `OPENBASE_TRUST_LOCAL_SUBJECT` | 空 / `false` | 映射 JSON；同库部署方可开 `trust=true`，否则未命中即拒绝 | `config.py:56-63` |
 | OpenLLM | `OPENBASE_REVOCATIONS_URL` / `OPENBASE_SERVICE_KEY` | 空 / 空 | 吊销端点 + 服务 Key（`X-API-Key`，`scope.system` 含 `auth`） | `config.py:64-71` |
 | OpenLLM | `OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `_STRICT` | `60` / `false` | 60；严格模式按离线容忍度裁定 | `config.py:72-78` |
-| OpenLLM | `IDENTITY_AUTHORITY` | `local` | 生产建议 `openbase`（关闭本地开户/登录/换发） | `config.py:84-87, 1046-1049` |
+| OpenLLM | `IDENTITY_AUTHORITY` | `local` | 生产建议 `openbase`（关闭本地开户/登录/换发）；**E3b 本机进程级证据**：`openbase` 下 `POST /api/v1/auth/login` **403** 含「身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）」、`local` 对照 **401** 无该文案；`openbase` 缺 `OPENBASE_JWKS_URL` **拒启 `exit=3`**、非法取值 **拒启 `exit=1`**（`ValueError ...（R17）`/pydantic `ValidationError`） | `config.py:84-87, 1046-1049`、`app/core/config.py`（R17 段 1073-1081） |
 | OpenLLM | `OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | `false` | K-05：可选后台吊销同步（守护线程，幂等 start/stop；仅配置吊销端点且显式置 `true` 才起线程）；开启后与请求路径共用同一间隔判定 | `backend/app/core/config.py`、`backend/app/security/revocation_background.py` |
 | OpenLLM | `QUOTA_ALGORITHM` | `window` | K-05：`window`=既有窗口算法（默认零行为变化）/ `token_bucket`=Redis Lua 原子令牌桶（Redis 不可用回退进程内）；非法值归一 `window` | `backend/app/core/config.py`（`QUOTA_ALGORITHM`）、`backend/app/edgerouter/middleware/quota.py` |
 | OpenLLM | `QUOTA_BUCKET_CAPACITY` / `QUOTA_BUCKET_REFILL_PER_SECOND` | `1000` / `1000.0` | 仅 `QUOTA_ALGORITHM=token_bucket` 生效：容量须正、补充速率须非负，违规拒启 | `backend/app/core/config.py`、`backend/app/services/quota_token_bucket.py` |
@@ -276,8 +277,9 @@ curl.exe -s "$Env:OPENBASE_URL/.well-known/jwks.json" | jq '.keys | length, .[0]
 | §6.2 JWKS/吊销/内省端点核对 | ✅ E2/E3 本机生产形态已核对：JWKS 200 仅 RSA 公钥（`kid` 一致）、内省与吊销端点无凭证 401 | ⛔ 生产端点核对待生产会话；按 §6.2 命令逐项核对并归档 `evidence/a2/` |
 | 五仓部署键名存在性（§6.1） | ✅ **E1 已全部补齐（2026-11-02）**：v1.1.5 登记的 4 处漂移均已收口——① OpenBase `.env.shared-infra` 已补生产基线 7 键（该文件不被 git 跟踪，真实值由 OPS 注入）；② OpenRAG `.env.example` 已补 `OPENRAG_API_STATIC_KEY_CHANNEL` + 应急 bypass 两键；③ OpenMemory `.env.example` 已补 `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` + 应急 bypass 两键；④ DPS 环境配置说明 v2.8.3 已新增 §2.5 `IDENTITY_AUTHORITY` / §2.6 `STATIC_KEY_CHANNEL` + 应急 bypass 两键（**无 `DPS_` 前缀**，勘正 v1.1.5 笔误）；✅ E3 已验证摘要/密钥文件两形态放行、生产明文 Key 拒启 | ⛔ 生产 `.env` 真实注入与 PEM 0600 只读挂载仍归真实生产窗口 |
 | 多 Provider issuer 唯一性（登记前置） | ✅ Provider name 唯一性门禁生效；ℹ️ issuer 为 discovery 运行期解析（配置层无该字段） | ⛔ issuer 判重待可达 IdP；同 issuer 多 client 仅一个承担 back-channel |
+| OpenLLM R17 身份权威（§3 `IDENTITY_AUTHORITY`） | ✅ E3b 本机进程级两向：缺 JWKS 拒启 `exit=3`（176.3s）、非法取值拒启 `exit=1`、`openbase` 登录 **403** 含 R17、`local` 对照 **401** 无 R17 | ⛔ 生产 ENV 全套门禁与 OpenBase 令牌直放待 E4；解除条件=生产拓扑 + 真实令牌 |
 
-证据：`doc/audit/verification/evidence/d/d-02-gate-matrix-20261101.json`、`d-06-template-key-check-20261101.json`、`d-07-issuer-uniqueness-20261101.json`；E1/E2/E3 证据 `evidence/a2/a2-e1-template-drift-20261102.json`、`a2-e2-native-20261102.json`、`a2-d02-negative-e2native-20261102.json`、`evidence/e3/e3-native-20261102.json`；执行方式与阻塞解除条件见 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.2.md` §5。
+证据：`doc/audit/verification/evidence/d/d-02-gate-matrix-20261101.json`、`d-06-template-key-check-20261101.json`、`d-07-issuer-uniqueness-20261101.json`；E1/E2/E3/E3b 证据 `evidence/a2/a2-e1-template-drift-20261102.json`、`a2-e2-native-20261102.json`、`a2-d02-negative-e2native-20261102.json`、`evidence/e3/e3-native-20261102.json`、`evidence/e3/e3b-openllm-20261102.json`；执行方式与阻塞解除条件见 `OpenBase-四系统APIKey优化-D类部署取证执行记录-v1.0.3.md` §5。
 
 ---
 

@@ -1,0 +1,92 @@
+{
+  "generated_at": "2026-11-02T07:53:01.191712+00:00",
+  "scope": "E3b OpenLLM R17 身份权威两向（无 Docker，原生 uvicorn + SQLite，ENV=development）",
+  "environment": {
+    "python": "3.12.10",
+    "interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+    "extra_libs": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\e3b-openllm\\libs",
+    "backend": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+    "database_url_scheme": "sqlite"
+  },
+  "note": "R17 门禁与 ENV 无关（app/core/config.py:1073 注释）；本批次在 development ENV 下取证，仅覆盖身份权威语义，不覆盖生产 ENV 的其余启动门禁（SECRET_KEY/入站头/RBAC/租户隔离）。N1/N2 以 lifespan=on 真实启动（门禁在 lifespan 首行无包裹求值）；P1/P2 以 lifespan=off 起真实 uvicorn 进程，仅跳过插件/EdgeRouter/回写恢复等重型自检，路由与鉴权代码路径不变。",
+  "db_prepare": {
+    "exit_code": 0,
+    "ready": true,
+    "message_tail": []
+  },
+  "n1_openbase_without_jwks": {
+    "exit_code": 3,
+    "rejected_at_startup": true,
+    "elapsed_seconds": 176.3,
+    "message_tail": [
+      "assert_startup_gates()",
+      "File \"D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\app\\core\\config.py\", line 1091, in assert_startup_gates",
+      "return get_settings()",
+      "^^^^^^^^^^^^^^",
+      "File \"D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\app\\core\\config.py\", line 1077, in get_settings",
+      "raise ValueError(",
+      "ValueError: IDENTITY_AUTHORITY=openbase 必须同时配置 OPENBASE_JWKS_URL（R17）：身份权威切到 openbase 后本地身份通道已关闭，无 JWKS 则无任何可验证身份来源。",
+      "ERROR:    Application startup failed. Exiting."
+    ]
+  },
+  "n2_illegal_authority": {
+    "exit_code": 1,
+    "rejected_at_startup": true,
+    "elapsed_seconds": 12.5,
+    "message_tail": [
+      "super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))",
+      "File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\pydantic\\main.py\", line 280, in __init__",
+      "validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)",
+      "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "pydantic_core._pydantic_core.ValidationError: 1 validation error for Settings",
+      "IDENTITY_AUTHORITY",
+      "Value error, IDENTITY_AUTHORITY 取值非法：'openid'；仅允许 'local' 或 'openbase'（R17） [type=value_error, input_value='openid', input_type=str]",
+      "For further information visit https://errors.pydantic.dev/2.14/v/value_error"
+    ]
+  },
+  "p1_openbase_login_forbidden": {
+    "started": true,
+    "startup_mode": "lifespan=off（跳过插件/EdgeRouter/回写恢复自检）",
+    "port": 18021,
+    "health_status": 200,
+    "health_body_prefix": "{\"status\":\"healthy\",\"version\":\"2.19.1\",\"details\":{\"postgresql\":\"healthy\",\"redis\":\"healthy\"},\"metrics\":{\"uptime_seconds\":null,\"debug\":true,\"sql_echo\":false,\"env\"",
+    "local_login_status": 403,
+    "local_login_body_prefix": "{\"detail\":\"身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）\"}",
+    "r17_message_present_in_login_403": true,
+    "local_register_status": 422,
+    "process_exit_code": 1,
+    "stderr_tail": [
+      "NVML初始化失败: Unknown Error",
+      "{\"ts\": \"2026-11-02T07:59:56.072Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"IdentityGate \\u8eab\\u4efd\\u88c1\\u51b3\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T07:59:56.074Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"\\u5ba1\\u8ba1\\u65e5\\u5fd7\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T07:59:56.155Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"\\u901f\\u7387\\u9650\\u5236\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T07:59:56.210Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"\\u76d1\\u63a7\\u6307\\u6807\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T08:00:19.195Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"app.middleware.rate_limit\", \"message\": \"RateLimitMiddleware \\u914d\\u7f6e\\u751f\\u6548: enabled=True, global=1.0/s(burst=60), user=20.0/s(burst=200), route=50.0/s(burst=100)\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T08:00:30.364Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"app.middleware.audit\", \"message\": \"access\", \"request_id\": \"-\", \"method\": \"POST\", \"path\": \"/api/v1/auth/login\", \"status_code\": 403, \"duration_ms\": 1129}",
+      "{\"ts\": \"2026-11-02T08:00:34.215Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"app.middleware.audit\", \"message\": \"access\", \"request_id\": \"-\", \"method\": \"POST\", \"path\": \"/api/v1/auth/register\", \"status_code\": 422, \"duration_ms\": 385}"
+    ]
+  },
+  "p2_local_login_reachable": {
+    "started": true,
+    "startup_mode": "lifespan=off（跳过插件/EdgeRouter/回写恢复自检）",
+    "port": 18022,
+    "health_status": 200,
+    "local_login_status": 401,
+    "local_login_body_prefix": "{\"detail\":\"用户名或密码错误\"}",
+    "r17_message_absent": true,
+    "process_exit_code": 1,
+    "stderr_tail": [
+      "NVML初始化失败: Unknown Error",
+      "{\"ts\": \"2026-11-02T08:02:17.800Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"IdentityGate \\u8eab\\u4efd\\u88c1\\u51b3\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T08:02:17.801Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"\\u5ba1\\u8ba1\\u65e5\\u5fd7\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T08:02:17.947Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"\\u901f\\u7387\\u9650\\u5236\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T08:02:17.992Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"\\u76d1\\u63a7\\u6307\\u6807\\u4e2d\\u95f4\\u4ef6\\u5df2\\u6dfb\\u52a0\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T08:02:19.763Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"app.middleware.rate_limit\", \"message\": \"RateLimitMiddleware \\u914d\\u7f6e\\u751f\\u6548: enabled=True, global=1.0/s(burst=60), user=20.0/s(burst=200), route=50.0/s(burst=100)\", \"request_id\": \"-\"}",
+      "{\"ts\": \"2026-11-02T08:02:24.169Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"app.middleware.audit\", \"message\": \"access\", \"request_id\": \"-\", \"method\": \"POST\", \"path\": \"/api/v1/auth/login\", \"status_code\": 401, \"duration_ms\": 1385}"
+    ]
+  },
+  "blocked_production_items": {
+    "openllm_prod_env_smoke": "生产 ENV 全套启动门禁（SECRET_KEY/入站身份头/RBAC 强制期/租户隔离/豁免行加固）未在本机跑",
+    "openllm_openbase_token_accept": "OpenBase RS256 令牌放行需 OpenBase JWKS 可达 + OPENBASE_SUBJECT_MAP 映射与吊销同步"
+  }
+}

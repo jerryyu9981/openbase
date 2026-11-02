@@ -2,15 +2,15 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 文档状态 | [Review] |
 | 适用环境 | 本机（Windows / 无 Docker）/ Pre-Pro / Pro（仅语义对齐） |
-| 关联批次 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项分批推进方案-v1.2.0.md`（§9.3 / §9.4 / §9.5） |
-| 关联记录 | `...-D类部署取证执行记录-v1.0.2.md`（§5.3 E3 逐项登记） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.28.0.md`（§10.31） |
-| 关联台账 | `...-残余项统一处置方案-v1.2.0.md`（§2.1 / §5.5 / §6） |
-| 关联清单 | `...-A1生产验收清单-v1.1.5.md`、`...-A2生产配置收口清单-v1.1.7.md` |
-| 证据文件 | `doc/audit/verification/evidence/e3/e3-native-20261102.json`（7447 B，SHA-256 `18224176AB92FDA0DA913BF83910A04DBCBC1680A4658B3EEF601D773CC94550`） |
+| 关联批次 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项分批推进方案-v1.3.0.md`（§9.3 / §9.4 / §9.5 / §9.6） |
+| 关联记录 | `...-D类部署取证执行记录-v1.0.3.md`（§5.3 E3 逐项登记、§5.4 E3b 逐项登记） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.29.0.md`（§10.31 / §10.32） |
+| 关联台账 | `...-残余项统一处置方案-v1.3.0.md`（§2.1 / §5.5 / §6） |
+| 关联清单 | `...-A1生产验收清单-v1.1.6.md`、`...-A2生产配置收口清单-v1.1.8.md` |
+| 证据文件 | `doc/audit/verification/evidence/e3/e3-native-20261102.json`（7447 B，SHA-256 `18224176AB92FDA0DA913BF83910A04DBCBC1680A4658B3EEF601D773CC94550`）；`.../e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5CA97D342E8FBD4401C1C1EF460091509DB3F5323DE39B1C7EA92D5C61`） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
 
@@ -18,6 +18,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.1.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | **E3b 补充：OpenLLM R17 身份权威进程级两向**：N1（`openbase` 缺 `OPENBASE_JWKS_URL`）拒启 `exit=3`（176.3s）、N2（非法取值 `openid`）拒启 `exit=1`（12.5s）、P1（`openbase` 正向）`/health` 200 + 本地登录 **403** 含 R17 文案、P2（`local` 对照）登录 **401** 无 R17 文案；新增 §10，同步 §1 摘要与 §7 联动；生产 ENV 全套门禁与 OpenBase 令牌放行仍 ⛔ Blocked；证据 `evidence/e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5C…D5C61`） |
 | v1.0.0 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | 首版：汇总 E3「本机生产形态」批次的目标、环境、用例矩阵、逐系统结果、Blocked 解除条件、判定边界、文档联动与复现方式；结论为 27 项 Pass / 3 项服务级 Blocked / 6 项生产前置 Blocked，真实生产实测仍 ⛔ Blocked |
 
 ---
@@ -28,7 +29,8 @@
 
 | 维度 | 结果 |
 |---|---|
-| 判定项合计 | **36**（27 Pass + 3 服务级 Blocked + 6 生产前置 Blocked，含重叠见 §4.4） |
+| 判定项合计 | **42**（31 Pass + 3 服务级 Blocked + 8 生产前置 Blocked，含重叠见 §4.4/§10；E3b 计入 4 Pass + 2 Blocked） |
+| OpenLLM（E3b 补充） | R17 进程级两向全部命中（N1/N2 拒启、P1 403 含 R17、P2 401 无 R17，4 Pass）；生产 ENV 与令牌放行 ⛔ Blocked（见 §10） |
 | OpenBase | D-03 / D-05 / D-06 两向全部命中（7 Pass，1 Blocked：PEM 0600） |
 | DPS | K-01 / K-02 两向全部命中（4 Pass） |
 | OpenRAG / OpenMemory | K-01 门禁级策略 **8/8 + 8/8** 断言通过；整服务启动 ⛔ Blocked |
@@ -50,6 +52,7 @@
 | DPS | K-01（`STATIC_KEY_CHANNEL=closed` 与应急 bypass）、K-02（`IDENTITY_AUTHORITY=openbase`） |
 | OpenRAG | K-01 静态 Key 通道策略层（`dual` / `closed` / 应急 bypass / 启动门禁） |
 | OpenMemory | 同上 |
+| OpenLLM（E3b 补充，v1.1.0） | R17 身份权威进程级两向：缺 JWKS 拒启、非法取值拒启、`openbase` 本地登录 403、`local` 对照 401（见 §10） |
 
 **范围外（不在本批次，保持 Blocked）**：D-04 存量 Key 收敛、D-05 出站映射两向、D-06 只读挂载 0600、A2-04 四仓 `iss/aud` 镜像矩阵、A2-05 服务 Key 权限面、V-04/V-05/V-13、E4 跨仓、E5 触发式暂缓。解除条件见 §5。
 
@@ -166,18 +169,18 @@
 
 | 文档 | 版本 | 变更要点 |
 |---|---|---|
-| 评估与优化方案 | v1.28.0 | 新增 §10.31（E3 本机生产形态 14 行用例表 + 判定边界） |
-| 残余项统一处置方案（台账） | v1.2.0 | §2.1 增「已完成 · E3」、§5.4/§5.5/§6/§9.1 同步 |
-| 残余项分批推进方案 | v1.2.0 | 新增 §9.4 结果表、§9.5 判定边界；§9.3 状态更新 |
-| D 类部署取证执行记录 | v1.0.2 | 新增 §5.3（16 行用例）、§3 证据清单、§4 结论修订 |
-| A2 生产配置收口清单 | v1.1.7 | §6.2/§6.4/§7 补 E3 证据；0600 仍 Blocked |
+| 评估与优化方案 | v1.29.0（E3 时 v1.28.0） | 新增 §10.31（E3 本机生产形态 14 行用例表 + 判定边界）；E3b 新增 §10.32 |
+| 残余项统一处置方案（台账） | v1.3.0（E3 时 v1.2.0） | §2.1 增「已完成 · E3」、§5.4/§5.5/§6/§9.1 同步；E3b 补 §5 K 类说明 |
+| 残余项分批推进方案 | v1.3.0（E3 时 v1.2.0） | 新增 §9.4 结果表、§9.5 判定边界；§9.3 状态更新；E3b 新增 §9.6 |
+| D 类部署取证执行记录 | v1.0.3（E3 时 v1.0.2） | 新增 §5.3（16 行用例）、§3 证据清单、§4 结论修订；E3b 新增 §5.4 |
+| A2 生产配置收口清单 | v1.1.8（E3 时 v1.1.7） | §6.2/§6.4/§7 补 E3 证据；0600 仍 Blocked；E3b 补 OpenLLM `IDENTITY_AUTHORITY` 证据口径 |
 | A1 生产验收清单 | v1.1.5 | A1-01/A1-02/A1-11 证据列追加 e3 佐证 |
-| **本报告** | v1.0.0 | 首版汇总（本文） |
+| **本报告** | v1.1.0（首版 v1.0.0） | E3 汇总 + E3b 补充（§10） |
 
 ### 7.2 交叉引用一致性
 
-- 六份既有文档均已指向同版关联方案 v1.28.0，并对 0600 / D-04 / A2-04 / A2-05 / V 类统一标注 ⛔ 与解除条件。
-- 改名升版后已全目录 grep 校验，无旧文件名（v1.27.0 / v1.1.6 / v1.0.1 / v1.1.4）残留。
+- 六份既有文档均已指向同版关联方案 v1.29.0，并对 0600 / D-04 / A2-04 / A2-05 / V 类统一标注 ⛔ 与解除条件。
+- 改名升版后已全目录 grep 校验，无旧文件名（v1.28.0 / v1.2.0 / v1.0.2 / v1.1.7 / v1.0.0）残留（历史版本引用除外）。
 
 ### 7.3 提交与推送
 
@@ -229,3 +232,38 @@
 | D-03 / D-05 / D-06 | RS256 强制 / 主体映射注入 / 秘密形态与挂载 |
 | K-01 / K-02 | 静态 Key 通道关闭与应急 bypass / DPS 身份权威切 OpenBase |
 | Blocked | 环境不可达，必须写明解除条件，不得以构造替代 |
+
+---
+
+## 10. E3b 补充：OpenLLM R17 身份权威进程级两向（2026-11-02）
+
+> **背景**：E3 覆盖 OpenBase / DPS / OpenRAG / OpenMemory 四仓，**未覆盖 OpenLLM**。R17（身份权威切到 OpenBase 后本地身份通道关闭）此前仅在 OpenBase 文档 v1.9.0 以单测闭合，缺真实进程两向。本节补齐，证据 `evidence/e3/e3b-openllm-20261102.json`（7628 B，SHA-256 `370DAA5C…D5C61`，`generated_at=2026-11-02T07:53:01Z`）。
+
+### 10.1 环境与方法
+
+| 项 | 实测 |
+|---|---|
+| 目标仓 | `D:\Trae CN\myproject\Dev\OpenLLM\backend`（只读引用，不改代码） |
+| 解释器 | `.venv-test/Scripts/python.exe` + `PYTHONPATH` 追加 `tmp/e3b-openllm/libs` → `.venv-libs` → `.pylib` |
+| 数据库 | 子进程 `init_db()` 预建 SQLite（`tmp/e3b-openllm/openllm.db`），`db_prepare exit=0 / ready=true` |
+| ENV | `development`（R17 为 pydantic/settings 级门禁，源码无 ENV 分支，故结论与 ENV 无关） |
+| JWKS | `http://127.0.0.1:18012/.well-known/jwks.json`（不可达；JWKS 惰性拉取，启动不触网） |
+| Docker | ⛔ 未使用 |
+
+### 10.2 逐项结果
+
+| 编号 | 用例 | 结果 |
+|---|---|---|
+| N1 | `IDENTITY_AUTHORITY=openbase` 且 `OPENBASE_JWKS_URL` 空（`lifespan=on`） | ✅ Pass：拒启 `exit=3`，176.3s，`ValueError: IDENTITY_AUTHORITY=openbase 必须同时配置 OPENBASE_JWKS_URL（R17）` |
+| N2 | `IDENTITY_AUTHORITY=openid`（`lifespan=on`） | ✅ Pass：拒启 `exit=1`，12.5s，pydantic `ValidationError`「仅允许 'local' 或 'openbase'（R17）」 |
+| P1 | `openbase` 正向（`lifespan=off`） | ✅ Pass：`/health` 200；`/api/v1/auth/login` **403** 含「身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）」；注册 422 |
+| P2 | `local` 对照（`lifespan=off`） | ✅ Pass：`/health` 200；登录 **401**「用户名或密码错误」，**不含** R17 文案 |
+| 生产 ENV 全套门禁 | 需生产 ENV + 可达 JWKS | ⛔ Blocked（`openllm_prod_env_smoke`） |
+| OpenLLM 接受 OpenBase 令牌 | 需真实令牌 + JWKS | ⛔ Blocked（`openllm_openbase_token_accept`），归 E4 |
+
+### 10.3 判定边界
+
+- R17 与 ENV 无关：development ENV 下的拒启结论**等价于**生产口径。
+- N1/N2 用 `lifespan=on`（真启动门禁路径）；P1/P2 用 `lifespan=off` 起真实进程（跳过插件发现/EdgeRouter/回写恢复等重型自检），**路由与鉴权代码路径不变**，403/401 均为真实 HTTP 响应。
+- 本机导入耗时 150–185s，首跑超时曾误记为失败，已复现修正；证据含 `elapsed_seconds` / `startup_mode`。
+- ✅ 一律为 `Pass（本机进程级）`，不替代生产 ENV 与跨仓令牌放行实测。

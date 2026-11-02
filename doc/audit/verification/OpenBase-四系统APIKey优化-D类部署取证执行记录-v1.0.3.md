@@ -2,14 +2,14 @@
 
 | 项目 | 内容 |
 |---|---|
-| 文档版本 | v1.0.2 |
+| 文档版本 | v1.0.3 |
 | 文档状态 | [Review] |
 | 适用环境 | Dev（本机）/ Pre-Pro / Pro |
-| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.2.0.md`（§6 D 行、§5.4/§5.5） |
-| 关联清单 | `...-A2生产配置收口清单-v1.1.7.md`（§4 门禁、§6 漂移自检、§7 验收项） |
-| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.28.0.md`（§10.29~§10.31） |
-| 关联批次 | `...-残余项分批推进方案-v1.2.0.md`（E1 模板补齐 / E2 本机原生取证 / E3 本机生产形态，见本文 §5） |
-| 覆盖对象 | D-02 / D-04 / D-05 / D-06 / D-07（P4 批 D 全部 5 项） |
+| 关联台账 | `doc/audit/verification/OpenBase-四系统APIKey优化-残余项统一处置方案-v1.3.0.md`（§6 D 行、§5.4/§5.5） |
+| 关联清单 | `...-A2生产配置收口清单-v1.1.8.md`（§4 门禁、§6 漂移自检、§7 验收项） |
+| 关联方案 | `doc/audit/OpenBase-四系统APIKey与授权全生命周期评估与优化方案-v1.29.0.md`（§10.29~§10.32） |
+| 关联批次 | `...-残余项分批推进方案-v1.3.0.md`（E1 模板补齐 / E2 本机原生取证 / E3 本机生产形态 / E3b OpenLLM R17，见本文 §5） |
+| 覆盖对象 | D-02 / D-04 / D-05 / D-06 / D-07（P4 批 D 全部 5 项）；E 批联动含 E3b（OpenLLM R17 进程级两向） |
 | 编写 | FA-OpenBase-Dev（AI 辅助） |
 | 批准 | 待人工批准 |
 
@@ -17,6 +17,7 @@
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.3 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3b 联动：新增 §5.4 逐项登记 **OpenLLM R17 身份权威进程级两向**（N1 `openbase` 缺 `OPENBASE_JWKS_URL` 拒启 `exit=3`、N2 非法取值拒启 `exit=1`、P1 `openbase` 正向 `/health` 200 + 本地登录 403 含 R17、P2 `local` 对照登录 401 无 R17），证据 `evidence/e3/e3b-openllm-20261102.json`（SHA-256 `370DAA5C…D5C61`）；§3 证据清单补 e3b 条目、§4 结论补 OpenLLM R17 行；同步关联方案 v1.29.0（§10.32）、关联台账 v1.3.0、A2 v1.1.8、分批推进方案 v1.3.0 |
 | v1.0.2 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E3 本机生产形态联动：新增 §5.3 逐项登记 OpenBase D-03/D-05/D-06 两向、DPS K-01/K-02 两向、OpenRAG/OpenMemory K-01 策略层 **8/8** 的取证结果（证据 `evidence/e3/e3-native-20261102.json`）；§3 证据清单补 e3 条目、§4 结论同步 D-05/D-06 判定（本机生产形态 Pass / 真实生产仍 Blocked）；同步关联方案 v1.28.0（§10.31）、关联台账 v1.2.0、A2 v1.1.7、A1 v1.1.5、分批推进方案 v1.2.0 |
 | v1.0.1 | 2026-11-02 | FA-OpenBase-Dev（AI 辅助） | E 批联动：**E1** D-06 登记的 4 处模板漂移全部补齐（OpenBase `.env.shared-infra` 7 键、OpenRAG/OpenMemory `.env.example` 各 3 键、DPS 环境配置说明 v2.8.3 新增 §2.5/§2.6）；**勘误**：DPS 键名为 `IDENTITY_AUTHORITY`（不带 `DPS_` 前缀，源码 `DPS/src/config.py:200`），§2.3 原表「`DPS_IDENTITY_AUTHORITY`」为登记笔误（证据 JSON 原件不改动，以本节勘误为准）；**E2** 本机原生（无 Docker）完成 D-02 重启两向验证（缺私钥拒启 exit=1 / 恢复后启动 200）与 A2 §6.2 端点核对；关联文档版本同步 |
 | v1.0.0 | 2026-11-01 | FA-OpenBase-Dev（AI 辅助） | 首版：登记 P4 批 D 五项部署取证的执行方式、本地实测结果、阻塞原因与解除条件；D-02 13 项启动门禁负向矩阵本地全部命中（17 例，含 #6 五个子情形），D-07 Provider 名称唯一性本地实测通过、issuer 唯一性为部署口径；D-06 四仓部署键名核对发现 4 处缺项（OpenBase 生产基线未注入、OpenRAG/OpenMemory 新增 `STATIC_KEY_CHANNEL` 未进模板、DPS 说明缺 `IDENTITY_AUTHORITY`/`STATIC_KEY_CHANNEL`）；D-04 生产执行 Blocked（无生产主机访问权 + 本机 PG 无凭据），已产出导出/分批收敛 SQL；证据落 `evidence/d/` |
@@ -127,6 +128,7 @@
 | `evidence/a2/a2-d02-negative-e2native-20261102.json` | D-02 / E2 | 私钥缺失时本机原生启动拒绝（exit=1，含拒绝原因摘要） |
 | `evidence/a2/a2-e2-native-20261102.json` | D-02 / A2-03 / A2-06 / E2 | 生产形态原生实例启动、`/health`、JWKS（仅公钥/kid 一致）、内省与吊销端点无凭证拒绝、日志秘密扫描 |
 | `evidence/e3/e3-native-20261102.json` | D-03 / D-05 / D-06 / K-01 / K-02 / E3 | 四仓本机生产形态取证：OpenBase 启动/JWKS/HS256 拒签/缺 RS256 拒启/明文 Key 拒启/密钥文件放行/映射解析；DPS `closed` 拒静态 Key、应急 bypass 放行+审计仅摘要、缺过期拒启、K-02 本地登录 403；OpenRAG/OpenMemory K-01 策略层 8/8（已脱敏） |
+| `evidence/e3/e3b-openllm-20261102.json` | E3b（OpenLLM R17） | OpenLLM 原生进程两向：N1/N2 负向拒启（`exit=3`/`exit=1`）、P1 `openbase` 正向 `/health` 200 + 登录 403 含 R17、P2 `local` 对照 401 无 R17；另含 db_prepare 与两条 Blocked 登记（7628 B，SHA-256 `370DAA5C…D5C61`） |
 
 ---
 
@@ -139,6 +141,7 @@
 | D-05 | **Pass（编排口径 + E3 解析口径）/ ⛔ 生产注入 Blocked** | 适用范围收敛为两仓映射 + 两仓直通，模板与审计口径已定；E3 已验证 `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` 单条映射解析与启动放行 |
 | D-06 | **Pass（模板/说明补齐 + E3 摘要/密钥文件两形态）/ ⛔ 生产注入与 0600 挂载 Blocked** | 4 处模板/说明漂移已全部补齐；E3 已验证生产摘要/密钥文件两形态放行、生产明文 Key 拒启；生产 `.env` 注入与 PEM 0600 只读挂载归真实生产窗口 |
 | D-07 | **部分 Pass** | 名称唯一性门禁生效；issuer 判重为登记前置部署动作 |
+| OpenLLM R17（E3b） | **Pass（本机进程级两向）/ ⛔ 生产 ENV 与令牌放行 Blocked** | 缺 JWKS 拒启（`exit=3`）、非法取值拒启（`exit=1`）、`openbase` 本地登录 403 含 R17、`local` 对照 401 无 R17；生产 ENV 全套门禁与 OpenBase 令牌直放仍需 E4 |
 
 **未闭环项全部为环境/权限阻塞，无代码缺口**；解除条件统一为「获得生产（或 Dev 全栈）会话与启停权限」。
 
@@ -203,4 +206,24 @@
 
 - ✅ 一律为 `Pass（本机生产形态）`：验证的是**代码门禁与两向语义**，不替代真实生产主机、共享 PG/Redis、多实例与真实 IdP 实测（E4/E5 仍 ⛔ Blocked）。
 - 逐项结果与 Blocked 解除条件见《残余项分批推进方案 v1.2.0》§9.4/§9.5。
+
+### 5.4 E3b（OpenLLM R17 进程级两向，2026-11-02）
+
+> 目的：R17（`IDENTITY_AUTHORITY=openbase` 且缺 `OPENBASE_JWKS_URL` 必须拒启；`openbase` 下本地开户/登录关闭）此前仅有单测覆盖，补齐**真实进程**两向。执行方式：本机原生 `uvicorn` + SQLite（`ENV=development`，R17 门禁与 ENV 无关），**无 Docker**；证据 `evidence/e3/e3b-openllm-20261102.json`。
+
+| 编号 | 用例 | 结果 | 证据字段 |
+|---|---|---|---|
+| N1 | `IDENTITY_AUTHORITY=openbase` 且 `OPENBASE_JWKS_URL` 为空（`lifespan=on`） | ✅ **拒绝启动** `exit=3`，耗时 176.3s，含 `ValueError: IDENTITY_AUTHORITY=openbase 必须同时配置 OPENBASE_JWKS_URL（R17）` | `n1_openbase_jwks_gate` |
+| N2 | `IDENTITY_AUTHORITY=openid`（非法取值，`lifespan=on`） | ✅ **拒绝启动** `exit=1`，耗时 12.5s，pydantic `ValidationError`「仅允许 'local' 或 'openbase'（R17）」 | `n2_invalid_authority` |
+| P1 | `openbase` 正向：`/health` 与本地登录（`lifespan=off`） | ✅ `/health` **200**；`/api/v1/auth/login` **403** `{"detail":"身份由 OpenBase 统一管理，本地开户/登录已关闭（R17）"}`；注册 422 | `p1_openbase_positive` |
+| P2 | `local` 对照：`/health` 与本地登录（`lifespan=off`） | ✅ `/health` **200**；登录 **401**「用户名或密码错误」，**不含** R17 文案（门禁可开可关） | `p2_local_control` |
+| 生产 ENV 全套门禁 | 需生产 ENV + 真实 JWKS 可达 | ⛔ **Blocked**：本机 development ENV + 不可达 JWKS（JWKS 惰性拉取，启动不触网） | `blocked_production_items.openllm_prod_env_smoke` |
+| OpenLLM 接受 OpenBase 令牌 | 需真实 OpenBase 签发令牌与 JWKS | ⛔ **Blocked**：需 E4 跨仓实测 | `blocked_production_items.openllm_openbase_token_accept` |
+
+**E3b 判定边界**
+
+- R17 为 **pydantic/settings 级门禁**，与 `ENV` 取值无关（源码 `config.py` R17 段无 ENV 分支），故 development ENV 下的拒启结论等价于生产口径。
+- N1/N2 用 `lifespan=on`（真启动门禁路径）；P1/P2 用 `lifespan=off` 起真实进程（跳过插件发现/EdgeRouter/回写恢复等重型自检），**路由与鉴权代码路径不变**，登录 403/401 均为真实 HTTP 响应。
+- 首跑曾因本机导入耗时（150–185s）超时误记为失败，已复现修正；证据含 `elapsed_seconds` 与 `startup_mode` 标注。
+- 逐项状态与解除条件见《残余项分批推进方案 v1.3.0》§9.6。
 
