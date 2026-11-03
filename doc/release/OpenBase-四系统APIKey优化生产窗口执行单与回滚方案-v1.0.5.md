@@ -1,12 +1,12 @@
-# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.4
+# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.5
 
 | 项 | 内容 |
 |---|---|
 | 项目名称 | OpenBase（开放底座）四系统 API Key 与授权治理 |
 | 下发单编号 | **XR-OPS-08-APIKEY-001** |
-| 文档版本 | v1.0.4 |
-| 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已闭合（F0-4/F0-5 Fail 已整改为 Pass）；本机全栈启动复核已执行（2 running / 1 degraded / 2 blocked，见 §12）；阶段 1~6 待 OPS 生产窗口** |
-| 执行进度 | 阶段 0（执行前检查）已完成：RF-01（共享 PG 补列）与 RF-02（Redis 前缀登记）于 2026-11-03 闭合；RF-03 / RF-04 研发侧交付已完成（§11 附录 B 逐仓逐键补录表单），实际填值仍待生产 `.env` → ⛔ Blocked；**本机全栈启动复核（§12）**：OpenBase 8000 `/docs` 200、OpenLLM 8020 `/health` 200 实跑通过，OpenMemory 8040 `/health` 503（degraded），DPS / OpenRAG 仍受环境阻塞；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
+| 文档版本 | v1.0.5 |
+| 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已闭合（F0-4/F0-5 Fail 已整改为 Pass）；本机全栈启动复核已执行并完成阻塞整改：五系统并行启动 **5 / 5 running（HTTP 200）**（见 §13）；阶段 1~6 待 OPS 生产窗口** |
+| 执行进度 | 阶段 0（执行前检查）已完成：RF-01（共享 PG 补列）与 RF-02（Redis 前缀登记）于 2026-11-03 闭合；RF-03 / RF-04 研发侧交付已完成（§11 附录 B 逐仓逐键补录表单），实际填值仍待生产 `.env` → ⛔ Blocked；**本机全栈复核与阻塞整改（§12 / §13）**：五系统并行启动全部 HTTP 200（OpenBase 8000 / OpenLLM 8020 / DPS 8013 / OpenRAG 8030 / OpenMemory 8040），整改仅限共享解释器依赖与进程级环境变量，未改仓库源码；阶段 1~6 因生产主机不可达仍 ⛔ Blocked |
 | 创建日期 | 2026-11-03 |
 | 编制 | FA-OpenBase-Dev（AI 辅助） |
 | 执行方 | OPS（生产环境）+ 生产 DBA（仅 P-01） |
@@ -536,6 +536,7 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.5 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 新增 **§13 阻塞点整改与五系统并行复核（2026-11-03）**：B-1~B-7 逐项根因与整改（DPS 加载 `.env.shared-infra` 并映射 `DATABASE_URL = POSTGRES_URL`、OpenMemory 改用 `OPENMEMORY_DB__*` 前缀与官方启动器 `scripts/start_openmemory.py`、补装 `qdrant-client`/`neo4j` 等缺失包、`pymupdf 2.0 → 1.24.14` 规避 `onnxruntime` 崩溃、OpenBase 进程级注入 `POSTGRES_URL`/`REDIS_URL`、DPS/OpenRAG 探活路径修正）；五系统同时启动复核 **5 / 5 HTTP 200**；登记残余风险 R-13-1~R-13-3；头部「状态」「执行进度」同步为 5 / 5 running；§12.3 三行标注「本机已解除」 |
 | v1.0.4 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 新增 **§12 本机全栈启动复核（2026-11-03）**：两轮启动级复核结果（OpenBase 8000 `/docs` 200、OpenLLM 8020 `/health` 200、OpenMemory 8040 `/health` 503 degraded、DPS 与 OpenRAG blocked）、仅解释器依赖的准备清单、逐项阻塞与解除条件、两份证据与清理/秘密口径；头部「状态」「执行进度」同步；明确本机结果**不替代生产实测**、不作为 A1-04 / A1-14 验收证据 |
 | v1.0.3 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 新增 **§11 附录 B：RF-03 / RF-04 生产补录清单**——按阶段 0 五仓键存在性证据逐仓列表（OpenBase 9 / OpenLLM 15 / OpenRAG 17 / OpenMemory 17 / DPS 18 共 74 键），标注当前态（`present`/`commented`/`absent`）、类型（含 🔒 秘密项）、生产取值来源、校验点与回执字段；明确四类禁止项、DPS 五键**无 `DPS_` 前缀**陷阱、`ALLOW_UNVERIFIED_GATEWAY_TOKEN` 不得启用、`*_REVOCATION_STRICT` 不得放宽；给出 RF-03/RF-04 闭合判据（五仓 `commented=0`/`duplicate=0` 且 DPS `present=18`） |
 | v1.0.2 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 整改闭环：**RF-01** 在共享测试 PG 定向补齐 `service_api_keys` 四列（`ADD COLUMN IF NOT EXISTS`，未执行 `create_all`，`lock_timeout=3s`/`statement_timeout=30s`），P-01 基线复验 `BASELINE_CAPTURED`；**RF-02** 按代码实测逐仓登记 Redis 前缀（§3.4），五仓无重合、无串键冲突，并登记两项非阻断命名空间风险；§8.1 F0-4/F0-5 由 Fail 转 Pass（阶段 0 判定 5 Pass + 3 生产侧 Blocked）、新增测试/生产口径声明；§8.4 更新 PG/Redis 判定；§8.5 增「状态」列并回填 RF-01/RF-02 已闭合、RF-03/RF-04 仍 Blocked；§8.6 补 3 份证据（RF-01 执行 + 迁移前/后基线） |
@@ -557,7 +558,7 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 | 批次总结 | `doc/audit/verification/OpenBase-四系统APIKey优化-E3批次执行总结报告-v1.2.1.md` | 42 项判定（34 Pass + 8 Blocked）与 §12 E4 |
 | 格式范本 | `doc/release/OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0.md` | 备份 / 覆盖 / 核验 / 重启 / 回滚 / 回执结构 |
 | 整体回滚 | `doc/release/OpenBase-主备双通道生产上线回滚方案-v1.0.0.md` | 双通道回滚总口径 |
-| 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4,xr-ops-08}/` | 本机口径佐证（不替代生产实测）；`xr-ops-08` 含阶段 0 证据与 §12 全栈启动复核证据（`xr08-fullstack-run-20261103.json` / `xr08-fullstack-run-round2-20261103.json`） |
+| 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4,xr-ops-08}/` | 本机口径佐证（不替代生产实测）；`xr-ops-08` 含阶段 0 证据、§12 全栈启动复核证据（`xr08-fullstack-run-20261103.json` / `xr08-fullstack-run-round2-20261103.json`）与 §13 整改后并行复核证据（`xr08-fullstack-simultaneous-20261103-131838.json` 及两份分证据） |
 
 ---
 
@@ -709,9 +710,9 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 
 | 阻塞项 | 责任方 | 解除条件 | 影响面 |
 |---|---|---|---|
-| DPS 共享 PG 不可达 + `DB_FAIL_FAST=true` | OPS / 生产 DBA | 提供可达 PG（`192.168.0.151:5432` 网络放通或等价实例）并核账号权限；**生产不得放开 SQLite 降级** | 影响 P-03 / P-05 / P-06 的 DPS 侧验证 |
-| OpenRAG `onnxruntime` 原生崩溃 | OPS / 研发 | 匹配解释器与 CPU 指令集的 `onnxruntime`，或在隔离窗口修复 `pymupdf.layout` 导入链；不得以「跳过 RAG 解析」替代 | 影响 P-05 / P-06 的 OpenRAG 侧验证 |
-| OpenMemory PG 口令认证失败 | OPS / 生产 DBA | 生产口令与连接串对齐（只记状态，不记值） | 影响 P-05 / P-06 的 OpenMemory 侧验证 |
+| DPS 共享 PG 不可达 + `DB_FAIL_FAST=true`（**本机已解除，见 §13**） | OPS / 生产 DBA | 提供可达 PG（`192.168.0.151:5432` 网络放通或等价实例）并核账号权限；**生产不得放开 SQLite 降级** | 影响 P-03 / P-05 / P-06 的 DPS 侧验证 |
+| OpenRAG `onnxruntime` 原生崩溃（**本机已解除，见 §13**） | OPS / 研发 | 匹配解释器与 CPU 指令集的 `onnxruntime`，或在隔离窗口修复 `pymupdf.layout` 导入链；不得以「跳过 RAG 解析」替代 | 影响 P-05 / P-06 的 OpenRAG 侧验证 |
+| OpenMemory PG 口令认证失败（**本机已解除，见 §13**） | OPS / 生产 DBA | 生产口令与连接串对齐（只记状态，不记值） | 影响 P-05 / P-06 的 OpenMemory 侧验证 |
 | F0-6 PEM `0600` / F0-7 网关与 IdP 地址 / F0-8 DBA 会话 | OPS / 生产 DBA | 生产主机窗口内完成 | 阻断阶段 1 起点（P-03） |
 | RF-03 / RF-04 填值 | OPS | 按 §11 附录 B 逐仓补值并回执 | 阻断阶段 1 前置 |
 
@@ -725,3 +726,45 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 | 秘密口径 | 日志已打码；未记录任何 token / key / 密码原文；未写入 `.env` 或任何文件 |
 
 > **结论**：本机可启动性复核为 **2 running + 1 degraded + 2 blocked**。该结果只回答「服务在缺失生产依赖时能否启动、卡在哪一环」，**不作为 A1-04 / A1-14 的验收证据**；生产实测仍须按 §4 阶段 4 在真实拓扑执行。
+
+---
+
+## 13. 阻塞点整改与五系统并行复核（2026-11-03）
+
+> **整改口径**：仅做两类动作 ——（1）向共享解释器（`.venv-test`）补装缺失运行时包；（2）进程级环境变量注入。**未写入任何 `.env`、未修改任何仓库源码、未放开 SQLite 降级**。
+
+### 13.1 逐项整改
+
+| # | 仓 | 原阻塞 | 根因 | 整改动作 | 结果 |
+|---|---|---|---|---|---|
+| B-1 | DPS | 连接默认库 `dps_db` 不存在 → `connection was closed in the middle of operation` | 未加载 `.env.shared-infra`，`DATABASE_URL` 缺省指向本地 `dps_db` | 按仓内 `scripts/start-shared-infra.ps1` 口径加载 `.env.shared-infra` 并映射 `DATABASE_URL = POSTGRES_URL`；保持 `DB_FAIL_FAST=true` / `SQLITE_FALLBACK=false`（**未放开降级**） | ✅ 8013 `/health/liveness` 200 |
+| B-2 | OpenMemory | `127.0.0.1` 用户 `openmemory` 认证失败、迁移跳过、`/health` 503 | `.env` 使用 `POSTGRES_*` 旧键，配置类实际前缀为 `OPENMEMORY_DB__` / `OPENMEMORY_CACHE__` / `OPENMEMORY_VECTOR__`，全部落到默认值 | 按部署指南注入 `OPENMEMORY_DB__*`（共享 PG `nuct`）、`OPENMEMORY_CACHE__*`（Redis 6380）、`OPENMEMORY_VECTOR__*`（Qdrant 6333）、`OPENMEMORY_GRAPH_*`（Neo4j 7687）；改用仓内官方启动器 `scripts/start_openmemory.py`（`create_app --factory` 不会注入 `memory_service`，属入口误用） | ✅ 8040 `/health` 200 |
+| B-3 | OpenMemory | 启动阻断：`No module named 'qdrant-client'` / `'neo4j'` | 共享解释器缺依赖 | 仅补装 `qdrant-client 1.20.0`、`neo4j 6.4.1` | ✅ 解除 |
+| B-4 | OpenRAG | `import fitz` → `pymupdf.layout` → `onnxruntime` 原生崩溃（`0xC0000005`） | `pymupdf 2.0` 将 `pymupdf.layout` 设为无条件导入，且 `onnxruntime 1.31.1` / `1.22.0` 在本机 DLL 初始化均失败 | 将 `pymupdf` 降至 `1.24.14`（`fitz` API 不变、不再导入 layout/onnxruntime） | ✅ 解除 |
+| B-5 | OpenRAG | 导入链连续缺包：`tiktoken`、`bs4`、`python-docx`、`qdrant_client` 等 | 共享解释器缺文档解析依赖 | 补装 `tiktoken`、`beautifulsoup4`、`python-docx 1.2.0`、`openpyxl 3.1.5`、`pypdf 6.21.4`、`python-pptx 1.0.2`、`markdownify 1.2.3`、`striprtf 0.0.35`、`qdrant-client 1.20.0` | ✅ 8030 `/openapi.json` 200 |
+| B-6 | OpenBase | 启动降级内存（`database init failed, fallback to memory`） | `.env` 无 `POSTGRES_URL`，缺省指向不存在的本地库 | 进程级注入 `.env.shared-infra` 的 `POSTGRES_URL` / `REDIS_URL` | ✅ 8000 `/docs` 200，且不再出现内存降级告警 |
+| B-7 | DPS / OpenRAG | 探活路径口径错误（`/health` 非实际路由） | DPS 健康路由为 `/health/liveness`；OpenRAG `/health` 位于 `/api/v1` 且受身份门禁，`/openapi.json` 在门禁白名单 | 修正探活路径（不改代码） | ✅ 200 |
+
+### 13.2 五系统并行复核结果
+
+| 仓 | 端口 | 探活 | 结果 |
+|---|---|---|---|
+| OpenBase | 8000 | `/docs` | ✅ 200 |
+| OpenLLM | 8020 | `/health` | ✅ 200 |
+| DPS | 8013 | `/health/liveness` | ✅ 200 |
+| OpenRAG | 8030 | `/openapi.json` | ✅ 200 |
+| OpenMemory | 8040 | `/health` | ✅ 200 |
+
+**汇总：5 / 5 running（HTTP 200）**。复核方式为「同时启动 → 逐项探活 → 统一停止」；停止后 8000 / 8013 / 8020 / 8030 / 8040 均为 `CLOSED`，无残留进程与监听。
+
+### 13.3 证据与残余风险
+
+| 项 | 说明 |
+|---|---|
+| 主证据 | `doc/audit/verification/evidence/xr-ops-08/xr08-fullstack-simultaneous-20261103-131838.json`（`residual_ports` 全 `false`） |
+| 分证据 | `…-unblock-OpenMemory-20261103-131657.json`、`…-unblock-OpenRAG-20261103-131724.json` |
+| R-13-1 | `pymupdf4llm 2.0` 依赖 `pymupdf 2.0`，与本次降级不兼容；OpenRAG 未使用该包，后续启用需在隔离环境恢复组合 |
+| R-13-2 | `qdrant-client 1.20.0` 与 Qdrant Server `1.7.4` 存在主/次版本不匹配告警（读路径可用，写路径需生产复核） |
+| R-13-3 | 本机为「共享测试实例」口径；生产仍须按 §4 阶段 4 在真实拓扑实测，本结果**不作为 A1-04 / A1-14 验收证据** |
+
+> **结论**：本机阻塞点 B-1~B-7 已全部解除，五系统可同时运行并全部返回 200。生产侧 F0-6 / F0-7 / F0-8、RF-03 / RF-04 与生产拓扑实测仍为阶段 1 的硬门禁。

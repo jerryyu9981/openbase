@@ -1,0 +1,29 @@
+﻿{
+    "run_timestamp":  "2026-11-03T13:17:46",
+    "environment":  "windows-native-no-docker",
+    "interpreter":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+    "results":  [
+                    {
+                        "repo":  "OpenRAG",
+                        "port":  8030,
+                        "verdict":  "running",
+                        "http_status":  200,
+                        "probe_url":  "http://127.0.0.1:8030/openapi.json",
+                        "probe_body":  "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"OpenRAG\",\"description\":\"å¢å¼ºç RAG / Context Engine ç³»ç»\",\"version\":\"1.9.5\"},\"paths\":{\"/api/v1/collections\":{\"post\":{\"tags\":[\"ç¥è¯åºç®¡ç\"],\"summary\":\"åå»ºç¥è¯åº\",\"description\":\"åå»ºä¸ä¸ªæ°çç¥è¯åº/ææ¡£éå\",\"operationId\":\"create_collection_api_v1_collections_post\",\"requestBody\":{\"required\":true,\"content\":{\"application/json\":{\"schema\":{\"$ref\":\"#/components/schemas/CollectionCreate\"}}}},\"responses\":{\"200\":{\"description\":\"Successful Response\",\"content\":{\"application/json\":{\"schema\":{\"type\":\"object\",\"additionalProperties\":true,\"title\":",
+                        "startup_seconds":  21,
+                        "log_out_tail":  [
+                                             "2026-11-03T05:17:44.918009Z [info     ] request_started                client_ip=127.0.0.1 method=GET path=/openapi.json query= request_id=req-b62970581bc7 user_agent=\u0027Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.2",
+                                             "2026-11-03T05:17:44.938569Z [info     ] scope_exemption_denied         method=GET path=/openapi.json reason=scope.deny.no_match request_id=req-b62970581bc7",
+                                             "2026-11-03T05:17:45.582068Z [info     ] request_completed              duration_ms=664.059 method=GET path=/openapi.json request_id=req-b62970581bc7 status_code=200"
+                                         ],
+                        "log_err_tail":  [
+                                             "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\fastapi\\openapi\\utils.py:295: UserWarning: Duplicate Operation ID get_config_api_v1_config_get for function get_config at D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\api\\v1_3_r",
+                                             "  warnings.warn(message, stacklevel=1)",
+                                             "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\fastapi\\openapi\\utils.py:295: UserWarning: Duplicate Operation ID update_config_api_v1_config_put for function update_config at D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\api\\",
+                                             "  warnings.warn(message, stacklevel=1)"
+                                         ]
+                    }
+                ],
+    "cleanup":  "all started processes stopped; env overrides removed after each service",
+    "secrets_policy":  "logs masked; no key values written"
+}

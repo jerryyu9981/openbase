@@ -1,0 +1,52 @@
+﻿{
+    "run_timestamp":  "2026-11-03T13:19:33",
+    "environment":  "windows-native-no-docker",
+    "mode":  "simultaneous-start-then-probe-then-stop",
+    "interpreter":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+    "results":  [
+                    {
+                        "repo":  "OpenBase",
+                        "port":  8000,
+                        "verdict":  "running",
+                        "http_status":  200,
+                        "probe_url":  "http://127.0.0.1:8000/docs"
+                    },
+                    {
+                        "repo":  "OpenLLM",
+                        "port":  8020,
+                        "verdict":  "running",
+                        "http_status":  200,
+                        "probe_url":  "http://127.0.0.1:8020/health"
+                    },
+                    {
+                        "repo":  "DPS",
+                        "port":  8013,
+                        "verdict":  "running",
+                        "http_status":  200,
+                        "probe_url":  "http://127.0.0.1:8013/health/liveness"
+                    },
+                    {
+                        "repo":  "OpenRAG",
+                        "port":  8030,
+                        "verdict":  "running",
+                        "http_status":  200,
+                        "probe_url":  "http://127.0.0.1:8030/openapi.json"
+                    },
+                    {
+                        "repo":  "OpenMemory",
+                        "port":  8040,
+                        "verdict":  "running",
+                        "http_status":  200,
+                        "probe_url":  "http://127.0.0.1:8040/health"
+                    }
+                ],
+    "residual_ports":  {
+                           "OpenLLM":  false,
+                           "OpenMemory":  false,
+                           "OpenRAG":  false,
+                           "OpenBase":  false,
+                           "DPS":  false
+                       },
+    "cleanup":  "all five processes stopped; no residual listeners expected",
+    "secrets_policy":  "no key values written to evidence"
+}

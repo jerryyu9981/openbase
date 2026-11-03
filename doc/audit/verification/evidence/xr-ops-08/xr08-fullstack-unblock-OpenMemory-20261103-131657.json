@@ -1,0 +1,25 @@
+﻿{
+    "run_timestamp":  "2026-11-03T13:17:16",
+    "environment":  "windows-native-no-docker",
+    "interpreter":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+    "results":  [
+                    {
+                        "repo":  "OpenMemory",
+                        "port":  8040,
+                        "verdict":  "running",
+                        "http_status":  200,
+                        "probe_url":  "http://127.0.0.1:8040/health",
+                        "probe_body":  "{\"status\":\"healthy\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}}",
+                        "startup_seconds":  18,
+                        "log_out_tail":  "INFO:     127.0.0.1:49768 - \"GET /health HTTP/1.1\" 200 OK",
+                        "log_err_tail":  [
+                                             "{\"ts\": \"2026-11-03T05:17:14.611Z\", \"level\": \"INFO\", \"service\": \"openmemory\", \"logger\": \"openmemory.api.server\", \"message\": \"豁免注册表已装配（entries=0, store=False, json_seed=False）\", \"request_id\": \"-\"}",
+                                             "INFO:     Application startup complete.",
+                                             "INFO:     Uvicorn running on http://127.0.0.1:8040 (Press CTRL+C to quit)",
+                                             "{\"ts\": \"2026-11-03T05:17:15.253Z\", \"level\": \"INFO\", \"service\": \"openmemory\", \"logger\": \"openmemory.api.middleware.structured_log\", \"message\": \"access_log\", \"request_id\": \"req-c85ff3687a6a\", \"event\": \"access\", \"method\": \"GET\", \"path\": \"/heal"
+                                         ]
+                    }
+                ],
+    "cleanup":  "all started processes stopped; env overrides removed after each service",
+    "secrets_policy":  "logs masked; no key values written"
+}
