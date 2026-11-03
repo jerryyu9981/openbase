@@ -1,12 +1,12 @@
-# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.3
+# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.4
 
 | 项 | 内容 |
 |---|---|
 | 项目名称 | OpenBase（开放底座）四系统 API Key 与授权治理 |
 | 下发单编号 | **XR-OPS-08-APIKEY-001** |
-| 文档版本 | v1.0.3 |
-| 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已闭合（F0-4/F0-5 Fail 已整改为 Pass），阶段 1~6 待 OPS 生产窗口** |
-| 执行进度 | 阶段 0（执行前检查）已完成：RF-01（共享 PG 补列）与 RF-02（Redis 前缀登记）于 2026-11-03 闭合；RF-03 / RF-04 研发侧交付已完成（§11 附录 B 逐仓逐键补录表单），实际填值仍待生产 `.env` → ⛔ Blocked；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
+| 文档版本 | v1.0.4 |
+| 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已闭合（F0-4/F0-5 Fail 已整改为 Pass）；本机全栈启动复核已执行（2 running / 1 degraded / 2 blocked，见 §12）；阶段 1~6 待 OPS 生产窗口** |
+| 执行进度 | 阶段 0（执行前检查）已完成：RF-01（共享 PG 补列）与 RF-02（Redis 前缀登记）于 2026-11-03 闭合；RF-03 / RF-04 研发侧交付已完成（§11 附录 B 逐仓逐键补录表单），实际填值仍待生产 `.env` → ⛔ Blocked；**本机全栈启动复核（§12）**：OpenBase 8000 `/docs` 200、OpenLLM 8020 `/health` 200 实跑通过，OpenMemory 8040 `/health` 503（degraded），DPS / OpenRAG 仍受环境阻塞；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
 | 创建日期 | 2026-11-03 |
 | 编制 | FA-OpenBase-Dev（AI 辅助） |
 | 执行方 | OPS（生产环境）+ 生产 DBA（仅 P-01） |
@@ -536,6 +536,7 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.4 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 新增 **§12 本机全栈启动复核（2026-11-03）**：两轮启动级复核结果（OpenBase 8000 `/docs` 200、OpenLLM 8020 `/health` 200、OpenMemory 8040 `/health` 503 degraded、DPS 与 OpenRAG blocked）、仅解释器依赖的准备清单、逐项阻塞与解除条件、两份证据与清理/秘密口径；头部「状态」「执行进度」同步；明确本机结果**不替代生产实测**、不作为 A1-04 / A1-14 验收证据 |
 | v1.0.3 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 新增 **§11 附录 B：RF-03 / RF-04 生产补录清单**——按阶段 0 五仓键存在性证据逐仓列表（OpenBase 9 / OpenLLM 15 / OpenRAG 17 / OpenMemory 17 / DPS 18 共 74 键），标注当前态（`present`/`commented`/`absent`）、类型（含 🔒 秘密项）、生产取值来源、校验点与回执字段；明确四类禁止项、DPS 五键**无 `DPS_` 前缀**陷阱、`ALLOW_UNVERIFIED_GATEWAY_TOKEN` 不得启用、`*_REVOCATION_STRICT` 不得放宽；给出 RF-03/RF-04 闭合判据（五仓 `commented=0`/`duplicate=0` 且 DPS `present=18`） |
 | v1.0.2 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 整改闭环：**RF-01** 在共享测试 PG 定向补齐 `service_api_keys` 四列（`ADD COLUMN IF NOT EXISTS`，未执行 `create_all`，`lock_timeout=3s`/`statement_timeout=30s`），P-01 基线复验 `BASELINE_CAPTURED`；**RF-02** 按代码实测逐仓登记 Redis 前缀（§3.4），五仓无重合、无串键冲突，并登记两项非阻断命名空间风险；§8.1 F0-4/F0-5 由 Fail 转 Pass（阶段 0 判定 5 Pass + 3 生产侧 Blocked）、新增测试/生产口径声明；§8.4 更新 PG/Redis 判定；§8.5 增「状态」列并回填 RF-01/RF-02 已闭合、RF-03/RF-04 仍 Blocked；§8.6 补 3 份证据（RF-01 执行 + 迁移前/后基线） |
 | v1.0.1 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 执行回填：状态转 [Approved]；新增 §8（门禁判定 F0-1~F0-8、五仓 HEAD、键存在性含 DPS 18 键全缺、共享 PG 可达但缺 4 列、共享 Redis 五仓同 `db=0`、整改项 RF-01~RF-04、两份脱敏证据）；§3.3 与阶段 3 前置补「列结构门禁」；§2 共享 PG 约束补第 ⑥ 条；章节号顺延（修订历史 §9、依据 §10） |
@@ -556,7 +557,7 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 | 批次总结 | `doc/audit/verification/OpenBase-四系统APIKey优化-E3批次执行总结报告-v1.2.1.md` | 42 项判定（34 Pass + 8 Blocked）与 §12 E4 |
 | 格式范本 | `doc/release/OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0.md` | 备份 / 覆盖 / 核验 / 重启 / 回滚 / 回执结构 |
 | 整体回滚 | `doc/release/OpenBase-主备双通道生产上线回滚方案-v1.0.0.md` | 双通道回滚总口径 |
-| 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4,xr-ops-08}/` | 本机口径佐证（不替代生产实测）；`xr-ops-08` 为本单阶段 0 证据 |
+| 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4,xr-ops-08}/` | 本机口径佐证（不替代生产实测）；`xr-ops-08` 含阶段 0 证据与 §12 全栈启动复核证据（`xr08-fullstack-run-20261103.json` / `xr08-fullstack-run-round2-20261103.json`） |
 
 ---
 
@@ -674,3 +675,53 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 | `checked_at` / `checked_by` | 复核时间与执行人 |
 
 **RF-03 / RF-04 闭合判据**：五仓 `commented=0`、`duplicate=0`，且 DPS `present=18`、四仓目标键全量 `present`；同时满足才可进入阶段 1（P-03）。任一未闭合 → 窗口保持挂起，不得带缺键执行。
+
+---
+
+## 12. 本机全栈启动复核（2026-11-03）
+
+> **口径**：Windows 原生进程、无 Docker；共享解释器 `OpenBase\.venv-test\Scripts\python.exe`；仅做**启动级复核**（监听 + 探活），**不替代生产实测**——E5 拓扑实测与阶段 4 取证仍以 §4 为准。未修改任何仓库源码或 `.env`。
+
+### 12.1 复核结果（两轮汇总）
+
+| 仓 | 入口 | 端口 | 结果 | 探活 | 阻塞点 / 备注 |
+|---|---|---|---|---|---|
+| OpenBase | `openbase.demo_app:app` | 8000 | ✅ running | `/docs` 200 | 共享 PG 不可达时按设计降级内存演示用户；Redis `192.168.0.151:6380/0` 可用 |
+| OpenLLM | `main:app`（cwd `backend`） | 8020 | ✅ running | `/health` 200 | `IdentityGate` 身份裁决中间件已加载；`pynvml` 缺失仅 GPU 监控降级；启动约 20.4s |
+| OpenMemory | `openmemory.api.server:create_app --factory`（cwd `OpenMemory\src`） | 8040 | ⚠️ degraded | `/health` **503** | 空密钥启动门禁已越过（仅进程级临时 `OPENMEMORY_SERVER_API_KEY`，探测后清除）；PG `127.0.0.1:5432` 用户 `openmemory` 口令认证失败 → 迁移跳过 |
+| DPS | `rest_api.app:app`（cwd `DPS\src`） | 8013 | ⛔ blocked | 无监听 | 首轮缺 `aiofiles`（已补装解除）；次轮 PG `192.168.0.151:5432` 不可达且 `DB_FAIL_FAST=true` 禁用 SQLite 降级，lifespan 内终止 |
+| OpenRAG | `openrag.main:app`（cwd `OpenRAG\src`） | 8030 | ⛔ blocked | 无监听 | `import fitz` → `pymupdf.layout` 无条件 `import onnxruntime`；Windows access violation（`0xC0000005`），全包无禁用开关 |
+
+**汇总**：`running=[OpenBase, OpenLLM]`；`degraded=[OpenMemory]`；`blocked=[DPS, OpenRAG]`。
+
+### 12.2 环境准备（仅解释器依赖，不改仓库）
+
+| 包 | 版本 | 用途 |
+|---|---|---|
+| `aiofiles` | 25.1.0 | DPS 导入期缺包 |
+| `psycopg` / `psycopg-binary` | 3.3.6 | OpenLLM PostgreSQL 驱动 |
+| `jinja2` | 3.1.6 | OpenLLM 缺失项（补充包 1） |
+| `opentelemetry-exporter-otlp-proto-grpc` / `grpcio` | 1.45.2 / 1.85.1 | OpenLLM 缺失项（补充包 2） |
+
+> 该 venv 原本无 `pip`，使用 `ensurepip` 引导 `pip 25.0.1`；安装范围限定为缺失运行时包，未升级/降级既有依赖。
+
+### 12.3 阻塞项与解除条件
+
+| 阻塞项 | 责任方 | 解除条件 | 影响面 |
+|---|---|---|---|
+| DPS 共享 PG 不可达 + `DB_FAIL_FAST=true` | OPS / 生产 DBA | 提供可达 PG（`192.168.0.151:5432` 网络放通或等价实例）并核账号权限；**生产不得放开 SQLite 降级** | 影响 P-03 / P-05 / P-06 的 DPS 侧验证 |
+| OpenRAG `onnxruntime` 原生崩溃 | OPS / 研发 | 匹配解释器与 CPU 指令集的 `onnxruntime`，或在隔离窗口修复 `pymupdf.layout` 导入链；不得以「跳过 RAG 解析」替代 | 影响 P-05 / P-06 的 OpenRAG 侧验证 |
+| OpenMemory PG 口令认证失败 | OPS / 生产 DBA | 生产口令与连接串对齐（只记状态，不记值） | 影响 P-05 / P-06 的 OpenMemory 侧验证 |
+| F0-6 PEM `0600` / F0-7 网关与 IdP 地址 / F0-8 DBA 会话 | OPS / 生产 DBA | 生产主机窗口内完成 | 阻断阶段 1 起点（P-03） |
+| RF-03 / RF-04 填值 | OPS | 按 §11 附录 B 逐仓补值并回执 | 阻断阶段 1 前置 |
+
+### 12.4 取证与清理
+
+| 项 | 说明 |
+|---|---|
+| 证据 1 | `doc/audit/verification/evidence/xr-ops-08/xr08-fullstack-run-20261103.json`（第一轮：OpenBase running，其余四项 blocked） |
+| 证据 2 | `doc/audit/verification/evidence/xr-ops-08/xr08-fullstack-run-round2-20261103.json`（第二轮：OpenLLM running、OpenMemory degraded、DPS / OpenRAG blocked） |
+| 清理 | 两轮均逐进程停止并校验 PID 不存在；8000 / 8013 / 8020 / 8030 / 8040 无残留监听；进程级临时环境变量已清除 |
+| 秘密口径 | 日志已打码；未记录任何 token / key / 密码原文；未写入 `.env` 或任何文件 |
+
+> **结论**：本机可启动性复核为 **2 running + 1 degraded + 2 blocked**。该结果只回答「服务在缺失生产依赖时能否启动、卡在哪一环」，**不作为 A1-04 / A1-14 的验收证据**；生产实测仍须按 §4 阶段 4 在真实拓扑执行。

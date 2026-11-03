@@ -1,0 +1,190 @@
+{
+  "order_id": "XR-OPS-08-APIKEY-001",
+  "stage": "fullstack-local-run",
+  "environment": "windows-native-no-docker",
+  "run_timestamp": "2026-11-03T02:26:00Z",
+  "probe_policy": "serial; max 40s wait per service; /health then /docs then /openapi.json; process stopped immediately after probe",
+  "services": [
+    {
+      "repo": "OpenBase",
+      "entry": "openbase.demo_app:app",
+      "interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+      "command": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe -m uvicorn openbase.demo_app:app --host 127.0.0.1 --port 8000",
+      "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenBase",
+      "port": 8000,
+      "startup_seconds": 16.0,
+      "probe_url": "http://127.0.0.1:8000/docs",
+      "http_status": 200,
+      "probe_attempts": [
+        "http://127.0.0.1:8000/health -> timeout (2s, 应用启动期未及时响应)",
+        "http://127.0.0.1:8000/docs -> 200"
+      ],
+      "verdict": "running",
+      "blocker": "",
+      "log_excerpt": [
+        "INFO:     127.0.0.1:61577 - \"GET /docs HTTP/1.1\" 200 OK",
+        "{\"ts\": \"2026-11-03T02:26:12.664+00:00\", \"level\": \"INFO\", \"service\": \"openbase\", \"module\": \"openbase.demo\", \"message\": \"service.start\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"log_path\": \"logs\\\\openbase\\\\openbase-20261103.jsonl\", \"log_level\": \"INFO\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:26:14.399+00:00\", \"level\": \"WARNING\", \"service\": \"openbase\", \"module\": \"openbase.demo\", \"message\": \"database init failed, fallback to memory: (sqlalchemy.dialects.postgresql.asyncpg.Error) connection was closed in the middle of operation\\n(Background on this error at: https://sqlalche.me/e/21/dbapi)\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:26:14.721+00:00\", \"level\": \"WARNING\", \"service\": \"openbase\", \"module\": \"passlib.handlers.bcrypt\", \"message\": \"(trapped) error reading bcrypt version\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:26:15.002+00:00\", \"level\": \"INFO\", \"service\": \"openbase\", \"module\": \"openbase.demo\", \"message\": \"fallback: memory demo user seeded (admin/***)\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:26:17.120+00:00\", \"level\": \"INFO\", \"service\": \"openbase\", \"module\": \"openbase.cache\", \"message\": \"redis cache enabled\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"url\": \"192.168.0.151:6380/0\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:26:17.121+00:00\", \"level\": \"INFO\", \"service\": \"openbase\", \"module\": \"openbase.cache\", \"message\": \"redis subscribe started\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"pattern\": \"openbase:notify:user:*\", \"request_id\": \"-\"}",
+        "INFO:     Started server process [43348]",
+        "INFO:     Waiting for application startup.",
+        "{\"ts\": \"2026-11-03T02:26:18.739+00:00\", \"level\": \"INFO\", \"service\": \"openbase\", \"module\": \"openbase.identity.dispatcher\", \"message\": \"outbox dispatcher background loop started\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:26:18.772+00:00\", \"level\": \"INFO\", \"service\": \"openbase\", \"module\": \"openbase.audit\", \"message\": \"capture.switch.state\", \"env\": \"development\", \"version\": \"d6af7ee\", \"capture_response\": false, \"capture_upstream\": false, \"capture_field_allowlist\": [], \"capture_enabled\": false, \"request_id\": \"-\"}",
+        "INFO:     Application startup complete.",
+        "INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)",
+        "{\"ts\": \"2026-11-03T02:26:18.895+00:00\", \"level\": \"WARNING\", \"service\": \"openbase\", \"module\": \"openbase.identity.dispatcher\", \"message\": \"outbox dispatcher loop iteration failed\", \"env\": \"dev\", \"version\": \"d6af7ee\", \"error\": \"(sqlalchemy.dialects.postgresql.asyncpg.Error) connection was closed in the middle of operation\", \"request_id\": \"-\"}"
+      ],
+      "notes": "PostgreSQL 不可达，应用按设计降级到内存演示用户；Redis 指向 192.168.0.151:6380 可用；服务成功监听并响应。",
+      "unblock_condition": ""
+    },
+    {
+      "repo": "DPS",
+      "entry": "rest_api.app:app",
+      "interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+      "command": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe -m uvicorn rest_api.app:app --host 127.0.0.1 --port 8013",
+      "cwd": "D:\\Trae CN\\myproject\\Dev\\DPS\\src",
+      "port": 8013,
+      "startup_seconds": 6.9,
+      "probe_url": "http://127.0.0.1:8013/health",
+      "http_status": null,
+      "probe_attempts": [
+        "进程在应用导入阶段退出，未产生监听端口；/health 无连接"
+      ],
+      "verdict": "blocked",
+      "blocker": "ModuleNotFoundError: No module named 'aiofiles'（DPS 自有 .venv 不含 python.exe，回退 OpenBase .venv-test 后缺 DPS 依赖）",
+      "log_excerpt": [
+        "{\"ts\": \"2026-11-03T02:26:34.064Z\", \"level\": \"INFO\", \"service\": \"dps\", \"logger\": \"database\", \"message\": \"数据库初始化 (v2.1.0): backend=postgresql\", \"request_id\": \"-\"}",
+        "Traceback (most recent call last):",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\DPS\\src\\rest_api\\app.py\", line 552, in <module>",
+        "    app = create_app()",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\DPS\\src\\rest_api\\app.py\", line 539, in create_app",
+        "    from rest_api.routes import register_routes",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\DPS\\src\\rest_api\\routes\\__init__.py\", line 34, in <module>",
+        "    from rest_api.routes.routes_profiles import router as profiles_router",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\DPS\\src\\rest_api\\routes\\routes_profiles.py\", line 19, in <module>",
+        "    from engines import (",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\DPS\\src\\engines\\__init__.py\", line 31, in <module>",
+        "    from engines.batch_engine import BatchEngine",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\DPS\\src\\engines\\batch_engine.py\", line 15, in <module>",
+        "    import aiofiles",
+        "ModuleNotFoundError: No module named 'aiofiles'"
+      ],
+      "notes": "解释器回退符合任务约定；启动失败发生在前置导入期，与数据库连接无关。",
+      "unblock_condition": "提供 DPS 自有可用的 Python 环境（.venv 需含 Scripts\\python.exe），或在隔离的依赖准备窗口安装 aiofiles 及 DPS requirements 中的其余缺失项；本任务不执行安装。"
+    },
+    {
+      "repo": "OpenLLM",
+      "entry": "main:app",
+      "interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+      "command": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8020",
+      "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend",
+      "port": 8020,
+      "startup_seconds": 6.9,
+      "probe_url": "http://127.0.0.1:8020/health",
+      "http_status": null,
+      "probe_attempts": [
+        "进程在应用导入阶段退出，未产生监听端口；/health 无连接"
+      ],
+      "verdict": "blocked",
+      "blocker": "ModuleNotFoundError: No module named 'psycopg'（app/db/session.py 导入期 create_engine 使用 postgresql+psycopg 驱动）",
+      "log_excerpt": [
+        "Traceback (most recent call last):",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\main.py\", line 21, in <module>",
+        "    from app.api import (",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\app\\api\\__init__.py\", line 4, in <module>",
+        "    from app.api.auth import router as auth_router",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\app\\api\\auth.py\", line 11, in <module>",
+        "    from app.db.session import get_db",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\app\\db\\__init__.py\", line 4, in <module>",
+        "    from app.db.session import Base, SessionLocal, engine, get_db, init_db, close_db",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenLLM\\backend\\app\\db\\session.py\", line 24, in <module>",
+        "    engine = create_engine(",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\sqlalchemy\\engine\\create.py\", line 602, in create_engine",
+        "    dbapi = dbapi_meth(**dbapi_args)",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\sqlalchemy\\dialects\\postgresql\\psycopg.py\", line 497, in import_dbapi",
+        "    import psycopg",
+        "ModuleNotFoundError: No module named 'psycopg'"
+      ],
+      "notes": "OpenLLM 仓内无虚拟环境；回退解释器缺 psycopg 驱动，导入期即退出。",
+      "unblock_condition": "提供 OpenLLM 自有可用虚拟环境，或在隔离窗口安装 psycopg（并按仓库要求配置可达 PostgreSQL）；本任务不改配置、不装包。"
+    },
+    {
+      "repo": "OpenRAG",
+      "entry": "openrag.main:app",
+      "interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+      "command": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe -m uvicorn openrag.main:app --host 127.0.0.1 --port 8030",
+      "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src",
+      "port": 8030,
+      "startup_seconds": 6.9,
+      "probe_url": "http://127.0.0.1:8030/health",
+      "http_status": null,
+      "probe_attempts": [
+        "进程在应用导入阶段发生原生崩溃（Windows access violation），未产生监听端口；/health 无连接"
+      ],
+      "verdict": "blocked",
+      "blocker": "Windows fatal exception: access violation（退出码 0xC0000005 / -1073741819），崩溃于 onnxruntime\\capi\\_pybind_state.py，经 import fitz（PyMuPDF）→ pymupdf.layout 导入链触发",
+      "log_excerpt": [
+        "2026-11-03 10:31:29 [info     ] LLMLingua 依赖未安装，查询压缩将使用规则降级方案。可通过 pip install llmlingua 安装以获得更好的压缩效果。",
+        "Windows fatal exception: access violation",
+        "Current thread 0x0000b4ac (most recent call first):",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\onnxruntime\\capi\\_pybind_state.py\", line 32 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\onnxruntime\\__init__.py\", line 26 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\pymupdf\\layout\\onnx\\BoxRFDGNN.py\", line 6 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\pymupdf\\layout\\MultiProcessWrapper.py\", line 123 in __init__",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\pymupdf\\layout\\DocumentLayoutAnalyzer.py\", line 34 in get_model",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\pymupdf\\layout\\__init__.py\", line 17 in activate",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\pymupdf\\layout\\__init__.py\", line 25 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\pymupdf\\__init__.py\", line 343 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\indexing\\advanced_parser.py\", line 15 in <module>  # import fitz（PyMuPDF）",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\indexing\\__init__.py\", line 6 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\preprocessing\\hyde.py\", line 12 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\preprocessing\\__init__.py\", line 8 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\agents\\adaptive_rag.py\", line 27 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\agents\\__init__.py\", line 10 in <module>",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\__init__.py\", line 22 in <module>",
+        "进程退出码: -1073741819"
+      ],
+      "notes": "OpenRAG .venv2\\Scripts\\python.exe 存在但指向不存在的 C:\\Python313，不可用；回退 OpenBase .venv-test 后，onnxruntime 原生扩展加载即崩溃。",
+      "unblock_condition": "提供 OpenRAG 自有可用虚拟环境（与解释器/CPU 匹配的 onnxruntime 版本），或在隔离窗口修复/替换 onnxruntime 与 pymupdf 的可选 layout 依赖；本任务不改配置、不装包。"
+    },
+    {
+      "repo": "OpenMemory",
+      "entry": "openmemory.api.server:create_app（--factory）",
+      "interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+      "command": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe -m uvicorn openmemory.api.server:create_app --factory --host 127.0.0.1 --port 8040",
+      "cwd": "D:\\Trae CN\\myproject\\Dev\\OpenMemory\\src",
+      "port": 8040,
+      "startup_seconds": 13.5,
+      "probe_url": "http://127.0.0.1:8040/health",
+      "http_status": null,
+      "probe_attempts": [
+        "进程在 create_app 校验阶段退出，未产生监听端口；/health 无连接"
+      ],
+      "verdict": "blocked",
+      "blocker": "RuntimeError: server.api_key 未配置，拒绝无鉴权启动（P0-1 空密钥启动门禁）",
+      "log_excerpt": [
+        "Traceback (most recent call last):",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Lib\\site-packages\\uvicorn\\config.py\", line 514, in load",
+        "    self.loaded_app = self.loaded_app()",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenMemory\\src\\openmemory\\api\\server.py\", line 279, in create_app",
+        "    validate_server_api_key_policy(config)",
+        "  File \"D:\\Trae CN\\myproject\\Dev\\OpenMemory\\src\\openmemory\\utils\\config.py\", line 489, in validate_server_api_key_policy",
+        "    raise RuntimeError(",
+        "RuntimeError: server.api_key 未配置，拒绝以无鉴权模式启动（P0-1 空密钥启动门禁）。请配置 OPENMEMORY_SERVER_API_KEY，或仅在本地开发显式设置 OPENMEMORY_SERVER_ALLOW_EMPTY_API_KEY=true"
+      ],
+      "notes": "属预期安全门禁（fail-closed），并非运行期故障；本任务不设置密钥环境变量以绕过门禁。",
+      "unblock_condition": "由运维按规范注入 OPENMEMORY_SERVER_API_KEY（仅本地受控开发可显式设置 OPENMEMORY_SERVER_ALLOW_EMPTY_API_KEY=true）；本任务不改 .env/环境变量。"
+    }
+  ],
+  "summary": {
+    "running": ["OpenBase"],
+    "blocked": ["DPS", "OpenLLM", "OpenRAG", "OpenMemory"],
+    "running_count": 1,
+    "blocked_count": 4
+  },
+  "source_integrity": "未修改源码、未安装依赖、未变更 .env；仅启动/探测/停止进程并写入本证据文件。",
+  "secrets_policy": "logs masked; no token/key values captured"
+}

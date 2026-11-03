@@ -1,0 +1,112 @@
+{
+  "order_id": "XR-OPS-08-APIKEY-001",
+  "stage": "fullstack-local-run-round2",
+  "environment": "windows-native-no-docker",
+  "run_timestamp": "2026-11-03T02:40:00Z",
+  "scope": "最小解除尝试：仅补装缺失 Python 包、仅进程级临时环境变量；未改仓库源码、未改 .env、未卸载/重装 onnxruntime",
+  "shared_interpreter": "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+  "toolchain_note": "该 venv 原本无 pip，使用 ensurepip 引导 pip 25.0.1 后安装缺失包（属于允许的解释器环境安装动作）",
+  "packages_installed": [
+    {"name": "aiofiles", "version": "25.1.0", "reason": "DPS 导入期 ModuleNotFoundError"},
+    {"name": "psycopg", "version": "3.3.6", "reason": "OpenLLM 导入期缺 PG 驱动"},
+    {"name": "psycopg-binary", "version": "3.3.6", "reason": "psycopg[binary] 官方 wheel 依赖"},
+    {"name": "jinja2", "version": "3.1.6", "reason": "OpenLLM 第 2 个缺失项（纯 Python，补充包 1）"},
+    {"name": "opentelemetry-exporter-otlp-proto-grpc", "version": "1.45.2", "reason": "OpenLLM 第 3 个缺失项（官方 wheel，补充包 2）"},
+    {"name": "grpcio", "version": "1.85.1", "reason": "上述 OTLP gRPC 导出的官方 wheel 依赖"}
+  ],
+  "services": [
+    {
+      "repo": "OpenBase",
+      "action_taken": "无（上一轮已 running，本轮不重试）",
+      "retry_result": "running",
+      "http_status": 200,
+      "new_blocker": "",
+      "packages_installed": [],
+      "notes": "沿用第一轮结果：openbase.demo_app:app 监听 8000，/docs 200；PG 不可达时按设计降级内存模式。"
+    },
+    {
+      "repo": "DPS",
+      "action_taken": "pip install aiofiles（25.1.0）；随后按上一轮命令重试",
+      "retry_result": "blocked",
+      "http_status": null,
+      "new_blocker": "数据库 fail-fast：PostgreSQL 192.168.0.151:5432 不可达，且 DB_FAIL_FAST=true 禁用 SQLite 降级，lifespan 内终止启动",
+      "packages_installed": ["aiofiles 25.1.0"],
+      "log_excerpt": [
+        "{\"ts\": \"2026-11-03T02:40:24.782Z\", \"level\": \"INFO\", \"service\": \"dps\", \"logger\": \"database\", \"message\": \"数据库初始化 (v2.1.0): backend=postgresql\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:40:26.181Z\", \"level\": \"INFO\", \"service\": \"dps\", \"logger\": \"engines.query_engine\", \"message\": \"查询引擎初始化完成 (v2.2.0)\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:40:27.705Z\", \"level\": \"INFO\", \"service\": \"dps\", \"logger\": \"rest_api.routes\", \"message\": \"路由注册完成: /api/v2, /api/v1 (兼容), /health\", \"request_id\": \"-\"}",
+        "INFO:     Started server process [27876]",
+        "{\"ts\": \"2026-11-03T02:40:28.843Z\", \"level\": \"ERROR\", \"service\": \"dps\", \"logger\": \"database\", \"message\": \"PostgreSQL 连接失败（SQLite 降级已禁用）: connection was closed in the middle of operation\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:40:28.843Z\", \"level\": \"ERROR\", \"service\": \"dps\", \"logger\": \"rest_api.app\", \"message\": \"数据库初始化失败，DB_FAIL_FAST=true 终止启动: PostgreSQL 连接失败且 SQLite 降级已禁用：请检查 DATABASE_URL、共享库(192.168.0.151:5432)可达性与账号权限\", \"request_id\": \"-\"}"
+      ],
+      "notes": "aiofiles 阻塞已解除，导入与路由注册均通过；新阻塞点在数据库可达性/降级策略，属环境与配置门禁，未做变更。"
+    },
+    {
+      "repo": "OpenLLM",
+      "action_taken": "pip install psycopg[binary]（3.3.6）；重试命中 jinja2 缺失后补装 jinja2 3.1.6；再命中 OTLP gRPC 缺失后补装 opentelemetry-exporter-otlp-proto-grpc 1.45.2（达到补充包上限，未再扩展）",
+      "retry_result": "running",
+      "http_status": 200,
+      "new_blocker": "",
+      "packages_installed": [
+        "psycopg 3.3.6",
+        "psycopg-binary 3.3.6",
+        "jinja2 3.1.6",
+        "opentelemetry-exporter-otlp-proto-grpc 1.45.2",
+        "grpcio 1.85.1"
+      ],
+      "log_excerpt": [
+        "数据库初始化完成",
+        "INFO:     127.0.0.1:57944 - \"GET /health HTTP/1.1\" 200 OK",
+        "pynvml未安装，GPU监控功能不可用",
+        "{\"ts\": \"2026-11-03T02:42:43.393Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"main\", \"message\": \"IdentityGate 身份裁决中间件已添加\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:42:43.833Z\", \"level\": \"INFO\", \"service\": \"openllm\", \"logger\": \"app.core.otel\", \"message\": \"OpenTelemetry 已完全禁用\", \"request_id\": \"-\"}",
+        "INFO:     Application startup complete.",
+        "INFO:     Uvicorn running on http://127.0.0.1:8020 (Press CTRL+C to quit)"
+      ],
+      "notes": "监听 8020，/health 200，启动耗时约 20.4s；pynvml 缺失仅 GPU 监控降级，不阻断。探测后已立即停止进程。",
+      "elapsed_seconds": 20.4
+    },
+    {
+      "repo": "OpenRAG",
+      "action_taken": "检查 pymupdf.layout 顶部源码及全包 os.environ/getenv/DISABLE/LAYOUT 开关；未发现可禁用 layout/onnxruntime 导入的环境变量，按约束不设置变量、不重试",
+      "retry_result": "blocked",
+      "http_status": null,
+      "new_blocker": "Windows fatal exception: access violation（0xC0000005 / -1073741819），onnxruntime\\capi\\_pybind_state.py 原生加载崩溃；import fitz → pymupdf.layout 为无条件导入",
+      "packages_installed": [],
+      "log_excerpt": [
+        "pymupdf/layout/__init__.py 第 25 行: activate() 无条件执行；无环境变量分支",
+        "pymupdf/__init__.py 第 342-345 行: try: import pymupdf.layout（仅捕获 ImportError，未提供禁用开关）",
+        "全包检索 PYMUPDF_SUGGEST_LAYOUT_ANALYZER：仅控制版式分析建议提示（pymupdf/__init__.py:368），不控制 layout 导入",
+        "Windows fatal exception: access violation",
+        "File \"...\\onnxruntime\\capi\\_pybind_state.py\", line 32 in <module>",
+        "File \"D:\\Trae CN\\myproject\\Dev\\OpenRAG\\src\\openrag\\indexing\\advanced_parser.py\", line 15 in <module>（import fitz）",
+        "进程退出码: -1073741819"
+      ],
+      "notes": "无明确开关，保持 blocked；未卸载/重装 onnxruntime，未改源码或配置。"
+    },
+    {
+      "repo": "OpenMemory",
+      "action_taken": "仅在本次启动进程的环境变量中注入临时 OPENMEMORY_SERVER_API_KEY（值为临时占位，未写入 .env 或任何文件；探测后立即从环境清除）",
+      "retry_result": "running",
+      "http_status": 503,
+      "new_blocker": "PostgreSQL 127.0.0.1:5432 认证失败（用户 openmemory 口令校验失败），迁移跳过并以 degraded 模式启动，/health 返回 503",
+      "packages_installed": [],
+      "log_excerpt": [
+        "{\"ts\": \"2026-11-03T02:43:46.765Z\", \"level\": \"INFO\", \"service\": \"openmemory\", \"logger\": \"openmemory.api.server\", \"message\": \"OpenMemory API starting (mode=lightweight, port=8000)\", \"request_id\": \"-\"}",
+        "{\"ts\": \"2026-11-03T02:43:51.399Z\", \"level\": \"WARNING\", \"service\": \"openmemory\", \"logger\": \"openmemory.db.migration\", \"message\": \"Database not reachable, skipping migrations (application will start in degraded mode): (psycopg.OperationalError) connection failed ... 用户 \\\"openmemory\\\" Password 认证失败 ...\", \"request_id\": \"-\"}",
+        "INFO:     Application startup complete.",
+        "INFO:     Uvicorn running on http://127.0.0.1:8040 (Press CTRL+C to quit)",
+        "INFO:     127.0.0.1:59682 - \"GET /health HTTP/1.1\" 503 Service Unavailable"
+      ],
+      "notes": "空密钥启动门禁已越过，进程成功监听 8040 并完成 startup；因数据库不可达处于 degraded，/health=503。探测后立即停止，环境变量已清除（env_cleared=True）。",
+      "elapsed_seconds": 13.8
+    }
+  ],
+  "summary": {
+    "running": ["OpenBase", "OpenLLM", "OpenMemory(degraded, /health 503)"],
+    "blocked": ["DPS", "OpenRAG"]
+  },
+  "cleanup": "所有本轮启动进程已停止（已逐个校验 PID 不存在），无残留监听；进程级临时环境变量已清除。",
+  "source_integrity": "未修改任何仓库源码或 .env 文件；仅对共享 venv 安装缺失 Python 包，并在单次进程环境注入临时变量。",
+  "secrets_policy": "logs masked; no token/key values captured or written to files"
+}
