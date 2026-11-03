@@ -1,0 +1,1414 @@
+{
+  "run_timestamp": "2026-11-03T23:23:11",
+  "environment": "windows-native-no-docker",
+  "launcher": "scripts/service-orchestrator.ps1 -Action start",
+  "mode": "targeted per-service immediate pages-and-readonly-get-sweep",
+  "policy": "read-only: GET only; templated paths skipped; write endpoints not called",
+  "services": [
+    {
+      "service": "OpenRAG",
+      "port": 8010,
+      "startup_seconds": 0.0,
+      "alive": true,
+      "pages": [
+        {
+          "path": "/",
+          "http_status": 404,
+          "content_type": "application/json",
+          "body_head": "{\"code\":\"NOTFOUND-4040\",\"message\":\"Not Found\",\"data\":null,\"trace_id\":\"755c1c93bc4a47d1adc821246545a81b\",\"timestamp\":\"2026-11-03T15:23:11.938240+00:00\",\"request_"
+        },
+        {
+          "path": "/docs",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "body_head": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <link type=\"text/css\" rel=\"stylesheet\""
+        },
+        {
+          "path": "/redoc",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "body_head": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <title>OpenRAG - ReDoc</title>\n    <!-- needed for adaptive design -->\n    <meta charset=\"utf-8\"/>\n    <meta name"
+        },
+        {
+          "path": "/openapi.json",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"OpenRAG\",\"description\":\"增强版 RAG / Context Engine 系统\",\"version\":\"1.9.5\"},\"paths\":{\"/api/v1/collections\":{\"post\":{\"tags\":[\"知识库"
+        },
+        {
+          "path": "/health",
+          "http_status": 404,
+          "content_type": "application/json",
+          "body_head": "{\"code\":\"NOTFOUND-4040\",\"message\":\"Not Found\",\"data\":null,\"trace_id\":\"6122816bc0684c22b3049d072df37ed9\",\"timestamp\":\"2026-11-03T15:23:13.131871+00:00\",\"request_"
+        },
+        {
+          "path": "/api/v1/system/health",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"healthy\",\"version\":\"1.9.5\",\"uptime\":328.6,\"components\":{\"database\":{\"status\":\"up\",\"response_time_ms\":16.0,\"version\":\"postgresql\"},\"vector_store\":{\"st"
+        },
+        {
+          "path": "/api/v1/collections",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":20,\"total_pages\":0},\"trace_id\":\"a459d9d8182744e4b143da660d805deb\",\"timestamp\":\"2"
+        },
+        {
+          "path": "/api/v1/system/stats",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"collections\":{\"total\":0},\"documents\":{\"total\":0},\"chunks\":{\"total\":0},\"vector_stats\":{}},\"trace_id\":\"d0164b34542a48d4b652"
+        }
+      ],
+      "openapi": {
+        "available": true,
+        "status": 200,
+        "paths": 98,
+        "operations": 115,
+        "get_operations": 47,
+        "get_executed": 25,
+        "get_2xx": 22,
+        "get_gated_401_403": 0,
+        "skipped_templated": 22
+      },
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/collections",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":20,\"total_pages\":0},\"trace_id\":\"71e7171a"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/collections/{collection_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/collections/{collection_id}/documents",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/collections/{collection_id}/documents/{document_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/system/health",
+          "http_status": 200,
+          "body_head": "{\"status\":\"healthy\",\"version\":\"1.9.5\",\"uptime\":329.2,\"components\":{\"database\":{\"status\":\"up\",\"response_time_ms\":31.0,\"ve"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/system/stats",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"collections\":{\"total\":0},\"documents\":{\"total\":0},\"chunks\":{\"total\":0},\"vector_sta"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/system/config",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"env\":\"development\",\"debug\":true,\"log_level\":\"INFO\",\"embedding\":{\"model\":\"BAAI/bge"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/eval/results/{evaluation_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/eval/ab-test/{experiment_id}/results",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/governance/update/{task_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/governance/lifecycle/{document_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/governance/lifecycle/stats",
+          "http_status": 404,
+          "body_head": "{\"code\":\"NOTFOUND-4040\",\"message\":\"文档不存在\",\"data\":null,\"trace_id\":\"e769f944a9ce4cb48174eb3eab920de4\",\"timestamp\":\"2026-11"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/governance/update/stats",
+          "http_status": 404,
+          "body_head": "{\"code\":\"NOTFOUND-4040\",\"message\":\"任务不存在\",\"data\":null,\"trace_id\":\"4ade8b70215c4bb8b0851896f1d3d6e0\",\"timestamp\":\"2026-11"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/harness/budget",
+          "http_status": 200,
+          "body_head": "{\"query_id\":null,\"config\":{\"max_tokens\":null,\"max_api_calls\":null,\"max_cost\":null},\"usage\":{\"tokens_used\":0,\"api_calls\":"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/harness/circuit-breaker",
+          "http_status": 200,
+          "body_head": "{\"breakers\":{},\"total\":0}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/harness/circuit-breaker/{name}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/harness/degradation",
+          "http_status": 200,
+          "body_head": "{\"level\":\"NORMAL\",\"level_value\":0,\"actions\":[],\"config\":{\"enabled\":true,\"timeout_threshold\":3,\"error_rate_threshold\":0.3"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/harness/status",
+          "http_status": 200,
+          "body_head": "{\"timestamp\":\"2026-11-03T23:23:14.865174\",\"budget\":{\"queries_count\":0,\"config\":{\"max_tokens\":null,\"max_api_calls\":null,\""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/organizations",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":20,\"total_pages\":0},\"trace_id\":\"715803e7"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/organizations/{org_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/organizations/{org_id}/users",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/organizations/{org_id}/users/{user_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/namespaces",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0},\"trace_id\":\"479a2e9118c5463fb4ab61680031fb6d\",\"timestamp\":\"2"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/namespaces/{namespace_key}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/connectors",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"registered_types\":[],\"instances\":[],\"total_types\":0,\"total_instances\":0},\"trace_i"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/connectors/{connector_name}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/connectors/{connector_name}/health",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/plugins",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0},\"trace_id\":\"9a18c106203740429a58995bb29761fd\",\"timestamp\":\"2"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/plugins/{plugin_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/config",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"env\":\"development\",\"debug\":true,\"log_level\":\"INFO\",\"embedding\":{\"model\":\"BAAI/bge"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/config/history",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[],\"total\":0,\"page\":1,\"page_size\":20,\"current_version\":0},\"trace_id\":\"df65"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/cache/stats",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"l1_stats\":{\"type\":\"l1\",\"entries\":0,\"memory_mb\":0.0,\"hit_count\":0,\"miss_count\":0},"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/citations/{query_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/citations/summary",
+          "http_status": 404,
+          "body_head": "{\"code\":\"NOTFOUND-4040\",\"message\":\"查询不存在: summary\",\"data\":null,\"trace_id\":\"1a88c1667df84f2dba2fad1f46f52233\",\"timestamp\""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/fairness/reports",
+          "http_status": 200,
+          "body_head": "[]"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/fairness/reports/{report_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/fairness/metrics",
+          "http_status": 200,
+          "body_head": "{\"overall_score\":1.0,\"dimension_scores\":{},\"demographic_parity\":1.0,\"equal_opportunity\":1.0}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/datasets",
+          "http_status": 200,
+          "body_head": "[]"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/datasets/{dataset_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/datasets/{dataset_id}/samples",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/datasets/{dataset_id}/trace/{sample_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/datasets/{dataset_id}/verify",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/datasets/{dataset_id}/export",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/agent/tools",
+          "http_status": 200,
+          "body_head": "[]"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/health",
+          "http_status": 200,
+          "body_head": "{\"status\":\"healthy\",\"version\":\"1.9.5\",\"components\":{\"cache\":\"ok\",\"federated_retriever\":\"not_configured\",\"config_manager\""
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/compact/stats",
+          "http_status": 200,
+          "body_head": "{\"success\":true,\"data\":{\"total_compressions\":0,\"avg_compression_ratio\":1.0,\"total_tokens_saved\":0,\"strategy_distribution"
+        },
+        {
+          "method": "GET",
+          "path": "/openrag/endpoints",
+          "http_status": 200,
+          "body_head": "{\"code\":0,\"message\":\"ok\",\"data\":[{\"method\":\"GET\",\"path\":\"/api/v1/collections\",\"auth_required\":true},{\"method\":\"POST\",\"pa"
+        }
+      ],
+      "swept_at": "2026-11-03T23:23:11"
+    },
+    {
+      "service": "OpenMemory",
+      "port": 8020,
+      "startup_seconds": 0.0,
+      "alive": true,
+      "pages": [
+        {
+          "path": "/",
+          "http_status": 401,
+          "content_type": "application/json",
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        },
+        {
+          "path": "/docs",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "body_head": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <link type=\"text/css\" rel=\"stylesheet\""
+        },
+        {
+          "path": "/redoc",
+          "http_status": 401,
+          "content_type": "application/json",
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        },
+        {
+          "path": "/openapi.json",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"OpenMemory API\",\"description\":\"AI Agent Memory Framework with persistent storage, intelligent retrieval, and temporal knowle"
+        },
+        {
+          "path": "/health",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"healthy\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}}"
+        },
+        {
+          "path": "/health/readiness",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"ready\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}}"
+        },
+        {
+          "path": "/health/liveness",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"alive\"}"
+        }
+      ],
+      "openapi": {
+        "available": true,
+        "status": 200,
+        "paths": 31,
+        "operations": 37,
+        "get_operations": 19,
+        "get_executed": 11,
+        "get_2xx": 4,
+        "get_gated_401_403": 7,
+        "skipped_templated": 8
+      },
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/orgs/{org_id}/roles",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/orgs/{org_id}/permissions",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/orgs/{org_id}/users/{user_id}/role",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/organizations/",
+          "http_status": 401,
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/organizations/{org_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/organizations/{org_id}/members/",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memories/{memory_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/decay/config",
+          "http_status": 401,
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/recall/traces/{trace_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/monitor",
+          "http_status": 401,
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/sessions",
+          "http_status": 401,
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/sessions/{session_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/graph/overview",
+          "http_status": 401,
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/health",
+          "http_status": 200,
+          "body_head": "{\"status\":\"healthy\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}}"
+        },
+        {
+          "method": "GET",
+          "path": "/health/readiness",
+          "http_status": 200,
+          "body_head": "{\"status\":\"ready\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}}"
+        },
+        {
+          "method": "GET",
+          "path": "/health/liveness",
+          "http_status": 200,
+          "body_head": "{\"status\":\"alive\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/metrics",
+          "http_status": 401,
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"Invalid API key\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/health",
+          "http_status": 200,
+          "body_head": "{\"status\":\"healthy\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/metrics",
+          "http_status": 401,
+          "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少或无效的 API Key，请在请求头中提供 X-API-Key\"}"
+        }
+      ],
+      "swept_at": "2026-11-03T23:23:17"
+    },
+    {
+      "service": "OIDC-IdP",
+      "port": 8090,
+      "startup_seconds": 22.7,
+      "alive": true,
+      "pages": [
+        {
+          "path": "/",
+          "http_status": 404,
+          "content_type": "application/json",
+          "body_head": "{\"detail\":\"Not Found\"}"
+        },
+        {
+          "path": "/docs",
+          "http_status": 404,
+          "content_type": "application/json",
+          "body_head": "{\"detail\":\"Not Found\"}"
+        },
+        {
+          "path": "/openapi.json",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"openbase-oidc-idp\",\"version\":\"0.1.0\"},\"paths\":{\"/.well-known/openid-configuration\":{\"get\":{\"summary\":\"Discovery\",\"operationI"
+        },
+        {
+          "path": "/health",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"ok\",\"issuer\":\"http://127.0.0.1:8090\"}"
+        },
+        {
+          "path": "/.well-known/openid-configuration",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"issuer\":\"http://127.0.0.1:8090\",\"authorization_endpoint\":\"http://127.0.0.1:8090/authorize\",\"token_endpoint\":\"http://127.0.0.1:8090/token\",\"userinfo_endpoint\":"
+        },
+        {
+          "path": "/jwks",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"keys\":[{\"kid\":\"openbase-idp-rsa-1\",\"n\":\"0AUE7uR_d1KQqI05QGskMMq2Tmi6wn8SXadYlGE8ZfZNUrELsXsZlpaOFJldVZT_aCzzfl_ub5BEVyvCMsCVjzYb2Ah0SjRk5PJRdeYwYtUMK49paTkIQW"
+        }
+      ],
+      "openapi": {
+        "available": true,
+        "status": 200,
+        "paths": 7,
+        "operations": 7,
+        "get_operations": 5,
+        "get_executed": 5,
+        "get_2xx": 3,
+        "get_gated_401_403": 1,
+        "skipped_templated": 0
+      },
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/.well-known/openid-configuration",
+          "http_status": 200,
+          "body_head": "{\"issuer\":\"http://127.0.0.1:8090\",\"authorization_endpoint\":\"http://127.0.0.1:8090/authorize\",\"token_endpoint\":\"http://12"
+        },
+        {
+          "method": "GET",
+          "path": "/jwks",
+          "http_status": 200,
+          "body_head": "{\"keys\":[{\"kid\":\"openbase-idp-rsa-1\",\"n\":\"0AUE7uR_d1KQqI05QGskMMq2Tmi6wn8SXadYlGE8ZfZNUrELsXsZlpaOFJldVZT_aCzzfl_ub5BEVy"
+        },
+        {
+          "method": "GET",
+          "path": "/authorize",
+          "http_status": 422,
+          "body_head": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"query\",\"client_id\"],\"msg\":\"Field required\",\"input\":null},{\"type\":\"missing\",\"loc\":[\""
+        },
+        {
+          "method": "GET",
+          "path": "/userinfo",
+          "http_status": 401,
+          "body_head": "{\"error\":\"invalid_token\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/health",
+          "http_status": 200,
+          "body_head": "{\"status\":\"ok\",\"issuer\":\"http://127.0.0.1:8090\"}"
+        }
+      ],
+      "swept_at": "2026-11-03T23:23:41"
+    },
+    {
+      "service": "DPS",
+      "port": 8030,
+      "startup_seconds": 190.9,
+      "alive": true,
+      "pages": [
+        {
+          "path": "/",
+          "http_status": 401,
+          "content_type": "application/json",
+          "body_head": "{\"code\":401,\"message\":\"缺少组织或租户标识\",\"data\":null}"
+        },
+        {
+          "path": "/docs",
+          "http_status": 401,
+          "content_type": "application/json",
+          "body_head": "{\"code\":401,\"message\":\"缺少组织或租户标识\",\"data\":null}"
+        },
+        {
+          "path": "/redoc",
+          "http_status": 401,
+          "content_type": "application/json",
+          "body_head": "{\"code\":401,\"message\":\"缺少组织或租户标识\",\"data\":null}"
+        },
+        {
+          "path": "/openapi.json",
+          "http_status": 401,
+          "content_type": "application/json",
+          "body_head": "{\"code\":401,\"message\":\"缺少组织或租户标识\",\"data\":null}"
+        },
+        {
+          "path": "/health/liveness",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"healthy\",\"version\":\"2.13.0\",\"timestamp\":\"2026-11-03T15:26:53Z\",\"uptime_seconds\":36,\"check_type\":\"liveness\",\"checks\":{\"process\":{\"status\":\"healthy\",\"r"
+        },
+        {
+          "path": "/health/readiness",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"healthy\",\"version\":\"2.13.0\",\"timestamp\":\"2026-11-03T15:26:53Z\",\"uptime_seconds\":36,\"check_type\":\"readiness\",\"checks\":{\"database\":{\"status\":\"healthy\","
+        },
+        {
+          "path": "/health/startup",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"healthy\",\"version\":\"2.13.0\",\"timestamp\":\"2026-11-03T15:26:53Z\",\"uptime_seconds\":36,\"check_type\":\"startup\",\"checks\":{\"database\":{\"status\":\"healthy\",\"r"
+        },
+        {
+          "path": "/healthz",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"healthy\",\"version\":\"2.13.0\",\"timestamp\":\"2026-11-03T15:26:53Z\",\"uptime_seconds\":36,\"check_type\":\"liveness\",\"checks\":{\"process\":{\"status\":\"healthy\",\"r"
+        }
+      ],
+      "openapi": {
+        "available": false,
+        "status": 401,
+        "reason": "openapi not parsable"
+      },
+      "endpoints": [],
+      "swept_at": "2026-11-03T23:26:52"
+    },
+    {
+      "service": "OpenBase",
+      "port": 8000,
+      "startup_seconds": 208.7,
+      "alive": true,
+      "pages": [
+        {
+          "path": "/",
+          "http_status": null,
+          "content_type": "",
+          "body_head": "TimeoutError: timed out"
+        },
+        {
+          "path": "/docs",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "body_head": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <link type=\"text/css\" rel=\"stylesheet\""
+        },
+        {
+          "path": "/redoc",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "body_head": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <title>OpenBase - ReDoc</title>\n    <!-- needed for adaptive design -->\n    <meta charset=\"utf-8\"/>\n    <meta nam"
+        },
+        {
+          "path": "/openapi.json",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"OpenBase\",\"version\":\"1.4.12\"},\"paths\":{\"/api/v1/auth/login\":{\"post\":{\"tags\":[\"auth\"],\"summary\":\"Login\",\"description\":\"账号密码登录"
+        },
+        {
+          "path": "/health",
+          "http_status": 200,
+          "content_type": "application/json",
+          "body_head": "{\"status\":\"ok\"}"
+        },
+        {
+          "path": "/api/v1/health",
+          "http_status": 401,
+          "content_type": "application/json",
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-17319358011f\"}"
+        }
+      ],
+      "openapi": {
+        "available": true,
+        "status": 200,
+        "paths": 173,
+        "operations": 221,
+        "get_operations": 110,
+        "get_executed": 76,
+        "get_2xx": 4,
+        "get_gated_401_403": 70,
+        "skipped_templated": 34
+      },
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/me",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-fef142b1d21a\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/notification-preferences",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-46704ba3e41e\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/api-keys",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-daa9d185f624\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/api-keys/expiring",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-f786355b77af\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/roles/contract",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-ae60c493871d\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/oidc/authorize",
+          "http_status": null,
+          "body_head": "TimeoutError: timed out"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/oidc/callback",
+          "http_status": null,
+          "body_head": "TimeoutError: timed out"
+        },
+        {
+          "method": "GET",
+          "path": "/.well-known/jwks.json",
+          "http_status": 200,
+          "body_head": "{\"keys\":[]}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/revocations",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_API_KEY_INVALID\",\"message\":\"missing api key\",\"detail\":null,\"request_id\":\"req-8accd7ffc90b\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/access/duties",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-fb3dc17f31a4\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/access/policies",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-b1817702b438\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/auth/idp/providers",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-cddaf92fc036\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/tenants/context",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-7a1fdd973376\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/tenants/{tenant}/quota",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/tenants",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-41f0cc2d7e0b\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/tenants/{tenant_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/health",
+          "http_status": 200,
+          "body_head": "{\"status\":\"ok\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/audit/records",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-d687f00240bf\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/audit/chain/verify",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-99f7cc596081\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/audit/export",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-d92883a51991\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/observability/status",
+          "http_status": 200,
+          "body_head": "{\"otel_enabled\":false,\"langfuse_configured\":false,\"business_metrics\":{\"counters\":{},\"latency_samples\":{}}}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/configs",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-a30ac19db2f2\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/configs/{key}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/configs/{key}/versions",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/mcp/tools/list",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"invalid mcp credential\",\"detail\":{\"reason\":\"missing_credential\"},\"request_id\":\"req-3e8d1c9"
+        },
+        {
+          "method": "GET",
+          "path": "/mcp/server/info",
+          "http_status": 200,
+          "body_head": "{\"name\":\"openbase-mcp\",\"version\":\"1.0.0\",\"running\":false,\"tools_count\":0}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/org/departments",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-5473f7655df9\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/org/departments/tree",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-8fb4872b1210\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dicts",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-320597ba4ae3\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dicts/{type_code}/items",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/schedules",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-033e6b41970e\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/schedules/{task_id}/logs",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/files",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-f4e98d3e8a22\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/files/{file_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/notifications",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-c4f36d14c1ef\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/notifications/stream",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-1fc22a903699\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/ai-apps",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-68cf375aeda0\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/ai-apps/calls",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-ff17825501ec\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/ai-apps/{app_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/ai-apps/{app_id}/versions",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/ai-apps/{app_id}/calls",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/proxy/{system}/{path}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/memories/{memory_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/memories",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-4d89803dbcfc\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/graph/overview",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-a44a458233d0\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/sessions",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-4c790d77a7e8\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/sessions/{session_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/decay/config",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-6fc7eb03743f\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/recall/traces/{trace_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/monitor",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-d08e98fd7013\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/health",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-bc3468633d3d\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/health/readiness",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-dc7f3f8665ca\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/memory-proxy/health/liveness",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-e36d46a9df81\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/modules",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-e3980826fedd\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/modules/{id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/services",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-657bdb57080c\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/services/{system}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/gateway/health",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-013f783505d8\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/gateway/ping",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-020c7bd23fc0\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-704baa993ffc\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users/{user_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/models",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-c29384fe198d\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/models/{model_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/health",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-a336fc320c72\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/prompt-assembly/template",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-6a41fa2c7feb\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/prompt-assembly/compare",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-bf020419b19a\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/prompt-assembly/compare/records",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-738ad01d5902\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/conversations",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-8cd0732a9d6d\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/conversations/{conversation_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/llm-proxy/conversations/{conversation_id}/messages",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-2c3391db62ca\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections/{collection_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections/{collection_id}/documents",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/collections/{collection_id}/documents/{document_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/rag-proxy/health",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-155bfcdb8e39\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-be445e1bded7\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/portraits/{person_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/tags/categories",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-2ed9da595f96\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/reports/overview",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-d73d167a50f3\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/batch/tasks/{task_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/audit/logs",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-3f7605a1e183\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/health",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-051ce8e6e237\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/metrics",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-6318be2dd321\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/rate-limits/status",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-c61059365007\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/alerts/rules",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-bc2efd36d9a1\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/api-registry",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-aab733123580\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/error-codes",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-b98349ba650f\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/permissions/roles",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-9bf3ca1a5929\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/lineage/impact",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-b688df58de6e\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/lineage/tags/{tag_code}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/measures/suggest",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-04df28820ee0\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/scoring-types",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-2fee0512bac9\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-f8851f86641b\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/annotation-templates",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-bf65632172fb\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/labels",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-366ee0029374\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates/{code}/diff",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates/{code}/preflight",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/templates/{code}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dps-proxy/annotation-templates/{code}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/identity/agents/{agent_id}/keys",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/identity/events",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-1187d31f372a\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/identity/events/{event_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/identity/blocked/{subject_id}",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/test-records",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-a73ef70ff628\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/test-runs",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-c17ecd4dd20f\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/test-runs/{run_id}/summary",
+          "http_status": null,
+          "skipped": "templated-path"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/logs/search",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-8e560ac90fd4\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/logs/facets",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-846b183da238\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/logs/facets/presets",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-5227ed683d73\"}"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/logs/export",
+          "http_status": 401,
+          "body_head": "{\"code\":\"AUTH_401\",\"message\":\"missing bearer token\",\"detail\":null,\"request_id\":\"req-815a8e309f11\"}"
+        }
+      ],
+      "swept_at": "2026-11-03T23:30:24"
+    }
+  ],
+  "login": {
+    "endpoint": "http://127.0.0.1:8000/api/v1/auth/login",
+    "http_status": null,
+    "error": "URLError: <urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>",
+    "token_acquired": false
+  }
+}
