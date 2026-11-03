@@ -1,12 +1,12 @@
-# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.2
+# OpenBase 四系统 API Key 优化 —— 生产窗口执行单与回滚方案 - v1.0.3
 
 | 项 | 内容 |
 |---|---|
 | 项目名称 | OpenBase（开放底座）四系统 API Key 与授权治理 |
 | 下发单编号 | **XR-OPS-08-APIKEY-001** |
-| 文档版本 | v1.0.2 |
+| 文档版本 | v1.0.3 |
 | 状态 | **[Approved] 人工批准（2026-11-03）；阶段 0 已闭合（F0-4/F0-5 Fail 已整改为 Pass），阶段 1~6 待 OPS 生产窗口** |
-| 执行进度 | 阶段 0（执行前检查）已完成：RF-01（共享 PG 补列）与 RF-02（Redis 前缀登记）于 2026-11-03 闭合；RF-03 / RF-04 依赖生产 `.env` 与真实秘密取值，仍 ⛔ Blocked；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
+| 执行进度 | 阶段 0（执行前检查）已完成：RF-01（共享 PG 补列）与 RF-02（Redis 前缀登记）于 2026-11-03 闭合；RF-03 / RF-04 研发侧交付已完成（§11 附录 B 逐仓逐键补录表单），实际填值仍待生产 `.env` → ⛔ Blocked；阶段 1~6 因生产主机不可达全部 ⛔ Blocked |
 | 创建日期 | 2026-11-03 |
 | 编制 | FA-OpenBase-Dev（AI 辅助） |
 | 执行方 | OPS（生产环境）+ 生产 DBA（仅 P-01） |
@@ -536,6 +536,7 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.3 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 新增 **§11 附录 B：RF-03 / RF-04 生产补录清单**——按阶段 0 五仓键存在性证据逐仓列表（OpenBase 9 / OpenLLM 15 / OpenRAG 17 / OpenMemory 17 / DPS 18 共 74 键），标注当前态（`present`/`commented`/`absent`）、类型（含 🔒 秘密项）、生产取值来源、校验点与回执字段；明确四类禁止项、DPS 五键**无 `DPS_` 前缀**陷阱、`ALLOW_UNVERIFIED_GATEWAY_TOKEN` 不得启用、`*_REVOCATION_STRICT` 不得放宽；给出 RF-03/RF-04 闭合判据（五仓 `commented=0`/`duplicate=0` 且 DPS `present=18`） |
 | v1.0.2 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 整改闭环：**RF-01** 在共享测试 PG 定向补齐 `service_api_keys` 四列（`ADD COLUMN IF NOT EXISTS`，未执行 `create_all`，`lock_timeout=3s`/`statement_timeout=30s`），P-01 基线复验 `BASELINE_CAPTURED`；**RF-02** 按代码实测逐仓登记 Redis 前缀（§3.4），五仓无重合、无串键冲突，并登记两项非阻断命名空间风险；§8.1 F0-4/F0-5 由 Fail 转 Pass（阶段 0 判定 5 Pass + 3 生产侧 Blocked）、新增测试/生产口径声明；§8.4 更新 PG/Redis 判定；§8.5 增「状态」列并回填 RF-01/RF-02 已闭合、RF-03/RF-04 仍 Blocked；§8.6 补 3 份证据（RF-01 执行 + 迁移前/后基线） |
 | v1.0.1 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 阶段 0 执行回填：状态转 [Approved]；新增 §8（门禁判定 F0-1~F0-8、五仓 HEAD、键存在性含 DPS 18 键全缺、共享 PG 可达但缺 4 列、共享 Redis 五仓同 `db=0`、整改项 RF-01~RF-04、两份脱敏证据）；§3.3 与阶段 3 前置补「列结构门禁」；§2 共享 PG 约束补第 ⑥ 条；章节号顺延（修订历史 §9、依据 §10） |
 | v1.0.0 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 初始创建：将 E 批遗留的 8 项生产前置 Blocked（D-04 / D-05 / D-06 / K-01 / A1-04 / A1-14 / A2-04 / A2-05 / V-04 / V-13 / D-07）整理为发布单格式；按五仓**共享基础设施**口径（共享 PG / Redis / 网关 / IdP / PEM 挂载 / 服务 Key）明确约束、执行顺序与逐项回滚口径；状态待人工批准与 OPS 执行 |
@@ -556,3 +557,120 @@ curl -s -X POST "$OPENBASE_URL/api/v1/auth/introspect" \
 | 格式范本 | `doc/release/OpenBase-生产环境配置下发单-XR-OPS-07-v1.0.0.md` | 备份 / 覆盖 / 核验 / 重启 / 回滚 / 回执结构 |
 | 整体回滚 | `doc/release/OpenBase-主备双通道生产上线回滚方案-v1.0.0.md` | 双通道回滚总口径 |
 | 证据 | `doc/audit/verification/evidence/{d,a2,e3,e4,xr-ops-08}/` | 本机口径佐证（不替代生产实测）；`xr-ops-08` 为本单阶段 0 证据 |
+
+---
+
+## 11. 附录 B：RF-03 / RF-04 生产补录清单（OPS 填写用）
+
+> 本附录是 RF-03（DPS 18 键）与 RF-04（四仓注释态键）的**执行表单**。研发侧已完成逐仓逐键取证（键名、当前态、类型、取值来源），OPS 只需在生产 `.env` 按行补值并回执。
+> 🔒 = 秘密值（服务 Key / 令牌 / 私钥 / 哈希清单），**只在生产 `.env` 或密钥挂载内填写**，不得写入本单、不得进 git、不得贴入回执；回执仅记「已配置 / 未配置」。
+
+### 11.1 通用填写与校验口径
+
+| 项 | 口径 |
+|---|---|
+| 填写位置 | 各仓生产 `.env`（DPS 为 DPS 仓 `.env`）；PEM 走密钥挂载，不进 `.env` |
+| 覆盖前备份 | `cp .env .env.bak.$(date +%Y%m%d%H%M)`，保留至窗口关闭后 ≥7 天 |
+| 生效方式 | 逐仓重启进程（共享网关 / 共享 IdP 无需重启） |
+| 键存在性复核 | 复用 `tmp/xr08/stage0_precheck.ps1`（临时脚本，不入库）；判据：`commented=0`、`duplicate=0`、目标键全部 `present` |
+| 秘密处理 | 仅记「已配置」；不得在回执、日志、工单粘贴原文 |
+| 回滚 | 恢复 `.env.bak.*` → 重启 → 复跑键存在性复核；**不得只删键不重启** |
+| 禁止项 | ① 不得用注释行充当生效值；② 不得用测试实例服务 Key 冒充生产 Key；③ 不得启用 `ALLOW_UNVERIFIED_GATEWAY_TOKEN`；④ 不得放宽 `*_REVOCATION_STRICT` 以绕过同步失败 |
+
+### 11.2 OpenBase（9 键：`commented=7`、`absent=2`）
+
+| 键 | 当前态 | 类型 | 生产取值来源 / 目标 | 校验点 |
+|---|---|---|---|---|
+| `OPENBASE_JWT_RSA_PRIVATE_KEY_PATH` | commented | 路径（非秘密） | 生产 PEM 挂载路径，`0600`、仅 OpenBase 可读 | 文件存在且权限 `0600`；启动不触发 D-02 私钥门禁 |
+| `OPENBASE_JWT_SIGNING_KID` | commented | 非秘密 | 与 JWKS 实际发布的 `kid` 一致 | `GET /api/v1/auth/jwks` 返回同一 `kid` |
+| `OPENBASE_JWT_REQUIRE_RS256` | commented | 布尔 | `true` | 非 RS256 令牌被拒（401） |
+| `OPENBASE_JWT_ISSUER` | commented | 非秘密 | 生产对外 issuer | 与三下游 `*_JWT_ISSUER` 完全一致 |
+| `OPENBASE_ENFORCE_TOKEN_VERSION` | absent | 布尔 | `true` | 登出后旧令牌 `token_version` 生效（401） |
+| `OPENBASE_OIDC_STATE_TTL_SECONDS` | absent | 数值 | 与共享 Redis 中 OIDC state 生命周期一致（≤ 会话时长） | state 过期后回调被拒 |
+| `OPENBASE_MCP_API_KEY_HASHES` | commented | 🔒 哈希清单 | MCP 摘要清单生产值 | 摘要校验通过；非清单摘要 401 |
+| `OPENBASE_SERVICE_ACCOUNT_SUBJECT_MAP` | commented | 映射（非秘密） | D-05 生产映射快照（见 §4 阶段 2） | 主体映射命中；**回滚不得清空**（清空=全量拒绝） |
+| `OPENBASE_IDP_PROVIDERS` | commented | JSON（内含 🔒 `client_secret`） | 生产 IdP 登记（含 name / client_id / client_secret / 证书） | Provider `name` 唯一、`issuer` 唯一（D-07） |
+
+### 11.3 OpenLLM（15 键：`commented=12`、`absent=3`）
+
+| 键 | 当前态 | 类型 | 生产取值来源 / 目标 | 校验点 |
+|---|---|---|---|---|
+| `OPENBASE_JWKS_URL` | commented | 非秘密 | `https://<openbase 生产域名>/api/v1/auth/jwks` | `/health` 200；缺该键进程拒启（R17） |
+| `OPENBASE_JWKS_CACHE_TTL_SECONDS` | commented | 数值 | 按现网缓存策略（建议 300） | — |
+| `OPENBASE_JWKS_TIMEOUT_SECONDS` | commented | 数值 | `3.0`；**生产网关超时必须 ≥3s** | 共享网关超时 ≥ 该值 |
+| `OPENBASE_JWT_ISSUER` | commented | 非秘密 | 与 OpenBase `OPENBASE_JWT_ISSUER` 完全一致 | 不一致时令牌被拒 |
+| `OPENBASE_JWT_AUDIENCE` | commented | 非秘密 | OpenBase 为该服务登记的受众 | 受众校验通过 |
+| `OPENBASE_JWT_LEEWAY_SECONDS` | commented | 数值 | 按现网时钟偏差（建议 30） | — |
+| `OPENBASE_REVOCATIONS_URL` | commented | 非秘密 | `https://<openbase>/api/v1/auth/revocations` | 吊销增量拉取 200 |
+| `OPENBASE_SERVICE_KEY` | commented | 🔒 服务 Key | OpenBase 签发的 `ob_k_*`，`scope.system` 含 `auth` | 调用 JWKS/吊销端点 200；被吊销后 401 |
+| `OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` | commented | 数值 | 按现网（建议 30） | — |
+| `OPENBASE_REVOCATION_STRICT` | commented | 布尔 | `true` | 吊销端点不可达时**拒绝**而非放行 |
+| `OPENBASE_SUBJECT_MAP` | commented | 映射（非秘密） | D-05 生产映射快照 | 映射命中；回滚恢复快照而非清空 |
+| `OPENBASE_TRUST_LOCAL_SUBJECT` | commented | 布尔 | `false` | 本地令牌不得越权 |
+| `IDENTITY_AUTHORITY` | absent | 枚举（**无 `OPENBASE_` 前缀**） | `openbase` | 取 `local` 时同步不生效 |
+| `OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | absent | 布尔 | `true` | 后台同步日志出现；阶段 4 取证依赖 |
+| `QUOTA_ALGORITHM` | absent | 枚举 | `token_bucket` | 令牌桶键前缀 `quota_bucket:` 生成 |
+
+### 11.4 OpenRAG（17 键：`present=2`、`commented=13`、`absent=2`）
+
+| 键 | 当前态 | 类型 | 生产取值来源 / 目标 | 校验点 |
+|---|---|---|---|---|
+| `OPENRAG_API_OPENBASE_JWKS_URL` / `..._JWKS_CACHE_TTL_SECONDS` / `..._JWKS_TIMEOUT_SECONDS` | commented | 非秘密 / 数值 | 同 OpenLLM 口径；超时默认 `3.0` | 网关超时 ≥3s |
+| `OPENRAG_API_OPENBASE_JWT_ISSUER` / `..._JWT_AUDIENCE` / `..._JWT_LEEWAY_SECONDS` | commented | 非秘密 / 数值 | 与 OpenBase 一致 | 令牌校验通过 |
+| `OPENRAG_API_OPENBASE_REVOCATIONS_URL` | commented | 非秘密 | OpenBase 吊销端点 | 增量拉取 200 |
+| `OPENRAG_API_OPENBASE_SERVICE_KEY` | commented | 🔒 服务 Key | `ob_k_*`，`scope.system` 含 `auth` | 调用 200 / 吊销后 401 |
+| `OPENRAG_API_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `..._REVOCATION_STRICT` | commented | 数值 / 布尔 | `30` / `true` | 端点不可达时拒绝 |
+| `OPENRAG_API_STATIC_KEY_CHANNEL` | commented | 枚举 | `closed` | 静态 Key 通道关闭（拒绝） |
+| `OPENRAG_API_EMERGENCY_BYPASS_KEY` | commented | 🔒 应急 Key | 仅窗口内有效，窗口结束即作废 | 未到期时可放行，到期后拒绝 |
+| `OPENRAG_API_EMERGENCY_BYPASS_EXPIRES_AT` | commented | 时间 | 必须写入明确到期时间（不得空） | 到期后 bypass 失效 |
+| `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES` | **present** | 非秘密 | 按生产网关网段复核（现值需确认仍适用） | 仅网关来源可透传身份 |
+| `OPENRAG_IDENTITY_ROLE_FAIL_CLOSED` | **present** | 布尔 | `true`（保持现值） | 角色取不到时拒绝 |
+| `OPENRAG_IDENTITY_ROLE_CONTRACT_URL` | absent | 非秘密 | 生产角色契约端点 | 契约拉取成功 |
+| `OPENRAG_API_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | absent | 布尔 | `true` | 后台同步生效 |
+
+### 11.5 OpenMemory（17 键：`commented=14`、`absent=3`）
+
+| 键 | 当前态 | 类型 | 生产取值来源 / 目标 | 校验点 |
+|---|---|---|---|---|
+| `OPENMEMORY_GATEWAY_JWKS_URL` / `..._JWKS_CACHE_TTL_SECONDS` / `..._JWKS_TIMEOUT_SECONDS` | commented | 非秘密 / 数值 | 同 OpenLLM 口径；超时默认 `3.0` | 网关超时 ≥3s |
+| `OPENMEMORY_GATEWAY_JWT_ISSUER` / `..._JWT_AUDIENCE` / `..._JWT_LEEWAY_SECONDS` | commented | 非秘密 / 数值 | 与 OpenBase 一致 | 令牌校验通过 |
+| `OPENMEMORY_GATEWAY_REVOCATIONS_URL` | commented | 非秘密 | OpenBase 吊销端点 | 增量拉取 200 |
+| `OPENMEMORY_GATEWAY_SERVICE_KEY` | commented | 🔒 服务 Key | `ob_k_*`，`scope.system` 含 `auth` | 调用 200 / 吊销后 401 |
+| `OPENMEMORY_GATEWAY_REVOCATION_SYNC_INTERVAL_SECONDS` / `..._REVOCATION_STRICT` | commented | 数值 / 布尔 | `30` / `true` | 端点不可达时拒绝 |
+| `OPENMEMORY_GATEWAY_OIDC_MODE` | commented | 枚举 | 按 A2 §3 目标值（OpenBase 信任模式） | 非目标取值时拒启/拒绝 |
+| `OPENMEMORY_GATEWAY_STATIC_KEY_CHANNEL` | commented | 枚举 | `closed` | 静态 Key 通道关闭 |
+| `OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_KEY` | commented | 🔒 应急 Key | 仅窗口内有效 | 未到期可放行、到期拒绝 |
+| `OPENMEMORY_GATEWAY_EMERGENCY_BYPASS_EXPIRES_AT` | commented | 时间 | 明确到期时间（不得空） | 到期后 bypass 失效 |
+| `ALLOW_UNVERIFIED_GATEWAY_TOKEN` | absent | 布尔 | **必须 `false` 或保持未设置** | 为 `true` 即视为窗口失败 |
+| `OPENMEMORY_IDENTITY_ROLE_CONTRACT_URL` | absent | 非秘密 | 生产角色契约端点 | 契约拉取成功 |
+| `OPENMEMORY_GATEWAY_REVOCATION_BACKGROUND_SYNC_ENABLED` | absent | 布尔 | `true` | 后台同步生效 |
+
+### 11.6 DPS（18 键：`present=0`、`absent=18`）
+
+| 键 | 当前态 | 类型 | 生产取值来源 / 目标 | 校验点 |
+|---|---|---|---|---|
+| `DPS_OPENBASE_JWKS_URL` / `..._JWKS_CACHE_TTL_SECONDS` / `..._JWKS_TIMEOUT_SECONDS` | absent | 非秘密 / 数值 | 同 OpenLLM 口径；超时默认 `3.0` | 网关超时 ≥3s |
+| `DPS_OPENBASE_JWT_ISSUER` / `..._JWT_AUDIENCE` / `..._JWT_LEEWAY_SECONDS` | absent | 非秘密 / 数值 | 与 OpenBase 一致 | 令牌校验通过 |
+| `DPS_OPENBASE_REVOCATIONS_URL` | absent | 非秘密 | OpenBase 吊销端点 | 增量拉取 200 |
+| `DPS_OPENBASE_SERVICE_KEY` | absent | 🔒 服务 Key | `ob_k_*`，`scope.system` 含 `auth` | 调用 200 / 吊销后 401 |
+| `DPS_OPENBASE_REVOCATION_SYNC_INTERVAL_SECONDS` / `..._REVOCATION_STRICT` | absent | 数值 / 布尔 | `30` / `true` | 端点不可达时拒绝 |
+| `DPS_OPENBASE_SUBJECT_MAP` / `DPS_OPENBASE_TRUST_LOCAL_SUBJECT` | absent | 映射 / 布尔 | D-05 快照 / `false` | 映射命中、本地令牌不越权 |
+| `IDENTITY_AUTHORITY` | absent | 枚举（**无 `DPS_` 前缀**） | `openbase` | 取缺省 `local` 时身份权威不生效 |
+| `STATIC_KEY_CHANNEL` | absent | 枚举（**无 `DPS_` 前缀**） | `closed` | 静态 Key 通道关闭 |
+| `EMERGENCY_BYPASS_KEY` | absent | 🔒 应急 Key（**无 `DPS_` 前缀**） | 仅窗口内有效 | 未到期可放行、到期拒绝 |
+| `EMERGENCY_BYPASS_EXPIRES_AT` | absent | 时间（**无 `DPS_` 前缀**） | 明确到期时间（不得空） | 到期后 bypass 失效 |
+| `IDENTITY_ROLE_CONTRACT_URL` | absent | 非秘密（**无 `DPS_` 前缀**） | 生产角色契约端点 | 契约拉取成功 |
+| `DPS_OPENBASE_REVOCATION_BACKGROUND_SYNC_ENABLED` | absent | 布尔 | `true` | 后台同步生效 |
+
+> **DPS 前缀陷阱**：`IDENTITY_AUTHORITY` / `STATIC_KEY_CHANNEL` / `EMERGENCY_BYPASS_KEY` / `EMERGENCY_BYPASS_EXPIRES_AT` / `IDENTITY_ROLE_CONTRACT_URL` 五键**不带 `DPS_` 前缀**（源码 `DPS/src/config.py`），误加前缀等于未配置。
+
+### 11.7 回执字段与闭合判据
+
+| 回执字段 | 说明 |
+|---|---|
+| `repo` | 仓名（OpenBase / OpenLLM / OpenRAG / OpenMemory / DPS） |
+| `key` | 键名（秘密键只记「已配置」） |
+| `state` | `已配置` / `未配置` / `保持未设置` |
+| `checked_at` / `checked_by` | 复核时间与执行人 |
+
+**RF-03 / RF-04 闭合判据**：五仓 `commented=0`、`duplicate=0`，且 DPS `present=18`、四仓目标键全量 `present`；同时满足才可进入阶段 1（P-03）。任一未闭合 → 窗口保持挂起，不得带缺键执行。
