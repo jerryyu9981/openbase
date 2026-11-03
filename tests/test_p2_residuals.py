@@ -208,12 +208,12 @@ def fake_redis(monkeypatch):
 
 def test_redis_aggregation_triggers_cross_instance_alerts(fake_redis, monkeypatch):
     """两个进程内检测器经同一 Redis 聚合 → 跨实例触发 multi_ip 与网段跳变."""
-    from openbase.settings import get_settings
     from openbase.modules.auth.key_anomaly import (
         KIND_IP_PREFIX_CHANGE,
         KIND_MULTI_IP,
         KeyAnomalyTracker,
     )
+    from openbase.settings import get_settings
 
     monkeypatch.setattr(get_settings(), "key_anomaly_max_ips", 2)
     first = KeyAnomalyTracker()
@@ -252,11 +252,11 @@ def test_redis_aggregation_rate_spike(monkeypatch):
 def test_redis_unavailable_falls_back_to_process_window(monkeypatch):
     """Redis 不可用 → 回退进程内滑动窗口（保留现行为）."""
     monkeypatch.setattr("openbase.core.cache.redis_client.get_client", lambda: None)
-    from openbase.settings import get_settings
     from openbase.modules.auth.key_anomaly import (
         KIND_IP_PREFIX_CHANGE,
         KeyAnomalyTracker,
     )
+    from openbase.settings import get_settings
 
     monkeypatch.setattr(get_settings(), "key_anomaly_max_ips", 3)
     tracker = KeyAnomalyTracker()
@@ -355,8 +355,9 @@ async def test_emit_expiring_events_deduplicates_per_day(db_session, monkeypatch
     )
     assert first >= 1
     assert second == 0
-    from openbase.core.models import OutboxEvent
     from sqlalchemy import select
+
+    from openbase.core.models import OutboxEvent
 
     result = await db_session.execute(
         select(OutboxEvent).where(OutboxEvent.event_type == "service_key.expiring")

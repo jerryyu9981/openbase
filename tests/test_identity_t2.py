@@ -482,6 +482,8 @@ def _patch_oidc(
 
     class _FakeOidcClient:
         enabled = True
+        # oidc.py 自 v1.4.0 起按 profile 分支（keycloak 才做 access token 角色兜底）
+        profile = "generic"
 
         async def exchange_code(
             self, code: str, *, code_verifier: str | None = None

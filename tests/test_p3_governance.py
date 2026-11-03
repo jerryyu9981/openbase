@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from openbase.core.db import audit_chain  # noqa: F401 - 导入即注册链式哈希钩子
 from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_current_user
-from openbase.core.errors import BaseError, ErrorCode, ERROR_HTTP_MAP, install_exception_handlers
+from openbase.core.errors import ERROR_HTTP_MAP, BaseError, ErrorCode, install_exception_handlers
 from openbase.core.models import AuditLog, Base
 from openbase.modules.auth.abac_policy_store import ABAC_CHANGE_REVIEW_MODE
 from openbase.modules.auth.access_api import router as access_router
@@ -31,8 +31,8 @@ from openbase.modules.auth.access_control import (
     DUTY_SECURITY_ADMIN,
     DUTY_SYSTEM_ADMIN,
     AbacRule,
-    evaluate_abac,
     ensure_role_grant_allowed,
+    evaluate_abac,
 )
 from openbase.settings import Settings
 
@@ -210,7 +210,7 @@ def test_abac_rule_count_over_soft_limit_warns_with_index_hint(caplog) -> None:
     ]
     assert len(hints) == 1
     assert hints[0].levelno == logging.WARNING
-    assert getattr(hints[0], "rule_count") == 12
+    assert hints[0].rule_count == 12
 
 
 def test_abac_slow_evaluation_warns(caplog) -> None:
@@ -227,8 +227,8 @@ def test_abac_slow_evaluation_warns(caplog) -> None:
         )
     slow = [record for record in caplog.records if "slow" in record.getMessage()]
     assert len(slow) == 1
-    assert getattr(slow[0], "elapsed_ms") is not None
-    assert getattr(slow[0], "rule_count") == 3
+    assert slow[0].elapsed_ms is not None
+    assert slow[0].rule_count == 3
 
 
 def test_abac_evaluation_within_thresholds_stays_quiet(caplog) -> None:

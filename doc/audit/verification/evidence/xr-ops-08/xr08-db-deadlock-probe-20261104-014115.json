@@ -1,0 +1,12 @@
+{
+  "database": "nuct",
+  "instance_deadlocks_total": 0,
+  "deadlock_timeout": "1s",
+  "lock_timeout": "0",
+  "statement_timeout": "0",
+  "blocked_sessions": [],
+  "long_transactions": [],
+  "ungranted_locks": 0,
+  "probed_at": "2026-11-04T01:41:15+08:00",
+  "environment": "shared-postgresql (test instance; NOT production)"
+}

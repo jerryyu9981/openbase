@@ -33,6 +33,9 @@ def _prod_settings(**overrides) -> Settings:
         "env": "production",
         "jwt_secret": _STRONG_SECRET,
         "enforce_token_version": True,
+        # 生产禁止内置默认 MCP 静态 Key，测试只验证登录租户门禁，需显式清空
+        "mcp_api_keys": "",
+        "mcp_api_key_hashes": "a" * 64,
     }
     base.update(overrides)
     return Settings(**base)

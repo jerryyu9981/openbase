@@ -480,6 +480,11 @@ class Settings(BaseSettings):
     db_echo: bool = False
     # openbase schema 名（共享库内隔离）
     db_schema: str = "openbase"
+    # 数据库死锁/长事务防护（2026-11-04，对齐生产窗口执行单 §13 风险处置）：
+    # lock_timeout 让等锁请求在 3s 内失败（55P03），避免单个长事务无限期占锁；
+    # statement_timeout 限制单条语句 30s，防止跨仓共享库被一条慢 SQL 拖住。
+    db_lock_timeout_ms: int = 3000
+    db_statement_timeout_ms: int = 30000
 
     # ---- Redis ----
     redis_url: str = _resolve_redis_url()

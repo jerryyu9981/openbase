@@ -1,0 +1,150 @@
+{
+  "run_timestamp": "2026-11-04T02:21:36+08:00",
+  "login_ok": true,
+  "checks": [
+    {
+      "name": "OpenMemory /docs",
+      "method": "GET",
+      "url": "http://127.0.0.1:8020/docs",
+      "status": 200,
+      "seconds": 0.02,
+      "body_head": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <link type=\"text/css\" rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css\">\n    <link rel=\"shortcut icon\" href=\"https://fastapi.tiangolo.com/img/favicon.png\">\n    <title>OpenMemory API - Swagger UI</title>\n    </head>\n    <body>\n    <div id=\"swa",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "name": "OpenMemory /redoc",
+      "method": "GET",
+      "url": "http://127.0.0.1:8020/redoc",
+      "status": 200,
+      "seconds": 0.02,
+      "body_head": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <title>OpenMemory API - ReDoc</title>\n    <!-- needed for adaptive design -->\n    <meta charset=\"utf-8\"/>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    \n    <link href=\"https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700\" rel=\"stylesheet\">\n    \n    <link rel=\"shortcut icon\" href=\"https://fas",
+      "content_type": "text/html; charset=utf-8"
+    },
+    {
+      "name": "OpenMemory /openapi.json",
+      "method": "GET",
+      "url": "http://127.0.0.1:8020/openapi.json",
+      "status": 200,
+      "seconds": 0.35,
+      "body_head": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"OpenMemory API\",\"description\":\"AI Agent Memory Framework with persistent storage, intelligent retrieval, and temporal knowledge graph capabilities.\",\"version\":\"7.3.2\"},\"paths\":{\"/api/v1/orgs/{org_id}/roles\":{\"get\":{\"tags\":[\"rbac\"],\"summary\":\"Get Org Roles\",\"description\":\"获取组织角色列表。\\n\\n返回指定组织下所有可用角色（内置角色 + 自定义角色）。\\n\\nArgs:\\n    org_id: 组织标识。\\n    request: FastAPI ",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenRAG /health",
+      "method": "GET",
+      "url": "http://127.0.0.1:8010/health",
+      "status": 200,
+      "seconds": 0.05,
+      "body_head": "{\"status\":\"ok\"}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenRAG /api/v1/system/health",
+      "method": "GET",
+      "url": "http://127.0.0.1:8010/api/v1/system/health",
+      "status": 200,
+      "seconds": 0.03,
+      "body_head": "{\"status\":\"healthy\",\"version\":\"1.9.5\",\"uptime\":873.1,\"components\":{\"database\":{\"status\":\"up\",\"response_time_ms\":0.0,\"version\":\"postgresql\"},\"vector_store\":{\"status\":\"up\",\"response_time_ms\":0.0,\"type\":\"qdrant\"},\"elasticsearch\":{\"status\":\"disabled\"},\"cache\":{\"status\":\"disabled\"}},\"timestamp\":\"2026-11-03T18:21:36.481870+00:00\"}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenMemory recall(semantic)",
+      "method": "POST",
+      "url": "http://127.0.0.1:8020/api/v1/recall",
+      "status": 401,
+      "seconds": 0.01,
+      "body_head": "{\"error\":\"AUTHENTICATION_ERROR\",\"message\":\"缺少 Bearer Token，请在 Authorization 请求头中提供 JWT\"}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase memory-proxy recall",
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/recall",
+      "status": 500,
+      "seconds": 0.7,
+      "body_head": "{\"code\":\"INTERNAL_ERROR\",\"message\":\"An internal error occurred\",\"data\":null,\"timestamp\":\"2026-11-03T18:21:37.192510+00:00\"}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/auth/me",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/auth/me",
+      "status": 200,
+      "seconds": 0.05,
+      "body_head": "{\"id\":1,\"username\":\"admin\",\"tenant_id\":\"1\",\"permissions\":[\"*\",\"system:superadmin\"],\"display_name\":\"系统管理员\",\"email\":null,\"phone\":null}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/gateway/health",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/gateway/health",
+      "status": 200,
+      "seconds": 0.11,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"systems\":[{\"system\":\"openllm\",\"healthy\":true,\"instance_count\":1,\"health_rate\":1.0},{\"system\":\"openrag\",\"healthy\":true,\"instance_count\":1,\"health_rate\":1.0},{\"system\":\"openmemory\",\"healthy\":true,\"instance_count\":1,\"health_rate\":1.0},{\"system\":\"dps\",\"healthy\":true,\"instance_count\":1,\"health_rate\":1.0}]}}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/gateway/ping",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/gateway/ping",
+      "status": 200,
+      "seconds": 1.04,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"results\":[{\"system\":\"openllm\",\"reachable\":true,\"latency_ms\":266.0},{\"system\":\"openrag\",\"reachable\":true,\"latency_ms\":250.0},{\"system\":\"openmemory\",\"reachable\":true,\"latency_ms\":250.0},{\"system\":\"dps\",\"reachable\":false,\"latency_ms\":234.0}]}}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/llm-proxy/health",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/health",
+      "status": 200,
+      "seconds": 1.68,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"version\":\"2.19.1\",\"components\":{\"openmemory\":{\"status\":\"ok\",\"latency_ms\":0,\"channel\":\"b\"},\"openrag\":{\"status\":\"ok\",\"latency_ms\":311,\"channel\":\"b\"},\"dps\":{\"status\":\"ok\",\"latency_ms\":390,\"channel\":\"b\"},\"ollama\":{\"status\":\"ok\",\"latency_ms\":515,\"models\":4,\"channel\":\"a\"}},\"channel\":{\"preference\":\"b-primary\",\"primary_channel\":\"b\",\"single_primary\"",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/llm-proxy/models",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/llm-proxy/models",
+      "status": 200,
+      "seconds": 0.42,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"models\":[{\"id\":\"gpt-4\",\"object\":\"model\",\"created\":1785570622,\"owned_by\":\"DeepSeek2\"},{\"id\":\"deepseek-v4-flash\",\"object\":\"model\",\"created\":1786876867,\"owned_by\":\"DeepSeek\"},{\"id\":\"qwen2.5:0.5b\",\"object\":\"model\",\"created\":1787433912,\"owned_by\":\"Ollama LAN\"},{\"id\":\"llama3.2:1b\",\"object\":\"model\",\"created\":1787434707,\"owned_by\":\"Ollama LAN\"},{\"id\":\"qwen3.5:4b-q4_K",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/rag-proxy/collections",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/rag-proxy/collections",
+      "status": 200,
+      "seconds": 0.34,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"items\":[{\"id\":\"da895245-4c1a-45a5-99b9-c4751cde0161\",\"name\":\"g5-writeback-20261018023228\",\"description\":\"G5 writeback realface probe\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chunk_strategy\":\"structured\",\"chunk_size\":512,\"chunk_overlap\":50,\"reranker\":null,\"retrieval_strategy\":\"auto\",\"metadata\":{},\"tenant_code\":\"tenant-1\",\"document_count\":0,",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/dps-proxy/portraits",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
+      "status": 200,
+      "seconds": 0.61,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"total\":18,\"page\":1,\"page_size\":20,\"total_pages\":1,\"items\":[{\"id\":\"57aae02d-7990-41cc-afe2-6977b5f4adc5\",\"person_id\":\"tenant-1_1\",\"org_id\":\"10000000-0000-0000-0000-000000000001\",\"tenant_id\":\"20000000-0000-0000-0000-000000000001\",\"name\":\"admin\",\"basic_score\":80.0,\"behavioral_score\":0.0,\"psychological_score\":0.0,\"social_score\":0.0,\"correction_score\":0.0,\"risk_sc",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/memory-proxy/memories",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/memories",
+      "status": 500,
+      "seconds": 0.29,
+      "body_head": "{\"code\":\"INTERNAL_ERROR\",\"message\":\"An internal error occurred\",\"data\":null,\"timestamp\":\"2026-11-03T18:21:41.723552+00:00\"}",
+      "content_type": "application/json"
+    },
+    {
+      "name": "OpenBase /api/v1/memory-proxy/health",
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/v1/memory-proxy/health",
+      "status": 200,
+      "seconds": 0.27,
+      "body_head": "{\"code\":0,\"message\":\"success\",\"data\":{\"status\":\"healthy\",\"dependencies\":{\"vector_store\":\"healthy\",\"metadata_store\":\"healthy\",\"session_store\":\"healthy\"}},\"timestamp\":\"2026-11-03T18:21:41.992025+00:00\"}",
+      "content_type": "application/json"
+    }
+  ]
+}

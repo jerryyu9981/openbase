@@ -22,11 +22,22 @@ void useModuleRegistry().prefetch().catch(() => undefined)
  *
  * v1.4.11：预热最多等待 2500ms —— 后端 `/auth/me`、`/modules` 慢时（实测可达 8s+）
  * 不再阻塞首帧，先挂载骨架页，模块路由由守卫在导航阶段继续装载，避免长时间白屏。
+ *
+ * D-2（2026-11-04）：深链（模块子页）若在注册表就绪前安装路由器，首帧 `router.resolve`
+ * 必然告警 `No match found`（走查实测 `/openllm/models/comparison`）。根路径保留 2500ms
+ * 快首帧预算；深链改用更长的等待预算，保证首帧即命中模块路由。
  */
 const BOOTSTRAP_MAX_WAIT_MS = 2500
+const BOOTSTRAP_DEEP_LINK_MAX_WAIT_MS = 12000
+const initialPath = window.location.pathname
+const isRootEntry =
+  initialPath === '/' || initialPath === '/dashboard' || initialPath.startsWith('/auth/')
+const bootstrapWaitBudgetMs = isRootEntry
+  ? BOOTSTRAP_MAX_WAIT_MS
+  : BOOTSTRAP_DEEP_LINK_MAX_WAIT_MS
 const bootstrap = bootstrapModuleRoutes().catch(() => undefined)
 const bootstrapDeadline = new Promise<void>((resolve) => {
-  window.setTimeout(resolve, BOOTSTRAP_MAX_WAIT_MS)
+  window.setTimeout(resolve, bootstrapWaitBudgetMs)
 })
 
 void Promise.race([bootstrap, bootstrapDeadline]).finally(() => {

@@ -1,0 +1,372 @@
+{
+  "schema": "openbase-ui-e2e-all-services/v1.1.0",
+  "base_url": "http://localhost:5173",
+  "token_source": "OPENBASE_ACCESS_TOKEN",
+  "shots_dir": "",
+  "interact": false,
+  "started_at": "2026-11-03T18:28:06.406Z",
+  "services": {
+    "openllm": {
+      "total": 11,
+      "pass": 11,
+      "fail": 0,
+      "pages": [
+        {
+          "path": "/openllm/models",
+          "url": "http://localhost:5173/openllm/models",
+          "nav_status": 200,
+          "final_path": "/openllm/models",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/llm-proxy/models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模型管理"
+        },
+        {
+          "path": "/openllm/models/local",
+          "url": "http://localhost:5173/openllm/models/local",
+          "nav_status": 200,
+          "final_path": "/openllm/models/local",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "本地模型"
+        },
+        {
+          "path": "/openllm/models/comparison",
+          "url": "http://localhost:5173/openllm/models/comparison",
+          "nav_status": 200,
+          "final_path": "/openllm/models/comparison",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模型对比"
+        },
+        {
+          "path": "/openllm/models/market",
+          "url": "http://localhost:5173/openllm/models/market",
+          "nav_status": 200,
+          "final_path": "/openllm/models/market",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/open-models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "开源模型市场"
+        },
+        {
+          "path": "/openllm/favorites",
+          "url": "http://localhost:5173/openllm/favorites",
+          "nav_status": 200,
+          "final_path": "/openllm/favorites",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/models/favorites"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/proxy/openllm/api/v1/models/favorite-folders"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "我的收藏"
+        },
+        {
+          "path": "/openllm/apps",
+          "url": "http://localhost:5173/openllm/apps",
+          "nav_status": 200,
+          "final_path": "/openllm/apps",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/ai-apps"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "AI 应用"
+        },
+        {
+          "path": "/openllm/apps/new",
+          "url": "http://localhost:5173/openllm/apps/new",
+          "nav_status": 200,
+          "final_path": "/openllm/apps/new",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "创建应用"
+        },
+        {
+          "path": "/openllm/playground",
+          "url": "http://localhost:5173/openllm/playground",
+          "nav_status": 200,
+          "final_path": "/openllm/playground",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/llm-proxy/models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "Playground"
+        },
+        {
+          "path": "/openllm/conversations",
+          "url": "http://localhost:5173/openllm/conversations",
+          "nav_status": 200,
+          "final_path": "/openllm/conversations",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/llm-proxy/conversations"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/llm-proxy/models"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "对话管理"
+        },
+        {
+          "path": "/openllm/recommend",
+          "url": "http://localhost:5173/openllm/recommend",
+          "nav_status": 200,
+          "final_path": "/openllm/recommend",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "模型对比推荐"
+        },
+        {
+          "path": "/openllm/reports-trend",
+          "url": "http://localhost:5173/openllm/reports-trend",
+          "nav_status": 200,
+          "final_path": "/openllm/reports-trend",
+          "fallback_count": 0,
+          "api_calls": [
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/modules"
+            },
+            {
+              "method": "GET",
+              "status": 200,
+              "url": "/api/v1/auth/me"
+            }
+          ],
+          "interactions": [],
+          "network_errors": [],
+          "console_errors": [],
+          "console_warns": [],
+          "page_errors": [],
+          "shot": "",
+          "result": "PASS",
+          "detail": "HTTP 200 渲染正常、无 console/page error/warn",
+          "title": "报表趋势"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total": 11,
+    "pass": 11,
+    "fail": 0,
+    "api_errors": 0
+  },
+  "finished_at": "2026-11-03T18:28:23.729Z"
+}

@@ -56,7 +56,13 @@ def test_production_requires_min_length():
 
 def test_production_accepts_strong_secret():
     """production + 强密钥 + 吊销强校验开启 → 通过（B4 生产门禁要求 enforce=True）."""
-    s = _module().Settings(env="production", jwt_secret=STRONG, enforce_token_version=True)
+    s = _module().Settings(
+        env="production",
+        jwt_secret=STRONG,
+        enforce_token_version=True,
+        mcp_api_keys="",
+        mcp_api_key_hashes="a" * 64,
+    )
     assert s.jwt_secret == STRONG
 
 

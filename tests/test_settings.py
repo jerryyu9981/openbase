@@ -106,6 +106,21 @@ def test_resolve_db_url_precedence_and_asyncpg_normalization(monkeypatch):
     assert settings_module._resolve_db_url() == "postgresql+asyncpg://u2:p@h2:5432/db2"
 
 
+def test_db_timeout_guard_defaults_and_env_override(monkeypatch):
+    """死锁/长事务防护默认值：lock_timeout=3s、statement_timeout=30s，可经环境覆盖."""
+    monkeypatch.delenv("OPENBASE_DB_LOCK_TIMEOUT_MS", raising=False)
+    monkeypatch.delenv("OPENBASE_DB_STATEMENT_TIMEOUT_MS", raising=False)
+    settings = Settings()
+    assert settings.db_lock_timeout_ms == 3000
+    assert settings.db_statement_timeout_ms == 30000
+
+    monkeypatch.setenv("OPENBASE_DB_LOCK_TIMEOUT_MS", "5000")
+    monkeypatch.setenv("OPENBASE_DB_STATEMENT_TIMEOUT_MS", "45000")
+    settings = Settings()
+    assert settings.db_lock_timeout_ms == 5000
+    assert settings.db_statement_timeout_ms == 45000
+
+
 def test_resolve_redis_url_default_and_override(monkeypatch):
     """_resolve_redis_url：OPENBASE_REDIS_URL > REDIS_URL > 默认."""
     monkeypatch.delenv("OPENBASE_REDIS_URL", raising=False)

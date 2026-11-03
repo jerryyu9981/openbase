@@ -227,7 +227,7 @@ async def create_policy_rule(
     _warn_post_audit(
         ACTION_ABAC_POLICY_CREATE, policy_id=row.id, version=row.version, actor_id=actor_id
     )
-    logger.info("abac policy created", extra={"policy_id": row.id, "name": name})
+    logger.info("abac policy created", extra={"policy_id": row.id, "policy_name": name})
     return row
 
 
@@ -268,7 +268,7 @@ async def update_policy_rule(
     _warn_post_audit(
         ACTION_ABAC_POLICY_UPDATE, policy_id=policy_id, version=row.version, actor_id=actor_id
     )
-    logger.info("abac policy updated", extra={"policy_id": policy_id, "name": name})
+    logger.info("abac policy updated", extra={"policy_id": policy_id, "policy_name": name})
     return row
 
 

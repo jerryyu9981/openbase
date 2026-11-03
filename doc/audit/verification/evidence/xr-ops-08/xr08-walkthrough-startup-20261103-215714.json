@@ -1,0 +1,60 @@
+﻿{
+    "run_timestamp":  "2026-11-03T21:57:38",
+    "environment":  "windows-native-no-docker",
+    "mode":  "persistent-start-for-walkthrough",
+    "interpreter":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\.venv-test\\Scripts\\python.exe",
+    "log_directory":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714",
+    "results":  [
+                    {
+                        "repo":  "OpenBase",
+                        "port":  8000,
+                        "pid":  36988,
+                        "listening":  false,
+                        "exited":  false,
+                        "startup_seconds":  15.9,
+                        "out_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenBase.out.log",
+                        "err_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenBase.err.log"
+                    },
+                    {
+                        "repo":  "OpenLLM",
+                        "port":  8020,
+                        "pid":  30564,
+                        "listening":  false,
+                        "exited":  false,
+                        "startup_seconds":  17.1,
+                        "out_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenLLM.out.log",
+                        "err_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenLLM.err.log"
+                    },
+                    {
+                        "repo":  "DPS",
+                        "port":  8013,
+                        "pid":  14408,
+                        "listening":  false,
+                        "exited":  false,
+                        "startup_seconds":  13.5,
+                        "out_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\DPS.out.log",
+                        "err_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\DPS.err.log"
+                    },
+                    {
+                        "repo":  "OpenRAG",
+                        "port":  8030,
+                        "pid":  36692,
+                        "listening":  false,
+                        "exited":  false,
+                        "startup_seconds":  8.5,
+                        "out_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenRAG.out.log",
+                        "err_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenRAG.err.log"
+                    },
+                    {
+                        "repo":  "OpenMemory",
+                        "port":  8040,
+                        "pid":  42220,
+                        "listening":  false,
+                        "exited":  false,
+                        "startup_seconds":  2.4,
+                        "out_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenMemory.out.log",
+                        "err_log":  "D:\\Trae CN\\myproject\\Dev\\OpenBase\\tmp\\xr08\\run-20261103-215714\\OpenMemory.err.log"
+                    }
+                ],
+    "secrets_policy":  "no key values written to evidence"
+}

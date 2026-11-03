@@ -1,10 +1,10 @@
-# OpenBase 生产侧硬门禁待办清单与回执 - XR-OPS-08 - v1.0.0
+# OpenBase 生产侧硬门禁待办清单与回执 - XR-OPS-08 - v1.0.1
 
 | 项 | 内容 |
 |---|---|
 | 项目名称 | OpenBase（开放底座）四系统 API Key 与授权治理 |
 | 单据编号 | **XR-OPS-08-APIKEY-001-GATE** |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 状态 | **[Review] 待 OPS 接收与人工批准** |
 | 适用环境 | 生产环境（Pro）；本清单**不适用于**本机 / 测试实例 |
 | 创建日期 | 2026-11-03 |
@@ -56,7 +56,7 @@ G-1 PEM 挂载 ────────┘
 | G-1.5 | 日志抽样扫描 PEM 头 | G-1.2 | 无 `BEGIN PRIVATE KEY` / `BEGIN RSA PRIVATE KEY` | 扫描命令与命中数 `0` |
 | G-2.1 | 下发 OpenBase 生产对外 base URL 与 JWKS / 吊销端点 | 无 | 三端点可经网关访问并 200 | 字段表（§4.1） |
 | G-2.2 | 下发网关超时、代理透传与可信代理网段 | G-2.1 | 网关超时 ≥ `3.0s`；仅网关网段可透传身份 | 网关配置快照 |
-| G-2.3 | 五仓路由与端口映射确认 | G-2.1 | 五仓经网关可达（8000/8013/8020/8030/8040） | 路由表 |
+| G-2.3 | 五仓路由与端口映射确认 | G-2.1 | 五仓经网关可达（8000/8001/8010/8020/8030） | 路由表 |
 | G-3.1 | 下发 IdP issuer 与端点集合 | 无 | 字段齐备、`issuer` 唯一 | 字段表（§5.1） |
 | G-3.2 | 下发 client_id / client_secret / redirect_uri / scopes | G-3.1 | 秘密仅在生产 `.env` 或密钥挂载，不落回执 | 「已配置」状态 |
 | G-3.3 | `OPENBASE_IDP_PROVIDERS` JSON 组装与判重 | G-3.1 / G-3.2 | `name` 唯一、`issuer` 唯一、JSON 可解析 | 校验输出（不含 secret） |
@@ -120,7 +120,7 @@ grep -c -E 'BEGIN (RSA )?PRIVATE KEY' <OpenBase 日志目录>/*.log
 | 吊销端点 | `__________`（默认 `<base>/api/v1/auth/revocations`） | 增量拉取 200 |
 | 网关超时 | `__________`（**必须 ≥ 3.0s**） | 需 ≥ `*_JWKS_TIMEOUT_SECONDS=3.0` |
 | 可信代理网段（CIDR） | `__________` | `OPENRAG_IDENTITY_TRUSTED_PROXY_SOURCES` 取值依据 |
-| 五仓内部路由 | OpenBase `8000` / DPS `8013` / OpenLLM `8020` / OpenRAG `8030` / OpenMemory `8040` | 逐仓经网关可达 |
+| 五仓内部路由 | OpenBase `8000` / OpenLLM `8001` / OpenRAG `8010` / OpenMemory `8020` / DPS `8030` | 逐仓经网关可达 |
 | `X-Forwarded-*` 透传策略 | `__________` | 身份透传仅限网关来源 |
 | TLS 证书 / CA | `__________` | 下游信任链 |
 
@@ -322,4 +322,5 @@ grep -c -E 'BEGIN (RSA )?PRIVATE KEY' <OpenBase 日志目录>/*.log
 
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
+| v1.0.1 | 2026-11-04 | FA-OpenBase-Dev（AI 辅助） | 修正 G-2.3 与 §4.1 的端口映射口径：由过期的「8000/8013/8020/8030/8040」改为与 `scripts/service-orchestrator.ps1` 一致的「OpenBase 8000 / OpenLLM 8001 / OpenRAG 8010 / OpenMemory 8020 / DPS 8030」；其余门禁判据与禁止项不变 |
 | v1.0.0 | 2026-11-03 | FA-OpenBase-Dev（AI 辅助） | 初始创建：将上游执行单 v1.0.5 阶段 0 遗留的 5 类生产侧 Blocked 拆解为 G-1~G-7 可勾选待办；给出 PEM `0600` 操作与判据、网关/IdP 字段下发表、DBA 会话与基线复核口径、DPS 18 键与四仓 58 键回执表、统一回执签署与证据归档路径 |

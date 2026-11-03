@@ -31,6 +31,8 @@ from openbase.modules.identity import verification as verification_module
 from openbase.settings import Settings
 
 _SECRET = "b4-test-secret-0123456789abcdef0123456789abcdef"
+# 生产禁止内置默认 MCP 静态 Key：测试提供虚拟摘要，避免与本用例目标无关的门禁先行拒绝
+_MCP_HASH_OK = {"mcp_api_key_hashes": "a" * 64}
 _DELEGATION_BLOCK = {
     "subject_id": "88",
     "subject_type": "user",
@@ -94,7 +96,8 @@ def _user_row(status_state: str = "active", token_version: int = 0) -> SimpleNam
 
 def _apply_settings(monkeypatch: pytest.MonkeyPatch, **overrides: Any) -> Settings:
     """构造并装载 settings 单例（monkeypatch 自动复原）."""
-    settings = Settings(jwt_secret=_SECRET, **overrides)
+    options = {"mcp_api_keys": "", **_MCP_HASH_OK, **overrides}
+    settings = Settings(jwt_secret=_SECRET, **options)
     module = importlib.import_module("openbase.settings")
     monkeypatch.setattr(module, "_settings", settings)
     return settings
@@ -307,7 +310,13 @@ def test_b4_4_production_requires_token_version_enforcement() -> None:
 def test_b4_5_production_with_enforcement_ok() -> None:
     """生产环境 + enforce_token_version=True → 通过（启动放行）."""
     strong = "b4-" + "x" * 40
-    settings = Settings(env="production", jwt_secret=strong, enforce_token_version=True)
+    settings = Settings(
+        env="production",
+        jwt_secret=strong,
+        enforce_token_version=True,
+        mcp_api_keys="",
+        mcp_api_key_hashes="a" * 64,
+    )
     assert settings.env == "production"
     assert settings.enforce_token_version is True
 
@@ -632,7 +641,13 @@ def test_b4_22_row_missing_policy_source_and_reject_derivation() -> None:
     assert dev.principal_row_missing_policy_source == "env_nonproduction"
     assert dev.principal_row_missing_reject is False
 
-    prod = Settings(jwt_secret=_SECRET, env="production", enforce_token_version=True)
+    prod = Settings(
+        jwt_secret=_SECRET,
+        env="production",
+        enforce_token_version=True,
+        mcp_api_keys="",
+        mcp_api_key_hashes="a" * 64,
+    )
     assert prod.principal_row_missing_policy_source == "env_production"
     assert prod.principal_row_missing_reject is True
 

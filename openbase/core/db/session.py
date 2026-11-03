@@ -15,7 +15,13 @@ _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-def init_db(url: str, echo: bool = False, schema: str | None = "openbase") -> AsyncEngine:
+def init_db(
+    url: str,
+    echo: bool = False,
+    schema: str | None = "openbase",
+    lock_timeout_ms: int = 3000,
+    statement_timeout_ms: int = 30000,
+) -> AsyncEngine:
     """初始化全局异步引擎与 session 工厂.
 
     连接建立时自动设置 search_path 指向 openbase schema，
@@ -26,6 +32,8 @@ def init_db(url: str, echo: bool = False, schema: str | None = "openbase") -> As
         echo: 是否打印 SQL 日志。
         schema: 目标 schema（默认 openbase）；传 None 表示不绑定 schema
             （SQLite 等无 schema 概念的场景）。
+        lock_timeout_ms: 等锁上限（毫秒）；超时抛 55P03，避免无限期占锁放大为死锁。
+        statement_timeout_ms: 单条语句上限（毫秒）；防止长事务拖住跨仓共享库。
 
     Returns:
         全局 AsyncEngine 实例。
@@ -43,7 +51,14 @@ def init_db(url: str, echo: bool = False, schema: str | None = "openbase") -> As
 
     # 连接池加固（v1.4.11 排查 8s 级请求耗时）：显式 pool 参数 + pre_ping/recycle，
     # 避免长时间运行后持有失效连接（死 socket / 网络抖动）导致的请求级等待。
-    engine_kwargs: dict[str, object] = {"connect_args": {"timeout": 5}}
+    connect_args: dict[str, object] = {"timeout": 5}
+    # 死锁/长事务防护下发到连接级（asyncpg server_settings 仅 PG 支持）
+    if url.startswith("postgresql"):
+        connect_args["server_settings"] = {
+            "lock_timeout": str(lock_timeout_ms),
+            "statement_timeout": str(statement_timeout_ms),
+        }
+    engine_kwargs: dict[str, object] = {"connect_args": connect_args}
     if url.startswith("postgresql"):
         engine_kwargs.update(
             {
@@ -79,7 +94,13 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
         from openbase.settings import get_settings
 
         settings = get_settings()
-        init_db(settings.db_url, settings.db_echo, settings.db_schema)
+        init_db(
+            settings.db_url,
+            settings.db_echo,
+            settings.db_schema,
+            settings.db_lock_timeout_ms,
+            settings.db_statement_timeout_ms,
+        )
     assert _session_factory is not None
     return _session_factory
 
