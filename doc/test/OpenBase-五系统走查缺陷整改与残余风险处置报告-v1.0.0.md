@@ -1,16 +1,16 @@
-# OpenBase 五系统走查缺陷整改与残余风险处置报告 - v1.0.0
+# OpenBase 五系统走查缺陷整改与残余风险处置报告 - v1.1.0
 
 ## 文档元信息
 
 | 项目 | 内容 |
 | --- | --- |
 | 文档编号 | TEST-WALK-FIX-001 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 文档状态 | [Review] |
 | 适用环境 | 本机 Windows 原生进程（无 Docker）；共享设施 `192.168.0.151`（PG 5432 / Redis 6380 / Qdrant 6333） |
 | 编制日期 | 2026-11-04 |
 | 编制 | FA-OpenBase-Dev（AI 辅助）/ 待人工复核 |
-| 处置范围 | ① 走查缺陷 D-1~D-9；② 执行单 v1.0.5 §13 残余风险 R-13-1~R-13-3；③ 生产硬门禁 G-1~G-7 本地可核查部分；④ 数据库死锁/长事务防护方案 |
+| 处置范围 | ① 走查缺陷 D-1~D-9；② 执行单 v1.0.5 §13 残余风险 R-13-1~R-13-3；③ 生产硬门禁 G-1~G-7 本地可核查部分；④ 数据库死锁/长事务防护方案；⑤ 五系统测试基线清零（OpenRAG 全量单测 19 项既有失败、OpenMemory 顺序污染与收集中断） |
 | 上游依据 | `OpenBase-五系统全栈走查报告-v1.0.1.md` §6；`OpenBase-四系统APIKey优化生产窗口执行单与回滚方案-v1.0.5.md` §13；`OpenBase-生产侧硬门禁待办清单与回执-XR-OPS-08-v1.0.1.md` §1~§8 |
 | 判定口径 | 代码/配置缺陷以「根因修复 + 回归验证」判闭合；生产环境依赖项以「本地可核查结论 + 明确交接对象」判阶段性闭合，不替代生产验收 |
 
@@ -109,7 +109,8 @@
 
 | 对象 | 命令/方式 | 结果 |
 | --- | --- | --- |
-| OpenMemory 单测 | `pytest` | 75 项通过 |
+| OpenMemory 单测 | `pytest tests --ignore=tests/e2e --ignore=tests/performance --ignore=tests/benchmark` | 1751 项通过 / 41 跳过 / 0 失败（`pytest 8.4.2` + `pytest-asyncio 0.24.0`，符合 `pyproject.toml` 约束） |
+| OpenRAG 全量单测 | `pytest tests/unit` | **2936 项通过 / 1 跳过 / 0 失败**（19 项既有失败已清零） |
 | OpenRAG 存储+检索单测 | `pytest tests/unit/storage tests/unit/retrieval` | 403 项通过（含新增 `query_points` 双路径与回落用例） |
 | 修复后定向探针 | `tmp/xr08/postfix_probe.py` | 16 项端点全部 200，`failures=0` |
 | 前端 openllm 模块 E2E | `ui_e2e_all_services.mjs` | 11/11 PASS、0 warning |
@@ -124,7 +125,8 @@
 | OpenBase 静态检查 | `ruff check openbase tests` | **All checks passed!**（exit=0） |
 | OpenBase 全量单测 | `pytest tests` | **全量通过**（exit=0） |
 | 前端生产构建 | `npm run build` | **成功**，`✓ built in 47.51s`（`dist/` 产出正常） |
-| OpenMemory 单测 | `pytest` | 75 项通过 |
+| OpenMemory 单测 | `pytest tests --ignore=tests/e2e --ignore=tests/performance --ignore=tests/benchmark` | 1751 通过 / 41 跳过 / 0 失败 |
+| OpenRAG 全量单测 | `pytest tests/unit -q` | 2936 通过 / 1 跳过 / 0 失败 |
 | OpenRAG 存储+检索 | `pytest tests/unit/storage tests/unit/retrieval` | 403 项通过 |
 | 修复后定向探针 | `postfix_probe.py` | 16/16 端点 200，`failures=0` |
 | 前端 openllm E2E | `ui_e2e_all_services.mjs` | 11/11 PASS、0 warning |
@@ -138,7 +140,8 @@
 | 3 | 源码编码契约测试失败 | `tmp/xr08/` 临时 PowerShell 脚本缺 BOM（非仓库产物） | 删除临时脚本 |
 | 4 | `test_storage_s3` 3 项失败 | `.venv-test` 缺 S3 可选依赖 `boto3` | 安装 `boto3==1.43.83`（与既有 `security-pip-list` 证据一致） |
 | 5 | 生产配置用例 13 项失败 | 用例未随「生产禁止内置默认 MCP 静态 Key」门禁更新 | 用例显式提供 `mcp_api_keys=""` + 虚拟摘要 |
-| 6 | OpenRAG 全量单测 19 项失败（基线 20 项） | S3 隔离/RED 用例在共享状态下的顺序污染，与本轮改动无关 | 记录为既有问题；本轮改动使失败数 20→19（`list_documents` 状态大小写） |
+| 6 | OpenRAG 全量单测 19 项失败（回退基线 20 项） | ① 7 项测试期望未随产品契约更新（状态枚举大写、`APP_VERSION` 事实源优先级、嵌套 `BaseSettings` 读 `.env`）；② 12 项为 `test_compaction.py` 仅恢复部分 `openrag*` `sys.modules` 键，残留 `openrag.core.exceptions` 副本导致异常类重复，`isinstance`/异常映射失配 | 测试隔离改为「全量快照 + 整体回填」；状态断言与 `tenant_code` 签名对齐；`APP_VERSION` 回退用例按事实源优先级重写；回归 **2936 通过 / 1 跳过 / 0 失败**，详见 OpenRAG `DevLogReport-v1.0.0` |
+| 7 | OpenMemory 全量单测顺序执行 278 项失败 + 默认收集 `INTERNALERROR(SystemExit)` | `asyncio.run()` 结束时清空线程当前事件循环；`tests/e2e/test_full_e2e_v660.py` 模块级直接执行并 `sys.exit` | `conftest.py` 增加事件循环兜底/清理夹具；e2e 脚本改为 `__main__` 保护；回归 **1751 通过 / 41 跳过 / 0 失败** |
 
 ---
 
@@ -151,6 +154,8 @@
 | 连接级超时验证 | `doc/audit/verification/evidence/xr-ops-08/xr08-db-guard-verify-20261104-020331.json` |
 | 前端 E2E（openllm 修复） | `doc/audit/verification/evidence/xr-ops-08/xr08-ui-e2e-openllm-fix-20261104.json` |
 | 基线（测试实例） | `doc/audit/verification/evidence/xr-ops-08/xr08-p01-baseline-20261103-post-migration.json` |
+| OpenRAG 单测修复留痕 | `OpenRAG/doc/development/OpenRAG-全量单测19项失败根因修复-DevLogReport-v1.0.0.md` |
+| OpenMemory 单测修复留痕 | `OpenMemory/doc/development/OpenMemory-全量单测事件循环污染修复-DevLogReport-v1.0.0.md` |
 
 ---
 
@@ -181,3 +186,4 @@
 | 版本 | 日期 | 修订人 | 修订摘要 | 状态 |
 | --- | --- | --- | --- | --- |
 | v1.0.0 | 2026-11-04 | FA-OpenBase-Dev（AI 辅助） | 首次记录：D-1~D-9 处置台账、R-13-1~R-13-3 处置、G-1~G-7 本地核查、死锁防护方案与验证、回归结果与交接清单 | [Review] |
+| v1.1.0 | 2026-11-04 | FA-OpenBase-Dev（AI 辅助） | 新增 §6.2 第 7 项并闭合第 6 项：OpenRAG 全量单测 19 项既有失败清零（2936 通过）、OpenMemory 顺序污染与收集中断修复（1751 通过）；§6/§6.1 回归数据同步更新 | [Review] |
