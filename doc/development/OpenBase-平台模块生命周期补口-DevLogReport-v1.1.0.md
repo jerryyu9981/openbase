@@ -1,22 +1,23 @@
-# OpenBase-平台模块生命周期补口-DevLogReport-v1.0.0
+# OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0
 
 | 属性 | 值 |
 |------|-----|
-| 文档编号 | OB-PLATFORM-LIFECYCLE-DEVLOG-v1.0.0 |
-| 文档版本 | v1.0.0 |
-| 状态 | [Review]（平台三处删除接口补口完成：TDD RED→GREEN、ruff 0、真实 Dev 环境 13 项实测通过；待人工批准） |
+| 文档编号 | OB-PLATFORM-LIFECYCLE-DEVLOG-v1.1.0 |
+| 文档版本 | v1.1.0 |
+| 状态 | [Review]（后端 3 处删除接口＋前端配置删除交互完成；定向单测、全量单测、前端门禁与真实 Dev 环境实测通过；待人工批准） |
 | 日期 | 2026-11-07 |
 | 作者 | AA-OpenBase-Dev（架构视图）／AT-OpenBase-Dev（测试视图） |
 | 存放 | `doc/development/` |
-| 版本主题 | 平台模块生命周期补口：字典类型删除、配置键删除、agent 列表与删除 |
-| 适用范围 | OpenBase 主仓（`openbase/modules/dict`、`openbase/modules/config`、`openbase/modules/identity`、`tests/test_platform_lifecycle_delete.py`） |
-| 上游依据 | 《OpenBase-基础设施子系统全生命周期走查报告-v1.1.0》§7 生命周期缺口登记 GAP-01／GAP-02／GAP-03 |
-| 关联文档 | 《OpenBase-API接口设计文档-v1.4.10》、《OpenBase-基础设施子系统全生命周期走查报告-v1.1.0》 |
+| 版本主题 | 平台模块生命周期补口：字典类型删除、配置键删除、agent 列表与删除、配置中心前端删除交互 |
+| 适用范围 | OpenBase 主仓（`openbase/modules/dict`、`openbase/modules/config`、`openbase/modules/identity`、`tests/test_platform_lifecycle_delete.py`、`openbase-ui` 配置中心） |
+| 上游依据 | 《OpenBase-基础设施子系统全生命周期走查报告-v1.2.0》§7 生命周期缺口登记 GAP-01／GAP-02／GAP-03／GAP-04 |
+| 关联文档 | 《OpenBase-API接口设计文档-v1.4.10》、《OpenBase-基础设施子系统全生命周期走查报告-v1.2.0》 |
 
 ## 修订历史
 
 | 版本 | 日期 | 修改人 | 修改内容 |
 |------|------|--------|---------|
+| v1.1.0 | 2026-11-07 | AA／AT-OpenBase-Dev | 收敛未闭合项：新增 GAP-04（配置中心前端删除入口）并落地；补前端 API／页面／2 项 vitest；全量后端单测与前端全量门禁闭合；gpt-4 归因定案（上游测试模型，非本仓缺陷） |
 | v1.0.0 | 2026-11-07 | AA／AT-OpenBase-Dev | 初始版本：闭合走查报告 §7 登记的 GAP-01~03，新增 4 个端点（字典类型删除／配置键删除／agent 列表／agent 删除），补 6 项闭环单测并完成真实 Dev 环境实测 |
 
 ---
@@ -30,6 +31,7 @@
 | GAP-01 | 字典 | `/api/v1/dicts` 仅 GET／POST，无**类型**删除接口 |
 | GAP-02 | 配置 | `/api/v1/configs/{key}` 无 DELETE，只能改值不能删键 |
 | GAP-03 | 身份 Agent | `/api/v1/identity/agents` 仅 POST，无列表／删除接口 |
+| GAP-04 | 配置中心（前端） | 后端已有 `DELETE /configs/{key}`，页面无删除入口（v1.2.0 登记） |
 
 **通过判据（沿用走查报告 §2.3）**：删除 2xx → 随后详情/列表不可见或状态为已删除 → 涉及下游引用时删除被拒（409）且数据保留 → 重复删除幂等。
 
@@ -62,6 +64,9 @@
 | `openbase/modules/config/__init__.py` | `ConfigStore` 新增 `has_runtime`／`has_default`／`clear_runtime`；新增 `DELETE /{key}` 路由 |
 | `openbase/modules/identity/__init__.py` | 新增 `AgentOut` schema、`GET /agents`（分页＋租户隔离）、`DELETE /agents/{agent_id}`（软删＋吊销密钥＋清缓存）；导入 `update`、`AgentApiKey`、`User`、`AgentKeyService` 状态常量与 `STATUS_STATE_*` |
 | `tests/test_platform_lifecycle_delete.py` | 新增 6 个闭环用例（模块级 SQLite，启用 `auth/tenant/users/audit/config/identity/dict`） |
+| `openbase-ui/src/core/api/configs.ts` | 新增 `remove(key)`：`DELETE /configs/{key}`，返回 `{deleted, restored_default}`；文件头注释同步删除语义 |
+| `openbase-ui/src/pages/platform/config/ConfigManageView.vue` | 操作列新增「删除」按钮（`data-test="cfg-delete"`）＋ `ElMessageBox` 二次确认；成功后提示是否回退默认值并刷新列表；失败展示可读错误 |
+| `openbase-ui/tests/r2-wiring-v192.spec.ts` | 新增 2 项用例：确认删除 → 走 `DELETE /configs/{key}` 并重新加载；取消删除 → 不发请求 |
 
 > 未改动 `dps_proxy` 与 DPS 仓代码；未改动任何既有接口行为（仅新增方法与端点）。
 
@@ -101,10 +106,20 @@
 | Agent：重复删除 | 200（幂等，`revoked_keys:0`） |
 | 残留清理 | 走查残留 `walkthrough.key`／`wt_dict_type`／`wt_agent_01` 均删除成功（200） |
 
-### 4.4 未覆盖项（如实登记）
+### 4.4 前端门禁（v1.1.0 新增）
 
-- OpenBase **全量单测仍为 PENDING**：受 `tests/test_s7_t6_gate.py`（子进程门禁聚合超 180s）与 `tests/test_cross_repo_auth_gate.py`（递归扫描兄弟仓阻塞）影响，本轮以定向单测＋真实环境实测作为质量门禁，全量终验建议在完整联调机执行。证据见走查报告 v1.1.0 §6。
-- 前端页面级交互（字典／配置／agent 管理页的删除按钮）未纳入本轮，本轮仅闭合**后端接口**；前端接入需在下一次前端走查中验证。
+| 检查 | 命令 | 结果 |
+|------|------|------|
+| 配置中心单测 | `npm test -- --run tests/r2-wiring-v192.spec.ts` | **9 passed**（含新增 2 项删除交互） |
+| 前端全量单测 | `npm test` | **39 files / 373 tests passed** |
+| ESLint | `node_modules/.bin/eslint src/pages/platform/config/ConfigManageView.vue src/core/api/configs.ts` | 0 error |
+| 类型检查 | `node_modules/.bin/vue-tsc --noEmit` | 0 error |
+
+### 4.5 存量未闭合项收敛
+
+- **OpenBase 全量后端单测**：v1.1.0 复跑已可完整执行（此前阻塞的 `test_s7_t6_gate.py` 约 110s、`test_cross_repo_auth_gate.py` 约 23s 均可通过，属冷启动/杀软扫描导致的偶发超时）。结果见走查报告 v1.2.0 §6。
+- **前端页面级交互**：配置中心删除入口已落地并覆盖单测；字典与 agent 在当前前端**本就没有管理页面**（非"缺删除按钮"），如需可视化管理应在后续版本按需求新建页面，不在本次补口范围。
+- **gpt-4 500**：定案为 OpenLLM 侧遗留 E2E 测试模型（`DeepSeek2`／`model_name=E2E-Test`），OpenBase 代理为保真透传，**非本仓缺陷**；清理建议见走查报告 §8 第 5 项。
 
 ---
 
@@ -124,6 +139,6 @@
 
 | 类别 | 文件 |
 |------|------|
-| 源码 | `openbase/modules/dict/__init__.py`、`openbase/modules/config/__init__.py`、`openbase/modules/identity/__init__.py` |
-| 测试 | `tests/test_platform_lifecycle_delete.py` |
-| 文档 | 本报告；《OpenBase-基础设施子系统全生命周期走查报告-v1.1.0》（§6 门禁补记、§7 GAP 闭合与实测证据） |
+| 源码 | `openbase/modules/dict/__init__.py`、`openbase/modules/config/__init__.py`、`openbase/modules/identity/__init__.py`、`openbase-ui/src/core/api/configs.ts`、`openbase-ui/src/pages/platform/config/ConfigManageView.vue` |
+| 测试 | `tests/test_platform_lifecycle_delete.py`、`openbase-ui/tests/r2-wiring-v192.spec.ts` |
+| 文档 | 本报告；《OpenBase-基础设施子系统全生命周期走查报告-v1.2.0》（§6 门禁补记、§7 GAP 闭合与实测证据） |

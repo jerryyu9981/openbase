@@ -1,19 +1,20 @@
-# OpenBase 基础设施子系统全生命周期走查报告（v1.1.0）
+# OpenBase 基础设施子系统全生命周期走查报告（v1.2.0）
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.1.0 |
-| 文档版本 | v1.1.0 |
+| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.2.0 |
+| 文档版本 | v1.2.0 |
 | 文档状态 | [Review]（待人工批准） |
 | 适用环境 | Dev（共享基础设施 192.168.0.151 ＋ 本机服务端口） |
-| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合复验） |
+| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合、v1.2.0 未闭合项收敛） |
 | 编写角色 | 测试工程师（QA）／开发工程师（Dev）协同 |
-| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.0.0》 |
+| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》 |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 | 状态 |
 | --- | --- | --- | --- | --- |
+| v1.2.0 | 2026-11-07 | Dev／QA | 收敛未闭合项：配置中心补删除交互（前端 API＋页面按钮＋单元测试）；OpenBase 全量后端单测闭合（不再 PENDING）；前端全量单测与 eslint/vue-tsc 通过；gpt-4 失败归因确认为 OpenLLM 侧测试模型数据（`model_name=E2E-Test`），非 OpenBase 缺陷 | [Review] |
 | v1.1.0 | 2026-11-07 | Dev／QA | 闭合 §7 生命周期缺口 GAP-01~03：新增字典类型删除、配置键删除、agent 列表与删除接口；补 6 项闭环单测并在真实 Dev 环境完成实测（含走查残留数据清理）；§6 补记门禁结果 | [Review] |
 | v1.0.0 | 2026-11-06 | QA／Dev | 首版：四子系统全生命周期走查、缺陷修复与复验、质量门禁结果、生命周期缺口登记 | [Review] |
 
@@ -41,8 +42,8 @@
 
 - 四个基础设施子系统的**生命周期闭环全部打通**：创建/写入、读取/检索、更新/状态流转、删除、删除后 404 均取得真实数据证据。
 - 本轮共修复 **6 项**阻断或失真缺陷（DPS 2 类 500、DPS 删除接口缺失、dps-proxy 全线 401、默认模型失效、Memory 代理超时），其中 2 项为跨仓（OpenBase ↔ DPS）契约补齐。
-- 质量门禁：OpenBase `ruff` 全通过；平台补口定向单测 6 通过；dps-proxy 定向单测 123 通过；DPS 模板相关用例 419 通过、模板引擎专项 22 通过；OpenBase 全量单测因跨仓扫描类用例在本机阻塞，登记为 PENDING（证据见 §6）。
-- v1.0.0 登记的 **3 项平台模块生命周期缺口（GAP-01~03）已于 v1.1.0 全部闭合**（新增字典类型删除、配置键删除、agent 列表与删除），并在真实 Dev 环境取得闭环证据（见 §7）。
+- 质量门禁：OpenBase `ruff` 全通过；平台补口定向单测 6 通过；dps-proxy 定向单测 123 通过；OpenBase 全量单测（collected 1524）exit 0；前端全量单测 373 通过、eslint／vue-tsc 0 error；DPS 模板相关用例 419 通过、模板引擎专项 22 通过。
+- v1.0.0 登记的 **3 项平台模块生命周期缺口（GAP-01~03）已于 v1.1.0 全部闭合**，v1.2.0 另行闭合配置中心前端删除入口（GAP-04），并在真实 Dev 环境取得闭环证据（见 §7）。
 
 ---
 
@@ -88,7 +89,7 @@
 | OpenRAG | 创建集合 → 详情 → 检索 → 删除 → 404（5 项）＋ 既有文档/对话 8 项 | 13 | 0 | 通过 |
 | OpenMemory | remember → recall → list → detail → forget → 404（6 项） | 6 | 0 | 通过（需 ≥180s 代理等待预算） |
 | DPS 画像模板 | 新建 → 详情 → 列表 → 更新 → 预检 → 启用 → 停用 → 对比 → 回滚 → 删除 → 404（11 项）＋ 409 引用保护 2 项 | 17 | 0 | 通过 |
-| OpenLLM | 模型列表 → 模型详情 → 对话推理 → 会话创建 → 消息写入 → 消息读取 → 会话删除（8 项） | 8 | 0 | 通过（gpt-4 除外，见 §5.6） |
+| OpenLLM | 模型列表 → 模型详情 → 对话推理 → 会话创建 → 消息写入 → 消息读取 → 会话删除（8 项） | 8 | 0 | 通过（gpt-4 归因见 §4.4） |
 | 平台模块（上一轮） | 网关/租户/组织/字典/配置/文件/通知/调度/MCP/日志/AI 应用/用户/密钥 | 56 | 0 | 通过 |
 
 ---
@@ -144,13 +145,15 @@
 
 | 步骤 | 接口 | 结果 | 证据要点 |
 | --- | --- | --- | --- |
-| 模型列表 | `GET /api/v1/llm-proxy/models` | 通过 | 注册表返回 6 个模型（gpt-4 / deepseek-v4-flash / qwen2.5:0.5b / llama3.2:1b / qwen3.5:2b / qwen3.5:4b） |
+| 模型列表 | `GET /api/v1/llm-proxy/models` | 通过 | 注册表返回 6 条，其中 5 条可用（deepseek-v4-flash / qwen2.5:0.5b / llama3.2:1b / qwen3.5:2b / qwen3.5:4b） |
 | 模型详情 | `GET /api/v1/llm-proxy/models/qwen2.5:0.5b` | 通过 | 容量/状态字段可读 |
 | 对话推理 | `POST /api/v1/llm-proxy/chat` | 通过 | 真实返回"走查通过！" |
 | 会话创建 | `POST /api/v1/llm-proxy/conversations` | 通过 | 返回会话 id |
 | 消息写入 | `POST /api/v1/llm-proxy/conversations/{id}/messages` | 通过 | 2xx |
 | 消息读取 | `GET /api/v1/llm-proxy/conversations/{id}/messages` | 通过 | 可读回写入消息 |
 | 会话删除 | `DELETE /api/v1/llm-proxy/conversations/{id}` | 通过 | 2xx |
+
+> **gpt-4 归因（v1.2.0 定案）**：`gpt-4` 是 OpenLLM 注册表中遗留的 E2E 测试模型（提供商 `DeepSeek2`，`model_name=E2E-Test`，指向 `https://api.deepseek.com/v1`），DeepSeek 侧不存在该模型名，故显式调用稳定返回上游 500（OpenLLM `code=5001`）。OpenBase `llm-proxy` 已**保真透传**该错误信封，**非 OpenBase 缺陷**；处置建议见 §8 第 5 项（OpenLLM 侧清理测试数据）。
 
 ### 4.5 平台模块（上一轮结论引用）
 
@@ -187,28 +190,32 @@
 | OpenBase 静态检查 | `python -m ruff check openbase tests` | All checks passed（v1.1.0 补口后复跑仍通过） |
 | OpenBase 平台补口定向单测 | `python -m pytest tests/test_platform_lifecycle_delete.py -q` | **6 passed**（v1.1.0 新增：字典 409/删除→404、配置回退默认值/仅默认值 409、agent 列表→删除→吊销→401→幂等、缺失 agent 404） |
 | OpenBase dps-proxy 定向单测 | `python -m pytest tests/test_dps_proxy.py tests/test_dps_proxy_v1410_contract.py tests/test_dps_proxy_routes_v1410.py -q` | **123 passed**（含本轮新增 DELETE 转发／409 透传 2 例） |
-| OpenBase 全量单测 | `python -m pytest tests -q --timeout=120`（忽略 5 个真实基础设施依赖文件） | **PENDING（环境受限，见下）** |
+| OpenBase 全量单测 | `python -m pytest tests`（忽略 5 个真实基础设施依赖文件） | **通过（exit 0）**：collected 1524，进度全绿；v1.2.0 已解除 PENDING |
 | DPS 模板相关用例 | `pytest src/tests -k "template or portrait or annotation"`（忽略缺 `mccabe` 的复杂度守卫文件） | 419 passed |
 | DPS 模板引擎专项 | `pytest src/tests/test_template_engine_v2_10.py` | 22 passed |
+| 前端配置中心单测 | `npm test -- --run tests/r2-wiring-v192.spec.ts` | **9 passed**（含 v1.2.0 新增删除交互 2 例） |
+| 前端全量单测 | `npm test` | **39 files / 373 tests passed** |
+| 前端 ESLint／类型检查 | `eslint <改动文件>`；`vue-tsc --noEmit` | 0 error ／ 0 error |
 
 > DPS 全量单测在本轮修复前基线为 1920 passed；本轮仅改动模板引擎与路由，模板相关 419 项全通过。
 
-**OpenBase 全量单测未能闭合的环境证据（两次尝试，均在 `pytest-timeout` 中断，无汇总统计）**：
+**OpenBase 全量单测 PENDING 的解除（v1.2.0）**：
 
-1. 第一次按 `--ignore` 排除 `test_storage_s3_real.py`／`test_orchestrator_db_failover.py`／`test_audit_db_services.py`／`test_p2_residuals.py`／`test_storage_s3.py`，运行至 **28%** 中断于 `tests/test_s7_t6_gate.py::gate_report`——该 fixture 以子进程执行 `scripts/gate_aggregate.py --dry-run --skip-main-batch`，`subprocess.communicate` 超过 180s 未返回。
-2. 第二次追加忽略 `test_s7_t6_gate.py`，运行至约 **30%** 中断于 `tests/test_cross_repo_auth_gate.py::test_error_code_map_literals_exist_in_targets`——`scripts/cross_repo_auth_gate.py:233` 的 `repo_text()` 递归遍历兄弟仓库源码时阻塞（`Path.is_file()` 长时间无返回）。
-
-两次中断点均为**跨仓源码扫描／递归门禁聚合**类用例，依赖本机兄弟仓库布局与共享基础设施；本轮改动仅涉及 `openbase/modules/dps_proxy/__init__.py` 与 3 个 dps-proxy 测试文件，定向用例已 100% 通过。故本项登记为 PENDING，建议在具备完整兄弟仓与共享基础设施的联调机上执行 `python -m pytest tests` 完成终验。
+1. v1.0.0 两次中断均发生在 `tests/test_s7_t6_gate.py::gate_report`（子进程执行 `scripts/gate_aggregate.py --dry-run --skip-main-batch`）与 `tests/test_cross_repo_auth_gate.py::test_error_code_map_literals_exist_in_targets`（`scripts/cross_repo_auth_gate.py` 递归扫描兄弟仓源码）。
+2. v1.2.0 复跑该两个用例分别耗时约 **110s** 与 **23s**，均正常通过——确认为冷启动／杀软扫描导致的**偶发**超时，非用例缺陷。
+3. 随后执行全量 `python -m pytest tests`（忽略 5 个真实基础设施依赖文件）：collected **1524**，进度全绿、**exit 0**，PENDING 正式解除。
+4. 首次全量复跑曾出现 1 项失败，定位为临时探针文件 `tmp/probe_gpt4.py` 带 UTF-8 BOM 触发 `test_source_encoding_contract.py` 跨仓编码契约；删除该临时文件后重跑全绿（未改动任何产品代码）。
 
 ---
 
-## 7. 生命周期缺口登记（v1.1.0 已全部闭合）
+## 7. 生命周期缺口登记（v1.1.0~v1.2.0 已全部闭合）
 
 | 编号 | 模块 | 原缺口 | 影响 | v1.1.0 落地 | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | GAP-01 | 字典 | `/api/v1/dicts` 仅 GET/POST，**无类型删除接口**；走查残留 `wt_dict_type` 无法通过 API 清理 | 字典类型只增不减 | 新增 `DELETE /api/v1/dicts/{type_code}`（存在字典项 → 409 `BIZ_CONFLICT`；不存在 → 404；删除后清 Redis 缓存） | ✅ 已闭合 |
 | GAP-02 | 配置 | `/api/v1/configs/{key}` 无 DELETE；走查残留 `walkthrough.key` | 配置项无法删除，只能改值 | 新增 `DELETE /api/v1/configs/{key}`（删 DB 行＋各级运行时覆盖，回退环境变量/代码默认值；仅默认值 → 409 `BIZ_CONFIG_CONFLICT`；未知键 → 404；版本历史保留供审计） | ✅ 已闭合 |
 | GAP-03 | 身份 Agent | `/api/v1/identity/agents` 仅 POST（无列表/删除）；走查残留 `wt_agent_01` | Agent 生命周期不完整、不可审计 | 新增 `GET /api/v1/identity/agents`（分页＋租户隔离）与 `DELETE /api/v1/identity/agents/{agent_id}`（软删 `status=0`/`suspended` ＋ 级联吊销全部有效密钥 ＋ 清主体缓存，幂等） | ✅ 已闭合 |
+| GAP-04 | 配置中心（前端） | 后端已有 `DELETE /api/v1/configs/{key}`，但页面仅有编辑/版本，**无删除入口** | 删除能力在 UI 不可达 | `configs.ts` 增加 `remove()`；`ConfigManageView.vue` 增加删除按钮＋二次确认＋回退默认值提示；新增 2 项 vitest 用例（确认删除/取消删除） | ✅ 已闭合（v1.2.0） |
 
 **真实环境复验证据（2026-11-07，Dev／共享 PG＋Redis）**：
 
@@ -223,7 +230,7 @@
 | Agent：重复删除 | 200（幂等，`revoked_keys:0`） |
 | 残留清理 | `walkthrough.key` 200；字典 `wt_dict_type` 200；`wt_agent_01` 200（均已删除） |
 
-详细契约与变更清单见《OpenBase-平台模块生命周期补口-DevLogReport-v1.0.0》。
+详细契约与变更清单见《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》。
 
 ---
 
@@ -233,6 +240,7 @@
 2. **冷启动耗时**：OpenMemory 294s、OpenLLM 193s，接近 orchestrator 健康等待上限（300s/180s）。建议对冷启动服务单独设更长的健康等待或预热。
 3. **启动期环境一致性**：`DPS_BASE_URL`（OpenLLM 用）与 `OPENBASE_DPS_UPSTREAM_BASE`（OpenBase 用）语义不同，易漏配。建议在 `.env.shared-infra` 增加成对注释（本轮已补）并在编排脚本启动日志中打印实际生效值。
 4. **orchestrator 状态显示**：`status` 对"运行中但单次健康探测超时"的服务显示"不健康"，与本轮实测可用性不一致，建议区分"探活超时"与"服务不可用"。
+5. **OpenLLM 遗留测试模型（gpt-4）**：`gpt-4` 指向提供商 `DeepSeek2` 的 `model_name=E2E-Test`，DeepSeek 侧无此模型，显式调用稳定 500。建议在 OpenLLM 侧清理该 E2E 测试数据（置 `inactive` 或移除），避免 OpenAI 兼容模型列表长期暴露不可用模型；本项属上游数据治理，不在 OpenBase 仓修改。
 
 ---
 

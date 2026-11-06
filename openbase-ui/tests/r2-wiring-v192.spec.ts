@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import ElementPlus from 'element-plus'
+import ElementPlus, { ElMessageBox } from 'element-plus'
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() }))
 
@@ -95,6 +95,41 @@ describe('v1.9.2 全局配置真实化', () => {
     expect(mocks.post).toHaveBeenCalledWith('/configs/gateway.discovery.enabled/rollback', null, {
       params: { version: 1 },
     })
+  }, 20000)
+
+  it('删除配置走 DELETE /configs/{key} 并提示回退默认值', async () => {
+    mocks.get.mockResolvedValue({ data: { items: [configItem()], total: 1 } })
+    mocks.delete.mockResolvedValue({
+      data: { key: 'gateway.discovery.enabled', deleted: true, restored_default: true },
+    })
+    const confirmSpy = vi.spyOn(ElMessageBox, 'confirm').mockResolvedValue('confirm' as never)
+
+    const wrapper = mountPage(ConfigManageView)
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as { remove: (row: unknown) => Promise<void> }
+    await vm.remove(configItem())
+    await flushPromises()
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(mocks.delete).toHaveBeenCalledWith('/configs/gateway.discovery.enabled')
+    expect(mocks.get).toHaveBeenCalledTimes(2)
+    confirmSpy.mockRestore()
+  }, 20000)
+
+  it('取消删除时不发起请求', async () => {
+    mocks.get.mockResolvedValue({ data: { items: [configItem()], total: 1 } })
+    const confirmSpy = vi.spyOn(ElMessageBox, 'confirm').mockRejectedValue(new Error('cancel'))
+
+    const wrapper = mountPage(ConfigManageView)
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as { remove: (row: unknown) => Promise<void> }
+    await vm.remove(configItem())
+    await flushPromises()
+
+    expect(mocks.delete).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
   }, 20000)
 
   it('加载失败展示可读错误', async () => {

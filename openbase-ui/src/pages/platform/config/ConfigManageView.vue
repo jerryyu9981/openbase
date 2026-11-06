@@ -42,10 +42,11 @@
               <el-tag size="small" :type="levelType(row.level)">{{ String(row.level).toUpperCase() }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200">
+          <el-table-column label="操作" width="240">
             <template #default="{ row }">
               <el-button link type="primary" size="small" data-test="cfg-edit" @click="openEdit(row)">编辑</el-button>
               <el-button link type="primary" size="small" data-test="cfg-versions" @click="openVersions(row)">版本</el-button>
+              <el-button link type="danger" size="small" data-test="cfg-delete" @click="remove(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -94,7 +95,7 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { configsApi, type ConfigItem, type ConfigLevel, type ConfigVersion } from '@/core/api/configs'
 
 const items = ref<ConfigItem[]>([])
@@ -215,6 +216,25 @@ async function rollback(version: number): Promise<void> {
     await load()
   } catch (error) {
     errorMessage.value = `回滚失败：${messageOf(error, '未知错误')}`
+  }
+}
+
+async function remove(row: ConfigItem): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除配置 ${row.key}？删除后将回退到环境变量/代码默认值（版本历史保留）。`,
+      '删除配置项',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+    )
+  } catch {
+    return
+  }
+  try {
+    const result = await configsApi.remove(row.key)
+    ElMessage.success(result.restored_default ? `${row.key} 已删除，已回退默认值` : `${row.key} 已删除`)
+    await load()
+  } catch (error) {
+    errorMessage.value = `删除失败：${messageOf(error, '未知错误')}`
   }
 }
 
