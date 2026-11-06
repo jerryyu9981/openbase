@@ -697,6 +697,33 @@ def test_v1410_existing_tag_category_write_routes_forward(
     assert call["json"] == body
 
 
+def test_template_delete_route_forward(client: TestClient) -> None:
+    """画像模板删除路由（生命周期补齐）：DELETE 转发至 /api/v2/portrait/templates/{code}."""
+    token = _token_with_identity()
+    client.fake.set_responses([_ok_response()])  # type: ignore[attr-defined]
+    resp = client.delete(
+        f"{PREFIX}/templates/tpl-del", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "DELETE"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/templates/tpl-del"
+
+
+def test_template_delete_reference_conflict_passthrough(client: TestClient) -> None:
+    """上游因下游引用返回 409 → 本层原样透传（引用保护由 DPS 裁决）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(409, {"code": 409, "message": "模板存在下游引用，禁止删除: child_template=1"}),
+    ])
+    resp = client.delete(
+        f"{PREFIX}/templates/tpl-del", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 409, resp.text
+    assert resp.json()["code"] == 409
+    assert "下游引用" in resp.json()["message"]
+
+
 def test_v1410_parse_map_json_empty_and_invalid_returns_empty_table() -> None:
     """dps 值映射 JSON：空串／非法 JSON／非 dict 均回落空表（不抛错），合法 dict 原样返回."""
     assert dps_proxy_module._parse_map_json("") == {}

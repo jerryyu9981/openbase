@@ -1041,6 +1041,25 @@ async def dps_template_deactivate(
     )
 
 
+@router.delete("/templates/{code}")
+async def dps_template_delete(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """删除画像模板（DELETE /api/v2/portrait/templates/{code}）.
+
+    上游在存在子模板/标注模板/标签血缘引用时返回 409，本层原样透传。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "DELETE", _portrait_upstream_path(f"/templates/{code}"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 # ---- 动态段：标注模板详情／更新（改挂）／删除（#18 / #20 / #21）-----------
 
 

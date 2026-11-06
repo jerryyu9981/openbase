@@ -118,15 +118,20 @@ def test_v1410_route_objects_count_is_22() -> None:
     """v1.4.10 新增路由对象恰为 22 个（10 新增 ＋ 12 补代理，无重复／无遗漏）.
 
     注：同路径多方法（如 ``/templates`` GET＋POST）各计一个路由对象，合计 22。
+    计数口径为 ``(路径, 方法)`` 精确配对：后续版本在同路径追加的方法（如
+    v1.4.11 走查修复新增的 ``DELETE /templates/{code}``）不计入本版契约。
     """
-    v1410_paths = {f"{PREFIX}{path}" for _rid, path, _method in V1410_ROUTES}
-    new_route_objects = [
-        route
+    expected_pairs = {
+        (f"{PREFIX}{path}", method) for _rid, path, method in V1410_ROUTES
+    }
+    matched_pairs = [
+        (getattr(route, "path", None), method)
         for route in dps_proxy.router.routes
-        if getattr(route, "path", None) in v1410_paths
+        for method in (getattr(route, "methods", None) or set())
+        if (getattr(route, "path", None), method) in expected_pairs
     ]
-    assert len(new_route_objects) == 22, (
-        f"v1.4.10 路由对象数应为 22，实际={len(new_route_objects)}"
+    assert len(matched_pairs) == 22, (
+        f"v1.4.10 路由对象数应为 22，实际={len(matched_pairs)}"
     )
 
 
