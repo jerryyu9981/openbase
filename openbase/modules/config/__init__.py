@@ -147,6 +147,34 @@ class ConfigStore:
         """获取配置版本历史."""
         return list(cls._versions.get(key, []))
 
+    # ---- 删除运行时覆盖 ----
+
+    @classmethod
+    def has_runtime(cls, key: str) -> bool:
+        """是否存在任一级别（system/tenant/user）的运行时覆盖."""
+        return any(key in level_map for level_map in cls._runtime.values())
+
+    @classmethod
+    def has_default(cls, key: str) -> bool:
+        """是否为已注册的代码默认值（删除覆盖后回退目标）."""
+        return key in cls._defaults
+
+    @classmethod
+    def clear_runtime(cls, key: str) -> bool:
+        """清除全部级别的运行时覆盖（版本历史保留，供审计与回溯）.
+
+        Returns:
+            True 表示确实移除了至少一个级别的覆盖值。
+        """
+        removed = False
+        for level_map in cls._runtime.values():
+            if key in level_map:
+                del level_map[key]
+                removed = True
+        if removed:
+            logger.info("config override deleted", extra={"key": key})
+        return removed
+
     @classmethod
     def rollback(cls, key: str, version: int) -> ConfigVersion | None:
         """回滚到指定版本.
@@ -330,6 +358,51 @@ async def get_config(
     except Exception:  # noqa: BLE001
         logger.debug("config db read failed, fallback memory", extra={"key": key})
     return ConfigOut(key=key, value=ConfigStore.get(key))
+
+
+@router.delete("/{key}", response_model=dict)
+async def delete_config(key: str, session: Any = Depends(get_db)) -> dict:
+    """删除配置覆盖值（回退到环境变量/代码默认值；版本历史保留供审计）.
+
+    语义与错误码：
+    - 存在 DB 行或运行时覆盖 → 删除覆盖，返回 ``{key, deleted, restored_default}``；
+    - 仅有代码默认值/环境变量、无可删覆盖 → 409 ``BIZ_CONFIG_CONFLICT``；
+    - 完全未知的键（无覆盖、无默认值、无 DB 行）→ 404 ``BIZ_404``。
+    """
+    from openbase.core.errors import BaseError, ErrorCode
+
+    db_existed = False
+    try:
+        from sqlalchemy import select
+
+        from openbase.core.models import ConfigKV
+
+        row = (
+            await session.execute(select(ConfigKV).where(ConfigKV.config_key == key))
+        ).scalar_one_or_none()
+        if row is not None:
+            await session.delete(row)
+            await session.commit()
+            db_existed = True
+    except Exception:  # noqa: BLE001
+        logger.debug("config db delete failed (memory only)", extra={"key": key})
+
+    removed_runtime = ConfigStore.clear_runtime(key)
+    if not (db_existed or removed_runtime):
+        if ConfigStore.has_default(key):
+            raise BaseError(
+                ErrorCode.BIZ_CONFIG_CONFLICT,
+                f"配置键为系统默认值，无可删除覆盖: {key}",
+            )
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"config not found: {key}")
+
+    env_key = "OPENBASE_CONFIG_" + key.upper().replace(".", "_")
+    restored_default = ConfigStore.has_default(key) or env_key in os.environ
+    logger.info(
+        "config deleted",
+        extra={"key": key, "restored_default": restored_default, "db_existed": db_existed},
+    )
+    return {"key": key, "deleted": True, "restored_default": restored_default}
 
 
 @router.post("", response_model=ConfigOut)

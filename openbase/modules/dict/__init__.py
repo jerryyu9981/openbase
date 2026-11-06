@@ -6,11 +6,12 @@ import logging
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.services import BaseDBService
 from openbase.core.db.session import get_db
+from openbase.core.errors import BaseError, ErrorCode
 from openbase.core.models import DictItem, DictType
 
 logger = logging.getLogger("openbase.dict")
@@ -142,6 +143,33 @@ class DictService(BaseDBService):
                 cache_delete(cls._cache_key(type_code))
         return {"deleted": item_id}
 
+    @classmethod
+    async def delete_type(cls, session: AsyncSession, code: str) -> dict:
+        """删除字典类型（存在字典项 → 409；类型不存在 → 404；删除后清缓存）."""
+        type_row = (
+            await session.execute(select(DictType).where(DictType.code == code))
+        ).scalar_one_or_none()
+        if type_row is None:
+            raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"dict type not found: {code}")
+        item_count = (
+            await session.execute(
+                select(func.count()).select_from(DictItem).where(DictItem.type_id == type_row.id)
+            )
+        ).scalar_one()
+        if int(item_count or 0) > 0:
+            raise BaseError(
+                ErrorCode.BIZ_CONFLICT,
+                f"字典类型存在字典项，禁止删除: {code}",
+                detail={"type_code": code, "item_count": int(item_count or 0)},
+            )
+        await session.delete(type_row)
+        await session.commit()
+        from openbase.core.cache.redis_client import cache_delete
+
+        cache_delete(cls._cache_key(code))
+        logger.info("dict type deleted", extra={"type_code": code})
+        return {"code": code, "deleted": True}
+
     # ---- 内存回退路径 ----
     @classmethod
     async def create_type_mem(cls, code: str, name: str) -> dict:
@@ -170,6 +198,22 @@ class DictService(BaseDBService):
         for items in _memory_items.values():
             items[:] = [i for i in items if i["id"] != item_id]
         return {"deleted": item_id}
+
+    @classmethod
+    async def delete_type_mem(cls, code: str) -> dict:
+        """内存回退路径删除字典类型（存在字典项 → 409；不存在 → 404）."""
+        if code not in _memory_types:
+            raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"dict type not found: {code}")
+        item_count = len(_memory_items.get(code, []))
+        if item_count > 0:
+            raise BaseError(
+                ErrorCode.BIZ_CONFLICT,
+                f"字典类型存在字典项，禁止删除: {code}",
+                detail={"type_code": code, "item_count": item_count},
+            )
+        _memory_types.pop(code, None)
+        _memory_items.pop(code, None)
+        return {"code": code, "deleted": True}
 
 
 @router.post("", response_model=dict)
@@ -230,5 +274,22 @@ async def delete_dict_item(
     except Exception as exc:  # noqa: BLE001
         DictService._fallback("dict.delete_item", exc)
         return await DictService.delete_item_mem(item_id)
+
+
+@router.delete("/{type_code}")
+async def delete_dict_type(type_code: str, session: AsyncSession = Depends(get_db)) -> dict:
+    """删除字典类型（存在字典项 → 409 BIZ_CONFLICT；类型不存在 → 404 BIZ_404）.
+
+    注意：本路由注册在 ``/items/{item_id}`` 之后，``DELETE /dicts/items`` 不会被
+    本条路径变量误吞（字典类型码不应为 ``items``）。
+    """
+    try:
+        return await DictService.delete_type(session, type_code)
+    except BaseError:
+        # 业务错误（404/409）不得被内存回退吞掉
+        raise
+    except Exception as exc:  # noqa: BLE001
+        DictService._fallback("dict.delete_type", exc)
+        return await DictService.delete_type_mem(type_code)
 
 __version__ = "1.1.0"

@@ -24,14 +24,18 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from openbase.core.db.session import get_db
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
-from openbase.core.models import AgentApiKey, OutboxEvent
-from openbase.modules.identity.agent_keys import AgentKeyService
+from openbase.core.models import AgentApiKey, OutboxEvent, User
+from openbase.modules.identity.agent_keys import (
+    AGENT_KEY_STATUS_ACTIVE,
+    AGENT_KEY_STATUS_REVOKED,
+    AgentKeyService,
+)
 from openbase.modules.identity.agents import (
     DEFAULT_AGENT_ROLE,
     create_agent_subject,
@@ -48,6 +52,9 @@ from openbase.modules.identity.lifecycle import IdentityLifecycleService
 from openbase.modules.identity.purge import IdentityPurgeService
 from openbase.modules.identity.state_machine import (
     CREDENTIAL_TYPE_API_KEY,
+    STATUS_STATE_ACTIVE,
+    STATUS_STATE_PROVISIONED,
+    STATUS_STATE_SUSPENDED,
     SUBJECT_TYPE_AGENT,
     SUBJECT_TYPE_USER,
 )
@@ -98,6 +105,20 @@ class AgentKeyOut(BaseModel):
     last_used_at: dt.datetime | None = None
     created_at: dt.datetime
     raw_key: str | None = None
+
+
+class AgentOut(BaseModel):
+    """agent 主体列表项（不回显密钥；status=0 为已删除/停用态）."""
+
+    id: int
+    username: str
+    display_name: str
+    subject_type: str
+    status: int
+    status_state: str
+    tenant_id: int | None = None
+    tenant_code: str | None = None
+    created_at: dt.datetime | None = None
 
 
 class AgentCreated(BaseModel):
@@ -247,6 +268,75 @@ def _key_out(record: AgentApiKey, raw_key: str | None = None) -> AgentKeyOut:
 
 
 # ---- 路由 ----
+
+
+@router.get("/agents", response_model=list[AgentOut])
+async def list_agents(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: dict = Depends(_require_identity_view),
+    session: AsyncSession = Depends(get_db),
+) -> list[AgentOut]:
+    """agent 主体列表（分页；非超管按租户隔离，含已软删/停用记录）."""
+    scope = await _agent_tenant_scope(session, user)
+    stmt = select(User).where(User.subject_type == SUBJECT_TYPE_AGENT).order_by(User.id)
+    if scope is not None:
+        stmt = stmt.where(User.tenant_code == scope)
+    rows = (
+        await session.execute(
+            stmt.offset((page - 1) * page_size).limit(page_size)
+        )
+    ).scalars().all()
+    return [
+        AgentOut(
+            id=row.id,
+            username=row.username,
+            display_name=row.display_name or row.username,
+            subject_type=row.subject_type,
+            status=row.status,
+            status_state=row.status_state,
+            tenant_id=row.tenant_id,
+            tenant_code=row.tenant_code,
+            created_at=row.created_at,
+        )
+        for row in rows
+    ]
+
+
+@router.delete("/agents/{agent_id}", response_model=dict[str, Any])
+async def delete_agent(
+    agent_id: int,
+    user: dict = Depends(_require_identity_manage),
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """删除 agent 主体（软删：status=0 且 status_state=suspended，级联吊销全部有效密钥）.
+
+    幂等：对已删除 agent 重复调用仍返回 200，``revoked_keys`` 为 0。
+    """
+    row = await ensure_agent_subject(
+        session, agent_id, tenant_code=await _agent_tenant_scope(session, user)
+    )
+    row.status = 0
+    if row.status_state in (STATUS_STATE_ACTIVE, STATUS_STATE_PROVISIONED):
+        row.status_state = STATUS_STATE_SUSPENDED
+    revoked = await session.execute(
+        update(AgentApiKey)
+        .where(
+            AgentApiKey.agent_id == agent_id,
+            AgentApiKey.status == AGENT_KEY_STATUS_ACTIVE,
+        )
+        .values(status=AGENT_KEY_STATUS_REVOKED)
+    )
+    await session.commit()
+    from openbase.modules.identity.verification import invalidate_principal_cache
+
+    invalidate_principal_cache(row.id, row.username)
+    revoked_keys = int(revoked.rowcount or 0)
+    logger.info(
+        "identity agent deleted",
+        extra={"agent_id": agent_id, "revoked_keys": revoked_keys, "operator": user.get("username")},
+    )
+    return {"code": 0, "agent_id": agent_id, "status": 0, "revoked_keys": revoked_keys}
 
 
 @router.post("/agents", response_model=AgentCreated)

@@ -1,19 +1,20 @@
-# OpenBase 基础设施子系统全生命周期走查报告（v1.0.0）
+# OpenBase 基础设施子系统全生命周期走查报告（v1.1.0）
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.0.0 |
-| 文档版本 | v1.0.0 |
+| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.1.0 |
+| 文档版本 | v1.1.0 |
 | 文档状态 | [Review]（待人工批准） |
 | 适用环境 | Dev（共享基础设施 192.168.0.151 ＋ 本机服务端口） |
-| 走查日期 | 2026-11-06 |
+| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合复验） |
 | 编写角色 | 测试工程师（QA）／开发工程师（Dev）协同 |
-| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》 |
+| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.0.0》 |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 | 状态 |
 | --- | --- | --- | --- | --- |
+| v1.1.0 | 2026-11-07 | Dev／QA | 闭合 §7 生命周期缺口 GAP-01~03：新增字典类型删除、配置键删除、agent 列表与删除接口；补 6 项闭环单测并在真实 Dev 环境完成实测（含走查残留数据清理）；§6 补记门禁结果 | [Review] |
 | v1.0.0 | 2026-11-06 | QA／Dev | 首版：四子系统全生命周期走查、缺陷修复与复验、质量门禁结果、生命周期缺口登记 | [Review] |
 
 ---
@@ -40,8 +41,8 @@
 
 - 四个基础设施子系统的**生命周期闭环全部打通**：创建/写入、读取/检索、更新/状态流转、删除、删除后 404 均取得真实数据证据。
 - 本轮共修复 **6 项**阻断或失真缺陷（DPS 2 类 500、DPS 删除接口缺失、dps-proxy 全线 401、默认模型失效、Memory 代理超时），其中 2 项为跨仓（OpenBase ↔ DPS）契约补齐。
-- 质量门禁：OpenBase `ruff` 全通过；dps-proxy 定向单测 123 通过；DPS 模板相关用例 419 通过、模板引擎专项 22 通过；OpenBase 全量单测因跨仓扫描类用例在本机阻塞，登记为 PENDING（证据见 §6）。
-- 登记 **3 项生命周期缺口**（平台模块缺少删除接口，非本轮阻断项，见 §7）。
+- 质量门禁：OpenBase `ruff` 全通过；平台补口定向单测 6 通过；dps-proxy 定向单测 123 通过；DPS 模板相关用例 419 通过、模板引擎专项 22 通过；OpenBase 全量单测因跨仓扫描类用例在本机阻塞，登记为 PENDING（证据见 §6）。
+- v1.0.0 登记的 **3 项平台模块生命周期缺口（GAP-01~03）已于 v1.1.0 全部闭合**（新增字典类型删除、配置键删除、agent 列表与删除），并在真实 Dev 环境取得闭环证据（见 §7）。
 
 ---
 
@@ -183,7 +184,8 @@
 
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
-| OpenBase 静态检查 | `python -m ruff check openbase tests` | All checks passed |
+| OpenBase 静态检查 | `python -m ruff check openbase tests` | All checks passed（v1.1.0 补口后复跑仍通过） |
+| OpenBase 平台补口定向单测 | `python -m pytest tests/test_platform_lifecycle_delete.py -q` | **6 passed**（v1.1.0 新增：字典 409/删除→404、配置回退默认值/仅默认值 409、agent 列表→删除→吊销→401→幂等、缺失 agent 404） |
 | OpenBase dps-proxy 定向单测 | `python -m pytest tests/test_dps_proxy.py tests/test_dps_proxy_v1410_contract.py tests/test_dps_proxy_routes_v1410.py -q` | **123 passed**（含本轮新增 DELETE 转发／409 透传 2 例） |
 | OpenBase 全量单测 | `python -m pytest tests -q --timeout=120`（忽略 5 个真实基础设施依赖文件） | **PENDING（环境受限，见下）** |
 | DPS 模板相关用例 | `pytest src/tests -k "template or portrait or annotation"`（忽略缺 `mccabe` 的复杂度守卫文件） | 419 passed |
@@ -200,15 +202,28 @@
 
 ---
 
-## 7. 生命周期缺口登记（非本轮阻断）
+## 7. 生命周期缺口登记（v1.1.0 已全部闭合）
 
-| 编号 | 模块 | 缺口 | 影响 | 建议 |
-| --- | --- | --- | --- | --- |
-| GAP-01 | 字典 | `/api/v1/dicts` 仅 GET/POST，**无类型删除接口**；走查残留 `wt_dict_type` 无法通过 API 清理 | 字典类型只增不减 | 补 `DELETE /api/v1/dicts/{type_code}`（有子项时 409） |
-| GAP-02 | 配置 | `/api/v1/configs/{key}` 无 DELETE；走查残留 `walkthrough.key` | 配置项无法删除，只能改值 | 补删除或"停用/隐藏"语义 |
-| GAP-03 | 身份 Agent | `/api/v1/identity/agents` 仅 POST（无列表/删除）；走查残留 `wt_agent_01` | Agent 生命周期不完整、不可审计 | 补 `GET`/`DELETE` 与密钥级联吊销 |
+| 编号 | 模块 | 原缺口 | 影响 | v1.1.0 落地 | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| GAP-01 | 字典 | `/api/v1/dicts` 仅 GET/POST，**无类型删除接口**；走查残留 `wt_dict_type` 无法通过 API 清理 | 字典类型只增不减 | 新增 `DELETE /api/v1/dicts/{type_code}`（存在字典项 → 409 `BIZ_CONFLICT`；不存在 → 404；删除后清 Redis 缓存） | ✅ 已闭合 |
+| GAP-02 | 配置 | `/api/v1/configs/{key}` 无 DELETE；走查残留 `walkthrough.key` | 配置项无法删除，只能改值 | 新增 `DELETE /api/v1/configs/{key}`（删 DB 行＋各级运行时覆盖，回退环境变量/代码默认值；仅默认值 → 409 `BIZ_CONFIG_CONFLICT`；未知键 → 404；版本历史保留供审计） | ✅ 已闭合 |
+| GAP-03 | 身份 Agent | `/api/v1/identity/agents` 仅 POST（无列表/删除）；走查残留 `wt_agent_01` | Agent 生命周期不完整、不可审计 | 新增 `GET /api/v1/identity/agents`（分页＋租户隔离）与 `DELETE /api/v1/identity/agents/{agent_id}`（软删 `status=0`/`suspended` ＋ 级联吊销全部有效密钥 ＋ 清主体缓存，幂等） | ✅ 已闭合 |
 
-以上残留数据位于共享 Dev 库，登记后由后续版本提供接口再清理；本轮不直接改库，避免绕过接口语义。
+**真实环境复验证据（2026-11-07，Dev／共享 PG＋Redis）**：
+
+| 步骤 | 响应 |
+| --- | --- |
+| 字典：建类型→建字典项 | 200／200（item id=8） |
+| 字典：有字典项时删类型 | **409** `BIZ_CONFLICT`，`detail.item_count=1` |
+| 字典：删字典项→删类型→再删 | 200 → 200 `deleted:true` → **404** `BIZ_404` |
+| 配置：设值→查→删→再查→再删 | 200 → 200 `v1` → 200 `deleted:true,restored_default:false` → 200 `value:null` → **404** |
+| Agent：创建→列表→删除 | 200（agent 131）→ 200 列表含该主体 → 200 `{status:0, revoked_keys:1}` |
+| Agent：删除后持原密钥访问 | **401** `AUTH_API_KEY_INVALID`（`agent api key revoked`） |
+| Agent：重复删除 | 200（幂等，`revoked_keys:0`） |
+| 残留清理 | `walkthrough.key` 200；字典 `wt_dict_type` 200；`wt_agent_01` 200（均已删除） |
+
+详细契约与变更清单见《OpenBase-平台模块生命周期补口-DevLogReport-v1.0.0》。
 
 ---
 
@@ -230,6 +245,7 @@
 - `phase20_subsystems.py`：RAG／Memory／LLM 生命周期
 - `phase21_llm.py`、`phase22_memory.py`：子系统单点复验
 - `cleanup_templates.py`：走查模板清理
+- `probe_platform_delete.py`（v1.1.0）：字典／配置／agent 删除接口真实环境复验与残留清理
 
 ### 9.2 术语
 
