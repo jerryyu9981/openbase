@@ -1,19 +1,20 @@
-# OpenBase 基础设施子系统全生命周期走查报告（v1.2.0）
+# OpenBase 基础设施子系统全生命周期走查报告（v1.3.0）
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.2.0 |
-| 文档版本 | v1.2.0 |
+| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.3.0 |
+| 文档版本 | v1.3.0 |
 | 文档状态 | [Review]（待人工批准） |
 | 适用环境 | Dev（共享基础设施 192.168.0.151 ＋ 本机服务端口） |
-| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合、v1.2.0 未闭合项收敛） |
+| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合、v1.2.0 未闭合项收敛、v1.3.0 跨仓闭环 gpt-4） |
 | 编写角色 | 测试工程师（QA）／开发工程师（Dev）协同 |
-| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》 |
+| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》 |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 | 状态 |
 | --- | --- | --- | --- | --- |
+| v1.3.0 | 2026-11-07 | Dev／QA | 跨仓闭环 §8 第 5 项：在 OpenLLM 仓软删除遗留 E2E 测试模型 `gpt-4`（`status=inactive`），公开模型列表由 6 条收敛为 5 条；显式调用由 500 变为 404 且错误语义明确；补 OpenLLM 定向单测 70 passed。下游证据见《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》 | [Review] |
 | v1.2.0 | 2026-11-07 | Dev／QA | 收敛未闭合项：配置中心补删除交互（前端 API＋页面按钮＋单元测试）；OpenBase 全量后端单测闭合（不再 PENDING）；前端全量单测与 eslint/vue-tsc 通过；gpt-4 失败归因确认为 OpenLLM 侧测试模型数据（`model_name=E2E-Test`），非 OpenBase 缺陷 | [Review] |
 | v1.1.0 | 2026-11-07 | Dev／QA | 闭合 §7 生命周期缺口 GAP-01~03：新增字典类型删除、配置键删除、agent 列表与删除接口；补 6 项闭环单测并在真实 Dev 环境完成实测（含走查残留数据清理）；§6 补记门禁结果 | [Review] |
 | v1.0.0 | 2026-11-06 | QA／Dev | 首版：四子系统全生命周期走查、缺陷修复与复验、质量门禁结果、生命周期缺口登记 | [Review] |
@@ -44,6 +45,7 @@
 - 本轮共修复 **6 项**阻断或失真缺陷（DPS 2 类 500、DPS 删除接口缺失、dps-proxy 全线 401、默认模型失效、Memory 代理超时），其中 2 项为跨仓（OpenBase ↔ DPS）契约补齐。
 - 质量门禁：OpenBase `ruff` 全通过；平台补口定向单测 6 通过；dps-proxy 定向单测 123 通过；OpenBase 全量单测（collected 1524）exit 0；前端全量单测 373 通过、eslint／vue-tsc 0 error；DPS 模板相关用例 419 通过、模板引擎专项 22 通过。
 - v1.0.0 登记的 **3 项平台模块生命周期缺口（GAP-01~03）已于 v1.1.0 全部闭合**，v1.2.0 另行闭合配置中心前端删除入口（GAP-04），并在真实 Dev 环境取得闭环证据（见 §7）。
+- v1.3.0 跨仓闭环：OpenLLM 侧遗留 E2E 测试模型 `gpt-4` 已软删除，公开模型列表 6→5 条，显式调用由 500 收敛为 **404 `模型 'gpt-4' 不存在`**；OpenBase 侧零代码改动。
 
 ---
 
@@ -89,7 +91,7 @@
 | OpenRAG | 创建集合 → 详情 → 检索 → 删除 → 404（5 项）＋ 既有文档/对话 8 项 | 13 | 0 | 通过 |
 | OpenMemory | remember → recall → list → detail → forget → 404（6 项） | 6 | 0 | 通过（需 ≥180s 代理等待预算） |
 | DPS 画像模板 | 新建 → 详情 → 列表 → 更新 → 预检 → 启用 → 停用 → 对比 → 回滚 → 删除 → 404（11 项）＋ 409 引用保护 2 项 | 17 | 0 | 通过 |
-| OpenLLM | 模型列表 → 模型详情 → 对话推理 → 会话创建 → 消息写入 → 消息读取 → 会话删除（8 项） | 8 | 0 | 通过（gpt-4 归因见 §4.4） |
+| OpenLLM | 模型列表 → 模型详情 → 对话推理 → 会话创建 → 消息写入 → 消息读取 → 会话删除（8 项） | 8 | 0 | 通过（gpt-4 已于 v1.3.0 跨仓处置，见 §4.4） |
 | 平台模块（上一轮） | 网关/租户/组织/字典/配置/文件/通知/调度/MCP/日志/AI 应用/用户/密钥 | 56 | 0 | 通过 |
 
 ---
@@ -145,7 +147,7 @@
 
 | 步骤 | 接口 | 结果 | 证据要点 |
 | --- | --- | --- | --- |
-| 模型列表 | `GET /api/v1/llm-proxy/models` | 通过 | 注册表返回 6 条，其中 5 条可用（deepseek-v4-flash / qwen2.5:0.5b / llama3.2:1b / qwen3.5:2b / qwen3.5:4b） |
+| 模型列表 | `GET /api/v1/llm-proxy/models` | 通过 | v1.3.0 处置后返回 **5 条**（deepseek-v4-flash / qwen2.5:0.5b / llama3.2:1b / qwen3.5:4b-q4_K_M / qwen3.5:2b-q4_K_M）；处置前为 6 条（含不可用的 `gpt-4`） |
 | 模型详情 | `GET /api/v1/llm-proxy/models/qwen2.5:0.5b` | 通过 | 容量/状态字段可读 |
 | 对话推理 | `POST /api/v1/llm-proxy/chat` | 通过 | 真实返回"走查通过！" |
 | 会话创建 | `POST /api/v1/llm-proxy/conversations` | 通过 | 返回会话 id |
@@ -153,7 +155,7 @@
 | 消息读取 | `GET /api/v1/llm-proxy/conversations/{id}/messages` | 通过 | 可读回写入消息 |
 | 会话删除 | `DELETE /api/v1/llm-proxy/conversations/{id}` | 通过 | 2xx |
 
-> **gpt-4 归因（v1.2.0 定案）**：`gpt-4` 是 OpenLLM 注册表中遗留的 E2E 测试模型（提供商 `DeepSeek2`，`model_name=E2E-Test`，指向 `https://api.deepseek.com/v1`），DeepSeek 侧不存在该模型名，故显式调用稳定返回上游 500（OpenLLM `code=5001`）。OpenBase `llm-proxy` 已**保真透传**该错误信封，**非 OpenBase 缺陷**；处置建议见 §8 第 5 项（OpenLLM 侧清理测试数据）。
+> **gpt-4 归因与跨仓处置（v1.2.0 定案／v1.3.0 闭环）**：`gpt-4` 是 OpenLLM 注册表中遗留的 E2E 测试模型（提供商 `DeepSeek2`，`model_name=E2E-Test`，指向 `https://api.deepseek.com/v1`），DeepSeek 侧不存在该模型名，故显式调用稳定返回上游 400 → OpenLLM `code=5001`；OpenBase `llm-proxy` 按既定规则透传，**非 OpenBase 缺陷**。v1.3.0 已在 OpenLLM 仓通过 `DELETE /api/v1/providers/models/4d49914c-453a-42f9-8415-ae924e046ca0`（软删除，`status=inactive`）完成治理：`GET /openllm/v1/models` 与 `GET /api/v1/llm-proxy/models` 均返回 5 条，显式调用返回 **404 `模型 'gpt-4' 不存在`**。详见《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》。
 
 ### 4.5 平台模块（上一轮结论引用）
 
@@ -196,6 +198,7 @@
 | 前端配置中心单测 | `npm test -- --run tests/r2-wiring-v192.spec.ts` | **9 passed**（含 v1.2.0 新增删除交互 2 例） |
 | 前端全量单测 | `npm test` | **39 files / 373 tests passed** |
 | 前端 ESLint／类型检查 | `eslint <改动文件>`；`vue-tsc --noEmit` | 0 error ／ 0 error |
+| OpenLLM 模型/提供商定向单测 | `python -m pytest tests/unit/test_providers_api.py tests/unit/test_chat_api.py tests/unit/test_open_models_api.py tests/unit/test_model_whitelist_list_endpoint.py` | **70 passed**（v1.3.0 跨仓处置后复跑，无代码变更） |
 
 > DPS 全量单测在本轮修复前基线为 1920 passed；本轮仅改动模板引擎与路由，模板相关 419 项全通过。
 
@@ -240,7 +243,7 @@
 2. **冷启动耗时**：OpenMemory 294s、OpenLLM 193s，接近 orchestrator 健康等待上限（300s/180s）。建议对冷启动服务单独设更长的健康等待或预热。
 3. **启动期环境一致性**：`DPS_BASE_URL`（OpenLLM 用）与 `OPENBASE_DPS_UPSTREAM_BASE`（OpenBase 用）语义不同，易漏配。建议在 `.env.shared-infra` 增加成对注释（本轮已补）并在编排脚本启动日志中打印实际生效值。
 4. **orchestrator 状态显示**：`status` 对"运行中但单次健康探测超时"的服务显示"不健康"，与本轮实测可用性不一致，建议区分"探活超时"与"服务不可用"。
-5. **OpenLLM 遗留测试模型（gpt-4）**：`gpt-4` 指向提供商 `DeepSeek2` 的 `model_name=E2E-Test`，DeepSeek 侧无此模型，显式调用稳定 500。建议在 OpenLLM 侧清理该 E2E 测试数据（置 `inactive` 或移除），避免 OpenAI 兼容模型列表长期暴露不可用模型；本项属上游数据治理，不在 OpenBase 仓修改。
+5. **OpenLLM 遗留测试模型（gpt-4）——v1.3.0 已跨仓闭环**：`gpt-4` 指向提供商 `DeepSeek2` 的 `model_name=E2E-Test`，DeepSeek 侧无此模型，处置前显式调用稳定 500。已在 OpenLLM 仓通过 `DELETE /api/v1/providers/models/{model_id}` 软删除（`status=inactive`，可经 `PUT` 回滚），公开模型列表 6→5 条，显式调用变为 404 `模型 'gpt-4' 不存在`。后续建议：E2E 走查脚本创建模型时统一使用可识别的临时前缀并在收尾阶段删除，避免再次沉淀为公开模型。
 
 ---
 
