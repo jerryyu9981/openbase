@@ -22,6 +22,8 @@ export const identityRoutes: RouteRecordRaw[] = [
   { path: 'platform/identity/workspaces', name: 'platform-identity-workspaces', component: () => import('@/pages/platform/identity/WorkspacesView.vue'), meta: { title: '工作空间', icon: 'Grid' } },
   { path: 'platform/identity/auth-ext', name: 'platform-identity-auth-ext', component: () => import('@/pages/platform/identity/AuthExt.vue'), meta: { title: '注册/找回密码', icon: 'Key' } },
   { path: 'platform/identity/users', name: 'platform-identity-users', component: () => import('@/pages/platform/identity/UsersView.vue'), meta: { title: '用户管理', icon: 'User', permission: 'users:view' } },
+  // v1.5.0：Agent 主体管理（列表 identity:view；新建/删除/密钥写操作 identity:manage）
+  { path: 'platform/identity/agents', name: 'platform-identity-agents', component: () => import('@/pages/platform/identity/AgentsView.vue'), meta: { title: 'Agent 管理', icon: 'Cpu', permission: 'identity:view' } },
   { path: 'platform/identity/memory-admin', name: 'platform-identity-memory-admin', component: () => import('@/pages/platform/identity/MemoryAdminView.vue'), meta: { title: '记忆管理席位', icon: 'Setting', permission: 'memory:manage', dependsOn: 'memory' } },
   // v1.4.11：DPS 权限管理从画像模块上收（公共域统一治理）
   { path: 'platform/identity/dps-permissions', name: 'platform-identity-dps-permissions', component: () => import('@/pages/platform/identity/DpsPermissionView.vue'), meta: { title: '画像数据权限', icon: 'User', dependsOn: 'portrait' } },
@@ -30,6 +32,8 @@ export const identityRoutes: RouteRecordRaw[] = [
 /** 平台管理 · 平台配置与密钥域 */
 export const configRoutes: RouteRecordRaw[] = [
   { path: 'platform/config/general', name: 'platform-config-general', component: () => import('@/pages/platform/config/ConfigManageView.vue'), meta: { title: '全局配置', icon: 'Setting' } },
+  // v1.5.0：数据字典（后端 dict 端点无独立权限码，沿用「仅登录可见」口径）
+  { path: 'platform/config/dicts', name: 'platform-config-dicts', component: () => import('@/pages/platform/config/DictManageView.vue'), meta: { title: '数据字典', icon: 'Collection' } },
   { path: 'platform/config/modules', name: 'platform-config-modules', component: () => import('@/pages/platform/config/ModuleSwitchView.vue'), meta: { title: '模块开关', icon: 'Grid', permission: 'module:manage' } },
   { path: 'platform/config/api-keys', name: 'platform-config-api-keys', component: () => import('@/pages/platform/config/ApiKeys.vue'), meta: { title: 'API 密钥', icon: 'Key', permission: 'auth:api-keys:view' } },
   // v1.4.11：DPS 限流管理从画像模块上收（公共域统一治理）

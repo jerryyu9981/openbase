@@ -114,6 +114,7 @@ const PLATFORM_LEAVES: MenuDomain[] = [
       { path: '/platform/identity/org', title: '组织/团队/用户', icon: OfficeBuilding, permission: 'users:view' },
       { path: '/platform/identity/workspaces', title: '工作空间', icon: Grid },
       { path: '/platform/identity/users', title: '用户管理', icon: User, permission: 'users:view' },
+      { path: '/platform/identity/agents', title: 'Agent 管理', icon: Cpu, permission: 'identity:view' },
       { path: '/platform/identity/memory-admin', title: '记忆管理席位', icon: Setting, permission: 'memory:manage', dependsOn: 'memory' },
       { path: '/platform/identity/auth-ext', title: '注册/找回密码', icon: Key },
       { path: '/platform/identity/dps-permissions', title: '画像数据权限', icon: User, dependsOn: 'portrait' },
@@ -123,6 +124,7 @@ const PLATFORM_LEAVES: MenuDomain[] = [
     label: '平台配置与密钥',
     items: [
       { path: '/platform/config/general', title: '全局配置', icon: Setting },
+      { path: '/platform/config/dicts', title: '数据字典', icon: Collection },
       { path: '/platform/config/modules', title: '模块开关', icon: Grid, permission: 'module:manage' },
       { path: '/platform/config/api-keys', title: 'API 密钥', icon: Key, permission: 'auth:api-keys:view' },
       { path: '/platform/config/rate-limits', title: '画像接口限流', icon: Operation, dependsOn: 'portrait' },

@@ -1,19 +1,20 @@
-# OpenBase 基础设施子系统全生命周期走查报告（v1.4.0）
+# OpenBase 基础设施子系统全生命周期走查报告（v1.5.0）
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.4.0 |
-| 文档版本 | v1.4.0 |
+| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.5.0 |
+| 文档版本 | v1.5.0 |
 | 文档状态 | [Review]（待人工批准） |
 | 适用环境 | Dev（共享基础设施 192.168.0.151 ＋ 本机服务端口） |
-| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合、v1.2.0 未闭合项收敛、v1.3.0 跨仓闭环 gpt-4、v1.4.0 编排器可观测性补口） |
+| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合、v1.2.0 未闭合项收敛、v1.3.0 跨仓闭环 gpt-4、v1.4.0 编排器可观测性补口、v1.5.0 字典与 Agent 前端删除闭环） |
 | 编写角色 | 测试工程师（QA）／开发工程师（Dev）协同 |
-| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》《OpenBase-编排器可观测性补口-DevLogReport-v1.0.0》 |
+| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》《OpenBase-编排器可观测性补口-DevLogReport-v1.0.0》《OpenBase-字典与Agent前端删除闭环-DevLogReport-v1.0.0》 |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 | 状态 |
 | --- | --- | --- | --- | --- |
+| v1.5.0 | 2026-11-07 | Dev／QA | 闭合 §7 GAP-05／GAP-06：前端补齐「数据字典」与「Agent 管理」两页，删除按钮与后端契约对齐（字典 409 引用保护、Agent 软删＋密钥吊销），新增 8 项 vitest 用例并纳入路由权限契约；配置中心删除链路复核为已匹配 | [Review] |
 | v1.4.0 | 2026-11-07 | Dev／QA | 闭合 §8 第 2~4 项：orchestrator 冷启动健康等待 OpenLLM 180→300s；新增启动期环境生效值快照（口令脱敏）；`status` 区分"健康探测超时/连接被拒绝/HTTP 5xx"并对单次超时重试一次；顺带修复 `Hide-DsnSecret` 未掩码 `redis://:pass@` 形式口令的安全缺陷。§8 第 1 项登记时延基线口径与既有实测样本 | [Review] |
 | v1.3.0 | 2026-11-07 | Dev／QA | 跨仓闭环 §8 第 5 项：在 OpenLLM 仓软删除遗留 E2E 测试模型 `gpt-4`（`status=inactive`），公开模型列表由 6 条收敛为 5 条；显式调用由 500 变为 404 且错误语义明确；补 OpenLLM 定向单测 70 passed。下游证据见《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》 | [Review] |
 | v1.2.0 | 2026-11-07 | Dev／QA | 收敛未闭合项：配置中心补删除交互（前端 API＋页面按钮＋单元测试）；OpenBase 全量后端单测闭合（不再 PENDING）；前端全量单测与 eslint/vue-tsc 通过；gpt-4 失败归因确认为 OpenLLM 侧测试模型数据（`model_name=E2E-Test`），非 OpenBase 缺陷 | [Review] |
@@ -48,6 +49,7 @@
 - v1.0.0 登记的 **3 项平台模块生命周期缺口（GAP-01~03）已于 v1.1.0 全部闭合**，v1.2.0 另行闭合配置中心前端删除入口（GAP-04），并在真实 Dev 环境取得闭环证据（见 §7）。
 - v1.3.0 跨仓闭环：OpenLLM 侧遗留 E2E 测试模型 `gpt-4` 已软删除，公开模型列表 6→5 条，显式调用由 500 收敛为 **404 `模型 'gpt-4' 不存在`**；OpenBase 侧零代码改动。
 - v1.4.0 编排器补口：冷启动健康等待与实测对齐（OpenLLM 180→300s）；启动日志登记环境生效值；`status` 输出精确失败原因（超时/拒绝/HTTP 码）并对单次超时自动重试；`Hide-DsnSecret` 补掩码 Redis 空用户名口令。编排器定向单测 **22 passed / 2 skipped**，`status` 实测输出已验证。
+- v1.5.0 前端删除闭环：核查确认配置中心删除链路已与 `DELETE /configs/{key}` 匹配；字典与 Agent 此前**无任何前端页面**（非交互不匹配），本轮补齐「数据字典」（类型＋字典项增删）与「Agent 管理」（列表/新建/软删/密钥签发与吊销）两页，并纳入路由权限契约（Agent 页 `identity:view`，字典页仅登录可见）。
 
 ---
 
@@ -198,7 +200,9 @@
 | DPS 模板相关用例 | `pytest src/tests -k "template or portrait or annotation"`（忽略缺 `mccabe` 的复杂度守卫文件） | 419 passed |
 | DPS 模板引擎专项 | `pytest src/tests/test_template_engine_v2_10.py` | 22 passed |
 | 前端配置中心单测 | `npm test -- --run tests/r2-wiring-v192.spec.ts` | **9 passed**（含 v1.2.0 新增删除交互 2 例） |
-| 前端全量单测 | `npm test` | **39 files / 373 tests passed** |
+| 前端字典／Agent 接线单测 | `vitest run tests/r2-dicts-agents.spec.ts` | **8 passed**（v1.5.0 新增：字典加载、删除字典项确认/取消、409 呈现、Agent 加载、删除确认/取消、raw_key 展示） |
+| 前端路由权限契约 | `vitest run tests/platform-ia.spec.ts` | **22 passed**（v1.5.0 将 Agent 页纳入 F3 门禁，字典页纳入「仅登录可见」断言） |
+| 前端全量单测 | `vitest run` | **40 files / 382 tests passed**（v1.5.0 新增 8 项；存量 374 项 0 失败） |
 | 前端 ESLint／类型检查 | `eslint <改动文件>`；`vue-tsc --noEmit` | 0 error ／ 0 error |
 | OpenLLM 模型/提供商定向单测 | `python -m pytest tests/unit/test_providers_api.py tests/unit/test_chat_api.py tests/unit/test_open_models_api.py tests/unit/test_model_whitelist_list_endpoint.py` | **70 passed**（v1.3.0 跨仓处置后复跑，无代码变更） |
 | 编排器单测/语法门禁 | `python -m pytest tests/test_orchestrator_db_failover.py` | **22 passed / 2 skipped**（v1.4.0 改动后复跑；含 PowerShell 语法解析守卫） |
@@ -214,7 +218,7 @@
 
 ---
 
-## 7. 生命周期缺口登记（v1.1.0~v1.2.0 已全部闭合）
+## 7. 生命周期缺口登记（v1.1.0~v1.5.0 已全部闭合）
 
 | 编号 | 模块 | 原缺口 | 影响 | v1.1.0 落地 | 状态 |
 | --- | --- | --- | --- | --- | --- |
@@ -222,6 +226,8 @@
 | GAP-02 | 配置 | `/api/v1/configs/{key}` 无 DELETE；走查残留 `walkthrough.key` | 配置项无法删除，只能改值 | 新增 `DELETE /api/v1/configs/{key}`（删 DB 行＋各级运行时覆盖，回退环境变量/代码默认值；仅默认值 → 409 `BIZ_CONFIG_CONFLICT`；未知键 → 404；版本历史保留供审计） | ✅ 已闭合 |
 | GAP-03 | 身份 Agent | `/api/v1/identity/agents` 仅 POST（无列表/删除）；走查残留 `wt_agent_01` | Agent 生命周期不完整、不可审计 | 新增 `GET /api/v1/identity/agents`（分页＋租户隔离）与 `DELETE /api/v1/identity/agents/{agent_id}`（软删 `status=0`/`suspended` ＋ 级联吊销全部有效密钥 ＋ 清主体缓存，幂等） | ✅ 已闭合 |
 | GAP-04 | 配置中心（前端） | 后端已有 `DELETE /api/v1/configs/{key}`，但页面仅有编辑/版本，**无删除入口** | 删除能力在 UI 不可达 | `configs.ts` 增加 `remove()`；`ConfigManageView.vue` 增加删除按钮＋二次确认＋回退默认值提示；新增 2 项 vitest 用例（确认删除/取消删除） | ✅ 已闭合（v1.2.0） |
+| GAP-05 | 字典（前端） | 后端已有 `DELETE /api/v1/dicts/{type_code}` 与 `/dicts/items/{item_id}`，但前端**无字典页、无 API 模块、无路由菜单** | 删除能力在 UI 完全不可达 | 新增 `core/api/dicts.ts` 与 `DictManageView.vue`：类型/字典项列表、新建、删除（二次确认）；409 引用保护与 404 以错误条呈现；接入 `platform/config/dicts` 与侧栏菜单（仅登录可见） | ✅ 已闭合（v1.5.0） |
+| GAP-06 | 身份 Agent（前端） | 后端已有 `GET/DELETE /api/v1/identity/agents` 与密钥端点，但前端**无 Agent 管理页、无 API 模块、无路由菜单** | 软删除与密钥吊销在 UI 不可达 | 新增 `core/api/agents.ts` 与 `AgentsView.vue`：列表、新建（raw_key 仅展示一次）、删除（二次确认＋吊销密钥数提示）、密钥抽屉（签发/吊销）；接入 `platform/identity/agents`（`identity:view`），写操作按 `identity:manage` 显示 | ✅ 已闭合（v1.5.0） |
 
 **真实环境复验证据（2026-11-07，Dev／共享 PG＋Redis）**：
 

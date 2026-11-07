@@ -123,6 +123,7 @@ describe('F3（MTAUTH 走查）: 身份/配置域补声明页面 —— 守卫�
     ['/platform/identity/tenants', 'tenant:view'],
     ['/platform/identity/org', 'users:view'],
     ['/platform/identity/users', 'users:view'],
+    ['/platform/identity/agents', 'identity:view'],
     ['/platform/identity/memory-admin', 'memory:manage'],
     ['/platform/config/api-keys', 'auth:api-keys:view'],
   ]
@@ -142,7 +143,7 @@ describe('F3（MTAUTH 走查）: 身份/配置域补声明页面 —— 守卫�
     }
   })
 
-  it('F3 五叶子 meta.permission 显式声明且与后端权限码同名（路由层契约锁定）', () => {
+  it('F3 补声明叶子 meta.permission 显式声明且与后端权限码同名（路由层契约锁定）', () => {
     const flat = (routes: RouteRecordRaw[]): RouteRecordRaw[] =>
       routes.flatMap((r) => (r.children?.length ? flat(r.children) : [r]))
     const leaves = flat(platformRoutes).filter((r) => !r.redirect)
@@ -165,6 +166,7 @@ describe('F3（MTAUTH 走查）: 身份/配置域补声明页面 —— 守卫�
       'platform/identity/workspaces',
       'platform/identity/auth-ext',
       'platform/config/general',
+      'platform/config/dicts',
       'platform/developers/docs',
     ]) {
       expect(permissionOf(loginOnlyPath), `${loginOnlyPath} 应保持仅登录可见`).toBeUndefined()
