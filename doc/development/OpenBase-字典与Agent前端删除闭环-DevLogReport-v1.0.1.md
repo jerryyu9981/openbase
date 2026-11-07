@@ -1,21 +1,22 @@
-# OpenBase 字典与 Agent 前端删除闭环 DevLogReport - v1.0.0
+# OpenBase 字典与 Agent 前端删除闭环 DevLogReport - v1.0.1
 
 ## 文档元信息
 
 | 项目 | 内容 |
 | --- | --- |
 | 文档编号 | OB-DEVLOG-FE-DICT-AGENT-001 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.0.1 |
 | 文档状态 | [Review]（待人工批准） |
 | 编制日期 | 2026-11-07 |
 | 适用环境 | 本机 Dev（openbase-ui + OpenBase 8000） |
-| 上游依据 | 《OpenBase-基础设施子系统全生命周期走查报告-v1.5.0》§7 GAP-05／GAP-06；《OpenBase-字典与Agent前端删除闭环-实施计划-v1.0.0》 |
+| 上游依据 | 《OpenBase-基础设施子系统全生命周期走查报告-v2.0.0》§7 GAP-05／GAP-06；《OpenBase-字典与Agent前端删除闭环-实施计划-v1.0.0》 |
 | 变更范围 | 仅前端：两页新增、路由与菜单接入、8 项 vitest 用例、路由权限契约扩展；后端零改动 |
 
 ### 修订历史
 
 | 版本 | 日期 | 修订内容 | 修订人 |
 | --- | --- | --- | --- |
+| v1.0.1 | 2026-11-07 | 同步上游走查报告定稿：上游依据与交付清单引用由 v1.5.0 更新为 v2.0.0（[Final]），本文档结论与验证证据不变 | FA-OpenBase-Dev |
 | v1.0.0 | 2026-11-07 | 首版：字典与 Agent 前端删除闭环的开发记录与验证证据 | FA-OpenBase-Dev |
 
 ---
@@ -110,4 +111,4 @@ Test Files  40 passed (40)
 | 字典管理页 | `openbase-ui/src/pages/platform/config/DictManageView.vue` |
 | Agent 管理页 | `openbase-ui/src/pages/platform/identity/AgentsView.vue` |
 | 接线回归用例 | `openbase-ui/tests/r2-dicts-agents.spec.ts` |
-| 走查报告回填 | `doc/test/OpenBase-基础设施子系统全生命周期走查报告-v1.5.0.md` §1.3／§6／§7 |
+| 走查报告回填 | `doc/test/OpenBase-基础设施子系统全生命周期走查报告-v2.0.0.md` §1.3／§6／§7 |
