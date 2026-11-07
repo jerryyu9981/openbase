@@ -161,23 +161,38 @@ function Test-TcpEndpoint {
 
     $startedAt = Get-Date
     if (-not $TargetHost -or $TargetPort -le 0) {
-        return @{ Healthy = $false; Method = 'none'; LatencyMs = 0 }
+        return @{ Healthy = $false; Method = 'none'; LatencyMs = 0; Detail = 'invalid' }
     }
     try {
         $client = New-Object System.Net.Sockets.TcpClient
         $task = $client.ConnectAsync($TargetHost, $TargetPort)
-        $connected = $task.Wait([TimeSpan]::FromSeconds($TimeoutSec)) -and $client.Connected
+        $completed = $task.Wait([TimeSpan]::FromSeconds($TimeoutSec))
+        $connected = $completed -and $client.Connected
         $client.Close()
+        # 区分「等待超时」与「连接被拒绝」：前者多为拥塞/冷启动，后者多为端口未监听。
+        $detail = if ($connected) { 'ok' } elseif (-not $completed) { 'timeout' } else { 'refused' }
         return @{
             Healthy   = [bool]$connected
             Method    = 'tcp'
             LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
+            Detail    = $detail
         }
     } catch {
+        $inner = $_.Exception
+        while ($inner -and ($inner -is [System.Management.Automation.MethodInvocationException] -or $inner -is [System.AggregateException])) {
+            if (-not $inner.InnerException) { break }
+            $inner = $inner.InnerException
+        }
+        $detail = 'connect_failed'
+        if ($inner -is [System.Net.Sockets.SocketException]) {
+            if ($inner.SocketErrorCode -eq 'HostNotFound') { $detail = 'dns' }
+            elseif ($inner.SocketErrorCode -eq 'ConnectionRefused') { $detail = 'refused' }
+        }
         return @{
             Healthy   = $false
             Method    = 'tcp'
             LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
+            Detail    = $detail
         }
     }
 }
@@ -235,7 +250,9 @@ function Set-UrlHostPort {
 function Hide-DsnSecret {
     param([string]$Value)
     if (-not $Value) { return '' }
-    return ($Value -replace '://([^:/@]+):[^@]*@', '://$1:***@')
+    # 覆盖 user:pass@ 与空用户名 :pass@ 两种写法（Redis 常用后者），并兜底掩码 password/pwd 参数。
+    $masked = $Value -replace '://([^:@/]*):[^@]*@', '://$1:***@'
+    return ($masked -replace '(?i)(password|pwd)=([^;&\s]+)', '$1=***')
 }
 
 $script:DbResolution = @{
@@ -790,8 +807,9 @@ $services = @(
         # 全服务统一脱离会话启动（WMI）：Start-Process 的子进程随启动它的
         # 终端/编排会话结束被回收（实测 openbase 起好后立即消失），因此不再按服务区分。
         Detach  = $true
-        # 冷启动（首次导入 torch/transformers 等）实测 >60s，健康等待放宽到 180s
-        HealthWait = 180
+        # 冷启动（首次导入 torch/transformers 等）实测 193s（2026-11-06 全生命周期走查样本），
+        # 原 180s 窗口会在服务实际就绪前先报「启动超时」→ 上调至 300s（2026-11-07）。
+        HealthWait = 300
         Cwd     = 'D:\Trae CN\myproject\Dev\OpenLLM\backend'
         Command = 'python'
         Args    = @('-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8001')
@@ -1116,16 +1134,62 @@ function Initialize-ServiceLogTarget {
     return @{ Out = $outPath; Err = $errPath }
 }
 
-function Test-Health {
+function Test-HealthProbe {
     param([hashtable]$Svc, [int]$TimeoutSec = 5)
+    $lastDetail = 'no_endpoint'
     foreach ($uri in $Svc.Health) {
+        $startedAt = Get-Date
         try {
             $resp = Invoke-WebRequest -Uri $uri -Method Get -TimeoutSec $TimeoutSec -UseBasicParsing -ErrorAction Stop
-            if ($resp.StatusCode -eq 200) { return $true }
+            if ($resp.StatusCode -eq 200) {
+                return @{
+                    Healthy   = $true
+                    Detail    = 'ok'
+                    LatencyMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
+                    Url       = $uri
+                }
+            }
+            $lastDetail = ("http_{0}" -f $resp.StatusCode)
         }
-        catch { }
+        catch {
+            $exception = $_.Exception
+            if ($exception -is [System.Net.WebException]) {
+                switch ($exception.Status) {
+                    'Timeout'               { $lastDetail = 'timeout' }
+                    'ConnectFailure'        { $lastDetail = 'connect_refused' }
+                    'NameResolutionFailure' { $lastDetail = 'dns' }
+                    default                 { $lastDetail = 'http_error' }
+                }
+            } elseif ($exception.Message -match '超时|timed out') {
+                $lastDetail = 'timeout'
+            } else {
+                $lastDetail = 'error'
+            }
+        }
     }
-    return $false
+    return @{ Healthy = $false; Detail = $lastDetail; LatencyMs = 0; Url = '' }
+}
+
+function Test-Health {
+    param([hashtable]$Svc, [int]$TimeoutSec = 5)
+    return [bool](Test-HealthProbe -Svc $Svc -TimeoutSec $TimeoutSec).Healthy
+}
+
+# status 展示口径：把探针细节翻译为可读原因，避免「失败」一律显示为服务不可用。
+function Format-HealthDetail {
+    param([string]$Detail)
+    if (-not $Detail) { return '未知原因' }
+    if ($Detail -match '^http_(\d+)$') { return ("HTTP {0}" -f $Matches[1]) }
+    switch ($Detail) {
+        'ok'              { return '正常' }
+        'ok_retry'        { return '重试后正常' }
+        'timeout'         { return '健康探测超时' }
+        'connect_refused' { return '连接被拒绝' }
+        'connect_failed'  { return '连接失败' }
+        'dns'             { return '域名解析失败' }
+        'no_endpoint'     { return '未配置健康端点' }
+        default           { return $Detail }
+    }
 }
 
 function Get-PortPid {
@@ -1442,12 +1506,24 @@ function Stop-Service {
 function Get-AllStatus {
     foreach ($svc in $services) {
         $portPid = Get-PortPid $svc.Port
-        $healthy = Test-Health $svc
+        $probe = Test-HealthProbe -Svc $svc
+        # 单次探测超时不足以判定不可用：端口在监听时按 10s 预算重试一次（冷启动/GC 抖动）。
+        if (-not $probe.Healthy -and $probe.Detail -eq 'timeout' -and $portPid) {
+            $probe = Test-HealthProbe -Svc $svc -TimeoutSec 10
+            if ($probe.Healthy) { $probe.Detail = 'ok_retry' }
+        }
         $lastPid = Get-LastPid $svc.Name
         $status = '未启动'
         if ($portPid) { $status = '运行中' }
-        if ($healthy) { $status = '健康 ✅' }
-        elseif ($portPid) { $status = '运行中（不健康 ⚠️）' }
+        if ($probe.Healthy) {
+            $status = if ($probe.Detail -eq 'ok_retry') { '健康 ✅（重试后）' } else { '健康 ✅' }
+        }
+        elseif ($portPid) {
+            $status = ('运行中（不健康 ⚠️：{0}）' -f (Format-HealthDetail $probe.Detail))
+        }
+        elseif ($lastPid) {
+            $status = '未启动（进程在，端口未监听）'
+        }
         $pidInfo = if ($portPid) { "PID=$portPid" } else { 'PID=-' }
         "{0,-11} {1,-6} {2,-30} {3} {4}" -f $svc.Name, $svc.Port, $svc.Desc, $status, $pidInfo
     }
@@ -1703,9 +1779,47 @@ function Invoke-DbCheck {
     return 0
 }
 
+# 启动期环境一致性自检：把跨系统地址/超时等易漏配键的**实际生效值**写入启动日志，
+# 避免「代码读 A 键、环境配 B 键」导致运行期才暴露（如 DPS_BASE_URL 与
+# OPENBASE_DPS_UPSTREAM_BASE 语义不同）。口令一律脱敏，仅登记来源与取值。
+function Write-EffectiveEnvSnapshot {
+    $keys = @(
+        'OPENBASE_LLM_UPSTREAM_BASE',
+        'OPENBASE_RAG_UPSTREAM_BASE',
+        'OPENBASE_MEMORY_UPSTREAM_BASE',
+        'OPENBASE_DPS_UPSTREAM_BASE',
+        'OPENBASE_MEMORY_UPSTREAM_TIMEOUT',
+        'DEFAULT_LLM_MODEL',
+        'DPS_BASE_URL',
+        'OPENRAG_BASE_URL',
+        'POSTGRES_URL',
+        'REDIS_URL'
+    )
+    $envFile = Join-Path $ProjectRoot '.env'
+    Write-Log 'INFO' '启动期环境生效值（优先级：进程环境 > .env.shared-infra > OpenBase/.env；口令已脱敏）：'
+    foreach ($key in $keys) {
+        $value = [Environment]::GetEnvironmentVariable($key, 'Process')
+        $source = '进程环境'
+        if (-not $value) {
+            $value = Get-EnvFileValue -Path $SharedInfraFile -Key $key
+            $source = '.env.shared-infra'
+        }
+        if (-not $value) {
+            $value = Get-EnvFileValue -Path $envFile -Key $key
+            $source = 'OpenBase/.env'
+        }
+        if (-not $value) {
+            Write-Log 'WARN' ("  环境未设置 {0}（由服务自身 .env 或代码默认值兜底）" -f $key)
+            continue
+        }
+        Write-Log 'INFO' ("  {0} = {1}（{2}）" -f $key, (Hide-DsnSecret $value), $source)
+    }
+}
+
 function Invoke-Start {
     param([switch]$WithCheck)
     Assert-DbReadyOrExit -ActionName 'start'
+    Write-EffectiveEnvSnapshot
     $targets = if ($Only.Count -gt 0) { $Only } else { ($services | ForEach-Object { $_.Name }) }
     $topo = Get-TopoOrder | Where-Object { $targets -contains $_ }
     Write-Log 'INFO' ("一键启动开始，服务拓扑序：{0}" -f ($topo -join ' → '))

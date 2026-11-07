@@ -1,19 +1,20 @@
-# OpenBase 基础设施子系统全生命周期走查报告（v1.3.0）
+# OpenBase 基础设施子系统全生命周期走查报告（v1.4.0）
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.3.0 |
-| 文档版本 | v1.3.0 |
+| 文档编号 | OB-TEST-LIFECYCLE-WALKTHROUGH-v1.4.0 |
+| 文档版本 | v1.4.0 |
 | 文档状态 | [Review]（待人工批准） |
 | 适用环境 | Dev（共享基础设施 192.168.0.151 ＋ 本机服务端口） |
-| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合、v1.2.0 未闭合项收敛、v1.3.0 跨仓闭环 gpt-4） |
+| 走查日期 | 2026-11-06（v1.0.0）／2026-11-07（v1.1.0 缺口闭合、v1.2.0 未闭合项收敛、v1.3.0 跨仓闭环 gpt-4、v1.4.0 编排器可观测性补口） |
 | 编写角色 | 测试工程师（QA）／开发工程师（Dev）协同 |
-| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》 |
+| 关联文档 | 《OpenBase-全栈功能走查报告-v1.0.0》《OpenBase-API接口设计文档-v1.4.10》《OpenBase-平台模块生命周期补口-DevLogReport-v1.1.0》《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》《OpenBase-编排器可观测性补口-DevLogReport-v1.0.0》 |
 
 ## 修订历史
 
 | 版本 | 日期 | 修订人 | 修订内容 | 状态 |
 | --- | --- | --- | --- | --- |
+| v1.4.0 | 2026-11-07 | Dev／QA | 闭合 §8 第 2~4 项：orchestrator 冷启动健康等待 OpenLLM 180→300s；新增启动期环境生效值快照（口令脱敏）；`status` 区分"健康探测超时/连接被拒绝/HTTP 5xx"并对单次超时重试一次；顺带修复 `Hide-DsnSecret` 未掩码 `redis://:pass@` 形式口令的安全缺陷。§8 第 1 项登记时延基线口径与既有实测样本 | [Review] |
 | v1.3.0 | 2026-11-07 | Dev／QA | 跨仓闭环 §8 第 5 项：在 OpenLLM 仓软删除遗留 E2E 测试模型 `gpt-4`（`status=inactive`），公开模型列表由 6 条收敛为 5 条；显式调用由 500 变为 404 且错误语义明确；补 OpenLLM 定向单测 70 passed。下游证据见《OpenLLM-遗留E2E测试模型清理-DevLogReport-v1.0.0》 | [Review] |
 | v1.2.0 | 2026-11-07 | Dev／QA | 收敛未闭合项：配置中心补删除交互（前端 API＋页面按钮＋单元测试）；OpenBase 全量后端单测闭合（不再 PENDING）；前端全量单测与 eslint/vue-tsc 通过；gpt-4 失败归因确认为 OpenLLM 侧测试模型数据（`model_name=E2E-Test`），非 OpenBase 缺陷 | [Review] |
 | v1.1.0 | 2026-11-07 | Dev／QA | 闭合 §7 生命周期缺口 GAP-01~03：新增字典类型删除、配置键删除、agent 列表与删除接口；补 6 项闭环单测并在真实 Dev 环境完成实测（含走查残留数据清理）；§6 补记门禁结果 | [Review] |
@@ -46,6 +47,7 @@
 - 质量门禁：OpenBase `ruff` 全通过；平台补口定向单测 6 通过；dps-proxy 定向单测 123 通过；OpenBase 全量单测（collected 1524）exit 0；前端全量单测 373 通过、eslint／vue-tsc 0 error；DPS 模板相关用例 419 通过、模板引擎专项 22 通过。
 - v1.0.0 登记的 **3 项平台模块生命周期缺口（GAP-01~03）已于 v1.1.0 全部闭合**，v1.2.0 另行闭合配置中心前端删除入口（GAP-04），并在真实 Dev 环境取得闭环证据（见 §7）。
 - v1.3.0 跨仓闭环：OpenLLM 侧遗留 E2E 测试模型 `gpt-4` 已软删除，公开模型列表 6→5 条，显式调用由 500 收敛为 **404 `模型 'gpt-4' 不存在`**；OpenBase 侧零代码改动。
+- v1.4.0 编排器补口：冷启动健康等待与实测对齐（OpenLLM 180→300s）；启动日志登记环境生效值；`status` 输出精确失败原因（超时/拒绝/HTTP 码）并对单次超时自动重试；`Hide-DsnSecret` 补掩码 Redis 空用户名口令。编排器定向单测 **22 passed / 2 skipped**，`status` 实测输出已验证。
 
 ---
 
@@ -199,6 +201,7 @@
 | 前端全量单测 | `npm test` | **39 files / 373 tests passed** |
 | 前端 ESLint／类型检查 | `eslint <改动文件>`；`vue-tsc --noEmit` | 0 error ／ 0 error |
 | OpenLLM 模型/提供商定向单测 | `python -m pytest tests/unit/test_providers_api.py tests/unit/test_chat_api.py tests/unit/test_open_models_api.py tests/unit/test_model_whitelist_list_endpoint.py` | **70 passed**（v1.3.0 跨仓处置后复跑，无代码变更） |
+| 编排器单测/语法门禁 | `python -m pytest tests/test_orchestrator_db_failover.py` | **22 passed / 2 skipped**（v1.4.0 改动后复跑；含 PowerShell 语法解析守卫） |
 
 > DPS 全量单测在本轮修复前基线为 1920 passed；本轮仅改动模板引擎与路由，模板相关 419 项全通过。
 
@@ -239,10 +242,10 @@
 
 ## 8. 风险与后续建议
 
-1. **共享基础设施时延**：PG/Qdrant 跨网访问使 DPS 单请求约 13s、Memory 写入约 79s，代理等待预算与服务健康检查阈值需与实测对齐（本轮已将 Memory 预算调至 180s）。建议在测试基线文档中登记各子系统 P95 时延。
-2. **冷启动耗时**：OpenMemory 294s、OpenLLM 193s，接近 orchestrator 健康等待上限（300s/180s）。建议对冷启动服务单独设更长的健康等待或预热。
-3. **启动期环境一致性**：`DPS_BASE_URL`（OpenLLM 用）与 `OPENBASE_DPS_UPSTREAM_BASE`（OpenBase 用）语义不同，易漏配。建议在 `.env.shared-infra` 增加成对注释（本轮已补）并在编排脚本启动日志中打印实际生效值。
-4. **orchestrator 状态显示**：`status` 对"运行中但单次健康探测超时"的服务显示"不健康"，与本轮实测可用性不一致，建议区分"探活超时"与"服务不可用"。
+1. **共享基础设施时延——v1.4.0 已登记基线口径（P95 待环境恢复后重采）**：PG/Qdrant 跨网访问使 DPS 单请求约 13s、Memory 写入约 79s，代理等待预算与服务健康检查阈值需与实测对齐（v1.0.0 已将 Memory 预算调至 180s）。v1.4.0 在 §9.3 登记采样口径与既有实测样本；因 2026-11-07 12:12 实测共享 PG 建连 4.5s、OpenBase 登录 35s 超时（环境降载），P95 需在基础设施恢复后按 §9.3 口径重采。
+2. **冷启动耗时——v1.4.0 已闭合**：OpenMemory 冷启动 294s（HealthWait 已为 300s）；OpenLLM 冷启动实测 193s，原 HealthWait 180s 会在服务就绪前先报"启动超时"，已上调至 **300s**（`scripts/service-orchestrator.ps1`）。
+3. **启动期环境一致性——v1.4.0 已闭合**：`DPS_BASE_URL`（OpenLLM 用）与 `OPENBASE_DPS_UPSTREAM_BASE`（OpenBase 用）语义不同，易漏配；v1.0.0 已在 `.env.shared-infra` 补成对注释。v1.4.0 新增 `Write-EffectiveEnvSnapshot`，在 `start` 时向编排日志打印 10 个跨系统键的**实际生效值及来源**（进程环境 > `.env.shared-infra` > `OpenBase/.env`），未配置项输出 WARN。
+4. **orchestrator 状态显示——v1.4.0 已闭合**：`status` 原先对"运行中但单次健康探测超时"的服务统一显示"不健康"。v1.4.0 将探针细分为 `timeout`／`connect_refused`／`dns`／`http_<code>` 等原因并原样展示，且端口在监听时对单次超时按 10s 预算自动重试一次（命中显示"健康 ✅（重试后）"）；进程存在但端口未监听时显示"未启动（进程在，端口未监听）"。
 5. **OpenLLM 遗留测试模型（gpt-4）——v1.3.0 已跨仓闭环**：`gpt-4` 指向提供商 `DeepSeek2` 的 `model_name=E2E-Test`，DeepSeek 侧无此模型，处置前显式调用稳定 500。已在 OpenLLM 仓通过 `DELETE /api/v1/providers/models/{model_id}` 软删除（`status=inactive`，可经 `PUT` 回滚），公开模型列表 6→5 条，显式调用变为 404 `模型 'gpt-4' 不存在`。后续建议：E2E 走查脚本创建模型时统一使用可识别的临时前缀并在收尾阶段删除，避免再次沉淀为公开模型。
 
 ---
@@ -265,3 +268,18 @@
 | 生命周期闭环 | 创建→读取→更新→删除→删除后不可见 全链路均取得真实证据 |
 | 自环 | 代理上游地址指向自身端口，导致请求被自身鉴权拦截 |
 | 引用保护 | 存在下游引用（子模板/标注模板/标签血缘）时禁止删除 |
+
+### 9.3 时延基线登记（v1.4.0）
+
+**采样口径**：同一端点连续采样 ≥20 次（间隔 1s），取 P50／P95；采样时记录共享基础设施状态（PG 建连耗时、Redis RTT），环境降载时样本作废。
+
+**既有实测样本（2026-11-06 走查期，Dev／共享 PG＋Redis）**：
+
+| 链路 | 观测值 | 样本数 | 备注 |
+| --- | --- | --- | --- |
+| DPS 画像模板单请求 | ≈13s | 单样本 | 跨网 PG |
+| Memory `remember` | 78.9s | 单样本 | Qdrant ＋ PG 写入 |
+| OpenRAG 集合详情／检索 | <1s | 复跑 | — |
+| OpenBase 代理转发（健康时） | <1s | 复跑 | — |
+
+**v1.4.0 采样环境状态（2026-11-07 12:12）**：共享 PG 建连 **4.5s**（正常应 <50ms）、OpenBase 登录 **35s 超时**、OpenLLM／OpenMemory／DPS／OIDC 端口未监听（进程已退出）。据此判定当前为**降载环境**，不产出 P95 数值；待基础设施恢复后按上述口径重采并回填本表。
