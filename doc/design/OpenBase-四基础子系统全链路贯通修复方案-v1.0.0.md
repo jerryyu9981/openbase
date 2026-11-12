@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.5.0 |
+| **版本** | v1.6.0 |
 | **状态** | [Review] |
 | **适用范围** | OpenBase / OpenLLM / OpenMemory / OpenRAG / DPS |
 | **依据** | 《OpenBase-四基础子系统全链路贯通审计报告-v1.0.0》R1–R9 |
@@ -19,6 +19,7 @@
 | v1.3.0 | 2026-11-12 | 将入口守卫实现方案完整整合进本方案（§7.7.2 定稿、§7.7.5 任务清单、§7.7.6 验收矩阵、§7.7.7 实施状态）：确认三态默认 `auto`（生产自动 `enforce`）、MCP 静态 Key 改受信来源判定（G4）、生产出清 per-target 兜底（G5，`default_tenant_code: null` 清空）、agent 创建强制租户（G2）；同步更新批次、端到端验收矩阵与配置附录。原独立 Spec 已并入，不再单独维护 | 架构组 |
 | v1.4.0 | 2026-11-12 | 批次 1 实施记录：R5 入口守卫 T1–T6 完成（`tenant_guard` 三态、settings 配置与生产门禁、JWT/`sk-agent`/服务 Key/MCP 四通道、agent 创建租户解析、单测）；R4 后端记忆 PATCH 代理与前端编辑入口完成；R3 短期 `dps_calc_timeout`（默认 30s）与 504 可读提示完成。`ruff check openbase tests` 全通过 | 架构组 |
 | v1.5.0 | 2026-11-12 | 批次 2 实施记录：R8 OpenRAG 重试限流 + 门户代理 + 前端重试；R6 OpenMemory `GET /memories` 原生分页 + 门户直连（不支持回退 recall）；R1 DPS `PATCH /portrait/{id}` 深合并 + If-Match（复用既有 `version`）+ OpenLLM 合并回写与 409 重放；R3 长期 `portrait_calc_task` 任务表 + `calculate?async=true` 202/task_id 幂等 + 任务查询 + 门户默认异步与前端轮询 helper。规格见 `doc/design/批次2-全链路贯通修复/spec.md` | 架构组 |
+| v1.6.0 | 2026-11-12 | 批次 3 实施记录：R7 上下文裁剪四策略（`context_policy`/`context_meta`，默认行为不变）；R9 DPS `profile.external_id` 列 + 部分唯一索引 + `by-external` 端点、门户代理、OpenLLM 回写携带；R2 OpenLLM 知识库可开关代理 OpenRAG（`OPENLLM_KB_PROXY_ENABLED=false` 默认）、`kb_id_map`、迁移脚本与只读 410。规格/任务/偏差见 `doc/design/批次3-全链路贯通修复/` | 架构组 |
 
 ---
 
@@ -106,6 +107,14 @@ DPS `PUT /api/v2/portrait/{person_id}` 对 `business.attributes` 采用整体覆
 > 前端知识库管理页对 `FAILED/ERROR` 文档展示「重试」，429 提示冷却。
 
 ## R2 双知识库 → OpenRAG 唯一事实源
+
+> **[已实现 v1.6.0｜批次 3]** OpenLLM 新增 `OPENLLM_KB_PROXY_ENABLED=false` /
+> `OPENLLM_KB_READONLY=false` / `OPENLLM_KB_TIMEOUT=5.0`、`kb_id_map` 映射表、
+> `KbOpenRAGBridge`、OpenRAG 客户端集合/文档方法、知识库与文档路由代理分支
+> （`Deprecation`/`Sunset` 头、只读 410 `BIZ_KB_MIGRATED`、上游不可用 503）及
+> `backend/scripts/migrate_kb_to_openrag.py`（幂等 + dry-run + 对账，失败退出码 2）。
+> **偏差**：仓内文档路由无 `/text` 端点，上传按 UTF-8 文本提取后调用 OpenRAG 文本
+> 入库（非文本 422）；代理响应直接返回旧字段 `dict`（`id: str`）；OpenRAG 零改动。
 
 ### 决策
 
@@ -490,6 +499,14 @@ python -m pytest tests
 
 ## R9 画像 person_id 口径 → external_id 映射
 
+> **[已实现 v1.6.0｜批次 3]** DPS `profile.external_id` 列 + 部分唯一索引
+> `uq_profile_org_external`（PG/SQLite 幂等迁移），PUT/PATCH 顶层 `external_id`
+> 落列（同 org 冲突 409 `BIZ_EXTERNAL_ID_CONFLICT`），新增
+> `GET /api/v2/portrait/by-external/{external_id}`；门户新增
+> `GET /api/v1/dps-proxy/portraits/by-external/{external_id}`；OpenLLM 画像回写
+> 携带 `external_id`（subject_id → external_user_id → 不携带）。
+> **偏差**：允许仅 `external_id` 的更新请求（单独登记映射）。
+
 ### 方案
 
 1. DPS `profile` 表新增 `external_id VARCHAR(128)`，唯一索引 `(org_id, external_id)`（幂等迁移）。
@@ -511,6 +528,13 @@ python -m pytest tests
 ---
 
 ## R7 上下文裁剪策略 → 透传 + 回显
+
+> **[已实现 v1.6.0｜批次 3]** OpenLLM `build_history_ctx` 支持
+> `recent/head_tail/system_priority/summarize_old` 四策略与
+> `build_history_selection` 统计；网关 `context_policy` 校验（非法 4003）并在同步
+> `data.context_meta` / 流式 routing 事件回显；门户前置校验（400 `PARAM_INVALID`）
+> 并在上游缺失时补 `context_meta` 默认值。不传策略时与旧实现逐字一致。
+> 前端设置页展示延后至批次 4。
 
 ### 方案
 

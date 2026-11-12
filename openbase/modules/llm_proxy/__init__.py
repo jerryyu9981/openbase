@@ -96,6 +96,106 @@ def _select_llm_api_key(
     return default_key
 
 
+# R7（批次 3）：上下文裁剪策略白名单与预算上限（与 OpenLLM 网关同口径）
+CONTEXT_POLICY_STRATEGIES: tuple[str, ...] = (
+    "recent",
+    "head_tail",
+    "system_priority",
+    "summarize_old",
+)
+CONTEXT_POLICY_MAX_TOKENS_LIMIT = 200_000
+
+
+def _validate_context_policy(payload: dict[str, Any]) -> dict[str, Any] | None:
+    """校验 chat 请求体 ``context_policy``（R7）.
+
+    与 OpenLLM 网关同口径前置校验，避免非法参数发起上游调用：
+    非对象 / 未知 strategy / max_tokens 非正或超上限 / preserve_recent_n 为负
+    → 400 ``PARAM_INVALID``。
+
+    Args:
+        payload: chat 请求体（门户原样透传上游）。
+
+    Returns:
+        dict | None: 归一化后的策略（缺省为 None，表示调用方未指定）。
+    """
+    raw = payload.get("context_policy")
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise BaseError(
+            ErrorCode.PARAM_INVALID, "context_policy 必须是 JSON 对象"
+        )
+
+    strategy = str(raw.get("strategy") or "recent").strip().lower()
+    if strategy not in CONTEXT_POLICY_STRATEGIES:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            f"context_policy.strategy 不支持: {strategy}（可选 "
+            f"{'/'.join(CONTEXT_POLICY_STRATEGIES)}）",
+        )
+    policy: dict[str, Any] = {"strategy": strategy}
+
+    max_tokens = raw.get("max_tokens")
+    if max_tokens is not None:
+        if isinstance(max_tokens, bool) or not isinstance(max_tokens, int):
+            raise BaseError(
+                ErrorCode.PARAM_INVALID, "context_policy.max_tokens 必须是正整数"
+            )
+        if max_tokens <= 0 or max_tokens > CONTEXT_POLICY_MAX_TOKENS_LIMIT:
+            raise BaseError(
+                ErrorCode.PARAM_INVALID,
+                "context_policy.max_tokens 超出范围（1~"
+                f"{CONTEXT_POLICY_MAX_TOKENS_LIMIT}）",
+            )
+        policy["max_tokens"] = max_tokens
+
+    preserve_recent_n = raw.get("preserve_recent_n")
+    if preserve_recent_n is not None:
+        if isinstance(preserve_recent_n, bool) or not isinstance(
+            preserve_recent_n, int
+        ):
+            raise BaseError(
+                ErrorCode.PARAM_INVALID,
+                "context_policy.preserve_recent_n 必须是非负整数",
+            )
+        if preserve_recent_n < 0:
+            raise BaseError(
+                ErrorCode.PARAM_INVALID,
+                "context_policy.preserve_recent_n 不能为负数",
+            )
+        policy["preserve_recent_n"] = preserve_recent_n
+
+    return policy
+
+
+def _with_context_meta(
+    response: JSONResponse, policy: dict[str, Any] | None
+) -> JSONResponse:
+    """为 chat 响应补齐 ``context_meta``（R7 响应回显）.
+
+    上游（OpenLLM）已返回时原样保留；缺失时补门户默认值，供前端展示当前
+    裁剪策略（``applied=false`` 表示上游未提供统计）。
+    """
+    if response.status_code >= 400 or not response.body:
+        return response
+    try:
+        body = json.loads(response.body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return response
+    if not isinstance(body, dict):
+        return response
+    data = body.get("data")
+    if not isinstance(data, dict) or data.get("context_meta") is not None:
+        return response
+    data["context_meta"] = {
+        "strategy": (policy or {}).get("strategy", "recent"),
+        "applied": False,
+        "source": "openbase-default",
+    }
+    return JSONResponse(status_code=response.status_code, content=body)
+
+
 def _build_upstream_headers(request: Request, user: dict | None) -> dict[str, str]:
     """构造转发上游的请求头（租户级 API Key Bearer + 外部身份归属注入）.
 
@@ -397,12 +497,18 @@ async def llm_chat(
     request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
-    """对话（POST /openllm/v1/chat，非流式聚合端点）."""
-    return await _forward(
+    """对话（POST /openllm/v1/chat，非流式聚合端点）.
+
+    R7：请求体 ``context_policy`` 前置校验（与 OpenLLM 同口径），响应补齐
+    ``context_meta``（上游已提供时原样保留）。
+    """
+    policy = _validate_context_policy(payload)
+    response = await _forward(
         "POST", "/openllm/v1/chat", json_body=payload,
         headers=_build_upstream_headers(request, _user),
         request=request,
     )
+    return _with_context_meta(response, policy)
 
 
 @router.post("/chat/stream")
@@ -411,7 +517,12 @@ async def llm_chat_stream(
     request: Request,
     _user: dict = Depends(get_current_user),
 ) -> StreamingResponse:
-    """对话流式（POST /openllm/v1/chat/stream，SSE 逐事件透传）."""
+    """对话流式（POST /openllm/v1/chat/stream，SSE 逐事件透传）.
+
+    R7：``context_policy`` 前置校验；``context_meta`` 由上游随
+    ``event: routing`` 事件回显（SSE 不包装、不改写）。
+    """
+    _validate_context_policy(payload)
     return await _forward_sse(
         "/openllm/v1/chat/stream", payload,
         _build_upstream_headers(request, _user),

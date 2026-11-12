@@ -361,6 +361,25 @@ async def dps_portraits_list(
     )
 
 
+@router.get("/portraits/by-external/{external_id}")
+async def dps_portrait_by_external(
+    external_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """按外部身份标识查询画像（GET /api/v2/portrait/by-external/{external_id}，R9）.
+
+    静态段 ``by-external`` 必须先于 ``/portraits/{person_id}`` 注册，避免被动态段
+    捕获；上游 404 原样透传（不泄露存在性）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", f"/api/v2/portrait/by-external/{external_id}",
+        headers=headers,
+        request=request,
+    )
+
+
 @router.get("/portraits/{person_id}")
 async def dps_portrait_detail(
     person_id: str,

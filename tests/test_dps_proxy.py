@@ -855,3 +855,49 @@ def test_annotation_batch_review_forwarded(client: TestClient) -> None:
     assert call["method"] == "POST"
     assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/annotations/batch-review"
     assert call["json"] == body
+
+
+# ---------------------------------------------------------------------------
+# R9（批次 3）：画像 external_id 映射查询代理
+# ---------------------------------------------------------------------------
+
+
+def test_portrait_by_external_forwards_and_injects_identity(
+    client: TestClient,
+) -> None:
+    """by-external 静态段先于 ``/portraits/{person_id}``，且透传身份四头."""
+    token = _token_with_identity()
+    upstream = {"person_id": "p-1", "external_id": "ext-001", "attributes": {}}
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": upstream}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/portraits/by-external/ext-001",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == upstream
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "GET"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/by-external/ext-001"
+    # 身份四头透传（X-Org-ID 为兼容别名，值域 = tenant 语义）
+    assert call["headers"].get("X-Tenant-ID") == "tenant-001"
+    assert call["headers"].get("X-Org-ID") == "tenant-001"
+
+
+def test_portrait_by_external_404_passthrough(client: TestClient) -> None:
+    """上游 404 原样透传（不泄露存在性）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(404, {"code": 404, "message": "画像不存在", "data": None}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/portraits/by-external/ext-missing",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 404, resp.text
+    assert "画像不存在" in resp.text
