@@ -334,8 +334,17 @@ export const dpsApi = {
 
   /** 画像计算（POST /api/v1/dps-proxy/portraits/calculate） */
   async calculatePortrait(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const { data } = await http.post<{ code: number; data: Record<string, unknown> }>('/dps-proxy/portraits/calculate', payload)
-    return data.data
+    try {
+      const { data } = await http.post<{ code: number; data: Record<string, unknown> }>('/dps-proxy/portraits/calculate', payload)
+      return data.data
+    } catch (error) {
+      // R3：门户超时放宽到 30s；仍返回 504 时给出可读提示（计算可能已提交）
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status === 504) {
+        throw new Error('计算可能已提交，请在详情页刷新确认')
+      }
+      throw error
+    }
   },
 
   /** 标签分类（GET /api/v1/dps-proxy/tags/categories） */

@@ -130,13 +130,14 @@ def parse_proxy_code_map(raw: str | None) -> dict[str, dict[str, object]]:
          "targets": {"<target>": {"reserved_codes": [...], "default_tenant_code": "..."}}}
 
     语义：`targets.<t>` 的字段**按字段覆盖**内置登记基线；`default_tenant_code` 显式出现
-    即表示该目标进兜底（须非空且非保留码）。
+    即表示该目标进兜底（须非空且非保留码）；显式 ``null`` 表示**清除**该目标内置兜底
+    （生产门禁要求出清兜底时使用）。
 
     Args:
         raw: JSON 字符串；空/非法 → 返回空覆盖表（由调用方按 fail-closed 决定是否报错）。
 
     Returns:
-        {target: {"reserved_codes"?: frozenset[str], "default_tenant_code"?: str}}
+        {target: {"reserved_codes"?: frozenset[str], "default_tenant_code"?: str | None}}
 
     Raises:
         ValueError: JSON 非法、结构不符或字段类型错误（fail-fast，禁静默降级）。
@@ -167,9 +168,10 @@ def parse_proxy_code_map(raw: str | None) -> dict[str, dict[str, object]]:
             normalized["reserved_codes"] = frozenset(reserved)
         if "default_tenant_code" in entry:
             code = entry["default_tenant_code"]
-            if not isinstance(code, str):
+            if code is not None and not isinstance(code, str):
                 raise ValueError(
-                    f"OPENBASE_PROXY_CODE_MAP.targets.{target}.default_tenant_code 必须是字符串"
+                    f"OPENBASE_PROXY_CODE_MAP.targets.{target}.default_tenant_code "
+                    "必须是字符串或 null"
                 )
             normalized["default_tenant_code"] = code
         result[str(target)] = normalized
@@ -266,6 +268,35 @@ def validate_target_code_space(resolved: dict[str, dict[str, object]]) -> None:
                 f"目标 {target} 的 default_tenant_code {text!r} 命中其保留码 "
                 f"{sorted(reserved)}；请改用该目标可接受的码值"
             )
+
+
+ENTRY_TENANT_ENFORCE_MODES: frozenset[str] = frozenset({"off", "shadow", "enforce"})
+ENTRY_TENANT_ENFORCE_AUTO = "auto"
+
+
+def resolve_entry_tenant_enforce_mode(raw: str | None, env: str | None) -> str:
+    """解析入口租户守卫模式（纯函数，R5 §7.7）.
+
+    Args:
+        raw: 配置原值（空 → ``auto``）。
+        env: 运行环境；``production`` 时 ``auto`` 推导为 ``enforce``。
+
+    Returns:
+        ``off`` / ``shadow`` / ``enforce``。
+
+    Raises:
+        ValueError: 取值不在 ``auto/off/shadow/enforce`` 内（fail-fast）。
+    """
+    mode = (raw or "").strip().lower() or ENTRY_TENANT_ENFORCE_AUTO
+    if mode == ENTRY_TENANT_ENFORCE_AUTO:
+        return "enforce" if str(env or "").strip().lower() == "production" else "off"
+    if mode not in ENTRY_TENANT_ENFORCE_MODES:
+        raise ValueError(
+            "OPENBASE_ENTRY_TENANT_ENFORCE 取值非法（支持 auto/off/shadow/enforce）："
+            f"{raw!r}"
+        )
+    return mode
+
 
 # 已注册的可用模块（模块包目录中存在即注册）
 AVAILABLE_MODULES: tuple[str, ...] = (
@@ -474,6 +505,12 @@ class Settings(BaseSettings):
     #   由 `validate_production_login_tenant_policy` 在应用装配期做启动门禁。
     default_tenant_code: str = ""
     require_tenant_on_login: bool = False
+
+    # ---- 入口租户守卫（R5 §7.7，2026-11-12） ----
+    # off：不校验；shadow：缺失计数 + WARN 放行；enforce：缺失 → 403 AUTH_FORBIDDEN
+    # （detail.reason=tenant_unbound）；auto：production → enforce，其余 → off。
+    # 生产启动门禁（validate_production_login_tenant_policy）强制解析结果必须为 enforce。
+    entry_tenant_enforce: str = "auto"
 
     # ---- 数据库 ----
     db_url: str = _resolve_db_url()
@@ -733,6 +770,9 @@ class Settings(BaseSettings):
     # OPENBASE_DPS_UPSTREAM_BASE 环境变量显式覆盖，避免端口错配。
     dps_upstream_base: str = "http://127.0.0.1:8000"
     dps_upstream_timeout: float = 20.0
+    # R3 短期（§R3）：画像计算为长耗时聚合，门户单列超时（默认 30s），
+    # 避免与普通 DPS 转发共用 10s 导致 504。
+    dps_calc_timeout: float = 30.0
     # 上游健康探活（P0-3）：首次 dps-proxy 请求前及此后每 dps_health_interval 秒
     # 对 {dps_upstream_base}/health 探活一次；失败仅 WARN 降级提示不阻断转发。
     # 关闭（False）仅用于测试隔离或上游无 /health 的场景。
@@ -1109,6 +1149,16 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _validate_entry_tenant_enforce(self) -> Settings:
+        """入口租户守卫模式校验（fail-fast，R5 §7.7）.
+
+        Raises:
+            ValueError: 取值非法（仅支持 auto/off/shadow/enforce）。
+        """
+        resolve_entry_tenant_enforce_mode(self.entry_tenant_enforce, self.env)
+        return self
+
+    @model_validator(mode="after")
     def _validate_llm_api_keys_by_tenant(self) -> Settings:
         """租户级 OpenLLM API Key 映射校验（G7 方案 ①，fail-fast）.
 
@@ -1467,6 +1517,25 @@ def validate_production_login_tenant_policy(settings: Settings) -> None:
         raise RuntimeError(
             "生产环境禁止配置 OPENBASE_DEFAULT_TENANT_CODE（显式兜底会掩盖未绑定主体，"
             "破坏 fail-closed）；请移除该配置并完成用户租户绑定"
+        )
+    entry_mode = resolve_entry_tenant_enforce_mode(
+        settings.entry_tenant_enforce, settings.env
+    )
+    if entry_mode != "enforce":
+        raise RuntimeError(
+            "生产环境入口租户守卫必须为 enforce（OPENBASE_ENTRY_TENANT_ENFORCE；"
+            "默认 auto 在 production 下即 enforce），否则拒绝启动"
+        )
+    fallback_targets = sorted(
+        target
+        for target, entry in resolve_target_code_space(settings.proxy_code_map).items()
+        if str(entry.get("default_tenant_code") or "").strip()
+    )
+    if fallback_targets:
+        raise RuntimeError(
+            "生产环境禁止 per-target 出站租户兜底码（目标："
+            f"{', '.join(fallback_targets)}）；请在 OPENBASE_PROXY_CODE_MAP 中为这些目标"
+            '设置 "default_tenant_code": null 以清空内置兜底'
         )
 
 

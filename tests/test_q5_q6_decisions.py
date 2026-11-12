@@ -61,7 +61,15 @@ class TestQ5ProductionTenantGate:
         assert "OPENBASE_DEFAULT_TENANT_CODE" in str(exc_info.value)
 
     def test_production_passes_with_strict_policy(self):
-        settings = _prod_settings(require_tenant_on_login=True, default_tenant_code="")
+        settings = _prod_settings(
+            require_tenant_on_login=True,
+            default_tenant_code="",
+            # R5/G5（v1.3.0）：生产必须清空 per-target 内置兜底
+            proxy_code_map=(
+                '{"targets": {"rag": {"default_tenant_code": null},'
+                ' "memory": {"default_tenant_code": null}}}'
+            ),
+        )
         validate_production_login_tenant_policy(settings)  # 不抛错
 
 

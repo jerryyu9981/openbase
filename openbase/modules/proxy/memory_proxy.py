@@ -358,6 +358,62 @@ async def memory_detail(
     return response
 
 
+# R4（§R4）：记忆可编辑字段白名单——其余字段丢弃并留痕，避免越权改库内字段
+MEMORY_EDITABLE_FIELDS: frozenset[str] = frozenset(
+    {"content", "memory_type", "metadata", "owner", "allow_ownership_change"}
+)
+
+
+@router.patch("/memories/{memory_id}")
+async def memory_update(
+    memory_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """编辑记忆（PATCH /api/v1/memories/{id}，R4）.
+
+    仅透传白名单字段（``content``/``memory_type``/``metadata``/``owner``/
+    ``allow_ownership_change``）；其余字段丢弃并 WARN。owner 变更由上游按
+    ``allow_ownership_change`` 做二次校验（未授权返回 400
+    ``MEMORY_OWNERSHIP_CHANGE_FORBIDDEN``，跨租户返回 404，均原样透传）。
+    审计：结构化记录 ``memory.update``（字段名/主体/租户/request_id，不记内容）。
+    """
+    body: dict[str, Any] = {}
+    dropped: list[str] = []
+    for key, value in payload.items():
+        if key in MEMORY_EDITABLE_FIELDS:
+            body[key] = value
+        else:
+            dropped.append(key)
+    if dropped:
+        logger.warning(
+            "memory update dropped non-editable fields",
+            extra={"memory_id": memory_id, "fields": sorted(dropped)},
+        )
+    if not body:
+        raise BaseError(
+            ErrorCode.PARAM_INVALID,
+            "no editable field provided",
+            detail={"allowed": sorted(MEMORY_EDITABLE_FIELDS)},
+        )
+    logger.info(
+        "memory.update",
+        extra={
+            "memory_id": memory_id,
+            "fields": sorted(body),
+            "subject_id": _effective_subject_id(_user),
+            "tenant_code": _user.get("tenant_code"),
+            "request_id": getattr(request.state, "request_id", None),
+        },
+    )
+    return await _forward(
+        "PATCH", f"/api/v1/memories/{memory_id}",
+        json_body=body, headers=_build_upstream_headers(request, _user),
+        request=request,
+    )
+
+
 @router.get("/memories")
 async def memory_list(
     request: Request,

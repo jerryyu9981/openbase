@@ -348,11 +348,17 @@ async def create_agent(
 ) -> AgentCreated:
     """创建 agent 主体（默认 viewer）并签发首条 sk-agent-* 密钥（明文仅此一次）."""
     operator = _subject_id(user)
+    # R5/G2（§7.7）：创建入口强制归属租户；请求未指定时回退操作者租户。
+    from openbase.modules.identity.tenant_guard import ensure_agent_tenant_bound
+
+    tenant_id = ensure_agent_tenant_bound(
+        payload.tenant_id, operator_tenant_id=user.get("tenant_id")
+    )
     agent = await create_agent_subject(
         session,
         username=payload.username,
         display_name=payload.display_name,
-        tenant_id=payload.tenant_id,
+        tenant_id=tenant_id,
         role=payload.role,
         created_by=operator,
     )

@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import asyncio
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -39,6 +40,18 @@ def test_slow_aggregate_path_gets_wider_timeout() -> None:
     assert _timeout("openllm", "/api/v1/billing/v2/cost-analysis") == SLOW_PATH_TIMEOUT
     assert _timeout("openllm", "/api/v1/monitoring/usage") == SLOW_PATH_TIMEOUT
     assert _timeout("openllm", "/api/v1/models") == 10.0
+
+
+def test_dps_portrait_calculate_uses_configurable_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """R3：DPS 画像计算单列超时（settings.dps_calc_timeout），其余 DPS 路径不变."""
+    monkeypatch.setattr(
+        "openbase.modules.proxy.get_settings",
+        lambda: SimpleNamespace(dps_calc_timeout=42.0),
+    )
+    assert _timeout("dps", "/api/v1/portraits/calculate") == 42.0
+    assert _timeout("dps", "/api/v1/portraits/p1") == 10.0
 
 
 def test_get_retries_once_after_transport_error() -> None:

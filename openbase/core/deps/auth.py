@@ -323,6 +323,9 @@ async def get_current_user(
 
         principal = await resolve_agent_principal(session, token)
         _attach_audit_identity(request, principal)
+        from openbase.modules.identity.tenant_guard import ensure_tenant_bound
+
+        await ensure_tenant_bound(principal, request, channel="sk-agent")
         return principal
     payload = decode_access_token(token)
     if payload is None:
@@ -390,6 +393,9 @@ async def get_current_user(
         ),
     }
     _attach_audit_identity(request, user_context)
+    from openbase.modules.identity.tenant_guard import ensure_tenant_bound
+
+    await ensure_tenant_bound(user_context, request, channel="jwt")
     return user_context
 
 
@@ -630,5 +636,11 @@ async def get_proxy_identity(
     authorization = request.headers.get("Authorization", "")
     bearer = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""
     if x_api_key or (bearer and bearer.startswith("ob_k_")):
-        return await require_api_key(request=request, session=session)
+        identity = await require_api_key(request=request, session=session)
+        # R5 入口强制（§7.7）：服务 Key 通道同样要求可确定租户；JWT 分支由
+        # get_current_user 内部守卫，避免重复计数。
+        from openbase.modules.identity.tenant_guard import ensure_tenant_bound
+
+        await ensure_tenant_bound(identity, request, channel="service-key")
+        return identity
     return await get_current_user(request, session)

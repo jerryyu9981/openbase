@@ -88,6 +88,8 @@ SLOW_PATH_HINTS: tuple[str, ...] = (
     "/usage/summary",
 )
 SLOW_PATH_TIMEOUT = 30.0
+# R3 短期（§R3）：DPS 画像计算路径单列超时（settings.dps_calc_timeout，默认 30s）
+DPS_CALC_PATH_HINTS: tuple[str, ...] = ("/portraits/calculate",)
 _RETRYABLE_METHODS = frozenset({"GET", "HEAD"})
 RETRY_BACKOFF_SEC = 0.2
 
@@ -100,6 +102,8 @@ def _timeout(system: str, path: str = "") -> float:
     其余端点保持 10s，避免把故障拖成全站等待。
     """
     base = PROXY_SYSTEMS[system]["timeout"]
+    if system == "dps" and any(hint in path for hint in DPS_CALC_PATH_HINTS):
+        return max(base, get_settings().dps_calc_timeout)
     if any(hint in path for hint in SLOW_PATH_HINTS):
         return max(base, SLOW_PATH_TIMEOUT)
     return base

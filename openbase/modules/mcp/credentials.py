@@ -245,32 +245,45 @@ async def require_mcp_credential(request: Request) -> MCPCredential:
     全部不匹配 → 401。静态 Key 命中后按 ``OPENBASE_MCP_API_KEY_TOOLS`` 收窄工具
     （未配置映射则保持不限工具）。
 
+    R5/G4：静态 Key 的租户改由 ``get_current_tenant`` 解析——仅受信代理来源
+    （``X-Proxy-Source`` 白名单）携带的 ``X-Tenant-Id`` 才被采纳，客户端伪造头
+    不再成为跨租户读写入口。三分支统一构造后由入口守卫按三态校验（§7.7）。
+
     Raises:
-        BaseError: AUTH_UNAUTHORIZED（缺/无效凭证）；PERM_API_KEY_SCOPE（服务 Key 越权）。
+        BaseError: AUTH_UNAUTHORIZED（缺/无效凭证）；PERM_API_KEY_SCOPE（服务 Key 越权）；
+            AUTH_FORBIDDEN（``enforce`` 且主体无租户）。
     """
     from openbase.core.deps.auth import get_current_tenant
 
     provided = request.headers.get("X-API-Key", "")
-    if provided:
-        identifier = _match_static_key(provided)
-        if identifier is not None:
-            return MCPCredential(
-                subject="static",
-                credential_type=CREDENTIAL_TYPE_STATIC,
-                tenant_code=request.headers.get("X-Tenant-Id"),
-                tools=_static_key_tools(identifier),
-            )
+    identifier = _match_static_key(provided) if provided else None
+    if identifier is not None:
+        credential = MCPCredential(
+            subject="static",
+            credential_type=CREDENTIAL_TYPE_STATIC,
+            tenant_code=await get_current_tenant(request),
+            tools=_static_key_tools(identifier),
+        )
+    else:
+        authorization = request.headers.get("Authorization", "")
+        bearer = (
+            authorization.removeprefix("Bearer ").strip()
+            if authorization.startswith("Bearer ")
+            else ""
+        )
+        candidate = provided or bearer
+        if not candidate:
+            raise _unauthorized("missing_credential")
+        tenant_code = await get_current_tenant(request)
+        if candidate.startswith("ob_k_"):
+            credential = await _service_key_credential(candidate, tenant_code)
+        else:
+            credential = _jwt_credential(candidate, CREDENTIAL_TYPE_JWT)
 
-    authorization = request.headers.get("Authorization", "")
-    bearer = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""
-    candidate = provided or bearer
-    if not candidate:
-        raise _unauthorized("missing_credential")
+    from openbase.modules.identity.tenant_guard import ensure_tenant_bound
 
-    tenant_code = await get_current_tenant(request)
-    if candidate.startswith("ob_k_"):
-        return await _service_key_credential(candidate, tenant_code)
-    return _jwt_credential(candidate, CREDENTIAL_TYPE_JWT)
+    await ensure_tenant_bound(credential, request, channel="mcp")
+    return credential
 
 
 def _read_stdio_token() -> str:

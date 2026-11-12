@@ -430,3 +430,67 @@ def test_memory_proxy_graph_overview_passthrough(client: TestClient) -> None:
     assert call["method"] == "GET"
     assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v1/graph/overview")
     assert call["params"] == {"limit": 60}
+
+
+def test_memory_proxy_patch_whitelist_only(client: TestClient) -> None:
+    """R4：编辑记忆仅透传白名单字段（越权/未知字段丢弃）."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"memory_id": "m1", "content": "新内容", "status": "success"}),
+    ])
+    resp = client.patch(
+        "/api/v1/memory-proxy/memories/m1",
+        json={
+            "content": "新内容",
+            "owner": "2",
+            "tenant_id": "attacker-tenant",
+            "user_id": "999",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["content"] == "新内容"
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "PATCH"
+    assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v1/memories/m1")
+    assert call["json"] == {"content": "新内容", "owner": "2"}
+
+
+def test_memory_proxy_patch_without_editable_field_returns_400(
+    client: TestClient,
+) -> None:
+    """无任何白名单字段 → 400 PARAM_INVALID，不发起上游请求."""
+    token = _token(client)
+    resp = client.patch(
+        "/api/v1/memory-proxy/memories/m1",
+        json={"tenant_id": "attacker-tenant"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 400, resp.text
+    assert resp.json()["code"] == "PARAM_INVALID"
+    assert client.fake.request_calls == []  # type: ignore[attr-defined]
+
+
+def test_memory_proxy_patch_owner_forbidden_passthrough(
+    client: TestClient,
+) -> None:
+    """owner 变更未授权 → 上游 400 语义原样透传."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            400,
+            {
+                "detail": {
+                    "error": "MEMORY_OWNERSHIP_CHANGE_FORBIDDEN",
+                    "message": "allow_ownership_change required",
+                }
+            },
+        ),
+    ])
+    resp = client.patch(
+        "/api/v1/memory-proxy/memories/m1",
+        json={"owner": "2"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 400, resp.text
+    assert resp.json()["code"] == "MEMORY_OWNERSHIP_CHANGE_FORBIDDEN"
