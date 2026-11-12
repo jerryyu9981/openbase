@@ -451,6 +451,38 @@ def test_rag_proxy_document_delete(client: TestClient) -> None:
     assert resp.json()["data"]["deleted"] is True
 
 
+def test_rag_proxy_document_reindex(client: TestClient) -> None:
+    """R8：文档重建索引进代理到上游 reindex 路由."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 0, "message": "success", "data": {"id": "doc-1", "status": "PENDING"}}),
+    ])
+    resp = client.post(
+        "/api/v1/rag-proxy/collections/col-1/documents/doc-1/reindex",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "POST"
+    assert call["url"].endswith("/api/v1/collections/col-1/documents/doc-1/reindex")
+
+
+def test_rag_proxy_document_reindex_throttled_passthrough(client: TestClient) -> None:
+    """R8：上游 429 限流原样透传."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            429,
+            {"error": "BIZ_REINDEX_THROTTLED", "message": "重试过于频繁，请 60 秒后再试"},
+        ),
+    ])
+    resp = client.post(
+        "/api/v1/rag-proxy/collections/col-1/documents/doc-1/reindex",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 429, resp.text
+
+
 # ---------------------------------------------------------------------------
 # 查询族（AC-144-03-1/4）
 # ---------------------------------------------------------------------------

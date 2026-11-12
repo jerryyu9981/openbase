@@ -382,11 +382,33 @@ async def dps_portrait_calculate(
     request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
-    """画像计算（POST /api/v2/portrait/calculate，请求体透传上游契约）."""
+    """画像计算（POST /api/v2/portrait/calculate，请求体透传上游契约）.
+
+    R3 长期：默认注入 ``async=true``（受 ``dps_calc_async_default`` 控制），
+    上游返回 202 + task_id；调用方显式传 ``async`` 时以其为准。
+    """
     headers = _build_identity_headers(_user, request)
+    body = dict(payload)
+    if get_settings().dps_calc_async_default and "async" not in body:
+        body["async"] = True
     return await _forward(
         "POST", "/api/v2/portrait/calculate",
-        json_body=payload,
+        json_body=body,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/portraits/tasks/{task_id}")
+async def dps_portrait_calc_task(
+    task_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像异步计算任务查询（GET /api/v2/portrait/tasks/{task_id}，R3 长期）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", f"/api/v2/portrait/tasks/{task_id}",
         headers=headers,
         request=request,
     )
@@ -408,6 +430,31 @@ async def dps_portrait_update(
     headers = _build_identity_headers(_user, request)
     return await _forward(
         "PUT", f"/api/v2/portrait/{person_id}",
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.patch("/portraits/{person_id}")
+async def dps_portrait_patch(
+    person_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像增量更新（PATCH /api/v2/portrait/{person_id}，R1 深合并）.
+
+    与 PUT 整体覆盖不同，上游按 dict 递归 / list 去重追加 / 标量覆盖 /
+    null 删除合并 attributes；可选透传 ``If-Match: <version>`` 触发 409
+    ``BIZ_VERSION_CONFLICT``。
+    """
+    headers = _build_identity_headers(_user, request)
+    if_match = request.headers.get("If-Match")
+    if if_match:
+        headers = {**headers, "If-Match": if_match}
+    return await _forward(
+        "PATCH", f"/api/v2/portrait/{person_id}",
         json_body=payload,
         headers=headers,
         request=request,

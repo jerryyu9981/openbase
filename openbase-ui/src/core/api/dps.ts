@@ -20,6 +20,15 @@ export interface DpsPortrait {
   [key: string]: unknown
 }
 
+/** 画像异步计算任务（R3 长期） */
+export interface DpsPortraitCalcTask {
+  task_id: string
+  status: 'pending' | 'running' | 'succeeded' | 'failed' | string
+  result?: Record<string, unknown> | null
+  error?: string | null
+  [key: string]: unknown
+}
+
 export interface DpsTagCategory {
   id?: string
   name?: string
@@ -344,6 +353,31 @@ export const dpsApi = {
         throw new Error('计算可能已提交，请在详情页刷新确认')
       }
       throw error
+    }
+  },
+
+  /** 画像异步计算任务（R3 长期：GET /api/v1/dps-proxy/portraits/tasks/{task_id}） */
+  async getPortraitTask(taskId: string): Promise<DpsPortraitCalcTask> {
+    const { data } = await http.get<{ code: number; data: DpsPortraitCalcTask }>(
+      `/dps-proxy/portraits/tasks/${encodeURIComponent(taskId)}`,
+    )
+    return data.data
+  },
+
+  /** 轮询画像异步任务：2s 间隔、默认 60s 超时；failed/超时抛可读错误 */
+  async waitPortraitTask(
+    taskId: string,
+    options?: { intervalMs?: number; timeoutMs?: number },
+  ): Promise<DpsPortraitCalcTask> {
+    const intervalMs = options?.intervalMs ?? 2000
+    const timeoutMs = options?.timeoutMs ?? 60000
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      const task = await this.getPortraitTask(taskId)
+      if (task.status === 'succeeded') return task
+      if (task.status === 'failed') throw new Error(task.error || '画像计算失败')
+      if (Date.now() >= deadline) throw new Error('计算超时，请在详情页刷新确认')
+      await new Promise((resolve) => setTimeout(resolve, intervalMs))
     }
   },
 

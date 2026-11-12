@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.4.0 |
+| **版本** | v1.5.0 |
 | **状态** | [Review] |
 | **适用范围** | OpenBase / OpenLLM / OpenMemory / OpenRAG / DPS |
 | **依据** | 《OpenBase-四基础子系统全链路贯通审计报告-v1.0.0》R1–R9 |
@@ -18,6 +18,7 @@
 | v1.2.0 | 2026-11-12 | 裁定 R5 采用「OpenBase 入口强制」为主方案：复用 Q5 登录门禁，补齐 JWT/agent/service-key/MCP 四条通道的请求级守卫；出站三态降为观测与兜底清理；补充 5 项缺口、落地改动点与切换顺序 | 架构组 |
 | v1.3.0 | 2026-11-12 | 将入口守卫实现方案完整整合进本方案（§7.7.2 定稿、§7.7.5 任务清单、§7.7.6 验收矩阵、§7.7.7 实施状态）：确认三态默认 `auto`（生产自动 `enforce`）、MCP 静态 Key 改受信来源判定（G4）、生产出清 per-target 兜底（G5，`default_tenant_code: null` 清空）、agent 创建强制租户（G2）；同步更新批次、端到端验收矩阵与配置附录。原独立 Spec 已并入，不再单独维护 | 架构组 |
 | v1.4.0 | 2026-11-12 | 批次 1 实施记录：R5 入口守卫 T1–T6 完成（`tenant_guard` 三态、settings 配置与生产门禁、JWT/`sk-agent`/服务 Key/MCP 四通道、agent 创建租户解析、单测）；R4 后端记忆 PATCH 代理与前端编辑入口完成；R3 短期 `dps_calc_timeout`（默认 30s）与 504 可读提示完成。`ruff check openbase tests` 全通过 | 架构组 |
+| v1.5.0 | 2026-11-12 | 批次 2 实施记录：R8 OpenRAG 重试限流 + 门户代理 + 前端重试；R6 OpenMemory `GET /memories` 原生分页 + 门户直连（不支持回退 recall）；R1 DPS `PATCH /portrait/{id}` 深合并 + If-Match（复用既有 `version`）+ OpenLLM 合并回写与 409 重放；R3 长期 `portrait_calc_task` 任务表 + `calculate?async=true` 202/task_id 幂等 + 任务查询 + 门户默认异步与前端轮询 helper。规格见 `doc/design/批次2-全链路贯通修复/spec.md` | 架构组 |
 
 ---
 
@@ -46,6 +47,15 @@
 ---
 
 ## R1 画像回写覆盖 → 深合并 + 乐观锁
+
+> **[已实现 v1.5.0｜批次 2]** DPS 新增 `PATCH /api/v2/portrait/{person_id}`：
+> `business.attributes` 深合并（dict 递归 / list 去重追加 / 标量覆盖 / `null` 删除 /
+> `__delete__` 点分路径），可选 `If-Match` 校验既有 `profile.version`（不符 409
+> `BIZ_VERSION_CONFLICT`），结构化日志记 before/after 哈希与 diff_paths；响应附加
+> `attributes_version`。门户新增 `PATCH /api/v1/dps-proxy/portraits/{person_id}` 透传
+> `If-Match`；OpenLLM 回写默认 PATCH（`PROFILE_WRITEBACK_MERGE=true`），409 重放一次，
+> 仍冲突则标记 `writeback=conflict` 跳过、不阻塞对话。**偏差**：复用既有 `version`
+> 列，未新增 `attributes_version` 列（避免 DDL 迁移与双版本语义）。
 
 ### 根因
 
@@ -79,6 +89,21 @@ DPS `PUT /api/v2/portrait/{person_id}` 对 `business.attributes` 采用整体覆
 `PROFILE_WRITEBACK_MERGE=false` 即回退 PUT；DPS PATCH 路由可保留（无调用方即无影响）。
 
 ---
+
+## R6 `/memories` 列表原生分页
+
+> **[已实现 v1.5.0｜批次 2]** OpenMemory 新增 `GET /api/v1/memories`（`offset/limit/
+> memory_type/tag`，scope fail-closed，返回 `data.items/total`）；`RelationalStore`
+> 新增 `list_memories_paginated`（同过滤条件计数 + 稳定排序），`PersistentMemory` /
+> `MemoryService` 薄封装，上游无能力时抛 `NotImplementedError` → 501。门户
+> `memory_list` 优先直连原生分页，404/405/501 自动回退原 recall 适配路径，响应信封不变。
+
+## R8 索引失败重试
+
+> **[已实现 v1.5.0｜批次 2]** OpenRAG 既有 reindex 路由增加 60 秒冷却限流
+> （同租户同文档重复提交返回 429 `BIZ_REINDEX_THROTTLED`）；门户 `rag_proxy` 新增
+> `POST /collections/{cid}/documents/{did}/reindex` 代理并记录 `rag.document.reindex`；
+> 前端知识库管理页对 `FAILED/ERROR` 文档展示「重试」，429 提示冷却。
 
 ## R2 双知识库 → OpenRAG 唯一事实源
 
@@ -114,7 +139,16 @@ DPS `PUT /api/v2/portrait/{person_id}` 对 `business.attributes` 采用整体覆
 
 > **[已实现 v1.4.0｜短期]** 门户代理新增 `settings.dps_calc_timeout`（默认 30s），
 > `_timeout("dps", "/portraits/calculate")` 单列取值；前端 `calculatePortrait` 对 504
-> 返回可读提示「计算可能已提交，请在详情页刷新确认」。长期异步化（202 + task_id）仍待推进。
+> 返回可读提示「计算可能已提交，请在详情页刷新确认」。
+>
+> **[已实现 v1.5.0｜批次 2・长期]** DPS 新增任务表 `portrait_calc_task`（幂等键唯一索引）
+> 与 `POST /portrait/calculate?async=true` → 202 `{task_id,status}`；幂等键
+> `sha256(tenant:person:template:data_version)`，非 failed 任务复用；后台任务
+> `pending→running→succeeded|failed` 落状态与 `result_json`；新增
+> `GET /portrait/tasks/{task_id}` 与 `GET /portrait/{person_id}/tasks?status=`。
+> 门户 `dps_calc_async_default=true` 时默认注入 `async:true`，新增
+> `GET /portraits/tasks/{task_id}` 代理；前端 `dps.ts` 提供 `getPortraitTask` /
+> `waitPortraitTask`（2s 轮询 / 60s 超时）。**偏差**：`result_json` 用 TEXT（PG/SQLite 通用）。
 
 ### 方案
 

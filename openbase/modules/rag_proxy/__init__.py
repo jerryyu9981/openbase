@@ -542,6 +542,34 @@ async def rag_document_detail(
     )
 
 
+@router.post("/collections/{collection_id}/documents/{document_id}/reindex")
+async def rag_document_reindex(
+    collection_id: str,
+    document_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """重建索引（POST /collections/{cid}/documents/{did}/reindex，R8）.
+
+    上游把文档状态回置 PENDING 并复用既有索引任务；doc_id 不变。
+    上游 429 `BIZ_REINDEX_THROTTLED` 原样透传（同文档 60 秒冷却）。
+    """
+    logger.info(
+        "rag.document.reindex",
+        extra={
+            "collection_id": collection_id,
+            "document_id": document_id,
+            "tenant_code": _user.get("tenant_code"),
+            "subject_id": _user.get("user_id") or _user.get("sub"),
+            "request_id": getattr(request.state, "request_id", None),
+        },
+    )
+    return await _forward(
+        "POST", f"/api/v1/collections/{collection_id}/documents/{document_id}/reindex",
+        request=request, user=_user,
+    )
+
+
 @router.delete("/collections/{collection_id}/documents/{document_id}")
 async def rag_document_delete(
     collection_id: str,

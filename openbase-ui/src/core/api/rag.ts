@@ -116,6 +116,14 @@ export const ragApi = {
     return data.data
   },
 
+  /** 重建索引（POST /collections/{cid}/documents/{did}/reindex，R8；同文档 60 秒限流 429） */
+  async retryDocument(collectionId: string, documentId: string): Promise<unknown> {
+    const { data } = await http.post<{ code: number; data: unknown }>(
+      `/rag-proxy/collections/${encodeURIComponent(collectionId)}/documents/${encodeURIComponent(documentId)}/reindex`,
+    )
+    return data.data
+  },
+
   /** RAG 查询（POST /collections/{cid}/query，检索 + 生成） */
   async query(collectionId: string, payload: { query: string; top_k?: number; filters?: Record<string, unknown> }): Promise<RagQueryResult> {
     const { data } = await http.post<{ code: number; data: RagQueryResult }>(

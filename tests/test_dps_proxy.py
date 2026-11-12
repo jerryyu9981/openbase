@@ -116,6 +116,62 @@ def _token_with_identity() -> str:
 # ---------------------------------------------------------------------------
 
 
+def test_dps_calculate_defaults_async(client: TestClient) -> None:
+    """R3 长期：门户默认向 payload 注入 async=true."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(202, {"code": 202, "message": "accepted", "data": {"task_id": "t1", "status": "pending"}}),
+    ])
+    resp = client.post(
+        "/api/v1/dps-proxy/portraits/calculate",
+        json={"person_id": "p1"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 202, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["json"]["async"] is True
+
+
+def test_dps_calculate_explicit_async_false_not_overridden(client: TestClient) -> None:
+    """调用方显式 async=false 时不被门户覆盖."""
+    token = _token_with_identity()
+    client.fake.set_responses([FakeResponse(200, {"code": 200, "data": {}})])  # type: ignore[attr-defined]
+    client.post(
+        "/api/v1/dps-proxy/portraits/calculate",
+        json={"person_id": "p1", "async": False},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert client.fake.request_calls[0]["json"]["async"] is False  # type: ignore[attr-defined]
+
+
+def test_dps_calc_task_proxy_forwards(client: TestClient) -> None:
+    """R3 长期：任务查询代理到 /api/v2/portrait/tasks/{id}."""
+    token = _token_with_identity()
+    client.fake.set_responses([FakeResponse(200, {"code": 200, "data": {"task_id": "t1", "status": "running"}})])  # type: ignore[attr-defined]
+    resp = client.get(
+        "/api/v1/dps-proxy/portraits/tasks/t1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert client.fake.request_calls[0]["url"].endswith("/api/v2/portrait/tasks/t1")  # type: ignore[attr-defined]
+
+
+def test_dps_portrait_patch_proxy_passes_if_match(client: TestClient) -> None:
+    """R1：PATCH 代理透传 If-Match 与请求体."""
+    token = _token_with_identity()
+    client.fake.set_responses([FakeResponse(200, {"code": 200, "data": {"attributes": {"tags": ["A", "B"]}}})])  # type: ignore[attr-defined]
+    resp = client.patch(
+        "/api/v1/dps-proxy/portraits/p1",
+        json={"business": {"attributes": {"tags": ["B"]}}},
+        headers={"Authorization": f"Bearer {token}", "If-Match": "3"},
+    )
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "PATCH"
+    assert call["headers"]["If-Match"] == "3"
+    assert call["json"]["business"]["attributes"]["tags"] == ["B"]
+
+
 def test_dps_proxy_no_token_returns_401(client: TestClient) -> None:
     """无认证头 → 401（AC-145-02-1）."""
     resp = client.get("/api/v1/dps-proxy/portraits")
@@ -258,7 +314,8 @@ def test_dps_proxy_portrait_calculate(client: TestClient) -> None:
     assert resp.json()["data"]["task_id"] == "t1"
     call = client.fake.request_calls[0]  # type: ignore[attr-defined]
     assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/calculate")
-    assert call["json"] == payload
+    # R3 长期：门户默认注入 async=true（调用方未显式指定时）
+    assert call["json"] == {**payload, "async": True}
 
 
 def test_dps_proxy_portrait_update(client: TestClient) -> None:

@@ -184,6 +184,36 @@ def test_memory_proxy_list_pagination_and_normalize(client: TestClient) -> None:
     assert resp.json()["data"]["total"] == 2
 
 
+def test_memory_proxy_list_native_pagination(client: TestClient) -> None:
+    """R6：上游原生分页可用时直连，total 取自上游（不再 recall 适配）."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {
+            "code": 0,
+            "message": "success",
+            "data": {
+                "items": [{"id": "m1", "memory_id": "m1", "content": "a", "tags": ["t1"]}],
+                "total": 42,
+                "offset": 0,
+                "limit": 20,
+            },
+        }),
+    ])
+    resp = client.get(
+        "/api/v1/memory-proxy/memories?page=1&page_size=20",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    assert data["total"] == 42
+    assert data["items"][0]["memory_id"] == "m1"
+
+    calls = client.fake.request_calls  # type: ignore[attr-defined]
+    assert len(calls) == 1
+    assert calls[0]["method"] == "GET"
+    assert "/api/v1/memories?offset=0&limit=20" in calls[0]["url"]
+
+
 def test_memory_proxy_list_upstream_error_adapted(client: TestClient) -> None:
     """列表上游 4xx → 统一错误响应（不落 items）."""
     token = _token(client)

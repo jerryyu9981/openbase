@@ -773,6 +773,9 @@ class Settings(BaseSettings):
     # R3 短期（§R3）：画像计算为长耗时聚合，门户单列超时（默认 30s），
     # 避免与普通 DPS 转发共用 10s 导致 504。
     dps_calc_timeout: float = 30.0
+    # R3 长期：门户画像计算默认以异步任务提交（PUT body 注入 async=true），
+    # 前端通过 /portraits/tasks/{task_id} 轮询；False 时保持同步调用。
+    dps_calc_async_default: bool = True
     # 上游健康探活（P0-3）：首次 dps-proxy 请求前及此后每 dps_health_interval 秒
     # 对 {dps_upstream_base}/health 探活一次；失败仅 WARN 降级提示不阻断转发。
     # 关闭（False）仅用于测试隔离或上游无 /health 的场景。

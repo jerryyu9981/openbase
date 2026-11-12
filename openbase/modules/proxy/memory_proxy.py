@@ -15,6 +15,7 @@ import json
 import logging
 import time
 from typing import Any
+from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
@@ -425,11 +426,54 @@ async def memory_list(
 ) -> JSONResponse:
     """记忆列表（分页/类型/标签过滤）.
 
-    OpenMemory v6.8.0 无原生持久化列表端点，以 recall 召回适配：
-    按当前用户召回全部持久记忆（auto 策略 + 泛化查询），
-    proxy 侧完成类型/标签过滤与分页。
+    R6：优先调用 OpenMemory 原生 ``GET /api/v1/memories``（offset/limit/
+    memory_type/tag，返回稳定 total）；上游 404/405/501 等不支持场景回退
+    recall 召回 + proxy 侧过滤分页（兼容旧版本）。
     """
     user_id = _effective_subject_id(_user)
+    headers = _build_upstream_headers(request, _user)
+
+    # R6：优先走上游原生分页；上游不支持时回退 recall 适配（兼容旧版本）
+    native_query: dict[str, Any] = {
+        "offset": (page - 1) * page_size,
+        "limit": page_size,
+    }
+    if memory_type:
+        native_query["memory_type"] = memory_type
+    if tag:
+        native_query["tag"] = tag
+    native_status, native_body = await _forward_raw(
+        "GET", f"/api/v1/memories?{urlencode(native_query)}",
+        headers=headers, request=request,
+    )
+    if native_status == 200:
+        # _adapt_response 对 2xx 会把上游完整响应体包进 data，这里兼容两种层级
+        outer = native_body.get("data")
+        native_data = None
+        if isinstance(outer, dict):
+            if "items" in outer:
+                native_data = outer
+            elif isinstance(outer.get("data"), dict) and "items" in outer["data"]:
+                native_data = outer["data"]
+        if native_data is not None:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "code": native_body.get("code", 0),
+                    "message": native_body.get("message", "success"),
+                    "data": {
+                        "items": native_data.get("items") or [],
+                        "total": native_data.get("total", 0),
+                        "page": page,
+                        "page_size": page_size,
+                    },
+                    "timestamp": _now_iso(),
+                },
+            )
+    elif native_status not in (404, 405, 501):
+        # 上游其他错误（鉴权/限流/5xx）原样返回，不再二次召回
+        return JSONResponse(status_code=native_status, content=native_body)
+
     payload: dict[str, Any] = {
         "query": "全部记忆",
         "user_id": user_id,
@@ -438,7 +482,7 @@ async def memory_list(
     }
     status_code, body = await _forward_raw(
         "POST", "/api/v1/recall",
-        json_body=payload, headers=_build_upstream_headers(request, _user),
+        json_body=payload, headers=headers,
         request=request,
     )
     if status_code >= 400:

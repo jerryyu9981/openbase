@@ -154,8 +154,18 @@
           <el-table-column prop="chunk_count" label="分块" width="80">
             <template #default="{ row }">{{ row.chunk_count ?? 0 }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="90">
+          <el-table-column label="操作" width="140">
             <template #default="{ row }">
+              <el-button
+                v-if="isDocFailed(row.status)"
+                link
+                type="primary"
+                size="small"
+                data-test="rag-doc-retry"
+                @click="retryDocument(row)"
+              >
+                重试
+              </el-button>
               <el-popconfirm title="确认删除该文档？" @confirm="removeDocument(row)">
                 <template #reference>
                   <el-button link type="danger" size="small">删除</el-button>
@@ -406,6 +416,22 @@ async function pollDocumentStatus(documentId: string) {
   }
   uploadingDoc.value = null
   ElMessage.warning('文档处理超时，请稍后在文档列表中刷新查看')
+}
+
+function isDocFailed(status?: string) {
+  return ['FAILED', 'ERROR'].includes(String(status ?? '').toUpperCase())
+}
+
+async function retryDocument(row: RagDocument) {
+  if (!currentDocCollectionId.value) return
+  try {
+    await ragApi.retryDocument(currentDocCollectionId.value, row.id)
+    ElMessage.success('重建索引已提交')
+    await pollDocumentStatus(row.id)
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 429) ElMessage.warning('重试过于频繁，请 60 秒后再试')
+  }
 }
 
 async function removeDocument(row: RagDocument) {
