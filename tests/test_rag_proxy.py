@@ -236,6 +236,77 @@ def test_rag_proxy_collection_delete_success(client: TestClient) -> None:
     assert resp.json()["data"]["deleted"] is True
 
 
+def test_rag_proxy_collection_update_success(client: TestClient) -> None:
+    """更新知识库 → PUT 转发，未显式字段不提交（批次 5 AC-KB-7）."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            200,
+            {
+                "code": 0,
+                "message": "success",
+                "data": {"id": "col-1", "name": "产品知识库", "chunk_size": 1024},
+            },
+        ),
+    ])
+    resp = client.put(
+        "/api/v1/rag-proxy/collections/col-1",
+        json={"name": "产品知识库", "chunk_size": 1024},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["chunk_size"] == 1024
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "PUT"
+    assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v1/collections/col-1")
+    # 未提交字段（chunk_overlap 等）不得出现，避免被上游视为显式修改
+    assert call["json"] == {"name": "产品知识库", "chunk_size": 1024}
+    assert call["params"] is None
+
+
+def test_rag_proxy_collection_update_rebuild_passes_query(client: TestClient) -> None:
+    """rebuild=true → 上游收到 ?rebuild=true，提示全量重建存量文档（批次 5 AC-KB-7）."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 0, "message": "success", "data": {"id": "col-1"}}),
+    ])
+    resp = client.put(
+        "/api/v1/rag-proxy/collections/col-1?rebuild=true",
+        json={"chunk_strategy": "semantic"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["params"] == {"rebuild": "true"}
+    assert call["json"] == {"chunk_strategy": "semantic"}
+
+
+def test_rag_proxy_collection_update_conflict_passthrough(client: TestClient) -> None:
+    """上游 409（名称冲突）→ 状态码与错误码原样透传，供前端提示（批次 5 AC-KB-7）."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            409,
+            {
+                "detail": {
+                    "error": "COLLECTION_NAME_CONFLICT",
+                    "code": 409,
+                    "message": "知识库名称已存在: 产品知识库",
+                }
+            },
+        ),
+    ])
+    resp = client.put(
+        "/api/v1/rag-proxy/collections/col-1",
+        json={"name": "产品知识库"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 409, resp.text
+    body = resp.json()
+    assert body["code"] == "COLLECTION_NAME_CONFLICT" or body["code"] == 409
+    assert "已存在" in body["message"]
+
+
 # ---------------------------------------------------------------------------
 # 错误归一化（AC-144-03-3）
 # ---------------------------------------------------------------------------

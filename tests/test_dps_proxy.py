@@ -117,7 +117,7 @@ def _token_with_identity() -> str:
 
 
 def test_dps_calculate_defaults_async(client: TestClient) -> None:
-    """R3 长期：门户默认向 payload 注入 async=true."""
+    """R3 长期：门户默认以 query ``?async=true`` 提交（上游只读 query，批次 5）."""
     token = _token_with_identity()
     client.fake.set_responses([  # type: ignore[attr-defined]
         FakeResponse(202, {"code": 202, "message": "accepted", "data": {"task_id": "t1", "status": "pending"}}),
@@ -129,19 +129,37 @@ def test_dps_calculate_defaults_async(client: TestClient) -> None:
     )
     assert resp.status_code == 202, resp.text
     call = client.fake.request_calls[0]  # type: ignore[attr-defined]
-    assert call["json"]["async"] is True
+    assert call["params"] == {"async": "true"}
+    # async 不得再落入 body（上游忽略 body.async，会造成同步计算的误判）
+    assert "async" not in call["json"]
 
 
 def test_dps_calculate_explicit_async_false_not_overridden(client: TestClient) -> None:
-    """调用方显式 async=false 时不被门户覆盖."""
+    """调用方显式 ?async=false 时不被门户默认值覆盖."""
+    token = _token_with_identity()
+    client.fake.set_responses([FakeResponse(200, {"code": 200, "data": {}})])  # type: ignore[attr-defined]
+    client.post(
+        "/api/v1/dps-proxy/portraits/calculate?async=false",
+        json={"person_id": "p1"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["params"] == {"async": "false"}
+    assert "async" not in call["json"]
+
+
+def test_dps_calculate_body_async_compat_removed(client: TestClient) -> None:
+    """历史调用方把 async 放 body → 剔除后按 query 转发（避免上游静默忽略）."""
     token = _token_with_identity()
     client.fake.set_responses([FakeResponse(200, {"code": 200, "data": {}})])  # type: ignore[attr-defined]
     client.post(
         "/api/v1/dps-proxy/portraits/calculate",
-        json={"person_id": "p1", "async": False},
+        json={"person_id": "p1", "async": True},
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert client.fake.request_calls[0]["json"]["async"] is False  # type: ignore[attr-defined]
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert "async" not in call["json"]
+    assert call["params"] == {"async": "true"}
 
 
 def test_dps_calc_task_proxy_forwards(client: TestClient) -> None:
@@ -314,8 +332,9 @@ def test_dps_proxy_portrait_calculate(client: TestClient) -> None:
     assert resp.json()["data"]["task_id"] == "t1"
     call = client.fake.request_calls[0]  # type: ignore[attr-defined]
     assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/calculate")
-    # R3 长期：门户默认注入 async=true（调用方未显式指定时）
-    assert call["json"] == {**payload, "async": True}
+    # R3 长期：默认 async 走 query（调用方未显式指定时），body 保持原样
+    assert call["json"] == payload
+    assert call["params"] == {"async": "true"}
 
 
 def test_dps_proxy_portrait_update(client: TestClient) -> None:

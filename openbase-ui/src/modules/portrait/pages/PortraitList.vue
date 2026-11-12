@@ -47,6 +47,8 @@
       <div class="page-toolbar">
         <el-input v-model="keyword" placeholder="搜索画像（姓名/ID 模糊）" clearable style="width: 240px" data-test="dps-search" />
         <el-button type="primary" data-test="dps-create" @click="$router.push('/portrait/search')">画像查询</el-button>
+        <el-button data-test="portrait-calculate-open" @click="openCalculate">计算画像</el-button>
+        <el-button data-test="portrait-external-open" @click="openExternal">按外部 ID 查询</el-button>
         <el-button :loading="loading" @click="loadData">刷新</el-button>
       </div>
       <el-alert
@@ -105,6 +107,33 @@
           @current-change="loadData"
         />
       </div>
+
+      <el-dialog v-model="calculateVisible" title="计算画像" width="460px" data-test="portrait-calculate-dialog">
+        <el-form label-width="110px">
+          <el-form-item label="画像主体 ID" required>
+            <el-input v-model="calcForm.personId" placeholder="person_id" data-test="calc-person-id" />
+          </el-form-item>
+          <el-form-item label="画像模板">
+            <el-input v-model="calcForm.templateCode" placeholder="可选，留空使用默认模板" data-test="calc-template-code" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="calculateVisible = false">取消</el-button>
+          <el-button type="primary" :loading="calculating" data-test="calc-submit" @click="submitCalculate">开始计算</el-button>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="externalVisible" title="按外部 ID 查询画像" width="460px" data-test="portrait-external-dialog">
+        <el-form label-width="110px">
+          <el-form-item label="外部身份标识" required>
+            <el-input v-model="externalId" placeholder="external_id" data-test="external-id" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="externalVisible = false">取消</el-button>
+          <el-button type="primary" :loading="externalLoading" data-test="external-submit" @click="submitExternalQuery">查询</el-button>
+        </template>
+      </el-dialog>
     </template>
   </PageContainer>
 </template>
@@ -112,9 +141,12 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
 
+const router = useRouter()
 const portraits = ref<DpsPortrait[]>([])
 const overview = ref<Record<string, unknown>>({})
 const health = ref<{ status?: string; version?: string }>({})
@@ -124,6 +156,14 @@ const pageSize = 20
 const total = ref(0)
 const loading = ref(false)
 const presentation = ref<ErrorPresentation | null>(null)
+/** 计算画像对话框（批次 5：POST /portraits/calculate，默认异步任务） */
+const calculateVisible = ref(false)
+const calculating = ref(false)
+const calcForm = ref({ personId: '', templateCode: '' })
+/** 按外部 ID 查询对话框（批次 5：GET /portraits/by-external/{id}） */
+const externalVisible = ref(false)
+const externalLoading = ref(false)
+const externalId = ref('')
 
 const isForbidden = computed(() => presentation.value?.pageLevel === true)
 const isNotFound = computed(() => presentation.value?.kind === 'not-found')
@@ -188,6 +228,69 @@ async function loadOverview() {
     overview.value = await dpsApi.getReportsOverview()
   } catch {
     overview.value = {}
+  }
+}
+
+function openCalculate() {
+  calcForm.value = { personId: '', templateCode: '' }
+  calculateVisible.value = true
+}
+
+/** 发起画像计算：返回 task_id 时轮询至终态，同步返回时直接刷新列表 */
+async function submitCalculate() {
+  const personId = calcForm.value.personId.trim()
+  if (!personId) {
+    ElMessage.warning('请输入画像主体 ID')
+    return
+  }
+  calculating.value = true
+  try {
+    const payload: Record<string, unknown> = { person_id: personId }
+    const templateCode = calcForm.value.templateCode.trim()
+    if (templateCode) payload.template_code = templateCode
+    const result = await dpsApi.calculatePortrait(payload)
+    const taskId = String(result.task_id || '')
+    if (taskId) {
+      ElMessage.info('计算任务已提交，正在等待结果…')
+      await dpsApi.waitPortraitTask(taskId)
+    }
+    ElMessage.success('画像计算完成')
+    calculateVisible.value = false
+    await loadData()
+  } catch (err) {
+    ElMessage.error((err as Error)?.message || '画像计算失败，请稍后重试')
+  } finally {
+    calculating.value = false
+  }
+}
+
+function openExternal() {
+  externalId.value = ''
+  externalVisible.value = true
+}
+
+/** 按外部身份标识定位画像：命中后跳转详情，404 提示未找到 */
+async function submitExternalQuery() {
+  const external = externalId.value.trim()
+  if (!external) {
+    ElMessage.warning('请输入外部身份标识')
+    return
+  }
+  externalLoading.value = true
+  try {
+    const portrait = await dpsApi.getPortraitByExternal(external)
+    const personId = String(portrait.person_id || portrait.id || '')
+    if (!personId) {
+      ElMessage.warning('已命中画像，但响应缺少 person_id')
+      return
+    }
+    externalVisible.value = false
+    await router.push(`/portrait/${encodeURIComponent(personId)}`)
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    ElMessage.error(status === 404 ? '未找到该外部标识对应的画像' : '查询失败，请稍后重试')
+  } finally {
+    externalLoading.value = false
   }
 }
 

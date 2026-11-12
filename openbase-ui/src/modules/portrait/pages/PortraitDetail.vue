@@ -41,13 +41,28 @@
       <div v-loading="loading">
         <el-row :gutter="16">
           <el-col :xs="24" :lg="12">
-            <el-card header="基本信息" class="mb-16">
+            <el-card class="mb-16">
+              <template #header>
+                <div class="card-head">
+                  <span>基本信息</span>
+                  <el-button
+                    v-if="profile && !loading"
+                    link
+                    type="primary"
+                    data-test="portrait-edit-open"
+                    @click="openEdit"
+                  >
+                    编辑属性
+                  </el-button>
+                </div>
+              </template>
               <el-descriptions v-if="profile" :column="1" border>
                 <el-descriptions-item label="画像名称">{{ profile.name || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="画像 ID">{{ profile.person_id || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="风险等级">
                   <el-tag :type="riskType(profile)" size="small">{{ riskLabel(profile) }}</el-tag>
                 </el-descriptions-item>
+                <el-descriptions-item label="画像版本">{{ profile.version ?? '-' }}</el-descriptions-item>
                 <el-descriptions-item label="更新时间">{{ formatTime(profile.updated_at) }}</el-descriptions-item>
               </el-descriptions>
               <el-empty v-else-if="!loading" description="当前租户暂无数据（如为权限问题请联系管理员）" :image-size="50" />
@@ -71,6 +86,27 @@
             </el-card>
           </el-col>
         </el-row>
+
+        <el-drawer v-model="editVisible" title="编辑画像属性" size="480px" data-test="portrait-edit-drawer">
+          <el-alert
+            title="增量更新（PATCH）：对象递归合并、数组去重追加、标量覆盖、null 删除键"
+            type="info"
+            show-icon
+            :closable="false"
+            class="mb-16"
+          />
+          <el-input
+            v-model="editText"
+            type="textarea"
+            :rows="16"
+            spellcheck="false"
+            data-test="portrait-edit-json"
+          />
+          <template #footer>
+            <el-button @click="editVisible = false">取消</el-button>
+            <el-button type="primary" :loading="saving" data-test="portrait-edit-save" @click="saveEdit">保存</el-button>
+          </template>
+        </el-drawer>
       </div>
     </template>
   </PageContainer>
@@ -80,6 +116,7 @@
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
 
@@ -88,6 +125,10 @@ const personId = String(route.params.id || '')
 const profile = ref<DpsPortrait | null>(null)
 const loading = ref(false)
 const presentation = ref<ErrorPresentation | null>(null)
+/** 属性编辑抽屉（批次 5：PATCH 深合并 + If-Match 乐观锁） */
+const editVisible = ref(false)
+const editText = ref('')
+const saving = ref(false)
 
 const isForbidden = computed(() => presentation.value?.pageLevel === true)
 const isNotFound = computed(() => presentation.value?.kind === 'not-found')
@@ -131,6 +172,51 @@ function formatTime(v?: string) {
   return Number.isNaN(d.getTime()) ? v : d.toLocaleString('zh-CN', { hour12: false })
 }
 
+function openEdit() {
+  const attributes = (profile.value?.attributes || {}) as Record<string, unknown>
+  editText.value = JSON.stringify(attributes, null, 2)
+  editVisible.value = true
+}
+
+/** 提交属性增量更新：JSON 校验 → PATCH（携带 If-Match version）→ 刷新 */
+async function saveEdit() {
+  if (!profile.value) return
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(editText.value || '{}')
+  } catch {
+    ElMessage.error('属性必须是合法 JSON')
+    return
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    ElMessage.error('属性必须是 JSON 对象')
+    return
+  }
+  saving.value = true
+  try {
+    const version = Number(profile.value.version)
+    await dpsApi.updatePortrait(
+      personId,
+      { business: { attributes: parsed } },
+      Number.isFinite(version) ? version : undefined,
+    )
+    ElMessage.success('画像属性已更新')
+    editVisible.value = false
+    await loadData()
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 409) {
+      ElMessage.warning('版本已变更，已刷新最新数据')
+      editVisible.value = false
+      await loadData()
+    } else {
+      ElMessage.error('保存失败，请检查属性内容后重试')
+    }
+  } finally {
+    saving.value = false
+  }
+}
+
 async function loadData() {
   if (!personId) {
     presentation.value = {
@@ -162,6 +248,7 @@ onMounted(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
+.card-head { display: flex; justify-content: space-between; align-items: center; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag-item { margin-right: 4px; }
 .text-muted { color: #9ca3af; }

@@ -341,6 +341,34 @@ export const dpsApi = {
     return data.data
   },
 
+  /** 按外部身份标识查询画像（GET /api/v1/dps-proxy/portraits/by-external/{external_id}，批次 5） */
+  async getPortraitByExternal(externalId: string): Promise<DpsPortrait> {
+    const { data } = await http.get<{ code: number; data: DpsPortrait }>(
+      `/dps-proxy/portraits/by-external/${encodeURIComponent(externalId)}`,
+    )
+    return data.data
+  },
+
+  /**
+   * 画像增量更新（PATCH /api/v1/dps-proxy/portraits/{person_id}，批次 5）
+   *
+   * 深合并语义（dict 递归 / list 去重追加 / 标量覆盖 / null 删除）；
+   * 传入 `version` 时携带 `If-Match` 做乐观锁，版本不符上游返回 409。
+   */
+  async updatePortrait(
+    personId: string,
+    body: Record<string, unknown>,
+    version?: number,
+  ): Promise<DpsPortrait> {
+    const config = version === undefined ? undefined : { headers: { 'If-Match': String(version) } }
+    const { data } = await http.patch<{ code: number; data: DpsPortrait }>(
+      `/dps-proxy/portraits/${encodeURIComponent(personId)}`,
+      body,
+      config,
+    )
+    return data.data
+  },
+
   /** 画像计算（POST /api/v1/dps-proxy/portraits/calculate） */
   async calculatePortrait(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
     try {

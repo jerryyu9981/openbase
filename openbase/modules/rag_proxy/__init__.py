@@ -61,6 +61,23 @@ class CollectionCreate(BaseModel):
     chunk_overlap: int | None = Field(default=50, ge=0, le=1024)
 
 
+class CollectionUpdate(BaseModel):
+    """更新知识库请求体（对齐 OpenRAG CollectionUpdate）.
+
+    embedding_model / embedding_dimension 不支持在线变更（上游 409），故不在此暴露，
+    避免前端构造必然失败的请求；分块配置变更由上游联动重建存量文档。
+    """
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    chunk_strategy: str | None = None
+    chunk_size: int | None = Field(default=None, ge=100, le=8192)
+    chunk_overlap: int | None = Field(default=None, ge=0, le=1024)
+    reranker: str | None = None
+    retrieval_strategy: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
 class RagQuery(BaseModel):
     """RAG 查询请求体（query 必填；stream 端点在代理层强制 true）.
 
@@ -470,6 +487,28 @@ async def rag_collection_detail(
     """知识库详情（GET /api/v1/collections/{id}）."""
     return await _forward(
         "GET", f"/api/v1/collections/{collection_id}",
+        request=request, user=_user,
+    )
+
+
+@router.put("/collections/{collection_id}")
+async def rag_collection_update(
+    collection_id: str,
+    payload: CollectionUpdate,
+    request: Request,
+    rebuild: bool = Query(False),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """更新知识库（PUT /api/v1/collections/{id}?rebuild=，上游 404/409 透传）.
+
+    ``rebuild=true`` 时上游强制全量重建存量文档；未变更字段不提交
+    （``exclude_unset``），避免把缺省值误判为显式修改。
+    """
+    params = {"rebuild": "true"} if rebuild else None
+    return await _forward(
+        "PUT", f"/api/v1/collections/{collection_id}",
+        json_body=payload.model_dump(exclude_none=True, exclude_unset=True),
+        params=params,
         request=request, user=_user,
     )
 

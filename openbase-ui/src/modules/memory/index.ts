@@ -12,6 +12,7 @@ export const routes: RouteRecordRaw[] = [
   { path: 'graph', name: 'memory-graph', component: () => import('./pages/MemoryGraph.vue'), meta: { title: '记忆图谱' } },
   { path: 'decay', name: 'memory-decay', component: () => import('./pages/MemoryDecay.vue'), meta: { title: '衰减配置' } },
   { path: 'write', name: 'memory-write', component: () => import('./pages/MemoryWrite.vue'), meta: { title: '写入记忆' } },
+  { path: 'monitor', name: 'memory-monitor', component: () => import('./pages/MemoryMonitor.vue'), meta: { title: '运行监控' } },
 ]
 
 /** 板块导航 */
@@ -25,6 +26,7 @@ export const navItems = [
       { path: '/memory/graph', title: '记忆图谱' },
       { path: '/memory/decay', title: '衰减配置' },
       { path: '/memory/write', title: '写入记忆' },
+      { path: '/memory/monitor', title: '运行监控' },
     ],
   },
 ]

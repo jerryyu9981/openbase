@@ -60,7 +60,7 @@
           </el-table-column>
           <el-table-column label="操作" width="190" fixed="right">
             <template #default="{ row }">
-              <el-button link type="primary" @click="openChat(row)">聊天</el-button>
+              <el-button link type="primary" data-test="conversation-open" @click="openChat(row)">查看/继续</el-button>
               <el-button link type="primary" @click="toggleArchive(row)">{{ row.archived ? '取消归档' : '归档' }}</el-button>
               <el-popconfirm title="确认删除该对话？" @confirm="remove(row.id)">
                 <template #reference><el-button link type="danger">删除</el-button></template>
@@ -90,17 +90,47 @@
       </el-dialog>
 
       <el-drawer v-model="chatVisible" :title="current?.title || '对话'" size="520px" data-test="chat-drawer">
-        <div class="chat-box">
+        <el-alert
+          v-if="current?.archived"
+          title="会话已归档，续聊前请先取消归档"
+          type="warning"
+          show-icon
+          :closable="false"
+          class="mb-16"
+          data-test="chat-archived-hint"
+        />
+        <el-alert
+          v-if="historyError"
+          :title="historyError"
+          type="error"
+          show-icon
+          closable
+          class="mb-16"
+          data-test="history-error"
+          @close="historyError = ''"
+        >
+          <template #default>
+            <el-button link type="primary" size="small" data-test="history-retry" @click="loadHistory(current)">点击重试</el-button>
+          </template>
+        </el-alert>
+        <div v-loading="historyLoading" class="chat-box" data-test="chat-history">
           <div v-for="msg in current?.chatMessages" :key="msg.id" class="chat-msg" :class="msg.role">
+            <span class="chat-role">{{ roleLabel(msg.role) }}</span>
             <div class="chat-bubble">{{ msg.content }}</div>
           </div>
           <div v-if="chatLoading" class="chat-msg assistant">
             <div class="chat-bubble typing">…</div>
           </div>
+          <el-empty
+            v-if="!historyLoading && (current?.chatMessages || []).length === 0"
+            description="该会话暂无消息，可直接开始对话"
+            :image-size="50"
+            data-test="chat-history-empty"
+          />
         </div>
         <div class="chat-input">
           <el-input v-model="chatInput" placeholder="输入消息，Enter 发送" data-test="chat-input" @keyup.enter="sendMessage" />
-          <el-button type="primary" :disabled="!chatInput.trim()" @click="sendMessage">发送</el-button>
+          <el-button type="primary" data-test="chat-send" :disabled="!chatInput.trim()" @click="sendMessage">发送</el-button>
         </div>
       </el-drawer>
     </template>
@@ -112,9 +142,15 @@ import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { llmApi, type ChatMessage as ApiChatMessage } from '@/core/api/llm'
+import { conversationApi, type ConversationMessage } from '@/core/api/conversation'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
 
-interface ChatMessage { id: number; role: 'user' | 'assistant'; content: string }
+interface ChatMessage {
+  id: number
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  created_at?: string
+}
 interface Conversation {
   id: string
   title: string
@@ -134,6 +170,9 @@ const newVisible = ref(false)
 const chatVisible = ref(false)
 const chatInput = ref('')
 const chatLoading = ref(false)
+/** 历史消息加载态（批次 5：打开会话时拉取会话详情 + 消息列表） */
+const historyLoading = ref(false)
+const historyError = ref('')
 const loading = ref(false)
 const presentation = ref<ErrorPresentation | null>(null)
 const current = ref<Conversation | null>(null)
@@ -228,13 +267,56 @@ async function createConversation() {
     ElMessage.error('会话创建失败（OpenLLM 会话端点为 JWT 通道，M1 待完善）')
   }
 }
-function openChat(row: Conversation) {
+function roleLabel(role: ChatMessage['role']): string {
+  if (role === 'user') return '我'
+  if (role === 'assistant') return '模型'
+  return '系统'
+}
+
+/** 打开会话：展示抽屉并加载历史消息（失败可重试，不阻断续聊） */
+async function openChat(row: Conversation) {
   current.value = row
   if (!row.chatMessages) row.chatMessages = []
   chatVisible.value = true
+  await loadHistory(row)
 }
+
+/** 并发拉取会话详情与消息列表；详情缺失不阻断消息渲染 */
+async function loadHistory(row: Conversation | null) {
+  if (!row) return
+  historyLoading.value = true
+  historyError.value = ''
+  try {
+    const [detail, messages] = await Promise.all([
+      conversationApi.getConversation(row.id).catch(() => null),
+      llmApi.listMessages(row.id),
+    ])
+    if (detail) {
+      if (detail.title) row.title = String(detail.title)
+      if (detail.model) row.model = String(detail.model)
+      if (detail.archived !== undefined) row.archived = Boolean(detail.archived)
+      if (detail.messages !== undefined) row.messages = Number(detail.messages) || row.messages
+    }
+    const list = (messages || []) as unknown as ConversationMessage[]
+    row.chatMessages = list.map((message, index) => ({
+      id: index + 1,
+      role: message.role === 'assistant' ? 'assistant' : message.role === 'user' ? 'user' : 'system',
+      content: String(message.content ?? ''),
+      created_at: message.created_at,
+    }))
+  } catch (err) {
+    historyError.value = `历史消息加载失败：${describeError(err).detail || '网络错误'}`
+  } finally {
+    historyLoading.value = false
+  }
+}
+
 async function sendMessage() {
   if (!chatInput.value.trim() || !current.value) return
+  if (current.value.archived) {
+    ElMessage.warning('会话已归档，请先取消归档')
+    return
+  }
   const text = chatInput.value.trim()
   current.value.chatMessages!.push({ id: Date.now(), role: 'user', content: text })
   current.value.messages += 1
@@ -242,6 +324,14 @@ async function sendMessage() {
   chatLoading.value = true
   const model = current.value.model || modelOptions.value[0] || 'qwen2.5-7b'
   const history: ApiChatMessage[] = (current.value.chatMessages || []).map((m) => ({ role: m.role, content: m.content }))
+  const conversationId = current.value.id
+  let persistFailed = false
+  // 用户消息回写：与助手回复各自独立，失败不阻断对话
+  try {
+    await conversationApi.appendMessage(conversationId, { role: 'user', content: text, model_name: model })
+  } catch {
+    persistFailed = true
+  }
   let reply = ''
   try {
     await llmApi.sendChatStream({ model, messages: history }, (evt) => {
@@ -271,8 +361,28 @@ async function sendMessage() {
     if (!reply && current.value) {
       current.value.chatMessages!.push({ id: Date.now(), role: 'assistant', content: '（无回复，请检查模型可用性）' })
     }
-  } catch {
-    ElMessage.error('对话失败，请确认 OpenLLM 服务（8001）可用')
+    // 助手回复回写会话（无回复也回写占位内容，保持两端一致）
+    const assistantText = reply || '（无回复，请检查模型可用性）'
+    try {
+      await conversationApi.appendMessage(conversationId, {
+        role: 'assistant',
+        content: assistantText,
+        model_name: model,
+      })
+      current.value.messages += 1
+    } catch {
+      persistFailed = true
+    }
+    if (persistFailed) {
+      ElMessage.warning('对话已完成，但会话记录回写失败（下次打开可能缺少本轮消息）')
+    }
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    ElMessage.error(
+      status === 400
+        ? '会话已归档或不可用，请先取消归档'
+        : '对话失败，请确认 OpenLLM 服务（8001）可用',
+    )
   } finally {
     chatLoading.value = false
   }
@@ -324,8 +434,9 @@ function exportJson() {
 .mb-16 { margin-bottom: 16px; }
 .request-id { color: #6b7280; font-size: 12px; margin-bottom: 8px; }
 .chat-box { height: 380px; overflow-y: auto; padding: 8px; background: var(--ob-bg-secondary, #f5f7fa); border-radius: 6px; }
-.chat-msg { display: flex; margin-bottom: 10px; }
+.chat-msg { display: flex; margin-bottom: 10px; align-items: flex-start; gap: 8px; }
 .chat-msg.user { justify-content: flex-end; }
+.chat-role { font-size: 12px; color: var(--ob-text-secondary); line-height: 32px; flex: none; }
 .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; background: #fff; border: 1px solid var(--el-border-color-lighter); }
 .chat-msg.user .chat-bubble { background: var(--el-color-primary-light-9); }
 .chat-msg.assistant .chat-bubble.typing { color: var(--ob-text-secondary); }

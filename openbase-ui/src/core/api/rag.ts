@@ -19,6 +19,18 @@ export interface RagCollection {
   [key: string]: unknown
 }
 
+/** 更新知识库请求体（批次 5；embedding 字段不支持在线变更，故不暴露） */
+export interface RagCollectionUpdate {
+  name?: string
+  description?: string
+  chunk_strategy?: string
+  chunk_size?: number
+  chunk_overlap?: number
+  reranker?: string
+  retrieval_strategy?: string
+  metadata?: Record<string, unknown>
+}
+
 export interface RagDocument {
   id: string
   filename?: string
@@ -67,6 +79,24 @@ export const ragApi = {
   /** 知识库详情（GET /api/v1/rag-proxy/collections/{id}） */
   async getCollection(collectionId: string): Promise<RagCollection> {
     const { data } = await http.get<{ code: number; data: RagCollection }>(`/rag-proxy/collections/${encodeURIComponent(collectionId)}`)
+    return data.data
+  },
+
+  /**
+   * 更新知识库（PUT /api/v1/rag-proxy/collections/{id}，批次 5）
+   *
+   * `rebuild=true` 时上游强制全量重建存量文档（分块配置变更后使用）。
+   */
+  async updateCollection(
+    collectionId: string,
+    payload: RagCollectionUpdate,
+    rebuild = false,
+  ): Promise<RagCollection> {
+    const { data } = await http.put<{ code: number; data: RagCollection }>(
+      `/rag-proxy/collections/${encodeURIComponent(collectionId)}`,
+      payload,
+      rebuild ? { params: { rebuild: true } } : undefined,
+    )
     return data.data
   },
 

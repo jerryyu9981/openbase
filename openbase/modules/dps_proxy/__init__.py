@@ -399,20 +399,26 @@ async def dps_portrait_detail(
 async def dps_portrait_calculate(
     payload: dict[str, Any],
     request: Request,
+    async_: bool | None = Query(None, alias="async"),
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
-    """画像计算（POST /api/v2/portrait/calculate，请求体透传上游契约）.
+    """画像计算（POST /api/v2/portrait/calculate）.
 
-    R3 长期：默认注入 ``async=true``（受 ``dps_calc_async_default`` 控制），
-    上游返回 202 + task_id；调用方显式传 ``async`` 时以其为准。
+    R3 长期：上游 ``async`` 是 **query 参数**（``Query(False, alias="async")``），
+    非请求体字段；此处以 query 透传，缺省按 ``dps_calc_async_default`` 决定。
+    上游异步返回 202 + task_id，同步返回计算结果。
     """
     headers = _build_identity_headers(_user, request)
     body = dict(payload)
-    if get_settings().dps_calc_async_default and "async" not in body:
-        body["async"] = True
+    # 兼容历史调用方把 async 放在 body 的写法：剔除后统一走 query，避免上游忽略
+    body.pop("async", None)
+    effective_async = (
+        async_ if async_ is not None else get_settings().dps_calc_async_default
+    )
     return await _forward(
         "POST", "/api/v2/portrait/calculate",
         json_body=body,
+        params={"async": "true" if effective_async else "false"},
         headers=headers,
         request=request,
     )
