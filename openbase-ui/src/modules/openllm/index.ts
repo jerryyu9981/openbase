@@ -22,6 +22,8 @@ export const routes: RouteRecordRaw[] = [
   { path: 'apps/new', name: 'openllm-app-new', component: () => import('./pages/AppForm.vue'), meta: { title: '创建应用' } },
   { path: 'apps/:id', name: 'openllm-app-detail', component: () => import('./pages/AppForm.vue'), meta: { title: '应用详情' } },
   { path: 'playground', name: 'openllm-playground', component: () => import('./pages/Playground.vue'), meta: { title: 'Playground' } },
+  // 推理设置（批次 4 R7：上下文裁剪策略查看与配置）
+  { path: 'settings', name: 'openllm-settings', component: () => import('./pages/InferenceSettings.vue'), meta: { title: '推理设置' } },
   // 对话与分析
   { path: 'conversations', name: 'openllm-conversations', component: () => import('./pages/Conversations.vue'), meta: { title: '对话管理' } },
   { path: 'recommend', name: 'openllm-recommend', component: () => import('./pages/P2RecommendView.vue'), meta: { title: '模型对比推荐' } },
@@ -45,6 +47,7 @@ export const navItems = [
     items: [
       { path: '/openllm/apps', title: '应用管理' },
       { path: '/openllm/playground', title: 'Playground' },
+      { path: '/openllm/settings', title: '推理设置' },
     ],
   },
   {

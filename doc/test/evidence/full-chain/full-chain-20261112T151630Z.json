@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-11-12T15:16:30.521332+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "check_id": "1",
+      "title": "上下文两轮",
+      "status": "BLOCKED",
+      "detail": "无法连接 http://127.0.0.1:8000：[WinError 10061] 由于目标计算机积极拒绝，无法连接。",
+      "evidence": {}
+    },
+    {
+      "check_id": "2",
+      "title": "记忆召回",
+      "status": "BLOCKED",
+      "detail": "无法连接 http://127.0.0.1:8000：[WinError 10061] 由于目标计算机积极拒绝，无法连接。",
+      "evidence": {}
+    },
+    {
+      "check_id": "3",
+      "title": "记忆 PATCH",
+      "status": "BLOCKED",
+      "detail": "召回结果无 memory id，无法验证 PATCH（可先执行记忆写入）",
+      "evidence": {}
+    },
+    {
+      "check_id": "4",
+      "title": "知识库上传/检索",
+      "status": "BLOCKED",
+      "detail": "无法连接 http://127.0.0.1:8000：[WinError 10061] 由于目标计算机积极拒绝，无法连接。",
+      "evidence": {}
+    },
+    {
+      "check_id": "5",
+      "title": "知识库租户隔离",
+      "status": "BLOCKED",
+      "detail": "缺少租户 A 的集合（第 4 项未成功创建）",
+      "evidence": {}
+    },
+    {
+      "check_id": "6",
+      "title": "画像计算/读取",
+      "status": "BLOCKED",
+      "detail": "无法连接 http://127.0.0.1:8000：[WinError 10061] 由于目标计算机积极拒绝，无法连接。",
+      "evidence": {}
+    },
+    {
+      "check_id": "7",
+      "title": "画像双标签合并",
+      "status": "BLOCKED",
+      "detail": "无法连接 http://127.0.0.1:8000：[WinError 10061] 由于目标计算机积极拒绝，无法连接。",
+      "evidence": {}
+    },
+    {
+      "check_id": "8",
+      "title": "缺租户头",
+      "status": "FAIL",
+      "detail": "ConnectError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。",
+      "evidence": {}
+    }
+  ]
+}

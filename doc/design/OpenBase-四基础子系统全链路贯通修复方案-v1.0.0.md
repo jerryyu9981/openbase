@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.6.0 |
+| **版本** | v1.7.0 |
 | **状态** | [Review] |
 | **适用范围** | OpenBase / OpenLLM / OpenMemory / OpenRAG / DPS |
 | **依据** | 《OpenBase-四基础子系统全链路贯通审计报告-v1.0.0》R1–R9 |
@@ -20,6 +20,7 @@
 | v1.4.0 | 2026-11-12 | 批次 1 实施记录：R5 入口守卫 T1–T6 完成（`tenant_guard` 三态、settings 配置与生产门禁、JWT/`sk-agent`/服务 Key/MCP 四通道、agent 创建租户解析、单测）；R4 后端记忆 PATCH 代理与前端编辑入口完成；R3 短期 `dps_calc_timeout`（默认 30s）与 504 可读提示完成。`ruff check openbase tests` 全通过 | 架构组 |
 | v1.5.0 | 2026-11-12 | 批次 2 实施记录：R8 OpenRAG 重试限流 + 门户代理 + 前端重试；R6 OpenMemory `GET /memories` 原生分页 + 门户直连（不支持回退 recall）；R1 DPS `PATCH /portrait/{id}` 深合并 + If-Match（复用既有 `version`）+ OpenLLM 合并回写与 409 重放；R3 长期 `portrait_calc_task` 任务表 + `calculate?async=true` 202/task_id 幂等 + 任务查询 + 门户默认异步与前端轮询 helper。规格见 `doc/design/批次2-全链路贯通修复/spec.md` | 架构组 |
 | v1.6.0 | 2026-11-12 | 批次 3 实施记录：R7 上下文裁剪四策略（`context_policy`/`context_meta`，默认行为不变）；R9 DPS `profile.external_id` 列 + 部分唯一索引 + `by-external` 端点、门户代理、OpenLLM 回写携带；R2 OpenLLM 知识库可开关代理 OpenRAG（`OPENLLM_KB_PROXY_ENABLED=false` 默认）、`kb_id_map`、迁移脚本与只读 410。规格/任务/偏差见 `doc/design/批次3-全链路贯通修复/` | 架构组 |
+| v1.7.0 | 2026-11-12 | 批次 4 收尾实施记录：R2 补 `GET /knowledge-bases/{kb_id}/documents/{doc_id}` 与 `POST .../reprocess` 代理分支（后者映射 OpenRAG reindex），并登记门户 `rag_proxy` 七项未暴露路由；R7 前端新增「推理设置」页（`contextPolicy.ts` 校验/存储/回显）、Playground 透传 `context_policy` 与展示 `context_meta`；审计 §4 八项联调清单完成契约级核对并交付可复跑脚本 `scripts/verify_full_chain_checklist.py`（本机无运行环境，八项 BLOCKED）。规格/任务见 `doc/design/批次4-收尾/`，执行记录见 `doc/test/OpenBase-四基础子系统全链路联调清单执行记录-v1.0.0.md` | 架构组 |
 
 ---
 
@@ -35,7 +36,7 @@
 | R8 | 索引失败无重试 | OpenRAG 新增 reindex + 门户重试入口 | OpenRAG / OpenBase | 2 |
 | R2 | 双知识库事实源 | 裁定 OpenRAG 唯一源；OpenLLM KB 转代理 → 迁移 → 只读下线 | OpenLLM / OpenRAG | 3 |
 | R9 | 画像 person_id 口径 | DPS external_id 映射 + by-external 查询 | DPS / OpenBase | 3 |
-| R7 | 裁剪策略不可配 | 门户透传 context_policy + 响应回显 context_meta | OpenBase / OpenLLM | 3 |
+| R7 | 裁剪策略不可配 | 门户透传 context_policy + 响应回显 context_meta + 前端设置页 | OpenBase / OpenLLM | 3 / 4 |
 
 统一约束（所有条目适用）：
 
@@ -564,6 +565,7 @@ python -m pytest tests
 | 批次 1（低风险、快速见效） | R4、R3 短期、**R5 入口守卫 T1–T6（代码 + `shadow`）** | 无 | 门户 PATCH、30s 超时、守卫三态与缺租户计数（`jwt/sk-agent/service-key/mcp/agent-create`） |
 | 批次 2（数据正确性） | R1、R6、R8、R3 长期 | R1 需 DPS 迁移列；R6 需 OpenMemory 新接口 | 合并写、原生分页、索引重试、异步计算 |
 | 批次 3（结构收敛） | R2、R9、R7、**R5 入口 `enforce` + G5 兜底清理 + G2 agent 租户治理** | 用户/服务 Key/agent 绑定盘点；旧 token 重签窗口；R2 需 ADR 裁定与迁移窗口 | 单一 KB 源、person 映射、策略可配、入口强制 |
+| 批次 4（收尾） | R2 遗漏端点补齐、R7 前端展示、审计报告 §4 联调清单 | 批次 3 | documents 详情/重处理代理、推理设置页、联调执行记录与可复跑脚本 |
 | 独立轨道（贯穿批次 1–3） | R5 L3–L4（出站纵深 + 存量迁移） | 服务主体清单、存量 `default`/`openrag-local`/`tenant-1` 数据量盘点 | 租户归属统一，见 R5-专项与 §7.7 |
 
 跨仓改动需保持"先加能力、后切开关、再删旧路径"的顺序；每批完成后按报告第 4 节联调清单回归。
