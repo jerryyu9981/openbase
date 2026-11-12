@@ -114,10 +114,10 @@
 
 ### T10 留痕与提交
 
-- [ ] 规格与任务清单升版（v1.1.0），追加修订历史与实施记录（含偏差）。
-- [ ] 更新方案文档《OpenBase-四基础子系统全链路贯通修复方案-v1.0.0.md》版本至 v1.8.0，登记批次 5 范围与结论。
-- [ ] 按规格 §1.3 提交边界提交并推送三远程（origin / backup / github `main`）。
-- [ ] 核对 `git status`：确认未误纳入 `llm.ts`、`Playground.vue`、`scripts/service-orchestrator.ps1` 及用户其他未提交文件。
+- [x] 规格与任务清单升版（v1.1.0），追加修订历史与实施记录（含偏差）。
+- [x] 更新方案文档《OpenBase-四基础子系统全链路贯通修复方案-v1.0.0.md》版本至 v1.8.0，登记批次 5 范围与结论。
+- [x] 按规格 §1.3 提交边界提交并推送三远程（origin / backup / github `main`），提交 `353fd0e`。
+- [x] 核对 `git status`：确认未误纳入 `llm.ts`、`Playground.vue`、`scripts/service-orchestrator.ps1` 及用户其他未提交文件。
 
 **验收映射**：文档与仓库留痕。
 
