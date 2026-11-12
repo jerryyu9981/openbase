@@ -83,9 +83,10 @@
           <el-table-column prop="updated_at" label="更新时间" width="170">
             <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="140" fixed="right">
+          <el-table-column label="操作" width="200" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" @click="$router.push(`/portrait/${row.person_id || row.id}`)">详情</el-button>
+              <el-button link type="danger" data-test="portrait-delete" @click="removePortrait(row)">删除</el-button>
             </template>
           </el-table-column>
           <template #empty>
@@ -142,7 +143,7 @@
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
 
@@ -291,6 +292,29 @@ async function submitExternalQuery() {
     ElMessage.error(status === 404 ? '未找到该外部标识对应的画像' : '查询失败，请稍后重试')
   } finally {
     externalLoading.value = false
+  }
+}
+
+/** 删除画像：二次确认 → DELETE（上游软删除）→ 刷新列表 */
+async function removePortrait(row: DpsPortrait) {
+  const personId = String(row.person_id || row.id || '')
+  if (!personId) return
+  try {
+    await ElMessageBox.confirm(
+      `确认删除画像「${row.name || personId}」？删除后将不再出现在列表与检索中（保留历史审计）。`,
+      '删除确认',
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    await dpsApi.deletePortrait(personId)
+    ElMessage.success('画像已删除')
+    await loadData()
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    ElMessage.error(status === 404 ? '画像不存在或已被删除' : '删除失败，请稍后重试')
   }
 }
 

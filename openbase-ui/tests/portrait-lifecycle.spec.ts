@@ -6,7 +6,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import ElementPlus from 'element-plus'
+import ElementPlus, { ElMessageBox } from 'element-plus'
 
 const dpsMocks = vi.hoisted(() => ({
   listPortraits: vi.fn(),
@@ -17,13 +17,15 @@ const dpsMocks = vi.hoisted(() => ({
   getPortraitByExternal: vi.fn(),
   getPortrait: vi.fn(),
   updatePortrait: vi.fn(),
+  deletePortrait: vi.fn(),
 }))
 
 const pushMock = vi.hoisted(() => vi.fn())
+const replaceMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/core/api/dps', () => ({ dpsApi: dpsMocks }))
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
   useRoute: () => ({ params: { id: 'P-1' } }),
 }))
 
@@ -71,6 +73,8 @@ beforeEach(() => {
     dimensions: {},
   })
   dpsMocks.updatePortrait.mockResolvedValue({ person_id: 'P-1', version: 4 })
+  dpsMocks.deletePortrait.mockResolvedValue({ person_id: 'P-1', status: 'deleted', already_deleted: false })
+  vi.spyOn(ElMessageBox, 'confirm').mockResolvedValue('confirm' as never)
 })
 
 describe('批次 5：画像计算与外部 ID 查询', () => {
@@ -151,6 +155,35 @@ describe('批次 5：画像属性编辑', () => {
     await flushPromises()
 
     expect(dpsMocks.updatePortrait).not.toHaveBeenCalled()
+  })
+
+  it('列表删除画像需确认并刷新（批次 5.1 DELETE）', async () => {
+    dpsMocks.listPortraits.mockResolvedValue({
+      items: [{ person_id: 'P-1', name: '张三', tags: [] }],
+      total: 1,
+    })
+    const wrapper = mountList()
+    await flushPromises()
+
+    await wrapper.find('[data-test="portrait-delete"]').trigger('click')
+    await flushPromises()
+
+    expect(ElMessageBox.confirm).toHaveBeenCalled()
+    expect(dpsMocks.deletePortrait).toHaveBeenCalledWith('P-1')
+    // 初次加载 1 次 + 删除后刷新 1 次
+    expect(dpsMocks.listPortraits).toHaveBeenCalledTimes(2)
+  })
+
+  it('详情删除画像后返回列表（批次 5.1 DELETE）', async () => {
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    await wrapper.find('[data-test="portrait-delete-open"]').trigger('click')
+    await flushPromises()
+
+    expect(ElMessageBox.confirm).toHaveBeenCalled()
+    expect(dpsMocks.deletePortrait).toHaveBeenCalledWith('P-1')
+    expect(replaceMock).toHaveBeenCalledWith('/portrait')
   })
 
   it('409 版本冲突时提示并重新加载（AC-POR-5）', async () => {

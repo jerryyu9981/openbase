@@ -2,8 +2,8 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.1.0 |
-| **状态** | [Final]（已实施并验证） |
+| **版本** | v1.2.0 |
+| **状态** | [Final]（已实施并验证，含 5.1 增量） |
 | **适用范围** | OpenBase（`openbase` 门户后端 rag_proxy / dps_proxy、`openbase-ui` 统一前端） |
 | **上游依据** | 批次 2/3/4 全链路贯通修复规格；《OpenBase-四基础子系统全链路贯通审计报告-v1.0.0》；门户代理现有端点（以代码为准） |
 | **作者** | 架构组 |
@@ -15,6 +15,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-13 | 首版：以门户既有代理端点为准，盘点上下文（会话）/记忆/画像/知识库四子系统的前端生命周期缺口，定义补齐范围、接口契约、页面改动、验收标准与验证命令 | 架构组 |
 | v1.1.0 | 2026-11-13 | 实施完成：T1~T10 全部交付；补记实施偏差（会话 API 独立文件、radio value、删除确认方式、监控指标渲染口径等）；验证结果 41 项前端用例、157 项后端用例、ruff/vue-tsc 0 错误 | 架构组 |
+| v1.2.0 | 2026-11-13 | 批次 5.1：补齐画像 DELETE 端点（DPS 软删除 + 门户代理 + 前端入口），关闭 §1.2 与 D7 登记的「画像无删除」缺口；新增 §11 | 架构组 |
 
 ---
 
@@ -29,7 +30,7 @@
 | 项 | 原因 |
 |---|---|
 | 新增记忆/LLM 代理端点 | 现有端点已覆盖生命周期，缺口仅在前端 |
-| 画像删除（DELETE） | 门户 `dps_proxy` 与上游 DPS `routes_profiles.py` 均无画像 DELETE，后端无此语义，不做前端入口 |
+| 画像删除（DELETE） | ~~门户 `dps_proxy` 与上游 DPS `routes_profiles.py` 均无画像 DELETE，后端无此语义，不做前端入口~~ **已由批次 5.1 补齐（见 §11，v1.2.0）** |
 | 记忆「组织事实源」治理页 | 本批次只做记忆运行时监控，不做组织治理 |
 | 修改 `openbase-ui/src/modules/openllm/pages/Playground.vue` | 该文件含批次 4 未提交改动，本批次不触碰（见 §1.3） |
 | 生产环境 `enforce` 开关、跨租户策略调整 | 与全生命周期无关，沿用既有基线 |
@@ -428,3 +429,39 @@ cd "d:\Trae CN\myproject\Dev\OpenBase\openbase-ui"
 | D9 | `openbase-ui/tests/knowledge-lifecycle.spec.ts` 上传步骤通过 `ElUpload.props('httpRequest')` 直接调用 | 文件选择器无法在 happy-dom 中交互，直接验证上传→轮询链路 |
 
 验证汇总：`ruff check openbase tests` 全通过；后端定向 pytest 157 passed；`vue-tsc --noEmit` 0 错误；前端 5 个 spec 共 41 passed（含 `nav-consistency` 21 例）。
+
+---
+
+## 11. 增量变更：画像 DELETE 端点（批次 5.1，v1.2.0）
+
+### 11.1 背景
+
+批次 5 盘点时登记缺口（§1.2 与 D7）：门户与上游 DPS 均无画像 DELETE，前端无法完成「删除」生命周期。本次按用户要求补齐，语义定为**软删除**（保留审计）。
+
+### 11.2 端点契约
+
+| 层 | 端点 | 行为 |
+|---|---|---|
+| 上游 DPS | `DELETE /api/v2/portrait/{person_id}` | 软删除：`status='deleted'`；租户取 contextvar 回退 `X-Tenant-ID`；重复删除返回 200 + `already_deleted=true`；不存在/跨租户 404 |
+| 门户 | `DELETE /api/v1/dps-proxy/portraits/{person_id}` | 转发上游并注入统一身份头；状态码与错误码原样透传 |
+| 前端 | `dpsApi.deletePortrait(personId)` | 列表行「删除」与详情「删除画像」入口，二次确认后调用；成功后刷新列表/返回列表 |
+
+不做硬删除：`annotation`/`profile_history` 等审计数据强关联，物理删除会破坏审计链。
+
+### 11.3 验收标准
+
+| 编号 | 验收标准 |
+|---|---|
+| AC-DEL-1 | 软删除后 `GET /portraits/{id}` 与列表均不再返回该画像（`status != 'deleted'` 过滤）。 |
+| AC-DEL-2 | 重复删除幂等（200 + `already_deleted=true`），不产生第二次写入。 |
+| AC-DEL-3 | 跨租户删除返回 404，且原租户数据保持 `active`（租户隔离）。 |
+| AC-DEL-4 | 前端列表/详情删除均需二次确认；成功后列表刷新、详情返回 `/portrait`；404 提示「画像不存在或已被删除」。 |
+
+### 11.4 验证记录
+
+| 范围 | 命令 | 结果 |
+|---|---|---|
+| DPS | `pytest src/tests/test_batch2_r1_patch_merge.py src/tests/test_batch5_1_portrait_delete.py -q` | 11 passed（新增 4 例：软删除可见性/幂等/404/租户隔离） |
+| 门户 | `pytest tests/test_dps_proxy.py -q` | 44 passed（新增 3 例：DELETE 转发/404 透传/幂等透传） |
+| 前端 | `vitest run tests/portrait-lifecycle.spec.ts` | 8 passed（新增 2 例：列表删除/详情删除） |
+| 静态 | `ruff check`（门户）、`vue-tsc --noEmit` | 0 错误（DPS 存量文件其余告警为历史遗留） |

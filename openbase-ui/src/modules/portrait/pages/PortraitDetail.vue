@@ -45,15 +45,10 @@
               <template #header>
                 <div class="card-head">
                   <span>基本信息</span>
-                  <el-button
-                    v-if="profile && !loading"
-                    link
-                    type="primary"
-                    data-test="portrait-edit-open"
-                    @click="openEdit"
-                  >
-                    编辑属性
-                  </el-button>
+                  <div v-if="profile && !loading" class="card-actions">
+                    <el-button link type="primary" data-test="portrait-edit-open" @click="openEdit">编辑属性</el-button>
+                    <el-button link type="danger" data-test="portrait-delete-open" @click="removePortrait">删除画像</el-button>
+                  </div>
                 </div>
               </template>
               <el-descriptions v-if="profile" :column="1" border>
@@ -115,12 +110,13 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { dpsApi, type DpsPortrait } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
 
 const route = useRoute()
+const router = useRouter()
 const personId = String(route.params.id || '')
 const profile = ref<DpsPortrait | null>(null)
 const loading = ref(false)
@@ -217,6 +213,27 @@ async function saveEdit() {
   }
 }
 
+/** 删除当前画像：二次确认 → DELETE → 返回列表（避免停留已删除详情页） */
+async function removePortrait() {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除画像「${profile.value?.name || personId}」？删除后将不再出现在列表与检索中（保留历史审计）。`,
+      '删除确认',
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    await dpsApi.deletePortrait(personId)
+    ElMessage.success('画像已删除')
+    await router.replace('/portrait')
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    ElMessage.error(status === 404 ? '画像不存在或已被删除' : '删除失败，请稍后重试')
+  }
+}
+
 async function loadData() {
   if (!personId) {
     presentation.value = {
@@ -249,6 +266,7 @@ onMounted(() => {
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; }
+.card-actions { display: flex; align-items: center; gap: 4px; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag-item { margin-right: 4px; }
 .text-muted { color: #9ca3af; }

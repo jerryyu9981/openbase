@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.8.0 |
+| **版本** | v1.9.0 |
 | **状态** | [Review] |
 | **适用范围** | OpenBase / OpenLLM / OpenMemory / OpenRAG / DPS |
 | **依据** | 《OpenBase-四基础子系统全链路贯通审计报告-v1.0.0》R1–R9 |
@@ -22,6 +22,7 @@
 | v1.6.0 | 2026-11-12 | 批次 3 实施记录：R7 上下文裁剪四策略（`context_policy`/`context_meta`，默认行为不变）；R9 DPS `profile.external_id` 列 + 部分唯一索引 + `by-external` 端点、门户代理、OpenLLM 回写携带；R2 OpenLLM 知识库可开关代理 OpenRAG（`OPENLLM_KB_PROXY_ENABLED=false` 默认）、`kb_id_map`、迁移脚本与只读 410。规格/任务/偏差见 `doc/design/批次3-全链路贯通修复/` | 架构组 |
 | v1.7.0 | 2026-11-12 | 批次 4 收尾实施记录：R2 补 `GET /knowledge-bases/{kb_id}/documents/{doc_id}` 与 `POST .../reprocess` 代理分支（后者映射 OpenRAG reindex），并登记门户 `rag_proxy` 七项未暴露路由；R7 前端新增「推理设置」页（`contextPolicy.ts` 校验/存储/回显）、Playground 透传 `context_policy` 与展示 `context_meta`；审计 §4 八项联调清单完成契约级核对并交付可复跑脚本 `scripts/verify_full_chain_checklist.py`（本机无运行环境，八项 BLOCKED）。规格/任务见 `doc/design/批次4-收尾/`，执行记录见 `doc/test/OpenBase-四基础子系统全链路联调清单执行记录-v1.0.0.md` | 架构组 |
 | v1.8.0 | 2026-11-13 | 批次 5 实施记录：统一前端四子系统全生命周期补齐。上下文：会话历史加载与消息回写（新增 `core/api/conversation.ts`，不改 `llm.ts`）；记忆：新增运行监控页（三探针 + monitor，路由/菜单）；画像：计算（异步 task 轮询/同步）、按外部 ID 查询、属性 PATCH 编辑（If-Match/409）；知识库：详情页去假数据接真实接口、上传轮询/重建/删除、纯检索与 RAG 问答双模式、集合配置更新；门户补 `PUT /rag-proxy/collections/{id}`，并修正画像计算 `async` 由 body 改 query（上游契约）。规格/任务/偏差见 `doc/design/批次5-统一前端全生命周期/` | 架构组 |
+| v1.9.0 | 2026-11-13 | 批次 5.1：补齐画像 DELETE 生命周期。DPS 新增 `DELETE /api/v2/portrait/{person_id}`（软删除 status=deleted、租户隔离、重复删除幂等 already_deleted=true、404 语义），门户新增 `DELETE /api/v1/dps-proxy/portraits/{person_id}` 代理，前端列表/详情新增删除入口（二次确认；404 提示；详情删除后返回列表）。验证：DPS 11 passed、门户 44 passed、前端 8 passed、vue-tsc 0 错误 | 架构组 |
 
 ---
 

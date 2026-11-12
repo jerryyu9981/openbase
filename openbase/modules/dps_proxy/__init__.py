@@ -486,6 +486,26 @@ async def dps_portrait_patch(
     )
 
 
+@router.delete("/portraits/{person_id}")
+async def dps_portrait_delete(
+    person_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像删除（DELETE /api/v2/portrait/{person_id}，批次 5.1）.
+
+    上游为软删除（``status='deleted'``，保留历史与标注审计），删除后
+    GET/列表/检索不可见；重复删除幂等（``already_deleted=true``），
+    不存在或跨租户不可见返回 404（原样透传）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "DELETE", f"/api/v2/portrait/{person_id}",
+        headers=headers,
+        request=request,
+    )
+
+
 # ---------------------------------------------------------------------------
 # 标签/报表族（AC-145-03-1）
 # ---------------------------------------------------------------------------

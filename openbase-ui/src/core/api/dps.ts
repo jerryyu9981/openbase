@@ -369,6 +369,20 @@ export const dpsApi = {
     return data.data
   },
 
+  /**
+   * 删除画像（DELETE /api/v1/dps-proxy/portraits/{person_id}，批次 5.1）
+   *
+   * 上游为软删除（status=deleted，保留历史与标注审计），删除后不可见；
+   * 重复删除幂等（响应 `already_deleted=true`），不存在返回 404。
+   */
+  async deletePortrait(personId: string): Promise<{ person_id?: string; status?: string; already_deleted?: boolean }> {
+    const { data } = await http.delete<{
+      code: number
+      data: { person_id?: string; status?: string; already_deleted?: boolean }
+    }>(`/dps-proxy/portraits/${encodeURIComponent(personId)}`)
+    return data.data
+  },
+
   /** 画像计算（POST /api/v1/dps-proxy/portraits/calculate） */
   async calculatePortrait(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
     try {

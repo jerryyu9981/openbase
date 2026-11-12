@@ -2,9 +2,9 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.1.0 |
-| **状态** | [Final]（已实施并验证） |
-| **对应规格** | `doc/design/批次5-统一前端全生命周期/spec.md` v1.1.0 |
+| **版本** | v1.2.0 |
+| **状态** | [Final]（已实施并验证，含 5.1 增量） |
+| **对应规格** | `doc/design/批次5-统一前端全生命周期/spec.md` v1.2.0 |
 | **适用范围** | OpenBase（门户后端 rag_proxy / dps_proxy、openbase-ui） |
 | **作者** | 架构组 |
 | **日期** | 2026-11-13 |
@@ -15,6 +15,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-13 | 首版：T1~T10 任务拆分、依赖、验收映射与验证命令 | 架构组 |
 | v1.1.0 | 2026-11-13 | 实施完成：T1~T10 全部勾选，回填验证记录（27/130/4/24/6/7 项用例与 41 项联合回归） | 架构组 |
+| v1.2.0 | 2026-11-13 | 新增 T11：画像 DELETE 端点（DPS 软删除 + 门户代理 + 前端入口 + 测试） | 架构组 |
 
 ---
 
@@ -121,6 +122,16 @@
 
 **验收映射**：文档与仓库留痕。
 
+### T11 画像 DELETE 端点补齐（批次 5.1）
+
+- [x] DPS 新增 `DELETE /api/v2/portrait/{person_id}`（软删除 + 租户隔离 + 幂等），`src/tests/test_batch5_1_portrait_delete.py` 4 例。
+- [x] 门户新增 `DELETE /api/v1/dps-proxy/portraits/{person_id}` 代理，`tests/test_dps_proxy.py` 新增 3 例（转发/404/幂等透传）。
+- [x] 前端 `dpsApi.deletePortrait` + 列表删除 + 详情删除（二次确认、404 提示、详情返回列表），`portrait-lifecycle.spec.ts` 新增 2 例。
+- [x] 验证：DPS 11 passed（含既有 PATCH 回归）、门户 44 passed、前端 8 passed、`vue-tsc --noEmit` 0 错误。
+- [x] 文档：规格 §11（AC-DEL-1~4）与方案 v1.9.0 留痕。
+
+**验收映射**：AC-DEL-1~4。
+
 ---
 
 ## 3. 验证记录
@@ -138,6 +149,9 @@
 | T9 | `ruff check openbase tests` | All checks passed | 0 错误 |
 | T9 | `vitest run <5 个 spec>` | 41 passed / 5 files | 含 nav-consistency 21 例 |
 | T9 | `vue-tsc --noEmit` | 0 错误 | — |
+| T11 | `pytest src/tests/test_batch5_1_portrait_delete.py`（DPS） | 4 passed | 软删除可见性/幂等/404/租户隔离 |
+| T11 | `pytest tests/test_dps_proxy.py` | 44 passed | 新增 DELETE 转发/404/幂等 3 例 |
+| T11 | `vitest run tests/portrait-lifecycle.spec.ts` | 8 passed | 新增列表/详情删除 2 例 |
 
 ---
 

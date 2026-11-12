@@ -190,6 +190,63 @@ def test_dps_portrait_patch_proxy_passes_if_match(client: TestClient) -> None:
     assert call["json"]["business"]["attributes"]["tags"] == ["B"]
 
 
+def test_dps_portrait_delete_proxy(client: TestClient) -> None:
+    """批次 5.1：DELETE 画像 → 转发上游 /api/v2/portrait/{id} 并注入身份头."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            200,
+            {
+                "code": 200,
+                "message": "success",
+                "data": {"person_id": "p1", "status": "deleted", "already_deleted": False},
+            },
+        ),
+    ])
+    resp = client.delete(
+        "/api/v1/dps-proxy/portraits/p1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["status"] == "deleted"
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "DELETE"
+    assert call["url"].startswith(f"{UPSTREAM_BASE}/api/v2/portrait/p1")
+    assert call["headers"].get("X-User-ID")
+    assert call["json"] is None
+
+
+def test_dps_portrait_delete_404_passthrough(client: TestClient) -> None:
+    """上游 404（不存在或跨租户不可见）→ 状态码与消息原样透传."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(404, {"detail": {"code": 404, "message": "画像不存在"}}),
+    ])
+    resp = client.delete(
+        "/api/v1/dps-proxy/portraits/absent",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 404, resp.text
+    assert "不存在" in resp.json()["message"]
+
+
+def test_dps_portrait_delete_idempotent_passthrough(client: TestClient) -> None:
+    """重复删除 → 上游 200 + already_deleted=true 原样返回（幂等语义）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            200,
+            {"code": 200, "message": "success", "data": {"person_id": "p1", "status": "deleted", "already_deleted": True}},
+        ),
+    ])
+    resp = client.delete(
+        "/api/v1/dps-proxy/portraits/p1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["already_deleted"] is True
+
+
 def test_dps_proxy_no_token_returns_401(client: TestClient) -> None:
     """无认证头 → 401（AC-145-02-1）."""
     resp = client.get("/api/v1/dps-proxy/portraits")
