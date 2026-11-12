@@ -2,9 +2,9 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.1.0 |
+| **版本** | v1.2.0 |
 | **状态** | [Review] |
-| **对应规格** | `doc/design/批次4-收尾/spec.md` v1.1.0 |
+| **对应规格** | `doc/design/批次4-收尾/spec.md` v1.2.0 |
 | **作者** | 架构组 |
 | **日期** | 2026-11-12 |
 
@@ -14,6 +14,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-12 | 首版：T1–T9 任务、验证命令与门禁 | 架构组 |
 | v1.1.0 | 2026-11-12 | 勾选 T1–T9，追加实施记录与验证结果（7 项偏差见规格 §9） | 架构组 |
+| v1.2.0 | 2026-11-12 | 全栈启动后补跑八项联调：PASS=7、PARTIAL=1、FAIL=0；脚本适配受信来源头/租户 B 主体/既有画像（规格 §9.2 第 9 条） | 架构组 |
 
 ## 任务总览
 
@@ -151,4 +152,12 @@
 
 - OpenLLM：`5bcd64e`（feature/s4-identity-channel-b，origin/backup/github）
 - OpenBase：本批次收尾提交（origin/backup/github）
+
+### 联调补跑（v1.2.0）
+
+- 启动：`scripts/service-orchestrator.ps1 -Action start`（8000/8001/8010/8020/8030/5173 + PG 均健康）
+- 执行：`scripts/verify_full_chain_checklist.py`（`OPENBASE_TOKEN` + `OPENBASE_TOKEN_B` + `OPENBASE_PROXY_SOURCE`）
+- 结果：**PASS=7、PARTIAL=1（第 8 项 R5 未上线）、FAIL=0**，退出码 0
+- 证据：`doc/test/evidence/full-chain/full-chain-20261112T175716Z.json`
+- 前置：租户 B 主体 `batch4-t2-user`（tenant_id=2）、既有人员 `tenant-1_1`
 

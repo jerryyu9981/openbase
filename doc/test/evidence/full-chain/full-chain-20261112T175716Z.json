@@ -1,0 +1,95 @@
+{
+  "generated_at": "2026-11-12T17:57:16.526209+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "check_id": "1",
+      "title": "上下文两轮",
+      "status": "PASS",
+      "detail": "session=batch4-54c592e232 两轮均 200",
+      "evidence": {
+        "session_id": "batch4-54c592e232",
+        "model": "qwen2.5:0.5b",
+        "round2_context_meta": {
+          "strategy": "recent",
+          "budget_tokens": 1433,
+          "history_messages": 0,
+          "included_messages": 0,
+          "dropped_messages": 0,
+          "history_tokens": 0,
+          "summarized": false,
+          "source": "openllm"
+        }
+      }
+    },
+    {
+      "check_id": "2",
+      "title": "记忆召回",
+      "status": "PASS",
+      "detail": "召回 1 条",
+      "evidence": {
+        "user_id": "1",
+        "count": 1
+      }
+    },
+    {
+      "check_id": "3",
+      "title": "记忆 PATCH",
+      "status": "PASS",
+      "detail": "memory=baed4288-68bb-45c9-90fd-d0b685d99326 更新 200",
+      "evidence": {
+        "memory_id": "baed4288-68bb-45c9-90fd-d0b685d99326"
+      }
+    },
+    {
+      "check_id": "4",
+      "title": "知识库上传/检索",
+      "status": "PASS",
+      "detail": "collection=7433a296-3d58-4754-b2b4-65541d1888b4 document=90017265-6618-4b50-8ab2-9ce8c0f387e3 status=completed",
+      "evidence": {
+        "collection_id": "7433a296-3d58-4754-b2b4-65541d1888b4",
+        "document_id": "90017265-6618-4b50-8ab2-9ce8c0f387e3",
+        "document_status": "completed",
+        "retrieve_hits": 1
+      }
+    },
+    {
+      "check_id": "5",
+      "title": "知识库租户隔离",
+      "status": "PASS",
+      "detail": "租户 B 详情/检索均 404（7433a296-3d58-4754-b2b4-65541d1888b4）",
+      "evidence": {
+        "collection_id": "7433a296-3d58-4754-b2b4-65541d1888b4"
+      }
+    },
+    {
+      "check_id": "6",
+      "title": "画像计算/读取",
+      "status": "PASS",
+      "detail": "person=tenant-1_1 计算与读取均成功",
+      "evidence": {
+        "person_id": "tenant-1_1"
+      }
+    },
+    {
+      "check_id": "7",
+      "title": "画像双标签合并",
+      "status": "PASS",
+      "detail": "合并后标签 ['A', 'B']",
+      "evidence": {
+        "person_id": "tenant-1_1",
+        "tags": [
+          "A",
+          "B"
+        ]
+      }
+    },
+    {
+      "check_id": "8",
+      "title": "缺租户头",
+      "status": "PARTIAL",
+      "detail": "缺省租户头返回 200（期望 400；R5 生产 enforce 未上线）",
+      "evidence": {}
+    }
+  ]
+}

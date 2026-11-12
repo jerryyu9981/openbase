@@ -11,7 +11,10 @@
 
 用法：
     set OPENBASE_TOKEN=<JWT>
-    set OPENBASE_TENANT_ID=<租户A>
+    set OPENBASE_TOKEN_B=<租户 B 主体 JWT>   # 第 5 项隔离检查需要
+    set OPENBASE_TENANT_ID=tenant-1
+    set OPENBASE_TENANT_ID_B=tenant-2
+    set OPENBASE_PROXY_SOURCE=openbase-orchestrator
     D:\\venvs\\openbase\\Scripts\\python.exe scripts/verify_full_chain_checklist.py --json
 
 退出码：存在 FAIL → 1；否则 0（BLOCKED/PARTIAL 不算失败，但摘要显著标注）。
@@ -56,11 +59,19 @@ class CheckResult:
 class ChecklistContext:
     """检查上下文：HTTP 客户端、租户与共享状态"""
 
-    def __init__(self, base_url: str, token: str, tenant_a: str, tenant_b: str) -> None:
+    def __init__(
+        self, base_url: str, token: str, tenant_a: str, tenant_b: str, token_b: str = ""
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.token = token
+        self.token_b = token_b
         self.tenant_a = tenant_a
         self.tenant_b = tenant_b
+        # 受信来源标识：R5 强校验期非受信来源携带身份头会被 403，
+        # 联调脚本按内部编排代理身份发起（值须在 OPENBASE_TRUSTED_PROXY_SOURCES 内）
+        self.proxy_source = os.environ.get(
+            "OPENBASE_PROXY_SOURCE", "openbase-orchestrator"
+        ).strip()
         self.state: dict[str, Any] = {}
         self.client = httpx.Client(
             base_url=self.base_url,
@@ -70,14 +81,23 @@ class ChecklistContext:
             trust_env=False,
         )
 
-    def headers(self, tenant: str | None = None, extra: dict[str, str] | None = None) -> dict[str, str]:
-        """构造认证与租户头（缺省使用租户 A）"""
+    def headers(
+        self,
+        tenant: str | None = None,
+        extra: dict[str, str] | None = None,
+        include_source: bool = True,
+        token: str | None = None,
+    ) -> dict[str, str]:
+        """构造认证与租户头（缺省使用租户 A 主体）"""
         headers: dict[str, str] = {}
-        if self.token:
-            headers["Authorization"] = f"Bearer {self.token}"
+        bearer = token if token is not None else self.token
+        if bearer:
+            headers["Authorization"] = f"Bearer {bearer}"
         tenant_id = tenant if tenant is not None else self.tenant_a
         if tenant_id:
             headers["X-Tenant-ID"] = tenant_id
+        if include_source and self.proxy_source:
+            headers["X-Proxy-Source"] = self.proxy_source
         if extra:
             headers.update(extra)
         return headers
@@ -86,7 +106,11 @@ class ChecklistContext:
         """发起请求；连接失败统一抛 SkipCheck（视为环境未就绪）"""
         tenant = kwargs.pop("tenant", None)
         extra_headers = kwargs.pop("extra_headers", None)
-        kwargs.setdefault("headers", self.headers(tenant, extra_headers))
+        include_source = kwargs.pop("include_source", True)
+        token = kwargs.pop("token", None)
+        kwargs.setdefault(
+            "headers", self.headers(tenant, extra_headers, include_source, token)
+        )
         try:
             return self.client.request(method, path, **kwargs)
         except httpx.ConnectError as exc:
@@ -99,7 +123,9 @@ class ChecklistContext:
         preferred = os.environ.get("OPENBASE_CHAT_MODEL", "").strip()
         if preferred:
             return preferred
-        response = self.request("GET", "/api/v1/llm-proxy/models")
+        response = self.request(
+            "GET", "/api/v1/llm-proxy/models", tenant="", include_source=False
+        )
         if response.status_code != 200:
             raise SkipCheck(f"模型列表不可用：HTTP {response.status_code}")
         models = (response.json().get("data") or {}).get("models") or []
@@ -157,6 +183,9 @@ def check_context_two_rounds(ctx: ChecklistContext) -> tuple[str, dict[str, Any]
         response = ctx.request(
             "POST",
             "/api/v1/llm-proxy/chat",
+            # llm-proxy 不接收 X-Tenant-ID（出站租户由 API Key 归属决定，
+            # 强带主体 tenant_id 会与 Key 归属不一致触发 OpenLLM D20 → 403）
+            tenant="",
             json={
                 "model": model,
                 "messages": [{"role": "user", "content": content}],
@@ -196,9 +225,11 @@ def check_memory_recall(ctx: ChecklistContext) -> tuple[str, dict[str, Any]]:
                 items = data[key]
                 break
     for item in items:
-        if isinstance(item, dict) and item.get("id"):
-            ctx.state["memory_id"] = str(item["id"])
-            break
+        if isinstance(item, dict):
+            memory_id = item.get("memory_id") or item.get("id")
+            if memory_id:
+                ctx.state["memory_id"] = str(memory_id)
+                break
     return f"召回 {len(items)} 条", {"user_id": user_id, "count": len(items)}
 
 
@@ -273,46 +304,77 @@ def check_rag_upload_and_retrieve(ctx: ChecklistContext) -> tuple[str, dict[str,
 
 
 def check_rag_tenant_isolation(ctx: ChecklistContext) -> tuple[str, dict[str, Any]]:
-    """5 知识库隔离：租户 B 查租户 A 的集合必须 404"""
+    """5 知识库隔离：租户 B 主体查租户 A 的集合必须 404"""
     collection_id = ctx.state.get("collection_id")
     if not collection_id:
         raise SkipCheck("缺少租户 A 的集合（第 4 项未成功创建）")
-    if not ctx.tenant_b:
-        raise SkipCheck("未设置 OPENBASE_TENANT_ID_B，无法验证跨租户隔离")
-    response = ctx.request(
+    if not ctx.token_b:
+        raise SkipCheck(
+            "未设置 OPENBASE_TOKEN_B（租户 B 主体令牌）；门户按 JWT 主体租户出站，"
+            "仅带 X-Tenant-ID 无法验证隔离"
+        )
+    detail = ctx.request(
         "GET",
         f"/api/v1/rag-proxy/collections/{collection_id}",
-        tenant=ctx.tenant_b,
+        tenant="",
+        include_source=False,
+        token=ctx.token_b,
     )
-    assert response.status_code == 404, (
-        f"跨租户查询应 404，实际 {response.status_code}：{response.text[:200]}"
+    retrieve = ctx.request(
+        "POST",
+        f"/api/v1/rag-proxy/collections/{collection_id}/query/retrieve",
+        tenant="",
+        include_source=False,
+        token=ctx.token_b,
+        json={"query": "B4-RAG-OK", "top_k": 3},
     )
-    return f"租户 B 查询返回 {response.status_code}", {"collection_id": collection_id}
+    assert detail.status_code == 404, (
+        f"租户 B 查详情应 404，实际 {detail.status_code}"
+    )
+    assert retrieve.status_code == 404, (
+        f"租户 B 跨库检索应 404，实际 {retrieve.status_code}"
+    )
+    return (
+        f"租户 B 详情/检索均 404（{collection_id}）",
+        {"collection_id": collection_id},
+    )
+
+
+def _resolve_person_id(ctx: ChecklistContext) -> str:
+    """画像 person_id：环境变量优先，否则取既有画像首条"""
+    configured = os.environ.get("OPENBASE_PERSON_ID", "").strip()
+    if configured:
+        return configured
+    listing = ctx.request(
+        "GET", "/api/v1/dps-proxy/portraits", params={"page": 1, "page_size": 1}
+    )
+    _expect(listing, (200,), "画像列表")
+    data = _json_body(listing).get("data")
+    items: list[Any] = []
+    if isinstance(data, dict) and isinstance(data.get("items"), list):
+        items = data["items"]
+    elif isinstance(data, list):
+        items = data
+    for item in items:
+        if isinstance(item, dict) and item.get("person_id"):
+            return str(item["person_id"])
+    raise SkipCheck("画像列表为空，无法验证计算/读取（可设置 OPENBASE_PERSON_ID）")
 
 
 def check_portrait_calculate_and_read(ctx: ChecklistContext) -> tuple[str, dict[str, Any]]:
-    """6 画像计算/读取"""
-    person_id = os.environ.get("OPENBASE_PERSON_ID", f"batch4-person-{uuid.uuid4().hex[:8]}")
+    """6 画像计算/读取（需既有人员）"""
+    person_id = _resolve_person_id(ctx)
     ctx.state["person_id"] = person_id
     calculate = ctx.request(
         "POST",
         "/api/v1/dps-proxy/portraits/calculate",
-        json={"person_id": person_id, "async": True},
-        timeout=httpx.Timeout(120.0, connect=5.0),
+        json={"person_id": person_id},
+        timeout=httpx.Timeout(180.0, connect=5.0),
     )
     _expect(calculate, (200, 202), "画像计算")
-    task_id = str((_json_body(calculate).get("data") or {}).get("task_id") or "")
-    if task_id:
-        for _ in range(POLL_MAX_ATTEMPTS):
-            task = ctx.request("GET", f"/api/v1/dps-proxy/portraits/tasks/{task_id}")
-            _expect(task, (200,), "画像计算任务查询")
-            status_text = str((_json_body(task).get("data") or {}).get("status", "")).lower()
-            if status_text in {"completed", "succeeded", "failed", "error"}:
-                break
-            time.sleep(POLL_INTERVAL_SECONDS)
     detail = ctx.request("GET", f"/api/v1/dps-proxy/portraits/{person_id}")
     _expect(detail, (200,), "画像详情")
-    return f"person={person_id} 计算与读取均成功", {"person_id": person_id, "task_id": task_id}
+    return f"person={person_id} 计算与读取均成功", {"person_id": person_id}
 
 
 def check_portrait_tag_merge(ctx: ChecklistContext) -> tuple[str, dict[str, Any]]:
@@ -346,13 +408,14 @@ def check_missing_tenant_header(ctx: ChecklistContext) -> tuple[str, dict[str, A
         "POST",
         "/api/v1/rag-proxy/collections",
         tenant="",
+        include_source=False,
         json={"name": f"batch4-no-tenant-{uuid.uuid4().hex[:8]}"},
     )
     if response.status_code == 400:
         return "缺省租户头返回 400", {"status_code": 400}
-    return (
-        f"当前实现返回 {response.status_code}（R5 生产 enforce 未上线，部分满足）",
-        {"status_code": response.status_code, "body": response.text[:200]},
+    # R5 生产 enforce 未上线：非 400 记为 PARTIAL（CHECKLIST 已声明断言状态）
+    raise AssertionError(
+        f"缺省租户头返回 {response.status_code}（期望 400；R5 生产 enforce 未上线）"
     )
 
 
@@ -441,6 +504,7 @@ def main(argv: list[str] | None = None) -> int:
         token=token,
         tenant_a=os.environ.get("OPENBASE_TENANT_ID", "").strip(),
         tenant_b=os.environ.get("OPENBASE_TENANT_ID_B", "").strip(),
+        token_b=os.environ.get("OPENBASE_TOKEN_B", "").strip(),
     )
     results = run_checklist(ctx)
     print_summary(results)

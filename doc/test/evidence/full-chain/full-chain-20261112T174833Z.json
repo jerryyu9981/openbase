@@ -1,0 +1,78 @@
+{
+  "generated_at": "2026-11-12T17:48:33.257756+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "check_id": "1",
+      "title": "上下文两轮",
+      "status": "PASS",
+      "detail": "session=batch4-b21529d795 两轮均 200",
+      "evidence": {
+        "session_id": "batch4-b21529d795",
+        "model": "qwen2.5:0.5b",
+        "round2_context_meta": {
+          "strategy": "recent",
+          "budget_tokens": 1433,
+          "history_messages": 0,
+          "included_messages": 0,
+          "dropped_messages": 0,
+          "history_tokens": 0,
+          "summarized": false,
+          "source": "openllm"
+        }
+      }
+    },
+    {
+      "check_id": "2",
+      "title": "记忆召回",
+      "status": "FAIL",
+      "detail": "记忆召回 期望 HTTP (200,)，实际 403：{\"code\":\"PERM_UNTRUSTED_IDENTITY_HEADER\",\"message\":\"identity headers from untrusted source\",\"detail\":{\"proxy_source\":null,\"headers\":[\"X-Tenant-Id\"]},\"request_id\":\"req-69d19d228a12\"}",
+      "evidence": {}
+    },
+    {
+      "check_id": "3",
+      "title": "记忆 PATCH",
+      "status": "BLOCKED",
+      "detail": "召回结果无 memory id，无法验证 PATCH（可先执行记忆写入）",
+      "evidence": {}
+    },
+    {
+      "check_id": "4",
+      "title": "知识库上传/检索",
+      "status": "FAIL",
+      "detail": "创建知识库 期望 HTTP (200, 201)，实际 403：{\"code\":\"PERM_UNTRUSTED_IDENTITY_HEADER\",\"message\":\"identity headers from untrusted source\",\"detail\":{\"proxy_source\":null,\"headers\":[\"X-Tenant-Id\"]},\"request_id\":\"req-54dbffcded3f\"}",
+      "evidence": {}
+    },
+    {
+      "check_id": "5",
+      "title": "知识库租户隔离",
+      "status": "BLOCKED",
+      "detail": "缺少租户 A 的集合（第 4 项未成功创建）",
+      "evidence": {}
+    },
+    {
+      "check_id": "6",
+      "title": "画像计算/读取",
+      "status": "FAIL",
+      "detail": "画像计算 期望 HTTP (200, 202)，实际 403：{\"code\":\"PERM_UNTRUSTED_IDENTITY_HEADER\",\"message\":\"identity headers from untrusted source\",\"detail\":{\"proxy_source\":null,\"headers\":[\"X-Tenant-Id\"]},\"request_id\":\"req-d53d51de8bd4\"}",
+      "evidence": {}
+    },
+    {
+      "check_id": "7",
+      "title": "画像双标签合并",
+      "status": "FAIL",
+      "detail": "画像 PATCH 标签 A 期望 HTTP (200,)，实际 403：{\"code\":\"PERM_UNTRUSTED_IDENTITY_HEADER\",\"message\":\"identity headers from untrusted source\",\"detail\":{\"proxy_source\":null,\"headers\":[\"X-Tenant-Id\"]},\"request_id\":\"req-4251b34ef0e5\"}",
+      "evidence": {}
+    },
+    {
+      "check_id": "8",
+      "title": "缺租户头",
+      "status": "PASS",
+      "detail": "当前实现返回 200（R5 生产 enforce 未上线，部分满足）",
+      "evidence": {
+        "status_code": 200,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"id\":\"1c5d3a4f-b4ea-4543-97d5-0c604a4863ce\",\"name\":\"batch4-no-tenant-995a3a3d\",\"description\":null,\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chun"
+      }
+    }
+  ]
+}

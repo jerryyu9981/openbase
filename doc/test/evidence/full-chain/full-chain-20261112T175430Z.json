@@ -1,0 +1,88 @@
+{
+  "generated_at": "2026-11-12T17:54:30.100742+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "check_id": "1",
+      "title": "上下文两轮",
+      "status": "PASS",
+      "detail": "session=batch4-c352cdfd7d 两轮均 200",
+      "evidence": {
+        "session_id": "batch4-c352cdfd7d",
+        "model": "qwen2.5:0.5b",
+        "round2_context_meta": {
+          "strategy": "recent",
+          "budget_tokens": 1433,
+          "history_messages": 0,
+          "included_messages": 0,
+          "dropped_messages": 0,
+          "history_tokens": 0,
+          "summarized": false,
+          "source": "openllm"
+        }
+      }
+    },
+    {
+      "check_id": "2",
+      "title": "记忆召回",
+      "status": "PASS",
+      "detail": "召回 1 条",
+      "evidence": {
+        "user_id": "1",
+        "count": 1
+      }
+    },
+    {
+      "check_id": "3",
+      "title": "记忆 PATCH",
+      "status": "PASS",
+      "detail": "memory=baed4288-68bb-45c9-90fd-d0b685d99326 更新 200",
+      "evidence": {
+        "memory_id": "baed4288-68bb-45c9-90fd-d0b685d99326"
+      }
+    },
+    {
+      "check_id": "4",
+      "title": "知识库上传/检索",
+      "status": "PASS",
+      "detail": "collection=2139ad5e-a680-4e9a-9a2e-2526de357cd9 document=ace5cba2-8213-48d4-8a94-a295c4c6ea39 status=completed",
+      "evidence": {
+        "collection_id": "2139ad5e-a680-4e9a-9a2e-2526de357cd9",
+        "document_id": "ace5cba2-8213-48d4-8a94-a295c4c6ea39",
+        "document_status": "completed",
+        "retrieve_hits": 1
+      }
+    },
+    {
+      "check_id": "5",
+      "title": "知识库租户隔离",
+      "status": "FAIL",
+      "detail": "跨租户查询应 404，实际 200：{\"code\":0,\"message\":\"success\",\"data\":{\"id\":\"2139ad5e-a680-4e9a-9a2e-2526de357cd9\",\"name\":\"batch4-verify-ad91af83\",\"description\":\"批次 4 全链路联调\",\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,",
+      "evidence": {}
+    },
+    {
+      "check_id": "6",
+      "title": "画像计算/读取",
+      "status": "FAIL",
+      "detail": "画像计算 期望 HTTP (200, 202)，实际 404：{\"code\":\"NOT_FOUND\",\"message\":\"人员不存在: person_id=batch4-person-40e41771\",\"data\":null,\"timestamp\":\"2026-11-12T17:54:27.914444+00:00\"}",
+      "evidence": {}
+    },
+    {
+      "check_id": "7",
+      "title": "画像双标签合并",
+      "status": "FAIL",
+      "detail": "画像 PATCH 标签 A 期望 HTTP (200,)，实际 404：{\"code\":\"NOT_FOUND\",\"message\":\"画像不存在\",\"data\":null,\"timestamp\":\"2026-11-12T17:54:28.195736+00:00\"}",
+      "evidence": {}
+    },
+    {
+      "check_id": "8",
+      "title": "缺租户头",
+      "status": "PASS",
+      "detail": "当前实现返回 200（R5 生产 enforce 未上线，部分满足）",
+      "evidence": {
+        "status_code": 200,
+        "body": "{\"code\":0,\"message\":\"success\",\"data\":{\"id\":\"fdc71877-792e-464b-9a33-0aa5c2e8b318\",\"name\":\"batch4-no-tenant-217c9d8c\",\"description\":null,\"embedding_model\":\"BAAI/bge-m3\",\"embedding_dimension\":1024,\"chun"
+      }
+    }
+  ]
+}

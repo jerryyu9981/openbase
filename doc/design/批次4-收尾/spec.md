@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.1.0 |
+| **版本** | v1.2.0 |
 | **状态** | [Review] |
 | **适用范围** | OpenBase（门户/前端）、OpenLLM（知识库路由）；DPS/OpenRAG 仅核对不改动 |
 | **上游依据** | 《OpenBase-四基础子系统全链路贯通审计报告-v1.0.0》§4 联调清单；《全链路贯通修复方案-v1.6.0》；《批次 3 全链路贯通修复规格》§7 风险表 |
@@ -15,6 +15,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-12 | 首版：批次 4 四项范围（R7 前端展示、R2 遗漏端点核对、审计 §4 联调清单执行、文档收口）的改动文件、契约、验证命令、提交边界与回滚 | 架构组 |
 | v1.1.0 | 2026-11-12 | 实施完成：R2 补齐 documents 详情/重处理代理，R7 前端设置页与 Playground 透传回显落地，§4 八项联调契约级核对与可复跑脚本交付；追加 §9 实施记录（验证结果与 7 项偏差） | 架构组 |
+| v1.2.0 | 2026-11-12 | 联调补跑：全栈启动后八项实测 PASS=7 / PARTIAL=1（第 8 项 R5 未上线）；脚本适配受信来源头、租户 B 主体令牌、既有画像人员；新增偏差 9 | 架构组 |
 
 ---
 
@@ -186,6 +187,11 @@ export function extractContextMeta(payload: unknown): ContextMeta | null    // �
 环境探测结论：`127.0.0.1` 的 8000/8010/8020/8030/8040/5173/11434 **均未监听**，无法进行真实端到端联调。
 因此采用"契约级验证 + 可复跑脚本"双轨：
 
+> **v1.2.0 补跑**：通过 `scripts/service-orchestrator.ps1 -Action start` 启动五个服务与前端后，
+> 八项实测结果为 **PASS=7、PARTIAL=1（第 8 项缺租户头，R5 生产 enforce 未上线）、FAIL=0**，
+> 证据 `doc/test/evidence/full-chain/full-chain-20261112T175716Z.json`。详见
+> `doc/test/OpenBase-四基础子系统全链路联调清单执行记录-v1.0.0.md` v1.1.0。
+
 1. 契约级：以既有 pytest 用例（代理转发、租户隔离、画像合并、上下文策略）为证据，逐项给出结论；
 2. 可复跑：新增 `scripts/verify_full_chain_checklist.py`，在运行环境可用时一键执行八项并落盘证据。
 
@@ -300,6 +306,7 @@ D:\venvs\openbase\Scripts\python.exe scripts/verify_full_chain_checklist.py --js
 | OpenLLM 新增单测 | `pytest backend/tests/unit/test_kb_documents_proxy_gaps.py test_kb_proxy_mode.py` | 11 passed |
 | OpenLLM 回归 | `pytest test_documents_api.py test_openrag_client.py test_knowledge_bases_api.py` | 29 passed |
 | 联调脚本 | `python scripts/verify_full_chain_checklist.py` | `BLOCKED=8`，退出码 0，证据已落盘 |
+| 联调补跑（全栈启动） | 同上（`OPENBASE_TOKEN` + `OPENBASE_TOKEN_B` + `OPENBASE_PROXY_SOURCE`） | **PASS=7、PARTIAL=1、FAIL=0**，退出码 0 |
 
 ### 9.2 偏差与实现说明
 
@@ -311,4 +318,5 @@ D:\venvs\openbase\Scripts\python.exe scripts/verify_full_chain_checklist.py --js
 6. **两个脏文件不提交**：`openbase-ui/src/core/api/llm.ts`、`Playground.vue` 仅在用户既有双通道改动上追加 R7 片段，按要求不纳入本批次提交，保留在工作区。
 7. **联调脚本禁用系统代理**：`httpx.Client(trust_env=False)`，避免本机代理不可达导致连接长期挂起；连接拒绝统一记 `BLOCKED`。
 8. **测试环境 Redis 加速**：本机 `.env` 的 `OPENBASE_REDIS_URL` 指向不可达远端，`isolate_identity_cache` 逐用例连接等待；定向回归通过临时覆盖 `OPENBASE_REDIS_URL=redis://127.0.0.1:6399/0`（快速失败）执行，未改动任何代码与配置。
+9. **联调脚本按真实契约适配**（补跑发现）：① 非受信来源携带身份头会被 403，脚本增加 `X-Proxy-Source=openbase-orchestrator`（受信来源）；② `llm-proxy` 不携带 `X-Tenant-ID`（否则与 API Key 归属不一致触发 OpenLLM D20 403）；③ 隔离验证改用租户 B 主体令牌 `OPENBASE_TOKEN_B`（入站租户头不改变 JWT 主体归属）；④ 画像计算使用既有人员（不存在 `person_id` 返回 404）；⑤ 第 8 项按实际返回 200 记 `PARTIAL`（R5 未上线）。
 
