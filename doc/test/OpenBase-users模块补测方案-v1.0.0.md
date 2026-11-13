@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |---|---|
 | 文档名称 | OpenBase users 模块补测方案 |
-| 版本 | v1.0.0 |
-| 状态 | [Review]（待人工审批后执行） |
+| 版本 | v1.1.0 |
+| 状态 | [Review]（已执行补测，待人工验收） |
 | 文档类型 | 测试阶段专项补测方案（`doc/test`，归属 Step 4 测试阶段） |
 | 编写角色 | 测试负责人 |
 | 适用环境 | 开发环境（Dev）/ 测试环境（Test）通用 |
@@ -17,6 +17,7 @@
 | 版本 | 日期 | 修改人 | 修改摘要 |
 |---|---|---|---|
 | v1.0.0 | 2026-11-13 | 测试负责人 | 首次编制：覆盖率口径诊断、缺口清单（21 行）、18 条补测用例与验收标准 |
+| v1.1.0 | 2026-11-13 | 测试负责人 | 回填执行结果：口径配置已落地、20 条用例全部实现并通过、users 覆盖率 100%（语句/分支） |
 
 ---
 
@@ -56,7 +57,7 @@
 
 FastAPI 异步 handler 经 `TestClient`（anyio portal + SQLAlchemy 异步引擎内部 greenlet 栈切换）执行。coverage.py 默认按线程采集（ctrace），**greenlet 栈切换后的事件丢失**，表现为：`await` 之前语句计入覆盖、`await` 之后的主体语句（如 `create_user` 的建号/落库、`list_users` 的过滤循环）被误判为未覆盖。因此当前 users 的 58% **系统性低估**，直接据此补测会产生大量冗余用例。
 
-### 2.3 前置动作（P0，必须先做）
+### 2.3 前置动作（P0，已完成）
 
 1. 在 `pyproject.toml` 增加统一覆盖率口径配置：
 
@@ -211,3 +212,39 @@ python -m ruff check openbase tests
 - 定向（默认口径，7 用例全通过）：`users 152 70 54%`，缺失 `98, 109, 134, 140, 142-145, 159-177, 182-186, 198-209, 220-223, 235-236, 241-245, 248-259, 261, 271-284, 296-304`。
 - 定向（`concurrency=greenlet,thread`，单用例）：`users 152 21 86%`，缺失 `140, 144, 160, 199, 202, 221, 236, 247, 249, 251, 271-284, 297`。
 - 两口径差异印证 §2.2 的 greenlet 采集缺陷；本方案缺口以修正口径为准。
+
+---
+
+## 10. 执行记录（2026-11-13）
+
+### 10.1 变更落地
+
+| 文件 | 变更 | 说明 |
+|---|---|---|
+| `pyproject.toml` | 新增 `[tool.coverage.run] concurrency = ["greenlet","thread"] / branch = true` | 修正异步 handler 覆盖率采集口径（§2.3） |
+| `tests/test_users_admin.py` | 新增 UT-USERS-01 ~ 20（20 条） | 复用既有模块级 SQLite 隔离 fixture；文件用例数 7 → 27 |
+
+### 10.2 定向验证结果
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 用例 | `pytest tests/test_users_admin.py` | **27 passed**（29.69s），0 failed |
+| 覆盖率 | `pytest tests/test_users_admin.py --cov=openbase --cov-report=term-missing` | `openbase/modules/users/__init__.py` **152 语句 / 0 未覆盖 / 34 分支 / 0 未覆盖分支 → 100%** |
+| 静态检查 | `ruff check tests/test_users_admin.py` | `All checks passed!` |
+
+缺口 G1–G12 全部命中，无残留未覆盖语句；同态写入分支（`active → active`）已由 UT-USERS-08 幂等断言补齐。
+
+### 10.3 全量回归结果
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 全量用例 | `pytest tests --cov=openbase --cov-report=term-missing --junitxml=...` | **1651 tests / 0 failed / 0 error / 5 skipped**，EXIT=0，1214.79s |
+| 全局覆盖率 | 同上（term-missing） | **TOTAL 89%**（12183 语句 / 1096 未覆盖；2924 分支 / 414 部分覆盖），较口径修正前的 87% 提升 2 个百分点 |
+| users 模块 | 同上 | **152 语句 / 0 未覆盖；34 分支 / 0 未覆盖 → 100%** |
+
+> 说明：全量耗时由修正前的约 57 分钟降至约 20 分钟（greenlet 口径下无重复 trace 开销）；全局 89% 距 90% 门禁仍差 1 个百分点，剩余缺口分布在 users 之外的历史模块（scheduler/org/storage/tenant 等），按 §1.3 非目标另行立项治理。
+
+### 10.4 备注
+
+- `--cov=openbase.modules.users`（子模块口径）在本机仍会触发 `TypeError: 'InternalTraversal' object is not callable`（coverage ctrace 与 SQLAlchemy C 扩展交互），**统一使用 `--cov=openbase` 口径**采集，不影响结果。
+- `tests/test_users_admin.py` 的用例通过 `_run_sql` 造数（角色重命名、状态机终态），均在 `try/finally` 内恢复或使用后置断言，不污染其他用例。

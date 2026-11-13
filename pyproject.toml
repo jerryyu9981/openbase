@@ -64,6 +64,13 @@ asyncio_default_test_loop_scope = "module"
 testpaths = ["tests"]
 addopts = "-q"
 
+[tool.coverage.run]
+# users 补测（2026-11-13）诊断：默认 ctrace 在 FastAPI 异步 handler +
+# SQLAlchemy greenlet 栈切换下丢事件，导致 async 路由主体被误判未覆盖
+# （同代码路径 54% vs 修正口径 86%）。显式声明并发模型后覆盖率数据可信。
+concurrency = ["greenlet", "thread"]
+branch = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

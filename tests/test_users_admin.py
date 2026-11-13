@@ -322,3 +322,351 @@ def test_user_permission_required() -> None:
 
     list_resp = client.get("/api/v1/users", headers=headers)
     assert list_resp.status_code == 403
+
+
+# ---- users 模块补测（补测方案 v1.0.0，UT-USERS-01 ~ 20）----
+
+
+def _admin_headers() -> dict[str, str]:
+    return _auth(_token("admin", "admin123"))
+
+
+def _create_user(headers: dict[str, str], **overrides) -> dict:
+    """创建用户并返回响应体（默认 viewer 角色）。"""
+    payload = {
+        "username": _unique("ut"),
+        "password": "pass123",
+        "display_name": "补测用户",
+        "role": "viewer",
+    }
+    payload.update(overrides)
+    resp = client.post("/api/v1/users", json=payload, headers=headers)
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+def _scoped_token(tenant_code: str | None, permissions: list[str]) -> str:
+    """构造非超管调用方 JWT（非数字 sub → 无本地主体行，按 OIDC 直签放行）。"""
+    from openbase.modules.auth.jwt import create_access_token
+
+    return create_access_token(
+        "idp-users-caller",
+        username="users-caller",
+        tenant_code=tenant_code,
+        extra={"permissions": permissions, "role": "viewer"},
+    )
+
+
+def _run_sql(statement: str, params: dict | None = None) -> list[tuple]:
+    """在应用同一库上执行单条写/读 SQL（补测造数与断言用）。"""
+    from sqlalchemy import text
+
+    from openbase.core.db.session import get_session_factory
+
+    async def _run() -> list[tuple]:
+        async with get_session_factory()() as session:  # type: ignore[call-arg]
+            result = await session.execute(text(statement), params or {})
+            rows = [tuple(row) for row in result.fetchall()] if result.returns_rows else []
+            await session.commit()
+            return rows
+
+    return asyncio.run(_run())
+
+
+def _user_status_state(user_id: int) -> tuple[int, str | None]:
+    rows = _run_sql("SELECT status, status_state FROM users WHERE id = :uid", {"uid": user_id})
+    assert rows, f"用户 {user_id} 不存在"
+    return rows[0][0], rows[0][1]
+
+
+def test_ut_users_01_create_invalid_role_rejected() -> None:
+    """UT-USERS-01：角色码不在受控枚举 → 400 PARAM_INVALID（G1）。"""
+    resp = client.post(
+        "/api/v1/users",
+        json={
+            "username": _unique("badrole"),
+            "password": "pass123",
+            "display_name": "非法角色",
+            "role": "superuser",
+        },
+        headers=_admin_headers(),
+    )
+    assert resp.status_code == 400, resp.text
+    body = resp.json()
+    assert body["code"] == "PARAM_INVALID"
+    assert "invalid role" in body["message"]
+
+
+def test_ut_users_02_create_role_not_seeded() -> None:
+    """UT-USERS-02：角色码合法但库中无对应行 → 404 BIZ_404（G2）。"""
+    _run_sql("UPDATE roles SET code = :new WHERE code = :old", {"new": "org_member_hidden", "old": "org_member"})
+    try:
+        resp = client.post(
+            "/api/v1/users",
+            json={
+                "username": _unique("norole"),
+                "password": "pass123",
+                "display_name": "未播种角色",
+                "role": "org_member",
+            },
+            headers=_admin_headers(),
+        )
+        assert resp.status_code == 404, resp.text
+        body = resp.json()
+        assert body["code"] == "BIZ_404"
+        assert "role not found" in body["message"]
+    finally:
+        _run_sql(
+            "UPDATE roles SET code = :old WHERE code = :new",
+            {"old": "org_member", "new": "org_member_hidden"},
+        )
+
+
+def test_ut_users_03_create_duplicate_username_conflict() -> None:
+    """UT-USERS-03：用户名重复 → 409 BIZ_CONFLICT（G3）。"""
+    headers = _admin_headers()
+    username = _unique("dup")
+    _create_user(headers, username=username)
+    resp = client.post(
+        "/api/v1/users",
+        json={
+            "username": username,
+            "password": "pass123",
+            "display_name": "重复用户",
+            "role": "viewer",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 409, resp.text
+    body = resp.json()
+    assert body["code"] == "BIZ_CONFLICT"
+    assert "username already exists" in body["message"]
+
+
+def test_ut_users_04_list_without_tenant_returns_empty() -> None:
+    """UT-USERS-04：非超管且无租户绑定 → 空列表（G4）。"""
+    token = _scoped_token(None, ["users:view"])
+    resp = client.get("/api/v1/users", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == []
+
+
+def test_ut_users_05_list_scoped_by_tenant_code() -> None:
+    """UT-USERS-05：非超管按 tenant_code 过滤，仅见本租户用户（G5）。"""
+    headers = _admin_headers()
+    code_a, code_b = _unique("tenant-a"), _unique("tenant-b")
+    tenant_a, tenant_b = _ensure_tenant(code_a), _ensure_tenant(code_b)
+    _create_user(headers, display_name="Tenant A User", tenant_id=tenant_a)
+    _create_user(headers, display_name="Tenant B User", tenant_id=tenant_b)
+
+    token = _scoped_token(code_a, ["users:view"])
+    resp = client.get("/api/v1/users", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    assert {row["display_name"] for row in resp.json()} == {"Tenant A User"}
+
+
+def test_ut_users_06_get_missing_user_not_found() -> None:
+    """UT-USERS-06：详情不存在 → 404 BIZ_404（G6）。"""
+    resp = client.get("/api/v1/users/999999", headers=_admin_headers())
+    assert resp.status_code == 404, resp.text
+    assert resp.json()["code"] == "BIZ_404"
+
+
+def test_ut_users_07_update_missing_user_not_found() -> None:
+    """UT-USERS-07：更新不存在用户 → 404 BIZ_404（G7）。"""
+    resp = client.put(
+        "/api/v1/users/999999",
+        json={"display_name": "不存在"},
+        headers=_admin_headers(),
+    )
+    assert resp.status_code == 404, resp.text
+    assert resp.json()["code"] == "BIZ_404"
+
+
+def test_ut_users_08_status_transition_active_suspended_roundtrip() -> None:
+    """UT-USERS-08：启停合法迁移 active ⇄ suspended，status_state 同步（G8）。"""
+    headers = _admin_headers()
+    user_id = _create_user(headers)["id"]
+
+    disable = client.put(f"/api/v1/users/{user_id}", json={"status": 0}, headers=headers)
+    assert disable.status_code == 200, disable.text
+    assert _user_status_state(user_id) == (0, "suspended")
+
+    enable = client.put(f"/api/v1/users/{user_id}", json={"status": 1}, headers=headers)
+    assert enable.status_code == 200, enable.text
+    assert enable.json()["status"] == 1
+    assert _user_status_state(user_id) == (1, "active")
+
+    # 同态写入（active → active）不触发迁移校验，幂等成功
+    noop = client.put(f"/api/v1/users/{user_id}", json={"status": 1}, headers=headers)
+    assert noop.status_code == 200, noop.text
+    assert _user_status_state(user_id) == (1, "active")
+
+
+def test_ut_users_09_status_transition_deactivated_rejected() -> None:
+    """UT-USERS-09：deactivated 终态不可经旧写路径复活 → 400（G8）。"""
+    headers = _admin_headers()
+    user_id = _create_user(headers)["id"]
+    _run_sql("UPDATE users SET status = 0, status_state = 'deactivated' WHERE id = :uid", {"uid": user_id})
+
+    resp = client.put(f"/api/v1/users/{user_id}", json={"status": 1}, headers=headers)
+    assert resp.status_code == 400, resp.text
+    assert resp.json()["code"] == "BIZ_STATE_TRANSITION_INVALID"
+    assert _user_status_state(user_id) == (0, "deactivated")
+
+
+def test_ut_users_10_update_basic_fields_partial() -> None:
+    """UT-USERS-10：display_name/email/phone 部分更新，未传字段保持原值（G9）。"""
+    headers = _admin_headers()
+    user_id = _create_user(headers)["id"]
+
+    first = client.put(f"/api/v1/users/{user_id}", json={"email": "ut@example.com"}, headers=headers)
+    assert first.status_code == 200, first.text
+    assert first.json()["email"] == "ut@example.com"
+    assert first.json()["display_name"] == "补测用户"
+
+    second = client.put(
+        f"/api/v1/users/{user_id}",
+        json={"display_name": "改名后", "phone": "13800000000"},
+        headers=headers,
+    )
+    assert second.status_code == 200, second.text
+    body = second.json()
+    assert body["display_name"] == "改名后"
+    assert body["phone"] == "13800000000"
+    assert body["email"] == "ut@example.com"
+
+
+def test_ut_users_11_status_change_invalidates_principal_cache(monkeypatch) -> None:
+    """UT-USERS-11：启停写路径即时失效 principal 缓存（G10）。"""
+    headers = _admin_headers()
+    user = _create_user(headers)
+    calls: list[tuple] = []
+
+    def _spy(subject_id: int, username: str | None = None) -> None:
+        calls.append((subject_id, username))
+
+    monkeypatch.setattr(
+        "openbase.modules.identity.verification.invalidate_principal_cache", _spy
+    )
+    resp = client.put(f"/api/v1/users/{user['id']}", json={"status": 0}, headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert calls == [(user["id"], user["username"])]
+
+
+def test_ut_users_12_delete_user_soft_delete_flow() -> None:
+    """UT-USERS-12：DELETE 软删（status=0 + suspended），数据保留（G11）。"""
+    headers = _admin_headers()
+    user = _create_user(headers)
+
+    resp = client.delete(f"/api/v1/users/{user['id']}", headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"code": 0, "user_id": user["id"], "status": 0}
+    assert _user_status_state(user["id"]) == (0, "suspended")
+
+    detail = client.get(f"/api/v1/users/{user['id']}", headers=headers)
+    assert detail.status_code == 200
+    assert detail.json()["status"] == 0
+
+
+def test_ut_users_13_delete_missing_user_not_found() -> None:
+    """UT-USERS-13：删除不存在用户 → 404 BIZ_404（G11）。"""
+    resp = client.delete("/api/v1/users/999999", headers=_admin_headers())
+    assert resp.status_code == 404, resp.text
+    assert resp.json()["code"] == "BIZ_404"
+
+
+def test_ut_users_14_delete_suspended_user_keeps_state() -> None:
+    """UT-USERS-14：已 suspended 用户再 DELETE 保持 suspended（不复活/不改写）（G11）。"""
+    headers = _admin_headers()
+    user_id = _create_user(headers)["id"]
+    assert client.put(f"/api/v1/users/{user_id}", json={"status": 0}, headers=headers).status_code == 200
+
+    resp = client.delete(f"/api/v1/users/{user_id}", headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert _user_status_state(user_id) == (0, "suspended")
+
+
+def test_ut_users_15_assign_role_missing_user_not_found() -> None:
+    """UT-USERS-15：角色分配目标不存在 → 404 BIZ_404（G12）。"""
+    resp = client.put(
+        "/api/v1/users/999999/role", json={"role": "admin"}, headers=_admin_headers()
+    )
+    assert resp.status_code == 404, resp.text
+    assert resp.json()["code"] == "BIZ_404"
+
+
+def test_ut_users_16_assign_role_replaces_previous() -> None:
+    """UT-USERS-16：角色分配替换旧角色关联（G12）。"""
+    headers = _admin_headers()
+    user_id = _create_user(headers, role="viewer")["id"]
+
+    resp = client.put(f"/api/v1/users/{user_id}/role", json={"role": "org_admin"}, headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["roles"] == ["org_admin"]
+
+    detail = client.get(f"/api/v1/users/{user_id}", headers=headers).json()
+    assert detail["roles"] == ["org_admin"]
+
+
+def test_ut_users_17_create_payload_validation_rejected() -> None:
+    """UT-USERS-17：参数契约校验——非法用户名/短密码/非法 status → 400 PARAM_400。"""
+    headers = _admin_headers()
+    invalid_payloads = [
+        {"username": "a", "password": "pass123", "display_name": "短用户名"},
+        {"username": "bad name", "password": "pass123", "display_name": "非法字符"},
+        {"username": _unique("shortpwd"), "password": "123", "display_name": "短密码"},
+    ]
+    for payload in invalid_payloads:
+        resp = client.post("/api/v1/users", json={**payload, "role": "viewer"}, headers=headers)
+        assert resp.status_code == 400, f"{payload}: {resp.text}"
+        assert resp.json()["code"] == "PARAM_400"
+
+    user_id = _create_user(headers)["id"]
+    bad_status = client.put(f"/api/v1/users/{user_id}", json={"status": 2}, headers=headers)
+    assert bad_status.status_code == 400, bad_status.text
+    assert bad_status.json()["code"] == "PARAM_400"
+
+
+def test_ut_users_18_all_endpoints_require_auth() -> None:
+    """UT-USERS-18：五个端点未认证一律 401。"""
+    requests = [
+        ("post", "/api/v1/users", {"json": {"username": _unique("na"), "password": "pass123", "display_name": "x"}}),
+        ("get", "/api/v1/users", {}),
+        ("get", "/api/v1/users/1", {}),
+        ("put", "/api/v1/users/1", {"json": {"display_name": "x"}}),
+        ("delete", "/api/v1/users/1", {}),
+        ("put", "/api/v1/users/1/role", {"json": {"role": "viewer"}}),
+    ]
+    for method, path, kwargs in requests:
+        resp = getattr(client, method)(path, **kwargs)
+        assert resp.status_code == 401, f"{method.upper()} {path}: {resp.status_code}"
+
+
+def test_ut_users_19_write_endpoints_forbidden_for_viewer() -> None:
+    """UT-USERS-19：viewer 对更新/删除/角色分配一律 403。"""
+    headers = _auth(_token("viewer", "viewer123"))
+    for method, path, payload in (
+        ("put", "/api/v1/users/1", {"display_name": "越权"}),
+        ("delete", "/api/v1/users/1", None),
+        ("put", "/api/v1/users/1/role", {"role": "admin"}),
+    ):
+        kwargs = {"headers": headers}
+        if payload is not None:
+            kwargs["json"] = payload
+        resp = getattr(client, method)(path, **kwargs)
+        assert resp.status_code == 403, f"{method.upper()} {path}: {resp.status_code}"
+
+
+def test_ut_users_20_response_never_exposes_password_hash() -> None:
+    """UT-USERS-20：创建/列表/详情响应均不回显密码哈希，roles 与入参一致。"""
+    headers = _admin_headers()
+    created = _create_user(headers, role="org_member")
+    assert "password_hash" not in created
+    assert created["roles"] == ["org_member"]
+
+    listing = client.get("/api/v1/users", headers=headers).json()
+    assert all("password_hash" not in row for row in listing)
+    detail = client.get(f"/api/v1/users/{created['id']}", headers=headers).json()
+    assert "password_hash" not in detail
+
