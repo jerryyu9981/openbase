@@ -22,7 +22,13 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _load_shared_infra_env() -> dict[str, str]:
-    """解析项目根 .env.shared-infra 配置到环境变量（只覆盖未设置的键）."""
+    """解析项目根 .env.shared-infra 配置到环境变量（只覆盖未设置的键）.
+
+    仅导出基础设施级变量（POSTGRES_URL / MINIO_* / REDIS_*），**跳过 OPENBASE_* 应用配置**：
+    该文件同时含本地编排的应用配置（如 OPENBASE_DPS_UPSTREAM_BASE=8030），
+    模块导入期写入 os.environ 会污染 Settings() 默认值，导致全量运行时
+    tests/test_settings.py::test_dps_upstream_defaults_aligned_to_source_port 误报失败。
+    """
     env_file = _PROJECT_ROOT / ".env.shared-infra"
     assert env_file.exists(), ".env.shared-infra 不存在"
     loaded: dict[str, str] = {}
@@ -32,6 +38,8 @@ def _load_shared_infra_env() -> dict[str, str]:
             continue
         key, _, value = line.partition("=")
         key, value = key.strip(), value.strip()
+        if key.startswith("OPENBASE_"):
+            continue
         if key and value and not os.environ.get(key):
             os.environ[key] = value
             loaded[key] = value
