@@ -28,6 +28,9 @@ vi.mock('@/core/api/conversation', () => ({ conversationApi: conversationMocks }
 
 import Conversations from '@/modules/openllm/pages/Conversations.vue'
 
+// 全量并发跑时 Element Plus 挂载成本显著上升，显式放宽单用例超时（单跑 ~1s）
+vi.setConfig({ testTimeout: 20_000 })
+
 function mountPage() {
   return mount(Conversations as never, {
     global: {

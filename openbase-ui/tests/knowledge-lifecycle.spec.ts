@@ -25,6 +25,9 @@ vi.mock('vue-router', () => ({ useRoute: () => ({ params: { id: 'kb-1' } }) }))
 
 import KnowledgeDetail from '@/modules/knowledge/pages/KnowledgeDetail.vue'
 
+// 全量并发跑时 Element Plus 挂载成本显著上升，显式放宽单用例超时（单跑 ~1s）
+vi.setConfig({ testTimeout: 20_000 })
+
 const dialogStub = {
   props: ['modelValue', 'title'],
   template: '<div v-if="modelValue"><slot /><slot name="footer" /></div>',
