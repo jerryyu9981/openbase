@@ -193,7 +193,7 @@ async def start_schedule(task_id: int, session: AsyncSession = Depends(get_db)) 
     if task is None:
         from openbase.core.errors import BaseError, ErrorCode
 
-        raise BaseError(ErrorCode.NOT_FOUND, f"task {task_id} not found")
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"task {task_id} not found")
     return _to_out(task)
 
 
@@ -208,7 +208,7 @@ async def stop_schedule(task_id: int, session: AsyncSession = Depends(get_db)) -
     if task is None:
         from openbase.core.errors import BaseError, ErrorCode
 
-        raise BaseError(ErrorCode.NOT_FOUND, f"task {task_id} not found")
+        raise BaseError(ErrorCode.BIZ_NOT_FOUND, f"task {task_id} not found")
     return _to_out(task)
 
 
