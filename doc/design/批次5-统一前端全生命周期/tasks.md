@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.3.1 |
+| **版本** | v1.3.2 |
 | **状态** | [Final]（已实施并验证，含 5.1 增量与全量回归） |
 | **对应规格** | `doc/design/批次5-统一前端全生命周期/spec.md` v1.2.0 |
 | **适用范围** | OpenBase（门户后端 rag_proxy / dps_proxy、openbase-ui） |
@@ -18,6 +18,7 @@
 | v1.2.0 | 2026-11-13 | 新增 T11：画像 DELETE 端点（DPS 软删除 + 门户代理 + 前端入口 + 测试） | 架构组 |
 | v1.3.0 | 2026-11-13 | 追加全量回归记录（前端 45 文件 / 415 用例串行全通过；后端全量与覆盖率的环境限制说明） | 架构组 |
 | v1.3.1 | 2026-11-13 | 后端全量补齐（1631 用例 0 失败）并修复测试进程环境变量污染（test_storage_s3_real 导入期导出 OPENBASE_*） | 架构组 |
+| v1.3.2 | 2026-11-13 | 安装 pytest-cov/coverage 并执行覆盖率门禁：全量 87%，变更模块 dps_proxy 100% / rag_proxy 94% | 架构组 |
 
 ---
 
@@ -112,7 +113,7 @@
 - [x] 后端：`ruff check openbase tests`（0 错误）；定向 `pytest tests/test_rag_proxy.py tests/test_dps_proxy.py tests/test_dps_proxy_routes_v1410.py tests/test_dps_proxy_v1410_contract.py -q`（全通过）。
 - [x] 前端：`vue-tsc --noEmit`（0 错误）；`vitest run tests/nav-consistency.spec.ts tests/conversation-lifecycle.spec.ts tests/memory-monitor.spec.ts tests/portrait-lifecycle.spec.ts tests/knowledge-lifecycle.spec.ts`（全通过）。
 - [x] 结果回填至本文件「3. 验证记录」。
-- [x] 全量补充验证（v1.3.0/v1.3.1）：前端串行全量 `45 文件 / 415 用例` 全通过；后端全量 `1631 用例 / 0 失败 / 5 跳过`（EXIT=0），并修复测试进程环境变量污染。结论见「3.1 全量回归记录」。
+- [x] 全量补充验证（v1.3.0/v1.3.1/v1.3.2）：前端串行全量 `45 文件 / 415 用例` 全通过；后端全量 `1631 用例 / 0 失败 / 5 跳过`（EXIT=0），并修复测试进程环境变量污染；覆盖率门禁 `TOTAL 87%`（dps_proxy 100% / rag_proxy 94%）。结论见「3.1 全量回归记录」。
 
 **验收映射**：§8 质量门禁。
 
@@ -164,9 +165,9 @@
 | 前端全量（并发，首轮） | `vitest run` | 403 passed / 12 failed | 失败全部为**既有 spec** 的 5s / 15s 超时（如 `nav-consistency`、`dps-ui-v1410`、`isolation-presentation`）；根因是宿主残留旧 vitest 进程占用 CPU（已清理），非批次 5 代码缺陷 |
 | 前端（受影响集合复跑） | `vitest run tests/conversation-lifecycle.spec.ts tests/knowledge-lifecycle.spec.ts tests/portrait-lifecycle.spec.ts tests/memory-monitor.spec.ts tests/nav-consistency.spec.ts tests/dps-ui-v1410.spec.ts` | 6 files / 57 passed，36.73s | 三个批次 5 spec 显式设置 `vi.setConfig({ testTimeout: 20_000 })` |
 | 后端全量 | `python -m pytest tests` | **1631 tests / 0 failed / 0 error / 5 skipped**，EXIT=0，3403.07s | 首轮全量暴露 `test_settings::test_dps_upstream_defaults_aligned_to_source_port` 失败（实际值 8030），根因为 `tests/test_storage_s3_real.py` 在导入期把 `.env.shared-infra` 的 `OPENBASE_*` 应用配置写入 `os.environ`，污染 `Settings()` 默认值；已改为只导出基础设施级变量（跳过 `OPENBASE_*`），复跑即全绿 |
-| 后端覆盖率 | `python -m pytest --cov=openbase` | 不可执行（环境限制） | 后端 venv（`D:\venvs\openbase`）未安装 pytest-cov / coverage：`unrecognized arguments: --cov`、`No module named coverage` |
+| 后端覆盖率 | `python -m pytest --cov=openbase --cov-report=term-missing` | **TOTAL 87%**（12183 语句 / 1636 未覆盖）；1631 tests / 0 failed / 5 skipped，EXIT=0，4372.85s | 已安装 pytest-cov 7.1.0 + coverage 7.17.3；批次变更模块 **dps_proxy 100%**、**rag_proxy 94%**，均满足「新增代码覆盖率 ≥90%」；全局 87% 低于 90% 的缺口集中在历史模块（users 58%、scheduler 66%、org 70%、storage 79%、tenant 81% 等），非本批次引入 |
 
-> 结论：本批次代码改动（rag_proxy / dps_proxy / openbase-ui）在前端全量 415 用例（45 文件）与后端全量 1631 用例（5 skipped，均为需 `OPENBASE_TEST_REAL_INFRA=1` 的真实基础设施用例）上均**零失败**；`ruff check openbase tests` 0 错误。仅覆盖率门禁因本机未安装 pytest-cov/coverage 未能执行，登记为已知限制，后续在具备 CI 的环境补齐。
+> 结论：本批次代码改动（rag_proxy / dps_proxy / openbase-ui）在前端全量 415 用例（45 文件）与后端全量 1631 用例（5 skipped，均为需 `OPENBASE_TEST_REAL_INFRA=1` 的真实基础设施用例）上均**零失败**；`ruff check openbase tests` 0 错误；变更模块覆盖率 dps_proxy 100% / rag_proxy 94%，满足 ≥90% 要求。全局覆盖率 87% 的历史缺口（users/scheduler/org/storage/tenant 等旧模块）不在本批次范围内，列为后续专项治理项。
 
 ---
 
