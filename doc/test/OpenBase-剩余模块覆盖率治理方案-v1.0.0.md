@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |---|---|
 | 文档名称 | OpenBase 剩余模块覆盖率治理方案 |
-| 版本 | v1.6.0 |
-| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理；v1.4.0 完成 7 个中小模块边角治理；v1.5.0 完成 `auth/oidc.py`；v1.6.0 完成 `auth/__init__.py`，待人工验收） |
+| 版本 | v1.7.0 |
+| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理；v1.4.0 完成 7 个中小模块边角治理；v1.5.0 完成 `auth/oidc.py`；v1.6.0 完成 `auth/__init__.py`；v1.7.0 完成 `audit/__init__.py`，待人工验收） |
 | 文档类型 | 测试阶段专项补测方案（`doc/test`，归属 Step 4 测试阶段） |
 | 编写角色 | 测试负责人 |
 | 适用环境 | 开发环境（Dev）/ 测试环境（Test）通用 |
@@ -24,6 +24,7 @@
 | v1.4.0 | 2026-11-14 | 测试负责人 | 中小模块边角治理（§9.8）：新增 `test_service_keys_edges.py`（6 条）与 `test_small_module_edges.py`（8 条），共 14 条；`service_keys` 缺失 27→8，`jwt`/`idp_registry`/`access_control`/`logs/derivation`/`abac_policy_store` 的既定缺口行全部清零，`token_api` scope 守卫补齐；14 条用例定向运行全通过 |
 | v1.5.0 | 2026-11-14 | 测试负责人 | `auth/oidc.py` 边角治理（§9.9）：新增 `tests/test_oidc_edges.py`（43 条），覆盖配置回落、discovery/验签失败包装、Keycloak 角色异常形状、绑定/租户降级、回调错误码、登出尽力而为、back-channel 载荷解析；定向覆盖率 **84% → 99%**（646 语句 0 缺失，仅 1 条不可达分支弧），OIDC 族 140 条用例全部通过 |
 | v1.6.0 | 2026-11-14 | 测试负责人 | `auth/__init__.py` 边角治理（§9.10）：新增 `tests/test_auth_edges.py`（23 条），覆盖密码校验异常、登录租户策略与兜底、租户 code 解析、刷新链主体/状态/租户分支、资料与改密边界、通知 Webhook 校验、角色契约与 API Key 端点边界；定向覆盖率 **87% → 98%**（389 语句仅余 4 处导入降级兜底 8 行），关联 15 个测试文件 205 条用例全部通过 |
+| v1.7.0 | 2026-11-14 | 测试负责人 | `audit/__init__.py` 边角治理（§9.11）：新增 `tests/test_audit_edges.py`（24 条），覆盖响应观测/长度解析/步骤归一、环形缓冲淘汰与过滤、落库队列排空/超时/批次边界、中间件路径跳过与客户端 IP 三级回落、请求体采集与脱敏、异常记录与记录失败降级、worker 启停、导出 until 过滤；定向覆盖率 **89% → 100%**（454 语句 0 缺失、126 分支 0 partial），关联 9 个测试文件 128 条用例全部通过 |
 
 ---
 
@@ -316,7 +317,7 @@ python -m ruff check openbase tests
 |---|---|---|
 | `modules/auth/oidc.py` | ~~65~~ → **0** | **已于 v1.5.0 治理（§9.9）**：定向 99%（646 语句 0 缺失，仅余 1 条不可达分支弧） |
 | `modules/auth/__init__.py` | ~~36~~ → **0**（8 行导入兜底不可达） | **已于 v1.6.0 治理（§9.10）**：定向 98%（389 语句仅余 4 处 import 降级兜底） |
-| `modules/audit/__init__.py` | 30 | 审计查询/导出/校验端点边角 |
+| `modules/audit/__init__.py` | ~~30~~ → **0** | **已于 v1.7.0 治理（§9.11）**：定向 **100%**（454 语句 0 缺失、126 分支 0 partial） |
 | `modules/logs/repository.py` | 60 | 需真实四仓日志目录布局的组合分支 |
 
 ### 9.9 `auth/oidc.py` 边角治理（v1.5.0，2026-11-14）
@@ -390,4 +391,38 @@ python -m ruff check openbase tests
 #### 9.10.3 剩余说明
 
 - 残留 8 行均为模块顶部 `try: import ... except ImportError` 的路由降级兜底（oidc/token_api/access_api/idp_registry），正常运行路径不可达；如需强覆盖需在独立子进程中模拟导入失败，收益低且易污染 `sys.modules`，本轮不做。
-- 全量回归仍受宿主机 PostgreSQL 故障与高负载阻断，门禁继续采用「定向覆盖率 + v1.1.0 全量基线」组合判定；§9.8.3 剩余项收敛为 `audit/__init__.py`（30）与 `logs/repository.py`（60）。
+- 全量回归仍受宿主机 PostgreSQL 故障与高负载阻断，门禁继续采用「定向覆盖率 + v1.1.0 全量基线」组合判定；§9.8.3 剩余项收敛为 `logs/repository.py`（60）。
+
+### 9.11 `audit/__init__.py` 边角治理（v1.7.0，2026-11-14）
+
+承接 §9.8.3 遗留项，针对审计模块的观测工具、环形缓冲、异步落库队列、审计中间件与导出端点的未触达分支补齐用例。
+
+#### 9.11.1 变更落地
+
+| 文件 | 变更 | 覆盖目标 |
+|---|---|---|
+| `tests/test_audit_edges.py` | 新增（24 条） | `modules/audit/__init__.py` 边角分支（见下表） |
+| `openbase/modules/audit/__init__.py` | 无变更 | 仅补测，不改生产语义 |
+
+| 覆盖域 | 关键分支 |
+|---|---|
+| 观测 / 解析 | 空载荷无 `resp_keys`、`Content-Length` 非法 → None、步骤号纯空白 → None |
+| 记录构造 | 带/不带 `IdentityContext` 的 operator/tenant/extra 投影 |
+| 内存服务 | 环形缓冲超限淘汰、按 `case_id` / `run_id` 过滤 |
+| 落库队列 | 会话工厂不可用 → 降级 WARN 后重抛、`batch_size=0` 排空、writer 单条批次消费、关闭排空超时且队列为空、模块级 start/stop 入口 |
+| 中间件 | 前缀路径跳过、客户端 IP（XFF / X-Real-IP / 直连）三级回落与未知兜底、请求体非 JSON / 二进制 / 超限 / 读取异常、敏感路径脱敏、异常请求记录 500 并重抛、`identity` 入 detail 与上游观测合并、响应体采集失败回退、内部记录异常 → None |
+| 导出 | `until` 上界过滤与 NDJSON 流输出 |
+
+#### 9.11.2 定向验证结果
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 用例 | `pytest tests/test_audit_edges.py -q` | **24 passed** |
+| 关联回归 | 新增文件 + 6 个 audit 测试文件 + E3 治理/用例上下文，共 9 个文件 | **128 passed**，0 failed |
+| 覆盖率 | 同上 + `--cov=openbase --cov-report=term-missing` | `modules/audit/__init__.py`：454 语句 **0 缺失**、126 分支 **0 partial** → **100%**（89% → 100%） |
+| 静态检查 | `ruff check tests/test_audit_edges.py` | `All checks passed!` |
+
+#### 9.11.3 剩余说明
+
+- 本轮未改动生产代码；`_read_request_body` 当前为未被调用的防御性工具方法，通过直接单测覆盖其全部分支。
+- 全量回归仍受宿主机 PostgreSQL 故障与高负载阻断，门禁继续采用「定向覆盖率 + v1.1.0 全量基线」组合判定；§9.8.3 仅剩 `modules/logs/repository.py`（60 行，需真实四仓目录布局）。
