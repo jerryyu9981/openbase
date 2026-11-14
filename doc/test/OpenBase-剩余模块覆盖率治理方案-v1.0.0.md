@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |---|---|
 | 文档名称 | OpenBase 剩余模块覆盖率治理方案 |
-| 版本 | v1.1.0 |
-| 状态 | [Final]（补测与全量回归已执行，全局覆盖率 91%，待人工验收） |
+| 版本 | v1.2.0 |
+| 状态 | [Final]（补测与全量回归见 v1.1.0；环境性失败已于 v1.2.0 修复并完成用例级验证，待人工验收） |
 | 文档类型 | 测试阶段专项补测方案（`doc/test`，归属 Step 4 测试阶段） |
 | 编写角色 | 测试负责人 |
 | 适用环境 | 开发环境（Dev）/ 测试环境（Test）通用 |
@@ -18,6 +18,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-13 | 测试负责人 | 首次编制：剩余缺口模块清单、30 条补测用例设计、scheduler 缺陷登记与验收标准 |
 | v1.1.0 | 2026-11-13 | 测试负责人 | 回填执行结果：30 条用例落地、6 个目标模块覆盖率 98%~100%、全量 1681 用例仅 1 项共享 PG 瞬态失败（已登记）、全局 TOTAL 由 89% 提升至 91% |
+| v1.2.0 | 2026-11-14 | 测试负责人 | 修复 `test_service_agent_outbound.py` 的环境性失败：服务 Key 用例改用独立 SQLite 库（不再依赖宿主机 PostgreSQL）；目标用例 1 passed、整文件 17 passed；全量复跑受宿主机 PG 故障与高负载影响未在窗口内完成 |
 
 ---
 
@@ -217,11 +218,21 @@ python -m ruff check openbase tests
 
 | 用例 | 现象 | 裁定 |
 |---|---|---|
-| `tests/test_service_agent_outbound.py::test_obk_service_account_mapped_outbound_headers` | `asyncpg ... connection was closed in the middle of operation`（连接 `localhost:5432` 共享 PostgreSQL）；单独复跑同样失败（`WinError 10054 远程主机强迫关闭了一个现有的连接`） | **环境性失败**：本机共享 PG 当前不可用/连接被重置，与本次变更无关；该类瞬态已登记于《OpenBase-DEF-MTAUTH-001-全量回归PG连接瞬态缺陷登记-v1.0.0.md》。本次 30 条新增用例与 6 个目标模块全部通过 |
+| `tests/test_service_agent_outbound.py::test_obk_service_account_mapped_outbound_headers` | `asyncpg ... connection was closed in the middle of operation`（连接 `localhost:5432` 共享 PostgreSQL）；单独复跑同样失败（`WinError 10054 远程主机强迫关闭了一个现有的连接`） | **环境性失败**：本机共享 PG 当前不可用/连接被重置，与本次变更无关；该类瞬态已登记于《OpenBase-DEF-MTAUTH-001-全量回归PG连接瞬态缺陷登记-v1.0.0.md》。本次 30 条新增用例与 6 个目标模块全部通过。**已于 v1.2.0 修复，见 §9.6** |
 
 ### 9.5 备注
 
 - 首次全量运行（`-x`）时 `tests/test_orchestrator_db_failover.py::test_standby_unreachable_blocks_startup` 因宿主机高负载导致子进程 PowerShell 启动超过 120s 超时；单跑通过（1 passed），完整重跑亦通过，判定为环境性抖动。
 - 统一使用 `--cov=openbase` 口径（`--cov=openbase.modules.*` 子口径仍触发 coverage ctrace 与 SQLAlchemy C 扩展的 `TypeError`，见 users 方案 §10.4）。
-- `tests/test_service_agent_outbound.py` 等共享 PG 用例在 PG 恢复后应重跑确认；本方案不修改其代码。
+- `tests/test_service_agent_outbound.py` 的共享 PG 依赖已按 §9.6 改造为独立 SQLite 库，不再等待 PG 恢复。
 - 存储相关用例使用 `tmp_path` 注入本地后端，不向仓库 `storage/` 写入产物。
+
+### 9.6 环境性失败修复（v1.2.0，2026-11-14）
+
+| 项 | 内容 |
+|---|---|
+| 失败用例 | `tests/test_service_agent_outbound.py::test_obk_service_account_mapped_outbound_headers` |
+| 根因 | 用例链路「admin 登录 → 签发服务 Key 落库 → 以 Key 经通用 `/proxy` 出站」必然触库，而应用使用全局 `get_db`（默认 `postgresql+asyncpg://localhost:5432/openbase`）。宿主机共享 PG 不可用/连接被重置时抛 `DBAPIError`，`ServiceKeyService.issue` 的 `session.flush()` 无降级，导致 500 → 用例失败；与业务代码无关 |
+| 修复方案 | 用例级数据库隔离：新增 `isolated_sqlite_db` 夹具，`init_db` 指向临时 SQLite 文件库、建全部 `Base` 表、播种 `SEEDED_ROLE_CODES` 与 admin 用户，并用 `monkeypatch` 固定全局 `get_session_factory`；用例通过 `@pytest.mark.usefixtures` 启用。夹具收尾 `reset_db_singletons()` 释放引擎后再删除库文件（Windows 文件句柄） |
+| 影响面 | 仅 `tests/test_service_agent_outbound.py`；不改生产代码、不影响其余用例（夹具仅在目标用例生效，不设 autouse） |
+| 验证 | 目标用例单跑 **1 passed**；整文件 **17 passed**；`ruff check tests/test_service_agent_outbound.py` → `All checks passed!`。全量复跑于 2026-11-14 启动，因宿主机 PostgreSQL 故障 + 高负载（40 分钟仅推进 29%）中止；本次改动仅新增测试夹具、无生产代码变更，其余用例沿用 v1.1.0 全量结果（1681 用例 / 仅上述 1 项环境性失败） |

@@ -82,6 +82,69 @@ def _apply_settings(monkeypatch: pytest.MonkeyPatch, **overrides: object) -> Set
     return settings
 
 
+@pytest.fixture()
+def isolated_sqlite_db(monkeypatch: pytest.MonkeyPatch) -> None:
+    """把全局 DB 单例切到独立 SQLite 库并播种 admin.
+
+    用例「服务 Key 发放 → 落库 → 校验」必然触库；原实现依赖宿主机共享
+    PostgreSQL（localhost:5432），PG 不可用时抛 ``DBAPIError`` 造成环境性失败
+    （DEF-MTAUTH-001）。此处改用文件库 + 全局工厂替换，使用例与外部 PG 解耦。
+    """
+    import tempfile
+    import uuid
+    from pathlib import Path
+
+    from conftest import reset_db_singletons
+
+    import openbase.core.db.session as session_module
+    from openbase.core.db.init import SEEDED_ROLE_CODES
+    from openbase.core.db.session import get_engine, get_session_factory, init_db
+    from openbase.core.models import Base, Role, User, user_role
+    from openbase.modules.auth import hash_password
+
+    db_path = Path(tempfile.gettempdir()) / f"openbase_svc_agent_{uuid.uuid4().hex[:8]}.db"
+    Base.metadata.schema = None
+    for table in Base.metadata.tables.values():
+        table.schema = None
+    init_db(f"sqlite+aiosqlite:///{db_path}", schema=None)
+    factory = get_session_factory()
+    # 请求期 get_db 取全局工厂；显式替换以防同进程其它用例重建为外部库
+    monkeypatch.setattr(session_module, "get_session_factory", lambda: factory)
+
+    async def _bootstrap() -> None:
+        async with get_engine().begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+        async with factory() as session:  # type: ignore[call-arg]
+            roles: dict[str, Role] = {}
+            for code, name, description in SEEDED_ROLE_CODES:
+                role = Role(name=name, code=code, description=description, is_system=True)
+                session.add(role)
+                roles[code] = role
+            await session.flush()
+            admin = User(
+                username="admin",
+                password_hash=hash_password("admin123"),
+                display_name="Admin",
+                status=1,
+            )
+            session.add(admin)
+            await session.flush()
+            await session.execute(
+                user_role.insert().values(
+                    {"user_id": admin.id, "role_id": roles["admin"].id}
+                )
+            )
+            await session.commit()
+
+    asyncio.run(_bootstrap())
+    try:
+        yield
+    finally:
+        # 先释放引擎再删文件（Windows 下未释放会占用文件句柄）
+        reset_db_singletons()
+        db_path.unlink(missing_ok=True)
+
+
 # ---------------------------------------------------------------------------
 # T5-1 / T5-2 / T5-3 / T5-4：四 proxy sk-agent 统一出站
 # ---------------------------------------------------------------------------
@@ -567,6 +630,7 @@ def test_obk_service_account_subject_mapping_unit(
     assert _resolve_service_account_subject({"name": "unknown-svc"}) is None
 
 
+@pytest.mark.usefixtures("isolated_sqlite_db")
 def test_obk_service_account_mapped_outbound_headers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
