@@ -1,5 +1,6 @@
 """测试 v1.4.3 R-379 AC-143-03：llm-proxy Bearer 注入 + 统一响应适配 + 错误透传 + 401 拦截."""
 
+import asyncio
 import json
 from collections.abc import AsyncGenerator
 
@@ -7,6 +8,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request as StarletteRequest
+from starlette.responses import JSONResponse, Response
 
 from openbase import init_app
 from openbase.modules import llm_proxy as llm_proxy_module
@@ -681,3 +683,198 @@ def test_llm_proxy_build_headers_uses_tenant_scoped_key(
     assert headers["Authorization"] == "Bearer sk-openllm-tenant-1-key"
     assert headers["X-Tenant-ID"] == "tenant-1"
     assert headers["X-User-ID"] == "42"
+
+
+# ---------------------------------------------------------------------------
+# 覆盖率补测：策略校验边角 / 响应适配与 context_meta 边角 / 详情降级 / 会话边角
+# ---------------------------------------------------------------------------
+
+
+def test_llm_proxy_context_policy_error_branches() -> None:
+    """context_policy：非对象 / max_tokens 布尔 / preserve_recent_n 非整数 → PARAM_INVALID."""
+    with pytest.raises(llm_proxy_module.BaseError):
+        llm_proxy_module._validate_context_policy({"context_policy": "bad"})
+    with pytest.raises(llm_proxy_module.BaseError):
+        llm_proxy_module._validate_context_policy({"context_policy": {"max_tokens": True}})
+    with pytest.raises(llm_proxy_module.BaseError):
+        llm_proxy_module._validate_context_policy(
+            {"context_policy": {"preserve_recent_n": "3"}}
+        )
+    assert llm_proxy_module._validate_context_policy(
+        {"context_policy": {"preserve_recent_n": 2}}
+    ) == {"strategy": "recent", "preserve_recent_n": 2}
+
+
+def test_llm_proxy_response_adaptation_edges() -> None:
+    """响应适配：非 JSON 响应体 / detail 对象与字符串 / 状态码兜底 / 嵌套 retry_after."""
+    class _RawResponse:
+        status_code = 500
+        text = "upstream plain text"
+
+        def json(self) -> dict:
+            raise ValueError("not json")
+
+    body = json.loads(llm_proxy_module._adapt_response(_RawResponse()).body)
+    assert body["code"] == 500
+    assert body["data"] is None
+
+    body = json.loads(
+        llm_proxy_module._adapt_response(
+            FakeResponse(400, {"detail": {"code": 1004, "message": "bad request"}})
+        ).body
+    )
+    assert body["code"] == 1004
+    assert body["message"] == "bad request"
+
+    body = json.loads(
+        llm_proxy_module._adapt_response(FakeResponse(422, {"detail": "invalid"})).body
+    )
+    assert body["code"] == 422
+    assert body["message"] == "invalid"
+
+    body = json.loads(
+        llm_proxy_module._adapt_response(
+            FakeResponse(500, {"code": None, "detail": {"status": 4001, "message": "quota"}})
+        ).body
+    )
+    assert body["code"] == 4001
+
+    body = json.loads(
+        llm_proxy_module._adapt_response(
+            FakeResponse(429, {"code": 1003, "message": "limited", "data": {"retry_after": 7}})
+        ).body
+    )
+    assert body["data"] == {"retry_after": 7}
+
+
+def test_llm_proxy_with_context_meta_edges() -> None:
+    """context_meta 回显：错误响应 / 空 body / 非 JSON / 非对象 JSON 均原样返回."""
+    assert llm_proxy_module._with_context_meta(
+        Response(status_code=400, content=b"error"), None
+    ).status_code == 400
+
+    empty = Response(status_code=200)
+    assert llm_proxy_module._with_context_meta(empty, None).body == b""
+
+    raw = Response(status_code=200, content=b"not-json")
+    assert llm_proxy_module._with_context_meta(raw, None).body == b"not-json"
+
+    list_body = Response(status_code=200, content=b"[1, 2]")
+    assert llm_proxy_module._with_context_meta(list_body, None).body == b"[1, 2]"
+
+
+def test_llm_proxy_model_detail_matched_and_non_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """模型详情：列表命中 → 返回详情对象；响应体非 JSON → 原样返回."""
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/api/v1/llm-proxy/models/qwen",
+        "raw_path": b"/api/v1/llm-proxy/models/qwen",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "client": ("127.0.0.1", 12345),
+        "server": ("test", 80),
+        "state": {},
+    }
+    responses = [
+        JSONResponse(
+            status_code=200,
+            content={"code": 0, "data": {"models": [{"id": "qwen", "object": "model"}]}},
+        ),
+        Response(status_code=200, content=b"not-json"),
+    ]
+
+    async def _fake_forward(*args, **kwargs):
+        return responses.pop(0)
+
+    monkeypatch.setattr(llm_proxy_module, "_forward", _fake_forward)
+    monkeypatch.setattr(llm_proxy_module, "_build_upstream_headers", lambda *a, **k: {})
+
+    matched = asyncio.run(
+        llm_proxy_module.llm_model_detail("qwen", StarletteRequest(scope), {"id": "1"})
+    )
+    assert json.loads(matched.body)["data"]["id"] == "qwen"
+
+    broken = asyncio.run(
+        llm_proxy_module.llm_model_detail("qwen", StarletteRequest(scope), {"id": "1"})
+    )
+    assert broken.body == b"not-json"
+
+
+def test_llm_proxy_assembly_compare_records_params(client: TestClient) -> None:
+    """对照记录：session_id/limit 非空参数透传."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 0, "message": "success", "data": {"items": []}}),
+    ])
+    resp = client.get(
+        "/api/v1/llm-proxy/prompt-assembly/compare/records?session_id=s1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[-1]  # type: ignore[attr-defined]
+    assert call["url"].endswith("/openllm/v1/prompt/assembly/compare/records")
+    assert call["params"] == {"session_id": "s1", "limit": 50}
+
+
+def test_llm_proxy_conversation_archive_body_variants(client: TestClient) -> None:
+    """归档：空 body / 非法 JSON body → json=None 仍转发."""
+    token = _token(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    client.fake.set_responses([FakeResponse(200, {"archived": True})])  # type: ignore[attr-defined]
+
+    resp = client.post("/api/v1/llm-proxy/conversations/c1/archive", headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert client.fake.request_calls[-1]["json"] is None  # type: ignore[attr-defined]
+
+    client.fake.set_responses([FakeResponse(200, {"archived": True})])  # type: ignore[attr-defined]
+    resp = client.post(
+        "/api/v1/llm-proxy/conversations/c1/archive",
+        content=b"not-json",
+        headers={**headers, "Content-Type": "application/json"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert client.fake.request_calls[-1]["json"] is None  # type: ignore[attr-defined]
+
+
+def test_llm_proxy_conversation_message_create(client: TestClient) -> None:
+    """追加会话消息 → 载荷透传 + 统一响应."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"id": "msg-1", "role": "user", "content": "hi"}),
+    ])
+    payload = {"role": "user", "content": "hi"}
+    resp = client.post(
+        "/api/v1/llm-proxy/conversations/c1/messages",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["id"] == "msg-1"
+    call = client.fake.request_calls[-1]  # type: ignore[attr-defined]
+    assert call["url"].endswith("/api/v1/conversations/c1/messages")
+    assert call["json"] == payload
+
+
+def test_llm_proxy_sse_error_body_non_json(client: TestClient) -> None:
+    """SSE 上游错误体非 JSON → error 事件携带截断文本."""
+    token = _token(client)
+
+    class _NonJsonStream(FakeStream):
+        async def aread(self) -> bytes:
+            return b"<html>bad gateway</html>"
+
+    client.fake.set_stream(_NonJsonStream(status_code=502, lines=[]))  # type: ignore[attr-defined]
+    resp = client.post(
+        "/api/v1/llm-proxy/chat/stream",
+        json={"model": "m", "messages": [{"role": "user", "content": "hi"}]},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert "event: error" in resp.text
+    assert "bad gateway" in resp.text

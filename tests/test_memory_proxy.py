@@ -1,13 +1,24 @@
 """测试 v1.4.2 R-378 AC-142-05：memory-proxy 双通道注入 + 统一响应适配 + 401 拦截."""
 
+import asyncio
 import json
+from types import SimpleNamespace
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import JSONResponse, Response
 
+import openbase.modules.proxy.memory_proxy as memory_proxy_module
 from openbase import init_app
 from openbase.modules.auth import UserService
+from openbase.modules.proxy.memory_proxy import (
+    _adapt_response,
+    _build_upstream_headers,
+    _effective_subject_id,
+    _original_bearer_token,
+)
 from openbase.settings import Settings
 
 UPSTREAM_BASE = "http://127.0.0.1:8020"
@@ -524,3 +535,189 @@ def test_memory_proxy_patch_owner_forbidden_passthrough(
     )
     assert resp.status_code == 400, resp.text
     assert resp.json()["code"] == "MEMORY_OWNERSHIP_CHANGE_FORBIDDEN"
+
+
+# ---------------------------------------------------------------------------
+# 覆盖率补测：响应适配边角 / 上游不可达（raw 转发）/ 其余透传端点 / 列表回退
+# ---------------------------------------------------------------------------
+
+
+def test_memory_proxy_response_adaptation_edges() -> None:
+    """委托主体取值 + 非 JSON 响应体 + detail 字符串与状态码兜底."""
+    assert _effective_subject_id({"id": "u1", "delegated": {"subject_id": 7}}) == "7"
+    assert _effective_subject_id({"id": "u1"}) == "u1"
+
+    class _RawResponse:
+        status_code = 500
+        text = "upstream plain text"
+
+        def json(self) -> dict:
+            raise ValueError("not json")
+
+    adapted = _adapt_response(_RawResponse())
+    assert adapted.status_code == 500
+    assert json.loads(adapted.body)["data"] is None
+
+    # detail 为字符串 → 作为 message；code 缺省回落 HTTP 状态码
+    adapted = _adapt_response(FakeResponse(400, {"detail": "bad request"}))
+    body = json.loads(adapted.body)
+    assert body["code"] == 400
+    assert body["message"] == "bad request"
+
+    # detail 为对象但仅含 message → code 仍回落状态码
+    adapted = _adapt_response(FakeResponse(503, {"detail": {"message": "boom"}}))
+    assert json.loads(adapted.body)["code"] == 503
+
+
+def test_memory_proxy_forget_and_other_passthrough_endpoints(client: TestClient) -> None:
+    """forget / 会话详情与终止 / 衰减配置写入 / 召回追踪 / 就绪存活 / 图像嵌入."""
+    token = _token(client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    def _call(method: str, path: str, **kwargs):
+        client.fake.set_responses([FakeResponse(200, {"ok": True})])  # type: ignore[attr-defined]
+        return client.request(method, f"/api/v1/memory-proxy{path}", headers=headers, **kwargs)
+
+    assert _call("POST", "/forget", json={"content": "x"}).status_code == 200
+    assert _call("GET", "/sessions/s-1").status_code == 200
+    assert _call("POST", "/sessions/s-1/terminate").status_code == 200
+    assert _call("PUT", "/decay/config", json={"strategy": "adaptive"}).status_code == 200
+    assert _call("GET", "/recall/traces/t-1").status_code == 200
+    assert _call("GET", "/health/readiness").status_code == 200
+    assert _call("GET", "/health/liveness").status_code == 200
+    resp = _call(
+        "POST",
+        "/multimodal/image-embed",
+        files={"file": ("img.png", b"\x89PNG", "image/png")},
+    )
+    assert resp.status_code == 200
+
+
+def test_memory_proxy_raw_forward_upstream_unreachable(client: TestClient) -> None:
+    """列表原生分页路径上游不可达 → 502（raw 转发异常分支）."""
+    token = _token(client)
+    client.fake.fail_with = httpx.ConnectError("connection refused")  # type: ignore[attr-defined]
+    resp = client.get(
+        "/api/v1/memory-proxy/memories",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 502, resp.text
+    assert resp.json()["code"] == "SYS_502"
+
+
+def test_memory_proxy_detail_tags_normalization_and_bad_body(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """详情：metadata.tags 提升为顶层；响应体非 JSON 时跳过归一化."""
+    token = _token(client)
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"memory_id": "m1", "metadata": {"tags": ["t1"]}}),
+    ])
+    resp = client.get(
+        "/api/v1/memory-proxy/memories/m1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["tags"] == ["t1"]
+
+    async def _fake_forward(*args, **kwargs):
+        return Response(content=b"not-json", status_code=200)
+
+    monkeypatch.setattr(memory_proxy_module, "_forward", _fake_forward)
+    monkeypatch.setattr(memory_proxy_module, "_build_upstream_headers", lambda *a, **k: {})
+    response = asyncio.run(memory_proxy_module.memory_detail("m1", SimpleNamespace(), {"id": "1"}))
+    assert response.status_code == 200
+    assert response.body == b"not-json"
+
+
+def test_memory_proxy_list_native_and_recall_fallbacks(client: TestClient) -> None:
+    """列表：原生顶层 items / 非对象响应回退 recall / 404 回退 / recall 报错透传."""
+    token = _token(client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 原生 body.data 为顶层 {items,total}，且 tag 参数透传上游
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"items": [{"memory_id": "m1"}], "total": 1}),
+    ])
+    resp = client.get("/api/v1/memory-proxy/memories?tag=t1", headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["total"] == 1
+    assert "tag=t1" in client.fake.request_calls[-1]["url"]  # type: ignore[attr-defined]
+
+    # 原生返回非对象（列表）→ 回退 recall，并在本地按 tag/memory_type 过滤
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, [{"memory_id": "ignored"}]),
+        FakeResponse(200, {"results": [
+            {"memory_id": "a", "tags": ["t1"], "memory_type": "text"},
+            {"memory_id": "b", "tags": ["t2"], "memory_type": "text"},
+        ]}),
+    ])
+    resp = client.get(
+        "/api/v1/memory-proxy/memories?tag=t1&memory_type=text", headers=headers
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    assert data["total"] == 1
+    assert data["items"][0]["memory_id"] == "a"
+
+    # 原生 404 → 回退 recall；recall 5xx → 原样返回错误信封
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(404, {"error": "NOT_FOUND", "message": "no native"}),
+        FakeResponse(500, {"error": "INTERNAL_ERROR", "message": "boom"}),
+    ])
+    resp = client.get("/api/v1/memory-proxy/memories", headers=headers)
+    assert resp.status_code == 500, resp.text
+    assert resp.json()["code"] == "INTERNAL_ERROR"
+
+
+def test_memory_proxy_original_token_and_header_branches() -> None:
+    """原 JWT 透传：非 Bearer/空 token 返回 None；匿名与 sk-agent 不构造伪 JWT."""
+    assert _original_bearer_token(SimpleNamespace(headers={})) is None
+    assert _original_bearer_token(SimpleNamespace(headers={"Authorization": "Basic x"})) is None
+    assert _original_bearer_token(SimpleNamespace(headers={"Authorization": "Bearer   "})) is None
+
+    scope = {
+        "type": "http",
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": "/api/v1/remember",
+        "raw_path": b"/api/v1/remember",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "client": ("127.0.0.1", 12345),
+        "server": ("test", 80),
+        "state": {},
+    }
+    request = StarletteRequest(scope)
+    anonymous = _build_upstream_headers(request, None)
+    assert "Authorization" not in anonymous
+    assert anonymous["X-API-Key"]
+
+    service_agent = _build_upstream_headers(request, {"id": "1", "auth_method": "sk-agent"})
+    assert "Authorization" not in service_agent
+
+
+def test_memory_proxy_detail_normalization_skips(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """详情归一化：data 非 dict / metadata 缺失 / tags 已存在 → 保持原响应."""
+    responses = [
+        JSONResponse(status_code=200, content={"code": 0, "data": {"memory_id": "m1"}}),
+        JSONResponse(
+            status_code=200,
+            content={"code": 0, "data": {"memory_id": "m2", "metadata": {}, "tags": ["t"]}},
+        ),
+    ]
+
+    async def _fake_forward(*args, **kwargs):
+        return responses.pop(0)
+
+    monkeypatch.setattr(memory_proxy_module, "_forward", _fake_forward)
+    monkeypatch.setattr(memory_proxy_module, "_build_upstream_headers", lambda *a, **k: {})
+
+    first = asyncio.run(memory_proxy_module.memory_detail("m1", SimpleNamespace(), {"id": "1"}))
+    assert json.loads(first.body)["data"] == {"memory_id": "m1"}
+    second = asyncio.run(memory_proxy_module.memory_detail("m2", SimpleNamespace(), {"id": "1"}))
+    assert json.loads(second.body)["data"]["tags"] == ["t"]
