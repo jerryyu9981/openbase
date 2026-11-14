@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |---|---|
 | 文档名称 | OpenBase 剩余模块覆盖率治理方案 |
-| 版本 | v1.4.0 |
-| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理；v1.4.0 完成 7 个中小模块边角治理，待人工验收） |
+| 版本 | v1.5.0 |
+| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理；v1.4.0 完成 7 个中小模块边角治理；v1.5.0 完成 `auth/oidc.py` 边角治理，待人工验收） |
 | 文档类型 | 测试阶段专项补测方案（`doc/test`，归属 Step 4 测试阶段） |
 | 编写角色 | 测试负责人 |
 | 适用环境 | 开发环境（Dev）/ 测试环境（Test）通用 |
@@ -22,6 +22,7 @@
 | v1.3.0 | 2026-11-14 | 测试负责人 | 余量模块治理（§9.7）：`logs/repository` 新增 11 条补测（定向 85%，缺失行 88→60）；`auth` 四个边角模块（oidc_state/oidc_logout/key_anomaly/role_contract）新增 17 条补测，定向覆盖率均达 **100%**；`proxy/memory_proxy` 新增 7 条（83%→**98%**）；`llm_proxy` 新增 8 条（82%→定向补齐）。全量复跑仍受宿主机 PG 故障与高负载阻断，门禁以「定向覆盖 + v1.1.0 全量基线」组合判定 |
 | v1.3.1 | 2026-11-14 | 测试负责人 | 回填 `llm_proxy` 定向实测：`pytest tests/test_llm_proxy.py --cov=openbase` 全通过，模块覆盖率 **82% → 94%**（单文件口径，缺失 8 行：策略范围/负数分支由 `test_llm_proxy_context_policy.py` 覆盖，另有 2 行为不可达兜底）；`memory_proxy` 最终 2 条分支用例提交后定向验证 **2 passed** |
 | v1.4.0 | 2026-11-14 | 测试负责人 | 中小模块边角治理（§9.8）：新增 `test_service_keys_edges.py`（6 条）与 `test_small_module_edges.py`（8 条），共 14 条；`service_keys` 缺失 27→8，`jwt`/`idp_registry`/`access_control`/`logs/derivation`/`abac_policy_store` 的既定缺口行全部清零，`token_api` scope 守卫补齐；14 条用例定向运行全通过 |
+| v1.5.0 | 2026-11-14 | 测试负责人 | `auth/oidc.py` 边角治理（§9.9）：新增 `tests/test_oidc_edges.py`（43 条），覆盖配置回落、discovery/验签失败包装、Keycloak 角色异常形状、绑定/租户降级、回调错误码、登出尽力而为、back-channel 载荷解析；定向覆盖率 **84% → 99%**（646 语句 0 缺失，仅 1 条不可达分支弧），OIDC 族 140 条用例全部通过 |
 
 ---
 
@@ -312,7 +313,44 @@ python -m ruff check openbase tests
 
 | 模块 | 缺口行 | 说明 |
 |---|---|---|
-| `modules/auth/oidc.py` | 65 | 授权码/回调/登出/刷新等端点错误分支，需 OIDC 夹具与上游 Mock |
+| `modules/auth/oidc.py` | ~~65~~ → **0** | **已于 v1.5.0 治理（§9.9）**：定向 99%（646 语句 0 缺失，仅余 1 条不可达分支弧） |
 | `modules/auth/__init__.py` | 36 | 登录/刷新/改密/API Key 路由的异常与降级分支 |
 | `modules/audit/__init__.py` | 30 | 审计查询/导出/校验端点边角 |
 | `modules/logs/repository.py` | 60 | 需真实四仓日志目录布局的组合分支 |
+
+### 9.9 `auth/oidc.py` 边角治理（v1.5.0，2026-11-14）
+
+承接 §9.8.3 遗留项，针对 OIDC 统一认证模块的配置解析、上游失败、降级与 back-channel 载荷分支补齐定向用例。
+
+#### 9.9.1 变更落地
+
+| 文件 | 变更 | 覆盖目标 |
+|---|---|---|
+| `tests/test_oidc_edges.py` | 新增（43 条） | `auth/oidc.py` 全链路边角（见下表） |
+| `openbase/modules/auth/oidc.py` | 无变更 | 仅补测，不改生产语义 |
+
+| 覆盖域 | 关键分支 |
+|---|---|
+| 客户端配置 | 算法串归一（空项/重复/大小写）、Provider `redirect_uri`/`default_tenant` 优先与回落 |
+| discovery / 断言 | 缺失端点、`_build_client_assertion` 前置校验（token endpoint / 私钥路径）、`_verify_token` 未加载 discovery / 缺 `jwks_uri` / JWTError 包装 |
+| 登出 URL | 无 `end_session_endpoint` → None、仅 `post_logout_redirect_uri`、无 `id_token_hint` |
+| Provider 解析 | 非法 JSON → `SYS_INTERNAL_ERROR` |
+| Keycloak 角色 | 平铺 `roles` 字符串、`realm_access.roles` 非数组、`resource_access` entry/roles 非数组 |
+| 用户绑定 | `role` 字符串、无白名单角色、Role 行缺失、`_tenant_code_from_id` 数字/非数字/DB 异常、缺 `sub`、回滚失败吞异常 |
+| 回调 | `error` 参数、缺 `code/state`、客户端未启用、缺 `id_token`、Keycloak 角色兜底（无 access_token/验签失败/伪角色过滤）、绑定主体查询异常/行缺失/非 active、`tenant_code` 回查与跳过、hint 保存失败、无租户直签 |
+| 登出 | 主体行缺失、回滚失败、Provider 未启用、无 hint、IdP 尽力而为失败 |
+| back-channel | `aud` 字符串/数组、登出算法回落与无交集、缺 `jwks_uri`、非法 JSON/非对象载荷、非 JWT/非对象 claims、候选 discovery 失败/issuer 不匹配/aud 不匹配、未知 `sid` |
+
+#### 9.9.2 定向验证结果
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 用例 | `pytest tests/test_oidc_edges.py -q` | **43 passed** |
+| OIDC 全族 | `pytest tests/test_oidc_edges.py tests/test_oidc_p1_residuals.py tests/test_oidc_token_auth.py tests/test_oidc_gateway.py tests/test_oidc_multi_provider.py tests/test_oidc_keycloak.py tests/test_oidc_hardening.py tests/test_oidc_binding.py -q` | **140 passed**，0 failed |
+| 覆盖率 | 同上 + `--cov=openbase --cov-report=term-missing` | `modules/auth/oidc.py`：646 语句 **0 缺失**，228 分支仅 1 条 partial → **99%**（84% → 99%） |
+| 静态检查 | `ruff check tests/test_oidc_edges.py` | `All checks passed!` |
+
+#### 9.9.3 剩余说明
+
+- 唯一残留分支弧 `1248->1251`（`elif sid:` 为假）：`_validate_logout_claims` 已强制 `sub` 或 `sid` 至少其一，`sub` 为空时 `sid` 必非空，该弧不可达，不做生产改动。
+- 全量回归仍受宿主机 PostgreSQL 故障与高负载阻断，门禁继续采用「定向覆盖率 + v1.1.0 全量基线」组合判定。
