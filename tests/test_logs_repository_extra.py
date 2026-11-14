@@ -34,8 +34,9 @@ from openbase.modules.logs.repository import (
 )
 from openbase.modules.testing import TestRecordService
 
-_TODAY = datetime.now().strftime("%Y%m%d")
 _NOW = datetime.now(timezone.utc)
+# 与 Filters 的时间窗（UTC）同口径，避免本地/UTC 跨零点导致日分片选择漂移
+_TODAY = _NOW.strftime("%Y%m%d")
 
 
 def _entry(**overrides) -> SimpleNamespace:
