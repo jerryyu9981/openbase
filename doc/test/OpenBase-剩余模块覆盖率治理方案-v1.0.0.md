@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |---|---|
 | 文档名称 | OpenBase 剩余模块覆盖率治理方案 |
-| 版本 | v1.3.1 |
-| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理与实测回填，待人工验收） |
+| 版本 | v1.4.0 |
+| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理；v1.4.0 完成 7 个中小模块边角治理，待人工验收） |
 | 文档类型 | 测试阶段专项补测方案（`doc/test`，归属 Step 4 测试阶段） |
 | 编写角色 | 测试负责人 |
 | 适用环境 | 开发环境（Dev）/ 测试环境（Test）通用 |
@@ -21,6 +21,7 @@
 | v1.2.0 | 2026-11-14 | 测试负责人 | 修复 `test_service_agent_outbound.py` 的环境性失败：服务 Key 用例改用独立 SQLite 库（不再依赖宿主机 PostgreSQL）；目标用例 1 passed、整文件 17 passed；全量复跑受宿主机 PG 故障与高负载影响未在窗口内完成 |
 | v1.3.0 | 2026-11-14 | 测试负责人 | 余量模块治理（§9.7）：`logs/repository` 新增 11 条补测（定向 85%，缺失行 88→60）；`auth` 四个边角模块（oidc_state/oidc_logout/key_anomaly/role_contract）新增 17 条补测，定向覆盖率均达 **100%**；`proxy/memory_proxy` 新增 7 条（83%→**98%**）；`llm_proxy` 新增 8 条（82%→定向补齐）。全量复跑仍受宿主机 PG 故障与高负载阻断，门禁以「定向覆盖 + v1.1.0 全量基线」组合判定 |
 | v1.3.1 | 2026-11-14 | 测试负责人 | 回填 `llm_proxy` 定向实测：`pytest tests/test_llm_proxy.py --cov=openbase` 全通过，模块覆盖率 **82% → 94%**（单文件口径，缺失 8 行：策略范围/负数分支由 `test_llm_proxy_context_policy.py` 覆盖，另有 2 行为不可达兜底）；`memory_proxy` 最终 2 条分支用例提交后定向验证 **2 passed** |
+| v1.4.0 | 2026-11-14 | 测试负责人 | 中小模块边角治理（§9.8）：新增 `test_service_keys_edges.py`（6 条）与 `test_small_module_edges.py`（8 条），共 14 条；`service_keys` 缺失 27→8，`jwt`/`idp_registry`/`access_control`/`logs/derivation`/`abac_policy_store` 的既定缺口行全部清零，`token_api` scope 守卫补齐；14 条用例定向运行全通过 |
 
 ---
 
@@ -279,3 +280,39 @@ python -m ruff check openbase tests
 - 全量 `pytest tests --cov=openbase` 在本窗口仍不可执行：宿主机共享 PostgreSQL 不可用（`WinError 10054`）叠加高负载，单文件带覆盖率运行超过 7 分钟未完成，另出现一次 Python 解释器访问违例（`0xC0000005`，环境性）。
 - 因此本轮门禁采用「**定向覆盖率 + v1.1.0 全量基线**」组合判定：新增用例均为分支/异常路径补测，不改生产代码，不影响既有全量结论（TOTAL 91%）。
 - 建议 PG 恢复后在低负载窗口补跑一次全量，回填最终 TOTAL（各模块定向结果已在 §9.7.2 回填）。
+
+### 9.8 中小模块边角治理（v1.4.0，2026-11-14）
+
+按 v1.1.0 全量基线中的模块缺口排行，继续治理 200 行以内的中小模块（防御性分支、配置解析异常、降级路径为主）。
+
+#### 9.8.1 变更落地
+
+| 文件 | 变更 | 覆盖目标 |
+|---|---|---|
+| `tests/test_service_keys_edges.py` | 新增（6 条） | `auth/service_keys.py`：TTL/宽限配置异常回落、到期提醒去重 Redis 降级与容量兜底、轮换非 active 拒绝、使用痕迹写入失败降级、已吊销幂等 |
+| `tests/test_small_module_edges.py` | 新增（8 条） | `auth/token_api.py` scope 守卫；`auth/idp_registry.py` 解析异常；`auth/jwt.py` RS256 claim 注入/aud 数组/解码异常/可选 claim；`auth/access_control.py` 规则与阈值兜底；`auth/abac_policy_store.py` 参数校验；`logs/derivation.py` 动作语义兜底 |
+
+合计新增用例 **14 条**（UT-REM-74 ~ 87），无生产代码变更。
+
+#### 9.8.2 定向验证结果
+
+| 模块 | 基线缺口行 | 现状 | 说明 |
+|---|---|---|---|
+| `modules/auth/service_keys.py` | 27 | **8** | 剩余为需真实 DB 会话的签发/列表/校验组合分支；`_default_expires_at`/`_rotate_grace_hours`/`_claim_expiring_notification`/`rotate` 拒绝/`touch_last_used` 降级/`_mark_revoked` 幂等已覆盖 |
+| `modules/auth/jwt.py` | 4 | **0** | RS256 iss/aud 注入与缺省、aud 数组、解码异常、可选 claim、extra 透传 |
+| `modules/auth/idp_registry.py` | 4 | **0** | 算法空项/重复、非对象、非法 JSON、顶层非数组 |
+| `modules/auth/access_control.py` | 3 | **0** | ABAC 规则非对象、阈值读取异常回落 |
+| `modules/auth/abac_policy_store.py` | 2 | **0** | effect 非法 → `PARAM_INVALID` |
+| `modules/logs/derivation.py` | 3 | **0** | 无前缀模块、动作语义 delete/proxy/config/read |
+| `modules/auth/token_api.py` | 5 | 1 | scope 守卫已覆盖；其余为内省/吊销端点内部异常分支 |
+
+验证：`ruff check` 全通过；`pytest tests/test_service_keys_edges.py tests/test_small_module_edges.py -q` → **14 passed**。
+
+#### 9.8.3 遗留（下一轮）
+
+| 模块 | 缺口行 | 说明 |
+|---|---|---|
+| `modules/auth/oidc.py` | 65 | 授权码/回调/登出/刷新等端点错误分支，需 OIDC 夹具与上游 Mock |
+| `modules/auth/__init__.py` | 36 | 登录/刷新/改密/API Key 路由的异常与降级分支 |
+| `modules/audit/__init__.py` | 30 | 审计查询/导出/校验端点边角 |
+| `modules/logs/repository.py` | 60 | 需真实四仓日志目录布局的组合分支 |
