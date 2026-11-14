@@ -3,8 +3,8 @@
 | 项目 | 内容 |
 |---|---|
 | 文档名称 | OpenBase 剩余模块覆盖率治理方案 |
-| 版本 | v1.5.0 |
-| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理；v1.4.0 完成 7 个中小模块边角治理；v1.5.0 完成 `auth/oidc.py` 边角治理，待人工验收） |
+| 版本 | v1.6.0 |
+| 状态 | [Final]（v1.1.0 完成 30 条主量补测；v1.2.0 修复环境性失败；v1.3.x 完成余量模块治理；v1.4.0 完成 7 个中小模块边角治理；v1.5.0 完成 `auth/oidc.py`；v1.6.0 完成 `auth/__init__.py`，待人工验收） |
 | 文档类型 | 测试阶段专项补测方案（`doc/test`，归属 Step 4 测试阶段） |
 | 编写角色 | 测试负责人 |
 | 适用环境 | 开发环境（Dev）/ 测试环境（Test）通用 |
@@ -23,6 +23,7 @@
 | v1.3.1 | 2026-11-14 | 测试负责人 | 回填 `llm_proxy` 定向实测：`pytest tests/test_llm_proxy.py --cov=openbase` 全通过，模块覆盖率 **82% → 94%**（单文件口径，缺失 8 行：策略范围/负数分支由 `test_llm_proxy_context_policy.py` 覆盖，另有 2 行为不可达兜底）；`memory_proxy` 最终 2 条分支用例提交后定向验证 **2 passed** |
 | v1.4.0 | 2026-11-14 | 测试负责人 | 中小模块边角治理（§9.8）：新增 `test_service_keys_edges.py`（6 条）与 `test_small_module_edges.py`（8 条），共 14 条；`service_keys` 缺失 27→8，`jwt`/`idp_registry`/`access_control`/`logs/derivation`/`abac_policy_store` 的既定缺口行全部清零，`token_api` scope 守卫补齐；14 条用例定向运行全通过 |
 | v1.5.0 | 2026-11-14 | 测试负责人 | `auth/oidc.py` 边角治理（§9.9）：新增 `tests/test_oidc_edges.py`（43 条），覆盖配置回落、discovery/验签失败包装、Keycloak 角色异常形状、绑定/租户降级、回调错误码、登出尽力而为、back-channel 载荷解析；定向覆盖率 **84% → 99%**（646 语句 0 缺失，仅 1 条不可达分支弧），OIDC 族 140 条用例全部通过 |
+| v1.6.0 | 2026-11-14 | 测试负责人 | `auth/__init__.py` 边角治理（§9.10）：新增 `tests/test_auth_edges.py`（23 条），覆盖密码校验异常、登录租户策略与兜底、租户 code 解析、刷新链主体/状态/租户分支、资料与改密边界、通知 Webhook 校验、角色契约与 API Key 端点边界；定向覆盖率 **87% → 98%**（389 语句仅余 4 处导入降级兜底 8 行），关联 15 个测试文件 205 条用例全部通过 |
 
 ---
 
@@ -314,7 +315,7 @@ python -m ruff check openbase tests
 | 模块 | 缺口行 | 说明 |
 |---|---|---|
 | `modules/auth/oidc.py` | ~~65~~ → **0** | **已于 v1.5.0 治理（§9.9）**：定向 99%（646 语句 0 缺失，仅余 1 条不可达分支弧） |
-| `modules/auth/__init__.py` | 36 | 登录/刷新/改密/API Key 路由的异常与降级分支 |
+| `modules/auth/__init__.py` | ~~36~~ → **0**（8 行导入兜底不可达） | **已于 v1.6.0 治理（§9.10）**：定向 98%（389 语句仅余 4 处 import 降级兜底） |
 | `modules/audit/__init__.py` | 30 | 审计查询/导出/校验端点边角 |
 | `modules/logs/repository.py` | 60 | 需真实四仓日志目录布局的组合分支 |
 
@@ -354,3 +355,39 @@ python -m ruff check openbase tests
 
 - 唯一残留分支弧 `1248->1251`（`elif sid:` 为假）：`_validate_logout_claims` 已强制 `sub` 或 `sid` 至少其一，`sub` 为空时 `sid` 必非空，该弧不可达，不做生产改动。
 - 全量回归仍受宿主机 PostgreSQL 故障与高负载阻断，门禁继续采用「定向覆盖率 + v1.1.0 全量基线」组合判定。
+
+### 9.10 `auth/__init__.py` 边角治理（v1.6.0，2026-11-14）
+
+承接 §9.8.3 遗留项，针对本地认证主模块（登录/刷新/资料/通知偏好/角色契约/服务 Key）的降级与校验分支补齐用例。
+
+#### 9.10.1 变更落地
+
+| 文件 | 变更 | 覆盖目标 |
+|---|---|---|
+| `tests/test_auth_edges.py` | 新增（23 条） | `modules/auth/__init__.py` 边角分支（见下表） |
+| `openbase/modules/auth/__init__.py` | 无变更 | 仅补测，不改生产语义 |
+
+| 覆盖域 | 关键分支 |
+|---|---|
+| 密码工具 | 非法哈希 `verify_password` → False（ValueError 兜底） |
+| 登录租户策略 | 显式默认租户兜底、生产强制无租户 → `AUTH_FORBIDDEN`、未绑定留痕 |
+| 租户解析 | 空值 / 非数字原样 / 数字查表 / DB 异常降级 |
+| 登录主链路 | 用户不存在 → 401；默认租户兜底 WARN 后正常签发 |
+| 刷新链 | 非法 refresh / 缺 sub、字符串主体跳过 DB、DB 异常降级、agent 主体拒签、主体行租户与角色回填、payload 自带 tenant_code 跳过回查 |
+| 资料 / 改密 | OIDC 非数字主体无本地行、行缺失 404、仅更新部分字段、新旧密码相同拒绝 |
+| 通知偏好 | Webhook 地址协议非法、既有行更新不重复插入 |
+| 角色契约 / 服务 Key | `GET /roles/contract`、`GET /api-keys/expiring`、按 id 吊销未命中 404 |
+
+#### 9.10.2 定向验证结果
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 用例 | `pytest tests/test_auth_edges.py -q` | **23 passed** |
+| 关联回归 | 新增文件 + 6 个 auth 测试文件 + 8 个身份/密钥/应用文件，共 15 个文件 | **205 passed**，0 failed |
+| 覆盖率 | 同上 + `--cov=openbase --cov-report=term-missing` | `modules/auth/__init__.py`：389 语句仅 8 行未覆盖，96 分支 0 partial → **98%**（87% → 98%） |
+| 静态检查 | `ruff check tests/test_auth_edges.py` | `All checks passed!` |
+
+#### 9.10.3 剩余说明
+
+- 残留 8 行均为模块顶部 `try: import ... except ImportError` 的路由降级兜底（oidc/token_api/access_api/idp_registry），正常运行路径不可达；如需强覆盖需在独立子进程中模拟导入失败，收益低且易污染 `sys.modules`，本轮不做。
+- 全量回归仍受宿主机 PostgreSQL 故障与高负载阻断，门禁继续采用「定向覆盖率 + v1.1.0 全量基线」组合判定；§9.8.3 剩余项收敛为 `audit/__init__.py`（30）与 `logs/repository.py`（60）。
