@@ -93,14 +93,14 @@ import { ref } from 'vue'
 import { gatewayApi, type AggregateStep } from '@/core/api/gateway'
 
 const steps = ref<AggregateStep[]>([
-  { id: 'models', system: 'openllm', path: '/models', method: 'GET', timeout_ms: 2000 },
-  { id: 'kbs', system: 'openrag', path: '/kb/list', method: 'GET', timeout_ms: 2000 },
+  { id: 'models', system: 'openllm', path: '/openllm/v1/models', method: 'GET', timeout_ms: 3000 },
+  { id: 'dps', system: 'dps', path: '/health/liveness', method: 'GET', timeout_ms: 2000 },
 ])
 const timeoutMs = ref(5000)
 const onPartialFailure = ref<'return_errors' | 'strict' | 'best_effort'>('return_errors')
 const mappingItems = ref([
-  { target: 'model_total', expr: '${models.data.total}' },
-  { target: 'kb_total', expr: '${kbs.data.total}' },
+  { target: 'models', expr: '${models.data.data.models}' },
+  { target: 'dps_status', expr: '${dps.data.status}' },
 ])
 const executing = ref(false)
 const errorMessage = ref('')

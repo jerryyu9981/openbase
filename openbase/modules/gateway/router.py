@@ -12,7 +12,7 @@ import time
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from openbase.modules.auth.rbac import require_permission
 from openbase.modules.gateway.aggregate import execute_aggregate
@@ -146,6 +146,39 @@ async def gateway_health() -> dict[str, Any]:
     return _ok({"systems": systems})
 
 
+# 各系统健康探测候选路径（按顺序回退；实例 meta.health_path 优先）。
+# DPS 仅暴露 /health/liveness|readiness|startup 与 /healthz，/health 为 404。
+_HEALTH_PATHS: dict[str, tuple[str, ...]] = {
+    "dps": ("/health/liveness", "/health"),
+}
+_DEFAULT_HEALTH_PATHS: tuple[str, ...] = ("/health",)
+
+
+async def _probe_health(target: ServiceInstance) -> tuple[bool, float | None]:
+    """探测实例健康（候选路径逐个尝试，任一 2xx 即可达）.
+
+    Args:
+        target: 待探测实例。
+
+    Returns:
+        (reachable, latency_ms)；全部失败时 latency_ms 为 None。
+    """
+    meta_path = str(target.meta.get("health_path") or "").strip()
+    paths = (meta_path, *_HEALTH_PATHS.get(target.system, _DEFAULT_HEALTH_PATHS)) if meta_path else _HEALTH_PATHS.get(
+        target.system, _DEFAULT_HEALTH_PATHS
+    )
+    started = time.monotonic()
+    async with httpx.AsyncClient(timeout=2.0) as client:
+        for path in dict.fromkeys(paths):
+            try:
+                response = await client.get(f"http://{target.host}:{target.port}{path}")
+            except httpx.HTTPError:
+                continue
+            if 200 <= response.status_code < 300:
+                return True, round((time.monotonic() - started) * 1000, 1)
+    return False, None
+
+
 @router.get(
     "/gateway/ping",
     response_model=dict[str, Any],
@@ -160,17 +193,8 @@ async def gateway_ping() -> dict[str, Any]:
         if not instances:
             results.append({"system": system, "reachable": False, "latency_ms": None})
             continue
-        target = instances[0]
-        started = time.monotonic()
-        try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
-                response = await client.get(f"http://{target.host}:{target.port}/health")
-            latency_ms = round((time.monotonic() - started) * 1000, 1)
-            results.append(
-                {"system": system, "reachable": 200 <= response.status_code < 300, "latency_ms": latency_ms}
-            )
-        except httpx.HTTPError:
-            results.append({"system": system, "reachable": False, "latency_ms": None})
+        reachable, latency_ms = await _probe_health(instances[0])
+        results.append({"system": system, "reachable": reachable, "latency_ms": latency_ms})
     return _ok({"results": results})
 
 
@@ -181,7 +205,16 @@ async def gateway_ping() -> dict[str, Any]:
     response_model=dict[str, Any],
     dependencies=[Depends(require_permission("gateway:aggregate"))],
 )
-async def aggregate(request: AggregateRequest) -> dict[str, Any]:
-    """聚合编排执行（代码式并发聚合）."""
-    result = await execute_aggregate(request.model_dump())
+async def aggregate(request: Request, payload: AggregateRequest) -> dict[str, Any]:
+    """聚合编排执行（代码式并发聚合）.
+
+    子步骤经本服务 /api/v1/proxy 转发，故必须以**绝对地址**回连自身，
+    并把调用方 Authorization 透传下去（代理层据此装配身份头与上游凭据）。
+    """
+    proxy_base = str(request.base_url).rstrip("/") + "/api/v1/proxy"
+    authorization = request.headers.get("authorization")
+    forward_headers = {"Authorization": authorization} if authorization else {}
+    result = await execute_aggregate(
+        payload.model_dump(), proxy_base=proxy_base, forward_headers=forward_headers
+    )
     return _ok(result)

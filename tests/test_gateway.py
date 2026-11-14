@@ -247,6 +247,126 @@ def test_aggregate_step_timeout_partial_failure(monkeypatch: pytest.MonkeyPatch)
     assert result["result"]["kb_total"] == 42
 
 
+def test_aggregate_uses_absolute_proxy_base_and_forwards_headers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """聚合经绝对地址调用自身代理，并透传调用方 Authorization（DEF-01 回归）."""
+    import httpx
+
+    from openbase.modules.gateway.aggregate import execute_aggregate
+
+    recorded: list[tuple[str, dict[str, str]]] = []
+
+    class _RecordingClient(_FakeAggregateClient):
+        async def request(self, method: str, url: str, **kwargs: Any) -> Any:
+            recorded.append((url, dict(kwargs.get("headers") or {})))
+            return self
+
+    fake = _RecordingClient([])
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: fake)
+
+    request: dict[str, Any] = {
+        "steps": [{"id": "models", "system": "openllm", "path": "openllm/v1/models", "method": "GET"}],
+        "mapping": {"model_total": "${models.data.total}"},
+    }
+    result = asyncio.run(
+        execute_aggregate(
+            request,
+            proxy_base="http://127.0.0.1:8000/api/v1/proxy",
+            forward_headers={"Authorization": "Bearer t"},
+        )
+    )
+    assert result["errors"] == []
+    assert recorded[0][0] == "http://127.0.0.1:8000/api/v1/proxy/openllm/openllm/v1/models"
+    assert recorded[0][1]["Authorization"] == "Bearer t"
+
+
+def test_probe_health_falls_back_to_liveness(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DPS 无 /health 时回落 /health/liveness 判定可达（DEF-02 回归）."""
+    import httpx
+
+    from openbase.modules.gateway.discovery import ServiceInstance
+    from openbase.modules.gateway.router import _probe_health
+
+    class _Response:
+        def __init__(self, status_code: int) -> None:
+            self.status_code = status_code
+
+    class _HealthClient:
+        async def __aenter__(self) -> "_HealthClient":
+            return self
+
+        async def __aexit__(self, *args: Any) -> None:
+            return None
+
+        async def get(self, url: str) -> _Response:
+            return _Response(200 if url.endswith("/health/liveness") else 404)
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: _HealthClient())
+    target = ServiceInstance(system="dps", instance_id="127.0.0.1:8030", host="127.0.0.1", port=8030)
+    reachable, latency_ms = asyncio.run(_probe_health(target))
+    assert reachable is True
+    assert latency_ms is not None
+
+
+def test_probe_health_prefers_instance_meta_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """实例 meta.health_path 优先于系统候选链."""
+    import httpx
+
+    from openbase.modules.gateway.discovery import ServiceInstance
+    from openbase.modules.gateway.router import _probe_health
+
+    class _Response:
+        def __init__(self, status_code: int) -> None:
+            self.status_code = status_code
+
+    class _HealthClient:
+        async def __aenter__(self) -> "_HealthClient":
+            return self
+
+        async def __aexit__(self, *args: Any) -> None:
+            return None
+
+        async def get(self, url: str) -> _Response:
+            return _Response(200 if url.endswith("/custom-health") else 404)
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: _HealthClient())
+    target = ServiceInstance(
+        system="openrag",
+        instance_id="127.0.0.1:8010",
+        host="127.0.0.1",
+        port=8010,
+        meta={"health_path": "/custom-health"},
+    )
+    reachable, _ = asyncio.run(_probe_health(target))
+    assert reachable is True
+
+
+def test_probe_health_all_paths_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """全部候选路径非 2xx 或不可达 → 不可达且无延迟值."""
+    import httpx
+
+    from openbase.modules.gateway.discovery import ServiceInstance
+    from openbase.modules.gateway.router import _probe_health
+
+    class _Response:
+        status_code = 404
+
+    class _HealthClient:
+        async def __aenter__(self) -> "_HealthClient":
+            return self
+
+        async def __aexit__(self, *args: Any) -> None:
+            return None
+
+        async def get(self, url: str) -> _Response:
+            raise httpx.ConnectError("boom")
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: _HealthClient())
+    target = ServiceInstance(system="dps", instance_id="127.0.0.1:8030", host="127.0.0.1", port=8030)
+    reachable, latency_ms = asyncio.run(_probe_health(target))
+    assert reachable is False
+    assert latency_ms is None
+
+
 # ---- 8. proxy 兜底开关 ----
 
 def test_proxy_resolve_uses_static_table_when_discovery_disabled(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -124,6 +124,86 @@ def test_aggregate_api_validation() -> None:
     assert resp.json()["code"] == "PARAM_400"
 
 
+def test_aggregate_api_forwards_absolute_base_and_auth(monkeypatch: pytest.MonkeyPatch) -> None:
+    """聚合路由向执行器传绝对 proxy_base 并透传调用方 Authorization（DEF-01 回归）."""
+    import importlib
+
+    # package __init__ 暴露了同名 router（APIRouter 对象），需取模块本体
+    gateway_router = importlib.import_module("openbase.modules.gateway.router")
+
+    captured: dict = {}
+
+    async def _fake_execute(
+        payload: dict,
+        proxy_base: str = "/api/v1/proxy",
+        forward_headers: dict | None = None,
+    ) -> dict:
+        captured["payload"] = payload
+        captured["proxy_base"] = proxy_base
+        captured["forward_headers"] = forward_headers
+        return {"result": {}, "errors": []}
+
+    monkeypatch.setattr(gateway_router, "execute_aggregate", _fake_execute)
+    resp = client.post(
+        "/api/v1/gateway/aggregate",
+        headers=admin_headers,
+        json={
+            "steps": [{"id": "a", "system": "openllm", "path": "/openllm/v1/models"}],
+            "mapping": {},
+        },
+    )
+    assert resp.status_code == 200
+    assert str(captured["proxy_base"]).startswith("http")
+    assert str(captured["proxy_base"]).endswith("/api/v1/proxy")
+    assert captured["forward_headers"]["Authorization"] == admin_headers["Authorization"]
+
+
+def test_gateway_ping_marks_dps_reachable_via_liveness(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DPS 仅暴露 /health/liveness 时连通性检测判定可达（DEF-02 回归）."""
+    import importlib
+
+    import httpx
+
+    gateway_router = importlib.import_module("openbase.modules.gateway.router")
+    from openbase.modules.gateway.discovery import ServiceInstance
+
+    class _Provider:
+        def list_instances(self, system: str) -> list:
+            if system == "dps":
+                return [
+                    ServiceInstance(
+                        system="dps",
+                        instance_id="127.0.0.1:8030",
+                        host="127.0.0.1",
+                        port=8030,
+                    )
+                ]
+            return []
+
+    class _Response:
+        def __init__(self, status_code: int) -> None:
+            self.status_code = status_code
+
+    class _HealthClient:
+        async def __aenter__(self) -> "_HealthClient":
+            return self
+
+        async def __aexit__(self, *args) -> None:
+            return None
+
+        async def get(self, url: str) -> _Response:
+            return _Response(200 if url.endswith("/health/liveness") else 404)
+
+    monkeypatch.setattr(gateway_router, "_provider", lambda: _Provider())
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: _HealthClient())
+    resp = client.get("/api/v1/gateway/ping", headers=admin_headers)
+    assert resp.status_code == 200
+    results = resp.json()["data"]["results"]
+    dps = next(item for item in results if item["system"] == "dps")
+    assert dps["reachable"] is True
+    assert dps["latency_ms"] is not None
+
+
 def test_aggregate_api_return_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     """四系统未启动 → 部分失败 errors 明细（H 类环境提示，成功路径待对接批次）."""
     resp = client.post(

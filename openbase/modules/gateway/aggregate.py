@@ -26,13 +26,15 @@ async def _fetch_step(
     step: dict[str, Any],
     proxy_base: str,
     semaphore: asyncio.Semaphore,
+    forward_headers: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """执行单个子请求（经代理转发链路）.
 
     Args:
         step: 步骤定义（system/path/method/timeout_ms 等）。
-        proxy_base: 代理基础路径（如 /api/v1/proxy）。
+        proxy_base: 代理基础地址（必须是绝对 URL，如 http://127.0.0.1:8000/api/v1/proxy）。
         semaphore: 并发信号量。
+        forward_headers: 透传给自身代理的请求头（如调用方 Authorization）。
 
     Returns:
         {"id", "data"} 或 {"id", "error"}。
@@ -50,7 +52,8 @@ async def _fetch_step(
         async with semaphore:
             async with httpx.AsyncClient(timeout=max(timeout_ms / 1000, 0.01)) as client:
                 response = await asyncio.wait_for(
-                    client.request(method, url), timeout=max(timeout_ms / 1000, 0.01)
+                    client.request(method, url, headers=dict(forward_headers or {})),
+                    timeout=max(timeout_ms / 1000, 0.01),
                 )
         if response.status_code >= 400:
             return {"id": step.get("id"), "error": f"upstream {system} error {response.status_code}"}
@@ -104,12 +107,20 @@ def _apply_mapping(mapping: dict[str, str], step_results: dict[str, dict[str, An
     return merged
 
 
-async def execute_aggregate(request: dict[str, Any], proxy_base: str = "/api/v1/proxy") -> dict[str, Any]:
+DEFAULT_PROXY_BASE = "http://127.0.0.1:8000/api/v1/proxy"
+
+
+async def execute_aggregate(
+    request: dict[str, Any],
+    proxy_base: str = DEFAULT_PROXY_BASE,
+    forward_headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     """执行聚合编排请求.
 
     Args:
         request: AggregateRequest（steps/timeout_ms/on_partial_failure/mapping）。
-        proxy_base: 代理基础路径。
+        proxy_base: 代理基础地址（绝对 URL；相对路径会被 httpx 拒绝）。
+        forward_headers: 透传给自身代理的请求头（路由层传入调用方 Authorization）。
 
     Returns:
         聚合结果；部分失败时含 errors 明细。
@@ -130,7 +141,9 @@ async def execute_aggregate(request: dict[str, Any], proxy_base: str = "/api/v1/
     semaphore = asyncio.Semaphore(min(len(steps), MAX_CONCURRENCY))
     try:
         results = await asyncio.wait_for(
-            asyncio.gather(*(_fetch_step(s, proxy_base, semaphore) for s in steps)),
+            asyncio.gather(
+                *(_fetch_step(s, proxy_base, semaphore, forward_headers) for s in steps)
+            ),
             timeout=timeout_ms / 1000,
         )
     except asyncio.TimeoutError as exc:
