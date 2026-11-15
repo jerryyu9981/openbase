@@ -1,12 +1,13 @@
 # 社区矫正模板包导入验证记录
 
-- 版本：v1.1.0
+- 版本：v1.2.0
 - 日期：2026-11-15
 - 环境：Dev（服务 127.0.0.1:8000/8030，共享 PG 192.168.0.151:5432/nuct）
 - 操作人：AI 编码代理（经用户批准执行）
 - 修订历史：
   - v1.0.0（2026-11-15）：模板包导入共享 PG 的预演、实做与数据/接口/页面复验记录。
   - v1.1.0（2026-11-15）：新增 §6 标注模板前端本地关键词过滤修复与复验（用户批准）；§5 第 1 条已知限制收敛。
+  - v1.2.0（2026-11-15）：新增 §7 DPS 侧全局模板可见性修复（跨仓）与复验；§5 第 2 条已知限制收敛。
 
 ## 1. 导入对象
 
@@ -38,7 +39,7 @@
 ## 5. 已知限制
 
 - ~~标注模板页的过滤框为 `template_code` 精确匹配（服务端），输入 `cor` 或中文名称不会命中~~ → 已于 v1.1.0 修复（见 §6）。
-- PG 中既有默认模板 `dps-correction-v1`（tenant_id=NULL）仍受租户过滤不可见，属 DPS 全局模板可见性缺口，未在本轮修改。
+- ~~PG 中既有默认模板 `dps-correction-v1`（tenant_id=NULL）仍受租户过滤不可见~~ → 已于 v1.2.0 修复（见 §7）。
 
 ## 6. 标注模板前端本地关键词过滤（v1.1.0）
 
@@ -48,3 +49,14 @@
   2. 工具栏新增「共 N 条」计数（`data-test="annotation-count"`），空结果文案区分「无匹配」与「暂无」。
 - 校验：`vue-tsc --noEmit` 0 错误、`eslint` 0 错误。
 - 浏览器复验：初始 8 条 → 搜「社区矫正」8 条 → 搜「心理」1 条（`cor-anno-psych-v1`）→ 搜 `cor` 8 条 → 清空恢复 8 条，全部 PASS。
+
+## 7. DPS 全局模板可见性（v1.2.0，跨仓）
+
+- 仓库/文件：`DPS/src/engines/template_engine.py`、`DPS/src/tests/test_v2_11_tenant_isolation.py`
+- 变更：
+  1. 读路径（`get_template` / `list_templates` / `_validate_extends_chain`）改为 `tenant_id = ? OR tenant_id IS NULL`，`tenant_id=NULL` 的全局模板对所有租户可见；
+  2. 新增 `_reject_global_write`：租户上下文下禁止改写/启停/删除全局模板（fail-closed）；
+  3. 他租户隔离边界不变（非空且不同的 tenant_id 仍不可见、不可写）。
+- 测试：`test_v2_11_tenant_isolation` 新增 `TestGlobalTemplateVisibility` 5 条（先 RED 后 GREEN）；模板相关 4 个测试文件共 **112 passed**。
+- 运行时复验：重启 DPS 后 `GET /api/v1/dps-proxy/templates` total=5（4 租户 + `dps-correction-v1`），详情 200/v1/active；前端模板族管理 5 条、搜「社区矫正」仍 5 条、无报错。
+- 留痕：`DPS/doc/development/DPS-画像模板全局可见性修复-DevLogReport-v1.0.0.md`。
