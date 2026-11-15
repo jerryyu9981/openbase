@@ -31,6 +31,32 @@
       <span v-if="error.requestId" class="request-id" data-test="dps-request-id">请求编号：{{ error.requestId }}</span>
     </el-alert>
 
+    <el-card v-if="lastSavedCode" shadow="never" class="mb-12 next-steps" data-test="workbench-next-steps">
+      <div class="next-head">
+        <span>模板已保存（{{ lastSavedCode }}）· 下一步</span>
+        <el-button link size="small" data-test="next-steps-close" @click="lastSavedCode = ''">关闭</el-button>
+      </div>
+      <div class="next-actions">
+        <el-button
+          v-if="draft.status !== 'active'"
+          type="primary"
+          size="small"
+          :loading="activating"
+          data-test="next-steps-activate"
+          @click="activateSavedTemplate"
+        >
+          激活模板
+        </el-button>
+        <el-tag v-else type="success" size="small">已激活，可用于画像计算</el-tag>
+        <el-button size="small" data-test="next-steps-annotation" @click="router.push('/portrait/dps/annotation-templates')">
+          创建标注模板
+        </el-button>
+        <el-button size="small" data-test="next-steps-rules" @click="router.push('/portrait/rules')">查看规则口径</el-button>
+        <el-button size="small" data-test="next-steps-calculate" @click="router.push('/portrait/list')">去计算画像</el-button>
+      </div>
+      <div class="muted sm mt-8">未激活的模板不会参与计算；标注模板必须归属已激活的画像模板。</div>
+    </el-card>
+
     <div class="workbench-body">
       <nav class="section-nav" data-test="workbench-tabs">
         <button
@@ -206,6 +232,9 @@ const serverIssues = ref<TemplateIssue[]>([])
 const error = ref<DpsErrorPresentation | null>(null)
 const saving = ref(false)
 const validating = ref(false)
+/** 最近一次保存成功的模板 code（用于展示「下一步」引导） */
+const lastSavedCode = ref('')
+const activating = ref(false)
 const jsonOpen = ref(false)
 const dryRunOpen = ref(false)
 const dirty = ref(false)
@@ -385,9 +414,11 @@ async function save() {
     if (isEdit.value) {
       const updated = await dpsApi.updateTemplate(editingCode.value, payload.value)
       serverVersion.value = Number(updated.version || 0)
+      lastSavedCode.value = editingCode.value
       ElMessage.success(`已保存，版本递增至 v${updated.version ?? '-'}`)
     } else {
       const created = await dpsApi.createTemplate(payload.value as Partial<DpsPortraitTemplate> & { code: string })
+      lastSavedCode.value = created.code
       ElMessage.success(`创建成功（v${created.version ?? 1}）`)
       await router.replace(`/portrait/dps/templates/${created.code}/edit`)
     }
@@ -406,6 +437,21 @@ function openRawEditor() {
     return
   }
   void router.push(`/portrait/dps/templates/${editingCode.value}/raw`)
+}
+
+/** 保存后的下一步：激活当前模板（未激活模板不参与计算）。 */
+async function activateSavedTemplate() {
+  if (!lastSavedCode.value) return
+  activating.value = true
+  try {
+    const updated = await dpsApi.activateTemplate(lastSavedCode.value)
+    draft.status = String(updated.status || 'active')
+    ElMessage.success('模板已激活，可用于画像计算')
+  } catch (caught) {
+    error.value = describeDpsError(caught)
+  } finally {
+    activating.value = false
+  }
 }
 
 onBeforeRouteLeave(async () => {
@@ -456,4 +502,7 @@ onMounted(() => {
 .sm { font-size: 12px; margin-left: 6px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }
 .request-id { color: var(--ob-text-disabled); font-size: 12px; margin-left: 8px; }
+.next-steps { border: 1px solid var(--ob-primary-light, #bfdbfe); background: var(--ob-primary-lighter, #f8fbff); }
+.next-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+.next-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 </style>

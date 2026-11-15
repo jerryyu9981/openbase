@@ -31,7 +31,7 @@
           <el-table-column prop="code" label="标注模板" min-width="180" />
           <el-table-column label="归属画像模板" min-width="170">
             <template #default="{ row }">
-              <el-button link type="primary" size="small" data-test="annotation-owner" @click="router.push(`/dps/templates/${row.template_code}/edit`)">
+              <el-button link type="primary" size="small" data-test="annotation-owner" @click="router.push(`/portrait/dps/templates/${row.template_code}/edit`)">
                 {{ row.template_code || '-' }}
               </el-button>
             </template>

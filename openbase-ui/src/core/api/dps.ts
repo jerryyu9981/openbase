@@ -13,10 +13,22 @@ import type { ChatMessage } from '@/core/api/llm'
 export interface DpsPortrait {
   person_id?: string
   name?: string
-  tags?: string[]
+  /** 标签行：PG 为 `{tag_code, tag_name, score}`，SQLite 回退为 `{tag_name, tag_value, dimension}` */
+  tags?: Array<Record<string, unknown> | string>
   risk_level?: string
+  risk_score?: number
+  basic_score?: number
+  behavioral_score?: number
+  psychological_score?: number
+  social_score?: number
+  correction_score?: number
+  overall_score?: number
+  /** 解析后的 attributes（默认含 `attributes_json` 中的模板命名空间） */
+  attributes?: Record<string, unknown>
+  version?: number
+  status?: string
+  created_at?: string
   updated_at?: string
-  dimensions?: Record<string, unknown>
   [key: string]: unknown
 }
 
@@ -404,9 +416,12 @@ export const dpsApi = {
     return data.data
   },
 
-  /** 画像详情（GET /api/v1/dps-proxy/portraits/{person_id}） */
-  async getPortrait(personId: string): Promise<DpsPortrait> {
-    const { data } = await http.get<{ code: number; data: DpsPortrait }>(`/dps-proxy/portraits/${encodeURIComponent(personId)}`)
+  /** 画像详情（GET /api/v1/dps-proxy/portraits/{person_id}；`templateCode` 指定模板口径） */
+  async getPortrait(personId: string, templateCode?: string): Promise<DpsPortrait> {
+    const { data } = await http.get<{ code: number; data: DpsPortrait }>(
+      `/dps-proxy/portraits/${encodeURIComponent(personId)}`,
+      { params: templateCode ? { template_code: templateCode } : undefined },
+    )
     return data.data
   },
 

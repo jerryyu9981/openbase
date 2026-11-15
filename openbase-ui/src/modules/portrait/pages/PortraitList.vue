@@ -71,7 +71,7 @@
           <el-table-column prop="person_id" label="画像 ID" min-width="180" show-overflow-tooltip />
           <el-table-column label="标签" min-width="180">
             <template #default="{ row }">
-              <el-tag v-for="t in (row.tags || [])" :key="String(t)" size="small" class="tag-item" type="info">{{ t }}</el-tag>
+              <el-tag v-for="(t, index) in (row.tags || [])" :key="`${index}-${tagLabel(t)}`" size="small" class="tag-item" type="info">{{ tagLabel(t) }}</el-tag>
               <span v-if="!(row.tags || []).length" class="text-muted">-</span>
             </template>
           </el-table-column>
@@ -115,9 +115,29 @@
             <el-input v-model="calcForm.personId" placeholder="person_id" data-test="calc-person-id" />
           </el-form-item>
           <el-form-item label="画像模板">
-            <el-input v-model="calcForm.templateCode" placeholder="可选，留空使用默认模板" data-test="calc-template-code" />
+            <el-select
+              v-model="calcForm.templateCode"
+              clearable
+              placeholder="留空使用默认模板"
+              style="width: 100%"
+              data-test="calc-template-code"
+            >
+              <el-option
+                v-for="item in templateOptions"
+                :key="item.code"
+                :label="`${item.name || item.code}（${item.code}）`"
+                :value="item.code"
+              />
+            </el-select>
+            <div class="form-hint">仅展示已激活模板；未激活模板不会参与计算。</div>
           </el-form-item>
         </el-form>
+        <el-alert v-if="calcError" type="error" show-icon :closable="false" class="mt-8" data-test="calc-error">
+          <template #title>{{ calcError }}</template>
+          <el-button v-if="calcErrorNeedsActivation" link type="primary" size="small" @click="goActivateTemplate">
+            去模板族管理激活
+          </el-button>
+        </el-alert>
         <template #footer>
           <el-button @click="calculateVisible = false">取消</el-button>
           <el-button type="primary" :loading="calculating" data-test="calc-submit" @click="submitCalculate">开始计算</el-button>
@@ -144,8 +164,8 @@ import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { dpsApi, type DpsPortrait } from '@/core/api/dps'
-import { describeError, type ErrorPresentation } from '@/core/api/error'
+import { dpsApi, type DpsPortrait, type DpsPortraitTemplate } from '@/core/api/dps'
+import { describeDpsError, describeError, type ErrorPresentation } from '@/core/api/error'
 
 const router = useRouter()
 const portraits = ref<DpsPortrait[]>([])
@@ -161,6 +181,9 @@ const presentation = ref<ErrorPresentation | null>(null)
 const calculateVisible = ref(false)
 const calculating = ref(false)
 const calcForm = ref({ personId: '', templateCode: '' })
+const templateOptions = ref<DpsPortraitTemplate[]>([])
+const calcError = ref('')
+const calcErrorNeedsActivation = computed(() => calcError.value.includes('未激活'))
 /** 按外部 ID 查询对话框（批次 5：GET /portraits/by-external/{id}） */
 const externalVisible = ref(false)
 const externalLoading = ref(false)
@@ -216,6 +239,12 @@ function formatTime(v?: string) {
   return Number.isNaN(d.getTime()) ? v : d.toLocaleString('zh-CN', { hour12: false })
 }
 
+/** 标签行兼容：PG `{tag_code,tag_name,score}` / SQLite `{tag_name,tag_value}` / 纯字符串。 */
+function tagLabel(raw: Record<string, unknown> | string): string {
+  if (typeof raw === 'string') return raw
+  return String(raw.tag_name || raw.tag_code || raw.tag_value || '-')
+}
+
 async function loadHealth() {
   try {
     health.value = await dpsApi.getDpsHealth()
@@ -234,7 +263,27 @@ async function loadOverview() {
 
 function openCalculate() {
   calcForm.value = { personId: '', templateCode: '' }
+  calcError.value = ''
+  void loadTemplateOptions()
   calculateVisible.value = true
+}
+
+/** 仅加载已激活模板：未激活模板无法参与计算。 */
+async function loadTemplateOptions() {
+  try {
+    const result = await dpsApi.listTemplates({ status: 'active' })
+    templateOptions.value = result.items || []
+    if (templateOptions.value.length === 1) {
+      calcForm.value.templateCode = templateOptions.value[0].code
+    }
+  } catch {
+    templateOptions.value = []
+  }
+}
+
+function goActivateTemplate() {
+  calculateVisible.value = false
+  void router.push('/portrait/dps/templates')
 }
 
 /** 发起画像计算：返回 task_id 时轮询至终态，同步返回时直接刷新列表 */
@@ -245,6 +294,7 @@ async function submitCalculate() {
     return
   }
   calculating.value = true
+  calcError.value = ''
   try {
     const payload: Record<string, unknown> = { person_id: personId }
     const templateCode = calcForm.value.templateCode.trim()
@@ -259,7 +309,9 @@ async function submitCalculate() {
     calculateVisible.value = false
     await loadData()
   } catch (err) {
-    ElMessage.error((err as Error)?.message || '画像计算失败，请稍后重试')
+    const described = describeDpsError(err)
+    calcError.value = described.detail || described.title
+    ElMessage.error(calcError.value)
   } finally {
     calculating.value = false
   }
@@ -350,4 +402,6 @@ onMounted(() => {
 .text-muted { color: #9ca3af; }
 .pager { display: flex; justify-content: flex-end; margin-top: 12px; }
 .request-id { color: #6b7280; font-size: 12px; margin-bottom: 8px; }
+.form-hint { font-size: 12px; color: #9ca3af; line-height: 1.6; }
+.mt-8 { margin-top: 8px; }
 </style>

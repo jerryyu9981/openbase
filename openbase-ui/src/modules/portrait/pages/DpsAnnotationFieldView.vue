@@ -73,9 +73,23 @@
               <el-input v-model="row.rangeText" size="small" :disabled="row.type !== 'number'" placeholder="0,100" data-test="field-range" />
             </template>
           </el-table-column>
-          <el-table-column label="target_dimension" width="180">
+          <el-table-column label="target_dimension（留空=不进画像）" width="220">
             <template #default="{ row }">
-              <el-input v-model="row.target_dimension" size="small" placeholder="留空=不参与联动" data-test="field-target-dimension" />
+              <el-select
+                v-model="row.target_dimension"
+                size="small"
+                clearable
+                filterable
+                placeholder="选择所属模板的维度"
+                data-test="field-target-dimension"
+              >
+                <el-option
+                  v-for="item in dimensionOptions"
+                  :key="item.code"
+                  :label="item.label"
+                  :value="item.code"
+                />
+              </el-select>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="80">
@@ -137,6 +151,8 @@ const currentOwner = ref('')
 const reassignTo = ref('')
 const rows = ref<FieldRow[]>([])
 const activeTemplates = ref<DpsPortraitTemplate[]>([])
+/** 当前归属画像模板（用于取维度候选，避免手填 target_dimension） */
+const ownerTemplate = ref<DpsPortraitTemplate | null>(null)
 const loading = ref(false)
 const saving = ref(false)
 const error = ref<DpsErrorPresentation | null>(null)
@@ -146,6 +162,36 @@ const duplicateKeys = computed(() => {
   rows.value.forEach((row) => counts.set(row.key, (counts.get(row.key) || 0) + 1))
   return [...counts.entries()].filter(([, count]) => count > 1).map(([key]) => key)
 })
+
+/** 归属模板的维度候选：target_dimension 只能是这些 code（或留空）。 */
+const dimensionOptions = computed<Array<{ code: string; label: string }>>(() => {
+  const raw = ownerTemplate.value?.dimension_config
+  const config = typeof raw === 'string' ? safeParse(raw) : raw
+  const list = (config as { dimensions?: unknown } | null)?.dimensions
+  if (!Array.isArray(list)) return []
+  return list.map((item) => {
+    const record = (item || {}) as Record<string, unknown>
+    const code = String(record.code || '')
+    const name = String(record.name || code)
+    return { code, label: code === name ? code : `${name}（${code}）` }
+  })
+})
+
+function safeParse(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
+async function loadOwnerTemplate(ownerCode: string) {
+  if (!ownerCode) {
+    ownerTemplate.value = null
+    return
+  }
+  ownerTemplate.value = await dpsApi.getTemplate(ownerCode).catch(() => null)
+}
 
 const issues = computed(() => {
   const list: string[] = []
@@ -192,6 +238,7 @@ async function load() {
     rows.value = toRows(template.field_schema)
     const owners = await dpsApi.listTemplates({ status: 'active' }).catch(() => ({ items: [] as DpsPortraitTemplate[] }))
     activeTemplates.value = owners.items || []
+    await loadOwnerTemplate(currentOwner.value)
   } catch (caught) {
     error.value = describeDpsError(caught)
   } finally {
@@ -214,6 +261,7 @@ async function confirmReassign() {
   try {
     const updated = await dpsApi.updateAnnotationTemplate(templateCode.value, { template_code: reassignTo.value })
     currentOwner.value = String(updated.template_code || reassignTo.value)
+    await loadOwnerTemplate(currentOwner.value)
     ElMessage.success('归属已改挂；变更后新标注将按新归属校验')
     reassignTo.value = ''
   } catch (caught) {

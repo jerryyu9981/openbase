@@ -384,12 +384,19 @@ async def dps_portrait_by_external(
 async def dps_portrait_detail(
     person_id: str,
     request: Request,
+    template_code: str | None = Query(None),
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
-    """画像详情（GET /api/v2/portrait/{person_id}）."""
+    """画像详情（GET /api/v2/portrait/{person_id}）.
+
+    ``template_code`` 透传上游：指定时返回该模板命名空间（``attributes_json[template_code]``）
+    的计算结果，缺省行为不变（默认口径）。
+    """
     headers = _build_identity_headers(_user, request)
+    params = {"template_code": template_code} if template_code else None
     return await _forward(
         "GET", f"/api/v2/portrait/{person_id}",
+        params=params,
         headers=headers,
         request=request,
     )

@@ -45,8 +45,8 @@
             <template #default="{ row }">
               <el-button link type="primary" size="small" data-test="template-workbench" @click="router.push(`/portrait/dps/templates/${row.code}/edit`)">工作台</el-button>
               <el-button link type="primary" size="small" data-test="template-detail" @click="openDetail(row.code)">详情</el-button>
-              <el-button link type="primary" size="small" data-test="template-versions" @click="router.push(`/dps/templates/${row.code}/versions`)">查看对比</el-button>
-              <el-button link type="primary" size="small" data-test="template-preflight" @click="router.push(`/dps/templates/${row.code}/preflight`)">预检</el-button>
+              <el-button link type="primary" size="small" data-test="template-versions" @click="router.push(`/portrait/dps/templates/${row.code}/versions`)">查看对比</el-button>
+              <el-button link type="primary" size="small" data-test="template-preflight" @click="router.push(`/portrait/dps/templates/${row.code}/preflight`)">预检</el-button>
               <el-popconfirm
                 :title="row.status === 'active' ? '确认停用该模板？' : '确认启用该模板？'"
                 @confirm="toggleStatus(row)"
@@ -78,8 +78,8 @@
         <el-descriptions-item label="description">{{ detail?.description || '-' }}</el-descriptions-item>
       </el-descriptions>
       <div class="mt-12">
-        <el-button size="small" @click="router.push(`/dps/templates/${detail?.code}/versions`)">查看对比</el-button>
-        <el-button size="small" @click="router.push(`/dps/templates/${detail?.code}/preflight`)">预检</el-button>
+        <el-button size="small" @click="router.push(`/portrait/dps/templates/${detail?.code}/versions`)">查看对比</el-button>
+        <el-button size="small" @click="router.push(`/portrait/dps/templates/${detail?.code}/preflight`)">预检</el-button>
         <el-button size="small" data-test="template-edit" @click="router.push(`/portrait/dps/templates/${detail?.code}/edit`)">工作台</el-button>
         <el-button size="small" @click="router.push(`/portrait/dps/templates/${detail?.code}/raw`)">JSON 编辑</el-button>
       </div>

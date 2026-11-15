@@ -1,6 +1,6 @@
 <template>
-  <PageContainer title="画像详情" description="单主体画像与标签明细" test-id="portrait-detail-page">
-    <el-page-header content="画像详情" class="mb-16" @back="$router.push('/portrait')" />
+  <PageContainer title="画像详情" description="单主体画像 360 视图与标签明细" test-id="portrait-detail-page">
+    <el-page-header content="画像详情" class="mb-16" @back="$router.push('/portrait/list')" />
 
     <el-result
       v-if="isForbidden"
@@ -35,52 +35,229 @@
         @close="presentation = null"
       >
         <template #default>
+          <div v-if="presentation?.detail" class="error-detail">{{ presentation.detail }}</div>
           <el-button link type="primary" size="small" data-test="isolation-retry" @click="loadData">点击重试</el-button>
         </template>
       </el-alert>
+
       <div v-loading="loading">
+        <!-- 口径与操作 -->
+        <el-card shadow="never" class="mb-16">
+          <div class="toolbar">
+            <span class="toolbar-label">计算口径</span>
+            <el-select
+              v-model="selectedTemplate"
+              placeholder="默认口径（六维基础分）"
+              clearable
+              style="width: 300px"
+              data-test="portrait-template-select"
+              @change="onTemplateChange"
+            >
+              <el-option label="默认口径（六维基础分）" value="" />
+              <el-option
+                v-for="item in templateOptions"
+                :key="item.code"
+                :label="`${item.name || item.code}（${item.code}）`"
+                :value="item.code"
+              />
+            </el-select>
+            <el-tag v-if="templateVersion" size="small" type="info">{{ selectedTemplate }} · v{{ templateVersion }}</el-tag>
+            <div class="toolbar-actions">
+              <el-button size="small" :loading="loading" data-test="portrait-refresh" @click="loadData">刷新</el-button>
+              <el-button link type="primary" data-test="portrait-edit-open" @click="openEdit">编辑属性</el-button>
+              <el-button link type="danger" data-test="portrait-delete-open" @click="removePortrait">删除画像</el-button>
+            </div>
+          </div>
+          <el-alert
+            v-if="templateMissing"
+            type="info"
+            show-icon
+            :closable="false"
+            class="mt-12"
+            data-test="portrait-template-missing"
+          >
+            <template #title>该画像尚无模板「{{ selectedTemplate }}」的计算结果</template>
+            <div>请到画像列表以该模板重新计算，或切回默认口径查看六维基础分。</div>
+          </el-alert>
+        </el-card>
+
         <el-row :gutter="16">
-          <el-col :xs="24" :lg="12">
-            <el-card class="mb-16">
+          <!-- 身份卡 + 分数 -->
+          <el-col :xs="24" :lg="14">
+            <el-card class="mb-16" data-test="portrait-identity">
               <template #header>
                 <div class="card-head">
-                  <span>基本信息</span>
-                  <div v-if="profile && !loading" class="card-actions">
-                    <el-button link type="primary" data-test="portrait-edit-open" @click="openEdit">编辑属性</el-button>
-                    <el-button link type="danger" data-test="portrait-delete-open" @click="removePortrait">删除画像</el-button>
-                  </div>
+                  <span>身份与状态</span>
+                  <el-tag v-if="isStale" size="small" type="warning">数据可能过期</el-tag>
                 </div>
               </template>
-              <el-descriptions v-if="profile" :column="1" border>
+              <el-descriptions v-if="profile" :column="2" border>
                 <el-descriptions-item label="画像名称">{{ profile.name || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="画像 ID">{{ profile.person_id || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="画像 ID">{{ profile.person_id || personId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="风险等级">
                   <el-tag :type="riskType(profile)" size="small">{{ riskLabel(profile) }}</el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item label="画像版本">{{ profile.version ?? '-' }}</el-descriptions-item>
                 <el-descriptions-item label="更新时间">{{ formatTime(profile.updated_at) }}</el-descriptions-item>
+                <el-descriptions-item label="计算时刻">{{ formatTime(resultCalculatedAt) }}</el-descriptions-item>
+                <el-descriptions-item label="综合评分">
+                  <strong data-test="portrait-overall">{{ overallScore === null ? '—' : overallScore.toFixed(1) }}</strong>
+                </el-descriptions-item>
+                <el-descriptions-item label="数据完整度">
+                  <span v-if="completeness !== null" data-test="portrait-completeness">
+                    {{ Math.round(completeness * 100) }}%
+                    <el-tag v-if="completeness < 0.8" size="small" type="warning">偏低，结果为部分完成</el-tag>
+                  </span>
+                  <span v-else class="muted">—</span>
+                </el-descriptions-item>
               </el-descriptions>
               <el-empty v-else-if="!loading" description="当前租户暂无数据（如为权限问题请联系管理员）" :image-size="50" />
             </el-card>
-          </el-col>
-          <el-col :xs="24" :lg="12">
-            <el-card header="标签" class="mb-16">
-              <div class="tags">
-                <el-tag v-for="t in (profile?.tags || [])" :key="String(t)" class="tag-item" type="info">{{ t }}</el-tag>
-                <span v-if="!(profile?.tags || []).length" class="text-muted">暂无标签</span>
-              </div>
-            </el-card>
-            <el-card header="画像维度" class="mb-16" data-test="feature-dist">
-              <div v-if="dimensionEntries.length">
-                <div v-for="[dimKey, dimValue] in dimensionEntries" :key="dimKey" class="dimension-block">
-                  <div class="dimension-title">{{ dimKey }}</div>
-                  <pre class="dimension-value">{{ JSON.stringify(dimValue, null, 2) }}</pre>
+
+            <el-card class="mb-16" data-test="portrait-dimensions">
+              <template #header>
+                <div class="card-head">
+                  <span>维度得分</span>
+                  <span class="muted sm">点击任一维度查看证据</span>
+                </div>
+              </template>
+
+              <el-empty
+                v-if="!loading && !dimensionScores.length"
+                description="暂无维度数据，请先计算画像"
+                :image-size="50"
+              >
+                <el-button size="small" type="primary" plain @click="$router.push('/portrait/list')">去计算</el-button>
+              </el-empty>
+
+              <div v-else class="dimension-layout">
+                <div v-if="radar" class="radar-wrap">
+                  <svg :width="radar.size" :height="radar.size" role="img" aria-label="维度雷达图">
+                    <polygon
+                      v-for="(ring, index) in radar.rings"
+                      :key="`ring-${index}`"
+                      :points="ring"
+                      fill="none"
+                      stroke="#e5e7eb"
+                      stroke-width="1"
+                    />
+                    <line
+                      v-for="(point, index) in radar.axes"
+                      :key="`axis-${index}`"
+                      :x1="radar.center"
+                      :y1="radar.center"
+                      :x2="point.x"
+                      :y2="point.y"
+                      stroke="#e5e7eb"
+                      stroke-width="1"
+                    />
+                    <polygon :points="radar.polygon" fill="rgba(59,130,246,0.22)" stroke="#3b82f6" stroke-width="2" />
+                    <circle
+                      v-for="(point, index) in radar.points"
+                      :key="`dot-${index}`"
+                      :cx="point.x"
+                      :cy="point.y"
+                      r="3"
+                      fill="#3b82f6"
+                    />
+                    <text
+                      v-for="(point, index) in radar.labels"
+                      :key="`label-${index}`"
+                      :x="point.x"
+                      :y="point.y"
+                      text-anchor="middle"
+                      dominant-baseline="middle"
+                      font-size="11"
+                      fill="#6b7280"
+                    >
+                      {{ point.text }}
+                    </text>
+                  </svg>
+                </div>
+
+                <div class="dimension-list">
+                  <div
+                    v-for="item in dimensionScores"
+                    :key="item.code"
+                    class="dimension-row"
+                    data-test="portrait-dimension-row"
+                    @click="openEvidence(item)"
+                  >
+                    <div class="dimension-row-head">
+                      <span class="dimension-name">{{ item.label }}</span>
+                      <span class="dimension-score" :class="{ missing: item.score === null }">
+                        {{ item.score === null ? '未采集' : item.score.toFixed(1) }}
+                      </span>
+                    </div>
+                    <el-progress
+                      :percentage="item.score === null ? 0 : Math.min(100, Math.round(item.score))"
+                      :stroke-width="8"
+                      :status="item.score === null ? 'warning' : undefined"
+                      :show-text="false"
+                    />
+                    <div class="dimension-meta">
+                      <span class="muted sm">置信度 {{ item.confidence === null ? '—' : item.confidence.toFixed(2) }}</span>
+                      <span v-if="item.score === null" class="muted sm">缺值按 50 分计入总分</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <el-empty v-else-if="!loading" description="暂无维度数据" :image-size="50" />
+            </el-card>
+          </el-col>
+
+          <!-- 标签 -->
+          <el-col :xs="24" :lg="10">
+            <el-card class="mb-16" data-test="portrait-tags">
+              <template #header>
+                <div class="card-head">
+                  <span>标签（按维度分组）</span>
+                  <span class="muted sm">共 {{ tagItems.length }} 个</span>
+                </div>
+              </template>
+              <el-empty v-if="!tagItems.length" description="暂无标签" :image-size="50" />
+              <div v-for="group in tagGroups" :key="group.dimension" class="tag-group">
+                <div class="tag-group-head">
+                  <span class="tag-group-title">{{ group.label }}</span>
+                  <span class="muted sm">{{ group.items.length }}</span>
+                </div>
+                <div class="tags">
+                  <el-tag
+                    v-for="tag in group.items"
+                    :key="`${tag.code}-${tag.name}`"
+                    class="tag-item"
+                    type="info"
+                    size="small"
+                  >
+                    {{ tag.name }}<span v-if="tag.score !== null" class="tag-score">{{ tag.score }}</span>
+                  </el-tag>
+                </div>
+              </div>
+            </el-card>
+
+            <el-card shadow="never" header="口径说明" class="mb-16">
+              <ul class="notes">
+                <li>默认口径展示画像主表的六维基础分（`basic/behavioral/...`）。</li>
+                <li>选择具体模板后展示该模板命名空间内的计算结果与置信度。</li>
+                <li>缺值按 50 分计入总分；`when` 条件不成立的规则会被跳过。</li>
+              </ul>
             </el-card>
           </el-col>
         </el-row>
+
+        <el-drawer v-model="evidenceVisible" :title="`证据 · ${evidenceTitle}`" size="520px" data-test="portrait-evidence-drawer">
+          <el-empty v-if="!evidenceRows.length" description="该维度暂无标签证据（可能尚未计算或证据策略未保留）" :image-size="60" />
+          <el-table v-else :data="evidenceRows" size="small" data-test="portrait-evidence-table">
+            <el-table-column prop="name" label="标签" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="code" label="标签键" min-width="150" show-overflow-tooltip />
+            <el-table-column label="得分" width="90">
+              <template #default="{ row }">{{ row.score === null ? '—' : row.score }}</template>
+            </el-table-column>
+            <el-table-column prop="source" label="来源" width="110" />
+          </el-table>
+          <template #footer>
+            <span class="muted sm">证据来源于标签联动与计算时的维度标签快照；无证据时请检查模板证据策略。</span>
+          </template>
+        </el-drawer>
 
         <el-drawer v-model="editVisible" title="编辑画像属性" size="480px" data-test="portrait-edit-drawer">
           <el-alert
@@ -112,19 +289,61 @@ import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { dpsApi, type DpsPortrait } from '@/core/api/dps'
+import { dpsApi, type DpsPortrait, type DpsPortraitTemplate } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
+
+interface DimensionScore {
+  code: string
+  label: string
+  score: number | null
+  confidence: number | null
+}
+
+interface TagView {
+  dimension: string
+  code: string
+  name: string
+  score: number | null
+  source: string
+}
+
+const DIMENSION_LABELS: Record<string, string> = {
+  basic: '基础属性',
+  behavior: '行为特征',
+  behavioral: '行为特征',
+  psychology: '心理评估',
+  psychological: '心理评估',
+  social: '社会关系',
+  correction: '矫正表现',
+  risk: '风险等级',
+}
+
+/** 默认口径：画像主表六维列（DDL 稳定列）。 */
+const DEFAULT_DIMENSION_FIELDS: Array<{ code: string; label: string; field: keyof DpsPortrait }> = [
+  { code: 'basic', label: '基础属性', field: 'basic_score' },
+  { code: 'behavior', label: '行为特征', field: 'behavioral_score' },
+  { code: 'psychology', label: '心理评估', field: 'psychological_score' },
+  { code: 'social', label: '社会关系', field: 'social_score' },
+  { code: 'correction', label: '矫正表现', field: 'correction_score' },
+  { code: 'risk', label: '风险等级', field: 'risk_score' },
+]
 
 const route = useRoute()
 const router = useRouter()
 const personId = String(route.params.id || '')
 const profile = ref<DpsPortrait | null>(null)
+const templateOptions = ref<DpsPortraitTemplate[]>([])
+const selectedTemplate = ref('')
+const templateResult = ref<Record<string, unknown> | null>(null)
+const templateMissing = ref(false)
 const loading = ref(false)
 const presentation = ref<ErrorPresentation | null>(null)
-/** 属性编辑抽屉（批次 5：PATCH 深合并 + If-Match 乐观锁） */
 const editVisible = ref(false)
 const editText = ref('')
 const saving = ref(false)
+const evidenceVisible = ref(false)
+const evidenceTitle = ref('')
+const evidenceRows = ref<TagView[]>([])
 
 const isForbidden = computed(() => presentation.value?.pageLevel === true)
 const isNotFound = computed(() => presentation.value?.kind === 'not-found')
@@ -135,10 +354,141 @@ const errorMessage = computed(() =>
   showErrorBar.value ? `画像详情加载失败：${presentation.value?.detail || '网络错误'}` : '',
 )
 
-const dimensionEntries = computed(() => {
-  const dims = (profile.value?.dimensions || {}) as Record<string, unknown>
-  return Object.entries(dims)
+const templateVersion = computed(() => {
+  const matched = templateOptions.value.find((item) => item.code === selectedTemplate.value)
+  return matched?.version
 })
+
+/** 所选模板的计算结果（缺省为空对象 → 回落默认口径）。 */
+const resultPayload = computed<Record<string, unknown>>(() => templateResult.value || {})
+
+const resultCalculatedAt = computed(() => {
+  const value = resultPayload.value.calculated_at
+  return typeof value === 'string' ? value : undefined
+})
+
+const completeness = computed(() => {
+  const raw = Number(resultPayload.value.data_completeness)
+  return Number.isFinite(raw) ? raw : null
+})
+
+const isStale = computed(() => !!resultPayload.value && completeness.value !== null && completeness.value < 0.8)
+
+const overallScore = computed<number | null>(() => {
+  if (templateResult.value) return toNumber(resultPayload.value.overall_score)
+  return toNumber(profile.value?.overall_score)
+})
+
+/** 维度分：有模板结果用模板维度，否则用六维基础列。 */
+const dimensionScores = computed<DimensionScore[]>(() => {
+  const payloadDimensions = resultPayload.value.dimensions
+  if (payloadDimensions && typeof payloadDimensions === 'object') {
+    const entries = Object.entries(payloadDimensions as Record<string, unknown>)
+    if (entries.length) {
+      return entries.map(([code, value]) => {
+        const row = (value || {}) as Record<string, unknown>
+        return {
+          code,
+          label: DIMENSION_LABELS[code] || String(row.dimension || code),
+          score: toNumber(row.score),
+          confidence: toNumber(row.confidence),
+        }
+      })
+    }
+  }
+  return DEFAULT_DIMENSION_FIELDS.map((item) => ({
+    code: item.code,
+    label: item.label,
+    score: toNumber(profile.value?.[item.field]),
+    confidence: null,
+  }))
+})
+
+const tagItems = computed<TagView[]>(() => {
+  const rawTags = profile.value?.tags || []
+  return rawTags.map((raw) => {
+    if (typeof raw === 'string') {
+      return { dimension: dimensionOf(raw), code: raw, name: raw, score: null, source: '标签' }
+    }
+    const code = String(raw.tag_code || raw.tag_value || '')
+    const score = toNumber(raw.score)
+    return {
+      dimension: String(raw.dimension || dimensionOf(code)),
+      code: code || '-',
+      name: String(raw.tag_name || code || '-'),
+      score,
+      source: score === null ? '标签' : '标签联动',
+    }
+  })
+})
+
+const tagGroups = computed(() => {
+  const groups = new Map<string, TagView[]>()
+  for (const tag of tagItems.value) {
+    const key = tag.dimension || 'other'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)?.push(tag)
+  }
+  return Array.from(groups.entries()).map(([dimension, items]) => ({
+    dimension,
+    label: DIMENSION_LABELS[dimension] || dimension || '其他',
+    items,
+  }))
+})
+
+/** 雷达图几何：≥3 个有分维度才渲染，避免退化图形。 */
+const radar = computed(() => {
+  const items = dimensionScores.value.filter((item) => item.score !== null)
+  if (items.length < 3) return null
+  const size = 240
+  const center = size / 2
+  const radius = 78
+  const angleOf = (index: number) => (Math.PI * 2 * index) / items.length - Math.PI / 2
+  const points = items.map((item, index) => {
+    const angle = angleOf(index)
+    const ratio = Math.max(0, Math.min(100, item.score ?? 0)) / 100
+    return {
+      x: center + Math.cos(angle) * radius * ratio,
+      y: center + Math.sin(angle) * radius * ratio,
+    }
+  })
+  const axes = items.map((_item, index) => ({
+    x: center + Math.cos(angleOf(index)) * radius,
+    y: center + Math.sin(angleOf(index)) * radius,
+  }))
+  const labels = items.map((item, index) => ({
+    x: center + Math.cos(angleOf(index)) * (radius + 22),
+    y: center + Math.sin(angleOf(index)) * (radius + 22),
+    text: `${item.label} ${item.score === null ? '' : item.score.toFixed(0)}`.trim(),
+  }))
+  const rings = [0.25, 0.5, 0.75, 1].map((scale) =>
+    items
+      .map((_item, index) => {
+        const angle = angleOf(index)
+        return `${(center + Math.cos(angle) * radius * scale).toFixed(1)},${(center + Math.sin(angle) * radius * scale).toFixed(1)}`
+      })
+      .join(' '),
+  )
+  return {
+    size,
+    center,
+    points,
+    axes,
+    labels,
+    rings,
+    polygon: points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' '),
+  }
+})
+
+function toNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function dimensionOf(code: string): string {
+  return code.includes(':') ? code.split(':')[0] : 'other'
+}
 
 function riskOf(row: DpsPortrait): number {
   const raw = row.risk_level ?? row.risk_score
@@ -163,9 +513,28 @@ function riskType(row: DpsPortrait): 'success' | 'warning' | 'danger' | 'info' {
 }
 
 function formatTime(v?: string) {
-  if (!v) return '-'
+  if (!v) return '—'
   const d = new Date(v)
   return Number.isNaN(d.getTime()) ? v : d.toLocaleString('zh-CN', { hour12: false })
+}
+
+function openEvidence(item: DimensionScore) {
+  evidenceTitle.value = item.label
+  const matched = tagItems.value.filter((tag) => tag.dimension === item.code)
+  if (matched.length) {
+    evidenceRows.value = matched
+  } else {
+    const snapshot = (resultPayload.value.dimensions as Record<string, Record<string, unknown>> | undefined)?.[item.code]
+    const snapshotTags = (snapshot?.tags || {}) as Record<string, unknown>
+    evidenceRows.value = Object.entries(snapshotTags).map(([code, value]) => ({
+      dimension: item.code,
+      code,
+      name: String(value ?? code),
+      score: toNumber(value),
+      source: '计算快照',
+    }))
+  }
+  evidenceVisible.value = true
 }
 
 function openEdit() {
@@ -234,6 +603,50 @@ async function removePortrait() {
   }
 }
 
+async function loadTemplateOptions() {
+  try {
+    const result = await dpsApi.listTemplates({ status: 'active' })
+    templateOptions.value = result.items || []
+  } catch {
+    templateOptions.value = []
+  }
+}
+
+/** 所选模板口径的结果：404 视为「该模板尚未计算」，不当作加载失败。 */
+async function loadTemplateResult() {
+  templateResult.value = null
+  templateMissing.value = false
+  if (!selectedTemplate.value) return
+  try {
+    const row = await dpsApi.getPortrait(personId, selectedTemplate.value)
+    const namespace = row.result_namespace
+    if (namespace && typeof namespace === 'object') {
+      templateResult.value = namespace as Record<string, unknown>
+    } else {
+      templateMissing.value = true
+    }
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 404) {
+      templateMissing.value = true
+      return
+    }
+    throw err
+  }
+}
+
+async function onTemplateChange() {
+  loading.value = true
+  presentation.value = null
+  try {
+    await loadTemplateResult()
+  } catch (err) {
+    presentation.value = describeError(err)
+  } finally {
+    loading.value = false
+  }
+}
+
 async function loadData() {
   if (!personId) {
     presentation.value = {
@@ -250,6 +663,7 @@ async function loadData() {
   presentation.value = null
   try {
     profile.value = await dpsApi.getPortrait(personId)
+    await loadTemplateResult()
   } catch (err) {
     profile.value = null
     presentation.value = describeError(err)
@@ -259,22 +673,37 @@ async function loadData() {
 }
 
 onMounted(() => {
+  void loadTemplateOptions()
   void loadData()
 })
 </script>
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
-.card-head { display: flex; justify-content: space-between; align-items: center; }
-.card-actions { display: flex; align-items: center; gap: 4px; }
+.mt-12 { margin-top: 12px; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.toolbar-label { font-size: 13px; color: #4b5563; }
+.toolbar-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.dimension-layout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.radar-wrap { flex: 0 0 240px; display: flex; justify-content: center; }
+.dimension-list { flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; gap: 12px; }
+.dimension-row { cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: background 0.2s; }
+.dimension-row:hover { background: #f3f4f6; }
+.dimension-row-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.dimension-name { font-weight: 600; font-size: 13px; color: #374151; }
+.dimension-score { font-size: 15px; font-weight: 600; color: #2563eb; }
+.dimension-score.missing { color: #9ca3af; font-weight: 400; font-size: 12px; }
+.dimension-meta { display: flex; justify-content: space-between; margin-top: 2px; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.tag-item { margin-right: 4px; }
-.text-muted { color: #9ca3af; }
-.dimension-block { margin-bottom: 12px; }
-.dimension-title { font-weight: 600; font-size: 13px; color: #374151; margin-bottom: 4px; text-transform: capitalize; }
-.dimension-value {
-  margin: 0; padding: 8px 10px; background: #f9fafb; border-radius: 6px;
-  font-size: 12px; color: #6b7280; white-space: pre-wrap; word-break: break-all;
-}
+.tag-item { margin-right: 2px; }
+.tag-score { margin-left: 4px; color: #2563eb; }
+.tag-group { margin-bottom: 12px; }
+.tag-group-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.tag-group-title { font-size: 13px; font-weight: 600; color: #374151; }
+.muted { color: #9ca3af; }
+.sm { font-size: 12px; }
+.notes { margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.9; }
 .request-id { color: #6b7280; font-size: 12px; margin-bottom: 8px; }
+.error-detail { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
 </style>
