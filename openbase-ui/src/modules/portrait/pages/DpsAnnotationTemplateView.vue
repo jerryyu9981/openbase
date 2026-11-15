@@ -1,11 +1,12 @@
 <template>
   <PageContainer title="标注模板管理" description="标注模板列表与字段维护" test-id="dps-annotation-template-view-page">
     <div class="page-toolbar">
-      <el-input v-model="templateCodeFilter" placeholder="按 template_code 过滤" clearable style="width: 220px" data-test="annotation-template-filter" />
+      <el-input v-model="keyword" placeholder="搜索 code / 名称 / scenario" clearable style="width: 240px" data-test="annotation-template-filter" />
       <el-select v-model="scenarioFilter" placeholder="scenario：全部" clearable style="width: 170px" data-test="annotation-scenario-filter">
         <el-option v-for="item in SCENARIOS" :key="item" :label="item" :value="item" />
       </el-select>
       <el-button type="primary" data-test="annotation-query" @click="load">查询</el-button>
+      <span class="result-count" data-test="annotation-count">共 {{ filteredItems.length }} 条</span>
       <el-button data-test="annotation-reset" @click="resetFilters">重置</el-button>
       <el-button type="primary" plain data-test="annotation-new" @click="openCreate">新建标注模板</el-button>
     </div>
@@ -26,7 +27,7 @@
 
     <el-card header="标注模板">
       <div class="ob-table-scroll">
-        <el-table v-loading="loading" :data="items" stripe empty-text="暂无标注模板" data-test="annotation-table">
+        <el-table v-loading="loading" :data="filteredItems" stripe :empty-text="keyword ? '无匹配标注模板' : '暂无标注模板'" data-test="annotation-table">
           <el-table-column prop="code" label="标注模板" min-width="180" />
           <el-table-column label="归属画像模板" min-width="170">
             <template #default="{ row }">
@@ -117,7 +118,7 @@ import { useAsyncState } from '@/core/composables/useAsyncState'
 const SCENARIOS = ['intake', 'assess', 'check', 'general']
 
 const router = useRouter()
-const templateCodeFilter = ref('')
+const keyword = ref('')
 const scenarioFilter = ref('')
 const detailOpen = ref(false)
 const detail = ref<DpsAnnotationTemplate | null>(null)
@@ -129,18 +130,28 @@ const createForm = reactive({ code: '', name: '', template_code: '', scenario: '
 
 const { data, loading, error, run } = useAsyncState<{ items: DpsAnnotationTemplate[]; total?: number }>()
 const items = computed(() => data.value?.items || [])
+// 关键词在已加载列表内本地过滤（code / 名称 / scenario），支持中文与前缀；
+// 服务端 template_code 为精确等值匹配，无法满足检索诉求。
+const filteredItems = computed(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  if (!kw) return items.value
+  return items.value.filter((item) =>
+    [item.code, item.name, item.template_code, item.scenario]
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(kw)),
+  )
+})
 
 async function load() {
   await run(() =>
     dpsApi.listAnnotationTemplates({
-      template_code: templateCodeFilter.value || undefined,
       scenario: scenarioFilter.value || undefined,
     }),
   )
 }
 
 function resetFilters() {
-  templateCodeFilter.value = ''
+  keyword.value = ''
   scenarioFilter.value = ''
   void load()
 }
@@ -212,6 +223,7 @@ onMounted(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
+.result-count { color: var(--ob-text-secondary); font-size: 13px; margin-left: 4px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }
 .request-id { color: var(--ob-text-disabled); font-size: 12px; margin-left: 8px; }
 </style>
