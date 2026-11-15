@@ -37,7 +37,7 @@
             </template>
           </el-table-column>
           <el-table-column label="版本" width="90">
-            <template #default="{ row }">v{{ row.version ?? 1 }}</template>
+            <template #default="{ row }">{{ formatVersion(row.version) }}</template>
           </el-table-column>
           <el-table-column prop="profile_type" label="profile_type" width="140" />
           <el-table-column prop="subject_type" label="subject_type" width="140" />
@@ -70,7 +70,7 @@
         <el-descriptions-item label="code">{{ detail?.code || '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">{{ detail?.status || '-' }}</el-descriptions-item>
         <el-descriptions-item label="name">{{ detail?.name || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="version">v{{ detail?.version ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="version">{{ formatVersion(detail?.version) }}</el-descriptions-item>
         <el-descriptions-item label="profile_type">{{ detail?.profile_type || '-' }}</el-descriptions-item>
         <el-descriptions-item label="subject_type">{{ detail?.subject_type || '-' }}</el-descriptions-item>
         <el-descriptions-item label="extends">{{ detail?.extends || '—（无继承）' }}</el-descriptions-item>
@@ -93,6 +93,7 @@ import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsPortraitTemplate } from '@/core/api/dps'
 import { describeDpsError } from '@/core/api/error'
 import { useAsyncState } from '@/core/composables/useAsyncState'
+import { formatVersion } from '@/modules/portrait/version'
 
 const router = useRouter()
 const keyword = ref('')

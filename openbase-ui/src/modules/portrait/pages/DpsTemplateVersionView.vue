@@ -59,7 +59,7 @@
     <el-alert v-if="rollbackResult" type="success" show-icon :closable="false" class="mb-16" data-test="rollback-result">
       <template #title>回滚已完成</template>
       <div>
-        当前版本 v{{ rollbackResult.new_version ?? '-' }}（回滚至内容等价 v{{ rollbackResult.rolled_back_to ?? '-' }}）；
+        当前版本 {{ formatVersion(rollbackResult.new_version) }}（回滚至内容等价 {{ formatVersion(rollbackResult.rolled_back_to) }}）；
         等价性自检 {{ rollbackResult.equivalence_check ? '通过' : '未通过' }}。
       </div>
     </el-alert>
@@ -108,6 +108,7 @@ import {
 import { describeDpsError } from '@/core/api/error'
 import { useAsyncState } from '@/core/composables/useAsyncState'
 import { useBasisTooltip } from '@/core/composables/useBasisTooltip'
+import { formatVersion } from '@/modules/portrait/version'
 
 const route = useRoute()
 const code = ref(String(route.params.code || ''))

@@ -1,6 +1,6 @@
 # 社区矫正模板包导入验证记录
 
-- 版本：v1.2.0
+- 版本：v1.3.0
 - 日期：2026-11-15
 - 环境：Dev（服务 127.0.0.1:8000/8030，共享 PG 192.168.0.151:5432/nuct）
 - 操作人：AI 编码代理（经用户批准执行）
@@ -8,6 +8,7 @@
   - v1.0.0（2026-11-15）：模板包导入共享 PG 的预演、实做与数据/接口/页面复验记录。
   - v1.1.0（2026-11-15）：新增 §6 标注模板前端本地关键词过滤修复与复验（用户批准）；§5 第 1 条已知限制收敛。
   - v1.2.0（2026-11-15）：新增 §7 DPS 侧全局模板可见性修复（跨仓）与复验；§5 第 2 条已知限制收敛。
+  - v1.3.0（2026-11-15）：新增 §8 模板版本号重复前缀（`vv1`）显示修复与复验。
 
 ## 1. 导入对象
 
@@ -60,3 +61,12 @@
 - 测试：`test_v2_11_tenant_isolation` 新增 `TestGlobalTemplateVisibility` 5 条（先 RED 后 GREEN）；模板相关 4 个测试文件共 **112 passed**。
 - 运行时复验：重启 DPS 后 `GET /api/v1/dps-proxy/templates` total=5（4 租户 + `dps-correction-v1`），详情 200/v1/active；前端模板族管理 5 条、搜「社区矫正」仍 5 条、无报错。
 - 留痕：`DPS/doc/development/DPS-画像模板全局可见性修复-DevLogReport-v1.0.0.md`。
+
+## 8. 模板版本号显示修复（v1.3.0）
+
+- 文件：`openbase-ui/src/modules/portrait/version.ts`（新增 `formatVersion`）、
+  `DpsTemplateListView.vue`、`DpsAnnotationTemplateView.vue`、`DpsTemplateVersionView.vue`
+- 根因：DPS 返回的 `version` 已带 `v` 前缀（`v1`），前端模板又拼接一次 `v{{ version }}` → `vv1`。
+- 修复：统一走 `formatVersion`，已带 `v` 前缀原样输出，纯数字补 `v`，空值显示 `-`。
+- 校验：`vue-tsc --noEmit` 0 错误、`eslint`（4 个文件）0 错误。
+- 浏览器复验：模板族 5 行、标注模板 8 行、模板详情 version 均显示 `v1`，无 `vv1`，PASS。

@@ -41,7 +41,7 @@
             <template #default="{ row }">{{ (row.field_schema || []).length }}</template>
           </el-table-column>
           <el-table-column label="版本" width="80">
-            <template #default="{ row }">v{{ row.version ?? 1 }}</template>
+            <template #default="{ row }">{{ formatVersion(row.version) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="250" fixed="right">
             <template #default="{ row }">
@@ -70,7 +70,7 @@
         <el-descriptions-item label="name">{{ detail?.name || '-' }}</el-descriptions-item>
         <el-descriptions-item label="归属（强归属）">{{ detail?.template_code || '-' }}（不可置空；改挂见「字段与归属」）</el-descriptions-item>
         <el-descriptions-item label="scenario">{{ detail?.scenario || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="version">v{{ detail?.version ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="version">{{ formatVersion(detail?.version) }}</el-descriptions-item>
         <el-descriptions-item label="status">{{ detail?.status || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
@@ -114,6 +114,7 @@ import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsAnnotationTemplate, type DpsPortraitTemplate } from '@/core/api/dps'
 import { describeDpsError } from '@/core/api/error'
 import { useAsyncState } from '@/core/composables/useAsyncState'
+import { formatVersion } from '@/modules/portrait/version'
 
 const SCENARIOS = ['intake', 'assess', 'check', 'general']
 
