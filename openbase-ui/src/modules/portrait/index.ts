@@ -34,6 +34,8 @@ export const dpsRoutes: RouteRecordRaw[] = [
   { path: 'dps/annotation-adapters', name: 'dps-annotation-adapters', component: () => import('./pages/DpsAnnotationAdapterView.vue'), meta: { title: 'AI 标注候选与复核' } },
   { path: 'dps/annotation-templates', name: 'dps-annotation-templates', component: () => import('./pages/DpsAnnotationTemplateView.vue'), meta: { title: '标注模板管理' } },
   { path: 'dps/annotation-templates/:code/fields', name: 'dps-annotation-fields', component: () => import('./pages/DpsAnnotationFieldView.vue'), meta: { title: '标注模板字段与归属' } },
+  // 标注录入与审核（v2.13.0）：补齐「配好标注模板 → 人工录入 → 审核联动」闭环
+  { path: 'dps/annotations', name: 'dps-annotations', component: () => import('./pages/DpsAnnotationWorkbenchView.vue'), meta: { title: '标注录入与审核' } },
   { path: 'dps/tags', name: 'dps-tags', component: () => import('./pages/DpsTagSystemView.vue'), meta: { title: '标签体系查看' } },
 ]
 
@@ -73,6 +75,7 @@ export const navItems = [
       { path: '/portrait/dps/scoring-types', title: '评分类型' },
       { path: '/portrait/dps/annotation-adapters', title: 'AI 标注候选与复核' },
       { path: '/portrait/dps/annotation-templates', title: '标注模板管理' },
+      { path: '/portrait/dps/annotations', title: '标注录入与审核' },
       { path: '/portrait/dps/tags', title: '标签体系查看' },
     ],
   },

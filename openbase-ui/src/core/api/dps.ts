@@ -117,6 +117,37 @@ export interface DpsPaged<T> {
   total?: number
 }
 
+/** 标注队列行（GET /portrait/annotations；`fields` 为落库结构化字段） */
+export interface DpsAnnotationRow {
+  id: string
+  person_id?: string
+  person_name?: string
+  annotation_template?: string
+  annotation_template_name?: string
+  profile_template_code?: string
+  review_status?: string
+  fields?: Record<string, unknown>
+  content?: string
+  created_at?: string
+  author_id?: string
+  [key: string]: unknown
+}
+
+export interface DpsAnnotationQuery {
+  annotation_template?: string
+  review_status?: string
+  person_id?: string
+  page?: number
+  page_size?: number
+}
+
+export interface DpsAnnotationQueue {
+  items: DpsAnnotationRow[]
+  total: number
+  page: number
+  page_size: number
+}
+
 /** 模板包（#1；前端不修改包内容，结构校验以 DPS 白名单为准） */
 export interface DpsTemplatePackage {
   format_version?: string
@@ -806,6 +837,23 @@ export const dpsApi = {
         comment: body.comment,
       },
     )
+    return data.data
+  },
+
+  /** 标注队列（GET /portrait/annotations；只读分页，供待办与审核历史） */
+  async listAnnotations(params: DpsAnnotationQuery = {}): Promise<DpsAnnotationQueue> {
+    const { data } = await http.get<ApiSuccess<DpsAnnotationQueue>>('/dps-proxy/annotations', { params })
+    return data.data
+  },
+
+  /**
+   * 结构化标注录入（POST /portrait/annotate）
+   *
+   * 需 `annotation_template` + `fields`，主体必须已有画像（profile）；
+   * 归属门禁与字段 schema 校验由 DPS 裁决，失败返回 400 原文。
+   */
+  async createAnnotation(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const { data } = await http.post<ApiSuccess<Record<string, unknown>>>('/dps-proxy/annotate', body)
     return data.data
   },
 

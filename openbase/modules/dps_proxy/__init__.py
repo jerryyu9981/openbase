@@ -1287,6 +1287,45 @@ async def dps_annotation_template_delete(
 # ---- 动态段 6：标注复核（单条 / 批量，OBS-02-DEF-02，2026-10-26）-----------
 
 
+@router.get("/annotations")
+async def dps_annotations_list(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注队列查询（GET；上游 ``/api/v2/portrait/annotations``）.
+
+    查询参数 ``annotation_template`` / ``review_status`` / ``person_id`` / ``page`` /
+    ``page_size`` 原样透传（上游已做枚举与分页收敛）。用于标注待办与审核历史列表。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/annotations"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/annotate")
+async def dps_annotate(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注创建/查询（POST；上游 ``/api/v2/portrait/annotate``）.
+
+    结构化分支需 ``annotation_template`` + ``fields``（主体须已有画像）；自由文本分支
+    只需 ``content``。请求体原样透传，归属门禁与字段校验以 DPS 为准。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path("/annotate"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
 @router.post("/annotations/batch-review")
 async def dps_annotations_batch_review(
     payload: dict[str, Any],

@@ -1,7 +1,7 @@
 # OpenBase 画像业务全流程与前端易用性分析
 
-- 版本：v1.1.0
-- 状态：[Implemented]（P0 + 画像 360 + 审核服务端补全已交付，2026-11-15；见 §13 实施回填）
+- 版本：v1.2.0
+- 状态：[Implemented]（P0 + 画像 360 + 审核服务端补全 + 标注录入闭环已交付，2026-11-16；见 §13）
 - 适用环境：Dev / Test / Pro
 - 作者：AI 编码代理
 - 评审：产品/业务负责人、DPS 技术负责人、前端负责人
@@ -13,6 +13,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-15 | 首版：DPS 标注→模板→打分→画像→证据全链路梳理、前端可达性盘点、优势与不足、P0/P1/P2 完善方案与验收标准 | AI 编码代理 |
 | v1.1.0 | 2026-11-15 | 决策确认并实施：范围 = P0 + 画像 360；审核未带 fields 由服务端补全；规则引擎页改只读总览。回填 9 项改动、验证结果与遗留项 | AI 编码代理 |
+| v1.2.0 | 2026-11-16 | 第二批：补齐标注录入闭环（DPS 标注队列只读接口 + 代理 `/annotate`、`/annotations` + 前端标注工作台），更新遗留项与验收证据 | AI 编码代理 |
 
 ---
 
@@ -404,9 +405,26 @@
 | 前端类型检查 | `vue-tsc --noEmit` | 0 错误 |
 | 前端 lint | `eslint`（8 个改动文件） | 0 错误 |
 
-### 13.4 遗留项（下一批）
+### 13.4 第二批交付（v1.2.0，标注闭环）
 
-1. 标注录入/待办页（P1-1）与 `GET /portrait/annotations`、代理 `/annotate`：本轮未做，UI 仍无法人工录入标注。
+| 编号 | 改动 | 文件 |
+|---|---|---|
+| 12 | 新增 `GET /portrait/annotations`：跨主体分页查询标注，支持 `annotation_template` / `review_status` / `person_id` 过滤，返回结构化 `fields` 与归属画像模板 | `DPS/src/engines/annotation_template_engine.py`（`query_annotations`）、`routes_profiles.py`（`api_list_annotations`） |
+| 13 | 新增标注队列单测（过滤分页、payload 反序列化、存量缺列降级、page_size 收敛） | `DPS/src/tests/test_annotation_queue_v2_13.py` |
+| 14 | 代理新增 `POST /annotate` 与 `GET /annotations`（查询参数透传） | `openbase/modules/dps_proxy/__init__.py` |
+| 15 | 前端 API：`listAnnotations` / `createAnnotation` + 队列类型 | `openbase-ui/src/core/api/dps.ts` |
+| 16 | 新增「标注录入与审核」页：按标注模板渲染动态字段、必填前置校验、待办队列与通过/驳回 | `openbase-ui/src/modules/portrait/pages/DpsAnnotationWorkbenchView.vue` |
+| 17 | 路由 `/portrait/dps/annotations` 与导航项 | `openbase-ui/src/modules/portrait/index.ts` |
+
+**闭环说明**：录入 →（pending）→ 队列通过（服务端补全 fields 并联动标签/血缘）→ 画像计算可见。此前 B1/B2 断点（无录入、无待办）已消除。
+
+**验证**：DPS 定向 60 passed（队列 3 + 审核补全 5 + 标注模板回归 52）；OpenBase 代理回归 44 passed；`ruff` All checks passed；`vue-tsc` 0 错误；`eslint` 0 错误。
+
+**遗留**：浏览器端到端走查（录入→审核→标签→画像）尚未执行；模板版本列表、影响面「受影响画像数」、服务端检索等仍按原计划顺延。
+
+### 13.5 遗留项（下一批）
+
+1. 浏览器端到端走查：标注录入 → 待办通过 → 标签联动 → 画像重算 → 360 视图。
 2. 模板版本列表接口（P1-3）：版本对比仍需手填 from/to。
 3. 影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
 4. 画像 360 的时间线/版本对照（P2-1 后半）。

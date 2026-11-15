@@ -1,10 +1,10 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.0.0
+- 版本：v1.1.0
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.1.0）
-- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.1.0）
-- 日期：2026-11-15
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.2.0）
+- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.2.0）
+- 日期：2026-11-16
 - 作者：AI 编码代理
 
 ## 修订历史
@@ -12,6 +12,7 @@
 | 版本 | 日期 | 变更摘要 | 作者 |
 |---|---|---|---|
 | v1.0.0 | 2026-11-15 | 首批交付：P0（8 项）+ 画像 360（雷达/分组标签/证据抽屉）+ 审核 fields 服务端补全；记录验证证据与遗留项 | AI 编码代理 |
+| v1.1.0 | 2026-11-16 | 第二批：标注录入闭环（DPS 标注队列接口 + 代理 /annotate、/annotations + 前端标注工作台），补 3 条单测 | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -47,9 +48,24 @@
 | 前端类型检查 | `vue-tsc --noEmit` | 0 错误 |
 | 前端 lint | `eslint`（8 个改动文件） | 0 错误 |
 
-## 4. 未覆盖 / 后续
+## 5. 第二批（v1.1.0，标注闭环）
 
-1. 标注录入与待办页（P1-1）：UI 仍无人工结构化标注入口；需新增 DPS `GET /portrait/annotations` 与代理 `/annotate`。
+| 仓库 | 模块 | 说明 |
+|---|---|---|
+| DPS | `engines/annotation_template_engine.py` | 新增 `query_annotations`：跨主体分页查询（模板/状态/主体过滤、租户列存在时过滤、payload→fields、缺列降级） |
+| DPS | `rest_api/routes/routes_profiles.py` | 新增 `GET /portrait/annotations`（枚举校验 400、分页收敛） |
+| DPS | `tests/test_annotation_queue_v2_13.py` | 3 条单测：过滤分页、存量缺列、page_size 收敛 |
+| OpenBase | `openbase/modules/dps_proxy/__init__.py` | 新增 `GET /annotations`（查询参数透传）、`POST /annotate` |
+| OpenBase | `core/api/dps.ts` | 新增 `listAnnotations` / `createAnnotation` 与队列类型 |
+| OpenBase | `pages/DpsAnnotationWorkbenchView.vue` | 标注录入（按 schema 动态字段、必填前置校验）+ 待办队列（筛选/分页/通过/驳回） |
+| OpenBase | `modules/portrait/index.ts` | 路由 `/portrait/dps/annotations` + 导航「标注录入与审核」 |
+
+闭环：录入（pending）→ 队列通过（服务端补全 fields 并联动标签/血缘）→ 计算后画像可见。
+
+验证：DPS 定向 60 passed；代理回归 44 passed；`ruff` / `vue-tsc` / `eslint` 均 0 错误。
+
+## 6. 未覆盖 / 后续
+
+1. 浏览器端到端走查：标注录入 → 待办通过 → 标签联动 → 画像重算 → 360 视图。
 2. 模板版本列表接口（P1-3）、影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
 3. 画像 360 的时间线与版本对照（P2-1 后半）。
-4. 浏览器端到端走查（规则总览 / 画像 360 / 计算弹窗 / 下一步卡片）尚未执行，建议在下一批与 P1 一并回归。
