@@ -171,6 +171,75 @@ export interface DpsPreflightResult {
   [key: string]: unknown
 }
 
+/** 模板可视化元数据（GET /dps-proxy/meta/schema；DPS 只读） */
+export interface DpsTemplateMetaSchema {
+  field_types?: Array<{ type?: string; label?: string; ops?: string[] }>
+  operators?: Array<{ op?: string; label?: string }>
+  condition_max_depth?: number
+  rule_types?: Array<{
+    type?: string
+    label?: string
+    description?: string
+    params?: Array<{ name?: string; label?: string; kind?: string; required?: boolean }>
+    example?: Record<string, unknown>
+  }>
+  profile_types?: string[]
+  subject_types?: string[]
+  template_statuses?: string[]
+  weight_sum_tolerance?: number
+  rule_key_field?: string
+  registration_guidance?: string
+  [key: string]: unknown
+}
+
+/** 模板校验问题项（字段级 path，供前端节点定位） */
+export interface DpsTemplateValidationIssue {
+  path?: string
+  code?: string
+  message?: string
+  severity?: 'error' | 'warning' | string
+}
+
+export interface DpsTemplateValidationResult {
+  valid?: boolean
+  errors?: DpsTemplateValidationIssue[]
+  weight_sum?: number
+  [key: string]: unknown
+}
+
+export interface DpsTemplatePreviewRule {
+  key?: string
+  type?: string
+  weight?: number
+  value?: unknown
+  status?: 'scored' | 'missing' | 'skipped' | 'error' | string
+  when_matched?: boolean | null
+  score?: number | null
+  message?: string
+}
+
+export interface DpsTemplatePreviewDimension {
+  code?: string
+  name?: string
+  weight?: number
+  score?: number
+  confidence?: number
+  skipped?: number
+  rules?: DpsTemplatePreviewRule[]
+}
+
+export interface DpsTemplatePreviewResult {
+  valid?: boolean
+  errors?: DpsTemplateValidationIssue[]
+  weight_sum?: number
+  normalized?: boolean
+  overall_score?: number
+  dimensions?: DpsTemplatePreviewDimension[]
+  sample_keys?: string[]
+  elapsed_ms?: number
+  [key: string]: unknown
+}
+
 export interface DpsLineageSource {
   annotation_id?: string
   template_code?: string
@@ -549,6 +618,34 @@ export const dpsApi = {
   /** 预检（GET /dps-proxy/templates/{code}/preflight，#5；只读，不写入） */
   async preflightTemplate(code: string): Promise<DpsPreflightResult> {
     const { data } = await http.get<ApiSuccess<DpsPreflightResult>>(`/dps-proxy/templates/${encodeURIComponent(code)}/preflight`)
+    return data.data
+  },
+
+  /** 模板可视化元数据（GET /dps-proxy/meta/schema；算子/规则参数模式，只读） */
+  async getTemplateMetaSchema(): Promise<DpsTemplateMetaSchema> {
+    const { data } = await http.get<ApiSuccess<DpsTemplateMetaSchema>>('/dps-proxy/meta/schema')
+    return data.data
+  },
+
+  /** 模板服务端全量校验（POST /dps-proxy/templates/{code}/validate；只读，可校验未保存草稿） */
+  async validateTemplate(code: string, template?: Record<string, unknown>): Promise<DpsTemplateValidationResult> {
+    const { data } = await http.post<ApiSuccess<DpsTemplateValidationResult>>(
+      `/dps-proxy/templates/${encodeURIComponent(code)}/validate`,
+      template ? { template } : {},
+    )
+    return data.data
+  },
+
+  /** 模板样例试算（POST /dps-proxy/templates/{code}/preview；dry-run 无副作用） */
+  async previewTemplate(
+    code: string,
+    template: Record<string, unknown> | undefined,
+    sample: Record<string, unknown>,
+  ): Promise<DpsTemplatePreviewResult> {
+    const { data } = await http.post<ApiSuccess<DpsTemplatePreviewResult>>(
+      `/dps-proxy/templates/${encodeURIComponent(code)}/preview`,
+      { ...(template ? { template } : {}), sample },
+    )
     return data.data
   },
 

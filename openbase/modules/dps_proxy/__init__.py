@@ -1051,6 +1051,68 @@ async def dps_template_preflight(
     )
 
 
+# ---- 画像模板可视化（v2.12.0 P1）：元数据 / 校验 / 试算 -------------------
+# 契约：《OpenBase-画像模板与标注模板可视化设计》§8.2；三者均**只读、无副作用**。
+
+
+@router.get("/meta/schema")
+async def dps_portrait_meta_schema(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板可视化元数据（GET /api/v2/portrait/meta/schema；权限 portrait_template:read）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/meta/schema"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/templates/{code}/validate")
+async def dps_template_validate(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板服务端全量校验（POST；只读，可校验未保存草稿 ``{template}``）.
+
+    返回字段级 ``[{path, code, message, severity}]``；校验失败仍为 200（``valid=false``），
+    由前端按 path 定位节点。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/templates/{code}/validate"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/templates/{code}/preview")
+async def dps_template_preview(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板样例试算（POST；dry-run 无副作用）.
+
+    请求体 ``{template?, sample}``；``template`` 缺省取库内模板（未保存草稿可显式传入）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/templates/{code}/preview"),
+        json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 # ---- 动态段：画像模板详情／更新／启停（#12 / #14 / #15 / #16）-------------
 
 

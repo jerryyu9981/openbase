@@ -41,8 +41,9 @@
           </el-table-column>
           <el-table-column prop="profile_type" label="profile_type" width="140" />
           <el-table-column prop="subject_type" label="subject_type" width="140" />
-          <el-table-column label="操作" width="280" fixed="right">
+          <el-table-column label="操作" width="350" fixed="right">
             <template #default="{ row }">
+              <el-button link type="primary" size="small" data-test="template-workbench" @click="router.push(`/portrait/dps/templates/${row.code}/edit`)">工作台</el-button>
               <el-button link type="primary" size="small" data-test="template-detail" @click="openDetail(row.code)">详情</el-button>
               <el-button link type="primary" size="small" data-test="template-versions" @click="router.push(`/dps/templates/${row.code}/versions`)">查看对比</el-button>
               <el-button link type="primary" size="small" data-test="template-preflight" @click="router.push(`/dps/templates/${row.code}/preflight`)">预检</el-button>
@@ -79,7 +80,8 @@
       <div class="mt-12">
         <el-button size="small" @click="router.push(`/dps/templates/${detail?.code}/versions`)">查看对比</el-button>
         <el-button size="small" @click="router.push(`/dps/templates/${detail?.code}/preflight`)">预检</el-button>
-        <el-button size="small" data-test="template-edit" @click="router.push(`/dps/templates/${detail?.code}/edit`)">编辑</el-button>
+        <el-button size="small" data-test="template-edit" @click="router.push(`/portrait/dps/templates/${detail?.code}/edit`)">工作台</el-button>
+        <el-button size="small" @click="router.push(`/portrait/dps/templates/${detail?.code}/raw`)">JSON 编辑</el-button>
       </div>
     </el-drawer>
   </PageContainer>

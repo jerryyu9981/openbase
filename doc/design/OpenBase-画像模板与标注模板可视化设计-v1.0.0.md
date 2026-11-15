@@ -1,7 +1,7 @@
 # OpenBase 画像模板 / 标注模板可视化设计
 
-- 版本：v1.1.0
-- 状态：[Approved]（2026-11-15 用户确认四项决策，进入实施）
+- 版本：v1.2.0
+- 状态：[Implemented]（P0 + P1 已交付，2026-11-15；见 §14 实施回填）
 - 适用环境：Dev / Test / Pro
 - 作者：AI 编码代理
 - 评审：产品/业务负责人、DPS 技术负责人、前端负责人
@@ -13,6 +13,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-15 | 首版：现状差距、信息架构、模板项编辑器、规则引擎、画像 360 视图、接口契约与分期方案 | AI 编码代理 |
 | v1.1.0 | 2026-11-15 | 决策确认：范围 P0+P1；`when` 允许落库并由 DPS 解释；画像视图（后续期）单主体+版本对照；沿用管理员权限 | AI 编码代理 |
+| v1.2.0 | 2026-11-15 | 实施回填：契约对齐（规则键 `key`、`attributes_schema` 分组数组、`tag_bindings` 标注模板绑定）、导航改为左侧分区、新增三个只读接口与 `when` 求值、验收证据 | AI 编码代理 |
 
 ---
 
@@ -287,3 +288,55 @@
 2. **规则 `when` 允许落库**，由 DPS 打分前求值：条件不成立则跳过该规则；需同步补 DPS 单测与向后兼容验证（旧模板无 `when` 行为不变）。
 3. **画像视图（后续期）范围：单主体 + 版本对照**，不做人群分布/跨主体对比。
 4. **权限：沿用管理员权限**（`portrait_template:create/update`），本期不引入业务角色与审批流。
+
+---
+
+## 14. 实施落地回填（v1.2.0，2026-11-15）
+
+### 14.1 与设计稿的契约对齐（以运行态为准）
+
+实施前对库内 `cor-persona-root-v1` 等真实模板做了逐键核对，以下为**以现有契约落地**的调整（设计稿对应条目同步按此理解）：
+
+| 设计稿假设 | 运行态实际 | 落地方式 |
+|---|---|---|
+| 规则用 `tag_code` 引用标签 | 规则用 **`key`**（如 `basic:age_stage`） | 编辑器统一写 `key`，读取兼容 `tag_code` |
+| `attributes_schema` 为字段对象数组 | **`{分组: [字段 key]}`** | 属性编辑器按「分组 → key 标签」维护，未知键透传 |
+| `tag_bindings` 为 `tag_code → 维度/属性` 行 | **`[{dimensions:[...], annotation_template}]`** | 绑定表按「标注模板 → 目标维度」编辑，保留扩展键 |
+| `evidence_policy` 为固定字段表单 | 自由对象（`description/review_levels/require_source` 等） | 已知键可视化，未知键原样保留并显式提示 |
+| `anomaly_rules` 为规则数组 | **`{规则名: {condition, action}}`** | 按「规则名 → 条件/动作/级别」编辑，内置 3 个模板 |
+| 顶部横向 6 个 Tab | 6 个中文标签超出容器宽度被折叠 | 改为**左侧分区导航 + 计数徽标**（与 §5.1 结构树一致，避免 Tab 溢出） |
+| 条件组字段来源为属性字段 | 计分规则引用的是**标签 key** | 字段选择器合并「规则 key + 属性字段」，支持手动输入 |
+
+### 14.2 交付清单（P0 + P1）
+
+**前端（`openbase-ui`）**
+
+- 草稿模型：[model.ts](file:///d:/Trae%20CN/myproject/Dev/OpenBase/openbase-ui/src/modules/portrait/templates/model.ts)（深拷贝保留未知键、前端即时校验、条件表达式预览、`toDraft/fromDraft`）。
+- 组件：`DimensionEditor` / `RuleCardForm` / `ConditionGroupBuilder`（AND/OR 嵌套 ≤3 层）/ `AttributeFieldTable` / `TagBindingTable` / `EvidencePolicyForm` / `AnomalyRuleList` / `DryRunDrawer`。
+- 页面：[DpsTemplateWorkbenchView.vue](file:///d:/Trae%20CN/myproject/Dev/OpenBase/openbase-ui/src/modules/portrait/pages/DpsTemplateWorkbenchView.vue)（6 段分区、问题清单定位、权重合计、JSON 只读视图、服务端校验、试运行、未保存拦截）。
+- 路由：`/portrait/dps/templates/new`、`/portrait/dps/templates/:code/edit` 指向工作台；原 JSON 编辑器保留为 `/raw`（高级兜底）；列表页新增「工作台」入口。
+- API：[dps.ts](file:///d:/Trae%20CN/myproject/Dev/OpenBase/openbase-ui/src/core/api/dps.ts) 新增 `getTemplateMetaSchema` / `validateTemplate` / `previewTemplate`。
+
+**DPS（后端，均只读）**
+
+- [conditions.py](file:///D:/Trae%20CN/myproject/Dev/DPS/src/engines/portrait/conditions.py)：18 个条件算子 + `all/any` 嵌套求值（`fail-closed`）、结构校验、`should_apply`。
+- [template_preview.py](file:///D:/Trae%20CN/myproject/Dev/DPS/src/engines/portrait/template_preview.py)：元数据、字段级校验（`path` 定位）、样例试算（`scored/missing/skipped/error` 四态 + 维度加权）。
+- [routes_profiles.py](file:///D:/Trae%20CN/myproject/Dev/DPS/src/rest_api/routes/routes_profiles.py)：`GET /api/v2/portrait/meta/schema`、`POST /templates/{code}/validate`、`POST /templates/{code}/preview`（置于 `/portrait/{person_id}` 动态段之前）。
+- [core.py](file:///D:/Trae%20CN/myproject/Dev/DPS/src/engines/portrait/core.py)：打分前 `when` 求值，不成立跳过该规则；**无 `when` 的存量规则行为不变**。
+- 代理层：`/api/v1/dps-proxy/meta/schema`、`/templates/{code}/validate`、`/templates/{code}/preview` 已转发（JWT + 组织/租户身份头透传）。
+
+### 14.3 验收证据
+
+| 验收项 | 结果 |
+|---|---|
+| 单元测试（`test_template_preview_v2_12.py`，18 例） | 18 passed；含旧模板无 `when` 回归对照 `ScoringDispatcher` |
+| 关联回归（preview + preflight + scoring，59 例） | 59 passed |
+| 静态检查 | `vue-tsc --noEmit` 0 错误；`eslint` 0 错误 0 警告；新增 DPS 文件 `ruff` 全通过 |
+| 接口联调 | `meta/schema` 返回 6 类规则 + 18 算子；存量模板 `validate` valid=true、权重 1.00；`preview` 总分 49.7、按维度输出置信度 |
+| 浏览器走查 | 工作台 6 个分区 + 权重合计 + 问题清单正常；试运行生成 32 条样例、总分 61.45；新建 `wb-smoke-v1` 保存成功（v1）并刷新后维度/规则持久 |
+
+### 14.4 已知边界
+
+- 试算与运行态一致地采用「缺样例 → 50 分」口径；`when` 仅在规则级生效（维度级条件留待 P2）。
+- 画像 360 视图（雷达/证据/时间线/版本对照）按决策留待后续期，本期只交付模板配置与试算闭环。
+- 服务端校验对权重合计 ≠ 1.00 给出 `warning`（不阻断），与运行态归一化口径一致。

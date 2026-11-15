@@ -21,8 +21,10 @@ import type { RouteRecordRaw } from 'vue-router'
  */
 export const dpsRoutes: RouteRecordRaw[] = [
   { path: 'dps/templates', name: 'dps-template-list', component: () => import('./pages/DpsTemplateListView.vue'), meta: { title: '模板族管理' } },
-  { path: 'dps/templates/new', name: 'dps-template-new', component: () => import('./pages/DpsTemplateEditView.vue'), meta: { title: '画像模板新建' } },
-  { path: 'dps/templates/:code/edit', name: 'dps-template-edit', component: () => import('./pages/DpsTemplateEditView.vue'), meta: { title: '画像模板编辑' } },
+  // 可视化工作台（P0）：新建与编辑统一入口；`raw` 保留原 JSON 编辑器作为高级兜底
+  { path: 'dps/templates/new', name: 'dps-template-new', component: () => import('./pages/DpsTemplateWorkbenchView.vue'), meta: { title: '画像模板新建' } },
+  { path: 'dps/templates/:code/edit', name: 'dps-template-edit', component: () => import('./pages/DpsTemplateWorkbenchView.vue'), meta: { title: '画像模板工作台' } },
+  { path: 'dps/templates/:code/raw', name: 'dps-template-raw', component: () => import('./pages/DpsTemplateEditView.vue'), meta: { title: '画像模板 JSON 编辑' } },
   { path: 'dps/templates/:code/versions', name: 'dps-template-versions', component: () => import('./pages/DpsTemplateVersionView.vue'), meta: { title: '版本对比与回滚' } },
   { path: 'dps/templates/:code/preflight', name: 'dps-template-preflight', component: () => import('./pages/DpsTemplatePreflightView.vue'), meta: { title: '预检与影响面' } },
   { path: 'dps/template-packages', name: 'dps-template-packages', component: () => import('./pages/DpsTemplatePackageView.vue'), meta: { title: '模板包导出／导入' } },
