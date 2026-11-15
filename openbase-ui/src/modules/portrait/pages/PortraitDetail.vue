@@ -63,6 +63,16 @@
             </el-select>
             <el-tag v-if="templateVersion" size="small" type="info">{{ selectedTemplate }} · v{{ templateVersion }}</el-tag>
             <div class="toolbar-actions">
+              <el-button
+                size="small"
+                type="primary"
+                plain
+                :loading="recalcRunning"
+                data-test="portrait-recalc"
+                @click="recalculate"
+              >
+                重算
+              </el-button>
               <el-button size="small" :loading="loading" data-test="portrait-refresh" @click="loadData">刷新</el-button>
               <el-button link type="primary" data-test="portrait-edit-open" @click="openEdit">编辑属性</el-button>
               <el-button link type="danger" data-test="portrait-delete-open" @click="removePortrait">删除画像</el-button>
@@ -77,8 +87,83 @@
             data-test="portrait-template-missing"
           >
             <template #title>该画像尚无模板「{{ selectedTemplate }}」的计算结果</template>
-            <div>请到画像列表以该模板重新计算，或切回默认口径查看六维基础分。</div>
+            <div>请点击上方「重算」以该模板计算，或切回默认口径查看六维基础分。</div>
           </el-alert>
+        </el-card>
+
+        <!-- 重算结果：对接任务查询接口 GET /portraits/tasks/{task_id} -->
+        <el-card
+          v-if="recalcVisible"
+          shadow="never"
+          class="mb-16"
+          data-test="portrait-recalc-result"
+        >
+          <template #header>
+            <div class="card-head">
+              <span>重算结果</span>
+              <div class="card-head-actions">
+                <el-tag size="small" :type="recalcStatusType">{{ recalcStatusLabel }}</el-tag>
+                <el-button link size="small" data-test="portrait-recalc-dismiss" @click="recalcVisible = false">
+                  收起
+                </el-button>
+              </div>
+            </div>
+          </template>
+
+          <el-alert
+            v-if="recalcError"
+            type="error"
+            show-icon
+            :closable="false"
+            :title="recalcError"
+            class="mb-12"
+            data-test="portrait-recalc-error"
+          />
+
+          <el-descriptions v-if="recalcResult" :column="2" border size="small">
+            <el-descriptions-item label="任务 ID">
+              <span data-test="portrait-recalc-task-id">{{ recalcTaskId || '同步计算（无任务 ID）' }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="计算口径">{{ recalcTemplateLabel }}</el-descriptions-item>
+            <el-descriptions-item label="完成时间">{{ formatTime(recalcFinishedAt) }}</el-descriptions-item>
+            <el-descriptions-item label="综合评分">
+              <strong data-test="portrait-recalc-overall">
+                {{ recalcOverall === null ? '—' : recalcOverall.toFixed(1) }}
+              </strong>
+              <span
+                v-if="recalcOverallDelta !== null"
+                class="delta"
+                :class="recalcOverallDelta >= 0 ? 'delta-up' : 'delta-down'"
+                data-test="portrait-recalc-delta"
+              >
+                {{ recalcOverallDelta >= 0 ? '+' : '' }}{{ recalcOverallDelta.toFixed(1) }}
+              </span>
+            </el-descriptions-item>
+            <el-descriptions-item label="数据完整度">
+              {{ recalcCompleteness === null ? '—' : `${Math.round(recalcCompleteness * 100)}%` }}
+            </el-descriptions-item>
+            <el-descriptions-item label="存储落点">{{ recalcStorage }}</el-descriptions-item>
+          </el-descriptions>
+
+          <el-table
+            v-if="recalcDimensions.length"
+            :data="recalcDimensions"
+            size="small"
+            class="mt-12"
+            data-test="portrait-recalc-dimensions"
+          >
+            <el-table-column prop="label" label="维度" min-width="120" />
+            <el-table-column label="得分" width="100">
+              <template #default="{ row }">{{ row.score === null ? '未采集' : row.score.toFixed(1) }}</template>
+            </el-table-column>
+            <el-table-column label="置信度" width="100">
+              <template #default="{ row }">{{ row.confidence === null ? '—' : row.confidence.toFixed(2) }}</template>
+            </el-table-column>
+          </el-table>
+
+          <div v-if="recalcResult" class="muted sm mt-8">
+            本次重算已回写画像数据，页面已自动刷新；维度得分与标签以当前展示为准。
+          </div>
         </el-card>
 
         <el-row :gutter="16">
@@ -127,7 +212,7 @@
                 description="暂无维度数据，请先计算画像"
                 :image-size="50"
               >
-                <el-button size="small" type="primary" plain @click="$router.push('/portrait/list')">去计算</el-button>
+                <el-button size="small" type="primary" plain :loading="recalcRunning" @click="recalculate">立即重算</el-button>
               </el-empty>
 
               <div v-else class="dimension-layout">
@@ -289,7 +374,7 @@ import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { dpsApi, type DpsPortrait, type DpsPortraitTemplate } from '@/core/api/dps'
+import { dpsApi, type DpsPortrait, type DpsPortraitCalcTask, type DpsPortraitTemplate } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
 
 interface DimensionScore {
@@ -344,6 +429,15 @@ const saving = ref(false)
 const evidenceVisible = ref(false)
 const evidenceTitle = ref('')
 const evidenceRows = ref<TagView[]>([])
+
+/** 重算：提交异步任务 → 轮询任务查询接口 → 展示结果并刷新画像 */
+const recalcVisible = ref(false)
+const recalcRunning = ref(false)
+const recalcTask = ref<DpsPortraitCalcTask | null>(null)
+const recalcResult = ref<Record<string, unknown> | null>(null)
+const recalcError = ref('')
+const recalcSynchronous = ref(false)
+const recalcBeforeOverall = ref<number | null>(null)
 
 const isForbidden = computed(() => presentation.value?.pageLevel === true)
 const isNotFound = computed(() => presentation.value?.kind === 'not-found')
@@ -402,6 +496,61 @@ const dimensionScores = computed<DimensionScore[]>(() => {
     score: toNumber(profile.value?.[item.field]),
     confidence: null,
   }))
+})
+
+/** 重算任务结果字段（异步任务返回 task.result，同步计算直接返回结果体） */
+const recalcTaskId = computed(() => String(recalcTask.value?.task_id || ''))
+const recalcOverall = computed(() => toNumber(recalcResult.value?.overall_score))
+const recalcOverallDelta = computed<number | null>(() => {
+  if (recalcOverall.value === null || recalcBeforeOverall.value === null) return null
+  return recalcOverall.value - recalcBeforeOverall.value
+})
+const recalcCompleteness = computed(() => {
+  const raw = Number(recalcResult.value?.data_completeness)
+  return Number.isFinite(raw) ? raw : null
+})
+const recalcFinishedAt = computed(() => {
+  const value = recalcTask.value?.finished_at
+  return typeof value === 'string' ? value : undefined
+})
+const recalcTemplateLabel = computed(() => {
+  const code = String(recalcResult.value?.template_code || '')
+  return code ? code : '默认口径（六维基础分）'
+})
+const recalcStorage = computed(() => {
+  const storage = recalcResult.value?.storage as Record<string, unknown> | undefined
+  if (!storage) return '默认口径（六维列）'
+  if (storage.persisted) return `已写入 ${String(storage.namespace || '模板命名空间')}`
+  return `未写入（${String(storage.reason || '未知原因')}）`
+})
+const recalcDimensions = computed<DimensionScore[]>(() => {
+  const dimensions = recalcResult.value?.dimensions
+  if (!dimensions || typeof dimensions !== 'object') return []
+  return Object.entries(dimensions as Record<string, unknown>).map(([code, value]) => {
+    const row = (value || {}) as Record<string, unknown>
+    return {
+      code,
+      label: DIMENSION_LABELS[code] || String(row.dimension || code),
+      score: toNumber(row.score),
+      confidence: toNumber(row.confidence),
+    }
+  })
+})
+const recalcStatusLabel = computed(() => {
+  if (recalcError.value) return '计算失败'
+  const status = recalcTask.value?.status
+  if (status === 'pending') return '排队中'
+  if (status === 'running') return '计算中'
+  if (status === 'failed') return '计算失败'
+  if (recalcSynchronous.value) return '已完成（同步）'
+  return '已完成'
+})
+const recalcStatusType = computed<'success' | 'warning' | 'danger' | 'info'>(() => {
+  if (recalcError.value) return 'danger'
+  const status = recalcTask.value?.status
+  if (status === 'pending' || status === 'running') return 'warning'
+  if (status === 'failed') return 'danger'
+  return 'success'
 })
 
 const tagItems = computed<TagView[]>(() => {
@@ -603,6 +752,45 @@ async function removePortrait() {
   }
 }
 
+/**
+ * 重算：按当前口径提交计算；异步返回 task_id 时轮询任务查询接口，
+ * 终态后展示任务结果并刷新 360 视图。
+ */
+async function recalculate() {
+  if (!personId || recalcRunning.value) return
+  recalcVisible.value = true
+  recalcRunning.value = true
+  recalcError.value = ''
+  recalcTask.value = null
+  recalcResult.value = null
+  recalcSynchronous.value = false
+  recalcBeforeOverall.value = overallScore.value
+  try {
+    const payload: Record<string, unknown> = { person_id: personId }
+    if (selectedTemplate.value) payload.template_code = selectedTemplate.value
+    const response = await dpsApi.calculatePortrait(payload)
+    const taskId = String(response.task_id || '')
+    if (taskId) {
+      recalcTask.value = { task_id: taskId, status: 'pending' }
+      ElMessage.info('重算任务已提交，正在等待结果…')
+      const task = await dpsApi.waitPortraitTask(taskId)
+      recalcTask.value = task
+      recalcResult.value = (task.result || null) as Record<string, unknown> | null
+    } else {
+      recalcSynchronous.value = true
+      recalcResult.value = response
+    }
+    ElMessage.success('重算完成，画像数据已刷新')
+    await loadData()
+  } catch (err) {
+    const described = describeError(err)
+    recalcError.value = described.detail || described.title || '重算失败'
+    ElMessage.error(recalcError.value)
+  } finally {
+    recalcRunning.value = false
+  }
+}
+
 async function loadTemplateOptions() {
   try {
     const result = await dpsApi.listTemplates({ status: 'active' })
@@ -682,6 +870,10 @@ onMounted(() => {
 .mb-16 { margin-bottom: 16px; }
 .mt-12 { margin-top: 12px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card-head-actions { display: flex; align-items: center; gap: 8px; }
+.delta { margin-left: 6px; font-size: 12px; }
+.delta-up { color: #16a34a; }
+.delta-down { color: #dc2626; }
 .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .toolbar-label { font-size: 13px; color: #4b5563; }
 .toolbar-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }

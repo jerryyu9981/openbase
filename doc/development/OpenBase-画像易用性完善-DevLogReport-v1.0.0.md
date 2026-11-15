@@ -1,9 +1,9 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.2.0
+- 版本：v1.3.0
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.3.0）
-- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.2.0）
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.0）
+- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.0）
 - 日期：2026-11-16
 - 作者：AI 编码代理
 
@@ -14,18 +14,20 @@
 | v1.0.0 | 2026-11-15 | 首批交付：P0（8 项）+ 画像 360（雷达/分组标签/证据抽屉）+ 审核 fields 服务端补全；记录验证证据与遗留项 | AI 编码代理 |
 | v1.1.0 | 2026-11-16 | 第二批：标注录入闭环（DPS 标注队列接口 + 代理 /annotate、/annotations + 前端标注工作台），补 3 条单测 | AI 编码代理 |
 | v1.2.0 | 2026-11-16 | 服务重启后实跑验证；修复 3 处 PG 适配（annotation.template_id、profile_tag tenant+upsert、tag_lineage.profile_id），补 2 条单测；浏览器走查 PASS | AI 编码代理 |
+| v1.3.0 | 2026-11-16 | 详情页对接异步任务查询（重算 + 结果卡片）；修复 `_persist_template_namespace` 的 PG TIMESTAMPTZ 写入并补存完整度/置信度，补 2 条单测；实跑与浏览器走查通过 | AI 编码代理 |
 
 ## 1. 变更范围
 
 | 仓库 | 模块 | 说明 |
 |---|---|---|
 | DPS | `engines/annotation_template_engine.py` | 新增 `get_structured_annotation`，读取标注模板 code / 归属画像模板 / 结构化字段 |
-| DPS | `rest_api/routes/routes_profiles.py` | 新增 `_backfill_review_fields`；审核通过缺参时服务端补全，响应新增 `fields_backfilled` |
+| DPS | `rest_api/routes/routes_profiles.py` | 新增 `_backfill_review_fields`；审核通过缺参时服务端补全，响应新增 `fields_backfilled`；修复 `_persist_template_namespace` 的 PG `updated_at` 类型并补存 `confidence` / `data_completeness` |
 | DPS | `tests/test_annotation_review_backfill_v2_13.py` | 新增 5 条单测 |
+| DPS | `tests/test_template_namespace_persist_v2_13.py` | 新增 2 条单测（datetime 落库 + 命名空间字段 + 画像缺失降级） |
 | OpenBase | `openbase/modules/dps_proxy/__init__.py` | 画像详情透传 `template_code` 查询参数 |
 | OpenBase | `core/api/dps.ts` | `getPortrait(personId, templateCode?)`；`DpsPortrait` 补齐六维分 / attributes / tags 行类型 |
 | OpenBase | `pages/Rules.vue` | 由本地 mock 重写为 active 模板规则只读总览 |
-| OpenBase | `pages/PortraitDetail.vue` | 360 视图：身份卡 / 完整度 / 雷达 / 维度条 / 分组标签 / 证据抽屉 / 模板口径切换 |
+| OpenBase | `pages/PortraitDetail.vue` | 360 视图：身份卡 / 完整度 / 雷达 / 维度条 / 分组标签 / 证据抽屉 / 模板口径切换；新增「重算」与重算结果卡片（轮询任务查询接口） |
 | OpenBase | `pages/PortraitList.vue` | 计算弹窗改 active 模板下拉、错误原文与「去激活」引导；标签列对象渲染修复 |
 | OpenBase | `pages/DpsTemplateWorkbenchView.vue` | 保存后「下一步」卡片（激活 / 建标注模板 / 看规则 / 去计算） |
 | OpenBase | `pages/DpsAnnotationFieldView.vue` | `target_dimension` 改归属模板维度下拉，列头提示「留空=不进画像」 |
@@ -80,7 +82,20 @@
 
 单测：新增 `test_insert_annotation_casts_uuid_template_id_to_text`、`test_insert_profile_tag_writes_tenant_and_upserts`；定向 10 passed。
 
-## 7. 未覆盖 / 后续
+## 7. 详情页重算结果对接任务查询（v1.3.0）
+
+**目标**：详情页可直接重算，并通过任务查询接口展示本次重算结果，不必回列表或猜测是否成功。
+
+**实现**
+- 前端 `PortraitDetail.vue`：工具栏新增「重算」，按当前口径提交 `POST /portraits/calculate`；响应含 `task_id` 时复用 `dpsApi.waitPortraitTask` 轮询 `GET /portraits/tasks/{task_id}`（2s/60s），终态后渲染「重算结果」卡片（任务 ID、口径、完成时间、综合评分及增减、完整度、存储落点、维度明细），并自动刷新 360 视图；同步返回（无 `task_id`）时直接展示结果体。
+- DPS `routes_profiles.py::_persist_template_namespace`：修复 PostgreSQL 下 `updated_at` 必须为 `datetime` 对象（原 ISO 字符串被 asyncpg 拒绝，`persisted=false` 静默丢结果）；命名空间补存 `confidence`、`data_completeness`，详情页口径视图可直接展示。
+
+**验证**
+- 实跑：任务 `1547706…` → `succeeded`，`storage.persisted=true namespace=cor-persona-risk-v1`；`GET /portraits/61?template_code=…` 回读命名空间含 `overall_score`/`data_completeness`/`confidence`/`dimensions`。
+- 浏览器走查 `/portrait/61`：卡片「已完成」，任务 ID `a3afeba5…`、综合评分 `50.0（+13.4）`、完整度 `7%`、存储落点「默认口径（六维列）」、维度表 6 行，无红色报错。
+- 单测：`test_template_namespace_persist_v2_13.py` 2 条；与既有标注回归合计定向 12 passed；`vue-tsc --noEmit`、`eslint` 0 错误。
+
+## 8. 未覆盖 / 后续
 
 1. 模板版本列表接口（P1-3）、影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
 2. 画像 360 的时间线与版本对照（P2-1 后半）。

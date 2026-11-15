@@ -1,7 +1,7 @@
 # OpenBase 画像业务全流程与前端易用性分析
 
-- 版本：v1.3.0
-- 状态：[Implemented]（P0 + 画像 360 + 审核服务端补全 + 标注录入闭环已交付并完成运行验证，2026-11-16；见 §13）
+- 版本：v1.4.0
+- 状态：[Implemented]（P0 + 画像 360 + 审核服务端补全 + 标注录入闭环 + 详情页重算结果已交付并完成运行验证，2026-11-16；见 §13）
 - 适用环境：Dev / Test / Pro
 - 作者：AI 编码代理
 - 评审：产品/业务负责人、DPS 技术负责人、前端负责人
@@ -15,6 +15,7 @@
 | v1.1.0 | 2026-11-15 | 决策确认并实施：范围 = P0 + 画像 360；审核未带 fields 由服务端补全；规则引擎页改只读总览。回填 9 项改动、验证结果与遗留项 | AI 编码代理 |
 | v1.2.0 | 2026-11-16 | 第二批：补齐标注录入闭环（DPS 标注队列只读接口 + 代理 `/annotate`、`/annotations` + 前端标注工作台），更新遗留项与验收证据 | AI 编码代理 |
 | v1.3.0 | 2026-11-16 | 重启服务后实跑验证：修复 PostgreSQL 三处类型/租户适配（annotation.template_id UUID→TEXT、profile_tag 补 tenant_id+upsert、tag_lineage.profile_id UUID→TEXT）；浏览器走查通过 | AI 编码代理 |
+| v1.4.0 | 2026-11-16 | 详情页对接异步任务查询：新增「重算」入口与重算结果卡片；修复 `_persist_template_namespace` 的 PG TIMESTAMPTZ 写入缺陷（模板口径结果原先静默丢失）；补 2 条回归单测 | AI 编码代理 |
 
 ---
 
@@ -448,6 +449,25 @@
 2. 影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
 3. 画像 360 的时间线与版本对照（P2-1 后半）。
 4. `DpsPortraitTemplate` 类型注释「前端不解析内部结构」已与实现（规则总览解析 `dimension_config`）不一致，后续统一措辞。
+
+### 13.7 详情页重算结果对接任务查询（v1.4.0）
+
+**背景**：详情页原先只能查看已有结果；`POST /portrait/calculate` 在异步模式返回 `{task_id, status}` 信封后，任务结果在页面上无处查看，用户必须回列表重算再猜。
+
+**改动**
+
+| 端 | 文件 | 说明 |
+|---|---|---|
+| DPS | `rest_api/routes/routes_profiles.py::_persist_template_namespace` | 修复 PostgreSQL 落点：`updated_at` 由 ISO 字符串改传 `datetime` 对象（asyncpg 严格类型，原实现报错导致模板口径结果静默丢失）；命名空间补存 `confidence` / `data_completeness`，供详情页口径视图展示 |
+| DPS | `tests/test_template_namespace_persist_v2_13.py` | 新增 2 条回归：`updated_at` 必须为 datetime 且命名空间含完整度/置信度；画像缺失时降级为 `persisted=False` |
+| OpenBase | `openbase-ui/src/modules/portrait/pages/PortraitDetail.vue` | 工具栏新增「重算」；提交后复用 `dpsApi.waitPortraitTask` 轮询 `GET /portraits/tasks/{task_id}`；结果卡片展示任务 ID / 计算口径 / 完成时间 / 综合评分（含增减）/ 数据完整度 / 存储落点 / 维度明细；成功后自动刷新 360 视图；空维度态提供「立即重算」 |
+| OpenBase | `core/api/dps.ts` | 复用既有 `getPortraitTask` / `waitPortraitTask`，无新增契约 |
+
+**验证（实跑）**
+- 任务：`POST /portraits/calculate` → `task_id=1547706…`，轮询终态 `succeeded`，`storage.persisted=true namespace=cor-persona-risk-v1`。
+- 命名空间回读：`GET /portraits/61?template_code=cor-persona-risk-v1` 返回 `result_namespace`，含 `overall_score` / `data_completeness` / `confidence` / `dimensions`。
+- 浏览器走查 `/portrait/61`：点击「重算」→ 卡片状态「已完成」，任务 ID `a3afeba5…`、综合评分 `50.0（+13.4）`、数据完整度 `7%`、存储落点「默认口径（六维列）」、维度表 6 行，无红色报错。
+- 单测：`test_template_namespace_persist_v2_13.py` + 既有标注回归，定向 `12 passed`；前端 `vue-tsc --noEmit` / `eslint` 均 0 错误。
 
 
 ---
