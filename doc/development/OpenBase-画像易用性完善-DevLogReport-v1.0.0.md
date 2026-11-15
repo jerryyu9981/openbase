@@ -1,8 +1,8 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.1.0
+- 版本：v1.2.0
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.2.0）
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.3.0）
 - 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.2.0）
 - 日期：2026-11-16
 - 作者：AI 编码代理
@@ -13,6 +13,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-15 | 首批交付：P0（8 项）+ 画像 360（雷达/分组标签/证据抽屉）+ 审核 fields 服务端补全；记录验证证据与遗留项 | AI 编码代理 |
 | v1.1.0 | 2026-11-16 | 第二批：标注录入闭环（DPS 标注队列接口 + 代理 /annotate、/annotations + 前端标注工作台），补 3 条单测 | AI 编码代理 |
+| v1.2.0 | 2026-11-16 | 服务重启后实跑验证；修复 3 处 PG 适配（annotation.template_id、profile_tag tenant+upsert、tag_lineage.profile_id），补 2 条单测；浏览器走查 PASS | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -64,8 +65,22 @@
 
 验证：DPS 定向 60 passed；代理回归 44 passed；`ruff` / `vue-tsc` / `eslint` 均 0 错误。
 
-## 6. 未覆盖 / 后续
+## 6. 运行验证与 PG 适配修复（v1.2.0）
 
-1. 浏览器端到端走查：标注录入 → 待办通过 → 标签联动 → 画像重算 → 360 视图。
-2. 模板版本列表接口（P1-3）、影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
-3. 画像 360 的时间线与版本对照（P2-1 后半）。
+| # | 现象 | 根因 | 修复文件 |
+|---|---|---|---|
+| 1 | 录入标注 500 | `annotation_template.id` 为 UUID，`annotation.template_id` 为 TEXT，asyncpg 拒绝隐式转换 | `engines/annotation_template_engine.py::_insert_annotation_row`（`str(template_id)`） |
+| 2 | 审核 `synced=1` 但画像标签为 0 | `profile_tag` 未写 `tenant_id`（详情按 person_id+tenant_id 过滤），且唯一键导致重复联动冲突 | `sync_tags_to_profile` / `_insert_profile_tag`（补 tenant、`ON CONFLICT DO UPDATE`） |
+| 3 | 血缘 `recorded=0` | `tag_lineage.profile_id` 为 TEXT，传入 UUID 对象 | `routes_profiles.py::_sync_tags_after_approval`（`str(profile_id)`） |
+
+实跑证据（重启后）：
+- 录入 200 → 队列 pending total=1 → 审核 200 / `backfilled=true` / `synced=1` / `lineage.recorded=1`
+- 画像详情 `tags count=1`（`behavior:signin_compliance_rate`）
+- 浏览器走查 `/portrait/dps/annotations` PASS：标题正确、模板渲染 19 个字段、队列 3 行、无报错
+
+单测：新增 `test_insert_annotation_casts_uuid_template_id_to_text`、`test_insert_profile_tag_writes_tenant_and_upserts`；定向 10 passed。
+
+## 7. 未覆盖 / 后续
+
+1. 模板版本列表接口（P1-3）、影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
+2. 画像 360 的时间线与版本对照（P2-1 后半）。

@@ -1,7 +1,7 @@
 # OpenBase 画像业务全流程与前端易用性分析
 
-- 版本：v1.2.0
-- 状态：[Implemented]（P0 + 画像 360 + 审核服务端补全 + 标注录入闭环已交付，2026-11-16；见 §13）
+- 版本：v1.3.0
+- 状态：[Implemented]（P0 + 画像 360 + 审核服务端补全 + 标注录入闭环已交付并完成运行验证，2026-11-16；见 §13）
 - 适用环境：Dev / Test / Pro
 - 作者：AI 编码代理
 - 评审：产品/业务负责人、DPS 技术负责人、前端负责人
@@ -14,6 +14,7 @@
 | v1.0.0 | 2026-11-15 | 首版：DPS 标注→模板→打分→画像→证据全链路梳理、前端可达性盘点、优势与不足、P0/P1/P2 完善方案与验收标准 | AI 编码代理 |
 | v1.1.0 | 2026-11-15 | 决策确认并实施：范围 = P0 + 画像 360；审核未带 fields 由服务端补全；规则引擎页改只读总览。回填 9 项改动、验证结果与遗留项 | AI 编码代理 |
 | v1.2.0 | 2026-11-16 | 第二批：补齐标注录入闭环（DPS 标注队列只读接口 + 代理 `/annotate`、`/annotations` + 前端标注工作台），更新遗留项与验收证据 | AI 编码代理 |
+| v1.3.0 | 2026-11-16 | 重启服务后实跑验证：修复 PostgreSQL 三处类型/租户适配（annotation.template_id UUID→TEXT、profile_tag 补 tenant_id+upsert、tag_lineage.profile_id UUID→TEXT）；浏览器走查通过 | AI 编码代理 |
 
 ---
 
@@ -420,15 +421,33 @@
 
 **验证**：DPS 定向 60 passed（队列 3 + 审核补全 5 + 标注模板回归 52）；OpenBase 代理回归 44 passed；`ruff` All checks passed；`vue-tsc` 0 错误；`eslint` 0 错误。
 
-**遗留**：浏览器端到端走查（录入→审核→标签→画像）尚未执行；模板版本列表、影响面「受影响画像数」、服务端检索等仍按原计划顺延。
+**遗留**：浏览器走查与 PG 实跑验证已在 v1.3.0 完成（见 §13.5）；模板版本列表、影响面「受影响画像数」、服务端检索等仍按原计划顺延。
 
-### 13.5 遗留项（下一批）
+### 13.5 运行验证与缺陷修复（v1.3.0）
 
-1. 浏览器端到端走查：标注录入 → 待办通过 → 标签联动 → 画像重算 → 360 视图。
-2. 模板版本列表接口（P1-3）：版本对比仍需手填 from/to。
-3. 影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
-4. 画像 360 的时间线/版本对照（P2-1 后半）。
-5. `DpsPortraitTemplate` 类型标注「前端不解析内部结构」已与实现（规则总览解析 `dimension_config`）不一致，后续统一措辞。
+服务重启后按「登录 → 选标注模板 → 选主体 → 录入 → 队列 → 通过 → 标签 → 计算」实跑，暴露并修复 3 处 **仅 PostgreSQL 环境可见** 的适配缺陷：
+
+| # | 现象 | 根因 | 修复 |
+|---|---|---|---|
+| 1 | `POST /portrait/annotate` 返回 500 | PG 下 `annotation_template.id` 为 UUID 对象，而 `annotation.template_id` 是 TEXT 列，asyncpg 拒绝隐式转换（`expected str, got UUID`） | 写入前显式 `str(template_id)` |
+| 2 | 审核通过 `synced=1`，但画像详情标签数为 0 | `profile_tag` 写入未带 `tenant_id`，而画像详情按 `person_id + tenant_id` 过滤；且 `UNIQUE(profile_id, tag_code)` 导致重复联动冲突 | 写入补 `tenant_id`（`CAST(? AS UUID)`）并改为 `ON CONFLICT DO UPDATE` 幂等 upsert |
+| 3 | 血缘 `lineage.recorded=0` 且带 error | `tag_lineage.profile_id` 为 TEXT 列，传入 UUID 对象 | 写谱系前显式 `str(profile_id)` |
+
+**验证结果（实跑）**：
+- 录入 `200` → 队列 `pending total=1` → 审核 `200 / backfilled=true / synced=1 / lineage.recorded=1`
+- 画像详情 `tags count=1`，标签键 `behavior:signin_compliance_rate`
+- 前端浏览器走查 PASS：`/portrait/dps/annotations` 标题正确、左侧选择模板后渲染 19 个字段输入项、右侧队列 3 行待办、无白屏与红色报错。
+
+**新增单测**：`test_insert_annotation_casts_uuid_template_id_to_text`、`test_insert_profile_tag_writes_tenant_and_upserts`（合计 5 条，定向 10 passed）。
+
+> 注：`POST /portrait/calculate` 在该版本返回 `{task_id, status}` 任务信封（非计算明细），属既有异步契约，与本闭环无关。
+
+### 13.6 遗留项（下一批）
+
+1. 模板版本列表接口（P1-3）：版本对比仍需手填 from/to。
+2. 影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
+3. 画像 360 的时间线与版本对照（P2-1 后半）。
+4. `DpsPortraitTemplate` 类型注释「前端不解析内部结构」已与实现（规则总览解析 `dimension_config`）不一致，后续统一措辞。
 
 
 ---
