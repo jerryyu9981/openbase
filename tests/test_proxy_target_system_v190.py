@@ -103,10 +103,12 @@ async def test_proxy_passes_mapped_target_system(monkeypatch: pytest.MonkeyPatch
 
 
 class _StubSettings:
-    """settings 桩：只需 llm_api_key 与租户 Key 映射."""
+    """settings 桩：llm/rag/memory 凭据与租户 Key 映射."""
 
     llm_api_key = "ob_llm_test_key"
     llm_api_keys_by_tenant = ""
+    rag_api_key = "ob_rag_test_key"
+    memory_api_key = "ob_memory_test_key"
 
 
 def _stub_settings(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -134,8 +136,19 @@ def test_inject_credentials_for_openllm(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 def test_inject_credentials_skipped_for_other_systems(monkeypatch: pytest.MonkeyPatch) -> None:
-    """非 openllm 系统不注入凭据，避免越权携带 OpenLLM Key."""
+    """各系统只注入自身上游凭据，不越权携带 OpenLLM Key（DEF-04）."""
     _stub_settings(monkeypatch)
-    for system in ("openrag", "openmemory", "dps"):
-        headers = proxy_module._inject_upstream_credentials(system, {"Accept": "application/json"})
-        assert "Authorization" not in headers
+
+    rag_headers = proxy_module._inject_upstream_credentials("openrag", {"Accept": "application/json"})
+    assert rag_headers["X-API-Key"] == "ob_rag_test_key"
+    assert "Authorization" not in rag_headers
+
+    memory_headers = proxy_module._inject_upstream_credentials(
+        "openmemory", {"Accept": "application/json"}
+    )
+    assert memory_headers["X-API-Key"] == "ob_memory_test_key"
+    assert "Authorization" not in memory_headers
+
+    dps_headers = proxy_module._inject_upstream_credentials("dps", {"Accept": "application/json"})
+    assert "X-API-Key" not in dps_headers
+    assert "Authorization" not in dps_headers

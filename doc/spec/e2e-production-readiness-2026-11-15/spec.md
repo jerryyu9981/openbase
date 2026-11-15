@@ -1,6 +1,6 @@
 # OpenBase 全服务端到端走查与上生产就绪修复 Spec
 
-- 版本：v1.1.0
+- 版本：v1.2.0
 - 状态：[Approved]（已批准并实施，验证通过）
 - 适用环境：Dev（本机 127.0.0.1，共享基础设施 192.168.0.151）
 - 作者：AI 编码代理（承接 2026-11-15 端到端走查）
@@ -8,6 +8,7 @@
 - 修订历史：
   - v1.0.0（2026-11-15）：首版。汇总 7 服务拉起与三轮全页面/全功能走查结果，固化 2 项 P1 阻断缺陷修复设计、2 项 P2 遗留登记。
   - v1.1.0（2026-11-15）：批准并实施 DEF-01/DEF-02 修复；补测 7 条、ruff 0 错误、定向测试 37 条全通过；重启 openbase 后运行时验收与浏览器复走查全 PASS；追加 §8 变更记录。
+  - v1.2.0（2026-11-15）：按用户要求收敛两项 P2 遗留——DEF-03（记忆列表筛选计数）与 DEF-04（通用代理 RAG/Memory 上游凭据）；补测 5 条并更新 1 条既有断言，ruff 0 错误，代理相关 68 条回归全通过，运行时与浏览器复验 PASS；追加 §9。
 
 ---
 
@@ -160,9 +161,9 @@ python -m pytest tests/test_gateway.py tests/test_gateway_api.py -q
 - 通用代理已注入 openllm 凭据与身份头（已实测 200）。
 - 前端经 vite 代理访问 8000，`Host` 为可回连地址。
 
-遗留（P2，经批准后登记，不阻塞上线）
-- DEF-03 记忆列表关键词筛选分页计数不一致。
-- DEF-04 通用代理对 openrag/openmemory 401（建议后续把通用代理凭据注入与专用代理收敛为单一事实源）。
+遗留（P2，已于 v1.2.0 收敛，见 §9）
+- DEF-03 记忆列表关键词筛选分页计数不一致 —— 已修复。
+- DEF-04 通用代理对 openrag/openmemory 401 —— 已修复（凭据注入与专用代理同源）。
 
 ---
 
@@ -202,4 +203,32 @@ python -m pytest tests/test_gateway.py tests/test_gateway_api.py -q
 
 - 自调用代理增加一次本机往返（毫秒级），仅聚合链路。
 - 反向代理部署下依赖 `Host`/`X-Forwarded-*` 可回连；不可回连时后续可引入 self base 配置项。
-- DEF-03（记忆列表关键词筛选分页计数）与 DEF-04（通用代理对 openrag/openmemory 401）维持 P2 遗留。
+- DEF-03（记忆列表关键词筛选分页计数）与 DEF-04（通用代理对 openrag/openmemory 401）维持 P2 遗留（v1.2.0 已收敛，见 §9）。
+
+---
+
+## 9. P2 收敛记录（v1.2.0）
+
+### 9.1 DEF-03 记忆列表筛选计数
+
+- 文件：`openbase-ui/src/modules/memory/pages/MemoryList.vue`
+- 变更：
+  1. 记忆类型改为**服务端过滤**（`memory_type` 查询参数），total 与结果一致；
+  2. 关键词（当前页内过滤）激活时，分页总数改用 `filtered.length`（`displayTotal`），并固定展示过滤结果；
+  3. 关键词变化自动回到第 1 页；输入框提示明确「当前页」；清空触发重载。
+- 验证：浏览器实测初始「共 31 条」→ 输入「咖啡」后「共 1 条」且仅 1 行 → 清空恢复 31 条。
+
+### 9.2 DEF-04 通用代理凭据补齐
+
+- 文件：`openbase/modules/proxy/__init__.py`
+- 变更：`_inject_upstream_credentials(system, headers, request=None, *, is_service_key=False)`
+  - openrag → `X-API-Key: settings.rag_api_key`；
+  - openmemory → `X-API-Key: settings.memory_api_key` + 透传调用方原 JWT（双层认证；服务 Key 通道不构造 Authorization，复用 memory_proxy 的 `_original_bearer_token`）；
+  - openllm / dps 行为不变。
+- 测试：`tests/test_proxy_outbound_matrix.py` 新增 5 条；`tests/test_proxy_target_system_v190.py` 更新凭据矩阵断言。
+- 验证：`/api/v1/proxy/openrag/api/v1/collections` 与 `/api/v1/proxy/openmemory/api/v1/memories?limit=1` 均由 401 → **200**；聚合编排（openrag+openmemory+dps）`errors=0`。
+- 回归：`ruff` 0 错误；代理相关 68 条测试全通过。
+
+### 9.3 残留说明
+
+- 关键词过滤范围仍为**当前页**（OpenMemory 原生列表未提供内容全文检索参数），UI 已明示；跨页全文检索应使用「记忆搜索」（语义检索）页面。

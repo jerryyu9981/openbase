@@ -30,6 +30,7 @@ from openbase.modules.protocol_headers import (
     TARGET_SYSTEM_RAG,
     build_outbound_headers,
 )
+from openbase.modules.proxy.memory_proxy import _original_bearer_token
 from openbase.modules.proxy.memory_proxy import router as memory_proxy_router
 from openbase.modules.proxy.upstream_observe import (
     content_type_of,
@@ -152,29 +153,48 @@ def _target_system_of(system: str) -> str:
     return _TARGET_SYSTEM_BY_PROXY.get(system, TARGET_SYSTEM_GENERIC)
 
 
-def _inject_upstream_credentials(system: str, headers: dict[str, str]) -> dict[str, str]:
-    """按被代理系统注入上游凭据（v1.9.0）.
+def _inject_upstream_credentials(
+    system: str,
+    headers: dict[str, str],
+    request: Request | None = None,
+    *,
+    is_service_key: bool = False,
+) -> dict[str, str]:
+    """按被代理系统注入上游凭据（v1.9.0；v1.2.0 DEF-04 补齐 RAG/Memory）.
 
-    OpenLLM 原生 `/api/v1/*` 走 ``get_current_active_user_or_api_key`` 双通道：
-    仅携带身份头不足以认证，必须同时带 ``Authorization: Bearer <OpenLLM API Key>``
-    （与 ``llm_proxy`` 同一注入方式与租户级选 Key 规则，单一事实源）。
-    其余系统（RAG/Memory/DPS）沿用身份头 + 各自 ``openbase-*-proxy`` 信任链，不注入。
+    - openllm：`Authorization: Bearer <OpenLLM API Key>`（与 llm_proxy 同一选 Key 规则）；
+    - openrag：`X-API-Key: <rag_api_key>`（OpenRAG APIKeyMiddleware 强制鉴权）；
+    - openmemory：`X-API-Key: <memory_api_key>` + 透传调用方原 JWT（双层认证；
+      服务 Key 通道无原 JWT，不构造 Authorization）；
+    - dps：不注入（沿用身份头 + 专段代理信任链）。
 
     Args:
         system: 被代理系统（PROXY_SYSTEMS 的键）。
         headers: 已装配身份头的出站头。
+        request: 入站请求（用于读取原 JWT；可为 None）。
+        is_service_key: 是否 ob_k_ 服务 Key 通道（该通道不透传 Authorization）。
 
     Returns:
         dict[str, str]: 补入凭据后的出站头（原地修改并返回）。
     """
-    if system != "openllm":
-        return headers
-    # 延迟导入：llm_proxy 依赖 openbase.modules.proxy 包，模块级导入会形成循环
-    from openbase.modules.llm_proxy import _select_llm_api_key
+    settings = get_settings()
+    if system == "openllm":
+        # 延迟导入：llm_proxy 依赖 openbase.modules.proxy 包，模块级导入会形成循环
+        from openbase.modules.llm_proxy import _select_llm_api_key
 
-    api_key = _select_llm_api_key(headers.get(HEADER_TENANT_ID), get_settings().llm_api_key)
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
+        api_key = _select_llm_api_key(headers.get(HEADER_TENANT_ID), settings.llm_api_key)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+    elif system == "openrag":
+        if settings.rag_api_key:
+            headers["X-API-Key"] = settings.rag_api_key
+    elif system == "openmemory":
+        if settings.memory_api_key:
+            headers["X-API-Key"] = settings.memory_api_key
+        if request is not None and not is_service_key:
+            token = _original_bearer_token(request)
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
     return headers
 
 
@@ -414,7 +434,9 @@ async def proxy(
         extra_headers=headers,
         enforce_org_alias=settings.enforce_org_alias,
     )
-    headers = _inject_upstream_credentials(system, headers)
+    headers = _inject_upstream_credentials(
+        system, headers, request, is_service_key=is_service_key
+    )
     body = await request.body() if method in ("POST", "PUT", "PATCH") else None
 
     # C-16：上游耗时与专段观测（成功/业务错误/异常三路径共用同一结构，不新增日志点）

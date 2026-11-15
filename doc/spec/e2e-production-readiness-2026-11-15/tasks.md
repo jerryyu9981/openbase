@@ -39,6 +39,13 @@
 ## 门禁
 - 需人工批准本 Spec 后方可进入 T1；T3 全绿且 T4 全 PASS 方可判定「可上生产」。
 
+## P2 收敛任务（v1.2.0，2026-11-15）
+- [x] P2-1 `openbase-ui/src/modules/memory/pages/MemoryList.vue`：类型服务端过滤 + 关键词激活时 total 用匹配数 + 关键词变化回第 1 页。
+- [x] P2-2 `openbase/modules/proxy/__init__.py`：`_inject_upstream_credentials` 补齐 openrag（X-API-Key）与 openmemory（X-API-Key + 原 JWT 双层）；服务 Key 通道不透传 Authorization。
+- [x] P2-3 补测：`tests/test_proxy_outbound_matrix.py` 新增 5 条；`tests/test_proxy_target_system_v190.py` 更新凭据矩阵。
+- [x] P2-4 验证：ruff 0 错误；代理相关 68 条测试全通过；openrag/openmemory 通用代理 401→200；聚合（rag+memory+dps）errors=0。
+- [x] P2-5 浏览器复验：记忆列表「咖啡」筛选 31→1（分页同步显示 1），清空恢复 31。
+
 ## 执行结果（2026-11-15）
 - T1：新增 6 条测试（test_gateway.py 4 条、test_gateway_api.py 2 条），先 RED 后 GREEN。
 - T3：`ruff` 0 错误；网关定向测试 37 条全通过；openbase 重启后聚合 `errors=0 / dps_status=healthy / models=5`，ping 四系统全 `reachable=true`。

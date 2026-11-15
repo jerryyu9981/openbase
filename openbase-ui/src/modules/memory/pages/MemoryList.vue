@@ -21,7 +21,14 @@
 
     <template v-else>
       <div class="page-toolbar">
-        <el-input v-model="keyword" placeholder="搜索记忆内容/标签" clearable style="width: 220px" data-test="memory-keyword" />
+        <el-input
+          v-model="keyword"
+          placeholder="搜索记忆内容/标签（当前页）"
+          clearable
+          style="width: 220px"
+          data-test="memory-keyword"
+          @clear="onFilterChange"
+        />
         <el-select v-model="typeFilter" placeholder="记忆类型" clearable style="width: 140px" @change="onFilterChange">
           <el-option label="持久" value="persistent" />
           <el-option label="会话" value="session" />
@@ -94,7 +101,7 @@
         <el-pagination
           v-model:current-page="page"
           :page-size="pageSize"
-          :total="total"
+          :total="displayTotal"
           layout="total, prev, pager, next"
           background
           @current-change="load"
@@ -106,7 +113,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { http } from '@/core/api/http'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
@@ -156,9 +163,12 @@ async function load() {
   loading.value = true
   presentation.value = null
   try {
+    // 记忆类型由服务端过滤（memory-proxy 支持 memory_type 参数），保证 total 与结果一致
+    const params: Record<string, unknown> = { page: page.value, page_size: pageSize }
+    if (typeFilter.value) params.memory_type = typeFilter.value
     const { data } = await http.get<{ code: number; message: string; data: MemoryListData }>(
       '/memory-proxy/memories',
-      { params: { page: page.value, page_size: pageSize } },
+      { params },
     )
     memories.value = data.data.items
     total.value = data.data.total
@@ -176,6 +186,7 @@ function onFilterChange() {
   load()
 }
 
+const hasKeyword = computed(() => !!keyword.value.trim())
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
   return memories.value.filter((m) => {
@@ -184,9 +195,17 @@ const filtered = computed(() => {
     return matchKw && matchType
   })
 })
+// 关键词仅在当前页内过滤：总数改用匹配数，避免分页显示服务端总数（31）与实际 1 条不一致
+const displayTotal = computed(() => (hasKeyword.value ? filtered.value.length : total.value))
 const paged = computed(() => {
+  if (hasKeyword.value) return filtered.value.slice(0, pageSize)
   const start = (page.value - 1) * pageSize
   return filtered.value.slice(start, start + pageSize)
+})
+
+// 关键词变化时回到第 1 页（过滤范围是当前页）
+watch(keyword, () => {
+  page.value = 1
 })
 
 // 衰减权重着色：>=0.80 绿 / 0.50~0.79 黄 / <0.50 红（OpenMemory v6.7 规则）

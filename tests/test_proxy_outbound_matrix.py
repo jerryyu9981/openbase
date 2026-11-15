@@ -244,6 +244,66 @@ def test_t1_10_generic_proxy_service_key_channel_outbound() -> None:
 
 
 # ---------------------------------------------------------------------------
+# DEF-04：通用 /proxy 上游凭据补齐（v1.2.0）
+# ---------------------------------------------------------------------------
+
+
+def test_generic_proxy_injects_rag_api_key() -> None:
+    """通用代理转发 openrag 时注入 X-API-Key（原缺失 → 上游 401）."""
+    from openbase.modules.proxy import _inject_upstream_credentials
+    from openbase.settings import get_settings
+
+    headers = _inject_upstream_credentials("openrag", {"Accept": "application/json"})
+    assert headers["X-API-Key"] == get_settings().rag_api_key
+
+
+def test_generic_proxy_injects_memory_key_and_user_bearer() -> None:
+    """通用代理转发 openmemory：X-API-Key + 原 JWT 双层认证."""
+    from openbase.modules.proxy import _inject_upstream_credentials
+    from openbase.settings import get_settings
+
+    headers = _inject_upstream_credentials(
+        "openmemory",
+        {},
+        request=StubRequest(headers={"Authorization": "Bearer user.jwt.token"}),
+    )
+    assert headers["X-API-Key"] == get_settings().memory_api_key
+    assert headers["Authorization"] == "Bearer user.jwt.token"
+
+
+def test_generic_proxy_memory_service_key_has_no_bearer() -> None:
+    """服务 Key 通道（无原 JWT）：仅注入 X-API-Key，不构造 Authorization."""
+    from openbase.modules.proxy import _inject_upstream_credentials
+
+    headers = _inject_upstream_credentials(
+        "openmemory",
+        {},
+        request=StubRequest(headers={"Authorization": "Bearer user.jwt.token"}),
+        is_service_key=True,
+    )
+    assert "Authorization" not in headers
+    assert headers["X-API-Key"]
+
+
+def test_generic_proxy_dps_has_no_credentials() -> None:
+    """dps 不注入凭据（沿用身份头 + 专段代理信任链）."""
+    from openbase.modules.proxy import _inject_upstream_credentials
+
+    headers = _inject_upstream_credentials("dps", {"Accept": "application/json"})
+    assert "X-API-Key" not in headers
+    assert "Authorization" not in headers
+
+
+def test_generic_proxy_llm_keeps_bearer_only() -> None:
+    """openllm 仍仅注入 Bearer，不引入 X-API-Key（上游契约）."""
+    from openbase.modules.proxy import _inject_upstream_credentials
+
+    headers = _inject_upstream_credentials("openllm", {})
+    assert headers["Authorization"].startswith("Bearer ")
+    assert "X-API-Key" not in headers
+
+
+# ---------------------------------------------------------------------------
 # 委托出站 X-Agent-Id（T1-4；与 dps/llm/memory 委托取值一致）
 # ---------------------------------------------------------------------------
 
