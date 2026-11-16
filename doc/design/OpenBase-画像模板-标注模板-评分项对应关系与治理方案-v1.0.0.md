@@ -4,7 +4,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.1.0 |
+| 文档版本 | v1.1.1 |
 | 状态 | [Approved]（评审通过；P0、P1 均已实施并验证） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
@@ -18,6 +18,7 @@
 | v1.0.0 | 2026-11-16 | 首次梳理画像模板父子关系、标注模板归属与绑定、字段→标签映射、评分项实际生效口径，并给出分阶段治理方案 | AI 编码代理 |
 | v1.0.1 | 2026-11-16 | 评审通过；按推荐决策（D-01 A / D-02 A / D-03 A / D-04 留待 P1）实施 P0，补充 §11 实施结果与验证证据 | AI 编码代理 |
 | v1.1.0 | 2026-11-16 | 实施 P1（D-04 采纳 A：来源隔离保留多行）：标注模板字段治理、`profile_tag` 来源列与读侧择优、维度标注来源缺口提示、`tag_bindings` 迁移、重算/回滚脚本；补 §12 实施结果与验证证据 | AI 编码代理 |
+| v1.1.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口），前端评分项弹窗验证由 BLOCKED 转 PASS，补证据截图与执行方式 | AI 编码代理 |
 
 ---
 
@@ -357,7 +358,7 @@
 | DPS 评分项 | `GET /api/v2/portrait/templates/cor-persona-risk-v1/scoring-items` | `dimensions_without_annotation_source=["crime","social"]`；basic 来源 `cor-anno-basic-v1`，psychology 来源 `cor-anno-psych-v1`+`cor-anno-reward-v1`，behavior 4 来源，intervention 3 来源 |
 | OpenBase 代理 | `GET /api/v1/dps-proxy/templates/{code}/scoring-items`（JWT） | 与直连一致（gap 与来源列表逐项相同） |
 | 前端 | `vue-tsc --noEmit` / `eslint`（2 文件） | 0 错误 |
-| 前端走查 | 浏览器自动化 | **BLOCKED**：本机浏览器 viewport 初始化超时（环境问题），已用源码 + 接口证据替代；页面渲染逻辑与接口字段已逐项核对 |
+| 前端走查 | Playwright headless：`node node_modules/@playwright/test/cli.js test tests/e2e/portrait-scoring-sources.spec.ts --reporter=list` | **PASS**：6 个维度区块、≥1 个「标注来源」标签、crime/social 缺口警示 2 个、页面零 `pageerror`/`console.error`；证据截图 `doc/test/evidence/s6/ui-e2e/p1-scoring-sources-dialog.png` |
 
 ### 12.5 测试
 
@@ -389,5 +390,5 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 
 1. `social` / `crime` 维度仍无标注字段来源（当前以 UI 缺口提示替代，需业务确认是否补字段）。
 2. 同名 `tag_code` 跨模板的**语义歧义**（如 `crisis_level` 选项集合不同）已通过来源隔离与显式 `score_map` 缓解，但业务侧仍需确认优先级策略。
-3. 前端可视化走查需在可用浏览器环境下补做（本机自动化环境阻塞）。
+3. 前端可视化走查已改为 Playwright headless 可重复执行（不再依赖 IDE 内置浏览器）；新增页面仍需补对应 spec。
 

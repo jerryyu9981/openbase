@@ -18,6 +18,7 @@
 | v1.3.1 | 2026-11-16 | 补强重算交互：等待计时与进度条、轮询状态实时刷新、维度变化列、失败重试、完成后自动滚动、口径锁定与按钮说明 | AI 编码代理 |
 | v1.4.0 | 2026-11-16 | P0 落地：模板规则/权重成为评分事实源、标签契约归一、标注字段扩展、`tag_bindings` 校验、评分项接口与前端弹窗；补 10 条单测并完成运行态与浏览器验证 | AI 编码代理 |
 | v1.5.0 | 2026-11-16 | P1 落地：标注模板字段治理（`tag_key`/`score_map`）、`profile_tag` 来源维度与读侧择优、维度标注来源缺口提示、`tag_bindings` 迁移、一次性重算与回滚脚本；补 20 条单测并完成迁移/重算/回滚实跑 | AI 编码代理 |
+| v1.5.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口 + 接口登录注入），评分项弹窗走查转 PASS 并留证据截图 | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -167,11 +168,12 @@
 | 迁移（Dev，8 模板） | 7 个 v1→v2；二次执行 `changed=0`；存量标签标 `legacy` 无丢失 |
 | 评分项接口（直连 + 代理） | `dimensions_without_annotation_source=["crime","social"]`，来源列表逐项一致 |
 | 重算写库 + 回滚 | 六维 40/45/50/42/48/15（81.2）→ 50 → 回滚还原 81.2 |
-| 前端 | `vue-tsc` / `eslint` 0 错误；浏览器走查受本机 viewport 超时阻塞（已用源码+接口证据替代） |
+| 前端 | `vue-tsc` / `eslint` 0 错误 |
+| 前端走查（v1.5.1） | `node node_modules/@playwright/test/cli.js test tests/e2e/portrait-scoring-sources.spec.ts --reporter=list` → 1 passed：6 维度、标注来源标签、crime/social 缺口警示、零页面错误；截图 `doc/test/evidence/s6/ui-e2e/p1-scoring-sources-dialog.png` |
 
 ## 12. 未覆盖 / 后续
 
 1. 模板版本列表接口（P1-3）、影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
 2. 画像 360 的时间线与版本对照（P2-1 后半）。
 3. `social` / `crime` 维度标注字段补充（P1 已提供"无标注来源"UI 提示，补字段需业务确认）。
-4. 前端可视化走查待可用浏览器环境补做。
+4. 前端可视化走查已切换到 Playwright headless（`tests/e2e/*.spec.ts`），后续新增页面需补 spec。
