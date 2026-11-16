@@ -446,6 +446,26 @@ async def dps_portrait_calc_task(
     )
 
 
+@router.get("/portraits/{person_id}/dimension-details")
+async def dps_portrait_dimension_details(
+    person_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像维度规则级明细（GET /api/v2/portrait/{person_id}/dimension-details，P2）.
+
+    返回本维度参与评分的标签、实际得分与缺值兜底标记（只读解释性接口）；
+    ``template_code`` 缺省为默认口径。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", f"/api/v2/portrait/{person_id}/dimension-details",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 @router.put("/portraits/{person_id}")
 async def dps_portrait_update(
     person_id: str,
@@ -1018,6 +1038,26 @@ async def dps_template_scoring_items(
     )
 
 
+@router.get("/templates/{code}/lineage")
+async def dps_template_lineage(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板四联视图（P2，GET；权限动作 portrait_template:read）.
+
+    返回族谱 / 标注模板 / 标签产出 / 评分项与实际缺口，
+    供前端单一数据源消费；上游 404 语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/templates/{code}/lineage"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 @router.get("/templates/{code}/diff")
 async def dps_template_diff(
     code: str,
@@ -1241,6 +1281,26 @@ async def dps_template_delete(
 
 
 # ---- 动态段：标注模板详情／更新（改挂）／删除（#18 / #20 / #21）-----------
+
+
+@router.get("/annotation-templates/{code}/field-mapping")
+async def dps_annotation_field_mapping(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注模板字段映射（P2，GET；权限动作 annotation_template:read）.
+
+    逐字段返回「将写入 dimension:tag_key / 计分规则 / 影响哪个评分项」；
+    ``portrait_template`` 查询参数透传，缺省由上游取强归属画像模板。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/annotation-templates/{code}/field-mapping"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
 
 
 @router.get("/annotation-templates/{code}")

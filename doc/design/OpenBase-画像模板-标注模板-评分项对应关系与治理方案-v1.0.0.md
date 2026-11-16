@@ -4,8 +4,8 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.1.1 |
-| 状态 | [Approved]（评审通过；P0、P1 均已实施并验证） |
+| 文档版本 | v1.2.0 |
+| 状态 | [Approved]（评审通过；P0、P1、P2 均已实施并验证） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
 | 评审人 | 需求方 / 技术负责人 |
@@ -19,10 +19,13 @@
 | v1.0.1 | 2026-11-16 | 评审通过；按推荐决策（D-01 A / D-02 A / D-03 A / D-04 留待 P1）实施 P0，补充 §11 实施结果与验证证据 | AI 编码代理 |
 | v1.1.0 | 2026-11-16 | 实施 P1（D-04 采纳 A：来源隔离保留多行）：标注模板字段治理、`profile_tag` 来源列与读侧择优、维度标注来源缺口提示、`tag_bindings` 迁移、重算/回滚脚本；补 §12 实施结果与验证证据 | AI 编码代理 |
 | v1.1.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口），前端评分项弹窗验证由 BLOCKED 转 PASS，补证据截图与执行方式 | AI 编码代理 |
+| v1.2.0 | 2026-11-17 | 实施 P2「前端可解释性」：DPS 新增模板 lineage / 标注字段映射 / 画像维度明细三个只读接口，OpenBase 三代理路由，前端四联视图与维度展开；补 §13 实施结果与验证证据 | AI 编码代理 |
 
 ---
 
 ## 1. 结论摘要
+
+> 下列 1~5 为**治理前（2026-11-16）实测结论**，用于说明问题成因；P0/P1/P2 实施后的现行口径见 §11、§12、§13。
 
 1. **父子关系是"声明式"的**：`portrait_template.extends` 只支持单父、深度 ≤ 2，实际数据为 1 个根 + 3 个直接子模板；`TemplateRegistry.resolve_dimensions()` 的合并规则是"父维度先入、子覆盖同名、追加新维度"，但**该解析结果只用于维度清单/预览，不参与真实画像计算**。
 2. **标注模板是"强归属"的**：每个 `annotation_template.template_code` 必须指向一个 **active** 画像模板；父模板的 `tag_bindings` 可以声明绑定子模板名下的标注模板，因此出现"归属 ≠ 绑定方"的交叉关系。
@@ -228,7 +231,7 @@
 
 **验收标准**：迁移脚本幂等；重算前后分数差异有对照报告；无标签丢失（按来源可追溯）。
 
-### 阶段三（P2）：前端可解释性
+### 阶段三（P2）：前端可解释性（✅ 已实施，见 §13）
 
 1. 模板详情页改为"族谱 / 标注模板 / 标签产出 / 评分项"四联视图；
 2. 标注工作台字段旁标注"将写入 `dimension:tag_key`、计分规则、影响哪个评分项"；
@@ -391,4 +394,74 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 1. `social` / `crime` 维度仍无标注字段来源（当前以 UI 缺口提示替代，需业务确认是否补字段）。
 2. 同名 `tag_code` 跨模板的**语义歧义**（如 `crisis_level` 选项集合不同）已通过来源隔离与显式 `score_map` 缓解，但业务侧仍需确认优先级策略。
 3. 前端可视化走查已改为 Playwright headless 可重复执行（不再依赖 IDE 内置浏览器）；新增页面仍需补对应 spec。
+
+---
+
+## 13. P2 实施结果与验证证据（v1.2.0）
+
+### 13.1 交付物清单
+
+| 仓库 | 交付物 | 说明 |
+|---|---|---|
+| DPS | `src/engines/p2_explainability.py` | 纯函数（族谱/字段契约/评分项命中/缺口）+ 三个异步装配函数 |
+| DPS | `src/rest_api/routes/routes_profiles.py` | 新增 3 条只读路由；`scoring-items` 改为复用 `build_scoring_payload`（口径单源） |
+| DPS | `src/tests/test_p2_explainability_v3.py` | 15 条单测；新增模块行覆盖率 94% |
+| OpenBase | `openbase/modules/dps_proxy/__init__.py` | 3 条逐端点代理（身份头注入 + 错误体保真） |
+| OpenBase | `tests/test_dps_proxy_routes_v1410.py` | 追加 3 条注册断言 + 动态段不遮蔽断言 |
+| 前端 | `src/core/api/dps.ts` | 7 个类型 + 3 个方法 |
+| 前端 | `DpsTemplateListView.vue` / `DpsAnnotationWorkbenchView.vue` / `PortraitDetail.vue` | 四联视图 / 字段提示 / 维度展开 |
+| 前端 | `tests/e2e/portrait-lineage.spec.ts` | 2 条 headless 走查用例 |
+
+### 13.2 新增接口契约
+
+| 接口 | 用途 | 关键返回 | 错误语义 |
+|---|---|---|---|
+| `GET /api/v2/portrait/templates/{code}/lineage` | 四联视图单一数据源 | `lineage[]`、`bindings[]`、`annotation_templates[]`、`scoring`、`gaps` | 模板不存在 404；模板未激活时 `scoring=null` + `template_not_active` |
+| `GET /api/v2/portrait/annotation-templates/{code}/field-mapping?portrait_template=` | 字段 → 标签 → 评分项 | `fields[]`（`tag_code`/`score_rule`/`affects_scoring`/`scoring_status`）、`summary` | 标注模板不存在 404 |
+| `GET /api/v2/portrait/{person_id}/dimension-details?template_code=&dimension=` | 维度规则级明细 | `dimensions[].rules[]`（`value`/`score`/`missing`）、`missing_policy` | 画像/模板不存在 404；模板无该维度 400 |
+
+约定：`scoring_status` = `affects`（命中评分项）/ `tag_only`（仅写标签）/ `no_tag`（无目标维度）；缺值 `missing=true` 且按 50 分计入。
+
+### 13.3 前端四项落地
+
+| 治理要求 | 呈现位置 | 关键标识 |
+|---|---|---|
+| 四联视图 | 模板族详情抽屉 `el-tabs`：族谱 / 标注模板 / 标签产出 / 评分项 | `template-lineage-tabs`、`template-lineage-node`、`template-tag-only-tag`、`template-dimension-gap-tag` |
+| 字段旁提示 | 标注工作台每个字段下方：写入 `dimension:tag_key` · 计分摘要 · 影响评分项 | `annotation-field-mapping` |
+| 维度展开 | 画像详情维度行「展开明细」：评分项 / 标签值 / 权重 / 得分 / 缺值兜底 | `portrait-dimension-details-toggle`、`portrait-dimension-details`、`portrait-dimension-missing-tag` |
+| 缺口警示 | 抽屉顶部缺口汇总 + 标注模板「未绑定/归属不一致」+ 评分项「无标注来源」 | `template-lineage-gaps`、`template-unbound-tag`、`template-ownership-mismatch-tag`、`template-scoring-gap` |
+
+### 13.4 验证证据
+
+| 项目 | 命令 | 结果 |
+|---|---|---|
+| DPS 新增单测 | `pytest src/tests/test_p2_explainability_v3.py` | 15 passed |
+| DPS 定向回归 | P2 + P0 scoring + P1 governance + template registry | 55 passed |
+| DPS 覆盖率 | `--cov=engines.p2_explainability` | 94% |
+| DPS 静态检查 | `ruff check`（新增文件） | All checks passed |
+| OpenBase 代理测试 | `pytest tests/test_dps_proxy_routes_v1410.py -q` | 47 passed |
+| 前端类型检查 | `vue-tsc --noEmit` | 0 错误 |
+| 前端静态检查 | `eslint`（4 个改动文件） | 0 错误 |
+| 前端 E2E | `portrait-lineage.spec.ts` + `portrait-scoring-sources.spec.ts`（headless 1440×900） | 3 passed |
+| 运行时冒烟 | 经 OpenBase 代理直调 3 接口 | 全部 200，数据见 §13.5 |
+
+证据截图：
+
+- `doc/test/evidence/s6/ui-e2e/p2-template-lineage.png`（四联视图）
+- `doc/test/evidence/s6/ui-e2e/p2-dimension-details.png`（维度展开 + 缺值兜底）
+
+### 13.5 实测下钻样例（2026-11-17，Dev）
+
+| 调用 | 结果摘要 |
+|---|---|
+| `templates/cor-persona-root-v1/lineage` | 族谱 1 节点；绑定 6 个标注模板；标注模板视图 8 个；6 维 32 条规则；缺口 10 项 = 2 个无标注来源维度 + 2 个未绑定标注模板 + 6 个归属错位 |
+| `annotation-templates/cor-anno-psych-v1/field-mapping` | 归属 `cor-persona-assess-v1`（active）；22 字段中 5 个命中评分项（`affects`），其余 17 个不产出标签 |
+| `portraits/tenant-1_1/dimension-details?template_code=cor-persona-root-v1` | 6 维；`basic` 7 条规则全部缺值 → 每行显示「缺值→50」，维度分 50（兜底） |
+
+### 13.6 只读边界与遗留
+
+1. P2 **不改变**评分算法、写路径与既有接口返回；`scoring-items` 仅做实现复用，响应结构保持不变。
+2. 维度明细每维度查询一次 `profile_tag`（单画像 6 次读），当前场景可接受；批量画像下钻如需性能优化另行评审。
+3. §12.7 的两项业务遗留（`social`/`crime` 无标注字段、同名标签语义歧义）仍由业务确认；P2 已使这两类缺口在页面可见。
+
 

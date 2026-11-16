@@ -316,6 +316,158 @@ export interface DpsTemplateScoringItems {
   dimensions: DpsScoringDimension[]
 }
 
+/* ==================== P2 可解释性（族谱 / 字段映射 / 维度明细） ==================== */
+
+/** 族谱节点（`depth=0` 为当前模板） */
+export interface DpsLineageNode {
+  code: string
+  name: string
+  status?: string | null
+  version?: string | null
+  depth: number
+  current: boolean
+}
+
+/** 画像模板的标注模板绑定（`ownership_mismatch` = 归属 ≠ 绑定方） */
+export interface DpsLineageBinding {
+  annotation_template: string
+  dimensions: string[]
+  exists: boolean
+  status?: string | null
+  owned_by?: string | null
+  ownership_mismatch: boolean
+  bound_by?: string
+}
+
+/** 字段计分规则（由 `score_map` / `score_direction` 归一） */
+export interface DpsAnnotationScoreRule {
+  type: string
+  score_direction: string
+  score_map: Record<string, number> | null
+  summary: string
+}
+
+/** 标注字段 → 标签 → 评分项映射 */
+export interface DpsAnnotationFieldMappingEntry {
+  key: string
+  label: string
+  type: string
+  target_dimension: string | null
+  tag_key: string | null
+  tag_code: string | null
+  score_rule: DpsAnnotationScoreRule | null
+  affects_scoring: DpsLineageScoringHit[]
+  /** affects=命中评分项 / tag_only=仅写标签 / no_tag=无目标维度 */
+  scoring_status: 'affects' | 'tag_only' | 'no_tag' | string
+  missing_fallback: number
+}
+
+export interface DpsLineageTagOutput {
+  tag_code: string
+  field_key: string
+  tag_key: string
+}
+
+export interface DpsLineageScoringHit {
+  dimension: string
+  rule_key: string
+  weight: number
+  description: string
+  tag_code?: string
+  field_key?: string
+  type?: string
+}
+
+/** 标注模板视图（被当前模板绑定 ∪ 归属当前模板 ∪ 全局未绑定） */
+export interface DpsLineageAnnotationView {
+  code: string
+  name: string
+  status?: string | null
+  owned_by?: string | null
+  bound_to_current: boolean
+  bound_dimensions: string[]
+  unbound: boolean
+  fields: DpsAnnotationFieldMappingEntry[]
+  tag_outputs: DpsLineageTagOutput[]
+  scoring_hits: DpsLineageScoringHit[]
+  unmatched_tag_outputs: string[]
+}
+
+export interface DpsLineageGap {
+  dimensions_without_annotation_source: string[]
+  unbound_annotation_templates: string[]
+  bound_annotation_templates_missing: string[]
+  ownership_mismatches: Array<{
+    annotation_template: string
+    owned_by?: string | null
+    bound_by?: string | null
+  }>
+  tag_outputs_without_scoring_rule: string[]
+  items: Array<{ type: string; severity: string; code?: string; message: string }>
+}
+
+/** 模板四联视图（族谱 / 标注模板 / 标签产出 / 评分项 + 缺口） */
+export interface DpsTemplateLineage {
+  template_code: string
+  name?: string
+  status?: string
+  version?: string
+  extends?: string | null
+  lineage: DpsLineageNode[]
+  bindings: DpsLineageBinding[]
+  annotation_templates: DpsLineageAnnotationView[]
+  /** 模板未激活时为 null（无运行时评分口径） */
+  scoring: DpsTemplateScoringItems | null
+  gaps: DpsLineageGap
+}
+
+/** 标注字段映射（标注工作台逐字段提示） */
+export interface DpsAnnotationFieldMapping {
+  annotation_template: string
+  name?: string
+  owned_by?: string | null
+  portrait_template?: string | null
+  portrait_template_status?: string | null
+  scoring_available: boolean
+  notes: string[]
+  fields: DpsAnnotationFieldMappingEntry[]
+  summary: { field_count: number; affects_scoring: number; tag_only: number; no_tag: number }
+}
+
+/** 维度规则级明细（缺值 `missing=true`，按 50 分计入） */
+export interface DpsDimensionRuleDetail {
+  key: string
+  tag_key: string
+  description: string
+  weight: number
+  score: number
+  value: unknown
+  missing: boolean
+  scoring_type: string
+}
+
+export interface DpsDimensionDetail {
+  code: string
+  name: string
+  weight: number
+  score: number
+  confidence: number
+  level: string
+  rule_count: number
+  present_count: number
+  missing_count: number
+  rules: DpsDimensionRuleDetail[]
+}
+
+export interface DpsPortraitDimensionDetails {
+  person_id: string
+  template_code?: string | null
+  source: 'template' | 'default' | string
+  overall_score: number
+  missing_policy: { score: number; note: string }
+  dimensions: DpsDimensionDetail[]
+}
+
 export interface DpsLineageSource {
   annotation_id?: string
   template_code?: string
@@ -786,6 +938,38 @@ export const dpsApi = {
   async getTemplateScoringItems(code: string): Promise<DpsTemplateScoringItems> {
     const { data } = await http.get<ApiSuccess<DpsTemplateScoringItems>>(
       `/dps-proxy/templates/${encodeURIComponent(code)}/scoring-items`,
+    )
+    return data.data
+  },
+
+  /** 模板四联视图（GET /dps-proxy/templates/{code}/lineage；P2 族谱/标注模板/标签产出/评分项） */
+  async getTemplateLineage(code: string): Promise<DpsTemplateLineage> {
+    const { data } = await http.get<ApiSuccess<DpsTemplateLineage>>(
+      `/dps-proxy/templates/${encodeURIComponent(code)}/lineage`,
+    )
+    return data.data
+  },
+
+  /** 标注字段映射（GET /dps-proxy/annotation-templates/{code}/field-mapping；P2 字段→标签→评分项） */
+  async getAnnotationFieldMapping(
+    code: string,
+    params?: { portrait_template?: string },
+  ): Promise<DpsAnnotationFieldMapping> {
+    const { data } = await http.get<ApiSuccess<DpsAnnotationFieldMapping>>(
+      `/dps-proxy/annotation-templates/${encodeURIComponent(code)}/field-mapping`,
+      { params },
+    )
+    return data.data
+  },
+
+  /** 画像维度规则级明细（GET /dps-proxy/portraits/{id}/dimension-details；P2 标签值/得分/缺值兜底） */
+  async getPortraitDimensionDetails(
+    personId: string,
+    params?: { template_code?: string; dimension?: string },
+  ): Promise<DpsPortraitDimensionDetails> {
+    const { data } = await http.get<ApiSuccess<DpsPortraitDimensionDetails>>(
+      `/dps-proxy/portraits/${encodeURIComponent(personId)}/dimension-details`,
+      { params },
     )
     return data.data
   },

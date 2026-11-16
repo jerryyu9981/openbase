@@ -338,6 +338,61 @@
                     <div class="dimension-meta">
                       <span class="muted sm">置信度 {{ item.confidence === null ? '—' : item.confidence.toFixed(2) }}</span>
                       <span v-if="item.score === null" class="muted sm">缺值按 50 分计入总分</span>
+                      <el-button
+                        link
+                        type="primary"
+                        size="small"
+                        :loading="dimensionDetailLoading === item.code"
+                        data-test="portrait-dimension-details-toggle"
+                        @click.stop="toggleDimensionDetails(item.code)"
+                      >
+                        {{ expandedDimension === item.code ? '收起明细' : '展开明细' }}
+                      </el-button>
+                    </div>
+                    <div
+                      v-if="expandedDimension === item.code"
+                      class="dimension-details"
+                      data-test="portrait-dimension-details"
+                    >
+                      <el-alert
+                        v-if="dimensionDetailError"
+                        type="error"
+                        show-icon
+                        :closable="false"
+                        :title="dimensionDetailError"
+                        data-test="portrait-dimension-details-error"
+                      />
+                      <el-table
+                        v-else-if="currentDimensionDetail"
+                        :data="currentDimensionDetail.rules"
+                        size="small"
+                        empty-text="该维度暂无评分规则"
+                      >
+                        <el-table-column prop="description" label="评分项" min-width="130" />
+                        <el-table-column prop="tag_key" label="标签 key" min-width="130" />
+                        <el-table-column label="标签值" min-width="100">
+                          <template #default="{ row }">
+                            <span v-if="row.missing" class="muted">缺值</span>
+                            <span v-else>{{ formatRuleValue(row.value) }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column prop="weight" label="权重" width="70" />
+                        <el-table-column prop="score" label="得分" width="70" />
+                        <el-table-column label="兜底" width="100">
+                          <template #default="{ row }">
+                            <el-tag
+                              v-if="row.missing"
+                              size="small"
+                              type="warning"
+                              data-test="portrait-dimension-missing-tag"
+                            >
+                              缺值→50
+                            </el-tag>
+                            <span v-else class="muted sm">—</span>
+                          </template>
+                        </el-table-column>
+                      </el-table>
+                      <div v-else class="muted sm">明细加载中…</div>
                     </div>
                   </div>
                 </div>
@@ -504,6 +559,7 @@ import {
   dpsApi,
   type DpsPortrait,
   type DpsPortraitCalcTask,
+  type DpsPortraitDimensionDetails,
   type DpsPortraitTemplate,
   type DpsTemplateScoringItems,
 } from '@/core/api/dps'
@@ -583,6 +639,16 @@ const scoringVisible = ref(false)
 const scoringLoading = ref(false)
 const scoringError = ref('')
 const scoringItems = ref<DpsTemplateScoringItems | null>(null)
+/** P2：维度展开明细（按模板口径缓存，缺省口径键为 __default__） */
+const expandedDimension = ref('')
+const dimensionDetailLoading = ref('')
+const dimensionDetailError = ref('')
+const dimensionDetailCache = ref<Record<string, DpsPortraitDimensionDetails>>({})
+const dimensionDetailCacheKey = computed(() => selectedTemplate.value || '__default__')
+const currentDimensionDetail = computed(() => {
+  const payload = dimensionDetailCache.value[dimensionDetailCacheKey.value]
+  return payload?.dimensions.find((item) => item.code === expandedDimension.value) || null
+})
 
 const isForbidden = computed(() => presentation.value?.pageLevel === true)
 const isNotFound = computed(() => presentation.value?.kind === 'not-found')
@@ -928,6 +994,36 @@ async function scrollToRecalcCard() {
   element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+/** 展开/收起维度规则级明细（同口径只拉一次并缓存） */
+async function toggleDimensionDetails(dimensionCode: string) {
+  if (expandedDimension.value === dimensionCode) {
+    expandedDimension.value = ''
+    return
+  }
+  expandedDimension.value = dimensionCode
+  dimensionDetailError.value = ''
+  const cacheKey = dimensionDetailCacheKey.value
+  if (dimensionDetailCache.value[cacheKey]) return
+  dimensionDetailLoading.value = dimensionCode
+  try {
+    dimensionDetailCache.value[cacheKey] = await dpsApi.getPortraitDimensionDetails(personId, {
+      template_code: selectedTemplate.value || undefined,
+    })
+  } catch (err) {
+    const described = describeError(err)
+    dimensionDetailError.value = described.detail || described.title || '维度明细加载失败'
+  } finally {
+    dimensionDetailLoading.value = ''
+  }
+}
+
+/** 标签值展示（列表/对象兜底为 JSON 字符串，避免表格出现 [object Object]） */
+function formatRuleValue(value: unknown): string {
+  if (value === null || value === undefined) return '—'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
 /** 加载并展示当前口径模板的实际评分项（与计算口径一致） */
 async function openScoringItems() {
   if (!selectedTemplate.value) {
@@ -1029,6 +1125,8 @@ async function loadTemplateResult() {
 }
 
 async function onTemplateChange() {
+  expandedDimension.value = ''
+  dimensionDetailError.value = ''
   loading.value = true
   presentation.value = null
   try {
@@ -1094,6 +1192,7 @@ onMounted(() => {
 .dimension-list { flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; gap: 12px; }
 .dimension-row { cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: background 0.2s; }
 .dimension-row:hover { background: #f3f4f6; }
+.dimension-details { margin-top: 8px; cursor: default; }
 .dimension-row-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
 .dimension-name { font-weight: 600; font-size: 13px; color: #374151; }
 .dimension-score { font-size: 15px; font-weight: 600; color: #2563eb; }

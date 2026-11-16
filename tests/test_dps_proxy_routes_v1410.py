@@ -231,3 +231,36 @@ def test_new_endpoints_not_declared_on_generic_proxy() -> None:
     for _route_id, path, _method in V1410_ROUTES:
         assert path not in generic_paths
         assert f"/api/v1/proxy/dps{path}" not in generic_paths
+
+
+# ---------------------------------------------------------------------------
+# 5. P2 可解释性路由（2026-11-17）
+# ---------------------------------------------------------------------------
+
+P2_EXPLAINABILITY_ROUTES = [
+    ("/templates/{code}/lineage", "GET"),
+    ("/annotation-templates/{code}/field-mapping", "GET"),
+    ("/portraits/{person_id}/dimension-details", "GET"),
+]
+
+
+@pytest.mark.parametrize(
+    ("path", "method"),
+    P2_EXPLAINABILITY_ROUTES,
+    ids=[f"p2-{method}-{path}" for path, method in P2_EXPLAINABILITY_ROUTES],
+)
+def test_p2_explainability_route_registered(path: str, method: str) -> None:
+    """P2 三条只读解释性路由均以精确路径 ＋ GET 注册."""
+    matched = _matched_routes(f"{PREFIX}{path}")
+    assert matched, f"P2 路由未注册: {PREFIX}{path}"
+    assert method in _methods_of(matched), f"P2 路由方法缺失: {method} {path}"
+
+
+def test_p2_dimension_details_is_independent_route() -> None:
+    """``/portraits/{person_id}/dimension-details`` 为独立路由，不被单段详情遮蔽."""
+    detail = _matched_routes(f"{PREFIX}/portraits/{{person_id}}")
+    dimension_details = _matched_routes(
+        f"{PREFIX}/portraits/{{person_id}}/dimension-details"
+    )
+    assert len(dimension_details) == 1
+    assert dimension_details[0] not in detail

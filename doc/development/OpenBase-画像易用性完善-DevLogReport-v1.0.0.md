@@ -1,10 +1,10 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.4.0
+- 版本：v1.6.0
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）
-- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）
-- 日期：2026-11-16
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.2.0
+- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）；`doc/spec/p2-template-explainability-2026-11-17/tasks.md`
+- 日期：2026-11-17
 - 作者：AI 编码代理
 
 ## 修订历史
@@ -19,6 +19,7 @@
 | v1.4.0 | 2026-11-16 | P0 落地：模板规则/权重成为评分事实源、标签契约归一、标注字段扩展、`tag_bindings` 校验、评分项接口与前端弹窗；补 10 条单测并完成运行态与浏览器验证 | AI 编码代理 |
 | v1.5.0 | 2026-11-16 | P1 落地：标注模板字段治理（`tag_key`/`score_map`）、`profile_tag` 来源维度与读侧择优、维度标注来源缺口提示、`tag_bindings` 迁移、一次性重算与回滚脚本；补 20 条单测并完成迁移/重算/回滚实跑 | AI 编码代理 |
 | v1.5.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口 + 接口登录注入），评分项弹窗走查转 PASS 并留证据截图 | AI 编码代理 |
+| v1.6.0 | 2026-11-17 | P2 落地：模板四联视图、标注字段映射提示、画像维度规则级展开、缺口警示；新增 3 个 DPS 只读接口 + 3 条代理 + 15 条单测 + 2 条 E2E | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -177,3 +178,34 @@
 2. 画像 360 的时间线与版本对照（P2-1 后半）。
 3. `social` / `crime` 维度标注字段补充（P1 已提供"无标注来源"UI 提示，补字段需业务确认）。
 4. 前端可视化走查已切换到 Playwright headless（`tests/e2e/*.spec.ts`），后续新增页面需补 spec。
+
+## 13. P2：前端可解释性（v1.6.0）
+
+依据《OpenBase-画像模板-标注模板-评分项对应关系与治理方案》v1.2.0 §7 阶段三实施；只读解释性接口 + 前端呈现，不改评分算法与写路径。
+
+| 仓库 | 模块 | 说明 |
+|---|---|---|
+| DPS | `engines/p2_explainability.py`（新增） | 族谱构造、字段标签契约、评分项命中、缺口组装；三个异步装配（lineage / field-mapping / dimension-details） |
+| DPS | `rest_api/routes/routes_profiles.py` | 新增 `GET /portrait/templates/{code}/lineage`、`/portrait/annotation-templates/{code}/field-mapping`、`/portrait/{person_id}/dimension-details`；`scoring-items` 复用 `build_scoring_payload` |
+| DPS | `src/tests/test_p2_explainability_v3.py`（新增） | 15 条单测；新增模块覆盖率 94% |
+| OpenBase | `modules/dps_proxy/__init__.py` | 3 条逐端点代理；身份头注入与错误体保真沿用既有 `_forward` |
+| OpenBase | `tests/test_dps_proxy_routes_v1410.py` | 追加 3 条注册断言 + 三段路径不被单段详情遮蔽断言 |
+| 前端 | `core/api/dps.ts` | 7 个类型 + `getTemplateLineage` / `getAnnotationFieldMapping` / `getPortraitDimensionDetails` |
+| 前端 | `DpsTemplateListView.vue` | 详情抽屉四联视图（族谱/标注模板/标签产出/评分项）+ 缺口汇总告警 |
+| 前端 | `DpsAnnotationWorkbenchView.vue` | 字段旁提示：写入标签、计分摘要、影响评分项；映射失败降级不阻断录入 |
+| 前端 | `PortraitDetail.vue` | 维度「展开明细」：评分项/标签值/权重/得分/缺值→50，按模板口径缓存 |
+| 前端 | `tests/e2e/portrait-lineage.spec.ts`（新增） | 四联视图 + 维度展开两条 headless 用例 |
+
+验证：
+
+| 项 | 结果 |
+|---|---|
+| `pytest src/tests/test_p2_explainability_v3.py` | 15 passed；模块覆盖率 94% |
+| DPS 定向回归（P2 + P0 scoring + P1 governance + registry） | 55 passed |
+| `pytest tests/test_dps_proxy_routes_v1410.py -q` | 47 passed |
+| `ruff check`（DPS 新增文件） | All checks passed |
+| `vue-tsc --noEmit` / `eslint`（4 文件） | 0 错误 |
+| 运行时冒烟（经 OpenBase 代理） | lineage：6 绑定 / 8 标注视图 / 6 维 32 规则 / 10 项缺口；psych 映射：22 字段 5 命中；维度明细：6 维、basic 7 条缺值兜底 |
+| E2E（headless 1440×900） | 3 passed（2 条 P2 + 1 条 P1 回归）；截图 `p2-template-lineage.png`、`p2-dimension-details.png` |
+
+已知边界：维度明细按维度读取 `profile_tag`（单画像 6 次读），批量画像场景如需优化另行评审；`social` / `crime` 无标注字段仍待业务确认（页面已提示）。

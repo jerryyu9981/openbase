@@ -42,6 +42,16 @@
               <div v-if="currentTemplate" class="hint">
                 归属画像模板：{{ currentTemplate.template_code || '-' }} · 场景：{{ currentTemplate.scenario || 'general' }}
               </div>
+              <div v-if="mappingLoading" class="hint">字段映射加载中…</div>
+              <el-alert
+                v-else-if="fieldMapping && !fieldMapping.scoring_available"
+                type="warning"
+                show-icon
+                :closable="false"
+                class="mt-8"
+                data-test="annotation-mapping-unavailable"
+                title="归属画像模板当前无运行时评分口径（未激活），字段仅写入标签"
+              />
             </el-form-item>
 
             <el-form-item label="主体 person_id" required>
@@ -79,7 +89,9 @@
                 :placeholder="fieldPlaceholder(field)"
                 @update:model-value="(value: string) => setValue(field.key, value)"
               />
-              <div v-if="field.target_dimension" class="hint">→ 通过后计入维度 {{ field.target_dimension }}</div>
+              <div v-if="fieldHint(field)" class="hint field-mapping" data-test="annotation-field-mapping">
+                {{ fieldHint(field) }}
+              </div>
             </el-form-item>
 
             <el-empty
@@ -185,6 +197,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   dpsApi,
   type DpsAnnotationField,
+  type DpsAnnotationFieldMapping,
+  type DpsAnnotationFieldMappingEntry,
   type DpsAnnotationRow,
   type DpsAnnotationTemplate,
 } from '@/core/api/dps'
@@ -197,6 +211,9 @@ const values = reactive<Record<string, unknown>>({})
 const submitting = ref(false)
 const submitError = ref('')
 const pageError = ref('')
+/** P2：字段 → 标签 → 评分项映射（按当前标注模板拉取） */
+const fieldMapping = ref<DpsAnnotationFieldMapping | null>(null)
+const mappingLoading = ref(false)
 
 const rows = ref<DpsAnnotationRow[]>([])
 const total = ref(0)
@@ -216,6 +233,49 @@ const schema = computed<DpsAnnotationField[]>(() => {
 })
 
 const canSubmit = computed(() => !!selectedTemplate.value && !!personId.value.trim() && schema.value.length > 0)
+
+/** 字段 key → 映射项（未拉取到映射时为空，回退为原维度提示） */
+const mappingByField = computed<Record<string, DpsAnnotationFieldMappingEntry>>(() => {
+  const map: Record<string, DpsAnnotationFieldMappingEntry> = {}
+  ;(fieldMapping.value?.fields || []).forEach((item) => {
+    map[item.key] = item
+  })
+  return map
+})
+
+/** P2 字段提示：写入哪个标签、如何计分、影响哪个评分项。 */
+function fieldHint(field: DpsAnnotationField): string {
+  const entry = mappingByField.value[field.key]
+  if (!entry) {
+    return field.target_dimension ? `→ 通过后计入维度 ${field.target_dimension}` : ''
+  }
+  if (entry.scoring_status === 'no_tag') return '不生成标签（未配置目标维度）'
+  const tagPart = `→ 写入 ${entry.tag_code}`
+  const scorePart = entry.score_rule ? ` · 计分：${entry.score_rule.summary}` : ''
+  if (entry.scoring_status === 'affects' && entry.affects_scoring.length) {
+    const hits = entry.affects_scoring
+      .map((hit) => `${hit.rule_key}（权重 ${hit.weight}）`)
+      .join('、')
+    return `${tagPart}${scorePart} · 影响评分项 ${hits}`
+  }
+  return `${tagPart}${scorePart} · 仅生成标签，当前模板无同名评分项`
+}
+
+async function loadFieldMapping() {
+  if (!selectedTemplate.value) {
+    fieldMapping.value = null
+    return
+  }
+  mappingLoading.value = true
+  try {
+    fieldMapping.value = await dpsApi.getAnnotationFieldMapping(selectedTemplate.value)
+  } catch {
+    // 映射仅用于解释，失败时降级为原维度提示，不阻断录入
+    fieldMapping.value = null
+  } finally {
+    mappingLoading.value = false
+  }
+}
 
 function safeParse(text: string): unknown {
   try {
@@ -267,6 +327,7 @@ async function onTemplateChange() {
   Object.keys(values).forEach((key) => delete values[key])
   submitError.value = ''
   applyDefaults()
+  await loadFieldMapping()
 }
 
 async function loadTemplates() {
@@ -276,6 +337,7 @@ async function loadTemplates() {
     if (!selectedTemplate.value && templates.value.length) {
       selectedTemplate.value = templates.value[0].code
       applyDefaults()
+      void loadFieldMapping()
     }
   } catch (err) {
     pageError.value = `标注模板加载失败：${describeDpsError(err).detail}`
@@ -442,6 +504,8 @@ onMounted(() => {
 .card-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .filters { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .hint { font-size: 12px; color: #9ca3af; line-height: 1.6; margin-top: 4px; }
+.field-mapping { color: #6b7280; }
+.mt-8 { margin-top: 8px; }
 .muted { color: #9ca3af; }
 .sm { font-size: 12px; }
 .pager { display: flex; justify-content: flex-end; margin-top: 12px; }
