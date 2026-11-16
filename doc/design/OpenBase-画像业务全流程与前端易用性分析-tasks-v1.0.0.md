@@ -1,6 +1,6 @@
 # OpenBase 画像易用性完善 · 任务分解（tasks）
 
-- 版本：v1.3.0
+- 版本：v1.3.1
 - 状态：[Implemented]（T-01~T-12、T-18 部分、T-23 已交付；其余待排期）
 - 日期：2026-11-15
 - 作者：AI 编码代理
@@ -13,8 +13,9 @@
 | v1.1.0 | 2026-11-15 | 回填首批交付状态：P0 全部完成、T-12 审核补全完成、T-18 画像 360（雷达/分组标签/证据抽屉）完成；时间线与 T-13 起顺延 | AI 编码代理 |
 | v1.2.0 | 2026-11-16 | T-09（标注列表接口）、T-10（代理通路）、T-11（标注工作台）完成；标注链路闭环 | AI 编码代理 |
 | v1.3.0 | 2026-11-16 | T-23 完成：详情页对接异步任务查询、重算结果卡片；DPS 修复模板命名空间 PG 落点并补 2 条单测 | AI 编码代理 |
+| v1.3.1 | 2026-11-16 | T-23 交互补强：等待计时/进度条、轮询状态实时刷新、维度变化列、失败重试、完成自动滚动、口径锁定与按钮说明 | AI 编码代理 |
 
-## 交付状态（v1.3.0）
+## 交付状态（v1.3.1）
 
 | 任务 | 状态 |
 |---|---|
@@ -68,7 +69,7 @@
 | T-15 | 服务端检索 | 代理 `/portraits/search`；`pages/PortraitSearch.vue` | 改用 `POST /portraits/search`，支持关键词/标签/维度分数区间/模板 | 结果总数与后端一致 |
 | T-16 | 空态/失败态分离 | `DpsLineageView.vue`、`DpsMeasureView.vue` 等 | 404 → 「暂无记录」空态；5xx → 错误 + `request_id`；措施页主体改选择器 | 404/500 两态走查 |
 | T-17 | 血缘主体选择器 | `DpsLineageView.vue`、`DpsMeasureView.vue` | 复用画像列表选择器替代手填 ID | 无法手填非法 ID |
-| T-23 | 详情页重算结果 | `pages/PortraitDetail.vue`；DPS `routes_profiles.py::_persist_template_namespace` | 工具栏「重算」→ `POST /portraits/calculate`；有 `task_id` 时轮询 `GET /portraits/tasks/{task_id}`，卡片展示任务 ID/口径/完成时间/综合评分（含增减）/完整度/存储落点/维度明细；完成后刷新 360。DPS 侧修复 PG `updated_at` 类型并补存 `confidence`/`data_completeness` | 任务终态 `succeeded` 且 `storage.persisted=true`；浏览器走查卡片字段齐全、无红错 |
+| T-23 | 详情页重算结果 | `pages/PortraitDetail.vue`；DPS `routes_profiles.py::_persist_template_namespace` | 工具栏「重算」→ `POST /portraits/calculate`；有 `task_id` 时轮询 `GET /portraits/tasks/{task_id}`，卡片展示任务 ID/口径/完成时间/综合评分（含增减）/完整度/存储落点/维度明细；交互含等待计时与进度条、状态实时刷新、失败重试、完成自动滚动、计算中锁定口径（v1.3.1）。DPS 侧修复 PG `updated_at` 类型并补存 `confidence`/`data_completeness` | 任务终态 `succeeded` 且 `storage.persisted=true`；浏览器走查进度态与结果态字段齐全、无红错 |
 
 ## 3. P2（体验升级）
 

@@ -521,16 +521,21 @@ export const dpsApi = {
     return data.data
   },
 
-  /** 轮询画像异步任务：2s 间隔、默认 60s 超时；failed/超时抛可读错误 */
+  /** 轮询画像异步任务：2s 间隔、默认 60s 超时；failed/超时抛可读错误；onStatus 透出每次轮询状态 */
   async waitPortraitTask(
     taskId: string,
-    options?: { intervalMs?: number; timeoutMs?: number },
+    options?: {
+      intervalMs?: number
+      timeoutMs?: number
+      onStatus?: (task: DpsPortraitCalcTask) => void
+    },
   ): Promise<DpsPortraitCalcTask> {
     const intervalMs = options?.intervalMs ?? 2000
     const timeoutMs = options?.timeoutMs ?? 60000
     const deadline = Date.now() + timeoutMs
     for (;;) {
       const task = await this.getPortraitTask(taskId)
+      options?.onStatus?.(task)
       if (task.status === 'succeeded') return task
       if (task.status === 'failed') throw new Error(task.error || '画像计算失败')
       if (Date.now() >= deadline) throw new Error('计算超时，请在详情页刷新确认')
