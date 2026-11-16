@@ -4,8 +4,8 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.0.0 |
-| 状态 | [Draft]（待评审，评审通过后再进入实施） |
+| 文档版本 | v1.0.1 |
+| 状态 | [Approved]（评审通过，P0 已实施并验证） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
 | 评审人 | 需求方 / 技术负责人 |
@@ -16,6 +16,7 @@
 | 版本 | 日期 | 变更说明 | 作者 |
 |---|---|---|---|
 | v1.0.0 | 2026-11-16 | 首次梳理画像模板父子关系、标注模板归属与绑定、字段→标签映射、评分项实际生效口径，并给出分阶段治理方案 | AI 编码代理 |
+| v1.0.1 | 2026-11-16 | 评审通过；按推荐决策（D-01 A / D-02 A / D-03 A / D-04 留待 P1）实施 P0，补充 §11 实施结果与验证证据 | AI 编码代理 |
 
 ---
 
@@ -194,21 +195,21 @@
 
 ## 7. 治理方案（建议分三阶段，待确认后实施）
 
-### 阶段一（P0）：打通"标注 → 标签 → 评分"主链
+### 阶段一（P0）：打通"标注 → 标签 → 评分"主链（✅ 已实施，见 §11）
 
-1. **统一标签契约**
+1. **统一标签契约** ✅
    - DB 统一存 `tag_code = "<dimension>:<tag_key>"`；
    - 评分引擎按维度读取后，以 `tag_key`（去前缀）匹配规则；
    - 标注字段新增可选 `tag_key`（默认取 `field.key`），并支持 `score_map`（枚举→分值）与 `score_direction`（正向/反向）。
-2. **模板规则成为唯一事实源**
+2. **模板规则成为唯一事实源** ✅
    - 计算入口改为 `calculate_portrait(person_id, template_code=...)`，内部用 `TemplateRegistry.resolve_dimensions()` 生成维度权重与规则；
    - `ScoringDispatcher` 按规则 `type` 分派（已支持 6 类）；
    - 未知维度改为显式错误或结果中标记 `unsupported`，不再静默跳过；
    - `dps-correction-v1` 继续等价常量，确保默认口径不变。
-3. **补齐评分项可解释接口**
+3. **补齐评分项可解释接口** ✅
    - 新增 `GET /portrait/templates/{code}/scoring-items`（维度/权重/规则/缺值策略/数据来源）；
    - 模板工作台和画像详情展示"本模板实际评分项"，与试算口径一致。
-4. **`tag_bindings` 校验升级**
+4. **`tag_bindings` 校验升级** ✅
    - 统一数组格式（兼容存量对象并给出迁移提示）；
    - 校验标注模板存在、active、且归属为当前模板或族谱内模板；
    - 未绑定/重复绑定给出明确 warning/error。
@@ -250,12 +251,12 @@
 
 ## 9. 待确认决策点
 
-| 编号 | 决策 | 选项 |
-|---|---|---|
-| D-01 | 评分事实源 | A. 模板规则为唯一事实源（推荐，默认模板等价常量） / B. 保留常量，仅做字段映射 |
-| D-02 | 标签 code 形态 | A. DB 存 `dim:key`，引擎按维度+key 解析（推荐） / B. DB 改存无前缀 key |
-| D-03 | 标注模板归属策略 | A. 允许父模板绑定子模板标注模板（现状，需写入规则）（推荐） / B. 强制绑定方=归属方 |
-| D-04 | 同名标签冲突 | A. 按来源隔离保留多行（推荐） / B. 后写覆盖 / C. 人工优先级 |
+| 编号 | 决策 | 选项 | 结论 |
+|---|---|---|---|
+| D-01 | 评分事实源 | A. 模板规则为唯一事实源（推荐，默认模板等价常量） / B. 保留常量，仅做字段映射 | **采纳 A** |
+| D-02 | 标签 code 形态 | A. DB 存 `dim:key`，引擎按维度+key 解析（推荐） / B. DB 改存无前缀 key | **采纳 A**（读取层兼容带/不带前缀） |
+| D-03 | 标注模板归属策略 | A. 允许父模板绑定子模板标注模板（现状，需写入规则）（推荐） / B. 强制绑定方=归属方 | **采纳 A**（跨归属仅告警） |
+| D-04 | 同名标签冲突 | A. 按来源隔离保留多行（推荐） / B. 后写覆盖 / C. 人工优先级 | **推迟至 P1** |
 
 ---
 
@@ -265,3 +266,41 @@
 - 真实评分：`DPS/src/engines/portrait/__init__.py`（`_DIMENSION_RULES`、`_DIMENSION_WEIGHTS`）、`core.py:72-242`、`validation.py:25-46`
 - 标注与标签：`DPS/src/engines/annotation_template_engine.py`（`build_tag_sync_entries`、`_score_for_tag`、`sync_tags_to_profile`）
 - 实测数据：2026-11-16 `GET /api/v1/dps-proxy/templates?page_size=50`、`/templates/{code}`、`/annotation-templates?page_size=50`、`/annotation-templates/{code}`
+
+---
+
+## 11. P0 实施结果与验证证据（v1.0.1）
+
+### 11.1 代码落点
+
+| 仓库 | 文件 | 变更 |
+|---|---|---|
+| DPS | `src/engines/portrait/core.py` | `calculate_portrait` / `calculate_dimension_score` 接受 `dimension_rules`/`dimension_weights`/`dimension_names`；规则 key 带/不带维度前缀均可命中；模板维度缺规则显式报错 |
+| DPS | `src/engines/portrait/validation.py` | 综合分改用传入权重；完整度按模板规则统计（支持后缀匹配） |
+| DPS | `src/rest_api/routes/routes_profiles.py` | `_execute_calc` 以模板解析结果驱动计算；新增 `GET /portrait/templates/{code}/scoring-items` |
+| DPS | `src/engines/annotation_template_engine.py` | 字段支持 `tag_key`/`score_map`/`score_direction`；标签 code 用 `tag_key` 生成；打分支持 score_map 优先与反向 |
+| DPS | `src/engines/template_engine.py` | `tag_bindings` 归一化为数组并校验引用（不存在/未激活报错，跨归属告警） |
+| DPS | `src/engines/portrait/template_preview.py` | 兼容存量对象格式 `tag_bindings`（warning 提示迁移），补维度元素类型校验 |
+| DPS | `src/tests/test_p0_template_scoring_v3.py` | 新增 10 条单测（前缀命中、后缀兜底、缺规则报错、权重归一、tag_key/score_map、反向打分、字段校验、绑定归一与引用校验） |
+| OpenBase | `openbase/modules/dps_proxy/__init__.py` | 新增 `GET /templates/{code}/scoring-items` 代理（身份头注入 + 上游透传） |
+| OpenBase | `openbase-ui/src/core/api/dps.ts` | 新增评分项类型与 `getTemplateScoringItems` |
+| OpenBase | `openbase-ui/src/modules/portrait/pages/PortraitDetail.vue` | 工具栏「查看评分项」+ 弹窗（维度权重、规则 key/标签 key/打分类型/权重/说明） |
+
+### 11.2 运行态验证（2026-11-16，Dev）
+
+| 项 | 方式 | 结果 |
+|---|---|---|
+| 模板驱动 6 维 | `POST /api/v2/portrait/calculate`（`template_code=cor-persona-intake-v1`，person 61） | 维度 = basic/crime/psychology/behavior/social/intervention；behavior 规则 key 为 `behavior:report_compliance_rate` 等模板 key；`storage.persisted=true` |
+| 默认口径不变 | 同接口不传 `template_code`（person 61） | 维度 = basic/behavior/psychology/social/correction/risk（六维常量口径） |
+| 评分项字典 | `GET /api/v2/portrait/templates/cor-persona-intake-v1/scoring-items` | `dimension_count=6`、`rule_count=32`、`source=template`、`extends=cor-persona-root-v1` |
+| 代理透传 | `GET /api/v1/dps-proxy/templates/{code}/scoring-items`（JWT） | `code=0`，data 内 6 维/32 规则，权重与 DPS 直连一致 |
+| 前端弹窗 | 浏览器登录后 `/portrait/tenant-1_1` 选择 `cor-persona-assess-v1` → 「查看评分项」 | PASS：显示「共 6 个维度 / 32 条规则；继承自 cor-persona-root-v1」，含 basic/crime/intervention 等 6 个维度区块 |
+| 单测 | `python -m pytest src/tests/test_p0_template_scoring_v3.py -q` | 10 passed |
+
+> 说明：排查中曾观察到 `cor-persona-*` 模板重算结果只有 4 维，经核对为 2026-11-15 创建的历史任务被幂等键（`sha256(tenant:person:template:data_version)`）复用；改用同步计算入口（不走幂等）后确认新代码已按模板输出 6 维，无需额外代码修复。
+
+### 11.3 遗留（P1 起）
+
+1. 存量标注模板批量补 `tag_key`/`score_map`，消除同名标签语义冲突（D-04 来源隔离）。
+2. `social`/`crime` 标注来源补充；`cor-persona-risk-v1.tag_bindings` 对象格式迁移。
+3. 一次“标注审核通过 → 标签落库 → 维度分变化”的全链路实跑样本（当前 Dev 库中已审批标注的字段未命中 `target_dimension`，无标签产出）。

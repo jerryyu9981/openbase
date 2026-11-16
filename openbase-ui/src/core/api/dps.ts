@@ -283,6 +283,33 @@ export interface DpsTemplatePreviewResult {
   [key: string]: unknown
 }
 
+/** 模板实际评分项（继承解析后，与画像计算口径一致） */
+export interface DpsScoringRule {
+  key: string
+  tag_key: string
+  type: string
+  weight: number
+  description: string
+  default_score: number
+  when?: unknown
+}
+
+export interface DpsScoringDimension {
+  code: string
+  name: string
+  weight: number
+  rules: DpsScoringRule[]
+}
+
+export interface DpsTemplateScoringItems {
+  template_code: string
+  extends: string | null
+  source: string
+  dimension_count: number
+  rule_count: number
+  dimensions: DpsScoringDimension[]
+}
+
 export interface DpsLineageSource {
   annotation_id?: string
   template_code?: string
@@ -746,6 +773,14 @@ export const dpsApi = {
   /** 画像模板详情（GET /dps-proxy/templates/{code}，#12；原样呈现不假设结构） */
   async getTemplate(code: string): Promise<DpsPortraitTemplate> {
     const { data } = await http.get<ApiSuccess<DpsPortraitTemplate>>(`/dps-proxy/templates/${encodeURIComponent(code)}`)
+    return data.data
+  },
+
+  /** 模板实际评分项（GET /dps-proxy/templates/{code}/scoring-items；含继承解析后的维度权重与规则） */
+  async getTemplateScoringItems(code: string): Promise<DpsTemplateScoringItems> {
+    const { data } = await http.get<ApiSuccess<DpsTemplateScoringItems>>(
+      `/dps-proxy/templates/${encodeURIComponent(code)}/scoring-items`,
+    )
     return data.data
   },
 

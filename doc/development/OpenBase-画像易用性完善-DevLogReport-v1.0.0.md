@@ -1,6 +1,6 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.3.1
+- 版本：v1.4.0
 - 状态：[Implemented]
 - 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）
 - 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）
@@ -16,6 +16,7 @@
 | v1.2.0 | 2026-11-16 | 服务重启后实跑验证；修复 3 处 PG 适配（annotation.template_id、profile_tag tenant+upsert、tag_lineage.profile_id），补 2 条单测；浏览器走查 PASS | AI 编码代理 |
 | v1.3.0 | 2026-11-16 | 详情页对接异步任务查询（重算 + 结果卡片）；修复 `_persist_template_namespace` 的 PG TIMESTAMPTZ 写入并补存完整度/置信度，补 2 条单测；实跑与浏览器走查通过 | AI 编码代理 |
 | v1.3.1 | 2026-11-16 | 补强重算交互：等待计时与进度条、轮询状态实时刷新、维度变化列、失败重试、完成后自动滚动、口径锁定与按钮说明 | AI 编码代理 |
+| v1.4.0 | 2026-11-16 | P0 落地：模板规则/权重成为评分事实源、标签契约归一、标注字段扩展、`tag_bindings` 校验、评分项接口与前端弹窗；补 10 条单测并完成运行态与浏览器验证 | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -111,7 +112,37 @@
 
 验证：`vue-tsc --noEmit`（TSC_OK）、`eslint`（0 错误）通过；浏览器走查 `/portrait/61`：点击重算后出现「排队中」与「已等待 1s」，完成态卡片显示任务 ID、耗时 `0.13 s`、综合评分 `50.0（+13.4）`、完整度 `7%`，维度表为「维度/得分/变化/置信度」四列且变化值如 `基础属性 -22.5`，无红色报错。
 
-## 9. 未覆盖 / 后续
+## 10. P0：模板规则成为评分事实源（v1.4.0）
+
+依据《OpenBase-画像模板-标注模板-评分项对应关系与治理方案》v1.0.1 阶段一实施。
+
+| 仓库 | 模块 | 说明 |
+|---|---|---|
+| DPS | `engines/portrait/core.py` | `calculate_portrait`/`calculate_dimension_score` 新增 `dimension_rules`/`dimension_weights`/`dimension_names`；规则 key 带/不带维度前缀均可命中；模板维度缺规则显式 `ValueError` |
+| DPS | `engines/portrait/validation.py` | 综合分改用模板权重；完整度按模板规则统计（后缀兼容） |
+| DPS | `rest_api/routes/routes_profiles.py` | `_execute_calc` 由 `TemplateRegistry.resolve_dimensions()` 驱动；新增 `GET /portrait/templates/{code}/scoring-items` |
+| DPS | `engines/annotation_template_engine.py` | 字段支持 `tag_key`/`score_map`/`score_direction`；标签 code 用 `tag_key`；打分支持 score_map 优先与 `lower_better` |
+| DPS | `engines/template_engine.py` | `tag_bindings` 对象→数组归一；引用校验（不存在/未激活报错，跨归属告警） |
+| DPS | `engines/portrait/template_preview.py` | 存量对象格式兼容（warning 提示迁移）+ 维度元素类型校验 |
+| DPS | `tests/test_p0_template_scoring_v3.py` | 新增 10 条单测 |
+| OpenBase | `modules/dps_proxy/__init__.py` | 新增评分项字典代理 |
+| OpenBase | `core/api/dps.ts` | 新增评分项类型与 `getTemplateScoringItems` |
+| OpenBase | `pages/PortraitDetail.vue` | 工具栏「查看评分项」+ 弹窗（维度权重与规则明细） |
+
+验证：
+
+| 项 | 结果 |
+|---|---|
+| `pytest src/tests/test_p0_template_scoring_v3.py -q` | 10 passed |
+| 模板重算（`cor-persona-intake-v1`，person 61，同步入口） | 6 维 basic/crime/psychology/behavior/social/intervention，规则 key 为模板 key，`storage.persisted=true` |
+| 默认口径回归（不传 `template_code`） | 6 维 basic/behavior/psychology/social/correction/risk 不变 |
+| 评分项接口（DPS 直连 + OpenBase 代理） | 6 维 / 32 规则 / `source=template` / `extends=cor-persona-root-v1` |
+| 浏览器走查 `/portrait/tenant-1_1` | 弹窗显示「共 6 个维度 / 32 条规则；继承自 cor-persona-root-v1」，无错误提示 |
+
+> 说明：排查中“重算仍只有 4 维”系 2026-11-15 历史任务被幂等键复用所致，非代码问题；详见治理方案 §11.2。
+
+## 11. 未覆盖 / 后续
 
 1. 模板版本列表接口（P1-3）、影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
 2. 画像 360 的时间线与版本对照（P2-1 后半）。
+3. P1 数据治理：存量标注模板补 `tag_key`/`score_map`、同名标签来源隔离（D-04）、`social`/`crime` 标注来源、risk 模板 `tag_bindings` 迁移。

@@ -999,6 +999,25 @@ async def dps_labels_list(
 # ---- 动态段：画像模板版本操作（#3 对比 / #4 回滚 / #5 预检）--------------
 
 
+@router.get("/templates/{code}/scoring-items")
+async def dps_template_scoring_items(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板实际评分项字典（GET；权限动作 portrait_template:read）.
+
+    返回继承解析后的维度权重与规则明细，与画像计算口径一致。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/templates/{code}/scoring-items"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 @router.get("/templates/{code}/diff")
 async def dps_template_diff(
     code: str,

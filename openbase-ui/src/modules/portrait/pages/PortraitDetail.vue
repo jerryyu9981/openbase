@@ -63,6 +63,16 @@
               />
             </el-select>
             <el-tag v-if="templateVersion" size="small" type="info">{{ selectedTemplate }} · v{{ templateVersion }}</el-tag>
+            <el-button
+              size="small"
+              link
+              type="primary"
+              :disabled="!selectedTemplate"
+              data-test="portrait-scoring-items"
+              @click="openScoringItems"
+            >
+              查看评分项
+            </el-button>
             <div class="toolbar-actions">
               <el-tooltip
                 content="按当前「计算口径」重新计算并回写画像；完成后在下方卡片展示本次结果"
@@ -409,6 +419,50 @@
             <el-button type="primary" :loading="saving" data-test="portrait-edit-save" @click="saveEdit">保存</el-button>
           </template>
         </el-drawer>
+
+        <el-dialog
+          v-model="scoringVisible"
+          title="本模板实际评分项"
+          width="880px"
+          data-test="portrait-scoring-dialog"
+        >
+          <div v-loading="scoringLoading">
+            <el-alert
+              v-if="scoringError"
+              type="error"
+              show-icon
+              :closable="false"
+              :title="scoringError"
+              class="mb-12"
+            />
+            <div v-if="scoringItems" class="muted sm mb-12">
+              共 {{ scoringItems.dimension_count }} 个维度 / {{ scoringItems.rule_count }} 条规则；
+              继承自 {{ scoringItems.extends || '独立模板' }}。缺值按 50 分计，维度分按规则权重加权，
+              综合分按维度权重归一化。
+            </div>
+            <div v-if="scoringItems" class="scoring-dims">
+              <div v-for="dim in scoringItems.dimensions" :key="dim.code" class="scoring-dim">
+                <div class="scoring-dim-head">
+                  <strong>{{ dim.name }}</strong>
+                  <el-tag size="small" type="info">{{ dim.code }}</el-tag>
+                  <span class="muted sm">维度权重 {{ Math.round(dim.weight * 1000) / 10 }}%</span>
+                </div>
+                <el-table :data="dim.rules" size="small">
+                  <el-table-column prop="key" label="规则 key" min-width="180" />
+                  <el-table-column prop="tag_key" label="标签 key" width="150" />
+                  <el-table-column prop="type" label="打分类型" width="130" />
+                  <el-table-column label="权重" width="80">
+                    <template #default="{ row }">{{ Math.round(row.weight * 100) }}%</template>
+                  </el-table-column>
+                  <el-table-column prop="description" label="说明" min-width="180" />
+                </el-table>
+              </div>
+            </div>
+          </div>
+          <template #footer>
+            <el-button @click="scoringVisible = false">关闭</el-button>
+          </template>
+        </el-dialog>
       </div>
     </template>
   </PageContainer>
@@ -419,7 +473,13 @@ import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { dpsApi, type DpsPortrait, type DpsPortraitCalcTask, type DpsPortraitTemplate } from '@/core/api/dps'
+import {
+  dpsApi,
+  type DpsPortrait,
+  type DpsPortraitCalcTask,
+  type DpsPortraitTemplate,
+  type DpsTemplateScoringItems,
+} from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
 
 interface DimensionScore {
@@ -492,6 +552,10 @@ const recalcBeforeDimensions = ref(new Map<string, number | null>())
 const recalcElapsed = ref(0)
 const recalcTimer = ref<ReturnType<typeof setInterval> | null>(null)
 const recalcCardRef = ref<{ $el?: HTMLElement } | null>(null)
+const scoringVisible = ref(false)
+const scoringLoading = ref(false)
+const scoringError = ref('')
+const scoringItems = ref<DpsTemplateScoringItems | null>(null)
 
 const isForbidden = computed(() => presentation.value?.pageLevel === true)
 const isNotFound = computed(() => presentation.value?.kind === 'not-found')
@@ -837,6 +901,26 @@ async function scrollToRecalcCard() {
   element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+/** 加载并展示当前口径模板的实际评分项（与计算口径一致） */
+async function openScoringItems() {
+  if (!selectedTemplate.value) {
+    ElMessage.info('请先选择计算口径模板')
+    return
+  }
+  scoringVisible.value = true
+  scoringLoading.value = true
+  scoringError.value = ''
+  scoringItems.value = null
+  try {
+    scoringItems.value = await dpsApi.getTemplateScoringItems(selectedTemplate.value)
+  } catch (err) {
+    const described = describeError(err)
+    scoringError.value = described.detail || described.title || '评分项加载失败'
+  } finally {
+    scoringLoading.value = false
+  }
+}
+
 /**
  * 重算：按当前口径提交计算；异步返回 task_id 时轮询任务查询接口，
  * 终态后展示任务结果并刷新 360 视图。
@@ -970,6 +1054,8 @@ onMounted(() => {
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .card-head-actions { display: flex; align-items: center; gap: 8px; }
 .recalc-progress { margin-bottom: 12px; }
+.scoring-dim { margin-bottom: 16px; }
+.scoring-dim-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .delta { margin-left: 6px; font-size: 12px; }
 .delta-up { color: #16a34a; }
 .delta-down { color: #dc2626; }
