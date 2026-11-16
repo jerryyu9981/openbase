@@ -440,12 +440,39 @@
               继承自 {{ scoringItems.extends || '独立模板' }}。缺值按 50 分计，维度分按规则权重加权，
               综合分按维度权重归一化。
             </div>
+            <el-alert
+              v-if="scoringItems?.dimensions_without_annotation_source?.length"
+              type="warning"
+              show-icon
+              :closable="false"
+              class="mb-12"
+              data-test="scoring-source-gap"
+              :title="`以下维度暂无标注来源：${scoringItems.dimensions_without_annotation_source.join('、')}`"
+              description="这些维度的分数只能来自历史标签或接口导入；如需标注驱动，请先补充带目标维度的标注字段。"
+            />
             <div v-if="scoringItems" class="scoring-dims">
               <div v-for="dim in scoringItems.dimensions" :key="dim.code" class="scoring-dim">
                 <div class="scoring-dim-head">
                   <strong>{{ dim.name }}</strong>
                   <el-tag size="small" type="info">{{ dim.code }}</el-tag>
                   <span class="muted sm">维度权重 {{ Math.round(dim.weight * 1000) / 10 }}%</span>
+                  <el-tag
+                    v-for="source in dim.annotation_sources || []"
+                    :key="source"
+                    size="small"
+                    type="success"
+                    data-test="scoring-source-tag"
+                  >
+                    标注来源 {{ source }}
+                  </el-tag>
+                  <el-tag
+                    v-if="dim.source_gap"
+                    size="small"
+                    type="warning"
+                    data-test="scoring-source-gap-tag"
+                  >
+                    无标注来源
+                  </el-tag>
                 </div>
                 <el-table :data="dim.rules" size="small">
                   <el-table-column prop="key" label="规则 key" min-width="180" />

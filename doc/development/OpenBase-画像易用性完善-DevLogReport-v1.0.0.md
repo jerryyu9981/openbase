@@ -17,6 +17,7 @@
 | v1.3.0 | 2026-11-16 | 详情页对接异步任务查询（重算 + 结果卡片）；修复 `_persist_template_namespace` 的 PG TIMESTAMPTZ 写入并补存完整度/置信度，补 2 条单测；实跑与浏览器走查通过 | AI 编码代理 |
 | v1.3.1 | 2026-11-16 | 补强重算交互：等待计时与进度条、轮询状态实时刷新、维度变化列、失败重试、完成后自动滚动、口径锁定与按钮说明 | AI 编码代理 |
 | v1.4.0 | 2026-11-16 | P0 落地：模板规则/权重成为评分事实源、标签契约归一、标注字段扩展、`tag_bindings` 校验、评分项接口与前端弹窗；补 10 条单测并完成运行态与浏览器验证 | AI 编码代理 |
+| v1.5.0 | 2026-11-16 | P1 落地：标注模板字段治理（`tag_key`/`score_map`）、`profile_tag` 来源维度与读侧择优、维度标注来源缺口提示、`tag_bindings` 迁移、一次性重算与回滚脚本；补 20 条单测并完成迁移/重算/回滚实跑 | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -141,8 +142,36 @@
 
 > 说明：排查中“重算仍只有 4 维”系 2026-11-15 历史任务被幂等键复用所致，非代码问题；详见治理方案 §11.2。
 
-## 11. 未覆盖 / 后续
+## 11. P1：数据治理与标签来源隔离（v1.5.0）
+
+依据《OpenBase-画像模板-标注模板-评分项对应关系与治理方案》v1.1.0 §7 阶段二实施，D-04 采纳 A（按来源隔离保留多行）。
+
+| 仓库 | 模块 | 说明 |
+|---|---|---|
+| DPS | `ddl/schema_profile_dependents.py` | `profile_tag` 双方言新增 `source` / `annotation_template_code`；PG 退役 `UNIQUE(profile_id, tag_code)`；来源演进常量单一来源 |
+| DPS | `database.py` | 启动期 `_ensure_profile_tag_source_columns()`：幂等补列、存量标 `legacy`、建 `uq_profile_tag_source` |
+| DPS | `engines/annotation_template_engine.py` | 标签 upsert 冲突键加入来源维度；列探测降级兼容旧列集 |
+| DPS | `engines/portrait/crud.py` / `risk.py` | `pick_preferred_tags()` 读取择优；risk 维度复用同一口径 |
+| DPS | `engines/p1_governance.py` + `scripts/p1_governance_migration.py` | 标注模板补 `tag_key`/`score_map`、`tag_bindings` 归一与引用校验、来源缺口审计；默认 dry-run、幂等可重跑 |
+| DPS | `scripts/p1_recompute_profiles.py` | 旧分快照 → 重算 → 对照报告 → `--rollback`（恢复六维列/整体分/attributes_json） |
+| DPS | `rest_api/routes/routes_profiles.py` | `scoring-items` 增 `annotation_sources` / `source_gap` / `dimensions_without_annotation_source` |
+| OpenBase | `core/api/dps.ts`、`pages/PortraitDetail.vue` | 评分项弹窗展示维度标注来源、无来源警示与缺口汇总 |
+
+验证：
+
+| 项 | 结果 |
+|---|---|
+| `pytest src/tests/test_p1_governance_v3.py` | 20 passed |
+| `pytest src/tests/test_v2_11_ddl_profile_dependents.py` | 19 passed（含来源索引契约） |
+| 标注/评分/租户/命名空间回归（8 文件） | 135 passed, 1 skipped |
+| 迁移（Dev，8 模板） | 7 个 v1→v2；二次执行 `changed=0`；存量标签标 `legacy` 无丢失 |
+| 评分项接口（直连 + 代理） | `dimensions_without_annotation_source=["crime","social"]`，来源列表逐项一致 |
+| 重算写库 + 回滚 | 六维 40/45/50/42/48/15（81.2）→ 50 → 回滚还原 81.2 |
+| 前端 | `vue-tsc` / `eslint` 0 错误；浏览器走查受本机 viewport 超时阻塞（已用源码+接口证据替代） |
+
+## 12. 未覆盖 / 后续
 
 1. 模板版本列表接口（P1-3）、影响面「受影响画像数」（P1-4）、服务端检索（P1-5）、血缘主体选择器（P1-6）。
 2. 画像 360 的时间线与版本对照（P2-1 后半）。
-3. P1 数据治理：存量标注模板补 `tag_key`/`score_map`、同名标签来源隔离（D-04）、`social`/`crime` 标注来源、risk 模板 `tag_bindings` 迁移。
+3. `social` / `crime` 维度标注字段补充（P1 已提供"无标注来源"UI 提示，补字段需业务确认）。
+4. 前端可视化走查待可用浏览器环境补做。

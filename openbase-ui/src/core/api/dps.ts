@@ -298,6 +298,10 @@ export interface DpsScoringDimension {
   code: string
   name: string
   weight: number
+  /** P1：产出该维度标签的标注模板（为空表示无标注来源） */
+  annotation_sources?: string[]
+  /** P1：无标注来源标记（分数只能来自历史标签/接口导入） */
+  source_gap?: boolean
   rules: DpsScoringRule[]
 }
 
@@ -307,6 +311,8 @@ export interface DpsTemplateScoringItems {
   source: string
   dimension_count: number
   rule_count: number
+  /** P1：无标注来源的维度 code 列表（social / crime 等缺口提示） */
+  dimensions_without_annotation_source?: string[]
   dimensions: DpsScoringDimension[]
 }
 
