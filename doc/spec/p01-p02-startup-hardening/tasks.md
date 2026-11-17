@@ -60,9 +60,9 @@
 
 ## T7 回填与交付
 
-- [ ] 更新 `doc/test/OpenBase-前端全站走查报告-v1.0.0.md`：P-01/P-02 标记已修复并附证据路径（版本升次版本 1.1.0，记修订历史）
-- [ ] 新增实现记录 `doc/dev/OpenBase-P01-P02-实现记录-v1.0.0.md`（变更清单、命令、结果）
-- [ ] 分仓提交并推送三远程：OpenMemory、DPS、OpenBase
+- [x] 更新 `doc/test/OpenBase-前端全站走查报告-v1.0.0.md`：P-01/P-02 标记已修复并附证据路径（版本升 v1.1.0，记修订历史）
+- [x] 新增实现记录 `doc/dev/OpenBase-P01-P02-实现记录-v1.0.0.md`（变更清单、命令、结果）
+- [x] 分仓提交并推送三远程：OpenMemory（f7ca20a）、DPS（04c005e）、OpenBase（764808e）
 
 ## 依赖关系
 
