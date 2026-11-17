@@ -4,8 +4,8 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.3.0 |
-| 状态 | [Approved]（评审通过；P0、P1、P2、P3 均已实施并验证） |
+| 文档版本 | v1.4.0 |
+| 状态 | [Approved]（评审通过；P0、P1、P2、P3、P4 均已实施并验证） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
 | 评审人 | 需求方 / 技术负责人 |
@@ -21,6 +21,7 @@
 | v1.1.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口），前端评分项弹窗验证由 BLOCKED 转 PASS，补证据截图与执行方式 | AI 编码代理 |
 | v1.2.0 | 2026-11-17 | 实施 P2「前端可解释性」：DPS 新增模板 lineage / 标注字段映射 / 画像维度明细三个只读接口，OpenBase 三代理路由，前端四联视图与维度展开；补 §13 实施结果与验证证据 | AI 编码代理 |
 | v1.3.0 | 2026-11-17 | 实施 P3「策略执行与孤儿治理」：证据来源落库与审核门禁、异常规则求值、孤儿标注模板治理报告；DPS 2 只读接口 + OpenBase 2 代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E；补 §14 实施结果与验收对照 | AI 编码代理 |
+| v1.4.0 | 2026-11-17 | 实施 P4「多级审核」：逐级状态机（非末级通过保持 pending）、应审级数快照、审核留痕表与只读接口、前端进度与终审按钮/留痕弹窗；顺带修复 P3 遗漏的 DDL 契约冻结列；补 §15 实施结果与验收对照 | AI 编码代理 |
 
 ---
 
@@ -562,5 +563,102 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 2. **字符串条件不求值**：避免任意表达式执行风险，页面与响应均标注 `evaluable=false` 并提示改为结构化条件。
 3. **孤儿模板只给建议**：治理报告不自动改数据（G-05/G-06 的最终处置需业务裁定归属或停用）。
 4. **G-08 仍在业务侧**：`social` / `crime` 无标注来源字段，P1/P2 已页面提示，P3 未扩围。
+
+---
+
+## 15. P4 实施结果与验证证据（v1.4.0）
+
+依据 §14.8「多级审核未支持，建议 P4」实施：让 `evidence_policy.review_levels` 真正生效，标注逐级通过后才终审并联动标签；**默认单级行为不变**。
+
+### 15.1 交付物清单
+
+| 仓库 | 交付物 | 说明 |
+|---|---|---|
+| DPS | `src/ddl/schema_profile_dependents.py` | `annotation.review_level`（默认 0）、`review_levels_required`（默认 1）列；`annotation_review_log` 建表/索引（PG/SQLite 单一来源） |
+| DPS | `src/database.py` | `_ensure_annotation_review_progress()`：PG `ADD COLUMN IF NOT EXISTS` + 建表；SQLite PRAGMA 探测后 ALTER + 建表 |
+| DPS | `src/engines/annotation_template_engine.py` | `resolve_review_outcome` 逐级状态机、`review_annotation` 进度持久化、`record_review_log` / `query_review_logs`、队列与详情读取进度列、创建时快照应审级数 |
+| DPS | `src/engines/p3_policies.py` | 级数解析/归一（1~5）；`review_levels_supported` 改为按上限判定 |
+| DPS | `src/rest_api/routes/routes_profiles.py` | 审核响应新增 `review{level,required,finalized}` 与 `review_log_persisted`；仅终审联动标签/求值异常规则；新增 `GET /portrait/annotations/{id}/review-log` |
+| DPS | `src/tests/test_p4_multi_level_review.py`（新增） | 35 条单测（状态机/解析/DDL/写路径/持久化/留痕/编排/只读接口） |
+| DPS | `src/tests/test_v2_11_ddl_profile_dependents.py` | 修正 `annotation` 冻结列（补 P3 `evidence_source` 与 P4 两列），修复 P3 遗漏的 DDL 契约失败 |
+| OpenBase | `openbase/modules/dps_proxy/__init__.py` | `GET /annotations/{annotation_id}/review-log` 代理 |
+| OpenBase | `tests/test_dps_proxy_routes_v1410.py` | 注册断言 + 不与 `GET /annotations`/`POST .../review` 遮蔽断言 |
+| 前端 | `src/core/api/dps.ts` | 队列行补进度字段；新增 `DpsAnnotationReviewProgress` / `DpsAnnotationReviewLogItem` / `DpsAnnotationReviewLog` 与 `getAnnotationReviewLog` |
+| 前端 | `DpsAnnotationWorkbenchView.vue` | 「审核进度」列、`通过本级（N/M）` / `终审通过` 按钮、分级提示、审核记录弹窗 |
+| 前端 | `DpsTemplateListView.vue` | 移除「当前仅支持单级审核」警示，保留级数摘要 |
+| 前端 | `tests/e2e/portrait-multilevel-review.spec.ts`（新增） | 2 条 headless 用例（进度+按钮文案 / 留痕弹窗） |
+
+### 15.2 数据模型与不变式
+
+| 对象 | 变更 | 幂等/兼容 |
+|---|---|---|
+| `annotation.review_level` | 已通过级数（0 = 未通过） | 默认 0；存量行按 0 处理 |
+| `annotation.review_levels_required` | 创建时快照的应审级数（1~5） | 默认 1 → 存量 `pending` 行按单级收口，不追溯补审 |
+| `annotation_review_log` | 只追加留痕（`annotation_id/review_level/action/reviewer/comment/created_at`） | `CREATE TABLE/INDEX IF NOT EXISTS`；写失败仅 WARN |
+
+### 15.3 逐级审核语义
+
+| 动作 | 条件 | 新状态 | 级数 | 终审 |
+|---|---|---|---|---|
+| `approved` | `level + 1 < required` | `pending` | `level + 1` | 否（不联动标签、不求值异常规则） |
+| `approved` | `level + 1 >= required` | `approved` | `required` | 是（联动标签 + 求值异常规则） |
+| `rejected` | 任意级 | `rejected` | 不变 | 是（终态） |
+| `modified` | 任意级 | `modified` | 不变 | 是（终态） |
+
+补充：证据门禁在**任一级通过前**执行（来源缺失且列已持久化 → 409，状态与级数不变）；留痕记录“本次审核所处级数”；不强制不同审核人（无分级角色模型）。
+
+### 15.4 接口契约
+
+| 接口 | 变更 | 关键字段 |
+|---|---|---|
+| `POST /api/v2/portrait/annotations/{id}/review` | 扩展 | `review{level,required,finalized}`、`review_log_persisted`；非末级通过时 `status=pending` |
+| `POST /api/v2/portrait/annotations/batch-review` | 继承 | 每条结果含 `review` 块，单条失败不影响其余 |
+| `GET /api/v2/portrait/annotations` | 扩展 | 行内 `review_level` / `review_levels_required` |
+| `GET /api/v2/portrait/annotations/{id}/review-log` | 新增（只读） | `{annotation_id, items[], total}`；不存在 404；表未迁移返回空列表 |
+
+### 15.5 前端落地
+
+| 能力 | 呈现 | 关键标识 |
+|---|---|---|
+| 审核进度 | 队列列：`第 N/M 级`，终审后 `已完成` | `annotation-review-progress-text` |
+| 分级按钮 | `通过本级（N/M）` / `终审通过` / 单级 `通过` | `annotation-approve` |
+| 分级提示 | 非末级「已通过第 N 级，待第 N+1 级审核」；末级「终审通过，标签联动已执行」 | — |
+| 审核记录 | 行内「记录」打开弹窗，按级升序展示动作/审核人/意见/时间 | `annotation-review-log`、`annotation-review-log-dialog` |
+| 策略摘要 | 模板评分项页签保留「审核级数：N 级」，移除单级限制警示 | `template-review-levels` |
+
+### 15.6 验证证据
+
+| 项目 | 命令/方式 | 结果 |
+|---|---|---|
+| DPS P4 单测 | `pytest src/tests/test_p4_multi_level_review.py` | 35 passed |
+| DPS 定向回归 | P4 + P3 + P2 + P1 + P0 + annotation chain + DDL 契约 | 173 passed |
+| DPS 静态检查 | `ruff check`（新测/策略文件） + `--select F,E9`（存量改动文件） | 0 错误 |
+| OpenBase 路由测试 | `pytest tests/test_dps_proxy_routes_v1410.py -q` | 52 passed |
+| OpenBase 静态检查 | `ruff check` | All checks passed |
+| 前端类型/静态检查 | `vue-tsc --noEmit`；`eslint`（3 文件 + 新 E2E） | 0 错误 |
+| 前端 E2E | `portrait-multilevel-review.spec.ts` | 2 passed（截图 `p4-review-progress.png`、`p4-review-log.png`） |
+| E2E 回归 | `portrait-policies.spec.ts`、`portrait-lineage.spec.ts` | 3 + 2 passed（需 `--trace=off` 规避 trace 对大响应的 8s 超时影响） |
+| 真实链路冒烟（经 OpenBase 代理） | 创建多级标注 → 第 1 级通过 → 查留痕 | `required=2`、`created.progress_persisted=true`、`status=pending`、`review={level:1,required:2,finalized:false}`、留痕 `total=1` |
+
+说明：E2E 标注页用例通过 `page.route` 固定模板/队列/留痕响应（本机 tracing + 大响应对前端 8s 预算的影响），UI 断言为强断言；真实链路由上述冒烟与 DPS 单测覆盖。
+
+### 15.7 验收标准对照
+
+| 编号 | 验收项 | 结论 | 证据 |
+|---|---|---|---|
+| AC-P4-01 | 多级逐级生效 | ✅ | 单测三组推进（1→2 pending，2→3 approved）；真实冒烟 1/2 级 pending |
+| AC-P4-02 | 终审才联动 | ✅ | 编排单测：非末级 `tag_sync=null`、`sync_calls=0`；末级调用 1 次并求值 |
+| AC-P4-03 | 审核留痕 | ✅ | 单测追加/降级/查询；真实冒烟 `total=1`；E2E 弹窗显示 `一级通过` |
+| AC-P4-04 | 证据门禁保持 | ✅ | 缺来源任一级 409（P3 用例保持通过） |
+| AC-P4-05 | 进度可见 | ✅ | 队列/审核响应含进度；E2E 断言 `第 1/2 级`、`第 0/1 级`、`终审通过`/`通过` |
+| AC-P4-06 | 默认行为不变 | ✅ | `required=1` 即时终审、存量行默认 1；173 条定向回归通过 |
+| AC-P4-07 | 无回归 | ✅ | 上述测试/E2E 全绿；修复 P3 遗留 DDL 契约测试 |
+
+### 15.8 边界与遗留
+
+1. **未强制不同审核人**：DPS 无分级角色模型，P4 仅留痕；按角色路由审核任务需 IAM 配套，另立需求。
+2. **审核超时/催办/转交**未实现，需任务调度与通知通道。
+3. **存量 `pending` 行不追溯补审**：按 `required=1` 单级收口，避免改变既有语义。
+4. **测试环境提示**：Playwright trace + DPS 大响应会触发前端 8s 超时，回归命令建议附 `--trace=off`（非功能缺陷，已在本章记录）。
 
 

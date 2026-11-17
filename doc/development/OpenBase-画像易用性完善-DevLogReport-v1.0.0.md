@@ -1,9 +1,9 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.7.0
+- 版本：v1.8.0
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.3.0
-- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）；`doc/spec/p2-template-explainability-2026-11-17/tasks.md`；`doc/spec/p3-policy-execution-2026-11-17/tasks.md`
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.4.0
+- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）；`doc/spec/p2-template-explainability-2026-11-17/tasks.md`；`doc/spec/p3-policy-execution-2026-11-17/tasks.md`；`doc/spec/p4-multi-level-review-2026-11-17/tasks.md`
 - 日期：2026-11-17
 - 作者：AI 编码代理
 
@@ -21,6 +21,7 @@
 | v1.5.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口 + 接口登录注入），评分项弹窗走查转 PASS 并留证据截图 | AI 编码代理 |
 | v1.6.0 | 2026-11-17 | P2 落地：模板四联视图、标注字段映射提示、画像维度规则级展开、缺口警示；新增 3 个 DPS 只读接口 + 3 条代理 + 15 条单测 + 2 条 E2E | AI 编码代理 |
 | v1.7.0 | 2026-11-17 | P3 落地：`annotation.evidence_source` 幂等演进、证据策略审核门禁、异常规则求值、孤儿标注模板治理报告；2 个 DPS 只读接口 + 2 条代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E | AI 编码代理 |
+| v1.8.0 | 2026-11-17 | P4 落地：逐级审核状态机、应审级数快照、审核留痕表与只读接口、前端进度/终审按钮/留痕弹窗；35 条单测 + 1 条代理 + 2 条 E2E；修复 P3 遗留 DDL 契约冻结列 | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -246,3 +247,38 @@
 证据截图：`doc/test/evidence/s6/ui-e2e/p3-evidence-source.png`、`p3-anomaly-alerts.png`、`p3-template-policy.png`。
 
 已知边界：多级审核（`review_levels>1`）仅告警未实现；字符串条件不求值（`evaluable=false`）；孤儿模板仅给建议不自动改数据；`social` / `crime` 字段仍待业务确认。
+
+## 15. P4：多级审核（v1.8.0）
+
+依据治理方案 v1.4.0 §15 与 `doc/spec/p4-multi-level-review-2026-11-17/spec.md`（v1.0.0，已批准）实施。目标：让 `evidence_policy.review_levels` 真实生效，标注逐级通过后才终审并联动标签；全流程留痕、可查询，默认单级行为不变。
+
+| 仓库 | 模块 | 说明 |
+|---|---|---|
+| DPS | `ddl/schema_profile_dependents.py` | `annotation.review_level` / `review_levels_required` 列 + `annotation_review_log` 建表/索引（双后端单一来源） |
+| DPS | `database.py` | `_ensure_annotation_review_progress()`：PG/ SQLite 幂等演进（列 + 表），接入启动装配链 |
+| DPS | `engines/annotation_template_engine.py` | `resolve_review_outcome`（逐级状态机）、`review_annotation` 进度持久化与列缺失降级、`record_review_log`/`query_review_logs`、创建时级数快照、队列/详情读取进度 |
+| DPS | `engines/p3_policies.py` | `parse_review_levels` / `normalize_review_levels`（1~5）；`review_levels_supported` 按上限判定 |
+| DPS | `rest_api/routes/routes_profiles.py` | 审核响应 `review{level,required,finalized}` + `review_log_persisted`；仅终审联动；新增 `GET /portrait/annotations/{id}/review-log` |
+| DPS | `tests/test_p4_multi_level_review.py`（新增） | 35 条单测 |
+| DPS | `tests/test_v2_11_ddl_profile_dependents.py` | 修正 `annotation` 冻结列（补 `evidence_source` 与 P4 两列） |
+| OpenBase | `modules/dps_proxy/__init__.py` | 审核留痕代理路由 |
+| OpenBase | `tests/test_dps_proxy_routes_v1410.py` | 注册/不遮蔽断言 |
+| 前端 | `core/api/dps.ts` | 进度类型 + 留痕类型 + `getAnnotationReviewLog`；队列行补进度字段 |
+| 前端 | `DpsAnnotationWorkbenchView.vue` | 审核进度列、分级按钮与提示、审核记录弹窗 |
+| 前端 | `DpsTemplateListView.vue` | 移除单级限制警示 |
+| 前端 | `tests/e2e/portrait-multilevel-review.spec.ts`（新增） | 2 条用例（进度/按钮文案、留痕弹窗） |
+
+验证：
+
+| 项 | 结果 |
+|---|---|
+| `pytest src/tests/test_p4_multi_level_review.py` | 35 passed |
+| DPS 定向回归（P4 + P3 + P2 + P1 + P0 + 标注链 + DDL 契约） | 173 passed |
+| `pytest tests/test_dps_proxy_routes_v1410.py -q` | 52 passed |
+| `ruff check` / `vue-tsc` / `eslint` | 0 错误 |
+| E2E（headless 1440×900） | `portrait-multilevel-review.spec.ts` 2 passed；回归 `portrait-policies` 3 passed、`portrait-lineage` 2 passed（`--trace=off`） |
+| 真实链路冒烟（经代理） | 创建多级标注（required=2）→ 第 1 级通过 → `status=pending`、`review.level=1`、留痕 total=1 |
+
+证据截图：`doc/test/evidence/s6/ui-e2e/p4-review-progress.png`、`p4-review-log.png`。
+
+已知边界：不强制不同审核人（仅留痕）；审核超时/催办/转交未实现；存量 pending 行按 `required=1` 单级收口；Playwright trace 对大响应有 8s 影响，回归建议 `--trace=off`。
