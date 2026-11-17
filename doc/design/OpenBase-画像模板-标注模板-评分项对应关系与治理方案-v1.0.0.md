@@ -4,8 +4,8 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.2.0 |
-| 状态 | [Approved]（评审通过；P0、P1、P2 均已实施并验证） |
+| 文档版本 | v1.3.0 |
+| 状态 | [Approved]（评审通过；P0、P1、P2、P3 均已实施并验证） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
 | 评审人 | 需求方 / 技术负责人 |
@@ -20,6 +20,7 @@
 | v1.1.0 | 2026-11-16 | 实施 P1（D-04 采纳 A：来源隔离保留多行）：标注模板字段治理、`profile_tag` 来源列与读侧择优、维度标注来源缺口提示、`tag_bindings` 迁移、重算/回滚脚本；补 §12 实施结果与验证证据 | AI 编码代理 |
 | v1.1.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口），前端评分项弹窗验证由 BLOCKED 转 PASS，补证据截图与执行方式 | AI 编码代理 |
 | v1.2.0 | 2026-11-17 | 实施 P2「前端可解释性」：DPS 新增模板 lineage / 标注字段映射 / 画像维度明细三个只读接口，OpenBase 三代理路由，前端四联视图与维度展开；补 §13 实施结果与验证证据 | AI 编码代理 |
+| v1.3.0 | 2026-11-17 | 实施 P3「策略执行与孤儿治理」：证据来源落库与审核门禁、异常规则求值、孤儿标注模板治理报告；DPS 2 只读接口 + OpenBase 2 代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E；补 §14 实施结果与验收对照 | AI 编码代理 |
 
 ---
 
@@ -463,5 +464,103 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 1. P2 **不改变**评分算法、写路径与既有接口返回；`scoring-items` 仅做实现复用，响应结构保持不变。
 2. 维度明细每维度查询一次 `profile_tag`（单画像 6 次读），当前场景可接受；批量画像下钻如需性能优化另行评审。
 3. §12.7 的两项业务遗留（`social`/`crime` 无标注字段、同名标签语义歧义）仍由业务确认；P2 已使这两类缺口在页面可见。
+
+---
+
+## 14. P3 实施结果与验证证据（v1.3.0）
+
+依据 §6 的 G-10（`evidence_policy` / `anomaly_rules` 仅校验不执行）与 §12.7 / §13.6 遗留实施。P3 让模板上**已声明但从未执行**的两类策略真正生效，并补孤儿标注模板治理入口；**不改变评分算法与默认行为**。
+
+### 14.1 交付物清单
+
+| 仓库 | 交付物 | 说明 |
+|---|---|---|
+| DPS | `src/ddl/schema_profile_dependents.py` | `annotation.evidence_source` 建表列（PG `VARCHAR(200)` / SQLite `TEXT`）+ ALTER 常量（DDL 单一来源） |
+| DPS | `src/database.py` | `_ensure_annotation_evidence_source()`：PG `ADD COLUMN IF NOT EXISTS`；SQLite `PRAGMA table_info` 探测后 ALTER；接入启动装配链 |
+| DPS | `src/engines/p3_policies.py`（新增） | 规则上下文双键、异常规则求值、证据策略校验、孤儿模板识别、画像预警聚合、策略装载 |
+| DPS | `src/engines/annotation_template_engine.py` | 创建/读取标注时按实际列集合动态写入 `evidence_source`；列缺失降级且如实标注 `evidence_source_persisted=false` |
+| DPS | `src/rest_api/routes/routes_profiles.py` | 创建标注接受 `evidence_source`（≤200）；审核通过前证据门禁（409）；通过后求值异常规则；新增 2 条只读路由 |
+| DPS | `src/tests/test_p3_policies_v3.py`（新增） | 20 条单测（含写路径落库、审核门禁 409、审核响应装配） |
+| OpenBase | `openbase/modules/dps_proxy/__init__.py` | 2 条代理路由（静态段注册在动态段之前） |
+| OpenBase | `tests/test_dps_proxy_routes_v1410.py` | 2 条注册断言 + `governance` 静态段不被 `/portraits/{person_id}` 遮蔽断言 |
+| 前端 | `src/core/api/dps.ts` | 5 个类型 + `getPortraitAnomalyAlerts` / `getOrphanAnnotationTemplates`；创建标注载荷补 `evidence_source` |
+| 前端 | `DpsAnnotationWorkbenchView.vue` | 「证据来源（文书编号）」输入 + 按模板策略动态必填提示 + 409 文案展示 |
+| 前端 | `PortraitDetail.vue` | 「异常预警」区块：规则/动作/来源标注时间 + 未执行规则警示 |
+| 前端 | `DpsTemplateListView.vue` | 评分项页签策略摘要（证据来源 / 审核级数 / 异常规则）+ 多级审核未支持警示 |
+| 前端 | `tests/e2e/portrait-policies.spec.ts`（新增） | 3 条 headless 走查用例（策略摘要 / 证据来源 / 异常预警） |
+
+### 14.2 数据模型与幂等演进
+
+| 对象 | 变更 | 幂等策略 |
+|---|---|---|
+| `annotation.evidence_source` | 新增可空列（不建索引、不回填） | PG `ADD COLUMN IF NOT EXISTS`；SQLite PRAGMA 探测后 ALTER |
+| 启动装配 | `_ensure_annotation_evidence_source()` | 与既有 `_ensure_*` 同链执行，重复启动无副作用 |
+
+存量行 `evidence_source=NULL`；模板未声明 `require_source` 时不受影响。
+
+### 14.3 策略执行语义
+
+1. **证据策略**：`require_source=true` 且来源为空 → 审核通过被拒（409，状态不变更）；证据列未迁移时**降级放行**并 `logger.warning`，响应标注 `persisted=false / enforced=false`。
+2. **异常规则**：仅结构化条件（`{all|any: [{field,op,value}]}`）可执行，复用 `engines/portrait/conditions.py`；字符串表达式返回 `evaluable=false` 且**不执行**；求值异常被捕获，不影响审核成功。
+3. **多级审核**：`review_levels>1` 仅告警（响应 `review_levels_supported=false` + 页面警示），当前审核状态机仍为单级 `pending → approved/rejected/modified`。
+4. **默认行为不变**：策略为空时创建/审核语义与 P2 一致，仅新增可选字段。
+
+### 14.4 新增接口契约
+
+| 接口 | 用途 | 关键返回 | 错误语义 |
+|---|---|---|---|
+| `GET /api/v2/portrait/{person_id}/anomaly-alerts?template_code=&limit=` | 画像异常预警聚合（只读） | `person_id` / `template_code` / `scanned` / `alerts[]`（`rule`/`action`/`matched`/`evaluable`/`reason`/`annotation_id`/`created_at`）/ `unevaluated_rules[]` | 画像不存在 404 |
+| `GET /api/v2/portrait/governance/orphan-annotation-templates` | 孤儿标注模板治理报告（只读，给建议不改数据） | `items[]`（`code`/`name`/`status`/`owned_by`/`suggested_action`/`reason`）/ `total` | — |
+
+审核响应新增 `evidence`（`required`/`provided`/`satisfied`/`review_levels`/`review_levels_supported`/`persisted`/`enforced`）与 `anomaly_alerts[]`；创建标注响应新增 `evidence_source` / `evidence_source_persisted`。
+
+### 14.5 前端落地
+
+| 能力 | 呈现位置 | 关键标识 |
+|---|---|---|
+| 证据来源录入 | 标注工作台表单「证据来源（文书编号）」，必填态随归属模板策略变化 | `annotation-evidence-source` |
+| 异常预警 | 画像详情维度卡片下方：规则 + 动作 + 标注时间；未执行规则警示 | `portrait-anomaly-alerts`、`portrait-anomaly-alert`、`portrait-anomaly-unevaluated` |
+| 策略摘要 | 模板详情「评分项」页签顶部：证据来源 / 审核级数 / 异常规则条数 | `template-policy-summary`、`template-evidence-policy`、`template-review-levels`、`template-anomaly-rule-count` |
+| 多级审核警示 | 同上，`review_levels>1` 时显示 | `template-review-levels-warning` |
+
+### 14.6 验证证据
+
+| 项目 | 命令 | 结果 |
+|---|---|---|
+| DPS P3 单测 | `pytest src/tests/test_p3_policies_v3.py` | 20 passed；`engines.p3_policies` 行覆盖率 99% |
+| DPS 定向回归 | P3 + P2 + P1 + P0 + annotation chain | 95 passed |
+| DPS 静态检查 | `ruff check`（新增/改动文件） | All checks passed |
+| OpenBase 代理测试 | `pytest tests/test_dps_proxy_routes_v1410.py -q` | 50 passed |
+| OpenBase 静态检查 | `ruff check` | All checks passed |
+| 前端类型检查 | `vue-tsc --noEmit` | 0 错误 |
+| 前端静态检查 | `eslint`（改动 4 文件 + 新 E2E） | 0 错误 |
+| 前端 E2E | `portrait-policies.spec.ts`（headless 1440×900） | 3 passed |
+| E2E 回归 | `portrait-lineage.spec.ts` + `portrait-scoring-sources.spec.ts` | 3 passed |
+| 运行时冒烟（经 OpenBase 代理） | 孤儿报告 / 画像预警 | 孤儿 `total=2`（`cor-anno-eposition-v1` → `cor-persona-assess-v1`；`cor-anno-category-v1` → `cor-persona-root-v1`）；`anomaly-alerts` 200（样例画像暂无已审核标注，`scanned=0`） |
+
+证据截图：
+
+- `doc/test/evidence/s6/ui-e2e/p3-evidence-source.png`（证据来源录入）
+- `doc/test/evidence/s6/ui-e2e/p3-anomaly-alerts.png`（异常预警区块）
+- `doc/test/evidence/s6/ui-e2e/p3-template-policy.png`（评分项策略摘要）
+
+### 14.7 验收标准对照
+
+| 编号 | 验收项 | 结论 | 证据 |
+|---|---|---|---|
+| AC-P3-01 | 证据来源可写入 | ✅ | 单测 `test_create_structured_annotation_persists_evidence_source`（INSERT 含列且参数含来源、响应回显）；E2E 工作台可录入 |
+| AC-P3-02 | 证据门禁生效 | ✅ | 单测 `test_review_blocks_approval_without_evidence_source`（409 + 明确文案）；`test_review_returns_evidence_and_anomaly_alerts`（有来源放行） |
+| AC-P3-03 | 异常规则可执行 | ✅ | 单测同上：结构化条件 `matched=true`；字符串条件 `evaluable=false` 且审核成功 |
+| AC-P3-04 | 画像预警可见 | ✅ | E2E「画像详情展示异常预警区块」PASS + 截图 `p3-anomaly-alerts.png` |
+| AC-P3-05 | 孤儿治理可见 | ✅ | 运行时冒烟 `total=2`，含建议动作 `bind_to_owner` 与归属模板 |
+| AC-P3-06 | 默认行为不变 | ✅ | 空策略走 `load_policy_bundle` 默认空策略分支；审核响应仅新增可选字段；DPS 95 条定向回归全通过 |
+| AC-P3-07 | 无回归 | ✅ | DPS 95 passed；OpenBase 50 passed；`vue-tsc`/`eslint` 0 错误；3 条新 E2E + 3 条回归 E2E 全 PASS |
+
+### 14.8 边界与遗留
+
+1. **多级审核未支持**：需重做审核状态机与审核 UI，P3 仅显式告警，登记为后续需求（建议 P4）。
+2. **字符串条件不求值**：避免任意表达式执行风险，页面与响应均标注 `evaluable=false` 并提示改为结构化条件。
+3. **孤儿模板只给建议**：治理报告不自动改数据（G-05/G-06 的最终处置需业务裁定归属或停用）。
+4. **G-08 仍在业务侧**：`social` / `crime` 无标注来源字段，P1/P2 已页面提示，P3 未扩围。
 
 

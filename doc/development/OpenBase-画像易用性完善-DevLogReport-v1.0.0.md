@@ -1,9 +1,9 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.6.0
+- 版本：v1.7.0
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.2.0
-- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）；`doc/spec/p2-template-explainability-2026-11-17/tasks.md`
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.3.0
+- 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）；`doc/spec/p2-template-explainability-2026-11-17/tasks.md`；`doc/spec/p3-policy-execution-2026-11-17/tasks.md`
 - 日期：2026-11-17
 - 作者：AI 编码代理
 
@@ -20,6 +20,7 @@
 | v1.5.0 | 2026-11-16 | P1 落地：标注模板字段治理（`tag_key`/`score_map`）、`profile_tag` 来源维度与读侧择优、维度标注来源缺口提示、`tag_bindings` 迁移、一次性重算与回滚脚本；补 20 条单测并完成迁移/重算/回滚实跑 | AI 编码代理 |
 | v1.5.1 | 2026-11-17 | 修复前端走查环境阻塞：新增 Playwright headless 走查用例（固定视口 + 接口登录注入），评分项弹窗走查转 PASS 并留证据截图 | AI 编码代理 |
 | v1.6.0 | 2026-11-17 | P2 落地：模板四联视图、标注字段映射提示、画像维度规则级展开、缺口警示；新增 3 个 DPS 只读接口 + 3 条代理 + 15 条单测 + 2 条 E2E | AI 编码代理 |
+| v1.7.0 | 2026-11-17 | P3 落地：`annotation.evidence_source` 幂等演进、证据策略审核门禁、异常规则求值、孤儿标注模板治理报告；2 个 DPS 只读接口 + 2 条代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -209,3 +210,39 @@
 | E2E（headless 1440×900） | 3 passed（2 条 P2 + 1 条 P1 回归）；截图 `p2-template-lineage.png`、`p2-dimension-details.png` |
 
 已知边界：维度明细按维度读取 `profile_tag`（单画像 6 次读），批量画像场景如需优化另行评审；`social` / `crime` 无标注字段仍待业务确认（页面已提示）。
+
+## 14. P3：策略执行与孤儿治理（v1.7.0）
+
+依据治理方案 v1.3.0 §14 与 `doc/spec/p3-policy-execution-2026-11-17/spec.md`（v1.0.0，已批准）实施。目标：让模板上已声明但从未执行的证据策略与异常规则真正生效，并给出孤儿标注模板治理入口；不改评分算法与默认行为。
+
+| 仓库 | 模块 | 说明 |
+|---|---|---|
+| DPS | `ddl/schema_profile_dependents.py` | `annotation.evidence_source` 建表列（PG `VARCHAR(200)` / SQLite `TEXT`）+ ALTER 常量（单一来源） |
+| DPS | `database.py` | `_ensure_annotation_evidence_source()`：PG `ADD COLUMN IF NOT EXISTS`；SQLite PRAGMA 探测后 ALTER；接入 `_ensure_*` 装配链 |
+| DPS | `engines/p3_policies.py`（新增） | `build_rule_context`（裸 key + `dim:tag_key` 双键）、`evaluate_anomaly_rules`、`check_evidence_policy`、`collect_orphan_annotation_templates`、`build_portrait_anomaly_alerts`、`load_policy_bundle` |
+| DPS | `engines/annotation_template_engine.py` | 写/读标注按实际列集合动态拼接 `evidence_source`；列缺失降级 `evidence_source_persisted=false` |
+| DPS | `rest_api/routes/routes_profiles.py` | 创建标注接受 `evidence_source`（>200 → 400）；审核通过前证据门禁（409）；通过后求值异常规则；新增 2 条只读路由 |
+| DPS | `tests/test_p3_policies_v3.py`（新增） | 20 条单测（规则上下文/求值/证据策略/孤儿/预警聚合/写路径/审核门禁与响应） |
+| OpenBase | `modules/dps_proxy/__init__.py` | `GET /governance/orphan-annotation-templates`、`GET /portraits/{person_id}/anomaly-alerts`（静态段先于动态段） |
+| OpenBase | `tests/test_dps_proxy_routes_v1410.py` | 2 条注册断言 + governance 静态段不遮蔽断言 |
+| 前端 | `core/api/dps.ts` | `DpsEvidencePolicy` / `DpsEvidenceCheck` / `DpsAnomalyAlert` / `DpsPortraitAnomalyAlerts` / `DpsOrphanAnnotationTemplate`；2 个方法；创建载荷补 `evidence_source` |
+| 前端 | `DpsAnnotationWorkbenchView.vue` | 「证据来源（文书编号）」输入 + 按模板策略动态必填 + 409 文案展示 |
+| 前端 | `PortraitDetail.vue` | 「异常预警」区块（规则/动作/时间 + 未执行规则警示） |
+| 前端 | `DpsTemplateListView.vue` | 评分项页签策略摘要（证据来源/审核级数/异常规则）+ 多级审核未支持警示 |
+| 前端 | `tests/e2e/portrait-policies.spec.ts`（新增） | 3 条 headless 用例：策略摘要 / 证据来源录入 / 异常预警区块 |
+
+验证：
+
+| 项 | 结果 |
+|---|---|
+| `pytest src/tests/test_p3_policies_v3.py` | 20 passed；`engines.p3_policies` 行覆盖率 99% |
+| DPS 定向回归（P3 + P2 + P1 + P0 + annotation chain） | 95 passed |
+| `pytest tests/test_dps_proxy_routes_v1410.py -q` | 50 passed |
+| `ruff check`（DPS 新增/改动文件、OpenBase 改动文件） | All checks passed |
+| `vue-tsc --noEmit` / `eslint`（4 文件 + 新 E2E） | 0 错误 |
+| E2E（headless 1440×900） | `portrait-policies.spec.ts` 3 passed；回归 `portrait-lineage.spec.ts` + `portrait-scoring-sources.spec.ts` 3 passed |
+| 运行时冒烟（经 OpenBase 代理） | 孤儿报告 `total=2`（建议 `bind_to_owner`）；`anomaly-alerts` 200（样例画像 `scanned=0`，区块显示「暂无」） |
+
+证据截图：`doc/test/evidence/s6/ui-e2e/p3-evidence-source.png`、`p3-anomaly-alerts.png`、`p3-template-policy.png`。
+
+已知边界：多级审核（`review_levels>1`）仅告警未实现；字符串条件不求值（`evaluable=false`）；孤儿模板仅给建议不自动改数据；`social` / `crime` 字段仍待业务确认。
