@@ -264,3 +264,33 @@ def test_p2_dimension_details_is_independent_route() -> None:
     )
     assert len(dimension_details) == 1
     assert dimension_details[0] not in detail
+
+
+# ---------------------------------------------------------------------------
+# 6. P3 策略执行路由（2026-11-17）
+# ---------------------------------------------------------------------------
+
+P3_POLICY_ROUTES = [
+    ("/portraits/{person_id}/anomaly-alerts", "GET"),
+    ("/governance/orphan-annotation-templates", "GET"),
+]
+
+
+@pytest.mark.parametrize(
+    ("path", "method"),
+    P3_POLICY_ROUTES,
+    ids=[f"p3-{method}-{path}" for path, method in P3_POLICY_ROUTES],
+)
+def test_p3_policy_route_registered(path: str, method: str) -> None:
+    """P3 两条只读策略路由均以精确路径 ＋ GET 注册."""
+    matched = _matched_routes(f"{PREFIX}{path}")
+    assert matched, f"P3 路由未注册: {PREFIX}{path}"
+    assert method in _methods_of(matched), f"P3 路由方法缺失: {method} {path}"
+
+
+def test_p3_governance_static_segment_not_shadowed() -> None:
+    """``/governance/orphan-annotation-templates`` 不被 ``/portraits/{person_id}`` 遮蔽."""
+    detail = _matched_routes(f"{PREFIX}/portraits/{{person_id}}")
+    governance = _matched_routes(f"{PREFIX}/governance/orphan-annotation-templates")
+    assert len(governance) == 1
+    assert governance[0] not in detail

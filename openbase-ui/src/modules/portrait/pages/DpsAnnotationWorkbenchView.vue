@@ -59,6 +59,19 @@
               <div class="hint">结构化标注要求主体已有画像，否则后端返回「画像不存在」。</div>
             </el-form-item>
 
+            <el-form-item label="证据来源（文书编号）" :required="evidenceRequired">
+              <el-input
+                v-model="evidenceSource"
+                maxlength="200"
+                show-word-limit
+                placeholder="如 WS-2026-001"
+                data-test="annotation-evidence-source"
+              />
+              <div class="hint">
+                {{ evidenceRequired ? '该画像模板要求证据来源，缺失将无法审核通过' : '可选：填写后可追溯标注依据' }}
+              </div>
+            </el-form-item>
+
             <el-form-item v-for="field in schema" :key="field.key" :label="fieldLabel(field)" :required="!!field.required">
               <el-select
                 v-if="field.type === 'enum'"
@@ -201,6 +214,7 @@ import {
   type DpsAnnotationFieldMappingEntry,
   type DpsAnnotationRow,
   type DpsAnnotationTemplate,
+  type DpsEvidencePolicy,
 } from '@/core/api/dps'
 import { describeDpsError } from '@/core/api/error'
 
@@ -214,6 +228,10 @@ const pageError = ref('')
 /** P2：字段 → 标签 → 评分项映射（按当前标注模板拉取） */
 const fieldMapping = ref<DpsAnnotationFieldMapping | null>(null)
 const mappingLoading = ref(false)
+/** P3：证据来源与归属模板证据策略 */
+const evidenceSource = ref('')
+const evidencePolicy = ref<DpsEvidencePolicy | null>(null)
+const evidenceRequired = computed(() => !!evidencePolicy.value?.require_source)
 
 const rows = ref<DpsAnnotationRow[]>([])
 const total = ref(0)
@@ -264,17 +282,20 @@ function fieldHint(field: DpsAnnotationField): string {
 async function loadFieldMapping() {
   if (!selectedTemplate.value) {
     fieldMapping.value = null
+    evidencePolicy.value = null
     return
   }
   mappingLoading.value = true
-  try {
-    fieldMapping.value = await dpsApi.getAnnotationFieldMapping(selectedTemplate.value)
-  } catch {
-    // 映射仅用于解释，失败时降级为原维度提示，不阻断录入
-    fieldMapping.value = null
-  } finally {
-    mappingLoading.value = false
-  }
+  const templateCode = currentTemplate.value?.template_code
+  const [mappingResult, templateResult] = await Promise.allSettled([
+    dpsApi.getAnnotationFieldMapping(selectedTemplate.value),
+    templateCode ? dpsApi.getTemplate(templateCode) : Promise.resolve(null),
+  ])
+  // 映射/策略仅用于解释与必填提示，失败时降级，不阻断录入
+  fieldMapping.value = mappingResult.status === 'fulfilled' ? mappingResult.value : null
+  evidencePolicy.value =
+    templateResult.status === 'fulfilled' ? templateResult.value?.evidence_policy || null : null
+  mappingLoading.value = false
 }
 
 function safeParse(text: string): unknown {
@@ -313,6 +334,7 @@ function resetForm() {
   Object.keys(values).forEach((key) => delete values[key])
   submitError.value = ''
   personId.value = ''
+  evidenceSource.value = ''
   applyDefaults()
 }
 
@@ -326,6 +348,7 @@ function applyDefaults() {
 async function onTemplateChange() {
   Object.keys(values).forEach((key) => delete values[key])
   submitError.value = ''
+  evidenceSource.value = ''
   applyDefaults()
   await loadFieldMapping()
 }
@@ -363,6 +386,10 @@ async function submit() {
     submitError.value = `请填写必填字段：${missing.join('、')}`
     return
   }
+  if (evidenceRequired.value && !evidenceSource.value.trim()) {
+    submitError.value = '该画像模板要求证据来源（文书编号），请补充后提交'
+    return
+  }
 
   const fields: Record<string, unknown> = {}
   schema.value.forEach((field) => {
@@ -381,6 +408,7 @@ async function submit() {
       template_code: currentTemplate.value?.template_code,
       fields,
       created_by: 'operator',
+      evidence_source: evidenceSource.value.trim() || undefined,
     })
     ElMessage.success('标注已提交，进入待审核队列')
     const template = selectedTemplate.value

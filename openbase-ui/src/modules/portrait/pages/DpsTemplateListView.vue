@@ -184,6 +184,29 @@
 
           <!-- ④ 评分项 -->
           <el-tab-pane label="评分项" name="scoring" data-test="template-tab-scoring">
+            <div class="policy-summary mb-12" data-test="template-policy-summary">
+              <el-tag
+                size="small"
+                :type="evidencePolicy?.require_source ? 'warning' : 'info'"
+                data-test="template-evidence-policy"
+              >
+                证据来源：{{ evidencePolicy?.require_source ? '审核前必填' : '可选' }}
+              </el-tag>
+              <el-tag size="small" type="info" data-test="template-review-levels">
+                审核级数：{{ reviewLevels }}
+              </el-tag>
+              <el-tag size="small" type="info" data-test="template-anomaly-rule-count">
+                异常规则：{{ anomalyRuleCount }} 条
+              </el-tag>
+              <el-tag
+                v-if="multiLevelUnsupported"
+                size="small"
+                type="warning"
+                data-test="template-review-levels-warning"
+              >
+                当前仅支持单级审核（配置 {{ reviewLevels }} 级将被忽略）
+              </el-tag>
+            </div>
             <el-empty v-if="!scoring" description="模板未激活，无运行时评分口径" :image-size="48" />
             <template v-else>
               <div class="muted sm mb-8">
@@ -255,6 +278,14 @@ const filteredItems = computed(() => {
 
 /** 标签产出行（标签 → 字段 → 命中评分项），供第三页签平铺展示 */
 const scoring = computed(() => lineage.value?.scoring || null)
+/** P3：模板策略摘要（证据策略 / 审核级数 / 异常规则） */
+const evidencePolicy = computed(() => detail.value?.evidence_policy || null)
+const reviewLevels = computed(() => evidencePolicy.value?.review_levels ?? 1)
+const multiLevelUnsupported = computed(() => reviewLevels.value > 1)
+const anomalyRuleCount = computed(() => {
+  const rules = detail.value?.anomaly_rules
+  return Array.isArray(rules) ? rules.length : 0
+})
 const tagRows = computed(() =>
   (lineage.value?.annotation_templates || []).flatMap((view) =>
     view.tag_outputs.map((output) => ({
@@ -340,6 +371,7 @@ onMounted(() => {
 .lineage-node.current { border-color: var(--ob-primary); background: var(--ob-primary-lighter, #f8fbff); }
 .lineage-code { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; }
 .scoring-dim { margin-bottom: 14px; }
+.policy-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .scoring-dim-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
 .hit-text { display: inline-flex; flex-direction: column; gap: 2px; font-size: 12px; }
 </style>

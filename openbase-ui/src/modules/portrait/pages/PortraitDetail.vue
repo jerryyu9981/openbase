@@ -398,6 +398,46 @@
                 </div>
               </div>
             </el-card>
+
+            <el-card class="mb-16" data-test="portrait-anomaly-alerts">
+              <template #header>
+                <div class="card-head">
+                  <span>异常预警</span>
+                  <span class="muted sm">
+                    {{ anomalyAlerts.length ? `${anomalyAlerts.length} 条命中` : '暂无' }}
+                  </span>
+                </div>
+              </template>
+              <div v-if="anomalyLoading" class="muted sm">加载中…</div>
+              <el-alert
+                v-else-if="anomalyError"
+                type="error"
+                show-icon
+                :closable="false"
+                :title="anomalyError"
+              />
+              <template v-else>
+                <div
+                  v-for="(alert, index) in anomalyAlerts"
+                  :key="`${alert.rule}-${alert.annotation_id || index}`"
+                  class="anomaly-row"
+                  data-test="portrait-anomaly-alert"
+                >
+                  <el-tag size="small" type="danger">{{ alert.rule }}</el-tag>
+                  <span class="anomaly-action">{{ alert.action || '—' }}</span>
+                  <span class="muted sm">{{ alert.created_at || '' }}</span>
+                </div>
+                <div v-for="rule in anomalyUnevaluated" :key="rule" class="anomaly-row">
+                  <el-tag size="small" type="warning" data-test="portrait-anomaly-unevaluated">
+                    规则未执行
+                  </el-tag>
+                  <span class="muted sm">{{ rule }}：需改为结构化条件</span>
+                </div>
+                <div v-if="!anomalyAlerts.length && !anomalyUnevaluated.length" class="muted sm">
+                  暂无异常预警
+                </div>
+              </template>
+            </el-card>
           </el-col>
 
           <!-- 标签 -->
@@ -557,6 +597,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   dpsApi,
+  type DpsAnomalyAlert,
   type DpsPortrait,
   type DpsPortraitCalcTask,
   type DpsPortraitDimensionDetails,
@@ -645,6 +686,11 @@ const dimensionDetailLoading = ref('')
 const dimensionDetailError = ref('')
 const dimensionDetailCache = ref<Record<string, DpsPortraitDimensionDetails>>({})
 const dimensionDetailCacheKey = computed(() => selectedTemplate.value || '__default__')
+/** P3：异常预警（按当前口径模板） */
+const anomalyAlerts = ref<DpsAnomalyAlert[]>([])
+const anomalyUnevaluated = ref<string[]>([])
+const anomalyLoading = ref(false)
+const anomalyError = ref('')
 const currentDimensionDetail = computed(() => {
   const payload = dimensionDetailCache.value[dimensionDetailCacheKey.value]
   return payload?.dimensions.find((item) => item.code === expandedDimension.value) || null
@@ -1017,6 +1063,25 @@ async function toggleDimensionDetails(dimensionCode: string) {
   }
 }
 
+/** 加载当前口径模板的异常预警（P3，只读；失败仅提示不影响主信息） */
+async function loadAnomalyAlerts() {
+  if (!personId) return
+  anomalyLoading.value = true
+  anomalyError.value = ''
+  try {
+    const payload = await dpsApi.getPortraitAnomalyAlerts(personId, {
+      template_code: selectedTemplate.value || undefined,
+    })
+    anomalyAlerts.value = payload.alerts || []
+    anomalyUnevaluated.value = payload.unevaluated_rules || []
+  } catch (err) {
+    const described = describeError(err)
+    anomalyError.value = described.detail || described.title || '异常预警加载失败'
+  } finally {
+    anomalyLoading.value = false
+  }
+}
+
 /** 标签值展示（列表/对象兜底为 JSON 字符串，避免表格出现 [object Object]） */
 function formatRuleValue(value: unknown): string {
   if (value === null || value === undefined) return '—'
@@ -1131,6 +1196,7 @@ async function onTemplateChange() {
   presentation.value = null
   try {
     await loadTemplateResult()
+    await loadAnomalyAlerts()
   } catch (err) {
     presentation.value = describeError(err)
   } finally {
@@ -1155,6 +1221,7 @@ async function loadData() {
   try {
     profile.value = await dpsApi.getPortrait(personId)
     await loadTemplateResult()
+    await loadAnomalyAlerts()
   } catch (err) {
     profile.value = null
     presentation.value = describeError(err)
@@ -1193,6 +1260,8 @@ onMounted(() => {
 .dimension-row { cursor: pointer; padding: 6px 8px; border-radius: 8px; transition: background 0.2s; }
 .dimension-row:hover { background: #f3f4f6; }
 .dimension-details { margin-top: 8px; cursor: default; }
+.anomaly-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.anomaly-action { font-size: 13px; color: var(--ob-text-primary); }
 .dimension-row-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
 .dimension-name { font-weight: 600; font-size: 13px; color: #374151; }
 .dimension-score { font-size: 15px; font-weight: 600; color: #2563eb; }

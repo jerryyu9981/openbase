@@ -65,7 +65,9 @@ export interface DpsPortraitTemplate {
   dimension_config?: unknown
   attributes_schema?: unknown
   tag_bindings?: unknown
-  evidence_policy?: unknown
+  /** 证据策略（P3） */
+  evidence_policy?: DpsEvidencePolicy | null
+  /** 异常规则（P3；结构化条件可执行，字符串条件仅提示） */
   anomaly_rules?: unknown
   [key: string]: unknown
 }
@@ -466,6 +468,71 @@ export interface DpsPortraitDimensionDetails {
   overall_score: number
   missing_policy: { score: number; note: string }
   dimensions: DpsDimensionDetail[]
+}
+
+/* ==================== P3 策略执行（证据来源 / 异常预警 / 孤儿治理） ==================== */
+
+/** 模板证据策略（`review_levels>1` 当前未支持，仅提示） */
+export interface DpsEvidencePolicy {
+  require_source?: boolean
+  review_levels?: number
+  [key: string]: unknown
+}
+
+/** 审核响应的证据校验结果 */
+export interface DpsEvidenceCheck {
+  required: boolean
+  provided: boolean
+  satisfied: boolean
+  review_levels: number
+  review_levels_supported: boolean
+  persisted?: boolean
+  enforced?: boolean
+}
+
+/** 异常规则求值结果（`evaluable=false` 表示条件不可执行） */
+export interface DpsAnomalyAlert {
+  rule: string
+  action?: string | null
+  matched: boolean
+  evaluable: boolean
+  reason?: string | null
+  annotation_id?: string
+  created_at?: string
+}
+
+/** 画像异常预警聚合（P3） */
+export interface DpsPortraitAnomalyAlerts {
+  person_id: string
+  template_code?: string | null
+  scanned: number
+  alerts: DpsAnomalyAlert[]
+  /** 字符串表达式等不可求值的规则名（页面显示警示） */
+  unevaluated_rules?: string[]
+}
+
+/** 孤儿标注模板治理项（只读建议，不自动改数据） */
+export interface DpsOrphanAnnotationTemplate {
+  code: string
+  name?: string
+  status?: string
+  owned_by?: string | null
+  suggested_action: 'bind_to_owner' | 'deprecate' | string
+  reason: string
+}
+
+/** 标注创建载荷（P3 增加证据来源） */
+export interface DpsAnnotationCreatePayload {
+  action: 'create' | string
+  person_id: string
+  annotation_template?: string
+  template_code?: string
+  fields?: Record<string, unknown>
+  content?: string
+  created_by?: string
+  /** 证据来源（文书编号）；模板 `require_source=true` 时审核通过前必填 */
+  evidence_source?: string
+  [key: string]: unknown
 }
 
 export interface DpsLineageSource {
@@ -974,6 +1041,29 @@ export const dpsApi = {
     return data.data
   },
 
+  /** 画像异常预警聚合（GET /dps-proxy/portraits/{id}/anomaly-alerts；P3 只读） */
+  async getPortraitAnomalyAlerts(
+    personId: string,
+    params?: { template_code?: string; limit?: number },
+  ): Promise<DpsPortraitAnomalyAlerts> {
+    const { data } = await http.get<ApiSuccess<DpsPortraitAnomalyAlerts>>(
+      `/dps-proxy/portraits/${encodeURIComponent(personId)}/anomaly-alerts`,
+      { params },
+    )
+    return data.data
+  },
+
+  /** 孤儿标注模板治理报告（GET /dps-proxy/governance/orphan-annotation-templates；P3 只读） */
+  async getOrphanAnnotationTemplates(): Promise<{
+    items: DpsOrphanAnnotationTemplate[]
+    total: number
+  }> {
+    const { data } = await http.get<
+      ApiSuccess<{ items: DpsOrphanAnnotationTemplate[]; total: number }>
+    >('/dps-proxy/governance/orphan-annotation-templates')
+    return data.data
+  },
+
   /** 画像模板创建（POST /dps-proxy/templates，#13；400 含字段级原因／409 `code` 冲突） */
   async createTemplate(body: Partial<DpsPortraitTemplate> & { code: string }): Promise<DpsPortraitTemplate> {
     const { data } = await http.post<ApiSuccess<DpsPortraitTemplate>>('/dps-proxy/templates', body)
@@ -1082,7 +1172,7 @@ export const dpsApi = {
    * 需 `annotation_template` + `fields`，主体必须已有画像（profile）；
    * 归属门禁与字段 schema 校验由 DPS 裁决，失败返回 400 原文。
    */
-  async createAnnotation(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async createAnnotation(body: DpsAnnotationCreatePayload): Promise<Record<string, unknown>> {
     const { data } = await http.post<ApiSuccess<Record<string, unknown>>>('/dps-proxy/annotate', body)
     return data.data
   },

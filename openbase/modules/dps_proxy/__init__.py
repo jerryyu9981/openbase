@@ -446,6 +446,44 @@ async def dps_portrait_calc_task(
     )
 
 
+@router.get("/governance/orphan-annotation-templates")
+async def dps_orphan_annotation_templates(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """孤儿标注模板治理报告（P3，GET；只读）.
+
+    返回未被任何画像模板绑定的 active 标注模板及建议动作（不自动改数据）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/governance/orphan-annotation-templates"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/portraits/{person_id}/anomaly-alerts")
+async def dps_portrait_anomaly_alerts(
+    person_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像异常预警聚合（P3，GET；只读）.
+
+    对最近已审核标注按模板 ``anomaly_rules`` 求值并返回命中规则；
+    字符串条件以 ``unevaluated_rules`` 显式标注，不执行任意表达式。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", f"/api/v2/portrait/{person_id}/anomaly-alerts",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 @router.get("/portraits/{person_id}/dimension-details")
 async def dps_portrait_dimension_details(
     person_id: str,
