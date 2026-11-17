@@ -4,7 +4,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.4.1 |
+| 文档版本 | v1.4.2 |
 | 状态 | [Approved]（评审通过；P0、P1、P2、P3、P4 均已实施并验证） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
@@ -23,6 +23,7 @@
 | v1.3.0 | 2026-11-17 | 实施 P3「策略执行与孤儿治理」：证据来源落库与审核门禁、异常规则求值、孤儿标注模板治理报告；DPS 2 只读接口 + OpenBase 2 代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E；补 §14 实施结果与验收对照 | AI 编码代理 |
 | v1.4.0 | 2026-11-17 | 实施 P4「多级审核」：逐级状态机（非末级通过保持 pending）、应审级数快照、审核留痕表与只读接口、前端进度与终审按钮/留痕弹窗；顺带修复 P3 遗漏的 DDL 契约冻结列；补 §15 实施结果与验收对照 | AI 编码代理 |
 | v1.4.1 | 2026-11-17 | 修复前端代理端点 8s 超时误伤：代理超时收敛逻辑移除，统一沿用 15s 默认值（DPS 模板首查实测 7.76s）；E2E 默认 trace 全绿（multilevel 2、policies 3、lineage 2），标注页 stub 恢复为确定性数据源 | AI 编码代理 |
+| v1.4.2 | 2026-11-17 | 主备通道核查后收口两处 P4 门禁旁路：AI 候选快照应审级数、MCP approve 按级推进且仅终审联动标签；新增 5 条 DPS 单测，定向回归 107 passed | AI 编码代理 |
 
 ---
 
@@ -661,5 +662,22 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 2. **审核超时/催办/转交**未实现，需任务调度与通知通道。
 3. **存量 `pending` 行不追溯补审**：按 `required=1` 单级收口，避免改变既有语义。
 4. **前端超时已修复（v1.4.1）**：代理端点不再单独收敛到 8s，统一沿用 15s 默认值；触发证据为 DPS 模板首查 7.76s，E2E 默认 trace 回归已通过。
+
+### 15.9 主备通道核查与门禁旁路收口（v1.4.2）
+
+**核查结论**：OpenLLM 主备通道（B 主 A 备）不依赖 P4 新改的标注族接口——B 通道 DPS client 仅调用 `calculate` / `GET|PUT portrait/{id}` / `list`（探活），P4 未改动上述契约；A 通道已补齐 `GET /portrait/annotations/{id}/review-log` 代理。因此**无需 OpenLLM 侧配套改造**。
+
+**收口的两处旁路**（同属「应审级数快照」只在人工创建路径生效导致）：
+
+| 旁路 | 位置 | 修复 |
+|---|---|---|
+| AI 候选标注仅写基础列，`review_levels_required` 落默认 1 → 多级模板首次通过即终审 | `DPS src/engines/ai_annotation_engine.py` | 从 `evidence_policy.review_levels` 解析并快照 `review_level=0` / `review_levels_required=N`；缺进度列时降级 legacy 写入 |
+| MCP `portrait_annotate approve` 未读取记录进度、且在审核前同步标签 → 多级模板被一次通过绕过并提前写标签 | `DPS src/mcp_server/tools.py` | 读取记录进度后传入 `review_annotation`；仅 `finalized=true` 才同步标签；与 REST 同源写审核留痕 |
+
+**验证**：新增 5 条单测（AI 快照 2、MCP 逐级/终审 2、DDL 列集护栏 1）；`test_p4_multi_level_review.py` + `test_annotation_adapter_v2_11.py` 61 passed；定向回归（P3 策略 / 标注链路 / DDL 契约 / MCP JSON / 种子集成）107 passed；改动文件 `ruff --select F,E9,I` 0 错误。
+
+**残余观察**：
+1. MCP 输入模型无 `evidence_source` 字段，证据门禁（P3）仍未覆盖 MCP approve；补齐需扩展 MCP 入参，属独立需求。
+2. 通道 B 的 DPS 单请求超时为 5s（`DPS_TIMEOUT`），实测 B 通道所用接口冷启动 2.4~3.1s、模板列表 7.76s（不在 B 通道）；当前无失败，但余量仅约 2s，负载升高时建议上调至 10s。
 
 

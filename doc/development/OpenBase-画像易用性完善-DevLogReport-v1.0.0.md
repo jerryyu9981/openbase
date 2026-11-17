@@ -1,8 +1,8 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.8.1
+- 版本：v1.8.2
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.4.1
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.4.2
 - 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）；`doc/spec/p2-template-explainability-2026-11-17/tasks.md`；`doc/spec/p3-policy-execution-2026-11-17/tasks.md`；`doc/spec/p4-multi-level-review-2026-11-17/tasks.md`
 - 日期：2026-11-17
 - 作者：AI 编码代理
@@ -23,6 +23,7 @@
 | v1.7.0 | 2026-11-17 | P3 落地：`annotation.evidence_source` 幂等演进、证据策略审核门禁、异常规则求值、孤儿标注模板治理报告；2 个 DPS 只读接口 + 2 条代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E | AI 编码代理 |
 | v1.8.0 | 2026-11-17 | P4 落地：逐级审核状态机、应审级数快照、审核留痕表与只读接口、前端进度/终审按钮/留痕弹窗；35 条单测 + 1 条代理 + 2 条 E2E；修复 P3 遗留 DDL 契约冻结列 | AI 编码代理 |
 | v1.8.1 | 2026-11-17 | 修复前端代理端点 8s 超时误伤：移除代理前缀 8s 收敛，统一沿用 15s 默认值；E2E 默认 trace 全绿（multilevel 2 + policies 3 + lineage 2），标注页 stub 恢复为确定性数据源 | AI 编码代理 |
+| v1.8.2 | 2026-11-17 | 主备通道核查：确认 B 通道所调 DPS 接口未受 P4 影响；收口 AI 候选未快照级数、MCP approve 跳过逐级且提前同步标签两处旁路；新增 5 条 DPS 单测，定向回归 107 passed | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -302,3 +303,27 @@
 | E2E（默认 trace） | `portrait-multilevel-review` 2 passed（2.4s / 2.4s）；`portrait-policies` 3 passed、`portrait-lineage` 2 passed，合计 7 passed |
 
 结论：代理端点不再单独收敛，统一沿用 15s 默认值；8s 误伤问题闭环，E2E 无需 `--trace=off` 规避。
+
+## 17. 主备通道核查与 P4 门禁旁路收口（v1.8.2）
+
+核查目标：确认 P4 是否影响经 OpenLLM 主备通道（B 主 A 备）的 DPS 接口，并排查相关疏漏。
+
+**通道接口面**：B 通道 DPS client 仅调用 `POST /api/v2/portrait/calculate`、`GET|PUT /api/v2/portrait/{person_id}`、`GET /api/v2/portrait/list`（探活）；P4 仅改标注族（创建/队列/复核/留痕）与标注引擎，未触碰上述契约。A 通道已新增 `GET /api/v1/dps-proxy/annotations/{id}/review-log` 代理，活体返回 200。
+
+**收口的两处旁路**：
+
+| 问题 | 位置 | 修复 |
+|---|---|---|
+| AI 候选直接写基础列，`review_levels_required` 落默认 1，多级模板首次通过即终审 | DPS `src/engines/ai_annotation_engine.py` | 新增 `_resolve_required_review_levels`（读 `evidence_policy.review_levels`）与 `_supports_review_progress`；rich/legacy 双形态写入，快照 `0/N` |
+| MCP `portrait_annotate approve` 未传进度、先同步标签再审核 | DPS `src/mcp_server/tools.py` | 读取记录进度传入 `review_annotation`；仅终审后同步标签；补写审核留痕；响应新增 `review` / `tag_sync_deferred` |
+
+**验证**：
+
+| 项 | 结果 |
+|---|---|
+| 单测（新增 5 条） | AI 快照 2、MCP 逐级/终审 2、DDL 列集护栏 1 |
+| `test_p4_multi_level_review.py` + `test_annotation_adapter_v2_11.py` | 61 passed |
+| 定向回归（P3 策略/标注链路/DDL 契约/MCP JSON/种子集成） | 107 passed |
+| ruff（改动文件，`--select F,E9,I`） | 0 错误 |
+
+**残余观察**：MCP 入参无 `evidence_source`，P3 证据门禁未覆盖 MCP approve；通道 B `DPS_TIMEOUT=5s` 相对实测冷启动 2.4~3.1s 余量约 2s，负载升高时建议上调。
