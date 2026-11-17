@@ -128,6 +128,10 @@ export interface DpsAnnotationRow {
   annotation_template_name?: string
   profile_template_code?: string
   review_status?: string
+  /** P4：已通过审核级数（0 = 未通过任何级） */
+  review_level?: number
+  /** P4：创建时快照的应审级数（1~5） */
+  review_levels_required?: number
   fields?: Record<string, unknown>
   content?: string
   created_at?: string
@@ -472,7 +476,7 @@ export interface DpsPortraitDimensionDetails {
 
 /* ==================== P3 策略执行（证据来源 / 异常预警 / 孤儿治理） ==================== */
 
-/** 模板证据策略（`review_levels>1` 当前未支持，仅提示） */
+/** 模板证据策略（P4 起 `review_levels` 1~5 级均已生效） */
 export interface DpsEvidencePolicy {
   require_source?: boolean
   review_levels?: number
@@ -608,6 +612,28 @@ export interface DpsReviewSubmitRequest {
   review_status: 'approved' | 'rejected' | 'modified'
   comment?: string
   modified_value?: unknown
+}
+
+/** P4：审核进度（逐级审核；`finalized=true` 表示终审完成） */
+export interface DpsAnnotationReviewProgress {
+  level: number
+  required: number
+  finalized: boolean
+}
+
+/** P4：审核留痕条目（`GET /portrait/annotations/{id}/review-log`） */
+export interface DpsAnnotationReviewLogItem {
+  review_level: number
+  action: string
+  reviewer?: string | null
+  comment?: string | null
+  created_at?: string
+}
+
+export interface DpsAnnotationReviewLog {
+  annotation_id: string
+  items: DpsAnnotationReviewLogItem[]
+  total: number
 }
 
 /** AI 复核辅助（经 llm_proxy → OpenLLM，非本版 22 端点） */
@@ -1163,6 +1189,18 @@ export const dpsApi = {
   /** 标注队列（GET /portrait/annotations；只读分页，供待办与审核历史） */
   async listAnnotations(params: DpsAnnotationQuery = {}): Promise<DpsAnnotationQueue> {
     const { data } = await http.get<ApiSuccess<DpsAnnotationQueue>>('/dps-proxy/annotations', { params })
+    return data.data
+  },
+
+  /**
+   * 审核留痕（P4；GET /dps-proxy/annotations/{id}/review-log）
+   *
+   * 按级升序返回逐级审核记录；标注不存在返回 404，留痕表未迁移返回空列表。
+   */
+  async getAnnotationReviewLog(annotationId: string): Promise<DpsAnnotationReviewLog> {
+    const { data } = await http.get<ApiSuccess<DpsAnnotationReviewLog>>(
+      `/dps-proxy/annotations/${encodeURIComponent(annotationId)}/review-log`,
+    )
     return data.data
   },
 

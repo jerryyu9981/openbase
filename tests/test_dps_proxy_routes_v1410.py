@@ -294,3 +294,27 @@ def test_p3_governance_static_segment_not_shadowed() -> None:
     governance = _matched_routes(f"{PREFIX}/governance/orphan-annotation-templates")
     assert len(governance) == 1
     assert governance[0] not in detail
+
+
+# ---------------------------------------------------------------------------
+# P4（多级审核）：审核留痕只读路由
+# ---------------------------------------------------------------------------
+
+P4_REVIEW_LOG_ROUTE = "/annotations/{annotation_id}/review-log"
+
+
+def test_p4_review_log_route_registered() -> None:
+    """P4 审核留痕路由以精确路径 ＋ GET 注册."""
+    matched = _matched_routes(f"{PREFIX}{P4_REVIEW_LOG_ROUTE}")
+    assert matched, f"P4 路由未注册: {PREFIX}{P4_REVIEW_LOG_ROUTE}"
+    assert "GET" in _methods_of(matched)
+
+
+def test_p4_review_log_not_shadowed_by_annotation_list() -> None:
+    """``/annotations/{id}/review-log`` 不会被静态 ``/annotations`` 或复核 POST 遮蔽."""
+    review_log = _matched_routes(f"{PREFIX}{P4_REVIEW_LOG_ROUTE}")
+    annotation_list = _matched_routes(f"{PREFIX}/annotations")
+    review_post = _matched_routes(f"{PREFIX}/annotations/{{annotation_id}}/review")
+    assert len(review_log) == 1
+    assert review_log[0] not in annotation_list
+    assert review_log[0] not in review_post

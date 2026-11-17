@@ -174,13 +174,23 @@
                 <el-tag size="small" :type="statusType(row.review_status)">{{ statusLabel(row.review_status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="130" fixed="right">
+            <el-table-column label="审核进度" width="110" data-test="annotation-review-progress">
+              <template #default="{ row }">
+                <span class="muted sm" data-test="annotation-review-progress-text">{{ progressLabel(row) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="190" fixed="right">
               <template #default="{ row }">
                 <template v-if="row.review_status === 'pending'">
-                  <el-button link type="primary" size="small" data-test="annotation-approve" @click="approve(row)">通过</el-button>
+                  <el-button link type="primary" size="small" data-test="annotation-approve" @click="approve(row)">
+                    {{ approveLabel(row) }}
+                  </el-button>
                   <el-button link type="danger" size="small" data-test="annotation-reject" @click="reject(row)">驳回</el-button>
                 </template>
                 <span v-else class="muted sm">已处理</span>
+                <el-button link type="info" size="small" data-test="annotation-review-log" @click="openReviewLog(row)">
+                  记录
+                </el-button>
               </template>
             </el-table-column>
             <template #empty>
@@ -200,6 +210,37 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <el-dialog
+      v-model="reviewLogVisible"
+      title="审核记录"
+      width="620px"
+      data-test="annotation-review-log-dialog"
+    >
+      <el-table
+        v-loading="reviewLogLoading"
+        :data="reviewLogs"
+        size="small"
+        data-test="annotation-review-log-table"
+      >
+        <el-table-column label="级数" width="80">
+          <template #default="{ row }">第 {{ row.review_level }} 级</template>
+        </el-table-column>
+        <el-table-column label="动作" width="90">
+          <template #default="{ row }">{{ actionLabel(row.action) }}</template>
+        </el-table-column>
+        <el-table-column prop="reviewer" label="审核人" width="120" show-overflow-tooltip />
+        <el-table-column label="意见" min-width="140">
+          <template #default="{ row }">{{ row.comment || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无审核记录" :image-size="50" />
+        </template>
+      </el-table>
+    </el-dialog>
   </PageContainer>
 </template>
 
@@ -212,6 +253,8 @@ import {
   type DpsAnnotationField,
   type DpsAnnotationFieldMapping,
   type DpsAnnotationFieldMappingEntry,
+  type DpsAnnotationReviewLogItem,
+  type DpsAnnotationReviewProgress,
   type DpsAnnotationRow,
   type DpsAnnotationTemplate,
   type DpsEvidencePolicy,
@@ -240,6 +283,10 @@ const pageSize = ref(20)
 const statusFilter = ref('pending')
 const templateFilter = ref('')
 const loadingQueue = ref(false)
+/** P4：审核留痕弹窗 */
+const reviewLogVisible = ref(false)
+const reviewLogLoading = ref(false)
+const reviewLogs = ref<DpsAnnotationReviewLogItem[]>([])
 
 const currentTemplate = computed(() => templates.value.find((item) => item.code === selectedTemplate.value) || null)
 
@@ -458,10 +505,16 @@ function onPageChange(next: number) {
 
 /** 审核通过：联动入参由服务端按标注记录补全，无需前端回传 fields。 */
 async function approve(row: DpsAnnotationRow) {
+  const required = reviewRequired(row)
+  const nextLevel = Math.min(reviewLevel(row) + 1, required)
+  const finalStep = nextLevel >= required
+  const scope = required > 1 ? `第 ${nextLevel}/${required} 级` : '单级'
   try {
     await ElMessageBox.confirm(
-      `确认通过主体「${row.person_id || '-'}」的标注？通过后将按字段目标维度联动标签。`,
-      '通过确认',
+      `确认通过主体「${row.person_id || '-'}」的标注（${scope}）？${
+        finalStep ? '终审通过后将按字段目标维度联动标签。' : '非末级通过不会联动标签。'
+      }`,
+      finalStep ? '终审确认' : '本级通过确认',
       { type: 'info' },
     )
   } catch {
@@ -486,11 +539,61 @@ async function reject(row: DpsAnnotationRow) {
 
 async function doReview(row: DpsAnnotationRow, status: 'approved' | 'rejected', comment: string) {
   try {
-    await dpsApi.submitReview(row.id, { review_status: status, comment })
-    ElMessage.success(status === 'approved' ? '已通过，标签联动已执行' : '已驳回')
+    const result = await dpsApi.submitReview(row.id, { review_status: status, comment })
+    if (status === 'rejected') {
+      ElMessage.success('已驳回')
+    } else {
+      const review = result.review as DpsAnnotationReviewProgress | undefined
+      if (review && !review.finalized) {
+        ElMessage.success(`已通过第 ${review.level} 级，待第 ${review.level + 1} 级审核`)
+      } else {
+        ElMessage.success('终审通过，标签联动已执行')
+      }
+    }
     await loadQueue()
   } catch (err) {
     pageError.value = `复核失败：${describeDpsError(err).detail}`
+  }
+}
+
+/** 应审级数（缺省 1，兼容存量单级数据） */
+function reviewRequired(row: DpsAnnotationRow): number {
+  return Math.max(1, Number(row.review_levels_required || 1))
+}
+
+/** 已通过级数（缺省 0） */
+function reviewLevel(row: DpsAnnotationRow): number {
+  return Math.max(0, Number(row.review_level || 0))
+}
+
+function progressLabel(row: DpsAnnotationRow): string {
+  if (row.review_status === 'approved') return '已完成'
+  const required = reviewRequired(row)
+  return `第 ${Math.min(reviewLevel(row), required)}/${required} 级`
+}
+
+function approveLabel(row: DpsAnnotationRow): string {
+  const required = reviewRequired(row)
+  if (required <= 1) return '通过'
+  const nextLevel = reviewLevel(row) + 1
+  return nextLevel < required ? `通过本级（${nextLevel}/${required}）` : '终审通过'
+}
+
+function actionLabel(action?: string): string {
+  return { approved: '通过', rejected: '驳回', modified: '修改' }[action || ''] || action || '-'
+}
+
+async function openReviewLog(row: DpsAnnotationRow) {
+  reviewLogVisible.value = true
+  reviewLogLoading.value = true
+  reviewLogs.value = []
+  try {
+    const payload = await dpsApi.getAnnotationReviewLog(row.id)
+    reviewLogs.value = payload.items || []
+  } catch (err) {
+    pageError.value = `审核记录加载失败：${describeDpsError(err).detail}`
+  } finally {
+    reviewLogLoading.value = false
   }
 }
 

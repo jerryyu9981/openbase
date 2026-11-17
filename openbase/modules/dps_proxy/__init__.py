@@ -1490,6 +1490,25 @@ async def dps_annotation_review(
     )
 
 
+@router.get("/annotations/{annotation_id}/review-log")
+async def dps_annotation_review_log(
+    annotation_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """审核留痕查询（GET；上游 ``/api/v2/portrait/annotations/{id}/review-log``）.
+
+    P4（多级审核）：只读返回逐级审核记录；标注不存在 404，留痕表未迁移返回空列表。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/annotations/{annotation_id}/review-log"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 
 # ---- 动态段 7：AI 标注候选生成（#9）--------------------------------------
 

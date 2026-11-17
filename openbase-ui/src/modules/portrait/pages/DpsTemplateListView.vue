@@ -198,14 +198,6 @@
               <el-tag size="small" type="info" data-test="template-anomaly-rule-count">
                 异常规则：{{ anomalyRuleCount }} 条
               </el-tag>
-              <el-tag
-                v-if="multiLevelUnsupported"
-                size="small"
-                type="warning"
-                data-test="template-review-levels-warning"
-              >
-                当前仅支持单级审核（配置 {{ reviewLevels }} 级将被忽略）
-              </el-tag>
             </div>
             <el-empty v-if="!scoring" description="模板未激活，无运行时评分口径" :image-size="48" />
             <template v-else>
@@ -281,7 +273,6 @@ const scoring = computed(() => lineage.value?.scoring || null)
 /** P3：模板策略摘要（证据策略 / 审核级数 / 异常规则） */
 const evidencePolicy = computed(() => detail.value?.evidence_policy || null)
 const reviewLevels = computed(() => evidencePolicy.value?.review_levels ?? 1)
-const multiLevelUnsupported = computed(() => reviewLevels.value > 1)
 const anomalyRuleCount = computed(() => {
   const rules = detail.value?.anomaly_rules
   return Array.isArray(rules) ? rules.length : 0
