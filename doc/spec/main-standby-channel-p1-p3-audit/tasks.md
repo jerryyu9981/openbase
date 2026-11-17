@@ -6,4 +6,4 @@
 - [x] T3（DPS）运行 P0/P1 定向测试与 `ruff`，确认无新增失败
 - [x] T4（OpenLLM）运行 `tests/unit/test_real_contract_profile.py` 验证 B 通道兼容（25 passed / 1 既有基线失败）
 - [x] T5（OpenBase）治理方案升 v1.4.3，新增 §16 主备通道核查结论（P0~P4）与证据
-- [ ] T6（双仓）提交并推送 origin/backup/github
+- [x] T6（双仓）提交并推送 origin/backup/github
