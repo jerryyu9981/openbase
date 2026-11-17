@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "checkpoint": "P-01/P-02 实现验证",
+  "generated_at": "2026-11-18T02:55:00+08:00",
+  "warmup_evidence": "doc/test/evidence/ops/startup-warmup-20261118-025109.json",
+  "warmup": {
+    "login_ok": true,
+    "total_elapsed_ms": 3126,
+    "items": [
+      { "name": "平台用户数", "status": 200, "elapsed_ms": 349 },
+      { "name": "Dashboard KPI", "status": 200, "elapsed_ms": 723 },
+      { "name": "画像模板列表", "status": 200, "elapsed_ms": 599 },
+      { "name": "画像列表", "status": 200, "elapsed_ms": 318 },
+      { "name": "知识库集合", "status": 200, "elapsed_ms": 281 },
+      { "name": "记忆列表", "status": 200, "elapsed_ms": 454 }
+    ]
+  },
+  "dps_prewarm": {
+    "log": "logs/dps/dps-20261118.err.jsonl",
+    "ts": "2026-11-17T18:49:23.159Z",
+    "logger": "rest_api.app",
+    "loaded": 5,
+    "codes": [
+      "cor-persona-assess-v1",
+      "cor-persona-intake-v1",
+      "cor-persona-risk-v1",
+      "cor-persona-root-v1",
+      "dps-correction-v1"
+    ]
+  },
+  "graph_worker": {
+    "status": "健康 ✅ PID=11420（无端口）",
+    "metrics": {
+      "openmemory_graph_outbox_pending": 0,
+      "openmemory_graph_outbox_dead": 0,
+      "openmemory_graph_projection_events_total_ok": 2860
+    },
+    "backlog_before": 2860,
+    "backlog_after": 0,
+    "single_instance_conflict": {
+      "second_instance_exit_code": 0,
+      "log": "another graph projection worker holds lock openmemory.graph_projection_worker; worker exits",
+      "duplicate_heartbeat_written": false
+    },
+    "stop_residual_python": 0
+  }
+}

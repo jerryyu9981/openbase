@@ -4,7 +4,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.0.0 |
+| 文档版本 | v1.1.0 |
 | 状态 | [Approved]（本次全栈走查完成） |
 | 适用环境 | Dev（OpenBase 8000 / DPS / OpenLLM / OpenRAG / OpenMemory / 前端 5173） |
 | 作者 | AI 编码代理 |
@@ -16,6 +16,7 @@
 | 版本 | 日期 | 变更说明 | 作者 |
 |---|---|---|---|
 | v1.0.0 | 2026-11-18 | 首次全栈拉起与全站页面/关键流程走查，记录问题、修复 RAG SSE 终止缺陷并留存证据 | AI 编码代理 |
+| v1.1.0 | 2026-11-18 | 回填 P-01/P-02 修复：编排器启动预热（6 端点）+ DPS 模板注册表进程内预热；图投影 worker 纳入编排（单实例 advisory lock + 心跳，积压 2860→0） | AI 编码代理 |
 
 ## 1. 环境与启动
 
@@ -50,23 +51,41 @@
 | Playground（B 自动编排） | PASS | 提示「由 OpenLLM 判断是否装配 画像/记忆/知识库」，HTTP 200，9.3s 完成 |
 | 知识库列表 / RAG 对话 | PASS | 9 个知识库；RAG 回答完整，SSE 3.5s 内关闭，停止态消失、可继续提问 |
 | 记忆列表 / 搜索 / 写入 | PASS | 10 行；关键字过滤生效；空提交提示「请输入记忆内容」 |
-| 记忆图谱 | PASS（需 worker） | 见 P-02；启动投影 worker 后 5 节点/3 边，页面正常渲染 |
+| 记忆图谱 | PASS | P-02 已修复：worker 纳入编排常驻，`outbox_pending` 2860→0、死信 0，5 节点/3 边正常渲染 |
 | 平台用户/角色/租户/监控/日志 | PASS | 用户 115 行、角色 5 行、租户 8 行；监控与日志页正常渲染 |
 
 ## 4. 问题清单
 
 | 编号 | 级别 | 问题 | 处置 |
 |---|---|---|---|
-| P-01 | 中 | DPS/仪表盘页面冷启动首屏数据 3~12s，期间仅显示骨架屏；前端 15s 超时虽可兜底，但余量偏小 | 记录；建议保持 15s 并评估后端预热/缓存 |
-| P-02 | 中 | `service-orchestrator.ps1` 未拉起 OpenMemory 图投影 worker，导致记忆图谱页长期 `outbox_pending=3057`、节点为 0 | 记录；手工执行 `graph_projection_worker.py --once` 验证通过（200 事件，pending 3057→2860），建议纳入编排常驻 |
+| P-01 | 中 | DPS/仪表盘页面冷启动首屏数据 3~12s，期间仅显示骨架屏；前端 15s 超时虽可兜底，但余量偏小 | **已修复**（v1.1.0）：编排器 `Invoke-StackWarmup` 预热 6 个首屏端点（实测 281~723ms）+ DPS 启动加载模板注册表；见 §5、`doc/test/evidence/ops/startup-warmup-20261118-025109.json` |
+| P-02 | 中 | `service-orchestrator.ps1` 未拉起 OpenMemory 图投影 worker，导致记忆图谱页长期 `outbox_pending=3057`、节点为 0 | **已修复**（v1.1.0）：新增 `openmemory-graph-worker`（`Kind=worker`、心跳 + PG advisory lock 单实例）；积压 2860→0、死信 0；见 §5、`doc/test/evidence/ops/p01-p02-verify-20261118.json` |
 | P-03 | 低 | RAG 代理 SSE 依赖上游主动断连；若上游在 `done` 后保持连接，下游会等到超时 | 已修复（防御性终止），见 §5 |
 
-## 5. 修复记录（P-03）
+## 5. 修复记录（P-01 / P-02 / P-03）
+
+### 5.1 P-03：RAG SSE 防御性终止
 
 **文件**：`openbase/modules/rag_proxy/__init__.py` `_forward_sse`
 
 - 识别 `event: done` / `event: error` 为终止事件；转发完该事件块（下一个空行）后主动 `return` 结束下游流，不再等待上游断开。
 - 保留既有事件透传与观测逻辑，不改变事件内容。
+
+### 5.2 P-01：首屏冷启动预热
+
+**文件**：`scripts/service-orchestrator.ps1`、`DPS/src/rest_api/app.py`
+
+- 编排器新增 `Invoke-StackWarmup`：全服务健康后以 `admin` 身份登录并串行请求首屏 6 端点（用户数、Dashboard KPI、模板、画像、知识库、记忆），单端点 30s 超时、失败不阻断启动，证据落 `doc/test/evidence/ops/startup-warmup-*.json`；可用 `-SkipWarmup` 关闭。
+- DPS 新增 `_warmup_template_registry`：启动即执行 `SELECT 1` 并加载 `TemplateRegistry`（复用 `routes_profiles` 单例），日志 `画像模板注册表预热完成: {'loaded': 5, ...}`；失败仅告警，请求路径 `is_loaded()` 兜底。
+- 实测：6 端点全部 200，281~723ms；DPS 首访模板/画像接口 68.95ms / 48.06ms。
+
+### 5.3 P-02：图投影 worker 纳入编排
+
+**文件**：`scripts/service-orchestrator.ps1`、`OpenMemory/scripts/graph_projection_worker.py`、`OpenMemory/src/openmemory/storage/relational_store.py`
+
+- 编排器新增 `Kind='worker'` 服务类型与 `openmemory-graph-worker`（依赖 openmemory），`Start/Stop/Status/Monitor/CheckAll` 均按心跳判定，不依赖监听端口。
+- worker 新增 PG 会话级 advisory lock 单实例互斥（`openmemory.graph_projection_worker`）与原子心跳文件；`--once` 不取锁、不写心跳。
+- 实测：积压 2860→0、死信 0；重复启动第二实例记录 `holds lock` 后退出码 0；`stop` 后无残留进程。
 
 **测试**：`tests/test_specialized_proxy_upstream_observe.py`
 

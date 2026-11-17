@@ -1,0 +1,57 @@
+﻿{
+    "schema_version":  1,
+    "action":  "startup-warmup",
+    "generated_at":  "2026-11-18T02:51:09+08:00",
+    "login_ok":  true,
+    "items":  [
+                  {
+                      "name":  "平台用户数",
+                      "url":  "http://127.0.0.1:8000/api/v1/users",
+                      "status":  200,
+                      "elapsed_ms":  349,
+                      "ok":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "Dashboard KPI",
+                      "url":  "http://127.0.0.1:8000/api/v1/proxy/openllm/api/v1/monitoring/dashboard?time_range=24h",
+                      "status":  200,
+                      "elapsed_ms":  723,
+                      "ok":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "画像模板列表",
+                      "url":  "http://127.0.0.1:8000/api/v1/dps-proxy/templates",
+                      "status":  200,
+                      "elapsed_ms":  599,
+                      "ok":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "画像列表",
+                      "url":  "http://127.0.0.1:8000/api/v1/dps-proxy/portraits",
+                      "status":  200,
+                      "elapsed_ms":  318,
+                      "ok":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "知识库集合",
+                      "url":  "http://127.0.0.1:8000/api/v1/rag-proxy/collections",
+                      "status":  200,
+                      "elapsed_ms":  281,
+                      "ok":  true,
+                      "error":  ""
+                  },
+                  {
+                      "name":  "记忆列表",
+                      "url":  "http://127.0.0.1:8000/api/v1/memory-proxy/memories",
+                      "status":  200,
+                      "elapsed_ms":  454,
+                      "ok":  true,
+                      "error":  ""
+                  }
+              ],
+    "total_elapsed_ms":  3126
+}

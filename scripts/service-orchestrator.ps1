@@ -104,7 +104,9 @@ param(
     # 单服务启动前数据面校验的复用窗口（秒）：窗口内复用上次探测结果，过期则按需重探
     [int]$ProbeTtlSec = 60,
     # 服务解释器覆盖（exe 或目录）；不设则按候选链逐个 import 自检（见 Get-PythonCandidates）
-    [string]$PythonHome = ''
+    [string]$PythonHome = '',
+    # P-01：启动后预热首屏链路（登录 + 首屏聚合/列表端点）；关闭用 -SkipWarmup
+    [switch]$SkipWarmup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -481,6 +483,7 @@ function Get-ServiceInfraDeps {
         openllm    = @('pg', 'redis')
         openrag    = @('pg', 'qdrant')
         openmemory = @('pg', 'redis', 'qdrant', 'neo4j')
+        'openmemory-graph-worker' = @('pg', 'neo4j')
         frontend   = @()
     }
     $name = [string]$Svc.Name
@@ -904,6 +907,14 @@ $services = @(
         # 同样必须以 JSON 数组形态传值（list[str] 字段先经 pydantic-settings JSON 解码）。
         Env     = @{
             PYTHONDONTWRITEBYTECODE = '1'
+            # 2026-11-08：stdout/stderr 重定向到文件时为块缓冲，预热日志在结束前不落盘，
+            # 导致排障时 tail 永远停在 "Uvicorn running" 一行；强制行缓冲以便实时观测。
+            PYTHONUNBUFFERED = '1'
+            # 2026-11-08：CLIP 权重缺失时，transformers 即便 local_files_only=True 仍会
+            # 反复尝试连接 HF_ENDPOINT（实测 13min 才放弃），严重拖慢预热并饿死事件循环。
+            # 显式离线：缓存缺失立即失败，走既有 hash 降级（秒级）。
+            HF_HUB_OFFLINE = '1'
+            TRANSFORMERS_OFFLINE = '1'
             OPENMEMORY_IDENTITY_TRUSTED_PROXY_SOURCES = '["openbase-memory-proxy"]'
             # C1-a（2026-10-08，跨仓修复）：**登记 OpenBase 租户码空间为已配置组织**。
             # 背景（实测）：OpenMemory 的 RBAC 组织策略 fail-closed——未登记组织一律
@@ -928,6 +939,24 @@ $services = @(
             @{ Name = '存活探针';     Method = 'GET'; Path = '/health/liveness';    Expect = 200 }
             @{ Name = 'V1 健康别名';  Method = 'GET'; Path = '/api/v1/health';      Expect = 200 }
         )
+    },
+    @{
+        # P-02：图投影 worker（无监听端口）。存活判据 = 心跳文件新鲜 + 心跳 PID 进程存在。
+        # 单实例互斥由 worker 自身 PG advisory lock 保证（重复启动第二实例自动退出）。
+        Name       = 'openmemory-graph-worker'
+        Kind       = 'worker'
+        Detach     = $true
+        HealthWait = 60
+        Cwd        = 'D:\Trae CN\myproject\Dev\OpenMemory'
+        Command    = 'python'
+        Args       = @('scripts\graph_projection_worker.py', '--interval', '2',
+            '--heartbeat', (Join-Path $ServiceLogDir 'openmemory-graph-worker\graph-worker.heartbeat'))
+        Env        = @{ PYTHONDONTWRITEBYTECODE = '1'; PYTHONUNBUFFERED = '1' }
+        Heartbeat  = (Join-Path $ServiceLogDir 'openmemory-graph-worker\graph-worker.heartbeat')
+        HeartbeatMaxAgeSec = 120
+        Depends    = @('openmemory')
+        DepType    = 'hard'
+        Desc       = 'OpenMemory 图投影 worker（graph_outbox → Neo4j）'
     },
     @{
         Name    = 'oidc-idp'
@@ -996,6 +1025,9 @@ $services = @(
         # （tenant-1）→ DPS 预建 code（dps-org-001/dps-tenant-001，共享 PG 种子）映射，
         # 修复 dps-proxy 画像族 403「组织不存在」（DPS 中间件双形态解析并规范化 UUID）。
         Env     = @{
+            # 2026-11-08：stdout/stderr 重定向到文件时为块缓冲，冷启动期间日志文件长期 0 字节，
+            # 无法定位耗时分布（本次 168s 冷启动只能靠进程启动时间推断）。强制行缓冲。
+            PYTHONUNBUFFERED = '1'
             OPENBASE_DPS_UPSTREAM_BASE = 'http://127.0.0.1:8030'
             OPENBASE_DPS_ORG_MAP = '{"org-1":"dps-org-001","tenant-1":"dps-org-001"}'
             OPENBASE_DPS_TENANT_MAP = '{"org-1":"dps-tenant-001","tenant-1":"dps-tenant-001"}'
@@ -1134,8 +1166,41 @@ function Initialize-ServiceLogTarget {
     return @{ Out = $outPath; Err = $errPath }
 }
 
+# worker 类服务存活判定（无监听端口）：心跳文件新鲜 + 心跳 PID 进程存在。
+# Detail 取值：ok / no_heartbeat / stale_heartbeat / process_exited
+function Test-WorkerHealth {
+    param([hashtable]$Svc)
+
+    $heartbeatPath = [string]$Svc.Heartbeat
+    if (-not $heartbeatPath -or -not (Test-Path $heartbeatPath)) {
+        return @{ Healthy = $false; Detail = 'no_heartbeat'; LatencyMs = 0; HeartbeatAgeSec = $null; HeartbeatPid = $null }
+    }
+    $item = Get-Item $heartbeatPath
+    $ageSec = [int]((Get-Date) - $item.LastWriteTime).TotalSeconds
+    $maxAge = if ($Svc.HeartbeatMaxAgeSec) { [int]$Svc.HeartbeatMaxAgeSec } else { 120 }
+    $heartbeatPid = $null
+    try {
+        $payload = Get-Content $heartbeatPath -Raw | ConvertFrom-Json
+        if ($null -ne $payload.pid) { $heartbeatPid = [int]$payload.pid }
+    }
+    catch {
+        # 半截/损坏 JSON：按心跳陈旧处理，等待下一轮原子写覆盖
+        return @{ Healthy = $false; Detail = 'stale_heartbeat'; LatencyMs = 0; HeartbeatAgeSec = $ageSec; HeartbeatPid = $null }
+    }
+    if ($heartbeatPid -and -not (Get-Process -Id $heartbeatPid -ErrorAction SilentlyContinue)) {
+        return @{ Healthy = $false; Detail = 'process_exited'; LatencyMs = 0; HeartbeatAgeSec = $ageSec; HeartbeatPid = $heartbeatPid }
+    }
+    if ($ageSec -gt $maxAge) {
+        return @{ Healthy = $false; Detail = 'stale_heartbeat'; LatencyMs = 0; HeartbeatAgeSec = $ageSec; HeartbeatPid = $heartbeatPid }
+    }
+    return @{ Healthy = $true; Detail = 'ok'; LatencyMs = 0; HeartbeatAgeSec = $ageSec; HeartbeatPid = $heartbeatPid }
+}
+
 function Test-HealthProbe {
     param([hashtable]$Svc, [int]$TimeoutSec = 5)
+    if ($Svc.Kind -eq 'worker') {
+        return (Test-WorkerHealth -Svc $Svc)
+    }
     $lastDetail = 'no_endpoint'
     foreach ($uri in $Svc.Health) {
         $startedAt = Get-Date
@@ -1188,12 +1253,44 @@ function Format-HealthDetail {
         'connect_failed'  { return '连接失败' }
         'dns'             { return '域名解析失败' }
         'no_endpoint'     { return '未配置健康端点' }
+        'no_heartbeat'    { return '心跳文件缺失' }
+        'stale_heartbeat' { return '心跳超时' }
+        'process_exited'  { return '进程已退出' }
         default           { return $Detail }
     }
 }
 
 function Get-PortPid {
+    # 反查监听端口的 PID。
+    # 背景（2026-11-09）：本机 Get-NetTCPConnection 单次实测 4~6s，且高负载时出现过
+    # 「端口已在监听却返回空」，健康循环因此重复探测，把判定开销计入了「冷启动耗时」
+    # （openbase 168s 中虚增 31s）。故改为 netstat（实测 ~180ms）优先，CIM 查询兜底。
     param([int]$Port)
+
+    $netstat = Join-Path $env:SystemRoot 'System32\netstat.exe'
+    if (Test-Path $netstat) {
+        $table = @(& $netstat -ano -p TCP 2>$null)
+        if ($table.Count -gt 0) {
+            $listenPids = @()
+            $otherStatePids = @()
+            foreach ($line in $table) {
+                $fields = ($line.Trim() -split '\s+')
+                if ($fields.Count -lt 5 -or $fields[0] -ne 'TCP') { continue }
+                $localAddress = $fields[1]
+                $localPort = $localAddress.Substring($localAddress.LastIndexOf(':') + 1)
+                if ($localPort -ne [string]$Port) { continue }
+                if ($fields[4] -notmatch '^\d+$') { continue }
+                if ($fields[3] -eq 'LISTENING') { $listenPids += [int]$fields[4] }
+                else { $otherStatePids += [int]$fields[4] }
+            }
+            if ($listenPids.Count -gt 0) { return $listenPids[0] }
+            # 状态词随系统语言本地化时不出现 LISTENING：退化为「本地端口匹配」的首行
+            if ($otherStatePids.Count -gt 0) { return $otherStatePids[0] }
+            # 完整枚举且无匹配行 ⇒ 端口未监听；直接返回，不再付 CIM 查询的秒级开销
+            return $null
+        }
+    }
+
     $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
     if ($conn) { return ($conn | Select-Object -First 1).OwningProcess }
     return $null
@@ -1342,6 +1439,8 @@ function Get-PythonCandidates {
     if ($name -eq 'openbase') { $candidates += 'D:\venvs\openbase\Scripts\python.exe' }
     if ($name -eq 'openllm') { $candidates += 'D:\venvs\openllm\Scripts\python.exe' }
     if ($name -eq 'openmemory') { $candidates += 'D:\venvs\openmemory\Scripts\python.exe' }
+    # P-02：图投影 worker 与 openmemory 共用同一运行环境（sqlalchemy/neo4j 依赖）
+    if ($name -eq 'openmemory-graph-worker') { $candidates += 'D:\venvs\openmemory\Scripts\python.exe' }
     if ($name -eq 'openrag') { $candidates += 'D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe' }
     # DPS 的依赖在 `.venv\libs`（由 OpenRAG .venv3 的 cross-libs.pth 注入），运行时即 OpenRAG 的 3.11
     if ($name -eq 'dps') { $candidates += 'D:\Trae CN\myproject\Dev\OpenRAG\.venv3\python.exe' }
@@ -1378,16 +1477,34 @@ function Get-ServicePython {
 
 function Start-Service {
     param([hashtable]$Svc, [switch]$FromMonitor)
-    # 1) 端口预检：端口被其他进程占用（非本服务记录 PID）→ 拒绝启动
-    $portPid = Get-PortPid $Svc.Port
-    $lastPid = Get-LastPid $Svc.Name
-    if ($portPid -and $portPid -ne $lastPid) {
-        Write-Log 'WARN' ("{0} 端口 {1} 被进程 {2} 占用，跳过启动（视为已运行）" -f $Svc.Name, $Svc.Port, $portPid)
-        return $false
+    $isWorker = ($Svc.Kind -eq 'worker')
+    # 1) 存活/端口预检
+    if ($isWorker) {
+        # worker 无监听端口：心跳新鲜且进程在 → 视为已运行（幂等，不重复启动）
+        $workerHealth = Test-WorkerHealth -Svc $Svc
+        if ($workerHealth.Healthy) {
+            Write-Log 'INFO' ("{0} 已在运行（心跳 PID {1}，{2}s 前）" -f $Svc.Name, $workerHealth.HeartbeatPid, $workerHealth.HeartbeatAgeSec)
+            if ($workerHealth.HeartbeatPid) { Save-Pid $Svc.Name ([int]$workerHealth.HeartbeatPid) }
+            return $true
+        }
+        # 陈旧 PID 记录（进程不在）→ 清理，避免 stop 误杀复用 PID 的无关进程
+        $stalePid = Get-LastPid $Svc.Name
+        if ($stalePid -and -not (Get-Process -Id $stalePid -ErrorAction SilentlyContinue)) {
+            Remove-Pid $Svc.Name
+        }
     }
-    if ($portPid -and $portPid -eq $lastPid) {
-        Write-Log 'INFO' ("{0} 已在运行（PID {1}，端口 {2}）" -f $Svc.Name, $portPid, $Svc.Port)
-        return $true
+    else {
+        # 端口被其他进程占用（非本服务记录 PID）→ 拒绝启动
+        $portPid = Get-PortPid $Svc.Port
+        $lastPid = Get-LastPid $Svc.Name
+        if ($portPid -and $portPid -ne $lastPid) {
+            Write-Log 'WARN' ("{0} 端口 {1} 被进程 {2} 占用，跳过启动（视为已运行）" -f $Svc.Name, $Svc.Port, $portPid)
+            return $false
+        }
+        if ($portPid -and $portPid -eq $lastPid) {
+            Write-Log 'INFO' ("{0} 已在运行（PID {1}，端口 {2}）" -f $Svc.Name, $portPid, $Svc.Port)
+            return $true
+        }
     }
     # 2) 数据库/基础设施数据面校验（每次真正启动服务前都执行；start 全量/单服务与 monitor 自愈一致）
     if (-not (Assert-ServiceDataPlane -Svc $Svc)) {
@@ -1452,9 +1569,24 @@ function Start-Service {
         while ((Get-Date) -lt $deadline) {
             Start-Sleep -Seconds 2
             if (Test-Health $Svc) {
+                if ($isWorker) {
+                    $workerInfo = Test-WorkerHealth -Svc $Svc
+                    if ($workerInfo.HeartbeatPid) {
+                        Save-Pid $Svc.Name ([int]$workerInfo.HeartbeatPid)
+                        $launchedPid = [int]$workerInfo.HeartbeatPid
+                    }
+                    Write-Log 'INFO' ("{0} 心跳就绪 ✅（PID {1}，无端口，冷启动耗时 {2}s）" -f $Svc.Name, $launchedPid, [int]$stopwatch.Elapsed.TotalSeconds)
+                    return $true
+                }
                 # 记录**真实监听进程** PID（D-04）：脱离会话启动时 `$launchedPid` 是包装
                 # powershell，直接落它会令 `stop` 只杀包装、留下占用端口的 python 孤儿。
                 $listenPid = Get-PortPid $Svc.Port
+                if (-not $listenPid -and $launchedPid -gt 0) {
+                    # 端口已在监听但反查 PID 失败时，以启动 PID 兜底并立即判定通过：
+                    # 不再整轮回退重试，避免把「判定开销」计入冷启动耗时（2026-11-09）。
+                    $listenPid = $launchedPid
+                    Write-Log 'WARN' ("{0} 端口 {1} 已在监听，但反查监听 PID 失败，回退为启动 PID {2}" -f $Svc.Name, $Svc.Port, $launchedPid)
+                }
                 if ($listenPid) {
                     Save-Pid $Svc.Name ([int]$listenPid)
                     $launchedPid = [int]$listenPid
@@ -1467,6 +1599,16 @@ function Start-Service {
                 Remove-Pid $Svc.Name
                 return $false
             }
+            if ($isWorker -and $launchedPid -gt 0 -and -not (Get-Process -Id $launchedPid -ErrorAction SilentlyContinue)) {
+                # 脱离启动（WMI）时 $proc 为空：以启动 PID 消失判定提前退出（如锁冲突被其它实例占用）
+                Write-Log 'ERROR' ("{0} 进程提前退出（PID {1}），请查看 stderr 日志：{2}" -f $Svc.Name, $launchedPid, $logTarget.Err)
+                Remove-Pid $Svc.Name
+                return $false
+            }
+        }
+        if ($isWorker) {
+            Write-Log 'WARN' ("{0} 心跳等待超时（进程仍在，PID {1}，已等待 {2}s/{3}s，心跳文件：{4}）" -f $Svc.Name, $launchedPid, [int]$stopwatch.Elapsed.TotalSeconds, $wait, $Svc.Heartbeat)
+            return $false
         }
         # 健康超时也要落盘真实监听 PID：否则进程稍后才就绪时，`stop` 只会杀掉包装
         # powershell（D-04 同族缺陷，实测 openllm/openrag 健康超时后端口仍在监听）。
@@ -1484,6 +1626,35 @@ function Start-Service {
 
 function Stop-Service {
     param([hashtable]$Svc)
+    if ($Svc.Kind -eq 'worker') {
+        # worker 无端口：按「记录 PID + 心跳 PID + 命令行兜底」三路收集，避免残留消费进程
+        $targets = @()
+        $recordedPid = Get-LastPid $Svc.Name
+        if ($recordedPid -and (Get-Process -Id $recordedPid -ErrorAction SilentlyContinue)) { $targets += [int]$recordedPid }
+        $heartbeatPid = (Test-WorkerHealth -Svc $Svc).HeartbeatPid
+        if ($heartbeatPid -and ($targets -notcontains [int]$heartbeatPid) -and (Get-Process -Id $heartbeatPid -ErrorAction SilentlyContinue)) {
+            $targets += [int]$heartbeatPid
+        }
+        $workerProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -like '*graph_projection_worker.py*' })
+        foreach ($process in $workerProcesses) {
+            if ($targets -notcontains [int]$process.ProcessId) { $targets += [int]$process.ProcessId }
+        }
+        if ($targets.Count -gt 0) {
+            foreach ($target in $targets) {
+                Stop-Process -Id $target -Force -ErrorAction SilentlyContinue
+            }
+            Write-Log 'INFO' ("{0} 已停止（PID {1}，无端口）" -f $Svc.Name, ($targets -join ','))
+            Remove-Pid $Svc.Name
+        }
+        else {
+            Write-Log 'INFO' ("{0} 未运行，无需停止" -f $Svc.Name)
+        }
+        if ($Svc.Heartbeat -and (Test-Path $Svc.Heartbeat)) {
+            Remove-Item -LiteralPath $Svc.Heartbeat -Force -ErrorAction SilentlyContinue
+        }
+        return
+    }
     # 同时处理「记录的 PID」与「端口占用 PID」：脱离启动时记录值可能是包装 powershell，
     # 只杀包装会留下占用端口的孤儿（实测 openllm/openrag 健康超时场景）。两处都杀才闭环。
     $targets = @()
@@ -1505,6 +1676,21 @@ function Stop-Service {
 
 function Get-AllStatus {
     foreach ($svc in $services) {
+        if ($svc.Kind -eq 'worker') {
+            $workerProbe = Test-WorkerHealth -Svc $svc
+            $status = if ($workerProbe.Healthy) {
+                '健康 ✅'
+            }
+            elseif ($workerProbe.Detail -eq 'no_heartbeat') {
+                '未启动'
+            }
+            else {
+                ('未启动（{0}）' -f (Format-HealthDetail $workerProbe.Detail))
+            }
+            $pidInfo = if ($workerProbe.HeartbeatPid) { "PID=$($workerProbe.HeartbeatPid)" } else { 'PID=-' }
+            "{0,-11} {1,-6} {2,-30} {3} {4}" -f $svc.Name, '-', $svc.Desc, $status, $pidInfo
+            continue
+        }
         $portPid = Get-PortPid $svc.Port
         $probe = Test-HealthProbe -Svc $svc
         # 单次探测超时不足以判定不可用：端口在监听时按 10s 预算重试一次（冷启动/GC 抖动）。
@@ -1828,12 +2014,111 @@ function Invoke-Start {
         if (-not $svc) { Write-Log 'WARN' "未知服务：$name"; continue }
         Start-Service $svc
     }
+    # P-01：所有服务健康后预热首屏真实依赖链路（失败不阻断启动）
+    Invoke-StackWarmup -Targets $targets | Out-Null
     Write-Log 'INFO' "一键启动完成，最终状态："
     Get-AllStatus
     if ($WithCheck) {
         Write-Log 'INFO' "开始全量服务检查..."
         Invoke-CheckAll
     }
+}
+
+# P-01：启动预热。健康探针只覆盖轻端点（/health、/openapi.json），前端首屏依赖的
+# 聚合/列表查询仍处冷态（DPS 模板注册表惰性加载、OpenLLM dashboard 跨表聚合）。
+# 本函数在全部服务启动后以真实身份串行请求首屏端点，把冷启动成本前移到启动阶段；
+# 登录失败/单端点失败只告警，不改变启动结果（证据落 doc/test/evidence/ops/）。
+function Invoke-StackWarmup {
+    param([string[]]$Targets)
+
+    if ($SkipWarmup) {
+        Write-Log 'INFO' '启动预热已跳过（-SkipWarmup）'
+        return $true
+    }
+    if (-not ($Targets -contains 'openbase')) {
+        Write-Log 'INFO' '启动预热跳过：本次启动目标不含 openbase'
+        return $true
+    }
+
+    $base = 'http://127.0.0.1:8000'
+    $user = if ($env:OPENBASE_WARMUP_USER) { $env:OPENBASE_WARMUP_USER } else { 'admin' }
+    $password = if ($env:OPENBASE_WARMUP_PASSWORD) { $env:OPENBASE_WARMUP_PASSWORD } else { 'admin123' }
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $token = $null
+    try {
+        $loginBody = @{ username = $user; password = $password } | ConvertTo-Json -Compress
+        $login = Invoke-RestMethod -Uri "$base/api/v1/auth/login" -Method Post -ContentType 'application/json' -Body $loginBody -TimeoutSec 15
+        $token = [string]$login.access_token
+    }
+    catch {
+        Write-Log 'WARN' ("启动预热登录失败（不影响启动）：{0}" -f $_.Exception.Message)
+    }
+    $loginOk = [bool]$token
+
+    # 顺序执行：dashboard 最慢且最影响首屏观感，放在模板/画像之前完成
+    $endpoints = @(
+        @{ Name = '平台用户数';     Path = '/api/v1/users' },
+        # 通用代理通道：前端 governance.ts 的 OPENLLM = '/proxy/openllm/api/v1'
+        @{ Name = 'Dashboard KPI'; Path = '/api/v1/proxy/openllm/api/v1/monitoring/dashboard?time_range=24h' },
+        @{ Name = '画像模板列表';   Path = '/api/v1/dps-proxy/templates' },
+        @{ Name = '画像列表';       Path = '/api/v1/dps-proxy/portraits' },
+        @{ Name = '知识库集合';     Path = '/api/v1/rag-proxy/collections' },
+        @{ Name = '记忆列表';       Path = '/api/v1/memory-proxy/memories' }
+    )
+    $items = @()
+    if ($loginOk) {
+        $headers = @{ Authorization = "Bearer $token" }
+        foreach ($endpoint in $endpoints) {
+            $itemWatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $status = $null
+            $errorMessage = ''
+            try {
+                $response = Invoke-WebRequest -Uri ($base + $endpoint.Path) -Method Get -Headers $headers -TimeoutSec 30 -UseBasicParsing -ErrorAction Stop
+                $status = [int]$response.StatusCode
+            }
+            catch {
+                $exception = $_.Exception
+                if ($exception.Response) { try { $status = [int]$exception.Response.StatusCode } catch { } }
+                $errorMessage = $exception.Message
+            }
+            $itemWatch.Stop()
+            $ok = ($null -ne $status -and $status -ge 200 -and $status -lt 300)
+            $items += [ordered]@{
+                name       = $endpoint.Name
+                url        = $base + $endpoint.Path
+                status     = $status
+                elapsed_ms = [int]$itemWatch.Elapsed.TotalMilliseconds
+                ok         = $ok
+                error      = $errorMessage
+            }
+            $statusText = if ($null -ne $status) { [string]$status } else { 'n/a' }
+            $suffix = if ($ok) { '' } else { '（' + $errorMessage + '）' }
+            $level = if ($ok) { 'INFO' } else { 'WARN' }
+            Write-Log $level ("预热 {0}：status={1} {2}ms{3}" -f $endpoint.Name, $statusText, [int]$itemWatch.Elapsed.TotalMilliseconds, $suffix)
+        }
+    }
+    $stopwatch.Stop()
+
+    $evidenceDir = Get-EvidenceDir
+    New-Item -ItemType Directory -Force -Path $evidenceDir | Out-Null
+    $evidencePath = Join-Path $evidenceDir ("startup-warmup-{0}.json" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    $payload = [ordered]@{
+        schema_version   = 1
+        action           = 'startup-warmup'
+        generated_at     = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
+        login_ok         = $loginOk
+        items            = @($items)
+        total_elapsed_ms = [int]$stopwatch.Elapsed.TotalMilliseconds
+    }
+    ($payload | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $evidencePath -Encoding UTF8
+
+    $failed = @($items | Where-Object { -not $_.ok })
+    if (-not $loginOk -or $failed.Count -gt 0) {
+        Write-Log 'WARN' ("启动预热完成（登录={0}，失败项 {1}/{2}），证据：{3}" -f $loginOk, $failed.Count, @($items).Count, $evidencePath)
+        return $false
+    }
+    Write-Log 'INFO' ("启动预热完成（{0} 个端点，总耗时 {1}ms），证据：{2}" -f @($items).Count, [int]$stopwatch.Elapsed.TotalMilliseconds, $evidencePath)
+    return $true
 }
 
 function Invoke-Monitor {
@@ -1850,14 +2135,21 @@ function Invoke-Monitor {
         foreach ($svc in $services) {
             if ($Only.Count -gt 0 -and $Only -notcontains $svc.Name) { continue }
             $healthy = Test-Health $svc
-            $portPid = Get-PortPid $svc.Port
+            # worker 无监听端口：健康由心跳判定，$portPid 恒为空（宕机即走重启分支）
+            $portPid = if ($svc.Kind -eq 'worker') { $null } else { Get-PortPid $svc.Port }
             if ($healthy) {
                 if ($restartCount.ContainsKey($svc.Name)) { $restartCount.Remove($svc.Name) }
                 continue
             }
             if (-not $portPid) {
                 # 服务未运行 → 启动
-                Write-Log 'WARN' ("检测到 {0} 宕机（端口 {1} 无监听），自动重启..." -f $svc.Name, $svc.Port)
+                $reason = if ($svc.Kind -eq 'worker') {
+                    '心跳失效（{0}）' -f (Test-WorkerHealth -Svc $svc).Detail
+                }
+                else {
+                    '端口 {0} 无监听' -f $svc.Port
+                }
+                Write-Log 'WARN' ("检测到 {0} 宕机（{1}），自动重启..." -f $svc.Name, $reason)
                 $ok = Start-Service $svc
                 if (-not $ok) {
                     $n = [int]$restartCount[$svc.Name] + 1
@@ -1885,6 +2177,20 @@ function Invoke-CheckAll {
 
     foreach ($svc in $services) {
         if ($targets -notcontains $svc.Name) { continue }
+        if ($svc.Kind -eq 'worker') {
+            ""  # 空行分隔
+            "---- [{0}] {1}（worker，无端口）----" -f $svc.Name, $svc.Desc
+            $workerProbe = Test-WorkerHealth -Svc $svc
+            if ($workerProbe.Healthy) {
+                $totalPass++
+                "  [PASS] 心跳正常（PID {0}，{1}s 前）" -f $workerProbe.HeartbeatPid, $workerProbe.HeartbeatAgeSec
+            }
+            else {
+                $totalFail++
+                "  [FAIL] 心跳异常（{0}；文件：{1}）" -f (Format-HealthDetail $workerProbe.Detail), $svc.Heartbeat
+            }
+            continue
+        }
         $baseUrl = if ($svc.CheckBase) { $svc.CheckBase } else { "http://127.0.0.1:{0}" -f $svc.Port }
         $portPid = Get-PortPid $svc.Port
         $up = [bool]$portPid
