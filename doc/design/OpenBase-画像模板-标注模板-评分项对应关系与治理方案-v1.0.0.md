@@ -4,8 +4,8 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.4.2 |
-| 状态 | [Approved]（评审通过；P0、P1、P2、P3、P4 均已实施并验证） |
+| 文档版本 | v1.4.3 |
+| 状态 | [Approved]（评审通过；P0、P1、P2、P3、P4 均已实施并验证；P0~P4 主备通道影响核查完成） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
 | 评审人 | 需求方 / 技术负责人 |
@@ -24,6 +24,7 @@
 | v1.4.0 | 2026-11-17 | 实施 P4「多级审核」：逐级状态机（非末级通过保持 pending）、应审级数快照、审核留痕表与只读接口、前端进度与终审按钮/留痕弹窗；顺带修复 P3 遗漏的 DDL 契约冻结列；补 §15 实施结果与验收对照 | AI 编码代理 |
 | v1.4.1 | 2026-11-17 | 修复前端代理端点 8s 超时误伤：代理超时收敛逻辑移除，统一沿用 15s 默认值（DPS 模板首查实测 7.76s）；E2E 默认 trace 全绿（multilevel 2、policies 3、lineage 2），标注页 stub 恢复为确定性数据源 | AI 编码代理 |
 | v1.4.2 | 2026-11-17 | 主备通道核查后收口两处 P4 门禁旁路：AI 候选快照应审级数、MCP approve 按级推进且仅终审联动标签；新增 5 条 DPS 单测，定向回归 107 passed | AI 编码代理 |
+| v1.4.3 | 2026-11-17 | 扩展核查至 P0~P3 对 OpenLLM 主备通道的影响；登记 P0 默认计算后缀匹配为有意数据面变化、P2/P3 为 A-only 管理面扩展；修复 P1 通用画像读未按 D-04 择优的疏漏（`query_engine` 复用 `pick_preferred_tags`），新增 3 条单测 | AI 编码代理 |
 
 ---
 
@@ -679,5 +680,53 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 **残余观察**：
 1. MCP 输入模型无 `evidence_source` 字段，证据门禁（P3）仍未覆盖 MCP approve；补齐需扩展 MCP 入参，属独立需求。
 2. 通道 B 的 DPS 单请求超时为 5s（`DPS_TIMEOUT`），实测 B 通道所用接口冷启动 2.4~3.1s、模板列表 7.76s（不在 B 通道）；当前无失败，但余量仅约 2s，负载升高时建议上调至 10s。
+
+---
+
+## 16. 主备通道影响核查（P0~P4，v1.4.3）
+
+**核查范围**：OpenLLM B 通道（编排主用，经 `DpsClient` 直连 DPS）与 A 通道（OpenBase `dps-proxy` 直连备线）。B 通道固定调用 4 个 DPS 接口，本轮 P0~P4 均**未新增/删除/改签名**：
+
+| B 通道调用 | 入口 | P0 | P1 | P2 | P3 | P4 | 结论 |
+|---|---|---|---|---|---|---|---|
+| `POST /api/v2/portrait/calculate` | `dps_client.profile_read` | 默认口径不变；前缀标签可命中常量规则（有意） | 未改默认口径 | 未改 | 未改 | 未改 | 无契约变化 |
+| `GET /api/v2/portrait/{person_id}` | 同上 | 未改 | **读侧未择优 → 同名标签多行** | 未改 | 未改 | 未改 | **本次修复** |
+| `PUT/PATCH /api/v2/portrait/{person_id}` | `dps_client.profile_update` + `profile.py` | 未改 | 未改 | 未改 | 未改 | 未改 | 无影响 |
+| `GET /api/v2/portrait/list`（探活） | `dps_client.ping` | 未改 | 未改 | 未改 | 未改 | 未改 | 无影响 |
+
+### 16.1 分阶段结论
+
+| 阶段 | 对 B 通道的影响 | 处置 |
+|---|---|---|
+| P0 | `_execute_calc(person_id, None)` 的模板入参全为 `None` → 回落常量规则/权重（`routes_profiles.py` L138-164、`core.py` L92-95）；`_calculate_overall_score(weights=None)` 回落默认权重（`validation.py` L25-51）。**有意数据面变化**：`calculate_dimension_score` 与 `_calculate_data_completeness` 新增「规则 key 与标签 key 去前缀」后缀匹配，`<dimension>:<tag_key>` 标签若与常量规则同名将参与评分；当前标注字段 key 与常量规则 key 交集为 0（§4），仅手工/导入标签可能触发 | 无需 OpenLLM 改造；登记为预期变化 |
+| P1 | `profile_tag` 删除 `UNIQUE(profile_id, tag_code)`、新增 `source`/`annotation_template_code` 后，同一 `tag_code` 可多行；评分读路径已用 `pick_preferred_tags` 择优，**通用画像读未择优**，导致 B 通道 `business["tags"]`（进而 Prompt）与前端标签区出现重复/冲突标签 | 已修复（§16.2） |
+| P2 | lineage / field-mapping / dimension-details 三个只读接口与 `scoring-items` 实现复用仅服务 A 通道；`scoring-items` 响应结构不变（§13.6） | A-only 扩展，无需 B 对齐 |
+| P3 | 标注证据门禁/异常规则/孤儿报告只涉及标注写入与 A 通道只读面；B 通道不写标注、不调用新接口；DPS 与 OpenBase 代理的静态段均注册在动态段之前 | A-only 扩展，无需 B 对齐 |
+| P4 | 已核查收口（§15.9），B 通道 4 接口未改 | 无 |
+
+### 16.2 P1 读侧收口（DPS）
+
+| 文件 | 变更 |
+|---|---|
+| `src/engines/query_engine.py` | 新增 `_prefer_unique_tags()`（委托 `engines.portrait.crud.pick_preferred_tags`，仅当所有行均含 `tag_code` 时择优）；`get_portrait` 组装前、`get_portraits` 分组后应用 |
+| `src/tests/test_p1_read_side_tag_preference.py`（新增） | 3 条单测：manual_annotation 胜出、无 `tag_code` legacy 行原样返回、批量画像逐人择优 |
+
+规则与评分读路径完全一致：`manual_annotation > 其他来源 > legacy`，同优先级取 `created_at` 最新。未删除附加列（对 B 通道向后兼容），未改缓存键。
+
+### 16.3 验证证据
+
+| 项目 | 命令/方式 | 结果 |
+|---|---|---|
+| DPS 新增单测 | `pytest src/tests/test_p1_read_side_tag_preference.py -q` | 3 passed |
+| DPS 定向回归 | P0 scoring + P1 governance + list route + tenant isolation | 51 passed, 1 skipped |
+| DPS 静态检查 | `ruff --select E4,E7,E9,F`（改动文件） | 0 新增（HEAD 基线同为 4 项存量告警）；新测试 `--select I` 通过 |
+| OpenLLM B 通道兼容 | `pytest tests/unit/test_real_contract_profile.py -q` | 25 passed / 1 failed；失败项为既有基线（R9 已写 `external_id`，用例未同步），与本次 DPS 改动无关 |
+| OpenBase 代理 | 既有 `test_dps_proxy_routes_v1410.py`（P2/P3/P4 时已覆盖） | 无需变更 |
+
+### 16.4 残余与边界
+
+1. B 通道 Prompt 仍会看到 `profile_tag.source` / `annotation_template_code` 附加列（P1 前亦透传其他内部列）；本次不裁剪，避免改动 OpenLLM 契约层。
+2. P2/P3 的解释性/策略面为 A 通道管理面扩展，A/B 能力矩阵（`ab_equivalence.py`）仍按能力级「画像读/画像写」登记，不要求 B 对齐。
+3. P0 后缀匹配属有意修复：若后续补充与常量规则同名的标注字段，默认口径（不传 `template_code`）的分数/完整度/`status` 将随之变化，需在字段上线前评估。
 
 
