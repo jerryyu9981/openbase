@@ -4,7 +4,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.4.0 |
+| 文档版本 | v1.4.1 |
 | 状态 | [Approved]（评审通过；P0、P1、P2、P3、P4 均已实施并验证） |
 | 适用环境 | Dev（OpenBase 8000 + DPS 8030 + 前端 5173，PostgreSQL 主库） |
 | 作者 | AI 编码代理 |
@@ -22,6 +22,7 @@
 | v1.2.0 | 2026-11-17 | 实施 P2「前端可解释性」：DPS 新增模板 lineage / 标注字段映射 / 画像维度明细三个只读接口，OpenBase 三代理路由，前端四联视图与维度展开；补 §13 实施结果与验证证据 | AI 编码代理 |
 | v1.3.0 | 2026-11-17 | 实施 P3「策略执行与孤儿治理」：证据来源落库与审核门禁、异常规则求值、孤儿标注模板治理报告；DPS 2 只读接口 + OpenBase 2 代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E；补 §14 实施结果与验收对照 | AI 编码代理 |
 | v1.4.0 | 2026-11-17 | 实施 P4「多级审核」：逐级状态机（非末级通过保持 pending）、应审级数快照、审核留痕表与只读接口、前端进度与终审按钮/留痕弹窗；顺带修复 P3 遗漏的 DDL 契约冻结列；补 §15 实施结果与验收对照 | AI 编码代理 |
+| v1.4.1 | 2026-11-17 | 修复前端代理端点 8s 超时误伤：代理超时收敛逻辑移除，统一沿用 15s 默认值（DPS 模板首查实测 7.76s）；E2E 默认 trace 全绿（multilevel 2、policies 3、lineage 2），标注页 stub 恢复为确定性数据源 | AI 编码代理 |
 
 ---
 
@@ -637,10 +638,10 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 | OpenBase 静态检查 | `ruff check` | All checks passed |
 | 前端类型/静态检查 | `vue-tsc --noEmit`；`eslint`（3 文件 + 新 E2E） | 0 错误 |
 | 前端 E2E | `portrait-multilevel-review.spec.ts` | 2 passed（截图 `p4-review-progress.png`、`p4-review-log.png`） |
-| E2E 回归 | `portrait-policies.spec.ts`、`portrait-lineage.spec.ts` | 3 + 2 passed（需 `--trace=off` 规避 trace 对大响应的 8s 超时影响） |
+| E2E 回归 | `portrait-policies.spec.ts`、`portrait-lineage.spec.ts` | 3 + 2 passed（默认 trace；8s 超时已于 v1.4.1 修复为 15s） |
 | 真实链路冒烟（经 OpenBase 代理） | 创建多级标注 → 第 1 级通过 → 查留痕 | `required=2`、`created.progress_persisted=true`、`status=pending`、`review={level:1,required:2,finalized:false}`、留痕 `total=1` |
 
-说明：E2E 标注页用例通过 `page.route` 固定模板/队列/留痕响应（本机 tracing + 大响应对前端 8s 预算的影响），UI 断言为强断言；真实链路由上述冒烟与 DPS 单测覆盖。
+说明：E2E 标注页用例通过 `page.route` 固定模板/队列/留痕响应，使断言文案与数据完全可控、结果确定；UI 断言为强断言。前端代理超时已于 v1.4.1 统一为 15s，stub 不再用于规避超时；真实链路由上述冒烟与 DPS 单测覆盖。
 
 ### 15.7 验收标准对照
 
@@ -659,6 +660,6 @@ python scripts/p1_recompute_profiles.py --rollback reports/p1_recompute_snapshot
 1. **未强制不同审核人**：DPS 无分级角色模型，P4 仅留痕；按角色路由审核任务需 IAM 配套，另立需求。
 2. **审核超时/催办/转交**未实现，需任务调度与通知通道。
 3. **存量 `pending` 行不追溯补审**：按 `required=1` 单级收口，避免改变既有语义。
-4. **测试环境提示**：Playwright trace + DPS 大响应会触发前端 8s 超时，回归命令建议附 `--trace=off`（非功能缺陷，已在本章记录）。
+4. **前端超时已修复（v1.4.1）**：代理端点不再单独收敛到 8s，统一沿用 15s 默认值；触发证据为 DPS 模板首查 7.76s，E2E 默认 trace 回归已通过。
 
 

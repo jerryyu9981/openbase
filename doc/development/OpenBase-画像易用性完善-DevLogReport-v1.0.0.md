@@ -1,8 +1,8 @@
 # OpenBase 画像易用性完善 · 开发记录（DevLogReport）
 
-- 版本：v1.8.0
+- 版本：v1.8.1
 - 状态：[Implemented]
-- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.4.0
+- 对应设计：`doc/design/OpenBase-画像业务全流程与前端易用性分析-v1.0.0.md`（v1.4.1）；治理方案 v1.4.1
 - 任务清单：`doc/design/OpenBase-画像业务全流程与前端易用性分析-tasks-v1.0.0.md`（v1.3.1）；`doc/spec/p2-template-explainability-2026-11-17/tasks.md`；`doc/spec/p3-policy-execution-2026-11-17/tasks.md`；`doc/spec/p4-multi-level-review-2026-11-17/tasks.md`
 - 日期：2026-11-17
 - 作者：AI 编码代理
@@ -22,6 +22,7 @@
 | v1.6.0 | 2026-11-17 | P2 落地：模板四联视图、标注字段映射提示、画像维度规则级展开、缺口警示；新增 3 个 DPS 只读接口 + 3 条代理 + 15 条单测 + 2 条 E2E | AI 编码代理 |
 | v1.7.0 | 2026-11-17 | P3 落地：`annotation.evidence_source` 幂等演进、证据策略审核门禁、异常规则求值、孤儿标注模板治理报告；2 个 DPS 只读接口 + 2 条代理 + 前端证据录入/异常预警/策略摘要 + 20 条单测 + 3 条 E2E | AI 编码代理 |
 | v1.8.0 | 2026-11-17 | P4 落地：逐级审核状态机、应审级数快照、审核留痕表与只读接口、前端进度/终审按钮/留痕弹窗；35 条单测 + 1 条代理 + 2 条 E2E；修复 P3 遗留 DDL 契约冻结列 | AI 编码代理 |
+| v1.8.1 | 2026-11-17 | 修复前端代理端点 8s 超时误伤：移除代理前缀 8s 收敛，统一沿用 15s 默认值；E2E 默认 trace 全绿（multilevel 2 + policies 3 + lineage 2），标注页 stub 恢复为确定性数据源 | AI 编码代理 |
 
 ## 1. 变更范围
 
@@ -276,9 +277,28 @@
 | DPS 定向回归（P4 + P3 + P2 + P1 + P0 + 标注链 + DDL 契约） | 173 passed |
 | `pytest tests/test_dps_proxy_routes_v1410.py -q` | 52 passed |
 | `ruff check` / `vue-tsc` / `eslint` | 0 错误 |
-| E2E（headless 1440×900） | `portrait-multilevel-review.spec.ts` 2 passed；回归 `portrait-policies` 3 passed、`portrait-lineage` 2 passed（`--trace=off`） |
+| E2E（headless 1440×900） | `portrait-multilevel-review.spec.ts` 2 passed；回归 `portrait-policies` 3 passed、`portrait-lineage` 2 passed（默认 trace，v1.8.1 后全绿） |
 | 真实链路冒烟（经代理） | 创建多级标注（required=2）→ 第 1 级通过 → `status=pending`、`review.level=1`、留痕 total=1 |
 
 证据截图：`doc/test/evidence/s6/ui-e2e/p4-review-progress.png`、`p4-review-log.png`。
 
-已知边界：不强制不同审核人（仅留痕）；审核超时/催办/转交未实现；存量 pending 行按 `required=1` 单级收口；Playwright trace 对大响应有 8s 影响，回归建议 `--trace=off`。
+已知边界：不强制不同审核人（仅留痕）；审核超时/催办/转交未实现；存量 pending 行按 `required=1` 单级收口。前端 8s 超时边界已于 v1.8.1 消除，回归可直接使用默认 trace。
+
+## 16. 前端代理超时修复（v1.8.1）
+
+问题：`openbase-ui/src/core/api/http.ts` 曾对代理前缀（`/memory-proxy/`、`/rag-proxy/`、`/dps-proxy/`、`/llm-proxy/`、`/gateway/`）在请求拦截器中把超时收敛为 8000ms。实测 `/api/v1/dps-proxy/templates?page=1&page_size=50` 首查耗时 **7760ms**（冷查询 + 大字段序列化），叠加 Playwright trace 录制后频繁越过 8s，导致标注页在 E2E 与真实浏览时误报超时。
+
+| 仓库 | 模块 | 说明 |
+|---|---|---|
+| 前端 | `src/core/api/http.ts` | 删除 `PROXY_TIMEOUT_MS`、`PROXY_PREFIXES` 及拦截器内的超时覆盖；统一 `DEFAULT_TIMEOUT_MS = 15000`；流式调用（`llm.ts` / `rag.ts`）仍显式传 120s |
+| 前端 | `tests/e2e/portrait-multilevel-review.spec.ts` | 恢复 `stubAnnotationApis(page)`，断言数据完全可控；注释改为「确定性数据源」而非「规避超时」 |
+
+验证：
+
+| 项 | 结果 |
+|---|---|
+| 代理端点实测 | `/dps-proxy/templates` 首查 7760ms（< 15s，原 8s 会误伤） |
+| 前端静态检查 | `vue-tsc --noEmit`、`eslint` 0 错误 |
+| E2E（默认 trace） | `portrait-multilevel-review` 2 passed（2.4s / 2.4s）；`portrait-policies` 3 passed、`portrait-lineage` 2 passed，合计 7 passed |
+
+结论：代理端点不再单独收敛，统一沿用 15s 默认值；8s 误伤问题闭环，E2E 无需 `--trace=off` 规避。

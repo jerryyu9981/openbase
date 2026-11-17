@@ -84,25 +84,19 @@ export const tokenStore = {
   },
 }
 
+/**
+ * 全局请求超时：15s。
+ *
+ * 代理端点（`/dps-proxy/` 等）曾单独收敛到 8s 以尽快暴露上游不可达，但 DPS 的模板首查
+ * 实测可达 ~7.8s（冷查询/大字段序列化），8s 会误伤正常请求并在 E2E trace 场景频繁超时；
+ * 现统一沿用默认值，流式调用（`llm.ts` / `rag.ts`）仍显式传 120s 覆盖。
+ */
 const DEFAULT_TIMEOUT_MS = 15000
 const http = axios.create({ baseURL: '/api/v1', timeout: DEFAULT_TIMEOUT_MS })
-
-/**
- * 代理类端点（最终打到四仓上游）使用更短的超时。
- *
- * 上游不可达时若沿用 15s 默认值，列表页会长时间停留在 loading；收敛到 8s 让页面尽早
- * 进入「可重试」错误态。流式调用（`llm.ts` / `rag.ts`）显式传 120s，不受影响。
- */
-const PROXY_TIMEOUT_MS = 8000
-const PROXY_PREFIXES = ['/memory-proxy/', '/rag-proxy/', '/dps-proxy/', '/llm-proxy/', '/gateway/']
 
 http.interceptors.request.use((config) => {
   const token = tokenStore.access
   if (token) config.headers.Authorization = `Bearer ${token}`
-  const requestUrl = config.url ?? ''
-  if (config.timeout === DEFAULT_TIMEOUT_MS && PROXY_PREFIXES.some((prefix) => requestUrl.startsWith(prefix))) {
-    config.timeout = PROXY_TIMEOUT_MS
-  }
   // C-11 测试模式：URL ?test_case= 或 localStorage ob_test_mode=1 → 注入测试头；关闭时零影响
   const testHeaders = resolveTestCaseHeaders(
     typeof window !== 'undefined' ? window.location.search : '',

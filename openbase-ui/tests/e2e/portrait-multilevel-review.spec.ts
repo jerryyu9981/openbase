@@ -6,8 +6,9 @@
  *   2) 审核记录弹窗展示逐级留痕；
  *   3) 无 pageerror / 非受控 4xx。
  *
- * 数据策略：DPS 查询在本机 E2E 环境偶发超过前端 8s 预算，故用 `page.route` 固定标注相关
- * 响应（模板列表 / 队列 / 留痕），保证 UI 断言可复现；认证与其余接口仍走真实后端。
+ * 数据策略：用 `page.route` 固定标注相关响应（模板列表 / 队列 / 留痕），使断言文案与数据
+ * 完全可控、结果确定；认证与其余接口仍走真实后端。前端代理超时已于 v1.4.1 统一为 15s
+ * （原 8s 收敛移除），本 stub 不再承担规避超时的职责。
  */
 import { expect, test, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
