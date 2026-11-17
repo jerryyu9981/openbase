@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from types import SimpleNamespace
 from typing import Any
@@ -77,6 +78,18 @@ class _FakeStream:
     async def aiter_lines(self):
         for line in self._lines:
             yield line
+
+
+class _FakeStreamStuckAfterDone(_FakeStream):
+    """done 事件后上游不关闭连接的替身（复现前端一直处于生成中）."""
+
+    async def aiter_lines(self):
+        for line in self._lines:
+            yield line
+        import asyncio
+
+        await asyncio.Event().wait()  # 模拟上游保持连接不关闭
+
 
 
 class _FakeAsyncClient:
@@ -397,9 +410,37 @@ def test_sse_forward_publishes_header_level_segment(
     assert recorded[0]["reached"] is True
 
 
+def test_sse_closes_downstream_after_done_even_if_upstream_stays_open() -> None:
+    """done 事件后即使上游不关闭连接，代理也必须结束下游流（避免前端一直生成中）."""
+    _FakeAsyncClient.stream_result = _FakeStreamStuckAfterDone(
+        200,
+        [
+            "event: token",
+            'data: {"delta": "a"}',
+            "",
+            "event: done",
+            'data: {"answer": "a"}',
+            "",
+        ],
+    )
+    request = _request()
+
+    async def _collect() -> list[str]:
+        response = await rag_proxy_module._forward_sse(
+            "/api/v1/query/stream", {"q": "x"}, request=request
+        )
+        chunks: list[str] = []
+        async for chunk in response.body_iterator:
+            chunks.append(chunk)
+        return chunks
+
+    chunks = asyncio.run(asyncio.wait_for(_collect(), timeout=2))
+    assert any("event: done" in chunk for chunk in chunks)
+    assert any('"answer": "a"' in chunk for chunk in chunks)
+
+
 def test_sse_upstream_error_publishes_payload_segment() -> None:
     """SSE 4xx/5xx：错误体可读 → 记状态与错误码（可归因到上游）."""
-    import asyncio
 
     _FakeAsyncClient.stream_result = _FakeStream(500, [])
     request = _request()

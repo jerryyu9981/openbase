@@ -417,9 +417,21 @@ async def _forward_sse(
                         status_code=upstream.status_code,
                         content_type=content_type_of(upstream),
                     )
+                    # done/error 为终止事件：转发完该事件块后主动结束下游流。
+                    # 上游（OpenRAG）在 done 后可能保持连接不关闭，若继续等待
+                    # aiter_lines 结束，前端会一直停留在「生成中」直到超时。
+                    terminal_event = False
                     async for line in upstream.aiter_lines():
-                        if line:
-                            yield f"{line}\n"
+                        if not line:
+                            if terminal_event:
+                                return
+                            continue
+                        yield f"{line}\n"
+                        normalized = line.strip()
+                        if normalized.startswith("event:"):
+                            terminal_event = (
+                                normalized.split(":", 1)[1].strip() in {"done", "error"}
+                            )
         except httpx.HTTPError as exc:
             publish_upstream_response(
                 request,
