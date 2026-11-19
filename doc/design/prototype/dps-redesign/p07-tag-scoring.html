@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 标签体系 ↔ 功能口径体检 · DPS 重设计 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+<style>
+  .dps-main { padding: 14px 18px 30px; }
+  .tag-layout { display:grid; grid-template-columns: 250px minmax(0,1fr); gap:14px; align-items:start; }
+  .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .flow-node { border:1px solid var(--ob-border); border-radius:8px; padding:8px 12px; background:#fcfdff; font-size:12.5px; text-align:center; }
+  .flow-node b { display:block; font-size:13px; }
+  .flow-arrow { color:var(--ob-text-disabled); }
+</style>
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">概览</div>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>今日工作台</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>关系总览</a>
+      <div class="nav-group-title">标注作业</div>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>标注模板</a>
+      <div class="nav-group-title">模板与口径</div>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>模板工作台</a>
+      <a class="nav-item is-active" href="p07-tag-scoring.html"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></a>
+      <div class="nav-group-title">标签与画像</div>
+      <a class="nav-item is-active" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签体系</a>
+      <a class="nav-item is-active" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签血缘</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>画像列表</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">标签体系 · 血缘 · 口径体检</div><div class="ob-user">张治理 ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head">
+        <div>
+          <h1 class="dps-title">标签与评分口径</h1>
+          <div class="dps-sub">/portrait/dps/tags · /portrait/dps/lineage?tag=… · /portrait/dps/scoring-consistency</div>
+        </div>
+        <div class="dps-actions">
+          <button class="el-button el-button--small">导出 JSON</button>
+          <button class="el-button el-button--primary el-button--small">重新体检</button>
+        </div>
+      </div>
+
+      <div class="tag-layout">
+        <!-- 标签树 -->
+        <section class="el-card" style="margin-bottom:0">
+          <div class="el-card__header" style="padding:12px 14px"><span>标签体系</span><a class="el-button el-button--link el-button--small" href="#">分类管理</a></div>
+          <div class="el-card__body" style="padding:8px">
+            <input class="el-input" placeholder="搜索标签 / 分类" style="width:100%;margin-bottom:8px">
+            <div class="tree">
+              <div class="tree-node"><span class="caret">▾</span>就业 <span class="small muted" style="margin-left:auto">12</span></div>
+              <div class="tree-children">
+                <div class="tree-node"><span class="caret">•</span>就业状态 <span class="el-tag" style="margin-left:auto;height:18px">employment</span></div>
+                <div class="tree-node"><span class="caret">•</span>收入水平 <span class="el-tag" style="margin-left:auto;height:18px">employment</span></div>
+              </div>
+              <div class="tree-node"><span class="caret">▾</span>社会关系 <span class="small muted" style="margin-left:auto">8</span></div>
+              <div class="tree-children">
+                <div class="tree-node"><span class="caret">•</span>家庭支持 <span class="el-tag" style="margin-left:auto;height:18px">social</span></div>
+                <div class="tree-node is-active"><span class="caret">•</span>服务渠道 <span class="el-tag el-tag--danger" style="margin-left:auto;height:18px">未映射</span></div>
+              </div>
+              <div class="tree-node"><span class="caret">▸</span>心理 <span class="small muted" style="margin-left:auto">6</span></div>
+              <div class="tree-node"><span class="caret">▸</span>行为 <span class="small muted" style="margin-left:auto">9</span></div>
+            </div>
+            <div class="small muted mt-10">共 35 个标签 · 2 个维度未映射分类</div>
+          </div>
+        </section>
+
+        <div>
+          <!-- 标签详情 + 血缘 -->
+          <div class="el-card">
+            <div class="el-card__header"><span>service:channel · 服务渠道</span><span class="flex gap-6"><span class="el-tag el-tag--danger">未映射分类</span><button class="el-button el-button--small">复制链接</button></span></div>
+            <div class="el-card__body">
+              <div class="grid-3 mb-14">
+                <div><div class="small muted">标签值</div><div>电话 / 上门 / 线上</div></div>
+                <div><div class="small muted">产出模板</div><div class="mono">svc-note</div></div>
+                <div><div class="small muted">评分命中</div><div>—（无同名评分项）</div></div>
+              </div>
+
+              <div class="banner banner--danger">
+                <div><b>口径 BLOCK：</b>标注模板 <code>svc-note</code> 的字段 <code>channel</code> 配置了目标维度 <code>service</code>，但归属画像模板 <code>cc-persona-v3</code> 中无 <code>service</code> 维度或同名评分项。该标签生成后不会影响评分。</div>
+              </div>
+
+              <div class="small muted mb-6">血缘链路（可点击节点跳转）</div>
+              <div class="flow mb-14">
+                <div class="flow-node"><b>svc-note</b>标注模板</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node"><b>channel</b>字段</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node"><b>service:channel</b>标签</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node" style="border-color:#fecaca;background:#fef2f2"><b>无评分项</b>blocked</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node"><b>画像</b>412 条</div>
+              </div>
+
+              <div class="flex gap-6">
+                <a class="el-button el-button--small el-button--primary" href="p06-annotation-config.html">去字段设计器修复</a>
+                <a class="el-button el-button--small" href="p05-template-editor.html">去模板工作台加维度</a>
+                <button class="el-button el-button--small">查看影响面</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 口径体检 -->
+          <div class="el-card">
+            <div class="el-card__header"><span>口径体检（只读扫描）</span><span class="flex gap-6"><span class="el-tag el-tag--danger">1 BLOCK</span><span class="el-tag el-tag--warning">2 WARN</span></span></div>
+            <div class="el-card__body">
+              <div class="flex gap-6 wrap mb-10">
+                <input class="el-input" placeholder="分类 code（可选）" style="width:180px">
+                <label class="small"><input type="checkbox" checked> 仅 active 模板</label>
+                <span class="grow" style="flex:1"></span>
+                <span class="small muted">扫描 8 个画像模板 / 6 个标注模板 / 47 个字段</span>
+              </div>
+              <table class="el-table el-table--stripe">
+                <thead><tr><th style="width:80px">级别</th><th style="width:180px">问题码</th><th style="width:140px">画像模板</th><th style="width:130px">标注模板</th><th style="width:150px">标签</th><th>说明</th><th style="width:100px">操作</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="el-tag el-tag--danger">BLOCK</span></td><td class="mono small">SC_TAG_WITHOUT_RULE</td><td class="mono small">cc-persona-v3</td><td class="mono small">svc-note</td><td class="mono small">service:channel</td><td class="small">目标维度在画像模板中不存在</td><td><a class="el-button el-button--link el-button--small" href="p06-annotation-config.html">去修复</a></td></tr>
+                  <tr><td><span class="el-tag el-tag--warning">WARN</span></td><td class="mono small">SC_DIMENSION_NO_SOURCE</td><td class="mono small">risk-v2</td><td class="mono small">—</td><td class="mono small">behavior:*</td><td class="small">维度无标注来源，分数恒为缺值 50</td><td><a class="el-button el-button--link el-button--small" href="p05-template-editor.html">去修复</a></td></tr>
+                  <tr><td><span class="el-tag el-tag--warning">WARN</span></td><td class="mono small">SC_FIELD_NO_DIMENSION</td><td class="mono small">cc-persona-v3</td><td class="mono small">cc-intake</td><td class="mono small">—</td><td class="small">2 个字段未配置目标维度，仅存原始值</td><td><a class="el-button el-button--link el-button--small" href="p06-annotation-config.html">去修复</a></td></tr>
+                </tbody>
+              </table>
+              <div class="small muted mt-10">BLOCK 将阻断模板激活；可通过 <code>SCORING_CONSISTENCY_GATE=warn/off</code> 临时降级（需管理员）。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li>合并视图：标签体系（树 + 详情）、血缘（节点可跳转）、口径体检（问题 + 去修复）同页，减少 3 次跳转。</li>
+          <li>深链：<code>/portrait/dps/lineage?tag=service:channel</code> 直接定位到本页选中态。</li>
+          <li>问题闭环：每条问题提供「去修复」，跳转后保留返回上下文。</li>
+          <li>只读约束：体检不写入；修复动作在目标页执行并二次校验。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

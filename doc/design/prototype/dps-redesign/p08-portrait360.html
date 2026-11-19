@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>08 画像列表 / 360 / 措施建议 · DPS 重设计 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+<style>
+  .dps-main { padding: 14px 18px 30px; }
+  .scorebar { display:flex; height:10px; border-radius:99px; overflow:hidden; background:#eef2f7; }
+  .scorebar > i { display:block; height:100%; }
+  .dim-row { display:grid; grid-template-columns:150px 1fr 64px; gap:12px; align-items:center; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">概览</div>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>今日工作台</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>关系总览</a>
+      <div class="nav-group-title">标注作业</div>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>标注模板</a>
+      <div class="nav-group-title">模板与口径</div>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>模板工作台</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></a>
+      <div class="nav-group-title">标签与画像</div>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签体系</a>
+      <a class="nav-item is-active" href="p08-portrait360.html"><span class="nav-dot"></span>画像列表</a>
+      <a class="nav-item is-active" href="p08-portrait360.html"><span class="nav-dot"></span>画像 360</a>
+      <a class="nav-item is-active" href="p08-portrait360.html"><span class="nav-dot"></span>措施建议</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">画像列表 / 360 / 措施建议</div><div class="ob-user">业务查看者 ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head">
+        <div>
+          <h1 class="dps-title">画像列表</h1>
+          <div class="dps-sub">服务端检索 / 列设置 / 批量计算 / 导出（缺口期前端降级）</div>
+        </div>
+        <div class="dps-actions">
+          <a class="el-button el-button--small" href="#">高级搜索</a>
+          <button class="el-button el-button--small">列设置</button>
+          <button class="el-button el-button--small">导出 CSV</button>
+          <button class="el-button el-button--primary el-button--small">计算画像</button>
+        </div>
+      </div>
+
+      <div class="page-toolbar">
+        <input class="el-input" placeholder="姓名 / person_id / 外部 ID" style="width:260px">
+        <select class="el-select"><option>全部模板</option><option>cc-persona-v3</option><option>risk-v2</option></select>
+        <select class="el-select"><option>全部风险</option><option>高</option><option>中</option><option>低</option></select>
+        <select class="el-select"><option>更新时间：近 30 天</option><option>近 7 天</option><option>全部</option></select>
+        <button class="el-button el-button--primary">查询</button>
+        <button class="el-button">重置</button>
+        <span class="grow" style="flex:1"></span>
+        <button class="el-button el-button--small">保存视图</button>
+      </div>
+
+      <div class="bulkbar" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:12px">
+        <input type="checkbox" checked><span class="small">已选 2 条</span>
+        <span class="grow" style="flex:1"></span>
+        <button class="el-button el-button--small">批量计算</button>
+        <button class="el-button el-button--small el-button--danger">批量删除…</button>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__body" style="padding:0">
+          <table class="el-table el-table--stripe">
+            <thead><tr><th style="width:38px"><input type="checkbox"></th><th>姓名 / person_id</th><th style="width:170px">标签</th><th style="width:110px">风险</th><th style="width:90px">综合分</th><th style="width:150px">更新时间</th><th style="width:150px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><input type="checkbox" checked></td><td><b>张 * 华</b><div class="mono small muted">tenant-1_1042</div></td><td><span class="chip">就业不稳定</span><span class="chip">家庭支持良好</span></td><td><span class="el-tag el-tag--success">高</span></td><td>74</td><td class="small muted">2026-11-20 10:24</td><td><a class="el-button el-button--link el-button--small" href="#p360">360</a><a class="el-button el-button--link el-button--small" href="p07-tag-scoring.html">血缘</a></td></tr>
+              <tr><td><input type="checkbox" checked></td><td><b>李 *</b><div class="mono small muted">tenant-1_1039</div></td><td><span class="chip is-warn">就业改善</span></td><td><span class="el-tag el-tag--warning">中</span></td><td>61</td><td class="small muted">2026-11-20 10:02</td><td><a class="el-button el-button--link el-button--small" href="#p360">360</a><a class="el-button el-button--link el-button--small" href="p07-tag-scoring.html">血缘</a></td></tr>
+              <tr><td><input type="checkbox"></td><td><b>赵 * 强</b><div class="mono small muted">tenant-1_1035</div></td><td><span class="chip">家庭支持良好</span></td><td><span class="el-tag el-tag--info">低</span></td><td>38</td><td class="small muted">2026-11-19 09:41</td><td><a class="el-button el-button--link el-button--small" href="#p360">360</a><a class="el-button el-button--link el-button--small" href="p07-tag-scoring.html">血缘</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h2 style="font-size:16px;margin:24px 0 10px" id="p360">画像 360 · 张 * 华</h2>
+      <div class="grid-7-5">
+        <div class="el-card" style="margin-bottom:0">
+          <div class="el-card__header"><span>六维评分 <span class="small muted">cc-persona-v3 · v3</span></span><span class="flex gap-6"><span class="el-tag el-tag--success">高风险</span><button class="el-button el-button--small">重算</button></span></div>
+          <div class="el-card__body">
+            <div class="flex-between mb-6"><span class="small"><b>综合分</b></span><span style="font-size:22px;font-weight:700">74</span></div>
+            <div class="scorebar mb-14">
+              <i style="width:22%;background:#16a34a"></i><i style="width:24%;background:#22c55e"></i><i style="width:18%;background:#f59e0b"></i><i style="width:20%;background:#f97316"></i><i style="width:16%;background:#dc2626"></i>
+            </div>
+
+            <div class="dim-row"><span class="small">社会关系 <span class="muted">0.28</span></span><div class="bar"><i style="width:62%;background:#22c55e"></i></div><span class="small">62</span></div>
+            <div class="dim-row"><span class="small">就业 <span class="muted">0.26</span></span><div class="bar"><i style="width:48%;background:#f59e0b"></i></div><span class="small">48</span></div>
+            <div class="dim-row"><span class="small">心理 <span class="muted">0.22</span></span><div class="bar"><i style="width:71%;background:#22c55e"></i></div><span class="small">71</span></div>
+            <div class="dim-row"><span class="small">行为 <span class="muted">0.20</span></span><div class="bar"><i style="width:55%;background:#f59e0b"></i></div><span class="small">55</span></div>
+            <div class="dim-row"><span class="small">家庭 <span class="muted">0.04</span></span><div class="bar"><i style="width:80%;background:#22c55e"></i></div><span class="small">80</span></div>
+
+            <div class="ob-divider"></div>
+            <div class="flex-between mb-6"><span class="small muted">标签（按维度）</span><button class="el-button el-button--link el-button--small">展开全部</button></div>
+            <div class="mb-10"><span class="small muted">就业</span><div class="chips mt-4"><span class="chip is-warn">就业不稳定</span><span class="chip">收入 1k-3k</span></div></div>
+            <div class="mb-10"><span class="small muted">社会关系</span><div class="chips mt-4"><span class="chip is-primary">家庭支持良好</span><span class="chip">社区参与度中</span></div></div>
+            <div><span class="small muted">心理</span><div class="chips mt-4"><span class="chip">情绪较稳定</span></div></div>
+
+            <div class="ob-divider"></div>
+            <div class="flex-between mb-6"><span class="small muted">操作</span><span class="flex gap-6"><button class="el-button el-button--small">编辑属性</button><button class="el-button el-button--small">查看评分项</button><button class="el-button el-button--small el-button--danger">删除画像</button></span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="el-card">
+            <div class="el-card__header"><span>标注时间线</span><span class="small muted">最近 3 条</span></div>
+            <div class="el-card__body">
+              <div class="timeline">
+                <div class="tl-item is-ok"><div class="tl-time">2026-11-20 10:24</div><div class="tl-title">标注通过 · cc-intake</div><div class="small muted">写入 3 标签 · 综合分 71 → 74</div></div>
+                <div class="tl-item"><div class="tl-time">2026-11-10 15:02</div><div class="tl-title">标注通过 · cc-employment</div><div class="small muted">写入 2 标签 · 综合分 68 → 71</div></div>
+                <div class="tl-item"><div class="tl-time">2026-10-21 09:30</div><div class="tl-title">标注通过 · cc-psych</div><div class="small muted">写入 1 标签 · 综合分 68</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="el-card">
+            <div class="el-card__header"><span>措施建议</span><span class="flex gap-6"><button class="el-button el-button--small">复制</button><button class="el-button el-button--small">导出</button></span></div>
+            <div class="el-card__body">
+              <div class="issue"><div><div class="issue-title">就业帮扶（优先级高）</div><div class="issue-desc">就业维度 48 分，低于同类均值；建议转介就业服务并 2 周后复评。</div></div></div>
+              <div class="issue"><div><div class="issue-title">心理支持（优先级中）</div><div class="issue-desc">情绪稳定但风险态度偏消极；建议每月一次心理疏导。</div></div></div>
+              <div class="issue"><div><div class="issue-title">家庭协同（优先级低）</div><div class="issue-desc">家庭支持良好，可作为正向资源纳入帮扶计划。</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li>列表：服务端检索缺失时前端降级（最多 100 条），显式提示「当前为本地检索」。</li>
+          <li>批量：计算/删除均二次确认；删除后行消失并提示不可恢复（软删除）。</li>
+          <li>360：标签按维度分组，点击标签打开血缘抽屉；评分项、编辑属性、删除均在页内完成。</li>
+          <li>编辑属性：字段化表单，JSON 仅高级模式；<code>If-Match</code> 冲突（409）提示并刷新。</li>
+          <li>措施建议：按维度分组，可复制/导出；无建议时显示「暂无建议，请先完成画像计算」。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 今日工作台 · DPS 重设计 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">概览</div>
+      <a class="nav-item is-active" href="p01-workbench.html"><span class="nav-dot"></span>今日工作台</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>关系总览</a>
+      <div class="nav-group-title">标注作业</div>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>AI 候选复核 <span class="nav-count">3</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>标注模板</a>
+      <div class="nav-group-title">模板与口径</div>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>模板工作台</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>版本与发布</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></a>
+      <div class="nav-group-title">标签与画像</div>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签体系</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>画像列表</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>画像 360</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">今日工作台</div><div class="ob-user">王审核 · 审核员 ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head">
+        <div>
+          <h1 class="dps-title">早上好，今天有 21 项待处理</h1>
+          <div class="dps-sub">待标注 12 · 待我审核 4 · 返修 2 · AI 待复核 3 ｜ 治理告警 6 条（含 2 条阻断）</div>
+        </div>
+        <div class="dps-actions">
+          <button class="el-button">导出今日清单</button>
+          <a class="el-button el-button--primary" href="p02-annotation-workspace.html">开始标注</a>
+        </div>
+      </div>
+
+      <div class="grid-4 mb-14">
+        <a class="stat-card" href="p02-annotation-workspace.html" style="text-decoration:none;color:inherit">
+          <span class="stat-accent"></span>
+          <div class="stat-label">待标注</div><div class="stat-num">12</div>
+          <div class="bar mt-10"><i style="width:38%"></i></div>
+          <div class="stat-foot">3 个模板 · 预计 38% 今日完成</div>
+        </a>
+        <a class="stat-card is-warn" href="p03-review-inbox.html" style="text-decoration:none;color:inherit">
+          <span class="stat-accent"></span>
+          <div class="stat-label">待我审核</div><div class="stat-num">4</div>
+          <div class="bar is-warn mt-10"><i style="width:25%"></i></div>
+          <div class="stat-foot">2 条第 2 级 · 2 条终审</div>
+        </a>
+        <a class="stat-card is-danger" href="p02-annotation-workspace.html" style="text-decoration:none;color:inherit">
+          <span class="stat-accent"></span>
+          <div class="stat-label">返修</div><div class="stat-num">2</div>
+          <div class="bar is-danger mt-10"><i style="width:12%"></i></div>
+          <div class="stat-foot">最久已等待 2 天</div>
+        </a>
+        <a class="stat-card is-ok" href="p03-review-inbox.html" style="text-decoration:none;color:inherit">
+          <span class="stat-accent"></span>
+          <div class="stat-label">AI 待复核</div><div class="stat-num">3</div>
+          <div class="bar is-ok mt-10"><i style="width:18%"></i></div>
+          <div class="stat-foot">批次 ai-1120-A · 平均置信度 0.86</div>
+        </a>
+      </div>
+
+      <div class="grid-7-5">
+        <div>
+          <div class="el-card">
+            <div class="el-card__header">
+              <span>我的队列</span>
+              <span class="flex gap-6"><span class="el-tag el-tag--info">按模板分组</span><button class="el-button el-button--small">全部任务</button></span>
+            </div>
+            <div class="el-card__body">
+              <div class="flex-between mb-6"><span class="small"><b>社区矫正画像</b> <span class="text-muted">cc-persona-v3</span></span><span class="small text-muted">7/20</span></div>
+              <div class="bar mb-14"><i style="width:35%"></i></div>
+              <div class="flex-between mb-6"><span class="small"><b>再犯风险画像</b> <span class="text-muted">risk-v2</span></span><span class="small text-muted">3/12</span></div>
+              <div class="bar is-warn mb-14"><i style="width:25%"></i></div>
+              <div class="flex-between mb-6"><span class="small"><b>帮扶对象画像</b> <span class="text-muted">aid-v1</span></span><span class="small text-muted">2/8</span></div>
+              <div class="bar mb-14"><i style="width:25%"></i></div>
+
+              <div class="ob-divider"></div>
+              <div class="flex-between mb-10"><span class="small text-muted">最近处理</span><span class="small text-muted">查看全部</span></div>
+              <table class="el-table">
+                <thead><tr><th>主体</th><th>模板</th><th style="width:100px">状态</th><th style="width:110px">时间</th></tr></thead>
+                <tbody>
+                  <tr><td>张 * 华 <span class="mono small muted">tenant-1_1042</span></td><td>cc-persona-v3</td><td><span class="el-tag el-tag--warning">待审核</span></td><td class="small muted">10:24</td></tr>
+                  <tr><td>李 * <span class="mono small muted">tenant-1_1039</span></td><td>risk-v2</td><td><span class="el-tag el-tag--danger">已驳回</span></td><td class="small muted">10:02</td></tr>
+                  <tr><td>赵 * 强 <span class="mono small muted">tenant-1_1035</span></td><td>cc-persona-v3</td><td><span class="el-tag el-tag--success">已通过</span></td><td class="small muted">09:41</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="el-card">
+            <div class="el-card__header"><span>规模概览</span><span class="flex gap-6"><button class="el-button el-button--small">7 天</button><button class="el-button el-button--small">30 天</button><button class="el-button el-button--small">90 天</button></span></div>
+            <div class="el-card__body">
+              <div class="grid-3 mb-14">
+                <div><div class="small muted">画像总数</div><div style="font-size:22px;font-weight:700">1,284</div></div>
+                <div><div class="small muted">高风险</div><div style="font-size:22px;font-weight:700" class="text-danger">96</div></div>
+                <div><div class="small muted">今日新增</div><div style="font-size:22px;font-weight:700">18</div></div>
+              </div>
+              <div class="small muted mb-6">近 30 天新增趋势（示意）</div>
+              <div class="flex" style="align-items:flex-end;gap:5px;height:96px;padding:8px 0;border-bottom:1px solid var(--el-border-color-lighter)">
+                <i style="flex:1;height:32%;background:#bfdbfe;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:48%;background:#bfdbfe;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:41%;background:#bfdbfe;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:64%;background:#93c5fd;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:58%;background:#93c5fd;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:72%;background:#60a5fa;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:88%;background:#3b82f6;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:66%;background:#93c5fd;border-radius:3px 3px 0 0"></i>
+                <i style="flex:1;height:54%;background:#bfdbfe;border-radius:3px 3px 0 0"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="el-card">
+            <div class="el-card__header"><span>治理告警</span><span class="el-tag el-tag--danger">2 阻断</span></div>
+            <div class="el-card__body">
+              <div class="issue is-error">
+                <div>
+                  <div class="issue-title">评分口径 BLOCK · service:channel</div>
+                  <div class="issue-desc">标注模板 <code>svc-note</code> 字段 <code>channel</code> 目标维度在画像模板 <code>cc-persona-v3</code> 中无同名评分项。</div>
+                  <a class="issue-link" href="p07-tag-scoring.html">去修复 →</a>
+                </div>
+              </div>
+              <div class="issue is-error">
+                <div>
+                  <div class="issue-title">模板未激活但被标注模板引用</div>
+                  <div class="issue-desc"><code>risk-v2</code> 处于 draft，仍有 2 个标注模板归属它，审核通过后无法联动评分。</div>
+                  <a class="issue-link" href="p04-template-hub.html">去激活 →</a>
+                </div>
+              </div>
+              <div class="issue">
+                <div>
+                  <div class="issue-title">维度未映射标签分类</div>
+                  <div class="issue-desc">维度 <code>social</code> 在标签分类中无 <code>dimension_code</code>，血缘将断裂。</div>
+                  <a class="issue-link" href="p07-tag-scoring.html">去映射 →</a>
+                </div>
+              </div>
+              <div class="issue">
+                <div>
+                  <div class="issue-title">标注模板字段完整度 78%</div>
+                  <div class="issue-desc"><code>cc-intake</code> 有 3 个字段缺必填标记或目标维度。</div>
+                  <a class="issue-link" href="p06-annotation-config.html">去完善 →</a>
+                </div>
+              </div>
+              <div class="small muted mt-10">共 6 条 · 仅展示前 4 条</div>
+            </div>
+          </div>
+
+          <div class="el-card">
+            <div class="el-card__header"><span>快捷入口</span></div>
+            <div class="el-card__body">
+              <div class="grid-2">
+                <a class="el-button" href="p02-annotation-workspace.html">继续上次标注</a>
+                <a class="el-button" href="p03-review-inbox.html">批量审核</a>
+                <a class="el-button" href="p04-template-hub.html">新建模板</a>
+                <a class="el-button" href="p06-annotation-config.html">配字段映射</a>
+                <a class="el-button" href="p07-tag-scoring.html">口径体检</a>
+                <a class="el-button" href="p08-portrait360.html">查画像</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li>空态：无待办时四卡显示 0，并给「新建标注模板 / 去模板中心」入口。</li>
+          <li>降级：告警接口失败仅本卡片显示「暂不可用 + 重试」，KPI 与图表不受影响。</li>
+          <li>可访问性：四张待办卡整卡可点击（键盘 Enter 进入），告警「去修复」为链接按钮。</li>
+          <li>数据边界：不展示伪造趋势；接口不支持时间窗时隐藏切换按钮。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

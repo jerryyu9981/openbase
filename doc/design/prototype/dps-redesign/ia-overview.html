@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPS 新信息架构 · 原型 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+<style>
+  .route-table td { vertical-align: top; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ob-text-secondary); margin-bottom: 10px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">原型导航</div>
+      <a class="nav-item" href="index.html"><span class="nav-dot"></span>设计总览</a>
+      <a class="nav-item is-active" href="ia-overview.html"><span class="nav-dot"></span>信息架构</a>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>01 今日工作台</a>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>02 标注作业台</a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>03 审核收件箱</a>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>04 模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>05 模板工作台</a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>06 标注模板与字段</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>07 标签与口径</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>08 画像与措施</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">DPS 新信息架构</div><div class="ob-user">admin ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head">
+        <div>
+          <h1 class="dps-title">画像（DPS）· 四分组信息架构</h1>
+          <div class="dps-sub">保持 22 条路由不变；仅重排导航与页内视图。旧书签通过 <code>?view=</code> / <code>?tag=</code> / <code>?template=</code> 承接。</div>
+        </div>
+        <div class="dps-actions"><a class="el-button el-button--primary" href="p01-workbench.html">进入工作台原型</a></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="el-card">
+          <div class="el-card__header"><span>目标侧栏（四分组）</span><span class="el-tag el-tag--success">导航重排</span></div>
+          <div class="el-card__body" style="padding:0">
+            <div style="padding:6px 0">
+              <div class="nav-group-title">概览</div>
+              <div class="nav-item"><span class="nav-dot"></span>今日工作台 <span class="nav-count">6</span></div>
+              <div class="nav-item"><span class="nav-dot"></span>关系总览</div>
+
+              <div class="nav-group-title">标注作业</div>
+              <div class="nav-item is-active"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></div>
+              <div class="nav-item"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></div>
+              <div class="nav-item"><span class="nav-dot"></span>AI 候选复核 <span class="nav-count">3</span></div>
+              <div class="nav-item"><span class="nav-dot"></span>标注模板</div>
+              <div class="nav-item"><span class="nav-dot"></span>字段与映射</div>
+
+              <div class="nav-group-title">模板与口径</div>
+              <div class="nav-item"><span class="nav-dot"></span>模板中心</div>
+              <div class="nav-item"><span class="nav-dot"></span>模板工作台</div>
+              <div class="nav-item"><span class="nav-dot"></span>版本与发布</div>
+              <div class="nav-item"><span class="nav-dot"></span>预检与影响面</div>
+              <div class="nav-item"><span class="nav-dot"></span>模板包</div>
+              <div class="nav-item"><span class="nav-dot"></span>评分类型</div>
+              <div class="nav-item"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></div>
+
+              <div class="nav-group-title">标签与画像</div>
+              <div class="nav-item"><span class="nav-dot"></span>标签体系</div>
+              <div class="nav-item"><span class="nav-dot"></span>标签分类管理</div>
+              <div class="nav-item"><span class="nav-dot"></span>标签血缘</div>
+              <div class="nav-item"><span class="nav-dot"></span>画像列表</div>
+              <div class="nav-item"><span class="nav-dot"></span>画像搜索</div>
+              <div class="nav-item"><span class="nav-dot"></span>评分规则</div>
+              <div class="nav-item"><span class="nav-dot"></span>措施建议</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="el-card">
+            <div class="el-card__header"><span>设计要点</span></div>
+            <div class="el-card__body">
+              <div class="issue"><div><div class="issue-title">待办优先</div><div class="issue-desc">导航每个作业项右侧展示待处理数；工作台首屏即待办。</div></div></div>
+              <div class="issue"><div><div class="issue-title">实体中心化</div><div class="issue-desc">模板的 6 个页面收敛为「模板中心 → 详情抽屉 → 工作台/版本/预检」三级。</div></div></div>
+              <div class="issue"><div><div class="issue-title">同路由视图</div><div class="issue-desc">录入与审核复用 <code>/dps/annotations</code>，用 <code>?view=review</code> 切换，避免新增路由。</div></div></div>
+              <div class="issue is-error"><div><div class="issue-title">不删能力</div><div class="issue-desc">22 条路由全部保留；原始 JSON、模板包、评分类型等低频页保留入口。</div></div></div>
+            </div>
+          </div>
+          <div class="banner banner--warn mt-14">
+            <div><b>兼容约束：</b>所有旧路径与 <code>nav-consistency</code> 断言保持通过；导航分组名变更需同步更新测试快照。</div>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="font-size:16px;margin:22px 0 10px">路由处置矩阵</h2>
+      <div class="legend">
+        <span><i style="background:#dcfce7"></i>保留原位</span>
+        <span><i style="background:#fef3c7"></i>页内重构</span>
+        <span><i style="background:#dbeafe"></i>同路由视图</span>
+        <span><i style="background:#ede9fe"></i>新增深链参数</span>
+      </div>
+      <div class="el-card">
+        <div class="el-card__body" style="padding:0">
+          <table class="el-table el-table--stripe route-table">
+            <thead><tr><th style="width:300px">路由</th><th style="width:160px">新归属</th><th style="width:120px">处置</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">/portrait/overview</td><td>概览 / 今日工作台</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>加入待办卡、治理告警、我的队列</td></tr>
+              <tr><td class="mono">/portrait/relation</td><td>概览 / 关系总览</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>链路节点可点击；缺口直达修复</td></tr>
+              <tr><td class="mono">/portrait/dps/annotations</td><td>标注作业 / 标注作业台</td><td><span class="el-tag">同路由视图</span></td><td><code>?view=entry|review</code>；三栏作业台</td></tr>
+              <tr><td class="mono">/portrait/dps/annotation-adapters</td><td>标注作业 / AI 候选复核</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>批量复核、候选持久化（待接口）</td></tr>
+              <tr><td class="mono">/portrait/dps/annotation-templates</td><td>标注作业 / 标注模板</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>增加字段数/映射完整度列</td></tr>
+              <tr><td class="mono">/portrait/dps/annotation-templates/:code/fields</td><td>标注作业 / 字段与映射</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>实时表单预览 + 维度选择器</td></tr>
+              <tr><td class="mono">/portrait/dps/templates</td><td>模板与口径 / 模板中心</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>健康度列 + 详情抽屉六视图</td></tr>
+              <tr><td class="mono">/portrait/dps/templates/new<br>/portrait/dps/templates/:code/edit</td><td>模板与口径 / 模板工作台</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>步骤条 + 发布向导 + 草稿暂存</td></tr>
+              <tr><td class="mono">/portrait/dps/templates/:code/raw</td><td>模板与口径 / 原始 JSON</td><td><span class="el-tag el-tag--success">保留</span></td><td>作为高级模式独立路由保留</td></tr>
+              <tr><td class="mono">/portrait/dps/templates/:code/versions</td><td>模板与口径 / 版本与发布</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>版本时间线 + 内嵌预检摘要</td></tr>
+              <tr><td class="mono">/portrait/dps/templates/:code/preflight</td><td>模板与口径 / 预检与影响面</td><td><span class="el-tag el-tag--success">保留</span></td><td>支持 <code>?template=</code> 直达</td></tr>
+              <tr><td class="mono">/portrait/dps/template-packages</td><td>模板与口径 / 模板包</td><td><span class="el-tag el-tag--success">保留</span></td><td>增加包内容预览与结果下钻</td></tr>
+              <tr><td class="mono">/portrait/dps/scoring-types</td><td>模板与口径 / 评分类型</td><td><span class="el-tag el-tag--success">保留</span></td><td>增加搜索/说明</td></tr>
+              <tr><td class="mono">/portrait/dps/scoring-consistency</td><td>模板与口径 / 口径体检</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>问题行「去修复」直达</td></tr>
+              <tr><td class="mono">/portrait/dps/tags</td><td>标签与画像 / 标签体系</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>标签树 + 详情 + 血缘入口</td></tr>
+              <tr><td class="mono">/portrait/tags</td><td>标签与画像 / 标签分类管理</td><td><span class="el-tag el-tag--success">保留</span></td><td>管理视图，与体系页互相链接</td></tr>
+              <tr><td class="mono">/portrait/dps/lineage</td><td>标签与画像 / 标签血缘</td><td><span class="el-tag el-tag--info">新增深链</span></td><td><code>?tag=service:channel</code></td></tr>
+              <tr><td class="mono">/portrait/dps/measures</td><td>标签与画像 / 措施建议</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>主体选择器 + 建议卡片</td></tr>
+              <tr><td class="mono">/portrait/list</td><td>标签与画像 / 画像列表</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>列设置 / 批量 / 导出</td></tr>
+              <tr><td class="mono">/portrait/search</td><td>标签与画像 / 画像搜索</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>作为列表高级模式</td></tr>
+              <tr><td class="mono">/portrait/:id</td><td>标签与画像 / 画像 360</td><td><span class="el-tag el-tag--warning">页内重构</span></td><td>标签分组 + 血缘抽屉 + 标注时间线</td></tr>
+              <tr><td class="mono">/portrait/rules</td><td>标签与画像 / 评分规则</td><td><span class="el-tag el-tag--success">保留</span></td><td>只读口径视图，与模板工作台互链</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">待评审决策</div>
+        <ul>
+          <li>四分组命名是否采用「概览 / 标注作业 / 模板与口径 / 标签与画像」？<span class="el-tag el-tag--success" style="margin-left:6px">已裁定：采用</span></li>
+          <li>审核是否接受同路由视图（<code>?view=review</code>）而非独立路由？</li>
+          <li>低频页（原始 JSON、模板包、评分类型、评分规则）是否继续保留在导航，或收进「更多」？</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

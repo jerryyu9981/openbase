@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 模板工作台 · DPS 重设计 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+<style>
+  .dps-main { padding: 14px 18px 30px; }
+  .editor-layout { display:grid; grid-template-columns: 216px minmax(0,1fr) 300px; gap:14px; align-items:start; }
+  .dim-head { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:#f8fafc; border:1px solid var(--ob-border); border-radius:8px; margin-bottom:10px; }
+  .rule-row { display:grid; grid-template-columns:1.2fr .8fr .8fr .7fr 56px; gap:8px; align-items:center; padding:8px 10px; border-bottom:1px solid #f1f5f9; font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">概览</div>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>今日工作台</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>关系总览</a>
+      <div class="nav-group-title">标注作业</div>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>标注模板</a>
+      <div class="nav-group-title">模板与口径</div>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>模板中心</a>
+      <a class="nav-item is-active" href="p05-template-editor.html"><span class="nav-dot"></span>模板工作台</a>
+      <a class="nav-item is-active" href="p05-template-editor.html"><span class="nav-dot"></span>版本与发布</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></a>
+      <div class="nav-group-title">标签与画像</div>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签体系</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>画像列表</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">模板工作台 · 再犯风险画像 <span class="mono small muted">risk-v2</span></div><div class="ob-user">张治理 ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head" style="margin-bottom:10px">
+        <div>
+          <h1 class="dps-title">再犯风险画像 <span class="el-tag el-tag--warning" style="font-size:11px">draft</span> <span class="el-tag el-tag--info" style="font-size:11px">v2</span></h1>
+          <div class="dps-sub">权重合计 0.96（应 = 1.00）· 2 项提示 · 1 项阻断 · 自动暂存 10:32</div>
+        </div>
+        <div class="dps-actions">
+          <button class="el-button el-button--small">校验</button>
+          <button class="el-button el-button--small">试运行</button>
+          <button class="el-button el-button--small">JSON</button>
+          <button class="el-button el-button--small">保存草稿</button>
+          <button class="el-button el-button--primary el-button--small">发布向导</button>
+        </div>
+      </div>
+
+      <div class="editor-layout">
+        <!-- 步骤条 -->
+        <section class="el-card" style="margin-bottom:0">
+          <div class="el-card__header" style="padding:12px 14px"><span>配置步骤</span><span class="small muted">完成度 5/7</span></div>
+          <div class="stepper">
+            <div class="step is-done"><span class="step-idx">✓</span><div><div class="step-name">基础信息</div><div class="step-desc">名称 / 类型 / 继承</div></div></div>
+            <div class="step is-active"><span class="step-idx">2</span><div><div class="step-name">维度与权重</div><div class="step-desc">合计 0.96</div></div><span class="step-badge">1</span></div>
+            <div class="step"><span class="step-idx">3</span><div><div class="step-name">属性字段</div><div class="step-desc">12 个字段</div></div></div>
+            <div class="step"><span class="step-idx">4</span><div><div class="step-name">标签绑定</div><div class="step-desc">8 条绑定</div></div><span class="step-badge">1</span></div>
+            <div class="step is-done"><span class="step-idx">✓</span><div><div class="step-name">证据策略</div><div class="step-desc">审核前必填</div></div></div>
+            <div class="step"><span class="step-idx">6</span><div><div class="step-name">异常规则</div><div class="step-desc">3 条</div></div></div>
+            <div class="step"><span class="step-idx">7</span><div><div class="step-name">发布</div><div class="step-desc">校验 → 预检 → 激活</div></div></div>
+          </div>
+        </section>
+
+        <!-- 编辑区 -->
+        <section>
+          <div class="el-card">
+            <div class="el-card__header"><span>维度与权重</span><span class="small text-warn">权重合计 0.96，需调整为 1.00</span></div>
+            <div class="el-card__body">
+              <div class="dim-head">
+                <span class="small"><b>维度数 4</b> · 规则 11 条</span>
+                <div class="flex gap-6"><button class="el-button el-button--small">＋ 新增维度</button><button class="el-button el-button--small">从模板导入</button></div>
+              </div>
+
+              <div class="el-card" style="margin-bottom:10px">
+                <div class="el-card__header" style="padding:10px 12px">
+                  <span>social · 社会关系 <span class="el-tag el-tag--warning" style="font-size:11px;margin-left:6px">权重 0.28</span></span>
+                  <span class="flex gap-6"><button class="el-button el-button--small">复制</button><button class="el-button el-button--small">删除</button></span>
+                </div>
+                <div class="el-card__body" style="padding:10px 12px">
+                  <div class="rule-row" style="font-weight:600;color:var(--ob-text-secondary);border-bottom:1px solid var(--el-border-color-lighter)">
+                    <div>tag_key</div><div>类型</div><div>权重</div><div>缺值</div><div></div>
+                  </div>
+                  <div class="rule-row"><div class="mono">family_support</div><div>enum_map</div><div>0.10</div><div>50</div><div class="text-danger">删除</div></div>
+                  <div class="rule-row"><div class="mono">social_isolation</div><div>boolean</div><div>0.10</div><div>50</div><div class="text-danger">删除</div></div>
+                  <div class="rule-row"><div class="mono">community_integration</div><div>enum_map</div><div>0.08</div><div>50</div><div class="text-danger">删除</div></div>
+                </div>
+              </div>
+
+              <div class="el-card" style="margin-bottom:10px">
+                <div class="el-card__header" style="padding:10px 12px">
+                  <span>employment · 就业 <span class="el-tag" style="font-size:11px;margin-left:6px">权重 0.26</span></span>
+                  <span class="flex gap-6"><button class="el-button el-button--small">复制</button><button class="el-button el-button--small">删除</button></span>
+                </div>
+                <div class="el-card__body" style="padding:10px 12px">
+                  <div class="rule-row"><div class="mono">emp_stability</div><div>enum_map</div><div>0.15</div><div>50</div><div class="text-danger">删除</div></div>
+                  <div class="rule-row"><div class="mono">income_level</div><div>range_map</div><div>0.11</div><div>50</div><div class="text-danger">删除</div></div>
+                </div>
+              </div>
+
+              <div class="el-card" style="margin-bottom:10px">
+                <div class="el-card__header" style="padding:10px 12px">
+                  <span>psych · 心理 <span class="el-tag" style="font-size:11px;margin-left:6px">权重 0.22</span></span>
+                  <span class="flex gap-6"><button class="el-button el-button--small">复制</button><button class="el-button el-button--small">删除</button></span>
+                </div>
+                <div class="el-card__body" style="padding:10px 12px">
+                  <div class="rule-row"><div class="mono">emotion_stability</div><div>scale</div><div>0.12</div><div>50</div><div class="text-danger">删除</div></div>
+                  <div class="rule-row"><div class="mono">risk_attitude</div><div>enum_map</div><div>0.10</div><div>50</div><div class="text-danger">删除</div></div>
+                </div>
+              </div>
+
+              <div class="el-card">
+                <div class="el-card__header" style="padding:10px 12px">
+                  <span>behavior · 行为 <span class="el-tag el-tag--danger" style="font-size:11px;margin-left:6px">权重 0.20 · 无标注来源</span></span>
+                  <span class="flex gap-6"><button class="el-button el-button--small">复制</button><button class="el-button el-button--small">删除</button></span>
+                </div>
+                <div class="el-card__body" style="padding:10px 12px">
+                  <div class="banner banner--warn" style="margin:0 0 8px"><div>该维度没有任何标注模板提供 target_dimension，分数只能来自历史标签或接口导入。</div></div>
+                  <div class="rule-row"><div class="mono">report_punctuality</div><div>range_map</div><div>0.12</div><div>50</div><div class="text-danger">删除</div></div>
+                  <div class="rule-row"><div class="mono">violation_count</div><div>range_map</div><div>0.08</div><div>50</div><div class="text-danger">删除</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 问题清单 + 发布 -->
+        <section>
+          <div class="el-card">
+            <div class="el-card__header"><span>问题清单</span><span class="flex gap-6"><span class="el-tag el-tag--danger">1 错误</span><span class="el-tag el-tag--warning">1 提示</span></span></div>
+            <div class="el-card__body">
+              <div class="issue is-error">
+                <div>
+                  <div class="issue-title">维度权重合计不等于 1</div>
+                  <div class="issue-desc">当前 0.96，差值 -0.04。请调整任一维度权重。</div>
+                  <span class="issue-link">定位到「维度与权重」→</span>
+                </div>
+              </div>
+              <div class="issue">
+                <div>
+                  <div class="issue-title">维度 behavior 无标注来源</div>
+                  <div class="issue-desc">无标注模板字段 target_dimension = behavior；计算将恒为缺值 50 分。</div>
+                  <a class="issue-link" href="p06-annotation-config.html">去配置字段 →</a>
+                </div>
+              </div>
+              <div class="small muted mt-10">服务端校验在保存前自动执行，字段 path 会映射到同一清单。</div>
+            </div>
+          </div>
+
+          <div class="el-card">
+            <div class="el-card__header"><span>发布向导</span><span class="small muted">4 步</span></div>
+            <div class="el-card__body">
+              <div class="flex-between mb-6"><span class="small">① 保存与校验</span><span class="el-tag el-tag--danger" style="height:18px">未通过</span></div>
+              <div class="flex-between mb-6"><span class="small">② 口径一致性</span><span class="el-tag el-tag--warning" style="height:18px">1 BLOCK</span></div>
+              <div class="flex-between mb-6"><span class="small">③ 影响面</span><span class="small text-muted">3 模板 / 412 标注 / 38 标签</span></div>
+              <div class="flex-between mb-10"><span class="small">④ 激活</span><span class="el-tag el-tag--info" style="height:18px">待前序通过</span></div>
+              <button class="el-button el-button--primary el-button--disabled" style="width:100%">存在阻断，暂不可发布</button>
+              <div class="small muted mt-6">BLOCK 可通过 <code>SCORING_CONSISTENCY_GATE=warn</code> 临时降级（需管理员）。</div>
+            </div>
+          </div>
+
+          <div class="el-card">
+            <div class="el-card__header"><span>高级模式</span></div>
+            <div class="el-card__body">
+              <a class="el-button el-button--small" href="#" style="width:100%;margin-bottom:6px">原始 JSON 编辑</a>
+              <button class="el-button el-button--small" style="width:100%;margin-bottom:6px">查看当前 JSON</button>
+              <button class="el-button el-button--small" style="width:100%">试运行报告</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li>步骤条：各段显示问题徽标；点击「下一处问题」自动切换分区并滚动定位。</li>
+          <li>发布向导：① 校验 ② 口径一致性（BLOCK 阻断）③ 影响面 ④ 激活；任一步失败不可跳步。</li>
+          <li>草稿：输入变更本地暂存（键 <code>dps.template.draft.{code}</code>），误关恢复；离开守卫提示。</li>
+          <li>保存：`Ctrl+Enter`；保存后版本自动递增并提示「下一步（创建标注模板 / 预检 / 计算）.</li>
+          <li>原始 JSON 作为高级抽屉，不做默认入口，降低误改风险。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

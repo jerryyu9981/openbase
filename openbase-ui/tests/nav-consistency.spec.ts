@@ -51,6 +51,8 @@ const NON_MENU_ROUTE_WHITELIST: Record<string, string[]> = {
     ':id',
     'dps/templates/new',
     'dps/templates/:code/edit',
+    // 原始 JSON 为模板工作台的「高级模式」，由行内进入，不占菜单
+    'dps/templates/:code/raw',
     'dps/templates/:code/versions',
     'dps/templates/:code/preflight',
     'dps/annotation-templates/:code/fields',

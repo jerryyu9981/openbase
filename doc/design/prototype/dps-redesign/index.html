@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPS 统一前端重设计 · 原型总览 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">原型导航</div>
+      <a class="nav-item is-active" href="index.html"><span class="nav-dot"></span>设计总览</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>信息架构</a>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>01 今日工作台</a>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>02 标注作业台</a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>03 审核收件箱</a>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>04 模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>05 模板工作台</a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>06 标注模板与字段</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>07 标签与口径</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>08 画像与措施</a>
+      <div class="nav-group-title">参考</div>
+      <a class="nav-item" href="../index.html"><span class="nav-dot"></span>v1.4.10 旧原型</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">DPS 统一前端页面功能重设计</div><div class="ob-user">admin ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head">
+        <div>
+          <h1 class="dps-title">DPS 统一前端 · 重新设计总览</h1>
+          <div class="dps-sub">v1.0.0 · 目标：任务驱动 / 作业台化 / 治理闭环 / 可追溯 · 保留现有 22 条路由</div>
+        </div>
+        <div class="dps-actions">
+          <span class="el-tag el-tag--success">零外部依赖</span>
+          <span class="el-tag">file:// 可直接打开</span>
+        </div>
+      </div>
+
+      <div class="banner banner--info">
+        <div>
+          <b>使用说明：</b>本套原型用于评审「页面功能与操作方式」，不是最终视觉稿。所有页面共用
+          <code>../proto.css</code>（token 对齐 <code>tokens.css</code>）与 <code>redesign.css</code>；每页底部标注覆盖状态与交互规范。
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="stat-card"><span class="stat-accent"></span><div class="stat-label">现状页面</div><div class="stat-num">22</div><div class="stat-foot">16 条 DPS 路由 + 6 条画像路由</div></div>
+        <div class="stat-card is-warn"><span class="stat-accent"></span><div class="stat-label">共性缺口</div><div class="stat-num">8</div><div class="stat-foot">任务中心 / 主体手输 / 批量 / 保存视图 / 割裂 …</div></div>
+        <div class="stat-card is-ok"><span class="stat-accent"></span><div class="stat-label">原型页面</div><div class="stat-num">9</div><div class="stat-foot">IA + 8 个作业/治理页面</div></div>
+      </div>
+
+      <h2 style="font-size:16px;margin:22px 0 12px">一、原型地图</h2>
+      <div class="grid-2">
+        <a class="el-card" href="ia-overview.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>信息架构</span><span class="el-tag el-tag--info">先看</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">四分组导航（概览 / 标注作业 / 模板与口径 / 标签与画像）、22 条路由处置、旧链接兼容策略。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p01-workbench.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>01 今日工作台</span><span class="el-tag el-tag--success">P0</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">待标注 / 待审核 / 返修 / AI 待复核四类待办；治理告警可直达修复。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p02-annotation-workspace.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>02 标注作业台</span><span class="el-tag el-tag--success">P0</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">队列 + 主体 + 表单/上下文三栏；领取任务、上一条/下一条、快捷键、暂存。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p03-review-inbox.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>03 审核收件箱</span><span class="el-tag el-tag--success">P0</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">多级审核、提交与当前画像对照、批量通过/驳回、审计时间线。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p04-template-hub.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>04 模板中心</span><span class="el-tag el-tag--warning">P1</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">健康度总览；模板详情抽屉聚合血缘 / 标注 / 评分 / 版本 / 预检。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p05-template-editor.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>05 模板工作台</span><span class="el-tag el-tag--warning">P1</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">步骤条 + 问题清单 + 发布向导（校验 → 口径 → 影响面 → 激活）。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p06-annotation-config.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>06 标注模板与字段</span><span class="el-tag el-tag--warning">P1</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">字段设计器 + 实时表单预览 + 目标维度映射提示 + 归属改派影响面。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p07-tag-scoring.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>07 标签与口径</span><span class="el-tag el-tag--warning">P2</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">标签树 + 标签详情 + 血缘链路 + 口径体检问题直达修复。</p>
+          </div>
+        </a>
+        <a class="el-card" href="p08-portrait360.html" style="text-decoration:none;color:inherit">
+          <div class="el-card__header"><span>08 画像与措施</span><span class="el-tag el-tag--warning">P2</span></div>
+          <div class="el-card__body">
+            <p class="small text-muted">列表列设置/批量/导出；360 标签分组与血缘抽屉；措施建议卡片化。</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">评审关注点</div>
+        <ul>
+          <li><b>信息架构</b>：四分组是否符合日常动线？「审核收件箱」用同路由视图切换是否可接受？</li>
+          <li><b>标注作业台</b>：三栏宽度比例、主体选择器、快捷键集合是否符合标注员习惯？</li>
+          <li><b>审核</b>：提交值 / 当前值对照是否足够？批量通过的边界（仅 pending、仅末级联动）是否认可？</li>
+          <li><b>模板治理</b>：健康度口径、发布向导步骤、问题清单位置是否合理？</li>
+          <li><b>兼容</b>：旧路径全部保留，仅导航重排；是否允许后续为聚合视图新增查询参数？</li>
+        </ul>
+      </div>
+
+      <footer class="small text-muted mt-18 center">
+        OpenBase · DPS 统一前端页面功能设计 v1.0.0 · 原型生成于 2026-11-20 · 依据《OpenBase-DPS统一前端页面功能设计-v1.0.0》
+      </footer>
+    </main>
+  </div>
+</div>
+</body>
+</html>

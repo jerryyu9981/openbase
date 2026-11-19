@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 模板中心 · DPS 重设计 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+<style>
+  .dps-main { padding: 14px 18px 30px; }
+  .tabs { display:flex; gap:2px; border-bottom:1px solid var(--el-border-color-lighter); margin-bottom:14px; }
+  .tab { padding:8px 14px; font-size:13px; color:var(--ob-text-secondary); border-bottom:2px solid transparent; cursor:pointer; }
+  .tab.is-active { color:var(--ob-primary); border-bottom-color:var(--ob-primary); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">概览</div>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>今日工作台</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>关系总览</a>
+      <div class="nav-group-title">标注作业</div>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>AI 候选复核 <span class="nav-count">3</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>标注模板</a>
+      <div class="nav-group-title">模板与口径</div>
+      <a class="nav-item is-active" href="p04-template-hub.html"><span class="nav-dot"></span>模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>模板工作台</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>版本与发布</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></a>
+      <div class="nav-group-title">标签与画像</div>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签体系</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>画像列表</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">模板中心</div><div class="ob-user">张治理 · 模板管理员 ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head">
+        <div>
+          <h1 class="dps-title">模板族与发布状态</h1>
+          <div class="dps-sub">健康度 = 校验错误 + 口径 BLOCK + 配置缺口；点击健康度直达问题清单</div>
+        </div>
+        <div class="dps-actions">
+          <a class="el-button" href="p05-template-editor.html">新建模板</a>
+          <a class="el-button el-button--primary" href="p07-tag-scoring.html">口径体检</a>
+        </div>
+      </div>
+
+      <div class="grid-4 mb-14">
+        <div class="stat-card is-ok"><span class="stat-accent"></span><div class="stat-label">已激活</div><div class="stat-num">6</div><div class="stat-foot">参与画像计算</div></div>
+        <div class="stat-card is-warn"><span class="stat-accent"></span><div class="stat-label">草稿</div><div class="stat-num">2</div><div class="stat-foot">未参与计算</div></div>
+        <div class="stat-card is-danger"><span class="stat-accent"></span><div class="stat-label">存在 BLOCK</div><div class="stat-num">1</div><div class="stat-foot">激活将被阻断</div></div>
+        <div class="stat-card"><span class="stat-accent"></span><div class="stat-label">已停用</div><div class="stat-num">1</div><div class="stat-foot">历史画像仍可查看</div></div>
+      </div>
+
+      <div class="page-toolbar">
+        <input class="el-input" placeholder="搜索模板名称 / code" style="width:240px">
+        <select class="el-select"><option>状态：全部</option><option>active</option><option>draft</option><option>inactive</option></select>
+        <select class="el-select"><option>分类：全部</option><option>人物画像</option><option>风险画像</option></select>
+        <select class="el-select"><option>类型：全部</option><option>复合模板</option><option>子模板</option></select>
+        <button class="el-button el-button--primary">查询</button>
+        <button class="el-button">重置</button>
+        <span class="grow" style="flex:1"></span>
+        <button class="el-button">保存视图</button>
+        <button class="el-button">列设置</button>
+        <button class="el-button">导出</button>
+      </div>
+
+      <div class="el-card">
+        <div class="el-card__body" style="padding:0">
+          <table class="el-table el-table--stripe">
+            <thead>
+              <tr><th style="width:38px"><input type="checkbox"></th><th>模板</th><th style="width:120px">分类</th><th style="width:100px">类型</th><th style="width:80px">版本</th><th style="width:100px">状态</th><th style="width:150px">健康度</th><th style="width:150px">更新时间</th><th style="width:130px">操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="checkbox"></td>
+                <td><b>社区矫正画像</b><div class="mono small muted">cc-persona-v3</div></td>
+                <td>人物画像</td><td><span class="el-tag el-tag--success" style="font-size:11px">复合</span></td><td>v3</td>
+                <td><span class="el-tag el-tag--success">active</span></td>
+                <td><span class="health">正常</span><div class="small muted">0 错误 · 0 阻断</div></td>
+                <td class="small muted">2026-11-20 09:12</td>
+                <td><a class="el-button el-button--link el-button--small" href="p05-template-editor.html">工作台</a></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox"></td>
+                <td><b>再犯风险画像</b><div class="mono small muted">risk-v2</div></td>
+                <td>风险画像</td><td><span class="el-tag" style="font-size:11px">复合</span></td><td>v2</td>
+                <td><span class="el-tag el-tag--warning">draft</span></td>
+                <td><span class="health is-warn">2 提示</span><div class="small muted">1 阻断 · 1 缺口</div></td>
+                <td class="small muted">2026-11-19 18:40</td>
+                <td><a class="el-button el-button--link el-button--small" href="p05-template-editor.html">工作台</a></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox"></td>
+                <td><b>帮扶对象画像</b><div class="mono small muted">aid-v1</div></td>
+                <td>人物画像</td><td><span class="el-tag el-tag--success" style="font-size:11px">复合</span></td><td>v1</td>
+                <td><span class="el-tag el-tag--success">active</span></td>
+                <td><span class="health is-warn">1 缺口</span><div class="small muted">维度 social 未映射</div></td>
+                <td class="small muted">2026-11-18 11:02</td>
+                <td><a class="el-button el-button--link el-button--small" href="p05-template-editor.html">工作台</a></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox"></td>
+                <td><b>家庭关系子模板</b><div class="mono small muted">family-sub-v1</div></td>
+                <td>人物画像</td><td><span class="el-tag el-tag--warning" style="font-size:11px">子模板</span></td><td>v1</td>
+                <td><span class="el-tag el-tag--success">active</span></td>
+                <td><span class="health">正常</span><div class="small muted">被 2 个复合模板引用</div></td>
+                <td class="small muted">2026-11-15 16:20</td>
+                <td><a class="el-button el-button--link el-button--small" href="p05-template-editor.html">工作台</a></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox"></td>
+                <td><b>历史旧版画像</b><div class="mono small muted">legacy-v1</div></td>
+                <td>未分类</td><td><span class="el-tag" style="font-size:11px">复合</span></td><td>v1</td>
+                <td><span class="el-tag el-tag--info">inactive</span></td>
+                <td><span class="health">—</span><div class="small muted">已停用，无运行时口径</div></td>
+                <td class="small muted">2026-10-02 09:00</td>
+                <td><a class="el-button el-button--link el-button--small">查看</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li>行操作收敛为「工作台」+ 行点击打开详情抽屉；抽屉内承载历史六视图，避免表格操作列堆叠 5 个按钮。</li>
+          <li>健康度：正常（绿）/ 提示（黄）/ 阻断（红）；点击滚动定位到问题清单。</li>
+          <li>筛选：状态/分类/类型/关键字；保存视图与列设置本地持久化。</li>
+          <li>空态：「暂无模板族」+ 新建按钮；错误：保留 request_id 与重试。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 模板详情抽屉（默认展开用于演示） -->
+<div class="mask"></div>
+<aside class="mock-drawer">
+  <div class="mock-drawer__head">
+    <span>社区矫正画像 <span class="mono small muted">cc-persona-v3</span></span>
+    <div class="flex gap-6"><span class="el-tag el-tag--success">active</span><span class="el-button el-button--small">关闭</span></div>
+  </div>
+  <div class="mock-drawer__body">
+    <div class="tabs">
+      <div class="tab is-active">概览</div><div class="tab">血缘</div><div class="tab">标注模板</div><div class="tab">评分项</div><div class="tab">版本</div><div class="tab">预检</div>
+    </div>
+
+    <div class="grid-2 mb-14">
+      <div><div class="small muted">分类</div><div>人物画像</div></div>
+      <div><div class="small muted">类型</div><div>复合模板</div></div>
+      <div><div class="small muted">继承</div><div class="mono">base-persona-v2</div></div>
+      <div><div class="small muted">审核级数</div><div>2 级</div></div>
+      <div><div class="small muted">证据要求</div><div><span class="el-tag el-tag--warning">审核前必填</span></div></div>
+      <div><div class="small muted">异常规则</div><div>3 条</div></div>
+    </div>
+
+    <div class="banner banner--info">
+      <div><b>发布状态：</b>已激活 v3 · 最近发布 2026-11-20 09:12 · 影响 3 个标注模板 / 412 条标注 / 38 个标签。</div>
+    </div>
+
+    <div class="small muted mb-6">健康度摘要</div>
+    <div class="grid-3 mb-14">
+      <div class="stat-card"><div class="stat-label">校验</div><div class="stat-num text-ok" style="font-size:20px">通过</div></div>
+      <div class="stat-card"><div class="stat-label">口径</div><div class="stat-num text-ok" style="font-size:20px">0 BLOCK</div></div>
+      <div class="stat-card"><div class="stat-label">缺口</div><div class="stat-num" style="font-size:20px">0</div></div>
+    </div>
+
+    <div class="small muted mb-6">快捷动作</div>
+    <div class="flex gap-6 wrap mb-14">
+      <a class="el-button el-button--small el-button--primary" href="p05-template-editor.html">打开工作台</a>
+      <a class="el-button el-button--small" href="p05-template-editor.html">版本对比</a>
+      <a class="el-button el-button--small" href="p07-tag-scoring.html">预检</a>
+      <a class="el-button el-button--small" href="p06-annotation-config.html">标注模板</a>
+    </div>
+
+    <div class="small muted mb-6">族谱（深度 2）</div>
+    <div class="tree">
+      <div class="tree-node"><span class="caret">▾</span>base-persona-v2 <span class="el-tag el-tag--info" style="margin-left:6px">父级 1</span></div>
+      <div class="tree-children">
+        <div class="tree-node is-active"><span class="caret">•</span>cc-persona-v3 <span class="el-tag el-tag--success" style="margin-left:6px">当前</span></div>
+      </div>
+    </div>
+    <div class="small muted mt-6">继承口径：父维度先入 → 子覆盖同名 → 追加新维度。</div>
+  </div>
+</aside>
+<div class="prototype-note">原型演示：模板详情抽屉默认展开（点击遮罩不关闭）</div>
+</body>
+</html>

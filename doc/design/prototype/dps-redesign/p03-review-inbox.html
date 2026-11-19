@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 审核收件箱 · DPS 重设计 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+<style>
+  .dps-main { padding: 14px 18px 30px; }
+  .bulkbar { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; margin-bottom:12px; }
+  .review-check { margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">概览</div>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>今日工作台</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>关系总览</a>
+      <div class="nav-group-title">标注作业</div>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></a>
+      <a class="nav-item is-active" href="p03-review-inbox.html"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>AI 候选复核 <span class="nav-count">3</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>标注模板</a>
+      <div class="nav-group-title">模板与口径</div>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>模板工作台</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></a>
+      <div class="nav-group-title">标签与画像</div>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签体系</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>画像列表</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header">
+      <div class="ob-header-title">审核收件箱 <span class="el-tag el-tag--info" style="margin-left:6px">/portrait/dps/annotations?view=review</span></div>
+      <div class="ob-user">王审核 · 审核员 ▾ ｜ <span class="kbd">?</span> 快捷键</div>
+    </header>
+    <main class="dps-main">
+      <div class="dps-head" style="margin-bottom:10px">
+        <div>
+          <h1 class="dps-title" style="font-size:17px">待我审核 4 条 · 终审 2 条</h1>
+          <div class="dps-sub">提交值 / 当前值对照 ｜ <span class="kbd">Alt</span>+<span class="kbd">←/→</span> 上一条/下一条 · <span class="kbd">Ctrl</span>+<span class="kbd">↵</span> 通过并下一条</div>
+        </div>
+        <div class="dps-actions">
+          <a class="el-button el-button--small" href="p02-annotation-workspace.html">切换到录入视图</a>
+          <button class="el-button el-button--small">保存视图</button>
+        </div>
+      </div>
+
+      <div class="flex gap-6 wrap mb-14">
+        <button class="el-button el-button--small el-button--primary">待我审（4）</button>
+        <button class="el-button el-button--small">第 1 级（1）</button>
+        <button class="el-button el-button--small">第 2 级（1）</button>
+        <button class="el-button el-button--small">终审（2）</button>
+        <button class="el-button el-button--small">全部待审（9）</button>
+        <span class="grow" style="flex:1"></span>
+        <select class="el-select" style="height:32px"><option>全部模板</option><option>cc-persona-v3</option></select>
+        <select class="el-select" style="height:32px"><option>全部审核人</option><option>我</option></select>
+      </div>
+
+      <div class="bulkbar">
+        <input type="checkbox" checked>
+        <span class="small">已选 2 条</span>
+        <span class="grow" style="flex:1"></span>
+        <button class="el-button el-button--small el-button--primary">批量通过（2）</button>
+        <button class="el-button el-button--small el-button--danger">批量驳回…</button>
+        <span class="small muted">批量通过仅对「待审」生效；非末级通过不会联动标签。</span>
+      </div>
+
+      <div class="workspace" style="grid-template-columns: 330px minmax(0,1fr) 300px; min-height:560px">
+        <!-- 队列 -->
+        <section class="ws-col">
+          <div class="ws-col-head"><span>审核队列</span><span class="el-tag el-tag--warning">按级分组</span></div>
+          <div class="ws-scroll">
+            <div class="task-item is-active">
+              <div class="task-title"><span><input type="checkbox" class="review-check" checked>张 * 华</span><span class="el-tag el-tag--danger" style="height:18px">终审</span></div>
+              <div class="task-meta"><span class="mono">tenant-1_1042</span><span>第 2/2 级</span><span>10:24</span></div>
+            </div>
+            <div class="task-item">
+              <div class="task-title"><span><input type="checkbox" class="review-check" checked>王 * 丽</span><span class="el-tag el-tag--warning" style="height:18px">第 2 级</span></div>
+              <div class="task-meta"><span class="mono">tenant-1_1041</span><span>第 1/2 级</span><span>10:18</span></div>
+            </div>
+            <div class="task-item">
+              <div class="task-title"><span><input type="checkbox" class="review-check">赵 * 强</span><span class="el-tag el-tag--danger" style="height:18px">终审</span></div>
+              <div class="task-meta"><span class="mono">tenant-1_1035</span><span>第 2/2 级</span><span>09:41</span></div>
+            </div>
+            <div class="task-item">
+              <div class="task-title"><span><input type="checkbox" class="review-check">陈 * 明</span><span class="el-tag el-tag--warning" style="height:18px">第 1 级</span></div>
+              <div class="task-meta"><span class="mono">tenant-1_1031</span><span>第 1/3 级</span><span>09:30</span></div>
+            </div>
+            <div class="ob-divider" style="margin:0"></div>
+            <div class="ws-col-body small muted">已选 2 条，跨页选择全部 9 条</div>
+          </div>
+        </section>
+
+        <!-- 对照 -->
+        <section class="ws-col">
+          <div class="ws-col-head">
+            <span>张 * 华 · 终审对照</span>
+            <span class="flex gap-6"><span class="el-tag el-tag--success">高风险</span><span class="small muted">cc-persona-v3</span></span>
+          </div>
+          <div class="ws-col-body">
+            <div class="banner banner--info">
+              <div><b>终审提示：</b>通过后将按字段目标维度写入 3 个标签，并联动 2 个评分项；当前综合分 61 → 预计 64。</div>
+            </div>
+
+            <div class="diff-row head"><div>字段</div><div>本次提交</div><div>当前画像</div></div>
+            <div class="diff-row diff-changed"><div>就业状态 <span class="small muted mono">employment:status</span></div><div class="diff-after">灵活就业</div><div class="diff-before">失业</div></div>
+            <div class="diff-row"><div>家庭支持 <span class="small muted mono">family:support</span></div><div class="diff-after">中</div><div class="diff-before">中</div></div>
+            <div class="diff-row diff-changed"><div>月收入 <span class="small muted mono">employment:income</span></div><div class="diff-after">3k-5k</div><div class="diff-before">1k-3k</div></div>
+            <div class="diff-row"><div>风险关注 <span class="small muted mono">risk:focus</span></div><div class="diff-after">就业不稳定 / 社交隔离</div><div class="diff-before">就业不稳定</div></div>
+            <div class="diff-row"><div>评估结论</div><div class="diff-after">就业状态较上次改善…</div><div class="diff-before">—</div></div>
+
+            <div class="ob-divider"></div>
+            <div class="small muted mb-6">证据来源</div>
+            <div class="ob-state-block small flex-between">
+              <span class="mono">WS-2026-0318.pdf · 2.4 MB</span>
+              <span class="flex gap-6"><button class="el-button el-button--small">预览</button><button class="el-button el-button--small">下载</button></span>
+            </div>
+
+            <div class="ob-divider"></div>
+            <div class="flex gap-6">
+              <button class="el-button el-button--primary">终审通过并下一条 <span class="kbd" style="margin-left:6px">Ctrl+↵</span></button>
+              <button class="el-button el-button--danger">驳回…</button>
+              <button class="el-button">返回上一级</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 时间线 + 原因 -->
+        <section class="ws-col">
+          <div class="ws-col-head"><span>审计时间线</span><span class="small muted">4 条</span></div>
+          <div class="ws-col-body ws-scroll">
+            <div class="timeline mb-18">
+              <div class="tl-item is-ok">
+                <div class="tl-time">2026-11-20 10:26</div>
+                <div class="tl-title">第 1 级通过</div>
+                <div class="small muted">审核人 刘 * · 意见：材料齐全</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-time">2026-11-20 10:24</div>
+                <div class="tl-title">提交标注</div>
+                <div class="small muted">标注员 李 * · 证据 WS-2026-0318</div>
+              </div>
+              <div class="tl-item is-ok">
+                <div class="tl-time">2026-11-19 16:20</div>
+                <div class="tl-title">第 1 级通过</div>
+                <div class="small muted">审核人 刘 * · 意见：—</div>
+              </div>
+              <div class="tl-item is-danger">
+                <div class="tl-time">2026-11-19 16:18</div>
+                <div class="tl-title">驳回</div>
+                <div class="small muted">审核人 刘 * · 材料不足（文书编号缺失）</div>
+              </div>
+            </div>
+
+            <div class="small muted mb-6">驳回原因模板</div>
+            <div class="chips mb-10">
+              <span class="chip is-danger">材料不足</span>
+              <span class="chip">字段与事实不符</span>
+              <span class="chip">证据缺失</span>
+              <span class="chip">需补充说明</span>
+            </div>
+            <textarea class="el-input el-input--textarea" rows="3" placeholder="可在模板基础上补充说明…"></textarea>
+            <div class="small muted mt-6">驳回后进入返修队列，标注员修改后重新从第 1 级审核。</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li>级数：显示 <code>第 k/N 级</code>，N 取记录快照 <code>review_levels_required</code>；非末级通过提示「待第 k+1 级」。</li>
+          <li>批量：仅对 <code>pending</code> 生效；含终审项时二次确认「将联动标签」；结果逐条反馈（成功/跳过/失败）。</li>
+          <li>对照：左列字段，中列本次提交，右列当前画像；变更行高亮；证据可预览/下载。</li>
+          <li>异常：409（未复核候选）提示阻断语义；列表为空显示「没有待审核项」。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

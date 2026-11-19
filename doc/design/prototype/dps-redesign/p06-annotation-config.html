@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 标注模板与字段设计器 · DPS 重设计 · v1.0.0</title>
+<link rel="stylesheet" href="../proto.css">
+<link rel="stylesheet" href="redesign.css">
+<style>
+  .dps-main { padding: 14px 18px 30px; }
+  .config-layout { display:grid; grid-template-columns: 260px minmax(0,1fr) 340px; gap:14px; align-items:start; }
+  .field-row { display:grid; grid-template-columns:24px 1.2fr 1fr .8fr .8fr 1.3fr 50px; gap:8px; align-items:center; padding:8px 10px; border-bottom:1px solid #f1f5f9; font-size:12.5px; }
+  .drag { color:#cbd5e1; cursor:grab; }
+</style>
+</head>
+<body>
+<div class="ob-layout">
+  <aside class="ob-sidebar">
+    <div class="ob-logo">OpenBase</div>
+    <nav class="ob-menu">
+      <div class="nav-group-title">概览</div>
+      <a class="nav-item" href="p01-workbench.html"><span class="nav-dot"></span>今日工作台</a>
+      <a class="nav-item" href="ia-overview.html"><span class="nav-dot"></span>关系总览</a>
+      <div class="nav-group-title">标注作业</div>
+      <a class="nav-item" href="p02-annotation-workspace.html"><span class="nav-dot"></span>标注作业台 <span class="nav-count">12</span></a>
+      <a class="nav-item" href="p03-review-inbox.html"><span class="nav-dot"></span>审核收件箱 <span class="nav-count">4</span></a>
+      <a class="nav-item" href="p06-annotation-config.html"><span class="nav-dot"></span>AI 候选复核 <span class="nav-count">3</span></a>
+      <a class="nav-item is-active" href="p06-annotation-config.html"><span class="nav-dot"></span>标注模板</a>
+      <div class="nav-group-title">模板与口径</div>
+      <a class="nav-item" href="p04-template-hub.html"><span class="nav-dot"></span>模板中心</a>
+      <a class="nav-item" href="p05-template-editor.html"><span class="nav-dot"></span>模板工作台</a>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>口径体检 <span class="nav-count">2</span></a>
+      <div class="nav-group-title">标签与画像</div>
+      <a class="nav-item" href="p07-tag-scoring.html"><span class="nav-dot"></span>标签体系</a>
+      <a class="nav-item" href="p08-portrait360.html"><span class="nav-dot"></span>画像列表</a>
+    </nav>
+  </aside>
+
+  <div class="ob-body">
+    <header class="ob-header"><div class="ob-header-title">标注模板与字段设计器</div><div class="ob-user">张治理 ▾</div></header>
+    <main class="dps-main">
+      <div class="dps-head" style="margin-bottom:10px">
+        <div>
+          <h1 class="dps-title">cc-intake · 入矫信息采集 <span class="el-tag el-tag--success" style="font-size:11px">active</span></h1>
+          <div class="dps-sub">归属画像模板 cc-persona-v3 · 字段 8 · 已映射维度 6 · 被 2 个标注批次使用</div>
+        </div>
+        <div class="dps-actions">
+          <button class="el-button el-button--small">预览表单</button>
+          <button class="el-button el-button--small">归属改派</button>
+          <button class="el-button el-button--primary el-button--small">保存</button>
+        </div>
+      </div>
+
+      <div class="config-layout">
+        <!-- 模板列表 -->
+        <section class="el-card" style="margin-bottom:0">
+          <div class="el-card__header" style="padding:12px 14px"><span>标注模板</span><button class="el-button el-button--small el-button--primary">新建</button></div>
+          <div class="el-card__body" style="padding:0">
+            <div class="queue-filter" style="border-bottom:1px solid var(--el-border-color-lighter)">
+              <input class="el-input" placeholder="搜索模板 / code">
+            </div>
+            <div class="task-item is-active">
+              <div class="task-title"><span>入矫信息采集</span><span class="el-tag el-tag--success" style="height:18px">8 字段</span></div>
+              <div class="task-meta"><span class="mono">cc-intake</span><span>维度 6/8</span></div>
+            </div>
+            <div class="task-item">
+              <div class="task-title"><span>就业情况核查</span><span class="el-tag el-tag--warning" style="height:18px">5 字段</span></div>
+              <div class="task-meta"><span class="mono">cc-employment</span><span class="text-warn">2 字段缺目标维度</span></div>
+            </div>
+            <div class="task-item">
+              <div class="task-title"><span>心理评估摘要</span><span class="el-tag el-tag--success" style="height:18px">6 字段</span></div>
+              <div class="task-meta"><span class="mono">cc-psych</span><span>维度 6/6</span></div>
+            </div>
+            <div class="task-item">
+              <div class="task-title"><span>服务渠道记录</span><span class="el-tag el-tag--success" style="height:18px">4 字段</span></div>
+              <div class="task-meta"><span class="mono">svc-note</span><span class="text-danger">归属模板 draft</span></div>
+            </div>
+            <div class="ws-col-body small muted">共 4 个模板</div>
+          </div>
+        </section>
+
+        <!-- 字段设计 -->
+        <section>
+          <div class="el-card">
+            <div class="el-card__header"><span>字段设计</span><span class="flex gap-6"><span class="small muted">拖拽排序</span><button class="el-button el-button--small">＋ 新增字段</button></span></div>
+            <div class="el-card__body" style="padding:0">
+              <div class="field-row" style="font-weight:600;color:var(--ob-text-secondary);background:#f8fafc">
+                <div></div><div>字段 key</div><div>类型</div><div>必填</div><div>枚举/范围</div><div>目标维度</div><div></div>
+              </div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">employment_status</div><div>enum</div><div><span class="el-tag el-tag--danger" style="height:18px">是</span></div><div class="small muted">3 项</div><div><span class="el-tag" style="height:18px">employment</span></div><div class="text-danger">删</div></div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">monthly_income</div><div>enum</div><div><span class="el-tag el-tag--info" style="height:18px">否</span></div><div class="small muted">4 项</div><div><span class="el-tag" style="height:18px">employment</span></div><div class="text-danger">删</div></div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">family_support</div><div>enum</div><div><span class="el-tag el-tag--danger" style="height:18px">是</span></div><div class="small muted">强/中/弱</div><div><span class="el-tag" style="height:18px">social</span></div><div class="text-danger">删</div></div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">risk_focus</div><div>list</div><div><span class="el-tag el-tag--info" style="height:18px">否</span></div><div class="small muted">可自定义</div><div><span class="el-tag el-tag--warning" style="height:18px">未映射</span></div><div class="text-danger">删</div></div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">last_report_date</div><div>date</div><div><span class="el-tag el-tag--info" style="height:18px">否</span></div><div class="small muted">YYYY-MM-DD</div><div><span class="el-tag" style="height:18px">behavior</span></div><div class="text-danger">删</div></div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">emotion_score</div><div>number</div><div><span class="el-tag el-tag--info" style="height:18px">否</span></div><div class="small muted">1 ~ 10</div><div><span class="el-tag" style="height:18px">psych</span></div><div class="text-danger">删</div></div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">note</div><div>string</div><div><span class="el-tag el-tag--info" style="height:18px">否</span></div><div class="small muted">≤ 500 字</div><div><span class="el-tag el-tag--warning" style="height:18px">未映射</span></div><div class="text-danger">删</div></div>
+              <div class="field-row"><div class="drag">⣿</div><div class="mono">evidence_source</div><div>string</div><div><span class="el-tag el-tag--danger" style="height:18px">是</span></div><div class="small muted">文书编号</div><div><span class="el-tag el-tag--info" style="height:18px">系统字段</span></div><div class="text-danger">删</div></div>
+            </div>
+          </div>
+
+          <div class="banner banner--warn">
+            <div><b>映射检查：</b>2 个字段未配置目标维度，将只写入原始字段、不生成标签（不计入评分）。</div>
+          </div>
+
+          <div class="el-card">
+            <div class="el-card__header"><span>归属与影响面</span><span class="el-tag el-tag--info">改派前检查</span></div>
+            <div class="el-card__body">
+              <div class="flex gap-6 wrap mb-10">
+                <span class="small muted">当前归属</span><span class="el-tag">cc-persona-v3 · 社区矫正画像</span><span class="el-tag el-tag--success">active</span>
+                <span class="grow" style="flex:1"></span>
+                <button class="el-button el-button--small">改派归属…</button>
+              </div>
+              <div class="small muted">该模板已有 <b>186</b> 条标注记录；改派后历史记录保留原归属快照，新记录使用新归属。</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 实时预览 -->
+        <section class="el-card" style="margin-bottom:0">
+          <div class="el-card__header"><span>表单实时预览</span><span class="small muted">与作业台一致</span></div>
+          <div class="el-card__body">
+            <div class="field">
+              <div class="field-label">就业状态 <span class="req">*</span></div>
+              <select class="el-select" style="width:100%"><option>稳定就业</option><option>灵活就业</option><option>失业</option></select>
+              <div class="field-hint">→ <b>employment:status</b> · 评分项 emp_stability</div>
+            </div>
+            <div class="field">
+              <div class="field-label">月收入区间</div>
+              <select class="el-select" style="width:100%"><option>无收入</option><option>1k-3k</option><option>3k-5k</option><option>5k+</option></select>
+              <div class="field-hint">→ <b>employment:income</b> · 仅生成标签</div>
+            </div>
+            <div class="field">
+              <div class="field-label">家庭支持度 <span class="req">*</span></div>
+              <select class="el-select" style="width:100%"><option>强</option><option>中</option><option>弱</option></select>
+              <div class="field-hint">→ <b>social:family_support</b> · 评分项 family_support</div>
+            </div>
+            <div class="field">
+              <div class="field-label">风险关注点</div>
+              <select class="el-select" style="width:100%"><option>就业不稳定</option><option>社交隔离</option></select>
+              <div class="field-hint text-warn">未配置目标维度：不生成标签</div>
+            </div>
+            <div class="field">
+              <div class="field-label">情绪评分</div>
+              <input class="el-input" value="6" style="width:100%">
+              <div class="field-hint">范围 1 ~ 10 · → <b>psych:emotion_score</b></div>
+            </div>
+            <div class="field">
+              <div class="field-label">证据来源 <span class="req">*</span></div>
+              <input class="el-input" placeholder="文书编号" style="width:100%">
+            </div>
+            <button class="el-button el-button--primary" style="width:100%">提交预览（不写入）</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="el-card mt-14">
+        <div class="el-card__header"><span>AI 候选复核（页签）</span><span class="flex gap-6"><span class="el-tag el-tag--info">批次 ai-1120-A</span><button class="el-button el-button--small">生成候选</button></span></div>
+        <div class="el-card__body" style="padding:0">
+          <table class="el-table el-table--stripe">
+            <thead><tr><th style="width:38px"><input type="checkbox" checked></th><th style="width:120px">候选 ID</th><th style="width:120px">状态</th><th style="width:110px">置信度</th><th>字段摘要</th><th style="width:200px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><input type="checkbox" checked></td><td class="mono">ann-1201</td><td><span class="el-tag el-tag--warning">pending</span></td><td>0.91</td><td class="small muted">employment_status=灵活就业，family_support=中</td><td><button class="el-button el-button--link el-button--small">对比</button><button class="el-button el-button--link el-button--small">通过</button><button class="el-button el-button--link el-button--small el-button--danger">驳回</button></td></tr>
+              <tr><td><input type="checkbox" checked></td><td class="mono">ann-1202</td><td><span class="el-tag el-tag--warning">pending</span></td><td>0.78</td><td class="small muted">employment_status=失业，monthly_income=无收入</td><td><button class="el-button el-button--link el-button--small">对比</button><button class="el-button el-button--link el-button--small">通过</button><button class="el-button el-button--link el-button--small el-button--danger">驳回</button></td></tr>
+              <tr><td><input type="checkbox"></td><td class="mono">ann-1203</td><td><span class="el-tag el-tag--warning">pending</span></td><td>0.62</td><td class="small muted">risk_focus=社交隔离（低置信度，建议人工确认）</td><td><button class="el-button el-button--link el-button--small">对比</button><button class="el-button el-button--link el-button--small">通过</button><button class="el-button el-button--link el-button--small el-button--danger">驳回</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ob-spec">
+        <div class="ob-spec__title">本页覆盖状态与规范要点</div>
+        <ul>
+          <li>字段：拖拽排序；5 类类型（string/enum/number/date/list）；枚举/范围即时校验。</li>
+          <li>目标维度：来自归属画像模板维度选择器；未映射字段显式标黄并说明"不生成标签"。</li>
+          <li>预览：与作业台共用渲染器，保证"配置即所见"。</li>
+          <li>改派：展示已有标注数，确认后提交；历史记录保留原归属快照。</li>
+          <li>AI 候选：批量勾选；低置信度提示人工确认；提交前 409 阻断未复核项。</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -36,7 +36,7 @@ export const dpsRoutes: RouteRecordRaw[] = [
   { path: 'dps/annotation-templates', name: 'dps-annotation-templates', component: () => import('./pages/DpsAnnotationTemplateView.vue'), meta: { title: '标注模板管理' } },
   { path: 'dps/annotation-templates/:code/fields', name: 'dps-annotation-fields', component: () => import('./pages/DpsAnnotationFieldView.vue'), meta: { title: '标注模板字段与归属' } },
   // 标注录入与审核（v2.13.0）：补齐「配好标注模板 → 人工录入 → 审核联动」闭环
-  { path: 'dps/annotations', name: 'dps-annotations', component: () => import('./pages/DpsAnnotationWorkbenchView.vue'), meta: { title: '标注录入与审核' } },
+  { path: 'dps/annotations', name: 'dps-annotations', component: () => import('./pages/DpsAnnotationWorkbenchView.vue'), meta: { title: '标注作业台' } },
   { path: 'dps/tags', name: 'dps-tags', component: () => import('./pages/DpsTagSystemView.vue'), meta: { title: '标签体系查看' } },
 ]
 
@@ -46,7 +46,7 @@ export const routes: RouteRecordRaw[] = [
   // 静态子页须先于 ':id' 声明，避免被详情动态段吞并
   { path: 'search', name: 'portrait-search', component: () => import('./pages/PortraitSearch.vue'), meta: { title: '画像搜索' } },
   { path: 'tags', name: 'portrait-tags', component: () => import('./pages/Tags.vue'), meta: { title: '标签管理' } },
-  { path: 'overview', name: 'portrait-overview', component: () => import('./pages/Overview.vue'), meta: { title: '数据总览' } },
+  { path: 'overview', name: 'portrait-overview', component: () => import('./pages/Overview.vue'), meta: { title: '今日工作台' } },
   { path: 'relation', name: 'portrait-relation', component: () => import('./pages/RelationView.vue'), meta: { title: '关系视图' } },
   { path: 'rules', name: 'portrait-rules', component: () => import('./pages/Rules.vue'), meta: { title: '规则引擎' } },
   // v1.4.11：「分析报表」「批量任务」原复用列表视图（点进去与画像列表完全一致，属误导），
@@ -55,32 +55,47 @@ export const routes: RouteRecordRaw[] = [
   { path: ':id', name: 'portrait-detail', component: () => import('./pages/PortraitDetail.vue'), meta: { title: '画像详情' } },
 ]
 
-/** 板块导航 */
+/**
+ * 板块导航（v2.0.0 四分组：概览 / 标注作业 / 模板与口径 / 标签与画像）
+ *
+ * 路径全部沿用既有 22 条 route record；仅调整分组与文案，不做路由拆分。
+ * 「审核收件箱」复用标注作业台路由 `?view=review`，故不额外占菜单项。
+ */
 export const navItems = [
   {
-    label: '画像管理',
+    label: '概览',
     items: [
-      { path: '/portrait/overview', title: '数据总览' },
-      { path: '/portrait/relation', title: '关系视图' },
-      { path: '/portrait/list', title: '画像列表' },
-      { path: '/portrait/search', title: '画像搜索' },
-      { path: '/portrait/tags', title: '标签管理' },
-      { path: '/portrait/rules', title: '规则引擎' },
+      { path: '/portrait/overview', title: '今日工作台' },
+      { path: '/portrait/relation', title: '关系总览' },
     ],
   },
   {
-    label: '画像模板化（DPS）',
+    label: '标注作业',
     items: [
-      { path: '/portrait/dps/templates', title: '模板族管理' },
-      { path: '/portrait/dps/template-packages', title: '模板包导出/导入' },
-      { path: '/portrait/dps/lineage', title: '标签血缘反查' },
-      { path: '/portrait/dps/measures', title: '措施建议' },
+      { path: '/portrait/dps/annotations', title: '标注作业台' },
+      { path: '/portrait/dps/annotation-adapters', title: 'AI 候选复核' },
+      { path: '/portrait/dps/annotation-templates', title: '标注模板' },
+    ],
+  },
+  {
+    label: '模板与口径',
+    items: [
+      { path: '/portrait/dps/templates', title: '模板中心' },
+      { path: '/portrait/dps/template-packages', title: '模板包' },
       { path: '/portrait/dps/scoring-types', title: '评分类型' },
-      { path: '/portrait/dps/scoring-consistency', title: '评分口径一致性' },
-      { path: '/portrait/dps/annotation-adapters', title: 'AI 标注候选与复核' },
-      { path: '/portrait/dps/annotation-templates', title: '标注模板管理' },
-      { path: '/portrait/dps/annotations', title: '标注录入与审核' },
-      { path: '/portrait/dps/tags', title: '标签体系查看' },
+      { path: '/portrait/dps/scoring-consistency', title: '口径体检' },
+    ],
+  },
+  {
+    label: '标签与画像',
+    items: [
+      { path: '/portrait/dps/tags', title: '标签体系' },
+      { path: '/portrait/tags', title: '标签分类管理' },
+      { path: '/portrait/dps/lineage', title: '标签血缘' },
+      { path: '/portrait/list', title: '画像列表' },
+      { path: '/portrait/search', title: '画像搜索' },
+      { path: '/portrait/rules', title: '评分规则' },
+      { path: '/portrait/dps/measures', title: '措施建议' },
     ],
   },
 ]
