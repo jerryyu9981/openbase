@@ -58,11 +58,16 @@
               <el-option
                 v-for="item in templateOptions"
                 :key="item.code"
-                :label="`${item.name || item.code}（${item.code}）`"
+                :label="item.name || item.code"
                 :value="item.code"
-              />
+              >
+                <NameCodeLabel :name="item.name" :code="item.code" />
+              </el-option>
             </el-select>
-            <el-tag v-if="templateVersion" size="small" type="info">{{ selectedTemplate }} · v{{ templateVersion }}</el-tag>
+            <el-tag v-if="templateVersion" size="small" type="info">
+              <NameCodeLabel :name="selectedTemplateName" :code="selectedTemplate" />
+              <span class="ml-6">v{{ templateVersion }}</span>
+            </el-tag>
             <el-button
               size="small"
               link
@@ -102,7 +107,7 @@
             class="mt-12"
             data-test="portrait-template-missing"
           >
-            <template #title>该画像尚无模板「{{ selectedTemplate }}」的计算结果</template>
+            <template #title>该画像尚无模板「{{ selectedTemplateName || selectedTemplate }}」的计算结果</template>
             <div>请点击上方「重算」以该模板计算，或切回默认口径查看六维基础分。</div>
           </el-alert>
         </el-card>
@@ -166,7 +171,9 @@
             <el-descriptions-item label="任务 ID">
               <span data-test="portrait-recalc-task-id">{{ recalcTaskId || '同步计算（无任务 ID）' }}</span>
             </el-descriptions-item>
-            <el-descriptions-item label="计算口径">{{ recalcTemplateLabel }}</el-descriptions-item>
+            <el-descriptions-item label="计算口径">
+              <NameCodeLabel :name="recalcTemplateName" :code="recalcTemplateCode" />
+            </el-descriptions-item>
             <el-descriptions-item label="完成时间">{{ formatTime(recalcFinishedAt) }}</el-descriptions-item>
             <el-descriptions-item label="计算耗时">{{ recalcDurationText }}</el-descriptions-item>
             <el-descriptions-item label="综合评分">
@@ -233,7 +240,7 @@
               </template>
               <el-descriptions v-if="profile" :column="2" border>
                 <el-descriptions-item label="画像名称">{{ profile.name || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="画像 ID">{{ profile.person_id || personId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="画像码（person_id）">{{ profile.person_id || personId || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="风险等级">
                   <el-tag :type="riskType(profile)" size="small">{{ riskLabel(profile) }}</el-tag>
                 </el-descriptions-item>
@@ -380,8 +387,21 @@
                         <el-table-column prop="score" label="得分" width="70" />
                         <el-table-column label="兜底" width="100">
                           <template #default="{ row }">
+                            <el-tooltip
+                              v-if="row.scoring_error"
+                              :content="`评分异常，已按 50 兜底：${row.scoring_error}`"
+                              placement="top"
+                            >
+                              <el-tag
+                                size="small"
+                                type="warning"
+                                data-test="portrait-rule-scoring-error"
+                              >
+                                兜底 50
+                              </el-tag>
+                            </el-tooltip>
                             <el-tag
-                              v-if="row.missing"
+                              v-else-if="row.missing"
                               size="small"
                               type="warning"
                               data-test="portrait-dimension-missing-tag"
@@ -463,7 +483,13 @@
                     type="info"
                     size="small"
                   >
-                    {{ tag.name }}<span v-if="tag.score !== null" class="tag-score">{{ tag.score }}</span>
+                    {{ tag.name }}<el-tooltip
+                      v-if="tag.score !== null"
+                      content="采集得分（参考，不计入画像）"
+                      placement="top"
+                    >
+                      <span class="tag-score">{{ tag.score }}</span>
+                    </el-tooltip>
                   </el-tag>
                 </div>
               </div>
@@ -474,6 +500,7 @@
                 <li>默认口径展示画像主表的六维基础分（`basic/behavioral/...`）。</li>
                 <li>选择具体模板后展示该模板命名空间内的计算结果与置信度。</li>
                 <li>缺值按 50 分计入总分；`when` 条件不成立的规则会被跳过。</li>
+                <li>标签上的采集得分仅作参考、不计入画像；评分异常按 50 兜底并标注「兜底 50」。</li>
               </ul>
             </el-card>
           </el-col>
@@ -592,6 +619,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -710,6 +738,11 @@ const templateVersion = computed(() => {
   return matched?.version
 })
 
+/** 当前所选模板的中文名称（用于标识与码分开展示）。 */
+const selectedTemplateName = computed(
+  () => templateOptions.value.find((item) => item.code === selectedTemplate.value)?.name || '',
+)
+
 /** 所选模板的计算结果（缺省为空对象 → 回落默认口径）。 */
 const resultPayload = computed<Record<string, unknown>>(() => templateResult.value || {})
 
@@ -770,9 +803,11 @@ const recalcFinishedAt = computed(() => {
   const value = recalcTask.value?.finished_at
   return typeof value === 'string' ? value : undefined
 })
-const recalcTemplateLabel = computed(() => {
-  const code = String(recalcResult.value?.template_code || '')
-  return code ? code : '默认口径（六维基础分）'
+const recalcTemplateCode = computed(() => String(recalcResult.value?.template_code || ''))
+const recalcTemplateName = computed(() => {
+  const code = recalcTemplateCode.value
+  if (!code) return '默认口径（六维基础分）'
+  return templateOptions.value.find((item) => item.code === code)?.name || ''
 })
 const recalcStorage = computed(() => {
   const storage = recalcResult.value?.storage as Record<string, unknown> | undefined
@@ -1242,6 +1277,7 @@ onMounted(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
+.ml-6 { margin-left: 6px; }
 .mt-12 { margin-top: 12px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .card-head-actions { display: flex; align-items: center; gap: 8px; }

@@ -51,6 +51,13 @@
         <el-button size="small" data-test="next-steps-annotation" @click="router.push('/portrait/dps/annotation-templates')">
           创建标注模板
         </el-button>
+        <el-button
+          size="small"
+          data-test="next-steps-preflight"
+          @click="router.push(`/portrait/dps/templates/${lastSavedCode}/preflight`)"
+        >
+          评分口径体检
+        </el-button>
         <el-button size="small" data-test="next-steps-rules" @click="router.push('/portrait/rules')">查看规则口径</el-button>
         <el-button size="small" data-test="next-steps-calculate" @click="router.push('/portrait/list')">去计算画像</el-button>
       </div>
@@ -102,7 +109,15 @@
             </el-form-item>
             <el-form-item label="extends（深度 ≤ 2）">
               <el-select v-model="draft.extends" clearable placeholder="选择父模板（可不选）" style="width: 300px" data-test="workbench-extends">
-                <el-option v-for="item in extendsOptions" :key="item.code" :label="`${item.code}（${item.status || 'draft'}）`" :value="item.code" />
+                <el-option
+                  v-for="item in extendsOptions"
+                  :key="item.code"
+                  :label="item.name || item.code"
+                  :value="item.code"
+                >
+                  <NameCodeLabel :name="item.name" :code="item.code" />
+                  <span class="muted sm">{{ item.status || 'draft' }}</span>
+                </el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="description">
@@ -147,7 +162,7 @@
           v-else-if="activeSection === 'bindings'"
           v-model="draft.tag_bindings"
           :dimension-codes="dimensionCodes"
-          :annotation-templates="annotationTemplateCodes"
+          :annotation-templates="annotationTemplates"
         />
 
         <!-- ⑤ 证据策略 -->
@@ -189,6 +204,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -275,7 +291,6 @@ const draftJson = computed(() => JSON.stringify(payload.value, null, 2))
 const dimensionCodes = computed(() =>
   draft.dimension_config.dimensions.map((dimension) => String(dimension.code || '')).filter(Boolean),
 )
-const annotationTemplateCodes = computed(() => annotationTemplates.value.map((item) => item.code))
 const templateMap = computed(() => {
   const map: Record<string, DpsPortraitTemplate> = {}
   templates.value.forEach((item) => {

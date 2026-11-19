@@ -34,6 +34,46 @@
       </el-table>
     </el-card>
 
+    <el-card header="评分口径一致性（v2.13.0）" class="mb-16" data-test="preflight-scoring-consistency">
+      <div class="ob-metrics scoring-metrics">
+        <div class="metric">
+          <div class="metric-num danger">{{ consistency.block }}</div>
+          <div class="metric-label">阻断（BLOCK）</div>
+        </div>
+        <div class="metric">
+          <div class="metric-num">{{ consistency.warn }}</div>
+          <div class="metric-label">告警（WARN）</div>
+        </div>
+      </div>
+      <el-alert
+        v-if="consistency.error"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="mb-12"
+        :title="`一致性校验降级：${consistency.error}`"
+        data-test="preflight-scoring-degraded"
+      />
+      <el-table
+        :data="consistency.issues"
+        size="small"
+        stripe
+        empty-text="评分口径一致，未发现问题"
+        data-test="preflight-scoring-issues"
+      >
+        <el-table-column label="级别" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.severity === 'BLOCK' ? 'danger' : 'warning'" size="small">{{ row.severity }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="code" label="问题码" width="210" />
+        <el-table-column prop="tag_code" label="标签" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="annotation_template" label="标注模板" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="message" label="说明" min-width="240" show-overflow-tooltip />
+      </el-table>
+      <div class="muted sm mt-8">BLOCK 将阻断模板激活；可通过 SCORING_CONSISTENCY_GATE=warn/off 临时降级。</div>
+    </el-card>
+
     <el-card header="影响面（三项指标）">
       <el-radio-group v-model="dimension" class="mb-12" data-test="impact-dimension" @change="loadImpact">
         <el-radio-button value="template_code">按模板 template_code</el-radio-button>
@@ -98,6 +138,9 @@ const impact = ref<DpsImpactResult>({})
 const { loading, error, run } = useAsyncState<unknown>()
 
 const checks = computed(() => preflight.value?.checks || [])
+const consistency = computed(
+  () => preflight.value?.scoring_consistency || { block: 0, warn: 0, issues: [] },
+)
 const metrics = computed(() => ({
   annotation_template_count: impact.value.annotation_template_count ?? 0,
   annotation_count: impact.value.annotation_count ?? 0,
@@ -154,6 +197,9 @@ onMounted(() => {
 .request-id { color: var(--ob-text-disabled); font-size: 12px; margin-left: 8px; }
 .ob-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
 .metric { border: 1px solid var(--ob-border); border-radius: var(--ob-radius-md); padding: 12px; text-align: center; }
+.scoring-metrics { grid-template-columns: repeat(2, minmax(0, 200px)); }
+.danger { color: var(--el-color-danger, #f56c6c); }
+.mt-8 { margin-top: 8px; }
 .metric-num { font-size: 26px; font-weight: 600; }
 .metric-label { font-size: 12px; color: var(--ob-text-secondary); margin-top: 4px; }
 .basis-content { color: var(--ob-text-secondary); font-size: 12px; margin-top: 6px; }

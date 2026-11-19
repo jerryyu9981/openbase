@@ -31,6 +31,7 @@ export const dpsRoutes: RouteRecordRaw[] = [
   { path: 'dps/lineage', name: 'dps-lineage', component: () => import('./pages/DpsLineageView.vue'), meta: { title: '标签血缘反查' } },
   { path: 'dps/measures', name: 'dps-measures', component: () => import('./pages/DpsMeasureView.vue'), meta: { title: '措施建议' } },
   { path: 'dps/scoring-types', name: 'dps-scoring-types', component: () => import('./pages/DpsScoringTypeView.vue'), meta: { title: '评分类型' } },
+  { path: 'dps/scoring-consistency', name: 'dps-scoring-consistency', component: () => import('./pages/DpsScoringConsistencyView.vue'), meta: { title: '评分口径一致性' } },
   { path: 'dps/annotation-adapters', name: 'dps-annotation-adapters', component: () => import('./pages/DpsAnnotationAdapterView.vue'), meta: { title: 'AI 标注候选与复核' } },
   { path: 'dps/annotation-templates', name: 'dps-annotation-templates', component: () => import('./pages/DpsAnnotationTemplateView.vue'), meta: { title: '标注模板管理' } },
   { path: 'dps/annotation-templates/:code/fields', name: 'dps-annotation-fields', component: () => import('./pages/DpsAnnotationFieldView.vue'), meta: { title: '标注模板字段与归属' } },
@@ -46,6 +47,7 @@ export const routes: RouteRecordRaw[] = [
   { path: 'search', name: 'portrait-search', component: () => import('./pages/PortraitSearch.vue'), meta: { title: '画像搜索' } },
   { path: 'tags', name: 'portrait-tags', component: () => import('./pages/Tags.vue'), meta: { title: '标签管理' } },
   { path: 'overview', name: 'portrait-overview', component: () => import('./pages/Overview.vue'), meta: { title: '数据总览' } },
+  { path: 'relation', name: 'portrait-relation', component: () => import('./pages/RelationView.vue'), meta: { title: '关系视图' } },
   { path: 'rules', name: 'portrait-rules', component: () => import('./pages/Rules.vue'), meta: { title: '规则引擎' } },
   // v1.4.11：「分析报表」「批量任务」原复用列表视图（点进去与画像列表完全一致，属误导），
   // 已下线为独立路由；旧直达链接经 legacyRedirects 回落到画像列表，待上游提供专用接口后再成页。
@@ -59,6 +61,7 @@ export const navItems = [
     label: '画像管理',
     items: [
       { path: '/portrait/overview', title: '数据总览' },
+      { path: '/portrait/relation', title: '关系视图' },
       { path: '/portrait/list', title: '画像列表' },
       { path: '/portrait/search', title: '画像搜索' },
       { path: '/portrait/tags', title: '标签管理' },
@@ -73,6 +76,7 @@ export const navItems = [
       { path: '/portrait/dps/lineage', title: '标签血缘反查' },
       { path: '/portrait/dps/measures', title: '措施建议' },
       { path: '/portrait/dps/scoring-types', title: '评分类型' },
+      { path: '/portrait/dps/scoring-consistency', title: '评分口径一致性' },
       { path: '/portrait/dps/annotation-adapters', title: 'AI 标注候选与复核' },
       { path: '/portrait/dps/annotation-templates', title: '标注模板管理' },
       { path: '/portrait/dps/annotations', title: '标注录入与审核' },

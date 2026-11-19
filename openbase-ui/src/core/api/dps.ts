@@ -45,6 +45,8 @@ export interface DpsTagCategory {
   id?: string
   name?: string
   description?: string
+  /** 对齐画像模板 dimension_config.dimensions[].code；配置后标注模板 target_dimension 受校验 */
+  dimension_code?: string | null
   org_id?: string
   tenant_id?: string
   created_at?: string
@@ -69,7 +71,54 @@ export interface DpsPortraitTemplate {
   evidence_policy?: DpsEvidencePolicy | null
   /** 异常规则（P3；结构化条件可执行，字符串条件仅提示） */
   anomaly_rules?: unknown
+  /** 模板分类（v2.12.0；绑定 L3 分类） */
+  category_id?: string | null
+  /** composite=复合模板 / component=子模板 */
+  template_kind?: 'composite' | 'component' | string
+  /** manual=人工命名 / fallback=迁移回退（待补充中文名） */
+  name_source?: 'manual' | 'fallback' | string
   [key: string]: unknown
+}
+
+/** 模板分类节点（v2.12.0） */
+export interface DpsTemplateCategory {
+  id: string
+  code: string
+  name: string
+  parent_id?: string | null
+  path: string
+  level: number
+  sort_order?: number
+  status?: string
+  children?: DpsTemplateCategory[]
+  [key: string]: unknown
+}
+
+/** 复合模板挂载的子模板（v2.12.0） */
+export interface DpsTemplateComponent {
+  id?: string
+  parent_code: string
+  child_code: string
+  sort_order: number
+  required: boolean
+  weight_override?: number | null
+  child_name?: string
+  child_kind?: string
+  child_version?: string | number
+  child_status?: string
+  [key: string]: unknown
+}
+
+/** 标注范围预检结果（v2.12.0；单模板或模板类） */
+export interface DpsAnnotationScopeResult {
+  scope_type: 'template' | 'category'
+  scope_code: string
+  template_count: number
+  templates: Array<{ code: string; name?: string }>
+  annotation_template_count: number
+  field_count: number
+  /** 模板 >50 或字段 >500 时为 true，需前端二次确认 */
+  requires_confirmation: boolean
 }
 
 /** 标注字段（`field_schema` 元素；type 仅 5 类） */
@@ -213,10 +262,39 @@ export interface DpsRollbackResult {
   [key: string]: unknown
 }
 
+export interface DpsScoringIssue {
+  code: string
+  severity: 'BLOCK' | 'WARN'
+  dimension?: string
+  tag_code?: string
+  annotation_template?: string | null
+  field_key?: string | null
+  portrait_template?: string
+  detail?: Record<string, unknown>
+  message?: string
+}
+
+export interface DpsScoringConsistencySection {
+  block: number
+  warn: number
+  issues: DpsScoringIssue[]
+  error?: string
+}
+
+export interface DpsScoringConsistencyReport {
+  scanned: { templates: number; annotation_templates: number; fields: number }
+  summary: { block: number; warn: number; by_code: Record<string, number> }
+  issues: DpsScoringIssue[]
+  basis: string
+  pagination?: { limit: number; offset: number; total: number }
+}
+
 export interface DpsPreflightResult {
   valid?: boolean
   checks?: Array<{ item?: string; passed?: boolean; detail?: string }>
   impact?: DpsImpactResult
+  /** v2.13.0：评分口径一致性段（BLOCK/WARN 明细） */
+  scoring_consistency?: DpsScoringConsistencySection
   [key: string]: unknown
 }
 
@@ -828,13 +906,13 @@ export const dpsApi = {
   },
 
   /** 创建标签分类（POST /api/v1/dps-proxy/tags/categories） */
-  async createTagCategory(payload: { name: string; description?: string }): Promise<DpsTagCategory> {
+  async createTagCategory(payload: { name: string; description?: string; dimension_code?: string }): Promise<DpsTagCategory> {
     const { data } = await http.post<{ code: number; data: DpsTagCategory }>('/dps-proxy/tags/categories', payload)
     return data.data
   },
 
   /** 更新标签分类（PUT /api/v1/dps-proxy/tags/categories/{id}） */
-  async updateTagCategory(categoryId: string, payload: { name?: string; description?: string }): Promise<DpsTagCategory> {
+  async updateTagCategory(categoryId: string, payload: { name?: string; description?: string; dimension_code?: string }): Promise<DpsTagCategory> {
     const { data } = await http.put<{ code: number; data: DpsTagCategory }>(`/dps-proxy/tags/categories/${encodeURIComponent(categoryId)}`, payload)
     return data.data
   },
@@ -950,6 +1028,20 @@ export const dpsApi = {
     return data.data
   },
 
+  /** 评分口径一致性治理报告（GET /dps-proxy/governance/scoring-consistency；只读，v2.13.0） */
+  async getScoringConsistency(params?: {
+    category_code?: string
+    only_active?: boolean
+    limit?: number
+    offset?: number
+  }): Promise<DpsScoringConsistencyReport> {
+    const { data } = await http.get<ApiSuccess<DpsScoringConsistencyReport>>(
+      '/dps-proxy/governance/scoring-consistency',
+      { params },
+    )
+    return data.data
+  },
+
   /** 模板可视化元数据（GET /dps-proxy/meta/schema；算子/规则参数模式，只读） */
   async getTemplateMetaSchema(): Promise<DpsTemplateMetaSchema> {
     const { data } = await http.get<ApiSuccess<DpsTemplateMetaSchema>>('/dps-proxy/meta/schema')
@@ -1041,6 +1133,113 @@ export const dpsApi = {
       `/dps-proxy/templates/${encodeURIComponent(code)}/lineage`,
     )
     return data.data
+  },
+
+  // ── v2.12.0 模板分类树与子模板挂载 ─────────────────────────
+
+  /** 分类树（GET /dps-proxy/template-categories/tree） */
+  async getTemplateCategoryTree(): Promise<DpsTemplateCategory[]> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsTemplateCategory[] }>>(
+      '/dps-proxy/template-categories/tree',
+    )
+    return data.data.items
+  },
+
+  /** 分类平铺列表（GET /dps-proxy/template-categories） */
+  async listTemplateCategories(): Promise<DpsTemplateCategory[]> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsTemplateCategory[] }>>(
+      '/dps-proxy/template-categories',
+    )
+    return data.data.items
+  },
+
+  /** 标注范围预检（GET /dps-proxy/annotation-scopes/resolve；超阈值 → requires_confirmation） */
+  async resolveAnnotationScope(params: {
+    type: 'template' | 'category'
+    code: string
+    only_mounted?: boolean
+  }): Promise<DpsAnnotationScopeResult> {
+    const { data } = await http.get<ApiSuccess<DpsAnnotationScopeResult>>(
+      '/dps-proxy/annotation-scopes/resolve',
+      { params },
+    )
+    return data.data
+  },
+
+  /** 新建分类（POST /dps-proxy/template-categories） */
+  async createTemplateCategory(payload: {
+    code: string
+    name: string
+    parent_id?: string | null
+    sort_order?: number
+  }): Promise<DpsTemplateCategory> {
+    const { data } = await http.post<ApiSuccess<DpsTemplateCategory>>(
+      '/dps-proxy/template-categories',
+      payload,
+    )
+    return data.data
+  },
+
+  /** 编辑分类（PUT /dps-proxy/template-categories/{id}；code 不可改） */
+  async updateTemplateCategory(
+    categoryId: string,
+    payload: { name?: string; sort_order?: number; status?: string },
+  ): Promise<DpsTemplateCategory> {
+    const { data } = await http.put<ApiSuccess<DpsTemplateCategory>>(
+      `/dps-proxy/template-categories/${encodeURIComponent(categoryId)}`,
+      payload,
+    )
+    return data.data
+  },
+
+  /** 移动分类（POST /dps-proxy/template-categories/{id}/move） */
+  async moveTemplateCategory(categoryId: string, parentId: string | null): Promise<DpsTemplateCategory> {
+    const { data } = await http.post<ApiSuccess<DpsTemplateCategory>>(
+      `/dps-proxy/template-categories/${encodeURIComponent(categoryId)}/move`,
+      { parent_id: parentId },
+    )
+    return data.data
+  },
+
+  /** 子模板挂载清单（GET /dps-proxy/templates/{code}/components） */
+  async listTemplateComponents(code: string): Promise<DpsTemplateComponent[]> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsTemplateComponent[] }>>(
+      `/dps-proxy/templates/${encodeURIComponent(code)}/components`,
+    )
+    return data.data.items
+  },
+
+  /** 挂载子模板（POST /dps-proxy/templates/{code}/components） */
+  async mountTemplateComponent(
+    code: string,
+    payload: {
+      child_code: string
+      sort_order?: number
+      required?: boolean
+      weight_override?: number | null
+    },
+  ): Promise<{ parent_code: string; child_code: string; components: DpsTemplateComponent[] }> {
+    const { data } = await http.post<
+      ApiSuccess<{ parent_code: string; child_code: string; components: DpsTemplateComponent[] }>
+    >(`/dps-proxy/templates/${encodeURIComponent(code)}/components`, payload)
+    return data.data
+  },
+
+  /** 卸载子模板（DELETE /dps-proxy/templates/{code}/components/{child}） */
+  async unmountTemplateComponent(code: string, childCode: string): Promise<DpsTemplateComponent[]> {
+    const { data } = await http.delete<ApiSuccess<{ components: DpsTemplateComponent[] }>>(
+      `/dps-proxy/templates/${encodeURIComponent(code)}/components/${encodeURIComponent(childCode)}`,
+    )
+    return data.data.components
+  },
+
+  /** 子模板排序（PUT /dps-proxy/templates/{code}/components/order） */
+  async reorderTemplateComponents(code: string, childCodes: string[]): Promise<DpsTemplateComponent[]> {
+    const { data } = await http.put<ApiSuccess<{ items: DpsTemplateComponent[] }>>(
+      `/dps-proxy/templates/${encodeURIComponent(code)}/components/order`,
+      { child_codes: childCodes },
+    )
+    return data.data.items
   },
 
   /** 标注字段映射（GET /dps-proxy/annotation-templates/{code}/field-mapping；P2 字段→标签→评分项） */

@@ -464,6 +464,25 @@ async def dps_orphan_annotation_templates(
     )
 
 
+@router.get("/governance/scoring-consistency")
+async def dps_scoring_consistency_governance(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """评分口径一致性治理报告（v2.13.0，GET；只读）.
+
+    透传上游 ``/api/v2/portrait/governance/scoring-consistency``：返回
+    ``scanned/summary/issues/basis/pagination``；本仓不做问题判定与过滤改写。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/governance/scoring-consistency"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 @router.get("/portraits/{person_id}/anomaly-alerts")
 async def dps_portrait_anomaly_alerts(
     person_id: str,
@@ -985,6 +1004,176 @@ async def dps_template_create(
     return await _forward(
         "POST", _portrait_upstream_path("/templates"),
         json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- v2.12.0 模板分类树（静态段：tree 先于动态段 {category_id}）------------
+
+
+@router.get("/template-categories/tree")
+async def dps_template_category_tree(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板分类树（GET；上游 /api/v2/portrait/template-categories/tree）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/template-categories/tree"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/template-categories")
+async def dps_template_category_list(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """模板分类平铺列表（GET；上游 /api/v2/portrait/template-categories）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/template-categories"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/template-categories")
+async def dps_template_category_create(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """新建模板分类（POST；上游 409/400 语义保真）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path("/template-categories"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.put("/template-categories/{category_id}")
+async def dps_template_category_update(
+    category_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """编辑模板分类（PUT；code 不可改，由上游裁决）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "PUT", _portrait_upstream_path(f"/template-categories/{category_id}"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/template-categories/{category_id}/move")
+async def dps_template_category_move(
+    category_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """移动模板分类（POST；层级上限 3 由上游裁决）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/template-categories/{category_id}/move"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- v2.12.0 子模板挂载（须先于动态段 /templates/{code}）-------------------
+
+
+@router.get("/templates/{code}/components")
+async def dps_template_components_list(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """子模板挂载清单（GET；含子模板名称/类型/版本）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path(f"/templates/{code}/components"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/templates/{code}/components")
+async def dps_template_component_mount(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """挂载子模板（POST；挂载即升父模板版本并写快照）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST", _portrait_upstream_path(f"/templates/{code}/components"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.put("/templates/{code}/components/order")
+async def dps_template_components_reorder(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """子模板排序（PUT；child_codes 须覆盖全部已挂载项）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "PUT", _portrait_upstream_path(f"/templates/{code}/components/order"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.delete("/templates/{code}/components/{child_code}")
+async def dps_template_component_unmount(
+    code: str,
+    child_code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """卸载子模板（DELETE；必挂项由上游 409 拒绝）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "DELETE", _portrait_upstream_path(f"/templates/{code}/components/{child_code}"),
+        headers=headers,
+        request=request,
+    )
+
+
+# ---- v2.12.0 标注范围预检（单模板 / 模板类）--------------------------------
+
+
+@router.get("/annotation-scopes/resolve")
+async def dps_annotation_scope_resolve(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注范围预检（GET；超阈值返回 requires_confirmation=true）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/annotation-scopes/resolve"),
         params=_forward_query_params(request),
         headers=headers,
         request=request,
