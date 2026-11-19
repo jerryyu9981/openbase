@@ -24,7 +24,8 @@ export const LEGACY_REDIRECTS: ReadonlyArray<readonly [string, string]> = [
   ['/system/docs', '/platform/developers/docs'],
   ['/system/edgerouter', '/platform/developers/edgerouter'],
   // openllm 系统性能力上收
-  ['/openllm/settings', '/personal/settings'],
+  // `/openllm/settings`（推理设置）仍是 OpenLLM 模块内的真实功能页（上下文裁剪策略），
+  // 不在此重定向，否则模块菜单「推理设置」会跳到无关的个人设置页（走查 D1）。
   ['/openllm/api-keys', '/platform/config/api-keys'],
   ['/openllm/usage', '/platform/observability/usage'],
   ['/openllm/monitoring', '/platform/observability/monitoring'],

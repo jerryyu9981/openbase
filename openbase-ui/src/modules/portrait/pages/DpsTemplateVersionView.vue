@@ -154,10 +154,16 @@ function formatValue(value: unknown): string {
   return typeof value === 'string' ? value : JSON.stringify(value)
 }
 
+/** 后端模板 `version` 为展示串（如 `v2`），此处归一为数字，避免 `v2 - 1 = NaN`。 */
+function parseVersionNumber(value: unknown): number {
+  const matched = String(value ?? '').match(/\d+/)
+  return matched ? Number(matched[0]) : 1
+}
+
 async function loadMeta() {
   const template = (await run(() => dpsApi.getTemplate(code.value))) as DpsPortraitTemplate | null
   if (template) {
-    currentVersion.value = template.version ?? 1
+    currentVersion.value = parseVersionNumber(template.version)
     fromVersion.value = currentVersion.value
     toVersion.value = Math.max(1, currentVersion.value - 1)
   }
@@ -200,7 +206,8 @@ async function doRollback() {
 
 onMounted(async () => {
   await loadMeta()
-  if (code.value) await compare()
+  // 首屏不自动对比：版本历史缺失时 `/diff` 会 404 并弹出错误（走查 D2）；
+  // 用户选择 A/B 版本后由「对比」按钮显式触发。
 })
 </script>
 

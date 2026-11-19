@@ -151,36 +151,40 @@ describe('DPS 12 条路由注册', () => {
   // v1.4.11 收口：DPS 路由由顶部 `/dps/**` 归位画像模块（实际路径 `/portrait/dps/**`），
   // 直接断言模块子路由表（路径为模块内相对段，仍与设计 §2 一一对应）。
 
-  it('新增 12 条 DPS 设计路由（P-09 双路径 ⇒ 13 条 route record，均具 title）', () => {
-    // 设计 §2 共 12 行；P-09（新建／编辑）由 `dps/templates/new` 与 `dps/templates/:code/edit` 两条路径承载
-    expect(dpsRoutes).toHaveLength(13)
+  it('DPS 模块 16 条路由记录均具 title（设计 §2 基线 + v2.13.0 增量）', () => {
+    // 设计 §2 共 12 行；P-09（新建／编辑）由 `dps/templates/new` 与 `dps/templates/:code/edit` 两条路径承载；
+    // v2.13.0 增量：`dps/templates/:code/raw`、`dps/scoring-consistency`、`dps/annotations` ⇒ 13 + 3 = 16。
+    expect(dpsRoutes).toHaveLength(16)
     dpsRoutes.forEach((route) => {
       expect(route.meta?.title, `${String(route.name)} 缺 title`).toBeTruthy()
       expect(typeof route.component).toBe('function')
     })
   })
 
-  it('路由路径与设计 §2 一致（含 P-09 双路径）', () => {
+  it('路由路径与设计 §2 一致（含 P-09 双路径与 v2.13.0 增量）', () => {
     const paths = dpsRoutes.map((route) => route.path).sort()
     expect(paths).toEqual(
       [
         'dps/annotation-adapters',
         'dps/annotation-templates',
         'dps/annotation-templates/:code/fields',
+        'dps/annotations',
         'dps/lineage',
         'dps/measures',
+        'dps/scoring-consistency',
         'dps/scoring-types',
         'dps/tags',
         'dps/template-packages',
         'dps/templates',
         'dps/templates/:code/edit',
         'dps/templates/:code/preflight',
+        'dps/templates/:code/raw',
         'dps/templates/:code/versions',
         'dps/templates/new',
       ].sort(),
     )
     const names = new Set(dpsRoutes.map((route) => route.name))
-    expect(names.size).toBe(13)
+    expect(names.size).toBe(16)
   })
 
   it('12 个 Dps*View.vue 页面组件均可加载（22 端点 ↔ 12 页面，AC-18）', () => {
