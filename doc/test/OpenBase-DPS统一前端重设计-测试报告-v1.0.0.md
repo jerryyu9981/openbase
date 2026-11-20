@@ -5,8 +5,8 @@
 | 项目名称 | OpenBase（开放底座）／落点仓 **本仓**（`openbase-ui` 前端） |
 | 主题 | DPS 统一前端页面功能重设计（Phase 1～3） |
 | 文档 | 测试报告（Step 4 产出） |
-| 文档版本 | **v1.0.0** |
-| 状态 | **[Review]**（Step 4 已执行，待人工门禁批准） |
+| 文档版本 | **v1.1.1** |
+| 状态 | **[Approved]**（Step 4 人工批准通过，2026-11-20，批准人＝用户，准予进入 Step 5） |
 | 测试角色 | TE-OpenBase-Test |
 | 测试时间 | 2026-11-20 |
 | 存放 | `doc/test/` |
@@ -18,6 +18,8 @@
 | 版本 | 日期 | 变更说明 | 修订人 |
 |---|---|---|---|
 | v1.0.0 | 2026-11-20 | 首版：Phase 1～3 全量前端重设计的 Step 4 测试记录，含范围与环境、46 条 AC 覆盖矩阵、静态检查/单测/路由回归执行结果、A6/A9/A10/A11/A12/A14 降级口径验证、缺陷与结论 | TE-OpenBase-Test |
+| v1.1.0 | 2026-11-20 | 人工批准：Step 4 门禁通过，状态 [Review] → [Approved]，准予进入 Step 5（部署与运维） | TE-OpenBase-Test |
+| v1.1.1 | 2026-11-20 | Step 5 构建回归回填：补记全项目类型门禁口径（`npm run build` 覆盖 `tests/**`），登记并闭环 DEF-DPSR-05-01（测试文件 `WrapperLike.vm` 类型错误）；结论不变 | TE-OpenBase-Test |
 
 ---
 
@@ -159,6 +161,8 @@
 | 类型检查 | `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit` | **0 错误**（Phase 3 记录 + 本轮基线未变） |
 | 规范检查 | `node node_modules/eslint/bin/eslint.js`（Phase 3：5 个模型/工具 + 8 个页面 + 2 个测试文件） | **0 错误 0 告警** |
 
+> **v1.1.1 口径补充（Step 5 回填）**：Step 4 的类型检查未覆盖 `tests/**` 全量。Step 5 以 `npm run build`（`vue-tsc --noEmit && vite build`，全项目 tsconfig）复核时发现 `tests/portrait-lifecycle.spec.ts` 的 `WrapperLike.vm` 类型错误并阻断构建（DEF-DPSR-05-01，P1）。已修复并以构建通过 ＋ `portrait-lifecycle` 8 例回归验证闭环，详见《OpenBase-DPS 统一前端重设计-部署与运维报告-v1.0.0》§6。本报告测试结论不变。
+
 ### 4.2 单元/组件测试
 
 | Spec | 覆盖点 | 结果 |
@@ -256,6 +260,6 @@ node node_modules/vitest/vitest.mjs run \
 | AC 覆盖 | **46/46 有处置**；43 通过、3 按设计降级通过 |
 | 阻塞缺陷 | **0** |
 | 总体结论 | **测试通过**，满足设计文档 §11 验收标准 |
-| 门禁 | Step 4 测试完成，**待人工批准**后进入 Step 5（部署与运维） |
+| 门禁 | Step 4 人工批准通过（2026-11-20，批准人＝用户），已进入 Step 5（部署与运维） |
 
 > **降级说明**：AC-WB-5（趋势窗口）、AC-RV-5（审计时间线）、AC-PT-6（措施主体选择）三项依赖后端 A6/A10 能力，当前按「明示降级、不造假数据」实现并通过验证；后端能力就绪后需回归替换。
