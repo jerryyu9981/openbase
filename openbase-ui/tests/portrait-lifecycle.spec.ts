@@ -5,7 +5,7 @@
  * 属性 PATCH（If-Match）与 409 冲突重载。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import ElementPlus, { ElMessageBox } from 'element-plus'
 
 const dpsMocks = vi.hoisted(() => ({
@@ -105,7 +105,8 @@ describe('批次 5：画像计算与外部 ID 查询', () => {
 
     await wrapper.find('[data-test="portrait-calculate-open"]').trigger('click')
     await wrapper.find('input[data-test="calc-person-id"]').setValue('P-3')
-    wrapper.findComponent('[data-test="calc-template-code"]').vm.$emit('update:modelValue', 'tpl-1')
+    const templateSelect = wrapper.findComponent('[data-test="calc-template-code"]') as unknown as VueWrapper
+    templateSelect.vm.$emit('update:modelValue', 'tpl-1')
     await flushPromises()
     await wrapper.find('[data-test="calc-submit"]').trigger('click')
     await flushPromises()
