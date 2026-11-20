@@ -1,0 +1,141 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.8 [39m[90mD:/Trae CN/myproject/Dev/OpenBase/openbase-ui[39m
+
+ [32m✓[39m tests/dps-annotation-fields.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 31[2mms[22m[39m
+ [32m✓[39m tests/dps-list-view.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 64[2mms[22m[39m
+ [32m✓[39m tests/dps-template-health.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m tests/nav-consistency.spec.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+node : [90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始
+化但未装载时，深链 /portrait/list 仍命中 portrait 模块
+所在位置 行:15 字符: 1737
++ ... | Out-Null; node node_modules/vitest/vitest.mjs run tests/nav-consist ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...仍命中 portrait 模块:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /memory/sessions 仍命中 memory 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/memory/sessions"
+[Vue Router warn]: No match found for location with path "/memory/sessions"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /knowledge/chat 仍命中 knowledge 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/chat"
+[Vue Router warn]: No match found for location with path "/knowledge/chat"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /openllm/conversations 仍命中 openllm 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m模块子页时顶层导航高亮回退
+到 route_prefix
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m三层菜单：顶层 + 权限过
+滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪）
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m点击新增模型提示写操作待完善
+（M2，对话框不弹出）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m列表加载真实 API 数据（
+非 mock）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m名称为空不触发新增（写操作禁
+用路径）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-007: 对话导出 JSON[2m > [22m[2m点击导出触发下载并提示成功
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="对话管理" description="会话记录与消息明细"  ... > 
+  at <PageContainer title="对话管理" description="会话记录与消息明细" test-id="conversations-page" > 
+  at <Conversations ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/module-pages.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1162[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m点击新增模型提示写操作待完善（M2，对话框不弹出） [33m666[2mms[22m[39m
+[90mstderr[2m | tests/module-pages.spec.ts
+[22m[39mError: Not implemented: navigation (except hash changes)
+    at module.exports (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\browser\not-implement
+ed.js:9:17)
+    at navigateFetch (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navigati
+on.js:77:3)
+    at exports.navigate (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navig
+ation.js:55:3)
+    at Timeout._onTimeout (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\nodes\HTML
+HyperlinkElementUtils-impl.js:81:7)
+    at listOnTimeout (node:internal/timers:605:17)
+    at processTimers (node:internal/timers:541:7) [90mundefined[39m
+
+[90mstderr[2m | VirtualConsole.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdo
+m\virtual-console.js:29:45)
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+Error: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-4: 装载幂等与告警清零 / 空态兜底[2m > [22m[2mModuleLayout 在 navIt
+ems 存在时渲染二级导航分组
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+ [32m✓[39m tests/router-nav.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 1797[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22mregistry 已初始化但未装载时，深链 /portrait/list 仍命中 portrait 模块 [33m312[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m模块子页时顶层导航高亮回退到 route_prefix [33m354[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[32m57 passed[39m[22m[90m (57)[39m
+[2m   Start at [22m 17:10:36
+[2m   Duration [22m 38.93s[2m (transform 4.66s, setup 0ms, collect 40.69s, tests 3.07s, environment 114.07s, prepare 4.87s)[22m
+
