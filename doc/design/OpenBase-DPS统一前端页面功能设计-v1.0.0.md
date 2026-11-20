@@ -3,8 +3,8 @@
 | 项 | 内容 |
 |---|---|
 | **文档类型** | UI/前端设计（页面功能重新设计） |
-| **版本** | v2.1.0 |
-| **状态** | [Implemented] Phase 1 已落地 |
+| **版本** | v2.2.0 |
+| **状态** | [Implemented] Phase 2 已落地 |
 | **适用范围** | `openbase-ui/src/modules/portrait/**`（画像模块，含 DPS 模板化 16 条路由） |
 | **上游依据** | 《批次 5：统一前端四子系统全生命周期补齐（规格）》v1.2.0；`modules/portrait/index.ts`；`core/api/dps.ts`；既有 `doc/design/prototype/p01~p12` |
 | **作者** | 产品 / 前端架构组（Solo 角色：RA + FA + UI） |
@@ -17,6 +17,7 @@
 | v1.0.0 | 2026-11-20 | 首版：全量盘点 DPS/画像 22 个页面；对标同类标注软件常用操作；给出新信息架构、页面功能与交互规范、API 差距清单、分批实施与验收标准；同步新增高保真原型 `doc/design/prototype/dps-redesign/` | 产品/前端架构组 |
 | v2.0.0 | 2026-11-20 | 人工批准：四分组 IA 第一组定名「概览」；审核采用同路由视图 `?view=review`（附 3 项硬条件）；API 缺口按 P0/P1/P2 分层排期；批准进入 Phase 1 实现。详见 §14 | 产品/前端架构组 |
 | v2.1.0 | 2026-11-20 | Phase 1 前端实现落地：四分组导航、今日工作台、标注作业台 + 审核收件箱同路由视图、通用列表规范；补录实施记录与验证证据。详见 §14.5 | 前端工程师（FD） |
+| v2.2.0 | 2026-11-20 | Phase 2 前端实现落地：模板中心（健康度 + 分类侧栏 + 保存视图 + 六页签详情）、模板工作台（步骤条 + 发布向导 + 本地草稿 + JSON 变更）、标注模板/字段设计器（拖拽排序 + 映射提示 + 实时预览 + 改挂影响面）；补录实施记录与验证证据。详见 §14.6 | 前端工程师（FD） |
 
 ---
 
@@ -350,8 +351,8 @@
 
 | 批次 | 内容 | 依赖 | 交付判定 |
 |---|---|---|---|
-| Phase 1 | 导航四分组；工作台 P-01；标注作业台 P-02；审核收件箱 P-03；通用列表规范（保存视图/列设置/批量） | 现有接口 + A3/A6 前端降级 | 高频主流程可用 |
-| Phase 2 | 模板中心 P-04；模板工作台 P-05（步骤条 + 发布向导）；标注模板/字段设计器 P-06 | 现有接口 + A7/A8 前端组合 | 治理闭环、字段可预览 |
+| Phase 1 | 导航四分组；工作台 P-01；标注作业台 P-02；审核收件箱 P-03；通用列表规范（保存视图/列设置/批量） | 现有接口 + A3/A6 前端降级 | 高频主流程可用 · **v2.1.0 已交付** |
+| Phase 2 | 模板中心 P-04；模板工作台 P-05（步骤条 + 发布向导）；标注模板/字段设计器 P-06 | 现有接口 + A7/A8 前端组合 | 治理闭环、字段可预览 · **v2.2.0 已交付** |
 | Phase 3 | 标签与口径 P-07；画像列表/搜索/360/措施 P-08；导出与审计时间线 | A9/A10/A11 | 可追溯与批量导出 |
 
 **兼容策略**：所有旧路径保持；被合并的视图以 `?view=` / `?tag=` / `?template=` 参数承接；旧书签直达后自动落到对应视图。
@@ -461,7 +462,7 @@
 
 ### 13.3 关联文档
 
-- 《OpenBase-DPS 统一前端页面功能设计》v2.0.0（本文）
+- 《OpenBase-DPS 统一前端页面功能设计》v2.2.0（本文）
 - 《批次 5：统一前端四子系统全生命周期补齐（规格）》v1.2.0
 - `doc/design/prototype/proto.css`（原型共享样式，token 对齐 `tokens.css`）
 - `openbase-ui/src/modules/portrait/index.ts`、`openbase-ui/src/core/api/dps.ts`
@@ -527,3 +528,31 @@
 - `vitest run tests/nav-consistency.spec.ts tests/dps-list-view.spec.ts`：26 passed。
 - `vitest run tests/router-nav.spec.ts tests/module-pages.spec.ts`：43 passed。
 - 浏览器冒烟（admin 登录）：`/portrait/overview` 四卡与告警/队列卡渲染；`annotations` 录入表单与右栏卡片渲染；`annotations?view=review` 审核对照与队列渲染；均无红色错误告警。
+
+### 14.6 Phase 2 实施记录（v2.2.0）
+
+**实施范围与落地情况**
+
+| 交付项 | 落地位置 | 说明 |
+|---|---|---|
+| 模板中心 P-04 | `openbase-ui/src/modules/portrait/pages/DpsTemplateListView.vue` | 顶部状态概览（已激活/草稿/停用/有 BLOCK）；分类侧栏树（新增/改名/移动，保留 3 层约束与第 3 层绑定提示）；保存视图 `dps.view.templates` 与列设置 `dps.columns.templates`；健康度列（口径 BLOCK/告警 + 血缘缺口，A8 前端组合）；行操作收敛为「打开 + 更多」；详情抽屉六页签（概览/族谱/标注模板/标签产出/评分项/版本与预检），概览含健康度问题「去修复」 |
+| 模板工作台 P-05 | `openbase-ui/src/modules/portrait/pages/DpsTemplateWorkbenchView.vue` | 左侧步骤条（各段错误/提示计数、完成度、✓、「下一处问题」）；发布向导四步（校验 → 口径一致性 → 影响面 → 激活），BLOCK 阻断激活并给出修复入口；草稿本地暂存 `dps.workbench.draft.{code}`（自动保存、恢复确认、离开守卫）；JSON 视图展示与最近保存的顶层变更；`Ctrl/Cmd+S` 暂存、`Ctrl/Cmd+Enter` 保存 |
+| 标注模板列表 P-06 | `openbase-ui/src/modules/portrait/pages/DpsAnnotationTemplateView.vue` | 新增「已映射维度」「归属状态」「被使用次数」列；新建成功后直接进入字段设计；字段设计入口路径修正为 `/portrait/dps/...` |
+| 字段设计器 P-06 | `openbase-ui/src/modules/portrait/pages/DpsAnnotationFieldView.vue` | 字段卡片拖拽排序 + 上移/下移/删除；5 类字段与枚举/区间即时校验；目标维度选择器来自归属模板；「生成标签 → 命中评分项」实时提示；右侧表单实时预览；改挂前展示已有标注数影响面并二次确认；字段数为 0 阻止保存 |
+| 复用模型 | `openbase-ui/src/modules/portrait/templates/health.ts`、`openbase-ui/src/modules/portrait/annotation/fieldSchema.ts` | 健康度组合、字段模型/校验/标签提示均为纯函数，页面只负责拉取与呈现，便于单测 |
+| 单元测试 | `openbase-ui/tests/dps-template-health.spec.ts`、`openbase-ui/tests/dps-annotation-fields.spec.ts` | 健康度归组与阻断优先级、字段转换/校验/标签提示/字符串形态 `dimension_config` 解析 |
+
+**降级口径（与 §9 一致，不造假数据）**
+
+- 健康度：服务端暂无 `/templates/{code}/health`（A8），由治理报告口径问题 + 逐模板血缘缺口组合；血缘未加载或拉取失败显示 `—（待加载）`，不判定为健康。
+- 模板列表服务端筛选（A7）未就绪，关键字仍为前端过滤；健康度采样上限 30 条，超出保持未知。
+- 标注模板「被使用次数」逐模板读取标注总数（最多 30 条、5 并发），失败显示 `—`。
+- 发布向导的口径一致性与影响面基于已保存版本；新模板未保存时明确提示先保存，不伪造预检结果。
+- JSON 变更为顶层键级 diff（新增/修改/移除），非行级文本 diff。
+
+**验证证据**
+
+- `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit`：通过（0 错误）。
+- `node node_modules/eslint/bin/eslint.js`（4 个页面 + 2 个模型文件）：0 错误 0 告警。
+- `vitest`：`dps-template-health` 5 passed；`dps-annotation-fields` 4 passed；`dps-list-view` 5 passed；`dps-ui-v1410` P-01（模板列表整壳，补健康度 mock）passed。
+- 路由：未新增/删除任何 route record；导航与路由结构未变更，v2.1.0 的 `nav-consistency` / `module-pages` 结论继续有效；模板中心、工作台、字段设计沿用既有路径，旧深链全部可达。

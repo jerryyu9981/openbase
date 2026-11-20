@@ -20,6 +20,8 @@
         <el-button size="small" data-test="workbench-preview" @click="dryRunOpen = true">试运行</el-button>
         <el-button size="small" data-test="workbench-json" @click="jsonOpen = true">JSON 视图</el-button>
         <el-button size="small" data-test="workbench-raw" @click="openRawEditor">高级 JSON 编辑</el-button>
+        <el-button size="small" data-test="workbench-save-draft" @click="saveDraftLocal">保存草稿</el-button>
+        <el-button type="primary" plain size="small" data-test="workbench-publish" @click="openPublishWizard">发布向导</el-button>
         <el-button type="primary" size="small" :loading="saving" :disabled="!!extendsIssue" data-test="workbench-save" @click="save">保存</el-button>
       </div>
     </div>
@@ -66,17 +68,23 @@
 
     <div class="workbench-body">
       <nav class="section-nav" data-test="workbench-tabs">
+        <div class="step-progress">
+          <el-progress :percentage="completionPercent" :stroke-width="8" :show-text="false" :status="completionPercent === 100 ? 'success' : undefined" />
+          <span class="muted step-progress-text">完成度 {{ completionPercent }}%</span>
+        </div>
         <button
           v-for="section in SECTION_ORDER"
           :key="section"
           type="button"
           class="nav-item"
-          :class="{ active: activeSection === section }"
+          :class="{ active: activeSection === section, done: sectionComplete(section) }"
           :data-test="`workbench-nav-${section}`"
           @click="activeSection = section"
         >
           <span class="nav-label">{{ SECTION_LABELS[section] }}</span>
-          <el-badge v-if="sectionCounts[section]" :value="sectionCounts[section]" type="danger" />
+          <el-tag v-if="sectionErrorCount(section)" size="small" type="danger">{{ sectionErrorCount(section) }}</el-tag>
+          <el-tag v-else-if="sectionWarningCount(section)" size="small" type="warning">{{ sectionWarningCount(section) }}</el-tag>
+          <span v-else-if="sectionComplete(section)" class="step-done" data-test="workbench-step-done">✓</span>
         </button>
       </nav>
       <div class="editor-pane">
@@ -173,7 +181,15 @@
       </div>
 
       <div class="issue-pane">
-        <el-card shadow="never" header="问题清单（点击定位）" data-test="workbench-issues">
+        <el-card shadow="never" data-test="workbench-issues">
+          <template #header>
+            <div class="issue-head">
+              <span>问题清单（点击定位）</span>
+              <el-button link type="primary" size="small" :disabled="!issues.length" data-test="workbench-next-issue" @click="focusNextIssue">
+                下一处问题
+              </el-button>
+            </div>
+          </template>
           <div v-if="!issues.length" class="ok-hint">未发现问题，可保存</div>
           <div
             v-for="issue in issues"
@@ -195,8 +211,167 @@
     </div>
 
     <el-dialog v-model="jsonOpen" title="模板 JSON（当前草稿 · 只读）" width="720px" data-test="workbench-json-dialog">
+      <div class="json-diff" data-test="workbench-json-diff">
+        <span class="muted sm">相对最近一次保存的变更：</span>
+        <el-tag v-if="jsonDiff.added.length" size="small" type="success">新增 {{ jsonDiff.added.join('、') }}</el-tag>
+        <el-tag v-if="jsonDiff.changed.length" size="small" type="warning">修改 {{ jsonDiff.changed.join('、') }}</el-tag>
+        <el-tag v-if="jsonDiff.removed.length" size="small" type="danger">移除 {{ jsonDiff.removed.join('、') }}</el-tag>
+        <span v-if="!jsonDiff.added.length && !jsonDiff.changed.length && !jsonDiff.removed.length" class="muted sm">无变更</span>
+      </div>
       <pre class="json-view">{{ draftJson }}</pre>
     </el-dialog>
+
+    <!-- 发布向导：校验 → 口径一致性 → 影响面 → 激活 -->
+    <el-drawer v-model="publishOpen" title="发布向导" size="680px" data-test="workbench-publish-wizard">
+      <el-steps :active="publishStep" align-center finish-status="success" class="mb-16">
+        <el-step title="校验" />
+        <el-step title="口径一致性" />
+        <el-step title="影响面" />
+        <el-step title="激活" />
+      </el-steps>
+
+      <div v-loading="publishLoading">
+        <template v-if="publishStep === 0">
+          <el-alert
+            v-if="publishValidation && !publishValidation.valid"
+            type="error"
+            show-icon
+            :closable="false"
+            title="存在校验错误，请先修复问题清单"
+            data-test="publish-validate-failed"
+          />
+          <el-alert
+            v-else-if="publishValidation"
+            type="success"
+            show-icon
+            :closable="false"
+            title="校验通过，可继续检查口径一致性"
+            data-test="publish-validate-passed"
+          />
+          <div v-if="publishErrors.length" class="publish-issues" data-test="publish-errors">
+            <div v-for="(item, index) in publishErrors" :key="index" class="publish-issue">
+              <span class="muted sm">{{ item.path || '—' }}</span>
+              <span>{{ item.message }}</span>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="publishStep === 1">
+          <el-alert
+            v-if="!publishSaved"
+            type="warning"
+            show-icon
+            :closable="false"
+            title="新模板尚未保存，无法执行口径一致性预检"
+            data-test="publish-unsaved"
+          >
+            <div>请先返回工作台保存模板，再重新打开发布向导。</div>
+          </el-alert>
+          <template v-else>
+            <div class="publish-metrics">
+              <div class="publish-metric">
+                <strong class="danger">{{ publishBlock }}</strong>
+                <span>阻断（BLOCK）</span>
+              </div>
+              <div class="publish-metric">
+                <strong>{{ publishWarn }}</strong>
+                <span>告警（WARN）</span>
+              </div>
+            </div>
+            <el-alert
+              v-if="publishBlock"
+              type="error"
+              show-icon
+              :closable="false"
+              title="存在 BLOCK，激活将被阻断"
+              data-test="publish-block-alert"
+            >
+              <div class="mb-8">请前往口径体检定位问题模板与字段，修复后重新预检。</div>
+              <el-button link type="primary" size="small" @click="goScoringConsistency">去口径体检</el-button>
+            </el-alert>
+            <el-table :data="publishConsistencyIssues" size="small" empty-text="评分口径一致" data-test="publish-consistency-issues">
+              <el-table-column label="级别" width="80">
+                <template #default="{ row }">
+                  <el-tag size="small" :type="row.severity === 'BLOCK' ? 'danger' : 'warning'">{{ row.severity }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="code" label="问题码" min-width="170" show-overflow-tooltip />
+              <el-table-column prop="tag_code" label="标签" min-width="140" show-overflow-tooltip />
+              <el-table-column prop="message" label="说明" min-width="200" show-overflow-tooltip />
+            </el-table>
+          </template>
+        </template>
+
+        <template v-else-if="publishStep === 2">
+          <div class="ob-metrics">
+            <div class="metric">
+              <div class="metric-num">{{ publishImpact.annotation_template_count ?? '—' }}</div>
+              <div class="metric-label">受影响标注模板</div>
+            </div>
+            <div class="metric">
+              <div class="metric-num">{{ publishImpact.annotation_count ?? '—' }}</div>
+              <div class="metric-label">受影响标注数</div>
+            </div>
+            <div class="metric">
+              <div class="metric-num">{{ publishImpact.tag_count ?? '—' }}</div>
+              <div class="metric-label">受影响标签数</div>
+            </div>
+          </div>
+          <div class="muted sm mt-8">影响面基于已保存版本计算；本次草稿的修改在激活前不会生效。</div>
+        </template>
+
+        <template v-else>
+          <el-alert v-if="draft.status === 'active'" type="success" show-icon :closable="false" title="该模板已处于激活状态" />
+          <template v-else>
+            <div class="publish-confirm">
+              确认激活模板 <strong>{{ publishCode }}</strong>？
+              激活后将参与画像计算，且标注模板必须归属已激活模板。
+            </div>
+            <el-alert
+              v-if="publishBlock"
+              type="error"
+              show-icon
+              :closable="false"
+              class="mt-12"
+              title="存在 BLOCK，无法激活"
+              data-test="publish-activate-blocked"
+            />
+            <el-alert
+              v-else-if="!publishValidation?.valid"
+              type="warning"
+              show-icon
+              :closable="false"
+              class="mt-12"
+              title="校验未通过，无法激活"
+            />
+          </template>
+        </template>
+      </div>
+
+      <el-alert v-if="publishError" type="error" show-icon :closable="false" class="mt-12" data-test="publish-error">
+        <template #title>{{ publishError.title }}</template>
+        <div>{{ publishError.detail }}</div>
+        <div v-if="publishError.hint" class="hint">{{ publishError.hint }}</div>
+      </el-alert>
+
+      <template #footer>
+        <el-button :disabled="publishStep === 0" @click="publishStep = Math.max(0, publishStep - 1)">上一步</el-button>
+        <el-button v-if="publishStep < 3" type="primary" :disabled="publishStep === 0 && !publishValidation?.valid" @click="publishStep += 1">
+          下一步
+        </el-button>
+        <el-button
+          v-else
+          type="primary"
+          :loading="publishActivating"
+          :disabled="draft.status === 'active' || !publishCanActivate"
+          data-test="publish-activate"
+          @click="confirmPublish"
+        >
+          确认激活
+        </el-button>
+        <el-button @click="refreshPublishData">重新检查</el-button>
+      </template>
+    </el-drawer>
 
     <DryRunDrawer v-model="dryRunOpen" :template-code="draft.code" :template-payload="payload" />
   </PageContainer>
@@ -205,10 +380,17 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { dpsApi, type DpsPortraitTemplate, type DpsAnnotationTemplate } from '@/core/api/dps'
+import {
+  dpsApi,
+  type DpsPortraitTemplate,
+  type DpsAnnotationTemplate,
+  type DpsPreflightResult,
+  type DpsScoringIssue,
+  type DpsTemplateValidationResult,
+} from '@/core/api/dps'
 import { describeDpsError, type DpsErrorPresentation } from '@/core/api/error'
 import AttributeFieldTable from '../templates/AttributeFieldTable.vue'
 import AnomalyRuleList from '../templates/AnomalyRuleList.vue'
@@ -255,13 +437,27 @@ const jsonOpen = ref(false)
 const dryRunOpen = ref(false)
 const dirty = ref(false)
 const baselineJson = ref('')
+/** 最近一次保存的载荷（用于 JSON 视图展示变更） */
+const baselinePayload = ref<Record<string, unknown>>({})
 /** 首次水合完成前不展示校验计数，避免「空草稿」错误徽标闪现 */
 const hydrated = ref(false)
+const publishOpen = ref(false)
+const publishStep = ref(0)
+const publishLoading = ref(false)
+const publishActivating = ref(false)
+const publishValidation = ref<DpsTemplateValidationResult | null>(null)
+const publishPreflight = ref<DpsPreflightResult | null>(null)
+const publishError = ref<DpsErrorPresentation | null>(null)
 
 const payload = computed(() => fromDraft(draft))
-watch(payload, (value) => {
-  dirty.value = JSON.stringify(value) !== baselineJson.value
-})
+watch(
+  payload,
+  (value) => {
+    dirty.value = JSON.stringify(value) !== baselineJson.value
+    scheduleDraftPersist()
+  },
+  { deep: true },
+)
 
 const localIssues = computed(() => collectIssues(draft))
 const issues = computed<TemplateIssue[]>(() => {
@@ -277,13 +473,56 @@ const issues = computed<TemplateIssue[]>(() => {
 const errorCount = computed(() => issues.value.filter((issue) => issue.level === 'error').length)
 const warningCount = computed(() => issues.value.filter((issue) => issue.level === 'warning').length)
 const invalidPaths = computed(() => new Set(issues.value.filter((issue) => issue.level === 'error').map((issue) => issue.path)))
-const sectionCounts = computed<Record<string, number>>(() => {
-  const counts: Record<string, number> = {}
-  issues.value.forEach((issue) => {
-    counts[issue.section] = (counts[issue.section] || 0) + 1
-  })
-  return counts
+
+/** 步骤条：各段错误/提示数与完成状态（AC-TE-1） */
+function sectionErrorCount(section: SectionKey): number {
+  return issues.value.filter((issue) => issue.section === section && issue.level === 'error').length
+}
+
+function sectionWarningCount(section: SectionKey): number {
+  return issues.value.filter((issue) => issue.section === section && issue.level === 'warning').length
+}
+
+function sectionComplete(section: SectionKey): boolean {
+  if (!hydrated.value || sectionErrorCount(section)) return false
+  if (section === 'basic') return !!draft.code.trim() && !!draft.name.trim()
+  if (section === 'dimensions') return draft.dimension_config.dimensions.length > 0
+  return true
+}
+
+const completionPercent = computed(() => {
+  if (!hydrated.value) return 0
+  const done = SECTION_ORDER.filter((section) => sectionComplete(section)).length
+  return Math.round((done / SECTION_ORDER.length) * 100)
 })
+
+const jsonDiff = computed(() => {
+  const before = baselinePayload.value || {}
+  const after = payload.value
+  const added: string[] = []
+  const removed: string[] = []
+  const changed: string[] = []
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)])
+  keys.forEach((key) => {
+    const inBefore = Object.prototype.hasOwnProperty.call(before, key)
+    const inAfter = Object.prototype.hasOwnProperty.call(after, key)
+    if (!inBefore) added.push(key)
+    else if (!inAfter) removed.push(key)
+    else if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) changed.push(key)
+  })
+  return { added, removed, changed }
+})
+
+const publishSaved = computed(() => isEdit.value || !!lastSavedCode.value)
+const publishCode = computed(() => editingCode.value || lastSavedCode.value || draft.code)
+const publishErrors = computed(() => (publishValidation.value?.errors || []).filter((item) => item.severity !== 'warning'))
+const publishConsistencyIssues = computed<DpsScoringIssue[]>(() => publishPreflight.value?.scoring_consistency?.issues || [])
+const publishBlock = computed(() => Number(publishPreflight.value?.scoring_consistency?.block || 0))
+const publishWarn = computed(() => Number(publishPreflight.value?.scoring_consistency?.warn || 0))
+const publishImpact = computed(() => publishPreflight.value?.impact || {})
+const publishCanActivate = computed(
+  () => publishSaved.value && !!publishValidation.value?.valid && publishBlock.value === 0,
+)
 
 const weightTotal = computed(() => weightSum(draft))
 const catalog = computed(() => fieldCatalog(draft))
@@ -338,6 +577,7 @@ async function load() {
     Object.assign(draft, toDraft(null))
     markClean()
     hydrated.value = true
+    restoreDraft()
     return
   }
   try {
@@ -350,11 +590,13 @@ async function load() {
   } finally {
     hydrated.value = true
   }
+  restoreDraft()
 }
 
 /** 以当前草稿为基线，重置「未保存」标记 */
 function markClean() {
   baselineJson.value = JSON.stringify(fromDraft(draft))
+  baselinePayload.value = JSON.parse(baselineJson.value) as Record<string, unknown>
   dirty.value = false
 }
 
@@ -375,6 +617,15 @@ function duplicateDimension(index: number) {
 
 function focusIssue(issue: TemplateIssue) {
   activeSection.value = issue.section || sectionOfPath(issue.path)
+}
+
+/** 「下一处问题」：按步骤顺序向后定位，末尾回到第一条 */
+function focusNextIssue() {
+  if (!issues.value.length) return
+  const currentIndex = SECTION_ORDER.indexOf(activeSection.value)
+  const next =
+    issues.value.find((issue) => SECTION_ORDER.indexOf(issue.section) > currentIndex) || issues.value[0]
+  focusIssue(next)
 }
 
 function mapServerIssues(items: Array<Record<string, unknown>>): TemplateIssue[] {
@@ -439,6 +690,7 @@ async function save() {
     }
     Object.assign(draft, toDraft(await dpsApi.getTemplate(draft.code)))
     markClean()
+    clearDraft()
   } catch (caught) {
     error.value = describeDpsError(caught)
   } finally {
@@ -469,10 +721,145 @@ async function activateSavedTemplate() {
   }
 }
 
+// ── 草稿本地暂存（AC-TE-4）────────────────────────────────
+const draftStorageKey = computed(() => `dps.workbench.draft.${editingCode.value || 'new'}`)
+let draftTimer: ReturnType<typeof setTimeout> | undefined
+
+function scheduleDraftPersist() {
+  if (!hydrated.value || !dirty.value) return
+  if (draftTimer) clearTimeout(draftTimer)
+  draftTimer = setTimeout(writeDraft, 800)
+}
+
+function writeDraft() {
+  try {
+    localStorage.setItem(draftStorageKey.value, JSON.stringify({ saved_at: Date.now(), payload: payload.value }))
+  } catch {
+    // 存储不可用（隐私模式/配额）时静默降级，不阻断保存主流程
+  }
+}
+
+function saveDraftLocal() {
+  writeDraft()
+  ElMessage.success('草稿已暂存到本地（Ctrl+S）')
+}
+
+function clearDraft() {
+  if (draftTimer) {
+    clearTimeout(draftTimer)
+    draftTimer = undefined
+  }
+  try {
+    localStorage.removeItem(draftStorageKey.value)
+    if (editingCode.value) localStorage.removeItem('dps.workbench.draft.new')
+  } catch {
+    // 忽略存储异常
+  }
+}
+
+function restoreDraft() {
+  let raw = ''
+  try {
+    raw = localStorage.getItem(draftStorageKey.value) || ''
+  } catch {
+    return
+  }
+  if (!raw) return
+  try {
+    const stored = JSON.parse(raw) as { saved_at?: number; payload?: Record<string, unknown> }
+    if (!stored.payload) {
+      clearDraft()
+      return
+    }
+    if (JSON.stringify(stored.payload) === baselineJson.value) {
+      clearDraft()
+      return
+    }
+    const savedAt = stored.saved_at ? new Date(stored.saved_at).toLocaleString() : '未知时间'
+    ElMessageBox.confirm(`检测到 ${savedAt} 的本地草稿，是否恢复？`, '恢复草稿', {
+      confirmButtonText: '恢复草稿',
+      cancelButtonText: '丢弃',
+      type: 'info',
+    })
+      .then(() => {
+        Object.assign(draft, toDraft(stored.payload))
+        ElMessage.success('已恢复本地草稿')
+      })
+      .catch(() => clearDraft())
+  } catch {
+    clearDraft()
+  }
+}
+
+// ── 发布向导（AC-TE-2/3）────────────────────────────────
+async function openPublishWizard() {
+  publishOpen.value = true
+  publishStep.value = 0
+  publishError.value = null
+  await refreshPublishData()
+}
+
+async function refreshPublishData() {
+  publishLoading.value = true
+  publishError.value = null
+  try {
+    if (isEdit.value) {
+      publishValidation.value = await dpsApi.validateTemplate(draft.code || editingCode.value, payload.value)
+      const code = publishCode.value
+      publishPreflight.value = code ? await dpsApi.preflightTemplate(code).catch(() => null) : null
+    } else {
+      const errors = localIssues.value.filter((issue) => issue.level === 'error')
+      publishValidation.value = {
+        valid: errors.length === 0,
+        errors: errors.map((issue) => ({ path: issue.path, message: issue.message, severity: 'error' })),
+      }
+      publishPreflight.value = null
+    }
+  } catch (caught) {
+    publishError.value = describeDpsError(caught)
+  } finally {
+    publishLoading.value = false
+  }
+}
+
+async function confirmPublish() {
+  if (!publishCanActivate.value) return
+  publishActivating.value = true
+  publishError.value = null
+  try {
+    const updated = await dpsApi.activateTemplate(publishCode.value)
+    draft.status = String(updated.status || 'active')
+    lastSavedCode.value = publishCode.value
+    ElMessage.success('模板已激活，可用于画像计算')
+    publishOpen.value = false
+    await load()
+  } catch (caught) {
+    publishError.value = describeDpsError(caught)
+  } finally {
+    publishActivating.value = false
+  }
+}
+
+function goScoringConsistency() {
+  void router.push(`/portrait/dps/scoring-consistency?template=${encodeURIComponent(publishCode.value)}`)
+}
+
+/** 快捷键（§8.2）：Ctrl/Cmd+S 暂存草稿、Ctrl/Cmd+Enter 保存 */
+function handleShortcut(event: KeyboardEvent) {
+  if (!(event.ctrlKey || event.metaKey)) return
+  if (event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    saveDraftLocal()
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    void save()
+  }
+}
+
 onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
   try {
-    await ElMessageBox.confirm('存在未保存的修改，确认离开？', '未保存提示', { type: 'warning' })
+    await ElMessageBox.confirm('存在未保存的修改，确认离开？本地草稿已自动暂存。', '未保存提示', { type: 'warning' })
     return true
   } catch {
     return false
@@ -481,7 +868,13 @@ onBeforeRouteLeave(async () => {
 
 onMounted(() => {
   dirty.value = false
+  window.addEventListener('keydown', handleShortcut)
   void load()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleShortcut)
+  if (draftTimer) clearTimeout(draftTimer)
 })
 </script>
 

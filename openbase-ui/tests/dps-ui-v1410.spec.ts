@@ -202,12 +202,27 @@ describe('DPS 页面关键状态呈现', () => {
     // 本用例（Step 4 证据：`dps-ui-v1410` P-01 `Test timed out in 5000ms`）。
     // 按用例显式声明 15000ms 预算（与本仓既有多条整壳挂载用例同口径），未放宽全局 `testTimeout`。
     vi.spyOn(dpsApi, 'listTemplates').mockResolvedValue({ items: [{ code: 'cc-v1', status: 'active', version: 3 }], total: 1 })
+    // Phase 2：模板中心补充健康度（治理报告 + 血缘缺口），单测内固定为「无问题」，避免真实网络挂起
+    vi.spyOn(dpsApi, 'getScoringConsistency').mockResolvedValue({
+      total: 0,
+      block: 0,
+      warn: 0,
+      items: [],
+      issues: [],
+    } as never)
+    vi.spyOn(dpsApi, 'getTemplateLineage').mockResolvedValue({ gaps: { items: [] } } as never)
+    vi.spyOn(dpsApi, 'listTemplateCategories').mockResolvedValue([])
+    vi.spyOn(dpsApi, 'getTemplateCategoryTree').mockResolvedValue([])
     const wrapper = await mountPage(DpsTemplateListView)
     expect(wrapper.find('[data-test="template-table"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('cc-v1')
 
     vi.restoreAllMocks()
     vi.spyOn(dpsApi, 'listTemplates').mockResolvedValue({ items: [], total: 0 })
+    vi.spyOn(dpsApi, 'getScoringConsistency').mockResolvedValue({ total: 0, block: 0, warn: 0, items: [], issues: [] } as never)
+    vi.spyOn(dpsApi, 'getTemplateLineage').mockResolvedValue({ gaps: { items: [] } } as never)
+    vi.spyOn(dpsApi, 'listTemplateCategories').mockResolvedValue([])
+    vi.spyOn(dpsApi, 'getTemplateCategoryTree').mockResolvedValue([])
     const emptyWrapper = await mountPage(DpsTemplateListView)
     expect(emptyWrapper.find('[data-test="template-empty"]').exists()).toBe(true)
   }, 15000)
