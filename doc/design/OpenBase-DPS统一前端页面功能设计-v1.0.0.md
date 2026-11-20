@@ -3,8 +3,8 @@
 | 项 | 内容 |
 |---|---|
 | **文档类型** | UI/前端设计（页面功能重新设计） |
-| **版本** | v2.3.0 |
-| **状态** | [Implemented] Phase 3 已落地 |
+| **版本** | v2.4.0 |
+| **状态** | [Implemented] Phase 3 已落地＋UI 收口完成（2026-11-20） |
 | **适用范围** | `openbase-ui/src/modules/portrait/**`（画像模块，含 DPS 模板化 16 条路由） |
 | **上游依据** | 《批次 5：统一前端四子系统全生命周期补齐（规格）》v1.2.0；`modules/portrait/index.ts`；`core/api/dps.ts`；既有 `doc/design/prototype/p01~p12` |
 | **作者** | 产品 / 前端架构组（Solo 角色：RA + FA + UI） |
