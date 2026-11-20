@@ -44,7 +44,7 @@
 - [x] T5.1 产出 `DPS/doc/development/DPS-DevLogReport-v2.15.0.md`、`OpenBase/doc/development/OpenBase-DevLogReport-v1.6.0.md`。
 - [x] T5.2 产出两仓 `部署与运维报告`（构建/启动/健康检查/回滚）。
 - [x] T5.3 回填 `OpenBase-DPS统一前端页面功能设计-v1.0.0.md` 至内容版本 v2.5.0（A4 已交付、剩余缺口刷新）。
-- [ ] T5.4 两仓仅 stage 本任务文件 → commit → push `main` 三远程（origin/backup/github）。
+- [x] T5.4 两仓仅 stage 本任务文件 → commit → push `main` 三远程（origin/backup/github）。
 - 验收：推送成功；`git status` 无本任务残留；无夹带文件。
 
 ## 完成判据（Definition of Done）
