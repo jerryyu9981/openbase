@@ -458,6 +458,45 @@
                 </div>
               </template>
             </el-card>
+
+            <el-card class="mb-16" data-test="portrait-timeline">
+              <template #header>
+                <div class="card-head">
+                  <span>标注时间线</span>
+                  <div class="card-head-actions">
+                    <span class="muted sm">时间 / 模板 / 审核状态</span>
+                    <el-button link size="small" :loading="timelineLoading" data-test="portrait-timeline-refresh" @click="loadTimeline">
+                      刷新
+                    </el-button>
+                  </div>
+                </div>
+              </template>
+              <div v-if="timelineLoading" class="muted sm">加载中…</div>
+              <el-alert v-else-if="timelineError" type="error" show-icon :closable="false" :title="timelineError" />
+              <el-empty
+                v-else-if="!timelineItems.length"
+                description="暂无标注记录"
+                :image-size="50"
+                data-test="portrait-timeline-empty"
+              />
+              <el-timeline v-else>
+                <el-timeline-item
+                  v-for="item in timelineItems"
+                  :key="item.id"
+                  :timestamp="item.time"
+                  placement="top"
+                  data-test="portrait-timeline-item"
+                >
+                  <div class="timeline-row">
+                    <span class="timeline-title">{{ item.title }}</span>
+                    <el-tag size="small" :type="timelineStatusType(item.status)">{{ item.statusLabel }}</el-tag>
+                    <span class="muted sm">{{ item.template }}</span>
+                    <span v-if="item.levelText" class="muted sm">{{ item.levelText }}</span>
+                  </div>
+                </el-timeline-item>
+              </el-timeline>
+              <div class="muted sm mt-8">来源：标注队列创建时间；按审计字段过滤（A10）待后端。</div>
+            </el-card>
           </el-col>
 
           <!-- 标签 -->
@@ -476,21 +515,22 @@
                   <span class="muted sm">{{ group.items.length }}</span>
                 </div>
                 <div class="tags">
-                  <el-tag
+                  <el-tooltip
                     v-for="tag in group.items"
                     :key="`${tag.code}-${tag.name}`"
-                    class="tag-item"
-                    type="info"
-                    size="small"
+                    :content="tag.score === null ? '点击查看标签血缘' : `采集得分 ${tag.score}（参考）· 点击查看血缘`"
+                    placement="top"
                   >
-                    {{ tag.name }}<el-tooltip
-                      v-if="tag.score !== null"
-                      content="采集得分（参考，不计入画像）"
-                      placement="top"
+                    <el-tag
+                      class="tag-item tag-clickable"
+                      type="info"
+                      size="small"
+                      data-test="portrait-tag-open"
+                      @click="openTagLineage(tag)"
                     >
-                      <span class="tag-score">{{ tag.score }}</span>
-                    </el-tooltip>
-                  </el-tag>
+                      {{ tag.name }}<span v-if="tag.score !== null" class="tag-score">{{ tag.score }}</span>
+                    </el-tag>
+                  </el-tooltip>
                 </div>
               </div>
             </el-card>
@@ -521,25 +561,109 @@
           </template>
         </el-drawer>
 
-        <el-drawer v-model="editVisible" title="编辑画像属性" size="480px" data-test="portrait-edit-drawer">
-          <el-alert
-            title="增量更新（PATCH）：对象递归合并、数组去重追加、标量覆盖、null 删除键"
-            type="info"
-            show-icon
-            :closable="false"
-            class="mb-16"
-          />
-          <el-input
-            v-model="editText"
-            type="textarea"
-            :rows="16"
-            spellcheck="false"
-            data-test="portrait-edit-json"
-          />
+        <el-drawer v-model="editVisible" title="编辑画像属性" size="520px" data-test="portrait-edit-drawer">
+          <el-button-group class="mb-16" data-test="portrait-edit-mode">
+            <el-button
+              :type="editMode === 'fields' ? 'primary' : 'default'"
+              data-test="portrait-edit-fields-mode"
+              @click="setEditMode('fields')"
+            >
+              字段表单
+            </el-button>
+            <el-button
+              :type="editMode === 'json' ? 'primary' : 'default'"
+              data-test="portrait-edit-json-mode"
+              @click="setEditMode('json')"
+            >
+              高级（JSON）
+            </el-button>
+          </el-button-group>
+
+          <template v-if="editMode === 'fields'">
+            <el-alert
+              title="字段化编辑：值按 JSON 语义解析（数字/布尔/null/对象/数组），其余按字符串保存"
+              type="info"
+              show-icon
+              :closable="false"
+              class="mb-16"
+            />
+            <div v-for="(row, index) in attributeRows" :key="index" class="attr-row" data-test="portrait-edit-attr-row">
+              <el-input v-model="row.key" placeholder="属性名" style="width: 160px" data-test="portrait-edit-key" />
+              <el-input v-model="row.value" placeholder="属性值" data-test="portrait-edit-value" />
+              <el-button link type="danger" data-test="portrait-edit-remove" @click="removeAttributeRow(index)">移除</el-button>
+            </div>
+            <el-empty v-if="!attributeRows.length" description="暂无属性字段" :image-size="50" />
+            <el-button size="small" data-test="portrait-edit-add" @click="addAttributeRow">添加字段</el-button>
+            <div class="muted sm mt-8">空属性名忽略；同名属性后者覆盖。</div>
+          </template>
+
+          <template v-else>
+            <el-alert
+              title="增量更新（PATCH）：对象递归合并、数组去重追加、标量覆盖、null 删除键"
+              type="info"
+              show-icon
+              :closable="false"
+              class="mb-16"
+            />
+            <el-input
+              v-model="editText"
+              type="textarea"
+              :rows="16"
+              spellcheck="false"
+              data-test="portrait-edit-json"
+            />
+          </template>
+
           <template #footer>
             <el-button @click="editVisible = false">取消</el-button>
             <el-button type="primary" :loading="saving" data-test="portrait-edit-save" @click="saveEdit">保存</el-button>
           </template>
+        </el-drawer>
+
+        <el-drawer
+          v-model="tagLineageVisible"
+          :title="`标签血缘 · ${lineageTagCode || '—'}`"
+          size="520px"
+          data-test="portrait-tag-lineage-drawer"
+        >
+          <div v-loading="lineageLoading">
+            <el-alert v-if="lineageError" type="error" show-icon :closable="false" :title="lineageError" class="mb-16" />
+            <div class="metrics-2">
+              <div class="metric">
+                <div class="metric-num">{{ lineageImpact.tag_count ?? 0 }}</div>
+                <div class="metric-label">关联标签数</div>
+              </div>
+              <div class="metric">
+                <div class="metric-num">{{ lineageImpact.profile_count ?? 0 }}</div>
+                <div class="metric-label">关联画像数</div>
+              </div>
+            </div>
+            <el-table :data="lineageSources" size="small" empty-text="暂无血缘来源" data-test="portrait-tag-lineage-sources">
+              <el-table-column prop="template_code" label="画像模板" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="source" label="来源" width="120" />
+              <el-table-column prop="created_at" label="时间" min-width="160">
+                <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+              </el-table-column>
+            </el-table>
+            <el-empty
+              v-if="lineageNotFound"
+              description="未找到该标签血缘（尚未产生标注联动）"
+              :image-size="50"
+              data-test="portrait-tag-lineage-empty"
+            />
+            <div class="muted sm mt-8">
+              抽屉展示来源与影响面；字段 → 评分项的完整链路请打开血缘页。
+            </div>
+            <el-button
+              type="primary"
+              link
+              class="mt-8"
+              data-test="portrait-tag-lineage-full"
+              @click="$router.push({ path: '/portrait/dps/lineage', query: { tag: lineageTagCode } })"
+            >
+              打开完整血缘链路
+            </el-button>
+          </div>
         </el-drawer>
 
         <el-dialog
@@ -626,6 +750,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   dpsApi,
   type DpsAnomalyAlert,
+  type DpsImpactResult,
+  type DpsLineageSource,
   type DpsPortrait,
   type DpsPortraitCalcTask,
   type DpsPortraitDimensionDetails,
@@ -633,6 +759,13 @@ import {
   type DpsTemplateScoringItems,
 } from '@/core/api/dps'
 import { describeError, type ErrorPresentation } from '@/core/api/error'
+import {
+  attributeRowsFromObject,
+  attributeRowsToObject,
+  buildAnnotationTimeline,
+  type AnnotationTimelineItem,
+  type AttributeFieldRow,
+} from '@/modules/portrait/portrait/portraitTools'
 
 interface DimensionScore {
   code: string
@@ -687,10 +820,25 @@ const loading = ref(false)
 const presentation = ref<ErrorPresentation | null>(null)
 const editVisible = ref(false)
 const editText = ref('')
+/** P-08：字段化编辑为默认，JSON 为高级模式 */
+const editMode = ref<'fields' | 'json'>('fields')
+const attributeRows = ref<AttributeFieldRow[]>([])
 const saving = ref(false)
 const evidenceVisible = ref(false)
 const evidenceTitle = ref('')
 const evidenceRows = ref<TagView[]>([])
+/** P-08：标签血缘抽屉（点击标签打开） */
+const tagLineageVisible = ref(false)
+const lineageTagCode = ref('')
+const lineageLoading = ref(false)
+const lineageError = ref('')
+const lineageNotFound = ref(false)
+const lineageSources = ref<DpsLineageSource[]>([])
+const lineageImpact = ref<DpsImpactResult>({})
+/** P-08：标注时间线（A10 审计过滤未就绪，先用标注队列创建时间） */
+const timelineLoading = ref(false)
+const timelineError = ref('')
+const timelineItems = ref<AnnotationTimelineItem[]>([])
 
 /** 重算：提交异步任务 → 轮询任务查询接口 → 展示结果并刷新画像 */
 const recalcVisible = ref(false)
@@ -990,22 +1138,46 @@ function openEvidence(item: DimensionScore) {
 function openEdit() {
   const attributes = (profile.value?.attributes || {}) as Record<string, unknown>
   editText.value = JSON.stringify(attributes, null, 2)
+  attributeRows.value = attributeRowsFromObject(attributes)
+  editMode.value = 'fields'
   editVisible.value = true
 }
 
-/** 提交属性增量更新：JSON 校验 → PATCH（携带 If-Match version）→ 刷新 */
+/** 切换编辑模式：JSON 高级模式用字段行回填文本，返回字段模式时反向解析 */
+function setEditMode(mode: 'fields' | 'json') {
+  editMode.value = mode
+  if (mode === 'json') {
+    editText.value = JSON.stringify(attributeRowsToObject(attributeRows.value), null, 2)
+  } else {
+    attributeRows.value = attributeRowsFromObject(attributeRowsToObject(attributeRows.value))
+  }
+}
+
+function addAttributeRow() {
+  attributeRows.value = [...attributeRows.value, { key: '', value: '' }]
+}
+
+function removeAttributeRow(index: number) {
+  attributeRows.value = attributeRows.value.filter((_row, rowIndex) => rowIndex !== index)
+}
+
+/** 提交属性增量更新：字段表单 / JSON → PATCH（携带 If-Match version）→ 刷新 */
 async function saveEdit() {
   if (!profile.value) return
   let parsed: unknown
-  try {
-    parsed = JSON.parse(editText.value || '{}')
-  } catch {
-    ElMessage.error('属性必须是合法 JSON')
-    return
-  }
-  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    ElMessage.error('属性必须是 JSON 对象')
-    return
+  if (editMode.value === 'json') {
+    try {
+      parsed = JSON.parse(editText.value || '{}')
+    } catch {
+      ElMessage.error('属性必须是合法 JSON')
+      return
+    }
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      ElMessage.error('属性必须是 JSON 对象')
+      return
+    }
+  } else {
+    parsed = attributeRowsToObject(attributeRows.value)
   }
   saving.value = true
   try {
@@ -1239,6 +1411,61 @@ async function onTemplateChange() {
   }
 }
 
+/** 标注时间线：按主体拉取标注队列（A10 未提供审计过滤，先以创建时间呈现） */
+async function loadTimeline() {
+  if (!personId) return
+  timelineLoading.value = true
+  timelineError.value = ''
+  try {
+    const result = await dpsApi.listAnnotations({ person_id: personId, page: 1, page_size: 50 })
+    timelineItems.value = buildAnnotationTimeline(result.items || [])
+  } catch (err) {
+    const described = describeError(err)
+    timelineError.value = described.detail || described.title || '标注时间线加载失败'
+    timelineItems.value = []
+  } finally {
+    timelineLoading.value = false
+  }
+}
+
+function timelineStatusType(status: string): 'success' | 'warning' | 'danger' | 'info' {
+  if (status === 'approved') return 'success'
+  if (status === 'rejected') return 'danger'
+  if (status === 'pending') return 'warning'
+  return 'info'
+}
+
+/** 点击标签打开血缘抽屉（来源 + 影响面；完整链路在血缘页） */
+async function openTagLineage(tag: TagView) {
+  lineageTagCode.value = tag.code
+  tagLineageVisible.value = true
+  lineageSources.value = []
+  lineageImpact.value = {}
+  lineageError.value = ''
+  lineageNotFound.value = false
+  if (!tag.code || tag.code === '-') {
+    lineageError.value = '该标签缺少 tag_code，无法反查血缘'
+    return
+  }
+  lineageLoading.value = true
+  try {
+    const result = await dpsApi.getTagLineage(tag.code)
+    lineageSources.value = result.sources || []
+    lineageImpact.value = await dpsApi
+      .queryImpact({ tag_code: tag.code })
+      .catch(() => ({}) as DpsImpactResult)
+  } catch (err) {
+    const described = describeError(err)
+    if (described.kind === 'not-found') {
+      lineageNotFound.value = true
+    } else {
+      lineageError.value = described.detail || described.title || '标签血缘加载失败'
+    }
+  } finally {
+    lineageLoading.value = false
+  }
+}
+
 async function loadData() {
   if (!personId) {
     presentation.value = {
@@ -1257,6 +1484,7 @@ async function loadData() {
     profile.value = await dpsApi.getPortrait(personId)
     await loadTemplateResult()
     await loadAnomalyAlerts()
+    void loadTimeline()
   } catch (err) {
     profile.value = null
     presentation.value = describeError(err)
@@ -1305,6 +1533,14 @@ onMounted(() => {
 .dimension-meta { display: flex; justify-content: space-between; margin-top: 2px; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag-item { margin-right: 2px; }
+.tag-clickable { cursor: pointer; }
+.metrics-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.metric { border: 1px solid var(--ob-border); border-radius: var(--ob-radius-md); padding: 10px; text-align: center; }
+.metric-num { font-size: 22px; font-weight: 600; }
+.metric-label { font-size: 12px; color: var(--ob-text-secondary); margin-top: 4px; }
+.timeline-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.timeline-title { font-size: 13px; font-weight: 600; }
+.attr-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .tag-score { margin-left: 4px; color: #2563eb; }
 .tag-group { margin-bottom: 12px; }
 .tag-group-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }

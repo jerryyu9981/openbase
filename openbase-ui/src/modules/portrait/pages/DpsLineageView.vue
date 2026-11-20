@@ -1,9 +1,24 @@
 <template>
-  <PageContainer title="标签血缘反查" description="标签来源与下游影响反查" test-id="dps-lineage-view-page">
+  <PageContainer title="标签血缘反查" description="标注模板 → 字段 → 标签 → 评分项 → 画像 的完整链路" test-id="dps-lineage-view-page">
     <div class="page-toolbar">
       <el-input v-model="tagCode" placeholder="tag_code（如 service:channel）" style="width: 280px" data-test="lineage-tag" />
       <el-button type="primary" :loading="loading" data-test="lineage-run" @click="lookup">反查</el-button>
       <el-button :disabled="!sources.length" data-test="lineage-export" @click="exportResult">导出结果</el-button>
+      <el-button data-test="lineage-tag-tree" @click="goTagTree">从标签体系选择</el-button>
+    </div>
+    <div v-if="recentTags.length" class="recent-row">
+      <span class="muted sm">最近反查：</span>
+      <el-tag
+        v-for="item in recentTags"
+        :key="item"
+        class="recent-tag"
+        size="small"
+        type="info"
+        data-test="lineage-recent"
+        @click="useTag(item)"
+      >
+        {{ item }}
+      </el-tag>
     </div>
 
     <!-- 无谱系（正常业务结果，非错误页） -->
@@ -22,63 +37,137 @@
       <span v-if="error.requestId" class="request-id" data-test="dps-request-id">请求编号：{{ error.requestId }}</span>
     </el-alert>
 
-    <div v-else class="grid-2">
-      <el-card :header="`血缘来源（反查结果）· ${sources.length} 条`">
-        <div class="ob-table-scroll">
-          <el-table v-loading="loading" :data="sources" stripe empty-text="暂无血缘来源" data-test="lineage-table">
-            <el-table-column prop="annotation_id" label="标注 ID" width="130" />
-            <el-table-column prop="template_code" label="模板" min-width="160" />
-            <el-table-column label="来源" min-width="180">
-              <template #default="{ row }">
-                <el-tag :type="row.source === 'ai_annotation' ? '' : 'info'" size="small">{{ row.source || '-' }}</el-tag>
-                <span v-if="row.adapter_id" class="muted sm">adapter: {{ row.adapter_id }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="created_at" label="创建时间" min-width="170" />
-            <template #empty>
-              <el-empty description="暂无血缘来源" :image-size="60" data-test="lineage-empty" />
+    <template v-else>
+      <el-card v-if="sources.length" class="mb-16" data-test="lineage-chain-card">
+        <template #header>
+          <div class="card-head">
+            <span>血缘链路 · {{ tagCode }}</span>
+            <span class="muted sm">标注模板 → 字段 → 标签 → 评分项 → 画像（节点可跳转）</span>
+          </div>
+        </template>
+        <div v-for="group in chainGroups" :key="group.templateCode" class="chain-group" data-test="lineage-chain-group">
+          <div class="chain-node">
+            <div class="chain-title">标注模板 → 字段</div>
+            <template v-if="group.fields.length">
+              <el-button
+                v-for="field in group.fields"
+                :key="`${field.annotationTemplate}-${field.fieldKey}`"
+                link
+                type="primary"
+                size="small"
+                data-test="lineage-node-field"
+                @click="goField(field.annotationTemplate, field.fieldKey)"
+              >
+                {{ field.annotationTemplateName || field.annotationTemplate }} · {{ field.fieldLabel }}
+              </el-button>
             </template>
-          </el-table>
+            <el-tag v-else size="small" type="warning" data-test="lineage-field-missing">信源字段缺失</el-tag>
+          </div>
+          <span class="arrow">→</span>
+          <div class="chain-node">
+            <div class="chain-title">标签</div>
+            <el-tag size="small" data-test="lineage-node-tag">{{ tagCode }}</el-tag>
+          </div>
+          <span class="arrow">→</span>
+          <div class="chain-node">
+            <div class="chain-title">评分项</div>
+            <template v-if="groupScoringHits(group).length">
+              <el-button
+                v-for="hit in groupScoringHits(group)"
+                :key="`${hit.dimension}-${hit.rule_key}`"
+                link
+                type="primary"
+                size="small"
+                data-test="lineage-node-scoring"
+                @click="goTemplate(group.templateCode)"
+              >
+                {{ hit.dimension }} · {{ hit.rule_key }}
+              </el-button>
+            </template>
+            <span v-else class="muted sm">—（无评分命中）</span>
+          </div>
+          <span class="arrow">→</span>
+          <div class="chain-node">
+            <div class="chain-title">画像</div>
+            <el-button link type="primary" size="small" data-test="lineage-node-portrait" @click="goPortraitList">
+              {{ impact.profile_count ?? 0 }} 个画像
+            </el-button>
+          </div>
+          <div class="chain-source muted sm">
+            来源：{{ group.templateName || group.templateCode }} · 标注 {{ group.sources.length }} 条
+          </div>
         </div>
       </el-card>
 
-      <el-card header="影响面统计">
-        <div class="metrics-2">
-          <div class="metric">
-            <div class="metric-num">{{ impact.tag_count ?? 0 }}</div>
-            <div class="metric-label">关联标签数（tag_count）</div>
+      <div class="grid-2">
+        <el-card :header="`血缘来源（反查结果）· ${sources.length} 条`">
+          <div class="ob-table-scroll">
+            <el-table v-loading="loading" :data="sources" stripe empty-text="暂无血缘来源" data-test="lineage-table">
+              <el-table-column prop="annotation_id" label="标注 ID" width="130" />
+              <el-table-column prop="template_code" label="模板" min-width="160" />
+              <el-table-column label="来源" min-width="180">
+                <template #default="{ row }">
+                  <el-tag :type="row.source === 'ai_annotation' ? '' : 'info'" size="small">{{ row.source || '-' }}</el-tag>
+                  <span v-if="row.adapter_id" class="muted sm">adapter: {{ row.adapter_id }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="created_at" label="创建时间" min-width="170" />
+              <template #empty>
+                <el-empty description="暂无血缘来源" :image-size="60" data-test="lineage-empty" />
+              </template>
+            </el-table>
           </div>
-          <div class="metric">
-            <div class="metric-num">{{ impact.profile_count ?? 0 }}</div>
-            <div class="metric-label">关联画像数（profile_count）</div>
+        </el-card>
+
+        <el-card header="影响面统计">
+          <div class="metrics-2">
+            <div class="metric">
+              <div class="metric-num">{{ impact.tag_count ?? 0 }}</div>
+              <div class="metric-label">关联标签数（tag_count）</div>
+            </div>
+            <div class="metric">
+              <div class="metric-num">{{ impact.profile_count ?? 0 }}</div>
+              <div class="metric-label">关联画像数（profile_count）</div>
+            </div>
           </div>
-        </div>
-        <div class="basis">
-          <el-button link type="primary" size="small" :aria-expanded="basisAria" data-test="basis-trigger" @click="toggleBasis()">
-            <span class="caret">{{ basisExpanded ? '▾' : '▸' }}</span> 口径（basis）
-          </el-button>
-          <div v-if="basisExpanded" class="basis-content" data-test="basis-content">
-            三层维度：template_code ／ annotation_template_code ／ tag_code；
-            tag_count 谱系口径：未联动过则为 0。
-            <div v-if="basisForced" class="forced">※ 标签数为 0 → 强制展开口径。</div>
+          <div class="basis">
+            <el-button link type="primary" size="small" :aria-expanded="basisAria" data-test="basis-trigger" @click="toggleBasis()">
+              <span class="caret">{{ basisExpanded ? '▾' : '▸' }}</span> 口径（basis）
+            </el-button>
+            <div v-if="basisExpanded" class="basis-content" data-test="basis-content">
+              三层维度：template_code ／ annotation_template_code ／ tag_code；
+              tag_count 谱系口径：未联动过则为 0。
+              链路中的字段与评分项由模板血缘（getTemplateLineage）反查，血缘拉取失败时标记「信源字段缺失」。
+              <div v-if="basisForced" class="forced">※ 标签数为 0 → 强制展开口径。</div>
+            </div>
           </div>
-        </div>
-      </el-card>
-    </div>
+        </el-card>
+      </div>
+    </template>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { dpsApi, type DpsImpactResult, type DpsLineageSource } from '@/core/api/dps'
+import { useRoute, useRouter } from 'vue-router'
+import { dpsApi, type DpsImpactResult, type DpsLineageSource, type DpsTemplateLineage } from '@/core/api/dps'
 import { useAsyncState } from '@/core/composables/useAsyncState'
 import { useBasisTooltip } from '@/core/composables/useBasisTooltip'
+import {
+  buildTagChainGroups,
+  collectScoringHits,
+  type TagChainGroup,
+} from '@/modules/portrait/lineage/lineageChain'
+
+const RECENT_KEY = 'dps.lineage.recent'
 
 const route = useRoute()
-const tagCode = ref(String(route.query.tag_code || ''))
+const router = useRouter()
+const tagCode = ref(String(route.query.tag || route.query.tag_code || ''))
 const impact = ref<DpsImpactResult>({})
+const chainGroups = ref<TagChainGroup[]>([])
+const recentTags = ref<string[]>(readRecentTags())
 
 const { data, loading, error, run } = useAsyncState<{ sources?: DpsLineageSource[] }>()
 
@@ -91,16 +180,86 @@ const {
   toggle: toggleBasis,
 } = useBasisTooltip(() => (impact.value.tag_count ?? 0) === 0)
 
-async function lookup() {
-  if (!tagCode.value) return
-  const result = await run(() => dpsApi.getTagLineage(tagCode.value))
-  if (result || error.value?.kind === 'not-found') {
-    impact.value = await dpsApi.queryImpact({ tag_code: tagCode.value }).catch(() => ({}) as DpsImpactResult)
+function readRecentTags(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY)
+    const parsed = raw ? (JSON.parse(raw) as string[]) : []
+    return Array.isArray(parsed) ? parsed.slice(0, 5) : []
+  } catch {
+    return []
   }
 }
 
+function rememberTag(code: string) {
+  const next = [code, ...recentTags.value.filter((item) => item !== code)].slice(0, 5)
+  recentTags.value = next
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next))
+  } catch {
+    // 存储不可用时仅保留内存态
+  }
+}
+
+function useTag(code: string) {
+  tagCode.value = code
+  void lookup()
+}
+
+async function lookup() {
+  const value = tagCode.value.trim()
+  if (!value) return
+  tagCode.value = value
+  chainGroups.value = []
+  const result = await run(() => dpsApi.getTagLineage(value))
+  if (result || error.value?.kind === 'not-found') {
+    rememberTag(value)
+    impact.value = await dpsApi.queryImpact({ tag_code: value }).catch(() => ({}) as DpsImpactResult)
+    if (result) await loadChain(value, sources.value)
+  }
+}
+
+/** 用模板血缘补齐「字段 → 评分项」链路；单个模板失败不影响其他链路 */
+async function loadChain(code: string, sourceRows: DpsLineageSource[]) {
+  const templateCodes = Array.from(
+    new Set(sourceRows.map((source) => String(source.template_code || '')).filter(Boolean)),
+  )
+  const lineages: Array<DpsTemplateLineage | null> = await Promise.all(
+    templateCodes.map((templateCode) => dpsApi.getTemplateLineage(templateCode).catch(() => null)),
+  )
+  chainGroups.value = buildTagChainGroups(code, sourceRows, lineages)
+}
+
+function groupScoringHits(group: TagChainGroup) {
+  return collectScoringHits([group])
+}
+
+function goField(annotationTemplate: string, fieldKey: string) {
+  void router.push({
+    path: `/portrait/dps/annotation-templates/${encodeURIComponent(annotationTemplate)}/fields`,
+    query: fieldKey ? { field: fieldKey } : undefined,
+  })
+}
+
+function goTemplate(templateCode: string) {
+  if (!templateCode) return
+  void router.push(`/portrait/dps/templates/${encodeURIComponent(templateCode)}/edit`)
+}
+
+function goPortraitList() {
+  void router.push('/portrait/list')
+}
+
+function goTagTree() {
+  void router.push('/portrait/dps/tags')
+}
+
 function exportResult() {
-  const payload = { tag_code: tagCode.value, sources: sources.value, impact: impact.value }
+  const payload = {
+    tag_code: tagCode.value,
+    sources: sources.value,
+    impact: impact.value,
+    chain: chainGroups.value,
+  }
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
@@ -129,6 +288,15 @@ onMounted(() => {
 .basis-content { color: var(--ob-text-secondary); font-size: 12px; margin-top: 6px; }
 .forced { color: var(--ob-warning); }
 .caret { margin-right: 2px; }
+.recent-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.recent-tag { cursor: pointer; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chain-group { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px dashed var(--ob-border); }
+.chain-group:last-child { border-bottom: none; }
+.chain-node { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.chain-title { font-size: 12px; color: var(--ob-text-secondary); }
+.chain-source { width: 100%; }
+.arrow { color: var(--ob-text-disabled); margin-top: 18px; }
 @media (max-width: 767px) {
   .grid-2, .metrics-2 { grid-template-columns: 1fr; }
 }

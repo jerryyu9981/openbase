@@ -1,5 +1,5 @@
 <template>
-  <PageContainer title="画像管理" description="画像列表、状态与详情入口" test-id="portrait-list-page">
+  <PageContainer title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作" test-id="portrait-list-page">
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -46,11 +46,39 @@
 
       <div class="page-toolbar">
         <el-input v-model="keyword" placeholder="搜索画像（姓名/ID 模糊）" clearable style="width: 240px" data-test="dps-search" />
-        <el-button type="primary" data-test="dps-create" @click="$router.push('/portrait/search')">画像查询</el-button>
+        <el-button type="primary" data-test="dps-create" @click="$router.push('/portrait/search')">高级检索</el-button>
         <el-button data-test="portrait-calculate-open" @click="openCalculate">计算画像</el-button>
         <el-button data-test="portrait-external-open" @click="openExternal">按外部 ID 查询</el-button>
-        <el-button :loading="loading" @click="loadData">刷新</el-button>
+        <el-popover placement="bottom-end" :width="200" trigger="click">
+          <template #reference>
+            <el-button data-test="portrait-columns">列设置</el-button>
+          </template>
+          <el-checkbox
+            v-for="column in columns"
+            :key="column.key"
+            :model-value="column.visible"
+            data-test="portrait-column-option"
+            @change="toggleColumn(column.key)"
+          >
+            {{ column.label }}
+          </el-checkbox>
+        </el-popover>
+        <el-button data-test="portrait-export" @click="exportCsv">导出 CSV</el-button>
+        <el-button :loading="loading" data-test="portrait-refresh" @click="loadData">刷新</el-button>
+        <span class="muted sm">关键字为前端过滤（A6 服务端检索待后端）</span>
       </div>
+
+      <div v-if="selectedCount > 0" class="batch-bar" data-test="portrait-batch-bar">
+        <span>已选 {{ selectedCount }} 条</span>
+        <el-button size="small" type="primary" plain :loading="batchCalculating" data-test="portrait-batch-calc" @click="batchCalculate">
+          批量计算
+        </el-button>
+        <el-button size="small" type="danger" plain :loading="batchDeleting" data-test="portrait-batch-delete" @click="batchDelete">
+          批量删除
+        </el-button>
+        <el-button size="small" link data-test="portrait-batch-clear" @click="clearSelection">清空选择</el-button>
+      </div>
+
       <el-alert
         v-if="showErrorBar"
         :title="errorMessage"
@@ -66,21 +94,30 @@
         </template>
       </el-alert>
       <div class="ob-table-scroll">
-        <el-table v-loading="loading" :data="filtered" stripe data-test="portrait-table">
-          <el-table-column prop="name" label="画像名称" min-width="160" />
-          <el-table-column prop="person_id" label="画像 ID" min-width="180" show-overflow-tooltip />
-          <el-table-column label="标签" min-width="180">
+        <el-table
+          ref="tableRef"
+          v-loading="loading"
+          :data="filtered"
+          :row-key="rowKey"
+          stripe
+          data-test="portrait-table"
+          @selection-change="onSelectionChange"
+        >
+          <el-table-column type="selection" width="44" reserve-selection />
+          <el-table-column v-if="columnVisible('name')" prop="name" label="画像名称" min-width="160" />
+          <el-table-column v-if="columnVisible('person_id')" prop="person_id" label="画像码（person_id）" min-width="180" show-overflow-tooltip />
+          <el-table-column v-if="columnVisible('tags')" label="标签" min-width="180">
             <template #default="{ row }">
-              <el-tag v-for="(t, index) in (row.tags || [])" :key="`${index}-${tagLabel(t)}`" size="small" class="tag-item" type="info">{{ tagLabel(t) }}</el-tag>
+              <el-tag v-for="(tag, index) in (row.tags || [])" :key="`${index}-${tagLabel(tag)}`" size="small" class="tag-item" type="info">{{ tagLabel(tag) }}</el-tag>
               <span v-if="!(row.tags || []).length" class="text-muted">-</span>
             </template>
           </el-table-column>
-          <el-table-column label="风险等级" width="110">
+          <el-table-column v-if="columnVisible('risk')" label="风险等级" width="110">
             <template #default="{ row }">
               <el-tag :type="riskType(row)" size="small">{{ riskLabel(row) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="updated_at" label="更新时间" width="170">
+          <el-table-column v-if="columnVisible('updated_at')" prop="updated_at" label="更新时间" width="170">
             <template #default="{ row }">{{ formatTime(row.updated_at) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="200" fixed="right">
@@ -125,9 +162,11 @@
               <el-option
                 v-for="item in templateOptions"
                 :key="item.code"
-                :label="`${item.name || item.code}（${item.code}）`"
+                :label="item.name || item.code"
                 :value="item.code"
-              />
+              >
+                <NameCodeLabel :name="item.name" :code="item.code" />
+              </el-option>
             </el-select>
             <div class="form-hint">仅展示已激活模板；未激活模板不会参与计算。</div>
           </el-form-item>
@@ -161,11 +200,21 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { dpsApi, type DpsPortrait, type DpsPortraitTemplate } from '@/core/api/dps'
 import { describeDpsError, describeError, type ErrorPresentation } from '@/core/api/error'
+import { useDpsListView } from '@/modules/portrait/composables/useDpsListView'
+import {
+  PORTRAIT_COLUMNS,
+  buildPortraitCsv,
+  filterPortraitRows,
+  formatDateTime,
+  riskLabelOf,
+  tagLabelOf,
+} from '@/modules/portrait/portrait/portraitTools'
 
 const router = useRouter()
 const portraits = ref<DpsPortrait[]>([])
@@ -177,6 +226,18 @@ const pageSize = 20
 const total = ref(0)
 const loading = ref(false)
 const presentation = ref<ErrorPresentation | null>(null)
+const tableRef = ref<{ clearSelection?: () => void } | null>(null)
+const selectedRows = ref<DpsPortrait[]>([])
+const batchCalculating = ref(false)
+const batchDeleting = ref(false)
+
+const { columns, columnVisible, toggleColumn, setSelection, clearSelection } = useDpsListView({
+  pageKey: 'portraits',
+  columns: PORTRAIT_COLUMNS.filter((column) => ['name', 'person_id', 'tags', 'risk', 'updated_at'].includes(column.key)).map(
+    (column) => ({ key: column.key, label: column.label }),
+  ),
+})
+
 /** 计算画像对话框（批次 5：POST /portraits/calculate，默认异步任务） */
 const calculateVisible = ref(false)
 const calculating = ref(false)
@@ -191,7 +252,6 @@ const externalId = ref('')
 
 const isForbidden = computed(() => presentation.value?.pageLevel === true)
 const isNotFound = computed(() => presentation.value?.kind === 'not-found')
-/** 错误条仅承载可重试的页内错误（5xx/网络/未知），403/404 走页面级 / 空态 */
 const showErrorBar = computed(
   () => !!presentation.value && !presentation.value.pageLevel && presentation.value.kind !== 'not-found',
 )
@@ -202,47 +262,62 @@ const emptyDescription = computed(() => {
   if (showErrorBar.value) return '加载失败，请点击上方提示条「点击重试」'
   return '当前租户暂无数据（如为权限问题请联系管理员）'
 })
+const selectedCount = computed(() => selectedRows.value.length)
+const filtered = computed(() => filterPortraitRows(portraits.value, keyword.value))
 
-const filtered = computed(() => {
-  if (!keyword.value) return portraits.value
-  const kw = keyword.value.toLowerCase()
-  return portraits.value.filter(
-    (p) => String(p.name ?? '').toLowerCase().includes(kw) || String(p.person_id ?? '').toLowerCase().includes(kw),
-  )
-})
-
-function riskOf(row: DpsPortrait): number {
-  const raw = row.risk_level ?? row.risk_score
-  const n = Number(raw)
-  return Number.isFinite(n) ? n : -1
+function rowKey(row: DpsPortrait): string {
+  return String(row.person_id || row.id || '')
 }
 
 function riskLabel(row: DpsPortrait): string {
-  const v = riskOf(row)
-  if (v < 0) return '未知'
-  if (v >= 70) return '高'
-  if (v >= 40) return '中'
-  return '低'
+  return riskLabelOf(row)
 }
 
 function riskType(row: DpsPortrait): 'success' | 'warning' | 'danger' | 'info' {
-  const v = riskOf(row)
-  if (v < 0) return 'info'
-  if (v >= 70) return 'danger'
-  if (v >= 40) return 'warning'
+  const value = Number(row.risk_level ?? row.risk_score)
+  if (!Number.isFinite(value)) return 'info'
+  if (value >= 70) return 'danger'
+  if (value >= 40) return 'warning'
   return 'success'
 }
 
-function formatTime(v?: string) {
-  if (!v) return '-'
-  const d = new Date(v)
-  return Number.isNaN(d.getTime()) ? v : d.toLocaleString('zh-CN', { hour12: false })
+function formatTime(value?: string) {
+  return formatDateTime(value)
 }
 
-/** 标签行兼容：PG `{tag_code,tag_name,score}` / SQLite `{tag_name,tag_value}` / 纯字符串。 */
 function tagLabel(raw: Record<string, unknown> | string): string {
-  if (typeof raw === 'string') return raw
-  return String(raw.tag_name || raw.tag_code || raw.tag_value || '-')
+  return tagLabelOf(raw)
+}
+
+function onSelectionChange(rows: DpsPortrait[]) {
+  selectedRows.value = rows
+  setSelection(rows.map((row) => rowKey(row)).filter(Boolean))
+}
+
+function clearTableSelection() {
+  selectedRows.value = []
+  clearSelection()
+  tableRef.value?.clearSelection?.()
+}
+
+function downloadText(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportCsv() {
+  if (!filtered.value.length) {
+    ElMessage.warning('当前没有可导出的画像')
+    return
+  }
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadText(`\ufeff${buildPortraitCsv(filtered.value)}`, `portraits-${stamp}.csv`, 'text/csv;charset=utf-8')
+  ElMessage.success(`已导出 ${filtered.value.length} 条画像（A11 前端导出）`)
 }
 
 async function loadHealth() {
@@ -315,6 +390,76 @@ async function submitCalculate() {
   } finally {
     calculating.value = false
   }
+}
+
+/** 批量计算：逐条提交（异步任务逐个等待），逐条汇总成功/失败 */
+async function batchCalculate() {
+  const targets = selectedRows.value.map((row) => String(row.person_id || row.id || '')).filter(Boolean)
+  if (!targets.length) {
+    ElMessage.warning('请先勾选画像')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认对已选 ${targets.length} 条画像按默认口径重新计算？异步任务将逐条提交，耗时取决于上游。`,
+      '批量计算确认',
+      { type: 'warning', confirmButtonText: '确认计算' },
+    )
+  } catch {
+    return
+  }
+  batchCalculating.value = true
+  let succeeded = 0
+  const failures: string[] = []
+  for (const personId of targets) {
+    try {
+      const result = await dpsApi.calculatePortrait({ person_id: personId })
+      const taskId = String(result.task_id || '')
+      if (taskId) await dpsApi.waitPortraitTask(taskId)
+      succeeded += 1
+    } catch (err) {
+      const described = describeDpsError(err)
+      failures.push(`${personId}：${described.detail || described.title}`)
+    }
+  }
+  batchCalculating.value = false
+  ElMessage.success(`批量计算完成：成功 ${succeeded} 条${failures.length ? `，失败 ${failures.length} 条` : ''}`)
+  if (failures.length) ElMessage.warning(failures.slice(0, 3).join('；'))
+  clearTableSelection()
+  await loadData()
+}
+
+/** 批量删除：二次确认 → 逐条 DELETE（上游软删除）→ 汇总 → 刷新 */
+async function batchDelete() {
+  const targets = selectedRows.value.map((row) => String(row.person_id || row.id || '')).filter(Boolean)
+  if (!targets.length) {
+    ElMessage.warning('请先勾选画像')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认删除已选 ${targets.length} 条画像？删除后将不再出现在列表与检索中（保留历史审计）。`,
+      '批量删除确认',
+      { type: 'warning', confirmButtonText: '确认删除' },
+    )
+  } catch {
+    return
+  }
+  batchDeleting.value = true
+  let succeeded = 0
+  let failed = 0
+  for (const personId of targets) {
+    try {
+      await dpsApi.deletePortrait(personId)
+      succeeded += 1
+    } catch {
+      failed += 1
+    }
+  }
+  batchDeleting.value = false
+  ElMessage.success(`批量删除完成：成功 ${succeeded} 条${failed ? `，失败 ${failed} 条` : ''}`)
+  clearTableSelection()
+  await loadData()
 }
 
 function openExternal() {
@@ -400,8 +545,11 @@ onMounted(() => {
 .kpi-sub { font-size: 12px; color: #9ca3af; }
 .tag-item { margin-right: 4px; }
 .text-muted { color: #9ca3af; }
+.muted { color: var(--ob-text-secondary); }
+.sm { font-size: 12px; }
 .pager { display: flex; justify-content: flex-end; margin-top: 12px; }
 .request-id { color: #6b7280; font-size: 12px; margin-bottom: 8px; }
 .form-hint { font-size: 12px; color: #9ca3af; line-height: 1.6; }
 .mt-8 { margin-top: 8px; }
+.batch-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 12px; border: 1px solid var(--ob-border); border-radius: var(--ob-radius-md); background: var(--el-fill-color-light); }
 </style>

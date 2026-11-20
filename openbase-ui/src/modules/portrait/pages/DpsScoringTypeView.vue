@@ -1,8 +1,19 @@
 <template>
   <PageContainer title="评分类型" description="评分口径与类型定义" test-id="dps-scoring-type-view-page">
     <div class="page-toolbar">
-      <el-input v-model="keyword" placeholder="搜索评分类型" clearable style="width: 220px" data-test="scoring-search" />
+      <el-input
+        v-model="keyword"
+        placeholder="搜索评分类型 / 标识 / 说明"
+        clearable
+        style="width: 260px"
+        data-test="scoring-search"
+      />
+      <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width: 140px" data-test="scoring-status">
+        <el-option label="已注册" value="active" />
+        <el-option label="停用" value="inactive" />
+      </el-select>
       <el-button type="primary" :loading="loading" data-test="scoring-query" @click="load">查询</el-button>
+      <span class="muted sm">共 {{ filtered.length }} / {{ data?.items?.length || 0 }} 种评分类型（只读）</span>
     </div>
 
     <el-alert v-if="error" type="error" show-icon :closable="false" class="mb-16" data-test="dps-error">
@@ -40,13 +51,25 @@ import { dpsApi, type DpsScoringType } from '@/core/api/dps'
 import { useAsyncState } from '@/core/composables/useAsyncState'
 
 const keyword = ref('')
+const statusFilter = ref('')
 const { data, loading, error, run } = useAsyncState<{ items: DpsScoringType[]; total?: number }>()
 
 const filtered = computed(() => {
-  const items = data.value?.items || []
+  let items = data.value?.items || []
+  if (statusFilter.value) {
+    items = items.filter((item) => {
+      const status = item.status || 'active'
+      return statusFilter.value === 'active' ? status !== 'inactive' : status === statusFilter.value
+    })
+  }
   if (!keyword.value) return items
   const kw = keyword.value.toLowerCase()
-  return items.filter((item) => String(item.name || '').toLowerCase().includes(kw) || String(item.code || '').toLowerCase().includes(kw))
+  return items.filter(
+    (item) =>
+      String(item.name || '').toLowerCase().includes(kw) ||
+      String(item.code || '').toLowerCase().includes(kw) ||
+      String(item.description || '').toLowerCase().includes(kw),
+  )
 })
 
 async function load() {
@@ -60,6 +83,8 @@ onMounted(() => {
 
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
+.muted { color: var(--ob-text-secondary); }
+.sm { font-size: 12px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }
 .request-id { color: var(--ob-text-disabled); font-size: 12px; margin-left: 8px; }
 </style>

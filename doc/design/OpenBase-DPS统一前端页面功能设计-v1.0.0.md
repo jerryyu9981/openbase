@@ -3,8 +3,8 @@
 | 项 | 内容 |
 |---|---|
 | **文档类型** | UI/前端设计（页面功能重新设计） |
-| **版本** | v2.2.0 |
-| **状态** | [Implemented] Phase 2 已落地 |
+| **版本** | v2.3.0 |
+| **状态** | [Implemented] Phase 3 已落地 |
 | **适用范围** | `openbase-ui/src/modules/portrait/**`（画像模块，含 DPS 模板化 16 条路由） |
 | **上游依据** | 《批次 5：统一前端四子系统全生命周期补齐（规格）》v1.2.0；`modules/portrait/index.ts`；`core/api/dps.ts`；既有 `doc/design/prototype/p01~p12` |
 | **作者** | 产品 / 前端架构组（Solo 角色：RA + FA + UI） |
@@ -18,6 +18,7 @@
 | v2.0.0 | 2026-11-20 | 人工批准：四分组 IA 第一组定名「概览」；审核采用同路由视图 `?view=review`（附 3 项硬条件）；API 缺口按 P0/P1/P2 分层排期；批准进入 Phase 1 实现。详见 §14 | 产品/前端架构组 |
 | v2.1.0 | 2026-11-20 | Phase 1 前端实现落地：四分组导航、今日工作台、标注作业台 + 审核收件箱同路由视图、通用列表规范；补录实施记录与验证证据。详见 §14.5 | 前端工程师（FD） |
 | v2.2.0 | 2026-11-20 | Phase 2 前端实现落地：模板中心（健康度 + 分类侧栏 + 保存视图 + 六页签详情）、模板工作台（步骤条 + 发布向导 + 本地草稿 + JSON 变更）、标注模板/字段设计器（拖拽排序 + 映射提示 + 实时预览 + 改挂影响面）；补录实施记录与验证证据。详见 §14.6 | 前端工程师（FD） |
+| v2.3.0 | 2026-11-20 | Phase 3 前端实现落地：标签体系树/详情/血缘入口、血缘链路（模板→字段→标签→评分项→画像）、口径体检「去修复」与过滤、评分类型搜索与说明；画像列表列设置/导出/批量、高级检索条件行与高亮、360 标签血缘抽屉/标注时间线/字段化编辑、措施建议主体选择器与分组导出；补录实施记录与验证证据。详见 §14.7 | 前端工程师（FD） |
 
 ---
 
@@ -353,7 +354,7 @@
 |---|---|---|---|
 | Phase 1 | 导航四分组；工作台 P-01；标注作业台 P-02；审核收件箱 P-03；通用列表规范（保存视图/列设置/批量） | 现有接口 + A3/A6 前端降级 | 高频主流程可用 · **v2.1.0 已交付** |
 | Phase 2 | 模板中心 P-04；模板工作台 P-05（步骤条 + 发布向导）；标注模板/字段设计器 P-06 | 现有接口 + A7/A8 前端组合 | 治理闭环、字段可预览 · **v2.2.0 已交付** |
-| Phase 3 | 标签与口径 P-07；画像列表/搜索/360/措施 P-08；导出与审计时间线 | A9/A10/A11 | 可追溯与批量导出 |
+| Phase 3 | 标签与口径 P-07；画像列表/搜索/360/措施 P-08；导出与审计时间线 | A9/A10/A11 | 可追溯与批量导出 · **v2.3.0 已交付** |
 
 **兼容策略**：所有旧路径保持；被合并的视图以 `?view=` / `?tag=` / `?template=` 参数承接；旧书签直达后自动落到对应视图。
 
@@ -556,3 +557,55 @@
 - `node node_modules/eslint/bin/eslint.js`（4 个页面 + 2 个模型文件）：0 错误 0 告警。
 - `vitest`：`dps-template-health` 5 passed；`dps-annotation-fields` 4 passed；`dps-list-view` 5 passed；`dps-ui-v1410` P-01（模板列表整壳，补健康度 mock）passed。
 - 路由：未新增/删除任何 route record；导航与路由结构未变更，v2.1.0 的 `nav-consistency` / `module-pages` 结论继续有效；模板中心、工作台、字段设计沿用既有路径，旧深链全部可达。
+
+### 14.7 Phase 3 实施记录（v2.3.0）
+
+**实施范围与落地情况**
+
+| 交付项 | 落地位置 | 说明 |
+|---|---|---|
+| 标签体系 P-07 | `openbase-ui/src/modules/portrait/pages/DpsTagSystemView.vue` | 左树（分类 → 标签值，可搜索、分类展开）+ 右详情（定义、tag_code、产出模板/最近标注、影响面、评分命中）；「血缘反查」带 `?tag=` 跳转、复制标签码、分类管理入口；保留只读提示与「标注字段 → 画像标签」联动口径表 |
+| 标签树模型 | `openbase-ui/src/modules/portrait/tags/tagTree.ts` | `listLabels` 全量数据本地组装两层树（`category_id` 优先、`category` 名称兼容、未匹配归「未分类」）；本地搜索；`resolveTagCode` 兼容无 code 标签 |
+| 标签血缘 P-07 | `openbase-ui/src/modules/portrait/pages/DpsLineageView.vue` | 支持 `?tag=` / 旧 `?tag_code=` 深链与最近反查；展示「标注模板 → 字段 → 标签 → 评分项 → 画像」链路，字段跳字段设计器、评分项跳模板工作台、画像跳列表；保留来源表、影响面、口径展开与导出 |
+| 血缘链路模型 | `openbase-ui/src/modules/portrait/lineage/lineageChain.ts` | 以 `getTemplateLineage` 按 tag_code / tag_key 反查字段与评分命中；模板血缘缺失时标记「信源字段缺失」，不伪造链路 |
+| 口径体检 P-07 | `openbase-ui/src/modules/portrait/pages/DpsScoringConsistencyView.vue` | 问题行新增「去修复」（字段设计器 / 模板工作台 / 模板中心）；模板关键字与问题码过滤（当前页）、field_key 展示；导出保留并带过滤口径 |
+| 问题定位模型 | `openbase-ui/src/modules/portrait/scoring/scoringFix.ts` | 修复目标优先级、当前页过滤、问题码集合均为纯函数 |
+| 评分类型 P-07 | `openbase-ui/src/modules/portrait/pages/DpsScoringTypeView.vue` | 搜索扩展至名称/标识/说明，新增状态过滤与计数；说明列为既有列，保持只读 |
+| 画像列表 P-08 | `openbase-ui/src/modules/portrait/pages/PortraitList.vue` | 列设置（`dps.columns.portraits`）、CSV 导出（A11 前端导出）、批量计算/批量删除（二次确认、逐条汇总）；保留计算画像、外部 ID 查询、单条删除与 403/404/5xx 三分支 |
+| 画像工具 | `openbase-ui/src/modules/portrait/portrait/portraitTools.ts` | 前端过滤、CSV 转义、高级条件匹配、关键字高亮分段、标注时间线、属性字段化往返 |
+| 画像搜索 P-08 | `openbase-ui/src/modules/portrait/pages/PortraitSearch.vue` | 高级模式：条件行可增删（关键字/风险/创建时间），多条件 AND；结果关键字高亮；保留路由与分页 |
+| 画像 360 P-08 | `openbase-ui/src/modules/portrait/pages/PortraitDetail.vue` | 标签按维度分组（既有）并可点击打开血缘抽屉（来源 + 影响面 + 完整链路入口）；新增标注时间线卡片；编辑属性默认字段化表单，JSON 作为高级模式，409 冲突仍刷新 |
+| 措施建议 P-08 | `openbase-ui/src/modules/portrait/pages/DpsMeasureView.vue` | 主体选择器（前 100 条画像本地匹配 + 最近使用，A6 降级）；画像摘要；建议按维度分组为卡片，可复制、导出 JSON/CSV；免责声明原文保留 |
+| 措施模型 | `openbase-ui/src/modules/portrait/measures/measureGroups.ts` | 维度分组（未分组置末）与 CSV 生成 |
+| 单元测试 | `openbase-ui/tests/dps-phase3-helpers.spec.ts` | 标签树/搜索、血缘链路匹配与缺口、修复目标与过滤、列表/CSV/高级条件/高亮/时间线/属性往返、措施分组与 CSV，共 15 条 |
+
+**验收对照**
+
+| 验收 | 实现位置 |
+|---|---|
+| AC-TG-1 标签树搜索与分类展开 | 标签树 + `tag-search`，命中分类保留全部标签 |
+| AC-TG-2 一键血缘（`?tag=`）与完整链路 | `tag-lineage-open` → `/portrait/dps/lineage?tag=`；血缘页链路卡片 |
+| AC-TG-3 链路节点可跳转 | 字段 → `annotation-templates/:code/fields`；评分项 → `templates/:code/edit`；画像 → `/portrait/list` |
+| AC-TG-4 问题行「去修复」 | 口径体检操作列 `scoring-fix` |
+| AC-TG-5 评分类型搜索与说明 | 名称/标识/说明搜索 + 说明列 + 状态过滤 |
+| AC-PT-1 列设置 / 导出 / 批量 | 列设置 popover、CSV 导出、批量计算/删除二次确认 |
+| AC-PT-2 高级模式条件行与高亮 | 条件行增删、多条件 AND、`splitHighlight` 分段渲染 |
+| AC-PT-3 标签按维度分组 + 血缘抽屉 | `tagGroups` + `portrait-tag-lineage-drawer` |
+| AC-PT-4 标注时间线 | `portrait-timeline`（时间/模板/审核状态/级数） |
+| AC-PT-5 字段化编辑 + 409 | 字段表单默认、JSON 高级；409 刷新提示 |
+| AC-PT-6 主体选择器 / 分组 / 复制导出 | 自动完成主体选择、画像摘要、维度分组卡片、复制与 JSON/CSV 导出 |
+
+**降级口径（与 §9 一致，不造假数据）**
+
+- 标签检索/分页（A9）未就绪：`listLabels` 全量拉取后前端搜索；无 `tag_code` 的标签明示「无法反查血缘」。
+- 血缘链路：DPS 只返回标注来源，字段与评分项由 `getTemplateLineage` 反查；血缘拉取失败标记「信源字段缺失」，不展示空链。
+- 口径体检的模板/问题码过滤仅作用于当前页（A12 未提供查询参数），页面与导出均标注「当前页过滤」。
+- 画像检索（A6）、标注/画像导出（A11）、审计时间线（A10）均未就绪：列表关键字与措施主体选择为前 100 条前端降级；导出为前端 CSV/JSON；时间线取自标注队列创建时间，审计字段过滤待后端。
+- 360 血缘抽屉只展示来源与影响面，字段 → 评分项完整链路跳血缘页，避免重复实现。
+
+**验证证据**
+
+- `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit`：通过（0 错误）。
+- `node node_modules/eslint/bin/eslint.js`（5 个模型/工具模块 + 8 个页面 + 2 个测试文件）：0 错误 0 告警。
+- `vitest run tests/dps-phase3-helpers.spec.ts`：15 passed。
+- 路由：未新增/删除任何 route record；`?tag=` 为新增查询参数，`?tag_code=` 旧深链继续可用；`/portrait/search`、`/portrait/list`、`/portrait/:id` 路径不变。

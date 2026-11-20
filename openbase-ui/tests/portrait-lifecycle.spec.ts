@@ -105,7 +105,8 @@ describe('批次 5：画像计算与外部 ID 查询', () => {
 
     await wrapper.find('[data-test="portrait-calculate-open"]').trigger('click')
     await wrapper.find('input[data-test="calc-person-id"]').setValue('P-3')
-    await wrapper.find('input[data-test="calc-template-code"]').setValue('tpl-1')
+    wrapper.findComponent('[data-test="calc-template-code"]').vm.$emit('update:modelValue', 'tpl-1')
+    await flushPromises()
     await wrapper.find('[data-test="calc-submit"]').trigger('click')
     await flushPromises()
 
@@ -136,6 +137,8 @@ describe('批次 5：画像属性编辑', () => {
 
     expect(wrapper.text()).toContain('画像版本')
     await wrapper.find('[data-test="portrait-edit-open"]').trigger('click')
+    await wrapper.find('[data-test="portrait-edit-json-mode"]').trigger('click')
+    await flushPromises()
     await wrapper.find('textarea[data-test="portrait-edit-json"]').setValue('{"level":"中"}')
     await wrapper.find('[data-test="portrait-edit-save"]').trigger('click')
     await flushPromises()
@@ -153,6 +156,8 @@ describe('批次 5：画像属性编辑', () => {
     await flushPromises()
 
     await wrapper.find('[data-test="portrait-edit-open"]').trigger('click')
+    await wrapper.find('[data-test="portrait-edit-json-mode"]').trigger('click')
+    await flushPromises()
     await wrapper.find('textarea[data-test="portrait-edit-json"]').setValue('{bad json')
     await wrapper.find('[data-test="portrait-edit-save"]').trigger('click')
     await flushPromises()
@@ -195,6 +200,8 @@ describe('批次 5：画像属性编辑', () => {
     await flushPromises()
 
     await wrapper.find('[data-test="portrait-edit-open"]').trigger('click')
+    await wrapper.find('[data-test="portrait-edit-json-mode"]').trigger('click')
+    await flushPromises()
     await wrapper.find('textarea[data-test="portrait-edit-json"]').setValue('{"level":"低"}')
     await wrapper.find('[data-test="portrait-edit-save"]').trigger('click')
     await flushPromises()

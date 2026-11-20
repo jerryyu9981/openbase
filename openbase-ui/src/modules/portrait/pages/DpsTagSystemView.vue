@@ -1,13 +1,13 @@
 <template>
-  <PageContainer title="标签体系查看" description="标签分类与标签值只读呈现" test-id="dps-tag-system-view-page">
+  <PageContainer title="标签体系" description="标签分类 → 标签值两层结构，可下钻血缘与评分命中" test-id="dps-tag-system-view-page">
     <el-alert type="info" show-icon :closable="false" class="mb-16" data-test="tag-readonly-tip">
       <template #title>本页为只读呈现：分类 → 标签值两层结构</template>
-      <div>分类的增删改沿用既有「标签分类」能力（/tags/categories），本页不复制编辑入口。</div>
+      <div>分类的增删改沿用既有「标签分类管理」能力（/portrait/tags），本页不复制编辑入口。</div>
     </el-alert>
 
     <el-alert type="warning" show-icon :closable="false" class="mb-16" data-test="tag-subtag-tip">
       <template #title>子标签／标签层级当前不提供</template>
-      <div>DPS 实现暂无 parent_tag_code 落库 ⇒ 本版不呈现子标签、不做伪功能（已登记跨仓需求）。</div>
+      <div>DPS 实现暂无 parent_tag_code 落库 ⇒ 本版不呈现子标签、不做伪功能（已登记 A9 跨仓需求）。</div>
     </el-alert>
 
     <el-alert v-if="error" type="error" show-icon :closable="false" class="mb-16" data-test="dps-error">
@@ -18,49 +18,133 @@
       <span v-if="error.requestId" class="request-id" data-test="dps-request-id">请求编号：{{ error.requestId }}</span>
     </el-alert>
 
+    <div class="page-toolbar">
+      <el-input
+        v-model="keyword"
+        placeholder="搜索分类 / 标签 / 说明"
+        clearable
+        style="width: 260px"
+        data-test="tag-search"
+      />
+      <el-button data-test="tag-category-manage" @click="goCategoryManage">标签分类管理</el-button>
+      <el-button type="primary" plain data-test="tag-lineage-nav" @click="openLineage()">标签血缘</el-button>
+      <el-button :loading="loading" data-test="tag-refresh" @click="load">刷新</el-button>
+      <span class="muted sm">共 {{ categories.length }} 个分类 / {{ labels.length }} 个标签值（A9 服务端检索待后端）</span>
+    </div>
+
     <div class="grid-2">
-      <el-card :header="`标签分类 tag_category · ${categories.length} 条`">
-        <div class="ob-table-scroll">
-          <el-table
-            v-loading="loading"
-            :data="categories"
-            stripe
-            highlight-current-row
-            empty-text="暂无标签分类"
-            data-test="tag-category-table"
-            @current-change="onSelectCategory"
+      <el-card :header="`标签树 tag_category · ${categories.length} 条`">
+        <div class="tree-wrap" data-test="tag-category-table">
+          <el-empty v-if="!treeNodes.length" description="暂无标签分类" :image-size="60" data-test="tag-category-empty" />
+          <el-tree
+            v-else
+            :data="filteredTree"
+            node-key="key"
+            default-expand-all
+            :expand-on-click-node="false"
+            highlight-current
+            empty-text="无匹配分类或标签"
+            @node-click="onNodeClick"
           >
-            <el-table-column prop="name" label="分类" min-width="160" />
-            <el-table-column prop="description" label="说明" min-width="180" />
-            <template #empty>
-              <el-empty description="暂无标签分类" :image-size="60" data-test="tag-category-empty" />
+            <template #default="{ data }">
+              <span class="tree-node" :class="{ 'tree-node--active': data.key === activeKey }">
+                <span v-if="data.color" class="color-dot" :style="{ background: String(data.color) }" />
+                <span class="tree-name">{{ data.name }}</span>
+                <el-tag v-if="data.kind === 'label'" size="small" type="success">标签</el-tag>
+                <el-tag v-else size="small" type="info">{{ (data.children || []).length }} 个标签</el-tag>
+                <span v-if="data.code" class="muted sm">{{ data.code }}</span>
+              </span>
             </template>
-          </el-table>
+          </el-tree>
         </div>
-        <div class="muted sm mt-8">选中左侧分类 → 右侧展示其标签值（两层结构，无第三层）。</div>
+        <div class="muted sm mt-8">选中左侧标签 → 右侧展示定义、产出模板、最近标注与评分命中。</div>
       </el-card>
 
-      <el-card :header="`标签值 tag_value${selectedCategory ? ` · 分类：${selectedCategory.name}` : ''}`">
-        <div class="ob-table-scroll">
-          <el-table :data="filteredLabels" stripe empty-text="暂无标签值" data-test="tag-value-table">
-            <el-table-column prop="name" label="标签值" min-width="140" />
-            <el-table-column prop="color" label="颜色" width="130">
-              <template #default="{ row }">
-                <el-tag v-if="row.color" size="small" :style="{ background: String(row.color), color: '#fff', border: 'none' }">{{ row.color }}</el-tag>
-                <span v-else class="muted">—</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="sort_order" label="排序" width="90" />
-            <template #empty>
-              <el-empty
-                :description="selectedCategory ? '该分类暂无标签值' : '请选择左侧分类'"
-                :image-size="60"
-                data-test="tag-value-empty"
-              />
-            </template>
-          </el-table>
-        </div>
-        <div class="muted sm mt-8">标签值归属于分类（category_id 外键）。</div>
+      <el-card :header="detailHeader">
+        <el-empty v-if="!selectedNode || selectedNode.kind !== 'label'" description="请选择左侧标签查看详情" :image-size="60" data-test="tag-detail-empty" />
+        <template v-else>
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="标签值">{{ selectedNode.name }}</el-descriptions-item>
+            <el-descriptions-item label="tag_code">
+              <span v-if="selectedTagCode">{{ selectedTagCode }}</span>
+              <span v-else class="muted">—（无 code）</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="所属分类">{{ selectedNode.categoryName || '未分类' }}</el-descriptions-item>
+            <el-descriptions-item label="排序">{{ selectedNode.sortOrder ?? '—' }}</el-descriptions-item>
+            <el-descriptions-item label="颜色">
+              <el-tag v-if="selectedNode.color" size="small" :style="{ background: String(selectedNode.color), color: '#fff', border: 'none' }">
+                {{ selectedNode.color }}
+              </el-tag>
+              <span v-else class="muted">—</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="说明">{{ selectedNode.description || '—' }}</el-descriptions-item>
+          </el-descriptions>
+
+          <div class="detail-actions">
+            <el-button type="primary" size="small" :disabled="!selectedTagCode" data-test="tag-lineage-open" @click="openLineage()">
+              血缘反查
+            </el-button>
+            <el-button size="small" :disabled="!selectedTagCode" data-test="tag-code-copy" @click="copyTagCode">复制标签码</el-button>
+          </div>
+          <div v-if="!selectedTagCode" class="muted sm">
+            该标签无 tag_code，无法反查血缘；标签检索与 code 回填依赖 A9（待后端）。
+          </div>
+
+          <el-alert v-if="detailError" type="error" show-icon :closable="false" class="mt-12" data-test="tag-detail-error">
+            <template #title>{{ detailError.title }}</template>
+            <div>{{ detailError.detail }}</div>
+          </el-alert>
+
+          <div v-loading="detailLoading" class="detail-body">
+            <div class="section-title">产出模板 / 最近标注</div>
+            <el-table :data="detailSources" stripe size="small" empty-text="暂无标注来源" data-test="tag-source-table">
+              <el-table-column prop="template_code" label="画像模板" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="source" label="来源" width="130">
+                <template #default="{ row }">
+                  <el-tag size="small" :type="row.source === 'ai_annotation' ? '' : 'info'">{{ row.source || '-' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="annotation_id" label="标注 ID" min-width="130" show-overflow-tooltip />
+              <el-table-column prop="created_at" label="时间" min-width="160">
+                <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+              </el-table-column>
+            </el-table>
+
+            <div class="metrics-2 mt-12">
+              <div class="metric">
+                <div class="metric-num">{{ detailImpact.tag_count ?? 0 }}</div>
+                <div class="metric-label">关联标签数</div>
+              </div>
+              <div class="metric">
+                <div class="metric-num">{{ detailImpact.profile_count ?? 0 }}</div>
+                <div class="metric-label">关联画像数</div>
+              </div>
+            </div>
+
+            <div class="section-title">评分命中</div>
+            <el-empty
+              v-if="!detailHits.length"
+              :description="detailLoaded ? '未命中评分项（或模板血缘不可用）' : '选择标签后加载'"
+              :image-size="50"
+              data-test="tag-scoring-empty"
+            />
+            <el-table v-else :data="detailHits" size="small" data-test="tag-scoring-table">
+              <el-table-column prop="dimension" label="维度" width="120" />
+              <el-table-column prop="rule_key" label="评分规则" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="weight" label="权重" width="80" />
+              <el-table-column prop="description" label="说明" min-width="200" show-overflow-tooltip />
+            </el-table>
+
+            <div v-for="group in detailGroups" :key="group.templateCode" class="chain-line">
+              <el-tag size="small" type="info">{{ group.templateName || group.templateCode }}</el-tag>
+              <span v-if="group.missingField" class="muted sm">未找到产出该标签的字段（血缘缺口）</span>
+              <span v-else class="muted sm">
+                {{ group.fields.length }} 个字段 ·
+                {{ group.fields.reduce((total, field) => total + field.scoringHits.length, 0) }} 个评分命中
+              </span>
+            </div>
+          </div>
+        </template>
       </el-card>
     </div>
 
@@ -83,16 +167,45 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import { computed, onMounted, ref } from 'vue'
-import { dpsApi, type DpsTagCategory } from '@/core/api/dps'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import {
+  dpsApi,
+  type DpsImpactResult,
+  type DpsLineageScoringHit,
+  type DpsLineageSource,
+  type DpsTagCategory,
+} from '@/core/api/dps'
 import { describeDpsError, type DpsErrorPresentation } from '@/core/api/error'
+import {
+  buildTagTree,
+  filterTagTree,
+  normalizeTagLabel,
+  resolveTagCode,
+  type TagLabelItem,
+  type TagTreeNode,
+} from '@/modules/portrait/tags/tagTree'
+import {
+  buildTagChainGroups,
+  collectScoringHits,
+  type TagChainGroup,
+} from '@/modules/portrait/lineage/lineageChain'
 
-interface LabelItem { name: string; color?: string; sort_order?: number; category?: string; category_id?: string; [key: string]: unknown }
+const router = useRouter()
 
 const categories = ref<DpsTagCategory[]>([])
-const labels = ref<LabelItem[]>([])
-const selectedCategory = ref<DpsTagCategory | null>(null)
+const labels = ref<TagLabelItem[]>([])
+const keyword = ref('')
 const loading = ref(false)
 const error = ref<DpsErrorPresentation | null>(null)
+
+const selectedNode = ref<TagTreeNode | null>(null)
+const detailLoading = ref(false)
+const detailError = ref<DpsErrorPresentation | null>(null)
+const detailSources = ref<DpsLineageSource[]>([])
+const detailImpact = ref<DpsImpactResult>({})
+const detailGroups = ref<TagChainGroup[]>([])
+const detailLoaded = ref(false)
 
 const LINKAGE_RULES = [
   { field: 'cc-annot-intake · channel', dimension: 'service', tagCode: 'service:channel', scoring: 'enum 逆序线性：首项 100 → 末项 0' },
@@ -101,18 +214,86 @@ const LINKAGE_RULES = [
   { field: 'cc-annot-intake · visit_date', dimension: '—', tagCode: '不生成', scoring: '未声明 target_dimension ⇒ 不参与联动' },
 ]
 
-const filteredLabels = computed(() => {
-  if (!selectedCategory.value) return labels.value
-  const target = selectedCategory.value
-  return labels.value.filter((item) => {
-    if (item.category_id && target.id) return String(item.category_id) === String(target.id)
-    if (item.category) return String(item.category) === String(target.name)
-    return true
-  })
+const treeNodes = computed(() => buildTagTree(categories.value, labels.value))
+const filteredTree = computed(() => filterTagTree(treeNodes.value, keyword.value))
+const selectedTagCode = computed(() => resolveTagCode(selectedNode.value))
+const activeKey = computed(() => selectedNode.value?.key || '')
+const detailHeader = computed(() => {
+  const node = selectedNode.value
+  if (!node) return '标签详情'
+  return node.kind === 'label' ? `标签详情 · ${node.name}` : `标签详情 · 分类 ${node.name}`
 })
+const detailHits = computed<DpsLineageScoringHit[]>(() => collectScoringHits(detailGroups.value))
 
-function onSelectCategory(row: DpsTagCategory | null) {
-  selectedCategory.value = row
+function formatTime(value?: string): string {
+  if (!value) return '-'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN', { hour12: false })
+}
+
+function onNodeClick(node: TagTreeNode) {
+  selectedNode.value = node
+  if (node.kind !== 'label') return
+  void loadLabelDetail(node)
+}
+
+async function loadLabelDetail(node: TagTreeNode) {
+  detailSources.value = []
+  detailImpact.value = {}
+  detailGroups.value = []
+  detailError.value = null
+  detailLoaded.value = false
+  const tagCode = resolveTagCode(node)
+  if (!tagCode) {
+    detailLoaded.value = true
+    return
+  }
+  detailLoading.value = true
+  try {
+    const result = await dpsApi.getTagLineage(tagCode)
+    detailSources.value = result.sources || []
+    detailLoaded.value = true
+    detailImpact.value = await dpsApi
+      .queryImpact({ tag_code: tagCode })
+      .catch(() => ({}) as DpsImpactResult)
+    const templateCodes = Array.from(
+      new Set(detailSources.value.map((source) => String(source.template_code || '')).filter(Boolean)),
+    )
+    const lineages = await Promise.all(
+      templateCodes.map((code) => dpsApi.getTemplateLineage(code).catch(() => null)),
+    )
+    detailGroups.value = buildTagChainGroups(tagCode, detailSources.value, lineages)
+  } catch (caught) {
+    const described = describeDpsError(caught)
+    detailLoaded.value = true
+    if (described.kind !== 'not-found') detailError.value = described
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+function openLineage() {
+  if (!selectedTagCode.value) {
+    ElMessage.info('请先选择带 tag_code 的标签，或前往血缘页手动输入')
+    void router.push('/portrait/dps/lineage')
+    return
+  }
+  void router.push({ path: '/portrait/dps/lineage', query: { tag: selectedTagCode.value } })
+}
+
+function goCategoryManage() {
+  void router.push('/portrait/tags')
+}
+
+async function copyTagCode() {
+  const code = selectedTagCode.value
+  if (!code) return
+  try {
+    await navigator.clipboard?.writeText(code)
+    ElMessage.success(`已复制 ${code}`)
+  } catch {
+    ElMessage.info(`标签码：${code}`)
+  }
 }
 
 async function load() {
@@ -124,15 +305,7 @@ async function load() {
       dpsApi.listLabels(),
     ])
     categories.value = categoryResult.items || []
-    labels.value = (labelResult.items || []).map((item) => {
-      const record = item as Record<string, unknown>
-      return {
-        ...record,
-        name: String(record.name ?? record.value ?? record.code ?? '-'),
-        color: record.color ? String(record.color) : undefined,
-        sort_order: typeof record.sort_order === 'number' ? record.sort_order : undefined,
-      } as LabelItem
-    })
+    labels.value = (labelResult.items || []).map((item) => normalizeTagLabel(item))
   } catch (caught) {
     error.value = describeDpsError(caught)
   } finally {
@@ -148,12 +321,26 @@ onMounted(() => {
 <style scoped>
 .mb-16 { margin-bottom: 16px; }
 .mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .muted { color: var(--ob-text-secondary); }
 .sm { font-size: 12px; }
 .hint { color: var(--ob-text-secondary); font-size: 12px; margin-top: 4px; }
 .request-id { color: var(--ob-text-disabled); font-size: 12px; margin-left: 8px; }
+.tree-wrap { min-height: 260px; max-height: 520px; overflow: auto; }
+.tree-node { display: inline-flex; align-items: center; gap: 6px; }
+.tree-node--active .tree-name { font-weight: 600; color: var(--el-color-primary); }
+.tree-name { font-size: 13px; }
+.color-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.detail-actions { display: flex; gap: 8px; margin-top: 12px; }
+.detail-body { margin-top: 12px; }
+.section-title { font-size: 13px; font-weight: 600; margin: 14px 0 8px; color: var(--ob-text-primary); }
+.metrics-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.metric { border: 1px solid var(--ob-border); border-radius: var(--ob-radius-md); padding: 10px; text-align: center; }
+.metric-num { font-size: 22px; font-weight: 600; }
+.metric-label { font-size: 12px; color: var(--ob-text-secondary); margin-top: 4px; }
+.chain-line { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
 @media (max-width: 767px) {
   .grid-2 { grid-template-columns: 1fr; }
 }
