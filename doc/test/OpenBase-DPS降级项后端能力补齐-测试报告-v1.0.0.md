@@ -5,7 +5,7 @@
 | 项目 | OpenBase（开放底座）；后端 `openbase` ＋ 前端 `openbase-ui` |
 | 主题 | DPS 降级项 A6/A9/A10/A11/A12/A14：代理、CSV 导出、候选持久化与前端接入 |
 | 文档 | 测试报告（Step 4 产出） |
-| 文档版本 | **v1.1.0** |
+| 文档版本 | **v1.2.0** |
 | 状态 | **[Approved]**（Step 4 人工批准通过，2026-11-20，批准人＝用户，准予进入 Step 5） |
 | 日期 | 2026-11-20 |
 | 发布版本 | 后端 `1.5.0`／前端 `1.5.0` |
@@ -19,6 +19,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-20 | TE-OpenBase-Test | 首版：范围与环境、AC-150-01～14 覆盖矩阵、后端全量/定向与前端 10 个 spec 结果、残余问题登记、结论 |
 | v1.1.0 | 2026-11-20 | TE-OpenBase-Test | 人工批准：状态 [Review] → [Approved]（批准人＝用户），准予进入 Step 5 |
+| v1.2.0 | 2026-11-20 | TE-OpenBase-Test | 残余项闭环回填：OB-150-D01／D02 已由《OpenBase-残余项整改与验证报告-v1.0.0》处置，全量回归 1874 passed／0 failed |
 
 ---
 
@@ -87,10 +88,12 @@
 
 ## 5. 缺陷与残余
 
+> 2026-11-20 更新：下表 3 项残余均已整改并验证闭环，详见《OpenBase-残余项整改与验证报告-v1.0.0》。
+
 | 编号 | 描述 | 定性 |
 |---|---|---|
-| OB-150-D01 | 全量失败 `test_s6_t1_2_no_frontend_artifact_mount_in_backend`：该用例以子串 `mount(` 扫描后端源码，命中既有函数名 `dps_template_component_mount(`（存在于 `main` HEAD，非本版本新增） | 既有用例误报，非本版本缺陷；建议将该函数名或扫描口径加入白名单 |
-| OB-150-D02 | 全量失败 `test_no_python_source_has_utf8_bom_across_repos`：违规文件位于 **OpenMemory 仓** `scripts/graph_projection_worker.py`（UTF-8 BOM） | 跨仓既有问题，非本仓改动 |
+| OB-150-D01 | 全量失败 `test_s6_t1_2_no_frontend_artifact_mount_in_backend`：该用例以子串 `mount(` 扫描后端源码，命中既有函数名 `dps_template_component_mount(`（存在于 `main` HEAD，非本版本新增） | **已闭环**：扫描器改为标识符边界匹配 |
+| OB-150-D02 | 全量失败 `test_no_python_source_has_utf8_bom_across_repos`：违规文件位于 **OpenMemory 仓** `scripts/graph_projection_worker.py`（UTF-8 BOM） | **已闭环**：去除 BOM |
 | OB-150-D03 | 前端 10 spec 运行日志出现未 mock 请求的 `ECONNREFUSED` 栈噪声 | 仅日志噪声，不影响断言结果（131 tests 全通过） |
 
 ## 6. 测试结论

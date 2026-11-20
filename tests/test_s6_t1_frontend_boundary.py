@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -38,7 +39,11 @@ _CROSS_REPOSITORY_RELEASE = (
 )
 
 # 「后端不挂载统一前端产物」的禁用标识（设计草案 §4.1 S6-T1-2 ①）
-_FORBIDDEN_MOUNT_TOKENS = ("StaticFiles", "mount(", "dist-v")
+_FORBIDDEN_MOUNT_TOKENS = ("StaticFiles", "dist-v")
+
+# mount 调用需按标识符边界匹配：`app.mount(...)` 命中，`component_mount(...)` 不命中
+# （2026-11-20 残余项整改：原 `mount(` 子串会误报函数名 `dps_template_component_mount(`）
+_MOUNT_CALL_PATTERN = re.compile(r"(?<![A-Za-z0-9_])mount\s*\(")
 
 # 已知非挂载引用白名单：CLI scaffold 的目标目录文案（设计草案 §4.1 S6-T1-2 ②）
 _KNOWN_TARGET_DIRECTORY_REFERENCE = "openbase/cli/main.py"
@@ -55,8 +60,14 @@ def _relative_posix(path: Path) -> str:
 
 
 def _find_mount_tokens(text: str) -> list[str]:
-    """在给定文本中检出「挂载统一前端产物」的禁用标识."""
-    return [token for token in _FORBIDDEN_MOUNT_TOKENS if token in text]
+    """在给定文本中检出「挂载统一前端产物」的禁用标识.
+
+    ``mount`` 按调用边界匹配（``app.mount(`` 命中，``xxx_mount(`` 不命中）。
+    """
+    hits = [token for token in _FORBIDDEN_MOUNT_TOKENS if token in text]
+    if _MOUNT_CALL_PATTERN.search(text):
+        hits.append("mount(")
+    return hits
 
 
 def _scan_backend_mount_tokens() -> list[tuple[str, str]]:
@@ -144,9 +155,11 @@ def test_s6_t1_2_target_directory_reference_is_whitelisted() -> None:
 
 
 def test_s6_t1_2_mount_scanner_is_not_vacuous() -> None:
-    """负向自检：扫描器对违规样本必须命中、对 CLI 文案必须不误报."""
+    """负向自检：扫描器对违规样本必须命中、对 CLI 文案与普通函数名不误报."""
     assert _find_mount_tokens("app.mount('/ui', StaticFiles(directory='dist-v1.3.0'))") != []
     assert _find_mount_tokens("target: 目标目录（openbase/modules 或 openbase-ui/src/modules）") == []
+    # 2026-11-20 残余项整改：函数名含 `_mount(` 不是挂载调用，不得误报
+    assert _find_mount_tokens("async def dps_template_component_mount(request): ...") == []
 
 
 # ---- S6-T1-3 统一前端侧冻结声明落点 ----
