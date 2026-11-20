@@ -65,7 +65,7 @@
         </el-popover>
         <el-button data-test="portrait-export" @click="exportCsv">导出 CSV</el-button>
         <el-button :loading="loading" data-test="portrait-refresh" @click="loadData">刷新</el-button>
-        <span class="muted sm">关键字为前端过滤（A6 服务端检索待后端）</span>
+        <span class="muted sm">关键字支持服务端检索（姓名/person_id/外部 ID/标签名）</span>
       </div>
 
       <div v-if="selectedCount > 0" class="batch-bar" data-test="portrait-batch-bar">

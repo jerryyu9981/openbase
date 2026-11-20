@@ -293,7 +293,7 @@ const todoCards = computed<TodoCard[]>(() => [
     label: '待标注',
     tone: 'blue',
     value: null,
-    hint: '主体待标注统计待 A1/A6 接口就绪；点击直接开始录入',
+    hint: '主体待标注统计待 A1 队列统计接口就绪；点击直接开始录入',
     link: { path: '/portrait/dps/annotations' },
   },
   {
@@ -317,7 +317,7 @@ const todoCards = computed<TodoCard[]>(() => [
     label: 'AI 待复核',
     tone: 'violet',
     value: null,
-    hint: '候选尚未持久化（A14），前往复核页查看当前批次',
+    hint: '候选已持久化（A14），前往复核页可恢复最近批次',
     link: { path: '/portrait/dps/annotation-adapters' },
   },
 ])

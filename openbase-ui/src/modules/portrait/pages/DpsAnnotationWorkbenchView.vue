@@ -223,7 +223,7 @@
                     :value="item.person_id || ''"
                   />
                 </el-select>
-                <div class="hint">A6 服务端检索未就绪：先按 person_id / 外部 ID 精确查，再回退前 100 条匹配。</div>
+                <div class="hint">支持姓名、person_id 或外部 ID 模糊检索（服务端）；DPS 未升级时回退精确查询与前 100 条匹配。</div>
                 <div v-if="recentSubjects.length" class="recent">
                   <span class="muted sm">最近：</span>
                   <el-tag
@@ -960,25 +960,30 @@ async function searchSubject() {
   }
   subjectLoading.value = true
   try {
-    const found: DpsPortrait[] = []
-    const [byExternal, byId] = await Promise.allSettled([
-      dpsApi.getPortraitByExternal(keyword),
-      dpsApi.getPortrait(keyword),
-    ])
-    ;[byExternal, byId].forEach((result) => {
-      if (result.status === 'fulfilled' && result.value?.person_id) found.push(result.value)
-    })
-
-    // A6 未就绪：回退前 100 条前端匹配
-    if (!found.length) {
-      const pageResult = await dpsApi.listPortraits({ page: 1, page_size: 100 }).catch(() => null)
-      ;(pageResult?.items || [])
-        .filter((item) => {
-          const haystack = `${item.name || ''} ${item.person_id || ''}`.toLowerCase()
-          return haystack.includes(keyword.toLowerCase())
-        })
-        .slice(0, 10)
-        .forEach((item) => found.push(item))
+    let found: DpsPortrait[] = []
+    try {
+      const paged = await dpsApi.listPortraits({ page: 1, page_size: 20, keyword })
+      found = paged.items || []
+    } catch (caught) {
+      // DPS 未升级（404）→ 回退旧口径：精确 ID/外部 ID + 前 100 条本地匹配
+      if ((caught as { response?: { status?: number } })?.response?.status !== 404) throw caught
+      const [byExternal, byId] = await Promise.allSettled([
+        dpsApi.getPortraitByExternal(keyword),
+        dpsApi.getPortrait(keyword),
+      ])
+      ;[byExternal, byId].forEach((result) => {
+        if (result.status === 'fulfilled' && result.value?.person_id) found.push(result.value)
+      })
+      if (!found.length) {
+        const pageResult = await dpsApi.listPortraits({ page: 1, page_size: 100 }).catch(() => null)
+        ;(pageResult?.items || [])
+          .filter((item) => {
+            const haystack = `${item.name || ''} ${item.person_id || ''}`.toLowerCase()
+            return haystack.includes(keyword.toLowerCase())
+          })
+          .slice(0, 10)
+          .forEach((item) => found.push(item))
+      }
     }
 
     const deduped = new Map<string, DpsPortrait>()
@@ -988,7 +993,7 @@ async function searchSubject() {
     subjectResults.value = Array.from(deduped.values())
 
     if (!subjectResults.value.length) {
-      ElMessage.warning('未找到匹配主体（服务端检索未就绪，已回退前 100 条）')
+      ElMessage.warning('未找到匹配主体（支持姓名、person_id 或外部 ID）')
     } else if (subjectResults.value.length === 1) {
       void loadSubjectById(subjectResults.value[0].person_id || '')
     }

@@ -495,7 +495,7 @@
                   </div>
                 </el-timeline-item>
               </el-timeline>
-              <div class="muted sm mt-8">来源：标注队列创建时间；按审计字段过滤（A10）待后端。</div>
+              <div class="muted sm mt-8">来源：标注队列创建时间；单条审核留痕见审核收件箱（A10 审计时间线）。</div>
             </el-card>
           </el-col>
 

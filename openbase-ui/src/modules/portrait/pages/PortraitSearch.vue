@@ -1,8 +1,8 @@
 <template>
-  <PageContainer title="画像搜索" description="高级检索：条件行可增删，结果关键字高亮（前端降级 A6）" test-id="portrait-search-page">
+  <PageContainer title="画像搜索" description="高级检索：条件行可增删，结果关键字高亮（主关键字走服务端）" test-id="portrait-search-page">
     <div class="page-toolbar">
       <el-button link type="primary" data-test="search-back" @click="$router.push('/portrait/list')">← 返回画像列表</el-button>
-      <span class="muted sm">服务端检索（A6）未就绪：先取前 100 条画像在本地组合条件匹配。</span>
+      <span class="muted sm">主关键字服务端检索；DPS 未升级时回退前 100 条本地组合条件匹配。</span>
     </div>
 
     <!-- 高级检索：条件行 -->

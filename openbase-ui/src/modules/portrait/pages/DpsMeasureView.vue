@@ -29,7 +29,7 @@
       <template #header>
         <div class="card-head">
           <span>画像摘要</span>
-          <span class="muted sm">主体选择器支持姓名/ID 模糊（A6 前端降级：前 100 条）</span>
+          <span class="muted sm">主体选择器支持姓名/ID 模糊检索（服务端；DPS 未升级时回退前 100 条）</span>
         </div>
       </template>
       <template v-if="profile">

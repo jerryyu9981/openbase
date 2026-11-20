@@ -88,7 +88,7 @@
             <el-button size="small" :disabled="!selectedTagCode" data-test="tag-code-copy" @click="copyTagCode">复制标签码</el-button>
           </div>
           <div v-if="!selectedTagCode" class="muted sm">
-            该标签无 tag_code，无法反查血缘；标签检索与 code 回填依赖 A9（待后端）。
+            该标签无 tag_code，无法反查血缘；标签检索已支持服务端（A9），DPS 未升级时回退本地过滤。
           </div>
 
           <el-alert v-if="detailError" type="error" show-icon :closable="false" class="mt-12" data-test="tag-detail-error">
