@@ -1639,12 +1639,21 @@ export interface DpsBatchReviewItem {
   comment?: string
 }
 
+/** 批量复核成功条目的审核进度（与单条复核 `review` 同口径） */
+export interface DpsBatchReviewItemReview {
+  level?: number
+  required?: number
+  finalized?: boolean
+}
+
 /** 批量复核单条结果（单条失败不影响其余条目） */
 export interface DpsBatchReviewItemResult {
   annotation_id?: string | null
   ok: boolean
   status?: string | number
   error?: unknown
+  review?: DpsBatchReviewItemReview
+  [key: string]: unknown
 }
 
 /** 批量复核汇总结果 */

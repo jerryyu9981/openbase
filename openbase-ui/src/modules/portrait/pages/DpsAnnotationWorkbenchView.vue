@@ -110,7 +110,13 @@
             @row-click="selectTask"
             @selection-change="onSelectionChange"
           >
-            <el-table-column v-if="view === 'review'" type="selection" width="36" reserve-selection />
+            <el-table-column
+              v-if="view === 'review'"
+              type="selection"
+              width="36"
+              reserve-selection
+              :selectable="isRowSelectable"
+            />
             <el-table-column v-if="columnVisible('person')" prop="person_id" label="主体" width="112" show-overflow-tooltip />
             <el-table-column v-if="columnVisible('template')" label="模板" min-width="130" show-overflow-tooltip>
               <template #default="{ row }">
@@ -511,6 +517,34 @@
         <el-button type="primary" @click="confirmSaveView">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="batchResultVisible" title="批量复核结果" width="640px" data-test="annotation-batch-result-dialog">
+      <el-alert
+        :title="batchResultSummary"
+        :type="batchResultFailed ? 'warning' : 'success'"
+        show-icon
+        :closable="false"
+        class="mb-12"
+        data-test="annotation-batch-result-summary"
+      />
+      <el-table :data="batchResultRows" size="small" border max-height="360" data-test="annotation-batch-result-table">
+        <el-table-column prop="annotationId" label="标注 ID" min-width="200" show-overflow-tooltip />
+        <el-table-column label="结果" width="82">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.ok ? 'success' : 'danger'">{{ row.resultLabel }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="detail" label="详情" min-width="240" show-overflow-tooltip />
+        <template #empty>
+          <el-empty description="上游未返回逐条结果" :image-size="50" />
+        </template>
+      </el-table>
+      <template #footer>
+        <el-button type="primary" data-test="annotation-batch-result-close" @click="batchResultVisible = false">
+          关闭
+        </el-button>
+      </template>
+    </el-dialog>
   </PageContainer>
 </template>
 
@@ -536,6 +570,7 @@ import {
 } from '@/core/api/dps'
 import { describeDpsError } from '@/core/api/error'
 import { useDpsListView } from '../composables/useDpsListView'
+import { batchReviewSummary, toBatchReviewRows, type BatchReviewRow } from '../annotation/batchReview'
 
 type WorkbenchView = 'entry' | 'review'
 
@@ -1114,6 +1149,11 @@ function onSelectionChange(selected: DpsAnnotationRow[]) {
   setSelection(selected.map((row) => row.id))
 }
 
+/** 批量复核仅对 pending 生效（上游状态机同口径）；非待审核行不可勾选 */
+function isRowSelectable(row: DpsAnnotationRow): boolean {
+  return row.review_status === 'pending'
+}
+
 function clearQueueSelection() {
   queueTableRef.value?.clearSelection()
   clearSelection()
@@ -1179,6 +1219,10 @@ const reviewing = ref(false)
 const rejectComment = ref('')
 const reasonTemplates = ['材料不足', '字段与事实不符', '证据缺失']
 const batchLoading = ref(false)
+const batchResultVisible = ref(false)
+const batchResultRows = ref<BatchReviewRow[]>([])
+const batchResultSummary = ref('')
+const batchResultFailed = ref(false)
 
 const reviewPortrait = ref<DpsPortrait | null>(null)
 const reviewMapping = ref<DpsAnnotationFieldMapping | null>(null)
@@ -1417,7 +1461,12 @@ async function runBatch(ids: string[], status: 'approved' | 'rejected', comment?
         comment,
       })),
     )
-    if (result.failed > 0) {
+    // AC-AN-7／AC-RV-3：逐条呈现上游结果，失败条目不阻断其余条目
+    batchResultRows.value = toBatchReviewRows(result, status)
+    batchResultSummary.value = batchReviewSummary(result)
+    batchResultFailed.value = Number(result.failed || 0) > 0
+    batchResultVisible.value = true
+    if (batchResultFailed.value) {
       ElMessage.warning(`批量复核完成：成功 ${result.succeeded} / 失败 ${result.failed}`)
     } else {
       ElMessage.success(`批量复核成功 ${result.succeeded} 条`)

@@ -3,12 +3,12 @@
 | 项 | 内容 |
 |---|---|
 | **文档类型** | UI/前端设计（页面功能重新设计） |
-| **版本** | v2.5.0 |
-| **状态** | [Implemented] Phase 3 已落地＋UI 收口＋A4 标注详情接入（2026-11-20） |
+| **版本** | v2.6.0 |
+| **状态** | [Implemented] Phase 3 已落地＋UI 收口＋A4 标注详情接入＋A3 批量审核结果闭环（2026-11-21） |
 | **适用范围** | `openbase-ui/src/modules/portrait/**`（画像模块，含 DPS 模板化 16 条路由） |
 | **上游依据** | 《批次 5：统一前端四子系统全生命周期补齐（规格）》v1.2.0；`modules/portrait/index.ts`；`core/api/dps.ts`；既有 `doc/design/prototype/p01~p12` |
 | **作者** | 产品 / 前端架构组（Solo 角色：RA + FA + UI） |
-| **日期** | 2026-11-20 |
+| **日期** | 2026-11-21 |
 
 ## 修订历史
 
@@ -21,6 +21,7 @@
 | v2.3.0 | 2026-11-20 | Phase 3 前端实现落地：标签体系树/详情/血缘入口、血缘链路（模板→字段→标签→评分项→画像）、口径体检「去修复」与过滤、评分类型搜索与说明；画像列表列设置/导出/批量、高级检索条件行与高亮、360 标签血缘抽屉/标注时间线/字段化编辑、措施建议主体选择器与分组导出；补录实施记录与验证证据。详见 §14.7 | 前端工程师（FD） |
 | v2.4.0 | 2026-11-20 | 后端缺口回填与前端收口：A6/A9/A10/A11/A12/A14 由 DPS v2.14.0＋OpenBase v1.5.0 交付；收口工作台主体检索（A6 服务端）、清理过时降级文案；画像详情时间线按设计 AC-PT-4 保持标注队列口径，A10 审计时间线用于单条审核留痕 | 前端工程师（FD） |
 | v2.5.0 | 2026-11-20 | A4 标注详情由 DPS v2.15.0＋OpenBase v1.6.0 交付：`GET /annotations/{id}` 一次返回证据/字段/审核进度/审核人意见；审核收件箱接入详情并保留 404 回退 | 前端工程师（FD） |
+| v2.6.0 | 2026-11-21 | A3 批量审核由 OpenBase 前端 v1.7.0 闭环：仅待审核可勾选、统一意见、逐条结果弹窗（末级/非末级差异化文案、失败原因与状态码、失败不阻断） | 前端工程师（FD） |
 
 ---
 
@@ -335,7 +336,7 @@
 |---|---|---|---|---|
 | A1 | 队列统计（按模板/状态/级数/审核人） | 无聚合接口 | `GET /portrait/annotations/stats?group_by=...` | 建议新增 |
 | A2 | 审核人视角/领取 | 无 | `GET /annotations?reviewer=me&level=`；`POST /annotations/{id}/claim` | 建议新增 |
-| A3 | 批量审核 | `batchReviewAnnotations` 已封装（AI 页使用） | 标注工作台复用；确认支持统一 comment | 复用 |
+| A3 | 批量审核 | 工作台勾选/批量通过驳回＋逐条结果弹窗 | 复用 `batchReviewAnnotations`；统一 comment；失败不阻断 | 已交付（v1.7.0 前端） |
 | A4 | 标注详情 | 队列仅摘要 | `GET /portrait/annotations/{id}`（含证据、字段、画像快照） | 已交付（v2.15.0 / v1.6.0） |
 | A5 | 草稿暂存 | 无 | `POST /annotations` 支持 `status=draft` 或本地暂存 | 建议新增 |
 | A6 | 主体检索 | `listPortraits` 仅分页 | `GET /portraits?keyword=&external_id=` 服务端检索 | 必须新增（可先前端降级） |
@@ -495,11 +496,13 @@
 |---|---|---|
 | P0 | A4 标注详情 `GET /portrait/annotations/{id}` | 下一版必须 |
 | P0 | A6 主体检索 `GET /portraits?keyword=&external_id=` | 下一版必须；Phase 1 允许前端降级 |
-| P0 | A3 批量审核复用 `batchReviewAnnotations` | 确认统一 comment 语义即可 |
+| P0 | A3 批量审核复用 `batchReviewAnnotations` | 已交付（v1.7.0 前端）：仅 pending 可勾选、统一意见、逐条结果 |
 | P1 | A14 AI 候选持久化；A1 队列统计；A2 领取/审核人视角 | 条件触发，随迭代补 |
 | P2 | A5/A7/A8/A9/A10/A11/A12/A13 | 体验优化类 |
 
 > **2026-11-20 回填**：A6（主体检索）、A9（标签检索/分页）、A10（实体审计时间线）、A11（标注/画像 CSV 导出）、A12（口径 issue 修复建议与 `fix_target`）、A14（AI 候选持久化）已由 DPS v2.14.0＋OpenBase v1.5.0 交付并闭环；**A4（标注详情）已由 DPS v2.15.0＋OpenBase v1.6.0 交付并接入审核收件箱**；A1/A2/A3/A5/A7/A8/A13 仍未排期。
+>
+> **2026-11-21 回填**：**A3（批量审核）已由 OpenBase 前端 v1.7.0 闭环**（复用 `batchReviewAnnotations`，仅待审核可勾选、统一驳回意见、逐条结果弹窗、失败不阻断）；A1/A2/A5/A7/A8/A13 仍未排期。
 
 ### 14.4 实施授权
 
@@ -613,3 +616,30 @@
 - `node node_modules/eslint/bin/eslint.js`（5 个模型/工具模块 + 8 个页面 + 2 个测试文件）：0 错误 0 告警。
 - `vitest run tests/dps-phase3-helpers.spec.ts`：15 passed。
 - 路由：未新增/删除任何 route record；`?tag=` 为新增查询参数，`?tag_code=` 旧深链继续可用；`/portrait/search`、`/portrait/list`、`/portrait/:id` 路径不变。
+
+### 14.8 A3 批量审核实施记录（v2.6.0）
+
+**实施范围与落地情况**
+
+| 交付项 | 落地位置 | 说明 |
+|---|---|---|
+| 选择约束 | `openbase-ui/src/modules/portrait/pages/DpsAnnotationWorkbenchView.vue` | 选择列 `:selectable="isRowSelectable"`，仅 `review_status=pending` 可勾选；`reserve-selection` 跨页保持 |
+| 统一意见 | 同上 `batchReject` | 驳回弹窗必填统一原因，逐条写入 `comment`；通过为二次确认 |
+| 逐条结果 | 同上 `runBatch` ＋ `annotation-batch-result-dialog` | 汇总 alert ＋ 逐条表格（结果标签/详情），失败不阻断；队列随后刷新 |
+| 结果映射 | `openbase-ui/src/modules/portrait/annotation/batchReview.ts` | 末级/非末级/驳回/失败/缺 ID/空 `items` 全部纯函数化 |
+| 类型补全 | `openbase-ui/src/core/api/dps.ts` | `DpsBatchReviewItemResult.review` 与索引签名 |
+| 单元测试 | `openbase-ui/tests/dps-batch-review-v170.spec.ts` | 6 条用例覆盖全部映射分支 |
+
+**验收对照**
+
+| 验收 | 实现位置 |
+|---|---|
+| AC-AN-7 批量结果逐条反馈 | 结果弹窗逐条表格＋汇总 |
+| AC-RV-3 非末级提示待第 k+1 级 | `toBatchReviewRow` 依据 `review.finalized/level/required` 输出 |
+| 风险「误批量通过」 | 非 pending 行不可勾选，后端状态机最终裁决 |
+
+**验证证据**
+
+- `vitest run tests/dps-batch-review-v170.spec.ts tests/api-dps-v1410.spec.ts tests/dps-backend-v160.spec.ts`：29 passed。
+- `npm run build`（`vue-tsc --noEmit`＋`vite build`）：成功。
+- `pytest tests/test_dps_proxy.py`：44 passed（后端未改，仅代理回归）。
