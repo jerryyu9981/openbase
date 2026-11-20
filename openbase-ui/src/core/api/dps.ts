@@ -188,6 +188,23 @@ export interface DpsAnnotationRow {
   [key: string]: unknown
 }
 
+/** A4：标注详情条目（`GET /portrait/annotations/{id}`；审核对照一次取全） */
+export interface DpsAnnotationDetailAnnotation extends DpsAnnotationRow {
+  profile_id?: string
+  reviewer_id?: string | null
+  review_comment?: string | null
+  evidence_source?: string | null
+  updated_at?: string
+  /** 是否存在结构化字段（存量库无 payload 列为 false） */
+  structured?: boolean
+  evidence_source_persisted?: boolean
+  review_progress_persisted?: boolean
+}
+
+export interface DpsAnnotationDetail {
+  annotation: DpsAnnotationDetailAnnotation
+}
+
 export interface DpsAnnotationQuery {
   annotation_template?: string
   review_status?: string
@@ -1576,6 +1593,19 @@ export const dpsApi = {
   async getAnnotationReviewLog(annotationId: string): Promise<DpsAnnotationReviewLog> {
     const { data } = await http.get<ApiSuccess<DpsAnnotationReviewLog>>(
       `/dps-proxy/annotations/${encodeURIComponent(annotationId)}/review-log`,
+    )
+    return data.data
+  },
+
+  /**
+   * 标注详情（A4；GET /dps-proxy/annotations/{id}）
+   *
+   * 审核对照一次取全：结构化字段、证据来源、模板/主体归属、审核状态与级数、
+   * 审核人/意见、时间戳。上游未升级（404）时调用方应回退队列摘要，不阻断审核。
+   */
+  async getAnnotationDetail(annotationId: string): Promise<DpsAnnotationDetail> {
+    const { data } = await http.get<ApiSuccess<DpsAnnotationDetail>>(
+      `/dps-proxy/annotations/${encodeURIComponent(annotationId)}`,
     )
     return data.data
   },

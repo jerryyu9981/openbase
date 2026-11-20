@@ -356,7 +356,14 @@
               </el-descriptions-item>
               <el-descriptions-item label="提交时间">{{ formatTime(currentTask.created_at) }}</el-descriptions-item>
               <el-descriptions-item label="证据来源" :span="2">
-                {{ currentTask.evidence_source || '-' }}
+                {{ reviewTask?.evidence_source || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item
+                v-if="reviewTask?.reviewer_id || reviewTask?.review_comment"
+                label="审核结论"
+                :span="2"
+              >
+                审核人 {{ reviewTask?.reviewer_id || '-' }} · {{ reviewTask?.review_comment || '-' }}
               </el-descriptions-item>
             </el-descriptions>
 
@@ -518,6 +525,7 @@ import {
   type DpsAnnotationField,
   type DpsAnnotationFieldMapping,
   type DpsAnnotationFieldMappingEntry,
+  type DpsAnnotationDetail,
   type DpsAnnotationReviewLogItem,
   type DpsAnnotationReviewProgress,
   type DpsAnnotationRow,
@@ -1174,6 +1182,8 @@ const batchLoading = ref(false)
 
 const reviewPortrait = ref<DpsPortrait | null>(null)
 const reviewMapping = ref<DpsAnnotationFieldMapping | null>(null)
+/** A4：详情接口结果；上游未升级（404）时保持 null 并回退队列摘要 */
+const reviewDetail = ref<DpsAnnotationDetail | null>(null)
 const reviewLogs = ref<DpsAnnotationReviewLogItem[]>([])
 const reviewLogLoading = ref(false)
 const exporting = ref(false)
@@ -1200,8 +1210,10 @@ async function exportAnnotations() {
   }
 }
 
+const reviewTask = computed(() => reviewDetail.value?.annotation || currentTask.value)
+
 const reviewFields = computed(() => {
-  const row = currentTask.value
+  const row = reviewTask.value
   if (!row?.fields) return []
   return Object.entries(row.fields).map(([key, value]) => {
     const entry = (reviewMapping.value?.fields || []).find((item) => item.key === key)
@@ -1243,13 +1255,19 @@ function portraitValue(key: string): string {
 async function loadReviewContext(row: DpsAnnotationRow) {
   reviewPortrait.value = null
   reviewMapping.value = null
+  reviewDetail.value = null
   reviewLogs.value = []
   reviewLogLoading.value = true
-  const [portrait, mapping, logs] = await Promise.allSettled([
+  const [detail, portrait, mapping, logs] = await Promise.allSettled([
+    dpsApi.getAnnotationDetail(row.id),
     row.person_id ? dpsApi.getPortrait(row.person_id) : Promise.reject(new Error('缺少主体')),
     row.annotation_template ? dpsApi.getAnnotationFieldMapping(row.annotation_template) : Promise.reject(new Error('缺少模板')),
     dpsApi.getAnnotationReviewLog(row.id),
   ])
+  // A4：详情成功时以服务端全量上下文为准；404（DPS 未升级）静默回退队列摘要
+  if (detail.status === 'fulfilled' && detail.value?.annotation) {
+    reviewDetail.value = detail.value
+  }
   if (portrait.status === 'fulfilled') reviewPortrait.value = portrait.value
   if (mapping.status === 'fulfilled') reviewMapping.value = mapping.value
   if (logs.status === 'fulfilled' && logs.value.items?.length) {

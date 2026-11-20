@@ -2007,6 +2007,28 @@ async def dps_annotations_list(
     )
 
 
+@router.get("/annotations/{annotation_id}")
+async def dps_annotation_detail(
+    annotation_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注详情（A4，GET；上游 ``/api/v2/portrait/annotations/{id}``）.
+
+    一次返回审核对照所需的全量上下文（结构化字段、证据来源、模板与主体归属、
+    审核状态/级数/审核人与意见、时间戳）。标注不存在或跨租户不可见 → 上游 404
+    语义保真；路径片段经 ``quote(safe="")`` 编码，避免特殊字符改写上游路由。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _portrait_upstream_path(f"/annotations/{quote(annotation_id, safe='')}"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 @router.post("/annotate")
 async def dps_annotate(
     payload: dict[str, Any],
