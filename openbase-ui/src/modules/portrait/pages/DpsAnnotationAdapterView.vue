@@ -82,9 +82,9 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { dpsApi, type DpsReviewSubmitRequest } from '@/core/api/dps'
+import { dpsApi, type DpsPersistedCandidate, type DpsReviewSubmitRequest } from '@/core/api/dps'
 import { describeDpsError, type DpsErrorPresentation } from '@/core/api/error'
 
 interface Candidate { id: string; review_status: string; source: string; adapter_id?: string }
@@ -112,21 +112,22 @@ async function generate() {
   error.value = null
   adapterUnavailable.value = false
   try {
-    const result = await dpsApi.generateAnnotationCandidates(adapterId.value, {
+    const result = await dpsApi.generatePersistedAnnotationCandidate({
+      adapter_id: adapterId.value,
       text: text.value,
       annotation_template: annotationTemplate.value,
     })
-    const annotation = result.annotation || {}
+    const candidate = result.candidate
     candidates.value = [
       {
-        id: String(annotation.id || `cand-${candidates.value.length + 1}`),
-        review_status: String(annotation.review_status || 'pending'),
-        source: String(result.source || 'ai_annotation'),
-        adapter_id: result.adapter_id,
+        id: String(candidate.upstream_annotation_id || candidate.id),
+        review_status: String(candidate.review_status || 'pending'),
+        source: 'ai_annotation',
+        adapter_id: candidate.adapter_id,
       },
       ...candidates.value,
     ]
-    ElMessage.success('候选已生成')
+    ElMessage.success('候选已生成并已持久化')
   } catch (caught) {
     const presentation = describeDpsError(caught)
     if (presentation.kind === 'forbidden') capabilityDisabled.value = true
@@ -136,6 +137,30 @@ async function generate() {
     generating.value = false
   }
 }
+
+/** 刷新/重进页面时恢复最近一批已持久化候选；DPS 未升级（404）时静默回退 */
+async function restoreLatestCandidates() {
+  try {
+    const result = await dpsApi.getLatestAnnotationCandidates({
+      adapter_id: adapterId.value,
+      annotation_template: annotationTemplate.value || undefined,
+    })
+    if (!result.items.length) return
+    candidates.value = result.items.map((item: DpsPersistedCandidate) => ({
+      id: item.upstream_annotation_id || item.id,
+      review_status: item.review_status || 'pending',
+      source: 'ai_annotation',
+      adapter_id: item.adapter_id,
+    }))
+    ElMessage.info(`已恢复 ${result.items.length} 条候选`)
+  } catch {
+    // 上游尚未提供持久化能力时保持原内存态，不打断页面
+  }
+}
+
+onMounted(() => {
+  void restoreLatestCandidates()
+})
 
 async function assist(candidateId: string) {
   assistingId.value = candidateId

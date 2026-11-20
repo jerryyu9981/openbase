@@ -218,7 +218,19 @@ async function handleQuery() {
   loading.value = true
   currentPage.value = 1
   try {
-    const result = await dpsApi.listPortraits({ page: 1, page_size: 100 })
+    const keyword = primaryKeyword.value
+    let result
+    try {
+      result = await dpsApi.listPortraits({
+        page: 1,
+        page_size: 100,
+        keyword: keyword || undefined,
+      })
+    } catch (caught) {
+      // DPS 未升级（404）→ 回退全量拉取 + 本地条件匹配
+      if ((caught as { response?: { status?: number } })?.response?.status !== 404) throw caught
+      result = await dpsApi.listPortraits({ page: 1, page_size: 100 })
+    }
     rows.value = result.items || []
     queried.value = true
     if (!rows.value.length) {

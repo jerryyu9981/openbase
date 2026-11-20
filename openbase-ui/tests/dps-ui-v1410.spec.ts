@@ -254,7 +254,8 @@ describe('DPS 页面关键状态呈现', () => {
   })
 
   it('P-08 AI 标注：403 未启用 → 信息态（非报错）且不发起写请求', async () => {
-    const generate = vi.spyOn(dpsApi, 'generateAnnotationCandidates').mockRejectedValue(apiError(403, { code: 'PERM_DISABLED' }))
+    const generate = vi.spyOn(dpsApi, 'generatePersistedAnnotationCandidate').mockRejectedValue(apiError(403, { code: 'PERM_DISABLED' }))
+    vi.spyOn(dpsApi, 'getLatestAnnotationCandidates').mockResolvedValue({ batch_id: null, items: [], total: 0 })
     const wrapper = await mountPage(DpsAnnotationAdapterView, '/dps/annotation-adapters')
     expect(wrapper.find('[data-test="adapter-disabled"]').exists()).toBe(false)
     await wrapper.find('[data-test="adapter-text"]').setValue('待标注文本')

@@ -19,7 +19,7 @@ from openbase.settings import Settings, get_settings
 
 settings = get_settings()
 
-__version__ = "1.4.12"
+__version__ = "1.5.0"
 
 __all__ = ["init_app", "settings", "Settings", "__version__"]
 

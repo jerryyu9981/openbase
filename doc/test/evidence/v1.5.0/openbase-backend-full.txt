@@ -1,0 +1,144 @@
+﻿........................................................................ [  3%]
+........................................................................ [  7%]
+........................................................................ [ 11%]
+........................................................................ [ 15%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 26%]
+........................................................................ [ 30%]
+........................................................................ [ 34%]
+........................................................................ [ 38%]
+........................................................................ [ 42%]
+........................................................................ [ 45%]
+........................................................................ [ 49%]
+........................................................................ [ 53%]
+........................................................................ [ 57%]
+........................................................................ [ 61%]
+........................................................................ [ 65%]
+..s..................................................................... [ 68%]
+........................................................................ [ 72%]
+........................................................................ [ 76%]
+........................................................................ [ 80%]
+...............................F........................................ [ 84%]
+........................................................................ [ 88%]
+................................................................F....... [ 91%]
+....................ssss................................................ [ 95%]
+........................................................................ [ 99%]
+.......                                                                  [100%]
+================================== FAILURES ===================================
+_____________ test_s6_t1_2_no_frontend_artifact_mount_in_backend ______________
+
+    def test_s6_t1_2_no_frontend_artifact_mount_in_backend() -> None:
+        """OpenBase 后端 0 命中 StaticFiles / mount( / dist-v（防漂移固化）."""
+        hits = _scan_backend_mount_tokens()
+>       assert not hits, f"OpenBase 后端出现挂载统一前端产物的痕迹: {hits}"
+E       AssertionError: OpenBase 后端出现挂载统一前端产物的痕迹: [('openbase/modules/dps_proxy/__init__.py', 'mount(')]
+E       assert not [('openbase/modules/dps_proxy/__init__.py', 'mount(')]
+
+tests\test_s6_t1_frontend_boundary.py:131: AssertionError
+_______________ test_no_python_source_has_utf8_bom_across_repos _______________
+
+    def test_no_python_source_has_utf8_bom_across_repos():
+        """契约主体：参与扫描的**全部仓**的 `.py` 源码均不得带 UTF-8 BOM"""
+        report = _load_scanner().scan()
+        assert report["scanned_files"] > 0, "未扫描到文件（仓路径推断有误）"
+>       assert report["violations"] == [], (
+            "以下 Python 源码带 UTF-8 BOM，违反跨仓源码编码契约:\n"
+            + "\n".join(
+                f"  {item['repo']}/{item['path']}" for item in report["violations"]
+            )
+        )
+E       AssertionError: 以下 Python 源码带 UTF-8 BOM，违反跨仓源码编码契约:
+E           OpenMemory/scripts\graph_projection_worker.py
+E       assert [{'repo': 'Op...orbidden_py'}] == []
+E         
+E         Left contains one more item: {'repo': 'OpenMemory', 'path': 'scripts\\graph_projection_worker.py', 'kind': 'bom_forbidden_py'}
+E         
+E         Full diff: (-: missing in left side, +: extra in left side)
+E         - []
+E         + [
+E         +     {
+E         +         'repo': 'OpenMemory',
+E         +         'path': 'scripts\\graph_projection_worker.py',
+E         +         'kind': 'bom_forbidden_py',
+E         +     },
+E         + ]
+
+tests\test_source_encoding_contract.py:42: AssertionError
+============================== warnings summary ===============================
+..\..\..\..\Python\Lib\site-packages\fastapi\testclient.py:1
+  D:\Python\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+openbase\demo_app.py:137
+  D:\Trae CN\myproject\Dev\OpenBase\openbase\demo_app.py:137: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+..\..\..\..\Python\Lib\site-packages\fastapi\applications.py:5039
+..\..\..\..\Python\Lib\site-packages\fastapi\applications.py:5039
+..\..\..\..\Python\Lib\site-packages\fastapi\applications.py:5039
+..\..\..\..\Python\Lib\site-packages\fastapi\applications.py:5039
+  D:\Python\Lib\site-packages\fastapi\applications.py:5039: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+openbase\demo_app.py:151
+  D:\Trae CN\myproject\Dev\OpenBase\openbase\demo_app.py:151: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+openbase\demo_app.py:163
+  D:\Trae CN\myproject\Dev\OpenBase\openbase\demo_app.py:163: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+openbase\demo_app.py:172
+  D:\Trae CN\myproject\Dev\OpenBase\openbase\demo_app.py:172: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_app.py::test_proxy_modules_mount_their_routers
+  D:\Python\Lib\site-packages\fastapi\openapi\utils.py:295: UserWarning: Duplicate Operation ID proxy_api_v1_proxy__system___path__put for function proxy at D:\Trae CN\myproject\Dev\OpenBase\openbase\modules\proxy\__init__.py
+    warnings.warn(message, stacklevel=1)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_s6_t1_frontend_boundary.py::test_s6_t1_2_no_frontend_artifact_mount_in_backend - AssertionError: OpenBase 后端出现挂载统一前端产物的痕迹: [('openbase/modules/dps_proxy/__init__.py', 'mount(')]
+assert not [('openbase/modules/dps_proxy/__init__.py', 'mount(')]
+FAILED tests/test_source_encoding_contract.py::test_no_python_source_has_utf8_bom_across_repos - AssertionError: 以下 Python 源码带 UTF-8 BOM，违反跨仓源码编码契约:
+    OpenMemory/scripts\graph_projection_worker.py
+assert [{'repo': 'Op...orbidden_py'}] == []
+  
+  Left contains one more item: {'repo': 'OpenMemory', 'path': 'scripts\\graph_projection_worker.py', 'kind': 'bom_forbidden_py'}
+  
+  Full diff: (-: missing in left side, +: extra in left side)
+  - []
+  + [
+  +     {
+  +         'repo': 'OpenMemory',
+  +         'path': 'scripts\\graph_projection_worker.py',
+  +         'kind': 'bom_forbidden_py',
+  +     },
+  + ]
+2 failed, 1872 passed, 5 skipped, 10 warnings in 785.92s (0:13:05)

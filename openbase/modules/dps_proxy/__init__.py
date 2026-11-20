@@ -34,13 +34,19 @@ import json
 import logging
 import time
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from openbase.core.deps.auth import get_current_user
 from openbase.core.errors import BaseError, ErrorCode
+from openbase.modules.dps_proxy.candidate_store import (
+    latest_batch,
+    list_by_batch,
+    save_candidate,
+)
 from openbase.modules.protocol_headers import (
     TARGET_SYSTEM_DPS,
     build_outbound_headers,
@@ -349,15 +355,49 @@ async def dps_portraits_list(
     request: Request,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    keyword: str | None = Query(None),
+    external_id: str | None = Query(None),
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
-    """画像列表（GET /api/v2/portrait/list?page=&page_size=）."""
+    """画像列表（GET /api/v2/portrait/list；v1.5.0 A6 透传 keyword/external_id）."""
     headers = _build_identity_headers(_user, request)
+    params: dict[str, Any] = {"page": page, "page_size": page_size}
+    if keyword:
+        params["keyword"] = keyword
+    if external_id:
+        params["external_id"] = external_id
     return await _forward(
         "GET", "/api/v2/portrait/list",
-        params={"page": page, "page_size": page_size},
+        params=params,
         headers=headers,
         request=request,
+    )
+
+
+@router.get("/portraits/export")
+async def dps_portraits_export(
+    request: Request,
+    keyword: str | None = Query(None),
+    external_id: str | None = Query(None),
+    _user: dict = Depends(get_current_user),
+) -> StreamingResponse:
+    """画像 CSV 导出（v1.5.0 A11；本仓生成，最多 10000 行）.
+
+    注册顺序必须早于 ``/portraits/{person_id}``，否则会被动态段捕获。
+    """
+    headers = _build_identity_headers(_user, request)
+    params: dict[str, Any] = {}
+    if keyword:
+        params["keyword"] = keyword
+    if external_id:
+        params["external_id"] = external_id
+    return await _export_response(
+        "/api/v2/portrait/list",
+        params,
+        headers,
+        _PORTRAIT_COLUMNS,
+        _portrait_value,
+        "portraits",
     )
 
 
@@ -595,6 +635,27 @@ async def dps_portrait_delete(
 # ---------------------------------------------------------------------------
 
 
+@router.get("/tags")
+async def dps_tags_search(
+    request: Request,
+    keyword: str | None = Query(None),
+    category_id: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标签检索（GET /api/v2/tags；v1.5.0 A9）."""
+    headers = _build_identity_headers(_user, request)
+    params: dict[str, Any] = {"page": page, "page_size": page_size}
+    if keyword:
+        params["keyword"] = keyword
+    if category_id:
+        params["category_id"] = category_id
+    return await _forward(
+        "GET", "/api/v2/tags", params=params, headers=headers, request=request
+    )
+
+
 @router.get("/tags/categories")
 async def dps_tags_categories(
     request: Request,
@@ -688,9 +749,343 @@ async def dps_audit_logs(
     request: Request,
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
-    """审计日志（GET /api/v2/audit/logs）."""
+    """审计日志（GET /api/v2/audit/logs；查询参数含 resource_id 原样透传）."""
     headers = _build_identity_headers(_user, request)
-    return await _forward("GET", "/api/v2/audit/logs", headers=headers, request=request)
+    return await _forward(
+        "GET", "/api/v2/audit/logs",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/audit")
+async def dps_audit_timeline(
+    request: Request,
+    entity_type: str = Query(...),
+    entity_id: str = Query(...),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    order: str = Query("desc"),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """实体审计时间线（GET /api/v2/audit；v1.5.0 A10）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", "/api/v2/audit",
+        params={
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "page": page,
+            "page_size": page_size,
+            "order": order,
+        },
+        headers=headers,
+        request=request,
+    )
+
+
+# ---------------------------------------------------------------------------
+# CSV 导出（v1.5.0 A11）与 AI 候选持久化（A14）
+# ---------------------------------------------------------------------------
+
+_CSV_MAX_ROWS = 10000
+_CSV_PAGE_SIZE = 100
+_ANNOTATION_COLUMNS = (
+    "annotation_id",
+    "person_id",
+    "profile_id",
+    "annotation_template",
+    "review_status",
+    "review_level",
+    "review_levels_required",
+    "created_at",
+    "updated_at",
+    "fields_json",
+)
+_PORTRAIT_COLUMNS = (
+    "person_id",
+    "name",
+    "status",
+    "person_type",
+    "region",
+    "external_id",
+    "created_at",
+    "updated_at",
+)
+
+
+def _csv_cell(value: Any) -> str:
+    """RFC4180 单元格：转义双引号；防 CSV 注入（= + - @ 与制表/回车前缀）."""
+    text = "" if value is None else str(value)
+    if text[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        text = "'" + text
+    return '"' + text.replace('"', '""') + '"'
+
+
+def _csv_line(values: list[Any]) -> str:
+    return ",".join(_csv_cell(value) for value in values) + "\r\n"
+
+
+async def _fetch_upstream_json(
+    path: str,
+    params: dict[str, Any],
+    headers: dict[str, str],
+) -> dict[str, Any]:
+    """拉取上游 JSON（错误映射 502；不返回半截数据）."""
+    await _maybe_probe_dps_health()
+    base_url, timeout = _upstream_config()
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(
+                f"{base_url.rstrip('/')}{path}", params=params, headers=headers
+            )
+    except httpx.HTTPError as exc:
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR, f"DPS upstream unreachable: {exc}"
+        ) from exc
+    if response.status_code >= 400:
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR,
+            f"DPS upstream returned {response.status_code}",
+        )
+    try:
+        body = response.json()
+    except ValueError as exc:
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR, "DPS upstream returned non-JSON"
+        ) from exc
+    if isinstance(body, dict) and body.get("code") not in (None, 0, 200):
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR,
+            str(body.get("message") or body.get("detail") or "DPS upstream error"),
+        )
+    return body if isinstance(body, dict) else {"code": 200, "data": body}
+
+
+def _annotation_value(item: dict[str, Any], column: str) -> Any:
+    if column == "annotation_id":
+        return item.get("annotation_id") or item.get("id") or ""
+    if column == "review_levels_required":
+        return item.get("review_levels_required") or item.get("required_levels") or ""
+    if column == "fields_json":
+        fields = item.get("fields")
+        if fields is None:
+            fields = item.get("fields_json") or {}
+        if isinstance(fields, (dict, list)):
+            return json.dumps(fields, ensure_ascii=False)
+        return fields
+    return item.get(column) or ""
+
+
+def _portrait_value(item: dict[str, Any], column: str) -> Any:
+    return item.get(column) or ""
+
+
+async def _stream_export(
+    path: str,
+    params: dict[str, Any],
+    headers: dict[str, str],
+    columns: tuple[str, ...],
+    mapper: Any,
+):
+    """逐页拉取并流式输出 CSV（UTF-8 BOM；最多 _CSV_MAX_ROWS 行）."""
+    yield "\ufeff" + _csv_line(list(columns))
+    fetched = 0
+    page = 1
+    while fetched < _CSV_MAX_ROWS:
+        body = await _fetch_upstream_json(
+            path,
+            {**params, "page": page, "page_size": _CSV_PAGE_SIZE},
+            headers,
+        )
+        data = body.get("data") or {}
+        items = data.get("items") or []
+        if not items:
+            break
+        for item in items:
+            if fetched >= _CSV_MAX_ROWS:
+                return
+            yield _csv_line([mapper(item, column) for column in columns])
+            fetched += 1
+        total = int(data.get("total") or 0)
+        if page * _CSV_PAGE_SIZE >= total:
+            break
+        page += 1
+
+
+async def _export_response(
+    path: str,
+    params: dict[str, Any],
+    headers: dict[str, str],
+    columns: tuple[str, ...],
+    mapper: Any,
+    filename_prefix: str,
+) -> StreamingResponse:
+    preflight = await _fetch_upstream_json(
+        path, {**params, "page": 1, "page_size": 1}, headers
+    )
+    total = int((preflight.get("data") or {}).get("total") or 0)
+    truncated = total > _CSV_MAX_ROWS
+    filename = f"{filename_prefix}-{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
+    logger.info(
+        "dps export started",
+        extra={
+            "path": path,
+            "total": total,
+            "truncated": truncated,
+            "max_rows": _CSV_MAX_ROWS,
+        },
+    )
+    return StreamingResponse(
+        _stream_export(path, params, headers, columns, mapper),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Export-Truncated": "true" if truncated else "false",
+        },
+    )
+
+
+@router.get("/annotations/export")
+async def dps_annotations_export(
+    request: Request,
+    annotation_template: str | None = Query(None),
+    review_status: str | None = Query(None),
+    person_id: str | None = Query(None),
+    _user: dict = Depends(get_current_user),
+) -> StreamingResponse:
+    """标注 CSV 导出（v1.5.0 A11；本仓生成，最多 10000 行）."""
+    headers = _build_identity_headers(_user, request)
+    params: dict[str, Any] = {}
+    if annotation_template:
+        params["annotation_template"] = annotation_template
+    if review_status:
+        params["review_status"] = review_status
+    if person_id:
+        params["person_id"] = person_id
+    return await _export_response(
+        "/api/v2/portrait/annotations",
+        params,
+        headers,
+        _ANNOTATION_COLUMNS,
+        _annotation_value,
+        "annotations",
+    )
+
+
+@router.post("/annotation-candidates")
+async def dps_annotation_candidates_generate(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """生成 AI 候选并落库（v1.5.0 A14；DPS 仍强制 pending）."""
+    adapter_id = str(payload.get("adapter_id") or "").strip()
+    text = payload.get("text")
+    if not adapter_id or not isinstance(text, str) or not text.strip():
+        raise BaseError(
+            ErrorCode.PARAM_VALIDATION_ERROR, "adapter_id 与 text 为必填"
+        )
+    headers = _build_identity_headers(_user, request)
+    base_url, timeout = _upstream_config()
+    safe_adapter_id = quote(adapter_id, safe="")
+    target = f"{base_url.rstrip('/')}/api/v2/portrait/annotation-adapters/{safe_adapter_id}/generate"
+    body: dict[str, Any] = {"text": text, "annotation_template": payload.get("annotation_template") or ""}
+    if payload.get("person_id"):
+        body["person_id"] = payload["person_id"]
+    if payload.get("profile_id"):
+        body["profile_id"] = payload["profile_id"]
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(target, json=body, headers=headers)
+    except httpx.HTTPError as exc:
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR, f"DPS upstream unreachable: {exc}"
+        ) from exc
+    if response.status_code >= 400:
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR,
+            f"DPS upstream returned {response.status_code}",
+        )
+    try:
+        envelope = response.json()
+    except ValueError as exc:
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR, "DPS upstream returned non-JSON"
+        ) from exc
+    data = (envelope or {}).get("data") or {}
+    annotation = data.get("annotation") or data.get("candidate") or {}
+    upstream_id = str(
+        annotation.get("id")
+        or annotation.get("annotation_id")
+        or data.get("annotation_id")
+        or ""
+    )
+    if not upstream_id:
+        raise BaseError(
+            ErrorCode.SYS_UPSTREAM_ERROR, "DPS 未返回候选 annotation_id，无法持久化"
+        )
+    fields = annotation.get("fields") or data.get("fields") or {}
+    saved = await save_candidate(
+        tenant_id=headers.get("X-Tenant-ID") or "",
+        operator=headers.get("X-User-ID") or "",
+        adapter_id=adapter_id,
+        annotation_template=str(body.get("annotation_template") or ""),
+        upstream_annotation_id=upstream_id,
+        review_status=str(annotation.get("review_status") or "pending"),
+        fields=fields if isinstance(fields, dict) else {"value": fields},
+        person_id=payload.get("person_id"),
+        profile_id=payload.get("profile_id"),
+        batch_id=payload.get("batch_id"),
+    )
+    return JSONResponse(
+        status_code=200,
+        content={"code": 200, "message": "success", "data": {"batch_id": saved["batch_id"], "candidate": saved}},
+    )
+
+
+@router.get("/annotation-candidates")
+async def dps_annotation_candidates_list(
+    request: Request,
+    batch_id: str = Query(...),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """按批次查询已持久化候选（v1.5.0 A14；租户隔离）."""
+    headers = _build_identity_headers(_user, request)
+    items = await list_by_batch(headers.get("X-Tenant-ID") or "", batch_id)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "code": 200,
+            "message": "success",
+            "data": {"batch_id": batch_id, "items": items, "total": len(items)},
+        },
+    )
+
+
+@router.get("/annotation-candidates/latest")
+async def dps_annotation_candidates_latest(
+    request: Request,
+    adapter_id: str | None = Query(None),
+    annotation_template: str | None = Query(None),
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """最近候选批次（v1.5.0 A14；无数据返回空集合 200）."""
+    headers = _build_identity_headers(_user, request)
+    batch_id, items = await latest_batch(
+        headers.get("X-Tenant-ID") or "",
+        adapter_id=adapter_id,
+        annotation_template=annotation_template,
+    )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "code": 200,
+            "message": "success",
+            "data": {"batch_id": batch_id, "items": items, "total": len(items)},
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

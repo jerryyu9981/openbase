@@ -1,0 +1,242 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.8 [39m[90mD:/Trae CN/myproject/Dev/OpenBase/openbase-ui[39m
+
+ [32m✓[39m tests/dps-phase3-helpers.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[90m 254[2mms[22m[39m
+ [32m✓[39m tests/api-dps-v1410.spec.ts [2m([22m[2m22 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+node : [90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始
+化但未装载时，深链 /portrait/list 仍命中 portrait 模块
+所在位置 行:15 字符: 1649
++ ... M = 'dumb'; node node_modules/vitest/vitest.mjs run tests/dps-backend ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...仍命中 portrait 模块:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /memory/sessions 仍命中 memory 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/memory/sessions"
+[Vue Router warn]: No match found for location with path "/memory/sessions"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /knowledge/chat 仍命中 knowledge 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/chat"
+[Vue Router warn]: No match found for location with path "/knowledge/chat"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /openllm/conversations 仍命中 openllm 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m模块子页时顶层导航高亮回退
+到 route_prefix
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m三层菜单：顶层 + 权限过
+滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪）
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-4: 装载幂等与告警清零 / 空态兜底[2m > [22m[2mModuleLayout 在 navIt
+ems 存在时渲染二级导航分组
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+ [32m✓[39m tests/router-nav.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 6586[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22mregistry 已初始化但未装载时，深链 /portrait/list 仍命中 portrait 模块 [33m2254[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22mregistry 已初始化但未装载时，深链 /memory/sessions 仍命中 memory 模块 [33m381[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22mregistry 已初始化但未装载时，深链 /knowledge/chat 仍命中 knowledge 模块 [33m639[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m禁用模块与无权模块不进注册表、路由不可达 [33m1078[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m模块子页时顶层导航高亮回退到 route_prefix [33m581[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m三层菜单：顶层 + 权限过滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪） [33m401[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m模块图标按 ModuleInfo.icon 映射，未命中回退 ChatDotRound [33m312[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-5: 旧登录入口 /login 兼容（v7.8.0）[2m > [22m首帧解析命中 /login，重定向到 /auth/login 且无 No match 告警 [33m323[2mms[22m[39m
+[90mstderr[2m | tests/isolation-presentation.spec.ts[2m > [22m[2mS6-T3-1: 画像关键页跨域呈现[2m > [22m[2m画像详情 404 / 403 
+/ 5xx 三分支呈现
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+Error: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+[90mstderr[2m | tests/isolation-presentation.spec.ts[2m > [22m[2mS6-T3-2: 记忆关键页跨域呈现[2m > [22m[2m200 且空数据 → 空态（隔
+离生效）
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+ [32m✓[39m tests/isolation-presentation.spec.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 4484[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m200 且空数据 → 空态（他域不可见，非错误态） [33m466[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m画像详情 404 / 403 / 5xx 三分支呈现 [33m1105[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m200 且空数据 → 空态（隔离生效） [33m393[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m403 → 页面级 403；5xx → 错误条 + 重试 [33m527[2mms[22m[39m
+ [32m✓[39m tests/dps-ui-v1410.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 2764[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-01 模板族列表：真实 API 渲染 + 空态 [33m2107[2mms[22m[39m
+ [32m✓[39m tests/portrait-lifecycle.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 1538[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：画像计算与外部 ID 查询[2m > [22m异步计算返回 task_id 时轮询至完成并刷新列表（AC-POR-1/2） [33m494[2mms[22m[39m
+ [32m✓[39m tests/nav-consistency.spec.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m tests/dps-backend-v150.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+[90mstderr[2m | tests/portrait-list-error.spec.ts[2m > [22m[2mISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m[2m列表接口失败时展示
+错误条与错误引导空态，不再误显示"暂无画像数据"
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作"  ... > 
+  at <PageContainer title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/portrait-list-error.spec.ts[2m > [22m[2mISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m[2m点击「点击重试」恢
+复成功后错误条消失并渲染数据
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作"  ... > 
+  at <PageContainer title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/portrait-list-error.spec.ts[2m > [22m[2mISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m[2mKPI 与上游健康
+度独立降级/展示，不因列表失败而静默空白
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作"  ... > 
+  at <PageContainer title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/portrait-list-error.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1276[2mms[22m[39m
+   [33m[2m✓[22m[39m ISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m列表接口失败时展示错误条与错误引导空态，不再误显示"暂无画像数据" [33m532[2mms[22m[39m
+   [33m[2m✓[22m[39m ISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m点击「点击重试」恢复成功后错误条消失并渲染数据 [33m411[2mms[22m[39m
+   [33m[2m✓[22m[39m ISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22mKPI 与上游健康度独立降级/展示，不因列表失败而静默空白 [33m332[2mms[22m[39m
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m点击新增模型提示写操作待完善
+（M2，对话框不弹出）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m列表加载真实 API 数据（
+非 mock）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m名称为空不触发新增（写操作禁
+用路径）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-007: 对话导出 JSON[2m > [22m[2m点击导出触发下载并提示成功
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="对话管理" description="会话记录与消息明细"  ... > 
+  at <PageContainer title="对话管理" description="会话记录与消息明细" test-id="conversations-page" > 
+  at <Conversations ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/module-pages.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1428[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m点击新增模型提示写操作待完善（M2，对话框不弹出） [33m581[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-007: 对话导出 JSON[2m > [22m点击导出触发下载并提示成功 [33m381[2mms[22m[39m
+[90mstderr[2m | tests/module-pages.spec.ts
+[22m[39mError: Not implemented: navigation (except hash changes)
+    at module.exports (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\browser\not-implement
+ed.js:9:17)
+    at navigateFetch (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navigati
+on.js:77:3)
+    at exports.navigate (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navig
+ation.js:55:3)
+    at Timeout._onTimeout (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\nodes\HTML
+HyperlinkElementUtils-impl.js:81:7)
+    at listOnTimeout (node:internal/timers:605:17)
+    at processTimers (node:internal/timers:541:7) [90mundefined[39m
+
+[90mstderr[2m | VirtualConsole.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdo
+m\virtual-console.js:29:45)
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+Error: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+
+[2m Test Files [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m      Tests [22m [1m[32m131 passed[39m[22m[90m (131)[39m
+[2m   Start at [22m 20:54:01
+[2m   Duration [22m 240.63s[2m (transform 29.71s, setup 0ms, collect 572.38s, tests 18.38s, environment 402.13s, prepare 45.40s)[22m
+

@@ -25,11 +25,12 @@
         clearable
         style="width: 260px"
         data-test="tag-search"
+        @keyup.enter="queryLabelsByKeyword"
       />
       <el-button data-test="tag-category-manage" @click="goCategoryManage">标签分类管理</el-button>
       <el-button type="primary" plain data-test="tag-lineage-nav" @click="openLineage()">标签血缘</el-button>
       <el-button :loading="loading" data-test="tag-refresh" @click="load">刷新</el-button>
-      <span class="muted sm">共 {{ categories.length }} 个分类 / {{ labels.length }} 个标签值（A9 服务端检索待后端）</span>
+      <span class="muted sm">共 {{ categories.length }} 个分类 / {{ labels.length }} 个标签值（A9 服务端检索）</span>
     </div>
 
     <div class="grid-2">
@@ -306,6 +307,40 @@ async function load() {
     ])
     categories.value = categoryResult.items || []
     labels.value = (labelResult.items || []).map((item) => normalizeTagLabel(item))
+  } catch (caught) {
+    error.value = describeDpsError(caught)
+  } finally {
+    loading.value = false
+  }
+}
+
+/** A9：关键字检索优先走服务端扁平标签检索；DPS 未升级（404）时回退全量 + 本地过滤 */
+async function queryLabelsByKeyword() {
+  const kw = keyword.value.trim()
+  if (!kw) {
+    await load()
+    return
+  }
+  loading.value = true
+  error.value = null
+  try {
+    try {
+      const result = await dpsApi.listTags({ keyword: kw, page: 1, page_size: 100 })
+      labels.value = result.items.map((item) =>
+        normalizeTagLabel({
+          name: item.value,
+          code: item.value_id,
+          color: item.color,
+          sort_order: item.order_num,
+          category: item.category_name,
+          category_id: item.category_id,
+        }),
+      )
+    } catch (caught) {
+      if ((caught as { response?: { status?: number } })?.response?.status !== 404) throw caught
+      const labelResult = await dpsApi.listLabels()
+      labels.value = (labelResult.items || []).map((item) => normalizeTagLabel(item))
+    }
   } catch (caught) {
     error.value = describeDpsError(caught)
   } finally {

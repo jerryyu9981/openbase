@@ -45,7 +45,7 @@
       </el-row>
 
       <div class="page-toolbar">
-        <el-input v-model="keyword" placeholder="搜索画像（姓名/ID 模糊）" clearable style="width: 240px" data-test="dps-search" />
+        <el-input v-model="keyword" placeholder="搜索画像（姓名/ID 模糊）" clearable style="width: 240px" data-test="dps-search" @keyup.enter="loadData" />
         <el-button type="primary" data-test="dps-create" @click="$router.push('/portrait/search')">高级检索</el-button>
         <el-button data-test="portrait-calculate-open" @click="openCalculate">计算画像</el-button>
         <el-button data-test="portrait-external-open" @click="openExternal">按外部 ID 查询</el-button>
@@ -310,14 +310,29 @@ function downloadText(content: string, filename: string, mime: string) {
   URL.revokeObjectURL(url)
 }
 
-function exportCsv() {
+async function exportCsv() {
+  try {
+    const result = await dpsApi.exportPortraitsCsv({ keyword: keyword.value || undefined })
+    const url = URL.createObjectURL(result.blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = result.filename
+    anchor.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success(
+      `已导出画像 CSV${result.truncated ? '（超过 10000 行，已截断）' : ''}`,
+    )
+    return
+  } catch {
+    // 服务端导出不可用（DPS 未升级/网络异常）→ 回退既有本地导出
+  }
   if (!filtered.value.length) {
     ElMessage.warning('当前没有可导出的画像')
     return
   }
   const stamp = new Date().toISOString().slice(0, 10)
   downloadText(`\ufeff${buildPortraitCsv(filtered.value)}`, `portraits-${stamp}.csv`, 'text/csv;charset=utf-8')
-  ElMessage.success(`已导出 ${filtered.value.length} 条画像（A11 前端导出）`)
+  ElMessage.warning(`服务端导出不可用，已回退本地导出 ${filtered.value.length} 条画像`)
 }
 
 async function loadHealth() {
@@ -519,7 +534,11 @@ async function loadData() {
   loading.value = true
   presentation.value = null
   try {
-    const result = await dpsApi.listPortraits({ page: page.value, page_size: pageSize })
+    const result = await dpsApi.listPortraits({
+      page: page.value,
+      page_size: pageSize,
+      keyword: keyword.value.trim() || undefined,
+    })
     portraits.value = result.items || []
     total.value = result.total ?? 0
   } catch (err) {

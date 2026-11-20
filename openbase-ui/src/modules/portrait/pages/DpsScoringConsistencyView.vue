@@ -96,7 +96,12 @@
       <el-table-column prop="portrait_template" label="画像模板" min-width="130" show-overflow-tooltip />
       <el-table-column prop="annotation_template" label="标注模板" min-width="130" show-overflow-tooltip />
       <el-table-column prop="tag_code" label="标签" min-width="150" show-overflow-tooltip />
-      <el-table-column prop="message" label="说明" min-width="240" show-overflow-tooltip />
+      <el-table-column label="说明 / 修复建议" min-width="280">
+        <template #default="{ row }">
+          <div>{{ row.message }}</div>
+          <div v-if="row.suggestion" class="muted sm">建议：{{ row.suggestion }}</div>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="120" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" data-test="scoring-fix" @click="goFix(row)">

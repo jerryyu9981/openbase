@@ -272,6 +272,14 @@ export interface DpsScoringIssue {
   portrait_template?: string
   detail?: Record<string, unknown>
   message?: string
+  /** v2.14.0 A12：修复建议与修复目标（只读） */
+  suggestion?: string
+  fix_target?: {
+    portrait_template?: string
+    annotation_template?: string
+    field_key?: string
+    tag_code?: string
+  }
 }
 
 export interface DpsScoringConsistencySection {
@@ -685,6 +693,50 @@ export interface DpsAnnotationCandidate {
   [key: string]: unknown
 }
 
+/** 扁平标签检索条目（v1.5.0 A9） */
+export interface DpsTagSearchItem {
+  category_id: string
+  category_name: string
+  dimension_code?: string | null
+  value_id: string
+  value: string
+  color?: string
+  order_num?: number
+  parent_value_id?: string | null
+}
+
+/** 已持久化 AI 候选（v1.5.0 A14） */
+export interface DpsPersistedCandidate {
+  id: string
+  batch_id: string
+  adapter_id: string
+  annotation_template: string
+  upstream_annotation_id: string
+  review_status: string
+  person_id?: string | null
+  profile_id?: string | null
+  fields: Record<string, unknown>
+  created_at: string
+}
+
+/** CSV 导出结果（v1.5.0 A11） */
+export interface DpsCsvExport {
+  blob: Blob
+  filename: string
+  truncated: boolean
+}
+
+function buildCsvExport(response: { data: Blob; headers: unknown }): DpsCsvExport {
+  const headers = (response.headers || {}) as Record<string, string | undefined>
+  const disposition = String(headers['content-disposition'] || '')
+  const matched = /filename="?([^";]+)"?/i.exec(disposition)
+  return {
+    blob: response.data,
+    filename: matched?.[1] || 'export.csv',
+    truncated: String(headers['x-export-truncated'] || '').toLowerCase() === 'true',
+  }
+}
+
 /** 复核提交（DPS 既有端点 `POST /portrait/annotations/{id}/review`） */
 export interface DpsReviewSubmitRequest {
   review_status: 'approved' | 'rejected' | 'modified'
@@ -797,8 +849,13 @@ export interface DpsRole {
 }
 
 export const dpsApi = {
-  /** 画像列表（GET /api/v1/dps-proxy/portraits） */
-  async listPortraits(params?: { page?: number; page_size?: number }): Promise<{ items: DpsPortrait[]; total?: number }> {
+  /** 画像列表（GET /api/v1/dps-proxy/portraits；v1.5.0 支持服务端 keyword/external_id） */
+  async listPortraits(params?: {
+    page?: number
+    page_size?: number
+    keyword?: string
+    external_id?: string
+  }): Promise<{ items: DpsPortrait[]; total?: number }> {
     const { data } = await http.get<{ code: number; data: { items: DpsPortrait[]; total?: number } }>('/dps-proxy/portraits', { params })
     return data.data
   },
@@ -936,8 +993,128 @@ export const dpsApi = {
   },
 
   /** 审计日志（GET /api/v1/dps-proxy/audit/logs） */
-  async listAuditLogs(): Promise<{ items: Record<string, unknown>[] }> {
-    const { data } = await http.get<{ code: number; data: { items: Record<string, unknown>[] } }>('/dps-proxy/audit/logs')
+  async listAuditLogs(params?: {
+    start_time?: string
+    end_time?: string
+    user_id?: string
+    resource_type?: string
+    resource_id?: string
+    action?: string
+    page?: number
+    page_size?: number
+  }): Promise<{ items: Record<string, unknown>[]; total?: number }> {
+    const { data } = await http.get<{
+      code: number
+      data: { items: Record<string, unknown>[]; total?: number }
+    }>('/dps-proxy/audit/logs', { params })
+    return data.data
+  },
+
+  /** 实体审计时间线（GET /api/v1/dps-proxy/audit；v1.5.0 A10） */
+  async getAuditTimeline(params: {
+    entity_type: string
+    entity_id: string
+    page?: number
+    page_size?: number
+    order?: 'asc' | 'desc'
+  }): Promise<{
+    items: Record<string, unknown>[]
+    total: number
+    page: number
+    page_size: number
+    entity_type: string
+    entity_id: string
+  }> {
+    const { data } = await http.get<{
+      code: number
+      data: {
+        items: Record<string, unknown>[]
+        total: number
+        page: number
+        page_size: number
+        entity_type: string
+        entity_id: string
+      }
+    }>('/dps-proxy/audit', { params })
+    return data.data
+  },
+
+  /** 标签检索（GET /api/v1/dps-proxy/tags；v1.5.0 A9，扁平标签值＋分类元数据） */
+  async listTags(params?: {
+    keyword?: string
+    category_id?: string
+    page?: number
+    page_size?: number
+  }): Promise<DpsPaged<DpsTagSearchItem>> {
+    const { data } = await http.get<ApiSuccess<DpsPaged<DpsTagSearchItem>>>('/dps-proxy/tags', { params })
+    return data.data
+  },
+
+  /** 标注 CSV 导出（GET /api/v1/dps-proxy/annotations/export；v1.5.0 A11） */
+  async exportAnnotationsCsv(params?: {
+    annotation_template?: string
+    review_status?: string
+    person_id?: string
+  }): Promise<DpsCsvExport> {
+    const response = await http.get<Blob>('/dps-proxy/annotations/export', {
+      params,
+      responseType: 'blob',
+    })
+    return buildCsvExport(response)
+  },
+
+  /** 画像 CSV 导出（GET /api/v1/dps-proxy/portraits/export；v1.5.0 A11） */
+  async exportPortraitsCsv(params?: {
+    keyword?: string
+    external_id?: string
+  }): Promise<DpsCsvExport> {
+    const response = await http.get<Blob>('/dps-proxy/portraits/export', {
+      params,
+      responseType: 'blob',
+    })
+    return buildCsvExport(response)
+  },
+
+  /** AI 候选生成并持久化（POST /api/v1/dps-proxy/annotation-candidates；v1.5.0 A14） */
+  async generatePersistedAnnotationCandidate(body: {
+    adapter_id: string
+    text: string
+    annotation_template?: string
+    person_id?: string
+    profile_id?: string
+    batch_id?: string
+  }): Promise<{ batch_id: string; candidate: DpsPersistedCandidate }> {
+    const { data } = await http.post<ApiSuccess<{ batch_id: string; candidate: DpsPersistedCandidate }>>(
+      '/dps-proxy/annotation-candidates',
+      body,
+    )
+    return data.data
+  },
+
+  /** 按批次恢复候选（GET /api/v1/dps-proxy/annotation-candidates?batch_id=；v1.5.0 A14） */
+  async listAnnotationCandidates(batchId: string): Promise<{
+    batch_id: string
+    items: DpsPersistedCandidate[]
+    total: number
+  }> {
+    const { data } = await http.get<ApiSuccess<{
+      batch_id: string
+      items: DpsPersistedCandidate[]
+      total: number
+    }>>('/dps-proxy/annotation-candidates', { params: { batch_id: batchId } })
+    return data.data
+  },
+
+  /** 最近候选批次（GET /api/v1/dps-proxy/annotation-candidates/latest；v1.5.0 A14） */
+  async getLatestAnnotationCandidates(params?: {
+    adapter_id?: string
+    annotation_template?: string
+  }): Promise<{ batch_id: string | null; items: DpsPersistedCandidate[]; total: number }> {
+    const { data } = await http.get<ApiSuccess<{
+      batch_id: string | null
+      items: DpsPersistedCandidate[]
+      total: number
+    }>>('/dps-proxy/annotation-candidates/latest', { params })
     return data.data
   },
 

@@ -172,23 +172,33 @@ function readRecentSubjects(): SubjectOption[] {
   }
 }
 
-/** 主体候选：前 100 条画像本地匹配（A6 服务端检索未就绪），追加最近使用 */
-function searchSubjects(keyword: string, callback: (items: SubjectOption[]) => void) {
+/** 主体候选：优先服务端检索（A6），DPS 未升级时回退前 100 条本地匹配；追加最近使用 */
+async function searchSubjects(keyword: string, callback: (items: SubjectOption[]) => void) {
   const recent = readRecentSubjects()
-  dpsApi
-    .listPortraits({ page: 1, page_size: 100 })
-    .then((result) => {
-      const kw = keyword.trim().toLowerCase()
-      const matched = (result.items || [])
-        .map((row) => ({ value: String(row.person_id || row.id || ''), name: row.name }))
-        .filter((item) => item.value)
-        .filter((item) => !kw || item.value.toLowerCase().includes(kw) || String(item.name || '').toLowerCase().includes(kw))
-      const merged = [...recent, ...matched].filter(
-        (item, index, array) => array.findIndex((other) => other.value === item.value) === index,
-      )
-      callback(merged.slice(0, 20))
-    })
-    .catch(() => callback(recent))
+  const kw = keyword.trim().toLowerCase()
+  try {
+    let result
+    try {
+      result = await dpsApi.listPortraits({
+        page: 1,
+        page_size: 50,
+        keyword: keyword.trim() || undefined,
+      })
+    } catch (caught) {
+      if ((caught as { response?: { status?: number } })?.response?.status !== 404) throw caught
+      result = await dpsApi.listPortraits({ page: 1, page_size: 100 })
+    }
+    const matched = (result.items || [])
+      .map((row) => ({ value: String(row.person_id || row.id || ''), name: row.name }))
+      .filter((item) => item.value)
+      .filter((item) => !kw || item.value.toLowerCase().includes(kw) || String(item.name || '').toLowerCase().includes(kw))
+    const merged = [...recent, ...matched].filter(
+      (item, index, array) => array.findIndex((other) => other.value === item.value) === index,
+    )
+    callback(merged.slice(0, 20))
+  } catch {
+    callback(recent)
+  }
 }
 
 function onSelectSubject(item: SubjectOption) {

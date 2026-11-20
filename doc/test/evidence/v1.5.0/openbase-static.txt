@@ -1,0 +1,13 @@
+# OpenBase v1.5.0 静态检查证据
+
+命令：`python -m ruff check openbase/modules/dps_proxy/__init__.py openbase/modules/dps_proxy/candidate_store.py tests/test_dps_backend_capabilities_v150.py`
+时间：2026-11-20
+
+结果：
+```
+All checks passed!
+```
+
+命令：`node node_modules/vue-tsc/bin/vue-tsc.js --noEmit`
+工作目录：`openbase-ui`
+结果：退出码 0（无类型错误）。

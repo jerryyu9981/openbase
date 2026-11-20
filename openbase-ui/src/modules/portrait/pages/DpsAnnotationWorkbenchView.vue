@@ -55,6 +55,9 @@
             <el-button size="small" :loading="loadingQueue" data-test="annotation-queue-refresh" @click="reloadQueue">
               刷新
             </el-button>
+            <el-button size="small" :loading="exporting" data-test="annotation-export" @click="exportAnnotations">
+              导出
+            </el-button>
           </div>
 
           <div class="view-tools">
@@ -1168,6 +1171,29 @@ const reviewPortrait = ref<DpsPortrait | null>(null)
 const reviewMapping = ref<DpsAnnotationFieldMapping | null>(null)
 const reviewLogs = ref<DpsAnnotationReviewLogItem[]>([])
 const reviewLogLoading = ref(false)
+const exporting = ref(false)
+
+/** A11：按当前队列筛选导出标注 CSV（服务端生成；失败时提示，不造假数据） */
+async function exportAnnotations() {
+  exporting.value = true
+  try {
+    const result = await dpsApi.exportAnnotationsCsv({
+      annotation_template: templateFilter.value || undefined,
+      review_status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+    })
+    const url = URL.createObjectURL(result.blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = result.filename
+    anchor.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success(`标注 CSV 已导出${result.truncated ? '（超过 10000 行，已截断）' : ''}`)
+  } catch {
+    ElMessage.error('标注导出失败，请稍后重试')
+  } finally {
+    exporting.value = false
+  }
+}
 
 const reviewFields = computed(() => {
   const row = currentTask.value
@@ -1221,7 +1247,28 @@ async function loadReviewContext(row: DpsAnnotationRow) {
   ])
   if (portrait.status === 'fulfilled') reviewPortrait.value = portrait.value
   if (mapping.status === 'fulfilled') reviewMapping.value = mapping.value
-  if (logs.status === 'fulfilled') reviewLogs.value = logs.value.items || []
+  if (logs.status === 'fulfilled' && logs.value.items?.length) {
+    reviewLogs.value = logs.value.items
+  } else {
+    // A10：审核留痕为空时回退实体审计时间线（DPS 未升级 404 时保持空态）
+    try {
+      const timeline = await dpsApi.getAuditTimeline({
+        entity_type: 'annotation',
+        entity_id: row.id,
+        page_size: 50,
+        order: 'asc',
+      })
+      reviewLogs.value = timeline.items.map((item) => ({
+        review_level: 1,
+        action: String(item.action || 'audit'),
+        reviewer: item.user_id ? String(item.user_id) : null,
+        comment: item.detail ? String(item.detail) : null,
+        created_at: item.timestamp ? String(item.timestamp) : undefined,
+      }))
+    } catch {
+      reviewLogs.value = []
+    }
+  }
   reviewLogLoading.value = false
 }
 
