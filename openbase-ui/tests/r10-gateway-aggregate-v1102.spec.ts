@@ -35,12 +35,12 @@ describe('v1.10.2 聚合网关交互', () => {
 
     expect(mocks.post).toHaveBeenCalledWith('/gateway/aggregate', {
       steps: [
-        { id: 'models', system: 'openllm', path: '/models', method: 'GET', timeout_ms: 2000 },
-        { id: 'kbs', system: 'openrag', path: '/kb/list', method: 'GET', timeout_ms: 2000 },
+        { id: 'models', system: 'openllm', path: '/openllm/v1/models', method: 'GET', timeout_ms: 3000 },
+        { id: 'dps', system: 'dps', path: '/health/liveness', method: 'GET', timeout_ms: 2000 },
       ],
       timeout_ms: 5000,
       on_partial_failure: 'return_errors',
-      mapping: { model_total: '${models.data.total}', kb_total: '${kbs.data.total}' },
+      mapping: { models: '${models.data.data.models}', dps_status: '${dps.data.status}' },
     })
     expect(wrapper.find('[data-test="agg-result"]').text()).toContain('"model_total": 3')
     expect(wrapper.find('[data-test="agg-errors"]').exists()).toBe(false)

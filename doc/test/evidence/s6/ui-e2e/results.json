@@ -1,7 +1,7 @@
 {
   "config": {
     "argv": [
-      "C:\\Users\\jerry\\AppData\\Roaming\\TRAE SOLO CN\\ModularData\\ai-agent\\vm\\tools\\node\\node.exe",
+      "D:\\Program Files\\nodejs\\node.exe",
       "D:\\Trae CN\\myproject\\Dev\\OpenBase\\openbase-ui\\node_modules\\@playwright\\test\\cli.js",
       "test"
     ],
@@ -100,12 +100,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3364,
+                      "duration": 1233,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:08.832Z",
+                      "startTime": "2026-11-21T18:53:12.099Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -134,12 +134,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2574,
+                      "duration": 901,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:12.587Z",
+                      "startTime": "2026-11-21T18:53:13.532Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -185,12 +185,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1945,
+                      "duration": 968,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:15.198Z",
+                      "startTime": "2026-11-21T18:53:14.473Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -219,12 +219,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2034,
+                      "duration": 905,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:17.162Z",
+                      "startTime": "2026-11-21T18:53:15.453Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -270,12 +270,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3452,
+                      "duration": 903,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:19.231Z",
+                      "startTime": "2026-11-21T18:53:16.387Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -304,12 +304,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3128,
+                      "duration": 908,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:22.695Z",
+                      "startTime": "2026-11-21T18:53:17.301Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -323,6 +323,310 @@
               "column": 5
             }
           ]
+        }
+      ]
+    },
+    {
+      "title": "portrait-lineage.spec.ts",
+      "file": "portrait-lineage.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "模板详情展示族谱/标注模板/标签产出/评分项四联视图",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5247,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:18.236Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "83adb71a77e611ed20d4-34e25e3d969c516d92ed",
+          "file": "portrait-lineage.spec.ts",
+          "line": 70,
+          "column": 1
+        },
+        {
+          "title": "画像维度展开显示规则级明细与缺值兜底",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5975,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:23.497Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "83adb71a77e611ed20d4-3a17173f22ca8ef02a81",
+          "file": "portrait-lineage.spec.ts",
+          "line": 119,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "portrait-multilevel-review.spec.ts",
+      "file": "portrait-multilevel-review.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "标注队列展示审核进度与按级审核按钮",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2009,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:29.504Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f05d6aafe29f6b6836f6-4952d0fa8dab2a7694ee",
+          "file": "portrait-multilevel-review.spec.ts",
+          "line": 174,
+          "column": 1
+        },
+        {
+          "title": "审核记录时间线展示逐级留痕",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2347,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:31.526Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f05d6aafe29f6b6836f6-79108a3a2257bad77672",
+          "file": "portrait-multilevel-review.spec.ts",
+          "line": 201,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "portrait-policies.spec.ts",
+      "file": "portrait-policies.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "模板评分项页签展示证据策略与审核级数摘要",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5299,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:33.896Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "18bd21f080b2eb10ef4d-1cbaea7ac7a8ff503352",
+          "file": "portrait-policies.spec.ts",
+          "line": 69,
+          "column": 1
+        },
+        {
+          "title": "标注工作台支持录入证据来源",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2000,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:39.208Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "18bd21f080b2eb10ef4d-c79bd158025d1d769ef5",
+          "file": "portrait-policies.spec.ts",
+          "line": 97,
+          "column": 1
+        },
+        {
+          "title": "画像详情展示异常预警区块",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1653,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:41.223Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "18bd21f080b2eb10ef4d-567bc636ccd7d56790ab",
+          "file": "portrait-policies.spec.ts",
+          "line": 128,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "portrait-scoring-sources.spec.ts",
+      "file": "portrait-scoring-sources.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "画像评分项弹窗展示维度标注来源与 crime/social 缺口",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5328,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T18:53:42.900Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "819a462ed781f005b558-2876881afc2e79cc0597",
+          "file": "portrait-scoring-sources.spec.ts",
+          "line": 54,
+          "column": 1
         }
       ]
     },
@@ -355,12 +659,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10755,
+                      "duration": 946,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:25.857Z",
+                      "startTime": "2026-11-21T18:53:48.250Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -389,12 +693,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 18055,
+                      "duration": 1016,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:36.659Z",
+                      "startTime": "2026-11-21T18:53:49.207Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -423,12 +727,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 13865,
+                      "duration": 2536,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-01T10:48:54.747Z",
+                      "startTime": "2026-11-21T18:53:50.238Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -448,9 +752,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-01T10:48:06.985Z",
-    "duration": 76670.284,
-    "expected": 9,
+    "startTime": "2026-11-21T18:53:11.334Z",
+    "duration": 43026.86,
+    "expected": 17,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -86,8 +86,8 @@
     <el-card header="标注范围预检（v2.12.0）" class="mb-16" data-test="annotation-scope-card">
       <div class="page-toolbar">
         <el-radio-group v-model="scopeType" data-test="annotation-scope-type" @change="resetScope">
-          <el-radio-button label="template">单模板</el-radio-button>
-          <el-radio-button label="category">模板类</el-radio-button>
+          <el-radio-button value="template">单模板</el-radio-button>
+          <el-radio-button value="category">模板类</el-radio-button>
         </el-radio-group>
         <el-select
           v-model="scopeCode"

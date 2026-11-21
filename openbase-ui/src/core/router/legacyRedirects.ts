@@ -41,7 +41,8 @@ export const LEGACY_REDIRECTS: ReadonlyArray<readonly [string, string]> = [
   // memory / portrait / knowledge 上收
   ['/memory/admin', '/platform/identity/memory-admin'],
   ['/memory/api-gateway', '/platform/observability/service-discovery'],
-  ['/memory/monitor', '/platform/observability/monitoring'],
+  // v1.4.6 曾将 `/memory/monitor` 上收到统一监控；批次 5 T5 已新增模块级「运行监控」页
+  // （AC-MEM-1），故不再重定向，避免静态旧路径劫持模块路由导致菜单不可达（D-1）。
   ['/portrait/dps-monitor', '/platform/observability/monitoring'],
   ['/knowledge/settings', '/platform/config/general'],
   ['/knowledge/users', '/platform/identity/users'],

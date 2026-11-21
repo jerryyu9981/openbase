@@ -1,8 +1,9 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 /** 记忆模块（OpenMemory 特色，RT-207）。
- * v1.4.6：`admin`→`/platform/identity/memory-admin`、`api-gateway`→`/platform/observability/service-discovery`、
- * `monitor`→`/platform/observability/monitoring`（统一监控），旧路径经 legacyRedirects 承接（禁 404）。 */
+ * v1.4.6：`admin`→`/platform/identity/memory-admin`、`api-gateway`→`/platform/observability/service-discovery`，
+ * 旧路径经 legacyRedirects 承接（禁 404）。
+ * 批次 5 T5：新增模块级「运行监控」页（AC-MEM-1），`/memory/monitor` 不再重定向至统一监控。 */
 export const routes: RouteRecordRaw[] = [
   { path: '', redirect: '/memory/list' },
   { path: 'list', name: 'memory-list', component: () => import('./pages/MemoryList.vue'), meta: { title: '记忆管理' } },

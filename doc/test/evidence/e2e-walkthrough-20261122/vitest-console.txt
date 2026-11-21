@@ -1,0 +1,718 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.8 [39m[90mD:/Trae CN/myproject/Dev/OpenBase/openbase-ui[39m
+
+node : [90mstderr[2m | tests/api-v146-clients.spec.ts[2m > [22m[2mDEF-FE-146-001: 模块开关页「修改详情」抽屉端到端回归[2m > [22m[
+2m切换成功后抽屉「模块/新状态/生效方式/请求号」四项均非空（修复前四项全空）
+所在位置 行:15 字符: 1649
++ ... v:TERM = 'dumb'; node node_modules/vitest/vitest.mjs run 2>&1 | Tee-O ...
++                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m...」四项均非空（修复前四项全空）:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模块开关" description="控制各业务模块的启用状态。修改后立即生效：侧栏菜单与模块路由同步增删（后端仍按 next_login 记录审计留痕）。"  ... > 
+  at <PageContainer title="模块开关" description="控制各业务模块的启用状态。修改后立即生效：侧栏菜单与模块路由同步增删（后端仍按 next_login 记录审计留痕）。" test-id="mod
+ule-switch-page" > 
+  at <ModuleSwitchView ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/api-v146-clients.spec.ts[2m > [22m[2mDEF-FE-146-001: 模块开关页「修改详情」抽屉端到端回归[2m > [22m[2m切换失败：
+抽屉不弹出、不改写表格状态；以服务端为准重载列表
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模块开关" description="控制各业务模块的启用状态。修改后立即生效：侧栏菜单与模块路由同步增删（后端仍按 next_login 记录审计留痕）。"  ... > 
+  at <PageContainer title="模块开关" description="控制各业务模块的启用状态。修改后立即生效：侧栏菜单与模块路由同步增删（后端仍按 next_login 记录审计留痕）。" test-id="mod
+ule-switch-page" > 
+  at <ModuleSwitchView ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/api-v146-clients.spec.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 699[2mms[22m[39m
+   [33m[2m✓[22m[39m DEF-FE-146-001: 模块开关页「修改详情」抽屉端到端回归[2m > [22m切换成功后抽屉「模块/新状态/生效方式/请求号」四项均非空（修复前四项全空） [33m469[2mms[22m[39m
+ [32m✓[39m tests/r5-wiring-v195.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 2670[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.5 角色与权限真实化[2m > [22m加载角色列表并展示系统标记 [33m356[2mms[22m[39m
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /portrait/list 仍命中 portrait 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /memory/sessions 仍命中 memory 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/memory/sessions"
+[Vue Router warn]: No match found for location with path "/memory/sessions"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /knowledge/chat 仍命中 knowledge 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/chat"
+[Vue Router warn]: No match found for location with path "/knowledge/chat"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22m[2mregistry 已初始化但未装载时，
+深链 /openllm/conversations 仍命中 openllm 模块
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+ [32m✓[39m tests/r4-wiring-v194.spec.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 4055[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.4 成本分析真实化[2m > [22m加载成本三源并透传维度与时间范围 [33m484[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.4 告警中心真实化[2m > [22m加载规则与告警历史 [33m446[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.4 告警中心真实化[2m > [22m启停透传 PUT /alerts/rules/{id} [33m397[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.4 告警中心真实化[2m > [22m新建规则透传条件对象 [33m310[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.4 用量统计真实化[2m > [22m加载总览/趋势/明细并透传日期区间 [33m300[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.4 用量统计真实化[2m > [22m开始日期晚于结束日期时阻断请求 [33m314[2mms[22m[39m
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-2: 模块来源唯一（/modules + 权限过滤）[2m > [22m[2m禁用模块与无权模块不进注册
+表、路由不可达
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m模块子页时顶层导航高亮回退
+到 route_prefix
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m[2m三层菜单：顶层 + 权限过
+滤业务模块 + 平台四域（gateway 迁出、平台受限叶子按权限码裁剪）
+[22m[39m[Vue Router warn]: No match found for location with path "/knowledge/list"
+
+[90mstderr[2m | tests/router-nav.spec.ts[2m > [22m[2mS6-T2-4: 装载幂等与告警清零 / 空态兜底[2m > [22m[2mModuleLayout 在 navIt
+ems 存在时渲染二级导航分组
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/conversations"
+
+ [32m✓[39m tests/router-nav.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 2280[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-1: 深链/刷新模块路由必达（幂等装载）[2m > [22mregistry 已初始化但未装载时，深链 /portrait/list 仍命中 portrait 模块 [33m522[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m模块子页时顶层导航高亮回退到 route_prefix [33m360[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-3: 导航一致性（顶层高亮 / 图标 / 权限矩阵）[2m > [22m模块图标按 ModuleInfo.icon 映射，未命中回退 ChatDotRound [33m306[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T2-4: 装载幂等与告警清零 / 空态兜底[2m > [22mModuleLayout 在 navItems 存在时渲染二级导航分组 [33m371[2mms[22m[39m
+[90mstderr[2m | tests/isolation-presentation.spec.ts[2m > [22m[2mS6-T3-1: 画像关键页跨域呈现[2m > [22m[2m画像详情 404 / 403 
+/ 5xx 三分支呈现
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+[90mstderr[2m | tests/isolation-presentation.spec.ts[2m > [22m[2mS6-T3-1: 画像关键页跨域呈现[2m > [22m[2m画像详情 404 / 403 
+/ 5xx 三分支呈现
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+ [32m✓[39m tests/http.spec.ts [2m([22m[2m23 tests[22m[2m)[22m[90m 55[2mms[22m[39m
+[90mstderr[2m | tests/isolation-presentation.spec.ts[2m > [22m[2mS6-T3-2: 记忆关键页跨域呈现[2m > [22m[2m200 且空数据 → 空态（隔
+离生效）
+[22m[39mError: AggregateError
+    at Object.dispatchError (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\xhr-
+utils.js:63:19)
+    at Request.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\xhr\XMLHt
+tpRequest-impl.js:655:18)
+    at Request.emit (node:events:521:24)
+    at ClientRequest.<anonymous> (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\hel
+pers\http-request.js:127:14)
+    at ClientRequest.emit (node:events:509:28)
+    at emitErrorEvent (node:_http_client:109:11)
+    at Socket.socketErrorListener (node:_http_client:593:5)
+    at Socket.emit (node:events:509:28)
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3) [90mundefined[39m
+
+ [32m✓[39m tests/api-dps-v1410.spec.ts [2m([22m[2m22 tests[22m[2m)[22m[90m 59[2mms[22m[39m
+ [32m✓[39m tests/isolation-presentation.spec.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 7243[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m200 且空数据 → 空态（他域不可见，非错误态） [33m514[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m404 → 「资源不存在」空态（非错误态） [33m300[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m5xx → 错误条 + 重试，且不泄漏堆栈/原始 JSON [33m396[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m5xx 后点击重试恢复数据 [33m648[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-1: 画像关键页跨域呈现[2m > [22m画像详情 404 / 403 / 5xx 三分支呈现 [33m1619[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m200 且空数据 → 空态（隔离生效） [33m567[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m403 → 页面级 403；5xx → 错误条 + 重试 [33m652[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-2: 记忆关键页跨域呈现[2m > [22m停用/吊销主体数据面 403（AUTH_ 前缀）→ 页面级提示，非空态、非白屏 [33m477[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-3: 对话关键页（OpenLLM 会话）呈现[2m > [22m403 → 页面级 403；5xx → 错误条 + 重试 [33m407[2mms[22m[39m
+   [33m[2m✓[22m[39m S6-T3-4: 渲染异常兜底（防白屏）[2m > [22m子页面渲染异常时 AppLayout 渲染兜底提示，不白屏 [33m510[2mms[22m[39m
+ [32m✓[39m tests/r7-wiring-v197.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 3899[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.7 仪表盘真实化[2m > [22m聚合用户数与 OpenLLM 24h 概览 [33m338[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.7 统一监控真实化[2m > [22m加载 dashboard 与未解决告警 [33m431[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.7 个人设置真实化[2m > [22m回填资料并保存 [33m475[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.7 个人设置真实化[2m > [22m修改密码透传后端并展示后端错误 [33m451[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.7 模型部署真实化[2m > [22m加载模型并透传部署参数 [33m1186[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.7 模型部署真实化[2m > [22m状态与日志抽屉加载真实数据 [33m423[2mms[22m[39m
+ [32m✓[39m tests/auth-redirect.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 776[2mms[22m[39m
+ [32m✓[39m tests/api-logs.spec.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [32m✓[39m tests/dps-ui-v1410.spec.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 4241[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-01 模板族列表：真实 API 渲染 + 空态 [33m3283[2mms[22m[39m
+   [33m[2m✓[22m[39m DPS 页面关键状态呈现[2m > [22mP-12 标签体系：分类 → 标签值两层只读呈现 [33m324[2mms[22m[39m
+ [32m✓[39m tests/platform-ia.spec.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 1959[2mms[22m[39m
+   [33m[2m✓[22m[39m F3（MTAUTH 走查）: 身份/配置域补声明页面 —— 守卫门禁与三处同源[2m > [22madmin（* 通配）访问 F3 补声明页全部可达（显式 meta 存在但通配放行） [33m1304[2mms[22m[39m
+ [32m✓[39m tests/api-clients.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+ [32m✓[39m tests/dps-phase3-helpers.spec.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 2381[2mms[22m[39m
+   [33m[2m✓[22m[39m P-08 画像列表 / 搜索[2m > [22m标注时间线按创建时间倒序并带审核状态 [33m2257[2mms[22m[39m
+ [32m✓[39m tests/r11-longtail-v1120.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 3882[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 应用调用记录（OB-03）[2m > [22m加载应用与跨应用调用记录 [33m2359[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 应用调用记录（OB-03）[2m > [22m按状态筛选时携带 status 参数 [33m324[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 知识库 API 控制台（OB-04）[2m > [22m加载知识库与健康，并调用真实检索端点 [33m463[2mms[22m[39m
+ [32m✓[39m tests/r8-openllm-pages-v1100.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 2054[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.0 本地模型页真实接线[2m > [22m加载已安装模型 / GPU / 仓库，并调用启停端点 [33m352[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.0 开源市场页真实接线[2m > [22m渲染开源模型并提交下载任务 [33m343[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.0 模型对比页真实接线[2m > [22m模型池来自开源模型列表，加入 2 个模型后调用对比端点 [33m600[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.0 模型对比页真实接线[2m > [22m对比失败时展示错误态 [33m310[2mms[22m[39m
+ [32m✓[39m tests/r1-wiring-v191.spec.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 4090[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.1 用户管理真实化[2m > [22m加载 /users 并映射显示名/角色/状态 [33m698[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.1 用户管理真实化[2m > [22m停用开关透传 PUT /users/{id} {status:0} [33m387[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.1 EdgeRouter 真实化[2m > [22m概览/组织/适配器并发加载并渲染真实字段 [33m778[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.1 EdgeRouter 真实化[2m > [22m切到路由审计时按页请求审计日志 [33m614[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.1 EdgeRouter 真实化[2m > [22m新增组织透传 POST /edge/organizations [33m458[2mms[22m[39m
+[90mstderr[2m | tests/portrait-lifecycle.spec.ts[2m > [22m[2m批次 5：画像计算与外部 ID 查询[2m > [22m[2m异步计算返回 task_id 时轮询至
+完成并刷新列表（AC-POR-1/2）
+[22m[39m[Vue warn]: Failed to resolve component: RouterLink
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <ConceptNav current="portrait" > 
+  at <Anonymous title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/portrait-lifecycle.spec.ts[2m > [22m[2m批次 5：画像计算与外部 ID 查询[2m > [22m[2m同步返回结果时不轮询，直接刷新（AC-
+POR-2）
+[22m[39m[Vue warn]: Failed to resolve component: RouterLink
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <ConceptNav current="portrait" > 
+  at <Anonymous title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/portrait-lifecycle.spec.ts[2m > [22m[2m批次 5：画像计算与外部 ID 查询[2m > [22m[2m按外部 ID 命中后跳转画像详情（AC
+-POR-3）
+[22m[39m[Vue warn]: Failed to resolve component: RouterLink
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <ConceptNav current="portrait" > 
+  at <Anonymous title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/r2-wiring-v192.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 1732[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.2 全局配置真实化[2m > [22m加载 /configs 并渲染键、值与级别 [33m377[2mms[22m[39m
+[90mstderr[2m | tests/portrait-lifecycle.spec.ts[2m > [22m[2m批次 5：画像属性编辑[2m > [22m[2m列表删除画像需确认并刷新（批次 5.1 DELETE
+）
+[22m[39m[Vue warn]: Failed to resolve component: RouterLink
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <ConceptNav current="portrait" > 
+  at <Anonymous title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/portrait-lifecycle.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 3375[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：画像计算与外部 ID 查询[2m > [22m异步计算返回 task_id 时轮询至完成并刷新列表（AC-POR-1/2） [33m696[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：画像计算与外部 ID 查询[2m > [22m同步返回结果时不轮询，直接刷新（AC-POR-2） [33m374[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：画像属性编辑[2m > [22mPATCH 携带 If-Match 版本并刷新（AC-POR-4） [33m382[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：画像属性编辑[2m > [22m非法 JSON 前端拦截，不发起 PATCH（AC-POR-5） [33m860[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：画像属性编辑[2m > [22m409 版本冲突时提示并重新加载（AC-POR-5） [33m354[2mms[22m[39m
+ [32m✓[39m tests/r3-wiring-v193.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 1970[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.3 插件管理真实化[2m > [22m加载插件列表与工具清单 [33m722[2mms[22m[39m
+ [31m❯[39m tests/l3-2-smoke.spec.ts [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 3833[2mms[22m[39m
+[31m   [31m×[31m S6-T5-1: L3-2 冒烟基座（fixture 同源）[2m > [22mE2E 用例与冒烟脚本读取同一 fixture（Q-S6-D6 防漂移）[90m 20[2mms[22m[31m[39m
+[31m     → expected '/**\n * P2 可解释性走查（headless Chromium 固…' to contain 'fixtures/key-pages.json'[39m
+   [33m[2m✓[22m[39m S6-T5-1: 静态旁路检查（子系统中不直连）[2m > [22m端口字面量仅存在于白名单（显示文案 / mock 数据），白名单外 = 0 [33m3505[2mms[22m[39m
+ [32m✓[39m tests/r2-dicts-agents.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 2424[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.5.0 数据字典页[2m > [22m加载类型列表并默认选中首个类型的字典项 [33m418[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.5.0 数据字典页[2m > [22m删除类型遇 409：呈现后端「存在字典项」文案且不静默 [33m344[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.5.0 Agent 管理页[2m > [22m加载 /identity/agents 并渲染用户名与租户 [33m310[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.5.0 Agent 管理页[2m > [22m删除 Agent：确认后 DELETE /identity/agents/{id} 并刷新列表 [33m377[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.5.0 Agent 管理页[2m > [22m新建 Agent：展示后端仅返回一次的 api_key.raw_key [33m326[2mms[22m[39m
+ [32m✓[39m tests/api-testing.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+ [32m✓[39m tests/r7-context-policy.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 988[2mms[22m[39m
+   [33m[2m✓[22m[39m 推理设置页[2m > [22m非管理员只读：无保存按钮并提示权限 [33m629[2mms[22m[39m
+   [33m[2m✓[22m[39m 推理设置页[2m > [22m管理员展示已保存策略，可保存并恢复默认 [33m345[2mms[22m[39m
+ [32m✓[39m tests/r12-dps-readonly-v1120.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 2111[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 画像数据权限（XR-DPS-03 只读）[2m > [22m加载角色权限并保持无写入口 [33m549[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 画像接口限流（XR-DPS-03 只读）[2m > [22m加载限流状态并按租户过滤透传参数 [33m430[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 画像 API 管理（XR-DPS-03 只读）[2m > [22m加载 API 注册表与错误码，且不提供写入口 [33m378[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 插件工具来源标注（XR-LLM-08）[2m > [22m运行时注册表工具标注「运行期内建」，DB 插件工具标注「插件注册」 [33m752[2mms[22m[39m
+ [32m✓[39m tests/r6-wiring-v196.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 3115[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.6 GPU 资源真实化[2m > [22m加载分配状态与运行中模型 [33m648[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.6 下载管理真实化[2m > [22m加载下载任务并格式化大小/速度 [33m636[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.6 下载管理真实化[2m > [22m暂停/恢复/取消/重试/部署分别透传对应端点 [33m589[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.6 下载管理真实化[2m > [22m状态筛选透传 status 参数 [33m399[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.9.6 下载管理真实化[2m > [22m加载失败展示错误态 [33m352[2mms[22m[39m
+ [32m✓[39m tests/knowledge-lifecycle.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 3814[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：知识库详情真实数据[2m > [22m集合与文档均来自 API，不含硬编码假数据（AC-KB-1/2） [33m1110[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：知识库详情真实数据[2m > [22m上传后轮询至终态并刷新列表（AC-KB-3） [33m602[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：知识库详情真实数据[2m > [22m重建索引调用 reindex 接口并刷新（AC-KB-4） [33m428[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：知识库详情真实数据[2m > [22m删除文档需二次确认后调用删除接口（AC-KB-5） [33m389[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：知识库详情真实数据[2m > [22m纯检索调用 retrieve 并渲染片段（AC-KB-6） [33m324[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：知识库详情真实数据[2m > [22mRAG 问答调用 query 并渲染答案与来源（AC-KB-6） [33m373[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：知识库详情真实数据[2m > [22m分块配置变更时确认并以 rebuild=true 提交（AC-KB-7/8） [33m584[2mms[22m[39m
+ [32m✓[39m tests/nav-consistency.spec.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+[90mstderr[2m | tests/core-extra.spec.ts[2m > [22m[2mrouter guards[2m > [22m[2m模块路由权限不足跳转仪表盘
+[22m[39m[Vue Router warn]: No match found for location with path "/portrait"
+[Vue Router warn]: No match found for location with path "/portrait"
+
+[90mstderr[2m | tests/core-extra.spec.ts[2m > [22m[2mrouter guards[2m > [22m[2m通配权限可加载模块路由
+[22m[39m[Vue Router warn]: No match found for location with path "/openllm/models"
+
+ [32m✓[39m tests/core-extra.spec.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 199[2mms[22m[39m
+ [32m✓[39m tests/r9-notify-prefs-v1101.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1355[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.1 通知偏好[2m > [22m加载时回填后端偏好 [33m482[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.1 通知偏好[2m > [22m保存时透传完整偏好并回填返回值 [33m351[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.1 通知偏好[2m > [22m启用 Webhook 但地址非法时本地拦截，不调用保存 [33m316[2mms[22m[39m
+ [32m✓[39m tests/conversation-lifecycle.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 2277[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：会话查看与续聊[2m > [22m打开会话并发加载详情与历史消息（AC-CTX-1） [33m930[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：会话查看与续聊[2m > [22m发送消息后分别回写用户与助手消息（AC-CTX-2） [33m540[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：会话查看与续聊[2m > [22m历史加载失败展示提示条与重试入口（AC-CTX-3） [33m445[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：会话查看与续聊[2m > [22m归档会话展示提示且不发起续聊（AC-CTX-4） [33m360[2mms[22m[39m
+ [32m✓[39m tests/r12-dps-monitor-v1120.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1216[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 画像系统监控（XR-DPS-05）[2m > [22m四源并行加载并渲染指标、限流与告警规则 [33m613[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 画像系统监控（XR-DPS-05）[2m > [22m单源失败时提示错误且保留其他可用区域 [33m346[2mms[22m[39m
+ [32m✓[39m tests/api-modules.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+[90mstderr[2m | tests/portrait-list-error.spec.ts[2m > [22m[2mISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m[2m列表接口失败时展示
+错误条与错误引导空态，不再误显示"暂无画像数据"
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」"  ... > 
+  at <PageContainer title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: RouterLink
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <ConceptNav current="portrait" > 
+  at <PageContainer title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/portrait-list-error.spec.ts[2m > [22m[2mISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m[2m点击「点击重试」恢
+复成功后错误条消失并渲染数据
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」"  ... > 
+  at <PageContainer title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: RouterLink
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <ConceptNav current="portrait" > 
+  at <PageContainer title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/portrait-list-error.spec.ts[2m > [22m[2mISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m[2mKPI 与上游健康
+度独立降级/展示，不因列表失败而静默空白
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」"  ... > 
+  at <PageContainer title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+[Vue warn]: Failed to resolve component: RouterLink
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomEleme
+nt. 
+  at <ConceptNav current="portrait" > 
+  at <PageContainer title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page" > 
+  at <PortraitList ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/portrait-list-error.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1684[2mms[22m[39m
+   [33m[2m✓[22m[39m ISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m列表接口失败时展示错误条与错误引导空态，不再误显示"暂无画像数据" [33m736[2mms[22m[39m
+   [33m[2m✓[22m[39m ISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22m点击「点击重试」恢复成功后错误条消失并渲染数据 [33m613[2mms[22m[39m
+   [33m[2m✓[22m[39m ISSUE-002: 画像列表页错误态（静默吞错回归）[2m > [22mKPI 与上游健康度独立降级/展示，不因列表失败而静默空白 [33m334[2mms[22m[39m
+ [32m✓[39m tests/dps-backend-v150.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m tests/dps-annotation-fields.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m tests/memory-monitor.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 888[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：记忆运行监控[2m > [22m切换 range 仅重拉运行指标，不重复探测（AC-MEM-3） [33m302[2mms[22m[39m
+   [33m[2m✓[22m[39m 批次 5：记忆运行监控[2m > [22m运行指标加载失败展示错误条与重试（AC-MEM-4） [33m317[2mms[22m[39m
+ [32m✓[39m tests/providers-v190.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 628[2mms[22m[39m
+ [32m✓[39m tests/gateway-api.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [31m❯[39m tests/r10-gateway-aggregate-v1102.spec.ts [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 3426[2mms[22m[39m
+[31m   [31m×[31m v1.10.2 聚合网关交互[2m > [22m成功执行：透传步骤/超时/失败策略与映射，渲染结果且无错误条[33m 1273[2mms[22m[31m[39m
+[31m     → expected "spy" to be called with arguments: [ '/gateway/aggregate', { …(4) } ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[2m    "/gateway/aggregate",[22m
+[2m    Object {[22m
+[2m      "mapping": Object {[22m
+[32m-       "kb_total": "${kbs.data.total}",[90m
+[32m-       "model_total": "${models.data.total}",[90m
+[31m+       "dps_status": "${dps.data.status}",[90m
+[31m+       "models": "${models.data.data.models}",[90m
+[2m      },[22m
+[2m      "on_partial_failure": "return_errors",[22m
+[2m      "steps": Array [[22m
+[2m        Object {[22m
+[2m          "id": "models",[22m
+[2m          "method": "GET",[22m
+[32m-         "path": "/models",[90m
+[31m+         "path": "/openllm/v1/models",[90m
+[2m          "system": "openllm",[22m
+[32m-         "timeout_ms": 2000,[90m
+[31m+         "timeout_ms": 3000,[90m
+[2m        },[22m
+[2m        Object {[22m
+[32m-         "id": "kbs",[90m
+[31m+         "id": "dps",[90m
+[2m          "method": "GET",[22m
+[32m-         "path": "/kb/list",[90m
+[32m-         "system": "openrag",[90m
+[31m+         "path": "/health/liveness",[90m
+[31m+         "system": "dps",[90m
+[2m          "timeout_ms": 2000,[22m
+[2m        },[22m
+[2m      ],[22m
+[2m      "timeout_ms": 5000,[22m
+[2m    },[22m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+   [33m[2m✓[22m[39m v1.10.2 聚合网关交互[2m > [22m部分失败：展示 errors 列表且保留成功结果 [33m753[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.2 聚合网关交互[2m > [22m请求超时：展示错误条且不残留结果，按钮回到可执行态 [33m726[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.10.2 聚合网关交互[2m > [22m重置清空结果与错误条 [33m672[2mms[22m[39m
+ [32m✓[39m tests/r12-workspace-invite-v1120.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1568[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 工作空间按用户名邀请（XR-LLM-06）[2m > [22m邀请成员时提交 username 而非 user_id [33m605[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 工作空间按用户名邀请（XR-LLM-06）[2m > [22m用户名为空时不发起请求 [33m338[2mms[22m[39m
+   [33m[2m✓[22m[39m v1.12.0 工作空间按用户名邀请（XR-LLM-06）[2m > [22m成员抽屉加载后展示用户名 [33m623[2mms[22m[39m
+ [32m✓[39m tests/dps-list-view.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 41[2mms[22m[39m
+ [32m✓[39m tests/session-id.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/dps-template-health.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m点击新增模型提示写操作待完善
+（M2，对话框不弹出）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m列表加载真实 API 数据（
+非 mock）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m[2m名称为空不触发新增（写操作禁
+用路径）
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="模型管理" description="模型目录、启用状态与调用参数"  ... > 
+  at <PageContainer title="模型管理" description="模型目录、启用状态与调用参数" test-id="models-page" > 
+  at <Models ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+[90mstderr[2m | tests/module-pages.spec.ts[2m > [22m[2mBUG-120-007: 对话导出 JSON[2m > [22m[2m点击导出触发下载并提示成功
+[22m[39m[Vue warn]: injection "Symbol(router)" not found. 
+  at <PageHeader key=0 title="对话管理" description="会话记录与消息明细"  ... > 
+  at <PageContainer title="对话管理" description="会话记录与消息明细" test-id="conversations-page" > 
+  at <Conversations ref="VTU_COMPONENT" > 
+  at <VTUROOT>
+
+ [32m✓[39m tests/module-pages.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1813[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m点击新增模型提示写操作待完善（M2，对话框不弹出） [33m770[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-006: 模型管理（v1.4.3 真实化）[2m > [22m列表加载真实 API 数据（非 mock） [33m420[2mms[22m[39m
+   [33m[2m✓[22m[39m BUG-120-007: 对话导出 JSON[2m > [22m点击导出触发下载并提示成功 [33m372[2mms[22m[39m
+[90mstderr[2m | tests/module-pages.spec.ts
+[22m[39mError: Not implemented: navigation (except hash changes)
+    at module.exports (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\browser\not-implement
+ed.js:9:17)
+    at navigateFetch (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navigati
+on.js:77:3)
+    at exports.navigate (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\window\navig
+ation.js:55:3)
+    at Timeout._onTimeout (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\node_modules\jsdom\lib\jsdom\living\nodes\HTML
+HyperlinkElementUtils-impl.js:81:7)
+    at listOnTimeout (node:internal/timers:605:17)
+    at processTimers (node:internal/timers:541:7) [90mundefined[39m
+
+ [32m✓[39m tests/core.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 113[2mms[22m[39m
+ [32m✓[39m tests/dps-batch-review-v170.spec.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/dev-proxy-v180.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32m✓[39m tests/dps-annotation-claim-v180.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m tests/memory-search-v180.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1062[2mms[22m[39m
+   [33m[2m✓[22m[39m v7.8.0 记忆搜索图谱命中展示[2m > [22m记忆命中展示命中实体，实体节点不提供详情入口 [33m1060[2mms[22m[39m
+ [32m✓[39m tests/portrait-list-stale.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1723[2mms[22m[39m
+   [33m[2m✓[22m[39m T-DM-02 画像口径过期[2m > [22mstale=true 渲染「口径已过期」标签 [33m1131[2mms[22m[39m
+   [33m[2m✓[22m[39m T-DM-02 画像口径过期[2m > [22m开启「仅看过期」后按默认模板口径请求 stale=true [33m591[2mms[22m[39m
+ [32m✓[39m tests/portrait-template-deactivate-impact.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 2128[2mms[22m[39m
+   [33m[2m✓[22m[39m T-DM-01 停用影响面[2m > [22m停用后提示受影响的标注模板数量 [33m2127[2mms[22m[39m
+ [32m✓[39m tests/dps-template-filter-v180.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m tests/dps-annotation-stats-v180.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/dps-backend-v160.spec.ts [2m([22m[2m1 test[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/portrait-concept-nav.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 64[2mms[22m[39m
+ [32m✓[39m tests/oidc-auth.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/memory-graph-v180.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 363[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/l3-2-smoke.spec.ts[2m > [22mS6-T5-1: L3-2 冒烟基座（fixture 同源）[2m > [22mE2E 用例
+与冒烟脚本读取同一 fixture（Q-S6-D6 防漂移）
+[31m[1mAssertionError[22m: expected '/**\n * P2 可解释性走查（headless Chromium 固…' to contain 'fixtures/key-pages.json'[3
+9m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- fixtures/key-pages.json[39m
+[31m+ /**[39m
+[31m+  * P2 可解释性走查（headless Chromium 固定视口）[39m
+[31m+  *[39m
+[31m+  * 覆盖《治理方案》v1.2.0 §7 阶段三：[39m
+[31m+  *   1) 模板详情四联视图：族谱 / 标注模板 / 标签产出 / 评分项四页签可见，族谱含当前模板；[39m
+[31m+  *   2) 标签产出页签可看到「dimension:tag_key → 命中评分项（规则 key + 权重）」或「仅标签」警示；[39m
+[31m+  *   3) 画像详情维度可展开规则级明细（标签值 / 得分 / 缺值兜底），缺值行出现「缺值→50」；[39m
+[31m+  *   4) 页面无 pageerror / 非受控 4xx。[39m
+[31m+  *[39m
+[31m+  * 登录态：用例内部调用 `/api/v1/auth/login` 获取 token，按 `ob_access_token` 键注入[39m
+[31m+  * localStorage（与 `src/core/api/http.ts` 一致），无需人工准备 token。[39m
+[31m+  */[39m
+[31m+ import { expect, test, type APIRequestContext, type Page } from '@playwright/test'[39m
+[31m+ import { mkdirSync } from 'node:fs'[39m
+[31m+ import { dirname, resolve } from 'node:path'[39m
+[31m+ import { fileURLToPath } from 'node:url'[39m
+[31m+[39m
+[31m+ const HERE = dirname(fileURLToPath(import.meta.url))[39m
+[31m+ const EVIDENCE_DIR = resolve(HERE, '../../../doc/test/evidence/s6/ui-e2e')[39m
+[31m+ const FALLBACK_PERSON_ID = 'tenant-1_1'[39m
+[31m+ const TARGET_TEMPLATE = 'cor-persona-root-v1'[39m
+[31m+[39m
+[31m+ async function loginToken(request: APIRequestContext): Promise<string> {[39m
+[31m+   const response = await request.post('/api/v1/auth/login', {[39m
+[31m+     data: { username: 'admin', password: 'admin123' },[39m
+[31m+   })[39m
+[31m+   expect(response.ok(), `登录失败: ${response.status()}`).toBeTruthy()[39m
+[31m+   const payload = (await response.json()) as { access_token?: string }[39m
+[31m+   expect(payload.access_token, '登录响应缺少 access_token').toBeTruthy()[39m
+[31m+   return payload.access_token as string[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ async function firstPersonId(request: APIRequestContext, token: string): Promise<string> {[39m
+[31m+   const response = await request.get('/api/v1/dps-proxy/portraits?page=1&page_size=5', {[39m
+[31m+     headers: { Authorization: `Bearer ${token}` },[39m
+[31m+   })[39m
+[31m+   if (!response.ok()) return FALLBACK_PERSON_ID[39m
+[31m+   const payload = (await response.json()) as { data?: { items?: Array<{ person_id?: string }> } }[39m
+[31m+   return payload.data?.items?.find((item) => item.person_id)?.person_id || FALLBACK_PERSON_ID[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ async function seedAuth(page: Page, token: string): Promise<void> {[39m
+[31m+   await page.addInitScript((access: string) => {[39m
+[31m+     window.localStorage.setItem('ob_access_token', access)[39m
+[31m+   }, token)[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ function trackErrors(page: Page) {[39m
+[31m+   const errors: string[] = [][39m
+[31m+   const badResponses: string[] = [][39m
+[31m+   page.on('pageerror', (error) => errors.push(error.message))[39m
+[31m+   page.on('console', (message) => {[39m
+[31m+     if (message.type() === 'error' && !message.text().includes('Failed to load resource')) {[39m
+[31m+       errors.push(message.text())[39m
+[31m+     }[39m
+[31m+   })[39m
+[31m+   page.on('response', (response) => {[39m
+[31m+     if (response.status() >= 400) badResponses.push(`${response.status()} ${response.url()}`)[39m
+[31m+   })[39m
+[31m+   return { errors, badResponses }[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ /** 受控失败：favicon 与「口径结果未计算」的空态探测 */[39m
+[31m+ function assertNoUnexpectedResponse(badResponses: string[]) {[39m
+[31m+   const controlled = /favicon|\/dps-proxy\/portraits\/[^/]+\?template_code=/[39m
+[31m+   const unexpected = badResponses.filter((entry) => !controlled.test(entry))[39m
+[31m+   expect(unexpected, `存在失败请求: ${unexpected.join(' | ')}`).toEqual([])[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ test('模板详情展示族谱/标注模板/标签产出/评分项四联视图', async ({ page, request }) => {[39m
+[31m+   const { errors, badResponses } = trackErrors(page)[39m
+[31m+   await page.setViewportSize({ width: 1440, height: 900 })[39m
+[31m+   const token = await loginToken(request)[39m
+[31m+   await seedAuth(page, token)[39m
+[31m+[39m
+[31m+   await page.goto('/portrait/dps/templates', { waitUntil: 'domcontentloaded' })[39m
+[31m+   const targetRow = page.locator('.el-table__row', { hasText: TARGET_TEMPLATE }).first()[39m
+[31m+   await expect(targetRow).toBeVisible({ timeout: 20000 })[39m
+[31m+   await targetRow.locator('[data-test="template-detail"]').click()[39m
+[31m+[39m
+[31m+   const drawer = page.locator('[data-test="template-detail-drawer"]')[39m
+[31m+   await expect(drawer).toBeVisible({ timeout: 20000 })[39m
+[31m+   await expect(drawer.locator('[data-test="template-lineage-tabs"]')).toBeVisible({ timeout: 20000 })[39m
+[31m+[39m
+[31m+   // ① 族谱：当前模板节点 + 继承链[39m
+[31m+   const lineageNodes = drawer.locator('[data-test="template-lineage-node"]')[39m
+[31m+   await expect(lineageNodes.first()).toBeVisible({ timeout: 20000 })[39m
+[31m+   expect(await lineageNodes.count()).toBeGreaterThanOrEqual(1)[39m
+[31m+   await expect(lineageNodes.first()).toContainText(TARGET_TEMPLATE)[39m
+[31m+[39m
+[31m+   // ② 标注模板：表内出现归属与缺口标签[39m
+[31m+   await drawer.locator('.el-tabs__item', { hasText: '标注模板' }).click()[39m
+[31m+   await expect(drawer.locator('[data-test="template-tab-annotations"]')).toBeVisible()[39m
+[31m+   expect(await drawer.locator('[data-test="template-tab-annotations"] .el-table__row').count()).toBeGreaterThan(
+0)[39m
+[31m+[39m
+[31m+   // ③ 标签产出：每行要么命中评分项，要么明确「仅标签·不影响评分」[39m
+[31m+   await drawer.locator('.el-tabs__item', { hasText: '标签产出' }).click()[39m
+[31m+   const tagPane = drawer.locator('[data-test="template-tab-tags"]')[39m
+[31m+   await expect(tagPane).toBeVisible()[39m
+[31m+   const tagRows = tagPane.locator('.el-table__row')[39m
+[31m+   expect(await tagRows.count()).toBeGreaterThan(0)[39m
+[31m+   const hitOrTagOnly =[39m
+[31m+     (await tagPane.locator('[data-test="template-tag-only-tag"]').count()) > 0 ||[39m
+[31m+     (await tagPane.locator('.hit-text').count()) > 0[39m
+[31m+   expect(hitOrTagOnly, '标签产出既无评分项命中也无「仅标签」提示').toBeTruthy()[39m
+[31m+[39m
+[31m+   // ④ 评分项：维度与规则可见[39m
+[31m+   await drawer.locator('.el-tabs__item', { hasText: '评分项' }).click()[39m
+[31m+   await expect(drawer.locator('[data-test="template-tab-scoring"]')).toBeVisible()[39m
+[31m+   expect(await drawer.locator('[data-test="template-tab-scoring"] .scoring-dim').count()).toBeGreaterThan(0)[39
+m
+[31m+[39m
+[31m+   mkdirSync(EVIDENCE_DIR, { recursive: true })[39m
+[31m+   await drawer.screenshot({ path: resolve(EVIDENCE_DIR, 'p2-template-lineage.png') })[39m
+[31m+[39m
+[31m+   expect(errors, `页面出现错误: ${errors.join(' | ')}`).toEqual([])[39m
+[31m+   assertNoUnexpectedResponse(badResponses)[39m
+[31m+ })[39m
+[31m+[39m
+[31m+ test('画像维度展开显示规则级明细与缺值兜底', async ({ page, request }) => {[39m
+[31m+   const { errors, badResponses } = trackErrors(page)[39m
+[31m+   await page.setViewportSize({ width: 1440, height: 900 })[39m
+[31m+   const token = await loginToken(request)[39m
+[31m+   const personId = await firstPersonId(request, token)[39m
+[31m+   await seedAuth(page, token)[39m
+[31m+[39m
+[31m+   await page.goto(`/portrait/${personId}`, { waitUntil: 'domcontentloaded' })[39m
+[31m+   const scoringButton = page.locator('[data-test="portrait-scoring-items"]')[39m
+[31m+   await expect(scoringButton).toBeVisible({ timeout: 20000 })[39m
+[31m+[39m
+[31m+   await page.locator('[data-test="portrait-template-select"]').click()[39m
+[31m+   await page.locator('.el-select-dropdown__item', { hasText: TARGET_TEMPLATE }).first().click()[39m
+[31m+   await expect(scoringButton).toBeEnabled({ timeout: 10000 })[39m
+[31m+[39m
+[31m+   const toggle = page.locator('[data-test="portrait-dimension-details-toggle"]').first()[39m
+[31m+   await expect(toggle).toBeVisible({ timeout: 20000 })[39m
+[31m+   await toggle.click()[39m
+[31m+[39m
+[31m+   const details = page.locator('[data-test="portrait-dimension-details"]').first()[39m
+[31m+   await expect(details).toBeVisible({ timeout: 20000 })[39m
+[31m+   const ruleRows = details.locator('.el-table__row')[39m
+[31m+   await expect(ruleRows.first()).toBeVisible({ timeout: 20000 })[39m
+[31m+   expect(await ruleRows.count()).toBeGreaterThan(0)[39m
+[31m+[39m
+[31m+   // 缺值兜底：至少一行显示「缺值→50」[39m
+[31m+   const missingTags = details.locator('[data-test="portrait-dimension-missing-tag"]')[39m
+[31m+   await expect(missingTags.first()).toBeVisible({ timeout: 20000 })[39m
+[31m+[39m
+[31m+   mkdirSync(EVIDENCE_DIR, { recursive: true })[39m
+[31m+   await page.locator('.dimension-layout').screenshot({[39m
+[31m+     path: resolve(EVIDENCE_DIR, 'p2-dimension-details.png'),[39m
+[31m+   })[39m
+[31m+[39m
+[31m+   expect(errors, `页面出现错误: ${errors.join(' | ')}`).toEqual([])[39m
+[31m+   assertNoUnexpectedResponse(badResponses)[39m
+[31m+ })[39m
+[31m+[39m
+
+[36m [2m❯[22m tests/l3-2-smoke.spec.ts:[2m122:44[22m[39m
+    [90m120| [39m    [34mexpect[39m(specs[33m.[39mlength)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)
+    [90m121| [39m    [35mfor[39m ([35mconst[39m spec [35mof[39m specs) {
+    [90m122| [39m      [34mexpect[39m([34mreadText[39m([34mjoin[39m(e2eDir[33m,[39m spec)))[33m.[39m[34mto
+Contain[39m([32m'fixtures/key-pag[39m…
+    [90m   | [39m                                           [31m^[39m
+    [90m123| [39m    }
+    [90m124| [39m    [34mexpect[39m([34mreadText[39m([33mSMOKE_SCRIPT[39m))[33m.[39m[34mtoContain[39m([32m
+'fixtures/key-pages.json'[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/r10-gateway-aggregate-v1102.spec.ts[2m > [22mv1.10.2 聚合网关交互[2m > [22m成功执行：
+透传步骤/超时/失败策略与映射，渲染结果且无错误条
+[31m[1mAssertionError[22m: expected "spy" to be called with arguments: [ '/gateway/aggregate', { …(4) } ][90m
+
+Received: 
+
+[1m  1st spy call:
+
+[22m[2m  Array [[22m
+[2m    "/gateway/aggregate",[22m
+[2m    Object {[22m
+[2m      "mapping": Object {[22m
+[32m-       "kb_total": "${kbs.data.total}",[90m
+[32m-       "model_total": "${models.data.total}",[90m
+[31m+       "dps_status": "${dps.data.status}",[90m
+[31m+       "models": "${models.data.data.models}",[90m
+[2m      },[22m
+[2m      "on_partial_failure": "return_errors",[22m
+[2m      "steps": Array [[22m
+[2m        Object {[22m
+[2m          "id": "models",[22m
+[2m          "method": "GET",[22m
+[32m-         "path": "/models",[90m
+[31m+         "path": "/openllm/v1/models",[90m
+[2m          "system": "openllm",[22m
+[32m-         "timeout_ms": 2000,[90m
+[31m+         "timeout_ms": 3000,[90m
+[2m        },[22m
+[2m        Object {[22m
+[32m-         "id": "kbs",[90m
+[31m+         "id": "dps",[90m
+[2m          "method": "GET",[22m
+[32m-         "path": "/kb/list",[90m
+[32m-         "system": "openrag",[90m
+[31m+         "path": "/health/liveness",[90m
+[31m+         "system": "dps",[90m
+[2m          "timeout_ms": 2000,[22m
+[2m        },[22m
+[2m      ],[22m
+[2m      "timeout_ms": 5000,[22m
+[2m    },[22m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/r10-gateway-aggregate-v1102.spec.ts:[2m36:24[22m[39m
+    [90m 34| [39m    [35mawait[39m [34mflushPromises[39m()
+    [90m 35| [39m
+    [90m 36| [39m    [34mexpect[39m(mocks[33m.[39mpost)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'/gateway/a
+ggregate'[39m[33m,[39m {
+    [90m   | [39m                       [31m^[39m
+    [90m 37| [39m      steps[33m:[39m [
+    [90m 38| [39m        { id[33m:[39m [32m'models'[39m[33m,[39m system[33m:[39m [32m'openllm'[39m[33m,[3
+9m path[33m:[39m [32m'/models'[39m[33m,[39m method[33m:[39m [32m'G[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m56 passed[39m[22m[90m (58)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m469 passed[39m[22m[90m (471)[39m
+[2m   Start at [22m 02:23:43
+[2m   Duration [22m 158.22s[2m (transform 28.38s, setup 0ms, collect 364.96s, tests 84.44s, environment 244.24s, prepare 19.26s)[22m
+

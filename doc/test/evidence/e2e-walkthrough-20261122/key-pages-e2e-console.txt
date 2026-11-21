@@ -1,0 +1,136 @@
+﻿
+Running 17 tests using 1 worker
+
+  ✓   1 [chromium] › tests\e2e\chat.spec.ts:22:5 › S6-T5-2 对话关键页 PASS（Q-FE-4b） › 对话（OpenLLM 会话） /openllm/conversations 渲染且无渲染兜底/无 console error/warn (1.7s)
+  ✓   2 [chromium] › tests\e2e\chat.spec.ts:22:5 › S6-T5-2 对话关键页 PASS（Q-FE-4b） › 对话（RAG 知识问答） /knowledge/chat 渲染且无渲染兜底/无 console error/warn (1.1s)
+  ✓   3 [chromium] › tests\e2e\knowledge.spec.ts:23:5 › S6-T5-2 知识关键页 PASS（Q-FE-4b） › 知识列表 /knowledge/list 渲染且无渲染兜底/无 console error/warn (880ms)
+  ✓   4 [chromium] › tests\e2e\knowledge.spec.ts:23:5 › S6-T5-2 知识关键页 PASS（Q-FE-4b） › 知识详情 /knowledge/:id 渲染且无渲染兜底/无 console error/warn (1.1s)
+  ✓   5 [chromium] › tests\e2e\memory.spec.ts:21:5 › S6-T5-2 记忆关键页 PASS（Q-FE-4b） › 记忆列表 /memory/list 渲染且无渲染兜底/无 console error/warn (1.4s)
+  ✓   6 [chromium] › tests\e2e\memory.spec.ts:21:5 › S6-T5-2 记忆关键页 PASS（Q-FE-4b） › 记忆会话 /memory/sessions 渲染且无渲染兜底/无 console error/warn (1.2s)
+  ✓   7 [chromium] › tests\e2e\portrait-lineage.spec.ts:70:1 › 模板详情展示族谱/标注模板/标签产出/评分项四联视图 (9.0s)
+  ✓   8 [chromium] › tests\e2e\portrait-lineage.spec.ts:119:1 › 画像维度展开显示规则级明细与缺值兜底 (7.9s)
+  ✘   9 [chromium] › tests\e2e\portrait-multilevel-review.spec.ts:154:1 › 标注队列展示审核进度与按级审核按钮 (11.9s)
+  ✘  10 [chromium] › tests\e2e\portrait-multilevel-review.spec.ts:183:1 › 审核记录弹窗展示逐级留痕 (1.0m)
+  ✓  11 [chromium] › tests\e2e\portrait-policies.spec.ts:69:1 › 模板评分项页签展示证据策略与审核级数摘要 (9.5s)
+  ✓  12 [chromium] › tests\e2e\portrait-policies.spec.ts:97:1 › 标注工作台支持录入证据来源 (2.6s)
+  ✓  13 [chromium] › tests\e2e\portrait-policies.spec.ts:128:1 › 画像详情展示异常预警区块 (2.4s)
+  ✓  14 [chromium] › tests\e2e\portrait-scoring-sources.spec.ts:54:1 › 画像评分项弹窗展示维度标注来源与 crime/social 缺口 (8.2s)
+  ✓  15 [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像列表 /portrait/list 渲染且无渲染兜底/无 console error/warn (1.4s)
+  ✓  16 [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像总览 /portrait/overview 渲染且无渲染兜底/无 console error/warn (1.5s)
+  ✘  17 [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn (16.0s)
+
+
+  1) [chromium] › tests\e2e\portrait-multilevel-review.spec.ts:154:1 › 标注队列展示审核进度与按级审核按钮 ───────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('th').filter({ hasText: '审核进度' })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('th').filter({ hasText: '审核进度' }) with timeout 10000ms
+      - waiting for locator('th').filter({ hasText: '审核进度' })
+
+
+      158 |   await openQueue(page, token)
+      159 |
+    > 160 |   await expect(page.locator('th', { hasText: '审核进度' })).toBeVisible()
+          |                                                         ^
+      161 |
+      162 |   const progressCells = page.locator('[data-test="annotation-review-progress-text"]')
+      163 |   await expect(progressCells.nth(0)).toHaveText('第 1/2 级')
+        at D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\tests\e2e\portrait-multilevel-review.spec.ts:160:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-标注队列展示审核进度与按级审核按钮-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-标注队列展示审核进度与按级审核按钮-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-标注队列展示审核进度与按级审核按钮-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-标注队列展示审核进度与按级审核按钮-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\portrait-multilevel-review.spec.ts:183:1 › 审核记录弹窗展示逐级留痕 ────────────────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('[data-test="annotation-review-log"]').first()
+
+
+      187 |   await openQueue(page, token)
+      188 |
+    > 189 |   await page.locator('[data-test="annotation-review-log"]').first().click()
+          |                                                                     ^
+      190 |
+      191 |   const dialog = page.locator('[data-test="annotation-review-log-dialog"], .el-dialog', {
+      192 |     hasText: '审核记录',
+        at D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\tests\e2e\portrait-multilevel-review.spec.ts:189:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-审核记录弹窗展示逐级留痕-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-审核记录弹窗展示逐级留痕-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-审核记录弹窗展示逐级留痕-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-multilevel-review-审核记录弹窗展示逐级留痕-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn 
+
+    Error: 关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test="feature-dist"] | [data-test="isolation-not-found"] | [data-test="isolation-empty"] | [data-test="isolation-forbidden"]）
+
+    关键页 /portrait/dps-tenant-001_admin1_001 未渲染关键元素/受控空态（期望其一：[data-test="feature-dist"] | [data-test="isolation-not-found"] | [data-test="isolation-empty"] | [data-test="isolation-forbidden"]）
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 15000ms exceeded while waiting on the predicate
+
+       at support\key-page.ts:82
+
+      80 |       },
+      81 |     )
+    > 82 |     .toBe(true)
+         |      ^
+      83 |
+      84 |   // 防白屏：渲染兜底不得触发
+      85 |   await expect(page.locator(RENDER_FALLBACK_SELECTOR)).toHaveCount(0)
+        at assertKeyPage (D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\tests\e2e\support\key-page.ts:82:6)
+        at D:\Trae CN\myproject\Dev\OpenBase\openbase-ui\tests\e2e\portrait.spec.ts:23:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\doc\test\evidence\s6\ui-e2e\artifacts\portrait-S6-T5-2-画像关键页-PAS-aa78a-且无渲染兜底-无-console-error-warn-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [chromium] › tests\e2e\portrait-multilevel-review.spec.ts:154:1 › 标注队列展示审核进度与按级审核按钮 ────────────
+    [chromium] › tests\e2e\portrait-multilevel-review.spec.ts:183:1 › 审核记录弹窗展示逐级留痕 ─────────────────
+    [chromium] › tests\e2e\portrait.spec.ts:21:5 › S6-T5-2 画像关键页 PASS（Q-FE-4b） › 画像详情 /portrait/:id 渲染且无渲染兜底/无 console error/warn 
+  14 passed (2.4m)

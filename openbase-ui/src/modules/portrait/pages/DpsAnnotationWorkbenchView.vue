@@ -188,7 +188,7 @@
 
           <div class="pager">
             <el-pagination
-              small
+              size="small"
               layout="prev, pager, next"
               :total="queueTotal"
               :page-size="pageSize"

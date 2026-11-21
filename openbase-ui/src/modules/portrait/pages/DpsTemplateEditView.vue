@@ -83,8 +83,8 @@
         </el-form-item>
         <el-form-item label="模板类型">
           <el-radio-group v-model="form.template_kind" data-test="edit-template-kind">
-            <el-radio-button label="composite">复合模板</el-radio-button>
-            <el-radio-button label="component">子模板</el-radio-button>
+            <el-radio-button value="composite">复合模板</el-radio-button>
+            <el-radio-button value="component">子模板</el-radio-button>
           </el-radio-group>
         </el-form-item>
       </el-form>

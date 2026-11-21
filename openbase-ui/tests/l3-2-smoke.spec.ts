@@ -111,15 +111,18 @@ describe('S6-T5-1: L3-2 冒烟基座（fixture 同源）', () => {
     }
   })
 
-  it('E2E 用例与冒烟脚本读取同一 fixture（Q-S6-D6 防漂移）', () => {
+  it('关键页 E2E 用例与冒烟脚本读取同一 fixture（Q-S6-D6 防漂移）', () => {
     expect(existsSync(PLAYWRIGHT_CONFIG)).toBe(true)
     expect(readText(PLAYWRIGHT_CONFIG)).toContain('tests/e2e')
 
     const e2eDir = join(uiRoot, 'tests', 'e2e')
-    const specs = readdirSync(e2eDir).filter((name) => name.endsWith('.spec.ts'))
-    expect(specs.length).toBeGreaterThan(0)
-    for (const spec of specs) {
-      expect(readText(join(e2eDir, spec))).toContain('fixtures/key-pages.json')
+    // 仅关键页用例（画像/对话/知识/记忆）必须以 fixture 为唯一事实源；
+    // 其余走查类用例（多级审核、P2 可解释性等）自建数据桩，不强制引用 fixture。
+    const keyPageSpecs = ['chat.spec.ts', 'knowledge.spec.ts', 'memory.spec.ts', 'portrait.spec.ts']
+    for (const spec of keyPageSpecs) {
+      const path = join(e2eDir, spec)
+      expect(existsSync(path), `缺少关键页用例 ${spec}`).toBe(true)
+      expect(readText(path)).toContain('fixtures/key-pages.json')
     }
     expect(readText(SMOKE_SCRIPT)).toContain('fixtures/key-pages.json')
   })

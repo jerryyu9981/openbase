@@ -2,8 +2,8 @@
  * P4 多级审核走查（headless Chromium 固定视口）
  *
  * 覆盖《治理方案》v1.4.0 §15：
- *   1) 标注队列展示「审核进度」（第 N/M 级 / 已完成），按钮文案体现本级或终审；
- *   2) 审核记录弹窗展示逐级留痕；
+ *   1) 审核队列展示「级数」（第 N/M 级 / 已完成），按钮文案体现本级或终审；
+ *   2) 审核详情「审计时间线」展示逐级留痕；
  *   3) 无 pageerror / 非受控 4xx。
  *
  * 数据策略：用 `page.route` 固定标注相关响应（模板列表 / 队列 / 留痕），使断言文案与数据
@@ -138,6 +138,25 @@ async function stubAnnotationApis(page: Page) {
       },
     }),
   )
+  // 审核详情对照所需的上游数据（A4：缺失时前端回落队列摘要，但会留下受控 404/500）
+  await page.route('**/api/v1/dps-proxy/annotations/anno-p4-multi-001', (route) =>
+    route.fulfill({
+      json: {
+        code: 0,
+        message: 'success',
+        data: { ...MULTI_LEVEL_ROW, values: MULTI_LEVEL_ROW.fields },
+      },
+    }),
+  )
+  await page.route('**/api/v1/dps-proxy/portraits/P4-E2E-SEED', (route) =>
+    route.fulfill({
+      json: {
+        code: 0,
+        message: 'success',
+        data: { person_id: 'P4-E2E-SEED', name: '样例主体', tags: [], dimensions: [] },
+      },
+    }),
+  )
 }
 
 async function openQueue(page: Page, token: string) {
@@ -145,6 +164,7 @@ async function openQueue(page: Page, token: string) {
   await seedAuth(page, token)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/portrait/dps/annotations', { waitUntil: 'domcontentloaded' })
+  await page.locator('[data-test="annotation-view-toggle"]').getByText('审核收件箱').click()
   await expect(page.locator('[data-test="annotation-queue-table"]')).toBeVisible({ timeout: 20000 })
   await expect(
     page.locator('[data-test="annotation-review-progress-text"]').first(),
@@ -157,19 +177,17 @@ test('标注队列展示审核进度与按级审核按钮', async ({ page }) => 
   const token = await loginToken()
   await openQueue(page, token)
 
-  await expect(page.locator('th', { hasText: '审核进度' })).toBeVisible()
+  await expect(page.locator('th', { hasText: '级数' })).toBeVisible()
 
   const progressCells = page.locator('[data-test="annotation-review-progress-text"]')
-  await expect(progressCells.nth(0)).toHaveText('第 1/2 级')
-  await expect(progressCells.nth(1)).toHaveText('第 0/1 级')
+  await expect(progressCells.nth(0)).toHaveText('1/2')
+  await expect(progressCells.nth(1)).toHaveText('0/1')
 
-  // 多级行：本级通过后仅剩最后一级 → 终审通过；单级行仍为「通过」
-  await expect(
-    page.locator('[data-test="annotation-approve"]').filter({ hasText: '终审通过' }),
-  ).toHaveCount(1)
-  await expect(
-    page.locator('[data-test="annotation-approve"]').filter({ hasText: /^通过$/ }),
-  ).toHaveCount(1)
+  // 多级行：本级通过后仅剩最后一级 → 终审通过；切换到单级行后按钮为「通过」
+  const approve = page.locator('[data-test="annotation-approve"]')
+  await expect(approve).toHaveText('终审通过')
+  await page.locator('[data-test="annotation-queue-table"] tbody tr').nth(1).click()
+  await expect(approve).toHaveText('通过')
 
   mkdirSync(EVIDENCE_DIR, { recursive: true })
   await page.locator('[data-test="annotation-queue-card"]').screenshot({
@@ -180,24 +198,20 @@ test('标注队列展示审核进度与按级审核按钮', async ({ page }) => 
   assertNoUnexpectedResponse(badResponses)
 })
 
-test('审核记录弹窗展示逐级留痕', async ({ page }) => {
+test('审核记录时间线展示逐级留痕', async ({ page }) => {
   test.setTimeout(60000)
   const { errors, badResponses } = trackErrors(page)
   const token = await loginToken()
   await openQueue(page, token)
 
-  await page.locator('[data-test="annotation-review-log"]').first().click()
-
-  const dialog = page.locator('[data-test="annotation-review-log-dialog"], .el-dialog', {
-    hasText: '审核记录',
-  }).first()
-  await expect(dialog).toBeVisible({ timeout: 20000 })
-  await expect(dialog).toContainText('第 1 级')
-  await expect(dialog).toContainText('一级通过')
-  await expect(dialog).toContainText('u-e2e-1')
+  const timeline = page.locator('[data-test="annotation-timeline-card"]')
+  await expect(timeline).toBeVisible({ timeout: 20000 })
+  await expect(timeline).toContainText('第 1 级')
+  await expect(timeline).toContainText('一级通过')
+  await expect(timeline).toContainText('u-e2e-1')
 
   mkdirSync(EVIDENCE_DIR, { recursive: true })
-  await dialog.screenshot({ path: resolve(EVIDENCE_DIR, 'p4-review-log.png') })
+  await timeline.screenshot({ path: resolve(EVIDENCE_DIR, 'p4-review-log.png') })
 
   expect(errors, `页面出现错误: ${errors.join(' | ')}`).toEqual([])
   assertNoUnexpectedResponse(badResponses)
