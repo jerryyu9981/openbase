@@ -1,5 +1,6 @@
 <template>
-  <PageContainer title="标签体系" description="标签分类 → 标签值两层结构，可下钻血缘与评分命中" test-id="dps-tag-system-view-page">
+  <PageContainer title="标签体系" description="语义定义：标签分类与标签值词表；标注模板按维度引用，画像模板按 tag_code 消费" test-id="dps-tag-system-view-page">
+    <ConceptNav current="tag" />
     <el-alert type="info" show-icon :closable="false" class="mb-16" data-test="tag-readonly-tip">
       <template #title>本页为只读呈现：分类 → 标签值两层结构</template>
       <div>分类的增删改沿用既有「标签分类管理」能力（/portrait/tags），本页不复制编辑入口。</div>
@@ -167,6 +168,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import ConceptNav from '../components/ConceptNav.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

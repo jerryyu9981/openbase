@@ -1,5 +1,6 @@
 <template>
-  <PageContainer title="标签管理" description="标签分类与标签值维护" test-id="tags-page">
+  <PageContainer title="标签分类与词表" description="语义定义：维护标签分类及 dimension_code；配置后标注模板的 target_dimension 受校验" test-id="tags-page">
+    <ConceptNav current="tag" />
     <!-- 错误态 -->
     <el-alert
       v-if="errorMessage"
@@ -32,6 +33,12 @@
     <div v-loading="loading" class="ob-table-scroll">
       <el-table :data="filteredTags" stripe data-test="tag-table">
         <el-table-column prop="name" label="分类名" min-width="160" />
+        <el-table-column label="维度编码" min-width="150">
+          <template #default="{ row }">
+            <code v-if="row.dimension_code" class="dimension-code">{{ row.dimension_code }}</code>
+            <span v-else class="text-secondary">未映射</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="description" label="描述" min-width="220">
           <template #default="{ row }">
             <span :class="{ 'text-secondary': !row.description }">{{ row.description || '—' }}</span>
@@ -60,6 +67,12 @@
         <el-form-item label="名称" required>
           <el-input v-model="form.name" placeholder="如：行为标签" data-test="tag-name-input" />
         </el-form-item>
+        <el-form-item label="维度编码">
+          <el-input v-model="form.dimensionCode" placeholder="如 basic，须与画像模板维度 code 一致" data-test="tag-dimension-input" />
+          <div class="form-hint">
+            配置后，标注模板中该维度的 target_dimension 将通过校验；留空表示暂不参与映射。
+          </div>
+        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="分类用途说明" />
         </el-form-item>
@@ -74,6 +87,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import ConceptNav from '../components/ConceptNav.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsTagCategory } from '@/core/api/dps'
@@ -81,6 +95,7 @@ import { dpsApi, type DpsTagCategory } from '@/core/api/dps'
 interface TagForm {
   name: string
   description: string
+  dimensionCode: string
 }
 
 const keyword = ref('')
@@ -89,12 +104,13 @@ const editingId = ref<string | null>(null)
 const loading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
-const form = reactive<TagForm>({ name: '', description: '' })
+const form = reactive<TagForm>({ name: '', description: '', dimensionCode: '' })
 const categories = ref<DpsTagCategory[]>([])
 
 const statCards = computed(() => [
   { label: '标签分类总数', value: categories.value.length },
   { label: '含描述分类', value: categories.value.filter((c) => c.description).length },
+  { label: '已映射维度', value: categories.value.filter((c) => c.dimension_code).length },
 ])
 
 const filteredTags = computed(() => {
@@ -118,6 +134,7 @@ function openForm(row?: DpsTagCategory) {
   editingId.value = row?.id ?? null
   form.name = row?.name ?? ''
   form.description = row?.description ?? ''
+  form.dimensionCode = row?.dimension_code ?? ''
   formVisible.value = true
 }
 
@@ -146,14 +163,24 @@ async function saveTag() {
     errorMessage.value = `分类名称「${name}」已存在，请更换名称`
     return
   }
+  const dimensionCode = form.dimensionCode.trim()
+  if (dimensionCode && !/^[A-Za-z0-9_-]{1,50}$/.test(dimensionCode)) {
+    errorMessage.value = '维度编码仅允许字母、数字、下划线、连字符，长度 1~50，且不能包含冒号'
+    return
+  }
   errorMessage.value = ''
   saving.value = true
   try {
+    const payload = {
+      name,
+      description: form.description.trim(),
+      ...(dimensionCode ? { dimension_code: dimensionCode } : {}),
+    }
     if (editingId.value) {
-      await dpsApi.updateTagCategory(editingId.value, { name, description: form.description.trim() })
+      await dpsApi.updateTagCategory(editingId.value, payload)
       ElMessage.success('分类已更新')
     } else {
-      await dpsApi.createTagCategory({ name, description: form.description.trim() })
+      await dpsApi.createTagCategory(payload)
       ElMessage.success('分类已创建')
     }
     formVisible.value = false
@@ -187,4 +214,17 @@ onMounted(() => {
 .stat-card { text-align: center; }
 .stat-value { font-size: 28px; font-weight: 700; line-height: 1.2; color: var(--ob-text); }
 .stat-label { margin-top: 6px; font-size: 13px; }
+.dimension-code {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--ob-bg);
+  font-size: 12px;
+  line-height: 20px;
+}
+.form-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ob-text-disabled);
+}
 </style>

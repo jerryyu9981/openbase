@@ -1,5 +1,6 @@
 <template>
-  <PageContainer title="模板中心" description="模板族健康度、发布状态与治理入口" test-id="dps-template-list-view-page">
+  <PageContainer title="画像模板" description="评分契约：定义维度、权重与打分规则，激活后参与画像计算；左侧分类仅用于治理" test-id="dps-template-list-view-page">
+    <ConceptNav current="portrait-template" />
     <!-- 顶部状态概览 -->
     <div class="ob-metrics health-metrics" data-test="template-health-overview">
       <div class="metric">
@@ -500,6 +501,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import ConceptNav from '../components/ConceptNav.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

@@ -1,5 +1,6 @@
 <template>
-  <PageContainer title="画像列表" description="画像列表、状态与详情入口；支持列设置、导出与批量操作" test-id="portrait-list-page">
+  <PageContainer title="画像结果" description="计算结果：按画像模板重算生成的画像快照与版本；模板配置请进入「画像模板」" test-id="portrait-list-page">
+    <ConceptNav current="portrait" />
     <el-result
       v-if="isForbidden"
       icon="error"
@@ -200,6 +201,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import ConceptNav from '../components/ConceptNav.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'

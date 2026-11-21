@@ -1,5 +1,5 @@
 <template>
-  <PageContainer title="规则引擎" description="画像规则与计算口径（只读总览）" test-id="rules-page">
+  <PageContainer title="评分规则" description="按当前激活的画像模板只读展示维度权重与打分规则；编辑请进入画像模板工作台" test-id="rules-page">
     <el-alert
       title="规则以「画像模板」为单位生效：本页只读展示当前激活模板的维度、权重与打分规则，编辑请进入模板工作台。"
       type="info"
@@ -35,12 +35,16 @@
           <el-option
             v-for="item in templates"
             :key="item.code"
-            :label="`${item.name || item.code}（${item.code}）`"
+            :label="item.name || item.code"
             :value="item.code"
-          />
+          >
+            <NameCodeLabel :name="item.name" :code="item.code" />
+          </el-option>
         </el-select>
         <el-tag v-if="activeTemplate?.version" size="small" type="info">v{{ activeTemplate.version }}</el-tag>
-        <el-tag v-if="activeTemplate?.extends" size="small" type="warning">继承 {{ activeTemplate.extends }}</el-tag>
+        <el-tag v-if="activeTemplate?.extends" size="small" type="warning">
+          继承 <NameCodeLabel :name="extendsName" :code="activeTemplate.extends" />
+        </el-tag>
         <div class="toolbar-actions">
           <el-button size="small" :loading="loading" data-test="rules-refresh" @click="reload">刷新</el-button>
           <el-button
@@ -137,6 +141,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { dpsApi, type DpsPortraitTemplate } from '@/core/api/dps'
@@ -164,6 +169,12 @@ const loading = ref(false)
 const presentation = ref<DpsErrorPresentation | null>(null)
 
 const dimensions = computed<DimensionView[]>(() => parseDimensions(activeTemplate.value?.dimension_config))
+/** 父模板中文名称（继承标签中与 code 分开展示）。 */
+const extendsName = computed(() => {
+  const code = activeTemplate.value?.extends
+  if (!code) return ''
+  return templates.value.find((item) => item.code === code)?.name || ''
+})
 const weightTotal = computed(() => dimensions.value.reduce((sum, item) => sum + item.weight, 0))
 const ruleCount = computed(() => dimensions.value.reduce((sum, item) => sum + item.rules.length, 0))
 

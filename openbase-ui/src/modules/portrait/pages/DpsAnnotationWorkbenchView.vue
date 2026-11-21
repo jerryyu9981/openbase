@@ -1,9 +1,10 @@
 <template>
   <PageContainer
-    title="标注作业台"
-    :description="view === 'review' ? '审核收件箱：按级对照提交内容与当前画像，逐条或批量复核' : '选择主体 → 按模板录入 → 提交待审；提交后自动进入下一条'"
+    title="标注记录与审核"
+    :description="view === 'review' ? '审核收件箱：按级对照提交内容与当前画像，逐条或批量复核' : '标注记录：选择主体 → 按模板录入 → 提交待审；提交后自动进入下一条'"
     test-id="dps-annotation-workbench"
   >
+    <ConceptNav current="annotation" />
     <template #actions>
       <el-radio-group :model-value="view" data-test="annotation-view-toggle" @update:model-value="switchView">
         <el-radio-button value="entry">录入作业</el-radio-button>
@@ -604,6 +605,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import ConceptNav from '../components/ConceptNav.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'

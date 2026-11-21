@@ -1,5 +1,6 @@
 <template>
-  <PageContainer title="标注模板管理" description="标注模板列表与字段维护" test-id="dps-annotation-template-view-page">
+  <PageContainer title="标注模板" description="采集契约：定义字段与标签产出，必须归属一个画像模板" test-id="dps-annotation-template-view-page">
+    <ConceptNav current="annotation-template" />
     <div class="page-toolbar">
       <el-input v-model="keyword" placeholder="搜索 code / 名称 / scenario" clearable style="width: 240px" data-test="annotation-template-filter" />
       <el-select v-model="scenarioFilter" placeholder="scenario：全部" clearable style="width: 170px" data-test="annotation-scenario-filter">
@@ -177,6 +178,7 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import ConceptNav from '../components/ConceptNav.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'

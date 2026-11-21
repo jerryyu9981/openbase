@@ -56,9 +56,11 @@ export const routes: RouteRecordRaw[] = [
 ]
 
 /**
- * 板块导航（v2.0.0 四分组：概览 / 标注作业 / 模板与口径 / 标签与画像）
+ * 板块导航（v2.8.0 五类对象分区：概览 / 标签 / 标注模板 / 标注 / 画像模板 / 画像）
  *
- * 路径全部沿用既有 22 条 route record；仅调整分组与文案，不做路由拆分。
+ * 分组顺序即“语义定义 → 采集契约 → 采集记录 → 评分契约 → 计算结果”的链路，
+ * 避免「标注模板 / 标注」「画像模板 / 画像」在菜单层混用。
+ * 路径全部沿用既有 route record；仅调整分组与文案，不做路由拆分。
  * 「审核收件箱」复用标注作业台路由 `?view=review`，故不额外占菜单项。
  */
 export const navItems = [
@@ -70,29 +72,39 @@ export const navItems = [
     ],
   },
   {
-    label: '标注作业',
+    label: '标签',
     items: [
-      { path: '/portrait/dps/annotations', title: '标注作业台' },
-      { path: '/portrait/dps/annotation-adapters', title: 'AI 候选复核' },
+      { path: '/portrait/dps/tags', title: '标签体系' },
+      { path: '/portrait/tags', title: '标签分类与词表' },
+      { path: '/portrait/dps/lineage', title: '标签血缘' },
+    ],
+  },
+  {
+    label: '标注模板',
+    items: [
       { path: '/portrait/dps/annotation-templates', title: '标注模板' },
     ],
   },
   {
-    label: '模板与口径',
+    label: '标注',
     items: [
-      { path: '/portrait/dps/templates', title: '模板中心' },
+      { path: '/portrait/dps/annotations', title: '标注记录与审核' },
+      { path: '/portrait/dps/annotation-adapters', title: 'AI 候选复核' },
+    ],
+  },
+  {
+    label: '画像模板',
+    items: [
+      { path: '/portrait/dps/templates', title: '画像模板' },
       { path: '/portrait/dps/template-packages', title: '模板包' },
       { path: '/portrait/dps/scoring-types', title: '评分类型' },
       { path: '/portrait/dps/scoring-consistency', title: '口径体检' },
     ],
   },
   {
-    label: '标签与画像',
+    label: '画像',
     items: [
-      { path: '/portrait/dps/tags', title: '标签体系' },
-      { path: '/portrait/tags', title: '标签分类管理' },
-      { path: '/portrait/dps/lineage', title: '标签血缘' },
-      { path: '/portrait/list', title: '画像列表' },
+      { path: '/portrait/list', title: '画像结果' },
       { path: '/portrait/search', title: '画像搜索' },
       { path: '/portrait/rules', title: '评分规则' },
       { path: '/portrait/dps/measures', title: '措施建议' },
