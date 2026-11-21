@@ -7,7 +7,7 @@
 
     <div class="ob-table-scroll">
       <el-table :data="modelValue" stripe empty-text="暂无绑定" data-test="binding-table">
-        <el-table-column label="标注模板 code" min-width="240">
+        <el-table-column label="标注模板" min-width="240">
           <template #default="{ row, $index }">
             <el-select
               :model-value="String(row.annotation_template || '')"
@@ -15,11 +15,18 @@
               filterable
               allow-create
               default-first-option
-              placeholder="选择/输入标注模板 code"
+              placeholder="选择/输入标注模板"
               data-test="binding-annotation-template"
               @update:model-value="(value: string) => patchRow($index, { annotation_template: String(value || '') })"
             >
-              <el-option v-for="code in annotationTemplates" :key="code" :label="code" :value="code" />
+              <el-option
+                v-for="item in annotationTemplates"
+                :key="item.code"
+                :label="item.name || item.code"
+                :value="item.code"
+              >
+                <NameCodeLabel :name="item.name" :code="item.code" />
+              </el-option>
             </el-select>
           </template>
         </el-table-column>
@@ -58,12 +65,13 @@
 
 <script setup lang="ts">
 import { newBinding, type BindingModel } from './model'
+import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 
 const props = withDefaults(
   defineProps<{
     modelValue: BindingModel[]
     dimensionCodes?: string[]
-    annotationTemplates?: string[]
+    annotationTemplates?: Array<{ code: string; name?: string }>
   }>(),
   { dimensionCodes: () => [], annotationTemplates: () => [] },
 )

@@ -47,7 +47,15 @@
 
     <el-card header="继承 extends（深度 ≤ 2 层）" class="mb-16">
       <el-select v-model="form.extends" clearable placeholder="选择父模板（可不选）" style="width: 300px" data-test="edit-extends">
-        <el-option v-for="item in extendsOptions" :key="item.code" :label="`${item.code}（${item.status || 'draft'}）`" :value="item.code" />
+        <el-option
+          v-for="item in extendsOptions"
+          :key="item.code"
+          :label="item.name || item.code"
+          :value="item.code"
+        >
+          <NameCodeLabel :name="item.name" :code="item.code" />
+          <span class="muted sm">{{ item.status || 'draft' }}</span>
+        </el-option>
       </el-select>
       <el-alert
         v-if="extendsIssue"
@@ -61,6 +69,77 @@
         <div>约束：不得指向自身、不得成环、深度上限 2 层、父模板必须存在。前端仅即时提示，最终以服务端 400 为准。</div>
       </el-alert>
       <div class="muted sm mt-12">维度解析口径：父维度先入 → 子覆盖同名 → 追加新维度。</div>
+    </el-card>
+
+    <el-card header="分类与子模板挂载（v2.12.0）" class="mb-16" data-test="edit-catalog">
+      <el-form label-width="150px">
+        <el-form-item label="模板分类">
+          <el-select v-model="form.category_id" clearable placeholder="选择具体画像分类（L3）" style="width: 320px" data-test="edit-category">
+            <el-option v-for="item in leafCategories" :key="item.id" :label="item.name" :value="item.id">
+              <NameCodeLabel :name="item.name" :code="item.code" />
+            </el-option>
+          </el-select>
+          <span class="muted sm">分类树在「模板族管理 → 分类管理」维护</span>
+        </el-form-item>
+        <el-form-item label="模板类型">
+          <el-radio-group v-model="form.template_kind" data-test="edit-template-kind">
+            <el-radio-button label="composite">复合模板</el-radio-button>
+            <el-radio-button label="component">子模板</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+
+      <el-divider content-position="left">子模板挂载</el-divider>
+      <template v-if="isEdit && form.template_kind === 'composite'">
+        <div class="mount-toolbar">
+          <el-select v-model="mountChildCode" filterable placeholder="选择子模板" style="width: 280px" data-test="mount-child">
+            <el-option
+              v-for="item in mountableComponents"
+              :key="item.code"
+              :label="item.name || item.code"
+              :value="item.code"
+            >
+              <NameCodeLabel :name="item.name" :code="item.code" />
+            </el-option>
+          </el-select>
+          <el-input-number v-model="mountWeight" :min="0" :max="1" :step="0.05" :precision="2" placeholder="权重" />
+          <el-checkbox v-model="mountRequired">必挂</el-checkbox>
+          <el-button type="primary" :disabled="!mountChildCode" data-test="mount-submit" @click="mountComponent">挂载</el-button>
+        </div>
+        <el-table v-loading="componentsLoading" :data="components" size="small" empty-text="尚未挂载子模板" data-test="mount-table">
+          <el-table-column label="子模板" min-width="240">
+            <template #default="{ row }">
+              <NameCodeLabel :name="row.child_name" :code="row.child_code" layout="stack" />
+            </template>
+          </el-table-column>
+          <el-table-column label="版本" width="90">
+            <template #default="{ row }">{{ row.child_version ?? '-' }}</template>
+          </el-table-column>
+          <el-table-column label="权重" width="110">
+            <template #default="{ row }">{{ row.weight_override ?? '继承' }}</template>
+          </el-table-column>
+          <el-table-column label="必挂" width="80">
+            <template #default="{ row }">
+              <el-tag size="small" :type="row.required ? 'warning' : 'info'" effect="plain">{{ row.required ? '是' : '否' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180" fixed="right">
+            <template #default="{ row, $index }">
+              <el-button link type="primary" size="small" :disabled="$index === 0" @click="moveComponent($index, -1)">上移</el-button>
+              <el-button link type="primary" size="small" :disabled="$index === components.length - 1" @click="moveComponent($index, 1)">下移</el-button>
+              <el-button link type="danger" size="small" data-test="mount-remove" @click="unmountComponent(row)">卸载</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <p class="muted sm mt-8">挂载变更会写入模板版本快照；必挂子模板需先取消必挂才能卸载。</p>
+      </template>
+      <el-alert
+        v-else
+        type="info"
+        show-icon
+        :closable="false"
+        title="保存为复合模板后，可在此挂载子模板；子模板仅用于组合，不能再次挂载其他模板。"
+      />
     </el-card>
 
     <el-card header="配置块（JSON 原样编辑 · 前端不解析内部结构）" class="mb-16">
@@ -94,10 +173,11 @@
 
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
+import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { dpsApi, type DpsPortraitTemplate } from '@/core/api/dps'
+import { dpsApi, type DpsPortraitTemplate, type DpsTemplateCategory, type DpsTemplateComponent } from '@/core/api/dps'
 import { describeDpsError, type DpsErrorPresentation } from '@/core/api/error'
 
 const route = useRoute()
@@ -113,6 +193,8 @@ const form = reactive({
   status: 'active',
   description: '',
   extends: '' as string,
+  category_id: '' as string,
+  template_kind: 'composite' as 'composite' | 'component',
 })
 
 const jsonBlocks = reactive<Record<string, string>>({
@@ -124,6 +206,12 @@ const jsonBlocks = reactive<Record<string, string>>({
 })
 
 const templates = ref<DpsPortraitTemplate[]>([])
+const categories = ref<DpsTemplateCategory[]>([])
+const components = ref<DpsTemplateComponent[]>([])
+const componentsLoading = ref(false)
+const mountChildCode = ref('')
+const mountWeight = ref<number | null>(null)
+const mountRequired = ref(true)
 const saving = ref(false)
 const error = ref<DpsErrorPresentation | null>(null)
 
@@ -135,6 +223,16 @@ const templateMap = computed<Record<string, DpsPortraitTemplate>>(() => {
   return map
 })
 const extendsOptions = computed(() => templates.value.filter((item) => item.code !== form.code))
+const leafCategories = computed(() => categories.value.filter((item) => Number(item.level) === 3))
+const mountedCodes = computed(() => new Set(components.value.map((item) => item.child_code)))
+const mountableComponents = computed(() =>
+  templates.value.filter(
+    (item) =>
+      item.template_kind === 'component' &&
+      item.code !== form.code &&
+      !mountedCodes.value.has(item.code),
+  ),
+)
 const canSave = computed(() => !!form.code && !!form.name)
 
 /** 继承链深度（>2 或成环 → 返回 99 作为非法哨兵） */
@@ -172,8 +270,12 @@ function parseBlock(raw: string, label: string): unknown {
 }
 
 async function load() {
-  const list = await dpsApi.listTemplates().catch(() => ({ items: [] as DpsPortraitTemplate[] }))
+  const [list, categoryList] = await Promise.all([
+    dpsApi.listTemplates().catch(() => ({ items: [] as DpsPortraitTemplate[] })),
+    dpsApi.listTemplateCategories().catch(() => [] as DpsTemplateCategory[]),
+  ])
   templates.value = list.items || []
+  categories.value = categoryList
   if (!isEdit.value) return
   try {
     const template = await dpsApi.getTemplate(editingCode.value)
@@ -184,13 +286,79 @@ async function load() {
     form.status = String(template.status || 'active')
     form.description = String(template.description || '')
     form.extends = template.extends ? String(template.extends) : ''
+    form.category_id = template.category_id ? String(template.category_id) : ''
+    form.template_kind = template.template_kind === 'component' ? 'component' : 'composite'
     jsonBlocks.dimension_config = JSON.stringify(template.dimension_config ?? {}, null, 2)
     jsonBlocks.attributes_schema = JSON.stringify(template.attributes_schema ?? {}, null, 2)
     jsonBlocks.tag_bindings = JSON.stringify(template.tag_bindings ?? [], null, 2)
     jsonBlocks.evidence_policy = JSON.stringify(template.evidence_policy ?? {}, null, 2)
     jsonBlocks.anomaly_rules = JSON.stringify(template.anomaly_rules ?? {}, null, 2)
+    await loadComponents()
   } catch (caught) {
     error.value = describeDpsError(caught)
+  }
+}
+
+async function loadComponents() {
+  if (!isEdit.value || form.template_kind !== 'composite') {
+    components.value = []
+    return
+  }
+  componentsLoading.value = true
+  try {
+    components.value = await dpsApi.listTemplateComponents(editingCode.value)
+  } catch (caught) {
+    const presentation = describeDpsError(caught)
+    ElMessage.error(presentation.hint || presentation.title)
+  } finally {
+    componentsLoading.value = false
+  }
+}
+
+async function mountComponent() {
+  if (!mountChildCode.value) return
+  try {
+    const result = await dpsApi.mountTemplateComponent(editingCode.value, {
+      child_code: mountChildCode.value,
+      required: mountRequired.value,
+      weight_override: mountWeight.value,
+    })
+    components.value = result.components
+    mountChildCode.value = ''
+    mountWeight.value = null
+    ElMessage.success('子模板已挂载')
+  } catch (caught) {
+    const presentation = describeDpsError(caught)
+    ElMessage.error(presentation.hint || presentation.title)
+  }
+}
+
+async function unmountComponent(row: DpsTemplateComponent) {
+  try {
+    components.value = await dpsApi.unmountTemplateComponent(editingCode.value, row.child_code)
+    ElMessage.success('子模板已卸载')
+  } catch (caught) {
+    const presentation = describeDpsError(caught)
+    ElMessage.error(presentation.hint || presentation.title)
+  }
+}
+
+async function moveComponent(index: number, offset: number) {
+  const target = index + offset
+  if (target < 0 || target >= components.value.length) return
+  const ordered = [...components.value]
+  const [moved] = ordered.splice(index, 1)
+  ordered.splice(target, 0, moved)
+  components.value = ordered
+  try {
+    components.value = await dpsApi.reorderTemplateComponents(
+      editingCode.value,
+      ordered.map((item) => item.child_code),
+    )
+  } catch (caught) {
+    const presentation = describeDpsError(caught)
+    ElMessage.error(presentation.hint || presentation.title)
+    await loadComponents()
   }
 }
 
@@ -211,6 +379,8 @@ async function save() {
       tag_bindings: parseBlock(jsonBlocks.tag_bindings, 'tag_bindings'),
       evidence_policy: parseBlock(jsonBlocks.evidence_policy, 'evidence_policy'),
       anomaly_rules: parseBlock(jsonBlocks.anomaly_rules, 'anomaly_rules'),
+      category_id: form.category_id || null,
+      template_kind: form.template_kind,
     }
   } catch (parseError) {
     ElMessage.warning((parseError as Error).message)
@@ -239,6 +409,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.mount-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
 .mb-16 { margin-bottom: 16px; }
 .mt-12 { margin-top: 12px; }
 .muted { color: var(--ob-text-secondary); }
