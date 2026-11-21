@@ -25,6 +25,12 @@ export interface DpsPortrait {
   overall_score?: number
   /** 解析后的 attributes（默认含 `attributes_json` 中的模板命名空间） */
   attributes?: Record<string, unknown>
+  /** T-DM-02：指定 template_code 查询时，画像结果口径是否已过期 */
+  stale?: boolean
+  /** 过期原因：template_missing | version_unknown | version_mismatch | result_missing */
+  stale_reason?: string | null
+  template_version?: string | null
+  current_template_version?: string | null
   version?: number
   status?: string
   created_at?: string
@@ -77,6 +83,10 @@ export interface DpsPortraitTemplate {
   template_kind?: 'composite' | 'component' | string
   /** manual=人工命名 / fallback=迁移回退（待补充中文名） */
   name_source?: 'manual' | 'fallback' | string
+  /** T-DM-01：停用响应中仍引用该模板的 active 标注模板数量 */
+  affected_annotation_templates?: number
+  /** T-DM-01：父模板停用门禁是否生效 */
+  parent_gate_enforced?: boolean
   [key: string]: unknown
 }
 
@@ -908,6 +918,10 @@ export const dpsApi = {
     page_size?: number
     keyword?: string
     external_id?: string
+    /** T-DM-02：指定画像模板口径（stale 过滤必须同时提供） */
+    template_code?: string
+    /** T-DM-02：仅看过期画像 */
+    stale?: boolean
   }): Promise<{ items: DpsPortrait[]; total?: number }> {
     const { data } = await http.get<{ code: number; data: { items: DpsPortrait[]; total?: number } }>('/dps-proxy/portraits', { params })
     return data.data

@@ -65,6 +65,7 @@
           </el-checkbox>
         </el-popover>
         <el-button data-test="portrait-export" @click="exportCsv">导出 CSV</el-button>
+        <el-checkbox v-model="staleOnly" data-test="portrait-stale-switch" @change="onStaleFilterChange">仅看过期</el-checkbox>
         <el-button :loading="loading" data-test="portrait-refresh" @click="loadData">刷新</el-button>
         <span class="muted sm">关键字支持服务端检索（姓名/person_id/外部 ID/标签名）</span>
       </div>
@@ -111,6 +112,18 @@
             <template #default="{ row }">
               <el-tag v-for="(tag, index) in (row.tags || [])" :key="`${index}-${tagLabel(tag)}`" size="small" class="tag-item" type="info">{{ tagLabel(tag) }}</el-tag>
               <span v-if="!(row.tags || []).length" class="text-muted">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="columnVisible('stale')" label="口径状态" width="120">
+            <template #default="{ row }">
+              <el-tag
+                v-if="row.stale"
+                type="warning"
+                size="small"
+                :title="staleReasonLabel(row.stale_reason)"
+                data-test="portrait-stale-tag"
+              >口径已过期</el-tag>
+              <span v-else class="text-muted">一致</span>
             </template>
           </el-table-column>
           <el-table-column v-if="columnVisible('risk')" label="风险等级" width="110">
@@ -235,10 +248,40 @@ const batchDeleting = ref(false)
 
 const { columns, columnVisible, toggleColumn, setSelection, clearSelection } = useDpsListView({
   pageKey: 'portraits',
-  columns: PORTRAIT_COLUMNS.filter((column) => ['name', 'person_id', 'tags', 'risk', 'updated_at'].includes(column.key)).map(
-    (column) => ({ key: column.key, label: column.label }),
-  ),
+  columns: [
+    ...PORTRAIT_COLUMNS.filter((column) => ['name', 'person_id', 'tags'].includes(column.key)).map(
+      (column) => ({ key: column.key, label: column.label }),
+    ),
+    { key: 'stale', label: '口径状态' },
+    ...PORTRAIT_COLUMNS.filter((column) => ['risk', 'updated_at'].includes(column.key)).map(
+      (column) => ({ key: column.key, label: column.label }),
+    ),
+  ],
 })
+
+/** T-DM-02：stale 过滤需绑定模板口径，默认使用六维默认模板 */
+const DEFAULT_PORTRAIT_TEMPLATE_CODE = 'dps-correction-v1'
+const staleOnly = ref(false)
+
+function staleReasonLabel(reason?: string | null): string {
+  switch (reason) {
+    case 'template_missing':
+      return '画像模板已不存在，请重新选择口径并重算'
+    case 'version_unknown':
+      return '历史画像缺少模板版本记录，建议重算'
+    case 'version_mismatch':
+      return '画像模板已升级，当前画像基于旧版本口径'
+    case 'result_missing':
+      return '该画像尚无此模板的计算结果'
+    default:
+      return '画像口径已过期，建议重算'
+  }
+}
+
+function onStaleFilterChange() {
+  page.value = 1
+  void loadData()
+}
 
 /** 计算画像对话框（批次 5：POST /portraits/calculate，默认异步任务） */
 const calculateVisible = ref(false)
@@ -540,6 +583,8 @@ async function loadData() {
       page: page.value,
       page_size: pageSize,
       keyword: keyword.value.trim() || undefined,
+      template_code: staleOnly.value ? DEFAULT_PORTRAIT_TEMPLATE_CODE : undefined,
+      stale: staleOnly.value ? true : undefined,
     })
     portraits.value = result.items || []
     total.value = result.total ?? 0

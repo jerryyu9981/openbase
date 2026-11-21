@@ -1,10 +1,10 @@
-# OpenBase-数据画像领域模型与标签/标注/评分关联关系设计说明-v1.1.0
+# OpenBase-数据画像领域模型与标签/标注/评分关联关系设计说明-v1.1.1
 
 | 项 | 内容 |
 |---|---|
-| 文档编号 | OpenBase-DESIGN-DM-v1.1.0 |
-| 版本 | v1.1.0 |
-| 状态 | **[Review]** 统一升级（领域模型 + 前端概念分区；后端改造项待排期） |
+| 文档编号 | OpenBase-DESIGN-DM-v1.1.1 |
+| 版本 | v1.1.1 |
+| 状态 | **[Approved] 已实施**（T-DM-01~07；DPS v2.17.0 / OpenBase v1.8.0 / openbase-ui v1.9.1） |
 | 日期 | 2026-11-21 |
 | 编制 | 架构/后端（BE） |
 | 适用范围 | DPS 标签体系、标注模板、画像（评分）模板、重算与画像快照；前端五类对象的概念分区与导航 |
@@ -18,6 +18,7 @@
 | v1.0.0 | 2026-11-21 | BE | 首版：领域模型分层、画像模板与标注模板三条关联通道、生命周期联动、6 项改造任务清单 |
 | v1.0.1 | 2026-11-21 | BE | 依据代码审计修正两处表述：补充 `tag_bindings` 跨归属仅告警；明确维度词表校验为“标注侧已做、画像侧缺失” |
 | v1.1.0 | 2026-11-21 | BE/FE | 统一升级：新增 §3.6 前端五类对象概念分区与呈现契约、G7 问题项、T-DM-07 任务；前端导航与五类落地页纳入同一设计包 |
+| v1.1.1 | 2026-11-21 | BE/FE | 实施闭环：T-DM-01~06 后端治理与 OpenBase 代理/前端适配完成；补充开关、字段语义与实施状态，DPS 2.17.0 / OpenBase 1.8.0 / UI 1.9.1 |
 
 ---
 
@@ -246,6 +247,8 @@ L5 画像快照/版本      portrait + attributes_json[template_code] + portrait
 
 ### T-DM-01 停用画像模板的采集门禁（P1）
 
+> **实施状态：已实施**（DPS v2.17.0）。`validate_annotation_submission` 增加父模板 active 校验，开关 `DPS_ENFORCE_ACTIVE_PARENT`（默认 true）；停用响应新增 `affected_annotation_templates` / `parent_gate_enforced`。用例：`test_dm_domain_model_v2_17.py::TestTdm01ParentGate`。
+
 | 项 | 内容 |
 |---|---|
 | 目标 | 父画像模板非 `active` 时，禁止新标注提交与新标签产出 |
@@ -257,6 +260,8 @@ L5 画像快照/版本      portrait + attributes_json[template_code] + portrait
 
 ### T-DM-02 模板版本对齐与画像 stale 标记（P1）
 
+> **实施状态：已实施**（DPS v2.17.0）。`attributes_json[template_code]` 写入 `template_version`；详情/外部 ID 查询派生 `stale`/`stale_reason`/`current_template_version`；列表支持 `template_code`+`stale` 过滤（缺模板口径返回 400）。用例：`TestTdm02Stale`。
+
 | 项 | 内容 |
 |---|---|
 | 目标 | 画像模板版本变更（update/rollback）后，既有画像标记 `stale`，重算成功后清除 |
@@ -266,6 +271,8 @@ L5 画像快照/版本      portrait + attributes_json[template_code] + portrait
 | 风险/回滚 | 只增量字段，无迁移破坏；stale 为派生标记，可随时重算修正 |
 
 ### T-DM-03 标签→维度绑定单一事实源（P1）
+
+> **实施状态：已实施**（DPS v2.17.0）。保存期与预检输出绑定差异；策略 `DPS_TAG_BINDING_CONSISTENCY=off|warn|reject`（默认 warn）。评分仍只读取 `dimension_config.rules[].tag_code`。用例：`TestTdm03BindingAlignment`。
 
 | 项 | 内容 |
 |---|---|
@@ -277,6 +284,8 @@ L5 画像快照/版本      portrait + attributes_json[template_code] + portrait
 
 ### T-DM-04 来源优先级显式化（P2）
 
+> **实施状态：已实施**（DPS v2.17.0）。模板 `dimension_config.source_precedence` 驱动 `pick_preferred_tags`；未配置时完全沿用默认优先级；选中标签附 `preferred_source`/`preferred_reason`。用例：`TestTdm04SourcePrecedence`。
+
 | 项 | 内容 |
 |---|---|
 | 目标 | 多来源同 `tag_code` 的择优规则可配置，默认保持现状 |
@@ -287,6 +296,8 @@ L5 画像快照/版本      portrait + attributes_json[template_code] + portrait
 
 ### T-DM-05 标签变更自动触发重算（P2）
 
+> **实施状态：已实施**（DPS v2.17.0）。审核通过且标签联动成功后按 `person+template` 时间桶去抖入队 `portrait_calc_task`（`DPS_TAG_CHANGE_RECALC_*`）；任务失败按上限重试并 ERROR 告警。用例：`TestTdm05AutoRecalc`。
+
 | 项 | 内容 |
 |---|---|
 | 目标 | 审核通过、AI 确认、人工改标签后，自动按受影响模板去抖重算 |
@@ -296,6 +307,8 @@ L5 画像快照/版本      portrait + attributes_json[template_code] + portrait
 | 风险/回滚 | 批量审核可能触发大量重算；默认按模板+人员去抖，并提供批量窗口合并 |
 
 ### T-DM-06 维度词表跨层保存期校验（P2）
+
+> **实施状态：已实施**（DPS v2.17.0）。画像模板保存期校验维度 code ∈ `tag_category.dimension_code`，策略 `DPS_DIMENSION_VOCABULARY_CHECK=off|warn|reject`（默认 warn）；词表为空视为未配置、不阻断存量。用例：`TestTdm06DimensionVocabulary`。
 
 | 项 | 内容 |
 |---|---|

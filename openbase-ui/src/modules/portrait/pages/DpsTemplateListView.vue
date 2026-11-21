@@ -901,9 +901,21 @@ async function toggleStatus(row: DpsPortraitTemplate) {
     return
   }
   try {
-    if (row.status === 'active') await dpsApi.deactivateTemplate(row.code)
-    else await dpsApi.activateTemplate(row.code)
-    ElMessage.success(`模板已${action}`)
+    if (row.status === 'active') {
+      // T-DM-01：停用后回显受影响标注模板数 / 门禁状态
+      const deactivated = await dpsApi.deactivateTemplate(row.code)
+      const affected = Number(deactivated.affected_annotation_templates ?? 0)
+      ElMessage.success(`模板已${action}`)
+      if (affected > 0) {
+        ElMessage.warning(`将影响 ${affected} 个标注模板的提交（父模板停用门禁）`)
+      }
+      if (deactivated.parent_gate_enforced === false) {
+        ElMessage.info('父模板停用门禁当前已关闭（DPS_ENFORCE_ACTIVE_PARENT=false）')
+      }
+    } else {
+      await dpsApi.activateTemplate(row.code)
+      ElMessage.success(`模板已${action}`)
+    }
     await load()
     if (detailOpen.value && detail.value?.code === row.code) await openDetail(row.code, detailTab.value)
   } catch (caught) {

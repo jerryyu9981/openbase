@@ -357,15 +357,25 @@ async def dps_portraits_list(
     page_size: int = Query(20, ge=1, le=100),
     keyword: str | None = Query(None),
     external_id: str | None = Query(None),
+    template_code: str | None = Query(None),
+    stale: bool | None = Query(None),
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
-    """画像列表（GET /api/v2/portrait/list；v1.5.0 A6 透传 keyword/external_id）."""
+    """画像列表（GET /api/v2/portrait/list；v1.5.0 A6 透传 keyword/external_id）.
+
+    v1.8.0 T-DM-02：新增 ``template_code`` / ``stale`` 透传，供上层按模板口径
+    筛选过期画像；两参数缺省时上游行为不变。
+    """
     headers = _build_identity_headers(_user, request)
     params: dict[str, Any] = {"page": page, "page_size": page_size}
     if keyword:
         params["keyword"] = keyword
     if external_id:
         params["external_id"] = external_id
+    if template_code:
+        params["template_code"] = template_code
+    if stale is not None:
+        params["stale"] = "true" if stale else "false"
     return await _forward(
         "GET", "/api/v2/portrait/list",
         params=params,
