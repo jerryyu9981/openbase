@@ -1374,7 +1374,8 @@ async def dps_templates_list(
 ) -> JSONResponse:
     """画像模板列表（#11，GET E-11；权限动作 portrait_template:read）.
 
-    查询参数 ?status=&profile_type=&subject_type=（均可选）原样透传。
+    查询参数 ?status=&profile_type=&subject_type=&keyword=&category_id=&template_kind=
+    （均可选）原样透传；服务端筛选依赖 DPS ≥2.16.0（A7）。
     """
     headers = _build_identity_headers(_user, request)
     return await _forward(
@@ -1995,12 +1996,33 @@ async def dps_annotations_list(
 ) -> JSONResponse:
     """标注队列查询（GET；上游 ``/api/v2/portrait/annotations``）.
 
-    查询参数 ``annotation_template`` / ``review_status`` / ``person_id`` / ``page`` /
-    ``page_size`` 原样透传（上游已做枚举与分页收敛）。用于标注待办与审核历史列表。
+    查询参数 ``annotation_template`` / ``review_status`` / ``person_id`` /
+    ``reviewer`` / ``level`` / ``page`` / ``page_size`` 原样透传（v2.16.0 A2 起
+    支持 ``reviewer=me`` 与级数过滤；身份解析在 DPS 侧，本仓不构造身份头）。
     """
     headers = _build_identity_headers(_user, request)
     return await _forward(
         "GET", _portrait_upstream_path("/annotations"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/annotations/stats")
+async def dps_annotations_stats(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """标注队列聚合统计（A1，GET；上游 ``/api/v2/portrait/annotations/stats``）.
+
+    静态段先于 ``/annotations/{annotation_id}`` 注册（DT-04）；查询参数
+    ``group_by``／``annotation_template``／``review_status``／``person_id`` 原样透传，
+    上游 400（非法分组/状态）语义保真。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET", _portrait_upstream_path("/annotations/stats"),
         params=_forward_query_params(request),
         headers=headers,
         request=request,
@@ -2090,6 +2112,29 @@ async def dps_annotation_review(
     return await _forward(
         "POST", _portrait_upstream_path(f"/annotations/{annotation_id}/review"),
         json_body=payload,
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/annotations/{annotation_id}/claim")
+async def dps_annotation_claim(
+    annotation_id: str,
+    request: Request,
+    payload: dict[str, Any] | None = None,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """领取待审核标注（A2，POST；上游 ``/api/v2/portrait/annotations/{id}/claim``）.
+
+    请求体可选且原样透传；上游 401（身份缺失）／404（不存在）／409（非待审核或
+    已被他人领取）语义保真。路径片段经 ``quote(safe="")`` 编码。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _portrait_upstream_path(f"/annotations/{quote(annotation_id, safe='')}/claim"),
+        json_body=payload or {},
         params=_forward_query_params(request),
         headers=headers,
         request=request,

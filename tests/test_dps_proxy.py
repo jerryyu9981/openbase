@@ -977,3 +977,121 @@ def test_portrait_by_external_404_passthrough(client: TestClient) -> None:
 
     assert resp.status_code == 404, resp.text
     assert "画像不存在" in resp.text
+
+
+# ---------------------------------------------------------------------------
+# v1.7.0：A7 模板服务端筛选 / A1 队列统计 / A2 审核人领取
+# ---------------------------------------------------------------------------
+
+
+def test_templates_server_filters_forwarded(client: TestClient) -> None:
+    """A7：keyword/category_id/template_kind 原样透传上游（不在本仓裁剪）."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(
+            200,
+            {"code": 200, "message": "success", "data": {"items": [], "total": 0}},
+        ),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/templates"
+        "?keyword=risk&category_id=cat-1&template_kind=component&status=active",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "GET"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/templates"
+    assert call["params"] == {
+        "keyword": "risk",
+        "category_id": "cat-1",
+        "template_kind": "component",
+        "status": "active",
+    }
+
+
+def test_annotation_stats_forwarded_before_dynamic_segment(client: TestClient) -> None:
+    """A1：``/annotations/stats`` 命中统计端点而非详情动态段，参数透传."""
+    token = _token_with_identity()
+    upstream = {
+        "group_by": "status",
+        "total": 2,
+        "items": [{"key": "pending", "label": "待审核", "count": 2}],
+        "degraded": False,
+    }
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": upstream}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/annotations/stats?group_by=status&review_status=pending",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == upstream
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "GET"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/annotations/stats"
+    assert call["params"] == {"group_by": "status", "review_status": "pending"}
+
+
+def test_annotation_stats_upstream_400_passthrough(client: TestClient) -> None:
+    """A1：上游 400（非法 group_by）消息保真透传."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(400, {"detail": "不支持的统计分组: unknown"}),
+    ])
+
+    resp = client.get(
+        "/api/v1/dps-proxy/annotations/stats?group_by=unknown",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 400, resp.text
+    assert "不支持的统计分组" in resp.text
+
+
+def test_annotation_claim_forwarded(client: TestClient) -> None:
+    """A2：领取 → 上游 ``/portrait/annotations/{id}/claim``，路径编码且请求体透传."""
+    token = _token_with_identity()
+    upstream = {
+        "annotation_id": "ann-1",
+        "reviewer": "user-001",
+        "claimed": True,
+        "already": False,
+    }
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(200, {"code": 200, "message": "success", "data": upstream}),
+    ])
+
+    resp = client.post(
+        "/api/v1/dps-proxy/annotations/ann-1/claim",
+        json={},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"] == upstream
+    call = client.fake.request_calls[0]  # type: ignore[attr-defined]
+    assert call["method"] == "POST"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/annotations/ann-1/claim"
+    assert call["json"] == {}
+
+
+def test_annotation_claim_conflict_passthrough(client: TestClient) -> None:
+    """A2：上游 409（已被他人领取）状态与消息保真."""
+    token = _token_with_identity()
+    client.fake.set_responses([  # type: ignore[attr-defined]
+        FakeResponse(409, {"detail": "记录已被其他审核人领取"}),
+    ])
+
+    resp = client.post(
+        "/api/v1/dps-proxy/annotations/ann-2/claim",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 409, resp.text
+    assert "已被其他审核人领取" in resp.text

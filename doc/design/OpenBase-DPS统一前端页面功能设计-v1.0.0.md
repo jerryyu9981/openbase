@@ -3,8 +3,8 @@
 | 项 | 内容 |
 |---|---|
 | **文档类型** | UI/前端设计（页面功能重新设计） |
-| **版本** | v2.6.0 |
-| **状态** | [Implemented] Phase 3 已落地＋UI 收口＋A4 标注详情接入＋A3 批量审核结果闭环（2026-11-21） |
+| **版本** | v2.7.0 |
+| **状态** | [Implemented] Phase 3 已落地＋UI 收口＋A4 标注详情＋A3 批量审核＋A1/A2/A7 后端能力与 A5/A8/A13 验证闭环（2026-11-21） |
 | **适用范围** | `openbase-ui/src/modules/portrait/**`（画像模块，含 DPS 模板化 16 条路由） |
 | **上游依据** | 《批次 5：统一前端四子系统全生命周期补齐（规格）》v1.2.0；`modules/portrait/index.ts`；`core/api/dps.ts`；既有 `doc/design/prototype/p01~p12` |
 | **作者** | 产品 / 前端架构组（Solo 角色：RA + FA + UI） |
@@ -22,6 +22,7 @@
 | v2.4.0 | 2026-11-20 | 后端缺口回填与前端收口：A6/A9/A10/A11/A12/A14 由 DPS v2.14.0＋OpenBase v1.5.0 交付；收口工作台主体检索（A6 服务端）、清理过时降级文案；画像详情时间线按设计 AC-PT-4 保持标注队列口径，A10 审计时间线用于单条审核留痕 | 前端工程师（FD） |
 | v2.5.0 | 2026-11-20 | A4 标注详情由 DPS v2.15.0＋OpenBase v1.6.0 交付：`GET /annotations/{id}` 一次返回证据/字段/审核进度/审核人意见；审核收件箱接入详情并保留 404 回退 | 前端工程师（FD） |
 | v2.6.0 | 2026-11-21 | A3 批量审核由 OpenBase 前端 v1.7.0 闭环：仅待审核可勾选、统一意见、逐条结果弹窗（末级/非末级差异化文案、失败原因与状态码、失败不阻断） | 前端工程师（FD） |
+| v2.7.0 | 2026-11-21 | A7 模板服务端筛选、A1 队列统计、A2 审核人视角/领取由 DPS v2.16.0＋OpenBase v1.7.0＋前端 v1.8.0 交付；A5/A8/A13 经既有实现与用例验证闭环。详见 §14.9 | 前端工程师（FD） |
 
 ---
 
@@ -334,19 +335,19 @@
 
 | # | 能力 | 现状 | 需求 | 优先级 |
 |---|---|---|---|---|
-| A1 | 队列统计（按模板/状态/级数/审核人） | 无聚合接口 | `GET /portrait/annotations/stats?group_by=...` | 建议新增 |
-| A2 | 审核人视角/领取 | 无 | `GET /annotations?reviewer=me&level=`；`POST /annotations/{id}/claim` | 建议新增 |
+| A1 | 队列统计（按模板/状态/级数/审核人） | `GET /portrait/annotations/stats`（DPS v2.16.0）；工作台状态 KPI | `group_by=template|status|level|reviewer`；缺列降级 `degraded` | 已交付（v2.16.0 / v1.7.0 / v1.8.0） |
+| A2 | 审核人视角/领取 | `GET /annotations?reviewer=me&level=`；`POST /annotations/{id}/claim` | 服务端解析 `me` 身份；条件 UPDATE 幂等领取 | 已交付（v2.16.0 / v1.7.0 / v1.8.0） |
 | A3 | 批量审核 | 工作台勾选/批量通过驳回＋逐条结果弹窗 | 复用 `batchReviewAnnotations`；统一 comment；失败不阻断 | 已交付（v1.7.0 前端） |
 | A4 | 标注详情 | 队列仅摘要 | `GET /portrait/annotations/{id}`（含证据、字段、画像快照） | 已交付（v2.15.0 / v1.6.0） |
-| A5 | 草稿暂存 | 无 | `POST /annotations` 支持 `status=draft` 或本地暂存 | 建议新增 |
+| A5 | 草稿暂存 | 本地草稿（`localStorage`，Ctrl+S）＋后端暂存兼容 | 保持本地草稿键 `dps.annotation.draft.{template}.{person}`，不新增接口 | 已实现（v2.2.0 前端，v1.8.0 验证） |
 | A6 | 主体检索 | `listPortraits` 仅分页 | `GET /portraits?keyword=&external_id=` 服务端检索 | 必须新增（可先前端降级） |
-| A7 | 模板列表服务端筛选 | 前端过滤 | `listTemplates` 增加 `keyword/category_id/template_kind` | 建议新增 |
-| A8 | 模板健康度 | 无聚合 | `GET /templates/{code}/health`（错误/口径/缺口）或前端组合 | 建议新增 |
+| A7 | 模板列表服务端筛选 | DPS `list_templates` 支持 keyword/category_id/template_kind | 前端传服务端参数，删除本地过滤 | 已交付（v2.16.0 / v1.8.0） |
+| A8 | 模板健康度 | 前端组合（规则缺口/口径一致性）＋健康度列/预检页签 | 复用 `preflightTemplate`；采样上限 30 条 | 已实现（v2.2.0 前端，v1.8.0 验证） |
 | A9 | 标签检索/分页 | `listLabels` 全量 | `GET /tags?keyword=&category_id=&page=` | 建议新增 |
 | A10 | 审计时间线 | `listAuditLogs` 无过滤 | `GET /audit?entity_type=&entity_id=` | 建议新增 |
 | A11 | 标注/画像导出 | 无 | `GET /annotations/export`、`/portraits/export`（CSV） | 建议新增 |
 | A12 | 口径问题定位 | 报告含 code/模板/字段 | 报告项补充 `field_key` 与修复建议文案 | 建议新增 |
-| A13 | 模板包内容预览 | 仅导出/导入 | 导出返回 items 明细（已有 `items`）；导入前 dry-run 明细 | 复用 |
+| A13 | 模板包内容预览 | 导出返回 `items`；导入前 `dry_run` 明细（模板包页/工作台抽屉） | 复用 `importPackage(dry_run=true)` 与结果展示 | 已实现（v2.2.0 前端，v1.8.0 验证） |
 | A14 | AI 候选持久化 | 候选仅在页面内存 | 候选落库或返回批次 ID 可重查 | 必须新增（否则刷新丢失） |
 
 ---
@@ -497,12 +498,14 @@
 | P0 | A4 标注详情 `GET /portrait/annotations/{id}` | 下一版必须 |
 | P0 | A6 主体检索 `GET /portraits?keyword=&external_id=` | 下一版必须；Phase 1 允许前端降级 |
 | P0 | A3 批量审核复用 `batchReviewAnnotations` | 已交付（v1.7.0 前端）：仅 pending 可勾选、统一意见、逐条结果 |
-| P1 | A14 AI 候选持久化；A1 队列统计；A2 领取/审核人视角 | 条件触发，随迭代补 |
-| P2 | A5/A7/A8/A9/A10/A11/A12/A13 | 体验优化类 |
+| P1 | A1 队列统计；A2 领取/审核人视角 | 已交付（DPS v2.16.0＋OpenBase v1.7.0＋前端 v1.8.0） |
+| P2 | A5/A7/A8/A13 | 已交付/已验证（A7 v2.16.0＋v1.8.0；A5/A8/A13 既有实现＋v1.8.0 验证） |
 
 > **2026-11-20 回填**：A6（主体检索）、A9（标签检索/分页）、A10（实体审计时间线）、A11（标注/画像 CSV 导出）、A12（口径 issue 修复建议与 `fix_target`）、A14（AI 候选持久化）已由 DPS v2.14.0＋OpenBase v1.5.0 交付并闭环；**A4（标注详情）已由 DPS v2.15.0＋OpenBase v1.6.0 交付并接入审核收件箱**；A1/A2/A3/A5/A7/A8/A13 仍未排期。
 >
-> **2026-11-21 回填**：**A3（批量审核）已由 OpenBase 前端 v1.7.0 闭环**（复用 `batchReviewAnnotations`，仅待审核可勾选、统一驳回意见、逐条结果弹窗、失败不阻断）；A1/A2/A5/A7/A8/A13 仍未排期。
+> **2026-11-21 回填**：**A3（批量审核）已由 OpenBase 前端 v1.7.0 闭环**（复用 `batchReviewAnnotations`，仅待审核可勾选、统一驳回意见、逐条结果弹窗、失败不阻断）。
+>
+> **2026-11-21 回填（v1.8.0）**：**A1（队列统计）与 A2（审核人视角/领取）已由 DPS v2.16.0＋OpenBase v1.7.0＋前端 v1.8.0 交付**；**A7（模板服务端筛选）已由 DPS v2.16.0＋前端 v1.8.0 交付**；A5（本地草稿）、A8（模板健康度）、A13（模板包预览）经源码核对与既有用例验证确认已实现，本轮补验证证据与文档闭环。A9/A10/A11/A12/A14 已于 v1.5.0 闭环。
 
 ### 14.4 实施授权
 
@@ -524,8 +527,8 @@
 
 **降级口径（与 §9 一致，不造假数据）**
 
-- 待标注、AI 待复核：显示 `—` 并注明依赖 A1/A6、A14；卡片仍可直达对应页面。
-- 待我审核：暂用待审核总数（A2 审核人维度未就绪）。
+- 待标注、AI 待复核：A1 统计与 A14 候选持久化已就绪；今日工作台卡片仍按既有口径展示，本轮 KPI 落在标注工作台队列（不新增总览请求）。
+- 待我审核：A2 已就绪（`reviewer=me`），本轮先在审核收件箱提供「只看我的」；总览卡后续可切换为服务端口径。
 - 趋势窗口：接口固定近 30 天，不提供 7/90 天切换。
 - 主体检索：先按 person_id / 外部 ID 精确查，未命中回退前 100 条前端匹配（A6）。
 
@@ -553,7 +556,7 @@
 **降级口径（与 §9 一致，不造假数据）**
 
 - 健康度：服务端暂无 `/templates/{code}/health`（A8），由治理报告口径问题 + 逐模板血缘缺口组合；血缘未加载或拉取失败显示 `—（待加载）`，不判定为健康。
-- 模板列表服务端筛选（A7）未就绪，关键字仍为前端过滤；健康度采样上限 30 条，超出保持未知。
+- 模板列表服务端筛选（A7）已就绪（DPS ≥2.16.0）：关键字/分类/模板类型由上游过滤，前端不再本地过滤；健康度采样上限 30 条，超出保持未知。
 - 标注模板「被使用次数」逐模板读取标注总数（最多 30 条、5 并发），失败显示 `—`。
 - 发布向导的口径一致性与影响面基于已保存版本；新模板未保存时明确提示先保存，不伪造预检结果。
 - JSON 变更为顶层键级 diff（新增/修改/移除），非行级文本 diff。
@@ -643,3 +646,49 @@
 - `vitest run tests/dps-batch-review-v170.spec.ts tests/api-dps-v1410.spec.ts tests/dps-backend-v160.spec.ts`：29 passed。
 - `npm run build`（`vue-tsc --noEmit`＋`vite build`）：成功。
 - `pytest tests/test_dps_proxy.py`：44 passed（后端未改，仅代理回归）。
+
+### 14.9 A1/A2/A7 交付与 A5/A8/A13 验证（v2.7.0）
+
+**A7 模板服务端筛选**
+
+| 交付项 | 落地位置 | 说明 |
+|---|---|---|
+| DPS 过滤 | `DPS/src/engines/template_engine.py::list_templates` | `keyword`（name/code，大小写不敏感，`%`/`_`/`\` 转义＋`ESCAPE`）、`category_id`、`template_kind` |
+| DPS 路由 | `DPS/src/rest_api/routes/routes_profiles.py::api_list_portrait_templates` | 新增同名 Query；非法 `template_kind` → 400 |
+| 代理 | `openbase/modules/dps_proxy/__init__.py::dps_templates_list` | 参数原样透传（无逻辑改动），docstring 补契约 |
+| 前端 | `DpsTemplateListView.vue`／`core/api/dps.ts` | `load()` 传四参数；删除三处客户端过滤；分类点击/清除触发请求 |
+
+**A1 队列统计**
+
+| 交付项 | 落地位置 | 说明 |
+|---|---|---|
+| 引擎聚合 | `annotation_template_engine.py::annotation_stats` | 4 分组、过滤与列表同口径；缺 `review_level`/`reviewer_id` 列 → 单桶＋`degraded=true` |
+| DPS 端点 | `routes_profiles.py::api_annotation_stats` | 静态段先于 `{annotation_id}`；非法分组/状态 → 400 |
+| 代理端点 | `dps_proxy/__init__.py::dps_annotations_stats` | 静态段先于动态段；参数透传、错误保真 |
+| 前端 | `DpsAnnotationWorkbenchView.vue`／`dps.ts` | 队列卡状态 KPI（`annotation-stats`），队列/模板筛选/审核后刷新；失败隐藏不阻断 |
+
+**A2 审核人视角与领取**
+
+| 交付项 | 落地位置 | 说明 |
+|---|---|---|
+| 列表过滤 | `query_annotations` ＋ `api_list_annotations` | `reviewer=me` 由 `get_user_id()` 解析（无身份 401）；`level` 0~5；缺列返回空页 |
+| 领取 | `claim_annotation` ＋ `POST /annotations/{id}/claim` | 条件 UPDATE（`reviewer_id IS NULL OR = 本人`）＋影响行数判定；成功/幂等/409/404 |
+| 权限 | `permission_middleware.py` | `("POST","/claim") → update`，后缀唯一性断言 |
+| 代理 | `dps_proxy/__init__.py::dps_annotation_claim` | 路径编码、请求体可选、409 保真 |
+| 前端 | `DpsAnnotationWorkbenchView.vue`／`dps.ts` | 「只看我的」＋级数筛选、审核人列、领取按钮（本人/他人/未领取三态） |
+
+**A5/A8/A13 验证（无改码）**
+
+| 项 | 证据 |
+|---|---|
+| A5 本地草稿 | `DpsAnnotationWorkbenchView.vue` 草稿键 `dps.annotation.draft.{template}.{person}`、Ctrl+S、恢复/清除；构建与 `r5-wiring-v195.spec.ts` 通过 |
+| A8 模板健康度 | `templates/health.ts` 组合逻辑 ＋ 模板中心健康度列/预检页签；`tests/dps-template-health.spec.ts` 5 passed |
+| A13 模板包预览 | `DpsTemplatePackageView.vue` dry-run 预检 ＋ `DpsTemplateWorkbenchView.vue` `DryRunDrawer`；`api-dps-v1410.spec.ts` 覆盖导入/预检契约 |
+
+**验证证据（v1.8.0）**
+
+- `pytest tests/test_template_filter_v2_16.py tests/test_annotation_stats_v2_16.py tests/test_annotation_claim_v2_16.py tests/test_v2_9_1_permission_mapping.py`：全绿（详见测试报告）。
+- `pytest tests/test_dps_proxy.py`：49 passed。
+- `vitest run tests/dps-template-filter-v180.spec.ts tests/dps-annotation-stats-v180.spec.ts tests/dps-annotation-claim-v180.spec.ts tests/api-dps-v1410.spec.ts`：30 passed。
+- `vitest run tests/dps-template-health.spec.ts tests/r5-wiring-v195.spec.ts`：20 passed。
+- `npm run build`：成功。

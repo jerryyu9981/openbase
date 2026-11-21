@@ -33,12 +33,43 @@
             </div>
           </template>
 
+          <div v-if="stats && stats.items.length" class="stats-strip" data-test="annotation-stats">
+            <span v-for="item in stats.items" :key="item.key" class="stat-chip">
+              <span class="muted sm">{{ item.label }}</span>
+              <strong>{{ item.count }}</strong>
+            </span>
+          </div>
+
           <div class="filters">
             <el-select v-model="statusFilter" size="small" style="width: 108px" data-test="annotation-status-filter">
               <el-option label="待审核" value="pending" />
               <el-option label="已通过" value="approved" />
               <el-option label="已驳回" value="rejected" />
               <el-option label="全部" value="all" />
+            </el-select>
+            <el-checkbox
+              v-if="view === 'review'"
+              v-model="reviewerOnly"
+              size="small"
+              data-test="annotation-reviewer-only"
+            >
+              只看我的
+            </el-checkbox>
+            <el-select
+              v-if="view === 'review'"
+              v-model="levelFilter"
+              size="small"
+              clearable
+              placeholder="级数"
+              style="width: 92px"
+              data-test="annotation-level-filter"
+            >
+              <el-option
+                v-for="level in levelOptions"
+                :key="level"
+                :label="level === 0 ? '未开始' : `第 ${level} 级`"
+                :value="String(level)"
+              />
             </el-select>
             <el-select
               v-model="templateFilter"
@@ -131,6 +162,17 @@
             <el-table-column v-if="columnVisible('progress')" label="级数" width="70" data-test="annotation-review-progress">
               <template #default="{ row }">
                 <span class="muted sm" data-test="annotation-review-progress-text">{{ progressLabel(row) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              v-if="view === 'review' && columnVisible('reviewer')"
+              label="审核人"
+              width="88"
+              show-overflow-tooltip
+              data-test="annotation-reviewer"
+            >
+              <template #default="{ row }">
+                <span class="muted sm">{{ reviewerLabel(row) }}</span>
               </template>
             </el-table-column>
             <el-table-column v-if="columnVisible('created')" label="提交时间" width="90" show-overflow-tooltip>
@@ -343,9 +385,21 @@
           <template #header>
             <div class="card-head">
               <span>审核对照</span>
-              <span v-if="currentTask" class="muted sm">
-                第 {{ Math.min((currentTask.review_level || 0) + 1, reviewRequired(currentTask)) }}/{{ reviewRequired(currentTask) }} 级
-              </span>
+              <div class="card-head-right">
+                <span v-if="currentTask" class="muted sm">
+                  第 {{ Math.min((currentTask.review_level || 0) + 1, reviewRequired(currentTask)) }}/{{ reviewRequired(currentTask) }} 级
+                </span>
+                <el-button
+                  v-if="currentTask && currentTask.review_status === 'pending'"
+                  size="small"
+                  :loading="claimLoading"
+                  :disabled="!!currentTask.reviewer_id && currentTask.reviewer_id !== currentReviewer"
+                  data-test="annotation-claim"
+                  @click="claimCurrentTask"
+                >
+                  {{ claimButtonText }}
+                </el-button>
+              </div>
             </div>
           </template>
 
@@ -563,12 +617,14 @@ import {
   type DpsAnnotationReviewLogItem,
   type DpsAnnotationReviewProgress,
   type DpsAnnotationRow,
+  type DpsAnnotationStats,
   type DpsAnnotationTemplate,
   type DpsEvidencePolicy,
   type DpsPortrait,
   type DpsPortraitTemplate,
 } from '@/core/api/dps'
 import { describeDpsError } from '@/core/api/error'
+import { useAuthStore } from '@/core/stores/auth'
 import { useDpsListView } from '../composables/useDpsListView'
 import { batchReviewSummary, toBatchReviewRows, type BatchReviewRow } from '../annotation/batchReview'
 
@@ -581,6 +637,7 @@ interface RecentSubject {
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 /* ------------------------------ 路由视图与筛选 ------------------------------ */
 
@@ -600,6 +657,20 @@ const templateFilter = computed({
   get: () => queryText(route.query.template),
   set: (value: string) => patchQuery({ template: value || undefined, page: undefined }),
 })
+
+/** A2：只看我的（reviewer=me，身份由服务端按身份头解析） */
+const reviewerOnly = computed({
+  get: () => queryText(route.query.reviewer) === 'me',
+  set: (value: boolean) => patchQuery({ reviewer: value ? 'me' : undefined, page: undefined }),
+})
+
+/** A2：审核级数过滤（0~5，空值不过滤） */
+const levelFilter = computed({
+  get: () => queryText(route.query.level),
+  set: (value: string) => patchQuery({ level: value || undefined, page: undefined }),
+})
+
+const levelOptions = [0, 1, 2, 3, 4, 5]
 
 const page = computed(() => Math.max(1, Number(queryText(route.query.page)) || 1))
 
@@ -1102,6 +1173,7 @@ const {
     { key: 'template', label: '模板' },
     { key: 'status', label: '状态' },
     { key: 'progress', label: '级数' },
+    { key: 'reviewer', label: '审核人' },
     { key: 'created', label: '提交时间' },
   ],
   hiddenByDefault: ['created'],
@@ -1116,11 +1188,14 @@ async function loadQueue() {
     const result = await dpsApi.listAnnotations({
       annotation_template: templateFilter.value || undefined,
       review_status: statusFilter.value === 'all' ? undefined : statusFilter.value,
+      reviewer: reviewerOnly.value ? 'me' : undefined,
+      level: levelFilter.value === '' ? undefined : Number(levelFilter.value),
       page: page.value,
       page_size: pageSize.value,
     })
     rows.value = result.items || []
     queueTotal.value = Number(result.total || 0)
+    void loadStats()
     if (view.value === 'review' && !currentTask.value && rows.value.length) {
       void selectTask(rows.value[0])
     }
@@ -1130,6 +1205,20 @@ async function loadQueue() {
     queueTotal.value = 0
   } finally {
     loadingQueue.value = false
+  }
+}
+
+/** A1：队列聚合（按状态），失败仅隐藏 KPI，不阻断队列 */
+const stats = ref<DpsAnnotationStats | null>(null)
+
+async function loadStats() {
+  try {
+    stats.value = await dpsApi.getAnnotationStats({
+      group_by: 'status',
+      annotation_template: templateFilter.value || undefined,
+    })
+  } catch {
+    stats.value = null
   }
 }
 
@@ -1152,6 +1241,38 @@ function onSelectionChange(selected: DpsAnnotationRow[]) {
 /** 批量复核仅对 pending 生效（上游状态机同口径）；非待审核行不可勾选 */
 function isRowSelectable(row: DpsAnnotationRow): boolean {
   return row.review_status === 'pending'
+}
+
+/* ------------------------------ A2 审核人视角与领取 ------------------------------ */
+
+const currentReviewer = computed(() => auth.user?.username || '')
+const claimLoading = ref(false)
+
+function reviewerLabel(row: DpsAnnotationRow): string {
+  const owner = row.reviewer_id
+  if (!owner) return '未领取'
+  return currentReviewer.value && owner === currentReviewer.value ? '我' : owner
+}
+
+const claimButtonText = computed(() => {
+  const owner = currentTask.value?.reviewer_id
+  if (!owner) return '领取'
+  return currentReviewer.value && owner === currentReviewer.value ? '已领取' : '他人已领取'
+})
+
+async function claimCurrentTask() {
+  if (!currentTask.value) return
+  claimLoading.value = true
+  try {
+    const result = await dpsApi.claimAnnotation(currentTask.value.id)
+    ElMessage.success(result.already ? '该任务已由你领取' : '已领取该任务')
+    currentTask.value = { ...currentTask.value, reviewer_id: result.reviewer }
+    await loadQueue()
+  } catch (err) {
+    ElMessage.error(describeDpsError(err).title)
+  } finally {
+    claimLoading.value = false
+  }
 }
 
 function clearQueueSelection() {
@@ -1190,6 +1311,8 @@ function applySavedView(viewId: string) {
   patchQuery({
     status: filters.status || 'pending',
     template: filters.template || undefined,
+    reviewer: undefined,
+    level: undefined,
     page: undefined,
   })
 }
@@ -1603,12 +1726,11 @@ onBeforeRouteLeave((to, from) => {
 
 let lastQueueKey = ''
 watch(
-  () => `${view.value}|${statusFilter.value}|${templateFilter.value}|${page.value}`,
+  () => `${view.value}|${statusFilter.value}|${templateFilter.value}|${reviewerOnly.value}|${levelFilter.value}|${page.value}`,
   (key) => {
     const previous = lastQueueKey.split('|')
     const current = key.split('|')
-    const filtersChanged =
-      lastQueueKey === '' || previous[0] !== current[0] || previous[1] !== current[1] || previous[2] !== current[2]
+    const filtersChanged = lastQueueKey === '' || previous.slice(0, 5).join('|') !== current.slice(0, 5).join('|')
     lastQueueKey = key
     if (filtersChanged) {
       currentTask.value = null
@@ -1641,6 +1763,22 @@ onBeforeUnmount(() => {
 .muted { color: var(--ob-text-secondary); }
 .sm { font-size: 12px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card-head-right { display: flex; align-items: center; gap: 8px; }
+.stats-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ob-fill-muted, #f3f4f6);
+}
+.stat-chip strong { font-size: 13px; }
 .card-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .filters { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
 .view-tools { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }

@@ -152,6 +152,12 @@ export interface DpsTemplateFilter {
   status?: string
   profile_type?: string
   subject_type?: string
+  /** A7：name/code 模糊匹配（服务端，DPS ≥2.16.0） */
+  keyword?: string
+  /** A7：模板分类精确匹配 */
+  category_id?: string
+  /** A7：composite / component */
+  template_kind?: string
   page?: number
   page_size?: number
 }
@@ -185,6 +191,8 @@ export interface DpsAnnotationRow {
   content?: string
   created_at?: string
   author_id?: string
+  /** A2：已领取/审核人（未领取为空） */
+  reviewer_id?: string | null
   [key: string]: unknown
 }
 
@@ -209,8 +217,36 @@ export interface DpsAnnotationQuery {
   annotation_template?: string
   review_status?: string
   person_id?: string
+  /** A2：`me` 由服务端按身份头解析；其他值为 reviewer_id 精确匹配 */
+  reviewer?: string
+  /** A2：审核级数（0~5） */
+  level?: number
   page?: number
   page_size?: number
+}
+
+/** A1：队列聚合统计条目 */
+export interface DpsAnnotationStatItem {
+  key: string
+  label: string
+  count: number
+}
+
+/** A1：队列聚合统计（GET /annotations/stats） */
+export interface DpsAnnotationStats {
+  group_by: 'template' | 'status' | 'level' | 'reviewer' | string
+  total: number
+  items: DpsAnnotationStatItem[]
+  /** 存量库缺列时对应分组退化 */
+  degraded?: boolean
+}
+
+/** A2：领取结果（幂等） */
+export interface DpsAnnotationClaimResult {
+  annotation_id: string
+  reviewer: string
+  claimed: boolean
+  already: boolean
 }
 
 export interface DpsAnnotationQueue {
@@ -1582,6 +1618,26 @@ export const dpsApi = {
   /** 标注队列（GET /portrait/annotations；只读分页，供待办与审核历史） */
   async listAnnotations(params: DpsAnnotationQuery = {}): Promise<DpsAnnotationQueue> {
     const { data } = await http.get<ApiSuccess<DpsAnnotationQueue>>('/dps-proxy/annotations', { params })
+    return data.data
+  },
+
+  /** 标注队列聚合统计（A1；GET /dps-proxy/annotations/stats） */
+  async getAnnotationStats(params: {
+    group_by?: 'template' | 'status' | 'level' | 'reviewer'
+    annotation_template?: string
+    review_status?: string
+    person_id?: string
+  } = {}): Promise<DpsAnnotationStats> {
+    const { data } = await http.get<ApiSuccess<DpsAnnotationStats>>('/dps-proxy/annotations/stats', { params })
+    return data.data
+  },
+
+  /** 领取待审核标注（A2；POST /dps-proxy/annotations/{id}/claim，幂等） */
+  async claimAnnotation(annotationId: string): Promise<DpsAnnotationClaimResult> {
+    const { data } = await http.post<ApiSuccess<DpsAnnotationClaimResult>>(
+      `/dps-proxy/annotations/${encodeURIComponent(annotationId)}/claim`,
+      {},
+    )
     return data.data
   },
 

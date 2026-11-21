@@ -574,20 +574,7 @@ const {
 
 const { data, loading, error, run } = useAsyncState<{ items: DpsPortraitTemplate[]; total?: number }>()
 
-const filteredItems = computed(() => {
-  let items = data.value?.items || []
-  if (categoryFilter.value) {
-    items = items.filter((item) => String(item.category_id || '') === categoryFilter.value)
-  }
-  if (kindFilter.value) {
-    items = items.filter((item) => String(item.template_kind || 'composite') === kindFilter.value)
-  }
-  if (!keyword.value) return items
-  const kw = keyword.value.toLowerCase()
-  return items.filter(
-    (item) => String(item.code || '').toLowerCase().includes(kw) || String(item.name || '').toLowerCase().includes(kw),
-  )
-})
+const filteredItems = computed(() => data.value?.items || [])
 
 const categoryNameMap = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
@@ -720,7 +707,14 @@ async function loadHealth() {
 }
 
 async function load() {
-  await run(() => dpsApi.listTemplates({ status: statusFilter.value || undefined }))
+  await run(() =>
+    dpsApi.listTemplates({
+      status: statusFilter.value || undefined,
+      keyword: keyword.value.trim() || undefined,
+      category_id: categoryFilter.value || undefined,
+      template_kind: kindFilter.value || undefined,
+    }),
+  )
   await loadHealth()
 }
 
@@ -772,10 +766,12 @@ function applySavedView(id?: string) {
 
 function onCategoryClick(node: DpsTemplateCategory) {
   categoryFilter.value = String(node.id)
+  void load()
 }
 
 function clearCategoryFilter() {
   categoryFilter.value = ''
+  void load()
 }
 
 function resetFilters() {
