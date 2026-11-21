@@ -2,9 +2,9 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.2.0 |
+| **版本** | v1.3.0 |
 | **状态** | [Review] |
-| **对应规格** | `doc/design/批次4-收尾/spec.md` v1.2.0 |
+| **对应规格** | `doc/design/批次4-收尾/spec.md` v1.3.0 |
 | **作者** | 架构组 |
 | **日期** | 2026-11-12 |
 
@@ -15,6 +15,7 @@
 | v1.0.0 | 2026-11-12 | 首版：T1–T9 任务、验证命令与门禁 | 架构组 |
 | v1.1.0 | 2026-11-12 | 勾选 T1–T9，追加实施记录与验证结果（7 项偏差见规格 §9） | 架构组 |
 | v1.2.0 | 2026-11-12 | 全栈启动后补跑八项联调：PASS=7、PARTIAL=1、FAIL=0；脚本适配受信来源头/租户 B 主体/既有画像（规格 §9.2 第 9 条） | 架构组 |
+| v1.3.0 | 2026-11-21 | 用户裁定：T6 两文件（`llm.ts`、`Playground.vue`）作为 R7 前端闭环单独提交入库，不再保留在工作区 | 架构组 |
 
 ## 任务总览
 
@@ -25,10 +26,10 @@
 | T3 | R2 | OpenLLM 单测：代理分支 / 503 / 本地回归 | OpenLLM | T2 | 高 |
 | T4 | R7 | 新增 `core/contextPolicy.ts` + 单测 | OpenBase | - | 高 |
 | T5 | R7 | 新增 `InferenceSettings.vue` + 路由/菜单 | OpenBase | T4 | 高 |
-| T6 | R7 | Playground/llm.ts 追加透传与回显（不提交两文件） | OpenBase | T4,T5 | 高 |
+| T6 | R7 | Playground/llm.ts 追加透传与回显（按 2026-11-21 裁定单独提交） | OpenBase | T4,T5 | 高 |
 | T7 | 联调 | 八项清单契约级核对 + `verify_full_chain_checklist.py` + 执行记录 | OpenBase | T2,T5 | 高 |
 | T8 | 收口 | 全量验证、spec/tasks 升 v1.1.0、方案升 v1.7.0 | OpenBase | T1-T7 | 高 |
-| T9 | 收口 | 各仓提交推送（OpenBase 三远程；排除两个脏文件） | 全部 | T8 | 高 |
+| T9 | 收口 | 各仓提交推送（OpenBase 三远程；两文件按 2026-11-21 裁定单独提交） | 全部 | T8 | 高 |
 
 ---
 
@@ -89,14 +90,14 @@
 
 ---
 
-## T6 R7：Playground 透传与回显（追加，不提交） [x]
+## T6 R7：Playground 透传与回显（追加；2026-11-21 裁定单独提交） [x]
 
 **文件**：`openbase-ui/src/core/api/llm.ts`、`openbase-ui/src/modules/openllm/pages/Playground.vue`
 
 **步骤**
 1. `ChatStreamPayload` 增 `context_policy`；`ChatChunk` 增 `context_meta`。
 2. `send()` 读取本地策略注入两条通道；`routing`/`done` 解析 `context_meta` 并展示。
-3. 不改动用户既有双通道逻辑；提交时排除这两个文件。
+3. 不改动用户既有双通道逻辑；按 2026-11-21 用户裁定，两文件作为 R7 前端闭环**单独提交**入库。
 
 ---
 

@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| **版本** | v1.2.0 |
+| **版本** | v1.3.0 |
 | **状态** | [Review] |
 | **适用范围** | OpenBase（门户/前端）、OpenLLM（知识库路由）；DPS/OpenRAG 仅核对不改动 |
 | **上游依据** | 《OpenBase-四基础子系统全链路贯通审计报告-v1.0.0》§4 联调清单；《全链路贯通修复方案-v1.6.0》；《批次 3 全链路贯通修复规格》§7 风险表 |
@@ -16,6 +16,7 @@
 | v1.0.0 | 2026-11-12 | 首版：批次 4 四项范围（R7 前端展示、R2 遗漏端点核对、审计 §4 联调清单执行、文档收口）的改动文件、契约、验证命令、提交边界与回滚 | 架构组 |
 | v1.1.0 | 2026-11-12 | 实施完成：R2 补齐 documents 详情/重处理代理，R7 前端设置页与 Playground 透传回显落地，§4 八项联调契约级核对与可复跑脚本交付；追加 §9 实施记录（验证结果与 7 项偏差） | 架构组 |
 | v1.2.0 | 2026-11-12 | 联调补跑：全栈启动后八项实测 PASS=7 / PARTIAL=1（第 8 项 R5 未上线）；脚本适配受信来源头、租户 B 主体令牌、既有画像人员；新增偏差 9 | 架构组 |
+| v1.3.0 | 2026-11-21 | 用户裁定：`llm.ts`、`Playground.vue` 两文件作为 R7 前端闭环单独提交入库；同步更新 §1 提交边界与 §7 风险处置 | 架构组 |
 
 ---
 
@@ -34,7 +35,7 @@
 
 1. **不含**：R5 生产 `enforce` 开关、G5 兜底清理、G2 agent 租户治理；本批次不改 DPS/OpenRAG 代码。
 2. R7 前端仅新增"客户端侧策略配置"（localStorage），不新增后端配置端点；OpenLLM 已有 `context_policy` 契约（批次 3）。
-3. **提交边界**：`openbase-ui/src/core/api/llm.ts`、`openbase-ui/src/modules/openllm/pages/Playground.vue` 含用户未提交的双通道改动。本批次仅在其上**追加** R7 内容，**禁止覆盖**；提交时**不纳入**这两个文件（保留在工作区，由用户自行决定提交），仅提交新增前端文件与 `modules/openllm/index.ts`。
+3. **提交边界**：`openbase-ui/src/core/api/llm.ts`、`openbase-ui/src/modules/openllm/pages/Playground.vue` 含用户未提交的双通道改动。本批次仅在其上**追加** R7 内容，**禁止覆盖**；2026-11-21 经用户裁定，两文件作为 R7 前端闭环**单独提交**入库（此前 v1.2.0 口径为「不纳入」）。
 4. 错误响应保持 `{code, message, detail, request_id}`；OpenLLM 保持既有 `HTTPException` 详情信封。
 5. 新增文件与改动须中文注释，命名遵循仓库既有约定。
 6. 文档每次更新同步升版本并追加修订历史。
@@ -261,7 +262,7 @@ D:\venvs\openbase\Scripts\python.exe scripts/verify_full_chain_checklist.py --js
 |---|---|
 | OpenRAG reindex 限流（60s 内重复 429）被 `_raise_business_error` 映射为 503 | 登记为已知偏差；前端提示"稍后重试" |
 | 前端权限点 `system:config` 与现网角色不匹配 | 同时接受 `system:superadmin`；无权限时降级只读，不影响使用 |
-| 修改脏文件引入用户改动覆盖 | 仅追加片段；提交排除两个脏文件 |
+| 修改脏文件引入用户改动覆盖 | 仅追加片段；2026-11-21 经用户裁定后两文件单独提交（已通过 `npm run build` 与相关 vitest） |
 | 联调脚本在无环境时报错 | 连接失败统一记 `BLOCKED`，退出码 0 |
 | 新增路由影响菜单一致性用例 | 同批更新 `openllm/index.ts` 路由与菜单，跑 `nav-consistency.spec.ts` |
 

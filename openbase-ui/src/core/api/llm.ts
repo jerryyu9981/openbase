@@ -8,6 +8,7 @@
  */
 import { http } from '@/core/api/http'
 import { withSessionId } from '@/core/session'
+import type { ContextMeta, ContextPolicy } from '@/core/contextPolicy'
 
 export interface LlmModel {
   id: string
@@ -42,12 +43,38 @@ export interface ChatChunk {
   model?: string
   choices?: Array<{ delta?: { content?: string }; message?: { content?: string } }>
   usage?: { total_tokens?: number }
+  /** 批次 4 R7：上游回显的上下文裁剪结果（同步响应的 data 内） */
+  context_meta?: ContextMeta
   [key: string]: unknown
 }
 
 export interface SseEvent {
   event: string
   data: string
+}
+
+/**
+ * 对话流式请求体（双通道）
+ *
+ * - 直连（缺省）：`model + messages`，OpenLLM 归一化为单 llm 组件（通道 A，不经编排）；
+ * - 自动编排：`mode: 'auto' + query`，由 OpenLLM 组件路由器决定是否装配
+ *   画像（DPS）/记忆（OpenMemory）/知识库（OpenRAG）（通道 B）。
+ *   两者不可同时生效：同时携带 `model + messages` 时按直连处理。
+ */
+export interface ChatStreamPayload extends Record<string, unknown> {
+  model?: string
+  messages?: ChatMessage[]
+  session_id?: string
+  /** 通道选择：auto=统一编排；explicit=显式 pipeline；缺省=直连模型 */
+  mode?: 'auto' | 'explicit'
+  /** 编排模式的用户查询（mode 非空时必填） */
+  query?: string
+  /** 编排模式组件开关：enable_memory / enable_rag / kb_id / model / user_id */
+  options?: Record<string, unknown>
+  /** 输出模式：llm_response / raw_results（流式仅支持 llm_response） */
+  output_mode?: 'llm_response' | 'raw_results'
+  /** 批次 4 R7：上下文裁剪策略（来自「推理设置」本地配置），后端原样透传 */
+  context_policy?: ContextPolicy
 }
 
 /** 解析 SSE ReadableStream，按事件分发（event: routing/chunk/done/error/usage） */
@@ -114,7 +141,7 @@ export const llmApi = {
    * fetch adapter 返回真实 ReadableStream 供 SSE 逐事件消费（TD-新增-011 偿还，v1.4.5）
    */
   async sendChatStream(
-    payload: { model: string; messages: ChatMessage[]; session_id?: string },
+    payload: ChatStreamPayload,
     onEvent: (evt: SseEvent) => void,
   ): Promise<void> {
     const resp = await http.post<ReadableStream<Uint8Array>>(
