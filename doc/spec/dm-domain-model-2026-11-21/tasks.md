@@ -78,9 +78,9 @@
 
 - [x] J1 设计文档升版 v1.1.1，T-DM-01~06 标「已实施」并补修订历史
 - [x] J2 产出开发记录、测试报告、部署报告
-- [x] J3 DPS 提交：按人工裁定**暂缓**（工作区存在并行「模板目录 v1」约 800 行未提交改动，与本任务交织，避免混提）
+- [x] J3 DPS 提交：`9de866b feat(dps): 数据画像领域模型治理 T-DM-01~06 与模板目录 v1 (v2.17.0)`（按人工裁定全量提交）
 - [x] J4 OpenBase 提交：`e98e027 feat(dps-proxy|portrait): 数据画像领域模型治理跨仓适配 (v1.8.0)`
-- [x] J5 OpenBase 已推送 origin/backup/github 三远程；DPS 按裁定暂缓推送
+- [x] J5 两仓均已推送 origin/backup/github 三远程
 
 ## 完成判据
 
