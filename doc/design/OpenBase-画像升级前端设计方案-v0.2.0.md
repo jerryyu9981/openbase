@@ -3,10 +3,10 @@
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-DESIGN-PORTRAIT-FE |
-| 版本 | v0.1.0 |
+| 版本 | v0.2.0 |
 | 状态 | [Review] |
 | 适用系统 | openbase-ui（Vue 3 + Element Plus + Vite），画像/DPS 模块 |
-| 关联文档 | 《OpenBase-画像命名与数据链路一体化设计 v0.2.0》 |
+| 关联文档 | 《OpenBase-画像命名与数据链路一体化设计 v0.3.0》 |
 | 作者 | AI 编码代理 |
 | 日期 | 2026-11-22 |
 
@@ -15,6 +15,7 @@
 | 版本 | 日期 | 变更 | 作者 |
 |---|---|---|---|
 | v0.1.0 | 2026-11-22 | 首次编制：命名中文化与编码自动生成、引入中心、任务中心的前端页面/组件/交互/API/测试设计 | AI 编码代理 |
+| v0.2.0 | 2026-11-22 | 补充数据引入定时任务配置的前端方案：调度编辑器、cron 校验与未来 5 次预览、暂停/恢复、状态与异常、接口与测试 | AI 编码代理 |
 
 ## 1. 概述
 
@@ -190,13 +191,49 @@ emits: { 'update:modelValue': [string]; conflict: [string] }
  → 生成任务 → 详情页轮询进度 → 完成后可查看错误行/导出
 ```
 
-### 6.3 数据源同步（P2）
+### 6.3 数据源与定时调度（P2）
+
+**基础流程**
 
 ```
 新建数据源（HTTP / 数据库 / 文件目录）→ 测试连接
- → 建同步任务（全量/增量 + 周期：手动/每日/自定义 cron）
- → 「立即同步」生成任务 → 任务中心可见
+ → 保存后打开「调度配置」抽屉
+ → 手动执行 / 配置周期 → 任务中心可见
 ```
+
+**调度编辑器（`ScheduleEditor.vue`）**
+
+| 配置项 | 控件 | 说明 |
+|---|---|---|
+| 调度模式 | 单选：手动 / 间隔 / 每日 / 每周 / 高级 Cron | 默认「手动」 |
+| 间隔 | 数字 + 单位（分钟/小时） | 最小 5 分钟，前端即时校验 |
+| 每日/每周 | 时间选择器（+ 星期多选） | 内部转换为 cron |
+| 高级 Cron | `CronInput.vue`（5 段） | 实时校验 + 人类可读描述 |
+| 时区 | 只读展示 `Asia/Shanghai` | 与后端一致，避免误解 |
+| 生效窗口 | 日期时间范围（可空） | 起止时间 |
+| 重叠策略 | 下拉：跳过 / 排队 / 替换 | 默认「跳过」 |
+| 错过策略 | 下拉：补一次 / 跳过 | 默认「补一次」 |
+| 高级参数（折叠） | 超时、重试次数、批量大小、抖动 | 展示默认值，可改 |
+| 启用状态 | 开关 | 关闭即暂停，不删除配置 |
+
+**交互与状态**
+
+- Cron 非法：输入框标红 + 「表达式无效」；「保存」禁用。
+- 每次有效变更触发 `POST /datasources/{id}/schedule/preview`，展示**未来 5 次执行时间**（含相对时间，如「明天 02:00」）。
+- 保存成功：抽屉顶部显示 `下一次执行：2026-11-23 02:00`；数据源列表「调度」列同步状态。
+- 暂停/恢复：行内开关直接调用 pause/resume，失败回滚开关并提示。
+- 立即同步：与调度解耦，生成 `trigger_source=manual` 任务并跳转任务详情。
+- 连续失败自动禁用：列表状态显示「已暂停（连续失败）」，提供「恢复」与「查看失败任务」。
+- 权限：无 `dps:manage` 时配置只读，隐藏保存与启停。
+
+**校验规则（前后端一致）**
+
+| 规则 | 前端表现 |
+|---|---|
+| Cron 5 段且可解析 | 保存禁用 + 行内提示 |
+| 间隔 ≥ 300s | 输入框提示「最小 5 分钟」 |
+| 超时 ≤ 3600s | 提示上限 |
+| 生效窗口结束早于开始 | 提示并阻断保存 |
 
 ### 6.4 标注与画像（P3）
 
@@ -220,6 +257,10 @@ emits: { 'update:modelValue': [string]; conflict: [string] }
 | GET/POST | `/datasources` | 数据源列表/新建 |
 | POST | `/datasources/{id}/test` | 测试连接 |
 | POST | `/datasources/{id}/sync` | 立即同步 |
+| GET/PUT | `/datasources/{id}/schedule` | 调度配置读取/保存 |
+| POST | `/datasources/{id}/schedule/preview` | cron 校验 + 未来 5 次执行时间 |
+| POST | `/datasources/{id}/schedule/pause`、`/resume` | 暂停/恢复调度 |
+| GET | `/sync-runs` | 调度执行历史（按数据源/状态筛选） |
 | GET | `/calc-tasks` | 画像计算任务列表 |
 | POST | `/calc-tasks/{id}/retry` | 重试计算任务 |
 | GET/PUT | `/config/ingest-policy` | 标注/画像触发策略 |
@@ -234,6 +275,26 @@ export type TriggerSource = 'approval' | 'ingest' | 'schedule' | 'manual'
 export interface IngestTask { id: string; type: 'import' | 'sync'; format?: string; status: TaskStatus; total: number; processed: number; success: number; failed: number; created_at: string; finished_at?: string; trigger_source: TriggerSource }
 export interface MappingItem { source: string; target: string; required: boolean }
 export interface Datasource { id: string; name: string; kind: 'http' | 'db' | 'file'; status: 'ok' | 'error'; last_sync_at?: string }
+export interface ScheduleConfig {
+  datasource_id: string
+  enabled: boolean
+  mode: 'manual' | 'interval' | 'cron'
+  cron_expr?: string
+  interval_seconds?: number
+  timezone: 'Asia/Shanghai'
+  start_at?: string
+  end_at?: string
+  overlap_policy: 'skip' | 'queue' | 'replace'
+  missed_policy: 'skip' | 'run_once'
+  max_retry: number
+  retry_backoff_seconds: number
+  timeout_seconds: number
+  batch_size: number
+  jitter_seconds: number
+  last_run_at?: string
+  last_status?: TaskStatus
+  next_run_at?: string
+}
 export interface CalcTask { id: string; person_id: string; template_code: string; trigger_source: TriggerSource; status: TaskStatus; retry_count: number; last_calc_at?: string }
 ```
 
@@ -293,8 +354,8 @@ export interface CalcTask { id: string; person_id: string; template_code: string
 
 | 层级 | 用例 |
 |---|---|
-| Vitest | `useCodeFromName`（中文/英文混合/标点/超长/冲突）、`NameCodeLabel`（4 种渲染）、`CodeField`（自动/覆盖/冲突）、`MappingTable`（自动匹配/必填阻断）、`TaskStatusTag` |
-| Playwright | `naming-autogen.spec`（新建模板不填 code 成功）、`ingest-import.spec`（上传→映射→执行，mock 接口）、`task-center.spec`（三段 Tab/重试）、关键页回归（中文主显、无 console warn） |
+| Vitest | `useCodeFromName`（中文/英文混合/标点/超长/冲突）、`NameCodeLabel`（4 种渲染）、`CodeField`（自动/覆盖/冲突）、`MappingTable`（自动匹配/必填阻断）、`TaskStatusTag`、`ScheduleEditor`（cron 校验/间隔下限/窗口校验/保存禁用） |
+| Playwright | `naming-autogen.spec`（新建模板不填 code 成功）、`ingest-import.spec`（上传→映射→执行，mock 接口）、`schedule-editor.spec`（配置每日任务→未来 5 次预览→暂停/恢复）、`task-center.spec`（三段 Tab/重试）、关键页回归（中文主显、无 console warn） |
 | 视觉 | 3 个新页面 1440×900 基线截图 |
 | 可访问性 | 表单 label、错误提示、键盘可达 |
 
@@ -311,7 +372,7 @@ export interface CalcTask { id: string; person_id: string; template_code: string
 | 类型 | 文件 |
 |---|---|
 | 新增页面 | `DpsIngestCenterView.vue`、`DpsIngestTaskDetailView.vue`、`DpsTaskCenterView.vue` |
-| 新增组件 | `CodeField.vue`、`TermSelect.vue`、`TaskStatusTag.vue`、`TriggerSourceTag.vue`、`MappingTable.vue`、`IngestTaskDrawer.vue` |
+| 新增组件 | `CodeField.vue`、`TermSelect.vue`、`TaskStatusTag.vue`、`TriggerSourceTag.vue`、`MappingTable.vue`、`IngestTaskDrawer.vue`、`ScheduleEditor.vue`、`CronInput.vue` |
 | 新增组合式 | `useCodeFromName.ts`、`useTaskPolling.ts` |
 | 升级组件 | `components/common/NameCodeLabel.vue` |
 | 改造页面 | `DpsTemplateWorkbenchView.vue`、`DpsTemplateEditView.vue`、`DpsTemplateListView.vue`、`DpsAnnotationFieldView.vue`、`DpsAnnotationTemplateView.vue`、`DpsAnnotationWorkbenchView.vue`、`DpsTagSystemView.vue`、`DpsScoringConsistencyView.vue`、`DpsScoringTypeView.vue`、`DpsMeasureView.vue`、`Tags.vue` |

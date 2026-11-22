@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-DESIGN-PORTRAIT-NAMING-INGEST |
-| 版本 | v0.2.0 |
+| 版本 | v0.3.0 |
 | 状态 | [Review] |
 | 适用系统 | OpenBase（openbase-ui 画像模块）、DPS、OpenLLM 回写链路 |
 | 作者 | AI 编码代理 |
@@ -15,6 +15,7 @@
 |---|---|---|---|
 | v0.1.0 | 2026-11-22 | 首次编制：中文优先展示与英文编码自动生成、数据引入/标注/画像触发一体化方案 | AI 编码代理 |
 | v0.2.0 | 2026-11-22 | 补充「5 入口 / 1 管线 / 3 标注模式 / 4 画像触发」全景与同类系统对比；明确引入后只建任务不自动通过、画像默认审核增量+每日兜底 | AI 编码代理 |
+| v0.3.0 | 2026-11-22 | 新增 §3.7 数据引入定时任务配置方案：dps-worker 调度、配置模型、运行语义、重试与租约、护栏、接口与验收 | AI 编码代理 |
 
 ## 1. 背景与目标
 
@@ -205,8 +206,122 @@
 
 **调度与补偿**：
 
-- 引入 APScheduler（进程内单实例）或复用 OpenBase 定时编排，执行：① 每日增量重算；② 每 5 分钟补偿扫描 `portrait_calc_task` 中超时 `pending`/`failed`（按 `retry_count` 上限）。
+- 引入独立 `dps-worker`（APScheduler + PG advisory lock，见 §3.7），执行：① 每日增量重算；② 每 5 分钟补偿扫描 `portrait_calc_task` 中超时 `pending`/`failed`（按 `retry_count` 上限）。
 - 多实例部署时通过 DB 抢占（`UPDATE ... WHERE status='pending' AND locked_until < now`）保证单执行。
+
+### 3.7 数据引入定时任务配置方案
+
+#### 3.7.1 调度器归属与部署
+
+- 新增独立 worker 进程 **`dps-worker`**（无监听端口，心跳文件），由 `service-orchestrator` 以 `Kind=worker` 拉起，复用 `openmemory-graph-worker` 的成熟模式：**PostgreSQL advisory lock 单实例互斥 + 心跳探活**。
+- 进程内使用 APScheduler（BackgroundScheduler）；**API 进程不承担调度**，只做配置读写与任务查询。
+- 双保险：advisory lock 保证单实例；`datasource_schedule.locked_until` 行级租约保证任务不被重复领取。
+- 多实例/多机部署下，新 worker 抢锁失败即自动退出，不产生重复触发。
+
+#### 3.7.2 配置模型（`datasource_schedule`，一数据源一配置）
+
+| 字段 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `id` / `tenant_id` / `datasource_id` | — | — | 唯一约束 `(tenant_id, datasource_id)` |
+| `enabled` | bool | false | 启用/暂停 |
+| `mode` | enum | manual | `manual` / `interval` / `cron` |
+| `cron_expr` | text | null | 5 段 cron，`mode=cron` 必填 |
+| `interval_seconds` | int | null | `mode=interval` 必填，最小 300 |
+| `timezone` | text | `Asia/Shanghai` | 按此计算，DB 存 UTC |
+| `start_at` / `end_at` | timestamptz | null | 生效窗口，可空 |
+| `overlap_policy` | enum | skip | `skip` / `queue` / `replace` |
+| `missed_policy` | enum | run_once | `skip` / `run_once` |
+| `max_retry` | int | 3 | 单次任务最大重试 |
+| `retry_backoff_seconds` | int | 60 | 退避基数（60/120/240） |
+| `timeout_seconds` | int | 1800 | 单次同步超时 |
+| `batch_size` | int | 1000 | 每批行数 |
+| `jitter_seconds` | int | 30 | 触发抖动，避免打堆 |
+| `last_run_at` / `last_status` / `next_run_at` | — | null | 运行时回写 |
+
+#### 3.7.3 运行语义
+
+1. **触发**：到点只向 `sync_task` 投递 `type=scheduled` 任务（`trigger_source=schedule`），由 worker 执行，不在调度线程内跑业务。
+2. **重叠**：默认 `skip`（上轮未结束则跳过并记 `skipped_overlap`）；`queue` 串行排队；`replace` 终止旧任务后执行（仅可中断数据源）。
+3. **错过**：worker 启动或恢复时扫描 `next_run_at < now`：`run_once` 补一次并顺延；`skip` 直接顺延。
+4. **增量水位**：以 `last_success_at` 为水位，查询窗口为 `[last_success_at - 5min, now]`，按 `(tenant, person_id)` 幂等 upsert，重叠窗口不产生重复数据。
+5. **抖动**：实际触发 = 计划时间 + `random(0, jitter_seconds)`。
+
+#### 3.7.4 失败、重试与熔断
+
+- 单任务失败按 `retry_backoff_seconds × 2^n` 重试，最多 `max_retry` 次；仍失败 → `status=failed`。
+- **连续 3 次调度失败自动置 `enabled=false`**（熔断），任务中心/监控页醒目提示，需人工恢复。
+- 超时：达到 `timeout_seconds` 标记 `timeout`，释放租约并按失败计数处理。
+- 错误留痕：记录 `error_code/error_message/error_rows`，行级错误可导出 CSV。
+
+#### 3.7.5 并发与护栏
+
+| 护栏 | 默认 | 说明 |
+|---|---|---|
+| 全局并发 | 2 | `max_concurrent_sync_tasks`，超出排队 |
+| 同源串行 | 强制 | 同一 `datasource_id` 同时仅 1 个任务 |
+| 最小间隔 | 300s | interval 下限 |
+| 单任务超时 | 1800s | 可配，上限 3600s |
+| 单批行数 | 1000 | 上限 5000 |
+| 配置审计 | 强制 | 记录操作人、前后值、时间 |
+
+#### 3.7.6 配置示例
+
+每日 02:00 全量：
+
+```json
+{
+  "mode": "cron",
+  "cron_expr": "0 2 * * *",
+  "timezone": "Asia/Shanghai",
+  "enabled": true,
+  "overlap_policy": "skip",
+  "missed_policy": "run_once",
+  "max_retry": 3,
+  "retry_backoff_seconds": 60,
+  "timeout_seconds": 1800,
+  "batch_size": 1000,
+  "jitter_seconds": 30
+}
+```
+
+每 30 分钟增量：
+
+```json
+{
+  "mode": "interval",
+  "interval_seconds": 1800,
+  "timezone": "Asia/Shanghai",
+  "enabled": true,
+  "overlap_policy": "skip",
+  "missed_policy": "skip"
+}
+```
+
+#### 3.7.7 接口
+
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| GET/PUT | `/datasources/{id}/schedule` | 读取/保存调度配置 |
+| POST | `/datasources/{id}/schedule/preview` | 校验 cron 并返回未来 5 次执行时间 |
+| POST | `/datasources/{id}/schedule/pause`、`/resume` | 暂停/恢复 |
+| POST | `/datasources/{id}/sync` | 立即同步（`trigger_source=manual`） |
+| GET | `/sync-runs?datasource_id=&status=` | 调度执行历史 |
+
+校验错误码：`PARAM_CRON_INVALID`、`PARAM_INTERVAL_TOO_SMALL`、`PARAM_SCHEDULE_WINDOW_INVALID`。
+
+#### 3.7.8 运维与可观测
+
+- `dps-worker` 心跳新鲜度（<30s）纳入 `checkall`；进程退出由 orchestrator 拉起。
+- 监控页展示：调度总数/启用数、近 24h 触发/失败/跳过（重叠、错过）、下次执行时间。
+- 启动恢复：`locked_until` 过期的 `running` 任务回到 `queued`，按幂等键重跑。
+
+#### 3.7.9 验收
+
+1. 配置每日 02:00 后 `next_run_at` 正确，到点生成 `trigger_source=schedule` 任务；
+2. 停机跨触发点后按 `run_once` 补一次且不重复；
+3. 重叠策略、并发上限、同源串行均生效；
+4. 连续 3 次失败自动暂停并可见；
+5. 重启后 pending 任务续跑，不丢不重；心跳与探针正常。
 
 ## 4. 数据模型变更
 
@@ -216,6 +331,7 @@
 | 标签分类/标签值、标注模板字段、维度、评分项 | 新增 `name`、`name_source`（缺省 fallback） |
 | `import_task` | 由内存迁表：`id/tenant_id/format/status/total/processed/error_count/created_at/finished_at` |
 | `datasource`、`sync_task` | 由内存迁表；`sync_config` JSON、`last_sync_at`、`next_run_at` |
+| `datasource_schedule`（新增） | 一数据源一调度配置：`mode/cron_expr/interval_seconds/timezone/overlap_policy/missed_policy/max_retry/timeout_seconds/batch_size/jitter_seconds/last_status/next_run_at/locked_until` |
 | `annotation_task`（或复用 annotation） | 增加 `ingest_batch_id`、`generated_by(manual|ingest|ai)` |
 | `portrait_calc_task` | 增加 `trigger_source(approval|ingest|schedule|manual)`、`locked_until`、`last_error` |
 
@@ -229,11 +345,13 @@
 | 标签/字段/评分项创建接口 | 同上，新增 `name` |
 | `POST /batch/import/{id}/execute` | 改为真实落库；新增 `dry_run` 参数 |
 | `POST /datasources/{id}/sync`（新增） | 触发同步并落库；返回任务 ID |
+| `GET/PUT /datasources/{id}/schedule`（新增） | 调度配置读写（详见 §3.7.7） |
+| `POST /datasources/{id}/schedule/preview`、`/pause`、`/resume`（新增） | 未来 5 次预览、暂停/恢复 |
 | `POST /portrait/ingest`（建议新增） | 统一引入入口：payload + mapping + 策略 |
 | `GET /portrait/calc-tasks`（建议新增） | 计算任务状态与重试 |
 | 配置接口 | 新增 `auto_annotate_on_ingest`、`annotation_mode`、`portrait_calc_on_ingest`、`portrait_schedule_cron` |
 
-错误码：`BIZ_ENTITY_CODE_CONFLICT(409)`、`PARAM_NAME_REQUIRED(400)`、`BIZ_INGEST_MAPPING_INVALID(400)`、`BIZ_INGEST_TENANT_MISSING(400)`。
+错误码：`BIZ_ENTITY_CODE_CONFLICT(409)`、`PARAM_NAME_REQUIRED(400)`、`BIZ_INGEST_MAPPING_INVALID(400)`、`BIZ_INGEST_TENANT_MISSING(400)`、`PARAM_CRON_INVALID(400)`、`PARAM_INTERVAL_TOO_SMALL(400)`、`PARAM_SCHEDULE_WINDOW_INVALID(400)`。
 
 ## 6. 关键时序
 
@@ -278,7 +396,7 @@ POST /portrait/annotations/{id}/review(approved)
 |---|---|---|
 | P1 命名与编码 | `NameCodeLabel` 全量接入、枚举中文化、`useCodeFromName` + 后端 pypinyin 兜底、历史名称补齐脚本 | 页面无裸 code 主展示；新建不填 code 可提交；冲突提示正确；E2E/vitest 通过 |
 | P2 引入落库与标注生成 | `ingest_pipeline`、批量导入/数据源真实落库、任务落库、`auto_annotate_on_ingest` | 导入后 profile 与标注任务可查询；重复导入幂等；任务中心可查引入/标注/画像三类任务 |
-| P3 画像调度与补偿 | 触发矩阵配置、APScheduler/编排、`portrait_calc_task` 补偿 worker、监控页 | 定时重算生效；重启后任务可续跑；stale 画像清零 |
+| P3 调度与补偿 | 触发矩阵配置、`dps-worker`（APScheduler + advisory lock + 心跳）、引入定时调度（cron/interval/暂停恢复/错过补偿）、`portrait_calc_task` 补偿 worker、监控页 | 定时引入与重算生效；重叠/并发/熔断策略生效；重启后任务可续跑；stale 画像清零 |
 
 ## 10. 风险与开放问题
 
