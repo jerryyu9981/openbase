@@ -3,9 +3,9 @@
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-RELEASE-PORTRAIT-WAVES |
-| 版本 | v1.0.0 |
+| 版本 | v1.0.1 |
 | 状态 | [Review] |
-| 上游文档 | 《画像优化升级实施方案 v1.0.0》《画像命名与数据链路一体化升级方案 v1.1.0》《画像 P0 前置评估报告 v1.1.0》 |
+| 上游文档 | 《画像优化升级实施方案 v1.0.2》《画像命名与数据链路一体化升级方案 v1.2.0》《画像 P0 前置评估报告 v1.1.0》《社区矫正对象分类管理与考核奖惩画像模板设计 v1.0.0》 |
 | 发布列车 | 2.18.x（A）→ 2.19.0（B）→ 2.20.0（C） |
 | 作者 | AI 编码代理 |
 | 日期 | 2026-11-22 |
@@ -15,6 +15,7 @@
 | 版本 | 日期 | 变更 | 作者 |
 |---|---|---|---|
 | v1.0.0 | 2026-11-22 | 首次编制：波次 A/B/C 的任务分解、门禁、发布清单、回滚与依赖 | AI 编码代理 |
+| v1.0.1 | 2026-11-23 | 修正 C-03：复用现有 `profile_type='business'`，不新增 `profile_family` | AI 编码代理 |
 
 ## 1. 发布原则
 
@@ -132,7 +133,7 @@
 |---|---|---|---|
 | C-01 | 进度模型 | `schema_v2_20_upgrade.py`：`business_item`、`progress_snapshot` | 事项可入库、周期键唯一 |
 | C-02 | 进度引擎 | 新增 `src/engines/progress_engine.py` | 责任人映射、日/周聚合、按时率/逾期/质量/工作量 |
-| C-03 | 模板族 | `portrait_template.profile_family`；业务进度模板种子 | 两类画像筛选与计算互不干扰 |
+| C-03 | 模板族 | 复用 `portrait_template.profile_type='business'`；业务进度模板种子 | 两类画像筛选与计算互不干扰 |
 | C-04 | 周期快照 | `profile_history` 加 `period_type/period_key/snapshot_type/template_code` | 每次计算写快照；趋势/对比可查 |
 | C-05 | 调度 worker | 新增 `src/worker/scheduler.py`；`scripts/service-orchestrator.ps1` 注册 `dps-worker`；`datasource_schedule` 表 | advisory lock + 心跳；cron/interval 生效 |
 | C-06 | 补偿与熔断 | `portrait_calc_task` 重领逻辑 | 过期任务回队；连续失败自动停用 |

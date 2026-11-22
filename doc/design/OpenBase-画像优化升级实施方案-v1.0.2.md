@@ -3,9 +3,9 @@
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-IMPL-PORTRAIT-UPGRADE |
-| 版本 | v1.0.1 |
+| 版本 | v1.0.2 |
 | 状态 | [Review] |
-| 上游文档 | 《画像命名与数据链路一体化升级方案 v1.1.0》《画像 P0 前置评估报告 v1.1.0》 |
+| 上游文档 | 《画像命名与数据链路一体化升级方案 v1.2.0》《画像 P0 前置评估报告 v1.1.0》《社区矫正对象分类管理与考核奖惩画像模板设计 v1.0.0》 |
 | 实施范围 | DPS 后端（DDL/引擎/API/worker）、openbase-ui 画像模块 |
 | 作者 | AI 编码代理 |
 | 日期 | 2026-11-22 |
@@ -16,6 +16,7 @@
 |---|---|---|---|
 | v1.0.0 | 2026-11-22 | 基于现有 DPS 成果编制：能力基线、差距映射、批次计划、DDL/API/前端清单、迁移与验收 | AI 编码代理 |
 | v1.0.1 | 2026-11-22 | 增加与《三波次发布实施计划 v1.0.0》的映射引用；批次 0-6 按波次 A/B/C 发布 | AI 编码代理 |
+| v1.0.2 | 2026-11-23 | 修正模板族设计：复用现有 `profile_type='business'`，移除新增 `profile_family` 字段；补充社区矫正规程落地引用 | AI 编码代理 |
 
 ## 1. 实施原则
 
@@ -29,7 +30,7 @@
 
 | 能力 | 现有实现 | 复用方式 |
 |---|---|---|
-| 模板族 | `portrait_template`、`portrait_template_category`、`component`、`history`、package/version/preflight/diff/rollback | 两类画像用「模板分类 + 新增 `profile_family`」区分，不新建模板体系 |
+| 模板族 | `portrait_template`、`portrait_template_category`、`component`、`history`、package/version/preflight/diff/rollback | 两类画像用现有 `profile_type`（`persona`/`business`）+ 模板分类区分，不新建模板体系 |
 | 画像计算 | `engines/portrait/{core,crud}.py`、`PortraitEngine.calculate_portrait`、六维评分 | 复用；新增进度维度由模板评分项承接 |
 | 计算任务 | `platform.portrait_calc_task`（幂等键、retry_count、status） | 加 `trigger_source`、`locked_until`；新增补偿 worker |
 | 去抖调度 | `engines/portrait/recalc_scheduler.py`、`config.tag_change_recalc_*` | 保留；接入统一任务触发来源 |
@@ -47,7 +48,7 @@
 |---|---|---|
 | 政务 PII | 仅密钥/IP 脱敏；`/portrait/list` 返回完整 `attributes_json` | 新增 `field_classification` + 统一序列化器 + 字段级权限 + 导出/日志纪律 |
 | 组织权限 | 仅 tenant 过滤；`organization` 无层级；无数据范围 | `organization` 加 `parent_code/path/level`；新增 `org_member`；中间件注入 `data_scope` |
-| 业务进度 | 无事项实体、无周期快照 | 新增 `business_item`、`progress_snapshot`；新增 `progress_engine`；模板加 `profile_family` |
+| 业务进度 | 无事项实体、无周期快照 | 新增 `business_item`、`progress_snapshot`；新增 `progress_engine`；模板复用 `profile_type='business'` |
 | 审计 | 只审计部分管理动作 | 扩展读/导出/删除/权限变更审计；保留期配置 |
 | 命名编码 | code 手填、部分裸英文 | 复用 `NameCodeLabel`，新增 `CodeField`/`useCodeFromName`；后端拼音兜底 |
 | 引入落库 | 导入/同步不落库、任务在内存 | 新增 `ingest_engine` + `import_task` 表；复用 `sync_task` |
@@ -94,7 +95,7 @@
 ### 批次 3：业务进度模型（P0-3）
 
 - 新增表：`business_item`、`progress_snapshot`。
-- 扩展：`profile_history`（`period_type/period_key/snapshot_type/template_code`）；`portrait_template` 加 `profile_family`（`persona|business_progress`，默认 persona）。
+- 扩展：`profile_history`（`period_type/period_key/snapshot_type/template_code`）；业务进度模板使用现有 `profile_type='business'`（无需新增字段）。
 - 新增 `src/engines/progress_engine.py`：
   - 事项入库/更新 → 责任人映射（`org_member`）→ 周期聚合 → `progress_snapshot`。
   - 生成进度标签（规则）→ 触发画像重算（复用 `portrait_calc_task`）。
@@ -203,8 +204,7 @@ ALTER TABLE profile_history ADD COLUMN IF NOT EXISTS template_code VARCHAR(100);
 CREATE INDEX IF NOT EXISTS ix_profile_history_period
   ON profile_history (profile_id, snapshot_type, period_key);
 
--- 模板族
-ALTER TABLE portrait_template ADD COLUMN IF NOT EXISTS profile_family VARCHAR(30) DEFAULT 'persona';
+-- 模板族：profile_type 已支持 persona/risk/business/topic，无需新增字段
 
 -- 任务与调度
 ALTER TABLE sync_task ADD COLUMN IF NOT EXISTS trigger_source VARCHAR(20) DEFAULT 'manual';
