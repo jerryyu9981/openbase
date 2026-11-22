@@ -64,9 +64,9 @@
         <div class="page-toolbar">
           <el-input v-model="keyword" placeholder="搜索模板族名称 / code" clearable style="width: 220px" data-test="template-search" />
           <el-select v-model="statusFilter" placeholder="状态：全部" clearable style="width: 130px" data-test="template-status-filter">
-            <el-option label="active" value="active" />
-            <el-option label="inactive" value="inactive" />
-            <el-option label="draft" value="draft" />
+            <el-option label="启用" value="active" />
+            <el-option label="停用" value="inactive" />
+            <el-option label="草稿" value="draft" />
           </el-select>
           <el-select v-model="kindFilter" placeholder="类型：全部" clearable style="width: 140px" data-test="template-kind-filter">
             <el-option label="复合模板" value="composite" />
@@ -135,7 +135,7 @@
               </el-table-column>
               <el-table-column label="状态" width="100">
                 <template #default="{ row }">
-                  <el-tag :type="statusTagType(row.status)" size="small">{{ row.status || 'draft' }}</el-tag>
+                  <el-tag :type="statusTagType(row.status)" size="small">{{ termLabel(TEMPLATE_STATUS_LABELS, row.status) }}</el-tag>
                 </template>
               </el-table-column>
               <el-table-column v-if="columnVisible('category')" label="分类" width="150">
@@ -236,7 +236,7 @@
     <el-drawer v-model="detailOpen" title="模板族详情" size="880px" data-test="template-detail-drawer">
       <div class="detail-head">
         <NameCodeLabel :name="detail?.name" :code="detail?.code" layout="stack" />
-        <el-tag size="small" :type="statusTagType(detail?.status)">{{ detail?.status || 'draft' }}</el-tag>
+        <el-tag size="small" :type="statusTagType(detail?.status)">{{ termLabel(TEMPLATE_STATUS_LABELS, detail?.status) }}</el-tag>
         <el-tag v-if="detailHealth?.block" size="small" type="danger">{{ detailHealth.block }} BLOCK</el-tag>
         <el-tag v-if="detailHealth?.warn" size="small" type="warning">{{ detailHealth.warn }} 告警</el-tag>
         <el-tag v-if="detailHealth?.gap" size="small" type="info">{{ detailHealth.gap }} 缺口</el-tag>
@@ -263,10 +263,10 @@
             <el-descriptions :column="2" border size="small">
               <el-descriptions-item label="模板名称">{{ detail?.name || '-' }}</el-descriptions-item>
               <el-descriptions-item label="模板码">{{ detail?.code || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="状态">{{ detail?.status || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="状态">{{ termLabel(TEMPLATE_STATUS_LABELS, detail?.status) }}</el-descriptions-item>
               <el-descriptions-item label="version">{{ formatVersion(detail?.version) }}</el-descriptions-item>
-              <el-descriptions-item label="profile_type">{{ detail?.profile_type || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="subject_type">{{ detail?.subject_type || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="画像类型">{{ termLabel(PROFILE_TYPE_LABELS, detail?.profile_type) }}</el-descriptions-item>
+              <el-descriptions-item label="主体类型">{{ termLabel(SUBJECT_TYPE_LABELS, detail?.subject_type) }}</el-descriptions-item>
               <el-descriptions-item label="extends">{{ detail?.extends || '—（无继承）' }}</el-descriptions-item>
               <el-descriptions-item label="description">{{ detail?.description || '-' }}</el-descriptions-item>
             </el-descriptions>
@@ -309,7 +309,7 @@
                   {{ node.current ? '当前模板' : `父级 ${node.depth}` }}
                 </el-tag>
                 <NameCodeLabel :name="node.name" :code="node.code" />
-                <el-tag size="small" :type="statusTagType(node.status)">{{ node.status || 'draft' }}</el-tag>
+                <el-tag size="small" :type="statusTagType(node.status)">{{ termLabel(TEMPLATE_STATUS_LABELS, node.status) }}</el-tag>
               </div>
               <div class="muted sm mt-8">
                 继承口径：父维度先入 → 子覆盖同名 → 追加新维度；深度上限 2 层。
@@ -517,6 +517,12 @@ import {
 import { describeDpsError } from '@/core/api/error'
 import { useAsyncState } from '@/core/composables/useAsyncState'
 import { formatVersion } from '@/modules/portrait/version'
+import {
+  PROFILE_TYPE_LABELS,
+  SUBJECT_TYPE_LABELS,
+  TEMPLATE_STATUS_LABELS,
+  termLabel,
+} from '@/modules/portrait/portraitTerms'
 import { useDpsListView } from '../composables/useDpsListView'
 import {
   buildTemplateHealth,

@@ -1,7 +1,7 @@
 <template>
   <PageContainer title="画像模板" description="模板字段编排与保存" test-id="dps-template-edit-view-page">
     <el-alert type="info" show-icon :closable="false" class="mb-16" data-test="edit-version-tip">
-      <template #title>保存后版本自动递增（v1 → v2）并写入模板变更历史；code 创建后不可修改。</template>
+      <template #title>保存后版本自动递增（v1 → v2）并写入模板变更历史；code 可留空（由中文名生成），创建后不可修改。</template>
     </el-alert>
 
     <el-alert v-if="error" type="error" show-icon :closable="false" class="mb-16" data-test="dps-error">
@@ -13,30 +13,45 @@
 
     <el-card header="基本信息" class="mb-16">
       <el-form label-width="150px">
-        <el-form-item label="code *">
-          <el-input v-model="form.code" :disabled="isEdit" placeholder="cc-persona-v1" style="width: 320px" data-test="edit-code" />
-          <span class="muted sm">唯一标识；重复 → 409</span>
+        <el-form-item label="code">
+          <CodeField
+            v-model="form.code"
+            :name="form.name"
+            :disabled="isEdit"
+            test-id="edit-code"
+          />
         </el-form-item>
         <el-form-item label="name *">
           <el-input v-model="form.name" placeholder="客服画像模板 v1" style="width: 320px" data-test="edit-name" />
         </el-form-item>
         <el-form-item label="profile_type">
           <el-select v-model="form.profile_type" style="width: 200px" data-test="edit-profile-type">
-            <el-option label="persona" value="persona" />
-            <el-option label="organization" value="organization" />
+            <el-option
+              v-for="item in PROFILE_TYPE_OPTIONS"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="subject_type">
           <el-select v-model="form.subject_type" style="width: 200px" data-test="edit-subject-type">
-            <el-option label="person" value="person" />
-            <el-option label="team" value="team" />
+            <el-option
+              v-for="item in SUBJECT_TYPE_OPTIONS"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="status">
           <el-select v-model="form.status" style="width: 200px" data-test="edit-status">
-            <el-option label="active" value="active" />
-            <el-option label="inactive" value="inactive" />
-            <el-option label="draft" value="draft" />
+            <el-option
+              v-for="item in TEMPLATE_STATUS_OPTIONS"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="description">
@@ -174,11 +189,17 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
+import CodeField from '@/components/common/CodeField.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { dpsApi, type DpsPortraitTemplate, type DpsTemplateCategory, type DpsTemplateComponent } from '@/core/api/dps'
 import { describeDpsError, type DpsErrorPresentation } from '@/core/api/error'
+import {
+  PROFILE_TYPE_OPTIONS,
+  SUBJECT_TYPE_OPTIONS,
+  TEMPLATE_STATUS_OPTIONS,
+} from '@/modules/portrait/portraitTerms'
 
 const route = useRoute()
 const router = useRouter()
@@ -233,7 +254,8 @@ const mountableComponents = computed(() =>
       !mountedCodes.value.has(item.code),
   ),
 )
-const canSave = computed(() => !!form.code && !!form.name)
+// v2.18.0（波次 A / A-05）：code 可省略，仅中文名必填（编码由服务端生成）
+const canSave = computed(() => !!form.name.trim())
 
 /** 继承链深度（>2 或成环 → 返回 99 作为非法哨兵） */
 function chainDepth(startCode: string): number {
@@ -367,7 +389,6 @@ async function save() {
   let payload: Record<string, unknown>
   try {
     payload = {
-      code: form.code,
       name: form.name,
       profile_type: form.profile_type,
       subject_type: form.subject_type,
@@ -382,6 +403,8 @@ async function save() {
       category_id: form.category_id || null,
       template_kind: form.template_kind,
     }
+    // code 留空时由服务端按中文名生成（v2.18.0 / A-06）
+    if (form.code.trim()) payload.code = form.code.trim()
   } catch (parseError) {
     ElMessage.warning((parseError as Error).message)
     return
@@ -392,7 +415,7 @@ async function save() {
       const updated = await dpsApi.updateTemplate(editingCode.value, payload)
       ElMessage.success(`已保存，版本递增至 v${updated.version ?? '-'}`)
     } else {
-      const created = await dpsApi.createTemplate(payload as Partial<DpsPortraitTemplate> & { code: string })
+      const created = await dpsApi.createTemplate(payload as Partial<DpsPortraitTemplate>)
       ElMessage.success(`创建成功（v${created.version ?? 1}）`)
       await router.push('/portrait/dps/templates')
     }

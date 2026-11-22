@@ -1533,8 +1533,8 @@ export const dpsApi = {
     return data.data
   },
 
-  /** 画像模板创建（POST /dps-proxy/templates，#13；400 含字段级原因／409 `code` 冲突） */
-  async createTemplate(body: Partial<DpsPortraitTemplate> & { code: string }): Promise<DpsPortraitTemplate> {
+  /** 画像模板创建（POST /dps-proxy/templates；400 含字段级原因／409 code 冲突；v2.18.0 起 code 可省略，由服务端按中文名生成） */
+  async createTemplate(body: Partial<DpsPortraitTemplate>): Promise<DpsPortraitTemplate> {
     const { data } = await http.post<ApiSuccess<DpsPortraitTemplate>>('/dps-proxy/templates', body)
     return data.data
   },
