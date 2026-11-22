@@ -1,10 +1,12 @@
 # OpenBase 画像升级前端设计方案
 
+> **归档说明**：本方案已合并至《OpenBase-画像命名与数据链路一体化升级方案 v1.0.0》，本文档仅作历史留痕。
+
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-DESIGN-PORTRAIT-FE |
 | 版本 | v0.2.0 |
-| 状态 | [Review] |
+| 状态 | [Superseded] |
 | 适用系统 | openbase-ui（Vue 3 + Element Plus + Vite），画像/DPS 模块 |
 | 关联文档 | 《OpenBase-画像命名与数据链路一体化设计 v0.3.0》 |
 | 作者 | AI 编码代理 |

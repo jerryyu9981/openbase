@@ -1,10 +1,12 @@
 # OpenBase 画像命名与数据链路一体化设计
 
+> **归档说明**：本方案已合并至《OpenBase-画像命名与数据链路一体化升级方案 v1.0.0》，本文档仅作历史留痕。
+
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-DESIGN-PORTRAIT-NAMING-INGEST |
 | 版本 | v0.3.0 |
-| 状态 | [Review] |
+| 状态 | [Superseded] |
 | 适用系统 | OpenBase（openbase-ui 画像模块）、DPS、OpenLLM 回写链路 |
 | 作者 | AI 编码代理 |
 | 日期 | 2026-11-22 |
