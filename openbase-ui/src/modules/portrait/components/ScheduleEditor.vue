@@ -5,8 +5,8 @@
     </el-form-item>
     <el-form-item label="调度类型">
       <el-radio-group v-model="form.schedule_type" data-test="schedule-type">
-        <el-radio-button label="cron">cron</el-radio-button>
-        <el-radio-button label="interval">固定间隔</el-radio-button>
+        <el-radio-button value="cron">cron</el-radio-button>
+        <el-radio-button value="interval">固定间隔</el-radio-button>
       </el-radio-group>
     </el-form-item>
     <el-form-item v-if="form.schedule_type === 'cron'" label="cron">

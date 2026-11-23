@@ -2,9 +2,9 @@
   <div class="business-item-table" data-test="business-item-table">
     <div class="table-head">
       <el-radio-group v-model="statusFilter" size="small" data-test="business-item-filter" @change="load">
-        <el-radio-button label="">全部</el-radio-button>
-        <el-radio-button label="pending">待完成</el-radio-button>
-        <el-radio-button label="done">已完成</el-radio-button>
+        <el-radio-button value="">全部</el-radio-button>
+        <el-radio-button value="pending">待完成</el-radio-button>
+        <el-radio-button value="done">已完成</el-radio-button>
       </el-radio-group>
       <el-button size="small" :loading="loading" data-test="business-item-refresh" @click="load">刷新</el-button>
     </div>

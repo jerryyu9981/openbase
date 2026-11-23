@@ -6,9 +6,9 @@
   >
     <div class="page-toolbar">
       <el-radio-group v-model="activeTab" data-test="ingest-tab" @change="loadTasks">
-        <el-radio-button label="all">全部</el-radio-button>
-        <el-radio-button label="running">进行中</el-radio-button>
-        <el-radio-button label="failed">失败</el-radio-button>
+        <el-radio-button value="all">全部</el-radio-button>
+        <el-radio-button value="running">进行中</el-radio-button>
+        <el-radio-button value="failed">失败</el-radio-button>
       </el-radio-group>
       <el-button :loading="loading" data-test="ingest-refresh" @click="loadTasks">刷新</el-button>
     </div>

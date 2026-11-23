@@ -2,9 +2,9 @@
   <div class="progress-trend" data-test="progress-trend">
     <div class="trend-head">
       <el-radio-group v-model="periodType" size="small" data-test="progress-period" @change="load">
-        <el-radio-button label="day">日</el-radio-button>
-        <el-radio-button label="week">周</el-radio-button>
-        <el-radio-button label="month">月</el-radio-button>
+        <el-radio-button value="day">日</el-radio-button>
+        <el-radio-button value="week">周</el-radio-button>
+        <el-radio-button value="month">月</el-radio-button>
       </el-radio-group>
       <span class="muted sm">最近 {{ limit }} 个周期</span>
     </div>

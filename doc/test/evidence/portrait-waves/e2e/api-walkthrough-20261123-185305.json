@@ -1,0 +1,284 @@
+{
+  "base": "http://127.0.0.1:8000",
+  "generated_at": "2026-11-23T18:53:05.546608",
+  "total": 33,
+  "passed": 33,
+  "failed": 0,
+  "failed_steps": [],
+  "checks": [
+    {
+      "step": "登录",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 384.7,
+      "detail": "",
+      "note": ""
+    },
+    {
+      "step": "模块清单",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 15.6,
+      "detail": "ok",
+      "note": ""
+    },
+    {
+      "step": "DPS 健康（经代理）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 527.2,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "画像列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 340.9,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "画像详情",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 305.1,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "PII 画像详情（admin）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 296.0,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "PII 掩码（readonly）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 0,
+      "detail": "masked=True",
+      "note": "L3 手机号掩码；L4 身份证掩码"
+    },
+    {
+      "step": "画像删除（审计 DELETE）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 315.9,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "画像模板列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 321.2,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "画像模板详情",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 302.0,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "标注模板列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 325.7,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "标注队列",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 348.8,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "标注统计",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 310.3,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "标签分类",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 299.4,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "报表概览",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 320.3,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "组织树",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 305.4,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "组织列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 311.5,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "引入任务列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 298.2,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "引入预览（脱敏、不写库）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 318.6,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "业务事项写入",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 345.2,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "业务事项列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 299.8,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "进度计算（落快照）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 335.9,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "进度趋势",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 284.0,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "进度事项",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 306.3,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "逾期事项",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 302.6,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "Cron 预览（未来 5 次）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 319.2,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "调度列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 310.9,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "调度创建（默认停用）",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 310.9,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "画像计算任务列表",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 320.4,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "画像任务人工重试",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 299.0,
+      "detail": "success",
+      "note": ""
+    },
+    {
+      "step": "重试后任务状态",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 0,
+      "detail": "task_id=e2e20261123_task status=failed",
+      "note": ""
+    },
+    {
+      "step": "画像导出",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 613.2,
+      "detail": "",
+      "note": "CSV 文本；导出列不含 L3/L4 字段"
+    },
+    {
+      "step": "审计日志",
+      "status": 200,
+      "ok": true,
+      "elapsed_ms": 325.2,
+      "detail": "success",
+      "note": ""
+    }
+  ],
+  "extra": {
+    "person_id": "e2e20261123_pii",
+    "audit_total": 3890,
+    "audit_actions": [
+      "CREATE",
+      "DELETE",
+      "READ"
+    ],
+    "export_masked": false
+  }
+}
