@@ -37,6 +37,39 @@
         </el-table>
       </el-tab-pane>
 
+      <el-tab-pane label="画像计算任务" name="calc">
+        <div class="toolbar">
+          <el-select v-model="calcStatus" size="small" clearable placeholder="全部状态" style="width: 160px" @change="loadCalc">
+            <el-option label="待执行" value="pending" />
+            <el-option label="执行中" value="running" />
+            <el-option label="成功" value="succeeded" />
+            <el-option label="失败" value="failed" />
+          </el-select>
+          <el-button size="small" :loading="calcLoading" data-test="task-center-calc-refresh" @click="loadCalc">刷新</el-button>
+        </div>
+        <el-table v-loading="calcLoading" :data="calcTasks" size="small" empty-text="暂无画像计算任务" data-test="task-center-calc">
+          <el-table-column prop="task_id" label="任务 ID" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="person_id" label="主体" width="150" show-overflow-tooltip />
+          <el-table-column prop="template_code" label="模板" width="170" show-overflow-tooltip />
+          <el-table-column prop="status" label="状态" width="100" />
+          <el-table-column prop="error" label="错误" min-width="150" show-overflow-tooltip />
+          <el-table-column label="操作" width="100">
+            <template #default="{ row }">
+              <el-button
+                v-if="row.status === 'failed'"
+                link
+                type="warning"
+                size="small"
+                data-test="task-center-calc-retry"
+                @click="retryCalc(row.task_id)"
+              >
+                重试
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-tab-pane>
+
       <el-tab-pane label="数据源调度" name="schedule">
         <div class="toolbar">
           <el-button size="small" type="primary" data-test="task-center-schedule-new" @click="openSchedule(null)">
@@ -115,6 +148,7 @@ import {
   dpsApi,
   type DpsAuditLog,
   type DpsIngestTask,
+  type DpsPortraitCalcTask,
   type DpsSchedule,
 } from '@/core/api/dps'
 import { describeError } from '@/core/api/error'
@@ -125,6 +159,10 @@ const activeTab = ref('ingest')
 const ingestStatus = ref('')
 const ingestTasks = ref<DpsIngestTask[]>([])
 const ingestLoading = ref(false)
+
+const calcStatus = ref('')
+const calcTasks = ref<DpsPortraitCalcTask[]>([])
+const calcLoading = ref(false)
 
 const schedules = ref<DpsSchedule[]>([])
 const scheduleLoading = ref(false)
@@ -160,6 +198,32 @@ async function retryIngest(taskId: string) {
     await dpsApi.retryIngestTask(taskId)
     ElMessage.success('已提交重试')
     await loadIngest()
+  } catch (err) {
+    ElMessage.error(describeError(err).detail || '重试失败')
+  }
+}
+
+async function loadCalc() {
+  calcLoading.value = true
+  try {
+    const payload = await dpsApi.listPortraitCalcTasks({
+      status: calcStatus.value || undefined,
+      page: 1,
+      page_size: 50,
+    })
+    calcTasks.value = payload.items || []
+  } catch (err) {
+    ElMessage.error(describeError(err).detail || '画像计算任务加载失败')
+  } finally {
+    calcLoading.value = false
+  }
+}
+
+async function retryCalc(taskId: string) {
+  try {
+    const result = await dpsApi.retryPortraitCalcTask(taskId)
+    ElMessage.success(result.retried ? '已提交重试' : `任务当前状态：${result.status}`)
+    await loadCalc()
   } catch (err) {
     ElMessage.error(describeError(err).detail || '重试失败')
   }
@@ -223,7 +287,7 @@ async function loadAudit() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadIngest(), loadSchedules(), loadAudit()])
+  await Promise.all([loadIngest(), loadCalc(), loadSchedules(), loadAudit()])
 })
 </script>
 

@@ -1003,6 +1003,32 @@ export const dpsApi = {
     return data.data
   },
 
+  /** 画像计算任务列表（v2.20.1：GET /dps-proxy/portraits/tasks） */
+  async listPortraitCalcTasks(
+    params: {
+      status?: string
+      person_id?: string
+      template_code?: string
+      page?: number
+      page_size?: number
+    } = {},
+  ): Promise<{ items: DpsPortraitCalcTask[]; total: number; page: number; page_size: number }> {
+    const { data } = await http.get<
+      ApiSuccess<{ items: DpsPortraitCalcTask[]; total: number; page: number; page_size: number }>
+    >('/dps-proxy/portraits/tasks', { params })
+    return data.data
+  },
+
+  /** 人工重试失败任务（v2.20.1：POST /dps-proxy/portraits/tasks/{task_id}/retry） */
+  async retryPortraitCalcTask(
+    taskId: string,
+  ): Promise<{ task_id: string; status: string; retried: boolean }> {
+    const { data } = await http.post<
+      ApiSuccess<{ task_id: string; status: string; retried: boolean }>
+    >(`/dps-proxy/portraits/tasks/${encodeURIComponent(taskId)}/retry`, {})
+    return data.data
+  },
+
   /** 轮询画像异步任务：2s 间隔、默认 60s 超时；failed/超时抛可读错误；onStatus 透出每次轮询状态 */
   async waitPortraitTask(
     taskId: string,

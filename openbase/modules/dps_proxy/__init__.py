@@ -437,6 +437,26 @@ async def dps_portrait_by_external(
     )
 
 
+@router.get("/portraits/tasks")
+async def dps_list_portrait_calc_tasks(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """画像计算任务列表（GET /api/v2/portrait/tasks）.
+
+    注册顺序必须早于 ``/portraits/{person_id}``（静态段先于动态段），
+    否则会被动态段捕获为 ``person_id="tasks"``（v2.20.1 修复）。
+    """
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        "/api/v2/portrait/tasks",
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 @router.get("/portraits/{person_id}")
 async def dps_portrait_detail(
     person_id: str,
@@ -498,6 +518,23 @@ async def dps_portrait_calc_task(
     headers = _build_identity_headers(_user, request)
     return await _forward(
         "GET", f"/api/v2/portrait/tasks/{task_id}",
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/portraits/tasks/{task_id}/retry")
+async def dps_retry_portrait_calc_task(
+    task_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """人工重试画像计算任务（POST /api/v2/portrait/tasks/{task_id}/retry）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        f"/api/v2/portrait/tasks/{task_id}/retry",
+        json_body={},
         headers=headers,
         request=request,
     )

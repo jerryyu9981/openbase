@@ -140,6 +140,30 @@ def test_schedule_crud_and_run(client: TestClient) -> None:
     assert _call(client)["url"] == f"{UPSTREAM_BASE}/api/v2/schedules/s1/run"
 
 
+def test_portrait_calc_task_list_and_retry(client: TestClient) -> None:
+    """任务中心画像计算任务：列表静态段与重试端点透传（v2.20.1）。"""
+    token = _token(client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.get(
+        "/api/v1/dps-proxy/portraits/tasks?status=failed&page=1&page_size=20",
+        headers=headers,
+    )
+    assert resp.status_code == 200, resp.text
+    call = _call(client)
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/tasks"
+    assert call["params"] == {"status": "failed", "page": "1", "page_size": "20"}
+
+    client.fake.request_calls.clear()  # type: ignore[attr-defined]
+    resp = client.post(
+        "/api/v1/dps-proxy/portraits/tasks/t1/retry", json={}, headers=headers
+    )
+    assert resp.status_code == 200, resp.text
+    call = _call(client)
+    assert call["method"] == "POST"
+    assert call["url"] == f"{UPSTREAM_BASE}/api/v2/portrait/tasks/t1/retry"
+
+
 def test_audit_logs_forwards_action_filter(client: TestClient) -> None:
     token = _token(client)
     resp = client.get(
