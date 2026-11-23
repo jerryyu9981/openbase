@@ -1431,6 +1431,227 @@ async def dps_ingest_task_errors(
     )
 
 
+# ---- 波次 C（2.20.0）：进度、业务事项与调度 --------------------------------
+
+
+@router.post("/progress/calculate")
+async def dps_progress_calculate(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """计算进度快照（POST；开关关闭时上游 409 原样透传）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _v2_upstream_path("/progress/calculate"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/progress/{person_id}")
+async def dps_progress_trend(
+    person_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """进度趋势（GET；周期类型与条数原样透传）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path(f"/progress/{person_id}"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/progress/{person_id}/items")
+async def dps_progress_items(
+    person_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """进度事项列表（GET）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path(f"/progress/{person_id}/items"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/progress/{person_id}/overdue")
+async def dps_progress_overdue(
+    person_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """逾期事项（GET）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path(f"/progress/{person_id}/overdue"),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/business-items")
+async def dps_list_business_items(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """业务事项列表（GET；静态段先于 /schedules/{id}）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path("/business-items"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/business-items")
+async def dps_upsert_business_item(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """业务事项写入（POST；唯一键幂等由上游裁决）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _v2_upstream_path("/business-items"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/schedules/preview")
+async def dps_schedule_preview_expression(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """cron 表达式预览（GET；静态段必须先于 /schedules/{id}/preview）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path("/schedules/preview"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/schedules")
+async def dps_list_schedules(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """调度列表（GET）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path("/schedules"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/schedules")
+async def dps_create_schedule(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """创建调度（POST；非法 cron 由上游 400 语义保真）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _v2_upstream_path("/schedules"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.put("/schedules/{schedule_id}")
+async def dps_update_schedule(
+    schedule_id: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """更新调度（PUT）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "PUT",
+        _v2_upstream_path(f"/schedules/{schedule_id}"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/schedules/{schedule_id}/preview")
+async def dps_preview_schedule(
+    schedule_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """既有调度的未来触发预览（GET）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path(f"/schedules/{schedule_id}/preview"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/schedules/{schedule_id}/run")
+async def dps_run_schedule(
+    schedule_id: str,
+    request: Request,
+    payload: dict[str, Any] | None = None,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """立即执行一次调度（POST）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _v2_upstream_path(f"/schedules/{schedule_id}/run"),
+        json_body=payload or {},
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/audit/logs")
+async def dps_audit_logs(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """审计日志查询（GET；DPS 侧按角色/范围裁决，本仓仅透传）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path("/audit/logs"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
 # ---- 静态段 1：模板包（#1 导出 / #2 导入）--------------------------------
 
 

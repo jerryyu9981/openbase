@@ -1069,6 +1069,7 @@ export const dpsApi = {
     resource_type?: string
     resource_id?: string
     action?: string
+    result?: string
     page?: number
     page_size?: number
   }): Promise<{ items: Record<string, unknown>[]; total?: number }> {
@@ -1786,6 +1787,117 @@ export const dpsApi = {
     )
     return data.data
   },
+
+  /* ==================== v2.20.0｜波次 C：进度、调度与审计 ==================== */
+
+  /** 计算进度快照（POST /dps-proxy/progress/calculate；同周期幂等） */
+  async calculateProgress(body: DpsProgressCalculateRequest): Promise<DpsProgressSnapshot> {
+    const { data } = await http.post<ApiSuccess<DpsProgressSnapshot>>(
+      '/dps-proxy/progress/calculate',
+      body,
+    )
+    return data.data
+  },
+
+  /** 进度趋势（GET /dps-proxy/progress/{person_id}；周期键倒序） */
+  async getProgressTrend(
+    personId: string,
+    params: { period_type?: 'day' | 'week' | 'month'; limit?: number } = {},
+  ): Promise<{ items: DpsProgressSnapshot[] }> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsProgressSnapshot[] }>>(
+      `/dps-proxy/progress/${encodeURIComponent(personId)}`,
+      { params },
+    )
+    return data.data
+  },
+
+  /** 进度事项（GET /dps-proxy/progress/{person_id}/items） */
+  async listProgressItems(
+    personId: string,
+    params: { status?: string; limit?: number } = {},
+  ): Promise<{ items: DpsBusinessItem[] }> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsBusinessItem[] }>>(
+      `/dps-proxy/progress/${encodeURIComponent(personId)}/items`,
+      { params },
+    )
+    return data.data
+  },
+
+  /** 逾期事项（GET /dps-proxy/progress/{person_id}/overdue） */
+  async listProgressOverdue(personId: string): Promise<{ items: DpsBusinessItem[] }> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsBusinessItem[] }>>(
+      `/dps-proxy/progress/${encodeURIComponent(personId)}/overdue`,
+    )
+    return data.data
+  },
+
+  /** 业务事项列表（GET /dps-proxy/business-items） */
+  async listBusinessItems(
+    params: { person_id?: string; status?: string; limit?: number } = {},
+  ): Promise<{ items: DpsBusinessItem[] }> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsBusinessItem[] }>>(
+      '/dps-proxy/business-items',
+      { params },
+    )
+    return data.data
+  },
+
+  /** 写入业务事项（POST /dps-proxy/business-items；唯一键幂等） */
+  async upsertBusinessItem(body: DpsBusinessItemInput): Promise<DpsBusinessItem> {
+    const { data } = await http.post<ApiSuccess<DpsBusinessItem>>(
+      '/dps-proxy/business-items',
+      body,
+    )
+    return data.data
+  },
+
+  /** cron 表达式预览（GET /dps-proxy/schedules/preview；未来 5 次） */
+  async previewCron(expr: string, count = 5): Promise<{ expr: string; next_runs: string[] }> {
+    const { data } = await http.get<ApiSuccess<{ expr: string; next_runs: string[] }>>(
+      '/dps-proxy/schedules/preview',
+      { params: { expr, count } },
+    )
+    return data.data
+  },
+
+  /** 调度列表（GET /dps-proxy/schedules） */
+  async listSchedules(): Promise<{ items: DpsSchedule[] }> {
+    const { data } = await http.get<ApiSuccess<{ items: DpsSchedule[] }>>('/dps-proxy/schedules')
+    return data.data
+  },
+
+  /** 创建调度（POST /dps-proxy/schedules） */
+  async createSchedule(body: DpsScheduleInput): Promise<DpsSchedule> {
+    const { data } = await http.post<ApiSuccess<DpsSchedule>>('/dps-proxy/schedules', body)
+    return data.data
+  },
+
+  /** 更新调度（PUT /dps-proxy/schedules/{id}；启停/改表达式） */
+  async updateSchedule(id: string, body: Partial<DpsScheduleInput>): Promise<DpsSchedule> {
+    const { data } = await http.put<ApiSuccess<DpsSchedule>>(
+      `/dps-proxy/schedules/${encodeURIComponent(id)}`,
+      body,
+    )
+    return data.data
+  },
+
+  /** 既有调度未来触发预览（GET /dps-proxy/schedules/{id}/preview） */
+  async previewSchedule(id: string, count = 5): Promise<{ id: string; next_runs: string[] }> {
+    const { data } = await http.get<ApiSuccess<{ id: string; next_runs: string[] }>>(
+      `/dps-proxy/schedules/${encodeURIComponent(id)}/preview`,
+      { params: { count } },
+    )
+    return data.data
+  },
+
+  /** 立即执行调度（POST /dps-proxy/schedules/{id}/run） */
+  async runSchedule(id: string): Promise<{ status: string }> {
+    const { data } = await http.post<ApiSuccess<{ status: string }>>(
+      `/dps-proxy/schedules/${encodeURIComponent(id)}/run`,
+      {},
+    )
+    return data.data
+  },
 }
 
 /** 组织树节点（v2.19.0） */
@@ -1908,4 +2020,110 @@ export interface DpsBatchReviewResult {
   succeeded: number
   failed: number
   items: DpsBatchReviewItemResult[]
+}
+
+/* ==================== v2.20.0｜波次 C：进度、调度与审计 ==================== */
+
+/** 业务事项（v2.20.0；唯一键 tenant+person+type+code+planned_at） */
+export interface DpsBusinessItem {
+  id?: string
+  person_id: string
+  item_type: string
+  item_code?: string | null
+  item_name?: string | null
+  owner_id?: string | null
+  planned_at?: string | null
+  completed_at?: string | null
+  status?: 'pending' | 'done' | 'cancelled' | string
+  quality_score?: number | null
+  workload_hours?: number | null
+  source?: string
+  org_id?: string | null
+  tenant_id?: string | null
+  [key: string]: unknown
+}
+
+/** 业务事项写入请求 */
+export interface DpsBusinessItemInput {
+  person_id: string
+  item_type: string
+  item_code?: string
+  item_name?: string
+  owner_id?: string
+  planned_at?: string
+  completed_at?: string
+  status?: string
+  quality_score?: number
+  workload_hours?: number
+  org_id?: string
+  tenant_id?: string
+}
+
+/** 进度周期快照（v2.20.0） */
+export interface DpsProgressSnapshot {
+  id?: string
+  person_id: string
+  period_type: 'day' | 'week' | 'month' | string
+  period_key: string
+  template_code?: string | null
+  total_items: number
+  completed_items: number
+  overdue_items: number
+  on_time_rate: number
+  quality_score: number
+  workload_hours: number
+  dimensions?: Record<string, { total: number; completed: number; overdue: number; hours: number }>
+  computed_at?: string
+  history_written?: boolean
+  [key: string]: unknown
+}
+
+/** 进度计算请求 */
+export interface DpsProgressCalculateRequest {
+  person_id: string
+  template_code?: string
+  period_type?: 'day' | 'week' | 'month'
+  period_key?: string
+}
+
+/** 数据源调度（v2.20.0） */
+export interface DpsSchedule {
+  id: string
+  datasource_id?: string | null
+  schedule_type: 'cron' | 'interval' | string
+  cron_expr?: string | null
+  interval_seconds?: number | null
+  enabled?: boolean | number
+  next_run_at?: string | null
+  last_run_at?: string | null
+  last_status?: string | null
+  failure_count?: number
+  max_failures?: number
+  [key: string]: unknown
+}
+
+/** 调度创建/更新请求 */
+export interface DpsScheduleInput {
+  datasource_id?: string
+  schedule_type?: 'cron' | 'interval'
+  cron_expr?: string
+  interval_seconds?: number
+  enabled?: boolean
+  max_failures?: number
+}
+
+/** 审计日志（v2.20.0；detail 不含 PII） */
+export interface DpsAuditLog {
+  id?: string | number
+  timestamp?: string
+  user_id?: string
+  action?: string
+  resource_type?: string
+  resource_id?: string | null
+  result?: string
+  detail?: string | null
+  org_id?: string
+  tenant_id?: string
+  request_id?: string | null
+  [key: string]: unknown
 }

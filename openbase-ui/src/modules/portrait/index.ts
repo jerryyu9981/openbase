@@ -41,6 +41,8 @@ export const dpsRoutes: RouteRecordRaw[] = [
   // 波次 B（2.19.0）：引入任务中心（静态段先于 :id 详情）
   { path: 'dps/ingest-tasks', name: 'dps-ingest-tasks', component: () => import('./pages/IngestTasksView.vue'), meta: { title: '引入任务' } },
   { path: 'dps/ingest-tasks/:id', name: 'dps-ingest-task-detail', component: () => import('./pages/TaskDetailView.vue'), meta: { title: '引入任务详情' } },
+  // 波次 C（2.20.0）：任务中心（引入 / 调度 / 审计）
+  { path: 'dps/task-center', name: 'dps-task-center', component: () => import('./pages/TaskCenterView.vue'), meta: { title: '任务中心' } },
 ]
 
 export const routes: RouteRecordRaw[] = [
@@ -111,6 +113,7 @@ export const navItems = [
       { path: '/portrait/search', title: '画像搜索' },
       { path: '/portrait/rules', title: '评分规则' },
       { path: '/portrait/dps/ingest-tasks', title: '引入任务' },
+      { path: '/portrait/dps/task-center', title: '任务中心' },
       { path: '/portrait/dps/measures', title: '措施建议' },
     ],
   },

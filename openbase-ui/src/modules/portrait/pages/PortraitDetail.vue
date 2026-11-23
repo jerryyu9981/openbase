@@ -546,6 +546,24 @@
           </el-col>
         </el-row>
 
+        <!-- 业务进度（v2.20.0 / C-08）：趋势与事项明细，开关关闭时组件内提示 -->
+        <el-card shadow="never" class="mb-16" data-test="portrait-progress-card">
+          <template #header>
+            <div class="card-head">
+              <span>业务进度</span>
+              <span class="muted sm">按周期快照展示按时率/完成率，事项明细可筛选</span>
+            </div>
+          </template>
+          <el-tabs v-model="progressTab" data-test="portrait-progress-tabs">
+            <el-tab-pane label="进度趋势" name="trend">
+              <ProgressTrend :person-id="personId" />
+            </el-tab-pane>
+            <el-tab-pane label="事项明细" name="items">
+              <BusinessItemTable :person-id="personId" />
+            </el-tab-pane>
+          </el-tabs>
+        </el-card>
+
         <el-drawer v-model="evidenceVisible" :title="`证据 · ${evidenceTitle}`" size="520px" data-test="portrait-evidence-drawer">
           <el-empty v-if="!evidenceRows.length" description="该维度暂无标签证据（可能尚未计算或证据策略未保留）" :image-size="60" />
           <el-table v-else :data="evidenceRows" size="small" data-test="portrait-evidence-table">
@@ -744,6 +762,8 @@
 <script setup lang="ts">
 import PageContainer from '@/components/page/PageContainer.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
+import ProgressTrend from '@/modules/portrait/components/ProgressTrend.vue'
+import BusinessItemTable from '@/modules/portrait/components/BusinessItemTable.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -811,6 +831,7 @@ const DEFAULT_DIMENSION_FIELDS: Array<{ code: string; label: string; field: keyo
 const route = useRoute()
 const router = useRouter()
 const personId = String(route.params.id || '')
+const progressTab = ref('trend')
 const profile = ref<DpsPortrait | null>(null)
 const templateOptions = ref<DpsPortraitTemplate[]>([])
 const selectedTemplate = ref('')
