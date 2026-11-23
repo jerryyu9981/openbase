@@ -33,7 +33,7 @@
 | [x] C-09 | 任务中心与调度前端 | `TaskCenterView.vue`、`ScheduleEditor.vue`、`CronInput.vue`、`core/api/dps.ts`、`openbase/modules/dps_proxy/__init__.py` | 类型编译；代理透传 |
 | [x] C-10 | 测试与回归 | `src/tests/test_v2_20_wave_c.py` 等 | pytest/flake8/build/代理测试 |
 | [x] C-11 | 版本与留痕 | `config.py`、`src/__init__.py`、`mcp_server/constants.py`；DevLogReport；计划 v1.0.4 | 版本一致；修订历史 |
-| [x] C-12 | 提交与推送 | DPS / OpenBase | origin/backup/github 均成功 |
+| [x] C-12 | 提交与推送 | DPS / OpenBase | origin/backup/github 均成功（DPS 8768a2c、OpenBase f73b176） |
 
 ## 门禁
 
