@@ -1,0 +1,265 @@
+{
+  "generated_at": "2026-11-23T14:55:35.774710+00:00",
+  "environment": {
+    "database": "isolated probe db (shared PG 192.168.0.151:5432, db dropped after run)",
+    "probe_db": "dps_prod_gate_probe_20261123",
+    "dps_version": "2.20.2",
+    "scheduler_enabled": true,
+    "progress_enabled": true,
+    "data_scope_mode_initial": "off",
+    "note": "worker 同步执行器为替身（真实 DB 状态机/条件更新/心跳/清理/恢复均走真实代码）"
+  },
+  "result": "PASS",
+  "fatal": null,
+  "checks": [
+    {
+      "id": "P13-1",
+      "name": "worker 心跳写入且持续更新",
+      "pass": true,
+      "first": "2026-11-23 00:05:00+00:00",
+      "second": "2026-11-23 00:05:10+00:00"
+    },
+    {
+      "id": "P13-2",
+      "name": "到点调度正常触发并推进 next_run_at",
+      "pass": true,
+      "summary": {
+        "scanned": 1,
+        "executed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "recovery": {
+          "scanned": 0,
+          "requeued": 0,
+          "failed": 0
+        }
+      },
+      "row": {
+        "last_status": "success",
+        "failure_count": "0",
+        "next_run_at": "2026-11-23 01:00:00+00:00"
+      }
+    },
+    {
+      "id": "P13-3",
+      "name": "双实例并发调度无重复执行（仅 1 次）",
+      "pass": true,
+      "r1": {
+        "scanned": 1,
+        "executed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "recovery": {
+          "scanned": 0,
+          "requeued": 0,
+          "failed": 0
+        }
+      },
+      "r2": {
+        "scanned": 0,
+        "executed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "recovery": {
+          "scanned": 0,
+          "requeued": 0,
+          "failed": 0
+        }
+      },
+      "executed_total": 1,
+      "executor_calls": 1,
+      "row": {
+        "last_status": "success",
+        "next_run_at": "2026-11-23 01:00:00+00:00"
+      }
+    },
+    {
+      "id": "P13-4",
+      "name": "PG advisory lock 跨会话互斥（持有连接内不可重入）",
+      "pass": true,
+      "locked_hold": true,
+      "locked_other": false,
+      "locked_after_release": true
+    },
+    {
+      "id": "P13-5",
+      "name": "连续失败达阈值自动停用（熔断）",
+      "pass": true,
+      "after_first": {
+        "failure_count": "1",
+        "enabled": "True"
+      },
+      "after_second": {
+        "failure_count": "2",
+        "enabled": "False"
+      },
+      "after_disabled": {
+        "scanned": 0,
+        "executed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "recovery": {
+          "scanned": 0,
+          "requeued": 0,
+          "failed": 0
+        }
+      }
+    },
+    {
+      "id": "P13-6",
+      "name": "重启后续跑：超时任务回队（pending，retry+1）",
+      "pass": true,
+      "recovery": {
+        "scanned": 1,
+        "requeued": 1,
+        "failed": 0
+      },
+      "row": {
+        "status": "pending",
+        "retry_count": "1"
+      }
+    },
+    {
+      "id": "P13-7",
+      "name": "审计保留期清理：过期行删除、新行保留",
+      "pass": true,
+      "expired_remaining": 0,
+      "probe_rows_remaining": 1
+    },
+    {
+      "id": "P14-1",
+      "name": "warn 模式：不拦截（4/4）且按范围记录 DATA_SCOPE_WOULD_LIMIT",
+      "pass": true,
+      "cases": [
+        {
+          "scope": "all",
+          "total": 4,
+          "warn_count": 1,
+          "warn_sample": "DATA_SCOPE_WOULD_LIMIT scope=all org_code=None org_id=None"
+        },
+        {
+          "scope": "org",
+          "total": 4,
+          "warn_count": 1,
+          "warn_sample": "DATA_SCOPE_WOULD_LIMIT scope=org org_code=PROBE-A org_id=None"
+        },
+        {
+          "scope": "org_subtree",
+          "total": 4,
+          "warn_count": 1,
+          "warn_sample": "DATA_SCOPE_WOULD_LIMIT scope=org_subtree org_code=PROBE-A org_id=None"
+        },
+        {
+          "scope": "self",
+          "total": 4,
+          "warn_count": 1,
+          "warn_sample": "DATA_SCOPE_WOULD_LIMIT scope=self org_code=None org_id=None"
+        }
+      ]
+    },
+    {
+      "id": "P14-2",
+      "name": "off 基线 4/4；enforce 矩阵 all/org/subtree/self/越权空集正确",
+      "pass": true,
+      "off_total": 4,
+      "cases": [
+        {
+          "case": "all",
+          "total": 4,
+          "expected": 4
+        },
+        {
+          "case": "org=A",
+          "total": 2,
+          "expected": 2
+        },
+        {
+          "case": "org_subtree=A",
+          "total": 3,
+          "expected": 3
+        },
+        {
+          "case": "org=B",
+          "total": 1,
+          "expected": 1
+        },
+        {
+          "case": "self=P-C1",
+          "total": 1,
+          "expected": 1
+        },
+        {
+          "case": "org=missing",
+          "total": 0,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "id": "P14-3",
+      "name": "身份头角色 → 范围接线（operator/admin/未知角色）",
+      "pass": true,
+      "derived": {
+        "operator": "org_subtree",
+        "admin": "all",
+        "unknown": "org"
+      }
+    },
+    {
+      "id": "P15-1",
+      "name": "并发进度计算 8 路 × 240 次：无错误、P95 ≤ 200 ms、快照 240 行",
+      "pass": true,
+      "seed_rows": 36000,
+      "seed_seconds": 5.4,
+      "wall_seconds": 0.67,
+      "count": 240,
+      "mean_ms": 21.67,
+      "p50_ms": 17.43,
+      "p95_ms": 30.5,
+      "p99_ms": 96.2,
+      "max_ms": 113.94,
+      "errors": [],
+      "error_count": 0,
+      "snapshot_rows": 240
+    },
+    {
+      "id": "P15-2",
+      "name": "并发列表查询 8 路 × 40 次：无错误、P95 ≤ 1500 ms",
+      "pass": true,
+      "wall_seconds": 0.05,
+      "count": 40,
+      "p50_ms": 7.36,
+      "p95_ms": 17.75,
+      "max_ms": 18.85,
+      "error_count": 0,
+      "errors": []
+    }
+  ],
+  "summary": {
+    "P13": {
+      "heartbeat": true,
+      "trigger": true,
+      "concurrency_no_duplicate": true,
+      "advisory_lock": true,
+      "circuit_breaker": true,
+      "restart_resume": true,
+      "retention_purge": true
+    },
+    "P14": {
+      "warn": true,
+      "matrix": true,
+      "wiring": true
+    },
+    "P15": {
+      "progress_concurrency": true,
+      "list_concurrency": true,
+      "metrics": {
+        "seed_rows": 36000,
+        "seed_seconds": 5.4,
+        "progress_p50_ms": 17.43,
+        "progress_p95_ms": 30.5,
+        "progress_max_ms": 113.94
+      }
+    }
+  }
+}
