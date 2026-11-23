@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-RELEASE-PORTRAIT-WAVES |
-| 版本 | v1.0.3 |
+| 版本 | v1.0.4 |
 | 状态 | [Review] |
 | 上游文档 | 《画像优化升级实施方案 v1.0.3》《画像命名与数据链路一体化升级方案 v1.3.0》《画像 P0 前置评估报告 v1.1.0》《社区矫正对象画像模板与标注模板设计 v2.0.0》《社区矫正画像标签字典 v1.0.0》 |
 | 发布列车 | 2.18.x（A）→ 2.19.0（B）→ 2.20.0（C） |
@@ -18,6 +18,7 @@
 | v1.0.1 | 2026-11-23 | 修正 C-03：复用现有 `profile_type='business'`，不新增 `profile_family` | AI 编码代理 |
 | v1.0.2 | 2026-11-23 | 同步六维标签体系：模板种子 1 主 + 9 子、标注 8 个、标签 118 项；新增教育帮扶/心理特征标注交付 | AI 编码代理 |
 | v1.0.3 | 2026-11-23 | 波次 B 交付：组织树/成员、数据范围、PII enforce、引入落库与标注自动生成、引入任务中心；补充 `sync_task.watermark` 偏差说明 | AI 编码代理 |
+| v1.0.4 | 2026-11-23 | 波次 C 交付：进度模型与引擎、business 模板族、周期快照、dps-worker 调度与补偿熔断、审计 enforce、进度/任务中心前端；发布列车闭环 | AI 编码代理 |
 
 ## 1. 发布原则
 
@@ -129,6 +130,12 @@
 `DPS_DATA_SCOPE_MODE=off`、`DPS_PII_MODE=warn`、`DPS_INGEST_PERSIST_ENABLED=false`；引入任务表保留但停止写入。
 
 ## 5. 波次 C：进度与调度（2.20.0）
+
+> **交付状态（2026-11-23）**：C-01~C-10 已实现并留痕，详见
+> `DPS/doc/development/DPS-画像波次C进度与调度-DevLogReport-v1.0.0.md`。
+> 默认开关：`DPS_PROGRESS_ENABLED=false`、`DPS_SCHEDULER_ENABLED=false`；
+> 新增 `worker_heartbeat` 与 `scripts/service-orchestrator.ps1`。
+> 偏差：任务中心第三页签取「审计日志」（画像计算任务上游无列表接口，不新增未规划端点）。
 
 ### 5.1 目标
 
