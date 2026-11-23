@@ -128,7 +128,7 @@ def test_schedule_crud_and_run(client: TestClient) -> None:
 
     client.fake.request_calls.clear()  # type: ignore[attr-defined]
     assert client.put(
-        f"/api/v1/dps-proxy/schedules/s1", json={"enabled": True}, headers=headers
+        "/api/v1/dps-proxy/schedules/s1", json={"enabled": True}, headers=headers
     ).status_code == 200
     assert _call(client)["method"] == "PUT"
     assert _call(client)["url"] == f"{UPSTREAM_BASE}/api/v2/schedules/s1"
@@ -138,6 +138,47 @@ def test_schedule_crud_and_run(client: TestClient) -> None:
         "/api/v1/dps-proxy/schedules/s1/run", json={}, headers=headers
     ).status_code == 200
     assert _call(client)["url"] == f"{UPSTREAM_BASE}/api/v2/schedules/s1/run"
+
+
+def test_portraits_export_records_business_audit(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CSV 由本仓生成：导出必须补写 log.export 留痕（C-07 接线）。"""
+    from test_dps_proxy import FakeResponse
+
+    token = _token(client)
+    items = [
+        {"person_id": "P1", "name": "张三"},
+        {"person_id": "P2", "name": "李四"},
+        {"person_id": "P3", "name": "王五"},
+    ]
+    client.fake.set_responses(  # type: ignore[attr-defined]
+        [
+            FakeResponse(200, {"code": 200, "data": {"items": items[:1], "total": 3}}),
+            FakeResponse(200, {"code": 200, "data": {"items": items, "total": 3}}),
+        ]
+    )
+    import openbase.modules.logs.service as logs_service
+
+    captured: dict = {}
+
+    async def fake_audit(**kwargs):
+        captured.update(kwargs)
+        return True
+
+    monkeypatch.setattr(logs_service, "record_export_audit", fake_audit)
+    resp = client.get(
+        "/api/v1/dps-proxy/portraits/export?keyword=%E5%BC%A0",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert captured["source"] == "dps_proxy.portraits.export"
+    assert captured["row_count"] == 3
+    assert captured["filters"] == {"keyword": "张"}
+    assert captured["export_format"] == "csv"
+    assert captured["extra"] == {"total": 3, "exported_rows": 3, "truncated": False}
+    assert captured["request_id"]
+    assert captured["actor"]
 
 
 def test_portrait_calc_task_list_and_retry(client: TestClient) -> None:

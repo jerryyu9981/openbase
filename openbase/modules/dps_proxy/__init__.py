@@ -33,6 +33,7 @@ import datetime as dt
 import json
 import logging
 import time
+import uuid
 from typing import Any
 from urllib.parse import quote
 
@@ -73,6 +74,17 @@ __all__ = ["router"]
 def _now_iso() -> str:
     """生成 ISO 8601 时间戳（UTC）."""
     return dt.datetime.now(dt.timezone.utc).isoformat()
+
+
+def _export_actor(user: dict) -> str | None:
+    """导出留痕操作者：优先 JWT ``sub``，其次 user_id/username（均无则 None）."""
+    if not isinstance(user, dict):
+        return None
+    for key in ("sub", "user_id", "username"):
+        value = user.get(key)
+        if value:
+            return str(value)
+    return None
 
 
 def _upstream_config() -> tuple[str, float]:
@@ -415,6 +427,9 @@ async def dps_portraits_export(
         _PORTRAIT_COLUMNS,
         _portrait_value,
         "portraits",
+        request=request,
+        actor=_export_actor(_user),
+        audit_source="dps_proxy.portraits.export",
     )
 
 
@@ -891,8 +906,8 @@ async def _fetch_upstream_json(
     base_url, timeout = _upstream_config()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.get(
-                f"{base_url.rstrip('/')}{path}", params=params, headers=headers
+            response = await client.request(
+                "GET", f"{base_url.rstrip('/')}{path}", params=params, headers=headers
             )
     except httpx.HTTPError as exc:
         raise BaseError(
@@ -975,12 +990,17 @@ async def _export_response(
     columns: tuple[str, ...],
     mapper: Any,
     filename_prefix: str,
+    *,
+    request: Request,
+    actor: str | None,
+    audit_source: str,
 ) -> StreamingResponse:
     preflight = await _fetch_upstream_json(
         path, {**params, "page": 1, "page_size": 1}, headers
     )
     total = int((preflight.get("data") or {}).get("total") or 0)
     truncated = total > _CSV_MAX_ROWS
+    exported_rows = min(total, _CSV_MAX_ROWS)
     filename = f"{filename_prefix}-{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
     logger.info(
         "dps export started",
@@ -991,6 +1011,35 @@ async def _export_response(
             "max_rows": _CSV_MAX_ROWS,
         },
     )
+    # 导出留痕（C-07）：CSV 由本仓生成，DPS 侧只会看到 list 读取；须在此补写
+    # OpenBase audit_logs(action="log.export")，失败降级不阻断导出（ADR-146-04）。
+    request_id = getattr(request.state, "request_id", None) or f"req-{uuid.uuid4().hex[:12]}"
+    try:
+        from openbase.modules.logs.service import record_export_audit
+
+        persisted = await record_export_audit(
+            actor=actor,
+            source=audit_source,
+            filters=params,
+            row_count=exported_rows,
+            export_format="csv",
+            request_id=request_id,
+            extra={
+                "total": total,
+                "exported_rows": exported_rows,
+                "truncated": truncated,
+            },
+        )
+        if not persisted:
+            logger.warning(
+                "dps export audit degraded (export continues)",
+                extra={"source": audit_source, "request_id": request_id},
+            )
+    except Exception as exc:  # noqa: BLE001 - 留痕失败不得阻断导出
+        logger.warning(
+            "dps export audit unavailable (export continues)",
+            extra={"source": audit_source, "error": str(exc)},
+        )
     return StreamingResponse(
         _stream_export(path, params, headers, columns, mapper),
         media_type="text/csv; charset=utf-8",
@@ -1025,6 +1074,9 @@ async def dps_annotations_export(
         _ANNOTATION_COLUMNS,
         _annotation_value,
         "annotations",
+        request=request,
+        actor=_export_actor(_user),
+        audit_source="dps_proxy.annotations.export",
     )
 
 
@@ -1668,22 +1720,6 @@ async def dps_run_schedule(
         "POST",
         _v2_upstream_path(f"/schedules/{schedule_id}/run"),
         json_body=payload or {},
-        headers=headers,
-        request=request,
-    )
-
-
-@router.get("/audit/logs")
-async def dps_audit_logs(
-    request: Request,
-    _user: dict = Depends(get_current_user),
-) -> JSONResponse:
-    """审计日志查询（GET；DPS 侧按角色/范围裁决，本仓仅透传）."""
-    headers = _build_identity_headers(_user, request)
-    return await _forward(
-        "GET",
-        _v2_upstream_path("/audit/logs"),
-        params=_forward_query_params(request),
         headers=headers,
         request=request,
     )
@@ -2613,10 +2649,7 @@ async def dps_annotation_review_log(
     )
 
 
-
 # ---- 动态段 7：AI 标注候选生成（#9）--------------------------------------
-
-
 @router.post("/annotation-adapters/{adapter_id}/generate")
 async def dps_annotation_adapter_generate(
     adapter_id: str,

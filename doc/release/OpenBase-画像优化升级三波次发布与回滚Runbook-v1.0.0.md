@@ -134,6 +134,7 @@ powershell -ExecutionPolicy Bypass -File scripts/service-orchestrator.ps1 status
 | S8 | `POST /dps-proxy/portraits/tasks/{id}/retry`（失败任务） | 200，`retried=true` |
 | S9 | `GET /dps-proxy/audit/logs?action=EXPORT` | 200，仅导出动作 |
 | S10 | `GET /dps-proxy/schedules/preview?expr=0+3+*+*+*` | 200，5 个递增时间 |
+| S11 | 导出后查 OpenBase `audit_logs(action='log.export')` | 1 条，request_id 对齐、`row_count/total/truncated` 齐全 |
 
 ### 4.2 页面级
 
@@ -213,6 +214,11 @@ powershell -ExecutionPolicy Bypass -File scripts/service-orchestrator.ps1 status
 git status
 git log --oneline -3
 git log --oneline -1 origin/main; git log --oneline -1 backup/main; git log --oneline -1 github/main
+
+# 导出审计真机验证（发布后冒烟 S11）
+$env:OPENBASE_BASE_URL = "http://127.0.0.1:8000"
+$env:DATABASE_URL = $env:POSTGRES_URL
+python scripts/verify_export_audit.py
 ```
 
 ```sql

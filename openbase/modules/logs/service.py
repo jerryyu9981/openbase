@@ -363,6 +363,7 @@ async def record_export_audit(
     row_count: int,
     export_format: str,
     request_id: str,
+    extra: dict[str, Any] | None = None,
 ) -> bool:
     """导出留痕（API §3.3：``detail={actor, source, filters, row_count, format}``）.
 
@@ -380,6 +381,8 @@ async def record_export_audit(
         "row_count": row_count,
         "format": export_format,
     }
+    if extra:
+        detail.update(extra)
     try:
         await _persist_export_audit(actor=actor, detail=detail, request_id=request_id)
     except Exception:  # noqa: BLE001 - 留痕降级：WARN 不阻断导出

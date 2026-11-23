@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |---|---|
 | 文档编号 | OB-CHECKLIST-PORTRAIT-WAVE-C |
-| 版本 | v1.0.5 |
+| 版本 | v1.0.6 |
 | 状态 | [Review] |
 | 规格 | [spec.md](./spec.md) v1.0.0 |
 | 日期 | 2026-11-23 |
@@ -18,6 +18,7 @@
 | v1.0.3 | 2026-11-23 | 补 PG 迁移演练与压测证据（隔离库、P50/P95），回勾 PG 门禁项 | AI 编码代理 |
 | v1.0.4 | 2026-11-23 | 修复 C-09 偏差：补画像计算任务列表/重试（DPS 2.20.1），回勾任务中心项 | AI 编码代理 |
 | v1.0.5 | 2026-11-23 | 全栈 E2E 走查：API 33/33、Playwright 4 页；修复 5 项缺陷（DPS 2.20.2） | AI 编码代理 |
+| v1.0.6 | 2026-11-23 | 导出审计接线完成（`log.export`），验证脚本 10/10；C-07 导出项闭合 | AI 编码代理 |
 
 ## 1. 功能
 
@@ -88,3 +89,4 @@
 | UI | 画像关键页 3/3、任务中心 1/1，零 console error/warn |
 | 缺陷修复 | retry_count 补列、PG 删除时间参数、报表方言探测、attributes_json 掩码、el-radio 弃用告警 |
 | 证据 | `doc/test/OpenBase-画像三波次全栈端到端走查报告-v1.0.0.md`、`doc/test/evidence/portrait-waves/e2e/` |
+| 导出审计 | `log.export` 落 `openbase.audit_logs`，request_id 对齐、链校验通过；`scripts/verify_export_audit.py` 10/10 |

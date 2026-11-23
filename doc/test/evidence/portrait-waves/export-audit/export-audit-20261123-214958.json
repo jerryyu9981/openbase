@@ -1,0 +1,68 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "generated_at": "2026-11-23T21:49:58.831955",
+  "total": 10,
+  "failed": 0,
+  "checks": [
+    {
+      "step": "登录",
+      "ok": true,
+      "detail": "status=200",
+      "severity": "critical"
+    },
+    {
+      "step": "导出接口返回 CSV",
+      "ok": true,
+      "detail": "status=200 bytes=2165 request_id=req-eac8dbb5f066",
+      "severity": "critical"
+    },
+    {
+      "step": "存在 log.export 留痕",
+      "ok": true,
+      "detail": "audit_logs 已定位",
+      "severity": "critical"
+    },
+    {
+      "step": "request_id 对齐",
+      "ok": true,
+      "detail": "export=req-eac8dbb5f066 audit=req-eac8dbb5f066 schema=openbase",
+      "severity": "critical"
+    },
+    {
+      "step": "留痕字段完整",
+      "ok": true,
+      "detail": "{\"actor\": \"admin\", \"source\": \"dps_proxy.portraits.export\", \"filters\": {}, \"row_count\": 18, \"format\": \"csv\", \"total\": 18, \"exported_rows\": 18, \"truncated\": false}",
+      "severity": "critical"
+    },
+    {
+      "step": "来源与格式",
+      "ok": true,
+      "detail": "source=dps_proxy.portraits.export format=csv",
+      "severity": "critical"
+    },
+    {
+      "step": "行数与截断",
+      "ok": true,
+      "detail": "row_count=18 total=18 truncated=False",
+      "severity": "critical"
+    },
+    {
+      "step": "过滤条件已脱敏记录",
+      "ok": true,
+      "detail": "{}",
+      "severity": "critical"
+    },
+    {
+      "step": "审计链校验",
+      "ok": true,
+      "detail": "status=200 ok=True",
+      "severity": "critical"
+    },
+    {
+      "step": "DPS 侧无 EXPORT（分工说明）",
+      "ok": true,
+      "detail": "platform.audit_logs EXPORT=0（预期 0；导出由本仓生成）",
+      "severity": "info"
+    }
+  ]
+}
