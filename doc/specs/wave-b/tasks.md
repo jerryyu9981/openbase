@@ -40,7 +40,7 @@
 | [x] B-10c | API 与路由注册 | `core/api/dps.ts`、`modules/portrait/index.ts` | 类型编译 |
 | [x] B-11 | 测试与回归 | `src/tests/test_v2_19_wave_b.py` 等 | pytest/ruff/flake8 |
 | [x] B-12 | 版本与留痕 | `config.py`、`__init__.py`、`constants.py`；DevLogReport；计划 v1.0.3 | 一致性检查 |
-| [ ] B-13 | 提交与推送 | DPS + OpenBase | origin/backup/github |
+| [x] B-13 | 提交与推送 | DPS `217d0f1`、OpenBase `a777f16` | origin/backup/github 均成功 |
 
 ## 门禁
 
