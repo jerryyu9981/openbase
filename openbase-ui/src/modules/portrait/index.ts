@@ -38,6 +38,9 @@ export const dpsRoutes: RouteRecordRaw[] = [
   // 标注录入与审核（v2.13.0）：补齐「配好标注模板 → 人工录入 → 审核联动」闭环
   { path: 'dps/annotations', name: 'dps-annotations', component: () => import('./pages/DpsAnnotationWorkbenchView.vue'), meta: { title: '标注作业台' } },
   { path: 'dps/tags', name: 'dps-tags', component: () => import('./pages/DpsTagSystemView.vue'), meta: { title: '标签体系查看' } },
+  // 波次 B（2.19.0）：引入任务中心（静态段先于 :id 详情）
+  { path: 'dps/ingest-tasks', name: 'dps-ingest-tasks', component: () => import('./pages/IngestTasksView.vue'), meta: { title: '引入任务' } },
+  { path: 'dps/ingest-tasks/:id', name: 'dps-ingest-task-detail', component: () => import('./pages/TaskDetailView.vue'), meta: { title: '引入任务详情' } },
 ]
 
 export const routes: RouteRecordRaw[] = [
@@ -107,6 +110,7 @@ export const navItems = [
       { path: '/portrait/list', title: '画像结果' },
       { path: '/portrait/search', title: '画像搜索' },
       { path: '/portrait/rules', title: '评分规则' },
+      { path: '/portrait/dps/ingest-tasks', title: '引入任务' },
       { path: '/portrait/dps/measures', title: '措施建议' },
     ],
   },

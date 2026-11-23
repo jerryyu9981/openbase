@@ -359,6 +359,7 @@ async def dps_portraits_list(
     external_id: str | None = Query(None),
     template_code: str | None = Query(None),
     stale: bool | None = Query(None),
+    org_code: str | None = Query(None),
     _user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """画像列表（GET /api/v2/portrait/list；v1.5.0 A6 透传 keyword/external_id）.
@@ -376,6 +377,9 @@ async def dps_portraits_list(
         params["template_code"] = template_code
     if stale is not None:
         params["stale"] = "true" if stale else "false"
+    # v2.19.0（波次 B）：组织编码筛选透传
+    if org_code:
+        params["org_code"] = org_code
     return await _forward(
         "GET", "/api/v2/portrait/list",
         params=params,
@@ -389,6 +393,7 @@ async def dps_portraits_export(
     request: Request,
     keyword: str | None = Query(None),
     external_id: str | None = Query(None),
+    org_code: str | None = Query(None),
     _user: dict = Depends(get_current_user),
 ) -> StreamingResponse:
     """画像 CSV 导出（v1.5.0 A11；本仓生成，最多 10000 行）.
@@ -401,6 +406,8 @@ async def dps_portraits_export(
         params["keyword"] = keyword
     if external_id:
         params["external_id"] = external_id
+    if org_code:
+        params["org_code"] = org_code
     return await _export_response(
         "/api/v2/portrait/list",
         params,
@@ -1244,6 +1251,184 @@ def _portrait_upstream_path(suffix: str) -> str:
 def _forward_query_params(request: Request) -> dict[str, Any]:
     """透传入站查询参数至上游（保真，不在本仓做语义裁剪）."""
     return dict(request.query_params)
+
+
+# 上游 v2 域前缀（波次 B：组织与引入任务，契约 /api/v2/{path}）
+DPS_V2_UPSTREAM_PREFIX = "/api/v2"
+
+
+def _v2_upstream_path(suffix: str) -> str:
+    """拼接上游 v2 域路径（``suffix`` 以 ``/`` 起始）."""
+    return f"{DPS_V2_UPSTREAM_PREFIX}{suffix}"
+
+
+# ---- 波次 B（2.19.0）：组织与引入任务 -------------------------------------
+
+
+@router.get("/orgs")
+async def dps_list_orgs(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """组织平铺列表（GET；只读）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path("/orgs"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/orgs/tree")
+async def dps_org_tree(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """组织树（GET；只读）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path("/orgs/tree"),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/orgs/{code}/members")
+async def dps_org_members(
+    code: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """组织成员列表（GET；只读）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path(f"/orgs/{code}/members"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.put("/orgs/{code}/members")
+async def dps_upsert_org_members(
+    code: str,
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """批量维护组织成员（PUT；写动作）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "PUT",
+        _v2_upstream_path(f"/orgs/{code}/members"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/ingest/preview")
+async def dps_ingest_preview(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """引入预览（POST；脱敏，由 DPS 完成）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _v2_upstream_path("/ingest/preview"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/ingest/execute")
+async def dps_ingest_execute(
+    payload: dict[str, Any],
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """执行引入（POST；开关关闭时上游保持模拟路径）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _v2_upstream_path("/ingest/execute"),
+        json_body=payload,
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/ingest/tasks")
+async def dps_ingest_tasks(
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """引入任务列表（GET；静态段先于 /ingest/tasks/{task_id}）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path("/ingest/tasks"),
+        params=_forward_query_params(request),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/ingest/tasks/{task_id}")
+async def dps_ingest_task_detail(
+    task_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """引入任务详情（GET）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path(f"/ingest/tasks/{task_id}"),
+        headers=headers,
+        request=request,
+    )
+
+
+@router.post("/ingest/tasks/{task_id}/retry")
+async def dps_ingest_task_retry(
+    task_id: str,
+    request: Request,
+    payload: dict[str, Any] | None = None,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """重试引入任务（POST）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "POST",
+        _v2_upstream_path(f"/ingest/tasks/{task_id}/retry"),
+        json_body=payload or {},
+        headers=headers,
+        request=request,
+    )
+
+
+@router.get("/ingest/tasks/{task_id}/errors")
+async def dps_ingest_task_errors(
+    task_id: str,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+) -> JSONResponse:
+    """引入任务错误行（GET；上游已脱敏）."""
+    headers = _build_identity_headers(_user, request)
+    return await _forward(
+        "GET",
+        _v2_upstream_path(f"/ingest/tasks/{task_id}/errors"),
+        headers=headers,
+        request=request,
+    )
 
 
 # ---- 静态段 1：模板包（#1 导出 / #2 导入）--------------------------------

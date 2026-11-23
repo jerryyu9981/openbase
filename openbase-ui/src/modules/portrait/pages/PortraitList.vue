@@ -47,6 +47,12 @@
 
       <div class="page-toolbar">
         <el-input v-model="keyword" placeholder="搜索画像（姓名/ID 模糊）" clearable style="width: 240px" data-test="dps-search" @keyup.enter="loadData" />
+        <OrgTreeSelect
+          v-model="selectedOrg"
+          :orgs="orgTree"
+          data-test="portrait-org-filter"
+          @update:model-value="loadData"
+        />
         <el-button type="primary" data-test="dps-create" @click="$router.push('/portrait/search')">高级检索</el-button>
         <el-button data-test="portrait-calculate-open" @click="openCalculate">计算画像</el-button>
         <el-button data-test="portrait-external-open" @click="openExternal">按外部 ID 查询</el-button>
@@ -106,7 +112,16 @@
           @selection-change="onSelectionChange"
         >
           <el-table-column type="selection" width="44" reserve-selection />
-          <el-table-column v-if="columnVisible('name')" prop="name" label="画像名称" min-width="160" />
+          <el-table-column v-if="columnVisible('name')" label="画像名称" min-width="160">
+            <template #default="{ row }">
+              <PiiMaskedField
+                :value="row.name"
+                :masked="isMaskedValue(row.name)"
+                level="L3"
+                test-id="portrait-name"
+              />
+            </template>
+          </el-table-column>
           <el-table-column v-if="columnVisible('person_id')" prop="person_id" label="画像码（person_id）" min-width="180" show-overflow-tooltip />
           <el-table-column v-if="columnVisible('tags')" label="标签" min-width="180">
             <template #default="{ row }">
@@ -216,10 +231,12 @@
 import PageContainer from '@/components/page/PageContainer.vue'
 import ConceptNav from '../components/ConceptNav.vue'
 import NameCodeLabel from '@/components/common/NameCodeLabel.vue'
+import OrgTreeSelect from '@/components/common/OrgTreeSelect.vue'
+import PiiMaskedField from '@/components/common/PiiMaskedField.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { dpsApi, type DpsPortrait, type DpsPortraitTemplate } from '@/core/api/dps'
+import { dpsApi, type DpsOrgNode, type DpsPortrait, type DpsPortraitTemplate } from '@/core/api/dps'
 import { describeDpsError, describeError, type ErrorPresentation } from '@/core/api/error'
 import { useDpsListView } from '@/modules/portrait/composables/useDpsListView'
 import {
@@ -245,6 +262,21 @@ const tableRef = ref<{ clearSelection?: () => void } | null>(null)
 const selectedRows = ref<DpsPortrait[]>([])
 const batchCalculating = ref(false)
 const batchDeleting = ref(false)
+// v2.19.0（波次 B / B-10）：组织范围切换与 PII 掩码展示
+const orgTree = ref<DpsOrgNode[]>([])
+const selectedOrg = ref('')
+
+function isMaskedValue(value: unknown): boolean {
+  return typeof value === 'string' && value.includes('*')
+}
+
+async function loadOrgTree(): Promise<void> {
+  try {
+    orgTree.value = await dpsApi.getOrgTree()
+  } catch {
+    orgTree.value = []
+  }
+}
 
 const { columns, columnVisible, toggleColumn, setSelection, clearSelection } = useDpsListView({
   pageKey: 'portraits',
@@ -583,6 +615,7 @@ async function loadData() {
       page: page.value,
       page_size: pageSize,
       keyword: keyword.value.trim() || undefined,
+      org_code: selectedOrg.value || undefined,
       template_code: staleOnly.value ? DEFAULT_PORTRAIT_TEMPLATE_CODE : undefined,
       stale: staleOnly.value ? true : undefined,
     })
@@ -601,6 +634,7 @@ async function loadData() {
 
 onMounted(() => {
   void loadData()
+  void loadOrgTree()
 })
 </script>
 

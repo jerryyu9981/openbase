@@ -922,6 +922,8 @@ export const dpsApi = {
     template_code?: string
     /** T-DM-02：仅看过期画像 */
     stale?: boolean
+    /** v2.19.0（波次 B）：组织编码筛选 */
+    org_code?: string
   }): Promise<{ items: DpsPortrait[]; total?: number }> {
     const { data } = await http.get<{ code: number; data: { items: DpsPortrait[]; total?: number } }>('/dps-proxy/portraits', { params })
     return data.data
@@ -1699,6 +1701,180 @@ export const dpsApi = {
     )
     return data.data
   },
+
+  /* ==================== v2.19.0｜波次 B：组织与引入任务 ==================== */
+
+  /** 组织平铺列表（GET /dps-proxy/orgs） */
+  async listOrgs(): Promise<DpsOrgNode[]> {
+    const { data } = await http.get<ApiSuccess<DpsOrgNode[]>>('/dps-proxy/orgs')
+    return data.data
+  },
+
+  /** 组织树（GET /dps-proxy/orgs/tree） */
+  async getOrgTree(): Promise<DpsOrgNode[]> {
+    const { data } = await http.get<ApiSuccess<DpsOrgNode[]>>('/dps-proxy/orgs/tree')
+    return data.data
+  },
+
+  /** 组织成员（GET /dps-proxy/orgs/{code}/members） */
+  async listOrgMembers(code: string, includeExpired = false): Promise<DpsOrgMember[]> {
+    const { data } = await http.get<ApiSuccess<DpsOrgMember[]>>(
+      `/dps-proxy/orgs/${encodeURIComponent(code)}/members`,
+      { params: includeExpired ? { include_expired: true } : undefined },
+    )
+    return data.data
+  },
+
+  /** 维护组织成员（PUT /dps-proxy/orgs/{code}/members；一人多岗、主岗唯一） */
+  async upsertOrgMembers(
+    code: string,
+    members: DpsOrgMember[],
+  ): Promise<{ org_code: string; written: number; primary_cleared: number }> {
+    const { data } = await http.put<ApiSuccess<{ org_code: string; written: number; primary_cleared: number }>>(
+      `/dps-proxy/orgs/${encodeURIComponent(code)}/members`,
+      { members },
+    )
+    return data.data
+  },
+
+  /** 引入预览（POST /dps-proxy/ingest/preview；脱敏，不写库） */
+  async previewIngest(body: DpsIngestPreviewRequest): Promise<DpsIngestPreview> {
+    const { data } = await http.post<ApiSuccess<DpsIngestPreview>>('/dps-proxy/ingest/preview', body)
+    return data.data
+  },
+
+  /** 执行引入（POST /dps-proxy/ingest/execute） */
+  async executeIngest(body: DpsIngestExecuteRequest): Promise<DpsIngestExecuteResult> {
+    const { data } = await http.post<ApiSuccess<DpsIngestExecuteResult>>('/dps-proxy/ingest/execute', body)
+    return data.data
+  },
+
+  /** 引入任务列表（GET /dps-proxy/ingest/tasks） */
+  async listIngestTasks(params?: {
+    status?: string
+    page?: number
+    page_size?: number
+  }): Promise<{ total: number; page: number; page_size: number; items: DpsIngestTask[] }> {
+    const { data } = await http.get<ApiSuccess<{ total: number; page: number; page_size: number; items: DpsIngestTask[] }>>(
+      '/dps-proxy/ingest/tasks',
+      { params },
+    )
+    return data.data
+  },
+
+  /** 引入任务详情（GET /dps-proxy/ingest/tasks/{task_id}） */
+  async getIngestTask(taskId: string): Promise<DpsIngestTask> {
+    const { data } = await http.get<ApiSuccess<DpsIngestTask>>(
+      `/dps-proxy/ingest/tasks/${encodeURIComponent(taskId)}`,
+    )
+    return data.data
+  },
+
+  /** 重试引入任务（POST /dps-proxy/ingest/tasks/{task_id}/retry） */
+  async retryIngestTask(taskId: string, body: DpsIngestExecuteRequest = {}): Promise<DpsIngestExecuteResult> {
+    const { data } = await http.post<ApiSuccess<DpsIngestExecuteResult>>(
+      `/dps-proxy/ingest/tasks/${encodeURIComponent(taskId)}/retry`,
+      body,
+    )
+    return data.data
+  },
+
+  /** 引入错误行（GET /dps-proxy/ingest/tasks/{task_id}/errors；上游已脱敏） */
+  async getIngestTaskErrors(taskId: string): Promise<DpsIngestError[]> {
+    const { data } = await http.get<ApiSuccess<DpsIngestError[]>>(
+      `/dps-proxy/ingest/tasks/${encodeURIComponent(taskId)}/errors`,
+    )
+    return data.data
+  },
+}
+
+/** 组织树节点（v2.19.0） */
+export interface DpsOrgNode {
+  id?: string
+  code: string
+  name?: string
+  status?: string
+  parent_code?: string | null
+  path?: string | null
+  level?: number
+  sort_order?: number
+  children?: DpsOrgNode[]
+  [key: string]: unknown
+}
+
+/** 组织成员（v2.19.0；一人多岗、主岗唯一） */
+export interface DpsOrgMember {
+  person_id: string
+  org_code?: string
+  position?: string | null
+  is_primary?: boolean | number
+  valid_from?: string | null
+  valid_to?: string | null
+  [key: string]: unknown
+}
+
+/** 引入错误行（v2.19.0；record 已脱敏） */
+export interface DpsIngestError {
+  row_number: number
+  error: string
+  record?: Record<string, unknown>
+}
+
+/** 引入任务（v2.19.0） */
+export interface DpsIngestTask {
+  id: string
+  file_name?: string
+  file_path?: string
+  file_format?: string
+  total_rows?: number
+  success_rows?: number
+  failed_rows?: number
+  status?: string
+  trigger_source?: string
+  created_at?: string
+  finished_at?: string | null
+  errors?: DpsIngestError[]
+  field_mapping?: Record<string, string>
+  [key: string]: unknown
+}
+
+/** 引入预览结果（v2.19.0；rows 已按 attributes.* 脱敏） */
+export interface DpsIngestPreview {
+  rows: Record<string, unknown>[]
+  total_sampled: number
+  mapping: Record<string, string>
+}
+
+/** 引入预览请求 */
+export interface DpsIngestPreviewRequest {
+  file_path: string
+  file_format?: string
+  field_mapping?: Record<string, string>
+  limit?: number
+}
+
+/** 引入执行请求（task_id 或文件信息二选一） */
+export interface DpsIngestExecuteRequest {
+  task_id?: string
+  file_path?: string
+  file_name?: string
+  file_format?: string
+  field_mapping?: Record<string, string>
+  trigger_source?: string
+  profile_template_code?: string
+  annotation_template_code?: string
+}
+
+/** 引入执行结果 */
+export interface DpsIngestExecuteResult {
+  status: string
+  task_id: string
+  total_records?: number
+  processed_records?: number
+  error_records?: number
+  annotations_created?: number
+  idempotent?: boolean
+  message?: string
 }
 
 /** 批量复核请求条目（逐条复用单条复核语义） */
